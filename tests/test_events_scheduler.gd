@@ -522,9 +522,9 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 ## outside it.
 const _WALL_SHARE_TOLERANCE := 0.2
 
-## **From the gatehouse day on, the day draws a share of its hard-blocking walls** —
-## `EventScheduler.view_weight()` scales the weight in the bags of every wall-role row with a body in
-## the way or a lethal field by `DaySpec.wall_row_share` (azure-puffin point 4: "fewer of all three"). The same city, seed and day is planned twice, once as the game plans it
+## **From the gatehouse day on, the day draws a share of its walls** — `EventScheduler.view_weight()`
+## scales the weight in the bags of every wall-role row by `DaySpec.wall_row_share` (azure-puffin
+## point 4: "fewer of all three"). The same city, seed and day is planned twice, once as the game plans it
 ## (`DaySpec.for_day()`) and once with `wall_row_share` at `1.0`, every wall weighed in full, so the
 ## check is a relationship between the two days rather than the rule read back to itself: the share
 ## of walls the day keeps is `DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` within `_WALL_SHARE_TOLERANCE`, and
@@ -553,39 +553,40 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t) -> void:
 			"from the gatehouse day the day keeps %.2f of its walls (%d of %d); the share asked "
 			% [share, kept, walls] + "for is %.2f" % DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE)
 
-## How many of `plans` are placed recurring hard-blocking walls (a body in the way or a lethal
-## field), the rows the bags weigh by the share.
+## How many of `plans` are placed recurring wall-role rows, the rows the bags weigh by the share.
 static func _walls_of(plans: Array[EventScheduler.Planned]) -> int:
 	var count := 0
 	for plan in plans:
 		if plan.role == GameEnums.BlockerRole.WALL and plan.is_placed() \
-				and plan.def.kind == GameEnums.EventKind.RECURRING and plan.obstructs():
+				and plan.def.kind == GameEnums.EventKind.RECURRING:
 			count += 1
 	return count
 
-## The city, and the seed of the day's draw, where the test below's setup holds: the clean area has
-## one way in and a body the day kept stands on it. Found by building this day for city 1000 and draw
-## seeds `hash("zz:<city>:0:<try>")` until every check below passed; the first hit is pinned. With the
-## day's locations drawn from the bags, none of 160 draws on this city made the repair keep different
-## bodies when `DayEvents.is_spoiled()` answered "not spoiled" (a temporary edit): the dawn draw's
-## rules leave it no body it has to drop here. The repair goes with the next step of placement by
-## construction. If the guard in the test trips because the catalogue, the planner or the tuning
-## moved, search again the same way and pin the first draw that passes.
+## The city, and the seed of the day's draw, for the test below. The case is live by construction:
+## the body that cuts the clean area off is stood there by hand (`_CUTTING_BODY`), so the city and the
+## draw only have to give the area she used a row that spoils it, which the test's guard checks. If it
+## trips because the catalogue, the planner or the tuning moved, pin another draw seed that passes.
 const _CHOICE_CITY_SEED := 1000
 const _CHOICE_DRAW_SEED := 3855935566
+## The body stood on the clean area's one way in: a burst water main, whose body reaches 96px each
+## way from the middle of the street, across its 192px. Stood through the run's scars, the one way a
+## day stands a catalogue body on a spot of the caller's choosing (`build_day()`'s `scars`).
+const _CUTTING_BODY := "burst_water_main"
 
 ## **The repair keeps a route to a clean calm area, not to a spoiled one.** On day 12, with the
 ## swing park as the target, `EventScheduler` keeps a route to the calm ground *besides* the
 ## swing's that no event's field reaches (`DayRepairs.ensure_the_city_is_still_walkable()`);
 ## when the bodies placed cut that clean area off, it drops them, widest first, until it is
-## reached. Counting the spoiled area as well would stop at the first drop that left *it*
-## reachable.
+## reached. Counting the spoiled area as well would stop at once, the spoiled area still reached,
+## and keep the body that cuts the clean one off.
 ##
 ## The route tree keeps calm ground reachable, so no day the game plans on its own puts a body on the
 ## one street to a clean area. The day here is built so it does: every street but the three the home,
 ## the swing and the two other calm areas need is closed (`CityMap.close_streets()`, the game's own
-## writer), the area the day spoils is the one she used, and the clean one is reached by those
-## streets alone, with bodies standing on them.
+## writer), the area the day spoils is the one she used, the clean one is reached by those streets
+## alone, and a body stands across the middle of a street only the clean area's walk uses
+## (`_CUTTING_BODY`). The guards say the case is live: that body alone cuts the clean area off and
+## leaves the spoiled one reached, so the check fails when the repair counts the spoiled area clean.
 func _test_the_repair_keeps_a_route_to_the_clean_calm_ground_not_the_spoiled(t) -> void:
 	var map := CityGenerator.generate(_CHOICE_CITY_SEED)
 	var day := ResistanceSteps.swing_day()
@@ -623,38 +624,43 @@ func _test_the_repair_keeps_a_route_to_the_clean_calm_ground_not_the_spoiled(t) 
 		if not keep.has(segment.key()):
 			shut.append(RoadClosure.new(RoadClosure.Kind.ROADWORKS, segment))
 	map.close_streets(shut)
+	var grid := ReachabilityGrid.build(map)
+	# The body, across the middle of the first street only the clean area's walk uses.
+	var cutting: EventScheduler.Planned = null
+	for key: Vector3i in walks["clean"]:
+		if cutting == null and not walks["target"].has(key) and not walks["spoiled"].has(key):
+			var street: StreetNetwork.Segment = walks["clean"][key]
+			cutting = EventScheduler.Planned.new(EventCatalogue.by_id(_CUTTING_BODY),
+					map.tile_rect_to_world(street.tile_rect()).get_center())
+	t.check(cutting != null, "the clean area has a street of its own to reach it by")
+	if cutting == null:
+		map.close_streets([])
+		return
+	var alone := EventScheduler.blocked_by(map, [cutting] as Array[EventScheduler.Planned])
+	var reached_alone := grid.flood([map.home_rect.position], alone)
+	t.check(not grid.reaches(calm_tile.call(clean_block), alone, reached_alone)
+			and grid.reaches(calm_tile.call(spoiled_block), alone, reached_alone),
+			"the case is live: that body alone cuts the clean area off and leaves the spoiled one reached")
+	var scars: Array[Dictionary] = [{"id": _CUTTING_BODY, "position": cutting.position,
+			"since_day": day - 1}]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _CHOICE_DRAW_SEED
 	var consumed: Array[String] = []
-	var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm, consumed, [],
+	var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm, consumed, scars,
 			null, 0, PackedVector2Array(), target, [])
+	t.check(events.is_spoiled(spoiled_block),
+			"the area she used is spoiled after the repair, so the repair has a spoiled area to pass over")
 	t.check(not events.is_spoiled(clean_block),
 			"the area she has not used is clean after the repair")
-	t.check(events.is_spoiled(spoiled_block),
-			"the area she used is spoiled after the repair")
 	var blockers := events.obstructions()
 	var blocked := EventScheduler.blocked_by(map, blockers)
-	var grid := ReachabilityGrid.build(map)
 	var reached := grid.flood([map.home_rect.position], blocked)
 	t.check(grid.reaches(calm_tile.call(clean_block), blocked, reached),
 			"with every body the day kept standing, the clean calm area is still reached from home")
-	# **The case is live**: the clean area has one way in, the streets only its walk uses, and a
-	# body the day kept stands on them. Were it opened another way, or no body to stand there,
-	# the check above would pass whatever `DayEvents.is_spoiled()` answered.
-	var access := {}   # the tiles of the streets only the clean area's walk uses
-	for key: Vector3i in walks["clean"]:
-		if not walks["target"].has(key) and not walks["spoiled"].has(key):
-			for tile in map.rect_tiles(walks["clean"][key].tile_rect()):
-				access[tile] = true
-	t.check(not access.is_empty(), "the clean area has streets of its own to reach it by")
-	var shut_off := grid.flood([map.home_rect.position], access)
-	t.check(not grid.reaches(calm_tile.call(clean_block), access, shut_off),
-			"the clean area has one way in: without its own streets home does not reach it")
-	var stands_on_access := false
+	var kept_the_cut := false
 	for body in blockers:
-		for tile: Vector2i in EventScheduler.blocked_by(map, [body] as Array[EventScheduler.Planned]):
-			stands_on_access = stands_on_access or access.has(tile)
-	t.check(stands_on_access, "a body the day kept stands on the clean area's one way in")
+		kept_the_cut = kept_the_cut or (body.def.id == _CUTTING_BODY and body.position == cutting.position)
+	t.check(not kept_the_cut, "the body across the clean area's one way in is dropped")
 	map.close_streets([])
 
 ## Marks in `keep` (by key) every street segment on the shortest walk from the doorstep to `to`.

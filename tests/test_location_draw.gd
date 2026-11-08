@@ -2,7 +2,7 @@ extends RefCounted
 ## `LocationDraw`, the day's open locations each drawn from its view's bag at dawn (inbox #1185):
 ## each open location drawn once and what it drew recorded, an event drawn stood in the day, a
 ## location taken, unavailable or already drawn left alone, a row the day's ground refuses at a
-## location never drawn there, a row at its `max_per_day` not drawn where the day keeps the caps, and
+## location never drawn there, a row not drawn once it has stood as many times as the caps handed in say, and
 ## each location's weight handed to its bag. Run with stand-ins for what it is handed: the day's
 ## locations (`_Locations`, a handful built by hand), the ground (`_Ground`, whose refusals and
 ## weights a check sets); the bags are real (`ViewBag`), of a few marbles each.
@@ -68,7 +68,7 @@ static func _rng() -> RandomNumberGenerator:
 
 ## The draw over `locations`, a bag of `fill` for the route view, `rows` the marbles' rows.
 static func _drawn(locations: _Locations, fill: Dictionary, rows: Dictionary, ground: _Ground,
-		caps := true, seed_value := 1) -> Array[EventScheduler.Planned]:
+		caps := {}, seed_value := 1) -> Array[EventScheduler.Planned]:
 	var bags := {ON: ViewBag.new(fill, seed_value)}
 	return LocationDraw.new(locations, bags, rows, ground, caps).draw_all(_rng())
 
@@ -113,7 +113,7 @@ func _test_a_row_the_ground_refuses_is_never_drawn_there(t) -> void:
 		var ground := _Ground.new()
 		ground.refused = [["cafe_tables", refusing]]
 		_drawn(locations, {"cafe_tables": 1, "dog_walker": 1},
-				{"cafe_tables": _row("cafe_tables"), "dog_walker": _row("dog_walker")}, ground, true,
+				{"cafe_tables": _row("cafe_tables"), "dog_walker": _row("dog_walker")}, ground, {},
 				seed_value)
 		var at: EventScheduler.Planned = locations.recorded[refusing]
 		never = never and at != null and at.row_id() == "dog_walker"
@@ -122,15 +122,19 @@ func _test_a_row_the_ground_refuses_is_never_drawn_there(t) -> void:
 func _test_a_row_at_its_cap_is_not_drawn(t) -> void:
 	var capped := _Locations.new()
 	capped.order = [_location(0), _location(1), _location(2)] as Array[Location]
-	var placed := _drawn(capped, {"cafe_tables": 3}, {"cafe_tables": _row("cafe_tables", 1)},
-			_Ground.new(), true)
-	t.check(placed.size() == 1, "a row at its cap of one is drawn once on a day that keeps the caps (%d)"
-			% placed.size())
+	var placed := _drawn(capped, {"cafe_tables": 3}, {"cafe_tables": _row("cafe_tables")},
+			_Ground.new(), {"cafe_tables": 1})
+	t.check(placed.size() == 1, "a row whose cap is one is drawn once (%d)" % placed.size())
+	var two := _Locations.new()
+	two.order = [_location(0), _location(1), _location(2)] as Array[Location]
+	placed = _drawn(two, {"cafe_tables": 3}, {"cafe_tables": _row("cafe_tables")}, _Ground.new(),
+			{"cafe_tables": 2})
+	t.check(placed.size() == 2, "a cap of two, twice: the cap is the one handed in (%d)" % placed.size())
 	var uncapped := _Locations.new()
 	uncapped.order = [_location(0), _location(1), _location(2)] as Array[Location]
 	placed = _drawn(uncapped, {"cafe_tables": 3}, {"cafe_tables": _row("cafe_tables", 1)},
-			_Ground.new(), false)
-	t.check(placed.size() == 3, "and at every location on a walk that keeps none (%d)" % placed.size())
+			_Ground.new(), {})
+	t.check(placed.size() == 3, "and at every location on a walk that hands no caps (%d)" % placed.size())
 
 ## A cafe and an empty marble: a location weighing the cafe a thousand times over draws it on nearly
 ## every seed, one weighing it as the bag does about half the time.
@@ -144,12 +148,12 @@ func _test_a_locations_weight_reaches_its_bag(t) -> void:
 		var ground := _Ground.new()
 		ground.weights = {weighed: 1000.0}
 		if not _drawn(locations, {"cafe_tables": 1, ViewBag.EMPTY: 1},
-				{"cafe_tables": _row("cafe_tables")}, ground, true, seed_value).is_empty():
+				{"cafe_tables": _row("cafe_tables")}, ground, {}, seed_value).is_empty():
 			heavy += 1
 		var even := _Locations.new()
 		even.order = [_location(1)] as Array[Location]
 		if not _drawn(even, {"cafe_tables": 1, ViewBag.EMPTY: 1},
-				{"cafe_tables": _row("cafe_tables")}, _Ground.new(), true, seed_value).is_empty():
+				{"cafe_tables": _row("cafe_tables")}, _Ground.new(), {}, seed_value).is_empty():
 			plain += 1
 	t.check(heavy > 190, "a location weighing the cafe a thousand times over draws it (%d of 200)" % heavy)
 	t.check(plain > 60 and plain < 140, "one weighing it as the bag does, about half the time (%d of 200)"

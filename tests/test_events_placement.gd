@@ -420,7 +420,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t) -> void:
 ## — so it arrives well under once a day, and a sweep that planned whole days would be asking
 ## nothing at all on most of them and would go red on a reseed rather than on a defect.
 ## `EventScheduler.recipe_placement()` is the public entry that judges a row on one chosen tile as
-## the fill does (the scene recipes call it), so the sweep asks it directly, over seeds and over
+## the day's own placement does (the scene recipes call it), so the sweep asks it directly, over seeds and over
 ## days spanning the acts: the ground the scheduler offers the row (`open_ground_for()`) has to be
 ## squares alone, the row is placed on tiles drawn from it, and every sidewalk tile of a sample
 ## strewn over the map is refused it. The count at the end is what stops it passing having placed

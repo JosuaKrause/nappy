@@ -967,7 +967,7 @@ events ever coming within reach: a twenty-second event planted across the city a
 before the player could have reached it. An event that waits for her is an event she meets.
 
 **And some events have no place at all.** `EventDef.SpawnMode.AHEAD_OF_PLAYER` events are
-budgeted by the day and sited by `EventDirector`, which puts them across her line
+owed by the day and sited by `EventDirector`, which puts them across her line
 `AHEAD_LEAD_DISTANCE` in front of her while she is walking. See docs/EVENTS.md, "Where an event
 happens", for which events earn that and what the contract on them is.
 

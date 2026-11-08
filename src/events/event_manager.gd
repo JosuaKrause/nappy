@@ -31,8 +31,8 @@ extends Node
 ## a world that is not the city (`setup_world()`); the run (`City.run`, or `use_run()`); the player
 ## (`use_player()`); the walk's spec (`use_the_spec()`).
 ##
-## Lookup is a linear scan. The budget formula tops out around 32 concurrent events on the last day
-## — 32 distance checks per physics tick is nothing, and a spatial hash would be more code with more
+## Lookup is a linear scan. Only what is inside `EVENT_STREAM_RADIUS` is live, a few dozen at most
+## — that many distance checks per physics tick is nothing, and a spatial hash would be more code with more
 ## ways to be subtly wrong. Revisit if an act ever wants hundreds of sources at once.
 ##
 ## **This node owns no instance as a scene child.** Every `EventInstance` is added to the world its
@@ -253,7 +253,7 @@ func _owe_the_return() -> void:
 ## **A day is keyed by its own number** (`DaySpec.number`): its streams and the rows it sends. **The
 ## escape's sections keep the run's last day**, on whose streams their plans are drawn
 ## (`DaySpec.number`'s own doc), and count her encounters under their own number. A day leaves the
-## director what it budgeted for her walk (`EventsAhead.start_day()`) and records its bodies for
+## director what it owes her walk (`EventsAhead.start_day()`) and records its bodies for
 ## the crowd; a walk planned whole before she sets off owes the director nothing
 ## (`EventsAhead.start_a_given_walk()`), and a plan of it that comes again
 ## (`EventScheduler.Planned.repeats()`) comes on its own clock
@@ -279,7 +279,7 @@ func _begin(spec: DaySpec) -> void:
 
 ## **The second half, which every walk shares** (a day, a section of the escape, a scene's recipe):
 ## takes `plan`'s placements and streams the events around `focus`. A day's plan records its bodies
-## and hands the director its budget; a walk planned whole hands it nothing. `world.day` is the
+## and hands the director what the day owes her; a walk planned whole hands it nothing. `world.day` is the
 ## plan's: the day's own number for a day, the run's last day for the escape's sections.
 func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	world.day = spec.number if plan.is_a_day else world.run.header.day
@@ -681,7 +681,7 @@ func plans() -> Array[EventScheduler.Planned]:
 func walk_events() -> WalkEvents:
 	return _walk_events
 
-## Events the day has budgeted for the director to put in front of her and has not spent yet.
+## Events the day owes the director to put in front of her and has not spent yet.
 func owed_ahead() -> int:
 	return ahead.owed_ahead()
 

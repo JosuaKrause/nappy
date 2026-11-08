@@ -135,7 +135,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 		for segment in city_map.network.around_blocks(Rect2i(city_map.home_block, Vector2i.ONE)):
 			city_map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
-	# Off the catalogue's own budget on purpose — see `SealPlanner`'s own doc. It seals everything
+	# Apart from the catalogue's own events on purpose — see `SealPlanner`'s own doc. It seals everything
 	# `EventScheduler` was not permitted to touch: every street off `tree` (a share of them from
 	# `Tuning.REGION_WALL_FIRST_DAY` on, see `SealPlanner._seals_this_street`), hard or soft, plus the
 	# mouths of any through-alley that never reaches it — except today's region boundary, wall or

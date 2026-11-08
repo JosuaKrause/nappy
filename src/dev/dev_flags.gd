@@ -341,7 +341,7 @@ func route_targets() -> Array[String]:
 
 ## `--force <event id> [seconds]`, the raw id, or "". **The flag for checking one row rather than one
 ## city**: the director hands out that row and nothing else, refilled as fast as it is spent, every
-## `forced_interval()` seconds. It bypasses `first_day` and the day's budget on purpose: the
+## `forced_interval()` seconds. It bypasses `first_day` and the day's count of moments on purpose: the
 ## question is what the row does when it reaches her. `--seed` and `--day` still decide the city and
 ## the act, so everything around the row is the ordinary game.
 func forced_row() -> String:

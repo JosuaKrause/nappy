@@ -109,13 +109,17 @@ static func _cells_of(map: CityMap, corridor: Corridor, types: Array, kind: int)
 				Rect2i(cell * OPEN_CELL, Vector2i.ONE * OPEN_CELL), 0, kind))
 	return found
 
-## Each junction box holding a crossing, one location each.
+## **Each junction box a street of the day meets, one location each** (`Location.Kind.JUNCTION`):
+## the whole box, its sidewalk corners, its carriageway and its crossings, the one location the
+## streets meeting there share. A box no street meets, inside a calm area that absorbed its streets,
+## is that area's ground and not a junction's.
 static func _junction_boxes(map: CityMap, corridor: Corridor) -> Array[Location]:
 	var boxes := {}
-	for tile in map.tiles_of_type(GameEnums.TileType.CROSSING):
-		var junction := CityMap.junction_at(tile)
-		if junction != Vector2i(-1, -1):
-			boxes[junction] = true
+	for segment in map.street_segments():
+		var key := segment.key()
+		var a := Vector2i(key.x, key.y)
+		boxes[a] = true
+		boxes[a + (Vector2i.RIGHT if key.z == 0 else Vector2i.DOWN)] = true
 	var keys := boxes.keys()
 	keys.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x))
 	var found: Array[Location] = []

@@ -58,9 +58,9 @@ const EVENT_SPACING_SAME := 256.0
 ## is the star shape `RouteTree` deliberately does not grow.
 ##
 ## It is also the reason this is a weight and not the per-gap roll that reads more directly. A roll
-## needs a phase, a stream, a budget of its own and a share of the caps; a weight rides on the day's
-## existing budget, spacing and per-row caps unchanged, and *cannot place more than the day can
-## afford*.
+## needs a phase, a stream, a count of its own and a share of the caps; a weight rides on the day's
+## bags, spacing and per-row caps unchanged (a location's weight, `JudgedLocationGround.scale()`), and
+## *cannot place more than the view's empty marbles let it*.
 const EVENT_WALL_GAP_WEIGHT := 6
 ## How many times over the **rim** is offered to a **wall** placement, against ground further out.
 ##
@@ -289,7 +289,7 @@ class Planned extends RefCounted:
 	## `stand_as_a_seal()`.
 	var _is_a_seal := false
 
-	## False for an event the day has budgeted but not sited.
+	## False for an event the day has planned but not sited.
 	func is_placed() -> bool:
 		return position != Vector2.INF
 
@@ -651,7 +651,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## `kept_ground` is the ground the escape's bag draw reads again on a replan of the same city
 ## (`KeptGround`); a day's draw does not read it.
 ##
-## `beside_the_routes` is the row the roadblock phase places beside the day's routes before the fill,
+## `beside_the_routes` is the row the roadblock phase places beside the day's routes before the dawn draw,
 ## so that one is close by wherever she reads the task's mark: day 13's roadblock
 ## (`_place_the_roadblocks()`). Null on every other day, which is then planned exactly as it would be
 ## without it.
@@ -674,7 +674,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
-	_plan_through_the_fill(day, base, map, consumed_one_shots, scars, calm, route, heat, doors,
+	_plan_the_dawn(day, base, map, consumed_one_shots, scars, calm, route, heat, doors,
 			events, trace, spec, beside_the_routes)
 	_ensure_the_run_is_taught(day, events, heat, trace)
 
@@ -697,7 +697,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 ## every location from its view's bag (`_draw_the_locations()`), each phase on its own stream off
 ## `base` (`_stream`). Answers the draw's own placements, in the order drawn. `spec` is the day's
 ## placement settings, a day's own (`DaySpec.for_day()`) where none is handed in.
-static func _plan_through_the_fill(day: int, base: int, map: CityMap,
+static func _plan_the_dawn(day: int, base: int, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary], calm: CalmAreas,
 		route: RouteSource, heat: int, doors: PackedVector2Array, events: DayEvents,
 		trace: RunTrace = null, spec: DaySpec = null,
@@ -743,7 +743,7 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 ## correction). `def` is the task's
 ## row, null on every other day, which this leaves exactly as it was.
 ##
-## **The phase places into the day's locations** (`locations`, laid out by `_plan_through_the_fill()`
+## **The phase places into the day's locations** (`locations`, laid out by `_plan_the_dawn()`
 ## off `corridor` every day), before the dawn draw fills the rest (`_draw_the_locations()`).
 ##
 ## **What a section is offered, and what close by is, are the day's**: `JudgedRoadblockGround`
@@ -753,13 +753,13 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 ## (`DayReach.paths_over()`), the widest the task searches (`ResistanceDirector.ROADBLOCK_WIDER_REACH`).
 ##
 ## **What it does not promise.** Close by is measured over the ground as it stands when this runs:
-## the scripted rows, the one-shots, the spoilers and the fill after it shut more, and a repair may take
+## the scripted rows, the one-shots, the spoilers and the dawn draw after it shut more, and a repair may take
 ## a roadblock away. `_count_what_is_left_uncovered()` writes to the run log how many route tiles have
 ## none as the day finally stands.
 ##
-## **Outside the budget and on a stream of its own** (`RoadblockPhase.SALT`): the fill after it rolls
-## the rows it always rolled, the roadblock among them, spaced against these as against anything
-## already down, and never over one.
+## **Outside the bags and on a stream of its own** (`RoadblockPhase.SALT`): the dawn draw after it
+## draws the day's other rows, the roadblock holding no marble in it, spaced against these as against
+## anything already down, and never over one.
 static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityMap,
 		events: DayEvents, ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
 		doors: PackedVector2Array, rules: Rules, locations: DayLocations, trace: RunTrace) -> void:
@@ -1374,8 +1374,8 @@ static func _stream(base: int, salt: int) -> RandomNumberGenerator:
 ## a day-3 pool, so whole day 3s with none of them exist — and a player can reach act II never
 ## having been shown the one control the game will later require.
 ##
-## It is added **outside** the budget rather than competing for it, and that is the exception being
-## made honestly: everywhere else in this file the density is the budget, and a lesson that only
+## It is added **outside** the day's draws rather than competing in them, and that is the exception
+## being made honestly: everywhere else in this file the density is the bags', and a lesson that only
 ## happens when the dice agree is not a lesson. One event on one day of fourteen.
 static func _ensure_the_run_is_taught(day: int, events: DayEvents, heat: int = 0,
 		trace: RunTrace = null) -> void:
@@ -1419,7 +1419,7 @@ static func _ensure_the_run_is_taught(day: int, events: DayEvents, heat: int = 0
 ##   the street and decide. An event that could seal or end the day is never chosen for this.
 ## - **`DayRepairs.ensure_one_usable_park` is told to protect a different one**, so the day it
 ##   creates is still winnable and the alternative is still real rather than nominal.
-## - **They are ordinary events, placed like any other.** They compete for no budget of their own
+## - **They are ordinary events, placed like any other.** They have no count of their own
 ##   and are drawn from the same day's pool, so day 2 is not "day 1 plus a punishment", it is a day
 ##   whose noise happens to be somewhere she was counting on.
 ##
@@ -1754,9 +1754,9 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		# spreads an ordinary one over the days it is eligible for so that meeting it feels like an
 		# accident; this one is the day's authored beat and has to happen whichever way she goes, so
 		# a roll here would be a guarantee resting on a coin flip the first time the row's eligible
-		# window was widened. It costs the day exactly what it always did — the plan is budgeted here
-		# and only its *position* is left for `EventDirector.site_what_is_on_her_way()` to choose, the
-		# same split an `AHEAD_OF_PLAYER` row is budgeted and sited under.
+		# window was widened. The plan is made here, at dawn, and only its *position* is left for
+		# `EventDirector.site_what_is_on_her_way()` to choose, the same split an `AHEAD_OF_PLAYER` row
+		# is owed and sited under.
 		if def.on_her_way != null:
 			var owed := Planned.new(def, Vector2.INF)
 			owed.role = _role_for(def, day)
@@ -1863,7 +1863,7 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 ## was stated against.
 ##
 ## **Why a placement can be made after dawn at all.** Every guarantee in this file is stated over a
-## *day* and decided in `build_day` — and that is untouched here: the row is budgeted at dawn, its
+## *day* and decided in `build_day` — and that is untouched here: the row is planned at dawn, its
 ## role is decided at dawn, and what it may stand on was decided at dawn. Only *which* of those
 ## tiles it takes waits, because on day 3 the fire has to be on the way she actually goes and
 ## nothing at dawn knows which way that is. See `EventDef.on_her_way`.
@@ -2469,14 +2469,35 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEv
 	var bags := _view_bags(rows, day, spec, base)
 	var judged := JudgedLocationGround.new(day, base, map, events, ground, leave_alone, corridor,
 			doors, rules)
-	return LocationDraw.new(locations, bags, rows, judged, spec.caps_per_day).draw_all(
+	var caps := _caps_of(rows, day, spec, _stream(base, CAPS_SALT)) if spec.caps_per_day else {}
+	return LocationDraw.new(locations, bags, rows, judged, caps).draw_all(
 			_stream(base, LOCATIONS_SALT))
 
+## **How many of each row the day's draw may stand** (`id -> count`): its `EventDef.max_per_day`,
+## and a wall-role row's times `DaySpec.wall_row_share`, so the gatehouse day holds that share of a
+## wall whose cap binds as well as of one whose weight does (`view_weight()` scales the weight). A
+## share of a cap that is not whole is rounded up or down on `rng`, by its fraction, so the day
+## holds the share on average.
+static func _caps_of(rows: Dictionary, day: int, spec: DaySpec,
+		rng: RandomNumberGenerator) -> Dictionary:
+	var caps := {}
+	var ids := rows.keys()
+	ids.sort()
+	for id: String in ids:
+		var def: EventDef = rows[id]
+		var most := float(def.most_in_a_day())
+		if _role_for(def, day) == GameEnums.BlockerRole.WALL:
+			most *= spec.wall_row_share
+		caps[id] = floori(most) + (1 if rng.randf() < most - floorf(most) else 0)
+	return caps
+
 ## The phase salt the dawn draw shuffles each street's locations on, and the bags' streams start
-## from: above the other phases' and far below `FILL_SALT`'s old range.
+## from: apart from every other phase's.
 const LOCATIONS_SALT := 6
 ## The phase salt the moments she is owed are drawn on.
 const MOMENTS_SALT := 7
+## The phase salt a share of a wall's cap is rounded on (`_caps_of()`).
+const CAPS_SALT := 8
 
 ## **A row's weight in a view's bag**: its own `EventDef.weight` times what the view is to its role,
 ## the offers today's placement made per tile of the view's ground (`_copies_of()`'s gradient),
@@ -2495,14 +2516,12 @@ const MOMENTS_SALT := 7
 ## - a row refused an alley the routes run down (`_refuses_required_alleys()`) has no marble on the
 ##   route.
 ##
-## **A hard-blocking wall's weight is scaled by `wall_share`** (`DaySpec.wall_row_share`): a wall with
-## a body in the way or a lethal field, fewer of them once the region wall stands (azure-puffin 4:
-## "let's loosen the density of the hard blocking events in that case", "fewer of all three"). A wall
-## by cost alone, nothing in her way (a patrol car, a leaf blower), is not a hard blocker and keeps its
-## weight. `_view_bags()` keeps the empty marbles a day without the share would have, so the share
-## takes walls away rather than giving their place to the other rows. *Read as, the builder's and open
-## to correction:* the share asks the player's "hard blocking", where the dawn thinning it replaces
-## took a share of every wall-role row.
+## **Every wall-role row's weight is scaled by `wall_share`** (`DaySpec.wall_row_share`), so there
+## are fewer of them once the region wall stands (azure-puffin 4: "let's loosen the density of the
+## hard blocking events in that case", and "fewer of all three" to a question that listed the
+## wall-type events; the record bouncy-egret). `_view_bags()` counts the empty marbles against every
+## wall weighed in full, so the share takes walls away rather than giving their place to the other
+## rows.
 static func view_weight(def: EventDef, view: int, day: int, wall_share: float) -> float:
 	var on := view == PlacementView.View.ON_THE_ROUTE
 	var off := view == PlacementView.View.OFF_THE_ROUTE
@@ -2519,8 +2538,7 @@ static func view_weight(def: EventDef, view: int, day: int, wall_share: float) -
 				times = float(WALL_DEEP_WEIGHT) if off else 1.0
 			else:
 				times = 1.0 if off else float(EVENT_WALL_RIM_WEIGHT)
-			if def.obstructs_radius > 0.0 or def.hard_fail:
-				times *= wall_share
+			times *= wall_share
 		_:
 			times = 1.0
 	return def.drawn_as_often() * times
@@ -2528,34 +2546,28 @@ static func view_weight(def: EventDef, view: int, day: int, wall_share: float) -
 ## **The day's three bags** (`view -> ViewBag`): each view's rows as many times as their weight in it
 ## (`view_weight()`, `BAG_MARBLES_PER_WEIGHT` marbles per unit, at least one of a row the view holds),
 ## and empty marbles enough that the view's share of locations holding an event is the share today's
-## placement gave it (`VIEW_SHARES`, measured; the orchestrator's reading of fork 5(a), open to
-## correction) on the day as it is played. The empty marbles are counted against every wall weighed
-## in full, so a spec weighing its walls by a share (`DaySpec.wall_row_share`) draws that share of
-## them, the rest of the day as it was. Each on its own stream off `base`.
+## placement gave it (`VIEW_SHARES`, measured, times `VIEW_SHARE_SCALES`, fitted; the orchestrator's
+## reading of fork 5(a), open to correction). The empty marbles are counted against every wall
+## weighed in full, so a spec weighing its walls by a share (`DaySpec.wall_row_share`) draws that
+## share of them and the rest of the day as it was; the scales are fitted on the days as they are
+## played, the gatehouse day's share included. Each on its own stream off `base`.
 static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> Dictionary:
 	var bags := {}
-	var played := DaySpec.for_day(day).wall_row_share
 	for view: int in [PlacementView.View.ON_THE_ROUTE, PlacementView.View.ROUTE_ADJACENT,
 			PlacementView.View.OFF_THE_ROUTE]:
 		var fill := {}
 		var weight := 0.0
 		var whole := 0.0
-		var as_played := 0.0
 		for id: String in rows:
 			var w := view_weight(rows[id], view, day, spec.wall_row_share)
 			whole += view_weight(rows[id], view, day, 1.0)
-			as_played += view_weight(rows[id], view, day, played)
 			if w <= 0.0:
 				continue
 			fill[id] = maxi(1, roundi(w * BAG_MARBLES_PER_WEIGHT))
 			weight += w
 		var share := clampf(float(VIEW_SHARES[view][clampi(day, 1, 14) - 1])
 				* float(VIEW_SHARE_SCALES[view][clampi(day, 1, 14) - 1]), 0.001, 0.95)
-		# The measured share is the day's as it is played, its walls weighed by the day's own share;
-		# the marbles are set for that day with every wall weighed in full, so a spec's share of the
-		# walls takes walls away rather than giving their place to the other rows.
-		var in_full := clampf(share * whole / maxf(as_played, 0.0001), 0.001, 0.95)
-		fill[ViewBag.EMPTY] = maxi(1, roundi((whole / in_full - weight) * BAG_MARBLES_PER_WEIGHT))
+		fill[ViewBag.EMPTY] = maxi(1, roundi((whole / share - weight) * BAG_MARBLES_PER_WEIGHT))
 		bags[view] = ViewBag.new(fill, hash("%d:%d:view-bag:%d" % [base, LOCATIONS_SALT, view]))
 	return bags
 
@@ -2582,14 +2594,57 @@ const VIEW_SHARES := [
 ## routes, and one scale for every day left the later days' routes light; what is on her route is
 ## what the route decision is about, so it is held at today's on each day. Fitted, not derived:
 ## each day's scale moved toward today's share by `tests/probes/placement_view_mix.gd`'s measure.
-const ON_SHARE_SCALES: Array[float] = [4.56, 5.10, 4.79, 5.39, 5.11, 5.17, 5.52, 5.64, 5.01, 4.43, 4.85, 4.73, 5.34, 5.55]
-const ADJACENT_SHARE_SCALES: Array[float] = [1.61, 1.39, 1.33, 1.47, 1.51, 1.58, 1.62, 1.61, 1.52, 1.58, 1.48, 1.82, 1.31, 2.00]
-const OFF_SHARE_SCALES: Array[float] = [2.31, 2.32, 2.45, 2.77, 2.54, 2.54, 2.60, 2.83, 2.55, 2.70, 2.54, 2.58, 2.82, 2.80]
+const ON_SHARE_SCALES: Array[float] = [4.63, 5.00, 4.99, 5.17, 5.40, 5.22, 5.17, 4.76, 5.78, 5.85, 6.45, 6.42, 6.87, 6.80]
+const ADJACENT_SHARE_SCALES: Array[float] = [1.92, 2.10, 1.93, 1.97, 1.99, 2.16, 2.30, 2.11, 3.33, 3.67, 3.70, 4.04, 2.92, 4.43]
+const OFF_SHARE_SCALES: Array[float] = [1.78, 1.72, 1.77, 2.03, 1.74, 1.72, 1.85, 2.14, 2.96, 2.98, 3.19, 2.94, 3.23, 3.32]
 const VIEW_SHARE_SCALES := [
 	ON_SHARE_SCALES,
 	ADJACENT_SHARE_SCALES,
 	OFF_SHARE_SCALES,
 ]
+
+## **How often a row is drawn on each kind of ground** (`row id -> {kind's name in Location.Kind -> weight}`),
+## a weight a location of that kind scales the row's share of its view's bag by
+## (`JudgedLocationGround.scale()`; the player's "yes" to a group of locations per kind of ground
+## and a weight per location scaling its view's bag, issue #1185). **Why it is needed:** each
+## location draws one marble, so a row whose own ground is rare (a square's few cells, an alley's
+## three locations, the junction boxes) would be drawn only as often as its share of the bag times
+## the few locations that take it, where today's placement picked the row by weight against the
+## whole day and then found it any tile of its ground. So each row's weight on each kind of ground
+## is fitted until its daily count there is today's (`tests/probes/placement_rows.gd` against main,
+## eighteen seeds), the way the view scales are; a row or a kind not listed weighs one. Measured, not
+## derived, and fitted again with the view scales whenever the draw's rules change.
+const GROUND_WEIGHTS := {
+	"abduction": {"SIDEWALK": 0.13, "JUNCTION": 110},
+	"alley_mouse": {"ALLEY": 13.41},
+	"alley_robbery": {"ALLEY": 3.96},
+	"busker": {"OPEN": 135},
+	"cafe_tables": {"SIDEWALK": 0.44},
+	"charging_dog": {"SIDEWALK": 0.21, "OPEN": 0.47, "JUNCTION": 372},
+	"chatting_mother": {"SIDEWALK": 0.28, "JUNCTION": 400},
+	"construction": {"SIDEWALK": 0.49},
+	"delivery_van": {"SIDEWALK": 1.46},
+	"dog_walker": {"SIDEWALK": 0.82, "JUNCTION": 2.23},
+	"homeless_yeller": {"SIDEWALK": 0.9, "OPEN": 0.65, "JUNCTION": 2.27},
+	"ice_cream_van": {"SIDEWALK": 0.85},
+	"leaf_blower": {"SIDEWALK": 0.59, "OPEN": 0.53, "JUNCTION": 1.18},
+	"market_stall": {"SIDEWALK": 0.46, "OPEN": 0.37},
+	"military_convoy": {"SECTION": 0.79},
+	"pigeon_flock": {"SIDEWALK": 0.73, "OPEN": 1.7, "JUNCTION": 6.73},
+	"police_patrol": {"SECTION": 1.32, "JUNCTION": 5.16},
+	"poster_crew_square": {"OPEN": 24.03},
+	"protest": {"OPEN": 6.23, "JUNCTION": 16.08},
+	"reversing_lorry": {"SIDEWALK": 1.43},
+	"roadblock": {"SECTION": 2.39},
+}
+
+## A row's weight on a location of `kind` (`Location.Kind`): `GROUND_WEIGHTS`', one where it lists
+## none. The table names a kind by its name in `Location.Kind`.
+static func _ground_weight(def: EventDef, kind: int) -> float:
+	var weights: Dictionary = GROUND_WEIGHTS.get(def.id, {})
+	if weights.is_empty():
+		return 1.0
+	return float(weights.get(Location.Kind.find_key(kind), 1.0))
 
 ## **The moments the day owes her** (`AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows, the cat that bolts
 ## across, the cyclist, the loose dog): sited in front of her by the director, on its own clock and
@@ -2624,8 +2679,9 @@ static func _owe_the_moments(day: int, rng: RandomNumberGenerator, events: DayEv
 		events.add(Planned.new(chosen, Vector2.INF))
 
 ## How many moments she is owed on each day (`[day - 1]`), as today's placement bought them before the
-## bags (`tests/probes/placement_view_mix.gd`, six seeds). Measured, not derived.
-const MOMENTS_PER_DAY: Array[int] = [23, 27, 30, 22, 25, 28, 31, 28, 28, 30, 33, 33, 33, 31]
+## bags (`tests/probes/placement_rows.gd` on main, eighteen seeds, rounded). Measured, not derived: a
+## fixed count each day, where the fill's rolls made it vary from one city to the next.
+const MOMENTS_PER_DAY: Array[int] = [23, 26, 29, 25, 26, 28, 29, 28, 28, 30, 31, 32, 32, 32]
 
 ## **The day's ground as the dawn draw asks it** (`LocationGround`): a row's event at a location,
 ## judged by today's placement rules, and the location's own weight.
@@ -2724,7 +2780,7 @@ class JudgedLocationGround extends LocationGround:
 			times *= float(EventScheduler.EVENT_WALL_GAP_WEIGHT)
 		if def.id == EventScheduler._MOUSE_ID and _beside_a_pile(location.tiles()):
 			times *= float(EventScheduler._MOUSE_PILE_EXTRA_COPIES + 1)
-		return times
+		return times * EventScheduler._ground_weight(def, location.kind())
 
 	## Overrides LocationGround.stand.
 	func stand(plan: Planned) -> void:
@@ -2779,13 +2835,10 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 		doors := PackedVector2Array(), standing: Array[Planned] = [],
 		rules: Rules = null) -> Planned:
 	var role := _role_for(def, day)
-	# An `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` event is budgeted here and sited by `EventDirector`
-	# while the player walks. Costing it here rather than giving the director its own allowance is
-	# deliberate: the cat competes with the café tables and the roadworks for the same day, so
-	# making the cat matter cannot quietly make the day denser as well. Asked over `spawn_mode_on
-	# (day)` rather than `spawn_mode` alone, so a row like `charging_dog` — director-sited on the
-	# day it teaches the run, map-placed every day after — is sited the way that day actually asks
-	# for.
+	# An `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` event is owed here with no position and sited by
+	# `EventDirector` while the player walks. Asked over `spawn_mode_on(day)` rather than
+	# `spawn_mode` alone, so a row like `charging_dog` — director-sited on the day it teaches the
+	# run, map-placed every day after — is sited the way that day actually asks for.
 	if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
 		return Planned.new(def, Vector2.INF)
 	def = def.for_day(day)
@@ -3149,8 +3202,8 @@ static func open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 		for type in def.placement:
 			for candidate in map.tiles_of_type(type as GameEnums.TileType):
 				# A closed street is not somewhere anyone can get to, so it is not somewhere an event
-				# can usefully happen: the player would never see it and the scheduler would have
-				# spent budget on nothing. `is_held_at` refuses the same ground for a street that is
+				# can usefully happen: the player would never see it and the day would hold an
+				# event for nothing. `is_held_at` refuses the same ground for a street that is
 				# not closed but is still spoken for — a hard seal's segment, a region wall or door,
 				# or a segment bordering the home block (`CityMap.held`) — and
 				# `is_on_home_block` refuses the block's own interior on top of that, both by

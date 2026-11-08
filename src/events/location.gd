@@ -91,7 +91,8 @@ func kind() -> int:
 
 ## **Whether a row may stand on a tile of `type` in this location**: a sidewalk location takes
 ## anything but the carriageway and the crossings, a section its carriageway (`ROAD`), an alley its
-## alley, an open lot its park or square, a junction box its crossings.
+## alley, an open lot its park or square, a junction box its street ground (its sidewalk corners,
+## its carriageway and its crossings).
 func takes(type: int) -> bool:
 	match _kind:
 		Kind.SIDEWALK:
@@ -103,7 +104,8 @@ func takes(type: int) -> bool:
 		Kind.OPEN:
 			return type == GameEnums.TileType.PARK or type == GameEnums.TileType.SQUARE
 		_:
-			return type == GameEnums.TileType.CROSSING
+			return type == GameEnums.TileType.CROSSING or type == GameEnums.TileType.SIDEWALK \
+					or type == GameEnums.TileType.ROAD
 
 ## Whether a draw has filled it yet, with an event or with nothing.
 func is_drawn() -> bool:

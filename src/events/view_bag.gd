@@ -36,7 +36,8 @@ func _init(fill: Dictionary, seed_value: int) -> void:
 ## answers it. The empty event is always accepted. `accepts` is asked of a marble only once it comes
 ## up, and once per marble at most: one it refuses is not considered again in this draw, which draws
 ## exactly as weighing only the accepted ones from the start would. A bag with nothing it accepts
-## left is filled again first; `EMPTY` where even a full bag holds nothing accepted.
+## left is given a second fill beside what it still holds, so the marbles refused here stay for the
+## locations after it; `EMPTY` where even that holds nothing accepted.
 func draw(accepts: Callable, scale: Callable) -> String:
 	if _total() <= 0:
 		_left = _fill.duplicate()
@@ -51,7 +52,9 @@ func draw(accepts: Callable, scale: Callable) -> String:
 				_left[marble] = int(_left[marble]) - 1
 				return marble
 			refused[marble] = true
-		_left = _fill.duplicate()
+		if _round == 0:
+			for marble: String in _fill:
+				_left[marble] = int(_left.get(marble, 0)) + int(_fill[marble])
 	return EMPTY
 
 ## One marble left, weighed by its count and its scale, none refused, or null where none is.

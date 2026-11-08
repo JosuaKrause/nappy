@@ -202,8 +202,20 @@ func _test_the_ground_beyond_the_streets_has_its_own_locations(t) -> void:
 	t.check(cells.size() == 4 and covered.size() == 64,
 			"a square of 8 by 8 tiles is a grid of four cells covering it (%d cells)" % cells.size())
 	var junctions := _grounds_of(locations, Location.Kind.JUNCTION)
-	t.check(junctions.size() == 1 and junctions[0].tiles() == Rect2i(box,
-			Vector2i.ONE * Tuning.STREET_WIDTH), "and a junction box with a crossing is one location")
+	var lattice := StreetNetwork.junction_count()
+	var the_box: Location = null
+	for junction in junctions:
+		if junction.tiles() == Rect2i(box, Vector2i.ONE * Tuning.STREET_WIDTH):
+			the_box = junction
+	t.check(junctions.size() == lattice.x * lattice.y and the_box != null,
+			"and every junction box a street meets is one location, the whole box (%d of %d)"
+			% [junctions.size(), lattice.x * lattice.y])
+	for key: Vector3i in [Vector3i(3, 3, 0), Vector3i(2, 3, 0), Vector3i(3, 3, 1), Vector3i(3, 2, 1)]:
+		map.absent_segments[key] = true
+	var absorbed := false
+	for junction in _grounds_of(DayLocations.lay_out(map, _views()), Location.Kind.JUNCTION):
+		absorbed = absorbed or junction.tiles().position == box
+	t.check(not absorbed, "while a box no street meets, its streets absorbed, is none")
 	var views_right := true
 	for location in alleys + cells + junctions:
 		views_right = views_right and location.view() == PlacementView.View.ROUTE_ADJACENT
@@ -255,5 +267,7 @@ func _test_each_kind_of_location_takes_its_own_ground(t) -> void:
 			and (at.call(Location.Kind.OPEN) as Location).takes(GameEnums.TileType.PARK)
 			and (at.call(Location.Kind.OPEN) as Location).takes(GameEnums.TileType.SQUARE)
 			and (at.call(Location.Kind.JUNCTION) as Location).takes(GameEnums.TileType.CROSSING)
-			and not (at.call(Location.Kind.JUNCTION) as Location).takes(GameEnums.TileType.ROAD),
-			"an alley its alley, an open lot its park or square, a junction box its crossings")
+			and (at.call(Location.Kind.JUNCTION) as Location).takes(GameEnums.TileType.SIDEWALK)
+			and (at.call(Location.Kind.JUNCTION) as Location).takes(GameEnums.TileType.ROAD)
+			and not (at.call(Location.Kind.JUNCTION) as Location).takes(GameEnums.TileType.PARK),
+			"an alley its alley, an open lot its park or square, a junction box its corners, carriageway and crossings")

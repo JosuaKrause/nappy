@@ -250,7 +250,7 @@ src/
 	                       way, owed ahead, the men a vehicle lets out, the poster tear's pursuer,
 	                       a task's mast placed after dawn and day 13's roadblock put across a
 	                       route-adjacent section in place of what it held, the fire lit at dusk
-	event_director.gd     sites what the day budgeted and did not place, from her own walk:
+	event_director.gd     sites what the day planned and did not place, from her own walk:
 	                       the moments that cross her line, and day 3's fire
 	pending_warning.gd    a screen-edge warning up before its thing exists, for at most a
 	                       second: where its badge points, fixed against her, and where the

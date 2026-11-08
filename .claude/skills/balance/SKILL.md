@@ -25,8 +25,10 @@ A test never asserts what a setting is, and the relationship tests that encode a
 
 **Change the event density:** `max_per_day` in the catalogue **first**, then each view's share of
 locations holding an event (`EventScheduler.VIEW_SHARES`, and `VIEW_SHARE_SCALES`, fitted per view and per day, for the
-draws the rules leave empty), because **a share the catalogue cannot fill is not density**. Then **measure what
-a day places**, over several seeds (`tests/probes/placement_view_mix.gd`), since
+draws the rules leave empty, with `GROUND_WEIGHTS`, each row's weight per kind of ground, fitted
+beside them so the mix holds), because **a share the catalogue cannot fill is not density**. Then **measure what
+a day places**, over several seeds (`tests/probes/placement_view_mix.gd` per view,
+`tests/probes/placement_rows.gd` row by row, on main and on the branch), since
 `DayRepairs.ensure_the_city_is_still_walkable` drops obstructions that would seal the city.
 
 A temporary probe suite that prints per-day counts takes two minutes and is the only honest way to

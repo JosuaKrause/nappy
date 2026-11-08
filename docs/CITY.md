@@ -1205,9 +1205,9 @@ the player switching between them cannot see — and has no reason to care — t
 colour. What tells two *routes* apart is `RouteTree.branches_on()`, and that is the telemetry's
 question: the trace has to be able to say she left one path and joined another.
 
-**Placement follows the tree, not a budget.** Plan the tree first and place from it — possibly with
-a budget *per role and per region*, but not a single per-block number that the whole city competes
-for. And the important half: **budget is not spent on what she never sees.** So the day places
+**Placement follows the tree, not one number for the city.** Plan the tree first and place from it —
+a density *per view* (the bags per view), not a single per-block number that the whole city competes
+for. And the important half: **nothing is held for what she never sees.** So the day places
 **placeholders**, and a placeholder is resolved into a concrete row when she actually reaches it.
 
 **Which means the one-shots must bind late.** *"This has to influence the design of one-off events
@@ -1225,7 +1225,7 @@ There are two ways to make that impossible and the day picks between them per ro
 sited against the tree** picks a **set** of candidate sites such that **every corridor passes at
 least one**, and the one she reaches is the one that fires: it needs no knowledge of what she chose,
 so the guarantee is structural and holds whichever way she goes. A **set piece sited from her walk**
-waits instead — the day budgets it with no position and puts it on a building face **on the branch
+waits instead — the day plans it with no position and puts it on a building face **on the branch
 of the tree she is actually walking**, ahead of her by distance along that route, once her heading
 is clear. That is what day 3's fire does, and it is steered onto her on purpose: *"the fire needs to
 spawn on the current path the player is on"* (PLAYTEST-119). `docs/EVENTS.md`, "A set piece happens
@@ -1473,7 +1473,7 @@ separate pass that does that: every street off the day's tree, real and not the 
 about 187 of the lattice's 264 on a typical day — carries a **seal** (a share of them from the
 gatehouse day on, below), so the corridor stops being the *cheapest* way through and becomes the
 *only* free one. It is planned the same morning as the
-closures, off the same tree, and counted apart from the day's event budget: a seal is a fact about
+closures, off the same tree, and counted apart from the day's events: a seal is a fact about
 where she may walk, not a piece of the catalogue's variety.
 
 **Two strengths, both obstacles from the existing catalogue rather than a new mechanism.** A

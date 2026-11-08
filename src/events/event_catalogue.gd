@@ -541,12 +541,12 @@ static func _cat_dash() -> EventDef:
 	def.mobile = true
 	def.still_while_telegraphing = true
 	def.speed = 240.0
-	# Shared with the other things that happen *to* her rather than being the whole of that budget:
-	# the director also has pigeons and, from day 3, the dog.
+	# Shared with the other things that happen *to* her rather than being the whole of the moments
+	# she is owed: the director also has the cyclist and, from day 3, the dog.
 	def.weight = 2.5
 	# Deliberately low where the rest of the catalogue's caps are not. A cat is sited by the director
 	# while she walks and `AHEAD_INTERVAL` spreads them 11-26s apart over a 210s day, so past this
-	# there is nowhere left for one to happen and the budget goes on cats the day cannot fit.
+	# there is nowhere left for one to happen and the day's moments go on cats it cannot fit.
 	def.max_per_day = 8
 	return def
 
@@ -1230,13 +1230,12 @@ static func _leaf_blower() -> EventDef:
 	# wall rows are capped in single figures across 121 blocks. A **weight** binds on day 1, where
 	# no cap is ever reached: a row is only *offered* as often as its weight, so the wall share is
 	# fixed however high the ceiling goes. Raising a cap the day never reaches is the other half of
-	# *a budget the catalogue cannot spend is not density*.
+	# *a share the catalogue cannot fill is not density*.
 	#
 	# At 3.0 and 24, over five seeds, day 1 places 29 walls and the cost per tile of street runs
 	# **corridor 0.202 / rim 0.253 / deep 0.216**, the gradient the design asks for: stray one
-	# turning and it is expensive. It costs about six placements a day, because the budget buys
-	# dearer rows, and makes a leaf blower as common a sight as a dog walker: the price of day 1
-	# having exactly two rows a wall can be made of.
+	# turning and it is expensive. It makes a leaf blower as common a sight as a dog walker: the
+	# price of day 1 having exactly two rows a wall can be made of.
 	def.weight = 3.0
 	def.max_per_day = 24
 	return def
@@ -1428,8 +1427,8 @@ static func _cyclist() -> EventDef:
 	def.weight = 1.5
 	# Well under the ordinary act I rows, and the cap does different work than its number suggests:
 	# `TOWARD_PLAYER` never puts it on a tile, so it cannot tile a street. What the cap bounds is how
-	# much of the day's budget (`cost` 3 each) goes to cyclists rather than cafes and construction,
-	# and `EventDirector.AHEAD_INTERVAL` (11-26s apart) throttles the rest: the director draws one
+	# many of the moments she is owed (`EventScheduler.MOMENTS_PER_DAY`) are cyclists rather than cats
+	# and dogs, and `EventDirector.AHEAD_INTERVAL` (11-26s apart) throttles the rest: the director draws one
 	# owed row at a time from a shared queue with the cat and the dog, so how many she can meet is
 	# bounded by the day's length long before the cap is.
 	def.max_per_day = 14
@@ -2117,7 +2116,7 @@ static func _alley_robbery() -> EventDef:
 ## the neighbor's sends him (`ResistanceDirector._sets_a_trap_on_her()`): the man shouting's note,
 ## the burnt building's door, the district door, a mast's foot, the swing and the last night's front
 ## door. Nothing places it but `ResistanceDirector._set_the_trap_on_her()`: `SCRIPTED` on day 0, the
-## day nobody plays, so the roll, the stream and the budget never reach it; `EventDef.validate()`
+## day nobody plays, so the roll, the stream and the bags never reach it; `EventDef.validate()`
 ## refuses a pursuer with no trigger on any other terms.
 ##
 ## **Warned first** (`warned_first`): the screen-edge badge is up alone, with nothing in the world,
@@ -2180,7 +2179,7 @@ static func _robber_giving_chase() -> EventDef:
 ## her from off screen the moment she hands the van's package over** (PLAYTEST-144 15). Nothing
 ## places it but `ResistanceDirector._set_the_trap_on_her()`, on the same terms as
 ## `robber_giving_chase`: warned first, then created just out of sight of her on walkable ground,
-## `SCRIPTED` on day 0 so the roll, the stream and the budget never reach it.
+## `SCRIPTED` on day 0 so the roll, the stream and the bags never reach it.
 ##
 ## **The door guard, read off his row rather than copied**: his shape, his field (18 over a
 ## 28–120px band: `MASKED_MAN_REACH` inside `door_guard`'s own 120px), his `hard_fail`, and
@@ -2232,7 +2231,7 @@ static func _van_guard_giving_chase() -> EventDef:
 ## **A torn poster's pursuer: a policeman on foot, coming at her from off screen the moment the
 ## tear draws its pursuit marble** (inbox #591 in olive-hedgehog). Nothing places it but
 ## `EventManager.send_a_pursuer()`: `SCRIPTED` on day 0, the day nobody plays, so the roll, the
-## day's queue, its stream and its budget never reach it.
+## day's queue, its stream and its bags never reach it.
 ##
 ## **The robber a task sends, in a policeman's coat**: every number read off
 ## `_robber_giving_chase()` (his field, his 130px/s, his 26px catch and 116px lunge, the dog's
@@ -2499,8 +2498,8 @@ static func _protest() -> EventDef:
 	def.weight = 2.5
 	# A wall row, capped with the rest of them. Act IV only, so this is the late city's share of the
 	# blocking events that make the ground off the paths expensive. A protester obstructs nothing
-	# and pursues nothing, so this cap has no other cap to compete with, and late acts leave enough
-	# of the day's budget unspent that this row's own cap is what binds.
+	# and pursues nothing, so this cap has no other cap to compete with, and this row's own cap is
+	# what binds where the bags would draw more.
 	def.max_per_day = 12
 	return def
 
@@ -2540,7 +2539,7 @@ static func _firefight() -> EventDef:
 # Every row below exists only as `SealPlanner` candidate material (`docs/DECISIONS.md`, "Eight
 # seal pictures, so that no single barrier becomes the city's signature."). Each is `SCRIPTED` with
 # `scripted_day = 0`, a day nobody plays, so `EventDef.available_on()` never rolls one and the
-# ordinary scheduler never sites one, the shape `barricade` uses to keep off the day's own budget.
+# ordinary scheduler never sites one, the shape `barricade` uses to keep out of the day's own bags.
 # `SealPlanner._effective_first_day` reads `act_tag` instead, so `act_tag` is what gates the day a
 # seal may use the row, not `first_day`.
 #

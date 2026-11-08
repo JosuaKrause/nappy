@@ -270,8 +270,12 @@ func _test_a_day_has_enough_in_it_to_meet(t) -> void:
 	for plan in _planned(14):
 		if plan.def.kind != GameEnums.EventKind.AMBIENT and plan.is_placed():
 			late += 1
-	t.check(late > early,
-			"and a late day is denser than an early one (%d placed on day 14, %d on day 1)" % [late, early])
+	# A fifth more, not half again: what day 14 places is under half again what day 1 places, before
+	# the bags as after (`tests/probes/placement_view_mix.gd`), so a bar of half again on what is
+	# placed holds no day. A fifth keeps it a check on the ramp and not only on its direction.
+	t.check(late * 5 > early * 6,
+			"and a late day is markedly denser than an early one, a fifth more and over (%d placed on day 14, %d on day 1)"
+			% [late, early])
 
 ## Playtest 05, finding 5: *"day two doesn't feel more difficult than day one. Having day one
 ## relatively easy is okay if the difficulty increases. But right now there is never any

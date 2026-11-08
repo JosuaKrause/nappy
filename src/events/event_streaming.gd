@@ -11,7 +11,7 @@ extends RefCounted
 ##
 ## The gameplay half of that is bigger than the frames it saves. Loading the day upfront gives days
 ## in which **zero** events ever come within reach: a twenty-second event planted across the city
-## fires and finishes at dawn, unobserved, and the budget bought nothing. An event that waits for
+## fires and finishes at dawn, unobserved, and the day held it for nothing. An event that waits for
 ## her is an event she meets.
 ##
 ## Handed the world the events stand in (`EventWorld`), the spawner every instance is made by

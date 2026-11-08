@@ -35,7 +35,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `path_mode` | How the scheduler builds a mobile row's route: `CROSS_STREET`, `ALONG_STREET`, or `ACROSS_ITS_ALLEY`, the dash the instance builds itself from the alley it landed in (`alley_mouse`) |
 | `still_while_telegraphing` | Holds position until the telegraph is over, then goes. Default off, which is right when the telegraph *is* the approach; on when it is a posture — see the cat, below |
 | `spawn_mode` | `MAP` (sited when the day is planned) or `AHEAD_OF_PLAYER` (sited in front of her, while she walks) — see "Where an event happens" |
-| `on_her_way` | An `OnHerWay`, or null: the day budgets the row and leaves where it stands to the walk she takes, a tile of its own ground ahead of her once her heading is clear (day 3's fire, `poster_crew`). `on_her_way.at_a_front` sites it in front of a blank ground-floor cell of a building's front, facing the wall (`poster_crew`) — see "Where an event happens" |
+| `on_her_way` | An `OnHerWay`, or null: the day plans the row and leaves where it stands to the walk she takes, a tile of its own ground ahead of her once her heading is clear (day 3's fire, `poster_crew`). `on_her_way.at_a_front` sites it in front of a blank ground-floor cell of a building's front, facing the wall (`poster_crew`) — see "Where an event happens" |
 | `from_day_after` | A `DaySwitch` for a row whose siting and notice change once its first appearance is over: `spawn_mode_on(day)` and `_notice_on(day)` answer the row's own `spawn_mode` and `notice` through `after_day` and the switch's own past it. Null (the default) means the row is the same every day. `charging_dog` is the one row that carries it: `AHEAD_OF_PLAYER` with no notice on `RUN_TAUGHT_DAY`, then `MAP` with a 130px notice (its one radius, inside its 150px field — see "Every charger that does not arrive charging warns first"), so a `MAP` placement waits for her instead of announcing itself the moment it streams in. A placement past the switch is handed a copy carrying the later notice (`EventDef.for_day()`) |
 | `departs_at` | How fast it removes itself when it is over (px/s). **Nothing vanishes while you are looking at it** — see "Going away". Anything `mobile` leaves at its own `speed` and needs no value here |
 | `pursuit` | A `PursuitSpec`, or null for a row that does not pursue: it comes after **her** rather than along a path, at its `speed`, strictly between a walk and a run — the one thing running is the answer to, see `Tuning.validate_pursuit`. Its fields: |
@@ -1333,7 +1333,11 @@ Each item quotes the code on this branch.
      - the `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows;
      - the `on_her_way` rows (`EventDirector.site_what_is_on_her_way()`);
      - day 11's added mast.
-7. **A row's own ground is still asked tile by tile inside the view.** A wall's own ground refuses
+7. **Each row's draw is weighed by a fitted weight per kind of ground** (`GROUND_WEIGHTS`), on top
+   of the location's own weight, so each row's count on each kind of ground stays today's. The
+   design has the view's bag alone decide; the weights are what holds the refactor at today's mix
+   while the rules are still today's (item 1), and are fitted again when the rules change.
+8. **A row's own ground is still asked tile by tile inside the view.** A wall's own ground refuses
    only the cells a route runs along (`Corridor.carries_a_route()`, in `_ground_for()`), so on a
    route street a wall stands only on the sidewalk across from the route, and the ground beyond the
    streets is told its view by the grid's own depth (`Corridor.view_of_ground()`).
@@ -1367,6 +1371,18 @@ to its role (`EventScheduler.view_weight()`), and each location scales it by its
 the routes six times over for a costly wall, an alley beside a sack pile five times over for the
 mouse, which stands on the alley's tiles beside the pile where it can. *(The player: "yes" to a weight per location that scales its view bag's weights, issue
 #1185.)*
+
+**And each row is weighed by the kind of ground the location is** (`EventScheduler.GROUND_WEIGHTS`,
+a weight per row per `Location.Kind`), so the mix inside each view is today's as well as its count.
+Each location draws one marble, so a row whose own ground is rare (a square's cells, an alley's three
+locations, the junction boxes) would be drawn only as often as its share of the bag times the few
+locations that take it, and the sidewalk rows would take the share it lost: the street musician
+would all but leave the squares, and day 12's protest the crossings. The weights are fitted, with
+the view scales, until each row's daily count on each kind of ground is today's
+(`tests/probes/placement_rows.gd`, run on main and on the branch over the same cities and streams);
+they are measured, not derived, and are fitted again whenever the draw's rules change. *(The
+player: "yes" to a group of locations per kind of ground, and to a weight per location scaling its
+view's bag; issue #1185.)*
 
 The share is **not** the count: `DayRepairs.ensure_one_usable_park` strips whatever reaches the
 calmest block and `DayRepairs.ensure_the_city_is_still_walkable` drops obstructions that would seal
@@ -1574,17 +1590,16 @@ outward. The measurement that established this is in `docs/DECISIONS.md` under M
 
 **From the gatehouse day on, the bags hold only a share of their walls.** *(azure-puffin, point 4:
 "when the guard houses are set up the city gets much harder to navigate let's loosen the density of
-the hard blocking events in that case"; "fewer of all three".)* From `Tuning.REGION_WALL_FIRST_DAY`
-the weight in every view's bag of every wall-role row that is a hard blocker, a body in the way or a
-lethal field, is scaled by `DaySpec.wall_row_share` (`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` from the
-gatehouse day, `EventScheduler.view_weight()`), so a location draws one that much less often. The
-empty marbles are counted against those walls weighed in full, so what a wall gives up is not
-respent on friction: the day holds fewer hard blockers. A wall by cost alone, nothing in her way,
-keeps its weight; *read as, the builder's and open to correction:* "hard blocking" in the player's
-words. Only the bags'
-walls are scaled; a scripted row, a one-shot and the spoilers in a park she used are placed for a
-reason that is not density. The seals and the road closures are thinned from the same day: see
-`docs/CITY.md`, "How heavy" and "Sealing the tree".
+the hard blocking events in that case"; "fewer of all three", to a question that listed the
+wall-type events.)* On a day the region wall stands (`DaySpec.region_wall_stands()`), the weight in
+every view's bag of every wall-role row is scaled by `DaySpec.wall_row_share`
+(`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE`, `EventScheduler.view_weight()`), so a location draws one
+that much less often. The empty marbles are counted against the walls weighed in full, so what a
+wall gives up is not respent on friction: the day holds fewer walls, and a lighter weight does make
+fewer here because each view's empty marbles are fixed. Only the bags' walls are scaled; a scripted
+row, a one-shot and the spoilers in a park she used are placed for a reason that is not density. The
+seals and the road closures are thinned from the same day: see `docs/CITY.md`, "How heavy" and
+"Sealing the tree".
 
 ### A set piece happens where she is going
 
@@ -1596,7 +1611,7 @@ fairness contract and a silhouette spent on nothing. There are two ways of guara
 which one a row gets is `EventDef.on_her_way`.
 
 **The fire is sited from the walk she is taking, on the path she is on.** `burning_building`, day
-3's one-shot and the only set piece carrying the flag, is budgeted at dawn with **no position at
+3's one-shot and the only set piece carrying the flag, is planned at dawn with **no position at
 all**.
 Once she has been walking `EventDirector.ON_HER_WAY_AFTER` seconds and is `ON_HER_WAY_BEYOND_HOME`
 pixels clear of the doorstep — far enough in that a heading means something, and past the day's run
@@ -2423,7 +2438,7 @@ The lookup is a **linear scan**, not a spatial hash. A late day has around 26 ev
 instantiated at once — the whole day is four times that, but only what is inside
 `EVENT_STREAM_RADIUS` exists as a node — and 26 distance checks per physics frame is nothing,
 while a hash would be more code with more ways to be subtly wrong. Revisit if an act ever wants
-hundreds of live sources at once; the streaming radius is what decides that, not the budget.
+hundreds of live sources at once; the streaming radius is what decides that, not the bags.
 
 ## Telegraph contract
 

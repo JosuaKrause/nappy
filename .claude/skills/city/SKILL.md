@@ -77,7 +77,7 @@ then drop them until the day is legal — has an order-dependent answer and a wi
 illegal, and the guarantee then rests on the repair with nothing checking the result. Testing each
 candidate against the invariant before accepting it is the same cost and has neither problem. The
 same holds for events: refusing the ground (`CalmAreas.unused_ground()`) keeps every unvisited
-calm area clean and *raises* the density, because a repair spends the budget twice. **If
+calm area clean and *raises* the density, because a repair empties ground the draw already filled. **If
 you find yourself writing a pass that deletes what a previous pass placed in order to make a
 guarantee true, this is the rule you are about to rediscover.**
 

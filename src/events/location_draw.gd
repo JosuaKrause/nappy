@@ -6,8 +6,8 @@ extends RefCounted
 ## stands there, with no rejection: **a row the day's ground leaves invalid at the location is not
 ## considered** (`LocationGround.offer()`, today's placement rules deciding, as the player said:
 ## "which events make which others invalid on the same street -- this is what your current rules
-## accomplish. the same applies still"), and a row at its `EventDef.max_per_day` is not either, where
-## the spec keeps the caps (the orchestrator's reading of fork 5(b), open to correction). Each row's
+## accomplish. the same applies still"), and a row that has stood as many times as the day's caps
+## let it is not either (the orchestrator's reading of fork 5(b), open to correction). Each row's
 ## share is the location's own weight times the bag's (`LocationGround.scale()`).
 ##
 ## The locations are drawn in the day's order (`DayLocations.drawing_order()`), so a street's later
@@ -15,17 +15,18 @@ extends RefCounted
 ## dawn, not during the walk:* the walk's draws are the next step's.
 ##
 ## Handed the day's locations, the three bags (`view -> ViewBag`), the rows the bags' marbles name
-## (`id -> EventDef`), the day's ground, and whether the day keeps the caps. Model: no node.
+## (`id -> EventDef`), the day's ground, and the day's caps (`id -> how many may stand`, a row not
+## named having none). Model: no node.
 
 var _locations: DayLocations
 var _bags: Dictionary
 var _rows: Dictionary
 var _ground: LocationGround
-var _caps := true
+var _caps := {}
 var _stood := {}
 
 func _init(locations: DayLocations, bags: Dictionary, rows: Dictionary, ground: LocationGround,
-		caps: bool) -> void:
+		caps: Dictionary) -> void:
 	_locations = locations
 	_bags = bags
 	_rows = rows
@@ -55,7 +56,7 @@ func _draw(location: Location) -> EventScheduler.Planned:
 	var offered := {}
 	var accepts := func(id: String) -> bool:
 		var def: EventDef = _rows[id]
-		if _caps and int(_stood.get(id, 0)) >= def.most_in_a_day():
+		if _caps.has(id) and int(_stood.get(id, 0)) >= int(_caps[id]):
 			return false
 		var plan := _ground.offer(def, location)
 		offered[id] = plan

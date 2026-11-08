@@ -8,6 +8,7 @@ func run(t) -> void:
 	_test_a_fill_is_drawn_whole_before_it_is_filled_again(t)
 	_test_a_marble_not_accepted_is_never_drawn_and_stays(t)
 	_test_the_empty_event_is_drawn_when_nothing_else_is_accepted(t)
+	_test_a_second_fill_keeps_what_was_refused(t)
 	_test_a_locations_weight_scales_a_marbles_share(t)
 	_test_the_same_seed_draws_the_same(t)
 
@@ -49,6 +50,20 @@ func _test_the_empty_event_is_drawn_when_nothing_else_is_accepted(t) -> void:
 	t.check(bag.draw(nothing, _one) == ViewBag.EMPTY, "a location that accepts no row draws empty")
 	t.check(bag.draw(nothing, _one) == ViewBag.EMPTY,
 			"and once the bag's empty marbles are gone, a fresh fill still gives it empty")
+
+## A location that accepts nothing, at a bag whose empty marbles are gone, is given a second fill
+## beside what is left: the three cafes it refused stay, and three more come with the fill, so six
+## draws that accept the cafe draw six cafes.
+func _test_a_second_fill_keeps_what_was_refused(t) -> void:
+	var bag := ViewBag.new({"cafe": 3, ViewBag.EMPTY: 1}, 5)
+	var nothing := func(_id: String) -> bool: return false
+	t.check(bag.draw(nothing, _one) == ViewBag.EMPTY and bag.draw(nothing, _one) == ViewBag.EMPTY,
+			"a location that accepts nothing draws empty, the second from a second fill")
+	var drawn: Array[String] = []
+	for _i in 6:
+		drawn.append(bag.draw(_yes, _one))
+	t.check(drawn == (["cafe", "cafe", "cafe", "cafe", "cafe", "cafe"] as Array[String]),
+			"and the cafes it refused are still there beside the second fill's (%s)" % [drawn])
 
 ## A cafe and an empty marble, one each: drawn without weight, the cafe comes first about half the
 ## time; weighed nine times over by the location, about nine times in ten.

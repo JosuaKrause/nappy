@@ -11,9 +11,9 @@ extends RefCounted
 ##
 ## **A seal is a fact about where she may walk, so it is planned beside `ClosurePlanner`** — the
 ## other pass that decides what a day's streets do — **and counted apart from the catalogue's
-## event budget**, which exists to decide variety rather than to price the city's walls. It is
-## hooked in at `EventManager.start_day`, after `EventScheduler.build_day` has spent that budget,
-## so the two never compete for it.
+## events**, whose bags exist to decide variety rather than to price the city's walls. It is
+## hooked in at `EventManager.start_day`, after `EventScheduler.build_day` has drawn the day's
+## locations, so the two never compete for ground.
 ##
 ## **Two strengths.** A **hard** seal stands several bodies across the whole street width —
 ## sidewalk, road and sidewalk — so nothing gets past it at all. A **soft** seal takes both

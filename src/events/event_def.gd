@@ -167,8 +167,8 @@ enum SpawnMode {
 	MAP,
 	## Placed in front of the player, while she walks, by `EventDirector`. For the few events whose
 	## whole content is *the moment it happens to you*: a cat bolting out of a doorway is nothing if
-	## it does it two blocks away. The day still budgets it: the scheduler counts one instead of
-	## placing one.
+	## it does it two blocks away. The day owes it rather than placing it: the scheduler counts the
+	## day's moments (`EventScheduler.MOMENTS_PER_DAY`) instead of putting one on a tile.
 	AHEAD_OF_PLAYER,
 	## Sited on her own line, ahead of her, by `EventDirector` like `AHEAD_OF_PLAYER`, but
 	## travelling *down* that line toward her rather than crossing it: a bike on the sidewalk she is

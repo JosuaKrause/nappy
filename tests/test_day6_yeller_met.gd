@@ -10,7 +10,8 @@ extends RefCounted
 ## while no more than that many events have been handed out on her route since (`EventManager.
 ## owed_ahead()` counts down one for each), ahead of her along her line of travel, on her street
 ## (no further across it than `HER_STREET_HALF_WIDTH`), out of her view
-## (`WalkSiting.could_be_in_her_view()`) and within `Tuning.EVENT_STREAM_RADIUS` of her. Whether
+## (`WalkSiting.could_be_in_her_view()`) and within `Tuning.EVENT_STREAM_RADIUS` of her, and on the
+## same tick one of the world's men shouting stands there (`EventManager.instances()`). Whether
 ## she then sees him is her walk's: a walk that turns off her street before it reaches him passes
 ## him by, and `tests/probes/calm_pelican_day7_van_met.gd` measures how often a played walk does.
 ##
@@ -78,18 +79,24 @@ func _walk(t, seed_value: int) -> String:
 	var outcome := "no mark"
 	var mark := resistance.current_step()
 	if mark and mark.is_pickup:
-		var seen := {"man": null, "standing": [], "read": false, "owed": 0, "outcome": "never sited"}
+		var seen := {"man": null, "standing": [], "read": false, "owed": 0, "outcome": "never sited",
+				"to_stream": false}
 		var tick := func() -> void:
 			var events := city.events
 			events.ahead.site_what_is_on_her_way(STEP)
+			var sited_now := false
 			if seen["man"] == null and seen["read"]:
 				for plan: EventScheduler.Planned in events.plans():
 					if plan.def.id == ROW and not seen["standing"].has(plan):
 						seen["man"] = plan
 						seen["outcome"] = _first_siting(plan, player,
 								int(seen["owed"]) - events.owed_ahead())
+						sited_now = true
 			events.ahead.place_what_is_owed_ahead(STEP)
 			events.stream_around(player.global_position)
+			# In the world on the tick he is sited, standing where he was sited.
+			if sited_now and seen["outcome"] == "kept":
+				seen["outcome"] = _in_the_world(events, seen["man"])
 		_along(player, _path(map, player.global_position, [map.world_to_tile(
 				resistance.contact_position())]), tick)
 		resistance.contact().complete_now()
@@ -112,6 +119,19 @@ func _walk(t, seed_value: int) -> String:
 	resistance.free()
 	city.free()
 	return outcome
+
+## "kept" when one of the world's men shouting stands where `man` was sited (within a tile, the
+## band middle a pacing body is laid on), or what is wrong.
+func _in_the_world(events: EventManager, man: EventScheduler.Planned) -> String:
+	var nearest := INF
+	for instance in events.instances():
+		if instance.def.id == ROW:
+			nearest = minf(nearest, instance.global_position.distance_to(man.placed_at()))
+	if nearest == INF:
+		return "sited but not in the world"
+	if nearest > Tuning.TILE_SIZE:
+		return "in the world %.0fpx from where he was sited" % nearest
+	return "kept"
 
 ## Whether the man's first siting keeps the guarantee: "kept", or what it broke. `handed` is how
 ## many events her route had been handed since the mark was read when he was sited.
