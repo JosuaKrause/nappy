@@ -17,10 +17,6 @@ the code last, or that nothing ever did.
 
 **Where the rest is** (the survey with `check_test_only_members.py` and a scan for members named
 nowhere in `src/`, `tests/`, `tools/` or `scenes/`; no module holds more than a few):
-- `src/visuals/`: `AtlasTable.has_group`, `AtlasTable.page_padding`, named nowhere.
-- `src/crowd/crowd_field.gd`: `CrowdField.contains`, no reader.
-- `src/player/stroller.gd`: `Stroller.family_sources`, no reader.
-- `tools/`: `lib_queue.REVIEW_NEXT_RUN` and `inbox.ISSUE_URL`, named nowhere.
 - `src/city/`: `MarbleBag.take`, `MarbleBag.is_shared`, `MarbleBag.has_marbles`,
   `StreetTrees.STREET_TREE_MAX_LINED_FRACTION`, and three members named nowhere.
 - `src/events/`: `EventsAhead.walk_siting` and `EventLook.drawn_rect_now` (test-only), and four

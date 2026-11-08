@@ -1,6 +1,11 @@
 extends RefCounted
 ## Real runtime installation rejects incomplete structures and refreshes a felled tree's source, and
 ## runs the scene's events under the one spec the run flow hands it.
+##
+## **Builds a real `City`: the runtime installs into one.** `SceneRecipeRuntime.install()` is handed the
+## concrete `City` and reads its map, streets, events and poster walls, so its refusals and the state it leaves
+## (a felled tree's pit emptied, a door's bodies stood) are only observable on a city the game made. Split
+## off the city, the suite would test the runtime against a stand-in whose answers are a copy of this city's.
 
 
 func run(t) -> void:
