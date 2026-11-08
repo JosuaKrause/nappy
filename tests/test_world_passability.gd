@@ -157,7 +157,7 @@ func _test_a_step_is_swept_so_a_long_frame_cannot_tunnel(t) -> void:
 	taken = Navigator.new(map).step(from, diagonal, Mover.on_foot())
 	t.check(map.world_to_tile(from + taken).x < 5,
 			"a slide along it never crosses it either (%s)" % taken)
-	t.check(Navigator.open_ground().step(from, across, Mover.on_foot()) == across,
+	t.check(Navigator.new().step(from, across, Mover.on_foot()) == across,
 			"open ground takes every step whole")
 
 ## A step keeps its body's reach clear in the way it is going: a man 9px wide stops short of a wall

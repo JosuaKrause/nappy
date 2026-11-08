@@ -27,7 +27,6 @@ src/crowd/crowd_field.gd contains  # no test reads it: the tests' `.contains(` a
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd drawn_rect_now
 src/player/stroller.gd family_sources
-src/world/navigator.gd open_ground
 
 # [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what

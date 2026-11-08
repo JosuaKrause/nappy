@@ -96,8 +96,12 @@ queue entry is not finished yet. That is the same test the **playtest-feedback**
 *somebody opening the repo cold could build the thing that was asked for.* Writing the brief until
 an agent can take it is not overhead on top of the work — it **is** the orchestrating half of it.
 
-**A milestone with an open design question is not ready for one.** The question goes to the player
-first, and "draft and put back" items never go to an agent at all.
+**A milestone with an open design question that blocks is not ready for one**: one where changing
+course after the answer would be very costly (**board**, "Blocking, and no dialogs"; inbox #1194).
+That question goes to the player first. An open question that does not block goes on the board and
+the work goes to an agent at once, built on My pick, with the brief naming the pick as open to the
+player's answer; a pick that would overturn something the player asked for is never built ahead of
+their answer (**playtest-feedback**, "Never silently overturn a decision the player took"). "Draft and put back" items never go to an agent at all.
 
 ## Code is designed by layer
 
@@ -135,8 +139,8 @@ report. A brief carries its task, its task-specific read-first items, the layer 
 (proposed in **designing-classes**), for a pull request that changes code the ask for the
 architecture questions' answers (**pr-review**'s `references/architecture-questions.md`) in the
 report and the description, **the GitHub role the agent
-acts as**, its fence, whether the evidence is a still or a burst, whether the capture may be
-invincible, whether this is a local-full-run case, and a paragraph on the other live agents and the
+acts as**, its fence, the capture for this session to take and the agent to list (a still or a
+burst; an agent takes none, inbox #1203), whether it may be invincible, whether this is a local-full-run case, and a paragraph on the other live agents and the
 files they own (written by hand from the briefs' fences; they are prose, so nothing generates it).
 The spawn prompt `agent-setup.sh` prints names the brief and the contract. Every later
 `SendMessage` that changes the agent's scope or task is appended under `## Amendment <ISO
@@ -190,19 +194,21 @@ role named has nothing to check `status` against:
   size, since CI runs the same suite on a better tree, and a local full run is a wait long enough
   to go to the background, which notifies this session and the player (inbox #870 in minty-dolphin). A brief copied from an earlier one is checked for this
   line, not inherited. A red PR goes back to the agent with the failing output.
-- **Headless first.** Verification lives in the test rigs, not in watching the game. Windowed runs
-  (`tools/run.sh`, repeated `tools/shot.sh`) open on the player's own screen; at most one or two
-  `shot.sh` calls at the end for evidence. A windowed run is also the least reliable thing an agent
-  can lean on — the **verify** skill carries the rig traps that make one look like it worked when
-  it did not. **Say in the brief whether the evidence is a still or a burst**: anything about
-  motion — a turn, a gait, a wing beat, a shadow rotating — is a burst
-  (`--press snapshot_burst <seconds>` on the same `shot.sh` call, see **verify** and
-  **session-captures**), and an agent told to take a screenshot of motion will spend its budget
-  on stills that land beside the moment. **And say whether the capture may be invincible**:
-  `--invincible` keeps the day running while a rig waits for a junction, a chase or a crossing
-  to happen in front of it, where a rig left to itself dies to the meter or the clock before the
-  moment arrives; an agent not told about it will burn runs landing on the summary screen. Leave
-  it off only for a capture whose subject is a cost or a loss.
+- **Headless first.** Verification lives in the test rigs, not in watching the game. Any tool
+  that opens a window (`tools/run.sh`, `tools/shot.sh`, `tools/scene-recipes.sh --screenshots`,
+  `tools/record.sh`, `tools/trailer.sh`, `browser-check.mjs`, the editor) opens it on the player's
+  own screen, so no agent takes one, a reviewer included (inbox #1203,
+  `references/agent-contract.md`): the brief names the capture, and the agent lists it in its
+  report for this session to arrange. A windowed run is also the least reliable thing to lean on:
+  the **verify** skill carries the rig traps that make one look like it worked when it did not.
+  **Name the capture in the brief as a still or a burst**: anything about motion (a turn, a gait,
+  a wing beat, a shadow rotating) is a burst (`--press snapshot_burst <seconds>` on the same
+  `shot.sh` call, see **verify** and **session-captures**), and the agent lists it as such, since
+  a still of motion lands beside the moment. **And name whether the capture may be invincible**:
+  `--invincible` keeps the day running while a rig waits for a junction, a chase or a crossing to
+  happen in front of it, where a rig left to itself dies to the meter or the clock before the
+  moment arrives; the agent lists the flag with the command. Leave it off only for a capture whose
+  subject is a cost or a loss.
 - **An agent's run carries a dev flag or `--no-save`** (see **verify**), because every worktree
   shares the player's save.
 - **Visual attempts come back early.** The player welcomes repeated feedback and prefers seeing
@@ -341,6 +347,22 @@ worktrees — merging is what collides — so parallelism is planned at the file
 
 ## What the orchestrator keeps
 
+- **The work moving, until there is none left** (inbox #1196). The orchestrating session ends only
+  when no task is left to start or advance. While agents run, it briefs and spawns every queue item
+  it can start whose files the running agents do not own; holding startable work back, to limit
+  the reviews to come or for any other reason, is stopping early. **While the player has put one
+  entry first, startable means that entry's items only** (inbox #1210), until that entry closes:
+  its `README.md` says so, and work on another entry before it is done is work done twice, on code
+  about to change. The up-next marker (`docs/TODO.md`) orders the queue and fences nothing, and the
+  end-of-session pass drops it from an entry open pull requests are building, so the fence is the
+  README's sentence. **Once everything startable is
+  running, it ends its turn to wait for the agents** (inbox #1196): their reports wake it, and
+  waiting that way is not ending the session. A report to the player goes out along the way, never
+  as a stopping point. A running agent or a
+  pull request still to review or land is a task to advance, so the session stays open while one
+  is left. *Proposed, not asked for, open to the player's correction:* a task that waits only on
+  the player, a blocking board question or a review item, does not keep the session open, since
+  nothing this side can advance it.
 - **The queue and the archive.** Agents never edit the queue or the archive; two writers on one
   entry is how a queue lies.
 - **The queue as it stands on `origin/main`, not as it stood when the session started.** More

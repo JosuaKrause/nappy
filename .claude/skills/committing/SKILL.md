@@ -541,7 +541,8 @@ A message that restates the diff is worth nothing; the diff is right there.
 ## Before committing
 
 Run the verification loop — see the **verify** skill, which owns it: `./tools/check.sh`, the
-suites your change touches, and a screenshot if you touched anything visual. The full suite is CI's
+suites your change touches, and, if you touched anything visual, a screenshot (an agent takes none,
+inbox #1203: it lists the capture in its report for the orchestrating session). The full suite is CI's
 on the pull request, not a local gate.
 
 Run `./tools/lint.sh` too if the commit touches a governed doc (`CLAUDE.md`, a skill, `README.md`,

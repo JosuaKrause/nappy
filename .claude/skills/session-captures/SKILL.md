@@ -8,7 +8,9 @@ description: Where gameplay stills, bursts and run folders are kept as evidence,
 Everything under `docs/evidence/archive/session-captures/` is dated runtime evidence. It records a
 particular build, seed, route and presentation state; it is not an approved visual reference.
 
-For a new capture, use a display-capable session and a bounded command such as:
+A new capture is taken by the orchestrating session, in a display-capable session; an agent takes
+none (inbox #1203) and lists the command, flags, seed and moment in its report. A bounded command
+such as:
 
 ```sh
 tools/shot.sh /private/tmp/nappy-shot.png 4 --seed 4242 --spawn arterial --walk 2s3e
