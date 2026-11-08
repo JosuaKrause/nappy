@@ -602,7 +602,7 @@ static func _no_wall_guards(def: EventDef) -> EventDef:
 
 ## A soft seal: one body per pavement, at the lane nearest the kerb — which is where a kerbed row
 ## like `delivery_van` already wants to be, and where any other row's own auto-centring
-## (`EventInstance._centred_on_the_pavement_band`) puts it regardless of which of the pavement's
+## (`EventFootprints._centred_on_the_pavement_band`) puts it regardless of which of the pavement's
 ## two lanes this names.
 static func _place_soft(map: CityMap, segment: StreetNetwork.Segment,
 		def_ids: Array[String], along: int = -1) -> Array[EventScheduler.Planned]:

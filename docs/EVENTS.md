@@ -1481,7 +1481,7 @@ lane tile it is never re-centred off — it leaves `(SIDEWALK_WIDTH * TILE_SIZE 
 22 = 26px` to the frontage, narrower than the 28px she needs (`2 * PLAYER_BODY_RADIUS`). So
 `EventScheduler._closes_the_band_by_its_own_placement` reads a row's own numbers against the exact
 edge its `pavement_side` stands it at — the kerb or the frontage lane's own tile centre, or the
-band's true middle for `ANY` (where `EventInstance._centred_on_the_pavement_band()` always puts a
+band's true middle for `ANY` (where `EventFootprints._centred_on_the_pavement_band()` always puts a
 stationary, unpinned body) — rather than against a fixed threshold, so a row narrow enough to slip
 under the cost clause is still caught if its body alone leaves no edge-to-edge gap that wide. The
 same reading is also why `poster_crew` stands `AGAINST_THE_BUILDING` rather than `ANY`: centred, an

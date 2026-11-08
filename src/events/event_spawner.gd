@@ -89,9 +89,7 @@ static func obstructed_footprint(map: WorldMap, def: EventDef, at: Vector2,
 	# so it is named by its own flag rather than by `detain_seconds`.
 	if def.mobile or def.detain_seconds > 0.0 or def.solid_when == EventDef.SolidWhen.WHILE_LOWERED:
 		return nothing
-	var placed := at
-	if def.pavement_side == EventDef.Pavement.ANY:
-		placed = EventInstance._centred_on_the_pavement_band(map, at)
+	var placed := EventFootprints.stands_at(map, def, at)
 	# A hard seal's own body and a region wall's are recorded like any other, and that is what a
 	# walker actually meets. The hold on their segment is a car's answer — a car cannot turn round
 	# against a barrier, so it has to turn at the last junction, before it can see one — and it is
