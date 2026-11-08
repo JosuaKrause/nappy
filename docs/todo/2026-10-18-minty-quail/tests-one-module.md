@@ -21,7 +21,9 @@ gets a method, and suites move as a pull request touches them.
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
 `booted_main` and `build_day`/`start_day`/`begin_day` first:
 
-1. telemetry (`test_telemetry`, `test_frame_record`);
+1. telemetry: `test_frame_record_wiring` reads the other modules' timing hand-ins
+   (`city.frame_timing`, `scenery.timing`, `events.timing`, the baby's, the screen edge's and the
+   halo's `timing`) until each of those modules' passes gives them methods;
 2. the player and the baby (`player_presentation`, `baby_world`, `move_poses`, `camera_start`,
    `pelican`, `loose_dog_arrives`, `tutorial_dog`);
 3. atlas and scenery (`atlas_*`, `scenery_*`, `ground_floor`, `building_shadows`,
