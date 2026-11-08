@@ -23,9 +23,17 @@ minty-quail's `walk-placed-blockers.md`, in #1169. The design is the player's wo
   (a street no route runs along, one of whose junctions a route crosses, never the main road),
   outside the budget on its own streams, until every route tile has one within 1,024px along her
   paths. The task uses the nearest one the day placed, by today's measure (576, 896, then
-  1,024px from the chalk mark); only when none is close does it swap one in, out of her sight, in
-  place of a still, non-live event the day placed there (seals included; never the region wall's
-  bodies, door bodies or scars). No fallback for "nothing near" is built.
+  1,024px from the chalk mark); only when none is close does it swap one in, in place of a still
+  event the day placed there whose picture is out of her view (seals included; never one that has
+  noticed her, the region wall's bodies, door bodies or scars), the roadblock taking the nearest
+  road tile on that event's street within 3 tiles and passing every rule a roadblock is placed
+  under. Nothing is added mid-walk: with neither, the task offers nothing after its mark (the
+  player: no fallback, "it can always swap", inbox #1185 in gray-dolphin).
+- **The guard's side is decided once** (inbox #1185 in gray-dolphin): the man who waits by day 13's
+  task roadblock stands on its far side from the way she comes, fixed the first frame the
+  roadblock the red arrow points at is drawn on screen; before that the side follows where she
+  stands, and a guard on her side then is moved unseen once he and the new spot are out of her
+  view. Nothing checks reachability.
 - **Two of the re-derived cases** (`re-derived-cases.md`'s after-dawn half): the walkability repair
   reads its calm tiles from the day's `CalmAreas`, and a scene recipe builds its `CalmAreas` once.
 - **Measured.** The placement fingerprint (days 1, 4, 8, 9, 10, 12, 14, the escape, the building)
@@ -38,7 +46,18 @@ minty-quail's `walk-placed-blockers.md`, in #1169. The design is the player's wo
   | before | 6 each | 0 or 1 | adds one at all 60 | 577–893px, median 590 |
   | after | 22, 17, 20, 15, 25, 17 | 14, 10, 13, 9, 17, 10 | finds one at all 60 | 101–1,034px, median 516 |
 
+  On 480 real chalk marks (20 cities, 24 each), the task finds a roadblock the day placed at 428
+  (median 480px); the swap finds one at 19 more (435–1,042px, median 750px); 33 (6.9%, on 11
+  cities) have nothing to swap: at 25 no event within 1,024px stands where a swap is allowed, at 8
+  a roadblock's own placement rules refuse the candidate (a held street, unused calm ground, a
+  door's clearance). Before the swap took in-world events and sidewalk ones, 52 had nothing.
+
+**Left.** The 33 marks with nothing to swap: "it can always swap" is the player's reading, so the
+swap's search widens until every mark finds one (`walk-placed-blockers.md`, rewritten to hold only that).
+
 **Rejected.**
+- A roadblock added mid-walk on the edge of the 576px circle round her when nothing was near and
+  nothing could be swapped: the player, no fallback (inbox #1185 in gray-dolphin).
 - The barricade kept, placed by the task roadblock's rules or only where the column stops off her
   routes: the player dropped the barricade instead (inbox #1183 in gray-dolphin).
 - An extra roadblock pass after the fill, at most 6 (the orchestrator's pick on
@@ -54,6 +73,7 @@ minty-quail's `walk-placed-blockers.md`, in #1169. The design is the player's wo
 - a roadblock the task finds may already be in her view, since it stood there from dawn;
 - `Planned.is_in_the_wall()` is set by `DayPlanner`, since the region planner was outside the
   pull request;
-- the old last resort, the contact spawned on the search circle's edge, still catches the case
-  nothing near and nothing to swap;
+- the guard reads her position against the roadblock, not her heading, which flips with a turn;
+  where the far side has no spot, he stands on her side and the run log says so;
+- the swap keeps "standing still", since a moving event leaves no place to take;
 - `test_walk_siting_spec` keeps only its source scan and spec check of the home-street rule.
