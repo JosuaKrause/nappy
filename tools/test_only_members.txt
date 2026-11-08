@@ -21,8 +21,6 @@ src/events/views/event_look.gd mark_rect  # the rectangle the danger caret cover
 # use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
-src/city/marble_bag.gd take  # no test reads it: the tests' `.take(` are `EventStreaming.take` and a callable's, on receivers the check cannot type, so it counts them; nothing calls it, so it is deleted
-src/city/street_trees.gd STREET_TREE_MAX_LINED_FRACTION
 src/events/events_ahead.gd walk_siting
 src/events/views/event_look.gd drawn_rect_now
 
