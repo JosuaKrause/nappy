@@ -23,7 +23,6 @@ src/events/event_scheduler.gd scar
 src/events/event_spawner.gd on_finish
 src/events/event_spawner.gd on_sight
 src/events/event_spawner.gd scar
-src/resistance/happenings.gd on_finish
 
 # [AttemptSpendState] src/run/attempt_spend_state.gd
 src/city/city.gd city_state
@@ -369,11 +368,8 @@ src/events/day_planner.gd held_segments
 src/events/day_planner.gd home_block
 src/events/day_planner.gd network
 src/events/day_repairs.gd closed_tiles
-src/events/day_repairs.gd home_rect
-src/events/event_scheduler.gd calm_blocks
 src/events/event_scheduler.gd closed_tiles
 src/events/event_scheduler.gd held_segments
-src/events/event_scheduler.gd home_rect
 src/events/event_scheduler.gd network
 src/events/event_scheduler.gd playgrounds
 src/events/event_scheduler.gd power_station
@@ -389,12 +385,10 @@ src/finale/finale_planner.gd main_road
 src/finale/finale_planner.gd network
 src/resistance/happenings.gd block_plans
 src/resistance/happenings.gd main_road
-src/resistance/happenings.gd network
 src/resistance/park_cordon.gd home_rect
 src/resistance/resistance_director.gd alley_rects
 src/resistance/resistance_director.gd block_layouts
 src/resistance/resistance_director.gd courtyard_rects
-src/resistance/resistance_director.gd home_rect
 src/resistance/resistance_steps.gd block_layouts
 src/resistance/resistance_steps.gd home_block
 src/resistance/resistance_steps.gd network
@@ -884,7 +878,6 @@ src/events/views/spread_look.gd shape
 src/finale/building_plan.gd repeat_every
 src/finale/building_plan.gd telegraph_time
 src/resistance/contact_point.gd inner_radius
-src/resistance/happenings.gd aftermath
 src/resistance/happenings.gd paces
 src/resistance/happenings.gd shape
 src/resistance/happenings.gd solid_parts
@@ -894,7 +887,6 @@ src/resistance/park_cordon.gd vehicle
 src/resistance/park_cordon.gd warned_first
 src/resistance/resistance_director.gd id
 src/resistance/resistance_director.gd inner_radius
-src/resistance/resistance_director.gd placement
 src/resistance/resistance_director.gd speed
 src/routes/seal_planner.gd act_tag
 src/routes/seal_planner.gd aftermath
@@ -1825,7 +1817,6 @@ src/interior/interior_scene.gd world
 src/main.gd world
 src/resistance/happenings.gd size
 src/resistance/park_cordon.gd moves
-src/resistance/resistance_director.gd blocked
 src/resistance/resistance_director.gd day_record_version
 src/resistance/resistance_director.gd obstruction_version
 src/routes/closure_planner.gd size

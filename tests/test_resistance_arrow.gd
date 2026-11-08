@@ -364,7 +364,7 @@ func _a_mast_can_be_sited_along_her_route() -> bool:
 	var path := _longest_route_points()
 	for i in range(0, path.size() - 1, 4):
 		var heading := (path[i + 1] - path[i]).normalized()
-		if heading != Vector2.ZERO and siting.ahead_of(def, rng, _city.events.plans(), path[i],
+		if heading != Vector2.ZERO and siting.ahead_of(def, rng, null, path[i],
 				heading, near, far) != null:
 			return true
 	return false

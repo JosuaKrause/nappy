@@ -186,7 +186,7 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
 	var cordon := ParkCordon.new(city.map, city.navigator, city.events, city, city.atlas, park,
-			city.spawn_siting, director._reach_blocked)
+			city.spawn_siting, city.events.walk_events().reach().shut())
 	for tick in CORDON_TICKS:
 		_tick_events(city)
 		city.events.visible_view().look(camera, null)

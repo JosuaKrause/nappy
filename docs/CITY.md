@@ -245,6 +245,15 @@ where it starts). `tests/test_resistance_reach_narrow.gd` plans the three days o
 day's seals and bodies have been found to ring, and finds the place's tile reached and the contact
 reached from it.
 
+**Nothing placed during the walk closes a route, so nothing is checked live** (inbox #1173). The
+day's routes are fixed at dawn, and everything sited while she walks — day 3's fire, the poster
+crews, her route's bag, day 11's added mast — is what the day's own placement rules accept, none of
+it a body across her way. Day 13's task roadblock is one dawn already stood beside her routes, on a
+street no route runs along (`EventScheduler._place_beside_the_routes()`), or one of the day's own
+events there swapped for one out of her sight; either stands off the routes and closes none of
+them. Where the resistance may send her is worked out once, as the walk starts, from the day's plan
+(`DayReach`).
+
 **Day 12's place is a park that is open whatever its state, and the day owes her a second one.**
 *(PLAYTEST-119: "we can just force open the park she needs to go to that day"; PLAYTEST-122: the
 day "guarantees a second open park she can reach from the swing".)* The swing's pool is the swing

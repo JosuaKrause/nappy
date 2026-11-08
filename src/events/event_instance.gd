@@ -401,8 +401,8 @@ static func _centred_on_the_pavement_band(map: WorldMap, at: Vector2) -> Vector2
 ## barrier that lies correctly across a north-south street lies along the kerb — parallel to the
 ## traffic, blocking nothing — on an east-west one, unless the direction it spreads in changes with
 ## the street. `CityMap.corridor_offset` answers which axis a tile's corridor runs on without
-## caring what the tile's *type* is, so a `ROAD` tile (`checkpoint`, the barricade a stopped convoy
-## leaves) is asked exactly the way a `SIDEWALK` tile is, with no second lookup for either
+## caring what the tile's *type* is, so a `ROAD` tile (`checkpoint`, a barricade seal across a
+## street) is asked exactly the way a `SIDEWALK` tile is, with no second lookup for either
 ## (`WorldMap.corridor_offsets()`).
 ##
 ## A tile whose two coordinates are **both** inside a corridor band is a junction — belonging to
@@ -1278,11 +1278,11 @@ var is_parked: bool:
 ## The end of an event: it leaves if it has anywhere to go, and stops existing if it has not.
 ##
 ## Three things never leave, and each would break something that reads the finishing position. An
-## event with an `aftermath.on_finish` stops **where the thing it leaves belongs** — a convoy's
-## barricade is across the street it shut, not two streets past it. Anything with no departure
+## event with an `aftermath.on_finish` stops **where the thing it leaves belongs** — the escape's
+## explosion leaves its crater where it went off, not two streets past it. Anything with no departure
 ## speed has no way to go anywhere; a café that closes is simply over. And a row with
 ## `EventDef.stops_where_it_arrives` **parks**: the fire engine is sent to the near kerb across from
-## the building (`EventSpawner.where_the_summoned_row_stops()`) and stays there for the rest of the
+## the building (`EventSpawner._where_the_summoned_row_stops()`) and stays there for the rest of the
 ## day, because a standing field beside a fire she was led to is the cost that makes the pair a
 ## street to turn round on rather than one to hurry past.
 ##
@@ -1421,6 +1421,12 @@ func notice_time() -> float:
 	if warns_by_radius() and def.pursuit and def.pursuit.warns_for > 0.0:
 		return def.pursuit.warns_for
 	return def.telegraph_time
+
+## True for a row that waits (`EventDef.notice`) once it has noticed her: its notice's clock is
+## running, so it is warning her, coming for her, or done with her. What day 13's swap leaves alone
+## (`EventScheduler.Planned.may_be_replaced()`), since taking it away would take its warning off her.
+func has_noticed_her() -> bool:
+	return def.notice != null and _notice.is_running()
 
 ## True for a row that waits (`EventDef.notice`) and has not noticed her: its notice's clock is not
 ## running. That is `Phase.WAITING`, and it stays true of such a row that leaves or is gone without

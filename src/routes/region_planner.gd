@@ -732,6 +732,7 @@ static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan:
 		body.facing = axis
 		if i == road_index:
 			body.gate_state = gate
+		body.stand_as_a_door()
 		plan.door_bodies.append(body)
 
 ## The two bodies an alley door stands, one `checkpoint_post` at each of its two mouths — the same
@@ -745,6 +746,7 @@ static func _add_alley_door_bodies(map: CityMap, rect: Rect2i, plan: RegionPlan)
 		var mouth := SealPlanner.alley_mouth_rect(rect, vertical, at_start)
 		var body := EventScheduler.Planned.new(def, map.tile_rect_to_world(mouth).get_center())
 		body.facing = axis
+		body.stand_as_a_door()
 		plan.door_bodies.append(body)
 
 # --------------------------------------------------------------------------------- dsu ---

@@ -20,6 +20,7 @@ func run(_t) -> void:
 		var regions := RegionPlanner.plan_day(map, day, tree)
 		var corridor := Corridor.of(tree)
 		var doors := PackedVector2Array()
+		var calm := CalmAreas.of(map)
 		for body in regions.door_bodies:
 			doors.append(body.position)
 			if body.def.id == "checkpoint_hut":
@@ -34,7 +35,8 @@ func run(_t) -> void:
 		for tile in tiles:
 			var prior: Array[EventScheduler.Planned] = []
 			var at := map.tile_to_world(tile)
-			var plan := EventScheduler.recipe_placement(def, day, map, at, 1, prior, corridor, doors)
+			var plan := EventScheduler.recipe_placement(def, day, map, at, 1, prior, corridor, doors,
+					calm)
 			if not plan:
 				continue
 			print("SITE ", def.id, " tile=", tile, " world=", at, " path=", plan.path)

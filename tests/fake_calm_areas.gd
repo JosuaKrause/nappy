@@ -3,7 +3,7 @@ extends CalmAreas
 ## A stand-in for the day's calm areas whose answers a check sets: handed to what is handed
 ## `CalmAreas` (`DayEvents.over()`, `DayRepairs`' repairs) in place of the real one, so the
 ## check builds no city. It answers what those ask: the areas, each one's calm ground and calm
-## tiles, which are unused, and the one set aside. Its values are copied from what
+## tiles, every calm tile, which are unused, and the one set aside. Its values are copied from what
 ## `CalmAreas.of()` answers for a real city; the real object's own logic is checked once, in
 ## `tests/test_calm_areas.gd`. A helper, not a suite: the runner loads only `test_*.gd`.
 
@@ -41,6 +41,15 @@ func ground_of(block: Vector2i) -> Rect2:
 func calm_tiles_of(block: Vector2i) -> Array[Vector2i]:
 	var tiles: Array[Vector2i] = []
 	tiles.assign(_fake_tiles.get(block, []))
+	return tiles
+
+## Every set area's calm tiles, in the order they were set.
+##
+## Overrides CalmAreas.calm_tiles.
+func calm_tiles() -> Array[Vector2i]:
+	var tiles: Array[Vector2i] = []
+	for block in _fake_blocks:
+		tiles.append_array(_fake_tiles.get(block, []))
 	return tiles
 
 ## Overrides CalmAreas.unused.

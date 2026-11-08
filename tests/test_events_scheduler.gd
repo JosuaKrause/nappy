@@ -41,6 +41,8 @@ func run(t) -> void:
 	_test_along_street_paths_stay_in_bounds(t)
 	_test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t)
 	_test_the_repair_keeps_a_route_to_the_clean_calm_ground_not_the_spoiled(t)
+	_test_nothing_beside_the_routes_stands_on_the_main_road(t)
+	_test_day_13s_roadblocks_stand_beside_the_routes(t)
 
 
 func _signature(planned: Array) -> String:
@@ -700,3 +702,74 @@ func _keep_streets_to(map: CityMap, to: Vector2i, keep: Dictionary) -> bool:
 			keep[segment.key()] = segment
 		tile = came[tile]
 	return true
+
+## **Beside the routes, and never the main road** (inbox #1185, inbox #1186): where day 13's dawn
+## stands its roadblocks and what the task's swap may replace (`stands_beside_the_routes()`), on a
+## corridor whose route is set by hand (`tests/fake_route_tree.gd`): east along the streets from
+## junction (2, 2) to (4, 2), with the main road the north-south corridor through junction column 3.
+func _test_nothing_beside_the_routes_stands_on_the_main_road(t) -> void:
+	var map := CityMap.new()
+	map.main_road = 3
+	var corridor := Corridor.of(FakeRouteTree.new(map).set_routes(
+			[Vector3i(2, 2, 0), Vector3i(3, 2, 0)] as Array[Vector3i],
+			[Vector2i(2, 2), Vector2i(3, 2), Vector2i(4, 2)] as Array[Vector2i]))
+	var middle := func(key: Vector3i) -> Vector2i:
+		return StreetNetwork.Segment.new(Vector2i(key.x, key.y), key.z == 0).tile_rect().get_center()
+	t.check(EventScheduler.stands_beside_the_routes(map, corridor, middle.call(Vector3i(2, 2, 1))),
+			"a side street south from a junction the route crosses stands beside the routes")
+	t.check(not EventScheduler.stands_beside_the_routes(map, corridor,
+			middle.call(Vector3i(3, 2, 1))),
+			"the main road south from the same kind of junction does not, though it touches the route")
+	t.check(not EventScheduler.stands_beside_the_routes(map, corridor,
+			middle.call(Vector3i(2, 2, 0))), "and a street the route runs along does not")
+
+## **Day 13's dawn stands its roadblocks beside her routes, spaced, and says how many route tiles it
+## leaves without one** (inbox #1185, inbox #1186): the day planned with the task's row
+## (`build_day()`'s `beside_the_routes`) on the suite's own city, where the run log names each one
+## it stood. Each is on a street beside the routes (`Corridor.is_beside_the_routes()`), off every
+## tile a route runs along and off the main road, nothing else stands within `EVENT_SPACING_ANY` of
+## it, and the count of route tiles left with none close by is written once the day is planned.
+func _test_day_13s_roadblocks_stand_beside_the_routes(t) -> void:
+	var map := _map()
+	var day := 13
+	var tree := RouteTree.for_day(map, day)
+	var corridor := Corridor.of(tree)
+	var told: Array[String] = []
+	var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, CalmAreas.of(map),
+			[] as Array[String], [] as Array[Dictionary], tree, 0, PackedVector2Array(),
+			[] as Array[Vector2i], [] as Array[EventScheduler.Planned], RunTrace.recording(told),
+			null, EventCatalogue.by_id("roadblock"))
+	var stood: Array[Vector2i] = []
+	var counted := ""
+	var tile_pattern := RegEx.create_from_string("\\((-?\\d+),(-?\\d+)\\)")
+	for line in told:
+		if line.contains("placed beside the day's routes"):
+			for found in tile_pattern.search_all(line.get_slice(";", 0)):
+				stood.append(Vector2i(int(found.get_string(1)), int(found.get_string(2))))
+		if line.contains("route tiles have no roadblock"):
+			counted = line
+	t.check(stood.size() > 1, "dawn stood roadblocks beside the routes (%d)" % stood.size())
+	var by_tile := {}
+	for plan in events.placements():
+		if plan.row_id() == "roadblock" and plan.is_placed():
+			by_tile[map.world_to_tile(plan.placed_at())] = plan
+	for tile in stood:
+		var plan: EventScheduler.Planned = by_tile.get(tile)
+		var segment := map.network.segment_containing(tile)
+		t.check(plan != null and segment != null and corridor.is_beside_the_routes(tile)
+				and not corridor.carries_a_route(tile)
+				and not map.is_main_road(not segment.horizontal, segment.a.x),
+				"the roadblock at %s stands on a street beside the routes, off them and off the main road"
+				% tile)
+		if plan == null:
+			continue
+		var nearest := INF
+		for other in events.placements():
+			if other != plan and other.is_placed():
+				nearest = minf(nearest, plan.gap_to(other))
+		t.check(nearest >= EventScheduler.EVENT_SPACING_ANY,
+				"and nothing else the day placed stands within %.0fpx of it (%.0fpx)"
+				% [EventScheduler.EVENT_SPACING_ANY, nearest])
+	var left := RegEx.create_from_string("^plan (\\d+) of (\\d+) route tiles").search(counted)
+	t.check(left != null and int(left.get_string(1)) < int(left.get_string(2)),
+			"the run log counts the route tiles left with no roadblock close by (%s)" % counted)

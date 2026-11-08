@@ -7,8 +7,10 @@ extends Node
 ## ends the day's charges. The work behind that face is handed to the parts that own it, each handed
 ## the one `EventWorld` they share:
 ##
-## - `EventStreaming`: the day's plan and the live instance each plan streams in as, the repeats,
-##   the masts, a finished plan spent;
+## - `WalkEvents`: the walk's plans, and what it was planned against (the doors, the calm areas),
+##   read through one object by everything that acts on them;
+## - `EventStreaming`: the live instance each plan streams in as, the repeats, the masts, a
+##   finished plan spent;
 ## - `EventSpawner`: every instance made (its scar, its body, the bang outside), what a finished row
 ##   leaves behind, the rows summoned on sight and the run's pelican bag;
 ## - `WarningBoard`: the screen-edge badges up for something not in the world yet, and the mark over
@@ -41,7 +43,9 @@ extends Node
 ## What every part works over: the world, the run, the player, what she can see and the live
 ## instances.
 var world := EventWorld.new()
-## The day's plan and the live instances it streams in as.
+## The walk's plans, read through one object (`walk_events()`).
+var _walk_events := WalkEvents.new()
+## The live instances the walk's plans stream in as.
 var streaming: EventStreaming
 ## Every instance made, what a finished row leaves, the summons and the pelican bag.
 var spawner: EventSpawner
@@ -124,8 +128,8 @@ func _init() -> void:
 	warnings = WarningBoard.new(world)
 	planner = DayPlanner.new(world)
 	spawner = EventSpawner.new(world, warnings)
-	streaming = EventStreaming.new(world, spawner)
-	ahead = EventsAhead.new(world, streaming, spawner, warnings)
+	streaming = EventStreaming.new(world, spawner, _walk_events)
+	ahead = EventsAhead.new(world, streaming, spawner, warnings, _walk_events)
 	checkpoints = CheckpointController.new(world, spawner.spawn, EventBus,
 			EventCatalogue.door_guard())
 	sources = EventSources.new(world, checkpoints)
@@ -255,7 +259,7 @@ func _owe_the_return() -> void:
 ## (`EventScheduler.Planned.repeats()`) comes on its own clock
 ## (`EventStreaming.bring_back_what_repeats()`). The streaming, the successors, the scars, the
 ## detentions and the hard fails are the same for all three: an explosion leaves its crater through
-## exactly the `aftermath.on_finish` mechanism a convoy leaves a barricade through.
+## the same `aftermath.on_finish` mechanism on the escape's streets as it would anywhere.
 func start_day(spec: DaySpec, rng: RandomNumberGenerator, consumed_one_shots: Array[String],
 		focus := Vector2.ZERO) -> void:
 	_begin(spec)
@@ -281,7 +285,10 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	world.day = spec.number if plan.is_a_day else world.run.header.day
 	_encounters.day = spec.number
 	_walk = plan.walk
-	streaming.take(plan.placements)
+	# Where she can get to from home, worked out once as the walk starts, from what it planned and
+	# the map's closures and soft seals as they stand now (`DayReach`).
+	var reach := DayReach.of(world.city_map, plan.placements) if world.city_map else null
+	_walk_events.take(plan.placements, plan.calm(), plan.doors, reach)
 	if plan.is_a_day:
 		# Every stationary solid body the day has sited, recorded per tile so the crowd goes round
 		# it — see `CityMap.obstructed_tiles`. Taken from the **plan** rather than from the live
@@ -294,7 +301,7 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 			if placed.is_placed():
 				spawner.record_the_body(placed.get_instance_id(), placed.def, placed.position,
 						placed.facing)
-		ahead.start_day(world.day, plan.walk as RouteTree, plan.doors)
+		ahead.start_day(world.day, plan.walk as RouteTree)
 	else:
 		streaming.find_what_repeats()
 		ahead.start_a_given_walk(world.day)
@@ -309,15 +316,23 @@ func walk() -> RouteSource:
 ## successors and warnings keep their production behavior; random siting is suppressed. `spec` is
 ## the walk the recipe stands for, handed in by the recipe's runtime — a day's, or the escape city's
 ## — and its settings are the walk's; `day` keys the walk's streams and counts its encounters.
+## `calm` is the calm areas the recipe's rows were placed against (`calm_as_the_map_stands()`), so
+## the walk sites against the same ones; a rig that places none hands none.
 ##
 ## **The recipe's holds stay**: its builder holds what it placed (`SceneRecipeRuntime`), and nothing
 ## here rolls against them. Its plans are taken as a walk planned whole is (`start_day()`), with
 ## their bodies recorded as a day's are.
 func start_recipe(plans: Array[EventScheduler.Planned], spec: DaySpec, day: int,
-		focus: Vector2) -> void:
+		focus: Vector2, calm: CalmAreas = null) -> void:
 	var plan := DayPlanner.Plan.new()
 	plan.placements = plans
 	plan.is_a_day = false
+	# The recipe's walk is sited against the calm areas its rows were placed against, or, handed
+	# none, those a day's would be as the map stands.
+	if calm:
+		plan.use_calm(calm)
+	elif world.city_map:
+		plan.use_calm(planner.calm_as_the_map_stands())
 	_begin(spec)
 	_take(spec, plan, focus)
 	for placed in plans:
@@ -327,6 +342,12 @@ func start_recipe(plans: Array[EventScheduler.Planned], spec: DaySpec, day: int,
 	world.day = day
 	_encounters.day = day
 	_recipe_plan = true
+
+## **The day's calm areas as the map stands now** (`DayPlanner.calm_as_the_map_stands()`): what a
+## scene recipe's rows are placed against, handed back to `start_recipe()` so its walk sites against
+## the same ones.
+func calm_as_the_map_stands() -> CalmAreas:
+	return planner.calm_as_the_map_stands()
 
 ## Everything in this world stops, because she is not in it any more: the escape's building once
 ## she has walked out of its service exit into the city. Every instance goes, its charge counted cut
@@ -484,7 +505,7 @@ func _tick_the_events(delta: float) -> void:
 		streaming.stream_around(world.player.global_position)
 		if not _recipe_plan and ahead.has_director():
 			ahead.place_what_is_owed_ahead(delta)
-		spawner.summon_what_has_been_sighted(streaming.plans())
+		spawner.summon_what_has_been_sighted(_walk_events.plans())
 		spawner.report_the_pelicans_in_view()
 		_watch_the_encounters(delta)
 		warnings.run(delta, world.player.global_position)
@@ -629,6 +650,11 @@ func keep_live(id: String, at: Vector2) -> EventInstance:
 func take_away_within(rect: Rect2, ids: Array[String]) -> int:
 	return streaming.take_away_within(rect, ids)
 
+## Takes today's plans inside `rect` not yet in the world out of the day, all but the ambient rows
+## (`EventStreaming.take_away_the_unseen_within()`).
+func take_away_the_unseen_within(rect: Rect2) -> int:
+	return streaming.take_away_the_unseen_within(rect)
+
 ## Today's foot for a mast id (`EventStreaming.mast_foot()`).
 func mast_foot(mast_id: String) -> Vector2:
 	return streaming.mast_foot(mast_id)
@@ -647,7 +673,12 @@ func planned_count() -> int:
 
 ## The day's plan, for the readouts and the telemetry. Not for anything that acts on it.
 func plans() -> Array[EventScheduler.Planned]:
-	return streaming.plans()
+	return _walk_events.plans()
+
+## **The walk's events, read through one object** (`WalkEvents`): what the resistance and every
+## placement made while she walks are handed.
+func walk_events() -> WalkEvents:
+	return _walk_events
 
 ## Events the day has budgeted for the director to put in front of her and has not spent yet.
 func owed_ahead() -> int:
@@ -693,14 +724,16 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventScheduler.Planned:
 	return ahead.queue_a_mast(offered, rng)
 
-## A task's own row, placed the way the day places one, near her (`EventsAhead.queue_a_task_row()`).
-func queue_a_task_row(def: EventDef, offered: Array[Vector2i], rng: RandomNumberGenerator,
-		her: Vector2) -> EventInstance:
-	return ahead.queue_a_task_row(def, offered, rng, her)
+## Day 13's task roadblock in place of one of the day's events, out of her view as `in_view`
+## answers (`EventsAhead.swap_in_a_task_row()`).
+func swap_in_a_task_row(def: EventDef, old: EventScheduler.Planned,
+		rng: RandomNumberGenerator, in_view := Callable()) -> EventInstance:
+	return ahead.swap_in_a_task_row(def, old, rng, in_view)
 
-## Does at dawn the one-time work of a task row's placement (`EventsAhead.prepare_a_task_row()`).
-func prepare_a_task_row(def: EventDef) -> void:
-	ahead.prepare_a_task_row(def)
+## Whether `tile` is on a street beside the day's routes and off the main road
+## (`EventsAhead.stands_beside_the_routes()`).
+func stands_beside_the_routes(tile: Vector2i) -> bool:
+	return ahead.stands_beside_the_routes(tile)
 
 ## Rigs her route's bag for a task (`EventsAhead.rig_her_route()`).
 func rig_her_route(ids: Array[String], size: int) -> Array:

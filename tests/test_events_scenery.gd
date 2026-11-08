@@ -285,10 +285,8 @@ func _test_a_flock_is_a_place_she_can_see(t) -> void:
 
 func _test_mobile_follows_its_path(t) -> void:
 	# `military_convoy` rather than the fire engine: this is about the generic path-following
-	# mechanic, not about fire, and it needs a row whose `_be_done()` finishes immediately rather
-	# than driving on until it is out of sight — `aftermath.on_finish` is what does that, which the
-	# fire engine no longer carries now that `burning_building` calls it in rather than the other
-	# way round (`EventDef.aftermath.on_sight`).
+	# mechanic, not about fire. At its path's end the truck is done with it (`_be_done()`): it
+	# drives on out of sight, leaving, with nothing left to do on the path.
 	var def := EventCatalogue.by_id("military_convoy")
 	var path := PackedVector2Array([Vector2(0.0, 0.0), Vector2(300.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)
@@ -300,7 +298,8 @@ func _test_mobile_follows_its_path(t) -> void:
 
 	# Off the end of the route is over, whatever the nominal duration says.
 	_advance(instance, 3.0)
-	t.check(instance.is_finished, "a mobile event finishes at the end of its path")
+	t.check(instance.is_finished or instance.is_leaving,
+			"a mobile event is done with its path at its end")
 	instance.free()
 
 ## The other kind of mobile event, and the reason the field exists. A telegraph that is an

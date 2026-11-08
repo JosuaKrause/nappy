@@ -336,7 +336,7 @@ class RefusingSiting extends EventScheduler.WalkSiting:
 
 	## Overrides EventScheduler.WalkSiting.ahead_of.
 	func ahead_of(def: EventDef, _rng: RandomNumberGenerator,
-			_already: Array[EventScheduler.Planned], _at: Vector2, _heading: Vector2,
+			_besides: EventScheduler.Planned, _at: Vector2, _heading: Vector2,
 			_near: float, _far: float) -> EventScheduler.Planned:
 		if def.id == "loudspeaker":
 			asked += 1
@@ -359,8 +359,8 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
 	plan_rng.seed = hash("route-bag:refused:%d" % SEED)
 	var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
 			CalmAreas.of(map), [], [], tree, 0).placements()
-	var no_calm: Array[Vector2i] = []
-	var siting := RefusingSiting.new(day, map, tree, no_calm, PackedVector2Array(),
+	var siting := RefusingSiting.new(day, map, tree,
+			FakeWalkEvents.new().set_plans(plans).set_calm(CalmAreas.of(map)),
 			EventScheduler.Verdicts.new())
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
@@ -379,7 +379,7 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
 	var met: Array[String] = []
 	var walked := 0.0
 	while walked < 300.0 and met.count("police_patrol") < count:
-		director.site_what_is_on_her_way(STEP, at, velocity, plans)
+		director.site_what_is_on_her_way(STEP, at, velocity)
 		var due := director.due(STEP, at, velocity)
 		if not due.is_empty():
 			met.append((due[0] as EventDef).id)
@@ -540,7 +540,7 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 			for i in MAST_SITINGS:
 				var siting_rng := RandomNumberGenerator.new()
 				siting_rng.seed = hash("route-bag:mast-sitings:%d" % i)
-				var again := siting.ahead_of(mast, siting_rng, city.events.plans(), her_at_siting,
+				var again := siting.ahead_of(mast, siting_rng, null, her_at_siting,
 						heading_at_siting, 0.0, INF)
 				if again == null or again.position == Vector2.INF:
 					continue
@@ -570,7 +570,7 @@ func _the_rigged_bag(told: Array[String]) -> Array:
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
 func _the_longest_route(city: City) -> Array[Vector2]:
 	var siting := EventScheduler.WalkSiting.new(city.events.world.day, city.map, city.streets().route_tree(),
-			[], PackedVector2Array(), EventScheduler.Verdicts.new())
+			FakeWalkEvents.new(), EventScheduler.Verdicts.new())
 	var longest: Array = []
 	for branch in city.streets().route_tree().branches:
 		for route: Array in branch.routes:

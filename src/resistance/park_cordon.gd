@@ -283,7 +283,7 @@ var trace := RunTrace.new()
 
 ## Starts closing `block`'s park: the line, its stretches and which of them need tape. Nothing is
 ## placed until the first `tick()`, which knows where she is and what the camera sees. `blocked` is
-## the day's obstruction the last gap is checked under (`ResistanceDirector`'s `_reach_blocked`).
+## the day's obstruction the last gap is checked under (`DayReach.shut()`, as the director hands it).
 ## `navigator` is the map's (`WorldMap.navigator()`), which the officers walk through; `events` the
 ## day's, or null for none; `world` where its pieces are drawn, from `atlas`, or null to draw
 ## nothing; `siting` is the one the officers are placed by: the ground they may stand on and the
@@ -524,27 +524,10 @@ func _outside_reaches(stretch: Stretch, ground: PackedInt32Array) -> bool:
 ## Whether `point` stands clear of everything the day put down that bounds or bites: farther from
 ## each body than its obstruction and her whole shape (`HER_REACH`), and outside the field of any
 ## body that carries one (a car crash's, which is there to stop her walking past it) and the
-## lethal reach of anything that ends the day. The park's own people are not asked: they are being
-## walked out.
+## lethal reach of anything that ends the day (`WalkEvents.is_clear_at()`). The park's own people
+## are not asked: they are being walked out.
 func _clear_of_the_day(point: Vector2) -> bool:
-	if not _events:
-		return true
-	for plan in _events.plans():
-		if plan.spent or not plan.is_placed() or _area.has_point(plan.position):
-			continue
-		var def := plan.def
-		if def.obstructs_radius <= 0.0 and not def.hard_fail:
-			continue
-		var reach := def.obstructs_radius + HER_REACH
-		if def.intensity > 0.0:
-			reach = maxf(reach, def.field_reach())
-		if def.hard_fail:
-			reach = maxf(reach, def.lethal_reach() + HER_REACH)
-		var at := plan.live.global_position if plan.live and is_instance_valid(plan.live) \
-				else plan.position
-		if point.distance_to(at) < reach:
-			return false
-	return true
+	return not _events or _events.walk_events().is_clear_at(point, HER_REACH, _area)
 
 # -------------------------------------------------------------- setting out ---
 
@@ -947,15 +930,8 @@ func _way_in() -> PackedVector2Array:
 func _send_escorts() -> void:
 	if not _events:
 		return
-	for plan in _events.plans():
-		if plan.spent or plan.live or not plan.is_placed() or not _area.has_point(plan.position):
-			continue
-		if plan.def.kind == GameEnums.EventKind.AMBIENT:
-			continue
-		# Not in the world yet, and out of her sight by construction (it would be streamed in
-		# otherwise): the same removal `EventManager.take_away_within()` makes of a plan.
-		plan.spent = true
-		_map.release_obstruction(plan.get_instance_id())
+	# Not in the world yet, and out of her sight by construction (it would be streamed in otherwise).
+	_events.take_away_the_unseen_within(_area)
 	var sent := 0
 	for live in _events.instances():
 		if not _walks_out(live):

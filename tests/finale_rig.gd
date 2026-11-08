@@ -1699,7 +1699,7 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t) -> void:
 			% [crater.obstructs_radius, drawn_width])
 
 	# And the wiring: a burst that has run its course is replaced by a crater standing where it
-	# was, through the same `aftermath.on_finish` mechanism a convoy leaves a barricade through.
+	# was, through the row's `aftermath.on_finish`.
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
 	city.build(MapCache.of(SEEDS[0]))

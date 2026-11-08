@@ -137,9 +137,11 @@ FILES: dict[str, str] = {
     "src/events/vehicle_spec.gd": "data",
     "src/events/calm_areas.gd": "model",
     "src/events/day_events.gd": "model",
+    "src/events/day_reach.gd": "model",
     "src/events/event_scheduler.gd": "model",
     "src/events/day_repairs.gd": "model",
     "src/events/mast_sites.gd": "model",
+    "src/events/walk_events.gd": "model",
     "src/events/walk_ground.gd": "model",
     # interior: the plan and its tiles are the model; the tileset and the scene are the world.
     "src/interior/interior_map.gd": "model",
@@ -389,11 +391,8 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
         "EventSpawner",
-        "placement rules live on the spawner the planner and the city both reach into",
-        (
-            "src/city/city.gd",
-            "src/events/event_scheduler.gd",
-        ),
+        "placement rules live on the spawner the city reaches into",
+        ("src/city/city.gd",),
     ),
     Exception_(
         "names",

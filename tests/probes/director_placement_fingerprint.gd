@@ -26,7 +26,7 @@ extends RefCounted
 ##   day 13's column sent at her from a few places along the main road;
 ## - **the events' director half**: where a row comes down her line (`down_her_line()`, the
 ##   cyclist and the loose dog), along her heading (`along_her_heading()`, the charging dog), on
-##   its route (`on_its_route()`, the fire engine to the kerb `where_the_summoned_row_stops()`
+##   its route (`on_its_route()`, the fire engine to the kerb `_where_the_summoned_row_stops()`
 ##   gives), in its lane (`in_its_lane()`, the column), and where the men a hunting van owes get out
 ##   (`let_the_officers_out()`).
 
@@ -149,7 +149,9 @@ func _the_guard_spots(city: City, director: ResistanceDirector, label: String, a
 			if on_screen and her != Vector2.INF:
 				city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 						Tuning.VIEW_HALF_EXTENT * 2.0), null)
-			var spot := director._guard_position(rng, at, for_mark, her, on_screen)
+			var approach := Vector2.ZERO if her == Vector2.INF else her - at
+			var spot := director._guard_position(rng, at, for_mark, her, on_screen,
+					ContactPoint.REACH, approach)
 			_print("%s %s guard spot her %s screen %s -> %s rng %d" % [label,
 					"mark" if for_mark else "roadblock", _point(her), on_screen, _point(spot),
 					rng.state])
@@ -157,8 +159,8 @@ func _the_guard_spots(city: City, director: ResistanceDirector, label: String, a
 	if not for_mark:
 		for her in hers:
 			var rng := _rng(0, 0, "roadblock-spot")
-			var moved := director._roadblock_guard_spot(rng, at, ContactPoint.REACH, her, false,
-					false)
+			var moved := director._roadblock_guard_spot(rng, at, ContactPoint.REACH, her,
+					Vector2.ZERO if her == Vector2.INF else her - at, false, false)
 			_print("%s roadblock spot no-any her %s -> %s rng %d" % [label, _point(her),
 					_point(moved), rng.state])
 			printed += 1
@@ -297,7 +299,7 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 			_print("%s ahead at %s heading %s: cyclist/dog down her line, charger along %s" % [
 					label, tile, heading, line])
 			printed += 1
-		var kerb := EventSpawner.where_the_summoned_row_stops(map, her)
+		var kerb := EventSpawner._where_the_summoned_row_stops(map, her)
 		if kerb != Vector2.INF:
 			for travel in headings:
 				_print("%s ahead at %s engine to %s travel %s -> %s" % [label, tile, _point(kerb),

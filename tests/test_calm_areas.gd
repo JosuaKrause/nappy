@@ -60,6 +60,11 @@ func _test_the_calm_tiles_are_the_calm_ones_of_that_ground(t) -> void:
 	t.check(park.size() == 63 and not park.has(Vector2i(6, 6)),
 			"the park's are its sixty-three calm ones, not the sidewalk tile on its corner (%d)"
 			% park.size())
+	var map := _map()
+	calm = CalmAreas.of(map)
+	t.check(calm.calm_tiles() == map.calm_tiles() and calm.calm_tiles().size() == 78,
+			"and every calm tile of the map is the map's own, as it stood when they were made (%d)"
+			% calm.calm_tiles().size())
 
 func _test_used_and_unused_are_read_off_the_act(t) -> void:
 	var used: Array[Vector2i] = [TAKEN, COURT]

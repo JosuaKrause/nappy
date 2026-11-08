@@ -275,10 +275,9 @@ static func for_section(which: int, section_length: float, section_title := "") 
 ## each is filled from one marble bag rather than sited round her as a day does *(minty-lemur #785:
 ## "so you prefill the events for escape but that doesn't justify not using a marble bag. those
 ## concepts are orthogonal")*, in the player's order of how many — *"frequency order is trucks >
-## explosions > vans > barriers > empty"* — at `Tuning`'s counts. The rows are the escape's own
-## copies: the convoy as traffic, with the barricade it leaves on a day stripped; the masked men in
-## their van; the roadblock at full heat, whose guards leave the post and come for her on foot; and
-## the explosion.
+## explosions > vans > barriers > empty"* — at `Tuning`'s counts. The rows: the convoy, as traffic;
+## the masked men in their van; the escape's own roadblock at full heat, whose guards leave the post
+## and come for her on foot; and the explosion.
 static func _place_the_escape_city(spec: DaySpec) -> void:
 	spec.draw = Draw.BAG_PER_STREET
 	spec.bag = {
@@ -289,8 +288,7 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 		EMPTY_MARBLE: FINALE_BAG_EMPTY,
 	}
 	spec.bag_rows = {
-		"military_convoy": EventCatalogue.without_its_aftermath(
-				EventCatalogue.by_id("military_convoy")),
+		"military_convoy": EventCatalogue.by_id("military_convoy"),
 		"finale_explosion": EventCatalogue.by_id("finale_explosion"),
 		"abduction": EventCatalogue.by_id("abduction"),
 		"roadblock": EventCatalogue.escape_roadblock(),

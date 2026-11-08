@@ -7,5 +7,5 @@ the design on `main` before the planned changes: "recreate it when the current r
 
 **Read as:** the Nappy board's System map tab (two mermaid diagrams and a table of the entities) is
 redrawn from the code as it stands once the redesign is complete: the after-dawn reader
-(`walk-placed-blockers.md`), the hand-ins (`city-hand-ins.md`) and the test conversion
+(`WalkEvents`, #1169), the hand-ins (`city-hand-ins.md`) and the test conversion
 (`tests-one-module.md`). It is the orchestrator's, since only its session reaches the board.

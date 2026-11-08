@@ -282,12 +282,13 @@ again keeps its route bag, which is the author's rigging, and writes the rest af
 One scene per day whose task names a target, days 6 to 14, puts that target at the least distance
 the task allows from where she reads the mark, which also tests that it is put out of her view
 *(the player, inbox #502: "in the scene we can use the minimum distance which in turn also serves
-as test whether it will be properly off screen")*. Days 6, 7, 8, 11 and 13 leave the placement to
+as test whether it will be properly off screen")*. Days 6, 7, 8 and 11 leave the placement to
 the director, which puts the target where a path from her first reaches the 576px circle round her
-(`ResistanceDirector.NEAR_THE_MARK`), on the stretch, out of her view; day 13's roadblock is put
-there under every rule a roadblock the day plans is placed under, or, where those rules refuse all of
-that ground, on ground her paths reach up to a block further out, and where they refuse that too, on
-the circle's edge as the other targets are, outside those rules. Day 8's burnt building stands
+(`ResistanceDirector.NEAR_THE_MARK`), on the stretch, out of her view. A scene plans no day of its
+own, so day 13's scene authors the roadblock its task finds, on a street beside her route; day 13's roadblock is the
+nearest the day placed that her paths reach within that circle or up to a block and a street further
+out (1,024px), or one of the day's events beside her routes swapped for one out of her view; nothing
+is added in the walk, so where neither is, the task has no roadblock. Day 8's burnt building stands
 there for a run with no day-3 fire, its door a tile or two behind the shell. The targets whose
 place is fixed — day 9's district door, day 12's swing and day 14's station door — have no such
 rule, so their scenes put the mark or her start just past that same circle. Day 10's neighbor
@@ -321,7 +322,7 @@ and holds every observation, and that nothing in the crowd appears or vanishes i
 | `task-11-mast.json` | 11, silencing a mast | 5 tiles west of the mark, on the street, the mark unread | a mast put up for the task, 540–644px from the mark |
 | `task-11-two-masts.json` | 11, silencing a mast, with two masts answering | 5 tiles west of the mark, on the street, the mark unread | two authored masts, `south` (224px east of the mark, on the street her walk later goes up) and `north` (where the day's own generated mast stands): the red arrow starts on `south` and moves to `north` once her walk up the street beyond passes the point where `north` is the nearer on foot |
 | `task-12-swing.json` | 12, the swing | 5 tiles east of the mark on the street below it, the mark unread | the swing's base, 540–676px from the mark |
-| `task-13-roadblock.json` | 13, into a roadblock's band | 5 tiles west of the mark, on the street, the mark unread | the roadblock, 540–644px from the mark, with the arrow on it |
+| `task-13-roadblock.json` | 13, into a roadblock's band | 5 tiles west of the mark, on the street, the mark unread | an authored roadblock, standing as one the day placed on the side street off her route, 540–644px from the mark (615px), with the arrow on it; she walks west along her street and up the side street into its band |
 | `task-14-last-night.json` | 14, the station's front door | on the sidewalk west of it | the door on the facade, 576–640px out |
 | `station-door-corner.json` | 14, the station's front door | on the far outer corner of its sidewalk, walking a few steps west and back to it | the door, 57.7px away, outside its 50.6px reach |
 | `fire-truck.json` | 3, the fire and the engine it calls in | on the sidewalk 496px east of the fire | the whole burning building, smoke included, out of her view at the first tick; the engine parked at the kerb in front of it |
