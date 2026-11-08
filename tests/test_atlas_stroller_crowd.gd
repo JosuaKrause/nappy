@@ -19,11 +19,8 @@ extends RefCounted
 ## a suite makes the gate red whether or not a test expected it. Every check below reads the run
 ## log, without ever calling `region()` on a group it already knows is not acquired.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const StreetMap := preload("res://tests/fixtures/street_map.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
-const RUN_SEED := 2
-const SEED := 4242
 
 func run(t) -> void:
 	_test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t)
@@ -74,12 +71,21 @@ func _rng(tag: String) -> RandomNumberGenerator:
 	rng.seed = hash("test_atlas_stroller_crowd:%s" % tag)
 	return rng
 
-func _city(t, atlas: AtlasLibrary) -> City:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	city.atlas = atlas
-	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
-	return city
+## The real crowd over a bare world and a street-only map, with the library handed in where the
+## game hands its own: no city, lights, streets or player are built around it. A day is started
+## with nobody to place (`populate` off), since the page is taken on the first day whether or not
+## anyone walks it.
+func _crowd(t, atlas: AtlasLibrary) -> Crowd:
+	var crowd := Crowd.new()
+	crowd.atlas = atlas
+	var world := WorldContext.new()
+	t.add_child(world)
+	crowd.setup(world, StreetMap.full(), null, null)
+	world.add_child(crowd)
+	return crowd
+
+func _start(crowd: Crowd, day: int, tag: String) -> void:
+	crowd.start_day(day, _rng(tag), Vector2.INF, false)
 
 ## The crowd's own lifetime, per `assets/atlases/membership.json`'s `crowd` entry: "the crowd
 ## node's own life: taken by the first day's crowd and held until the node itself is freed, since a
@@ -90,23 +96,23 @@ func _city(t, atlas: AtlasLibrary) -> City:
 ## `_test_a_crowd_freed_without_clear_still_releases_its_page()` below covers.
 ##
 ## A second reference the second day's `start_day()` took on top of the first would leave the page
-## held once the city is freed, so the one release line at the end is what says it took none.
+## held once the crowd is freed, so the one release line at the end is what says it took none.
 func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
-	var city := _city(t, atlas)
+	var crowd := _crowd(t, atlas)
 	t.check(pages.loads(Crowd.ATLAS_GROUP) == 0,
 			"nothing has asked for the crowd's page before the first day")
-	city.crowd.start_day(1, _rng("day1"))
+	_start(crowd, 1, "day1")
 	t.check(pages.held(Crowd.ATLAS_GROUP), "a day's crowd holds its own page")
-	city.crowd.clear()
+	crowd.clear()
 	t.check(pages.releases(Crowd.ATLAS_GROUP) == 0,
 			"clearing the crowd keeps the page held, not released and reloaded between two days")
-	city.crowd.start_day(2, _rng("day2"))
+	_start(crowd, 2, "day2")
 	t.check(pages.loads(Crowd.ATLAS_GROUP) == 1 and pages.releases(Crowd.ATLAS_GROUP) == 0,
 			"a second day's start_day() draws on the page it already holds")
-	city.crowd.clear()
-	city.free()
+	crowd.clear()
+	crowd.get_parent().free()
 	t.check(pages.releases(Crowd.ATLAS_GROUP) == 1,
 			"freeing the crowd node is what finally gives the page back, with nothing left over")
 	pages.stop()
@@ -119,26 +125,26 @@ func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t) ->
 func _test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
-	var city := _city(t, atlas)
-	city.crowd.clear()
+	var crowd := _crowd(t, atlas)
+	crowd.clear()
 	t.check(pages.loads(Crowd.ATLAS_GROUP) == 0,
 			"a direct clear with no day started holds nothing")
-	city.free()
+	crowd.get_parent().free()
 	pages.stop()
 
 ## The leak `clear()` cannot catch, since it never releases at all: a `Crowd` freed mid-day
 ## — the city torn down on quitting to the title screen while a day is still running, or exactly
-## this test freeing its city without ever calling `clear()` first. The library's counts outlive
+## this test freeing its crowd without ever calling `clear()` first. The library's counts outlive
 ## the freed node (in a booted game the library is the sitting's), so `Crowd._exit_tree()` is the
 ## only thing standing between this and a reference held for the rest of the process.
 func _test_a_crowd_freed_without_clear_still_releases_its_page(t) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
-	var city := _city(t, atlas)
-	city.crowd.start_day(1, _rng("freed-without-clear"))
+	var crowd := _crowd(t, atlas)
+	_start(crowd, 1, "freed-without-clear")
 	t.check(pages.held(Crowd.ATLAS_GROUP),
-			"the day's crowd holds its page before the city is torn down")
-	city.free()
+			"the day's crowd holds its page before the crowd is torn down")
+	crowd.get_parent().free()
 	t.check(not pages.held(Crowd.ATLAS_GROUP),
-			"freeing the city mid-day releases the crowd's page too, with no clear() in between")
+			"freeing the crowd mid-day releases the crowd's page too, with no clear() in between")
 	pages.stop()

@@ -97,9 +97,10 @@ extends RefCounted
 ## them every day, so the alley reads as an occasional exception rather than a wall of its own. See
 ## `_seal_alley_mouths`.
 ##
-## **From `Tuning.REGION_WALL_FIRST_DAY` on, only a share of those streets and alleys is sealed**
-## (`GATEHOUSE_DAY_SEAL_SHARE`): the region wall divides the city into regions from that
-## day, and the player found the two together much harder to navigate. See `_seals_this_street`.
+## **On a day the region wall stands, only a share of those streets and alleys is sealed**
+## (`GATEHOUSE_DAY_SEAL_SHARE`, asked of `DaySpec.region_wall_stands()`): the wall divides the city
+## into regions, and the player found the two together much harder to navigate. See
+## `_seals_this_street`.
 ##
 ## **A crossing alley — one whose two mouths open onto two different regions' ground — is never one
 ## of these candidates**, whichever way the tree runs. `RegionPlanner` already decides it as a door
@@ -124,11 +125,12 @@ const ALLEY_MOUTH_SEAL_CHANCE := 0.15
 ## **From the gatehouse day on, fewer hard blockers off the day's route tree** — *(azure-puffin,
 ## point 4: "when the guard houses are set up the city gets much harder to navigate let's loosen the
 ## density of the hard blocking events in that case"; asked which, "fewer of all three. gatehouses
-## stay and remain on the actual paths".)* The region wall and its doors divide the city into regions
-## from `Tuning.REGION_WALL_FIRST_DAY`, so the three things that close the ground off the tree are thinned
-## from that day on, each by one share below. Nothing about the tree, the routing or the region plan
-## changes: these only take blockers away, and a blocker taken away only adds ground she can reach
-## (the **city** skill's one monotonic exception), so every reachability guarantee stays true.
+## stay and remain on the actual paths".)* The region wall and its doors divide the city into
+## regions from `Tuning.REGION_WALL_FIRST_DAY`, so on a day the wall stands
+## (`DaySpec.region_wall_stands()`) the three things that close the ground off the tree are thinned,
+## each by one share below. Nothing about the tree, the routing or the region plan changes: these
+## only take blockers away, and a blocker taken away only adds ground she can reach (the **city**
+## skill's one monotonic exception), so every reachability guarantee stays true.
 ##
 ## **How much is a proposal, not something the player asked for** — they said *fewer*, not how many
 ## — so each share is a half and each is its own constant, to be moved against a played day.
@@ -195,11 +197,11 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 
 ## Every seal for the walk `spec` describes: one per real street off the walk `route` hands in
 ## (`RouteSource.walks_the_street()`) that is not the street the walk starts in, the main road or a
-## boundary — one in `GATEHOUSE_DAY_SEAL_SHARE` of them from `Tuning.REGION_WALL_FIRST_DAY` on
-## — thinned by a small fraction, plus the mouths of any through-alley the walk does not reach
-## (`RouteSource.reaches_the_alley()`). Returned as `EventScheduler.Planned` so the caller
-## (`DayPlanner`, for a day and for the escape's city) can simply append
-## them to the walk's plan.
+## boundary — one in `GATEHOUSE_DAY_SEAL_SHARE` of them on a day the region wall stands
+## (`DaySpec.region_wall_stands()`) — thinned by a small fraction, plus the mouths of any
+## through-alley the walk does not reach (`RouteSource.reaches_the_alley()`). Returned as
+## `EventScheduler.Planned` so the caller (`DayPlanner`, for a day and for the escape's city) can
+## simply append them to the walk's plan.
 ##
 ## **A day and the escape's city are this one path with the spec's settings**, since the walk is
 ## what decides which streets are spared and the spec decides how the rest are closed. The escape's
@@ -256,7 +258,7 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 	if not route:
 		map.set_seal_tree_pits([] as Array[Vector2i])
 		return planned
-	var day := spec.number
+	var day := spec.day_number()
 	var pictures := pictures_for(spec)
 	# The city's standing street trees, asked once rather than once per street. `trees` is the
 	# ground no seal body may stand on (`_seal_along_tile` steps along the street until it is
@@ -271,9 +273,9 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 	# pavement tiles in `CityMap.soft_sealed_tiles` as well as to drop one body of the pair — see
 	# `_thin_soft_pairs`.
 	var soft_pairs: Array = []
-	# From the gatehouse day on, only a share of the streets below is sealed at all — see
-	# `_seals_this_street`. Asked once here so a day before it draws nothing extra from `rng`.
-	var thinned := day >= Tuning.REGION_WALL_FIRST_DAY and not spec.seals_every_street_off_the_walk
+	# On a day the region wall stands, only a share of the streets below is sealed at all — see
+	# `_seals_this_street`. Asked once here so any other day draws nothing extra from `rng`.
+	var thinned := spec.region_wall_stands() and not spec.seals_every_street_off_the_walk
 	for segment in map.network.segments():
 		var key := segment.key()
 		if skip.has(key) or not may_seal(map, spec, route, segment):
@@ -375,12 +377,12 @@ static func may_seal(map: CityMap, spec: DaySpec, route: RouteSource,
 		return false
 	return spec.seals_the_main_road or not _is_the_main_road(map, segment)
 
-## Whether a street the loop in `plan_day` would seal is sealed today, from
-## `Tuning.REGION_WALL_FIRST_DAY` on — one roll per street against
-## `GATEHOUSE_DAY_SEAL_SHARE`. *(azure-puffin, point 4: "when the guard houses are set up the
-## city gets much harder to navigate let's loosen the density of the hard blocking events in that
-## case"; "fewer of all three".)* The region wall already divides the city into regions from that day,
-## and a seal on every street off the tree as well is what made it hard to navigate.
+## Whether a street the loop in `plan_day` would seal is sealed today, on a day the region wall
+## stands — one roll per street against `GATEHOUSE_DAY_SEAL_SHARE`. *(azure-puffin, point 4: "when
+## the guard houses are set up the city gets much harder to navigate let's loosen the density of the
+## hard blocking events in that case"; "fewer of all three".)* The region wall already divides the
+## city into regions on that day, and a seal on every street off the tree as well is what made it
+## hard to navigate.
 ##
 ## **Spread evenly rather than kept near the rim**, the same way `_thin_soft_pairs` picks which
 ## pairs lose a body: an independent roll per street, so the streets left open are anywhere off the
@@ -786,31 +788,32 @@ static func positions_across(world: Rect2, horizontal: bool, radius_in: float) -
 
 # ----------------------------------------------------------------------- alleys ---
 
-## Seals the mouths of every through-alley the walk does not reach (`RouteSource.reaches_the_alley()`:
-## on a day, one that touches the tree at neither end) — and only a `ALLEY_MOUTH_SEAL_CHANCE`
-## fraction of those, rolled once per qualifying alley, and from `Tuning.REGION_WALL_FIRST_DAY` on
-## that fraction times `GATEHOUSE_DAY_SEAL_SHARE`, unless the spec seals every alley off the
-## walk (`DaySpec.seals_every_street_off_the_walk`, the escape's), which rolls nothing. See the
-## class doc, "What alleys are for" — the smallest reading of a detail the design leaves open, taken
+## Seals the mouths of every through-alley the walk does not reach
+## (`RouteSource.reaches_the_alley()`: on a day, one that touches the tree at neither end) — and
+## only a `ALLEY_MOUTH_SEAL_CHANCE` fraction of those, rolled once per qualifying alley, and on a
+## day the region wall stands (`DaySpec.region_wall_stands()`) that fraction times
+## `GATEHOUSE_DAY_SEAL_SHARE`, unless the spec seals every alley off the walk
+## (`DaySpec.seals_every_street_off_the_walk`, the escape's), which rolls nothing. See the class
+## doc, "What alleys are for" — the smallest reading of a detail the design leaves open, taken
 ## rather than guessed at: an alley that touches the corridor at either end is kept open outright
 ## (the way round a wall), and one that touches it at neither is a *candidate* to be walled at both
 ## ends rather than left as a shortcut between two sealed streets. **A candidate, not a certainty**
-## — *(playtest 25, finding 5: "the probability of blocking off alleys should be way lower")* — since
-## walling every one of them, every day, is what made an alley read as closed off wholesale rather
-## than as the occasional exception the design wants.
+## — *(playtest 25, finding 5: "the probability of blocking off alleys should be way lower")* —
+## since walling every one of them, every day, is what made an alley read as closed off wholesale
+## rather than as the occasional exception the design wants.
 static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
 		rng: RandomNumberGenerator, skip: Dictionary = {}) -> Array[EventScheduler.Planned]:
 	var planned: Array[EventScheduler.Planned] = []
-	var day := spec.number
+	var day := spec.day_number()
 	var def_id := _alley_mouth_def(pictures_for(spec), day)
 	if def_id == "":
 		return planned
 	var mouth_def := sealed_variant(EventCatalogue.by_id(def_id), true)
 	var every := spec.seals_every_street_off_the_walk
-	# From the gatehouse day on, the same share `_seals_this_street` keeps of the streets, folded
-	# into the one roll each qualifying alley already gets rather than rolled a second time.
+	# On a day the region wall stands, the same share `_seals_this_street` keeps of the streets,
+	# folded into the one roll each qualifying alley already gets rather than rolled a second time.
 	var chance := ALLEY_MOUTH_SEAL_CHANCE
-	if day >= Tuning.REGION_WALL_FIRST_DAY:
+	if spec.region_wall_stands():
 		chance *= GATEHOUSE_DAY_SEAL_SHARE
 	for rect in map.alley_rects:
 		# A through-alley can be built over by a later generation pass (`CityGenerator.

@@ -2,19 +2,16 @@ extends RefCounted
 ## Scenery phases update their own retained layers without changing static layout or bodies.
 
 const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
-const GroundCells := preload("res://tests/ground_cells.gd")
 const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const EastWestStreet := preload("res://tests/east_west_street.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
-const WATER_SEED := 4242
 
 func run(t) -> void:
 	await _test_roof_rotors(t)
 	_test_both_rotor_phases_share_one_registration(t)
 	await _test_event_parts(t)
-	await _test_water_ownership(t)
+	await _test_water_surfaces(t)
 
 ## A roof that is told what to stand through a recording drawer (`tests/recording_roof_drawer.gd`,
 ## standing each unit for real so a vent has its rotor), and whose own process frames run in the
@@ -299,57 +296,22 @@ func _body_of(instance: EventInstance) -> StaticBody2D:
 			return child
 	return null
 
-func _test_water_ownership(t) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, WATER_SEED)
-	t.add_child(city)
-	city.build(CityGenerator.generate(WATER_SEED))
-	var shore_reach := float(CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)
-	# Inspect the complete shore explicitly, corners under the forest bands included; an ordinary
-	# home boot retains none of this water.
-	city.scenery.update(Rect2(Vector2(-shore_reach, city.map.world_size().y),
-			Vector2(city.map.world_size().x + 2.0 * shore_reach,
-					CityMap.OUTSIDE_DEPTH_TILES * Tuning.TILE_SIZE)), true)
-	# Out of view, the city keeps the residency it was given: its own process frame would otherwise
-	# follow the camera home and release the shore this inspects.
-	city.visible = false
-	var surfaces: Array[SceneryWater] = []
-	for chunk: TileMapLayer in city.scenery_ground.chunks.values():
-		for child in chunk.get_children():
-			if child is SceneryWater:
-				surfaces.append(child)
-	t.check(not surfaces.is_empty(), "the resident shoreline supplies water surfaces")
-	var water := surfaces[0]
-	t.check(not city.scenery_ground.tile_set.has_source(GroundTiles.WATER),
-			"the static ground sheet contains no unused water source")
-	t.check(not water.cells.is_empty(), "the actual city supplies water cells")
-	var expected: Dictionary[Vector2i, bool] = {}
-	var bridge_left := city.map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH
-	var bridge_right := bridge_left + Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH
-	# Residency prepares whole chunks, including water beyond the requested shore. The bridge
-	# carries its road on for as far as any view asks, so its columns are never water.
-	for key: Vector2i in city.scenery_ground.chunks:
-		var start := key * SceneryGround.CHUNK_TILES
-		for y in range(maxi(start.y, city.map.size.y + 1), start.y + SceneryGround.CHUNK_TILES):
-			for x in range(start.x, start.x + SceneryGround.CHUNK_TILES):
-				if x < bridge_left or x >= bridge_right:
-					expected[Vector2i(x, y)] = true
-	var actual: Dictionary[Vector2i, bool] = {}
-	var count := 0
-	for surface in surfaces:
-		for tile in surface.cells:
-			actual[tile] = true
-			count += 1
-			t.check(GroundCells.source_id(city.scenery_ground, tile) == -1,
-					"animated water has no duplicate pixel owner in the static TileMap")
-	t.check(actual == expected and actual.size() == count,
-			"resident water has one owner per cell and excludes the bridge columns at every depth")
-	for y in range(city.map.size.y + 1, city.map.size.y + CityMap.OUTSIDE_DEPTH_TILES):
-		for x in range(-CityMap.OUTSIDE_DEPTH_TILES, city.map.size.x + CityMap.OUTSIDE_DEPTH_TILES):
-			if x < bridge_left or x >= bridge_right:
-				t.check(actual.has(Vector2i(x, y)),
-						"water fills the complete requested shore, south-west and south-east corners included")
-	var cells := water.cells.duplicate()
+## One water surface, alone: the real `SceneryWater` on a parent node with a library handed in
+## where the ground hands its own, and cells of the test's own. What decides which cells of a city
+## are water is the city's painting (`tests/test_city_ground_water.gd`); this is what a surface does
+## with the cells it is given.
+func _test_water_surfaces(t) -> void:
+	var parent := Node2D.new()
+	t.add_child(parent)
+	var cells: Array[Vector2i] = []
+	for x in 4:
+		cells.append(Vector2i(x, 0))
+	var water := SceneryWater.new()
+	water.cells = cells
+	parent.add_child(water)
 	var ripples := water.material as ShaderMaterial
+	t.check(ripples != null and ripples.shader == SceneryWater.RIPPLE_SHADER,
+			"a surface with cells has the shared ripple shader")
 	var before := water.elapsed
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
@@ -361,18 +323,15 @@ func _test_water_ownership(t) -> void:
 	t.check(water.material != ripples
 			and (water.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
 			"repeated configure keeps the shared shader while refreshing instance uniforms")
-	# A surface handed no library makes one when it enters the tree.
-	var bare := SceneryWater.new()
-	city.scenery_ground.add_child(bare)
-	t.check(bare.atlas != null, "a surface handed no library makes one of its own")
-	bare.free()
+	# A surface handed no library made one when it entered the tree.
+	t.check(water.atlas != null, "a surface handed no library makes one of its own")
 	# A surface of its own on a library of the test's own, watched from here, so the only lines
 	# about the `ground` page are the ones that library writes.
 	var own := AtlasLibrary.new()
 	var pages := PageLog.new(own)
 	var other := SceneryWater.new()
 	other.atlas = own
-	city.scenery_ground.add_child(other)
+	parent.add_child(other)
 	other.configure(cells.slice(0, 1))
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
@@ -385,26 +344,14 @@ func _test_water_ownership(t) -> void:
 			== other.elapsed,
 			"two water surfaces keep independent animation clocks")
 	t.check(pages.held(&"ground"), "a surface holds the ground page while it stands")
-	var owner := other.get_parent()
-	owner.remove_child(other)
+	parent.remove_child(other)
 	t.check(other.material == null and not pages.held(&"ground"),
 			"detaching water releases its atlas region and shader material")
 	var kept := other.elapsed
-	owner.add_child(other)
+	parent.add_child(other)
 	t.check(pages.held(&"ground") and other.elapsed >= kept
 			and (other.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
 			"reentry rebinds the region and shared shader without resetting its clock")
 	other.free()
 	pages.stop()
-	owner = water.get_parent()
-	owner.remove_child(water)
-	t.check(water.material == null, "detaching a city's water releases its shader material")
-	owner.add_child(water)
-	t.check(water.elapsed > 0.0 and (water.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
-			"reentry rebinds the shared shader without resetting its clock")
-	# The escape's route tint repaints every resident chunk, shore included, as the game does.
-	city.tint_the_route(null)
-	t.check(not is_instance_valid(water), "repaint releases the prior water and material")
-	for tile: Vector2i in expected:
-		t.check(GroundWater.at(city.scenery_ground, tile), "repaint preserves the shoreline and bridge gap")
-	city.free()
+	parent.free()

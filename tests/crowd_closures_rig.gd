@@ -740,10 +740,10 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 	var door_tile := door_segment.tile_rect().get_center()
 	var vertical := not door_segment.horizontal
 	city.crowd.clear()
-	var walker: CrowdAgent = _rig.any_agent(city, map, CrowdAgent.Kind.WALKER, _rig.seed_for_door_answer(WalkerStrategy.DoorAnswer.HELD))
-	var car: CrowdAgent = _rig.any_agent(city, map, CrowdAgent.Kind.CAR)
+	var walker: CrowdAgent = _rig.any_agent(city.crowd, map, CrowdAgent.Kind.WALKER, _rig.seed_for_door_answer(WalkerStrategy.DoorAnswer.HELD))
+	var car: CrowdAgent = _rig.any_agent(city.crowd, map, CrowdAgent.Kind.CAR)
 	# One whose answer at a door is to turn back: the first roll of its seed gives it.
-	var turner: CrowdAgent = _rig.any_agent(city, map, CrowdAgent.Kind.WALKER,
+	var turner: CrowdAgent = _rig.any_agent(city.crowd, map, CrowdAgent.Kind.WALKER,
 			_rig.seed_for_door_answer(WalkerStrategy.DoorAnswer.TURNS_BACK))
 	t.check(walker != null and car != null and turner != null,
 			"the crowd takes a walker, a car and a walker that turns back on some open street")
@@ -1154,8 +1154,8 @@ func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t) -> void:
 		return
 
 	_city.crowd.clear()
-	var walker: CrowdAgent = _rig.any_agent(_city, _city.map, CrowdAgent.Kind.WALKER)
-	var car: CrowdAgent = _rig.any_agent(_city, _city.map, CrowdAgent.Kind.CAR)
+	var walker: CrowdAgent = _rig.any_agent(_city.crowd, _city.map, CrowdAgent.Kind.WALKER)
+	var car: CrowdAgent = _rig.any_agent(_city.crowd, _city.map, CrowdAgent.Kind.CAR)
 	t.check(walker != null and car != null, "the crowd takes a walker and a car on some open street")
 	if walker == null or car == null:
 		return

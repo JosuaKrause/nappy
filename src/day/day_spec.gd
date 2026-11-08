@@ -157,11 +157,11 @@ var caps_per_day := true
 ## The share of the **wall**-role placements the day's fill made that stay standing, rolled once per
 ## placement (`EventScheduler.build_day()`, which thins the fill after planning it). A wall is only
 ## ever placed off the tree, so this is the share of the catalogue's own blockers off it that the
-## day keeps. `1.0` keeps every wall: every day before `Tuning.REGION_WALL_FIRST_DAY` and every
-## section of the escape. From the gatehouse day (`Tuning.REGION_WALL_FIRST_DAY`) on, `for_day()`
-## hands `GATEHOUSE_DAY_WALL_ROW_SHARE`: the gatehouse day keeps half its walls, not all of them.
+## day keeps. `1.0` keeps every wall: every day the region wall does not stand
+## (`region_wall_stands()`) and every section of the escape. On a day it stands, `for_day()` hands
+## `GATEHOUSE_DAY_WALL_ROW_SHARE`: the gatehouse day keeps half its walls, not all of them.
 var wall_row_share := 1.0
-## The share `wall_row_share` is from `Tuning.REGION_WALL_FIRST_DAY` on, set by `for_day()`.
+## The share `wall_row_share` is on a day the region wall stands, set by `for_day()`.
 const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5
 ## Whether no two waiting guards may notice her from the same ground
 ## (`EventScheduler._keeps_its_notice_to_itself()`), so she deals with one at a time: the escape's.
@@ -225,12 +225,17 @@ const CITY_DAY := Tuning.RUN_LENGTH_DAYS + 2
 ## The marble a slot that stands nothing draws.
 const EMPTY_MARBLE := ""
 
+## Whether the region wall divides the city today, set by `for_day()` and read through
+## `region_wall_stands()`.
+var _region_wall_stands := false
+
 ## One of the fourteen days, `day_length` seconds long.
 static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpec:
 	var spec := DaySpec.new()
 	spec.number = day
 	spec.length = day_length
-	if day >= Tuning.REGION_WALL_FIRST_DAY:
+	spec._region_wall_stands = day >= Tuning.REGION_WALL_FIRST_DAY
+	if spec.region_wall_stands():
 		spec.wall_row_share = GATEHOUSE_DAY_WALL_ROW_SHARE
 	return spec
 
@@ -299,6 +304,21 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 	spec.seal_pictures = SealPictures.ESCAPE
 	spec.seals_the_main_road = true
 	spec.seals_every_street_off_the_walk = true
+
+## The day number every counter, loss line and run log header names (`number`).
+func day_number() -> int:
+	return number
+
+## **Whether the region wall divides the city today**, with its doors and the gatehouses at them:
+## every day from the gatehouse day (`Tuning.REGION_WALL_FIRST_DAY`) to the last, and neither section
+## of the escape, since the building has no streets and the escape's city grows no day's tree to
+## stand a wall against (`closes_streets` is off). Worked out once, by `for_day()`, and asked by
+## what the wall makes harder to navigate rather than compared with the day number again: the
+## catalogue's walls kept (`wall_row_share`), the closures (`ClosurePlanner.closures_wanted()`) and
+## the seals (`SealPlanner.plan_day()`), each thinned by a share of its own. *(azure-puffin, point
+## 4: "when the guard houses are set up the city gets much harder to navigate".)*
+func region_wall_stands() -> bool:
+	return _region_wall_stands
 
 ## Whether losing it spends a Nerve, in this run's mode.
 func a_loss_costs_a_nerve(hard_mode: bool) -> bool:

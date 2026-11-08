@@ -666,7 +666,8 @@ func _test_winnability_holds_with_the_wall_standing(t) -> void:
 			var region_plan := RegionPlanner.plan_day(map, day, tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
-			var closures := ClosurePlanner.plan_day(map, day, closure_rng, tree, region_plan)
+			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+					closure_rng, tree, region_plan)
 			map.close_streets(closures)
 			var boundary := _boundary_keys(region_plan)
 			var seal_rng := RandomNumberGenerator.new()
@@ -722,7 +723,8 @@ func _test_closures_and_seals_never_land_on_a_boundary(t) -> void:
 
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
-			var closures := ClosurePlanner.plan_day(map, day, closure_rng, tree, region_plan)
+			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+					closure_rng, tree, region_plan)
 			for closure in closures:
 				t.check(not boundary.has(closure.segment.key()),
 						"seed %d day %d: closure at %s does not land on a region boundary"

@@ -9,6 +9,7 @@ extends RefCounted
 ## caret's projection) agreeing, the escape's building stopping it at its own walls, and the debug
 ## view's fields layer cut where the meter receives nothing.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const BuildingEvents := preload("res://tests/building_events.gd")
 const HaloRig := preload("res://tests/halo_rig.gd")
 const _SIZE := float(Tuning.TILE_SIZE)
@@ -248,7 +249,7 @@ func _needed_at(map: CityMap, at: Vector2, thick: Dictionary) -> float:
 ## short must not, and the sliver between is set aside. The guards count both answers, so a sweep
 ## that only met open ground or only walls cannot pass.
 func _test_exact_geometry_agrees_with_a_sampled_depth(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := MapCache.of(4242)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 554
 	var buildings := map.tiles_of_type(GameEnums.TileType.BUILDING)
@@ -553,7 +554,7 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t) -> void:
 ## so a blocked line leaves no run and an open one exactly one. The guards count both that some were
 ## blocked and that some were open.
 func _test_the_fields_layer_cuts_a_blocked_line_whole_and_draws_an_open_one(t) -> void:
-	var maps: Array[CityMap] = [CityGenerator.generate(4242)]
+	var maps: Array[CityMap] = [MapCache.of(4242)]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 1004
 	for i in 6:
@@ -639,7 +640,7 @@ class _CountingMap extends CityMap:
 const _MISDRAWN_AT_MOST := 10.0
 
 func _test_the_fields_layer_follows_the_wall_along_the_whole_outline(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := MapCache.of(4242)
 	var walkable := map.tiles_of_type(GameEnums.TileType.SIDEWALK)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 642
