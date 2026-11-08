@@ -11,7 +11,6 @@ func run(t) -> void:
 	_test_a_held_segment_is_held_for_the_reasons_it_was_given(t)
 	_test_only_a_door_or_a_home_street_is_crossable(t)
 	_test_a_copy_and_a_clear_are_independent(t)
-	_test_the_fingerprint_moves_with_a_reason(t)
 
 func _test_a_held_segment_is_held_for_the_reasons_it_was_given(t) -> void:
 	var held := HeldStreets.new()
@@ -43,10 +42,3 @@ func _test_a_copy_and_a_clear_are_independent(t) -> void:
 	t.check(held.size() == 0 and twin.has(A), "clearing the original leaves the copy as it was")
 	twin.hold(B, HeldStreets.Why.WALL)
 	t.check(not held.has(B), "and holding on the copy leaves the original alone")
-
-func _test_the_fingerprint_moves_with_a_reason(t) -> void:
-	var held := HeldStreets.new()
-	held.hold(A, HeldStreets.Why.WALL)
-	var before := held.fingerprint()
-	held.hold(A, HeldStreets.Why.DOOR)
-	t.check(held.fingerprint() != before, "a new reason for a held segment changes the fingerprint")

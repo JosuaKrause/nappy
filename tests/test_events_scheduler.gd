@@ -788,7 +788,7 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t) -> void:
 	var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, CalmAreas.of(map),
 			[] as Array[String], [] as Array[Dictionary], tree, 0, PackedVector2Array(),
 			[] as Array[Vector2i], [] as Array[EventScheduler.Planned], RunTrace.recording(told),
-			null, EventCatalogue.by_id("roadblock"))
+			EventCatalogue.by_id("roadblock"))
 	var stood: Array[Vector2i] = []
 	var counted := ""
 	var tile_pattern := RegEx.create_from_string("\\((-?\\d+),(-?\\d+)\\)")

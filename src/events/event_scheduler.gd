@@ -614,7 +614,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## placement rules apply are all the spec's (`DaySpec`, "how its events are placed"), so a day and
 ## the escape's city are one entry point and one judge (`_best_of()`). A day draws the catalogue
 ## (`DaySpec.Draw.CATALOGUE`, below); the escape's city fills each street of its walk from its marble
-## bag (`DaySpec.Draw.BAG_PER_STREET`, `_fill_the_walk_from_the_bag()`). Nothing here asks which day
+## bag (`DaySpec.Draw.BAG_PER_STREET`, `_draw_the_walk()`). Nothing here asks which day
 ## it is beyond `spec.number`, the day the catalogue's rows are read for.
 ##
 ## `consumed_one_shots` is read and appended to, so a one-shot fires once per run.
@@ -648,9 +648,6 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## `trace` is where the planning writes its own account for the run log — a one-shot's roll, a
 ## lesson added, a park spoiled — and no trace writes nowhere. It changes nothing the plan holds.
 ##
-## `kept_ground` is the ground the escape's bag draw reads again on a replan of the same city
-## (`KeptGround`); a day's draw does not read it.
-##
 ## `beside_the_routes` is the row the roadblock phase places beside the day's routes before the dawn draw,
 ## so that one is close by wherever she reads the task's mark: day 13's roadblock
 ## (`_place_the_roadblocks()`). Null on every other day, which is then planned exactly as it would be
@@ -663,12 +660,11 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 		consumed_one_shots: Array[String] = [], scars: Array[Dictionary] = [],
 		route: RouteSource = null, heat: int = 0, doors := PackedVector2Array(),
 		target: Array[Vector2i] = [], standing: Array[Planned] = [], trace: RunTrace = null,
-		kept_ground: KeptGround = null, beside_the_routes: EventDef = null) -> DayEvents:
+		beside_the_routes: EventDef = null) -> DayEvents:
 	var events := DayEvents.over(calm, standing)
 	if spec.draw == DaySpec.Draw.BAG_PER_STREET:
-		_fill_the_walk_from_the_bag(spec, rng, map, route,
-				_street_bag(spec.bag, street_bag_seed(rng)), events, calm, doors, kept_ground,
-				trace)
+		_draw_the_walk(spec, rng, map, route, _street_bag(spec.bag, street_bag_seed(rng)), events,
+				calm, doors, trace)
 		return events
 	var day := spec.number
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
@@ -717,7 +713,6 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	var leave_alone: Array[Rect2] = []
 	if spec.keeps_unused_calm_clear:
 		leave_alone = calm.unused_ground()
-	var rules := Rules.of(spec, map, route, events.standing())
 	var locations := DayLocations.lay_out(map, corridor)
 	events.use_locations(locations)
 
@@ -725,15 +720,15 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	events.add_all(_place_scars(day, scars, heat))
 	events.add_all(_place_masts(day, map, heat, doors, scars))
 	_place_the_roadblocks(beside_the_routes, day, base, map, events, ground, leave_alone,
-			corridor, doors, rules, locations, trace)
+			corridor, doors, spec, locations, trace)
 	_place_scripted(day, _stream(base, 1), map, events, ground, leave_alone, corridor, heat,
-			doors, rules)
+			doors, spec.holds_the_home_streets)
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, events, ground,
-			leave_alone, corridor, heat, doors, trace, rules)
+			leave_alone, corridor, heat, doors, trace, spec.holds_the_home_streets)
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, events, calm, heat, trace)
 	_owe_the_moments(day, _stream(base, MOMENTS_SALT), events, heat, spec.caps_per_day)
 	return _draw_the_locations(day, base, map, events, ground, leave_alone, corridor, doors, spec,
-			rules, locations, heat, beside_the_routes)
+			locations, heat, beside_the_routes)
 
 ## **The roadblock phase at dawn** (inbox #1185: the day's routes first, then roadblocks next to
 ## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
@@ -762,14 +757,14 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 ## anything already down, and never over one.
 static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityMap,
 		events: DayEvents, ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
-		doors: PackedVector2Array, rules: Rules, locations: DayLocations, trace: RunTrace) -> void:
+		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations, trace: RunTrace) -> void:
 	if def == null:
 		return
 	def = def.for_day(day)
 	var judged := RuledRoadblockGround.new(def, day, map, events, ground, corridor,
 			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-					rules != null and rules.one_notice_at_a_time),
-			rules.holds_the_home_streets if rules else true)
+					spec.one_notice_at_a_time),
+			spec.holds_the_home_streets)
 	var phase := RoadblockPhase.new(locations, judged)
 	var placed: Array[String] = []
 	for plan in phase.place(_stream(base, RoadblockPhase.SALT)):
@@ -994,104 +989,74 @@ static func _hand_to_her_walk(events: DayEvents) -> void:
 
 # ------------------------------------------------------ the walk's streets from a bag ---
 
-## **The rules a plan's spec turns on that read what is already down**, handed to every placement
-## of one plan: whether the home's streets are the day's (`DaySpec.holds_the_home_streets`), whether
-## one waiting guard notices her at a time (`DaySpec.one_notice_at_a_time`), and the walk kept open
-## past everything standing on it (`DaySpec.keeps_the_walk_open`, `WalkGround`). A placement handed
-## none keeps a day's: the home's streets held, and neither of the other two.
-class Rules extends RefCounted:
-	var holds_the_home_streets := true
-	var one_notice_at_a_time := false
-	## The walk's ground with everything already standing on it, or null where the spec does not
-	## keep the walk open.
-	var walk: WalkGround = null
-
-	## `spec`'s rules for one plan on `map`, its walk `route` with `standing` — the seals, planned
-	## before the plan's own events — already down.
-	static func of(spec: DaySpec, map: CityMap, route: RouteSource,
-			standing: Array[EventScheduler.Planned]) -> Rules:
-		var rules := Rules.new()
-		rules.holds_the_home_streets = spec.holds_the_home_streets
-		rules.one_notice_at_a_time = spec.one_notice_at_a_time
-		if spec.keeps_the_walk_open:
-			rules.walk = WalkGround.new(map, standing, route)
-		return rules
-
-## **Every street of the walk has slots, and what fills each slot is drawn from one marble bag** —
-## `DaySpec.Draw.BAG_PER_STREET`, the escape city's draw. The walk knows exactly which streets she
-## can take — everything else is sealed — so it fills them before she sets off rather than siting
-## things round her as a day does; and which row a slot gets, or whether it gets one at all, is a
-## draw. *(Inbox #785 in minty-lemur: "nobody ever asked for all four events on *every* street.
-## that doesn't make any sense and cannot feasibly work at all. that is why the density is so high
-## that it's impossible to get anywhere. yes, a marble bag is absolutely needed with empty events
-## (nothing happening) as well. we need a fair mix".)*
+## **One draw per street of the walk, from one marble bag** — `DaySpec.Draw.BAG_PER_STREET`, the
+## escape city's draw. The walk knows exactly which streets she can take — everything else is sealed —
+## so it draws them before she sets off rather than siting things round her as a day does; and which
+## row a street gets, or whether it gets one at all, is a draw. *(Inbox #785 in minty-lemur: "nobody
+## ever asked for all four events on *every* street. that doesn't make any sense and cannot feasibly
+## work at all. that is why the density is so high that it's impossible to get anywhere. yes, a
+## marble bag is absolutely needed with empty events (nothing happening) as well. we need a fair
+## mix". Of how many a street holds, inbox #1185's board answer: "one per street. fill empty in if
+## any segment or location in the street has an event".)*
 ##
-## Each street of the walk (`RouteSource.streets_on_the_walk()`, in its own order) draws
-## `DaySpec.slots_per_street` marbles from `bag`, one bag for the whole walk. A marble with a row
-## (`DaySpec.bag_rows`) puts one of that row on the street, through the same judge every placement of
-## a day goes through (`_best_of()`); a marble with none leaves the slot with nothing; **a row's
-## marble that finds no ground the rules accept is spent unmet**, so a refused placement never moves
-## its danger onto the next street. A row past its `max_per_day` is spent unmet the same way when the
-## spec keeps the caps.
-##
-## **The ground is the day's own for the row** (`street_ground()`), on the street's own rect,
-## and every placement rule a day keeps is kept: `_build_placement` sites each one,
-## `_room_around` refuses anything drawn inside something else, and the telegraph contract is
-## the def's own and was checked at boot. What the spec turns on is asked on top (`Rules`): one
-## waiting guard's notice at a time, and the walk kept open past every body standing on it — the
-## seals (`standing`, planned before any of this and never this pass's to move) and everything
-## already accepted. The calm rule is the day's (`CalmAreas.unused_ground()`) where the spec
-## keeps it. Every row is added to `events`, the walk's plan (`DayEvents`), whose `standing()`
-## the seals are.
+## Each street of the walk (`RouteSource.streets_on_the_walk()`, in its own order) draws one marble
+## from `bag`, one bag for the whole walk. A marble with a row (`DaySpec.bag_rows`) is offered at the
+## street's locations in the street's own order (`StreetLocations.drawing_order()`), on the ground the
+## row fits (`LocationFit`, never the ground she starts on) and left out where the walk's rules
+## invalidate it (`StreetInvalidation`: every day's rules but the calm the spec does not keep, one
+## waiting guard's notice at a time, and the walk kept open past everything standing on it,
+## `WalkGround`); the first location it stands at takes it, and **the rest of the street stays
+## empty**. A marble with no row leaves the street empty, and **a row's marble no location of the
+## street takes is spent unmet**, so a refused row never moves its danger onto the next street (the
+## builder's reading, open to correction: the escape's bag keeps the player's counts, and a refused
+## row stays the empty street it is today rather than staying in the bag). A row past its
+## `max_per_day` is spent unmet the same way where the spec keeps the caps. Every row is added to
+## `events`, the walk's plan, whose `standing()` the seals are.
 ##
 ## `bag` is drawn on its own stream (`street_bag_seed()`, off `rng`'s seed), so drawing it takes
 ## nothing from the stream the placements roll on, and a replan from the same seed — the escape's
-## restart after a loss — draws the same walk again. Handed in rather than made here so a caller that
-## draws another bag hands its own.
-##
-## `trace` is told how many marbles the walk drew (`bag.drawn`, read after the last slot), which
-## is the plan's own account of how many slots met the bag and the one count a reader of the plan
-## cannot recompute from what stands. It is read once at the end and changes nothing placed.
-static func _fill_the_walk_from_the_bag(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
+## restart after a loss — draws the same walk again. `trace` is told how many marbles the walk drew
+## (`bag.drawn`), the plan's own account and the one count a reader of the plan cannot recompute.
+static func _draw_the_walk(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
 		route: RouteSource, bag: MarbleBag, events: DayEvents, calm: CalmAreas,
-		doors := PackedVector2Array(), kept_ground: KeptGround = null,
-		trace: RunTrace = null) -> void:
+		doors := PackedVector2Array(), trace: RunTrace = null) -> void:
 	if not route:
 		return
-	var standing := events.standing()
-	# **A tree and an event never share ground** — `docs/CITY.md`, "Street trees". Scanned once for
-	# the whole plan, and kept with the ground a replan reads again (`KeptGround`).
-	var ground := (kept_ground if kept_ground else KeptGround.new()).of(map)
-	var trees: Dictionary = ground[TREE_TILES_KEY]
-	var rules := Rules.of(spec, map, route, standing)
+	# **A tree and an event never share ground** — `docs/CITY.md`, "Street trees".
+	var ground := {TREE_TILES_KEY: StreetTrees.footprint_tiles(map)}
 	var leave_alone: Array[Rect2] = []
 	if spec.keeps_unused_calm_clear:
 		leave_alone = calm.unused_ground()
 	var corridor := route.corridor()
+	var walk := WalkGround.new(map, events.standing(), route) if spec.keeps_the_walk_open else null
+	var rules := StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
+			spec.one_notice_at_a_time, walk)
+	var fit := LocationFit.new(spec.number, map, ground, corridor, spec.holds_the_home_streets,
+			route.start())
+	var offered := RuledLocationGround.new(spec.number, rng.seed, map, events, corridor, fit, rules)
 	var placed := {}
 	for segment in route.streets_on_the_walk():
-		for _slot in spec.slots_per_street:
-			var def: EventDef = spec.bag_rows.get(bag.draw())
-			if def == null:
-				continue
-			if spec.caps_per_day and int(placed.get(def.id, 0)) >= def.max_per_day:
-				continue
-			var candidates := street_ground(map, segment, def, trees, route.start(), ground,
-					rules.holds_the_home_streets)
-			if candidates.is_empty():
-				continue
-			var placement := _best_of(def, rng, map, candidates, _role_for(def, spec.number),
-					events.placements(), ground, leave_alone, corridor, doors, standing, null, rules)
+		var def: EventDef = spec.bag_rows.get(bag.draw())
+		if def == null:
+			continue
+		if spec.caps_per_day and int(placed.get(def.id, 0)) >= def.max_per_day:
+			continue
+		var street := StreetLocations.of(map, segment, PlacementView.View.ON_THE_ROUTE)
+		var order_rng := RandomNumberGenerator.new()
+		order_rng.seed = hash("%d:%s:walk-street" % [rng.seed, segment.key()])
+		for location in street.drawing_order(order_rng):
+			var placement := offered.offer(def, location)
 			if placement:
-				events.add(placement)
+				offered.stand(placement)
 				placed[def.id] = int(placed.get(def.id, 0)) + 1
+				break
 	_note(trace, "plan", "the escape's bag drew %d marbles for %d rows"
 			% [bag.drawn, events.size()])
 
 ## **A marble bag of `counts`**: `counts` marbles of each key, a row's marble or
 ## `DaySpec.EMPTY_MARBLE`, on its own stream off `seed_value`, filled again whenever it runs empty —
 ## one bag for the whole walk, so the mix is exact over each fill of it rather than over each street.
-## See `_fill_the_walk_from_the_bag()`.
+## See `_draw_the_walk()`.
 static func _street_bag(counts: Dictionary, seed_value: int) -> MarbleBag:
 	var marbles: Array = []
 	for marble: String in counts:
@@ -1104,33 +1069,6 @@ static func _street_bag(counts: Dictionary, seed_value: int) -> MarbleBag:
 ## `EventDirector` seeds its route bag in.
 static func street_bag_seed(rng: RandomNumberGenerator) -> int:
 	return hash("%d:escape-bag" % rng.seed)
-
-## **The ground for a bag's rows, kept across replans of the same city.** The escape replans its
-## city on every restart after a loss (`main._plan_the_finale_city()`), and every answer
-## `open_ground_for()` keeps here is a function of that city alone: its tiles, its closed tiles,
-## its held streets and its street trees, none of which a walk changes, while the escape holds and
-## closes nothing of its own. So a replan reads the answers the first plan worked out rather than
-## scanning the whole city again for every row. Kept for one map at a time, held weakly so it never
-## keeps a city alive, and thrown away the moment any of the four differs from what it was read off.
-##
-## **Held by whoever replans** (`DayPlanner.kept_ground`, which lives as long as the city's events
-## do) and handed to `build_day()`; a caller that hands none plans on ground read afresh.
-class KeptGround extends RefCounted:
-	var _of: WeakRef = null
-	var _stamp: Array = []
-	var _answers := {}
-
-	## The answers for `map`: the ones kept if they were read off this map as it is now, else a
-	## fresh set that holds its street trees.
-	func of(map: CityMap) -> Dictionary:
-		var trees := StreetTrees.footprint_tiles(map)
-		var stamp := [hash(map.tiles), map.closed_tiles.hash(), map.held_streets().fingerprint(),
-				trees.hash()]
-		if _of == null or _of.get_ref() != map or _stamp != stamp:
-			_of = weakref(map)
-			_stamp = stamp
-			_answers = {TREE_TILES_KEY: trees}
-		return _answers
 
 ## **One waiting guard at a time** (`DaySpec.one_notice_at_a_time`). A candidate that waits to
 ## notice her (`EventDef.notice`: the escape's roadblock, whose guard notices her within
@@ -1730,17 +1668,18 @@ static func _place_ambient(day: int, map: CityMap, heat: int = 0) -> Array[Plann
 static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
 		events: DayEvents, ground := {}, leave_alone: Array[Rect2] = [],
 		corridor: Corridor = null, heat: int = 0, doors := PackedVector2Array(),
-		rules: Rules = null) -> void:
+		holds_the_home_streets := true) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day, heat):
 		var placement := _place_one(def, day, rng, map, events.placements(), ground,
-				leave_alone, corridor, NO_SITE, doors, events.standing(), rules)
+				leave_alone, corridor, NO_SITE, doors, events.standing(), holds_the_home_streets)
 		if placement:
 			events.add(placement)
 
 static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		consumed: Array[String], events: DayEvents, ground := {},
 		leave_alone: Array[Rect2] = [], corridor: Corridor = null, heat: int = 0,
-		doors := PackedVector2Array(), trace: RunTrace = null, rules: Rules = null) -> void:
+		doors := PackedVector2Array(), trace: RunTrace = null,
+		holds_the_home_streets := true) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, heat):
 		if def.id in consumed:
 			continue
@@ -1781,7 +1720,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 					% [def.id, roll, threshold])
 			continue
 		var sited := _place_a_set_piece(day, def, rng, map, events.placements(), ground,
-				leave_alone, corridor, doors, events.standing(), rules)
+				leave_alone, corridor, doors, events.standing(), holds_the_home_streets)
 		if sited.is_empty():
 			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
 			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
@@ -1823,7 +1762,7 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
 		corridor: Corridor, doors := PackedVector2Array(),
-		standing: Array[Planned] = [], rules: Rules = null) -> Array[Planned]:
+		standing: Array[Planned] = [], holds_the_home_streets := true) -> Array[Planned]:
 	var made: Array[Planned] = []
 	var sites := corridor.sites() if corridor else ([] as Array[Vector3i])
 	for site in sites:
@@ -1832,13 +1771,13 @@ static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerat
 		var beside: Array[Planned] = already.duplicate()
 		beside.append_array(made)
 		var placement := _place_one(def, day, rng, map, beside, ground, leave_alone, corridor, site,
-				doors, standing, rules)
+				doors, standing, holds_the_home_streets)
 		if placement:
 			placement.set_piece_group = "%s@%d" % [def.id, day]
 			made.append(placement)
 	if made.is_empty():
 		var anywhere := _place_one(def, day, rng, map, already, ground, leave_alone, corridor,
-				NO_SITE, doors, standing, rules)
+				NO_SITE, doors, standing, holds_the_home_streets)
 		if anywhere:
 			# **The fallback carries the group too, and it is a group of one.** Every other
 			# one-shot placement is tagged, and `EventStreaming.stream_in` spends the rest of a
@@ -2451,7 +2390,7 @@ class WalkSiting extends RefCounted:
 ## placed, in the order drawn.
 static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEvents,
 		ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
-		doors: PackedVector2Array, spec: DaySpec, rules: Rules, locations: DayLocations,
+		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations,
 		heat: int, beside_the_routes: EventDef) -> Array[Planned]:
 	var rows := {}
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
@@ -2462,9 +2401,9 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEv
 		rows[def.id] = def.for_day(day)
 	var bags := _view_bags(rows, day, spec, base)
 	var judged := RuledLocationGround.new(day, base, map, events, corridor,
-			LocationFit.new(day, map, ground, corridor, rules.holds_the_home_streets if rules else true),
+			LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets),
 			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-					rules != null and rules.one_notice_at_a_time))
+					spec.one_notice_at_a_time))
 	var caps := _caps_of(rows, day, spec, _stream(base, CAPS_SALT)) if spec.caps_per_day else {}
 	return LocationDraw.new(locations, bags, rows, judged, caps).draw_all(
 			_stream(base, LOCATIONS_SALT))
@@ -2824,7 +2763,7 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 		already: Array[Planned] = [], ground := {}, leave_alone: Array[Rect2] = [],
 		corridor: Corridor = null, site := NO_SITE,
 		doors := PackedVector2Array(), standing: Array[Planned] = [],
-		rules: Rules = null) -> Planned:
+		holds_the_home_streets := true) -> Planned:
 	var role := _role_for(def, day)
 	# An `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` event is owed here with no position and sited by
 	# `EventDirector` while the player walks. Asked over `spawn_mode_on(day)` rather than
@@ -2835,11 +2774,11 @@ static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map:
 	def = def.for_day(day)
 
 	var open_candidates := _ground_for(def, map, ground, corridor, role, site,
-			rules.holds_the_home_streets if rules else true)
+			holds_the_home_streets)
 	if open_candidates.is_empty():
 		return null
 	return _best_of(def, rng, map, open_candidates, role, already, ground, leave_alone, corridor,
-			doors, standing, null, rules)
+			doors, standing)
 
 ## Pins the same candidate the normal planner could accept on this tile. A private RNG owns
 ## its route roll, so unrelated background actors cannot move a required path. `calm` is the calm
@@ -2891,24 +2830,17 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 ## (`WalkEvents.everything_but()`), seals and the wall included, as its own `already`, so it
 ## already asks every question `standing` exists to add here.
 ##
-## **`rules` is what the plan's spec turns on** (`Rules`). One waiting guard's notice at a time is
-## asked by `_judge()` with the rest. **The walk kept open (`WalkGround`) is asked of the candidate
-## that would be taken, not of every try**, because it is the expensive question and the answer is
-## the same either way: a try with all the room it wants is asked at once and taken if it passes; a
-## cramped one is kept aside, and when no try had room the kept ones are asked roomiest first, the
-## earlier try first on equal room, until one passes. The pick is the roomiest try that passes, which
-## is what asking every try first and then picking would have chosen.
+## **Each candidate is asked of the day's rules** (`StreetInvalidation`), the same ones the dawn draw
+## asks, so they are stated once; the tries and the roomiest fallback are this function's own, kept
+## for its callers outside the dawn draw (the walk's sitings, the scripted rows, the one-shots and the
+## scene recipes) until each moves to the locations (the orchestrator's choice in placement step 3b).
 static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
 		corridor: Corridor, doors: PackedVector2Array,
-		standing: Array[Planned] = [], kept: Verdicts = null, rules: Rules = null) -> Planned:
+		standing: Array[Planned] = [], kept: Verdicts = null) -> Planned:
 	var best: Planned = null
 	var best_room := -INF
-	var walk: WalkGround = rules.walk if rules else null
-	var cramped: Array = []
-	if walk:
-		walk.catch_up(already)
 	# Built once per call rather than per try: neither `already` nor `standing` changes across the
 	# tries below, only which tile and which candidate is asked about.
 	var reach_context: Array[Planned] = already
@@ -2927,9 +2859,8 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# that caller's to drop whenever what a verdict reads changes — see `WalkSiting.begin_look()`.
 	var verdicts: Verdicts = kept if kept else Verdicts.new()
 	# The day's rules, the same ones the dawn draw asks (`StreetInvalidation`), so they are stated once.
-	var judge := StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-			rules != null and rules.one_notice_at_a_time)
-	for attempt in EVENT_PLACEMENT_TRIES:
+	var judge := StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false)
+	for _attempt in EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := _build_placement(def, map, tile, rng)
 		if not candidate:
@@ -2945,23 +2876,10 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		candidate.role = verdict[0]
 		var judged: float = verdict[1]
 		if judged == INF:
-			if not walk or walk.accepts(candidate):
-				return candidate
-			continue
-		if walk:
-			if judged != -INF:
-				cramped.append([judged, attempt, candidate])
-			continue
+			return candidate
 		if judged > best_room:
 			best_room = judged
 			best = candidate
-	if walk:
-		cramped.sort_custom(func(a: Array, b: Array) -> bool:
-			return a[0] > b[0] or (a[0] == b[0] and a[1] < b[1]))
-		for entry: Array in cramped:
-			if walk.accepts(entry[2]):
-				return entry[2]
-		return null
 	# Nothing comes back when every candidate broke a rule that does not bend — a lethal event
 	# with no clear ground, or a full pavement. The caller re-rolls; a scripted event that
 	# cannot be placed simply does not happen, which is the right failure direction.

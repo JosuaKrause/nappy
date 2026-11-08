@@ -62,9 +62,6 @@ class Plan extends RefCounted:
 
 ## The world the walk is planned over.
 var world: EventWorld
-## The ground the escape's rows are offered on, kept for as long as this planner replans the same
-## city (`EventScheduler.KeptGround`).
-var kept_ground := EventScheduler.KeptGround.new()
 
 func _init(the_world: EventWorld) -> void:
 	world = the_world
@@ -199,7 +196,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 			world.run.resistance.progress) if guarded != "" else null
 	var day_events := EventScheduler.build_day(spec, rng, city_map, calm, consumed,
 			world.run.attempt_spend.scars, tree, world.run.resistance.progress, doors, target,
-			standing, world.trace, null, beside)
+			standing, world.trace, beside)
 	var placements := day_events.placements()
 	placements.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
@@ -238,8 +235,7 @@ func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
 	var result := Plan.new()
 	var walk := FinalePlanner.route(world.city_map)
 	result.walk = walk
-	result.placements = plan_the_escape_city(world.city_map, walk, rng, spec, true, kept_ground,
-			world.trace)
+	result.placements = plan_the_escape_city(world.city_map, walk, rng, spec, true, world.trace)
 	result.is_a_day = false
 	world.city_map.clear_day_holds()
 	return result
@@ -259,12 +255,10 @@ func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
 ## anything afterwards. The events are handed the seals too, because what they may not close is the
 ## walk from where she stands to either exit with the seals already down.
 ##
-## `kept_ground` is what a replan of the same city reads its ground from again; none reads it afresh.
 ## `trace` is where the bag draw writes its count for the run log (`EventScheduler.build_day()`).
 static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 		rng: RandomNumberGenerator, spec: DaySpec,
 		populate_events := true,
-		kept_ground: EventScheduler.KeptGround = null,
 		trace: RunTrace = null) -> Array[EventScheduler.Planned]:
 	var placements: Array[EventScheduler.Planned] = []
 	var seals := SealPlanner.plan_day(map, spec, walk, rng)
@@ -273,7 +267,7 @@ static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 	placements.append_array(seals)
 	if populate_events:
 		placements.append_array(EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [],
-				walk, 0, PackedVector2Array(), [], seals, trace, kept_ground).placements())
+				walk, 0, PackedVector2Array(), [], seals, trace).placements())
 	return placements
 
 # --------------------------------------------------------------- the building ---

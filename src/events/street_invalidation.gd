@@ -4,8 +4,8 @@ extends RefCounted
 ## invalidation the design's draw leaves a refused row out by (inbox #1185, `docs/EVENTS.md`, "The
 ## three views and the placement order"), and the judge every other placement asks too, so the rules
 ## are stated once. A walk composes them from its spec: every walk's route rules, the calm she has
-## not used and the doors' clear ground; the escape's one notice at a time on top
-## (`DaySpec.one_notice_at_a_time`).
+## not used and the doors' clear ground; the escape's on top, one notice at a time
+## (`DaySpec.one_notice_at_a_time`) and its walk kept open (`DaySpec.keeps_the_walk_open`).
 ##
 ## `room()` answers what a placement weighs a candidate by: `-INF` where a rule refuses it, else the
 ## room round it among what the walk has placed (`EventScheduler._room_around()`, `INF` where it
@@ -17,10 +17,11 @@ var _rules: Array[StreetRule] = []
 
 ## The rules for a walk on `map` routed by `corridor` (null for a walk with no route tree, which
 ## asks none of the route rules): `ground` the day's ground cache, `leave_alone` the calm ground she
-## has not used, `doors` where the region doors' bodies stand, and `one_notice` whether the spec
-## keeps one waiting guard's notice at a time.
+## has not used, `doors` where the region doors' bodies stand, `one_notice` whether the spec keeps
+## one waiting guard's notice at a time, and `walk` the walk's ground where the spec keeps the walk
+## open, else null. The walk is asked last, since it is the expensive question.
 func _init(map: CityMap, corridor: Corridor, ground: Dictionary, leave_alone: Array[Rect2],
-		doors: PackedVector2Array, one_notice: bool) -> void:
+		doors: PackedVector2Array, one_notice: bool, walk: WalkGround = null) -> void:
 	_map = map
 	_corridor = corridor
 	_rules.append(UnusedCalmRule.new(leave_alone))
@@ -30,6 +31,8 @@ func _init(map: CityMap, corridor: Corridor, ground: Dictionary, leave_alone: Ar
 	_rules.append(PacingOpeningRule.new(map, corridor))
 	if one_notice:
 		_rules.append(OneNoticeRule.new(map))
+	if walk:
+		_rules.append(WalkOpenRule.new(walk))
 
 ## **The candidate's room, or `-INF` where a rule refuses it**, having given it its role: `role`,
 ## or a wall's where a pacing beat walls its sidewalk. What makes a man walking a beat passable is

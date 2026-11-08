@@ -368,7 +368,6 @@ src/events/event_scheduler.gd closed_tiles
 src/events/event_scheduler.gd network
 src/events/event_scheduler.gd playgrounds
 src/events/event_scheduler.gd power_station
-src/events/event_scheduler.gd tiles
 src/events/event_spawner.gd block_plans
 src/events/mast_sites.gd boundary_wall_at_a
 src/events/mast_sites.gd calm_blocks
@@ -560,7 +559,6 @@ src/events/event_scheduler.gd keeps_the_walk_open
 src/events/event_scheduler.gd keeps_unused_calm_clear
 src/events/event_scheduler.gd number
 src/events/event_scheduler.gd one_notice_at_a_time
-src/events/event_scheduler.gd slots_per_street
 src/events/event_scheduler.gd wall_row_share
 src/main.gd exits
 src/main.gd goal
