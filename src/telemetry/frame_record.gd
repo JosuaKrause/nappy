@@ -22,6 +22,10 @@ extends FrameTiming
 ## Null until `start()`.
 var ledger: FrameLedger
 
+## The ledger the record keeps, null until `start()`.
+func frame_ledger() -> FrameLedger:
+	return ledger
+
 ## Starts the record on `with`, answering to `on` from here.
 func start(with: FrameLedger) -> void:
 	ledger = with
