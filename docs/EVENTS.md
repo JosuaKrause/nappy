@@ -1176,170 +1176,140 @@ the investigating car driving on once its man is back in or has been shaken off 
 ## The three views and the placement order
 
 **Read this before changing where any event is placed.** It is the player's design for placing
-the city's events, and the numbered list at the end says where the code does not follow it yet.
-Nothing in that list is fixed here.
+the city's events. The numbered list at the end says where the code does not follow it yet, and
+which details the player's words leave unsettled. Nothing in that list is fixed here.
 
 ### The design
 
-**There are three views on events in the city: on the route, route-adjacent, and off the route.
-Each follows placement rules of its own** (inbox #1185).
+**The safe routes are established at dawn, before the day starts.** Nothing during the walk can
+close one, so nothing checks during the walk whether she can still get through. A live
+reachability check is ruled out (gray-dolphin #1173).
 
-**The safe routes are laid out at dawn, before the day starts.** Nothing placed during the walk
-can close one, so nothing checks during the walk whether she can still get through. A live
-reachability check is ruled out outright (gray-dolphin #1173).
+**There are three views on events in the city** (inbox #1185):
+- **On the route**: the ground the safe routes run along.
+- **Route-adjacent**: off the routes, on a street touching one (gray-dolphin #1173).
+- **Off the route**: deep, where nothing would be reachable at all (gray-dolphin #1173).
 
-**On the route** is the ground the safe routes run along.
-- Placeholders for events are placed alongside the routes.
-- As she walks, they are filled with non-blocking events from the bag.
-- A blocking event is never placed there (gray-dolphin #1173).
+**Placement is by construction, not by rules checked after placing.** Nothing tries an event in a
+spot and then checks what kind it is (inbox #1185).
+- **Each view has its own bag.** A location is filled by drawing from its view's bag.
+- **The event drawn is the event that appears there**, with no rejection (inbox #1185).
 
-**Route-adjacent** is ground off the routes, on a street that touches one (gray-dolphin #1173).
-- Blocking events may stand there.
-- A blocking beat that has to land near her during the walk takes the place of a route-adjacent
-  event the day placed. The swap is made off screen. Only events the day's plan placed are
-  replaced, never the region wall's guard houses, doors or barriers (gray-dolphin #1173).
+**A route stays open by construction.** Where a drawn event takes one side of a street (a
+restaurant on one side), the location across from it is drawn from a subset bag of the events that
+are valid beside that one. That bag holds mostly "empty", and possibly a yeller with a low chance
+on later days (inbox #1185).
 
-**Off the route, deep,** is ground far from every route. Anything deep would not be reachable at
-all, so a beat that has to reach her never takes an event from there (gray-dolphin #1173).
+**The roadblock phase at dawn** comes after the routes are established. It goes through the
+route-adjacent locations and places roadblocks there, evenly spaced out. Those locations are then
+assigned, so no draw happens for them during the walk (inbox #1185).
 
-**A non-blocking beat needs no swap and none of the blocking rules.** It can be placed whenever.
-Day 3's fire is one (gray-dolphin #1177).
+**Day 13's task** looks for a roadblock close by along her paths. Close by is 576px, then 896px,
+then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
+- **Only if none is close by**, it swaps one off-screen route-adjacent event for a roadblock, in
+  that event's place (gray-dolphin #1177, inbox #1185).
+- It never takes the region wall's guard houses, doors or barriers (gray-dolphin #1173).
 
 **The order:**
-1. The routes are established first.
-2. **Roadblocks are placed in route-adjacent candidates**, spread out across the city with the
-   spacing techniques the planner already has (inbox #1185).
-3. **The regular pass with the marble bag** places the regular events, which can be placed in
-   route-adjacent candidates. It never overwrites a roadblock already placed (inbox #1185).
-4. **During the walk**, the placeholders along the routes are filled with non-blocking events from
-   the bag (gray-dolphin #1173).
-5. **Day 13's task** looks for a roadblock close by along her paths. Close by is 576px, then 896px,
-   then 1,024px of her paths from where she reads the chalk mark, the measure the player kept
-   (inbox #1185). **Only if it finds none**, it swaps one off-screen route-adjacent event for a
-   roadblock (gray-dolphin #1177, inbox #1185). "That's it" (inbox #1185).
-
-**Since the regular pass fills route-adjacent candidates across the city, there is always an
-off-screen route-adjacent event to swap.** Day 13's task never finds nothing: "it can always swap"
-(inbox #1185).
+1. The routes are established.
+2. The roadblock phase assigns roadblocks to route-adjacent locations, evenly spaced.
+3. Every other location is drawn from its view's bag, the side across a drawn event from that
+   event's subset bag.
+4. Day 13's task searches close by, and swaps only if it finds nothing.
 
 ### Where the code differs from the design
 
-Each item quotes the code on this branch. An item marked **unsettled** is a detail the player's
-words do not decide; it is named, not invented.
+Each item quotes the code on this branch.
 
-1. **The code has no route-adjacent view of its own for the regular pass.**
-   - `EventScheduler._place_one()` draws from a row's whole ground (`_ground_for()`), weighted by
-     its role in `_copies_of()`.
-   - A `WALL` by cost gets extra copies wherever `Corridor.depth()` is 0 or 1:
-     `return EVENT_WALL_RIM_WEIGHT * (EVENT_WALL_GAP_WEIGHT if corridor.is_in_a_gap(tile) else 1)`.
-   - A lethal wall is pulled deep: `return WALL_DEEP_WEIGHT if away >= 2 else 1`.
-   - Friction is pulled onto the route: `return EVENT_CORRIDOR_WEIGHT if away == 0 else 1`.
-   - Every other row is offered every view alike.
-2. **The regular pass places events on the route at dawn.**
-   - A `FRICTION` row is weighted toward `depth() == 0` (above) and placed there in the morning.
-   - The design leaves the route to placeholders that the bag fills during the walk.
-   - The code has no dawn placeholders. The walk's bag (`EventDirector._route`, a `MarbleBag`)
-     sites what it draws ahead of her on the branch she walks (`WalkSiting.ahead_of()`).
-   - **Read as** (the orchestrator's, open to correction): the walk's bag siting ahead of her is how the placeholders along the route are filled.
-     A friction row placed on the route at dawn is non-blocking, so it keeps the route's promise.
-     Items 1 and 2 differ from the design in form, not in the promise.
-3. **A blocking event may stand on a route street's far sidewalk.**
-   - A wall is refused only on a tile whose own cell the route runs along:
-     `if corridor.carries_a_route(tile): return 0`.
-   - A route runs along one sidewalk of a street, so the far sidewalk of a route street takes
-     walls, at the rim weight (item 1, `away == 0`).
-   - The roadblock pass and the swap treat that whole street as on the route. `Corridor.is_beside_the_routes()`
-     refuses it: `if not segment or int(_segment_depth.get(segment.key(), DEEP)) == 0: return false`.
-   - **Unsettled:** whether "the ground the routes run along" is the route's sidewalk or its whole
-     street.
-   - **Read as** (the orchestrator's, open to correction): "on the route" is the route's whole street. Route-adjacent is a street that touches
-     one, so the route's own street is on the route, and no blocking event stands on its far
-     sidewalk.
-4. **"Route-adjacent" is asked two ways.**
-   - The roadblock pass and the swap ask `Corridor.is_beside_the_routes()`: the street is off the
-     tree, and one of its junctions is in `route_junctions()`. `stands_beside_the_routes()` adds
-     "not the main road" (inbox #1186).
-   - The fill's weight asks `depth() <= 1`, turnings on the street graph
-     (`RouteTree.segment_depths()`).
-   - `route_junctions()` also holds junctions that a park or alley cut crosses. How often the two
-     answers disagree is not measured.
-5. **The regular pass is a weighted roll, not a marble bag.**
-   - `_fill_with_recurring()` picks each row with `_pick_weighted(affordable, rng)` against the
-     day's budget and `max_per_day` caps.
-   - The marble bag in the code is the walk's route bag, plus the escape's bag per street
-     (`_fill_the_walk_from_the_bag()`).
-   - **Unsettled:** whether the regular pass at dawn is meant to draw from a bag.
-   - **Open, with the player:** whether the dawn regular pass draws from a marble bag rather than a
-     weighted roll. Nothing is done about it here.
-6. **The regular pass places events deep, blocking ones too.**
-   - Lethal walls are weighted toward `depth() >= 2` (item 1). The code's reason is a player
-     sentence from 2026-08-31 quoted in `Corridor`'s doc: "areas that outside the paths should have
-     blocking events all over".
-   - **Unsettled:** whether the design's regular pass places into deep ground at all. The player
-     has said "the regular off route placement pass with the marble bag" and "regular events that
-     can be placed in route adjacent candidates".
-   - **Read as** (the orchestrator's, open to correction): the regular pass places into route-adjacent and deep ground, by each row's own rules.
-     Deep blocking events stay.
-7. **Ambient rows, scars and masts are placed before the roadblocks.**
-   - `_plan_through_the_fill()` runs `_place_ambient()`, `_place_scars()` and `_place_masts()`,
-     then `_place_beside_the_routes()`.
-   - Before any of the events, `DayPlanner._plan_a_day()` lays the region's wall and doors, holds
-     the closures and the home's streets, and plans the seals (`SealPlanner.plan_day()`).
-   - **Unsettled:** where these stand in the player's order.
-   - **Read as** (the orchestrator's, open to correction): roadblocks in route-adjacent candidates come right after the routes, before every
-     other event pass, so ambient rows, scars and masts go after them. The region wall, its doors,
-     the closures, the home's streets and the seals lay out the city and its routes, so they stay
-     before.
-8. **The roadblock pass spreads from the route tiles, not across the city.**
+1. **The code places by rolling a row and judging its spot, not by filling locations from bags.**
+   - **The roll.** `_fill_with_recurring()` picks a row against the day's budget and caps:
+     `var def := _pick_weighted(affordable, rng)`.
+   - **The spot.** `_place_one()` sends it to `_best_of()`, which rolls tiles of the row's ground
+     (`_ground_for()`), copied by role (`_copies_of()`):
+     `var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]`.
+   - **The judgement.** `_judge()` judges each tile. It refuses with `-INF` or rates its room
+     (`_room_around()`), and the roomiest is taken.
+   - **Rejection.** A row whose tries are all refused is not placed:
+     `if not placement: continue`.
+2. **There are no locations per view.**
+   - A candidate is any tile of a row's own ground.
+   - The views appear only as weights (`_copies_of()`, by `Corridor.depth()`) and as refusals
+     (`if corridor.carries_a_route(tile): return 0` for a wall).
+3. **There is no bag per view.**
+   - The dawn pass is the weighted roll in item 1.
+   - Toward the design, two bags exist:
+     - **The walk's route bag** (`EventDirector._route`, a `MarbleBag`). It hands out the events
+       the day bought for her route, each sited ahead of her on the branch she walks
+       (`WalkSiting.ahead_of()`).
+     - **The escape's bag per street** (`_fill_the_walk_from_the_bag()`). Each street of the walk
+       draws `DaySpec.slots_per_street` marbles from one bag, empty marbles among them. But a
+       drawn row still goes through `_best_of()` and can be refused: "a row's marble that finds no
+       ground the rules accept is spent unmet".
+4. **The route is kept open by rules checked after a spot is drawn, not by construction.**
+   - `_judge()` refuses a spot that would close the route:
+     `_leaves_the_route_junctions_open()`, `_leaves_the_routes_sidewalk_open()` and
+     `_leaves_a_pacing_beats_opening()`.
+   - After the day is placed, `DayRepairs.ensure_the_city_is_still_walkable()` removes rows until
+     a route exists again.
+   - There is no subset bag for the location across a drawn event.
+5. **The roadblock phase is not an even spacing over route-adjacent locations.**
    - `_place_beside_the_routes()` takes the route tiles in the map's order. The first one with no
-     roadblock within `TASK_ROW_CLOSE_BY` (1,024px) of its paths gets one (`_best_of()`, the farther
-     half first).
-   - It never asks the places a chalk mark is read from, which stand one tile into an alley off
+     roadblock within `TASK_ROW_CLOSE_BY` (1,024px) of its paths gets one, rolled by `_best_of()`
+     and judged by `_judge()`.
+   - It runs after `_place_ambient()`, `_place_scars()` and `_place_masts()`, not straight after
      the routes.
-9. **The fill places roadblocks too, by its own rules.**
-   - `roadblock` is a recurring row (`def.first_day = 7`, `def.max_per_day = 6`, `def.weight = 2.0`).
-   - On day 13 the fill may add up to six more by the wall weights in item 1, so not only in
-     route-adjacent candidates.
-   - The task's close-by search takes any roadblock the day placed: `plan.row_id() != id or not
-     plan.is_placed() or plan.is_spent() or plan.is_door() or plan.is_in_the_wall()`.
-   - **Read as** (the orchestrator's, open to correction): (items 8 and 9) the roadblock pass keeps spreading from the route tiles. A roadblock the
-     fill places follows the blocking rules of the view it lands in, so it is never on the route.
-10. **The swap's candidates are narrowed past "route-adjacent, off screen, placed by the day".**
-    - `Planned.may_be_replaced()` adds standing still and not having noticed her:
-      `return is_placed() and not is_spent() and stands_still() and not is_door() and not
-      is_in_the_wall() and not is_permanent() and not _has_noticed_her()`.
-    - `ResistanceDirector._places_to_swap()` keeps only candidates touched within the widest ring:
-      `var distance := _touched_within(plan, paths, reach)` with `reach` 1,024px.
-    - The wall's bodies and door bodies are left out by the design (gray-dolphin #1173). Leaving
-      out scars (`is_permanent()`) is the code's, since a scar is not placed by the day.
-11. **The swap re-judges the roadblock and may move it or refuse it.**
-    - `WalkSiting.in_place_of()` tries the event's tile, then tiles of the same street within
-      `SWAP_SPREAD_TILES` (3) (`_tiles_in_place_of()`).
-    - It keeps a tile only if it is the roadblock's own ground (`if not own.has(tile): continue`),
-      and only with room all round under `_judge()` (`if room == INF: return candidate`). That
-      judging asks the spacing, a door's clearance, the unused calm, and the held streets through
-      `_ground_for()`.
-    - The design puts the roadblock in the event's place.
-    - On the 480 real chalk marks that `tests/probes/minty_quail_day13_real_marks.gd` reads, items 10
-      and 11 leave 33 with nothing to swap.
-    - **Read as** (the orchestrator's, open to correction): (items 10 and 11) the swap takes any route-adjacent event the day placed that is off
-      screen, never the wall's or a door's bodies, the nearest along her paths first, and puts the
-      roadblock in its place. Standing still, having noticed her, judging the placement rules again,
-      and the 1,024px cap on candidates are dropped.
-12. **A route-adjacent event may stand where a roadblock cannot.**
-    - The roadblock's ground is the carriageway: `def.placement = [GameEnums.TileType.ROAD,
-      GameEnums.TileType.CROSSING]`. Most of the fill's rows stand on a sidewalk.
-    - Put on a sidewalk tile, a roadblock is moved to the middle of the pavement band, as every
-      still body that blocks is:
-      `start = _centred_on_the_pavement_band(_map, start)` in `EventInstance.setup()`.
-    - It lays its band across the street (`_spread_is_vertical()`:
-      `return on_an_east_west_street and not on_a_north_south_street`).
-    - Its body is `GroundShape.band(60.0)`, so it covers that sidewalk and reaches into the
-      carriageway beside it.
-    - **Unsettled:** what the roadblock does in a sidewalk event's place.
-    - **Read as** (the orchestrator's, open to correction): in a sidewalk event's place, the roadblock stands across that street at the event's
-      spot, laid as every roadblock is: on the nearest carriageway tile of that street segment
-      beside it.
+6. **The fill also places roadblocks**, by the rules in item 1.
+   - `roadblock` is a recurring row (`def.first_day = 7`, `def.max_per_day = 6`).
+   - On day 13, the task's close-by search takes any roadblock the day placed.
+7. **Most events are placed at dawn, not drawn during the walk.**
+   - The fill places its rows in the morning.
+   - During the walk, only these are sited ahead of her:
+     - the route bag's marbles;
+     - the `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows;
+     - the `on_her_way` rows (`EventDirector.site_what_is_on_her_way()`);
+     - day 11's added mast.
+8. **The swap is narrowed and judged.**
+   - `Planned.may_be_replaced()` adds standing still and not having noticed her:
+     `return is_placed() and not is_spent() and stands_still() and not is_door() and not
+     is_in_the_wall() and not is_permanent() and not _has_noticed_her()`.
+   - `_places_to_swap()` keeps only candidates touched within 1,024px:
+     `var distance := _touched_within(plan, paths, reach)`.
+   - `WalkSiting.in_place_of()` judges the roadblock again, and may move or refuse it:
+     `if not own.has(tile): continue` and `if room == INF: return candidate`, over tiles of the
+     street within `SWAP_SPREAD_TILES` (3).
+   - On the 480 real chalk marks that `tests/probes/minty_quail_day13_real_marks.gd` reads, this
+     leaves 33 with nothing to swap.
+9. **"On the route" and "route-adjacent" are each asked two ways.**
+   - A wall is refused only where the route runs along the tile's own cell
+     (`Corridor.carries_a_route()`). So the far sidewalk of a route street takes walls.
+   - The roadblock phase treats that whole street as on the route
+     (`Corridor.is_beside_the_routes()`: `if not segment or int(_segment_depth.get(segment.key(),
+     DEEP)) == 0: return false`).
+   - The fill weights route-adjacent as `depth() <= 1`. The roadblock phase asks
+     `is_beside_the_routes()`, whose `route_junctions()` also holds junctions that park and alley
+     cuts cross.
+
+### Unsettled, unanswered
+
+The player's words do not yet settle these.
+
+1. How locations are laid out in each view: what a location is, how many a street has, and where
+   they stand (the escape's slots per street are one form).
+2. What each view's bag holds, and in what proportions, day by day.
+3. Which events take one side of a street, and what each one's subset bag for the side across
+   holds.
+4. Whether a location's draw happens at dawn or during the walk. The design says that no draw
+   happens during the walk for the roadblocks' locations.
+5. What "evenly spaced" measures for the roadblock phase, and how many roadblocks it places.
+6. Where ambient rows, scars, masts, seals, the region wall, its doors and the closures stand in the
+   order.
+7. What a roadblock does in the place of a route-adjacent event standing on a sidewalk. The
+   roadblock's own ground is the carriageway (`def.placement = [GameEnums.TileType.ROAD,
+   GameEnums.TileType.CROSSING]`). On a sidewalk tile, `EventInstance.setup()` centres a still body
+   on the pavement band (`start = _centred_on_the_pavement_band(_map, start)`), and its band lies
+   across the street (`_spread_is_vertical()`).
+8. Whether the dawn regular pass draws from a marble bag rather than a weighted roll: open with the
+   player.
 
 ## Scheduling
 
