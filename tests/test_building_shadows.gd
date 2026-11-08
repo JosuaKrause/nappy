@@ -1,8 +1,11 @@
 extends RefCounted
 ## M122, the shadow every building casts. `BuildingShadows.compute()` is pure tile arithmetic over
 ## `CityMap.building_rects`, so this suite asserts the tile sets directly rather than through a
-## built `City` scene — see the **writing-tests** skill, "test what a screenshot cannot see."
+## built `City` scene — see the **writing-tests** skill, "test what a screenshot cannot see." The one
+## realistic case reads the footprints of a generated map, from the cache of generated maps
+## (`tests/city_map_cache.gd`); no city is built.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const RecordingShadowDrawer := preload("res://tests/recording_shadow_drawer.gd")
 
 func run(t) -> void:
@@ -24,7 +27,7 @@ func run(t) -> void:
 ## asked about. A tile is asked about only when shadow tiles are worked out, so streamed shadows
 ## handed their footprints ask about none until a view prepares a chunk.
 func _test_resident_geometry_matches_the_complete_union(t) -> void:
-	var map := CityGenerator.generate(4242)
+	var map := MapCache.of(4242)
 	var expected := BuildingShadows.split(BuildingShadows.compute(map.building_rects))
 	var drawer := RecordingShadowDrawer.new()
 	var asked := [0]
