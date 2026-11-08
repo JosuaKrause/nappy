@@ -1370,7 +1370,7 @@ static func _stream(base: int, salt: int) -> RandomNumberGenerator:
 ## The day the run is taught cannot leave the lesson to a weighted roll.
 ##
 ## `EventDirector._teach_the_run` moves a pursuit to the head of the owed list on `RUN_TAUGHT_DAY`,
-## and if the day happened not to buy one there is nothing to teach. `charging_dog` is weight 1.4 of
+## and if the day happened to owe none there is nothing to teach. `charging_dog` is weight 1.4 of
 ## a day-3 pool, so whole day 3s with none of them exist — and a player can reach act II never
 ## having been shown the one control the game will later require.
 ##
@@ -1385,7 +1385,7 @@ static func _ensure_the_run_is_taught(day: int, events: DayEvents, heat: int = 0
 		if def.pursuit == null or def.spawn_mode != EventDef.SpawnMode.AHEAD_OF_PLAYER:
 			continue
 		events.add(Planned.new(def, Vector2.INF))
-		_note(trace, "plan", "day %d bought no pursuit, so the run lesson is added: %s"
+		_note(trace, "plan", "day %d owes no pursuit, so the run lesson is added: %s"
 				% [day, def.id])
 		return
 
@@ -2522,13 +2522,16 @@ const CAPS_SALT := 8
 ## wall-type events; the record bouncy-egret). `_view_bags()` counts the empty marbles against every
 ## wall weighed in full, so the share takes walls away rather than giving their place to the other
 ## rows.
+##
+## **Then each role is weighed per view and act**: a wall by `WALL_VIEW_SCALES`, friction by
+## `FRICTION_VIEW_SCALES`, fitted so each view holds today's walls and friction.
 static func view_weight(def: EventDef, view: int, day: int, wall_share: float) -> float:
 	var on := view == PlacementView.View.ON_THE_ROUTE
 	var off := view == PlacementView.View.OFF_THE_ROUTE
 	if on and _refuses_required_alleys(def):
 		return 0.0
 	var times := 1.0
-	var act := _act_of(day)
+	var act := Tuning.act_for_day(day) - 1
 	match _role_for(def, day):
 		GameEnums.BlockerRole.FRICTION:
 			times = float(EVENT_CORRIDOR_WEIGHT) if on else 1.0
@@ -2549,7 +2552,7 @@ static func view_weight(def: EventDef, view: int, day: int, wall_share: float) -
 ## above: fitted so the walls and the friction each view holds on each act are today's
 ## (`tests/probes/placement_rows.gd` against main, each placed plan counted under its row's role).
 ## One location draws one marble, and today's rules refuse a wall on her route more often than they
-## refused today's per-tile offers, so without it the walls left her route for the ground off it:
+## refused today's per-tile offers, so without it the walls leave her route for the ground off it:
 ## what her route holds is what the route decision faces. Measured, not derived, and fitted again with
 ## the view scales and `GROUND_WEIGHTS` whenever the draw's rules change.
 const WALL_VIEW_SCALES := [
@@ -2562,14 +2565,6 @@ const FRICTION_VIEW_SCALES := [
 	[1.15, 1.07, 1.11, 1.04],
 	[1.03, 1.06, 1.03, 1.03],
 ]
-
-## The act `day` falls in, counted from 0 (`Tuning.ACT_START_DAYS`).
-static func _act_of(day: int) -> int:
-	var act := 0
-	for i in Tuning.ACT_START_DAYS.size():
-		if day >= int(Tuning.ACT_START_DAYS[i]):
-			act = i
-	return act
 
 ## **The day's three bags** (`view -> ViewBag`): each view's rows as many times as their weight in it
 ## (`view_weight()`, `BAG_MARBLES_PER_WEIGHT` marbles per unit, at least one of a row the view holds),
@@ -2604,8 +2599,7 @@ static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> 
 const BAG_MARBLES_PER_WEIGHT := 10.0
 
 ## **Each view's share of locations holding an event, per day** (`[view][day - 1]`), as today's
-## placement gave it before the bags (`tests/probes/placement_view_mix.gd`'s maps and streams,
-## eighteen seeds; the orchestrator's reading of fork 5(a): the empty marble's weight is set from
+## placement gave it before the bags (`tests/probes/placement_rows.gd` on main, eighteen seeds; the orchestrator's reading of fork 5(a): the empty marble's weight is set from
 ## today's measured count).
 const ON_SHARES: Array[float] = [0.0334, 0.0313, 0.0298, 0.0353, 0.0382, 0.0387, 0.0452, 0.0464, 0.0375, 0.0417, 0.0437, 0.0422, 0.0461, 0.0461]
 const ADJACENT_SHARES: Array[float] = [0.0512, 0.0537, 0.0517, 0.0566, 0.0583, 0.0631, 0.0642, 0.0618, 0.0433, 0.0420, 0.0451, 0.0463, 0.0707, 0.0485]
@@ -2621,7 +2615,8 @@ const VIEW_SHARES := [
 ## refuse the most. **Per day**, since how much the rules refuse changes with the day's rows and its
 ## routes, and one scale for every day left the later days' routes light; what is on her route is
 ## what the route decision is about, so it is held at today's on each day. Fitted, not derived:
-## each day's scale moved toward today's share by `tests/probes/placement_view_mix.gd`'s measure.
+## each day's scale stepped toward today's share by `tests/probes/placement_rows.gd`, with
+## `GROUND_WEIGHTS` and the walls' and friction's scales.
 const ON_SHARE_SCALES: Array[float] = [4.64, 5.07, 4.91, 5.07, 5.33, 5.70, 5.12, 4.95, 6.21, 6.37, 6.54, 6.59, 7.20, 7.22]
 const ADJACENT_SHARE_SCALES: Array[float] = [2.12, 2.10, 2.06, 2.07, 2.08, 2.21, 2.27, 2.26, 3.36, 3.73, 3.91, 4.03, 3.03, 4.60]
 const OFF_SHARE_SCALES: Array[float] = [1.77, 1.66, 1.78, 2.06, 1.76, 1.71, 1.87, 2.08, 2.85, 2.90, 3.05, 2.91, 3.18, 3.25]

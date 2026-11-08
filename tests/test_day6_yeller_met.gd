@@ -17,8 +17,9 @@ extends RefCounted
 ##
 ## Walks the way `--route mark,task,calm,home` does, at `Tuning.WALK_SPEED`, running what the
 ## manager's own tick runs for her walk, so he is sited where a played day sites him; and where that
-## walk ends before the events the rig covers have all been handed out, on walking, back to the mark
-## and home again, since the guarantee counts events and a walk that ends first owes nothing. A sweep of
+## walk ends before he is sited, on walking, back to the mark and home again, until he is, since the
+## guarantee counts events and a walk that ends first owes nothing (a third event handed out before
+## his siting still fails him). A sweep of
 ## the walks, not one: where she is when his marble comes up depends on the city. Run by name:
 ## `tools/test.sh day6_yeller_met`.
 
@@ -31,8 +32,9 @@ const RUN_SEED := 2
 const ROW := "homeless_yeller"
 const STEP := 0.1
 const SETTLE_SECONDS := 12.0
-## How many more legs she walks, mark and home in turn, where the walk ends before the rig's events
-## have all come: enough for the next events at `EventDirector.AHEAD_INTERVAL`'s pace on any city.
+## How many more legs she walks, mark and home in turn, where the walk ends before he is sited:
+## enough for the next events at `EventDirector.AHEAD_INTERVAL`'s pace on the pinned
+## cities, where only city 555 walks on, for one leg.
 const MORE_LEGS := 6
 ## The street she is on, from her sidewalk to the far kerb, either side of her line of travel: the
 ## width `WalkSiting.ahead_on_her_street()` looks across.
@@ -120,8 +122,7 @@ func _walk(t, seed_value: int) -> String:
 		var home: Array[Vector2i] = [map.world_to_tile(map.doorstep_world_position())]
 		_along(player, _path(map, player.global_position, home), tick)
 		# The guarantee counts events after the mark, not the walk: where the walk home ends before
-		# the rig's events have all been handed out, she walks on, back to the mark and home again,
-		# until he is sited.
+		# he is sited, she walks on, back to the mark and home again, until he is.
 		var mark_tile: Array[Vector2i] = [map.world_to_tile(resistance.contact_position())]
 		var legs := 0
 		while seen["man"] == null and legs < MORE_LEGS:

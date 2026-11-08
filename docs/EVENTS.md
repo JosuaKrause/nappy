@@ -1383,7 +1383,7 @@ the view scales, until each row's daily count on each kind of ground is today's
 they are measured, not derived, and are fitted again whenever the draw's rules change. **And each
 role is weighed per view and act** (`EventScheduler.WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`),
 fitted the same way, since a weight per kind of ground scales a row the same in every view: without
-them the draw moved walls off her route onto the ground off it, and what her route holds is what the
+them the draw moves walls off her route onto the ground off it, and what her route holds is what the
 route decision faces. *(The
 player: "yes" to a group of locations per kind of ground, and to a weight per location scaling its
 view's bag; issue #1185.)*
