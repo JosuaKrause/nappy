@@ -254,7 +254,7 @@ func set_clock(seconds: float) -> void:
 ##
 ## **`set_clock(0.0)` alone is not this.** It leaves the last shot's time wherever the previous walk's
 ## last automatic shot fell, so `snapshot()`'s spacing gate (the clock less the last shot's time under
-## `SHOT_SPACING`)
+## `TelemetryShots.SPACING`)
 ## would stay true — the new clock read as still inside the old walk's three-second window — until
 ## the new walk's own clock climbed back past whatever the old one had reached, holding every
 ## automatic snapshot back for exactly that long. This gives a walk the same clean slate
@@ -291,11 +291,6 @@ func current_log() -> TelemetryLog:
 #   that raise the question a picture answers. See `TelemetryObserver`.
 # - **It has to stay small.** Capped per day and spaced, because a burst of near-identical frames is
 #   a directory nobody opens.
-
-## The least time between two shots — `TelemetryShots` holds it, with the most shots one day may
-## produce (`TelemetryShots.PER_DAY`) and the day's count; this is where it is named for the callers
-## that read it.
-const SHOT_SPACING := TelemetryShots.SPACING
 
 ## The day's allowance, the spacing and the run-wide counter that names every picture.
 var _shots := TelemetryShots.new()
@@ -347,7 +342,7 @@ func snapshot(kind: String) -> void:
 ## The same picture, asked for by a person rather than by a heuristic. A debugging aid rather than
 ## a game feature.
 ##
-## **It bypasses `TelemetryShots.PER_DAY` and `SHOT_SPACING`, and that is the whole difference.** Those two
+## **It bypasses `TelemetryShots.PER_DAY` and `TelemetryShots.SPACING`, and that is the whole difference.** Those two
 ## exist because a heuristic firing on a condition that stays true for two seconds would write a
 ## hundred and twenty near-identical frames; somebody pressing a key has already decided this frame
 ## is worth keeping, and a cap that silently swallows the seventh press is a tool that lies about

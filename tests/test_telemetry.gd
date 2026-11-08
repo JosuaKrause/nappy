@@ -343,7 +343,7 @@ func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t) -> void:
 ## time of the last shot, because a section's clock restarts at zero."* A clock pushed back with
 ## `Telemetry.set_clock(0.0)` alone leaves the last shot's time sitting at the previous attempt's
 ## own reading — here, 45s in, well past the retried walk's fresh `0.0`, which is exactly the state
-## `snapshot()`'s spacing gate (the clock less the last shot's time under `SHOT_SPACING`) reads as
+## `snapshot()`'s spacing gate (the clock less the last shot's time under `TelemetryShots.SPACING`) reads as
 ## "a shot just happened". `restart_section_clock()` clears the schedule the way `begin_section()`
 ## and `begin_day()` do. Asked through the pictures that land in the run's `auto/` folder, on a
 ## screen that can draw. That the observer's `start_section()` goes through it, and not through
