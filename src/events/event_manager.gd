@@ -288,7 +288,7 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	# Where she can get to from home, worked out once as the walk starts, from what it planned and
 	# the map's closures and soft seals as they stand now (`DayReach`).
 	var reach := DayReach.of(world.city_map, plan.placements) if world.city_map else null
-	_walk_events.take(plan.placements, plan.calm(), plan.doors, reach)
+	_walk_events.take(plan.placements, plan.calm(), plan.doors, reach, plan.locations())
 	if plan.is_a_day:
 		# Every stationary solid body the day has sited, recorded per tile so the crowd goes round
 		# it — see `CityMap.obstructed_tiles`. Taken from the **plan** rather than from the live
@@ -724,16 +724,10 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventScheduler.Planned:
 	return ahead.queue_a_mast(offered, rng)
 
-## Day 13's task roadblock in place of one of the day's events, out of her view as `in_view`
-## answers (`EventsAhead.swap_in_a_task_row()`).
-func swap_in_a_task_row(def: EventDef, old: EventScheduler.Planned,
-		rng: RandomNumberGenerator, in_view := Callable()) -> EventInstance:
-	return ahead.swap_in_a_task_row(def, old, rng, in_view)
-
-## Whether `tile` is on a street beside the day's routes and off the main road
-## (`EventsAhead.stands_beside_the_routes()`).
-func stands_beside_the_routes(tile: Vector2i) -> bool:
-	return ahead.stands_beside_the_routes(tile)
+## Day 13's task roadblock `plan` across a section of the day's locations, whatever it held spent
+## (`EventsAhead.swap_in_a_section()`).
+func swap_in_a_section(section: Location, plan: EventScheduler.Planned) -> EventInstance:
+	return ahead.swap_in_a_section(section, plan)
 
 ## Rigs her route's bag for a task (`EventsAhead.rig_her_route()`).
 func rig_her_route(ids: Array[String], size: int) -> Array:

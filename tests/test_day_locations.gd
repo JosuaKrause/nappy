@@ -14,6 +14,7 @@ func run(t) -> void:
 	_test_a_held_or_absent_street_has_no_section_open(t)
 	_test_an_assigned_section_is_taken_for_the_day(t)
 	_test_a_section_taken_takes_its_two_sidewalk_locations(t)
+	_test_the_nearest_section_along_her_paths(t)
 
 const ON := Vector3i(2, 2, 0)
 const BESIDE := Vector3i(3, 2, 1)
@@ -122,3 +123,36 @@ func _test_a_section_taken_takes_its_two_sidewalk_locations(t) -> void:
 			taken.append(sidewalk.section())
 	t.check(taken == ([1, 1] as Array[int]),
 			"a section taken takes its two sidewalk locations and no other (%s)" % [taken])
+
+## Her paths as `tile -> distance`, the middle tile of each section given its distance.
+static func _paths_to(sections: Array[Location], distances: Array[float]) -> Dictionary:
+	var paths := {}
+	for index in sections.size():
+		var tiles := sections[index].tiles()
+		paths[tiles.position + tiles.size / 2] = distances[index]
+	return paths
+
+## **The open section of a view nearest along her paths** (`nearest_section_in()`, day 13's swap):
+## the route-adjacent street's three sections, with her paths reaching them at 300, 100 and 200px.
+## The nearest is taken; one its caller refuses (`may_take`) or one already taken is passed over for
+## the next; a tile she may not touch from does not count; and with no path to any, none is.
+func _test_the_nearest_section_along_her_paths(t) -> void:
+	var always := func(_x: Variant) -> bool: return true
+	var locations := DayLocations.lay_out(CityMap.new(), _views())
+	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
+	var paths := _paths_to(sections, [300.0, 100.0, 200.0] as Array[float])
+	t.check(locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths, always, always)
+			== sections[1], "the section her paths reach first is the one taken")
+	var not_the_middle := func(section: Location) -> bool: return section != sections[1]
+	t.check(locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths, always,
+			not_the_middle) == sections[2], "one its caller refuses is passed over for the next nearest")
+	var middle_tile := sections[1].tiles().position + sections[1].tiles().size / 2
+	var not_from_there := func(tile: Vector2i) -> bool: return tile != middle_tile
+	t.check(locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths, not_from_there,
+			always) == sections[2], "and so is one reached only from ground she may not touch it from")
+	t.check(locations.nearest_section_in(PlacementView.View.OFF_THE_ROUTE, paths, always, always)
+			== null, "a view her paths reach no section of offers none")
+	locations.assign(sections[1], EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"),
+			sections[1].centre()))
+	t.check(locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths, always, always)
+			== sections[2], "a section already taken is passed over")

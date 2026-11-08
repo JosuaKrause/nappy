@@ -11,14 +11,16 @@ extends RefCounted
 ##     grep '^RM' out.txt
 ##
 ## Each outcome is **found** (a roadblock the day placed, with the ring of the walk it was found
-## in: 576, 896 or 1,024px), **swapped** (one of the day's events replaced by one), or **missed**
-## (neither, so the task has no roadblock; nothing is added in the walk). For a miss, `RM_MISS` lists
-## every event the day placed within reach and each filter of the swap that refused it, and
-## `RM_FILTERS` counts, per filter, the misses where it alone refused some candidate. Each mark gets
-## the day started again from the same inputs, the
+## in: 576, 896 or 1,024px), **swapped** (a route-adjacent section's whole content replaced by one,
+## `ResistanceDirector._section_to_swap()`), or **missed** (neither, so the task has no roadblock;
+## nothing is added in the walk). Each distance is the straight line from where she read the mark to
+## the roadblock; `RM_MISS` names a miss's mark. `RM_TIME` is how long the task's placement took on
+## the frame she reads the mark, found and swapped apart, and the swap's walk over the whole city,
+## the fallback a swap takes where the close-by walk reaches no section, timed on its own. Each mark gets the day started again from the same
+## inputs, the
 ## way `DayDirector.start_day()` starts it, with the world streamed in round her
-## (`EventManager.stream_around()`), so what is in the world, and so out of the swap, is what it
-## would be as she stands there.
+## (`EventManager.stream_around()`), so what is in the world, and so in her view, is what it would
+## be as she stands there.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The six probe seeds, then fourteen more.
@@ -84,156 +86,22 @@ func run(t) -> void:
 			continue
 		print("RM_DIST %s | n %d | min %.0f median %.0f max %.0f px" % [key, list.size(), list[0],
 				list[list.size() / 2], list.back()])
-	print("RM_FILTERS %d misses | a filter counts a miss when some candidate in reach is refused by"
-			% _misses + " it alone | %s" % _misses_by_filter)
+	print("RM_MISSES %d" % _misses)
+	for what: String in _times:
+		var list: Array = _times[what]
+		list.sort()
+		print("RM_TIME %s | n %d | median %.1f max %.1f ms" % [what, list.size(), list[list.size() / 2],
+				list.back()])
 	t.check(asked > 0, "there were marks to read (%d)" % asked)
 
 var _misses := 0
-var _misses_by_filter := {}
+## What -> the milliseconds each `_place_the_roadblock_near()` call took (`RM_TIME`).
+var _times := {}
 
-## **Why no event the day placed could be swapped for the task's roadblock** where she read the mark
-## at `at`: for each placed, unspent plan whose touch ground her paths reach within `reach`
-## (`ResistanceDirector._touched_within()`), every filter of the swap that refuses it, in the order
-## the swap asks them. `plan -> Array[String]`, a plan no filter refuses mapped to `[]`.
-func _why_nothing_swaps(city: City, director: ResistanceDirector, at: Vector2, paths: Dictionary,
-		reach: float) -> Dictionary:
-	var map := city.map
-	var siting: EventScheduler.WalkSiting = city.events.ahead._day_siting()
-	var def := EventCatalogue.by_id(_roadblock_step().task_event_id).for_day(DAY)
-	var role := EventScheduler._role_for(def, DAY)
-	var own := {}
-	for tile in EventScheduler._ground_for(def, map, siting._ground, siting._corridor, role,
-			EventScheduler.NO_SITE, siting.holds_the_home_streets):
-		own[tile] = true
-	var found := {}
-	for plan in director._walk.plans():
-		if not plan.is_placed() or plan.is_spent():
-			continue
-		if director._touched_within(plan, paths, reach) == INF:
-			continue
-		var why: Array[String] = []
-		var tile := map.world_to_tile(plan.placed_at())
-		if not plan.stands_still():
-			why.append("moving")
-		if plan.is_door():
-			why.append("door")
-		if plan.is_in_the_wall():
-			why.append("wall")
-		if plan.is_permanent():
-			why.append("scar")
-		if plan.is_in_the_world() and not plan.may_be_replaced() and plan.stands_still() \
-				and not plan.is_door() and not plan.is_in_the_wall() and not plan.is_permanent():
-			why.append("noticed her")
-		if not siting._corridor.is_beside_the_routes(tile):
-			why.append("not beside the routes")
-		elif not siting.stands_beside_the_routes(tile):
-			why.append("main road")
-		if director._drawing_shows(plan.row(), plan.where_it_stands_now()):
-			why.append("in view")
-		why.append_array(_why_no_spot(city, director, siting, def, role, own, plan))
-		found[plan] = why
-	return found
-
-## Why no tile in `plan`'s place takes the roadblock (`WalkSiting.in_place_of()`'s own order): none
-## of its own ground on the street within `SWAP_SPREAD_TILES`, every such tile in her view, or the
-## rules `_judge()` asks refusing every one, named for the nearest. Empty when one takes it.
-func _why_no_spot(city: City, director: ResistanceDirector, siting: EventScheduler.WalkSiting,
-		def: EventDef, role: GameEnums.BlockerRole, own: Dictionary,
-		plan: EventScheduler.Planned) -> Array[String]:
-	var map := city.map
-	var any_own := false
-	var first: Array[String] = []
-	for tile in siting._tiles_in_place_of(plan):
-		if not own.has(tile):
-			continue
-		any_own = true
-		if director._drawing_shows(def, map.tile_to_world(tile)):
-			continue
-		var why: Array[String] = []
-		var candidate := EventScheduler._build_placement(def, map, tile, _rng(0, "probe"))
-		if not candidate:
-			why.append("no placement built")
-		else:
-			var already := director._walk.everything_but(plan)
-			candidate.role = role
-			if EventScheduler._reaches_any(candidate, siting._leave_alone):
-				why.append("unused calm")
-			if not EventScheduler._clear_of_the_doors(candidate.position, candidate.path,
-					director._walk.doors(), candidate.def.field_reach()):
-				why.append("door clearance")
-			if not EventScheduler._leaves_the_route_junctions_open(candidate, map,
-					siting._corridor, siting._ground, already) \
-					or not EventScheduler._leaves_the_routes_sidewalk_open(candidate, map,
-							siting._corridor, already):
-				why.append("route kept open")
-			var room := EventScheduler._room_around(candidate, already)
-			if room == -INF:
-				why.append("spacing (another event within 64px or its field)")
-			elif room != INF:
-				why.append("spacing (a roadblock within 256px)")
-		if why.is_empty():
-			return [] as Array[String]
-		if first.is_empty():
-			first = why
-	if not any_own:
-		return ["no roadblock ground on its street within %d tiles (%s)"
-				% [EventScheduler.SWAP_SPREAD_TILES, _why_not_ground(map, siting, plan)]] as Array[String]
-	if first.is_empty():
-		return ["its spot in view"] as Array[String]
-	return first
-
-## Why the road and crossing tiles in `plan`'s place are not a roadblock's ground
-## (`EventScheduler.open_ground_for()`'s refusals, then the role's: a route runs along it): each
-## reason found on any of them, joined.
-static func _why_not_ground(map: CityMap, siting: EventScheduler.WalkSiting,
-		plan: EventScheduler.Planned) -> String:
-	var found := {}
-	var trees := EventScheduler._street_tree_tiles(map, siting._ground)
-	var doorstep := EventScheduler._the_street_she_starts_on(map)
-	var road := 0
-	for tile in siting._tiles_in_place_of(plan):
-		var type := map.tile_at(tile)
-		if type != GameEnums.TileType.ROAD and type != GameEnums.TileType.CROSSING:
-			continue
-		road += 1
-		if map.is_closed(tile):
-			found["closed"] = true
-		if map.is_held_at(tile):
-			found["held"] = true
-		if doorstep.has_point(tile):
-			found["her doorstep street"] = true
-		if map.is_on_home_block(tile):
-			found["home block"] = true
-		if trees.has(tile):
-			found["a street tree"] = true
-		if EventScheduler._is_a_corner(tile):
-			found["a corner"] = true
-		if siting._corridor.carries_a_route(tile):
-			found["a route runs along it"] = true
-	if road == 0:
-		return "no road on its street within reach"
-	return "/".join(found.keys())
-
-## The filters that alone refuse some candidate: removing that one filter would let a swap through.
-static func _only_refusals(refusals: Dictionary) -> Array[String]:
-	var only := {}
-	for plan: EventScheduler.Planned in refusals:
-		var why: Array = refusals[plan]
-		if why.size() == 1:
-			only[_family(why[0])] = true
-	var names: Array[String] = []
-	names.assign(only.keys())
-	return names
-
-static func _family(reason: String) -> String:
-	return reason.get_slice(" (", 0)
-
-static func _summary(refusals: Dictionary) -> String:
-	var counts := {}
-	for plan: EventScheduler.Planned in refusals:
-		var key := "+".join(refusals[plan])
-		counts[key] = int(counts.get(key, 0)) + 1
-	return "%d in reach: %s" % [refusals.size(), counts]
+func _took(what: String, ms: float) -> void:
+	if not _times.has(what):
+		_times[what] = []
+	_times[what].append(ms)
 
 ## The mark tiles the day's draw could pick, in `_marks()`'s order: those `_pick_reachable()` takes,
 ## legal ground and open to it and reachable from home.
@@ -287,24 +155,26 @@ func _read_the_mark_at(city: City, director: ResistanceDirector, player: Strolle
 		if director._a_roadblock_the_day_placed(def.id, paths, reach):
 			ring = reach
 			break
-	var spent := {}
+	var before := {}
 	for plan in city.events.plans():
-		spent[plan] = plan.is_spent()
-	var refusals := _why_nothing_swaps(city, director, at, paths, reaches.back())
+		before[plan] = true
+	var started := Time.get_ticks_usec()
 	var placed := director._place_the_roadblock_near(at)
+	var took := (Time.get_ticks_usec() - started) / 1000.0
 	if placed == null:
-		print("RM_MISS seed %d at %s | %s" % [seed_value, city.map.world_to_tile(at),
-				_summary(refusals)])
-		for filter: String in _only_refusals(refusals):
-			_misses_by_filter[filter] = int(_misses_by_filter.get(filter, 0)) + 1
-		if refusals.is_empty():
-			_misses_by_filter["nothing in reach"] = int(_misses_by_filter.get("nothing in reach",
-					0)) + 1
+		print("RM_MISS seed %d at %s" % [seed_value, city.map.world_to_tile(at)])
 		_misses += 1
 		return ["missed", INF]
 	for plan in city.events.plans():
-		if spent.has(plan) and plan.is_spent() and not spent[plan]:
+		if not before.has(plan) and plan.instance() == placed:
+			_took("swapped", took)
+			# The swap's fallback walk alone, her paths over the whole city, timed apart.
+			var whole_city := Vector2(Tuning.CITY_BLOCKS * CityMap.period()).length() * Tuning.TILE_SIZE
+			var walked := Time.get_ticks_usec()
+			director._paths_reach_between(at, 0.0, whole_city)
+			_took("the whole-city walk", (Time.get_ticks_usec() - walked) / 1000.0)
 			return ["swapped", placed.body_position().distance_to(at)]
+	_took("found", took)
 	return ["found@%.0f" % ring, placed.body_position().distance_to(at)]
 
 static func _roadblock_step() -> ResistanceSteps.Step:

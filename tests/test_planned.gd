@@ -10,7 +10,7 @@ func run(t) -> void:
 	_test_a_door_body_never_blocks_the_way(t)
 	_test_the_wall_s_body_says_so(t)
 	_test_what_stands_clear_of_it(t)
-	_test_what_day_13s_task_may_replace(t)
+	_test_which_plans_are_fixed_parts(t)
 
 ## A body of the row `id` as the region planner stands it, at `at`.
 func _sealed(id: String, at := Vector2(320, 320)) -> EventScheduler.Planned:
@@ -76,44 +76,27 @@ func _test_what_stands_clear_of_it(t) -> void:
 			"and it stands where it was placed while it is not in the world")
 
 
-## **What day 13's task may put its roadblock in place of** (`may_be_replaced()`, inbox #1185): one of
-## the day's own events standing still, blocking or not, in the world or not, and never the region
-## wall's body, a door's, a scar, one that moves, one already spent or not placed, or one in the world
-## that has noticed her.
-func _test_what_day_13s_task_may_replace(t) -> void:
+## **Which plans are the city's fixed parts rather than the day's events** (`is_a_fixed_part()`,
+## inbox #1185): the region wall's body, a door's, a seal, a loudspeaker mast and an ambient row,
+## whose sections day 13's swap never takes; the day's cafe tables, a barricade it rolled rather than
+## sealed with, and the burnt shell a fire left, which the player called a regular event, are not.
+func _test_which_plans_are_fixed_parts(t) -> void:
 	var tables := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
-	t.check(tables.may_be_replaced(), "the day's cafe tables, standing still, may be replaced")
-	t.check(_sealed("barricade").may_be_replaced(), "and so may a seal the day stood")
+	t.check(not tables.is_a_fixed_part(), "the day's cafe tables are the day's own")
+	t.check(not _sealed("barricade").is_a_fixed_part(),
+			"and so is a barricade the seal planner did not stand")
+	var shell := EventScheduler.Planned.new(EventCatalogue.by_id("burnt_shell"), Vector2(320, 320))
+	shell.permanent = true
+	t.check(not shell.is_a_fixed_part(), "and so is the burnt shell a fire left: a regular event")
+	var seal := _sealed("barricade")
+	seal.stand_as_a_seal()
+	t.check(seal.is_a_fixed_part(), "a seal the day stood is a fixed part")
 	var wall := _sealed("roadblock")
 	wall.stand_in_the_wall()
-	t.check(not wall.may_be_replaced(), "the region wall's own body may not")
-	for id: String in ["checkpoint_hut", "checkpoint_gate", "checkpoint_post"]:
-		t.check(not _door(id).may_be_replaced(), "nor a door's %s" % id)
-	var scar := _sealed("barricade")
-	scar.permanent = true
-	t.check(not scar.may_be_replaced(), "nor a scar the run left, which is its history")
-	var walking := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320),
-			PackedVector2Array([Vector2(320, 320), Vector2(640, 320)]))
-	t.check(not walking.may_be_replaced(), "nor one that moves along a route")
-	var spent := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
-	spent.spend()
-	t.check(not spent.may_be_replaced(), "nor one spent for the day")
-	t.check(not EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"),
-			Vector2.INF).may_be_replaced(), "nor one the day budgeted and never placed")
-	var live := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
-	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320), PackedVector2Array())
-	live.live = instance
-	t.check(live.may_be_replaced(),
-			"one in the world may be, since whether she sees it is asked where it stands")
-	instance.free()
-	var guard_row := EventCatalogue.by_id("alley_robbery")
-	var waiting := EventScheduler.Planned.new(guard_row, Vector2(320, 320))
-	var guard := EventInstance.new()
-	guard.setup(guard_row, Vector2(320, 320), PackedVector2Array())
-	waiting.live = guard
-	t.check(waiting.may_be_replaced(), "and so may a waiting robber who has not noticed her")
-	guard.notice_her_at(Vector2(380, 320))
-	t.check(guard.has_noticed_her() and not waiting.may_be_replaced(),
-			"but not once he has noticed her, since his warning is on her")
-	guard.free()
+	t.check(wall.is_a_fixed_part(), "and so is the region wall's body")
+	t.check(_door("checkpoint_hut").is_a_fixed_part(), "and a door's")
+	var mast := EventScheduler.Planned.new(EventCatalogue.mast(), Vector2(320, 320))
+	mast.mast_id = "a mast's site"
+	t.check(mast.is_a_fixed_part(), "and a loudspeaker mast")
+	var playground := EventScheduler.Planned.new(EventCatalogue.by_id("playground"), Vector2(320, 320))
+	t.check(playground.is_a_fixed_part(), "and an ambient row")

@@ -484,8 +484,8 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 			and _contact.step.is_pickup:
 		mark = _contact.global_position
 	var at: Vector2
-	# Day 13's roadblock is one the day placed, or one of the day's events swapped for one; nothing
-	# is added in the walk (`_place_the_roadblock_near()`).
+	# Day 13's roadblock is one the day placed, or one put across a section in place of what it held;
+	# nothing is added in the walk (`_place_the_roadblock_near()`).
 	var placed_row: EventInstance = null
 	if _step.is_a_guarded_band:
 		placed_row = _place_the_roadblock_near(mark)
@@ -1719,12 +1719,20 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 ## 1. **a roadblock the day placed** (`_a_roadblock_the_day_placed()`), put in the world now if it
 ##    is not and kept there (`EventManager.keep_live()`); it may already be in her view, since it
 ##    stood there all along;
-## 2. otherwise **a swap** (`_places_to_swap()`): the nearest of the day's own events beside her
-##    routes and out of her sight that a roadblock may be put in place of
-##    (`EventManager.swap_in_a_task_row()`), within the widest ring.
+## 2. otherwise **a swap** (`_section_to_swap()`): the route-adjacent section of the day's
+##    locations nearest along her paths, out of her sight, whose whole content is replaced by a
+##    roadblock across it (`EventManager.swap_in_a_section()`; inbox #1185: "if we don't find one
+##    closeby we swap one off screen route adjacent event with a roadblock", "it replaces the content
+##    of the section with the roadblock"). Two things narrow it. Nothing of the section, neither what
+##    it holds nor the roadblock to come, may be in her view, which is the design's "off screen". And
+##    a section holding one of the city's fixed parts is passed over (`Planned.is_a_fixed_part()`):
+##    the region wall, the doors, the seals, the masts and the ambient rows, which the player gave
+##    phases of their own, the orchestrator's reading. Nothing else does: not how far it is, not
+##    whether what it holds stands still or has noticed her, and not a placement rule asked again.
 ##
-## **Nothing is added in the walk** (inbox #1185): with neither, the task has no roadblock, and the
-## run log says so. Nothing is checked live: neither closes a route, since each stands off them.
+## **Nothing is added in the walk** (inbox #1185): with neither, which only a day with no open
+## route-adjacent section reachable from her leaves, the task has no roadblock, and the run log says
+## so. Nothing is checked live: neither closes a route, since each stands off them.
 ## Joined to the day's plan, the task's roadblock is one more live roadblock the arrow chooses among.
 ## With no mark (a rig that starts the task without one) it is looked for from where she stands.
 func _place_the_roadblock_near(mark: Vector2) -> EventInstance:
@@ -1746,16 +1754,16 @@ func _place_the_roadblock_near(mark: Vector2) -> EventInstance:
 						% [RunTrace.tile(_map.world_to_tile(found.placed_at())),
 						found.placed_at().distance_to(her)])
 				return kept
-	for old in _places_to_swap(paths, reaches.back()):
-		var swapped := _events.swap_in_a_task_row(def, old, _rng, _drawing_shows)
+	var to_swap := _section_to_swap(def, her, paths)
+	if not to_swap.is_empty():
+		var swapped := _events.swap_in_a_section(to_swap[0], to_swap[1])
 		if swapped:
-			trace.note("contact", "a %s at %s becomes the task's roadblock at %s, %.0fpx from the mark"
-					% [old.row_id(), RunTrace.tile(_map.world_to_tile(old.placed_at())),
-					RunTrace.tile(_map.world_to_tile(swapped.body_position())),
+			trace.note("contact", "the task's roadblock is put across a section at %s, %.0fpx from the mark"
+					% [RunTrace.tile(_map.world_to_tile(swapped.body_position())),
 					swapped.body_position().distance_to(her)])
 			return swapped
-	trace.note("contact", ("no roadblock the day placed and nothing to swap is within %.0fpx " +
-			"of her paths; the task has no roadblock") % reaches.back())
+	trace.note("contact", ("no roadblock the day placed is within %.0fpx of her paths and no " +
+			"section beside her routes can take one; the task has no roadblock") % reaches.back())
 	return null
 
 ## How far out from where she read the mark day 13's roadblock is looked for, in turn, past the
@@ -1786,29 +1794,47 @@ func _a_roadblock_the_day_placed(id: String, paths: Dictionary,
 			nearest = plan
 	return nearest
 
-## **The day's events a roadblock may be swapped in for, nearest first**, among those her paths
-## reach within `reach` (`_touched_within()`): one the plan says may be replaced
-## (`Planned.may_be_replaced()`: the day's own, placed, unspent, standing still, not one that has
-## noticed her, and not the wall's, a door's or a scar), no part of it in her view where it stands
-## now (`_drawing_shows()` over its own row's pictures, `Planned.row()`), and on a street beside her
-## routes and off the main road (`EventManager.stands_beside_the_routes()`). Where the roadblock may
-## stand in its place is asked when the swap is made (`EventManager.swap_in_a_task_row()`).
-func _places_to_swap(paths: Dictionary, reach: float) -> Array[EventScheduler.Planned]:
-	var found: Array = []
-	for plan in _walk.plans():
-		if not plan.may_be_replaced():
-			continue
-		if not _events.stands_beside_the_routes(_map.world_to_tile(plan.placed_at())) \
-				or _drawing_shows(plan.row(), plan.where_it_stands_now()):
-			continue
-		var distance := _touched_within(plan, paths, reach)
-		if distance < INF:
-			found.append([distance, plan])
-	found.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
-	var ordered: Array[EventScheduler.Planned] = []
-	for entry: Array in found:
-		ordered.append(entry[1])
-	return ordered
+## **The section day 13's task puts its roadblock across when none is close by**: the route-adjacent
+## section of the day's locations (`WalkEvents.locations()`) nearest along her paths from `her`, by
+## the nearest of its own tiles they reach that is reachable from home (`_reachable_from_home()`,
+## `DayLocations.nearest_section_in()`), with no cap on how far: `paths`, the paths the close-by
+## search walked, first, then her paths over the whole city where those reach none. Of those, the
+## first where the roadblock `def` stands across it (`EventScheduler.across_the_section()`: off the
+## main road, on its carriageway), with neither it nor anything the section holds in her view
+## (`_drawing_shows()`), and holding none of the city's fixed parts (`Planned.is_a_fixed_part()`).
+## Each roadblock checked is built on a fresh stream, never the director's, since a stationary one
+## draws nothing.
+## Answers `[the section, the roadblock checked across it]`, the very plan whose place was asked of
+## her view, so what is put there is what was checked; `[]` where none does or the walk has no
+## locations. *Read as, the orchestrator's and open to
+## correction:* nearest along her paths, a section not yet drawn taken like any other (fork 7 of the
+## placement proposal); and the city's fixed parts, which the player gave phases of their own, are not
+## the day's events to replace, while the burnt shell, "just regular events" to the player, is
+## (inbox #1185).
+func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> Array:
+	var locations := _walk.locations()
+	if not locations:
+		return []
+	var row := def.for_day(_day)
+	var checked := {}
+	var may_take := func(section: Location) -> bool:
+		# Stationary, so it draws nothing from a stream: a fresh one, never the director's.
+		var across := EventScheduler.across_the_section(row, _map, section,
+				RandomNumberGenerator.new())
+		if across == null or _drawing_shows(row, across.placed_at()):
+			return false
+		for plan in _walk.placed_within(_map.tile_rect_to_world(section.tiles())):
+			if plan.is_a_fixed_part() or _drawing_shows(plan.row(), plan.where_it_stands_now()):
+				return false
+		checked[section] = across
+		return true
+	var section := locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths,
+			_reachable_from_home, may_take)
+	if not section:
+		var whole_city := Vector2(Tuning.CITY_BLOCKS * CityMap.period()).length() * Tuning.TILE_SIZE
+		section = locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT,
+				_paths_reach_between(her, 0.0, whole_city), _reachable_from_home, may_take)
+	return [section, checked[section]] if section else []
 
 ## How far along her paths (`paths`, `tile -> its distance from her`) the nearest ground she can touch
 ## `plan` from is — within a tile and a half of its body, reachable from home — or `INF` when none is

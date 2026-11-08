@@ -35,15 +35,16 @@ func add(plan: EventScheduler.Planned) -> void:
 	_walk.add(plan)
 	_spawner.record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 
-## **`new` in place of `old`**: `old` spent, its body given back and taken out of the world if it
-## is in it, and `new` added with its body recorded, put in the world now and kept there for the
-## rest of the day, since a task's contact rides it (day 13's swap, `EventsAhead.
-## swap_in_a_task_row()`). Answers `new`'s live instance.
-func swap(old: EventScheduler.Planned, new: EventScheduler.Planned) -> EventInstance:
-	old.spend()
-	world.map.release_obstruction(old.get_instance_id())
-	if old.is_in_the_world():
-		stream_out(old)
+## **`new` across a section in place of what the section held** (`olds`, day 13's swap,
+## `EventsAhead.swap_in_a_section()`): each of `olds` spent, its body given back and taken out of the
+## world if it is in it, and `new` added with its body recorded, put in the world now and kept there
+## for the rest of the day, since a task's contact rides it. Answers `new`'s live instance.
+func swap_section(olds: Array[EventScheduler.Planned], new: EventScheduler.Planned) -> EventInstance:
+	for old in olds:
+		old.spend()
+		world.map.release_obstruction(old.get_instance_id())
+		if old.is_in_the_world():
+			stream_out(old)
 	add(new)
 	stream_in(new)
 	new.keep_in_the_world()

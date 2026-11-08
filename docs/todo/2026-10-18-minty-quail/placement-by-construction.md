@@ -14,11 +14,8 @@ refactors come first", "everything else would be meaningless" (inbox #1185).
 by line; its numbered list says where the code differs. Nothing in that section is reopened here.
 
 **Build:** what is left of the design, on the locations (`DayLocations`, `StreetLocations`,
-`Location`, each street's view from `Corridor.view_of()`) and the roadblock phase (`RoadblockPhase`)
-that are built:
-- day 13's task: a roadblock close by along her paths (576, 896, then 1,024px from where she reads
-  the chalk mark), else the nearest off-screen route-adjacent section's content replaced by a
-  roadblock;
+`Location`, each street's view from `Corridor.view_of()`), the roadblock phase (`RoadblockPhase`) and day 13's
+section swap that are built:
 - a bag per view holding every event possible in it, each as many times as its weight, empty
   included; a location's event is what its bag draws, with the events the street's other draws make
   invalid left out (today's placement rules, `_judge()`'s route-opening checks among them, become
@@ -29,8 +26,6 @@ that are built:
 - every other location drawn during the walk.
 
 It replaces, and deletes: the roll and judgement of `EventScheduler._place_one()`, `_best_of()`,
-`_judge()` as a placement step and `_copies_of()`; the swap (`Planned.may_be_replaced()`,
-`ResistanceDirector._places_to_swap()`, `WalkSiting.in_place_of()`); and whatever only they used.
-Day 13's swap misses (33 of 480 real chalk marks in `tests/probes/minty_quail_day13_real_marks.gd`)
-go to none. A step is done at test parity (minty-quail's README); what changes on purpose is listed
+`_judge()` as a placement step and `_copies_of()`; and whatever only they used.
+A step is done at test parity (minty-quail's README); what changes on purpose is listed
 for the remeasure.

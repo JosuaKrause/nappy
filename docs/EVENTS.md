@@ -1267,6 +1267,16 @@ then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
 - The event it takes is route-adjacent, since "anything deep wouldn't be reachable at all"
   (gray-dolphin #1173).
 - It never takes the guard houses or the district barriers (gray-dolphin #1173).
+- *Read as* (the orchestrator's, open to correction): the section it takes is the nearest along her
+  paths, with no cap on how far, and a section whose locations are not yet drawn takes the
+  roadblock like any other. `ResistanceDirector._section_to_swap()` chooses it from the day's
+  locations (`DayLocations.nearest_section_in()`), and the guard houses and barriers stand on streets
+  none of whose sections is open.
+- *Read as* (the orchestrator's, open to correction): a section holding one of the city's fixed
+  parts is not taken: the region wall, its doors, the seals (the soft ones included, which stand on
+  streets no hold closes), the masts and the ambient rows, which the player gave phases of their own
+  (inbox #1185; `Planned.is_a_fixed_part()`). The burnt shell is a regular event ("your scars are
+  just regular events", inbox #1185), so its section may be taken.
 
 **The order, as the player gave it** (inbox #1185):
 1. The routes are established.
@@ -1291,10 +1301,11 @@ Each item quotes the code on this branch.
      (`_room_around()`), and the roomiest is taken.
    - **Rejection.** A row whose tries are all refused is not placed:
      `if not placement: continue`.
-2. **Locations are laid out on day 13 alone, and only the roadblock phase places into them.** On
-   that day every street's three sections and their sidewalk locations are laid out at dawn
-   (`DayLocations`), handed to the roadblock phase and dropped once it is done; on every other day
-   nothing is laid out.
+2. **Locations are laid out on day 13 alone, and only day 13's roadblocks are placed into them.**
+   On that day every street's three sections and their sidewalk locations are laid out at dawn
+   (`DayLocations`), where the roadblock phase assigns its sections, and handed on to the walk,
+   where the task's swap takes one (`WalkEvents.locations()`); on every other day nothing is laid
+   out.
    - For the fill, a candidate is any tile of a row's own ground.
    - The views appear there only as weights (`_copies_of()`, by `Corridor.depth()`) and as refusals
      (`if corridor.carries_a_route(tile): return 0` for a wall).
@@ -1334,25 +1345,11 @@ Each item quotes the code on this branch.
      - the `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows;
      - the `on_her_way` rows (`EventDirector.site_what_is_on_her_way()`);
      - day 11's added mast.
-8. **The swap is narrowed and judged.**
-   - `Planned.may_be_replaced()` adds standing still and not having noticed her:
-     `return is_placed() and not is_spent() and stands_still() and not is_door() and not
-     is_in_the_wall() and not is_permanent() and not _has_noticed_her()`.
-   - `_places_to_swap()` keeps only candidates touched within 1,024px:
-     `var distance := _touched_within(plan, paths, reach)`.
-   - `WalkSiting.in_place_of()` judges the roadblock again, and may move or refuse it:
-     `if not own.has(tile): continue` and `if room == INF: return candidate`, over tiles of the
-     street within `SWAP_SPREAD_TILES` (3).
-   - On the 480 real chalk marks that `tests/probes/minty_quail_day13_real_marks.gd` reads, this
-     leaves 33 with nothing to swap.
-9. **Only the roadblock phase reads the views.** `Corridor.view_of()` decides them once, but the
+8. **Only day 13's roadblocks read the views.** `Corridor.view_of()` decides them once, but the
    fill still weights and refuses by its own questions: a wall is refused only where the route runs
    along the tile's own cell (`Corridor.carries_a_route()`), so the far sidewalk of a route street
    takes walls, and route-adjacent is weighted as `depth() <= 1`, which leaves out the streets a
    junction only a park or alley cut crosses touches.
-10. **A swapped-in roadblock takes one tile, not a section.** `WalkSiting.in_place_of()` builds it
-    on one tile of the event's street (`EventScheduler._build_placement(def, _map, tile, rng)`), and
-    the event it replaces is the only plan spent (`EventStreaming.swap()`: `old.spend()`).
 
 ## Scheduling
 
