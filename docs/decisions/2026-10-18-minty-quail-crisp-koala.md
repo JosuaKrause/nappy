@@ -1,7 +1,7 @@
 # minty-quail — After dawn: one reader of the walk's events, no live reachability check, day 13's roadblock found or swapped in, no convoy barricade · 2026-11-07
 
 
-minty-quail's `walk-placed-blockers.md`, in #1169. The design is the player's words in inbox #1173,
+minty-quail's walk-placed-blockers item, built whole in #1169. The design is the player's words in inbox #1173,
 #1177, #1179, #1182, #1183 and #1185 in gray-dolphin, and the orchestrator's readings marked there;
 #1169's description holds the build commit by commit.
 
@@ -33,7 +33,14 @@ minty-quail's `walk-placed-blockers.md`, in #1169. The design is the player's wo
   task roadblock stands on its far side from the way she comes, fixed the first frame the
   roadblock the red arrow points at is drawn on screen; before that the side follows where she
   stands, and a guard on her side then is moved unseen once he and the new spot are out of her
-  view. Nothing checks reachability.
+  view. The decided side belongs to the roadblock's place, the tile its body stands on, so a
+  roadblock that streams out and back in keeps it; seen again from its other side, it is not
+  decided again. Nothing checks reachability.
+- **The placement design is written down** (inbox #1185 in gray-dolphin): `docs/EVENTS.md`, "The
+  three views and the placement order", the player's design (placement by construction: the three
+  views on the route, route-adjacent and off the route, each with its own bag; a street's three
+  sections and six locations; the roadblock phase at dawn; the section swap) and where the code
+  differs from it. The events skill points to it before every placement change.
 - **Two of the re-derived cases** (`re-derived-cases.md`'s after-dawn half): the walkability repair
   reads its calm tiles from the day's `CalmAreas`, and a scene recipe builds its `CalmAreas` once.
 - **Measured.** The placement fingerprint (days 1, 4, 8, 9, 10, 12, 14, the escape, the building)
@@ -51,9 +58,9 @@ minty-quail's `walk-placed-blockers.md`, in #1169. The design is the player's wo
   cities) have nothing to swap: at 25 no event within 1,024px stands where a swap is allowed, at 8
   a roadblock's own placement rules refuse the candidate (a held street, unused calm ground, a
   door's clearance). Before the swap took in-world events and sidewalk ones, 52 had nothing.
-
-**Left.** The 33 marks with nothing to swap: "it can always swap" is the player's reading, so the
-swap's search widens until every mark finds one (`walk-placed-blockers.md`, rewritten to hold only that).
+  **These misses stand**: the swap and the dawn roadblock pass work on tiles, and placement by
+  construction (locations, a bag per view, the roadblock phase, the section swap) replaces both
+  whole after #1169, so neither is changed further here.
 
 **Rejected.**
 - A roadblock added mid-walk on the edge of the 576px circle round her when nothing was near and
@@ -65,6 +72,14 @@ swap's search widens until every mark finds one (`walk-placed-blockers.md`, rewr
   (inbox #1185 in gray-dolphin).
 - A swapped-in body no wider than the one it replaces: not needed, since a body off the routes
   closes none of them (inbox #1185 in gray-dolphin).
+- Dawn standing a roadblock close by every place the chalk mark can be read, to cover the 33
+  misses: the orchestrator's reading, withdrawn when the player restated the design (inbox #1185
+  in gray-dolphin).
+- Widening the swap past 1,024px and to the streets a route runs along, which a queue item held
+  for a while: not the player's measure, and the swap is replaced by placement by construction.
+- Narrowing the swap to the design on tiles (dropping standing still, having noticed her, the
+  re-judged placement and the 1,024px cap): left for placement by construction, so the work is not
+  done twice (inbox #1185 in gray-dolphin).
 
 **Open to overturn** (the builder's choices where the design was silent):
 - the count: route tiles taken in the map's order, the first with no roadblock within 1,024px gets
@@ -75,5 +90,7 @@ swap's search widens until every mark finds one (`walk-placed-blockers.md`, rewr
   pull request;
 - the guard reads her position against the roadblock, not her heading, which flips with a turn;
   where the far side has no spot, he stands on her side and the run log says so;
+- the side is decided for the roadblock the red arrow points at when it first comes on screen,
+  since that is the roadblock she approaches (inbox #1185 in gray-dolphin);
 - the swap keeps "standing still", since a moving event leaves no place to take;
 - `test_walk_siting_spec` keeps only its source scan and spec check of the home-street rule.
