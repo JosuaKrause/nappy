@@ -125,8 +125,8 @@ read for an answer; where they give one, it is built, and the reading is stated 
 the pull request's description, open to the player's correction there.
 
 **The same holds for an open point anywhere, not only a board question** (inbox #1232): an `Open:`
-line in a queue item or a record, a "whether…" a filer left, or a point the orchestrator would
-raise in a chat answer. Before it is relayed, it is read against the player's recorded words, the
+line in a queue item or a record, or a "whether…" a filer left. When its task's investigation
+reaches it (below), it is read against the player's recorded words, the
 whole entry it sits in included (items filed from one note belong together). The words answer it
 where their plain meaning does, even if they never name the point (inbox #1234): a hint about a
 thing she sees fires when she first sees it. Where the words answer it, the answer is stated as the
@@ -136,7 +136,7 @@ player to restate.
 **An open point is investigated only with its task's full context** (inbox #1244): when the task is
 created and discussed with the player, or, for a point postponed then, when the task is picked up
 and its full investigation runs. Never in passing: not in an audit of other tasks' open points, not
-in a status answer, not from a report about other work. A question raised without the task's
+in a status answer, which relays no open point, not from a report about other work. A question raised without the task's
 context misreads the task or lacks what would make it unnecessary.
 
 **A conclusion is written down in the turn it is reached** (inbox #1244): a reading of the player's
