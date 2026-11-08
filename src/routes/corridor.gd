@@ -238,7 +238,32 @@ func is_beside_the_routes(tile: Vector2i) -> bool:
 	if not _grid:
 		return false
 	var segment := _network.segment_containing(tile)
-	if not segment or int(_segment_depth.get(segment.key(), DEEP)) == 0:
+	return segment != null and _is_beside_the_routes(segment)
+
+## **Which of the three views `segment` is in** (`PlacementView.View`, inbox #1185), the one
+## definition every location of the street is told at dawn (`DayLocations.lay_out()`):
+##
+## - **on the route** where a route runs along the street, both its sidewalks — the street's grain,
+##   which the player's example asks for: a restaurant drawn on one side leaves the side across it a
+##   subset to draw from (inbox #1185), so the street as a whole is the route's;
+## - **route-adjacent** where it is beside the routes (`is_beside_the_routes()`): off them, one of
+##   its two junctions crossed by a route, a junction a park or alley cut crosses included;
+## - **off the route** everywhere else, and everywhere for a corridor with no tree.
+##
+## *Read as, the orchestrator's and open to correction:* the street grain and the junctions a park or
+## alley cut crosses (forks 1(a) and 1(b) of the placement proposal).
+func view_of(segment: StreetNetwork.Segment) -> int:
+	if not _grid:
+		return PlacementView.View.OFF_THE_ROUTE
+	if int(_segment_depth.get(segment.key(), DEEP)) == 0:
+		return PlacementView.View.ON_THE_ROUTE
+	if _is_beside_the_routes(segment):
+		return PlacementView.View.ROUTE_ADJACENT
+	return PlacementView.View.OFF_THE_ROUTE
+
+## `is_beside_the_routes()` of a street rather than a tile.
+func _is_beside_the_routes(segment: StreetNetwork.Segment) -> bool:
+	if int(_segment_depth.get(segment.key(), DEEP)) == 0:
 		return false
 	if _junction_set.is_empty():
 		for junction in _junctions:

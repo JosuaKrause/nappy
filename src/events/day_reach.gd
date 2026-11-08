@@ -36,7 +36,7 @@ static func of(map: CityMap, plans: Array[EventScheduler.Planned]) -> DayReach:
 ## **The ground `plans` shut on `map`** (`tile -> true`), as `map` stands now: the disc of every plan
 ## that blocks the way, today's closures and the soft seals' bands. What a reach is flooded over, for
 ## a caller that needs only the ground: dawn, placing day 13's roadblocks before the walk is planned
-## (`EventScheduler._place_beside_the_routes()`).
+## (`EventScheduler._place_the_roadblocks()`).
 static func shut_by(map: CityMap, plans: Array[EventScheduler.Planned]) -> Dictionary:
 	var blockers: Array[EventScheduler.Planned] = []
 	for plan in plans:
@@ -67,7 +67,7 @@ func paths_within(map: CityMap, seeds: Array[Vector2i], centre: Vector2, radius:
 	return paths_over(map, _shut, seeds, centre, radius)
 
 ## `paths_within()` over `shut` rather than a reach's own: the one walk both the task's measure and
-## dawn's (`EventScheduler._place_beside_the_routes()`) take, so the two measure close by alike.
+## dawn's (`EventScheduler._place_the_roadblocks()`) take, so the two measure close by alike.
 ## They measure it over different ground: dawn over what stood when its pass ran, the task over the
 ## walk's whole plan, which the passes after dawn's shut more of (`EventScheduler.
 ## _count_what_is_left_uncovered()` counts the route tiles that leaves without a roadblock).

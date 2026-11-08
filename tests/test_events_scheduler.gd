@@ -43,6 +43,7 @@ func run(t) -> void:
 	_test_the_repair_keeps_a_route_to_the_clean_calm_ground_not_the_spoiled(t)
 	_test_nothing_beside_the_routes_stands_on_the_main_road(t)
 	_test_day_13s_roadblocks_stand_beside_the_routes(t)
+	_test_a_roadblock_leaves_no_section_within_its_spacing_offered(t)
 
 
 func _signature(planned: Array) -> String:
@@ -723,12 +724,16 @@ func _test_nothing_beside_the_routes_stands_on_the_main_road(t) -> void:
 	t.check(not EventScheduler.stands_beside_the_routes(map, corridor,
 			middle.call(Vector3i(2, 2, 0))), "and a street the route runs along does not")
 
-## **Day 13's dawn stands its roadblocks beside her routes, spaced, and says how many route tiles it
-## leaves without one** (inbox #1185, inbox #1186): the day planned with the task's row
-## (`build_day()`'s `beside_the_routes`) on the suite's own city, where the run log names each one
-## it stood. Each is on a street beside the routes (`Corridor.is_beside_the_routes()`), off every
-## tile a route runs along and off the main road, nothing else stands within `EVENT_SPACING_ANY` of
-## it, and the count of route tiles left with none close by is written once the day is planned.
+## **Day 13's roadblock phase stands its roadblocks beside her routes and says how many route tiles
+## it leaves without one** (inbox #1185, inbox #1186): the day planned with the task's row
+## (`build_day()`'s `beside_the_routes`, `RoadblockPhase`) on the suite's own city, where the run log
+## names each one it stood. Each is on a street beside the routes (`Corridor.is_beside_the_routes()`),
+## off every tile a route runs along and off the main road, nothing else stands within
+## `EVENT_SPACING_ANY` of it, no two of them stand within `EVENT_SPACING_SAME` of each other (the
+## judged ground offers no section that close to one already placed), and the count of route tiles
+## left with none close by is written once the day is planned. The phase's own draw, its bias and its
+## stop are checked with stand-ins in `tests/test_roadblock_phase.gd`; this holds the phase and the
+## day's real ground together.
 func _test_day_13s_roadblocks_stand_beside_the_routes(t) -> void:
 	var map := _map()
 	var day := 13
@@ -770,6 +775,60 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t) -> void:
 		t.check(nearest >= EventScheduler.EVENT_SPACING_ANY,
 				"and nothing else the day placed stands within %.0fpx of it (%.0fpx)"
 				% [EventScheduler.EVENT_SPACING_ANY, nearest])
+	var nearest_pair := INF
+	for i in stood.size():
+		for j in range(i + 1, stood.size()):
+			nearest_pair = minf(nearest_pair,
+					map.tile_to_world(stood[i]).distance_to(map.tile_to_world(stood[j])))
+	t.check(nearest_pair >= EventScheduler.EVENT_SPACING_SAME,
+			("no two of the phase's roadblocks stand within %.0fpx of each other: the spacing " +
+			"between two of a row invalidates (nearest %.0fpx)")
+			% [EventScheduler.EVENT_SPACING_SAME, nearest_pair])
 	var left := RegEx.create_from_string("^plan (\\d+) of (\\d+) route tiles").search(counted)
 	t.check(left != null and int(left.get_string(1)) < int(left.get_string(2)),
 			"the run log counts the route tiles left with no roadblock close by (%s)" % counted)
+
+## **Once a roadblock stands, the day's ground offers no section a roadblock within
+## `EVENT_SPACING_SAME` of it** (the spacing between two of a row as an invalidation, the
+## orchestrator's reading of inbox #1185, open to correction): on the suite's own city on day 13,
+## the judged ground the roadblock phase asks (`EventScheduler.JudgedRoadblockGround`) is asked of
+## every route-adjacent section before and after one roadblock stands. Sections it offered one
+## within that spacing before are offered none, or one standing clear of it, after.
+func _test_a_roadblock_leaves_no_section_within_its_spacing_offered(t) -> void:
+	var map := _map()
+	var day := 13
+	var corridor := Corridor.of(RouteTree.for_day(map, day))
+	var def := EventCatalogue.by_id("roadblock").for_day(day)
+	var events := DayEvents.over(CalmAreas.of(map))
+	var judged := EventScheduler.JudgedRoadblockGround.new(def, day, map, events, {},
+			[] as Array[Rect2], corridor, PackedVector2Array(), null)
+	var sections := DayLocations.lay_out(map, corridor).sections_in(
+			PlacementView.View.ROUTE_ADJACENT)
+	var first: EventScheduler.Planned = null
+	var before := {}
+	for section in sections:
+		var offered := judged.offer(section)
+		if offered == null:
+			continue
+		if first == null:
+			first = offered
+		before[section] = offered
+	t.check(first != null, "the city's route-adjacent sections are offered roadblocks (%d)"
+			% before.size())
+	if first == null:
+		return
+	var near_before := 0
+	for section: Location in before:
+		var offered: EventScheduler.Planned = before[section]
+		if offered != first and offered.gap_to(first) < EventScheduler.EVENT_SPACING_SAME:
+			near_before += 1
+	judged.stand(first)
+	var near_after := 0
+	for section in sections:
+		var offered := judged.offer(section)
+		if offered != null and offered.gap_to(first) < EventScheduler.EVENT_SPACING_SAME:
+			near_after += 1
+	t.check(near_before > 0, "before it stands, sections within %.0fpx of it are offered one (%d)"
+			% [EventScheduler.EVENT_SPACING_SAME, near_before])
+	t.check(near_after == 0, "once it stands, none within %.0fpx of it is (%d)"
+			% [EventScheduler.EVENT_SPACING_SAME, near_after])

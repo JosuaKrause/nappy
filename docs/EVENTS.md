@@ -1187,11 +1187,17 @@ reachability check is ruled out (gray-dolphin #1173).
 
 **There are three views on events in the city: on the route, route-adjacent, and off the route**
 (inbox #1185).
-- **On the route** is the ground the safe routes run along.
+- **On the route** is the ground the safe routes run along. *Read as* (the orchestrator's, open to
+  correction): a street a route runs along, both its sidewalks. The player's example of a restaurant
+  on one side, with the side across drawn from a subset (inbox #1185), is about the street, so the
+  route's whole street is on the route, and the rules keep the route's own sidewalk open.
 - **Route-adjacent**: the player said "the off route events need to be route adjacent. anything deep
   wouldn't be reachable at all" (gray-dolphin #1173). *Read as* (the orchestrator's, open to
-  correction): off the routes, on a street touching one (gray-dolphin #1173).
+  correction): off the routes, on a street touching one (gray-dolphin #1173), which is a street one
+  of whose two junctions a route crosses, a junction only a park or alley cut crosses included.
 - **Off the route** is the third view (inbox #1185).
+- `Corridor.view_of()` is the one place the view of a street is decided, and each location is told
+  its view once, at dawn (`DayLocations`).
 
 **Placement is by construction, not by rules checked after placing.** Nothing tries an event in a
 spot and then checks what kind it is (inbox #1185).
@@ -1219,6 +1225,22 @@ route-adjacent locations and places roadblocks there, evenly spaced out: each ro
 biased toward the route-adjacent location farthest from the roadblocks already placed, a bias and
 not a strict rule. Those locations are then assigned, so no draw happens for them during the walk
 (inbox #1185).
+- *Read as* (the orchestrator's, open to correction): the roadblock phase is day 13's. It stops once
+  every route tile has a roadblock within 1,024px along her paths, the measure day 13's task searches
+  with, or once no section still offered would bring one within 1,024px of a route tile that has
+  none, or once 25 stand. Shown the count full coverage gave, 15 to 25, the player called it good
+  and said only a playtest can tell (inbox #1185), so where full coverage cannot be reached the count
+  stops rather than running on, and 25, the top of that count, is the cap. On days 7 to 12 a
+  roadblock is an ordinary event of the route-adjacent bag.
+- *Read as* (the orchestrator's, open to correction): the spacing between two of a row
+  (`EVENT_SPACING_SAME`, 256px) is one of the rules that make events invalid ("what your current
+  rules accomplish. the same applies still", inbox #1185). So once a roadblock is placed, no section
+  whose roadblock would stand within 256px of it is offered one, and the bias ranks the rest.
+- `RoadblockPhase` places them, in the sections of the day's locations (`DayLocations`). Every
+  route-adjacent section whose roadblock today's rules leave valid
+  (`EventScheduler.JudgedRoadblockGround`) is in each draw, weighted by the bias; the stop is asked
+  before each draw and never narrows it, so a section close by nothing new is drawn like any other
+  while another could still cover a route tile.
 
 **The city's fixed parts have phases of their own**, at dawn or at the start of the run: the
 region wall, its doors, the closures, the seals, the masts and the ambient rows (inbox #1185).
@@ -1269,9 +1291,12 @@ Each item quotes the code on this branch.
      (`_room_around()`), and the roomiest is taken.
    - **Rejection.** A row whose tries are all refused is not placed:
      `if not placement: continue`.
-2. **There are no locations per view.**
-   - A candidate is any tile of a row's own ground.
-   - The views appear only as weights (`_copies_of()`, by `Corridor.depth()`) and as refusals
+2. **Locations are laid out on day 13 alone, and only the roadblock phase places into them.** On
+   that day every street's three sections and their sidewalk locations are laid out at dawn
+   (`DayLocations`), handed to the roadblock phase and dropped once it is done; on every other day
+   nothing is laid out.
+   - For the fill, a candidate is any tile of a row's own ground.
+   - The views appear there only as weights (`_copies_of()`, by `Corridor.depth()`) and as refusals
      (`if corridor.carries_a_route(tile): return 0` for a wall).
 3. **There is no bag per view.**
    - The dawn pass is the weighted roll in item 1.
@@ -1295,16 +1320,13 @@ Each item quotes the code on this branch.
      clear, `_room_around()`). They become the invalidation applied when a street's other
      locations draw, rather than a refusal after a spot is rolled.
    - Nothing narrows a street's other draws once one of its events is drawn.
-5. **The roadblock phase is not an even spacing over route-adjacent locations.**
-   - `_place_beside_the_routes()` takes the route tiles in the map's order. The first one with no
-     roadblock within `TASK_ROW_CLOSE_BY` (1,024px) of its paths gets one, rolled by `_best_of()`
-     and judged by `_judge()`.
-   - It runs after `_place_ambient()`, `_place_scars()` and `_place_masts()`.
-   - Its spread is a rule, not a bias toward the location farthest from the roadblocks already
-     placed: a route tile already covered within 1,024px gets none.
-6. **The fill also places roadblocks**, by the rules in item 1.
-   - `roadblock` is a recurring row (`def.first_day = 7`, `def.max_per_day = 6`).
-   - On day 13, the task's close-by search takes any roadblock the day placed.
+5. **The fill also places roadblocks**, by the rules in item 1, where the design draws them as
+   ordinary events of the route-adjacent bag. It does so on day 13 too, after the roadblock phase;
+   the task's close-by search takes any roadblock the day placed.
+6. **The roadblock phase judges a section's roadblock with today's placement rules**
+   (`JudgedRoadblockGround.offer()` asks `_judge()`, and takes only a tile with room all round), which
+   is the invalidation item 4 describes, asked of the whole day rather than of a street's other
+   draws.
 7. **Most events are placed at dawn, not drawn during the walk.**
    - The fill places its rows in the morning.
    - During the walk, only these are sited ahead of her:
@@ -1323,15 +1345,11 @@ Each item quotes the code on this branch.
      street within `SWAP_SPREAD_TILES` (3).
    - On the 480 real chalk marks that `tests/probes/minty_quail_day13_real_marks.gd` reads, this
      leaves 33 with nothing to swap.
-9. **"On the route" and "route-adjacent" are each asked two ways.**
-   - A wall is refused only where the route runs along the tile's own cell
-     (`Corridor.carries_a_route()`). So the far sidewalk of a route street takes walls.
-   - The roadblock phase treats that whole street as on the route
-     (`Corridor.is_beside_the_routes()`: `if not segment or int(_segment_depth.get(segment.key(),
-     DEEP)) == 0: return false`).
-   - The fill weights route-adjacent as `depth() <= 1`. The roadblock phase asks
-     `is_beside_the_routes()`, whose `route_junctions()` also holds junctions that park and alley
-     cuts cross.
+9. **Only the roadblock phase reads the views.** `Corridor.view_of()` decides them once, but the
+   fill still weights and refuses by its own questions: a wall is refused only where the route runs
+   along the tile's own cell (`Corridor.carries_a_route()`), so the far sidewalk of a route street
+   takes walls, and route-adjacent is weighted as `depth() <= 1`, which leaves out the streets a
+   junction only a park or alley cut crosses touches.
 10. **A swapped-in roadblock takes one tile, not a section.** `WalkSiting.in_place_of()` builds it
     on one tile of the event's street (`EventScheduler._build_placement(def, _map, tile, rng)`), and
     the event it replaces is the only plan spent (`EventStreaming.swap()`: `old.spend()`).

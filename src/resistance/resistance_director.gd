@@ -1711,7 +1711,7 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 ## "let's not rig the roadblock let's place one properly and guide to that -- just make sure it's
 ## closeby"; inbox #1185: use a roadblock the day placed, and swap one in when none is close by)*.
 ## Dawn stands roadblocks beside her routes so that one usually is
-## (`EventScheduler._place_beside_the_routes()`). Close by is walked from where she read the mark,
+## (`EventScheduler._place_the_roadblocks()`). Close by is walked from where she read the mark,
 ## out to `NEAR_THE_MARK` and then each of `ROADBLOCK_WIDER_REACH` in turn, nearest first
 ## (`_paths_reach_between()`), and a place counts when ground she can touch it from is reached and
 ## is reachable from home (`_reachable_from_home()`):

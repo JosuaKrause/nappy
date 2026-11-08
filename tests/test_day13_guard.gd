@@ -114,8 +114,16 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	_view = Rect2(where - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
 	_settle_the_arrow(director)
 
-	var other := _her_way_to_another_roadblock(director, player, director.rider())
-	t.check(other != null, "there is another live roadblock she can walk up to (%d live)"
+	# The case needs a roadblock whose ground all round, out to where its guard may stand, lies
+	# clear of the guard where he stands now (the square the view below is set to): one that close
+	# to the task's own would put him in that view before he moved.
+	var everywhere := Vector2.ONE * (ResistanceDirector.TASK_GUARD_FARTHEST + 64.0)
+	var clear_of_him := func(roadblock: EventInstance) -> bool:
+		var square := Rect2(roadblock.body_position() - everywhere, everywhere * 2.0)
+		return not square.intersects(Rect2(where + Vector2(-14.0, -48.0), Vector2(28.0, 52.0)))
+	var other := _her_way_to_another_roadblock(director, player, director.rider(), clear_of_him)
+	t.check(other != null, ("there is another live roadblock she can walk up to whose ground round " +
+			"it is clear of where the guard stands (%d live)")
 			% ResistanceReads.answering(city.events, step).size())
 	if other == null:
 		_tear_down(player, director, city)
@@ -129,9 +137,9 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 
 	# Everywhere he may stand round the roadblock she approaches is in her view: he stays.
 	var around := other.body_position()
-	var everywhere := Vector2.ONE * (ResistanceDirector.TASK_GUARD_FARTHEST + 64.0)
+	# He stands out of that view himself: the premise the other roadblock was chosen by
+	# (`clear_of_him` above, the same square and his same rect) holds it.
 	_view = Rect2(around - everywhere, everywhere * 2.0)
-	t.check(not _guard_in_view(where), "he stands out of that view himself")
 	_choose_again(director)
 	t.check(_task_guard() == first and first.global_position == where,
 			"the guard does not move while all the ground round the roadblock she approaches is in view")
@@ -378,12 +386,16 @@ func _test_a_roadblock_streamed_out_and_in_keeps_its_side(t) -> void:
 	var rider := director.rider()
 	var guard := _task_guard()
 	# One other roadblock is kept, the first with open ground on either side of it away from the
-	# task's own, and the day's others are finished first, so the contact, which follows her between
-	# look-alikes, never rides one taken away under it.
+	# task's own, off the task's own street line (from out along one line, one stands behind the
+	# other) and with somewhere she may walk up to it from (`_spots_to_walk_up_from()`); the day's
+	# others are finished first, so the contact, which follows her between look-alikes, never rides
+	# one taken away under it.
 	var kept: EventInstance = null
 	for live in ResistanceReads.answering(city.events, director.current_step()):
 		if rider and live != rider and kept == null \
-				and not _either_side_of(city.map, live.body_position(), rider.body_position()).is_empty():
+				and not _either_side_of(city.map, live.body_position(), rider.body_position()).is_empty() \
+				and not _on_one_street_line(city.map, live.body_position(), rider.body_position()) \
+				and not _spots_to_walk_up_from(city.map, live).is_empty():
 			kept = live
 	for live in ResistanceReads.answering(city.events, director.current_step()):
 		if live != rider and live != kept:
@@ -679,7 +691,9 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 		var dir := Vector2.RIGHT.rotated(TAU * i / 16.0)
 		var at := guard.global_position + dir * 150.0
 		var far := guard.global_position + dir * 1200.0
-		if map.is_walkable(map.world_to_tile(at)) and map.clear_line(guard.global_position, at):
+		# Clear as he sees it (`EventInstance.clear_line_to()`, what his notice asks), the band and
+		# the bodies round it in the way included, which the map's own line does not know of.
+		if map.is_walkable(map.world_to_tile(at)) and guard.clear_line_to(at):
 			her = at
 			away = dir
 			break
@@ -908,27 +922,46 @@ static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
 ## roadblock has such a spot. Only where the street runs on past the roadblock on its far side from
 ## her (`_a_street_beyond()`), where its guard stands. Each try settles the arrow the way `main`'s ticks do
 ## (`_settle_the_arrow()`), so whatever the arrow's choices do to the guard on the way, they do here.
+## `accept`, when given, is the premise the caller's case needs of the roadblock (it is handed the
+## roadblock and answers whether it will do): a roadblock it refuses is passed over.
 func _her_way_to_another_roadblock(director: ResistanceDirector, player: Stroller,
-		guarded: EventInstance) -> EventInstance:
+		guarded: EventInstance, accept := Callable()) -> EventInstance:
 	var map := _city.map
 	for roadblock in ResistanceReads.answering(_city.events, director.current_step()):
-		if roadblock == guarded:
+		if roadblock == guarded or (accept.is_valid() and not accept.call(roadblock)):
 			continue
-		var centre := map.world_to_tile(roadblock.body_position())
-		# Far enough out that the band round it is mostly out of his trigger range of her, so a spot
-		# for him is found at once when nothing is in view.
-		for radius in [12, 10, 14, 8, 16, 6]:
-			for offset: Vector2i in [Vector2i(radius, 0), Vector2i(-radius, 0), Vector2i(0, radius),
-					Vector2i(0, -radius)]:
-				var tile := centre + offset
-				if not map.is_walkable(tile) or map.is_obstructed(tile) or map.is_closed(tile) \
-						or not _a_street_beyond(map, centre, -offset / radius):
-					continue
-				player.global_position = map.tile_to_world(tile)
-				_settle_the_arrow(director)
-				if ResistanceReads.pointed_at(director, [roadblock] as Array[EventInstance]) == roadblock:
-					return roadblock
+		for tile in _spots_to_walk_up_from(map, roadblock):
+			player.global_position = map.tile_to_world(tile)
+			_settle_the_arrow(director)
+			if ResistanceReads.pointed_at(director, [roadblock] as Array[EventInstance]) == roadblock:
+				return roadblock
 	return null
+
+## Where she may stand to walk up to `roadblock`, nearest the try order first: open ground out along
+## the streets from it, far enough out that the band round it is mostly out of his trigger range of
+## her, so a spot for him is found at once when nothing is in view, and only where the street runs on
+## past it on its far side from her (`_a_street_beyond()`), where its guard stands.
+func _spots_to_walk_up_from(map: CityMap, roadblock: EventInstance) -> Array[Vector2i]:
+	var centre := map.world_to_tile(roadblock.body_position())
+	var spots: Array[Vector2i] = []
+	for radius in [12, 10, 14, 8, 16, 6]:
+		for offset: Vector2i in [Vector2i(radius, 0), Vector2i(-radius, 0), Vector2i(0, radius),
+				Vector2i(0, -radius)]:
+			var tile := centre + offset
+			if not map.is_walkable(tile) or map.is_obstructed(tile) or map.is_closed(tile) \
+					or not _a_street_beyond(map, centre, -offset / radius):
+				continue
+			spots.append(tile)
+	return spots
+
+## Whether two roadblocks stand on one street line: their streets run the same way along the same
+## line of the lattice, so from out along it one stands behind the other.
+static func _on_one_street_line(map: CityMap, a: Vector2, b: Vector2) -> bool:
+	var first := map.network.segment_containing(map.world_to_tile(a))
+	var second := map.network.segment_containing(map.world_to_tile(b))
+	if first == null or second == null or first.horizontal != second.horizontal:
+		return false
+	return first.a.y == second.a.y if first.horizontal else first.a.x == second.a.x
 
 ## Whether the street through a roadblock at `centre` runs on in `direction` to ground a guard may
 ## stand on past its band, out to `ResistanceDirector.TASK_GUARD_FARTHEST`, with a clear line back to
