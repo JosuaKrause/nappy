@@ -1189,8 +1189,8 @@ reachability check is ruled out (gray-dolphin #1173).
 (inbox #1185).
 - **On the route** is the ground the safe routes run along.
 - **Route-adjacent**: the player said "the off route events need to be route adjacent. anything deep
-  wouldn't be reachable at all" (gray-dolphin #1173). *Read as* (the orchestrator's, which the
-  player agreed with): off the routes, on a street touching one (gray-dolphin #1173).
+  wouldn't be reachable at all" (gray-dolphin #1173). *Read as* (the orchestrator's, open to
+  correction): off the routes, on a street touching one (gray-dolphin #1173).
 - **Off the route** is the third view (inbox #1185).
 
 **Placement is by construction, not by rules checked after placing.** Nothing tries an event in a
@@ -1244,7 +1244,7 @@ then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
   event's whole section (inbox #1185).
 - The event it takes is route-adjacent, since "anything deep wouldn't be reachable at all"
   (gray-dolphin #1173).
-- It never takes the region wall's guard houses, doors or barriers (gray-dolphin #1173).
+- It never takes the guard houses or the district barriers (gray-dolphin #1173).
 
 **The order, as the player gave it** (inbox #1185):
 1. The routes are established.
