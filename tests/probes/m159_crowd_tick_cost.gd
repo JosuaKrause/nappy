@@ -139,7 +139,7 @@ func _split_tick(crowd: Crowd) -> Array[int]:
 	if crowd._signals:
 		crowd._signals.advance(STEP)
 	stamps.append(Time.get_ticks_usec())
-	crowd._pockets.refresh(crowd._map, crowd._crossable_segments)
+	crowd._pockets.refresh(crowd._map)
 	stamps.append(Time.get_ticks_usec())
 	var lanes := crowd._resolve_the_queues()
 	stamps.append(Time.get_ticks_usec())

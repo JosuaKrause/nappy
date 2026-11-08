@@ -72,25 +72,6 @@ var view: CrowdView = null
 ## the way it always did. See `TrafficIndex`.
 var traffic: TrafficIndex
 
-## Today's region-door segment keys (`StreetNetwork.Segment.key()` -> `true`), held by reference
-## and rebuilt once a day by `Crowd.start_day()` from `DayStreets.region_plan().doors`. Empty for an
-## agent built by hand in a test or for a rig with no city behind it, which then treats every held
-## segment as wall the way `cannot_go_on` already would. The one carve-out `CityMap.is_held_at`
-## does not make on its own: a wall segment and a hard seal's segment are shut outright, but a
-## door is a crossing the day's structure means to keep open — a car brakes and queues for the
-## gate (`Crowd._stop_for_gates()`) rather than being turned away at the last junction, and a
-## walker crosses unless its own `WalkerStrategy.DoorAnswer` is to turn back.
-var door_segments := {}
-
-## The segments bordering the home block, the second carve-out `is_held_at` cannot make on its
-## own — rebuilt beside `door_segments` from `map.network.around_blocks(Rect2i(map.home_block,
-## Vector2i.ONE))`, the exact set `EventManager.start_day` holds them from for the opposite reason:
-## those segments are held only so no catalogue row lands on the home block's own street, never
-## because a body stands across it. The home is a notch with one exit, she walks out onto one of
-## these every morning, and `held_segments` has no way to say *why* a segment is held — this list
-## is the crowd's own answer, the same shape `door_segments` already is.
-var home_segments := {}
-
 ## Where today's seals have left ground this agent could get into and not out of, or `null` for an
 ## agent built by hand in a test, which then treats every street as somewhere it can leave. Held by
 ## reference and shared with the rest of the crowd, since it is a fact about the day's map rather
@@ -299,7 +280,7 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 		_choose_lane(axis_roll)
 		var bounds := field.along_bounds(_vertical)
 		# **A held segment can swallow most of a corridor's visible stretch** — a region wall or a
-		# hard seal is kept off `held_segments` by the tile, not by a fraction of it, so a field
+		# hard seal is kept off `held` by the tile, not by a fraction of it, so a field
 		# centred close to one narrows the open ground a random draw can land on far more than a
 		# precinct's own bollards ever do. More draws is the same "retry is not a guarantee" trade
 		# as above, carried far enough that the small decision keeps up with how narrow it can get.
@@ -402,14 +383,13 @@ const ENTRY_PICTURE_ROOM := 2.0 * Tuning.TILE_SIZE
 
 ## Whether a tile's own street segment is shut to this agent the way a hard blocker is: held for
 ## today (`CityMap.is_held_at` — a hard seal's segment, a region wall, a closure, or the streets
-## around the home block) and neither of the two carve-outs `held_segments` cannot make on its
-## own. A region door is a crossing anybody may still enter — a car brakes and queues for the gate
+## around the home block) and neither of the two carve-outs the day's holds name (`HeldStreets`).
+## A region door is a crossing anybody may still enter — a car brakes and queues for the gate
 ## rather than turning away, and so does a walker unless its own answer is to turn back. The home
 ## block's own bordering streets are held only so no catalogue row lands there, never because a body stands
 ## across one — she walks out onto one of them every morning, and the home is a notch with one exit,
-## so sealing it would seal her in. Both lists are empty outside a real day (a hand-built test agent,
-## a rig with no city, or before the wall itself stands), which is a harmless no-op: nothing is held
-## then either.
+## so sealing it would seal her in. Nothing is held outside a real day (a rig with no city, or
+## before the wall itself stands), which is a harmless no-op.
 ##
 ## Whether a hold shuts the street is the kind's (`LaneStrategy.shut_by_a_hold`): a car is turned
 ## away a junction before the body that stands across it, a walker walks up to the body itself. A
@@ -421,9 +401,9 @@ func _segment_is_shut(tile: Vector2i) -> bool:
 	if segment == null:
 		return strategy.shut_by_a_hold
 	var key := segment.key()
-	if home_segments.has(key):
+	if _map.held_streets().is_for(key, HeldStreets.Why.HOME):
 		return false
-	if door_segments.has(key):
+	if _map.held_streets().is_for(key, HeldStreets.Why.DOOR):
 		return strategy.door_is_shut(key)
 	return strategy.shut_by_a_hold
 

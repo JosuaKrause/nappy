@@ -211,37 +211,11 @@ var skip_agent_drawing := false
 ## city behind it. See `_stop_for_gates()`.
 var _gates: Array[RegionPlanner.GateState] = []
 
-## Today's region-door segment keys, handed to every agent as `CrowdAgent.door_segments` — the
-## carve-out `cannot_go_on` needs to tell a door from a wall or a hard seal, both of which
-## `CityMap.held_segments` holds the same way. Rebuilt every `start_day` from
-## `_streets.region_plan()`, which is already valid by the time this runs the same way it
-## already is by the time `main.gd` calls `set_gates()` — `City.start_day()` builds it before
-## `Crowd.start_day()` is ever called. Empty before the wall stands, or for a rig with no streets,
-## which then holds nothing a door either.
-var _door_segments := {}
-
-## The segments bordering the home block, handed to every agent as `CrowdAgent.home_segments` —
-## the second carve-out `cannot_go_on` needs, since `EventManager.start_day` holds those segments
-## too (`map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE))`, the identical set),
-## but only so no catalogue row lands on the home block's own street, never because a body stands
-## across it. Rebuilt every `start_day` beside `_door_segments`: the home block never moves, but
-## computing it fresh here is one loop over four segments and needs no assumption about what
-## `main.gd` has or has not called yet.
-var _home_segments := {}
-
 ## Where today's seals have left carriageway a car can drive into and not out of — a junction with
-## all four arms held, and whatever stub of lane is shut in with it. Built here because both
-## carve-outs above are part of the question (a street the traffic may still cross is not a wall of
-## a pocket) and kept as one object for the day, handed to every agent the way the two carve-outs
-## are. Walkers have no pocket: sealed-in ground is ground a person walks the whole of. See
-## `CrowdPockets`.
+## all four arms held, and whatever stub of lane is shut in with it. Kept as one object for the day
+## and handed to every agent. Walkers have no pocket: sealed-in ground is ground a person walks the
+## whole of. See `CrowdPockets`.
 var _pockets := CrowdPockets.new()
-## The two carve-outs above as one set, built once a day beside them and handed to `_pockets` on
-## every frame. A field rather than a function call, because the refresh runs in the physics frame
-## and a dictionary built to be thrown away is the kind of per-frame cost this class measures
-## elsewhere — the answer only changes when `start_day()` rebuilds the two lists it is made of.
-var _crossable_segments := {}
-
 ## Today's checkpoint huts, as the crowd sees them — one `WalkerDoorHold` per door body that
 ## detains, rebuilt every `start_day` from `DayStreets.region_plan().door_bodies`. Empty before
 ## the wall stands or for a rig with no streets, which then holds nobody at anything. See
@@ -326,16 +300,10 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	_field.uniform_walkers = uniform_walkers
 	_field.centre = focus if focus != Vector2.INF else _map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, _map.size)).get_center()
-	# Before either `_populate` call: a walker's own `setup()` re-rolls off `_stands_on_a_street()`,
-	# which refuses both carve-outs the same as any other held ground unless they are already in
-	# place.
-	_door_segments = {}
 	_door_holds = []
 	if _streets:
 		var plan := _streets.region_plan()
 		if plan:
-			for segment in plan.doors:
-				_door_segments[segment.key()] = true
 			# Every door body that **detains** — the hut on each sidewalk and the alley door's
 			# guard. The boom over the road detains nobody (`EventDef.SolidWhen.WHILE_LOWERED`), and it
 			# is the cars' in any case: `_stop_for_gates()` is its answer. Which hut a given walker
@@ -347,16 +315,11 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 				var hold := WalkerDoorHold.new()
 				hold.position = body.position
 				_door_holds.append(hold)
-	_home_segments = {}
-	for segment in _map.network.around_blocks(Rect2i(_map.home_block, Vector2i.ONE)):
-		_home_segments[segment.key()] = true
-	# Before either `_populate` call for the same reason the carve-outs above are: `setup()` refuses
-	# a spot in a pocket the way it refuses one behind a barrier, and a record built afterwards would
-	# refuse nothing on the morning it is most needed. Today's seals are already planned by here —
-	# `EventManager.start_day` runs before this in `main._start_day()` — and `refresh()` is what
-	# catches one that arrives later anyway.
-	_rebuild_the_crossable_segments()
-	_pockets.refresh(_map, _crossable_segments)
+	# Before either `_populate` call: `setup()` refuses a spot in a pocket the way it refuses one
+	# behind a barrier, and a record built afterwards would refuse nothing on the morning it is most
+	# needed. Today's seals are already planned by here — `EventManager.start_day` runs before this
+	# in `main._start_day()` — and `refresh()` is what catches one that arrives later anyway.
+	_pockets.refresh(_map)
 	var act := Tuning.act_for_day(day)
 	if populate:
 		# The recipe overview covers more ground at the existing field's density. Ordinary
@@ -419,8 +382,6 @@ func _make_an_agent() -> CrowdAgent:
 	var agent := CrowdAgent.new()
 	agent.skip_draw = skip_agent_drawing
 	agent.traffic = _traffic
-	agent.door_segments = _door_segments
-	agent.home_segments = _home_segments
 	agent.pockets = _pockets
 	agent.view = view
 	agent.frame_timing = timing
@@ -493,14 +454,6 @@ func recipe_coverage() -> Dictionary:
 ## just sealed is actually a pocket before asserting anything about who is standing in it.
 func pockets() -> CrowdPockets:
 	return _pockets
-
-## Rebuilds `_crossable_segments`: the held segments the crowd crosses anyway, which are the
-## region's doors and the streets around the home block. Both are held so that no catalogue row
-## lands on them, and neither has a body across it, so neither is a wall of a pocket. See
-## `_door_segments` and `_home_segments`.
-func _rebuild_the_crossable_segments() -> void:
-	_crossable_segments = _home_segments.duplicate()
-	_crossable_segments.merge(_door_segments)
 
 func clear() -> void:
 	for agent in _agents:
@@ -634,7 +587,7 @@ func _advance_the_world(delta: float) -> void:
 	# A no-op on every frame but the one after a seal moves — see `CrowdPockets.refresh()`. Beside
 	# the signal clock rather than inside `space_out_the_traffic()`, since it is a fact about the
 	# day's map that both kinds read and not part of resolving a queue.
-	_pockets.refresh(_map, _crossable_segments)
+	_pockets.refresh(_map)
 	# Traffic has to queue whether or not anybody is watching: a car driving through another one
 	# at the far end of the street is still a car driving through another one, and a test rig has
 	# no player in it.

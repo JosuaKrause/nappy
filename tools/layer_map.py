@@ -100,6 +100,7 @@ FILES: dict[str, str] = {
     "src/city/city_map.gd": "model",
     "src/city/city_state.gd": "model",
     "src/city/garbage_sacks.gd": "model",
+    "src/city/held_streets.gd": "model",
     "src/city/ground_tiles.gd": "model",
     "src/city/litter.gd": "model",
     "src/city/marble_bag.gd": "model",

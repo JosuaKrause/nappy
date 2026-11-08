@@ -10,13 +10,9 @@ what another place already worked out, is moved into one object that derives it 
 to whoever asks (designing-classes). The dawn cases were built with `DayEvents`, `CalmAreas` and
 `DayRepairs` (#1158); the after-dawn ones with `WalkEvents` and `DayReach` (#1169).
 
-**What is left: two cases, as the orchestrator's notes name them.** The survey that described the
-cases is gone, and the board's numbering of them (3, 4, 6 and 7 among them) was not kept with the
-names, so which number each is cannot be told from what is on disk. Each case is found again, with
-its places in the code, before it is designed. Where to look first:
+**What is left: one case, as the orchestrator's notes name it,** found again with its places in the
+code before it is designed; placement by construction (`placement-by-construction.md`) replaces the
+code it sits in, so it is done there or after:
 
-- **The held streets' reasons:** which street segments are held and why, which `CityMap.is_held()`
-  and `is_held_at()` answer and `CrowdPockets._shut_the_held_segments()` and
-  `ResistanceSteps.stands_on_held_ground()` read again for themselves.
 - **The ground cache:** which tiles each row may stand on (`EventScheduler.open_ground_for()`), a
   per-day cache `build_day()` builds at dawn and each `WalkSiting` builds again for itself.

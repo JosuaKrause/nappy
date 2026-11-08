@@ -72,14 +72,14 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	map.clear_day_holds()
 	for closure in closures:
 		if closure is RoadClosure:
-			map.hold_segment(closure.segment.key())
+			map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
 	for segment: StreetNetwork.Segment in region_plan.walls:
-		map.hold_segment(segment.key())
+		map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 	for segment: StreetNetwork.Segment in region_plan.doors:
-		map.hold_segment(segment.key())
+		map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
 	for segment: StreetNetwork.Segment in map.network.around_blocks(
 			Rect2i(map.home_block, Vector2i.ONE)):
-		map.hold_segment(segment.key())
+		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 
 	var boundary := {}
 	for segment: StreetNetwork.Segment in region_plan.walls:
@@ -97,7 +97,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 			off_tree += 1
 
 	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
-			map.held_segments)
+			map.held_streets())
 	var sealed := {}
 	var mouths := 0
 	for plan in seals:
