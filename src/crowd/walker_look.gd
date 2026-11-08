@@ -66,14 +66,14 @@ const IDLE_SPEED := 5.0
 
 ## The walker's stride, in the units `Stroller._walk_phase` uses: wrapped 0..TAU, advanced by distance
 ## actually covered rather than by time, so it stays in step at any speed the way the mother's own does.
-var gait_phase := 0.0
+var _gait_phase := 0.0
 
 ## A placement starts the stride at rest, which keeps it deterministic for a given seed, the same
 ## reason `Stroller.reset_at()` zeroes `_walk_phase` for a new day.
 ##
 ## Overrides AgentLook.restart.
 func restart() -> void:
-	gait_phase = 0.0
+	_gait_phase = 0.0
 
 ## Adds the ground this tick covered, `velocity()` being the along-lane speed the crowd already
 ## stops to zero at a give-way, a queue or a light. Not idempotent, so it runs once per tick rather
@@ -81,7 +81,7 @@ func restart() -> void:
 ##
 ## Overrides AgentLook.advance.
 func advance(moving: Vector2, delta: float) -> void:
-	gait_phase = wrapf(gait_phase + moving.length() * delta * GAIT_RATE, 0.0, TAU)
+	_gait_phase = wrapf(_gait_phase + moving.length() * delta * GAIT_RATE, 0.0, TAU)
 
 ## Which of the two gait frames to draw: frame 1 (feet passing) for half of every stride while
 ## moving, frame 0 (the rest pose) otherwise — `Stroller._draw_mother()`'s own `stepping` test,
@@ -93,7 +93,7 @@ func gait_frame() -> int:
 func gait_frame_at(along: Vector2) -> int:
 	if along.length() <= IDLE_SPEED:
 		return 0
-	return 1 if sin(gait_phase * 2.0) > 0.0 else 0
+	return 1 if sin(_gait_phase * 2.0) > 0.0 else 0
 
 ## The walker's heading this frame: its along-lane velocity plus whatever its steering is doing
 ## across the lane right now, which swings a walker rounding a corner, or nudged aside by

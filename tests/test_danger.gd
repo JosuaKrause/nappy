@@ -32,7 +32,7 @@ func run(t) -> void:
 	_test_a_director_sited_pursuer_earns_an_arrow(t)
 	_test_the_screen_edge_is_the_same_size_for_everyone(t)
 	await _test_the_badge_measures_the_things_own_speed(t)
-	await _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t)
+	await _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t)
 	await _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
 	_test_the_pram_says_how_the_baby_is(t)
 	_test_the_babys_cue_only_steps_aside_for_something(t)
@@ -728,12 +728,9 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 	standing.free()
 	_free_manager(manager)
 
-## `docs/TODO.md`, M124: `_measure()` used to rebuild `_watch` from scratch every frame — a fresh
-## outer `Dictionary` plus one per live instance. It now mutates each instance's own entry in place
-## and only erases the ids `_events.instances()` stopped carrying, so this holds the two halves of
-## that promise: an instance still around keeps its own entry (same object, not a look-alike
-## rebuilt fresh), and one that left is actually gone from `_watch` rather than accumulating.
-func _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t) -> void:
+## An instance still around keeps its badge frame to frame, and one `_events.instances()` stopped
+## carrying loses it rather than leaving it up forever.
+func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t) -> void:
 	var manager := _manager(t)
 	manager.set_physics_process(false)
 	var standing := Node2D.new()
@@ -745,23 +742,18 @@ func _test_the_watch_keeps_a_live_entry_and_drops_a_gone_one(t) -> void:
 
 	var def := EventCatalogue.by_id("fire_truck")
 	var engine := manager.spawn_extra(def, Vector2(700.0, 0.0))
-	var id := engine.get_instance_id()
-
-	await t.get_tree().process_frame
-	await t.get_tree().process_frame
-	t.check(edge.model.watch.has(id), "a live instance gets an entry in _watch")
-	var entry: Dictionary = edge.model.watch[id]
-	await t.get_tree().process_frame
-	t.check(edge.model.watch[id] == entry,
-			"the same instance's entry is the same Dictionary object next frame, mutated in " +
-			"place rather than torn down and rebuilt")
-
+	var driven := 0.0
+	while driven < 1.0:
+		var delta: float = t.get_process_delta_time()
+		engine.global_position -= Vector2(def.speed * delta, 0.0)
+		driven += delta
+		await t.get_tree().process_frame
+	t.check(edge.announcing().size() == 1, "a live instance closing from off screen is badged")
 	manager.retire(engine)
 	manager.streaming.retire_finished()
 	await t.get_tree().process_frame
-	t.check(not edge.model.watch.has(id),
-			"an instance _events.instances() no longer carries is pruned from _watch, not left " +
-			"to sit there forever")
+	t.check(edge.announcing().is_empty(),
+			"an instance _events.instances() no longer carries loses its badge, not left to sit there forever")
 
 	edge.free()
 	standing.free()

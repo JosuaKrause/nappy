@@ -848,7 +848,7 @@ func _turn_round() -> void:
 ##
 ## **A stride is a distance, and each kind already has one.** A walker's is the gait's own: it draws
 ## two frames and `WalkerLook.gait_frame()` carries it through both of them over half a turn of
-## `WalkerLook.gait_phase`, which `WalkerLook.GAIT_RATE` prices at 0.09 radians per pixel walked — so a
+## the walker's stride phase, which `WalkerLook.GAIT_RATE` prices at 0.09 radians per pixel walked — so a
 ## stride is `PI / 0.09`, about 35px, and at `Tuning.PEDESTRIAN_SPEED` (46–74px/s) that is half a
 ## second or so. A car has no gait and its stride is its own length, the same 52px the body is
 ## measured over, which at `Tuning.CAR_SPEED` (130–185px/s) is about a third of a second.

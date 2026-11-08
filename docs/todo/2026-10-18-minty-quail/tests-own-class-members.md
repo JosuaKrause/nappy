@@ -23,10 +23,9 @@ balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `slee
 stay public for the same reason: the fairness tests check numbers against them.
 
 **Scope.** The CI check of test-only members lists the owners one by one, and its list is the scope. Its `[own file
-only]` group holds four members, each of which gets the underscore, or a `[kept]` line with its reason, as this
-item's work: `BuildingShadows.compute`, `PosterArt.compose`, `WalkerLook.gait_phase` and `BadgeModel.watch`. Its
-`[no reader]` group holds only the lines `tests-unseen-reads.md` owns. What is left beyond the list is the members the
-check cannot see, below.
+only]` group is empty: each member it listed became internal or holds a `[kept]` line with its reason. Its
+`[no reader]` group holds only the lines `tests-unseen-reads.md` owns. What is left is the members the check cannot
+see, below, and whatever the check's fix surfaces.
 
 **What the check still cannot see** (record minty-quail-feathery-finch): a member whose name only one file defines is
 judged by its word, so a local or an engine method of that name hides it: `ParkCordon.gap` (other files have a local

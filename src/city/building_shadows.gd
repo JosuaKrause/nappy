@@ -72,7 +72,7 @@ func set_buildings(rects: Array[Rect2i]) -> void:
 	_rects = rects
 	if streamed:
 		return
-	_tiles = _on_the_ground(compute(rects))
+	_tiles = _on_the_ground(_compute(rects))
 	_by_chunk = split(_tiles)
 	if not streamed:
 		_rebuild_chunks()
@@ -109,7 +109,7 @@ func _tiles_for_chunk(key: Vector2i) -> Tiles:
 	for rect in _rects:
 		if rect.intersects(area.grow(1)):
 			nearby.append(rect.intersection(area.grow(1)))
-	var tiles := _on_the_ground(compute(nearby))
+	var tiles := _on_the_ground(_compute(nearby))
 	tiles.full = tiles.full.filter(func(tile: Vector2i): return area.has_point(tile))
 	tiles.triangles = tiles.triangles.filter(func(tile: Vector2i): return area.has_point(tile))
 	return tiles
@@ -146,9 +146,8 @@ func _rebuild_chunks() -> void:
 		add_child(chunk)
 
 ## `tiles` dealt out into one `Tiles` per occupied chunk, keyed by the chunk's own coordinates —
-## pulled out of `_rebuild_chunks()` for the same reason `compute()` is pulled out of
-## `set_buildings()`: `tests/test_building_shadows.gd` can then hold the one property the split has
-## to have, that it is a **partition** of what `compute()` produced and not a filter of it. A tile
+## pulled out of `_rebuild_chunks()` so the one property the split has to have can be held, that it
+## is a **partition** of what `_compute()` produced and not a filter of it. A tile
 ## dropped here is a shadow that silently stops being drawn, and nothing else in the frame would
 ## say so.
 ##
@@ -170,15 +169,14 @@ static func _chunk_for(by_chunk: Dictionary, tile: Vector2i) -> Tiles:
 	var chunk: Tiles = by_chunk[key]
 	return chunk
 
-## The geometry, pulled out of `set_buildings()` so `tests/test_building_shadows.gd` can assert the
-## tile sets directly without building a scene. Tile `y` increases downward, the same convention
+## The geometry, pulled out of `set_buildings()` and `_tiles_for_chunk()`, which both ask it. Tile `y` increases downward, the same convention
 ## `CityMap` uses everywhere else, so "north" is `-y` and a light from the north-east casts toward
 ## the south-west: a `(1, -1)` step off a shaded tile lands back on the building that casts it.
 ##
 ## Runs off the occupied tiles rather than scanning the map: every tile satisfying either rule has
 ## an occupied neighbour by definition, so offsetting from each occupied tile finds every shaded
 ## tile without a pass over ground that holds none.
-static func compute(rects: Array[Rect2i]) -> Tiles:
+static func _compute(rects: Array[Rect2i]) -> Tiles:
 	var occupied := {}
 	for rect in rects:
 		for y in range(rect.position.y, rect.end.y):

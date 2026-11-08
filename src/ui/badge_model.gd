@@ -105,7 +105,7 @@ var coming: Array = []
 ## whether its badge is up (`up`), whether it has been in sight (`seen`), whether its charge has been
 ## met (`charged`), and the generation it was last touched on (`generation`). Keyed by `Subject.key` and mutated in
 ## place, so a subject that stops being handed over drops out the frame after.
-var watch := {}
+var _watch := {}
 var _generation := 0
 
 ## How fast something at `was`, now at `now`, is closing on a player standing at `player`.
@@ -125,7 +125,7 @@ static func _announces(approach: float, gap: float) -> bool:
 ##
 ## **Two paths, and only the first is the design.** `_announce_the_warnings()` is the end state: a
 ## warning is put up before its danger is placed, the badge points at where it will come from, and
-## nothing is measured. `_measure_dangers_in_the_world()` (with `watch`, `SMOOTHING`, `LEAD_TIME`,
+## nothing is measured. `_measure_dangers_in_the_world()` (with `_watch`, `SMOOTHING`, `LEAD_TIME`,
 ## `CLOSING_SPEED`, `SCREEN_MARGIN`, `_announces()`, `_approach_speed()` and the `Subject` fields only it
 ## reads) badges dangers that are already in the world; the stairwell's masked man and the army truck
 ## still need it, and it goes, as a deletion, in the follow-up that places those two after their badge.
@@ -157,16 +157,16 @@ func _measure_dangers_in_the_world(delta: float, here: Vector2, subjects: Array,
 	# Only the subjects alive this frame carry state forward; a key not touched above still reads an
 	# earlier generation and is erased here, which also keeps a freshly streamed thing from
 	# flashing an arrow on the frame it appears, and ends the badge of a danger that left the world.
-	for key in watch.keys():
-		if watch[key]["generation"] != _generation:
-			watch.erase(key)
+	for key in _watch.keys():
+		if _watch[key]["generation"] != _generation:
+			_watch.erase(key)
 
 func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 		walk_speed: float) -> void:
 	var at := subject.position
 	var state: Dictionary
-	if watch.has(subject.key):
-		state = watch[subject.key]
+	if _watch.has(subject.key):
+		state = _watch[subject.key]
 	else:
 		# **A thing that arrives under its own warning keeps the badge it already had.** It is
 		# created just out of sight, inside `SCREEN_MARGIN`, where a fresh thing would not raise
@@ -177,7 +177,7 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 		var own_speed := subject.chase_speed if subject.pursues else subject.speed
 		state = {"was": at, "approach": own_speed if subject.warned else 0.0,
 				"up": subject.warned, "seen": not subject.warned}
-		watch[subject.key] = state
+		_watch[subject.key] = state
 	# The event's own approach: how much closer *it* got to where she is standing now. Both
 	# distances are measured to the same point, so her own walking cancels out of it.
 	var raw := _approach_speed(state["was"], at, here, delta)
