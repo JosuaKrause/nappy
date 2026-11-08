@@ -6,6 +6,10 @@ extends RefCounted
 ## the runtime records a walker or car that left or entered within reach of either view
 ## (`SceneRecipeRuntime._watch_the_crowd()`, the manifest's `seen_to_jump`), and every observation the
 ## recipe asks, its `appeared` of the route event and its `crowd` among them, must hold.
+##
+## **Plays each scene in its own headless `main` process: the guarantee is about what she sees of the crowd
+## across the whole game's composition** (the runtime's watch, the crowd, the director's bag), so it is combined
+## by design and has no module to split to.
 
 func run(t) -> void:
 	var played := 0

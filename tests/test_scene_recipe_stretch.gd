@@ -4,6 +4,11 @@ extends RefCounted
 ## repainting independently of generation, the crowd enters and leaves at the stretch's ends, and the
 ## director draws her route's events from the bag the recipe rigs. The scenes' own walks are
 ## `tools/scene-recipes.sh`'s.
+##
+## **Builds a real `City` where a check is about what the city does with a stretch** (its ground is the only
+## ground, its crowd enters at the ends, its drawing leaves the void alone) and the real `Crowd` and `DayDirector`
+## beside it: a stretch is a guarantee between the recipe's map and those modules, which none of their suites
+## is handed. The checks that read only the built map (`RecipeCityBuilder`) need no city.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed of the run the city is handed (`RunCity.with_own_run()`).

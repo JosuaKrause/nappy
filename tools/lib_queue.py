@@ -174,7 +174,6 @@ sitting: nothing ends the day, the clock stands still and the excitement meter n
 run can stand next to every item for as long as looking takes.
 """
 
-REVIEW_NEXT_RUN = "## Next run, in one sitting"
 REVIEW_UNTESTED = "## What is untested by a human, listed so nobody mistakes arithmetic for a verdict"
 
 
