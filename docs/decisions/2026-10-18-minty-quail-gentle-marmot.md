@@ -40,6 +40,6 @@ stand elsewhere; every assertion is unchanged. The layout is built on day 13 onl
 
 **For the end-of-refactor remeasure:** day 13's roadblocks (how many, where, their spread, how many
 route tiles are left with none close by); the task's close-by hits and swaps on the 480 real chalk
-marks (`tests/probes/minty_quail_day13_real_marks.gd`); the dawn phase no longer preferring the
-roomiest tile; route costs and winnability, expected unchanged, since every roadblock the phase
+marks (`tests/probes/minty_quail_day13_real_marks.gd`); the dawn phase requiring room all round,
+no longer preferring the roomiest tile; route costs and winnability, expected unchanged, since every roadblock the phase
 places is route-adjacent.
