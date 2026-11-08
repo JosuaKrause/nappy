@@ -50,7 +50,10 @@ player asked for a guarantee (olive-koala 2). Over 44 cities, on main and on the
 holds every time: the bag is rigged at the mark and he is sited, before more than two events are
 handed out, ahead of her on the street she walks, out of her view. The old check counted whether
 the test's fixed walk brought him into view, and that walk turns off his street on about half the
-cities. The test now checks the guarantee itself, on every pinned city. Left for the walk's draws
+cities. The test now checks the guarantee itself, on every pinned city. The guarantee counts events
+after the mark, so a walk from the mark home that ends before they come owes nothing: on city 555
+the final draw leaves one event between the mark and home, and the test walks her on, back to the
+mark and home again, until the rig's events have come. Left for the walk's draws
 (the step after this one): a body already in the world is never moved, so a player who turns at the
 next junction passes him by.
 
