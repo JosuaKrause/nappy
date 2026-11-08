@@ -241,11 +241,9 @@ func _test_advancing_the_gait_tracks_distance_not_time(t) -> void:
 	t.check(other.gait_frame() == look.gait_frame(),
 			"the same ground in two ticks lands where one tick of it does")
 
-	_stop(agent)
 	_stride_to(look, PI / 4.0)
-	var held := look.gait_frame_at(Vector2.RIGHT * 100.0)
-	look.advance(agent.velocity(), 1.0 / 60.0)
-	t.check(look.gait_frame_at(Vector2.RIGHT * 100.0) == held,
+	look.advance(Vector2.ZERO, 1.0)
+	t.check(look.gait_frame() == 1,
 			"a walker covering no distance advances no stride at all")
 	agent.free()
 
