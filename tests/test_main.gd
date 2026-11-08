@@ -18,6 +18,11 @@ extends RefCounted
 ## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
 ## seed's city is generated once in the test process and every case is handed a copy of its own,
 ## the same city `CityGenerator.generate()` builds for the seed.
+##
+## **Combined by composition, for this reason:** `main` is the composition root, and what its suite holds
+## is what it builds and connects, which nothing but the real scene can answer. The readout, the
+## return window and the screens are each driven alone through their own setup where the check is
+## theirs.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const UI := preload("res://tests/ui_screens.gd")

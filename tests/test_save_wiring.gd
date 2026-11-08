@@ -34,8 +34,14 @@ extends RefCounted
 ## The suite's `GameSave` is built at a scratch file, handed to every boot (`main.use_save()`) and the
 ## configuration of a windowed release run (a booted `main` hands it its own, which is that), so its
 ## ordinary `write()`, `try_resume()` and `clear()` reach it.
+##
+## **Combined by composition, for this reason:** the save file itself is `tests/test_save.gd`'s. What is
+## held here is what `main` does with it (when it writes, which gate it opens, what survives a
+## reload), a guarantee between the save, the title, the pause, the day and the reload that only the
+## real `main` composes.
 
 const Boot := preload("res://tests/booted_main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 
@@ -173,6 +179,7 @@ func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save 
 	main.use_quit(calls.quit)
 	if home:
 		main.use_sitting_home(home)
+		main.use_city_maps(MapCache.source())
 	if run_log:
 		main.use_run_log(run_log)
 	t.add_child(main)

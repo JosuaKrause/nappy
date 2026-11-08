@@ -1,6 +1,15 @@
 extends RefCounted
 ## The day loop: the two phases, the four ways a day ends, and the run-level bookkeeping
 ## that decides which ending you get.
+##
+## **Mostly its one module.** The day's controller, the run's calendar and the summary screen are each
+## driven with a hand-built map and plain runs. Two cases combine other modules, each for its reason:
+## the booted one (`_test_day_finished_shows_the_summary_with_no_observer_in_the_tree`) holds that the
+## summary comes up from the day's own end signal with no observer in the tree, a guarantee of
+## `main`'s wiring; the retry case builds a real `City` and the resistance director, because what it
+## holds is that the calendar's seeded stream for a retried day puts the mark in the same alley, a
+## guarantee between the calendar and the director's placement. Both are on cached generated
+## cities (`tests/city_map_cache.gd`).
 
 const SEED := 4242
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -8,6 +17,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const CityStateReads := preload("res://tests/city_state_reads.gd")
 const DAY_SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const Boot := preload("res://tests/booted_main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 ## The save the boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_day_loop_scratch.json"
 
@@ -19,7 +29,7 @@ var _run: RunState
 var _results: Array[GameEnums.DayResult] = []
 
 func run(t) -> void:
-	_map = CityGenerator.generate(SEED)
+	_map = MapCache.of(SEED)
 	_test_start_sets_the_clock(t)
 	_test_running_out_of_daylight_loses(t)
 	_test_sleeping_starts_the_return_phase(t)
@@ -403,7 +413,7 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--seed", str(SEED)]),
-			func(unbooted: Node2D) -> void: unbooted.use_sitting_home(home))
+			func(unbooted: Node2D) -> void: unbooted.use_sitting_home(home), false, MapCache.source())
 	var main := booted.main
 	var session := main.get_node("RunSession") as RunSession
 	t.check(not session.get_children().any(func(child: Node) -> bool: return child is TelemetryObserver),
@@ -737,7 +747,7 @@ func _test_the_retry_meets_the_same_mark_in_the_same_alley(t) -> void:
 	var run := city.run
 	run.header.day = 6
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	city.build(MapCache.of(SEED))
 
 	run.calendar.begin_day()
 	var first := _resistance_director(t, city)

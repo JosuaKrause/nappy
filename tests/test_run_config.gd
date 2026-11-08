@@ -4,9 +4,17 @@ extends RefCounted
 ## the day, the baby and the escape's clock the plain values out of it. Every config here is parsed
 ## from the words a test would type (`RunConfig.parse()`), never from this process's own command
 ## line.
+##
+## **Combined by composition, for this reason:** `RunConfig` is a plain value, and its own rules (what it
+## reads on which build, that a resolved one cannot change, what a recipe puts on top) are checked on
+## parsed values with nothing built. What the rest holds is that `main` and the city hand each of
+## their parts the value it asks for, a guarantee between the configuration and the parts it reaches,
+## which only the real composition shows: a boot of `main`, and a built `City` for the one value
+## handed through the city's setup. Cities come from the cache (`tests/city_map_cache.gd`).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const Boot := preload("res://tests/booted_main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 const UI := preload("res://tests/ui_screens.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_run_config_scratch.json"
@@ -210,7 +218,7 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 						"scenery_frame_locked": c.scenery_frame_locked}
 		t.get_tree().node_added.connect(catch)
 		var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, RunConfig.parse(words, "", true),
-				func(main: Node) -> void: main.use_sitting_home(home))
+				func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
 		t.get_tree().node_added.disconnect(catch)
 		var baby := Boot.baby(booted.main)
 		t.check(baby != null and baby.excitement_frozen == invincible,
@@ -238,7 +246,7 @@ func _test_the_city_hands_each_value_to_its_part(t) -> void:
 	city.blackout_forced = true
 	city.all_cyclists_pelicans = true
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	city.build(MapCache.of(SEED))
 	# The shadow layer is the scene's own child, found by the name the scene gives it.
 	var shadows := city.get_node("BuildingShadows") as BuildingShadows
 	t.check(city.scenery_ground.mode == SceneryGround.Mode.STEPPED and city.scenery.frame_locked
@@ -299,7 +307,7 @@ func _test_the_forced_row_is_handed_to_the_director(t) -> void:
 	city.forced_row = "cyclist"
 	city.forced_interval = FORCED_INTERVAL
 	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
+	city.build(MapCache.of(SEED))
 	city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var her := Stroller.new()
 	var camera := Camera2D.new()
@@ -391,7 +399,8 @@ func _the_screens_answer(t, flagged: bool) -> void:
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words),
 			func(main: Node) -> void:
 				main.use_sitting_home(home)
-				main.use_quit(func() -> void: quits[0] += 1))
+				main.use_quit(func() -> void: quits[0] += 1),
+			false, MapCache.source())
 	var main := booted.main
 	var wanted_quits := 0 if flagged else 1
 
