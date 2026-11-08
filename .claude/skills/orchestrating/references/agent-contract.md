@@ -148,14 +148,18 @@ internal revision loop. For artwork, sound or any visual or audible result:
 
 ## Forks come back, never guessed
 
-Implement the unambiguous part and state any fork precisely. Where the design is silent on a small
-detail, choose the smallest implementation consistent with the contracts and say so in the PR
-description as open to overturn. A brief that contradicts a recorded decision is a fork too: build
+Implement the unambiguous part and state any fork precisely. **Nothing is called silent before the
+player's words behind it are read** (inbox #1232, inbox #1234): the item's whole entry (items filed
+from one note belong together), the playtest statements and inbox notes it cites, and their appended
+words. A point those words answer by their plain meaning, even without naming it, is not silent: it
+is built, and the PR description cites the words it rests on. Only where they truly say nothing,
+choose the smallest implementation consistent with the contracts and say so in the PR description
+as open to overturn, naming what was read. A brief that contradicts a recorded decision is a fork too: build
 nothing that overturns it, report the clash quoting both.
 
 ## Final report
 
 Also the PR description: per item, what was built and how it was verified; every choice made
-where the design was silent; every fork left open; the answers to the architecture questions, for a
+where the design was silent, each with the words read for it; every fork left open; the answers to the architecture questions, for a
 PR that changes code; the PR URL. An outcome it does not mention is
 an outcome that did not happen.

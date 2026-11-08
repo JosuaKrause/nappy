@@ -27,9 +27,9 @@ func _run_is_ordinary_street(map: CityMap, corridor: int, start: int, length: in
 				return false
 	return true
 
-## An agent on one lane of one corridor, walking or driving at a given along position, added to the
+## An agent on one lane of one corridor of `crowd`'s map, walking or driving at a given along position, added to the
 ## day's (emptied) crowd so `Crowd.step()` moves it exactly as it moves anybody.
-func agent_on(city: City, map: CityMap, kind: CrowdAgent.Kind, corridor: int, lane: int,
+func place_on(crowd: Crowd, map: CityMap, kind: CrowdAgent.Kind, corridor: int, lane: int,
 		along: float, direction: float, vertical := true,
 		offsets: Array[int] = CrowdLanes.SIDEWALK_OFFSETS, speed := -1.0,
 		seed_value := 1) -> CrowdAgent:
@@ -41,7 +41,31 @@ func agent_on(city: City, map: CityMap, kind: CrowdAgent.Kind, corridor: int, la
 	# lane, the body clearance and the pocket are checked as a rolled morning's are.
 	if speed < 0.0:
 		speed = 60.0 if kind == CrowdAgent.Kind.WALKER else 130.0
-	var placed := city.crowd.add_recipe_actor("rig-%d" % city.crowd.agent_count(), kind, at,
+	var placed := crowd.add_recipe_actor("rig-%d" % crowd.agent_count(), kind, at,
 			heading, speed, seed_value)
 	assert(placed["error"] == "", "the rig's agent is placed: %s" % placed["error"])
 	return placed.get("actor")
+
+## `place_on()` on a built city's crowd, for the suites that still build the city around theirs.
+func agent_on(city: City, map: CityMap, kind: CrowdAgent.Kind, corridor: int, lane: int,
+		along: float, direction: float, vertical := true,
+		offsets: Array[int] = CrowdLanes.SIDEWALK_OFFSETS, speed := -1.0,
+		seed_value := 1) -> CrowdAgent:
+	return place_on(city.crowd, map, kind, corridor, lane, along, direction, vertical, offsets,
+			speed, seed_value)
+
+## A crowd on `map` in a bare world held under `t`, built the way a task scene's rig builds it (the
+## world, the map, the lights and no streets handed to `Crowd.setup()`) and with no city around it,
+## which a suite of the crowd does not test. Free it with `free_crowd()`.
+func a_crowd(t, map: CityMap) -> Crowd:
+	var world := WorldContext.new()
+	t.add_child(world)
+	var crowd := Crowd.new()
+	crowd.name = "Crowd"
+	world.add_child(crowd)
+	crowd.setup(world, map, TrafficSignals.new(map), DayStreets.new())
+	return crowd
+
+## Frees the world `a_crowd()` made, and the crowd and every agent in it with it.
+func free_crowd(crowd: Crowd) -> void:
+	crowd.get_parent().free()

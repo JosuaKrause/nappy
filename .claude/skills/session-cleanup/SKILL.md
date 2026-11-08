@@ -181,8 +181,15 @@ player's correction:
 3. `## Waiting on the player`;
 4. `## Open inbox notes`;
 5. `## Board bookmarks`;
-6. `## Next up`;
+6. `## Plan`;
 7. `## Fences`.
+
+**`## Plan` holds what is already decided about what comes when** (inbox #1235): the phases in
+order, what starts each (a merge, an agent's report, the player's go-ahead), what runs in parallel
+within one, and where the next release falls with what it waits for. Each line rests on the player's
+words or a recorded decision and cites it, and the readings settled on the player's words that wait
+to be written into a queue item are listed with their citations, so no later session puts them back
+to the player as questions. An open point is listed only when it truly is open.
 
 A handover writes one row per open thread, and a thread whose pull request merged or was dropped
 has no row, since the pull request and its record hold it. Nothing is carried over as a log, so the

@@ -27,8 +27,9 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
 2. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
    (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
    events;
-3. atlas and scenery (`atlas_*`, `scenery_*`, `ground_floor`, `building_shadows`,
-   `destination_drawing`, `debug_layers`);
+3. atlas and scenery: `test_scenery_residency` observes a whole city until `SceneryGround` and
+   `SceneryResidency` take a narrower hand-in than `City`, and `test_events_scenery` waits for the
+   events;
 4. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
    and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
    what it reads from the city (its map, streets, events and poster walls) instead of the whole
@@ -40,7 +41,12 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
    it and `test_dark_spine` hold the scheduler's and the crowd's answers in a day-planning case each,
    to move to those modules' suites; `test_power_station`'s yard-layer frame-record case belongs in
    `test_frame_record`; `test_masts` waits for the events;
-6. the crowd (`crowd_bodies`, `crowd_contributions`, `crowd_yields`, `danger`, `wall_shield`);
+6. the crowd: a crowd suite takes `test_recipe_crowd`'s `Crowd.recipe_coverage` check (entry 4);
+   the events' answers still held in the crowd's suites move with the events (entry 7):
+   `test_crowd_yields`' four checks of the event instance and manager (stands as, parked, the list
+   of moves, placement), the events half of `test_danger` (about twenty tests of events, the baby,
+   the badge and the screen edge) and of `test_wall_shield`, and
+   `test_crowd_bodies_on_a_real_day`'s check that a crash's cars stand on recorded ground;
 7. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
    `protest`, the day 6, 7 and 13 suites) and the resistance (`resistance_*`, `spent_park`,
    `park_cordon`, `burnt_door`);

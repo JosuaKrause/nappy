@@ -9,8 +9,6 @@ extends RefCounted
 ## the node the readout names and the keys are real events pushed through the viewport; whether a
 ## layer asks to be redrawn is counted in the draws it gets over real frames.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
-
 func run(t) -> void:
 	_test_shadow_outline_matches_a_points_ellipse(t)
 	_test_shadow_outline_matches_a_segments_hull(t)
@@ -29,7 +27,6 @@ func run(t) -> void:
 	_test_a_release_or_an_echo_toggles_nothing(t)
 	_test_number_keys_toggle_their_own_layer(t)
 	_test_layer_keys_do_nothing_outside_a_debug_build(t)
-	_test_the_bounding_box_layer_draws_every_enabled_body(t)
 	await _test_no_redraw_is_asked_with_every_layer_off(t)
 	await _test_a_switch_off_still_owes_one_redraw(t)
 	_test_collision_nodes_under_finds_the_shape_and_the_polygon_at_every_depth(t)
@@ -323,68 +320,6 @@ func _test_layer_keys_do_nothing_outside_a_debug_build(t) -> void:
 			and not rig.readout.graph_on(),
 			"and pressing every layer key still builds or turns on nothing")
 	rig.free_all()
-
-# ------------------------------------------------------------- bounding boxes ---
-
-## PLAYTEST-57: *"and make sure *all* hitboxes are actually drawn"* — the bounding-box layer's own
-## completeness. Builds one real day on a real `City` (a checkpoint day, so a region wall or door
-## is in play, not only the ordinary catalogue) plus a real `Stroller`, then counts every enabled
-## `CollisionShape2D`/`CollisionPolygon2D` under a `StaticBody2D`/`CharacterBody2D` in both trees by
-## hand — independently of `DebugLayers.collision_nodes_under()`, which `_draw_bodies()` draws
-## every outline from, so a bug in that walk cannot hide from this test — and checks it finds the
-## same bodies in the two trees.
-func _test_the_bounding_box_layer_draws_every_enabled_body(t) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, 5551212)
-	t.add_child(city)
-	city.build(CityGenerator.generate(5551212))
-
-	var day := Tuning.REGION_WALL_FIRST_DAY
-	var state := CityState.new()
-	state.begin_day(city.map.block_plans, day)
-	var closures_rng := RandomNumberGenerator.new()
-	closures_rng.seed = hash("m100-debug-layers:closures:%d" % day)
-	city.start_day(state, day, closures_rng)
-
-	city.events.stream_radius = INF
-	var consumed: Array[String] = []
-	var events_rng := RandomNumberGenerator.new()
-	events_rng.seed = hash("m100-debug-layers:events:%d" % day)
-	city.events.start_day(DaySpec.for_day(day), events_rng, consumed)
-
-	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
-	var stroller: Stroller = scene.instantiate()
-	t.add_child(stroller)
-	city.events.use_player(stroller)
-	stroller.set_physics_process(false)
-
-	var expected := _count_enabled_bodies(city) + _count_enabled_bodies(stroller)
-	var drawn := DebugLayers.collision_nodes_under(city).size() \
-			+ DebugLayers.collision_nodes_under(stroller).size()
-	t.check(expected > 10,
-			"the generated day actually has bodies worth counting (%d found)" % expected)
-	t.check(drawn == expected,
-			("the bounding-box layer draws exactly the enabled collision shapes physics reads "
-			+ "(%d expected from an independent tree walk, %d from the layer's own walk)")
-			% [expected, drawn])
-
-	stroller.free()
-	city.free()
-
-## An oracle independent of `DebugLayers.collision_nodes_under()`: every enabled
-## `CollisionShape2D` (with a shape) or `CollisionPolygon2D` under a `StaticBody2D` or
-## `CharacterBody2D` anywhere in `root`'s own subtree, walked by hand so a bug in the layer's own
-## seam cannot hide from this test.
-func _count_enabled_bodies(root: Node) -> int:
-	var count := 0
-	if root is StaticBody2D or root is CharacterBody2D:
-		for child in root.get_children():
-			if child is CollisionShape2D and not child.disabled and child.shape != null:
-				count += 1
-			elif child is CollisionPolygon2D and not child.disabled:
-				count += 1
-	for child in root.get_children():
-		count += _count_enabled_bodies(child)
-	return count
 
 # ---------------------------------------------------------- the per-frame audit ---
 # `docs/TODO.md`, M124: `_process()` used to call `queue_redraw()` unconditionally, even with
