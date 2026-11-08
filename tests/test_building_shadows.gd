@@ -19,7 +19,7 @@ func run(t) -> void:
 
 ## What a non-streamed `BuildingShadows` over `rects` has every chunk draw once a frame has passed:
 ## `{"full": [...], "triangles": [...]}`, every chunk's tiles together, and `"chunks"`, each chunk's
-## own entry as the recording drawer saw it.
+## tiles and the patch (`"key"`) its node is named for.
 func _drawn_over(t, rects: Array[Rect2i]) -> Dictionary:
 	var drawer := RecordingShadowDrawer.new()
 	var shadows := BuildingShadows.new()
@@ -33,7 +33,10 @@ func _drawn_over(t, rects: Array[Rect2i]) -> Dictionary:
 	for entry in drawer.shown():
 		full.append_array(entry.full)
 		triangles.append_array(entry.triangles)
-		chunks.append(entry)
+		# The chunk's own name carries the patch it is filed under ("Chunk<x>_<y>").
+		var parts := String(entry.canvas.name).trim_prefix("Chunk").split("_")
+		chunks.append({"full": entry.full, "triangles": entry.triangles,
+				"key": Vector2i(int(parts[0]), int(parts[1]))})
 	shadows.free()
 	return {"full": full, "triangles": triangles, "chunks": chunks}
 
@@ -57,8 +60,7 @@ func _test_resident_geometry_matches_the_complete_union(t) -> void:
 		tiles.append_array(entry.triangles)
 		if tiles.is_empty():
 			continue
-		var size := BuildingShadows.CHUNK_TILES
-		expected[Vector2i(floori(float(tiles[0].x) / size), floori(float(tiles[0].y) / size))] = entry
+		expected[entry.key] = entry
 	var drawer := RecordingShadowDrawer.new()
 	var asked := [0]
 	var shadows := BuildingShadows.new()
@@ -217,11 +219,10 @@ func _test_a_chunk_holds_only_its_own_tiles(t) -> void:
 		all.append_array(entry.triangles)
 		if all.is_empty():
 			continue
-		var key := Vector2i(floori(float(all[0].x) / size), floori(float(all[0].y) / size))
 		for tile in all:
 			checked += 1
-			t.check(Vector2i(floori(float(tile.x) / size), floori(float(tile.y) / size)) == key,
-					"%s belongs to the chunk its neighbours are drawn by, %s" % [tile, key])
+			t.check(Vector2i(floori(float(tile.x) / size), floori(float(tile.y) / size)) == entry.key,
+					"%s is drawn by the chunk filed under its own patch, %s" % [tile, entry.key])
 	t.check(checked > 0, "there were tiles to ask about (%d)" % checked)
 
 func _to_set(tiles: Array[Vector2i]) -> Dictionary:

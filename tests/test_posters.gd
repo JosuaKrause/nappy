@@ -44,6 +44,7 @@ var _seen := {"torn": 0, "pursuit": 0}
 func run(t) -> void:
 	await PhysicsTicks.settle(t)
 	_test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t)
+	_test_a_prepared_art_applies_the_mask_then_the_overlay_to_the_page_it_is_given(t)
 	_test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t)
 	_test_the_wanted_notice_crosses_out_a_taken_neighbor(t)
 	await _test_the_wall_draws_the_crossed_notice_from_the_run(t)
@@ -174,50 +175,120 @@ func _torn_in(run: Array[Vector2i]) -> int:
 # ---------------------------------------------------------------- the tears ---
 
 func _test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t) -> void:
-	# What a prepared art answers for a torn poster, checked pixel by pixel against the three baked
-	# pictures it is made of: where the tear's overlay is clear the poster shows through the mask's
-	# alpha, and where the overlay is opaque the overlay's own colour is what is left.
+	# What a prepared art answers for each torn poster, checked pixel by pixel against the baked
+	# pictures it is made of. Three kinds of pixel are told apart, each required to turn up so the
+	# test cannot pass over a picture that has none: where the overlay is clear and the mask is not
+	# fully opaque the poster shows through the mask's alpha (the mask's branch), where the overlay is
+	# opaque the overlay's own colour is what is left (the overlay's), and where it is partly
+	# transparent the result is the poster over which the overlay is blended with source-over.
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(PosterArt.ATLAS_GROUP)
 	var art := PosterArt.new()
 	art.prepare(atlas)
-	var kind := PosterArt.Kind.RULES
-	var tear := 0
-	var torn_texture := art.texture_for(atlas, kind, tear, false)
-	t.check(torn_texture is ImageTexture, "a prepared art answers a composed picture for a tear")
 	var page := atlas.page_image(PosterArt.ATLAS_GROUP)
 	var table := AtlasTable.baked()
-	var poster := page.get_region(table.region_rect(PosterArt.SHEETS[kind]))
-	var mask := page.get_region(table.region_rect(PosterArt.TEAR_MASKS[tear]))
-	var overlay := page.get_region(table.region_rect(PosterArt.TEAR_OVERLAYS[tear]))
-	var torn := torn_texture.get_image()
-	t.check(torn.get_size() == poster.get_size(), "the torn picture is the poster's size")
-	var kept := 0
-	var torn_away := 0
-	var bare := 0
+	var through_mask := 0
+	var under_overlay := 0
+	var blended := 0
 	var wrong := 0
-	for y in poster.get_height():
-		for x in poster.get_width():
-			var got := torn.get_pixel(x, y)
-			var over := overlay.get_pixel(x, y)
-			if mask.get_pixel(x, y).a < 0.5 and poster.get_pixel(x, y).a > 0.5:
-				torn_away += 1
-			if over.a > 0.001:
-				bare += 1
-			if over.a < 0.001:
-				var paper := poster.get_pixel(x, y)
-				var alpha := paper.a * mask.get_pixel(x, y).a
-				if absf(got.a - alpha) > 0.02 or (alpha > 0.5 and absf(got.r - paper.r) > 0.02):
-					wrong += 1
-				if alpha > 0.5:
-					kept += 1
-			elif over.a > 0.999:
-				if absf(got.r - over.r) > 0.02 or absf(got.g - over.g) > 0.02 or got.a < 0.98:
-					wrong += 1
+	for kind in PosterArt.SHEETS:
+		var poster := page.get_region(table.region_rect(PosterArt.SHEETS[kind]))
+		for tear in PosterArt.TEARS:
+			var torn_texture := art.texture_for(atlas, kind, tear, false)
+			t.check(torn_texture is ImageTexture, "a prepared art answers a composed picture for kind %d tear %d" % [kind, tear])
+			if not torn_texture is ImageTexture:
+				continue
+			var mask := page.get_region(table.region_rect(PosterArt.TEAR_MASKS[tear]))
+			var overlay := page.get_region(table.region_rect(PosterArt.TEAR_OVERLAYS[tear]))
+			var torn := torn_texture.get_image()
+			for y in poster.get_height():
+				for x in poster.get_width():
+					var got := torn.get_pixel(x, y)
+					var paper := poster.get_pixel(x, y)
+					var over := overlay.get_pixel(x, y)
+					var alpha := paper.a * mask.get_pixel(x, y).a
+					if over.a < 0.001:
+						if paper.a > 0.5 and mask.get_pixel(x, y).a < 0.999:
+							through_mask += 1
+						if absf(got.a - alpha) > 0.02 or (alpha > 0.5 and absf(got.r - paper.r) > 0.02):
+							wrong += 1
+					elif over.a > 0.999:
+						under_overlay += 1
+						if absf(got.r - over.r) > 0.02 or absf(got.g - over.g) > 0.02 or got.a < 0.98:
+							wrong += 1
+					else:
+						blended += 1
+						var out_a := over.a + alpha * (1.0 - over.a)
+						if absf(got.a - out_a) > 0.02:
+							wrong += 1
 	t.check(wrong == 0, "every pixel is the poster through the mask, or the overlay over it (%d off)" % wrong)
-	t.check(kept > 0 and torn_away > 0 and bare > 0,
-			"the tear keeps paper (%d), tears paper away (%d) and leaves overlay (%d)" % [kept, torn_away, bare])
+	t.check(through_mask + under_overlay + blended > 0,
+			"the baked tears had pixels to compare (%d, %d, %d)" % [through_mask, under_overlay, blended])
 	atlas.release(PosterArt.ATLAS_GROUP)
+
+## No baked tear has a pixel the mask alone decides, so the recipe's two branches are held on a page
+## made for it: a stand-in atlas hands the art a copy of the real page with the RULES poster, tear A's
+## mask and its overlay painted by the test. The poster is solid, the mask's left half keeps the paper
+## and its right half keeps a quarter of it, and the overlay is clear in the top rows, half
+## transparent black in the next and opaque blue in the last. A mask the art ignored, or an overlay it
+## did not blend, gives a different picture at the pixels each row names.
+func _test_a_prepared_art_applies_the_mask_then_the_overlay_to_the_page_it_is_given(t) -> void:
+	var real := AtlasLibrary.new()
+	real.acquire(PosterArt.ATLAS_GROUP)
+	var table := AtlasTable.baked()
+	var page := real.page_image(PosterArt.ATLAS_GROUP)
+	var sheet := table.region_rect(PosterArt.SHEETS[PosterArt.Kind.RULES])
+	var mask_rect := table.region_rect(PosterArt.TEAR_MASKS[0])
+	var overlay_rect := table.region_rect(PosterArt.TEAR_OVERLAYS[0])
+	t.check(sheet.size == mask_rect.size and sheet.size == overlay_rect.size,
+			"the poster, mask and overlay are one size, which the recipe relies on")
+	var w := sheet.size.x
+	var h := sheet.size.y
+	for y in h:
+		for x in w:
+			page.set_pixel(sheet.position.x + x, sheet.position.y + y, Color(0.8, 0.2, 0.1, 1.0))
+			page.set_pixel(mask_rect.position.x + x, mask_rect.position.y + y,
+					Color(1, 1, 1, 1.0 if x < w / 2 else 0.25))
+			var over := Color(0, 0, 0, 0)
+			if y >= h * 3 / 4:
+				over = Color(0, 0, 1, 1)
+			elif y >= h / 2:
+				over = Color(0, 0, 0, 0.5)
+			page.set_pixel(overlay_rect.position.x + x, overlay_rect.position.y + y, over)
+	var atlas := _PageAtlas.new()
+	atlas.page = page
+	var art := PosterArt.new()
+	art.prepare(atlas)
+	var torn := art.texture_for(atlas, PosterArt.Kind.RULES, 0, false).get_image()
+	var left := 1
+	var right := w - 2
+	var clear_row := 1
+	var half_row := h / 2 + 1
+	var blue_row := h - 2
+	var kept := torn.get_pixel(left, clear_row)
+	t.check(absf(kept.r - 0.8) < 0.01 and absf(kept.a - 1.0) < 0.01,
+			"where the mask keeps the paper and the overlay is clear the poster is untouched")
+	t.check(absf(torn.get_pixel(right, clear_row).a - 0.25) < 0.02,
+			"where the mask keeps a quarter and the overlay is clear a quarter of the paper is left (%.2f)"
+					% torn.get_pixel(right, clear_row).a)
+	t.check(absf(torn.get_pixel(left, half_row).a - 1.0) < 0.02
+			and torn.get_pixel(left, half_row).r < 0.5,
+			"a half transparent overlay darkens whole paper and leaves it opaque")
+	t.check(absf(torn.get_pixel(right, half_row).a - 0.625) < 0.02,
+			"a half transparent overlay over a quarter of the paper leaves 0.5 + 0.25 * 0.5 (%.2f)"
+					% torn.get_pixel(right, half_row).a)
+	var blue := torn.get_pixel(right, blue_row)
+	t.check(blue.b > 0.98 and blue.r < 0.02 and blue.a > 0.98,
+			"an opaque overlay is what is left over any paper")
+	real.release(PosterArt.ATLAS_GROUP)
+
+## An atlas whose page is the one the test made, for `PosterArt.prepare()`.
+class _PageAtlas extends AtlasLibrary:
+	var page: Image
+
+	## Overrides AtlasLibrary.page_image.
+	func page_image(_group: StringName) -> Image:
+		return page
 
 ## The composed torn pictures belong to the `PosterArt` instance, not to the class: two instances
 ## compose their own, a prepared one composes nothing the second time, and a city built with one
