@@ -176,7 +176,7 @@ static func _distance_to(tiles: Array, tile: Vector2i) -> float:
 ## so that a hard seal and a region wall report the ground they actually stand on rather than the
 ## empty list `CityMap.obstructed_tiles` keeps for them. The holds go straight back.
 func _bodies(map: CityMap, plans: Array[EventScheduler.Planned]) -> Array:
-	var keys: Array = map.held_segments.keys()
+	var keys: Array = map.held_streets().keys()
 	map.clear_day_holds()
 	var found: Array = []
 	for plan in plans:
@@ -191,7 +191,7 @@ func _bodies(map: CityMap, plans: Array[EventScheduler.Planned]) -> Array:
 			"tiles": covered,
 		})
 	for key: Vector3i in keys:
-		map.hold_segment(key)
+		map.hold_segment(key, HeldStreets.Why.SEAL)
 	return found
 
 func _report() -> void:

@@ -1393,7 +1393,7 @@ as a check on what a roll came back with:
 - the street the front door opens onto (`_the_street_she_starts_on` — a notch with one exit is not
   a route decision, it is a tax);
 - a tile whose street segment is **held** today (`CityMap.is_held_at`) — a hard seal's own segment,
-  a region wall or door, or a segment bordering the home block, all in `CityMap.held_segments`; a
+  a region wall or door, or a segment bordering the home block, all in `CityMap.held_streets()`; a
   soft seal is not held, since its carriageway is still walkable and a café standing on it is the
   price of that route;
 - a tile inside the home block's own lot (`CityMap.is_on_home_block`), the same exemption stated

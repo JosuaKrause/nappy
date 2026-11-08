@@ -1209,7 +1209,7 @@ class KeptGround extends RefCounted:
 	## fresh set that holds its street trees.
 	func of(map: CityMap) -> Dictionary:
 		var trees := StreetTrees.footprint_tiles(map)
-		var stamp := [hash(map.tiles), map.closed_tiles.hash(), map.held_segments.hash(),
+		var stamp := [hash(map.tiles), map.closed_tiles.hash(), map.held_streets().fingerprint(),
 				trees.hash()]
 		if _of == null or _of.get_ref() != map or _stamp != stamp:
 			_of = weakref(map)
@@ -3006,7 +3006,7 @@ static func open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 				# can usefully happen: the player would never see it and the scheduler would have
 				# spent budget on nothing. `is_held_at` refuses the same ground for a street that is
 				# not closed but is still spoken for — a hard seal's segment, a region wall or door,
-				# or a segment bordering the home block (`CityMap.held_segments`) — and
+				# or a segment bordering the home block (`CityMap.held`) — and
 				# `is_on_home_block` refuses the block's own interior on top of that, both by
 				# construction rather than as a repair once something has landed there. See
 				# `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing on the

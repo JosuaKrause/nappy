@@ -889,7 +889,7 @@ func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 			var sited := SealPlanner.seal_street(map, segment, candidate, route, trees, emptied)
 			plans.append_array(sited.bodies)
 			if candidate.strength == SealPlanner.Strength.HARD:
-				map.hold_segment(key)
+				map.hold_segment(key, HeldStreets.Why.SEAL)
 			else:
 				sited.shut_the_sidewalk(map, true)
 				sited.shut_the_sidewalk(map, false)
@@ -927,7 +927,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 	if not finale:
 		plans.append_array(_authored_seals(errors))
 	for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
-		map.hold_segment(segment.key())
+		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 	var counts := {}
 	for entry: Dictionary in setup.get("events", []):
 		var at := position_of(entry.at, errors)

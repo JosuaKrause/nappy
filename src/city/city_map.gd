@@ -319,8 +319,8 @@ func set_fenced_park_state(existing_block: Vector2i, existing_act: int, today_ac
 func is_shut(tile: Vector2i) -> bool:
 	return _shut_tiles.has(tile)
 
-## Street segments a catalogue row may never be offered as ground today, keyed by
-## `StreetNetwork.Segment.key()`. Filled by `EventManager.start_day`, before `EventScheduler.
+## Street segments a catalogue row may never be offered as ground today, and why each is held
+## (`HeldStreets`). Filled by `EventManager.start_day`, before `EventScheduler.
 ## build_day` runs, from four sources: today's closures, every hard-sealed segment (`SealPlanner.
 ## plan_day`'s own `held` out-param — a soft seal is deliberately not covered, since its
 ## carriageway is still walkable and a café on it is the price of that route), every region wall
@@ -331,9 +331,13 @@ func is_shut(tile: Vector2i) -> bool:
 ## **Two readers, and the docstring is for both.** `EventScheduler.open_ground_for` refuses any
 ## candidate tile on a held segment, the fix this exists for. `CarStrategy.cannot_go_on()` (M110,
 ## "The crowd goes round a seal") wants the identical fact for the same reason a car should not
-## queue across a seal it cannot see through — read it with `is_held`/`is_held_at` rather than
-## reaching into this dictionary directly.
-var held_segments := {}
+## queue across a seal it cannot see through — read it with `is_held`/`is_held_at`, and the reason
+## through `held_streets()`, rather than keeping a list of one's own.
+var _held := HeldStreets.new()
+
+## Today's held streets and why each is held, the one answer every reader asks. See `_held`.
+func held_streets() -> HeldStreets:
+	return _held
 
 ## Every write to the three per-day records above and below — the holds, the soft seals and the
 ## closures — bumps `day_record_version` (the base's). **One reader, and it exists because the
@@ -343,20 +347,20 @@ var held_segments := {}
 ## tomorrow.
 
 ## Clears today's held segments. Called once per day, before anything is added — see
-## `held_segments`.
+## `held_streets()`.
 func clear_day_holds() -> void:
-	held_segments.clear()
+	_held.clear()
 	day_record_version += 1
 
-## Marks one segment as held for today. See `held_segments`.
-func hold_segment(key: Vector3i) -> void:
-	held_segments[key] = true
+## Marks one segment as held for today, for `why`. See `held_streets()`.
+func hold_segment(key: Vector3i, why: HeldStreets.Why) -> void:
+	_held.hold(key, why)
 	day_record_version += 1
 
 ## Whether `segment` is held today. Null answers false, so a caller need not check for a real
 ## street first.
 func is_held(segment: StreetNetwork.Segment) -> bool:
-	return segment != null and held_segments.has(segment.key())
+	return segment != null and _held.has(segment.key())
 
 ## Whether the street segment a tile stands on is held today. False for a tile inside a junction
 ## or a block interior, where `StreetNetwork.segment_containing` names no segment at all.
@@ -394,13 +398,13 @@ func is_in_walled_alley(tile: Vector2i, walled_alleys: Array[Rect2i]) -> bool:
 
 ## Tiles a soft seal's own body stands on, shut to walkers only for today — the carriageway
 ## underneath a soft seal is untouched, so a car still drives straight through it. Deliberately
-## apart from `held_segments`: that record is about which whole *segment* no catalogue row may be
+## apart from `held_streets()`: that record is about which whole *segment* no catalogue row may be
 ## offered, and a soft seal's own carriageway is still walkable and still open to a catalogue row,
 ## so it was never held there — folding this into it would shut the carriageway too. Keyed on the
 ## tile rather than the segment for the same reason: a soft seal takes one pavement or the other,
 ## never the whole street, and the thinning pass may drop one body of a pair and leave that
 ## pavement's tiles out of this set entirely. Filled by `SealPlanner.plan_day`, which clears and
-## refills it fresh on every call, the same as `held_segments` is cleared and refilled once a day.
+## refills it fresh on every call, the same as the holds are cleared and refilled once a day.
 var soft_sealed_tiles: Dictionary:
 	get:
 		return blocked.soft_sealed
@@ -650,7 +654,7 @@ func copy() -> CityMap:
 	twin._fenced_park_state = _fenced_park_state
 	twin._fenced_park_state_act = _fenced_park_state_act
 	twin._act_for_the_next_repaint = _act_for_the_next_repaint
-	twin.held_segments = held_segments.duplicate()
+	twin._held = _held.duplicate()
 	twin._closure_tree_pits = _closure_tree_pits.duplicate()
 	twin._seal_tree_pits = _seal_tree_pits.duplicate()
 	return twin

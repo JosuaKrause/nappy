@@ -852,7 +852,7 @@ func _arm(vertical: bool, direction: float) -> Vector3i:
 	return _ahead_of(vertical, direction)
 
 func _hold(key: Vector3i) -> void:
-	_city.map.hold_segment(key)
+	_city.map.hold_segment(key, HeldStreets.Why.SEAL)
 
 func _clear_the_holds() -> void:
 	_city.map.clear_day_holds()

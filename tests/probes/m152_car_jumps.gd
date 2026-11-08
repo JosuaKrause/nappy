@@ -315,7 +315,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 ## go.
 ##
 ## **A seal is asked of the map rather than of the catalogue.** Which rows can shut a street is a
-## property of the day's placements, and `CityMap.held_segments` is the answer the cars themselves
+## property of the day's placements, and `CityMap.held` is the answer the cars themselves
 ## read — so a watch point exists wherever a car is actually going to meet something, without this
 ## file carrying a list of row ids that would go stale the first time one was added.
 func _places_cars_turn(city: City, map: CityMap, doorstep: Vector2) -> Array[Vector2]:
@@ -325,7 +325,7 @@ func _places_cars_turn(city: City, map: CityMap, doorstep: Vector2) -> Array[Vec
 		for mouth: Vector2 in closure.mouth_centres(map):
 			stops.append(mouth)
 			seen[mouth.snapped(Vector2.ONE)] = true
-	for key: Vector3i in map.held_segments:
+	for key: Vector3i in map.held_streets().keys():
 		var segment := map.network.by_key(key)
 		if segment == null:
 			continue

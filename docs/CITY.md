@@ -1375,7 +1375,7 @@ that a seal may be loud, and only this one is — the fallen tree (one trunk ker
 burst main (a crater between two barriers) leave no gaps to close and stay at zero.
 
 **The seal still seals.** `ClosurePlanner` goes on counting a closed street as closed for the route
-guarantee, and `CityMap.held_segments` still keeps the crowd off a hard seal's street; both are
+guarantee, and `CityMap.held_streets()` still keeps the crowd off a hard seal's street; both are
 stated over `obstructs_radius` — the ground the scene *closes*, unmoved at 96px — rather than over
 the bodies it puts down. That is the conservative direction and deliberately so: taking obstruction
 away can only add reachable ground, so a day proved winnable against the whole-street band is still
@@ -1936,7 +1936,7 @@ is loud, and the reason a park is quiet.
   all.
 
 - **And the same predicate covers a hard seal, a region wall and a soft seal.** `CityMap.
-  held_segments` (the day's no-catalogue-row ground) and `CityMap.soft_sealed_tiles` (a soft seal's
+  held_streets()` (the day's no-catalogue-row ground, and why each segment is held) and `CityMap.soft_sealed_tiles` (a soft seal's
   own pavement tiles, kept apart because its carriageway is not held) are what each kind's
   `cannot_go_on()` (`CarStrategy`, `WalkerStrategy`) asks alongside a closure: a hard seal or a
   wall shuts the whole street to both walkers and cars, a soft seal shuts only the pavements so a car still crosses it, and a region
@@ -1958,7 +1958,7 @@ is loud, and the reason a park is quiet.
 
 - **And no car is put somewhere it could never leave.** A junction whose every arm is held for
   the day is a **pocket**: carriageway with no street out of it. `CrowdPockets` floods the
-  carriageway once per day from the same `held_segments` the crowd already reads, and labels every
+  carriageway once per day from the same `CityMap.held_streets()` the crowd already reads, and labels every
   connected piece that reaches at most one junction. A car's placement — the morning's and every
   recycle after it — refuses a spot inside one the way it refuses a spot with no room, because a
   car cannot turn round against a barrier and one stopped nose-on holds its queue. **A walker has
