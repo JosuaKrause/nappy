@@ -16,9 +16,18 @@ extends RefCounted
 ##
 ## **It stops once every route tile has a roadblock close by** (`RoadblockGround.covers()`, the walk
 ## along her paths day 13's task measures close by with, out to `EventScheduler.TASK_ROW_CLOSE_BY`),
-## or once no section is left in the draw. *Read as, the orchestrator's and open to correction:* the
-## phase is day 13's, with that stop (fork 6 of the placement proposal); the player, shown the count
-## full coverage gives, called it good and said only a playtest can tell (inbox #1185).
+## **or once no section still offered would bring one close by a route tile that has none**, or once
+## no section is left in the draw. The stop is asked before each draw, never of the draw itself: a
+## section close by nothing new is drawn like any other while some other section could still cover
+## a route tile. *Read as, the orchestrator's and open to correction:* the phase is day 13's, with
+## that stop (fork 6 of the placement proposal); the player, shown the count full coverage gave,
+## called it good and said only a playtest can tell (inbox #1185), so where full coverage cannot be
+## reached the count stops with the last section that could still help rather than running on.
+##
+## **What a section would cover is kept, and only ever shrinks**: a roadblock standing only shuts
+## ground, so a walk along her paths only grows longer, and what a section covered when it was last
+## asked is at least what it covers now. A kept answer that reaches no route tile left without one
+## settles that section; one that does is asked again before the phase goes on.
 ##
 ## Handed the day's locations and what it asks of the day's ground (`RoadblockGround`). Model: no
 ## node, nothing that runs.
@@ -36,6 +45,8 @@ const SPREAD_EXPONENT := 2.0
 var _locations: DayLocations
 var _ground: RoadblockGround
 var _uncovered := {}
+## Section -> the route tiles its offer was close by when last asked (`_something_left_to_cover()`).
+var _covers := {}
 var _placed: Array[EventScheduler.Planned] = []
 
 func _init(locations: DayLocations, ground: RoadblockGround) -> void:
@@ -48,7 +59,7 @@ func place(rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
 		_uncovered[tile] = true
 	var candidates := _locations.sections_in(PlacementView.View.ROUTE_ADJACENT)
 	var offers := {}
-	while not _uncovered.is_empty():
+	while not _uncovered.is_empty() and _something_left_to_cover(candidates, offers):
 		var pool: Array[Location] = []
 		for section in candidates:
 			if section.is_taken():
@@ -70,7 +81,33 @@ func place(rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
 		for section: Location in offers.keys():
 			if section.centre().distance_to(plan.placed_at()) <= radius:
 				offers.erase(section)
+				_covers.erase(section)
 	return _placed
+
+## Whether some section still offered a roadblock would bring one close by a route tile that has
+## none: the phase's stop, asked before each draw.
+func _something_left_to_cover(candidates: Array[Location], offers: Dictionary) -> bool:
+	for section in candidates:
+		if section.is_taken():
+			continue
+		if not offers.has(section):
+			offers[section] = _ground.offer(section)
+		var plan: EventScheduler.Planned = offers[section]
+		if plan == null:
+			continue
+		if _covers.has(section) and not _reaches_one_with_none(_covers[section]):
+			continue
+		_covers[section] = _ground.covers(plan)
+		if _reaches_one_with_none(_covers[section]):
+			return true
+	return false
+
+## Whether any of `tiles` is a route tile with no roadblock close by yet.
+func _reaches_one_with_none(tiles: Array[Vector2i]) -> bool:
+	for tile in tiles:
+		if _uncovered.has(tile):
+			return true
+	return false
 
 ## How many of the ground's route tiles are left with no roadblock close by once `place()` is done.
 func left_uncovered() -> int:

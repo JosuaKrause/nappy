@@ -1227,13 +1227,15 @@ not a strict rule. Those locations are then assigned, so no draw happens for the
 (inbox #1185).
 - *Read as* (the orchestrator's, open to correction): the roadblock phase is day 13's. It stops once
   every route tile has a roadblock within 1,024px along her paths, the measure day 13's task searches
-  with; shown the count full coverage gives, the player called it good and said only a playtest can
-  tell (inbox #1185). On days 7 to 12 a roadblock is an ordinary event of the route-adjacent bag.
+  with, or once no section still offered would bring one within 1,024px of a route tile that has
+  none. Shown the count full coverage gave, the player called it good and said only a playtest can
+  tell (inbox #1185), so where full coverage cannot be reached the count stops rather than running
+  on. On days 7 to 12 a roadblock is an ordinary event of the route-adjacent bag.
 - `RoadblockPhase` places them, in the sections of the day's locations (`DayLocations`). Every
   route-adjacent section whose roadblock today's rules leave valid
-  (`EventScheduler.JudgedRoadblockGround`) is in each draw, weighted by the bias. Where some route
-  tile can be covered by none of them, the stop is never reached, and the phase goes on until every
-  such section has one.
+  (`EventScheduler.JudgedRoadblockGround`) is in each draw, weighted by the bias; the stop is asked
+  before each draw and never narrows it, so a section close by nothing new is drawn like any other
+  while another could still cover a route tile.
 
 **The city's fixed parts have phases of their own**, at dawn or at the start of the run: the
 region wall, its doors, the closures, the seals, the masts and the ambient rows (inbox #1185).

@@ -13,6 +13,7 @@ extends RefCounted
 func run(t) -> void:
 	_test_it_stops_once_every_route_tile_has_one_close_by(t)
 	_test_a_section_offered_none_is_never_drawn(t)
+	_test_it_stops_once_no_section_could_cover_a_tile_left(t)
 	_test_every_offered_section_is_in_the_draw(t)
 	_test_each_roadblock_leans_toward_the_farthest(t)
 	_test_offers_near_a_roadblock_just_placed_are_asked_again(t)
@@ -165,6 +166,34 @@ func _test_a_section_offered_none_is_never_drawn(t) -> void:
 				and phase.left_uncovered() == 1
 	t.check(never, "a section the day's ground offers no roadblock is never drawn, and the route "
 			+ "tile only it was close by is left counted without one (%d seeds)" % SEEDS)
+
+## A route tile no section reaches is never covered, so full coverage cannot be reached. The phase
+## still stops: once A, the one section close by the other route tile, stands, no section left could
+## bring a roadblock close by a tile that has none, so B and C, close by nothing, are not drawn after
+## it. Before A they may be, since A could still cover a tile then.
+func _test_it_stops_once_no_section_could_cover_a_tile_left(t) -> void:
+	var always := true
+	var nothing_first := 0
+	for seed_value in SEEDS:
+		var a := _section(Vector3i(2, 2, 1), 1)
+		var b := _section(Vector3i(5, 2, 1), 1)
+		var c := _section(Vector3i(8, 2, 1), 1)
+		var ground := _Ground.new()
+		ground.tiles = _tiles([1, 9])
+		ground.close_by = {a: _tiles([1])}
+		var locations := _Locations.new()
+		locations.sections = [a, b, c] as Array[Location]
+		var phase := RoadblockPhase.new(locations, ground)
+		var placed := phase.place(_rng(seed_value))
+		always = always and not placed.is_empty() and ground.section_of(placed.back()) == a \
+				and phase.left_uncovered() == 1
+		if placed.size() > 1:
+			nothing_first += 1
+	t.check(always, "where a route tile no section reaches is left, the phase stops with the last "
+			+ "section that could still cover one: nothing is drawn after it (%d seeds)" % SEEDS)
+	t.check(nothing_first > 0 and nothing_first < SEEDS,
+			"and a section close by nothing is still drawn before it on some days (%d of %d)"
+			% [nothing_first, SEEDS])
 
 ## A section close by no route tile is in the draw like any other: the bias ranks every offered
 ## section, and nothing leaves one out for what it would cover.

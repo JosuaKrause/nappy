@@ -769,8 +769,9 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 ## **The roadblock phase at dawn** (inbox #1185: the day's routes first, then roadblocks next to
 ## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
 ## route-adjacent sections, spread by a bias toward the section farthest from those already placed,
-## until every route tile has one close by. `def` is the task's row, null on every other day, which
-## this leaves exactly as it was.
+## until every route tile has one close by or no section still offered could bring one close by a
+## route tile that has none (the orchestrator's reading, open to correction). `def` is the task's
+## row, null on every other day, which this leaves exactly as it was.
 ##
 ## **The day's locations are laid out here, on day 13 alone** (`DayLocations.lay_out()` off
 ## `corridor`), handed to the phase and dropped once it returns: in this step nothing else places
@@ -803,7 +804,7 @@ static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityM
 	for plan in phase.place(_stream(base, RoadblockPhase.SALT)):
 		placed.append(RunTrace.tile(map.world_to_tile(plan.placed_at())))
 	_note(trace, "plan", ("%d %s placed beside the day's routes, at %s; %d route tiles left with " +
-			"none close by, no section beside the routes left to take one")
+			"none close by, no section beside the routes left that could bring one close by them")
 			% [placed.size(), def.id, " ".join(placed) if not placed.is_empty() else "none",
 			phase.left_uncovered()])
 
