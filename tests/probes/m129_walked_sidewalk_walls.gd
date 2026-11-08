@@ -278,7 +278,8 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 ## single merged return cannot.
 func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var region_plan := RegionPlanner.plan_day(map, day, tree)
-	var closures := ClosurePlanner.plan_day(map, day, _rng(map, day, "closures"), tree, region_plan)
+	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+			_rng(map, day, "closures"), tree, region_plan)
 	map.close_streets(closures)
 
 	map.clear_day_holds()

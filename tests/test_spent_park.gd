@@ -232,7 +232,8 @@ func _test_the_fenced_park_closes_every_entrance(t) -> void:
 			var block := map.fenced_park
 			var rect := ClosurePlanner.calm_area_rect(map, block)
 			var world := map.tile_rect_to_world(rect)
-			var closures := ClosurePlanner.plan_day(map, day, _closure_rng(map, day))
+			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+					_closure_rng(map, day))
 			var boxes: Array[Rect2] = []
 			for closure in closures:
 				var fence := closure as ParkClosure
@@ -374,7 +375,8 @@ func _test_the_guarantees_hold_with_the_fenced_park(t) -> void:
 					cut += 1
 			t.check(cut == 0, "seed %d day %d: fencing cuts nothing off but its own ground (%d tiles)"
 					% [map.seed_used, day, cut])
-			var closures := ClosurePlanner.plan_day(map, day, _closure_rng(map, day))
+			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+					_closure_rng(map, day))
 			map.close_streets(closures)
 			var barriers := map.closed_tiles.duplicate()
 			for closure in closures:
@@ -452,7 +454,8 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 			fenced = result[0]
 			fenced_act = result[1]
 			var tree := RouteTree.for_day(map, day)
-			var closures := ClosurePlanner.plan_day(map, day, _closure_rng(map, day), tree)
+			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+					_closure_rng(map, day), tree)
 			map.close_streets(closures)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("events:%d:%d" % [map.seed_used, day])

@@ -242,7 +242,8 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 			var region_plan := RegionPlanner.plan_day(map, day, tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
-			var closures := ClosurePlanner.plan_day(map, day, closure_rng, tree, region_plan)
+			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+					closure_rng, tree, region_plan)
 			map.close_streets(closures)
 
 			# The same population `EventManager.start_day` performs, before `build_day` runs.
@@ -355,7 +356,8 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 			var region_plan := RegionPlanner.plan_day(map, day, tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
-			var closures := ClosurePlanner.plan_day(map, day, closure_rng, tree, region_plan)
+			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+					closure_rng, tree, region_plan)
 			map.close_streets(closures)
 
 			map.clear_day_holds()

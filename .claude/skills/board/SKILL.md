@@ -124,6 +124,14 @@ board, the note it comes from, its appended words and the settled questions on t
 read for an answer; where they give one, it is built, and the reading is stated in the brief and in
 the pull request's description, open to the player's correction there.
 
+**The same holds for an open point anywhere, not only a board question** (inbox #1232): an `Open:`
+line in a queue item or a record, a "whether…" a filer left, or a point the orchestrator would
+raise in a chat answer. Before it is relayed, it is read against the player's recorded words, the
+whole entry it sits in included (items filed from one note belong together). The words answer it
+where their plain meaning does, even if they never name the point (inbox #1234): a hint about a
+thing she sees fires when she first sees it. Where the words answer it, the answer is stated as the reading, and the line is rewritten when the item is next
+touched; it is never handed back for the player to restate.
+
 ## Answering
 
 - **General discussion is on the You line; the answer goes on the Me line under it** (inbox #830 in minty-dolphin).
