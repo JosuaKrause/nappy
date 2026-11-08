@@ -31,7 +31,6 @@ src/events/views/event_look.gd drawn_rect_now
 # that adds the underscores deletes these lines.
 src/city/building_shadows.gd compute
 src/city/poster_art.gd compose
-src/crowd/walker_look.gd gait_phase
 src/main.gd configure
 src/run/day_director.gd facts
 src/run/day_director.gd hands_over_to_the_escape
