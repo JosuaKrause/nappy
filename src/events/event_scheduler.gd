@@ -2528,9 +2528,8 @@ class WalkSiting extends RefCounted:
 	## - every rule `_judge()` asks against the walk's other plans (`WalkEvents.everything_but()`,
 	##   `old` left out, since it is what goes): clear of the unused calm and of the ground round the
 	##   doors, the route's junctions and sidewalks left open, and **room all round**, nothing within
-	##   `EVENT_SPACING_ANY` and no other of the row within `EVENT_SPACING_SAME`. Dawn's roadblock
-	##   phase takes a tile `_judge()` refuses nothing, room all round or not; a swap takes a tile only
-	##   with room all round.
+	##   `EVENT_SPACING_ANY` and no other of the row within `EVENT_SPACING_SAME`. A swap takes a tile
+	##   only with room all round, as dawn's roadblock phase does (`JudgedRoadblockGround.offer()`).
 	##
 	## The two rules a spec adds (`Rules`: the walk kept open past everything on it, one waiting
 	## guard's notice at a time) are the escape's and no day's, and a siting is a day's.

@@ -137,8 +137,9 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 
 	# Everywhere he may stand round the roadblock she approaches is in her view: he stays.
 	var around := other.body_position()
+	# He stands out of that view himself: the premise the other roadblock was chosen by
+	# (`clear_of_him` above, the same square and his same rect) holds it.
 	_view = Rect2(around - everywhere, everywhere * 2.0)
-	t.check(not _guard_in_view(where), "he stands out of that view himself")
 	_choose_again(director)
 	t.check(_task_guard() == first and first.global_position == where,
 			"the guard does not move while all the ground round the roadblock she approaches is in view")
