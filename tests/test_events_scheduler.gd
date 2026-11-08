@@ -527,19 +527,36 @@ const _WALL_SHARE_TOLERANCE := 0.2
 ## point 4: "fewer of all three"). The same city, seed and day is planned twice, once as the game plans it
 ## (`DaySpec.for_day()`) and once with `wall_row_share` at `1.0`, every wall weighed in full, so the
 ## check is a relationship between the two days rather than the rule read back to itself: the share
-## of walls the day keeps is `DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` within `_WALL_SHARE_TOLERANCE`, and
-## a day before `Tuning.REGION_WALL_FIRST_DAY` is the same day either way.
+## of walls the day keeps is `DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` within `_WALL_SHARE_TOLERANCE`, a
+## wall the full day stands at its cap stands at most its cap times the share, rounded up (its cap is
+## scaled as well as its weight), and a day before `Tuning.REGION_WALL_FIRST_DAY` is the same day
+## either way.
 func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t) -> void:
 	var map := _map()
 	var walls := 0
 	var kept := 0
+	var capped_rows := 0
 	for day: int in [Tuning.REGION_WALL_FIRST_DAY - 1, Tuning.REGION_WALL_FIRST_DAY, 11, 13]:
 		var every_wall := DaySpec.for_day(day)
 		every_wall.wall_row_share = 1.0
 		var consumed: Array[String] = []
-		var full := _walls_of(EventScheduler.build_day(every_wall, _rng(day), map,
-				CalmAreas.of(map), consumed).placements())
+		var full_plans := EventScheduler.build_day(every_wall, _rng(day), map, CalmAreas.of(map),
+				consumed).placements()
+		var full := _walls_of(full_plans)
 		var game := _walls_of(_planned(day))
+		if day >= Tuning.REGION_WALL_FIRST_DAY:
+			# A wall whose cap the full day reaches is thinned too: the share scales its cap.
+			var full_by_row := _walls_by_row(full_plans)
+			var game_by_row := _walls_by_row(_planned(day))
+			for id: String in full_by_row:
+				var most: int = full_by_row[id][1]
+				if int(full_by_row[id][0]) < most:
+					continue
+				capped_rows += 1
+				var bound := ceili(most * DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE)
+				t.check(int(game_by_row.get(id, [0, 0])[0]) <= bound,
+						"day %d: '%s', at its cap of %d with every wall kept, stands at most %d (%d)"
+						% [day, id, most, bound, int(game_by_row.get(id, [0, 0])[0])])
 		if day < Tuning.REGION_WALL_FIRST_DAY:
 			t.check(full == game and full > 0,
 					"day %d, before the gatehouse day, places the same %d walls either way (%d)"
@@ -548,10 +565,21 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t) -> void:
 		walls += full
 		kept += game
 	t.check(walls > 0, "the days from the gatehouse day had walls to weigh (%d)" % walls)
+	t.check(capped_rows > 0, "and walls at their cap to thin (%d)" % capped_rows)
 	var share := float(kept) / maxf(1.0, float(walls))
 	t.check(absf(share - DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE) <= _WALL_SHARE_TOLERANCE,
 			"from the gatehouse day the day keeps %.2f of its walls (%d of %d); the share asked "
 			% [share, kept, walls] + "for is %.2f" % DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE)
+
+## The placed recurring wall-role rows of `plans` by row: `id -> [how many, the row's cap]`.
+static func _walls_by_row(plans: Array[EventScheduler.Planned]) -> Dictionary:
+	var found := {}
+	for plan in plans:
+		if plan.role == GameEnums.BlockerRole.WALL and plan.is_placed() \
+				and plan.def.kind == GameEnums.EventKind.RECURRING:
+			var was: Array = found.get(plan.def.id, [0, plan.def.most_in_a_day()])
+			found[plan.def.id] = [int(was[0]) + 1, was[1]]
+	return found
 
 ## How many of `plans` are placed recurring wall-role rows, the rows the bags weigh by the share.
 static func _walls_of(plans: Array[EventScheduler.Planned]) -> int:
