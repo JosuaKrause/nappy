@@ -21,8 +21,17 @@ extends RefCounted
 ## path. The summary's continue is pressed through the viewport; the title's answers are the signal
 ## the title raises (a rig's boot skips the title, and the city runs on behind an open one).
 ## Everything is found by the names `main` gives it, and each run is a `RunState` of the test's own.
+##
+## **Combined by composition, for this reason:** the page counter's and the run log's own behavior are
+## `tests/test_visit_counter.gd`'s, `tests/test_telemetry.gd`'s and
+## `tests/test_telemetry_observer.gd`'s; what is pinned here is *which
+## notes the observers are handed and when* across a whole scripted run, which is a guarantee about
+## the domain events the day, the run and the escape raise and about `main` subscribing the
+## observers to them, so the real `main` is the subject. The first boot is on a cached generated
+## city (`tests/city_map_cache.gd`).
 
 const Boot := preload("res://tests/booted_main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_observers_scratch.json"
@@ -79,7 +88,8 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 			Boot.config(["--seed", str(SEED), "--no-title"]),
 			func(m: Node) -> void:
 				m.use_sitting_home(home)
-				m.use_run_log(run_log))
+				m.use_run_log(run_log),
+			false, MapCache.source())
 	var main := booted.main
 	t.check(Boot.day(main) != null and Boot.day(main).is_running(), "the boot reached day 1")
 	_check_the_observer_runs_after(t, main, [Boot.city(main), Boot.resistance(main), _edge_of(main),
