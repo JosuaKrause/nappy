@@ -27,10 +27,19 @@ keeps the walk's home-street rule went with it, no other siting giving it a plac
 the task finds a roadblock at 440 (median 410px straight-line from the mark) and swaps at 40 (median
 924px, farthest 2,113px); none misses, where the tile swap missed 33.
 
-**Readings, open to correction:** the nearest section along her paths, an undrawn one taking the
-roadblock like any other (the player: the task searches "closeby" first); a section holding a mast
-or a burnt shell is not taken, the fixed parts having phases of their own, though the player named
-only the guard houses and the district barriers.
+**The fixed parts are never taken** (the player: they "each get phases during either dawn or
+beginning of the game", inbox #1185): the region wall's bodies, a door's, a seal (soft seals
+included, which stand on streets no hold closes; `Planned.stand_as_a_seal()`), a mast, an ambient
+row (`Planned.is_a_fixed_part()`). The burnt shell is a regular event ("your scars are just regular
+events", inbox #1185), so its section may be taken. A swap leaves the map's bodies and shut tiles as
+they were, minus the section's, plus the roadblock's.
 
-**For the end-of-refactor remeasure:** day 13's swaps (how often, how far), and the walk to a
-far-off swapped roadblock.
+**Readings, open to correction:** the nearest section along her paths, an undrawn one taking the
+roadblock like any other (the player: the task searches "closeby" first).
+
+**Not built:** a scene's day 13 never swaps, since a scene's walk has no day's locations; day 13's
+scene authors its own roadblock.
+
+**For the end-of-refactor remeasure:** day 13's swaps (how often, how far), the walk to a far-off
+swapped roadblock, and the swap's cost on the frame she reads the mark (median 35ms, at most 41ms,
+the whole-city walk 33ms of it; a found roadblock 4ms).
