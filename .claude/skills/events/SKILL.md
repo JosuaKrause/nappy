@@ -8,6 +8,10 @@ description: Rules for adding or changing an event in the catalogue — the fair
 The catalogue is data, validated on load. Almost everything a new row needs already exists as a
 field; resist adding a script per event.
 
+**Before changing where any event is placed, read `docs/EVENTS.md`, "The three views and the
+placement order"**: the player's design (on the route, route-adjacent, off the route, and the
+order the day's events are placed in), and where the code does not follow it yet.
+
 ## Adding a row
 
 The steps are `docs/EVENTS.md`, "Adding a new event". The one that gets skipped is **a drawing**:
