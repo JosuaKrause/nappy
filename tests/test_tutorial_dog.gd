@@ -16,9 +16,14 @@ extends RefCounted
 ## too")* — `EventDirector._owe_the_sprinkled_dog()` now and then sends the same unmodified def
 ## off her heading again, unguaranteed and without the tip.
 ##
-## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
-## seed's city is generated once in the test process and every case is handed a copy of its own,
-## the same city `CityGenerator.generate()` builds for the seed.
+## **The director is handed a hand-drawn map of streets** (`tests/fixtures/street_map.gd`): it sites
+## what it hands out on the streets under and ahead of her and reads nothing else of a city, so no
+## generated city is built for the cases that test the director, the row or the instance. **One case
+## plans a whole day** (`_test_day_4_is_a_map_placement`): it asks the scheduler where the row is
+## placed, which is `EventScheduler`'s answer and not the director's, and it needs generated cities
+## for the planner to place on (`tests/city_map_cache.gd`: each seed's city is generated once in the
+## test process and every case is handed a copy of its own). It belongs in the scheduler's suite, which
+## is in the events conversion's list; it stays here until then.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
@@ -36,8 +41,9 @@ func run(t) -> void:
 	_test_no_other_day_hands_out_the_lesson(t)
 	_test_a_sprinkled_dog_is_never_the_lesson(t)
 
+## The streets she walks and the director sites on.
 func _map() -> CityMap:
-	return MapCache.of(4242)
+	return StreetMap.full()
 
 ## Walks a director until it hands out `charging_dog`, or returns two `Vector2.INF`s if a real
 ## street's worth of walking never gets one. `due()` sites relative to wherever she has walked to

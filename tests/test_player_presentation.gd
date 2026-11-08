@@ -1,10 +1,8 @@
 extends RefCounted
-## A reproducible run choice reaches every player view and survives the day's lifecycle.
+## A reproducible run choice reaches every player view and survives the day's lifecycle: the run
+## keeps it, and the rig draws only the family it is handed.
 
-const Boot := preload("res://tests/booted_main.gd")
-const Seat := preload("res://tests/seat.gd")
-## The save every boot is handed, so nothing here reaches `user://save.json`.
-const _SCRATCH_SAVE := "user://test_player_presentation_scratch.json"
+const STROLLER_SCENE: PackedScene = preload("res://scenes/player/stroller.tscn")
 const VIEWS: Array[String] = ["side", "front_diagonal", "front", "front_diagonal",
 		"side", "back_diagonal", "back", "back_diagonal"]
 const POSES: Array[String] = ["a", "c", "b"]
@@ -16,7 +14,7 @@ func _mother_texture(rig: Stroller, frame: int) -> Texture2D:
 
 func run(t) -> void:
 	_test_seeded_equal_choice_and_lifetime(t)
-	await _test_main_binds_both_complete_families_before_drawing(t)
+	_test_each_family_stays_in_its_own_poses(t)
 	_test_every_family_source_is_a_baked_region(t)
 
 func _test_seeded_equal_choice_and_lifetime(t) -> void:
@@ -36,25 +34,16 @@ func _test_seeded_equal_choice_and_lifetime(t) -> void:
 		t.check(state.header.player_is_male == selected, "replaying a seed reproduces the presentation")
 	t.check(observed.size() == 2, "the seed sweep exercises both families")
 
-## Real boots of `main` for each family (`--parent`), a day's and the escape's, whose rig is caught
-## the moment it enters the tree (`SceneTree.node_added`), before anything has drawn it: the choice
-## is bound by then on both ways in.
-func _test_main_binds_both_complete_families_before_drawing(t) -> void:
+## A rig of each family, handed its choice before it enters the tree, the way `main` hands it
+## (`Stroller.is_male`), and no boot, run or city: every pose, state and facing stays in the chosen
+## family, and standing aside, continuing, resetting and resolving either state never reroll it.
+## **That `main` binds the choice before the first draw, on a day's way in and on the escape's, is
+## `tests/test_main.gd`'s** (`_test_main_binds_the_family_before_the_first_draw`).
+func _test_each_family_stays_in_its_own_poses(t) -> void:
 	for male in [false, true]:
-		var parent := "father" if male else "mother"
-		var in_the_escape: Array[bool] = []
-		var escape_seat := Seat.new(t)
-		var escape: Boot.Booted = await _boot_catching(t, escape_seat,
-				["--parent", parent, "--start-escape"], in_the_escape)
-		escape.free_all()
-		escape_seat.end()
-		var on_a_day: Array[bool] = []
-		var seat := Seat.new(t)
-		var booted: Boot.Booted = await _boot_catching(t, seat, ["--parent", parent], on_a_day)
-		var rig := Boot.player(booted.main)
-		t.check(in_the_escape == [male] and on_a_day == [male] and rig != null
-				and rig.is_male == male,
-				"ordinary and escape construction share a choice bound before the first draw")
+		var rig: Stroller = STROLLER_SCENE.instantiate()
+		rig.is_male = male
+		t.add_child(rig)
 		rig.set_physics_process(false)
 		rig.stand_aside()
 		rig.step_back_in()
@@ -73,21 +62,9 @@ func _test_main_binds_both_complete_families_before_drawing(t) -> void:
 							"both presentations retain the same west-facing mirrors")
 					t.check(rig.pose(1.0).view == direction and _mother_texture(rig, frame) != null,
 							"the facing settles the view and the family resolves a picture for it")
-			t.check(rig.is_male == male and seat.run.header.player_is_male == male,
+			t.check(rig.is_male == male,
 					"standing aside, continuing, resetting and resolving either state never reroll")
-		booted.free_all()
-		seat.end()
-
-## A boot of `main` over `seat`'s run on `words`, with the family of every stroller that entered the
-## tree during it, at the moment it entered, appended to `entered`.
-func _boot_catching(t, seat: Seat, words: Array, entered: Array[bool]) -> Boot.Booted:
-	var catch := func(node: Node) -> void:
-		if node is Stroller:
-			entered.append((node as Stroller).is_male)
-	t.get_tree().node_added.connect(catch)
-	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words)
-	t.get_tree().node_added.disconnect(catch)
-	return booted
+		rig.free()
 
 ## Every path the rig can draw is a name the bake actually knows — the completeness check
 ## `assets/atlases/membership.json` wants. **Which page each one is on is
