@@ -1239,7 +1239,7 @@ not a strict rule. Those locations are then assigned, so no draw happens for the
   whose roadblock would stand within 256px of it is offered one, and the bias ranks the rest.
 - `RoadblockPhase` places them, in the sections of the day's locations (`DayLocations`). Every
   route-adjacent section whose roadblock today's rules leave valid
-  (`EventScheduler.JudgedRoadblockGround`) is in each draw, weighted by the bias; the stop is asked
+  (`EventScheduler.RuledRoadblockGround`) is in each draw, weighted by the bias; the stop is asked
   before each draw and never narrows it, so a section close by nothing new is drawn like any other
   while another could still cover a route tile.
 
@@ -1295,7 +1295,7 @@ Each item quotes the code on this branch.
 1. **The day's locations are drawn at dawn by today's placement rules, not by street rules.**
    Every day lays its locations out and draws each from its view's bag (`LocationDraw`,
    `EventScheduler._draw_the_locations()`), but whether a row is valid at a location is
-   `_judge()`'s answer for the whole day standing (`JudgedLocationGround.offer()`), the tile tried
+   `_judge()`'s answer for the whole day standing (`RuledLocationGround.offer()`), the tile tried
    in the location's own order, not a rule asked of the street's other draws.
    - A row comes up and is refused before the next is drawn: `ViewBag.draw()` asks a marble's row
      only once it comes up. It draws exactly as weighing only the valid rows from the start would.
@@ -1323,7 +1323,7 @@ Each item quotes the code on this branch.
      locations draw, rather than a refusal after a spot is rolled.
    - Nothing narrows a street's other draws once one of its events is drawn.
 5. **The roadblock phase judges a section's roadblock with today's placement rules**
-   (`JudgedRoadblockGround.offer()` asks `_judge()`, and takes only a tile with room all round), which
+   (`RuledRoadblockGround.offer()` asks `_judge()`, and takes only a tile with room all round), which
    is the invalidation item 4 describes, asked of the whole day rather than of a street's other
    draws.
 6. **Most events are placed at dawn, not drawn during the walk.**
@@ -1367,7 +1367,7 @@ places on each day comes out as the share measured, the route's above all, since
 route is what the route decision is about). A later day's shares are higher, so late days
 are denser as well as nastier. A row's weight in a view is its own `weight` times what the view is
 to its role (`EventScheduler.view_weight()`), and each location scales it by its own weight
-(`JudgedLocationGround.scale()`): a precinct's four times over, the street between two strands of
+(`RuledLocationGround.scale()`): a precinct's four times over, the street between two strands of
 the routes six times over for a costly wall, an alley beside a sack pile five times over for the
 mouse, which stands on the alley's tiles beside the pile where it can. *(The player: "yes" to a weight per location that scales its view bag's weights, issue
 #1185.)*
@@ -1981,7 +1981,7 @@ Two things a low cap does quietly, both of which have to belong to somebody once
 
 - **Separation.** `EVENT_SPACING_SAME` (256px, a block) between two of a kind and
   `EVENT_SPACING_ANY` (64px) between any two at all are rules of the day's ground
-  (`JudgedLocationGround.offer()`): the first bends to the roomiest tile of a location, the second
+  (`RuledLocationGround.offer()`): the first bends to the roomiest tile of a location, the second
   never does.
 - **Keeping a lethal field uncluttered.** See the telegraph contract below.
 

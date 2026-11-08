@@ -4,7 +4,7 @@ extends RefCounted
 ## a location, if the row fits there and the day's rules leave it valid, and how much the location
 ## weighs the row. The draw decides what each location holds; this answers for the day's ground, so
 ## the draw is handed it (dependency injection) and a test hands a stand-in holding the answers it
-## sets. The day's own is `EventScheduler.JudgedLocationGround`. Every method is to be overridden.
+## sets. The day's own is `EventScheduler.RuledLocationGround`. Every method is to be overridden.
 
 ## The event `def` would be at `location`, stood on a tile of the location it fits on, or null where
 ## it fits nowhere there or the day's rules leave it invalid given what already stands.
