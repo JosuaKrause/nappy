@@ -57,6 +57,9 @@ func run(t) -> void:
 	_map = MapCache.of(SEED)
 	_events = StreetEvents.over(t, _map, _run)
 	_events.start_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), _day_rng(), [] as Array[String])
+	# The rides run on a quiet day: a body the day's draw stands on the arterial's sidewalk would turn
+	# the rider off the line these checks ride, and what the draw stands there is not theirs to ask.
+	_quiet_day(_events)
 	_record_the_drawing()
 	await _test_a_pelican_rides_as_one_throughout(t)
 	await _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t)

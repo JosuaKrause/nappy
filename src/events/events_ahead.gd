@@ -69,7 +69,7 @@ func director() -> EventDirector:
 ## Starts the director's day over the walk's plan, as the manager planned it against `tree`, and
 ## keeps the placement context a row left for her walk is sited against.
 func start_day(day: int, tree: RouteTree) -> void:
-	# The day's placement context, kept past dawn for the one kind of plan the day budgets and
+	# The day's placement context, kept past dawn for the one kind of plan the day plans and
 	# leaves for her walk to site — see `EventScheduler.WalkSiting` and `EventDef.on_her_way`.
 	# Stated against exactly what `build_day` was: the same tree, and the walk's own doors and calm
 	# areas, which are the day's. Only on a day that has such a plan: the context grows a corridor,
@@ -331,7 +331,7 @@ func swap_in_a_section(section: Location, plan: EventScheduler.Planned) -> Event
 	locations.assign(section, plan)
 	return _streaming.swap_section(olds, plan)
 
-## Events the day has budgeted for the director to put in front of the player and has not
+## Events the day owes the director to put in front of the player and has not
 ## spent yet.
 func owed_ahead() -> int:
 	return _director.owed() if _director else 0

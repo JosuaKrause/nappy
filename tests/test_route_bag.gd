@@ -7,8 +7,9 @@ extends RefCounted
 ## elements"), that an inner bag of n marbles gives n events and is gone, that a stretch of her
 ## route the length of a bag has the rows' own mix, that day 3's lesson is still first and paid for
 ## by nothing in the bag, and that after day 6's and day 11's marks the task's row is one of the next
-## events placed on her route, ahead of her, where she can reach it, and in the world once she walks
-## on.
+## events placed on her route, where she can reach it, and in the world once she walks on: day 11's
+## mast ahead of her on the route band, day 6's man shouting on the street she walks (whose siting
+## `tests/test_day6_yeller_met.gd` holds).
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
@@ -502,11 +503,15 @@ func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> v
 		t.check(city.events.ahead.director().is_from_her_route(plan),
 				"day %d: and it is a place her route's marble handed to her walk" % day)
 		var tile := map.world_to_tile(plan.position)
-		t.check(not city.streets().route_tree().branches_on(tile).is_empty(),
-				"day %d: it stands on ground the day's routes run along" % day)
-		t.check(plan.position.distance_to(her_at_siting) >= Tuning.EVENT_STREAM_RADIUS,
-				"day %d: it is put past the streaming band, so it is never seen to appear (%.0fpx)"
-				% [day, plan.position.distance_to(her_at_siting)])
+		# Day 6's man shouting is sited on the street she is walking, inside the streaming band and
+		# in the world at once (`WalkSiting.ahead_on_her_street()`), not on the day's route band:
+		# `tests/test_day6_yeller_met.gd` holds where he stands. The route band's claims are the mast's.
+		if row != "homeless_yeller":
+			t.check(not city.streets().route_tree().branches_on(tile).is_empty(),
+					"day %d: it stands on ground the day's routes run along" % day)
+			t.check(plan.position.distance_to(her_at_siting) >= Tuning.EVENT_STREAM_RADIUS,
+					"day %d: it is put past the streaming band, so it is never seen to appear (%.0fpx)"
+					% [day, plan.position.distance_to(her_at_siting)])
 		var grid := ReachabilityGrid.build(map)
 		var reached := grid.flood([map.world_to_tile(her_at_siting)])
 		t.check(grid.reaches(tile, {}, reached), "day %d: she can walk to it from where she was" % day)

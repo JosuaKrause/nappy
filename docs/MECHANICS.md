@@ -967,7 +967,7 @@ events ever coming within reach: a twenty-second event planted across the city a
 before the player could have reached it. An event that waits for her is an event she meets.
 
 **And some events have no place at all.** `EventDef.SpawnMode.AHEAD_OF_PLAYER` events are
-budgeted by the day and sited by `EventDirector`, which puts them across her line
+owed by the day and sited by `EventDirector`, which puts them across her line
 `AHEAD_LEAD_DISTANCE` in front of her while she is walking. See docs/EVENTS.md, "Where an event
 happens", for which events earn that and what the contract on them is.
 
@@ -975,9 +975,9 @@ happens", for which events earn that and what the contract on them is.
 
 **The density target is one event per block**, and streaming is what makes it computable: the
 stream radius is a knowable fraction of the map, so what she is standing in is a knowable fraction
-of what the day planned. `EventScheduler.budget_for()` is stated per block for the same reason, and
-the caps have to move before the budget — see docs/EVENTS.md, "The density, and why it is caps
-before budget".
+of what the day planned. The bags' shares are per location for the same reason (`EventScheduler.
+VIEW_SHARES`), and the caps have to move before the shares — see docs/EVENTS.md, "The density, and
+why it is caps and bags".
 
 What the density does to the game is a change of kind, not of degree. A street with one event every
 four blocks is a street with an event *on* it — you see it, you route around it, and the rest of the

@@ -1755,8 +1755,8 @@ func _place_the_roadblock_near(mark: Vector2) -> EventInstance:
 						found.placed_at().distance_to(her)])
 				return kept
 	var to_swap := _section_to_swap(def, her, paths)
-	if not to_swap.is_empty():
-		var swapped := _events.swap_in_a_section(to_swap[0], to_swap[1])
+	if to_swap:
+		var swapped := _events.swap_in_a_section(to_swap.section(), to_swap.roadblock())
 		if swapped:
 			trace.note("contact", "the task's roadblock is put across a section at %s, %.0fpx from the mark"
 					% [RunTrace.tile(_map.world_to_tile(swapped.body_position())),
@@ -1804,17 +1804,17 @@ func _a_roadblock_the_day_placed(id: String, paths: Dictionary,
 ## (`_drawing_shows()`), and holding none of the city's fixed parts (`Planned.is_a_fixed_part()`).
 ## Each roadblock checked is built on a fresh stream, never the director's, since a stationary one
 ## draws nothing.
-## Answers `[the section, the roadblock checked across it]`, the very plan whose place was asked of
-## her view, so what is put there is what was checked; `[]` where none does or the walk has no
-## locations. *Read as, the orchestrator's and open to
+## Answers the section and the roadblock checked across it (`SectionToSwap`), the very plan whose
+## place was asked of her view, so what is put there is what was checked; null where none does or
+## the walk has no locations. *Read as, the orchestrator's and open to
 ## correction:* nearest along her paths, a section not yet drawn taken like any other (fork 7 of the
 ## placement proposal); and the city's fixed parts, which the player gave phases of their own, are not
 ## the day's events to replace, while the burnt shell, "just regular events" to the player, is
 ## (inbox #1185).
-func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> Array:
+func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> SectionToSwap:
 	var locations := _walk.locations()
 	if not locations:
-		return []
+		return null
 	var row := def.for_day(_day)
 	var checked := {}
 	var may_take := func(section: Location) -> bool:
@@ -1834,7 +1834,25 @@ func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> Array:
 		var whole_city := Vector2(Tuning.CITY_BLOCKS * CityMap.period()).length() * Tuning.TILE_SIZE
 		section = locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT,
 				_paths_reach_between(her, 0.0, whole_city), _reachable_from_home, may_take)
-	return [section, checked[section]] if section else []
+	return SectionToSwap.new(section, checked[section]) if section else null
+
+## **The section day 13's swap takes and the roadblock checked across it** (`_section_to_swap()`):
+## the two answers one search found, kept together so the roadblock placed is the one checked.
+class SectionToSwap extends RefCounted:
+	var _section: Location
+	var _roadblock: EventScheduler.Planned
+
+	func _init(section: Location, roadblock: EventScheduler.Planned) -> void:
+		_section = section
+		_roadblock = roadblock
+
+	## The section the roadblock goes across.
+	func section() -> Location:
+		return _section
+
+	## The roadblock checked across it, out of her view.
+	func roadblock() -> EventScheduler.Planned:
+		return _roadblock
 
 ## How far along her paths (`paths`, `tile -> its distance from her`) the nearest ground she can touch
 ## `plan` from is — within a tile and a half of its body, reachable from home — or `INF` when none is

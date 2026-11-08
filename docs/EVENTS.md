@@ -35,7 +35,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `path_mode` | How the scheduler builds a mobile row's route: `CROSS_STREET`, `ALONG_STREET`, or `ACROSS_ITS_ALLEY`, the dash the instance builds itself from the alley it landed in (`alley_mouse`) |
 | `still_while_telegraphing` | Holds position until the telegraph is over, then goes. Default off, which is right when the telegraph *is* the approach; on when it is a posture — see the cat, below |
 | `spawn_mode` | `MAP` (sited when the day is planned) or `AHEAD_OF_PLAYER` (sited in front of her, while she walks) — see "Where an event happens" |
-| `on_her_way` | An `OnHerWay`, or null: the day budgets the row and leaves where it stands to the walk she takes, a tile of its own ground ahead of her once her heading is clear (day 3's fire, `poster_crew`). `on_her_way.at_a_front` sites it in front of a blank ground-floor cell of a building's front, facing the wall (`poster_crew`) — see "Where an event happens" |
+| `on_her_way` | An `OnHerWay`, or null: the day plans the row and leaves where it stands to the walk she takes, a tile of its own ground ahead of her once her heading is clear (day 3's fire, `poster_crew`). `on_her_way.at_a_front` sites it in front of a blank ground-floor cell of a building's front, facing the wall (`poster_crew`) — see "Where an event happens" |
 | `from_day_after` | A `DaySwitch` for a row whose siting and notice change once its first appearance is over: `spawn_mode_on(day)` and `_notice_on(day)` answer the row's own `spawn_mode` and `notice` through `after_day` and the switch's own past it. Null (the default) means the row is the same every day. `charging_dog` is the one row that carries it: `AHEAD_OF_PLAYER` with no notice on `RUN_TAUGHT_DAY`, then `MAP` with a 130px notice (its one radius, inside its 150px field — see "Every charger that does not arrive charging warns first"), so a `MAP` placement waits for her instead of announcing itself the moment it streams in. A placement past the switch is handed a copy carrying the later notice (`EventDef.for_day()`) |
 | `departs_at` | How fast it removes itself when it is over (px/s). **Nothing vanishes while you are looking at it** — see "Going away". Anything `mobile` leaves at its own `speed` and needs no value here |
 | `pursuit` | A `PursuitSpec`, or null for a row that does not pursue: it comes after **her** rather than along a path, at its `speed`, strictly between a walk and a run — the one thing running is the answer to, see `Tuning.validate_pursuit`. Its fields: |
@@ -105,8 +105,8 @@ shell, whose mark she may read from across the city and walk away from again.
 An event that is somewhere is half of what makes a route a decision. It can be routed around,
 and finding out it is there is what walking a street is for.
 
-**`AHEAD_OF_PLAYER`, which is the cat and the day-3 charging dog.** No tile. The day
-budgets it at the same cost as everything else, and `EventDirector` sites it while she is walking. A
+**`AHEAD_OF_PLAYER`, which is the cat and the day-3 charging dog.** No tile. The day owes it to her
+(`EventScheduler._owe_the_moments()`), and `EventDirector` sites it while she is walking. A
 crossing row — the cat — is sited across her line, `AHEAD_LEAD_DISTANCE` in front of her.
 A pursuer — `charging_dog`, on `Tuning.RUN_TAUGHT_DAY` — is sited down her line instead, outside the
 view along the heading she is actually walking (`Offscreen.boundary()`), so it has an
@@ -229,15 +229,16 @@ differs, so the row's cost and picture are exactly the ones the day's own plan a
 ### What she meets on her route is drawn from a marble bag
 
 *(olive-koala, statement 2: "events should use the marble bag approach as well. that way we can
-control what the player sees on their route".)* The dawn still decides how many director-sited
-events the day buys, by the same weighted roll and at the same cost as everything else. **Which row
+control what the player sees on their route".)* The dawn decides how many director-sited
+events the day owes her: `EventScheduler.MOMENTS_PER_DAY` of them, as many as the day bought before
+the bags. **Which row
 each of them is** is drawn from a bag when it is handed out: `EventDirector` fills a `MarbleBag` at
 dawn with every row it sites that day — recurring, available, `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` —
 `EventDirector.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight, so over any stretch the length of a
 bag the mix she meets is the rows' own rather than a roll's
 streaks. A row `EventDirector.ROUTE_BAG_MARBLES_OF` names has the marbles it sets instead: day 3's
 `charging_dog` has 2 (inbox #566 in [feathery-stork](playtests/2026-10-04-feathery-stork.md): "I'd say we could do 2 dogs -- we don't need the charging dog
-that often"), set in the bag because the dawn roll reads the row's weight too. The bag has its own
+that often"), set in the bag because the dawn's count of the moments it owes reads the row's weight too. The bag has its own
 stream and draws nothing from the director's; the director's own draws still follow from which row
 each handout is — a crossing spends one on the side it comes from, a row down her line none — so the
 same seed and the same walk are the same day. A row met `max_per_day` times that day has its further
@@ -297,7 +298,7 @@ finds it a site, which can be after an event behind it, or never. Three rigs sta
 from anything that comes after" · "the lesson is not paid for. why would it be? that's not how the
 marble bag works"). A bag holding only the dog goes in front at dawn and takes nothing from the bag
 behind it, so the ordinary bag keeps both its dog marbles and the lesson is on top of them; the
-first of the events the dawn bought for her route is drawn from it, at `LESSON_DELAY`.
+first of the events the dawn owes her route is drawn from it, at `LESSON_DELAY`.
 
 **A marble may itself be a bag**: drawing it draws from it, and the bag marble goes straight back
 into the bag it was drawn from (inbox #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "this makes it very unlikely that two events from the
@@ -319,7 +320,7 @@ stretch of a day nothing in the catalogue was ever pacing for. `EventDirector.RE
 the day's other plans of that row already use. **Each is a rigged bag** in her route's bag (inbox
 #561 in [coral-bunny](playtests/2026-10-04-coral-bunny.md): "they will need rigged bags"): the patrol and `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` less one
 drawn from the bag she was drawing from, the next rigged once that bag is handed out, so each comes
-within its own bag's events rather than behind the dozens the dawn bought for her route, which the
+within its own bag's events rather than behind the dozens the dawn owes her route, which the
 pacing never reaches. From then on the queue
 rolls `EventDirector.RETURN_PATROL_INTERVAL` (9–16s) instead of `EventDirector.AHEAD_INTERVAL` (11–26s) for the
 rest of the day, so the extra rows have a real chance of landing inside a 33–47s leg rather than
@@ -1291,90 +1292,107 @@ The city's fixed parts have their own phases, above.
 
 Each item quotes the code on this branch.
 
-1. **The code places by rolling a row and judging its spot, not by filling locations from bags.**
-   - **The roll.** `_fill_with_recurring()` picks a row against the day's budget and caps:
-     `var def := _pick_weighted(affordable, rng)`.
-   - **The spot.** `_place_one()` sends it to `_best_of()`, which rolls tiles of the row's ground
-     (`_ground_for()`), copied by role (`_copies_of()`):
-     `var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]`.
-   - **The judgement.** `_judge()` judges each tile. It refuses with `-INF` or rates its room
-     (`_room_around()`), and the roomiest is taken.
-   - **Rejection.** A row whose tries are all refused is not placed:
-     `if not placement: continue`.
-2. **Locations are laid out on day 13 alone, and only day 13's roadblocks are placed into them.**
-   On that day every street's three sections and their sidewalk locations are laid out at dawn
-   (`DayLocations`), where the roadblock phase assigns its sections, and handed on to the walk,
-   where the task's swap takes one (`WalkEvents.locations()`); on every other day nothing is laid
-   out.
-   - For the fill, a candidate is any tile of a row's own ground.
-   - The views appear there only as weights (`_copies_of()`, by `Corridor.depth()`) and as refusals
-     (`if corridor.carries_a_route(tile): return 0` for a wall).
-3. **There is no bag per view.**
-   - The dawn pass is the weighted roll in item 1.
-   - Toward the design, two bags exist:
-     - **The walk's route bag** (`EventDirector._route`, a `MarbleBag`). It hands out the events
-       the day bought for her route, each sited ahead of her on the branch she walks
-       (`WalkSiting.ahead_of()`).
-     - **The escape's bag per street** (`_fill_the_walk_from_the_bag()`). Each street of the walk
-       draws `DaySpec.slots_per_street` marbles from one bag, empty marbles among them. But a
-       drawn row still goes through `_best_of()` and can be refused: "a row's marble that finds no
-       ground the rules accept is spent unmet".
+1. **The day's locations are drawn at dawn by today's placement rules, not by street rules.**
+   Every day lays its locations out and draws each from its view's bag (`LocationDraw`,
+   `EventScheduler._draw_the_locations()`), but whether a row is valid at a location is
+   `_judge()`'s answer for the whole day standing (`JudgedLocationGround.offer()`), the tile tried
+   in the location's own order, not a rule asked of the street's other draws.
+   - A row comes up and is refused before the next is drawn: `ViewBag.draw()` asks a marble's row
+     only once it comes up. It draws exactly as weighing only the valid rows from the start would.
+2. **The rest of the day's placement still rolls and judges a spot.** The scripted rows and the
+   one-shots go through `_place_one()` and `_best_of()`, the spoilers in a park she used through
+   their own grid, and the fixed parts' phases (masts, scars, ambient rows) stand where their
+   planners put them, none of them assigned to a location.
+3. **Not every bag is a view's.**
+   - **The walk's route bag** (`EventDirector._route`, a `MarbleBag`) hands out the places the day
+     owes her walk, each sited ahead of her on the branch she walks (`WalkSiting.ahead_of()`).
+   - **The escape's bag per street** (`_fill_the_walk_from_the_bag()`): each street of the walk
+     draws `DaySpec.slots_per_street` marbles from one bag, empty marbles among them, and a drawn
+     row still goes through `_best_of()` and can be refused.
 4. **The route is kept open by rules checked after a spot is drawn, not by construction.**
    - `_judge()` refuses a spot that would close the route:
      `_leaves_the_route_junctions_open()`, `_leaves_the_routes_sidewalk_open()` and
      `_leaves_a_pacing_beats_opening()`.
    - After the day is placed, `DayRepairs.ensure_the_city_is_still_walkable()` removes rows until
      a route exists again.
+   - They are asked of the whole day standing, not of the street's own draws (item 1).
    - In the design, these same rules decide which events make which others invalid on a street:
      `_judge()`'s route-opening checks above, and the rest of what it asks (the unused calm,
      `_reaches_any()`; a door's clearance, `_clear_of_the_doors()`; the spacing and the fields kept
      clear, `_room_around()`). They become the invalidation applied when a street's other
      locations draw, rather than a refusal after a spot is rolled.
    - Nothing narrows a street's other draws once one of its events is drawn.
-5. **The fill also places roadblocks**, by the rules in item 1, where the design draws them as
-   ordinary events of the route-adjacent bag. It does so on day 13 too, after the roadblock phase;
-   the task's close-by search takes any roadblock the day placed.
-6. **The roadblock phase judges a section's roadblock with today's placement rules**
+5. **The roadblock phase judges a section's roadblock with today's placement rules**
    (`JudgedRoadblockGround.offer()` asks `_judge()`, and takes only a tile with room all round), which
    is the invalidation item 4 describes, asked of the whole day rather than of a street's other
    draws.
-7. **Most events are placed at dawn, not drawn during the walk.**
-   - The fill places its rows in the morning.
+6. **Most events are placed at dawn, not drawn during the walk.**
+   - The dawn draw fills every location in the morning.
    - During the walk, only these are sited ahead of her:
      - the route bag's marbles;
      - the `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows;
      - the `on_her_way` rows (`EventDirector.site_what_is_on_her_way()`);
      - day 11's added mast.
-8. **Only day 13's roadblocks read the views.** `Corridor.view_of()` decides them once, but the
-   fill still weights and refuses by its own questions: a wall is refused only where the route runs
-   along the tile's own cell (`Corridor.carries_a_route()`), so the far sidewalk of a route street
-   takes walls, and route-adjacent is weighted as `depth() <= 1`, which leaves out the streets a
-   junction only a park or alley cut crosses touches.
+7. **Each row's draw is weighed by a fitted weight per kind of ground** (`GROUND_WEIGHTS`), on top
+   of the location's own weight, so each row's count on each kind of ground stays today's. The
+   design has the view's bag alone decide; the weights are what holds the refactor at today's mix
+   while the rules are still today's (item 1), and are fitted again when the rules change.
+8. **A row's own ground is still asked tile by tile inside the view.** A wall's own ground refuses
+   only the cells a route runs along (`Corridor.carries_a_route()`, in `_ground_for()`), so on a
+   route street a wall stands only on the sidewalk across from the route, and the ground beyond the
+   streets is told its view by the grid's own depth (`Corridor.view_of_ground()`).
 
 ## Scheduling
 
 ```
 EventScheduler.build_day(day_index, run_seed):
     rng = RNG(hash(run_seed, day_index))
-    1. add all AMBIENT events for the current act
-    2. add SCRIPTED events whose day == day_index
-    3. roll ONE_SHOT events not yet consumed this run, gated by first_day/last_day —
-       except one the day owes her walk, which is budgeted here and sited later
-    4. fill remaining budget with RECURRING events by weight
-    5. apply park spoiling rules  (docs/CITY.md)
-    6. validate: a path from home to at least one usable calm zone must exist
+    1. lay out the day's locations (DayLocations), each told its view
+    2. add all AMBIENT events for the current act, the scars, the masts
+    3. day 13: the roadblock phase (RoadblockPhase)
+    4. add SCRIPTED events whose day == day_index
+    5. roll ONE_SHOT events not yet consumed this run, gated by first_day/last_day —
+       except one the day owes her walk, which is owed here and sited later
+    6. spoil the parks she used  (docs/CITY.md)
+    7. owe her the day's moments (the rows the director sites in front of her)
+    8. draw every open location from its view's bag (LocationDraw)
+    9. validate: a path from home to at least one usable calm zone must exist
 ```
 
-The **event budget** is stated *per block of lattice* and grows with the day index:
-`blocks × (BUDGET_PER_BLOCK + day_index × BUDGET_PER_BLOCK_PER_DAY)`, both constants on
-`EventScheduler`. Each event costs budget equal to its `intensity` tier, so late days are not just
-"more cats".
+**The day's density is the bags' empty marbles**, set per view and per day so each view's share of
+locations holding an event is the share the day placed before the bags
+(`EventScheduler.VIEW_SHARES`, measured with `tests/probes/placement_view_mix.gd`, and scaled for the
+draws the rules leave empty, `VIEW_SHARE_SCALES`, fitted per view and per day so what each view
+places on each day comes out as the share measured, the route's above all, since what stands on her
+route is what the route decision is about). A later day's shares are higher, so late days
+are denser as well as nastier. A row's weight in a view is its own `weight` times what the view is
+to its role (`EventScheduler.view_weight()`), and each location scales it by its own weight
+(`JudgedLocationGround.scale()`): a precinct's four times over, the street between two strands of
+the routes six times over for a costly wall, an alley beside a sack pile five times over for the
+mouse, which stands on the alley's tiles beside the pile where it can. *(The player: "yes" to a weight per location that scales its view bag's weights, issue
+#1185.)*
 
-The budget is **not** the count: `DayRepairs.ensure_one_usable_park` strips whatever reaches the
+**And each row is weighed by the kind of ground the location is** (`EventScheduler.GROUND_WEIGHTS`,
+a weight per row per `Location.Kind`), so the mix inside each view is today's as well as its count.
+Each location draws one marble, so a row whose own ground is rare (a square's cells, an alley's three
+locations, the junction boxes) would be drawn only as often as its share of the bag times the few
+locations that take it, and the sidewalk rows would take the share it lost: the street musician
+would all but leave the squares, and day 12's protest the crossings. The weights are fitted, with
+the view scales, until each row's daily count on each kind of ground is today's
+(`tests/probes/placement_rows.gd`, run on main and on the branch over the same cities and streams);
+they are measured, not derived, and are fitted again whenever the draw's rules change. **And each
+role is weighed per view and act** (`EventScheduler.WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`),
+fitted the same way, since a weight per kind of ground scales a row the same in every view: without
+them the draw moves walls off her route onto the ground off it, and what her route holds is what the
+route decision faces. *(The
+player: "yes" to a group of locations per kind of ground, and to a weight per location scaling its
+view's bag; issue #1185.)*
+
+The share is **not** the count: `DayRepairs.ensure_one_usable_park` strips whatever reaches the
 calmest block and `DayRepairs.ensure_the_city_is_still_walkable` drops obstructions that would seal
-the city. Measure what a day *places*, over several seeds; deriving it from the formula gets a
-number that is too small and looks right. An `AHEAD_OF_PLAYER` event costs the same budget and takes
-no tile, so a day's `plan` line reads as *n sited, m ahead*.
+the city. Measure what a day *places*, over several seeds. The moments she is owed take no location:
+the day owes her `EventScheduler.MOMENTS_PER_DAY` of them, as many as the day bought before the bags,
+so a day's `plan` line reads as *n sited, m ahead*.
 
 ### Where in the city, and why
 
@@ -1564,8 +1582,9 @@ is, landing on the far side of a route street through `EVENT_CORRIDOR_WEIGHT` ra
 the rim. A pacing wall's own reach is wide enough that it answers the cost question too, so its own
 landing on the far side (above) is unchanged.
 
-The role weighting moves *where* the budget is spent and never how much of it there is: the density
-placed per day is unaffected by whether the weight is live, and so is the count of lethal rows —
+The role weighting moves *where* the events stand and never how many there are, since each view's
+share of locations holding an event is its bag's empty marbles' to set: the count of lethal rows is
+unaffected too —
 the one the rule could have broken, since a `hard_fail` event must clear its whole outer radius of
 everything else with no fallback, and refusing it a quarter of the city could have quietly stopped
 placing it. What the weight does move is the split: costly rows land on the corridor far more often
@@ -1573,18 +1592,20 @@ than off it, and lethal rows land on the rim far more often than elsewhere, with
 share drifting down over the run as it fills up and `EVENT_SPACING_SAME` pushes the overflow
 outward. The measurement that established this is in `docs/DECISIONS.md` under M50.
 
-**From the gatehouse day on, the fill keeps only a share of its walls, and that share is a count,
-not a weight.** *(azure-puffin, point 4: "when the guard houses are set up the city gets much harder
-to navigate let's loosen the density of the hard blocking events in that case"; "fewer of all
-three".)* From `Tuning.REGION_WALL_FIRST_DAY`, once the fill has spent the day's budget,
-`EventScheduler._thin_the_walls` rolls each wall-role placement it made against
-`DaySpec.wall_row_share` (`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` from the gatehouse day) and takes
-the rest back off the ground. A lighter weight could not do it, for the reason in the paragraph above: the tile weights only move *where* a wall stands,
-and a lighter row weight in the roll respends the budget on friction, which is aimed at the routes
-she walks. Only the fill's own walls are asked — a scripted row, a one-shot and the spoilers in a
-park she used are placed for a reason that is not density — and it is only a removal, so every guarantee
-about reaching somewhere still holds (the **city** skill's monotonic exception). The seals and the
-road closures are thinned from the same day: see `docs/CITY.md`, "How heavy" and "Sealing the tree".
+**From the gatehouse day on, the bags hold only a share of their walls.** *(azure-puffin, point 4:
+"when the guard houses are set up the city gets much harder to navigate let's loosen the density of
+the hard blocking events in that case"; "fewer of all three", to a question that listed the
+wall-type events.)* On a day the region wall stands (`DaySpec.region_wall_stands()`), every
+wall-role row is scaled by `DaySpec.wall_row_share` (`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE`) twice
+over: its weight in every view's bag (`EventScheduler.view_weight()`), so a location draws one that
+much less often, and its cap (`EventScheduler._caps_of()`, a fraction rounded up or down on its own
+stream), so a wall whose cap binds is thinned as well. The empty marbles are counted against the
+walls weighed in full, so what a wall gives up is not respent on friction: the day holds fewer walls.
+A lighter weight alone makes fewer only of a wall whose cap does not bind, which is why the cap is
+scaled too. Only the bags' walls are scaled; a scripted
+row, a one-shot and the spoilers in a park she used are placed for a reason that is not density. The
+seals and the road closures are thinned from the same day: see `docs/CITY.md`, "How heavy" and
+"Sealing the tree".
 
 ### A set piece happens where she is going
 
@@ -1596,7 +1617,7 @@ fairness contract and a silhouette spent on nothing. There are two ways of guara
 which one a row gets is `EventDef.on_her_way`.
 
 **The fire is sited from the walk she is taking, on the path she is on.** `burning_building`, day
-3's one-shot and the only set piece carrying the flag, is budgeted at dawn with **no position at
+3's one-shot and the only set piece carrying the flag, is planned at dawn with **no position at
 all**.
 Once she has been walking `EventDirector.ON_HER_WAY_AFTER` seconds and is `ON_HER_WAY_BEYOND_HOME`
 pixels clear of the doorstep — far enough in that a heading means something, and past the day's run
@@ -1717,7 +1738,7 @@ all two-to-six offers would reserve ground for events that will not exist — an
 retried day is the same day"* outright, because the day after the set piece fires then has several
 long routes' worth of ground freed rather than one. Measured on seed 4242 with offers spaced
 against: `leaf_blower` seven to five and eight kinds moving between two attempts at the same day.
-Because an offer costs nothing, the fill is **identical** between attempts.
+Because an offer takes no room, the dawn draw is **identical** between attempts.
 
 Two exceptions, both load-bearing. **Siblings space against each other**, because two offers on top
 of one another would be a real overlap on whichever one fires. And **nothing lethal may be planned
@@ -1943,32 +1964,30 @@ standing at the kerb or a heated roadblock still manned can be brushed past for 
 comes inside its own trigger — the same shape `alley_robbery` already has, now arriving in both
 once they hunt. A heated raid's van is never lethal itself; its men are.
 
-### The density, and why it is caps before budget
+### The density, and why it is caps and bags
 
-The target is **one event per block**, which is why `EventScheduler.budget_for()` is stated *per
-block* and not as a flat number. A flat budget is a statement about one lattice size: grow the city
-and the same events spread thinner, which is the density quietly falling while every constant still
-reads as correct.
+The target is about **one event per block**, and it is set per location rather than as a number for
+the day: each view's bag holds empty marbles enough that its share of locations holding an event is
+the day's share (`EventScheduler.VIEW_SHARES`), so a bigger city lays out more locations and draws
+more events, and the density holds.
 
-**The budget is not the binding constraint on an early day, and raising it alone does nothing.**
-The day's pool can only place what its `max_per_day` values add up to, so a budget above that sum
-buys nothing — which is what the **balance** skill's *"a budget the catalogue cannot spend is not
-density"* is about. **The caps come first and the budget follows.** Repeats are fine — the same
-event several times over is what a street is — so density needs no new catalogue rows: the common
-act I rows are capped in the teens and twenties.
+**A row's cap still binds on an early day**: a row at its `max_per_day` is not drawn again
+(`LocationDraw`; the orchestrator's reading of fork 5(b), open to correction), so the day can only
+place what its caps add up to whatever its shares. Repeats are fine — the same event several times
+over is what a street is — so density needs no new catalogue rows: the common act I rows are capped
+in the teens and twenties.
 
 Two things a low cap does quietly, both of which have to belong to somebody once the caps rise:
 
-- **Separation.** `_place_one` picks a uniformly random tile, so a cap of three is the only reason
-  two dog walkers never land on the same pavement — which is a coincidence rather than a rule. It
-  is a rule of its own: `EVENT_SPACING_SAME` (256px, a block) between two of a kind,
-  `EVENT_SPACING_ANY` (64px) between any two at all. The first bends on a full map, the second
+- **Separation.** `EVENT_SPACING_SAME` (256px, a block) between two of a kind and
+  `EVENT_SPACING_ANY` (64px) between any two at all are rules of the day's ground
+  (`JudgedLocationGround.offer()`): the first bends to the roomiest tile of a location, the second
   never does.
 - **Keeping a lethal field uncluttered.** See the telegraph contract below.
 
 The one cap deliberately kept low is `cat_dash`. A cat is sited by the director while she walks and
 `AHEAD_INTERVAL` spreads them over the day, so past a certain count there is nowhere left for one
-to happen and the budget would be spent on cats the day cannot fit.
+to happen; the day owes her `EventScheduler.MOMENTS_PER_DAY` moments, the cat among them.
 
 ## Catalogue
 
@@ -2231,8 +2250,8 @@ streets and the caps)*, each a setting the city section's spec turns off
   the streets round the home block, because she sets off from that door. The escape sets off from
   the service exit on the side of the block (`docs/CITY.md`, "The escape"), and that exit opens onto
   one of the streets round the home block, so holding them would empty the street she starts on.
-- **The budget and `max_per_day` caps**: a day spends a per-block allowance on a weighted roll; the
-  escape stands what its slots draw from its bag (above).
+- **The bags and `max_per_day` caps**: a day draws every location from its view's bag; the escape
+  stands what its slots draw from its bag (above).
 
 **And the ground she is put down on is refused to everything that could already be reaching her**
 (`EventScheduler._clearance_around_her`), because *"the spawning shouldn't be a check. the pathing
@@ -2425,7 +2444,7 @@ The lookup is a **linear scan**, not a spatial hash. A late day has around 26 ev
 instantiated at once — the whole day is four times that, but only what is inside
 `EVENT_STREAM_RADIUS` exists as a node — and 26 distance checks per physics frame is nothing,
 while a hash would be more code with more ways to be subtly wrong. Revisit if an act ever wants
-hundreds of live sources at once; the streaming radius is what decides that, not the budget.
+hundreds of live sources at once; the streaming radius is what decides that, not the bags.
 
 ## Telegraph contract
 
@@ -3025,12 +3044,12 @@ way:
 One rule runs while a day is planned and two run after it:
 
 - **Nothing is placed near calm she has not used this act.** The calm ground of every area she has
-  not settled in is refused to `_place_one`, so the events that would have landed there go somewhere
-  else. Ambient events and scars are exempt — a playground is a permanent, free feature of the map
+  not settled in is refused to every row at every location (`_judge()`, through the dawn draw's
+  ground), so the events that would have landed there go somewhere else. Ambient events and scars are exempt — a playground is a permanent, free feature of the map
   rather than something today placed there, and a scar is something that already burnt.
 
   **It is a refusal rather than a repair**, which is the rule about checking before accepting: a day
-  planned in full and then stripped of whatever landed on the calm spends its budget twice, and
+  planned in full and then stripped of whatever landed on the calm places its events twice, and
   leaves the guarantee running only on the days a weaker one has already failed. Refusing the ground
   keeps every unvisited area clean on 64 planned days of 64 *and* raises the density, because
   nothing is placed to be thrown away.

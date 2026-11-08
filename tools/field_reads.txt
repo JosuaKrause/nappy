@@ -671,7 +671,6 @@ src/events/event_catalogue.gd barrier_structure
 src/events/event_catalogue.gd catch_reach
 src/events/event_catalogue.gd core_intensity
 src/events/event_catalogue.gd core_radius
-src/events/event_catalogue.gd cost
 src/events/event_catalogue.gd counts_charges_as
 src/events/event_catalogue.gd departs_at
 src/events/event_catalogue.gd detain_radius

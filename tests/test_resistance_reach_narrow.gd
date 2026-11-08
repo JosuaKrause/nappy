@@ -17,7 +17,8 @@ func run(t) -> void:
 ## `ResistanceDirector.NEAR_THE_MARK` (576px) circle round her — worked out here by its own walk
 ## over the day's obstruction (`_edge_of_her_circle()`) — or the director says nothing on the edge
 ## qualified; day 11's mast is one her paths reach inside or on that circle; day 13's roadblock is
-## one the day placed, or swapped in, that her paths reach within its widest ring; and a task put in
+## one the day placed that her paths reach within its widest ring, or one its swap puts across the
+## nearest section, however far (the director's run log says which); and a task put in
 ## the world is put outside her view, day 13's found roadblock excepted, which stood there all along. *("create a circle around the current player position with the
 ## radius of the desired distance -- then follow the path until it reaches the edge of the
 ## circle".)* Before, it was drawn anywhere within 576px as the crow flies.
@@ -62,13 +63,16 @@ func _test_a_task_is_placed_near_its_mark(t) -> void:
 				# The nearest place stands in when nothing qualified: the director's run log says so
 				# (`_pick_near()` for a mark's task, `_place_at_a_mast()` for day 11's).
 				var fell_back_here := false
+				var swapped_here := false
 				for line in lines:
 					fell_back_here = fell_back_here or "nothing qualifies where a path reaches" in line \
 							or "no mast stands where a path reaches" in line
-				t.check(on_it or fell_back_here,
+					# Day 13's swap, with none close by, takes the nearest section however far.
+					swapped_here = swapped_here or "is put across a section" in line
+				t.check(on_it or fell_back_here or swapped_here,
 						("seed %d day %d: the task stands where her path reaches the circle's " +
-						"edge (day 13: or the wider reach its roadblock is offered next), or " +
-						"nothing there qualified") % [seed_value, day])
+						"edge (day 13: or the wider reach its roadblock is offered next, or the " +
+						"section its swap takes), or nothing there qualified") % [seed_value, day])
 				if fell_back_here:
 					fell_back[0] += 1
 				# A roadblock the day placed stood there all along, so day 13's may be in her view.

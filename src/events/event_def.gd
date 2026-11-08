@@ -32,9 +32,10 @@ const HEAT_INVESTIGATE_WITHIN := 150.0
 ## centre becomes 13.5/s. The smaller of the two multipliers, since an intensity rise is the one the
 ## player feels without seeing anything change.
 const HEAT_PRESSES_INTENSITY := 1.35
-## What the population of a pressing row is multiplied by at full heat. `police_patrol` is capped at
-## twelve a day cold, so nineteen hot: on an 11x11 lattice a patrol on one block in six rather than
-## one in ten.
+## What the population of a pressing row is multiplied by at full heat: its cap and its weight in the
+## day's bags (`EventScheduler.view_weight()`). `police_patrol` is capped at twelve a day cold, so
+## nineteen hot, and drawn 1.6 times as often: on an 11x11 lattice a patrol on one block in six rather
+## than one in ten.
 ##
 ## **Population is the axis that changes a route rather than a meter.** More patrols is more ground
 ## to plan around, and it costs nothing in fairness because each individual patrol is exactly the
@@ -166,8 +167,8 @@ enum SpawnMode {
 	MAP,
 	## Placed in front of the player, while she walks, by `EventDirector`. For the few events whose
 	## whole content is *the moment it happens to you*: a cat bolting out of a doorway is nothing if
-	## it does it two blocks away. The day still budgets it: the scheduler counts one instead of
-	## placing one.
+	## it does it two blocks away. The day owes it rather than placing it: the scheduler counts the
+	## day's moments (`EventScheduler.MOMENTS_PER_DAY`) instead of putting one on a tile.
 	AHEAD_OF_PLAYER,
 	## Sited on her own line, ahead of her, by `EventDirector` like `AHEAD_OF_PLAYER`, but
 	## travelling *down* that line toward her rather than crossing it: a bike on the sidewalk she is
@@ -348,9 +349,19 @@ func solid_reach() -> float:
 ## For SCRIPTED events: the exact day it fires.
 @export var scripted_day := 0
 
-## Relative likelihood when filling the recurring budget, and what one costs of it.
+## Relative likelihood: how many marbles of the row a view's bag holds, before the view's own weight
+## for its role (`EventScheduler.view_weight()`). Read through `drawn_as_often()`.
 @export var weight := 1.0
-@export var cost := 1
+
+## **How often the row is drawn against the others**, its `weight`: how many marbles of it a view's
+## bag holds before the view's own weight for its role (`EventScheduler.view_weight()`).
+func drawn_as_often() -> float:
+	return weight
+
+## **The most of the row a day stands** (`max_per_day`): a draw does not consider it once that many
+## stand (`LocationDraw`).
+func most_in_a_day() -> int:
+	return max_per_day
 @export var max_per_day := 1
 
 ## Tile types an instance may be placed on.
@@ -1016,6 +1027,9 @@ func at_heat(level: int) -> EventDef:
 		# I still be near it at all*.
 		hot.max_per_day = maxi(max_per_day,
 				roundi(max_per_day * lerpf(1.0, HEAT_PRESSES_POPULATION, through)))
+		# And as many more marbles in the day's bags: a cap a draw rarely reaches would raise no
+		# population, so the row's weight, which sets how often a location draws it, rises with it.
+		hot.weight = weight * lerpf(1.0, HEAT_PRESSES_POPULATION, through)
 		hot.intensity = intensity * lerpf(1.0, HEAT_PRESSES_INTENSITY, through)
 		hunts_from = HEAT_INVESTIGATES_LEVEL
 		notices_within = HEAT_INVESTIGATE_WITHIN

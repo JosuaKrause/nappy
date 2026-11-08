@@ -88,7 +88,10 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    about 4.5% slower once the walker and the car share a mover base the crowd member extends
    (minty-quail-16), where the player chose "let's eat the cost for now and think about optimizing
    later" (minty-dolphin #852): the step measures it again and says whether optimizing it is
-   worth an entry of its own.
+   worth an entry of its own. It also reruns `tests/probes/placement_rows.gd` on main and on the
+   refactor's head, and turns the script that compares the two into a `tools/` entry point, since
+   it is then a manual sequence done a second time (woolly-finch 23): the record grassy-magpie
+   states its rule and carries the output of its first run.
 
 The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer", whose
 proposal paragraph refers to this entry, and **removes its exception for downy-tapir's minimal

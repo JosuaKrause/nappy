@@ -31,16 +31,18 @@ static func of(map: CityMap, segment: StreetNetwork.Segment, view: int) -> Stree
 				else Vector2i(rect.size.x, end - start)
 		var whole := Rect2i(rect.position + along * start, size)
 		var available := _is_open(map, whole)
-		street._sections.append(_located(map, segment, index, whole, view, available))
+		street._sections.append(_located(map, segment, index, whole, view, available,
+				Location.Kind.SECTION))
 		for band in Corridor.sidewalk_bands(whole, segment.horizontal):
-			street._sidewalks.append(_located(map, segment, index, band, view, available))
+			street._sidewalks.append(_located(map, segment, index, band, view, available,
+					Location.Kind.SIDEWALK))
 		start = end
 	return street
 
 static func _located(map: CityMap, segment: StreetNetwork.Segment, index: int, tiles: Rect2i,
-		view: int, available: bool) -> Location:
+		view: int, available: bool, kind: int) -> Location:
 	return Location.new(segment, index, tiles, map.tile_rect_to_world(tiles).get_center(), view,
-			available)
+			available, kind)
 
 ## Whether nothing a fixed part holds stands on `tiles`.
 static func _is_open(map: CityMap, tiles: Rect2i) -> bool:
@@ -55,10 +57,25 @@ static func _is_open(map: CityMap, tiles: Rect2i) -> bool:
 func sections() -> Array[Location]:
 	return _sections
 
-## The street's six sidewalk locations, two in each section, in order along it. Read by no draw yet:
-## the bags draw into them in a later step of the placement, and a section taken takes its two.
+## The street's six sidewalk locations, two in each section, in order along it; a section taken
+## takes its two.
 func sidewalks() -> Array[Location]:
 	return _sidewalks
+
+## **The street's locations in the order the dawn draw fills them**: its three sections first, so
+## an event that takes its section (one that spans the street or drives its carriageway) is drawn
+## before the sidewalks it takes, then the six sidewalk locations, in an order `rng` shuffles, so no
+## side or end of a street always draws first.
+func drawing_order(rng: RandomNumberGenerator) -> Array[Location]:
+	var order: Array[Location] = _sections.duplicate()
+	var sidewalks := _sidewalks.duplicate()
+	for i in range(sidewalks.size() - 1, 0, -1):
+		var j := rng.randi_range(0, i)
+		var kept: Location = sidewalks[i]
+		sidewalks[i] = sidewalks[j]
+		sidewalks[j] = kept
+	order.append_array(sidewalks)
+	return order
 
 ## Puts `plan`, an event that spans the street, on `section` for the day, and takes the section's
 ## two sidewalk locations with it, so no draw happens for any of the three.

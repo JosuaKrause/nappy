@@ -674,22 +674,20 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 			% (second.position.x - resumed_at.x))
 	second.free()
 
-## A day planned at full heat places at least as many patrols as the same day cold, and strictly
-## more on at least one of several seeds — measured, since the population multiplier changing the
-## cap does not by itself guarantee more of them actually get rolled and placed against everything
-## else competing for the same budget.
+## A day planned at full heat places more patrols than the same day cold, over several seeds —
+## measured, since the population multiplier raising the row's cap and its weight in the day's bags
+## (`EventDef.at_heat()`) does not by itself guarantee more of them are drawn against everything else
+## the locations draw.
 ##
-## **One seed is not enough to assert `>` by itself.** The cold and hot plans roll from the same RNG
-## stream up to the point their budgets actually diverge, so on a city and a day where something
-## else competing for act I's tiles happens to win a few more of the shared rolls, the two plans can
-## tie — this test read 7 vs 7 on `SEED` once `alley_mouse` joined that competition, which is a
-## seed-specific coincidence about the roll rather than a broken relationship. `>=` on every sampled
-## seed is the contract the population multiplier actually promises; `>` on at least one is what
-## shows the multiplier does something rather than nothing.
+## **Summed over the seeds, not asserted seed by seed.** A cold and a hot day draw every location
+## from bags of different marbles, so on one seed the hot day can draw a patrol fewer by the luck of
+## its draws, which is no broken relationship. More over the seeds is the contract the population
+## multiplier promises.
 func _test_a_hot_day_places_more_patrols(t) -> void:
 	var day := 9
 	var seeds := [8817, 4242, 2102613802, 90210, 37, 38, 39, 12345]
-	var any_strictly_more := false
+	var colds := 0
+	var hots := 0
 	for run_seed in seeds:
 		var map := MapCache.of(run_seed)
 		var rng_seed := hash("%d:%d" % [run_seed, day])
@@ -697,17 +695,14 @@ func _test_a_hot_day_places_more_patrols(t) -> void:
 		cold_rng.seed = rng_seed
 		var hot_rng := RandomNumberGenerator.new()
 		hot_rng.seed = rng_seed
-		var cold := _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), cold_rng, map,
+		colds += _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), cold_rng, map,
 				CalmAreas.of(map), [], [], null, 0).placements())
-		var hot := _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), hot_rng, map,
+		hots += _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), hot_rng, map,
 				CalmAreas.of(map), [], [], null,
 				Tuning.RESISTANCE_GOAL).placements())
-		t.check(hot >= cold,
-				"seed %d: a fully heated day places at least as many patrols as a cold one (%d vs %d)"
-				% [run_seed, hot, cold])
-		any_strictly_more = any_strictly_more or hot > cold
-	t.check(any_strictly_more,
-			"and strictly more on at least one of the %d seeds sampled" % seeds.size())
+	t.check(hots > colds,
+			"over %d seeds a fully heated day places more patrols than a cold one (%d against %d)"
+			% [seeds.size(), hots, colds])
 
 func _count_patrols(planned: Array[EventScheduler.Planned]) -> int:
 	var count := 0

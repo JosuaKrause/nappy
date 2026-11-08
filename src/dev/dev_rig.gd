@@ -254,7 +254,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ##
 ## **A row the director sites while she walks has no position at dawn** — `cat_dash`, `cyclist`,
 ## `loose_dog`, `charging_dog` on `Tuning.RUN_TAUGHT_DAY`, and day 3's `burning_building`, which
-## the day budgets and sites from her walk (`EventDef.on_her_way`) — so `event:<id>` cannot
+## the day plans and sites from her walk (`EventDef.on_her_way`) — so `event:<id>` cannot
 ## find one. Rather than silently starting her on the doorstep as if nothing were wrong, this
 ## **refuses by name**: the row and the reason are written to the run log through the city's trace
 ## (`city.trace.note("spawn", …)`) and raised with `push_warning`, so both the log a capture is
@@ -281,9 +281,10 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 		elif plan.def.kind == GameEnums.EventKind.AMBIENT:
 			continue
 		if plan.def.notice_within() > 0.0:
-			var clearance := maxf(plan.def.outer_radius, plan.def.notice_within()) + Tuning.TILE_SIZE
+			var reach := maxf(plan.def.outer_radius, plan.def.notice_within())
+			var clearance := reach + Tuning.TILE_SIZE
 			var stand_off := pavement_offset(city.map, plan.position, clearance, 1.0)
-			return _nearest_walkable(city.map, plan.position + stand_off)
+			return _nearest_walkable(city.map, plan.position + stand_off, plan.position, reach)
 		var offset := pavement_offset(city.map, plan.position, plan.def.outer_radius)
 		return _nearest_walkable(city.map, plan.position + offset)
 	if waits_for_her_walk:
@@ -314,14 +315,23 @@ static func pavement_offset(map: CityMap, at: Vector2, radius: float, scale: flo
 	var vertical := EventInstance._spread_is_vertical(map, at)
 	return Vector2(0.0, radius * scale) if vertical else Vector2(radius * scale, 0.0)
 
-static func _nearest_walkable(map: CityMap, near: Vector2) -> Vector2:
+## The walkable tile nearest `near`, and further than `beyond` from `outside_of` where one is handed:
+## a waiting row's stand-off snapped to the pavement must not snap back inside its own trigger, as it
+## does where the step across the street lands on ground she cannot stand on (a row standing in a
+## junction box or on a square, whose street axis `pavement_offset()` cannot read).
+static func _nearest_walkable(map: CityMap, near: Vector2, outside_of := Vector2.INF,
+		beyond := 0.0) -> Vector2:
 	var start := map.world_to_tile(near)
 	for radius in 12:
 		for dy in range(-radius, radius + 1):
 			for dx in range(-radius, radius + 1):
 				var tile := start + Vector2i(dx, dy)
-				if map.is_walkable(tile):
-					return map.tile_to_world(tile)
+				if not map.is_walkable(tile):
+					continue
+				if outside_of != Vector2.INF \
+						and map.tile_to_world(tile).distance_to(outside_of) <= beyond:
+					continue
+				return map.tile_to_world(tile)
 	return map.home_world_position()
 
 ## `--overview` frames the whole city at once, so a generation bug that only shows up at map

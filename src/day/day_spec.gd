@@ -124,8 +124,9 @@ var pastes_posters := true
 ## What stands on the walk and how it is drawn (`EventScheduler.build_day()`).
 enum Draw {
 	## The catalogue's day: the ambient rows, the scars, the masts, the scripted rows, the
-	## one-shots, the spoilers in a park she used, then the recurring rows bought from the day's
-	## budget (`EventScheduler.budget_for()`) — every one of the fourteen days.
+	## one-shots, the spoilers in a park she used, then every one of the day's locations drawn from
+	## its view's bag of the recurring rows (`EventScheduler._draw_the_locations()`) — every one of
+	## the fourteen days.
 	CATALOGUE,
 	## Every street of the walk draws `slots_per_street` marbles from one bag holding `bag`, and a
 	## marble stands one of its row (`bag_rows`), or nothing where it has no row — the escape's city,
@@ -154,12 +155,13 @@ var holds_the_home_streets := true
 ## Whether a row stands at most its `EventDef.max_per_day` copies: a day's caps, which the escape
 ## does without (minty-lemur #785) — what stands there is the slots and the bag's draws.
 var caps_per_day := true
-## The share of the **wall**-role placements the day's fill made that stay standing, rolled once per
-## placement (`EventScheduler.build_day()`, which thins the fill after planning it). A wall is only
-## ever placed off the tree, so this is the share of the catalogue's own blockers off it that the
-## day keeps. `1.0` keeps every wall: every day the region wall does not stand
+## The share of its **wall**-role rows the day draws: every wall-role row's weight in the view bags
+## is scaled by it (`EventScheduler.view_weight()`), while the empty marbles are set for every wall
+## weighed in full, so a location draws a wall that much less often; and its cap is scaled by it too
+## (`EventScheduler._caps_of()`), so a wall whose cap binds is thinned as well. The day holds about
+## that share of its walls. `1.0` keeps every wall: every day the region wall does not stand
 ## (`region_wall_stands()`) and every section of the escape. On a day it stands, `for_day()` hands
-## `GATEHOUSE_DAY_WALL_ROW_SHARE`: the gatehouse day keeps half its walls, not all of them.
+## `GATEHOUSE_DAY_WALL_ROW_SHARE`: the gatehouse day holds about half its walls, not all of them.
 var wall_row_share := 1.0
 ## The share `wall_row_share` is on a day the region wall stands, set by `for_day()`.
 const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5

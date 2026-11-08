@@ -1,6 +1,6 @@
 ---
 name: balance
-description: Rules for changing any balance or density number — event density, crowd density, Tuning constants — and the measured facts about what a route actually costs. Load this BEFORE editing src/autoload/tuning.gd, max_per_day, budget_for, CROWD_*_PER_ACT, or any number a player can feel.
+description: Rules for changing any balance or density number — event density, crowd density, Tuning constants — and the measured facts about what a route actually costs. Load this BEFORE editing src/autoload/tuning.gd, max_per_day, the view bags' shares (VIEW_SHARES), CROWD_*_PER_ACT, or any number a player can feel.
 ---
 
 # Balance
@@ -23,9 +23,12 @@ A test never asserts what a setting is, and the relationship tests that encode a
 
 ## Never derive a density — measure it
 
-**Change the event density:** `max_per_day` in the catalogue **first**, then
-`EventScheduler.budget_for()`, because **a budget the catalogue cannot spend is not density**. Then
-**measure what a day places**, over several seeds, since
+**Change the event density:** `max_per_day` in the catalogue **first**, then each view's share of
+locations holding an event (`EventScheduler.VIEW_SHARES`, and `VIEW_SHARE_SCALES`, fitted per view and per day, for the
+draws the rules leave empty, with `GROUND_WEIGHTS`, each row's weight per kind of ground, fitted
+beside them so the mix holds), because **a share the catalogue cannot fill is not density**. Then **measure what
+a day places**, over several seeds (`tests/probes/placement_view_mix.gd` per view,
+`tests/probes/placement_rows.gd` row by row, on main and on the branch), since
 `DayRepairs.ensure_the_city_is_still_walkable` drops obstructions that would seal the city.
 
 A temporary probe suite that prints per-day counts takes two minutes and is the only honest way to
@@ -41,15 +44,15 @@ They move by different multiples, and only the last is what the player is compla
 ## Two levers, and which one binds differs by day
 
 A **cap** binds when the day reaches it. A **weight** binds when it does not, because a row is only
-offered as often as its weight. **Raising a cap the day never reaches does nothing at all** — that
-is "a budget the catalogue cannot spend is not density" at the other end.
+drawn as often as its weight. **Raising a cap the day never reaches does nothing at all** — that
+is "a share the catalogue cannot fill is not density" at the other end.
 
 ## Ask what a number is *per*
 
-`budget_for()` multiplies by `CITY_BLOCKS.x * CITY_BLOCKS.y`, because the target is per block. A
-flat budget is a statement about one lattice size and nothing else: grow the city and the same
-events spread thinner, which is the density silently falling while every constant still reads as
-correct.
+The bags' shares are per location, because the target is per block: a bigger lattice lays out
+more locations and draws more events. A flat count would be a statement about one lattice size and
+nothing else: grow the city and the same events spread thinner, which is the density silently
+falling while every constant still reads as correct.
 
 The crowd is the deliberate opposite — it is a population of the **field** around the player rather
 than of the city, so it does **not** scale with the lattice.

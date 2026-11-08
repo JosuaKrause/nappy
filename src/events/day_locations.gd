@@ -7,23 +7,136 @@ extends RefCounted
 ## phase has assigned taken for the day. The one object holding those answers, so nothing works
 ## them out again (inbox #1156 in gray-dolphin).
 ##
-## **Laid out on day 13 alone in this step**, by the roadblock phase's call in
-## `EventScheduler.build_day()` after the routes are established and the day's holds are on the map
-## (`EventScheduler._place_the_roadblocks()`). The roadblock phase (`RoadblockPhase`) assigns its
-## sections at dawn; the day's plan hands it on to the walk (`DayEvents.locations()`,
-## `DayPlanner.Plan.locations()`, `WalkEvents.locations()`), where day 13's task takes a section for
-## its roadblock when none is close by (`nearest_section_in()`). The bags and the walk's draws, later
-## steps of the placement, lay it out every day. Pure state: no node, nothing that runs.
+## **Laid out every day at dawn**, in `EventScheduler.build_day()` after the routes are established
+## and the day's holds are on the map (`EventScheduler._plan_the_dawn()`). On day 13 the roadblock
+## phase (`RoadblockPhase`) assigns its sections first; then every open location is drawn from its
+## view's bag (`LocationDraw`). The day's plan hands the locations on to the walk
+## (`DayEvents.locations()`, `DayPlanner.Plan.locations()`, `WalkEvents.locations()`), where day 13's
+## task takes a section for its roadblock when none is close by (`nearest_section_in()`). Pure state:
+## no node, nothing that runs.
 
 var _streets := {}
+## The ground beyond the streets: each alley's three locations, each open lot's grid of cells and
+## each junction box, in the order the draw fills them.
+var _grounds: Array[Location] = []
+
+## The side of an open lot's cells, in tiles: about a section's ground (a section is 3 tiles by 6).
+const OPEN_CELL := 4
 
 ## The day's locations on `map`, each street in the view `corridor` gives it. Every street the
-## lattice has (`CityMap.street_segments()`), the ones a calm zone absorbed left out.
+## lattice has (`CityMap.street_segments()`), the ones a calm zone absorbed left out; then the
+## ground beyond them (`Location.Kind`): each alley split along its length into three locations,
+## each square or park into a grid of `OPEN_CELL`-tile cells, and each junction box its own
+## location, each told the view of the nearest of its tiles to the routes (`Corridor.view_of_ground()`).
 static func lay_out(map: CityMap, corridor: Corridor) -> DayLocations:
 	var day := DayLocations.new()
 	for segment in map.street_segments():
 		day._streets[segment.key()] = StreetLocations.of(map, segment, corridor.view_of(segment))
+	for alley in _alleys(map):
+		day._grounds.append_array(_split_in_three(map, corridor, alley))
+	day._grounds.append_array(_cells_of(map, corridor, [GameEnums.TileType.PARK,
+			GameEnums.TileType.SQUARE], Location.Kind.OPEN))
+	day._grounds.append_array(_junction_boxes(map, corridor))
 	return day
+
+## **Every location in the order the dawn draw fills them**: street by street in the lattice's
+## order, each street's own order (`StreetLocations.drawing_order()`, shuffled on `rng`), then the
+## ground beyond the streets.
+func drawing_order(rng: RandomNumberGenerator) -> Array[Location]:
+	var order: Array[Location] = []
+	for key: Vector3i in _streets:
+		order.append_array((_streets[key] as StreetLocations).drawing_order(rng))
+	order.append_array(_grounds)
+	return order
+
+## **Records the draw's `plan` at `location`**, or nothing there for the empty event. An event drawn
+## into a section (it spans the street or drives its carriageway) takes the section's sidewalk
+## locations with it, as a roadblock assigned there does.
+func record(location: Location, plan: EventScheduler.Planned) -> void:
+	if plan and location.kind() == Location.Kind.SECTION and location.segment():
+		(_streets[location.segment().key()] as StreetLocations).take_section(location, plan)
+	location.record(plan)
+
+## The alleys of `map`, each as the rect of its connected `ALLEY` tiles.
+static func _alleys(map: CityMap) -> Array[Rect2i]:
+	var seen := {}
+	var found: Array[Rect2i] = []
+	for start in map.tiles_of_type(GameEnums.TileType.ALLEY):
+		if seen.has(start):
+			continue
+		var rect := Rect2i(start, Vector2i.ONE)
+		var queue: Array[Vector2i] = [start]
+		seen[start] = true
+		while not queue.is_empty():
+			var at: Vector2i = queue.pop_back()
+			rect = rect.expand(at).expand(at + Vector2i.ONE)
+			for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+				var next := at + step
+				if not seen.has(next) and map.in_bounds(next) \
+						and map.tile_at(next) == GameEnums.TileType.ALLEY:
+					seen[next] = true
+					queue.append(next)
+		found.append(rect)
+	return found
+
+## An alley's three locations, split along its longer side.
+static func _split_in_three(map: CityMap, corridor: Corridor, alley: Rect2i) -> Array[Location]:
+	var along := Vector2i.RIGHT if alley.size.x >= alley.size.y else Vector2i.DOWN
+	var length := alley.size.x if along == Vector2i.RIGHT else alley.size.y
+	var found: Array[Location] = []
+	var start := 0
+	for index in StreetLocations.SECTION_ENDS.size():
+		var end := roundi(length * StreetLocations.SECTION_ENDS[index])
+		if end > start:
+			var size := Vector2i(end - start, alley.size.y) if along == Vector2i.RIGHT \
+					else Vector2i(alley.size.x, end - start)
+			found.append(_ground_location(map, corridor, Rect2i(alley.position + along * start, size),
+					index, Location.Kind.ALLEY))
+		start = end
+	return found
+
+## The `OPEN_CELL`-tile cells holding any tile of `types`, in the map's order.
+static func _cells_of(map: CityMap, corridor: Corridor, types: Array, kind: int) -> Array[Location]:
+	var cells := {}
+	for type: int in types:
+		for tile in map.tiles_of_type(type as GameEnums.TileType):
+			cells[Vector2i(floori(tile.x / float(OPEN_CELL)), floori(tile.y / float(OPEN_CELL)))] = true
+	var keys := cells.keys()
+	keys.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x))
+	var found: Array[Location] = []
+	for cell: Vector2i in keys:
+		found.append(_ground_location(map, corridor,
+				Rect2i(cell * OPEN_CELL, Vector2i.ONE * OPEN_CELL), 0, kind))
+	return found
+
+## **Each junction box a street of the day meets, one location each** (`Location.Kind.JUNCTION`):
+## the whole box, its sidewalk corners, its carriageway and its crossings, the one location the
+## streets meeting there share. A box no street meets, inside a calm area that absorbed its streets,
+## is that area's ground and not a junction's.
+static func _junction_boxes(map: CityMap, corridor: Corridor) -> Array[Location]:
+	var boxes := {}
+	for segment in map.street_segments():
+		var key := segment.key()
+		var a := Vector2i(key.x, key.y)
+		boxes[a] = true
+		boxes[a + (Vector2i.RIGHT if key.z == 0 else Vector2i.DOWN)] = true
+	var keys := boxes.keys()
+	keys.sort_custom(func(a: Vector2i, b: Vector2i) -> bool: return a.y < b.y or (a.y == b.y and a.x < b.x))
+	var found: Array[Location] = []
+	for junction: Vector2i in keys:
+		found.append(_ground_location(map, corridor, Rect2i(junction * CityMap.period(),
+				Vector2i.ONE * Tuning.STREET_WIDTH), 0, Location.Kind.JUNCTION))
+	return found
+
+static func _ground_location(map: CityMap, corridor: Corridor, tiles: Rect2i, index: int,
+		kind: int) -> Location:
+	var available := true
+	for y in range(tiles.position.y, tiles.end.y):
+		for x in range(tiles.position.x, tiles.end.x):
+			if map.is_closed(Vector2i(x, y)):
+				available = false
+	return Location.new(null, index, tiles, map.tile_rect_to_world(tiles).get_center(),
+			corridor.view_of_ground(tiles), available, kind)
 
 ## The sections in `view` (`PlacementView.View`) that are available and not yet taken, street by
 ## street in the lattice's order and along each street in order.

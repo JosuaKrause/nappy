@@ -1,6 +1,6 @@
 class_name OnHerWay
 extends Resource
-## **The day budgets the row but leaves where it stands to the walk she takes** (`EventDef.on_her_way`).
+## **The day plans the row but leaves where it stands to the walk she takes** (`EventDef.on_her_way`).
 ##
 ## A `MAP` row in every other respect — it is a place, on a tile, with a body and a field, and the
 ## whole plan is stated against the day's corridor exactly as it would have been at dawn. What moves

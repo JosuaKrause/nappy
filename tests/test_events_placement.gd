@@ -420,7 +420,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t) -> void:
 ## — so it arrives well under once a day, and a sweep that planned whole days would be asking
 ## nothing at all on most of them and would go red on a reseed rather than on a defect.
 ## `EventScheduler.recipe_placement()` is the public entry that judges a row on one chosen tile as
-## the fill does (the scene recipes call it), so the sweep asks it directly, over seeds and over
+## the day's own placement does (the scene recipes call it), so the sweep asks it directly, over seeds and over
 ## days spanning the acts: the ground the scheduler offers the row (`open_ground_for()`) has to be
 ## squares alone, the row is placed on tiles drawn from it, and every sidewalk tile of a sample
 ## strewn over the map is refused it. The count at the end is what stops it passing having placed
@@ -508,43 +508,44 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 ## case is that truncation, which is why the floor under it is *one* rather than a share: what it
 ## guards is that the sweep can still produce the case at all.
 func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
-	var map := MapCache.of(4242)
 	var on_the_route := 0
 	var walled := 0
 	var by_a_side_route := 0
 	var passes_a_side_route := 0
 	var unavoidable_on_the_route := 0
 	var first := ""
-	for day in [1, 3, 5, 8, 11, 14]:
-		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
-		map.repaint(state)
-		var tree := RouteTree.for_day(map, day)
-		var corridor := Corridor.of(tree)
-		var consumed: Array[String] = []
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), consumed, [], tree).placements():
-			if not plan.def.paces or not plan.counts_against_the_line():
-				continue
-			if not plan.def.reaches_the_far_lane():
-				continue
-			var crossed := _a_beat_touches_a_junction(map, plan)
-			var sideways := _a_beat_passes_a_side_route(map, plan)
-			if sideways:
-				passes_a_side_route += 1
-				if not crossed:
-					by_a_side_route += 1
-			if not crossed and not sideways:
-				walled += 1
-			if not corridor.carries_a_route(map.world_to_tile(plan.position)):
-				continue
-			on_the_route += 1
-			if crossed or sideways:
-				continue
-			unavoidable_on_the_route += 1
-			if first == "":
-				first = "day %d, '%s' at %s" \
-						% [day, plan.def.id, RunTrace.tile(map.world_to_tile(plan.position))]
+	for map_seed: int in [4242, 90210, 1234567]:
+		var map := MapCache.of(map_seed)
+		for day in [1, 3, 5, 8, 11, 14]:
+			var state := CityState.new()
+			state.begin_day(map.block_plans, day)
+			map.repaint(state)
+			var tree := RouteTree.for_day(map, day)
+			var corridor := Corridor.of(tree)
+			var consumed: Array[String] = []
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+					CalmAreas.of(map), consumed, [], tree).placements():
+				if not plan.def.paces or not plan.counts_against_the_line():
+					continue
+				if not plan.def.reaches_the_far_lane():
+					continue
+				var crossed := _a_beat_touches_a_junction(map, plan)
+				var sideways := _a_beat_passes_a_side_route(map, plan)
+				if sideways:
+					passes_a_side_route += 1
+					if not crossed:
+						by_a_side_route += 1
+				if not crossed and not sideways:
+					walled += 1
+				if not corridor.carries_a_route(map.world_to_tile(plan.position)):
+					continue
+				on_the_route += 1
+				if crossed or sideways:
+					continue
+				unavoidable_on_the_route += 1
+				if first == "":
+					first = "day %d, '%s' at %s" \
+							% [day, plan.def.id, RunTrace.tile(map.world_to_tile(plan.position))]
 	t.check(on_the_route > 5,
 			"the days sampled pace a row along the route's own sidewalk (%d)" % on_the_route)
 	t.check(walled >= 1,

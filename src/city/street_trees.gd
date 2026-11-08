@@ -76,7 +76,7 @@ const STREET_TREE_RUN_MIN_BLOCKS := 3
 ## `STREET_TREE_RUN_MIN_BLOCKS`–`STREET_TREE_RUN_MAX_BLOCKS` streets each, six runs is well under
 ## the quarter of ordinary streets `tests/test_blocks.gd` caps it at.
 ##
-## **The count is per city, not per block**, unlike the event budget: a tree-lined street is
+## **The count is per city, not per block**, unlike the events' density: a tree-lined street is
 ## meant to be a *place* you recognise, and a number of places does not grow with the lattice the
 ## way a density does.
 const STREET_TREE_RUNS := 6
