@@ -43,4 +43,4 @@ also removing a check that holds nothing once its member is gone (curly-rabbit #
 becomes internal, its tests moving to what the class does outward, or, where nothing outside can confirm the behavior,
 takes a `[kept]` line with its reason (curly-rabbit #1098). A `[no reader]` member gets a reader in the game, is tested
 through what the game shows, or is deleted, or takes a `[kept]` line where the information cannot be had another way
-and the test needs it to confirm the behavior (curly-rabbit #1095); A builder deletes the member's line from the CI check's list as it goes.
+and the test needs it to confirm the behavior (curly-rabbit #1095). A builder deletes the member's line from the CI check's list as it goes.

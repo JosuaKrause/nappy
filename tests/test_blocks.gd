@@ -296,9 +296,10 @@ func _test_tree_runs_are_fixed_for_the_seed(t) -> void:
 	t.check(same, "the same seed plants the same trees in the same pits")
 
 ## **Rare, in the player's word** *(2026-09-12: "trees must be quite rare to be able to still place
-## vans restaurants etc.")*. This is the ceiling (a quarter of the ordinary streets) `StreetTrees.STREET_TREE_RUNS` is chosen under, not a
-## restatement of it: raising the run count is allowed right up to the point where a tree-lined
-## street stops being the exception, and this is the point.
+## vans restaurants etc.")*. This is the ceiling (a quarter of the ordinary streets)
+## `StreetTrees.STREET_TREE_RUNS` is chosen under, not a restatement of it: raising the run count is
+## allowed right up to the point where a tree-lined street stops being the exception, and this is the
+## point.
 func _test_tree_lined_streets_stay_rare(t) -> void:
 	var max_lined_fraction := 0.25
 	var worst := 0.0
