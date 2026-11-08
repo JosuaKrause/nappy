@@ -24,8 +24,9 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
 1. telemetry: `test_frame_record_wiring` reads the other modules' timing hand-ins
    (`city.frame_timing`, `scenery.timing`, `events.timing`, the baby's, the screen edge's and the
    halo's `timing`) until each of those modules' passes gives them methods;
-2. the player and the baby (`player_presentation`, `baby_world`, `move_poses`, `camera_start`,
-   `pelican`, `loose_dog_arrives`, `tutorial_dog`);
+2. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
+   (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
+   events;
 3. atlas and scenery (`atlas_*`, `scenery_*`, `ground_floor`, `building_shadows`,
    `destination_drawing`, `debug_layers`);
 4. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
