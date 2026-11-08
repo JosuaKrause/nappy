@@ -7,7 +7,7 @@ minty-quail's `placement-by-construction.md`, its first pull request, #1248. The
 - **A street's view is decided in one place,** `Corridor.view_of(segment)` (`PlacementView` in the
   data layer): a route street is on the route on both sidewalks; a street touching a route junction
   is route-adjacent, park and alley cuts included; every other street is off the route.
-- **Every street is laid out at dawn** (`DayLocations`, `StreetLocations`, `Location`; the city's
+- **Every street is laid out at dawn on day 13, in this step** (`DayLocations`, `StreetLocations`, `Location`; the city's
   streets from `CityMap.street_segments()`): three sections of 3, 2 and 3 tiles, two sidewalk locations in
   each, each location told its view once. Sections on closed or held streets (closures, hard seals,
   the region wall and its doors, the home's streets) are unavailable. A street-spanning event
