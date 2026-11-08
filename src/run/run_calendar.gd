@@ -15,7 +15,7 @@ var run_parts: RunStateRegistry
 var header: RunHeader
 var settled: SettledState
 var resistance: ResistanceRunState
-var facts: RunFacts
+var _facts: RunFacts
 
 ## Where the calendar's facts — a nerve spent, a checkpoint kept, the mode, the ending, where she
 ## settled — are written down for the run log. Handed in by `use_trace()`; silent until then.
@@ -27,7 +27,7 @@ func _init(parts: RunStateRegistry, the_header: RunHeader, the_settled: SettledS
 	header = the_header
 	settled = the_settled
 	resistance = the_resistance
-	facts = the_facts
+	_facts = the_facts
 
 ## Hands the calendar the trace its facts are written to.
 func use_trace(sink: RunTrace) -> void:
@@ -300,7 +300,7 @@ func _end_run(which: GameEnums.Ending) -> void:
 	# A run that has ended is no longer in the escape, whether it reached one or never did. Left
 	# set, the next boot would read a finished run's leftover section and open the escape over a
 	# title screen that has nothing behind it.
-	facts.escape_section = 0
+	_facts.escape_section = 0
 	# `played` reuses the `ending` kind rather than adding a new one — how the run finished is
 	# exactly the question a run's own length answers alongside, and the telemetry skill's own
 	# "a kind reused from that table, not a synonym for one" does not want a second line for it.
