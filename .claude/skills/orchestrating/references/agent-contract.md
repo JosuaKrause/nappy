@@ -95,18 +95,10 @@ the player's screen, so a wait that wakes every minute floods both with nothing 
 what you can into one command, so one wait gives one notification.
 
 **Headless first.** Any game run carries a dev flag or `--no-save`, since worktrees share the
-player's save. **No agent opens a window** (inbox #1203), and a reviewer is an agent: Godot runs
-headless only, and so does everything else. That bans any tool that opens a window, the known ones
-being the editor, `tools/run.sh`, `tools/shot.sh`, `tools/scene-recipes.sh --screenshots`,
-`tools/record.sh` and `tools/trailer.sh` (the movie writers), `tools/web-template/browser-check.mjs`
-(it launches Chrome), a Godot MCP tool that launches the editor or runs the project, and a
-browser-automation tool, since every window opens on the player's own screen and agents running
-side by side multiply them. A still, a burst, a recording, a trailer shot, a browser check or a
-measurement the brief asks for that needs a window is listed in the report (the command, the flags,
-the seed, the moment), with
-whether it is a still or a burst and whether `--invincible` may be used, and the orchestrator
-arranges it. *Proposed, not asked for, open to the player's correction:* the orchestrator runs
-those captures one at a time in a batch, at a moment the player has agreed to. The player's CLI cannot show
+player's save. **No agent opens the Godot editor** (inbox #1203, inbox #1242), a Godot MCP tool
+that launches it included; the game's own windows follow the rules here. At most one or two
+`tools/shot.sh` captures at the end for evidence; the brief says
+whether a still or a burst, and whether `--invincible` may be used. The player's CLI cannot show
 images: commit evidence pictures on the branch under `docs/evidence/<topic>-<date>/` (see
 **session-captures**), push, and embed them in the PR description as images with commit-pinned
 `https://github.com/JosuaKrause/nappy/raw/<sha>/…` URLs. A visible change with no pictures fails
@@ -148,14 +140,18 @@ internal revision loop. For artwork, sound or any visual or audible result:
 
 ## Forks come back, never guessed
 
-Implement the unambiguous part and state any fork precisely. Where the design is silent on a small
-detail, choose the smallest implementation consistent with the contracts and say so in the PR
-description as open to overturn. A brief that contradicts a recorded decision is a fork too: build
+Implement the unambiguous part and state any fork precisely. **Nothing is called silent before the
+player's words behind it are read** (inbox #1232, inbox #1234): the item's whole entry (items filed
+from one note belong together), the playtest statements and inbox notes it cites, and their appended
+words. A point those words answer by their plain meaning, even without naming it, is not silent: it
+is built, and the PR description cites the words it rests on. Only where they truly say nothing,
+choose the smallest implementation consistent with the contracts and say so in the PR description
+as open to overturn, naming what was read. A brief that contradicts a recorded decision is a fork too: build
 nothing that overturns it, report the clash quoting both.
 
 ## Final report
 
 Also the PR description: per item, what was built and how it was verified; every choice made
-where the design was silent; every fork left open; the answers to the architecture questions, for a
+where the design was silent, each with the words read for it; every fork left open; the answers to the architecture questions, for a
 PR that changes code; the PR URL. An outcome it does not mention is
 an outcome that did not happen.

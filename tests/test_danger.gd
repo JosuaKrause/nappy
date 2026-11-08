@@ -39,6 +39,7 @@ func run(t) -> void:
 	_test_the_carried_babys_cue_stays_over_her_head(t)
 	_atlas.release(&"events")
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 const STEP := 1.0 / 60.0
@@ -392,8 +393,8 @@ func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t) -> void:
 	var street := _a_street(t)
 	if street.is_empty():
 		return
-	var city: City = street.city
-	var car: CrowdAgent = _street_rig.agent_on(city, city.map, CrowdAgent.Kind.CAR, street.corridor,
+	var crowd: Crowd = street.crowd
+	var car: CrowdAgent = _street_rig.place_on(crowd, street.map, CrowdAgent.Kind.CAR, street.corridor,
 			CrowdLanes.road_lane(true, 1.0), street.along, 1.0, true, CrowdLanes.SIDEWALK_OFFSETS,
 			Tuning.CAR_SPEED.x)
 	car.excitement.set_player_at(car.global_position + Vector2(0.0, 60.0))
@@ -402,7 +403,7 @@ func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t) -> void:
 	car.excitement.set_player_at(car.global_position + Vector2(50.0, 60.0))
 	t.check(not car.excitement.will_be_lethal(car.excitement.player_at),
 			"the same car passing beside her — she would have to step into it herself — is not")
-	city.free()
+	_street_rig.free_crowd(crowd)
 
 ## `PEDESTRIAN_INTENSITY` (4.2/s) times `Tuning.EXPECTED_IMPACT_HORIZON` (5s) is 21, under
 ## `Tuning.EXPECTED_IMPACT_POINTS` (40) by construction, so no ordinary walker can ever earn a
@@ -412,31 +413,31 @@ func _test_a_walker_brushing_past_is_unmarked(t) -> void:
 	var street := _a_street(t)
 	if street.is_empty():
 		return
-	var city: City = street.city
-	var walker: CrowdAgent = _street_rig.agent_on(city, city.map, CrowdAgent.Kind.WALKER, street.corridor,
+	var crowd: Crowd = street.crowd
+	var walker: CrowdAgent = _street_rig.place_on(crowd, street.map, CrowdAgent.Kind.WALKER, street.corridor,
 			0, street.along, 1.0)
 	walker.excitement.set_player_at(walker.global_position + Vector2(20.0, 25.0))
 	t.check(walker.excitement.caret_strength() == 0,
 			"an ordinary walker brushing past her carries no caret at all")
-	city.free()
+	_street_rig.free_crowd(crowd)
 
-## A real generated city in a run of its own, its crowd emptied, with a straight stretch of ordinary
-## street to place a body on: `{city, corridor, along}`, or an empty dictionary (and a failed check)
-## when the city has none.
+## A crowd over a real generated map, emptied (no city is built around it: this suite asks the crowd's
+## bodies), with a straight stretch of ordinary street to place a body on: `{crowd, map, corridor,
+## along}`, or an empty dictionary (and a failed check) when the map has none.
 func _a_street(t) -> Dictionary:
-	var city: City = RunCity.with_own_run(preload("res://scenes/world/city.tscn"), STREET_SEED)
-	t.add_child(city)
-	city.build(CityGenerator.generate(STREET_SEED))
+	var map := MapCache.of(STREET_SEED)
+	var crowd := _street_rig.a_crowd(t, map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("test_danger:street")
-	city.crowd.start_day(1, rng, Vector2.ZERO)
-	city.crowd.clear()
-	var run: Vector2i = _street_rig.a_straight_run(city.map, Tuning.BLOCK_SIZE)
+	crowd.start_day(1, rng, Vector2.ZERO)
+	crowd.clear()
+	var run: Vector2i = _street_rig.a_straight_run(map, Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a straight stretch of street to place a body on")
 	if run.x < 0:
-		city.free()
+		_street_rig.free_crowd(crowd)
 		return {}
-	return {"city": city, "corridor": run.x, "along": float(run.y + 2) * Tuning.TILE_SIZE}
+	return {"crowd": crowd, "map": map, "corridor": run.x,
+			"along": float(run.y + 2) * Tuning.TILE_SIZE}
 
 const STREET_SEED := 4242
 ## The street rig (`tests/crowd_street_rig.gd`): places a car or a walker through the crowd's own entry.
@@ -444,32 +445,30 @@ var _street_rig = preload("res://tests/crowd_street_rig.gd").new()
 
 ## **The line this milestone cannot merge on the wrong side of.** *(2026-09-08, on the one
 ## measurement rather than an argument: "the answer has to be none at ordinary density, or the
-## line moves before this merges".)* A real generated city, a real `Crowd.step()` — "a rig that
+## line moves before this merges".)* A real generated map, a real `Crowd.step()` — "a rig that
 ## steps the parts is not running the whole" (`.claude/skills/crowd-traffic/SKILL.md`) — at
 ## ordinary arterial density, for the same forty-second walk `docs/EVENTS.md`'s own cost-table
 ## measurement uses, with the player standing still on the pavement rather than walking it: not
 ## one amber caret over the whole of it.
 func _test_the_arterial_at_ordinary_density_marks_nobody(t) -> void:
-	var city_scene: PackedScene = load("res://scenes/world/city.tscn")
-	var city: City = RunCity.with_own_run(city_scene, 9137)
-	t.add_child(city)
-	city.build(CityGenerator.generate(9137))
-	var standing_at := CrowdLanes.arterial_pavement(city.map)
+	var map := MapCache.of(9137)
+	var crowd := _street_rig.a_crowd(t, map)
+	var standing_at := CrowdLanes.arterial_pavement(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("test_danger:arterial")
-	city.crowd.start_day(1, rng, standing_at)
+	crowd.start_day(1, rng, standing_at)
 
 	var amber := 0
 	for i in int(round(40.0 / STEP)):
-		city.crowd.step(STEP)
-		for agent in city.crowd.agents():
+		crowd.step(STEP)
+		for agent in crowd.agents():
 			agent.excitement.set_player_at(standing_at)
 			if agent.excitement.caret_strength() == 1:
 				amber += 1
 	t.check(amber == 0,
 			("a crowd at ordinary arterial density around a standing player marks nobody " +
 					"(%d amber frames over the walk)") % amber)
-	city.free()
+	_street_rig.free_crowd(crowd)
 
 ## The one property the ring had that a symbol does not get for free. Without it a pulsing event
 ## stops being something to time a pass through and becomes something that hurts at random.

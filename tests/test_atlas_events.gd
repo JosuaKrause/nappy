@@ -27,11 +27,8 @@ extends RefCounted
 ## not a test expected it. Every check below reads `has_region()`, `group_of()` or the run log,
 ## none of which loads anything.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const StreetMap := preload("res://tests/fixtures/street_map.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
-const RUN_SEED := 2
-const SEED := 4242
 
 func run(t) -> void:
 	_test_every_picture_the_events_can_draw_is_on_the_events_page(t)
@@ -160,17 +157,22 @@ func _test_both_dog_families_draw_their_accepted_transfers(t) -> void:
 
 # ------------------------------------------------------------- the lifetime ---
 
-func _rng(day: int) -> RandomNumberGenerator:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("test_atlas_events:%d:%d" % [SEED, day])
-	return rng
+## A walk started on the manager with nothing planned (`start_recipe()`, the way a scene's recipe
+## starts one): a day's planning is the planner's own work over a city, and what the lifetime
+## tests ask is only what starting and clearing a walk does to the manager's hold on its page.
+func _start_a_day(manager: EventManager, day: int) -> void:
+	var none: Array[EventScheduler.Planned] = []
+	manager.start_recipe(none, DaySpec.for_day(day), day, Vector2.ZERO)
 
-func _city(t, atlas: AtlasLibrary) -> City:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	city.atlas = atlas
-	t.add_child(city)
-	city.build(CityGenerator.generate(SEED))
-	return city
+## The event manager the lifetime tests watch: the real one, over a world of its own (a map of
+## streets and a run, `setup_world()`) and the library handed in where the game hands its own, so
+## no city is built around it.
+func _manager(t, atlas: AtlasLibrary) -> EventManager:
+	var manager := EventManager.new()
+	manager.atlas = atlas
+	manager.setup_world(StreetMap.full(), RunState.new())
+	t.add_child(manager)
+	return manager
 
 ## `EventManager` takes one reference in `_enter_tree()` and gives it back in `_exit_tree()`, and
 ## nothing between those two moments drops the page: not a day starting, not a day's events being
@@ -182,44 +184,42 @@ func _city(t, atlas: AtlasLibrary) -> City:
 ##
 ## With no boot behind this rig the reference is what loads and drops the page, which is what makes
 ## the pairing visible at all; in a booted game it is a count on a page `RESIDENT_GROUPS` holds. A
-## reference a day's events took and never gave back would leave the page held after the city is
+## reference a day's events took and never gave back would leave the page held after the manager is
 ## freed, so the one release line at the end is what says the counts balanced.
 func _test_the_manager_holds_its_page_for_its_own_life(t) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var group := EventPictures.ATLAS_GROUP
-	var city := _city(t, atlas)
+	var manager := _manager(t, atlas)
 	t.check(pages.held(group) and pages.loads(group) == 1,
 			"the manager holds the page from the moment it is in the tree")
-	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(1), _rng(1), consumed)
+	_start_a_day(manager, 1)
 	t.check(pages.loads(group) == 1 and pages.releases(group) == 0,
 			"a day's events draw on the page the manager holds, reading nothing more")
-	city.events.clear()
+	manager.clear()
 	t.check(pages.releases(group) == 0,
 			"clearing the day keeps the page held rather than releasing and reloading it")
-	city.events.start_day(DaySpec.for_day(2), _rng(2), consumed)
+	_start_a_day(manager, 2)
 	t.check(pages.loads(group) == 1 and pages.releases(group) == 0,
 			"and a second day starts on the same page (%d loads)" % pages.loads(group))
-	city.events.clear()
-	city.free()
+	manager.clear()
+	manager.free()
 	t.check(pages.releases(group) == 1,
-			"freeing the city is what finally gives the page back, with no reference left over")
+			"freeing the manager is what finally gives the page back, with no reference left over")
 	pages.stop()
 
-## The leak `clear()` cannot catch, since it never releases: a city torn down mid-day — quitting to
+## The leak `clear()` cannot catch, since it never releases: a manager torn down mid-day — quitting to
 ## the title screen with a day still running. The library's counts outlive the freed node (in a
 ## booted game the library is the sitting's), so `EventManager._exit_tree()` is the only thing
 ## between this and a reference held for the rest of the process.
 func _test_a_manager_freed_mid_day_still_gives_its_page_back(t) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
-	var city := _city(t, atlas)
-	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(1), _rng(3), consumed)
+	var manager := _manager(t, atlas)
+	_start_a_day(manager, 1)
 	t.check(pages.held(EventPictures.ATLAS_GROUP),
-			"the day's manager holds its page before the city is torn down")
-	city.free()
+			"the day's manager holds its page before the manager is torn down")
+	manager.free()
 	t.check(not pages.held(EventPictures.ATLAS_GROUP),
-			"freeing the city mid-day releases the events page too, with no clear() in between")
+			"freeing the manager mid-day releases the events page too, with no clear() in between")
 	pages.stop()

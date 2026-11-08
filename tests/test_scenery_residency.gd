@@ -3,6 +3,16 @@ extends RefCounted
 ## The three ground modes schedule the same lazy, nearby preparation; the rest of the suite runs
 ## in the default.
 ##
+## **A combined suite, for a stated reason**: the guarantee is residency over a whole city. What
+## `SceneryResidency` keeps resident is a decision about every consumer the city registers with it
+## at once (its ground chunks, its buildings' windows and roofs, its water, its props), and the
+## claims are about what a view's movement does to all of them together: coverage with no
+## duplicate owner, identity and collision kept across eviction, the city clock shared by new
+## chunks, no global RNG consumed. A stand-in for each consumer would only restate what the
+## residency hands them, so the real city, built from a cached map, is the thing observed. What each
+## consumer does with its own residency (a roof's units, a water surface's clock) is its own
+## suite's (`tests/test_scenery_animation.gd`, `tests/test_ground_floor.gd`).
+##
 ## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
 ## seed's city is generated once in the test process and every case is handed a copy of its own,
 ## the same city `CityGenerator.generate()` builds for the seed.
