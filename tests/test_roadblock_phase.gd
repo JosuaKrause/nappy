@@ -14,6 +14,7 @@ func run(t) -> void:
 	_test_it_stops_once_every_route_tile_has_one_close_by(t)
 	_test_a_section_offered_none_is_never_drawn(t)
 	_test_it_stops_once_no_section_could_cover_a_tile_left(t)
+	_test_it_stops_at_the_most_it_stands(t)
 	_test_every_offered_section_is_in_the_draw(t)
 	_test_each_roadblock_leans_toward_the_farthest(t)
 	_test_offers_near_a_roadblock_just_placed_are_asked_again(t)
@@ -194,6 +195,28 @@ func _test_it_stops_once_no_section_could_cover_a_tile_left(t) -> void:
 	t.check(nothing_first > 0 and nothing_first < SEEDS,
 			"and a section close by nothing is still drawn before it on some days (%d of %d)"
 			% [nothing_first, SEEDS])
+
+## Thirty sections, each the only one close by a route tile of its own: full coverage takes all
+## thirty, and every section could still help to the end, so only the cap stops the phase, at
+## `RoadblockPhase.MOST`.
+func _test_it_stops_at_the_most_it_stands(t) -> void:
+	var sections: Array[Location] = []
+	var ground := _Ground.new()
+	var names: Array[int] = []
+	for index in 30:
+		var section := _section(Vector3i(index % 10, index / 10, 1), 1)
+		sections.append(section)
+		ground.close_by[section] = _tiles([index + 100])
+		names.append(index + 100)
+	ground.tiles = _tiles(names)
+	var locations := _Locations.new()
+	locations.sections = sections
+	var phase := RoadblockPhase.new(locations, ground)
+	var placed := phase.place(_rng(1))
+	t.check(placed.size() == RoadblockPhase.MOST and phase.left_uncovered() == 30 - RoadblockPhase.MOST,
+			"with every section still able to cover a route tile, the phase stops at %d roadblocks "
+			% RoadblockPhase.MOST + "(%d placed, %d route tiles left)" % [placed.size(),
+			phase.left_uncovered()])
 
 ## A section close by no route tile is in the draw like any other: the bias ranks every offered
 ## section, and nothing leaves one out for what it would cover.

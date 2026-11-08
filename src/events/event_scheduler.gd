@@ -769,8 +769,9 @@ static func _plan_through_the_fill(day: int, base: int, map: CityMap,
 ## **The roadblock phase at dawn** (inbox #1185: the day's routes first, then roadblocks next to
 ## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
 ## route-adjacent sections, spread by a bias toward the section farthest from those already placed,
-## until every route tile has one close by or no section still offered could bring one close by a
-## route tile that has none (the orchestrator's reading, open to correction). `def` is the task's
+## until every route tile has one close by, no section still offered could bring one close by a
+## route tile that has none, or `RoadblockPhase.MOST` stand (the orchestrator's reading, open to
+## correction). `def` is the task's
 ## row, null on every other day, which this leaves exactly as it was.
 ##
 ## **The day's locations are laid out here, on day 13 alone** (`DayLocations.lay_out()` off
@@ -804,7 +805,7 @@ static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityM
 	for plan in phase.place(_stream(base, RoadblockPhase.SALT)):
 		placed.append(RunTrace.tile(map.world_to_tile(plan.placed_at())))
 	_note(trace, "plan", ("%d %s placed beside the day's routes, at %s; %d route tiles left with " +
-			"none close by, no section beside the routes left that could bring one close by them")
+			"none close by, the phase done")
 			% [placed.size(), def.id, " ".join(placed) if not placed.is_empty() else "none",
 			phase.left_uncovered()])
 
@@ -817,10 +818,13 @@ static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityM
 ##   ground for its role (`_ground_for()`: off every tile a route runs along, off a held or closed
 ##   street, the home block, a tree) nearest the section's middle that `_judge()` refuses nothing,
 ##   asked against the day's plans and what stands (`DayEvents.standing()`). A section with no such
-##   tile is offered none, and none is ever offered on the main road (inbox #1186). **Room is no
-##   preference here**: a tile `_judge()` answers with less than all the room it wants (another
-##   roadblock within `EVENT_SPACING_SAME`, the one rule that bends) is taken like any other, since
-##   the phase spreads its roadblocks by its bias toward the farthest instead.
+##   tile is offered none, and none is ever offered on the main road (inbox #1186). **Every rule
+##   `_judge()` asks invalidates here, the spacing between two of a row included**: a tile with
+##   another roadblock within `EVENT_SPACING_SAME` (256px), the one rule that bends elsewhere, is
+##   not offered, so construction keeps the day's roadblocks apart and the phase's bias ranks what is
+##   left. *Read as, the orchestrator's and open to correction:* which events make others invalid is
+##   "what your current rules accomplish. the same applies still" (inbox #1185), and the spacing is
+##   one of those rules.
 ## - **Close by** is the walk her paths take, without leaving the circle of `TASK_ROW_CLOSE_BY` round
 ##   it, from the ground she touches it from (`_touched_from()`), with its own body standing.
 class JudgedRoadblockGround extends RoadblockGround:
@@ -896,8 +900,10 @@ class JudgedRoadblockGround extends RoadblockGround:
 		for tile in fits:
 			var candidate := EventScheduler._build_placement(_def, _map, tile,
 					RandomNumberGenerator.new())
+			# `INF` alone: room all round, so the spacing between two of a row
+			# (`EVENT_SPACING_SAME`) leaves a tile invalid rather than merely cramped.
 			if candidate and EventScheduler._judge(candidate, _role, _map, tile, already,
-					reach_context, _ground, _leave_alone, _corridor, _doors, _rules) != -INF:
+					reach_context, _ground, _leave_alone, _corridor, _doors, _rules) == INF:
 				return candidate
 		return null
 

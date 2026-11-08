@@ -1228,9 +1228,14 @@ not a strict rule. Those locations are then assigned, so no draw happens for the
 - *Read as* (the orchestrator's, open to correction): the roadblock phase is day 13's. It stops once
   every route tile has a roadblock within 1,024px along her paths, the measure day 13's task searches
   with, or once no section still offered would bring one within 1,024px of a route tile that has
-  none. Shown the count full coverage gave, the player called it good and said only a playtest can
-  tell (inbox #1185), so where full coverage cannot be reached the count stops rather than running
-  on. On days 7 to 12 a roadblock is an ordinary event of the route-adjacent bag.
+  none, or once 25 stand. Shown the count full coverage gave, 15 to 25, the player called it good
+  and said only a playtest can tell (inbox #1185), so where full coverage cannot be reached the count
+  stops rather than running on, and 25, the top of that count, is the cap. On days 7 to 12 a
+  roadblock is an ordinary event of the route-adjacent bag.
+- *Read as* (the orchestrator's, open to correction): the spacing between two of a row
+  (`EVENT_SPACING_SAME`, 256px) is one of the rules that make events invalid ("what your current
+  rules accomplish. the same applies still", inbox #1185). So once a roadblock is placed, no section
+  whose roadblock would stand within 256px of it is offered one, and the bias ranks the rest.
 - `RoadblockPhase` places them, in the sections of the day's locations (`DayLocations`). Every
   route-adjacent section whose roadblock today's rules leave valid
   (`EventScheduler.JudgedRoadblockGround`) is in each draw, weighted by the bias; the stop is asked
@@ -1319,8 +1324,9 @@ Each item quotes the code on this branch.
    ordinary events of the route-adjacent bag. It does so on day 13 too, after the roadblock phase;
    the task's close-by search takes any roadblock the day placed.
 6. **The roadblock phase judges a section's roadblock with today's placement rules**
-   (`JudgedRoadblockGround.offer()` asks `_judge()`), which is the invalidation item 4 describes,
-   asked of the whole day rather than of a street's other draws.
+   (`JudgedRoadblockGround.offer()` asks `_judge()`, and takes only a tile with room all round), which
+   is the invalidation item 4 describes, asked of the whole day rather than of a street's other
+   draws.
 7. **Most events are placed at dawn, not drawn during the walk.**
    - The fill places its rows in the morning.
    - During the walk, only these are sited ahead of her:
