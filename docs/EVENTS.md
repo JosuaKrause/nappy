@@ -1204,6 +1204,9 @@ on later days (inbox #1185).
 route-adjacent locations and places roadblocks there, evenly spaced out. Those locations are then
 assigned, so no draw happens for them during the walk (inbox #1185).
 
+**Every other location is drawn during the walk.** As she walks, the placeholders are filled from
+the bag (gray-dolphin #1173). The roadblock phase is the only assignment made at dawn (inbox #1185).
+
 **Day 13's task** looks for a roadblock close by along her paths. Close by is 576px, then 896px,
 then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
 - **Only if none is close by**, it swaps one off-screen route-adjacent event for a roadblock, in
@@ -1213,8 +1216,8 @@ then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
 **The order:**
 1. The routes are established.
 2. The roadblock phase assigns roadblocks to route-adjacent locations, evenly spaced.
-3. Every other location is drawn from its view's bag, the side across a drawn event from that
-   event's subset bag.
+3. During the walk, every other location is drawn from its view's bag, the side across a drawn
+   event from that event's subset bag.
 4. Day 13's task searches close by, and swaps only if it finds nothing.
 
 ### Where the code differs from the design
@@ -1298,18 +1301,14 @@ The player's words do not yet settle these.
 2. What each view's bag holds, and in what proportions, day by day.
 3. Which events take one side of a street, and what each one's subset bag for the side across
    holds.
-4. Whether a location's draw happens at dawn or during the walk. The design says that no draw
-   happens during the walk for the roadblocks' locations.
-5. What "evenly spaced" measures for the roadblock phase, and how many roadblocks it places.
-6. Where ambient rows, scars, masts, seals, the region wall, its doors and the closures stand in the
+4. What "evenly spaced" measures for the roadblock phase, and how many roadblocks it places.
+5. Where ambient rows, scars, masts, seals, the region wall, its doors and the closures stand in the
    order.
-7. What a roadblock does in the place of a route-adjacent event standing on a sidewalk. The
+6. What a roadblock does in the place of a route-adjacent event standing on a sidewalk. The
    roadblock's own ground is the carriageway (`def.placement = [GameEnums.TileType.ROAD,
    GameEnums.TileType.CROSSING]`). On a sidewalk tile, `EventInstance.setup()` centres a still body
    on the pavement band (`start = _centred_on_the_pavement_band(_map, start)`), and its band lies
    across the street (`_spread_is_vertical()`).
-8. Whether the dawn regular pass draws from a marble bag rather than a weighted roll: open with the
-   player.
 
 ## Scheduling
 
