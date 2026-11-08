@@ -27,7 +27,7 @@ view and its draw (`ViewBag`, `LocationDraw`, asking `LocationGround`), the road
 - the scene recipes assigning locations;
 - the fixed parts' phases at dawn or at the start of the run (the region wall, its doors, the
   closures, the seals, the masts, the ambient rows), a mast's location known from the run's start;
-- every other location drawn during the walk. **Read as:** a rigged marble, such as the day-6 man
+- every other location drawn during the walk. **Read as** (the orchestrator's reading): a rigged marble, such as the day-6 man
   shouting due within the next two events after the mark (olive-koala 2), lands on the next
   location she comes to on her way, so a player who turns at a junction still meets him; today a
   body sited ahead of her is never moved, and she can turn away from it.
