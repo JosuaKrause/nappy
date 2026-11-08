@@ -1217,8 +1217,9 @@ not a strict rule. Those locations are then assigned, so no draw happens for the
 
 **The city's fixed parts have phases of their own**, at dawn or at the start of the run: the
 region wall, its doors, the closures, the seals, the masts and the ambient rows (inbox #1185).
-- A mast's location is known from the start of the run. On a day without masts it draws as if it
-  were empty. On a day with one, the mast stands on the tiles inside its location where it fits.
+- A mast's location is known from the start of the run. On a day without masts, nothing has been
+  chosen for it yet, so it draws from its view's bag like any other location; it does not take the
+  "empty" event. On a day with one, the mast stands on the tiles inside its location where it fits.
 - A wall makes its location unavailable throughout.
 - Scars are cosmetic, not events. What the code calls a scar, the burnt shell a fire leaves, is a
   regular event under the design (inbox #1185).
