@@ -402,12 +402,22 @@ func _test_every_badge_is_listed_soonest_arrival_first(t) -> void:
 	t.check(names == ["v0", "v1", "v2", "v3", "v4"], "all five, the soonest to arrive first (%s)" % str(names))
 
 func _test_a_subject_no_longer_handed_over_is_forgotten(t) -> void:
+	# What forgetting shows: a badge up for a closing truck is gone with it, and the same truck handed
+	# over again is a fresh thing with no measured approach, so it is not badged on its first frame back.
 	var model := BadgeModel.new()
-	var truck := _vehicle(7, Vector2(800.0, 0.0))
-	_step(model, [truck])
-	t.check(model.watch.has(7), "a handed-over subject has state")
+	var truck := _vehicle(7, Vector2(2000.0, 0.0))
+	truck.logged_name = "fire_truck"
+	var frames := 0
+	while not _up(model, "fire_truck") and frames < 2000:
+		truck.position.x -= truck.speed * STEP
+		_step(model, [truck])
+		frames += 1
+	t.check(_up(model, "fire_truck"), "a truck closing from off screen is badged")
 	_step(model, [])
-	t.check(not model.watch.has(7), "one no longer handed over is pruned")
+	t.check(not _up(model, "fire_truck"), "one no longer handed over loses its badge")
+	truck.position.x -= truck.speed * STEP
+	_step(model, [truck])
+	t.check(not _up(model, "fire_truck"), "handed over again it is a fresh thing, not badged on its first frame")
 
 func _test_what_is_worth_an_arrow(t) -> void:
 	var walk := Tuning.WALK_SPEED

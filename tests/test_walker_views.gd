@@ -208,9 +208,15 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 # ---------------------------------------------------------------------- gait ---
 # `WalkerLook.advance()`/`WalkerLook.gait_frame()`, the walker's own two-frame stride —
 # `Stroller._walk_phase`/`_draw_mother()`'s pattern, extended to the crowd (M108, "every living
-# thing that moves has a stride"). `sin(WalkerLook.gait_phase * 2.0)` is positive on the two quarter-
-# turns `(0, PI/2)` and `(PI, 3*PI/2)` of a full `TAU` cycle and negative on the other two, so a
-# fixed phase is enough to pin the frame without going through `WalkerLook.advance()`'s own rate.
+# thing that moves has a stride"). The stride phase is internal: it is reached by walking the look
+# a distance (`advance()` adds `distance * GAIT_RATE`) and read as the frame drawn. The frame is
+# feet passing on the two quarter-turns `(0, PI/2)` and `(PI, 3*PI/2)` of a full `TAU` cycle and the
+# rest pose on the other two.
+
+## Restarts the look and walks it the distance whose stride phase is `phase`, in one tick.
+func _stride_to(look: WalkerLook, phase: float) -> void:
+	look.restart()
+	look.advance(Vector2.RIGHT * phase / WalkerLook.GAIT_RATE, 1.0)
 
 ## A placed walker has a nonzero `LaneMover.velocity()` — the same "moving by default" shape
 ## `_test_walker_headings_select_the_expected_view()` relies on. The stride is advanced with an
@@ -221,14 +227,23 @@ func _test_advancing_the_gait_tracks_distance_not_time(t) -> void:
 	if agent == null:
 		return
 	var look := ViewRig.walker_look(agent)
-	look.gait_phase = 0.0
-	look.advance(agent.velocity(), 1.0 / 60.0)
-	t.check(look.gait_phase > 0.0, "a moving walker's stride phase actually advances")
+	look.restart()
+	look.advance(Vector2.RIGHT * (PI / 4.0) / WalkerLook.GAIT_RATE, 1.0)
+	t.check(look.gait_frame() == 1, "a walker that covered ground has moved on in its stride")
 
-	_stop(agent)
-	look.gait_phase = 0.0
-	look.advance(agent.velocity(), 1.0 / 60.0)
-	t.check(look.gait_phase == 0.0,
+	# The same ground in two ticks of different lengths is the same stride: distance, not time.
+	var other := WalkerLook.new(agent)
+	other.restart()
+	var step := Vector2.RIGHT * (PI / 4.0) / WalkerLook.GAIT_RATE
+	other.advance(step, 0.25)
+	other.advance(step, 0.75)
+	_stride_to(look, PI / 4.0)
+	t.check(other.gait_frame() == look.gait_frame(),
+			"the same ground in two ticks lands where one tick of it does")
+
+	_stride_to(look, PI / 4.0)
+	look.advance(Vector2.ZERO, 1.0)
+	t.check(look.gait_frame() == 1,
 			"a walker covering no distance advances no stride at all")
 	agent.free()
 
@@ -237,25 +252,25 @@ func _test_a_moving_walker_alternates_gait_frames(t) -> void:
 	if agent == null:
 		return
 	var look := ViewRig.walker_look(agent)
-	look.gait_phase = 0.0
+	_stride_to(look, 0.0)
 	t.check(look.gait_frame() == 0, "phase zero draws the rest pose")
-	look.gait_phase = PI / 4.0
+	_stride_to(look, PI / 4.0)
 	t.check(look.gait_frame() == 1, "a quarter into the cycle draws feet passing")
-	look.gait_phase = 3.0 * PI / 4.0
+	_stride_to(look, 3.0 * PI / 4.0)
 	t.check(look.gait_frame() == 0, "past the half turn it returns to the rest pose")
-	look.gait_phase = 5.0 * PI / 4.0
+	_stride_to(look, 5.0 * PI / 4.0)
 	t.check(look.gait_frame() == 1, "the second half of the cycle passes feet again")
 	agent.free()
 
 ## The same give-way/queue/halt zeroing `_test_a_stopped_walker_keeps_its_view()` already reaches
 ## the view hold with also reaches the gait: `velocity()` is `heading() * _speed * WalkerStrategy._yield_factor()`,
-## so a walker yielding reads zero regardless of what `WalkerLook.gait_phase` its stride was at.
+## so a walker yielding reads zero regardless of the stride it was at.
 func _test_a_stopped_walker_holds_gait_frame_a(t) -> void:
 	var agent := _walker(t, Vector2.RIGHT)
 	if agent == null:
 		return
 	var look := ViewRig.walker_look(agent)
-	look.gait_phase = PI / 4.0
+	_stride_to(look, PI / 4.0)
 	t.check(look.gait_frame() == 1, "moving, this phase draws frame b (sanity check)")
 	_stop(agent)
 	t.check(look.gait_frame() == 0,

@@ -30,10 +30,6 @@ src/events/events_ahead.gd walk_siting
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
-src/city/building_shadows.gd compute
-src/city/poster_art.gd compose
-src/crowd/walker_look.gd gait_phase
-src/ui/badge_model.gd watch
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each
