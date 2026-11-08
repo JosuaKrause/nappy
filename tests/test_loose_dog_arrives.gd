@@ -13,8 +13,8 @@ extends RefCounted
 ## seed 4242, are the streets' and the siting's own, and nothing else of a city is read.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
-## The run's seed: on run seed 4242 a solid stands across the far dog's line, so it leaves its route
-## there and is finished by leaving; on seed 2 the line is clear.
+## The run's seed. Where the far dog runs is chosen clear of the day's bodies (`_on_a_clear_line()`),
+## whatever the seed's draw stands on the arterial.
 const RUN_SEED := 2
 ## The engine's clock for the walks: each physics tick carries `1 / Engine.physics_ticks_per_second
 ## * Engine.time_scale` seconds, so the stretch is sped up and put back after it.
@@ -85,15 +85,40 @@ func _start_the_day(forced: bool) -> void:
 	_rig.velocity = Vector2.ZERO
 
 ## A dog placed as far out behind her (`Vector2.DOWN`, she heads up) as the director ever sites one,
-## 700px, rather than just out of sight.
+## 700px, rather than just out of sight. She stands where the dog's line is clear (`_on_a_clear_line()`),
+## since what is checked is the retiring of a dog she outruns, not one a body turns off its route.
 func _send_from_behind_far() -> EventInstance:
 	var def := EventCatalogue.by_id("loose_dog")
+	_rig.global_position = _on_a_clear_line(_rig.global_position)
 	var her := _rig.global_position
 	var place := her + Vector2.DOWN * 700.0
 	var path := PendingWarning.route_down_her_line(null, place, her, Vector2.DOWN)
 	var made := _events.spawner.spawn(def, path[0], path)
 	made.resume(EventSpawner.age_when_warned(def), 0.0)
 	return made
+
+## The nearest point up the street from `start` with walkable ground under the dog's whole line and
+## no body the day placed within two tiles of it: the day's own draw decides what stands on any one
+## stretch of the arterial, so the stretch is chosen rather than the draw. `start` itself where no
+## such point is found within a few blocks.
+func _on_a_clear_line(start: Vector2) -> Vector2:
+	var bodies: Array[Vector2] = []
+	for plan in _events.plans():
+		if plan.is_placed() and plan.obstructs():
+			bodies.append(plan.position)
+	for step in 64:
+		var her := start + Vector2.UP * Tuning.TILE_SIZE * step
+		var clear := true
+		var along := 0.0
+		while clear and along <= 800.0:
+			var at := her + Vector2.DOWN * along
+			clear = _map.is_walkable(_map.world_to_tile(at))
+			for body in bodies:
+				clear = clear and body.distance_to(at) > Tuning.TILE_SIZE * 2.0
+			along += Tuning.TILE_SIZE * 0.5
+		if clear:
+			return her
+	return start
 
 ## Lets real physics ticks pass, one a frame, with her walking down the street by hand (the rig's
 ## own physics is off) until the director sends a loose dog down her line, ahead of her; then she
