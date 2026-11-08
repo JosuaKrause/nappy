@@ -4,6 +4,11 @@ extends RefCounted
 ## behind the title, where `Stroller.stand_aside()` has taken her out of every way the world can
 ## touch her), and every world's events are handed the cover of the on-screen controls (the day's
 ## city, the escape's city), so the joystick scheme's covered corners are out of sight in each.
+##
+## **Combined by composition, for this reason:** the guarantee is what `main` hands the worlds it builds
+## (the crowd her, the events the controls' cover), and `main` is the composition root that does the
+## handing: the crowd, the events and the screens are the real ones so that what the crowd does with
+## her can be read off the crowd itself.
 
 ## **Booted and driven as a player drives it** (`tests/booted_main.gd`): the title's button pressed
 ## through the viewport, real frames let pass behind it, and the booted parts found in the tree. Each
@@ -16,6 +21,7 @@ extends RefCounted
 ## from the doorstep to tell the two apart, since the patch stands on her at the doorstep either way.
 
 const Boot := preload("res://tests/booted_main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 const Seat := preload("res://tests/seat.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_boot_handing_scratch.json"
@@ -44,7 +50,7 @@ class Played:
 func _boot(t, run_for_it: Callable, words: Array) -> Played:
 	var played := Played.new()
 	played.seat = Seat.new(t, run_for_it)
-	played.booted = await played.seat.boot(t, _SCRATCH_SAVE, words, null, true)
+	played.booted = await played.seat.boot(t, _SCRATCH_SAVE, words, null, true, MapCache.source())
 	return played
 
 func _test_the_crowd_does_not_meet_her_behind_the_title(t) -> void:
