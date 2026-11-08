@@ -5,7 +5,15 @@ extends RefCounted
 ## so it is testable against a real `City` without booting a run — `for_spawn_target()` takes its
 ## target as a plain string rather than reading `--spawn` off a command line this suite does not
 ## control, the same seam `first_event_position()` already used for its own id before the move.
+##
+## **Combined, for this reason:** `DevRig`'s `--spawn` targets are promises about the *real placed day*: a
+## target that lands on a walkable tile near a placed event, the first closure, the resistance mark
+## or a checkpoint hut. Each answer is read off the city's map, its placed events, its closures and
+## the director's mark at once, so the day the rig stands in is a real generated city, planned
+## the way `main` plans it, from the cache of generated maps (`tests/city_map_cache.gd`); a
+## fake that answered for those would answer for itself.
 
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 ## Step 1, "A chalk mark", is the pickup `ResistanceSteps.for_day()` selects on a fresh run from
@@ -48,7 +56,7 @@ func _rng(stream: String) -> RandomNumberGenerator:
 func _build_day(t) -> void:
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
-	_city.build(CityGenerator.generate(SEED))
+	_city.build(MapCache.of(SEED))
 	_city.events.stream_radius = INF
 
 	var state := CityState.new()
@@ -201,7 +209,7 @@ func _test_no_door_before_the_region_wall_starts(t) -> void:
 ## `facing` axis — the approach side a `--walk` in that same direction closes toward.
 func _test_door_target_lands_on_the_approach_side_of_a_hut(t) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY
-	var map := CityGenerator.generate(_CHECKPOINT_SEED)
+	var map := MapCache.of(_CHECKPOINT_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(map)

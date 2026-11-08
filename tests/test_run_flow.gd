@@ -1,8 +1,14 @@
 extends RefCounted
 ## The run's flow through its screens (`RunFlow`): what each screen's continue leads to, and that a
 ## continue with no screen up leads nowhere.
+##
+## **Combined by composition, for this reason:** what `RunFlow` guarantees is where each screen's
+## continue *leads*, and that is only visible in the real `main`, which owns the screens, the day and
+## the escape that the continue hands over to; a stand-in for those would answer for itself what the
+## suite asks of them. Each boot is on a cached generated city (`tests/city_map_cache.gd`).
 
 const Boot := preload("res://tests/booted_main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 const UI := preload("res://tests/ui_screens.gd")
 const SEED := 4242
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
@@ -309,7 +315,7 @@ func _boot(t, args: Array) -> Boot.Booted:
 	_run = RunState.new()
 	_home = Boot.home_playing(t, _run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words),
-			func(main: Node) -> void: main.use_sitting_home(_home))
+			func(main: Node) -> void: main.use_sitting_home(_home), false, MapCache.source())
 	t.get_tree().paused = true
 	return booted
 

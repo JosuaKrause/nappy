@@ -27,8 +27,14 @@ extends RefCounted
 ## of the cordon it reads off the world (`tests/cordon_in_the_world.gd`): the officers, and the
 ## park shut or not. That is also the only case in which the game clears the cordon when the lost
 ## day is played again, which is what it checks.
+##
+## **Combined by composition, for this reason:** the softlock it guards against is a chain across
+## modules (the cordon closing, the baby asleep, the day ending, the summary, the next dawn), so the
+## whole real `main` is played through it on a sweep of seeds; each boot is on a cached generated
+## city (`tests/city_map_cache.gd`).
 
 const Boot := preload("res://tests/booted_main.gd")
+const MapCache := preload("res://tests/city_map_cache.gd")
 const CordonInTheWorld := preload("res://tests/cordon_in_the_world.gd")
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
 const SEEDS: Array[int] = [4242, 11, 13]
@@ -79,7 +85,7 @@ func _day_twelve(t, seed_value: int) -> Node2D:
 	# process's own command line says: any dev flag would refuse the save the resume reads.
 	_booted = await Boot.boot(t, _SCRATCH_PATH,
 			RunConfig.parse(PackedStringArray(["--no-telemetry"]), "", false, false, {}, false),
-			func(unbooted: Node) -> void: unbooted.use_sitting_home(_home))
+			func(unbooted: Node) -> void: unbooted.use_sitting_home(_home), false, MapCache.source())
 	var main := _booted.main
 	await Boot.press_title(t, main, "Right")
 	t.check(Boot.city(main).map.seed_used == seed_value, "seed %d is the city under test (%d)"
