@@ -13,17 +13,24 @@ refactors come first", "everything else would be meaningless" (inbox #1185).
 **Read as:** the design is `docs/EVENTS.md`'s "The three views and the placement order", cited line
 by line; its numbered list says where the code differs. Nothing in that section is reopened here.
 
-**Build:** what is left of the design, on the locations (`DayLocations`, `StreetLocations`,
-`Location`, each street's view from `Corridor.view_of()`), the roadblock phase (`RoadblockPhase`) and day 13's
-section swap that are built:
-- a bag per view holding every event possible in it, each as many times as its weight, empty
-  included; a location's event is what its bag draws, with the events the street's other draws make
-  invalid left out (today's placement rules, `_judge()`'s route-opening checks among them, become
-  that invalidation, the roadblock phase's own use of `_judge()` included); the fill's day-13
-  roadblocks go with the fill;
+**Build:** what is left of the design, on the locations of every day (`DayLocations`,
+`StreetLocations`, `Location`, each location's view from `Corridor.view_of_ground()`), the bag per
+view and its draw (`ViewBag`, `LocationDraw`, asking `LocationGround`), the roadblock phase
+(`RoadblockPhase`) and day 13's section swap that are built:
+- the events the street's other draws make invalid left out of a location's draw: today's placement
+  rules become that invalidation, in place of `JudgedLocationGround`, which still asks `_judge()`
+  whether a candidate fits (the roadblock phase's own use of `_judge()` included), and
+  `DayRepairs` goes with them;
+- the escape on the same draw, one draw per street and the rest of the street empty once any
+  location holds an event (inbox #1185's board answer), `_fill_the_walk_from_the_bag`, `KeptGround`
+  and the escape's `Rules` going with it;
+- the scene recipes assigning locations;
 - the fixed parts' phases at dawn or at the start of the run (the region wall, its doors, the
   closures, the seals, the masts, the ambient rows), a mast's location known from the run's start;
-- every other location drawn during the walk.
+- every other location drawn during the walk. **Read as:** a rigged marble, such as the day-6 man
+  shouting due within the next two events after the mark (olive-koala 2), lands on the next
+  location she comes to on her way, so a player who turns at a junction still meets him; today a
+  body sited ahead of her is never moved, and she can turn away from it.
 
 It replaces, and deletes: the roll and judgement of `EventScheduler._place_one()`, `_best_of()`,
 `_judge()` as a placement step and `_copies_of()`; and whatever only they used.
