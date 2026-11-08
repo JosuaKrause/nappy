@@ -270,14 +270,15 @@ static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]
 		errors.append("closure.day: explicit setup.day is required for closure eligibility")
 		return
 	var day := int(setup.day)
-	if pins.size() > ClosurePlanner.closures_wanted(DaySpec.for_day(day)):
+	var spec := DaySpec.for_day(day)
+	if pins.size() > ClosurePlanner.closures_wanted(spec):
 		errors.append("closure.count: exceeds the ordinary day's closure budget")
 		return
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
 	map.repaint(state)
 	var tree := RouteTree.for_day(map, day)
-	var regions := RegionPlanner.plan_day(map, day, tree)
+	var regions := RegionPlanner.plan_day(map, spec, tree)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = map.seed_used
 	var home := ClosurePlanner.home_street(map)

@@ -801,7 +801,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 		for day in [1, 5, 9, 13]:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
-			var region_plan := RegionPlanner.plan_day(map, day, tree)
+			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.seed_used, day])
 			var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),

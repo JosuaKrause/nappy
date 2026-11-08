@@ -109,7 +109,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var region_plan: RegionPlanner.RegionPlan = \
 			world.city.streets().region_plan() if world.city else null
 	if not region_plan:
-		region_plan = RegionPlanner.plan_day(city_map, day, tree)
+		region_plan = RegionPlanner.plan_day(city_map, spec, tree)
 
 	# Held ground, before `EventScheduler.build_day` rolls a single candidate — see
 	# `CityMap.held_segments`. Closures, the region's own wall and door segments, and the

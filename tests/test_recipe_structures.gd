@@ -81,7 +81,7 @@ func run(t) -> void:
 ## through (`RegionPlanner.stand_door()`).
 func _test_an_authored_door_stands_as_the_days(t, runtime: SceneRecipeRuntime, city: City,
 		player: Stroller, baby: Baby, own_run: RunState, data: Dictionary) -> void:
-	var days := RegionPlanner.plan_day(city.map, own_run.header.day, city.streets().route_tree())
+	var days := RegionPlanner.plan_day(city.map, DaySpec.for_day(own_run.header.day), city.streets().route_tree())
 	t.check(not days.doors.is_empty(), "the day has a street door to author")
 	if days.doors.is_empty():
 		return

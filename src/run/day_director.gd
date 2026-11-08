@@ -162,7 +162,8 @@ func start_authored_day(the_spec: DaySpec, scene: AuthoredScene) -> Array[String
 	calendar.begin_day()
 	EventBus.day_started.emit(today)
 	spend.city_state.begin_day(city.map.block_plans, today)
-	city.start_recipe_day(spend.city_state, today, calendar.day_rng(today, "closures"))
+	city.start_recipe_day(spend.city_state, today, calendar.day_rng(today, "closures"),
+			the_spec)
 	city.set_act(calendar.current_act())
 	day.start(spec.length)
 	# The scene's events run under the very spec the clock and the HUD were just handed.

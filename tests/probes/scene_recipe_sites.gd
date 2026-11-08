@@ -17,7 +17,7 @@ func run(_t) -> void:
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
-		var regions := RegionPlanner.plan_day(map, day, tree)
+		var regions := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 		var corridor := Corridor.of(tree)
 		var doors := PackedVector2Array()
 		var calm := CalmAreas.of(map)
