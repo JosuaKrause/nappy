@@ -29,7 +29,6 @@ src/events/views/event_look.gd drawn_rect_now
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
-src/city/building_shadows.gd compute
 src/city/poster_art.gd compose
 src/main.gd configure
 src/run/day_director.gd facts
