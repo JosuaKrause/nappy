@@ -354,27 +354,21 @@ class Planned extends RefCounted:
 	func is_permanent() -> bool:
 		return permanent
 
+	## **Whether this plan is one of the city's fixed parts that the day's events are not**: a scar
+	## the run left (`is_permanent()`, the burnt shell a fire leaves) or a loudspeaker mast
+	## (`mast_id`), each of which the placement design gives a phase of its own (inbox #1185). Day 13's
+	## swap never takes the section of one (`ResistanceDirector._place_the_roadblock_near()`); the
+	## region wall's and the doors' bodies stand on streets no section of which is open at all.
+	func is_a_fixed_part() -> bool:
+		return permanent or mast_id != ""
+
 	## Whether this plan stands at one point rather than moving along a route (`path`).
 	func stands_still() -> bool:
 		return path.size() < 2
 
-	## **Whether day 13's task may put its roadblock in this plan's place** (inbox #1185): one of the
-	## day's own events, placed and unspent, standing still, blocking or not, the seals among them,
-	## in the world or not. Never the region wall's or a door's bodies, which are the boundary rather
-	## than the day's events, nor a scar (`is_permanent()`), which is the run's history, nor one in the
-	## world that has noticed her (`EventInstance.has_noticed_her()`), whose warning is on her. Where
-	## it stands, and whether she can see it, is the asker's question
-	## (`ResistanceDirector._places_to_swap()`).
-	func may_be_replaced() -> bool:
-		return is_placed() and not is_spent() and stands_still() and not is_door() \
-				and not is_in_the_wall() and not is_permanent() and not _has_noticed_her()
-
-	## Whether this plan's instance is in the world and has noticed her (`may_be_replaced()`).
-	func _has_noticed_her() -> bool:
-		return live != null and is_instance_valid(live) and live.has_noticed_her()
-
-	## The row this plan places: what its pictures are, asked of her view before it is taken away
-	## (`ResistanceDirector._places_to_swap()`).
+	## The row this plan places: what its pictures are, asked of her view before day 13's task takes
+	## its section (`ResistanceDirector._place_the_roadblock_near()`), and whether it spans the street
+	## (`DayLocations.assign()`).
 	func row() -> EventDef:
 		return def
 
@@ -800,7 +794,9 @@ static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityM
 	def = def.for_day(day)
 	var judged := JudgedRoadblockGround.new(def, day, map, events, ground, leave_alone, corridor,
 			doors, rules)
-	var phase := RoadblockPhase.new(DayLocations.lay_out(map, corridor), judged)
+	var locations := DayLocations.lay_out(map, corridor)
+	events.use_locations(locations)
+	var phase := RoadblockPhase.new(locations, judged)
 	var placed: Array[String] = []
 	for plan in phase.place(_stream(base, RoadblockPhase.SALT)):
 		placed.append(RunTrace.tile(map.world_to_tile(plan.placed_at())))
@@ -808,6 +804,37 @@ static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityM
 			"none close by, the phase done")
 			% [placed.size(), def.id, " ".join(placed) if not placed.is_empty() else "none",
 			phase.left_uncovered()])
+
+## **Whether `section` is on the main road**, where nothing that closes a street stands outside the
+## escape (inbox #1186): neither a roadblock the phase places nor one day 13's task swaps in.
+static func _is_on_the_main_road(map: CityMap, section: Location) -> bool:
+	var segment := section.segment()
+	return map.is_main_road(not segment.horizontal, segment.a.x)
+
+## **`def`, an event that spans the street, standing across `section`**: on the carriageway tile of
+## the section nearest its middle, built as any placement is (`_build_placement()`), or null where the
+## section is on the main road (`_is_on_the_main_road()`) or has no carriageway. Nothing is judged:
+## day 13's task replaces the section's whole content with it, a route-adjacent section being valid
+## ground under the route-adjacent rules already (inbox #1185); what the section held is spent by
+## the caller (`EventStreaming.swap_section()`).
+static func across_the_section(def: EventDef, map: CityMap, section: Location,
+		rng: RandomNumberGenerator) -> Planned:
+	if _is_on_the_main_road(map, section):
+		return null
+	var tiles := section.tiles()
+	var middle := map.world_to_tile(section.centre())
+	var best := Vector2i(-1, -1)
+	for y in range(tiles.position.y, tiles.end.y):
+		for x in range(tiles.position.x, tiles.end.x):
+			var tile := Vector2i(x, y)
+			if map.tile_at(tile) != GameEnums.TileType.ROAD:
+				continue
+			if best == Vector2i(-1, -1) \
+					or (tile - middle).length_squared() < (best - middle).length_squared():
+				best = tile
+	if best == Vector2i(-1, -1):
+		return null
+	return _build_placement(def, map, best, rng)
 
 ## **The day's ground as the roadblock phase asks it** (`RoadblockGround`): the route tiles, a
 ## section's roadblock judged by today's placement rules, and close by along her paths.
@@ -880,8 +907,7 @@ class JudgedRoadblockGround extends RoadblockGround:
 
 	## Overrides RoadblockGround.offer.
 	func offer(section: Location) -> EventScheduler.Planned:
-		var segment := section.segment()
-		if _map.is_main_road(not segment.horizontal, segment.a.x):
+		if EventScheduler._is_on_the_main_road(_map, section):
 			return null
 		var tiles := section.tiles()
 		var middle := _map.world_to_tile(section.centre())
@@ -966,12 +992,6 @@ static func _count_what_is_left_uncovered(def: EventDef, map: CityMap, events: D
 ## (`_place_the_roadblocks()`).
 const TASK_ROW_CLOSE_BY := (Tuning.BLOCK_SIZE * 2.5 + Tuning.STREET_WIDTH * 2.0) * Tuning.TILE_SIZE
 
-## How far from the event it replaces, along the same street, day 13's swapped-in roadblock may
-## stand (`WalkSiting.in_place_of()`): three tiles, from a sidewalk's outer tile across it to the far
-## lane of the carriageway beside it (`Tuning.SIDEWALK_WIDTH` 2, a two-tile road), so an event on
-## either sidewalk has the street's carriageway in reach.
-const SWAP_SPREAD_TILES := 3
-
 ## The walkable ground left open within a tile and a half of `plan`'s body: where she touches it
 ## from.
 static func _touched_from(map: CityMap, shut: Dictionary, plan: Planned) -> Array[Vector2i]:
@@ -986,16 +1006,6 @@ static func _touched_from(map: CityMap, shut: Dictionary, plan: Planned) -> Arra
 					and map.tile_to_world(tile).distance_to(plan.placed_at()) <= reach:
 				found.append(tile)
 	return found
-
-## **Whether `tile` is on a street beside the day's routes** (`Corridor.is_beside_the_routes()`)
-## and not the main road, which nothing that closes a street stands on outside the escape
-## (inbox #1186). Where dawn stands day 13's roadblocks, and what the task's swap may replace
-## (`ResistanceDirector._place_the_roadblock_near()`).
-static func stands_beside_the_routes(map: CityMap, corridor: Corridor, tile: Vector2i) -> bool:
-	if not corridor.is_beside_the_routes(tile):
-		return false
-	var segment := map.network.segment_containing(tile)
-	return not map.is_main_road(not segment.horizontal, segment.a.x)
 
 ## **From the gatehouse day on, the fill keeps only a share of the walls it placed** —
 ## `DaySpec.wall_row_share` (`DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE` from the gatehouse day),
@@ -2506,81 +2516,6 @@ class WalkSiting extends RefCounted:
 	## meant to be watching. Nothing here rolls, so the day is the same day whether or not this ran.
 	func prepare(def: EventDef) -> void:
 		_ground_as_a_set(def)
-
-	## Whether `tile` is on a street beside the day's routes and off the main road
-	## (`EventScheduler.stands_beside_the_routes()`), against this siting's corridor.
-	func stands_beside_the_routes(tile: Vector2i) -> bool:
-		return EventScheduler.stands_beside_the_routes(_map, _corridor, tile)
-
-	## **`def` in place of `old`**, for day 13's task when no roadblock the day placed is close by:
-	## built where `old` stands, or, where that tile is not ground `def` stands on (a roadblock stands
-	## on the carriageway and most of the day's events on a sidewalk), on the nearest tile of its own
-	## ground on `old`'s street within `SWAP_SPREAD_TILES` of it, nearest first — and **checked before
-	## it is accepted** under `_judge()`'s rules, which dawn's roadblock phase asks too
-	## (`JudgedRoadblockGround.offer()`), or null, and no swap is made:
-	##
-	## - its own ground for its role on that tile (`_ground_for()`): a tile the row may stand on,
-	##   off every tile a route runs along (a `WALL`'s ground), not on a held street, a closed one,
-	##   the home block or, where the walk holds them, the home's streets (`holds_the_home_streets`);
-	## - out of her view, where `in_view` (the row and a world point) says so. It stands on `old`'s
-	##   own street, so it is beside the routes and off the main road where `old` is
-	##   (`stands_beside_the_routes()`, which the asker asks of `old`);
-	## - every rule `_judge()` asks against the walk's other plans (`WalkEvents.everything_but()`,
-	##   `old` left out, since it is what goes): clear of the unused calm and of the ground round the
-	##   doors, the route's junctions and sidewalks left open, and **room all round**, nothing within
-	##   `EVENT_SPACING_ANY` and no other of the row within `EVENT_SPACING_SAME`. A swap takes a tile
-	##   only with room all round, as dawn's roadblock phase does (`JudgedRoadblockGround.offer()`).
-	##
-	## The two rules a spec adds (`Rules`: the walk kept open past everything on it, one waiting
-	## guard's notice at a time) are the escape's and no day's, and a siting is a day's.
-	## Whoever asks spends `old` and puts this in its place (`EventStreaming.swap()`).
-	func in_place_of(def: EventDef, old: Planned, rng: RandomNumberGenerator,
-			in_view := Callable()) -> Planned:
-		def = def.for_day(_day)
-		var role := EventScheduler._role_for(def, _day)
-		var own := {}
-		for tile in EventScheduler._ground_for(def, _map, _ground, _corridor, role,
-				EventScheduler.NO_SITE, holds_the_home_streets):
-			own[tile] = true
-		var already := _walk.everything_but(old)
-		for tile in _tiles_in_place_of(old):
-			if not own.has(tile):
-				continue
-			if in_view.is_valid() and in_view.call(def, _map.tile_to_world(tile)):
-				continue
-			var candidate := EventScheduler._build_placement(def, _map, tile, rng)
-			if not candidate:
-				continue
-			var room := EventScheduler._judge(candidate, role, _map, tile, already, already,
-					_ground, _leave_alone, _corridor, _walk.doors())
-			if room == INF:
-				return candidate
-		return null
-
-	## The tiles a row swapped in for `old` is tried on (`in_place_of()`), nearest `old`'s own first:
-	## its own tile, then every tile of the same street (`StreetNetwork.segment_containing()`) within
-	## `SWAP_SPREAD_TILES` of it either way, in the map's order among equals. Its own tile alone for
-	## one standing in a junction, which belongs to no street.
-	func _tiles_in_place_of(old: Planned) -> Array[Vector2i]:
-		var from := _map.world_to_tile(old.placed_at())
-		var tiles: Array[Vector2i] = [from]
-		var street := _map.network.segment_containing(from)
-		if street == null:
-			return tiles
-		var spread := EventScheduler.SWAP_SPREAD_TILES
-		for dy in range(-spread, spread + 1):
-			for dx in range(-spread, spread + 1):
-				var tile := from + Vector2i(dx, dy)
-				if tile != from and _map.in_bounds(tile) \
-						and _map.network.segment_containing(tile) == street:
-					tiles.append(tile)
-		tiles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
-			var da := (a - from).length_squared()
-			var db := (b - from).length_squared()
-			if da != db:
-				return da < db
-			return a.y < b.y or (a.y == b.y and a.x < b.x))
-		return tiles
 
 ## Fills the day's budget, **one stream per attempt**.
 ##

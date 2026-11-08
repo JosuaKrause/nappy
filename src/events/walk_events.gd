@@ -26,19 +26,23 @@ var _plans: Array[EventScheduler.Planned] = []
 var _calm: CalmAreas = null
 var _doors := PackedVector2Array()
 var _reach: DayReach = null
+var _locations: DayLocations = null
 
 # ------------------------------------------------------------------- writes ---
 
 ## Takes `plans` as the walk's whole plan, the very array handed in, planned against `calm` (the
 ## day's calm areas, or none for a walk that is not a day in the city), with today's region doors
-## standing at `doors`, and `reach`, where she can get to from home as it was planned (none for a
-## walk that is not in the city).
+## standing at `doors`, `reach`, where she can get to from home as it was planned (none for a
+## walk that is not in the city), and `locations`, the day's locations as dawn laid them out (none
+## on a day that laid none out).
 func take(plans: Array[EventScheduler.Planned], calm: CalmAreas = null,
-		doors := PackedVector2Array(), reach: DayReach = null) -> void:
+		doors := PackedVector2Array(), reach: DayReach = null,
+		locations: DayLocations = null) -> void:
 	_plans = plans
 	_calm = calm
 	_doors = doors
 	_reach = reach
+	_locations = locations
 
 ## Adds one plan placed while she walks, after every plan already in the walk.
 func add(plan: EventScheduler.Planned) -> void:
@@ -50,6 +54,7 @@ func clear() -> void:
 	_calm = null
 	_doors = PackedVector2Array()
 	_reach = null
+	_locations = null
 
 # ---------------------------------------------------------------- questions ---
 
@@ -96,3 +101,19 @@ func calm() -> CalmAreas:
 ## not in the city (the building) and before a walk starts.
 func reach() -> DayReach:
 	return _reach
+
+## The day's locations as dawn laid them out (`DayLocations`): day 13's, whose route-adjacent
+## sections the task's swap takes from (`ResistanceDirector._place_the_roadblock_near()`); null on a
+## day that laid none out and before a walk starts.
+func locations() -> DayLocations:
+	return _locations
+
+## **The walk's placed, unspent plans standing inside `area`** (world space), by where each was
+## placed: what a section holds, which day 13's swap spends when it puts its roadblock across the
+## section (`EventsAhead.swap_in_a_section()`).
+func placed_within(area: Rect2) -> Array[EventScheduler.Planned]:
+	var found: Array[EventScheduler.Planned] = []
+	for plan in _plans:
+		if plan.is_placed() and not plan.is_spent() and area.has_point(plan.placed_at()):
+			found.append(plan)
+	return found

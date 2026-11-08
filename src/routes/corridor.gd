@@ -230,24 +230,15 @@ func is_in_a_gap(tile: Vector2i) -> bool:
 	var segment := _network.segment_containing(tile)
 	return segment != null and _gaps.has(segment.key())
 
-## **Whether `tile` is on a street beside the routes**: a street no route runs along (its whole
-## street is off the tree, `depth()` above zero) one of whose two junction boxes a route crosses
-## (`route_junctions()`). Where dawn stands day 13's roadblocks, close to her way and off it
-## (inbox #1185). A tile on no street (a junction's box, a block's interior) is beside nothing.
-func is_beside_the_routes(tile: Vector2i) -> bool:
-	if not _grid:
-		return false
-	var segment := _network.segment_containing(tile)
-	return segment != null and _is_beside_the_routes(segment)
-
 ## **Which of the three views `segment` is in** (`PlacementView.View`, inbox #1185), the one
 ## definition every location of the street is told at dawn (`DayLocations.lay_out()`):
 ##
 ## - **on the route** where a route runs along the street, both its sidewalks — the street's grain,
 ##   which the player's example asks for: a restaurant drawn on one side leaves the side across it a
 ##   subset to draw from (inbox #1185), so the street as a whole is the route's;
-## - **route-adjacent** where it is beside the routes (`is_beside_the_routes()`): off them, one of
-##   its two junctions crossed by a route, a junction a park or alley cut crosses included;
+## - **route-adjacent** where it is beside the routes (`_is_beside_the_routes()`): off them, one of
+##   its two junctions crossed by a route (`route_junctions()`), a junction a park or alley cut
+##   crosses included;
 ## - **off the route** everywhere else, and everywhere for a corridor with no tree.
 ##
 ## *Read as, the orchestrator's and open to correction:* the street grain and the junctions a park or
@@ -261,7 +252,10 @@ func view_of(segment: StreetNetwork.Segment) -> int:
 		return PlacementView.View.ROUTE_ADJACENT
 	return PlacementView.View.OFF_THE_ROUTE
 
-## `is_beside_the_routes()` of a street rather than a tile.
+## **Whether `segment` is beside the routes**: a street no route runs along (its whole street is off
+## the tree, `depth()` above zero) one of whose two junction boxes a route crosses
+## (`route_junctions()`). Where dawn stands day 13's roadblocks and the task's swap takes a section,
+## close to her way and off it (inbox #1185).
 func _is_beside_the_routes(segment: StreetNetwork.Segment) -> bool:
 	if int(_segment_depth.get(segment.key(), DEEP)) == 0:
 		return false
@@ -270,7 +264,7 @@ func _is_beside_the_routes(segment: StreetNetwork.Segment) -> bool:
 			_junction_set[junction] = true
 	return _junction_set.has(segment.a) or _junction_set.has(segment.b)
 
-## `_junctions` as a set, made the first time `is_beside_the_routes()` asks.
+## `_junctions` as a set, made the first time `_is_beside_the_routes()` asks.
 var _junction_set := {}
 
 ## As far off the corridor as this answers. Anything at or past it is simply *elsewhere*.

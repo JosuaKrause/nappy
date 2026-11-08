@@ -88,6 +88,7 @@ func run(t) -> void:
 	_test_the_guard_walks_round_a_building_to_her(t)
 	for seed_value in PLACEMENT_SEEDS:
 		_test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value)
+	_test_with_none_close_by_a_section_is_taken(t)
 
 func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	var city := _build_city(t, SEED)
@@ -847,26 +848,27 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 		return
 	var plans := city.events.plans()
 	# Found: one of the day's own roadblocks, placed and unspent and not the wall's or a door's, is
-	# what the task rides. Swapped: one plan more, it the roadblock, and one of the day's spent.
-	# Neither holds for a roadblock added outside the day's plan, which is no plan at all.
+	# what the task rides. Swapped: one plan more, it the roadblock, across a section whose content,
+	# if it held any, is spent. Neither holds for a roadblock added outside the day's plan, which is
+	# no plan at all.
 	var found := false
 	for index in plans_before:
 		var plan := plans[index]
 		found = found or (plan.is_placed() and not plan.is_spent() and not plan.is_in_the_wall()
 				and not plan.is_door() and plan.instance() == roadblock)
 	var swapped: bool = plans.size() == plans_before + 1 \
-			and plans.back().instance() == roadblock and _spent(city) == spent_before + 1
+			and plans.back().instance() == roadblock and _spent(city) >= spent_before
 	t.check(found or swapped,
-			"seed %d: it is a roadblock the day placed, or one swapped in for a day's event"
+			"seed %d: it is a roadblock the day placed, or one put across a section in place of what it held"
 			% seed_value)
 	var away := roadblock.global_position.distance_to(her)
-	# She touches it from ground her paths reach within the widest ring, a tile and a half from its
-	# body at most.
+	# A found one she touches from ground her paths reach within the widest ring, a tile and a half
+	# from its body at most; a section the swap takes is the nearest along her paths, however far.
 	var widest: float = ResistanceDirector.ROADBLOCK_WIDER_REACH.back()
 	var touch := EventScheduler.Planned.new(roadblock.def, Vector2.ZERO).blocking_radius() \
 			+ Tuning.TILE_SIZE * 2.0
-	t.check(away <= widest + touch,
-			"seed %d: close by, %.0fpx from where she read the mark (within %.0fpx)"
+	t.check(swapped or away <= widest + touch,
+			"seed %d: a found one is close by, %.0fpx from where she read the mark (within %.0fpx)"
 			% [seed_value, away, widest + touch])
 	if swapped:
 		var box := EventFootprints.footprint_of(roadblock.def)
@@ -888,6 +890,51 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 			calm_reached = true
 			break
 	t.check(calm_reached, "seed %d: and to a calm area" % seed_value)
+	_tear_down(player, director, city)
+
+## **With no roadblock close by, the nearest off-screen route-adjacent section takes one, its whole
+## content replaced** (inbox #1185: "if we don't find one closeby we swap one off screen route
+## adjacent event with a roadblock", "it replaces the content of the section with the roadblock"):
+## every roadblock the day placed is spent before she reads the mark, so the task can only swap. The
+## roadblock stands across a route-adjacent section of the day's locations, out of her view, the
+## section is taken, and nothing the section held stands unspent but the roadblock.
+func _test_with_none_close_by_a_section_is_taken(t) -> void:
+	var city := _build_city(t, SEED)
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director, director.contact_position())
+	var her := player.global_position
+	_view = Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	var map := city.map
+	for plan in city.events.plans():
+		if plan.row_id() == "roadblock" and not plan.is_door() and not plan.is_in_the_wall():
+			plan.spend()
+	var locations := city.events.walk_events().locations()
+	t.check(locations != null, "(swap) the walk has the day's locations")
+	if locations == null:
+		_tear_down(player, director, city)
+		return
+	var open_before := locations.sections_in(PlacementView.View.ROUTE_ADJACENT)
+	if director.current_step():
+		director.contact().complete_now()
+	var roadblock: EventInstance = director.rider()
+	t.check(roadblock != null and roadblock.def.id == "roadblock",
+			"(swap) with none close by, reading the mark still offers a roadblock")
+	if roadblock == null:
+		_tear_down(player, director, city)
+		return
+	var taken: Location = null
+	for section in open_before:
+		if section.is_taken() and section.tiles().has_point(map.world_to_tile(roadblock.body_position())):
+			taken = section
+	t.check(taken != null, "(swap) it stands across a route-adjacent section, which is taken for the day")
+	var box := EventFootprints.footprint_of(roadblock.def)
+	t.check(not _view.intersects(Rect2(roadblock.global_position + box.position, box.size)),
+			"(swap) no part of it is in her view when it is put there")
+	if taken:
+		var left := city.events.walk_events().placed_within(map.tile_rect_to_world(taken.tiles()))
+		t.check(left.size() == 1 and left[0].instance() == roadblock,
+				"(swap) of what the section held nothing stands but the roadblock (%d standing)"
+				% left.size())
 	_tear_down(player, director, city)
 
 ## How many of the day's plans are spent.

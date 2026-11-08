@@ -32,6 +32,8 @@ var _standing_obstructions: Array[EventScheduler.Planned] = []
 var _spoilers := {}
 var _obstructions: Array[EventScheduler.Planned] = []
 var _pursuits := 0
+## The day's locations, where a phase laid them out (`use_locations()`), or null.
+var _locations: DayLocations = null
 
 ## **An empty plan over `calm`**, with `standing` the bodies planned before the catalogue: the day's
 ## seals and the region wall's own bodies, or the escape city's seals on its walk. They stand for the
@@ -141,3 +143,13 @@ func obstructions() -> Array[EventScheduler.Planned]:
 ## Whether any row is a pursuit.
 func has_a_pursuit() -> bool:
 	return _pursuits > 0
+
+## Hands the plan the day's locations (`DayLocations`), as the roadblock phase lays them out, so the
+## walk that starts from this plan is handed them too (`DayPlanner.Plan.locations()`).
+func use_locations(locations: DayLocations) -> void:
+	_locations = locations
+
+## The day's locations, laid out at dawn on day 13 in this step of the placement, or null on a day
+## that laid none out.
+func locations() -> DayLocations:
+	return _locations

@@ -5,7 +5,7 @@ extends RefCounted
 ## ahead of her, down her line or her heading, warned first where they come from off screen
 ## (`place_what_is_owed_ahead()`); the men a stopped vehicle lets out (`let_the_officers_out()`);
 ## the pursuer on foot a torn poster sends (`send_a_pursuer()`); the mast and the task row a
-## resistance task places after dawn (`queue_a_mast()`, `swap_in_a_task_row()`); and the set piece she
+## resistance task places after dawn (`queue_a_mast()`, `swap_in_a_section()`); and the set piece she
 ## never met, lit at dusk (`light_what_she_never_met()`). Nothing here is planned at dawn: the day's
 ## plan is `EventStreaming`'s, and what this places joins it.
 ##
@@ -307,44 +307,27 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	_streaming.add(plan)
 	return plan
 
-## **Day 13's task roadblock in place of `old`**, one of the day's own events, when no roadblock the
-## day placed is close by where she read the mark (`ResistanceDirector._place_the_roadblock_near()`,
-## inbox #1185): `def` built where `old` stands, or on its own ground beside it, out of her view as
-## `in_view` (the row and a world point) answers, and checked under the rules a roadblock is placed
-## under (`EventScheduler.WalkSiting.in_place_of()`); `old` spent, taken out of the world if it is
-## in it, and its body given back, and the roadblock put in the world at once and kept there for the
-## rest of the day (`EventStreaming.swap()`), since the task's contact rides it. Answers its live
-## instance, or null when a rule refuses it there, and nothing is swapped.
-func swap_in_a_task_row(def: EventDef, old: EventScheduler.Planned,
-		rng: RandomNumberGenerator, in_view := Callable()) -> EventInstance:
-	if not def or not old:
+## **Day 13's task roadblock across `section`**, a route-adjacent section of the day's locations,
+## when no roadblock the day placed is close by where she read the mark
+## (`ResistanceDirector._place_the_roadblock_near()`, inbox #1185: "the roadblock replaces the content
+## of that event's whole section"): `def` stood across the section (`EventScheduler.across_the_section()`),
+## the section assigned to it for the day (`DayLocations.assign()`), and whatever the section held
+## (`WalkEvents.placed_within()`) spent and taken out of the world, the roadblock put in the world at
+## once and kept there for the rest of the day (`EventStreaming.swap_section()`), since the task's
+## contact rides it. Answers its live instance, or null where the walk has no locations or the section
+## has no carriageway for it.
+func swap_in_a_section(def: EventDef, section: Location,
+		rng: RandomNumberGenerator) -> EventInstance:
+	var locations := _walk.locations()
+	if not def or not section or not locations:
 		return null
-	var plan := _day_siting().in_place_of(def, old, rng, in_view)
+	var plan := EventScheduler.across_the_section(def.for_day(world.day), world.city_map, section,
+			rng)
 	if not plan:
 		return null
-	return _streaming.swap(old, plan)
-
-## Whether `tile` is on a street beside the day's routes and off the main road
-## (`EventScheduler.stands_beside_the_routes()`): the ground day 13's task may swap a roadblock in on.
-func stands_beside_the_routes(tile: Vector2i) -> bool:
-	return _day_siting().stands_beside_the_routes(tile)
-
-## The day's placement context for a question asked of the day's routes after dawn: the one the day
-## kept for her walk, or one built from what the day was planned against and kept for the rest of
-## the day (`_day_tree` names the day it was built for), so the corridor it builds is paid for once
-## however often it is asked.
-func _day_siting() -> EventScheduler.WalkSiting:
-	if _siting:
-		return _siting
-	if not _day_siting_cache or _day_siting_tree != _day_tree:
-		_day_siting_cache = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree,
-				_walk, EventScheduler.Verdicts.new())
-		_day_siting_cache.holds_the_home_streets = holds_the_home_streets
-		_day_siting_tree = _day_tree
-	return _day_siting_cache
-
-var _day_siting_cache: EventScheduler.WalkSiting
-var _day_siting_tree: RouteTree
+	var olds := _walk.placed_within(world.city_map.tile_rect_to_world(section.tiles()))
+	locations.assign(section, plan)
+	return _streaming.swap_section(olds, plan)
 
 ## Events the day has budgeted for the director to put in front of the player and has not
 ## spent yet.

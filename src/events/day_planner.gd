@@ -48,6 +48,18 @@ class Plan extends RefCounted:
 	func use_calm(calm: CalmAreas) -> void:
 		_calm = calm
 
+	## The day's locations, as dawn laid them out (`DayLocations`), which the walk hands day 13's
+	## task (`WalkEvents.locations()`); null on a day that laid none out.
+	var _locations: DayLocations = null
+
+	## The day's locations. See `_locations`.
+	func locations() -> DayLocations:
+		return _locations
+
+	## Hands the plan the day's locations. See `_locations`.
+	func use_locations(locations: DayLocations) -> void:
+		_locations = locations
+
 ## The world the walk is planned over.
 var world: EventWorld
 ## The ground the escape's rows are offered on, kept for as long as this planner replans the same
@@ -181,9 +193,10 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var guarded := ResistanceSteps.guarded_row_on(day)
 	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded),
 			world.run.resistance.progress) if guarded != "" else null
-	var placements := EventScheduler.build_day(spec, rng, city_map, calm, consumed,
+	var day_events := EventScheduler.build_day(spec, rng, city_map, calm, consumed,
 			world.run.attempt_spend.scars, tree, world.run.resistance.progress, doors, target,
-			standing, world.trace, null, beside).placements()
+			standing, world.trace, null, beside)
+	var placements := day_events.placements()
 	placements.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
@@ -201,6 +214,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	result.walk = tree
 	result.doors = doors
 	result.use_calm(calm)
+	result.use_locations(day_events.locations())
 	return result
 
 ## **The day's calm areas as the map stands now**, with the areas she settled in this act

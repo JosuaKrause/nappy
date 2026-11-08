@@ -287,7 +287,7 @@ the director, which puts the target where a path from her first reaches the 576p
 (`ResistanceDirector.NEAR_THE_MARK`), on the stretch, out of her view. A scene plans no day of its
 own, so day 13's scene authors the roadblock its task finds, on a street beside her route; day 13's roadblock is the
 nearest the day placed that her paths reach within that circle or up to a block and a street further
-out (1,024px), or one of the day's events beside her routes swapped for one out of her view; nothing
+out (1,024px), or one put across the nearest section of a street beside her routes out of her view, in place of what it held; nothing
 is added in the walk, so where neither is, the task has no roadblock. Day 8's burnt building stands
 there for a run with no day-3 fire, its door a tile or two behind the shell. The targets whose
 place is fixed — day 9's district door, day 12's swing and day 14's station door — have no such

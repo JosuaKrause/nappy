@@ -1422,12 +1422,6 @@ func notice_time() -> float:
 		return def.pursuit.warns_for
 	return def.telegraph_time
 
-## True for a row that waits (`EventDef.notice`) once it has noticed her: its notice's clock is
-## running, so it is warning her, coming for her, or done with her. What day 13's swap leaves alone
-## (`EventScheduler.Planned.may_be_replaced()`), since taking it away would take its warning off her.
-func has_noticed_her() -> bool:
-	return def.notice != null and _notice.is_running()
-
 ## True for a row that waits (`EventDef.notice`) and has not noticed her: its notice's clock is not
 ## running. That is `Phase.WAITING`, and it stays true of such a row that leaves or is gone without
 ## ever having noticed her, and of a barrier whose guard has gone for good (`Phase.SPENT`), which

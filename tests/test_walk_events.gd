@@ -1,7 +1,8 @@
 extends RefCounted
 ## `WalkEvents`, the walk's events read through one object while she walks: its plans in the order
 ## they stream, every plan but the one being placed, the doors and the day's calm areas, checked
-## here once on rows built by hand. Everything that reads the walk is handed it, or a stand-in with
+## here once on rows built by hand, with what stands inside an area and the day's locations it was
+## handed. Everything that reads the walk is handed it, or a stand-in with
 ## the answers set (`tests/fake_walk_events.gd`).
 
 func run(t) -> void:
@@ -9,6 +10,8 @@ func run(t) -> void:
 	_test_everything_but_leaves_out_the_plan_being_placed(t)
 	_test_clearing_forgets_the_walk(t)
 	_test_a_point_is_clear_of_the_walk_past_each_plans_clearance(t)
+	_test_what_stands_inside_an_area(t)
+	_test_the_walk_holds_the_days_locations(t)
 
 func _row(id: String, at: Vector2) -> EventScheduler.Planned:
 	return EventScheduler.Planned.new(EventCatalogue.by_id(id), at)
@@ -65,3 +68,25 @@ func _test_a_point_is_clear_of_the_walk_past_each_plans_clearance(t) -> void:
 	var unplaced := _row("barricade", Vector2.INF)
 	walk.take([unplaced] as Array[EventScheduler.Planned])
 	t.check(walk.is_clear_at(near, her), "nor one the day never placed")
+
+## **What stands inside an area** (`placed_within()`, what a section holds for day 13's swap): the
+## walk's placed, unspent plans standing in it, and not one outside it, one spent, or one never placed.
+func _test_what_stands_inside_an_area(t) -> void:
+	var inside := _row("busker", Vector2(100, 100))
+	var outside := _row("cafe_tables", Vector2(400, 100))
+	var spent := _row("cafe_tables", Vector2(120, 120))
+	spent.spend()
+	var unplaced := _row("cat_dash", Vector2.INF)
+	var walk := WalkEvents.new()
+	walk.take([inside, outside, spent, unplaced] as Array[EventScheduler.Planned])
+	t.check(walk.placed_within(Rect2(64, 64, 128, 128)) == ([inside] as Array[EventScheduler.Planned]),
+			"what stands inside an area is the placed, unspent plans standing in it")
+
+## **The day's locations it was handed** (`locations()`), and none once it forgets the walk.
+func _test_the_walk_holds_the_days_locations(t) -> void:
+	var locations := DayLocations.new()
+	var walk := WalkEvents.new()
+	walk.take([] as Array[EventScheduler.Planned], null, PackedVector2Array(), null, locations)
+	t.check(walk.locations() == locations, "the walk answers the day's locations it was handed")
+	walk.clear()
+	t.check(walk.locations() == null, "and none once it forgets the walk")

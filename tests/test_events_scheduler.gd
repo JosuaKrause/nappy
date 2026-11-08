@@ -704,30 +704,47 @@ func _keep_streets_to(map: CityMap, to: Vector2i, keep: Dictionary) -> bool:
 		tile = came[tile]
 	return true
 
-## **Beside the routes, and never the main road** (inbox #1185, inbox #1186): where day 13's dawn
-## stands its roadblocks and what the task's swap may replace (`stands_beside_the_routes()`), on a
-## corridor whose route is set by hand (`tests/fake_route_tree.gd`): east along the streets from
-## junction (2, 2) to (4, 2), with the main road the north-south corridor through junction column 3.
+## **Never across the main road** (inbox #1186): a section on the main road takes no roadblock,
+## neither one the roadblock phase places nor one day 13's task puts across it
+## (`EventScheduler.across_the_section()`, which the phase's offers share), on the suite's own city: the
+## middle section of a street of the main road, and of the first street that is not, the one with
+## its carriageway and the other without the main road under it.
 func _test_nothing_beside_the_routes_stands_on_the_main_road(t) -> void:
-	var map := CityMap.new()
-	map.main_road = 3
-	var corridor := Corridor.of(FakeRouteTree.new(map).set_routes(
-			[Vector3i(2, 2, 0), Vector3i(3, 2, 0)] as Array[Vector3i],
-			[Vector2i(2, 2), Vector2i(3, 2), Vector2i(4, 2)] as Array[Vector2i]))
-	var middle := func(key: Vector3i) -> Vector2i:
-		return StreetNetwork.Segment.new(Vector2i(key.x, key.y), key.z == 0).tile_rect().get_center()
-	t.check(EventScheduler.stands_beside_the_routes(map, corridor, middle.call(Vector3i(2, 2, 1))),
-			"a side street south from a junction the route crosses stands beside the routes")
-	t.check(not EventScheduler.stands_beside_the_routes(map, corridor,
-			middle.call(Vector3i(3, 2, 1))),
-			"the main road south from the same kind of junction does not, though it touches the route")
-	t.check(not EventScheduler.stands_beside_the_routes(map, corridor,
-			middle.call(Vector3i(2, 2, 0))), "and a street the route runs along does not")
+	var map := _map()
+	var def := EventCatalogue.by_id("roadblock").for_day(13)
+	var main: Location = null
+	var side: Location = null
+	for segment in map.street_segments():
+		var section := StreetLocations.of(map, segment, PlacementView.View.ROUTE_ADJACENT).sections()[1]
+		var on_it := map.is_main_road(not segment.horizontal, segment.a.x)
+		if on_it and main == null:
+			main = section
+		elif not on_it and side == null and _has_a_carriageway(map, section):
+			side = section
+	t.check(main != null and side != null, "the city has a street of the main road and one that is not")
+	if main == null or side == null:
+		return
+	var across := EventScheduler.across_the_section(def, map, side, _rng(13))
+	t.check(across != null and side.tiles().has_point(map.world_to_tile(across.placed_at())),
+			"a side street's section takes a roadblock across it, inside the section")
+	t.check(_has_a_carriageway(map, main)
+			and EventScheduler.across_the_section(def, map, main, _rng(13)) == null,
+			"a section of the main road takes none")
+
+## Whether any tile of `section` is carriageway (`ROAD`): a precinct, paved frontage to frontage,
+## has none.
+static func _has_a_carriageway(map: CityMap, section: Location) -> bool:
+	var tiles := section.tiles()
+	for y in range(tiles.position.y, tiles.end.y):
+		for x in range(tiles.position.x, tiles.end.x):
+			if map.tile_at(Vector2i(x, y)) == GameEnums.TileType.ROAD:
+				return true
+	return false
 
 ## **Day 13's roadblock phase stands its roadblocks beside her routes and says how many route tiles
 ## it leaves without one** (inbox #1185, inbox #1186): the day planned with the task's row
 ## (`build_day()`'s `beside_the_routes`, `RoadblockPhase`) on the suite's own city, where the run log
-## names each one it stood. Each is on a street beside the routes (`Corridor.is_beside_the_routes()`),
+## names each one it stood. Each is on a route-adjacent street (`Corridor.view_of()`),
 ## off every tile a route runs along and off the main road, nothing else stands within
 ## `EVENT_SPACING_ANY` of it, no two of them stand within `EVENT_SPACING_SAME` of each other (the
 ## judged ground offers no section that close to one already placed), and the count of route tiles
@@ -761,7 +778,8 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t) -> void:
 	for tile in stood:
 		var plan: EventScheduler.Planned = by_tile.get(tile)
 		var segment := map.network.segment_containing(tile)
-		t.check(plan != null and segment != null and corridor.is_beside_the_routes(tile)
+		t.check(plan != null and segment != null
+				and corridor.view_of(segment) == PlacementView.View.ROUTE_ADJACENT
 				and not corridor.carries_a_route(tile)
 				and not map.is_main_road(not segment.horizontal, segment.a.x),
 				"the roadblock at %s stands on a street beside the routes, off them and off the main road"
