@@ -1957,32 +1957,36 @@ func _test_the_two_sections_are_the_two_days_after_the_last(t) -> void:
 ## ending and must not reach the escape, and neither must a won earlier day that happens to have
 ## finished every task early.
 func _test_only_a_won_last_day_with_every_task_done_hands_over(t) -> void:
-	# A run of its own, so nothing of the autoload's (the state, the riders, the checkpoint, the mode)
-	# is touched, and nothing needs putting back.
+	var last := Tuning.RUN_LENGTH_DAYS
+	t.check(_hands_over(t, GameEnums.DayResult.WON, last, Tuning.RESISTANCE_GOAL, true),
+			"a won day 14 with every task complete hands over to the escape")
+	t.check(not _hands_over(t, GameEnums.DayResult.LOST_CRYING, last, Tuning.RESISTANCE_GOAL, true),
+			"a lost day 14 does not, however much was done")
+	t.check(not _hands_over(t, GameEnums.DayResult.WON, last, Tuning.RESISTANCE_GOAL, false),
+			"nor a won day 14 with the errands run and the last night skipped")
+	t.check(not _hands_over(t, GameEnums.DayResult.WON, last, Tuning.RESISTANCE_GOAL - 1, true),
+			"nor one short of the goal")
+	t.check(not _hands_over(t, GameEnums.DayResult.WON, last - 1, Tuning.RESISTANCE_GOAL, true),
+			"and nor does a won day before the last one")
+
+## Whether ending a day of `day` with the given result, goal progress and sabotage hands over to the
+## escape: the `DayEnd` a director of a run of its own, over a bare clock, returns (a run of its own,
+## so nothing of the autoload's is touched; the clock is freed).
+func _hands_over(t, result: GameEnums.DayResult, day: int, progress: int, sabotaged: bool) -> bool:
 	var run := RunState.new()
 	var director := DayDirector.new(run.calendar, run.facts, run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
 	run.start_run(9182)
-
-	run.header.day = Tuning.RUN_LENGTH_DAYS
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
-	run.resistance.sabotage_done = true
-	t.check(director.hands_over_to_the_escape(GameEnums.DayResult.WON),
-			"a won day 14 with every task complete hands over to the escape")
-	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.LOST_CRYING),
-			"a lost day 14 does not, however much was done")
-
-	run.resistance.sabotage_done = false
-	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
-			"nor a won day 14 with the errands run and the last night skipped")
-	run.resistance.sabotage_done = true
-	run.resistance.progress = Tuning.RESISTANCE_GOAL - 1
-	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
-			"nor one short of the goal")
-
-	run.resistance.progress = Tuning.RESISTANCE_GOAL
-	run.header.day = Tuning.RUN_LENGTH_DAYS - 1
-	t.check(not director.hands_over_to_the_escape(GameEnums.DayResult.WON),
-			"and nor does a won day before the last one")
+	run.header.day = day
+	run.resistance.progress = progress
+	run.resistance.sabotage_done = sabotaged
+	var clock := DayController.new()
+	clock.set_process(false)
+	t.add_child(clock)
+	clock.start(300.0)
+	director.use_the_world(null, null, null, null, null, clock)
+	var handed := director.finish_day(result).hands_over_to_the_escape
+	clock.free()
+	return handed
 
 ## Every part word `--start-escape` recognises has to actually move her, onto ground she can
 ## stand on: the real `main` booted on each word, her position read off the building it builds.
