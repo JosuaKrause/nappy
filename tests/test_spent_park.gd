@@ -28,6 +28,7 @@ func run(t) -> void:
 	_test_the_guarantees_hold_with_the_fenced_park(t)
 	_test_a_never_used_park_is_unaffected(t)
 	_test_the_day_spoils_every_shut_area_but_the_fenced_one(t)
+	_test_with_every_area_used_one_stays_clean(t)
 	_test_shutting_is_refused_rather_than_breaking_a_guarantee(t)
 	_test_the_swing_park_is_never_shut_or_fenced_on_its_day(t)
 	_test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t)
@@ -489,6 +490,38 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 					% [map.seed_used, day])
 	t.check(offered > 0, "the sweep had used, open areas to spoil (%d)" % offered)
 	print("  spent parks: %d of %d used-and-open areas were spoiled with events" % [spoiled, offered])
+
+## **With every calm area she could settle in used this act, one is still clean**: the day she has
+## settled in all of them is the one the calm rule protects nothing on, so dawn keeps one clean by
+## construction before the spoilers are placed (`EventScheduler._calm_kept_clean()`), and the plan
+## has some counted calm area nothing reaches. Days 5, 9 and 14, the used order the one an act
+## would have.
+func _test_with_every_area_used_one_stays_clean(t) -> void:
+	var asked := 0
+	for map in _maps:
+		for day in [5, 9, 14]:
+			var used := _calm_on(map, day)
+			_repaint(map, day, used)
+			var tree := RouteTree.for_day(map, day)
+			map.close_streets(ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+					_closure_rng(map, day), tree))
+			var rng := RandomNumberGenerator.new()
+			rng.seed = hash("events:%d:%d" % [map.seed_used, day])
+			var no_one_shots: Array[String] = []
+			var no_scars: Array[Dictionary] = []
+			var calm := CalmAreas.of(map, used)
+			if not calm.unused().is_empty():
+				continue
+			asked += 1
+			var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm,
+					no_one_shots, no_scars, tree)
+			var clean := 0
+			for block in calm.blocks():
+				if block != calm.besides() and not events.is_spoiled(block):
+					clean += 1
+			t.check(clean >= 1, "seed %d day %d, every area used: one calm area is clean (%d)"
+					% [map.seed_used, day, clean])
+	t.check(asked > 0, "the sweep had days with every calm area used (%d)" % asked)
 
 ## With every calm area handed over as used, the tree takes as many off as it may and no more: at
 ## least `MIN_CALM_AREAS_REACHABLE` of them are never excluded, and only the one fenced park, if any,
