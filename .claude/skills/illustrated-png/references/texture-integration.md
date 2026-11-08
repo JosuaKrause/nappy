@@ -43,8 +43,7 @@ Inspect every error, including resource import failures. The full suite runs in 
 starts the engine (`check.sh`, `test.sh`, `shot.sh`, `run.sh`) rebakes in the default PNG mode, so
 an `--svg` bake cannot be tested or captured through them. Compare against the SVG with source
 previews at the same scale (**svg-art**, "Render with the game's SVG parser"). Keep captures bounded
-to one or two windowed runs, taken by the orchestrating session: an agent opens no window (inbox
-#1203) and lists the capture in its report. Preserve only the relevant artifacts with the provenance
+to one or two windowed runs. Preserve only the relevant artifacts with the provenance
 session-captures requires, and record build, flags and coverage in the entry's decision record under
 `docs/decisions/`.
 
