@@ -75,6 +75,11 @@ const DRAW_KIND_META := &"counts_draws_as"
 ## Whether a record is running now. Read by every timed entry point before anything else.
 var on := false
 
+## Whether a record is running now, for a caller outside the timed entry points, which read `on`
+## directly: they are the hot path.
+func is_on() -> bool:
+	return on
+
 ## Starts charging `bucket` and answers the bucket that was being charged, for `leave()`.
 func enter(_bucket: int) -> int:
 	return 0

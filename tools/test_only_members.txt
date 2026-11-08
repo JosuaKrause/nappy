@@ -9,6 +9,7 @@
 
 # [kept] Kept public because a test or a tool holds a promise to the player with it, or because nothing outside can
 # confirm what it does (inbox #1095 and #1098 in curly-rabbit; writing-tests). The reason is on each line.
+src/city/prop.gd body_shape  # the post's collision shape, the only way to confirm the body is the circle its shadow is drawn from and that no other prop has one; the body is a child the physics engine reads, nothing under src/ asks it
 src/events/event_def.gd emission_at  # what a row emits at a point; tools/cost_table.gd prints the cost table's distance columns from it, a reader outside src/ and the tests, so underscoring it breaks the table
 src/events/event_def.gd lunge_is_inside_the_catch  # validate() refuses a lunge inside the catch with a push_error, which fails the whole run, so a test cannot call validate() on the bad row and asks the predicate it stands on
 src/events/event_def.gd minimum_telegraph  # the shortest warning a row may fairly give; the fairness and placement suites hold each row's warning against it (the telegraph lasts long enough, events skill), a relationship check writing-tests asks for
@@ -37,7 +38,6 @@ src/main.gd configure
 src/run/day_director.gd facts
 src/run/day_director.gd hands_over_to_the_escape
 src/run/run_calendar.gd facts
-src/telemetry/frame_recorder.gd ledger
 src/ui/badge_model.gd watch
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
@@ -48,6 +48,7 @@ src/autoload/tuning.gd required_horn_sight  # the sight distance the horn needs;
 src/autoload/tuning.gd sleepiness_gain_calm  # the sleepiness gain in a calm zone; tests/test_meters.gd asserts the baby's drain stays below it, a relationship test of the kind writing-tests wants
 src/crowd/crowd.gd set_focus  # where the crowd's simulated patch is centred; the rigs tick the crowd with step(), which has no player half, so no stroller moves the field there, and real frames would add shoves, warnings and strikes to every check (record minty-quail-lilac-walrus)
 src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS  # the mean wait between the building's distant window flashes, which InteriorScene's shape constant FINALE_DISTANT_FLASH_SHAPE_B is solved for (its doc says moving the mean means solving B again); nothing in src/ reads it, and tests/test_interior.gd draws 4000 waits from the curve and asserts the sample mean lands within 0.05s of it, a relationship test of the kind writing-tests wants, so it stays a constant a test reads for that relationship (the brief's choice between deleting it and keeping it; settled by inbox #1173 in gray-dolphin)
+src/telemetry/telemetry_log.gd recorded_lines  # the lines the run log wrote, kept in memory as well as on disk (its doc: "so a test can assert on the log without a file"); a run's log is a file the game only writes, so the log's suite (tests/test_telemetry.gd) can read it only off this
 
 # [kept] Kept public as hand-ins, the orchestrator's ruling, not asked for, open to the player's correction
 # (dependency injection, minty-lemur #794, and the mocking in inbox #1095 in curly-rabbit): each hands the object

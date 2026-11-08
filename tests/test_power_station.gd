@@ -14,6 +14,9 @@ const BASE_SEED := 7_140
 ## closures and the seals each — which is seconds a city rather than a quarter of one.
 const DAY_SEEDS := 10
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const MapCache := preload("res://tests/city_map_cache.gd")
+const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
+const UI := preload("res://tests/ui_screens.gd")
 ## The folder the frame recorder of the yard-layer check is handed to write its record in on leaving
 ## the tree.
 const _SCRATCH_RECORDS := "user://test_power_station_scratch_records"
@@ -22,7 +25,7 @@ var _maps: Array[CityMap] = []
 
 func run(t) -> void:
 	for i in SEEDS:
-		_maps.append(CityGenerator.generate(BASE_SEED + i * 211))
+		_maps.append(MapCache.of(BASE_SEED + i * 211))
 	_test_every_city_has_exactly_one(t)
 	_test_it_is_not_in_the_home_region(t)
 	_test_its_door_is_a_reasonable_walk_from_home(t)
@@ -33,6 +36,7 @@ func run(t) -> void:
 	_test_an_older_save_with_the_station_block_advanced_still_loads(t)
 	_test_the_yard_layer_is_counted_when_the_station_comes_into_view(t)
 	_test_the_stacks_stand_in_the_entities_depth_order(t)
+	await _test_the_hall_is_lit_only_on_the_last_night(t)
 
 # ------------------------------------------------------------------ generation ---
 
@@ -138,7 +142,7 @@ func _test_industrial_ground_is_preferred(t) -> void:
 func _maps_to_plan_days_on() -> Array[CityMap]:
 	var fresh: Array[CityMap] = []
 	for i in DAY_SEEDS:
-		fresh.append(CityGenerator.generate(BASE_SEED + i * 211))
+		fresh.append(MapCache.of(BASE_SEED + i * 211))
 	return fresh
 
 func _repaint_for(map: CityMap, day: int) -> void:
@@ -278,7 +282,7 @@ func _routes_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 ## snapshot through JSON, with a station block recorded past step 0. It loads: the block reads as
 ## the station for the whole run, the day's arcs advance around it, and the mass stays solid.
 func _test_an_older_save_with_the_station_block_advanced_still_loads(t) -> void:
-	var map := CityGenerator.generate(BASE_SEED)
+	var map := MapCache.of(BASE_SEED)
 	var block := map.power_station.position
 	var plan: BlockPlan = map.block_plans[block]
 	t.check(plan.steps.size() == 1, "the station's block has a one-step arc (%d)" % plan.steps.size())
@@ -307,11 +311,11 @@ func _test_an_older_save_with_the_station_block_advanced_still_loads(t) -> void:
 ## front." A stack rises past the station's lot into the street north of it, so it stands in the
 ## city's y-sorted `Entities` layer at its own foot, where the engine draws it over anything whose
 ## origin is north of that foot and under anything south of it — never in the `Buildings` layer,
-## which is drawn beneath every entity. Asked of a real city, since the wiring is `City`'s.
+## which is drawn beneath every entity. Asked of a real city, since the wiring is `City`'s: the one case here that builds one.
 func _test_the_stacks_stand_in_the_entities_depth_order(t) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 	t.add_child(city)
-	city.build(CityGenerator.generate(BASE_SEED))
+	city.build(MapCache.of(BASE_SEED))
 	var entities: Node2D = city.get_node("Entities")
 	var buildings: Node2D = city.get_node("Buildings")
 	t.check(entities.y_sort_enabled and entities.z_index > buildings.z_index,
@@ -357,6 +361,56 @@ func _test_the_stacks_stand_in_the_entities_depth_order(t) -> void:
 		t.check(behind > 0, "stack %d's picture reaches walkable ground behind it (%d tiles)"
 				% [i, behind])
 	city.free()
+
+## The hall is dimly lit on the one night it is seen to go out, and drawn as approved on every other.
+## A station hall of the shape a city dresses its own in (the values a generated seed's station
+## building has: a 704 x 256 px lot, a door at column 3, a yard of 8 columns from column 14), handed a
+## drawer that records its front, as the city hands it the real one; what is checked is the clerestory
+## band the front was drawn with. What puts the light out on the last night is `tests/test_blackout.gd`'s.
+func _test_the_hall_is_lit_only_on_the_last_night(t) -> void:
+	var hall := Building.new()
+	var front := RecordingFrontDrawer.new()
+	hall.front_drawer = front
+	hall.power_station = true
+	hall.station_door_col = 3
+	hall.station_yard_cols = Vector2i(14, 8)
+	hall.footprint = Vector2(704.0, 256.0)
+	hall.height = 128.0
+	hall.district = GameEnums.BlockPurpose.INDUSTRIAL
+	hall.day = Tuning.POWER_STATION_DAY
+	hall.powered = true
+	t.add_child(hall)
+	await UI.frames(t, 2)
+	var band := _clerestory_band(front)
+	var columns := hall.hall_cols().y - hall.hall_cols().x
+	t.check(columns > 0 and band.size() == columns
+			and band.count(Building.POWER_STATION_CLERESTORY_LIT) == columns,
+			"on the last night, with the power on, the hall is lit (%s)" % [band])
+	var yards := front.pictures().count(Building.POWER_STATION_YARD)
+	t.check(yards == 1, "and its yard is stood beside it, once (%d)" % yards)
+	front.draws.clear()
+	hall.powered = false
+	await UI.frames(t, 2)
+	band = _clerestory_band(front)
+	t.check(band.size() == columns and band.count(Building.POWER_STATION_CLERESTORY) == columns,
+			"and with it off, the hall is dark (%s)" % [band])
+	front.draws.clear()
+	hall.powered = true
+	hall.day = Tuning.POWER_STATION_DAY - 1
+	await UI.frames(t, 2)
+	band = _clerestory_band(front)
+	t.check(band.size() == columns and band.count(Building.POWER_STATION_CLERESTORY) == columns,
+			"on any other day the hall is unlit, as it always was (%s)" % [band])
+	hall.free()
+
+## The pictures the hall's clerestory band shows now, read off what its front was last drawn with.
+## Empty when the front has not been drawn since `front` was cleared.
+func _clerestory_band(front: RecordingFrontDrawer) -> Array[StringName]:
+	var band: Array[StringName] = []
+	for entry in front.shown():
+		if entry.picture in [Building.POWER_STATION_CLERESTORY, Building.POWER_STATION_CLERESTORY_LIT]:
+			band.append(entry.picture)
+	return band
 
 ## The yard layer is built when residency brings the station into view, in a tree whose frame record
 ## is listening: the recorder classifies a node as it is added, so the layer carries its kind
