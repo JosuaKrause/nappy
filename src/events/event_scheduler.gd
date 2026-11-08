@@ -2550,7 +2550,7 @@ static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> 
 			fill[id] = maxi(1, roundi(w * BAG_MARBLES_PER_WEIGHT))
 			weight += w
 		var share := clampf(float(VIEW_SHARES[view][clampi(day, 1, 14) - 1])
-				* float(VIEW_SHARE_SCALES[view]), 0.001, 0.95)
+				* float(VIEW_SHARE_SCALES[view][clampi(day, 1, 14) - 1]), 0.001, 0.95)
 		# The measured share is the day's as it is played, its walls weighed by the day's own share;
 		# the marbles are set for that day with every wall weighed in full, so a spec's share of the
 		# walls takes walls away rather than giving their place to the other rows.
@@ -2564,21 +2564,32 @@ static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> 
 const BAG_MARBLES_PER_WEIGHT := 10.0
 
 ## **Each view's share of locations holding an event, per day** (`[view][day - 1]`), as today's
-## placement gave it before the bags (`tests/probes/placement_view_mix.gd`, six seeds; the
-## orchestrator's reading of fork 5(a): the empty marble's weight is set from today's measured count).
-const ON_SHARES: Array[float] = [0.0308, 0.0322, 0.0310, 0.0353, 0.0372, 0.0383, 0.0465, 0.0492, 0.0383, 0.0372, 0.0401, 0.0428, 0.0450, 0.0487]
-const ADJACENT_SHARES: Array[float] = [0.0555, 0.0517, 0.0470, 0.0582, 0.0608, 0.0612, 0.0611, 0.0606, 0.0434, 0.0423, 0.0458, 0.0473, 0.0690, 0.0520]
-const OFF_SHARES: Array[float] = [0.0363, 0.0418, 0.0473, 0.0488, 0.0585, 0.0722, 0.0598, 0.0709, 0.0549, 0.0600, 0.0539, 0.0586, 0.0651, 0.0638]
+## placement gave it before the bags (`tests/probes/placement_view_mix.gd`'s maps and streams,
+## eighteen seeds; the orchestrator's reading of fork 5(a): the empty marble's weight is set from
+## today's measured count).
+const ON_SHARES: Array[float] = [0.0334, 0.0313, 0.0298, 0.0353, 0.0382, 0.0387, 0.0452, 0.0464, 0.0375, 0.0417, 0.0437, 0.0422, 0.0461, 0.0461]
+const ADJACENT_SHARES: Array[float] = [0.0512, 0.0537, 0.0517, 0.0566, 0.0583, 0.0631, 0.0642, 0.0618, 0.0433, 0.0420, 0.0451, 0.0463, 0.0707, 0.0485]
+const OFF_SHARES: Array[float] = [0.0373, 0.0393, 0.0425, 0.0486, 0.0594, 0.0677, 0.0610, 0.0694, 0.0563, 0.0578, 0.0568, 0.0628, 0.0626, 0.0636]
 const VIEW_SHARES := [
 	ON_SHARES,
 	ADJACENT_SHARES,
 	OFF_SHARES,
 ]
-## What each view's bag's empty marbles are set for against `VIEW_SHARES` (`[view]`): above one by how
-## many draws the view's ground or the day's rules leave without the row drawn, so the share placed
-## comes out as today's. Highest on the route, where the rules keeping a route open refuse the most.
-## Measured, not derived (`tests/probes/placement_view_mix.gd`).
-const VIEW_SHARE_SCALES: Array[float] = [4.6, 1.45, 2.7]
+## What each view's bag's empty marbles are set for against `VIEW_SHARES` (`[view][day - 1]`): above
+## one by how many draws the view's ground or the day's rules leave without the row drawn, so the
+## share placed comes out as today's. Highest on the route, where the rules keeping a route open
+## refuse the most. **Per day**, since how much the rules refuse changes with the day's rows and its
+## routes, and one scale for every day left the later days' routes light; what is on her route is
+## what the route decision is about, so it is held at today's on each day. Fitted, not derived:
+## each day's scale moved toward today's share by `tests/probes/placement_view_mix.gd`'s measure.
+const ON_SHARE_SCALES: Array[float] = [4.56, 5.10, 4.79, 5.39, 5.11, 5.17, 5.52, 5.64, 5.01, 4.43, 4.85, 4.73, 5.34, 5.55]
+const ADJACENT_SHARE_SCALES: Array[float] = [1.61, 1.39, 1.33, 1.47, 1.51, 1.58, 1.62, 1.61, 1.52, 1.58, 1.48, 1.82, 1.31, 2.00]
+const OFF_SHARE_SCALES: Array[float] = [2.31, 2.32, 2.45, 2.77, 2.54, 2.54, 2.60, 2.83, 2.55, 2.70, 2.54, 2.58, 2.82, 2.80]
+const VIEW_SHARE_SCALES := [
+	ON_SHARE_SCALES,
+	ADJACENT_SHARE_SCALES,
+	OFF_SHARE_SCALES,
+]
 
 ## **The moments the day owes her** (`AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows, the cat that bolts
 ## across, the cyclist, the loose dog): sited in front of her by the director, on its own clock and

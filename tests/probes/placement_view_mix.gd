@@ -15,7 +15,7 @@ extends RefCounted
 ## view's empty weight is set from (fork 5(a) of the placement proposal, the orchestrator's reading:
 ## set from today's measured count), and `PV_DAY` the day's whole count.
 
-const SEEDS := 6
+const SEEDS := 18
 const SAMPLE_DAYS := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 const NAMES := ["on the route", "route-adjacent", "off the route"]
 

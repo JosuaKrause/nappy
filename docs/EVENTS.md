@@ -1358,7 +1358,9 @@ EventScheduler.build_day(day_index, run_seed):
 **The day's density is the bags' empty marbles**, set per view and per day so each view's share of
 locations holding an event is the share the day placed before the bags
 (`EventScheduler.VIEW_SHARES`, measured with `tests/probes/placement_view_mix.gd`, and scaled for the
-draws the rules leave empty, `VIEW_SHARE_SCALES`). A later day's shares are higher, so late days
+draws the rules leave empty, `VIEW_SHARE_SCALES`, fitted per view and per day so what each view
+places on each day comes out as the share measured, the route's above all, since what stands on her
+route is what the route decision is about). A later day's shares are higher, so late days
 are denser as well as nastier. A row's weight in a view is its own `weight` times what the view is
 to its role (`EventScheduler.view_weight()`), and each location scales it by its own weight
 (`JudgedLocationGround.scale()`): a precinct's four times over, the street between two strands of
