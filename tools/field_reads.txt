@@ -1239,19 +1239,11 @@ src/world/draw_layer.gd pieces
 # [FrameGraph] src/ui/frame_graph.gd
 src/dev/debug_readout.gd text_colour
 
-# [FrameLedger] src/telemetry/frame_ledger.gd
-src/telemetry/frame_recorder.gd keep
-
-# [FrameRecord] src/telemetry/frame_record.gd
-src/telemetry/frame_recorder.gd ledger
-
 # [FrameTiming] src/frame_timing.gd
 src/city/scenery_residency.gd on
 src/events/event_instance.gd on
 src/events/event_manager.gd on
 src/player/baby.gd on
-src/telemetry/frame_record_timing.gd on
-src/telemetry/frame_recorder.gd on
 src/ui/danger_edge.gd on
 src/ui/excitement_halo.gd on
 
@@ -1755,7 +1747,6 @@ src/ui/day_summary.gd title
 src/ui/day_summary.gd title_is_prose
 
 # [TelemetryLog] src/telemetry/telemetry_log.gd
-src/autoload/telemetry.gd path
 src/dev/still_watch.gd path
 
 # [TrafficLight] src/city/traffic_light.gd
