@@ -17,7 +17,7 @@ extends Node
 ## `main` parks it at the tree's root, which a reload leaves alone. A test hands its boots a node of
 ## its own to stand for the root (`main.use_sitting_home()`), so the boot that stands for the
 ## reload takes the sitting the one before parked there, rather than the test setting and
-## resetting statics; a test driving a `main` off the tree hands it one (`main.use_sitting()`).
+## resetting statics.
 ##
 ## **It holds the run** (`run`, a `RunState`), which `main` takes off it once a boot and hands
 ## down: the day-14 hand-over and a run carried to its checkpoint keep it across their reloads,

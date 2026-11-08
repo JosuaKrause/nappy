@@ -23,20 +23,16 @@ balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `slee
 stay public for the same reason: the fairness tests check numbers against them.
 
 **Scope.** The CI check of test-only members lists the owners one by one, and its list is the scope. Its `[own file
-only]` group holds nine members, each of which gets the underscore, or a `[kept]` line with its reason, as this item's work: `BuildingShadows.compute`,
-`PosterArt.compose`, `WalkerLook.gait_phase`, `Main.configure`, `DayDirector.facts`,
-`DayDirector.hands_over_to_the_escape`, `RunCalendar.facts`, `FrameRecorder.ledger` and `BadgeModel.watch`. Its
-`[no reader]` group holds only the lines `tests-unseen-reads.md` owns. What is left beyond the list is the members the
-check cannot see, below.
+only]` group is empty: each member it listed became internal or holds a `[kept]` line with its reason. Its
+`[no reader]` group holds only the lines `tests-unseen-reads.md` owns. What is left is the members the check cannot
+see, below, and whatever the check's fix surfaces.
 
 **What the check still cannot see** (record minty-quail-feathery-finch): a member whose name only one file defines is
 judged by its word, so a local or an engine method of that name hides it: `ParkCordon.gap` (other files have a local
 `gap`, so it can take no `[kept]` line, whose reason stands as a comment on it, record minty-quail-grassy-squirrel) and
 `RouteTree.grow` (`Rect2.grow` calls). The queued fix takes a plain word in another file as a read only where that
 file's class extends the member's class, and an engine-typed or local receiver as not a src class's. A declaration is
-taken for the whole file, not per function. One member has no test reader:
-`Main.use_sitting` is a hand-in no test calls (the tests'
-`use_sitting()` is `TitleScreen`'s), so a test hands it in or it is deleted.
+taken for the whole file, not per function.
 
 **Build.** The members named in Scope, owner by owner (or several small owners together) in a pull request each, each
 also removing a check that holds nothing once its member is gone (curly-rabbit #1097). An `[own file only]` member

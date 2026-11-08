@@ -29,7 +29,7 @@ var player: Stroller
 var baby: Baby
 var day: DayController
 ## The facts and the spend the run holds, handed in beside the calendar.
-var facts: RunFacts
+var _facts: RunFacts
 var spend: AttemptSpendState
 ## Whether this is the boot's first day, the only one `--spawn` and `--meters` decide.
 var first_day := false
@@ -42,7 +42,7 @@ func _init(the_calendar: RunCalendar, the_facts: RunFacts, the_spend: AttemptSpe
 		the_config: RunConfig) -> void:
 	calendar = the_calendar
 	config = the_config
-	facts = the_facts
+	_facts = the_facts
 	spend = the_spend
 
 ## Hands the world the day is walked in. `events` is the events of whichever world she is in: the
@@ -98,11 +98,11 @@ func start_day(the_spec: DaySpec) -> void:
 	# What the run already remembers about the one park barriers ever stand around this run,
 	# handed over the same way, so a fence chosen on an earlier day of this act stands again today
 	# rather than being re-decided. See `CityMap.set_fenced_park_state()`.
-	city.map.set_fenced_park_state(facts.fenced_park, facts.fenced_park_act, calendar.current_act())
+	city.map.set_fenced_park_state(_facts.fenced_park, _facts.fenced_park_act, calendar.current_act())
 	city.start_day(spend.city_state, today, calendar.day_rng(today, "closures"), spec)
 	# Remember the first choice for the run. Today's physical fence disappears after its act,
 	# but that must not erase the history and allow tomorrow to choose another one.
-	facts.remember_fenced_park(city.map.fenced_park, city.map.fenced_park_act)
+	_facts.remember_fenced_park(city.map.fenced_park, city.map.fenced_park_act)
 	# The day is planned around the doorstep first, because `--spawn event` needs a plan to
 	# find an event in. The plan is the whole day and the *world* is only what is within
 	# reach, so where she actually starts decides what exists on the first frame —
@@ -226,7 +226,7 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 	# every task complete is the good ending, and the good ending is a walk rather than a screen — so
 	# `RunCalendar.finish_day()` is deliberately *not* called here: it would end the run on the
 	# spot, set `ending`, and clear the save the escape's own checkpoints need.
-	if hands_over_to_the_escape(result):
+	if _hands_over_to_the_escape(result):
 		# Day 14 is still an ordinary won day, so it still gives a normal run a nerve back — called
 		# directly because this is the one day whose win never reaches `finish_day()`.
 		calendar.regain_a_nerve_for_a_won_day()
@@ -244,7 +244,7 @@ func finish_day(result: GameEnums.DayResult) -> DayEnd:
 ## `RunCalendar.earned_good_ending()` — so the escape is reached by exactly the runs the good
 ## ending was reached by. A recipe never hands over (`escape_follows`): its won day reloads the
 ## authored scene.
-func hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
+func _hands_over_to_the_escape(result: GameEnums.DayResult) -> bool:
 	if not escape_follows:
 		return false
 	return result == GameEnums.DayResult.WON and calendar.is_final_day() \

@@ -17,22 +17,19 @@ src/events/event_def.gd warning_time  # the warning a row actually gives; held a
 src/events/event_scheduler.gd budget_for  # how many events a day may hold, per block; the cost suite holds a late day denser than an early one and the day's plans to it, the budget capping the day (balance skill), a relationship check writing-tests asks for
 src/events/event_manager.gd planner  # a hand-in: the game uses its default DayPlanner, a rig hands in a planner that plans the placements it chose (tests/given_planner.gd; dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/events/views/event_look.gd mark_rect  # the rectangle the danger caret covers this frame; the danger-caret suite reads the caret's colour and chevrons off a recording drawer, but the arrival sweep (tests/test_no_pop_in.gd, hundreds of arrivals) and the redraw suite ask only whether a mark has an area, and drawing each of those arrivals through a recording drawer would add a real frame and a drawer per arrival to the slowest suites for a check that reads only the area
+src/events/views/event_look.gd drawn_rect_now  # the rectangle the whole drawing covers on this frame (pictures, shadow, danger caret, halo margin, a fire's front), which the game asks only in pieces (_drawn_reach(), mark_rect()); the no-pop-in, drawn-view and resistance-trap suites hold that a thing that arrives is wholly off screen on the frame it exists against it, and a headless run draws no pixels and the caret is drawn straight onto the event, so no recording drawer or node holds the extent
+src/main.gd configure  # a hand-in: the game's boot reads the process's own flags (RunConfig.at_boot()) and a scene recipe's boot hands itself the run's with the recipe on top, but no outward act of a test can set the command line a boot reads, so the suites that boot the real main.tscn hand it the flags they test (--seed, --no-save, --touch) the way the game's process hands them (dependency injection; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 # [no reader] No use anywhere under src/ (functions: inbox #1095 in curly-rabbit; the orchestrator's
 # proposal, not asked for and open to the player's correction: vars, signals and constants with no
 # use too, since a constant nothing reads is the same dead weight). Each gets a reader in the game,
 # or its tests go through what the game exposes (a fake handed in, or what the game shows), or it is
 # deleted.
 src/events/events_ahead.gd walk_siting
-src/events/views/event_look.gd drawn_rect_now
 
 # [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
-src/main.gd configure
-src/run/day_director.gd facts
-src/run/day_director.gd hands_over_to_the_escape
-src/run/run_calendar.gd facts
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each

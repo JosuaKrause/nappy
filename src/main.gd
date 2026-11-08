@@ -150,9 +150,8 @@ var _save_indicator: SaveIndicator
 ## What this sitting keeps across the scene reloads a run makes — see `Sitting`'s own doc: the run
 ## carried on from its checkpoint, the title's answer, the title's restart stamp, the frame record's
 ## file and the save symbol a reload carries. Taken in `_ready()` by `_take_the_sitting()`: the one
-## `use_sitting()` handed in, else the one the boot before parked in the sitting's home, else built
-## here; and handed to the title, the frame recorder and the save symbol. A `main` that never
-## enters the tree has none unless it is handed one.
+## the boot before parked in the sitting's home, else built here; and handed to the title, the frame
+## recorder and the save symbol. A `main` that never enters the tree has none.
 var _sitting: Sitting
 ## The save this boot reads and writes: the one parked under the sitting (`GameSave`), which outlives
 ## the reload that frees this node, or the one `use_save()` handed in, which its caller owns. A
@@ -253,14 +252,6 @@ func use_reload(reload: Callable) -> void:
 ## the boot runs; a boot never handed one quits normally.
 func use_quit(quit: Callable) -> void:
 	_quit_override = quit
-
-## Hands this boot a sitting of the caller's own (`Sitting`) instead of the one its home holds: a
-## test that drives a `main` piece by piece, off the tree, hands it the one it reads, and the run
-## the sitting holds is the run it plays (one of the sitting's own when it was handed none). Set
-## before the boot runs; a boot never handed one takes its home's, or builds its own.
-func use_sitting(sitting: Sitting) -> void:
-	_sitting = sitting
-	_take_the_run()
 
 ## Hands this boot a save of the caller's own (`GameSave`) in place of the one under its sitting: a
 ## suite's, at a scratch path, so nothing it drives reaches the player's save file. The caller owns
@@ -2154,14 +2145,13 @@ func _reload_the_scene() -> void:
 		return
 	tree.call_deferred("reload_current_scene")
 
-## Takes the sitting this boot keeps across a reload: the one `use_sitting()` handed in, else the
-## one the boot before parked in the sitting's home (`_park_the_sitting()`), else a new one as this
-## node's own child, which this sitting's first boot builds. Looked up here, in the composition
+## Takes the sitting this boot keeps across a reload: the one the boot before parked in the
+## sitting's home (`_park_the_sitting()`), else a new one as this node's own child, which this
+## sitting's first boot builds. Looked up here, in the composition
 ## root, and handed down from it; nothing below fetches it. So are the observers it keeps under it,
 ## each found there or made on the sitting's first boot: the save, the run log and the page counter.
 func _take_the_sitting() -> void:
-	if not _sitting:
-		_sitting = _the_sittings_home().get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
+	_sitting = _the_sittings_home().get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
 	if not _sitting:
 		_sitting = Sitting.new()
 		_sitting.name = Sitting.NODE_NAME
@@ -2216,8 +2206,7 @@ func _take_the_run() -> void:
 ## Hands the sitting to its home just before every reload, the one a test stands in for included,
 ## so the next boot takes it back (`_take_the_sitting()`) with everything it keeps, the save symbol
 ## carried under it included. Only a sitting under this node needs moving, since the reload frees
-## this node: one already in its home stays there, and one `use_sitting()` handed in is its
-## caller's own.
+## this node: one already in its home stays there.
 func _park_the_sitting() -> void:
 	if is_ancestor_of(_sitting):
 		_sitting.reparent(_the_sittings_home(), false)
