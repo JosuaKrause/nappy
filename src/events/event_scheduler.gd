@@ -285,6 +285,9 @@ class Planned extends RefCounted:
 	## Whether this body is the region wall's own (`is_in_the_wall()`). Private: set once, by
 	## `stand_in_the_wall()`.
 	var _in_the_wall := false
+	## Whether this body is one of the day's seals (`is_a_fixed_part()`). Private: set once, by
+	## `stand_as_a_seal()`.
+	var _is_a_seal := false
 
 	## False for an event the day has budgeted but not sited.
 	func is_placed() -> bool:
@@ -354,13 +357,21 @@ class Planned extends RefCounted:
 	func is_permanent() -> bool:
 		return permanent
 
-	## **Whether this plan is one of the city's fixed parts that the day's events are not**: a scar
-	## the run left (`is_permanent()`, the burnt shell a fire leaves) or a loudspeaker mast
-	## (`mast_id`), each of which the placement design gives a phase of its own (inbox #1185). Day 13's
-	## swap never takes the section of one (`ResistanceDirector._place_the_roadblock_near()`); the
-	## region wall's and the doors' bodies stand on streets no section of which is open at all.
+	## **Whether this plan is one of the city's fixed parts rather than one of the day's events**: the
+	## region wall's body (`is_in_the_wall()`), a door's (`is_door()`), a seal (`stand_as_a_seal()`), a
+	## loudspeaker mast (`mast_id`) or an ambient row (a playground). The player's fixed parts: "the
+	## wall, doors, closures, seals, scars, masts and ambient rows" each "get phases during either dawn
+	## or beginning of the game" (inbox #1185); a closure is no plan, and the code's scar, the burnt
+	## shell a fire leaves, is a regular event ("your scars are just regular events", inbox #1185).
+	## Day 13's swap never takes the section of one (`ResistanceDirector._section_to_swap()`).
 	func is_a_fixed_part() -> bool:
-		return permanent or mast_id != ""
+		return _is_door or _in_the_wall or _is_a_seal or mast_id != "" \
+				or def.kind == GameEnums.EventKind.AMBIENT
+
+	## Makes this body one of the day's seals. Called by `DayPlanner` for each seal it plans, and by
+	## nothing else.
+	func stand_as_a_seal() -> void:
+		_is_a_seal = true
 
 	## Whether this plan stands at one point rather than moving along a route (`path`).
 	func stands_still() -> bool:

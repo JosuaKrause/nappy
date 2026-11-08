@@ -307,23 +307,18 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	_streaming.add(plan)
 	return plan
 
-## **Day 13's task roadblock across `section`**, a route-adjacent section of the day's locations,
-## when no roadblock the day placed is close by where she read the mark
+## **Day 13's task roadblock `plan` across `section`**, a route-adjacent section of the day's
+## locations, when no roadblock the day placed is close by where she read the mark
 ## (`ResistanceDirector._place_the_roadblock_near()`, inbox #1185: "the roadblock replaces the content
-## of that event's whole section"): `def` stood across the section (`EventScheduler.across_the_section()`),
-## the section assigned to it for the day (`DayLocations.assign()`), and whatever the section held
-## (`WalkEvents.placed_within()`) spent and taken out of the world, the roadblock put in the world at
-## once and kept there for the rest of the day (`EventStreaming.swap_section()`), since the task's
-## contact rides it. Answers its live instance, or null where the walk has no locations or the section
-## has no carriageway for it.
-func swap_in_a_section(def: EventDef, section: Location,
-		rng: RandomNumberGenerator) -> EventInstance:
+## of that event's whole section"): `plan` is the roadblock the director stood across it and checked
+## out of her view (`EventScheduler.across_the_section()`). The section is assigned to it for the day
+## (`DayLocations.assign()`), and whatever the section held (`WalkEvents.placed_within()`) spent and
+## taken out of the world with its body given back, the roadblock put in the world at once and kept
+## there for the rest of the day (`EventStreaming.swap_section()`), since the task's contact rides
+## it. Answers its live instance, or null where the walk has no locations.
+func swap_in_a_section(section: Location, plan: EventScheduler.Planned) -> EventInstance:
 	var locations := _walk.locations()
-	if not def or not section or not locations:
-		return null
-	var plan := EventScheduler.across_the_section(def.for_day(world.day), world.city_map, section,
-			rng)
-	if not plan:
+	if not section or not plan or not locations:
 		return null
 	var olds := _walk.placed_within(world.city_map.tile_rect_to_world(section.tiles()))
 	locations.assign(section, plan)

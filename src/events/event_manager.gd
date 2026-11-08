@@ -724,11 +724,10 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventScheduler.Planned:
 	return ahead.queue_a_mast(offered, rng)
 
-## Day 13's task roadblock across a section of the day's locations, whatever it held spent
+## Day 13's task roadblock `plan` across a section of the day's locations, whatever it held spent
 ## (`EventsAhead.swap_in_a_section()`).
-func swap_in_a_section(def: EventDef, section: Location,
-		rng: RandomNumberGenerator) -> EventInstance:
-	return ahead.swap_in_a_section(def, section, rng)
+func swap_in_a_section(section: Location, plan: EventScheduler.Planned) -> EventInstance:
+	return ahead.swap_in_a_section(section, plan)
 
 ## Rigs her route's bag for a task (`EventsAhead.rig_her_route()`).
 func rig_her_route(ids: Array[String], size: int) -> Array:

@@ -161,6 +161,10 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# fully blocked street").
 	var seals := SealPlanner.plan_day(city_map, spec, tree,
 			world.run.calendar.day_rng(day, "seals"), boundary, city_map.held_segments)
+	# Each says it is a seal, one of the city's fixed parts (`Planned.is_a_fixed_part()`), which day
+	# 13's swap never takes.
+	for seal in seals:
+		seal.stand_as_a_seal()
 	# Where today's doors stand, before a single candidate is rolled. `build_day` keeps
 	# `Tuning.CHECKPOINT_EVENT_GAP` of clear ground around each of them — the ground she is let out
 	# onto, on either side — by refusing a candidate whose field or beat reaches inside it, which is
@@ -264,6 +268,8 @@ static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 		trace: RunTrace = null) -> Array[EventScheduler.Planned]:
 	var placements: Array[EventScheduler.Planned] = []
 	var seals := SealPlanner.plan_day(map, spec, walk, rng)
+	for seal in seals:
+		seal.stand_as_a_seal()
 	placements.append_array(seals)
 	if populate_events:
 		placements.append_array(EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [],

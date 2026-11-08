@@ -1723,8 +1723,12 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 ##    locations nearest along her paths, out of her sight, whose whole content is replaced by a
 ##    roadblock across it (`EventManager.swap_in_a_section()`; inbox #1185: "if we don't find one
 ##    closeby we swap one off screen route adjacent event with a roadblock", "it replaces the content
-##    of the section with the roadblock"). Nothing else narrows it: not what the section holds, how
-##    far it is, or a placement rule asked again.
+##    of the section with the roadblock"). Two things narrow it. Nothing of the section, neither what
+##    it holds nor the roadblock to come, may be in her view, which is the design's "off screen". And
+##    a section holding one of the city's fixed parts is passed over (`Planned.is_a_fixed_part()`):
+##    the region wall, the doors, the seals, the masts and the ambient rows, which the player gave
+##    phases of their own, the orchestrator's reading. Nothing else does: not how far it is, not
+##    whether what it holds stands still or has noticed her, and not a placement rule asked again.
 ##
 ## **Nothing is added in the walk** (inbox #1185): with neither, which only a day with no open
 ## route-adjacent section reachable from her leaves, the task has no roadblock, and the run log says
@@ -1750,9 +1754,9 @@ func _place_the_roadblock_near(mark: Vector2) -> EventInstance:
 						% [RunTrace.tile(_map.world_to_tile(found.placed_at())),
 						found.placed_at().distance_to(her)])
 				return kept
-	var section := _section_to_swap(def, her, paths)
-	if section:
-		var swapped := _events.swap_in_a_section(def, section, _rng)
+	var to_swap := _section_to_swap(def, her, paths)
+	if not to_swap.is_empty():
+		var swapped := _events.swap_in_a_section(to_swap[0], to_swap[1])
 		if swapped:
 			trace.note("contact", "the task's roadblock is put across a section at %s, %.0fpx from the mark"
 					% [RunTrace.tile(_map.world_to_tile(swapped.body_position())),
@@ -1798,30 +1802,39 @@ func _a_roadblock_the_day_placed(id: String, paths: Dictionary,
 ## first where the roadblock `def` stands across it (`EventScheduler.across_the_section()`: off the
 ## main road, on its carriageway), with neither it nor anything the section holds in her view
 ## (`_drawing_shows()`), and holding none of the city's fixed parts (`Planned.is_a_fixed_part()`).
-## Null where none does or the walk has no locations. *Read as, the orchestrator's and open to
+## Each roadblock checked is built on a fresh stream, never the director's, since a stationary one
+## draws nothing.
+## Answers `[the section, the roadblock checked across it]`, the very plan whose place was asked of
+## her view, so what is put there is what was checked; `[]` where none does or the walk has no
+## locations. *Read as, the orchestrator's and open to
 ## correction:* nearest along her paths, a section not yet drawn taken like any other (fork 7 of the
-## placement proposal); and the masts and the burnt shell, which the design gives phases of their own,
-## are not the day's events to replace, the builder's reading of the same design.
-func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> Location:
+## placement proposal); and the city's fixed parts, which the player gave phases of their own, are not
+## the day's events to replace, while the burnt shell, "just regular events" to the player, is
+## (inbox #1185).
+func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> Array:
 	var locations := _walk.locations()
 	if not locations:
-		return null
+		return []
 	var row := def.for_day(_day)
+	var checked := {}
 	var may_take := func(section: Location) -> bool:
-		var across := EventScheduler.across_the_section(row, _map, section, _rng)
+		# Stationary, so it draws nothing from a stream: a fresh one, never the director's.
+		var across := EventScheduler.across_the_section(row, _map, section,
+				RandomNumberGenerator.new())
 		if across == null or _drawing_shows(row, across.placed_at()):
 			return false
 		for plan in _walk.placed_within(_map.tile_rect_to_world(section.tiles())):
 			if plan.is_a_fixed_part() or _drawing_shows(plan.row(), plan.where_it_stands_now()):
 				return false
+		checked[section] = across
 		return true
 	var section := locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths,
 			_reachable_from_home, may_take)
-	if section:
-		return section
-	var whole_city := Vector2(Tuning.CITY_BLOCKS * CityMap.period()).length() * Tuning.TILE_SIZE
-	return locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT,
-			_paths_reach_between(her, 0.0, whole_city), _reachable_from_home, may_take)
+	if not section:
+		var whole_city := Vector2(Tuning.CITY_BLOCKS * CityMap.period()).length() * Tuning.TILE_SIZE
+		section = locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT,
+				_paths_reach_between(her, 0.0, whole_city), _reachable_from_home, may_take)
+	return [section, checked[section]] if section else []
 
 ## How far along her paths (`paths`, `tile -> its distance from her`) the nearest ground she can touch
 ## `plan` from is — within a tile and a half of its body, reachable from home — or `INF` when none is

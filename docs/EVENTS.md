@@ -1272,8 +1272,11 @@ then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
   roadblock like any other. `ResistanceDirector._section_to_swap()` chooses it from the day's
   locations (`DayLocations.nearest_section_in()`), and the guard houses and barriers stand on streets
   none of whose sections is open.
-- *Read as* (the builder's, open to correction): a section holding a mast or the burnt shell a fire
-  left is not taken, since the design gives those fixed parts phases of their own.
+- *Read as* (the orchestrator's, open to correction): a section holding one of the city's fixed
+  parts is not taken: the region wall, its doors, the seals (the soft ones included, which stand on
+  streets no hold closes), the masts and the ambient rows, which the player gave phases of their own
+  (inbox #1185; `Planned.is_a_fixed_part()`). The burnt shell is a regular event ("your scars are
+  just regular events", inbox #1185), so its section may be taken.
 
 **The order, as the player gave it** (inbox #1185):
 1. The routes are established.

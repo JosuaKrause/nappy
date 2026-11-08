@@ -14,7 +14,9 @@ extends RefCounted
 ## in: 576, 896 or 1,024px), **swapped** (a route-adjacent section's whole content replaced by one,
 ## `ResistanceDirector._section_to_swap()`), or **missed** (neither, so the task has no roadblock;
 ## nothing is added in the walk). Each distance is the straight line from where she read the mark to
-## the roadblock; `RM_MISS` names a miss's mark. Each mark gets the day started again from the same
+## the roadblock; `RM_MISS` names a miss's mark. `RM_TIME` is how long the task's placement took on
+## the frame she reads the mark, found and swapped apart, and the swap's walk over the whole city,
+## the fallback a swap takes where the close-by walk reaches no section, timed on its own. Each mark gets the day started again from the same
 ## inputs, the
 ## way `DayDirector.start_day()` starts it, with the world streamed in round her
 ## (`EventManager.stream_around()`), so what is in the world, and so in her view, is what it would
@@ -85,9 +87,21 @@ func run(t) -> void:
 		print("RM_DIST %s | n %d | min %.0f median %.0f max %.0f px" % [key, list.size(), list[0],
 				list[list.size() / 2], list.back()])
 	print("RM_MISSES %d" % _misses)
+	for what: String in _times:
+		var list: Array = _times[what]
+		list.sort()
+		print("RM_TIME %s | n %d | median %.1f max %.1f ms" % [what, list.size(), list[list.size() / 2],
+				list.back()])
 	t.check(asked > 0, "there were marks to read (%d)" % asked)
 
 var _misses := 0
+## What -> the milliseconds each `_place_the_roadblock_near()` call took (`RM_TIME`).
+var _times := {}
+
+func _took(what: String, ms: float) -> void:
+	if not _times.has(what):
+		_times[what] = []
+	_times[what].append(ms)
 
 ## The mark tiles the day's draw could pick, in `_marks()`'s order: those `_pick_reachable()` takes,
 ## legal ground and open to it and reachable from home.
@@ -144,14 +158,23 @@ func _read_the_mark_at(city: City, director: ResistanceDirector, player: Strolle
 	var before := {}
 	for plan in city.events.plans():
 		before[plan] = true
+	var started := Time.get_ticks_usec()
 	var placed := director._place_the_roadblock_near(at)
+	var took := (Time.get_ticks_usec() - started) / 1000.0
 	if placed == null:
 		print("RM_MISS seed %d at %s" % [seed_value, city.map.world_to_tile(at)])
 		_misses += 1
 		return ["missed", INF]
 	for plan in city.events.plans():
 		if not before.has(plan) and plan.instance() == placed:
+			_took("swapped", took)
+			# The swap's fallback walk alone, her paths over the whole city, timed apart.
+			var whole_city := Vector2(Tuning.CITY_BLOCKS * CityMap.period()).length() * Tuning.TILE_SIZE
+			var walked := Time.get_ticks_usec()
+			director._paths_reach_between(at, 0.0, whole_city)
+			_took("the whole-city walk", (Time.get_ticks_usec() - walked) / 1000.0)
 			return ["swapped", placed.body_position().distance_to(at)]
+	_took("found", took)
 	return ["found@%.0f" % ring, placed.body_position().distance_to(at)]
 
 static func _roadblock_step() -> ResistanceSteps.Step:

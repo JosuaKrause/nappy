@@ -89,6 +89,7 @@ func run(t) -> void:
 	for seed_value in PLACEMENT_SEEDS:
 		_test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value)
 	_test_with_none_close_by_a_section_is_taken(t)
+	_test_a_swap_replaces_what_the_section_holds(t)
 
 func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 	var city := _build_city(t, SEED)
@@ -837,7 +838,6 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 	var map := city.map
 	var mark := director.current_step()
 	var plans_before := city.events.plans().size()
-	var spent_before := _spent(city)
 	if mark:
 		director.contact().complete_now()
 	var roadblock: EventInstance = director.rider()
@@ -856,8 +856,7 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 		var plan := plans[index]
 		found = found or (plan.is_placed() and not plan.is_spent() and not plan.is_in_the_wall()
 				and not plan.is_door() and plan.instance() == roadblock)
-	var swapped: bool = plans.size() == plans_before + 1 \
-			and plans.back().instance() == roadblock and _spent(city) >= spent_before
+	var swapped: bool = plans.size() == plans_before + 1 and plans.back().instance() == roadblock
 	t.check(found or swapped,
 			"seed %d: it is a roadblock the day placed, or one put across a section in place of what it held"
 			% seed_value)
@@ -896,8 +895,8 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 ## content replaced** (inbox #1185: "if we don't find one closeby we swap one off screen route
 ## adjacent event with a roadblock", "it replaces the content of the section with the roadblock"):
 ## every roadblock the day placed is spent before she reads the mark, so the task can only swap. The
-## roadblock stands across a route-adjacent section of the day's locations, out of her view, the
-## section is taken, and nothing the section held stands unspent but the roadblock. The view is
+## roadblock stands across a route-adjacent section of the day's locations, out of her view, and the
+## section is taken (what it held is `_test_a_swap_replaces_what_the_section_holds`'s). The view is
 ## `SWAP_VIEW_HALF_EXTENT` each way, so the nearest sections along her paths are in it.
 const SWAP_VIEW_HALF_EXTENT := Vector2(900.0, 900.0)
 
@@ -935,20 +934,90 @@ func _test_with_none_close_by_a_section_is_taken(t) -> void:
 	var box := EventFootprints.footprint_of(roadblock.def)
 	t.check(not _view.intersects(Rect2(roadblock.global_position + box.position, box.size)),
 			"(swap) no part of it is in her view when it is put there")
-	if taken:
-		var left := city.events.walk_events().placed_within(map.tile_rect_to_world(taken.tiles()))
-		t.check(left.size() == 1 and left[0].instance() == roadblock,
-				"(swap) of what the section held nothing stands but the roadblock (%d standing)"
-				% left.size())
 	_tear_down(player, director, city)
 
-## How many of the day's plans are spent.
-static func _spent(city: City) -> int:
-	var count := 0
+## **A swap replaces what the section holds, and leaves no mark of it on the map** (inbox #1185: "it
+## replaces the content of the section with the roadblock"): every roadblock the day placed is spent,
+## and she reads the mark standing in a route-adjacent section that holds one of the day's solid
+## bodies and none of the city's fixed parts, every other such section taken already and nothing in
+## her view, so it is the section the task takes. Everything it held is spent, and the map's record of what stands is the record from before
+## with the held plans' bodies given back and the roadblock's own body laid: no tile left shut or
+## obstructed by anything that is gone.
+func _test_a_swap_replaces_what_the_section_holds(t) -> void:
+	var city := _build_city(t, SEED)
+	var director := _start_the_day(t, city, SEED)
+	var player := _rig_player(t, director, director.contact_position())
+	_view = Rect2()
+	var map := city.map
 	for plan in city.events.plans():
-		if plan.is_spent():
-			count += 1
-	return count
+		if plan.row_id() == "roadblock" and not plan.is_door() and not plan.is_in_the_wall():
+			plan.spend()
+	var walk := city.events.walk_events()
+	var def := EventCatalogue.by_id("roadblock").for_day(DAY)
+	var chosen: Location = null
+	var held: Array[EventScheduler.Planned] = []
+	var stand := Vector2.INF
+	for section in walk.locations().sections_in(PlacementView.View.ROUTE_ADJACENT):
+		if EventScheduler.across_the_section(def, map, section, RandomNumberGenerator.new()) == null:
+			continue
+		var holds := walk.placed_within(map.tile_rect_to_world(section.tiles()))
+		var solid := false
+		var fixed := false
+		for plan in holds:
+			solid = solid or plan.obstructs()
+			fixed = fixed or plan.is_a_fixed_part()
+		if not solid or fixed:
+			continue
+		stand = _open_tile_in(map, section.tiles())
+		if stand != Vector2.INF:
+			chosen = section
+			held = holds
+			break
+	t.check(chosen != null and not held.is_empty(),
+			"(content) a route-adjacent section holds one of the day's solid bodies (%d held)"
+			% held.size())
+	if chosen == null:
+		_tear_down(player, director, city)
+		return
+	# Every other route-adjacent section is taken already, as dawn's roadblocks take theirs, so the
+	# one chosen is the only section the task can put its roadblock across.
+	var locations := walk.locations()
+	for section in locations.sections_in(PlacementView.View.ROUTE_ADJACENT):
+		if section != chosen:
+			locations.assign(section, EventScheduler.Planned.new(def, section.centre()))
+	# A body is recorded under its plan and, while it is in the world, under its instance too.
+	var expected := map.blocked.copy()
+	for plan in held:
+		expected.release(plan.get_instance_id())
+		if plan.instance():
+			expected.release(plan.instance().get_instance_id())
+	player.global_position = stand
+	if director.current_step():
+		director.contact().complete_now()
+	var roadblock: EventInstance = director.rider()
+	t.check(roadblock != null and chosen.tiles().has_point(map.world_to_tile(roadblock.body_position())),
+			"(content) the roadblock stands across the section she reads the mark in")
+	var all_spent := true
+	for plan in held:
+		all_spent = all_spent and plan.is_spent()
+	t.check(all_spent, "(content) everything the section held is spent (%d)" % held.size())
+	var actual := map.blocked.copy()
+	for plan in city.events.plans():
+		if roadblock != null and plan.instance() == roadblock:
+			actual.release(plan.get_instance_id())
+			actual.release(roadblock.get_instance_id())
+	t.check(actual.bodies == expected.bodies and actual.soft_sealed == expected.soft_sealed,
+			"(content) the map keeps no body or shut tile of anything the section held")
+	_tear_down(player, director, city)
+
+## A walkable tile of `tiles` nothing stands on, as world space, or `Vector2.INF`.
+static func _open_tile_in(map: CityMap, tiles: Rect2i) -> Vector2:
+	for y in range(tiles.position.y, tiles.end.y):
+		for x in range(tiles.position.x, tiles.end.x):
+			var tile := Vector2i(x, y)
+			if map.is_walkable(tile) and not map.is_obstructed(tile) and not map.is_closed(tile):
+				return map.tile_to_world(tile)
+	return Vector2.INF
 
 ## Every tile she can walk to from `from` today, around every closure, sealed way and standing body.
 static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
