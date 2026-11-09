@@ -33,7 +33,7 @@ separate session that has none of this context.
 
 **The board is read at session start, when the player says "doc" or "check the doc", and before
 the first write to it in a turn; it is not polled on other turns** (inbox #830 in minty-dolphin,
-inbox #1267). Nothing notifies the terminal session of an edit, and the player gives a heads-up
+inbox #1267 in olive-ferret). Nothing notifies the terminal session of an edit, and the player gives a heads-up
 when it matters rather than have the board polled (inbox #830 in minty-dolphin); the read before a
 turn's first write is what keeps a write from landing on a page the player has changed since.
 Between the session's own consecutive writes there is no read: each write's acknowledgement is the
@@ -260,7 +260,7 @@ the player corrects them. The citation is the player's word each one extends:
 - **Where a question's outcome is recorded before it leaves the board** ("Settling";
   inbox #1163 in gray-dolphin).
 - **One read covers a turn's run of writes** ("When it is read"): the pick the player took is a
-  read before each write (inbox #1267), read as before the first of a turn, since each later write
+  read before each write (inbox #1267 in olive-ferret), read as before the first of a turn, since each later write
   is anchored on the acknowledgement of the one before it.
 - **Where a conclusion goes when its note takes no appended block** ("Blocking, and no dialogs"):
   the restart prompt's plan in that turn, and the queue item at the next queue update

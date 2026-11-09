@@ -33,7 +33,7 @@ player's `~/.claude/settings.json`) and what is done on a refusal (the filer's p
 sub-agent never is, and a second top-level session is one only when the player says so. Any other
 session merges nothing on its own authority, only a pull request the orchestrating session hands it
 or the player authorizes in that session (**committing**, "Merging"), and writes neither the board
-nor `.claude/restart-prompt.md` (inbox #1267).
+nor `.claude/restart-prompt.md` (inbox #1267 in olive-ferret).
 
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
 what was tried and rejected, or what a number used to be, that is the records under
@@ -64,7 +64,7 @@ does to the route decision. If the answer is "nothing", it is decoration.
 
 The rules live in `.claude/skills/`, one per kind of work. **A `PreToolUse` hook,
 `.claude/hooks/project-rules.sh`, refuses the first `Edit`/`Write` of an area until the skills that
-govern it are read whole** (inbox #1267): the refusal names each skill with its path and size, and
+govern it are read whole** (inbox #1267 in olive-ferret): the refusal names each skill with its path and size, and
 the same edit made again passes. No hook prints a skill's text to a Claude Code session, since the
 harness cuts a long hook output to its opening.
 

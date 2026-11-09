@@ -5,7 +5,7 @@ after: 2026-10-18-minty-quail
 
 **Where this comes from.** The player had every rule file reviewed and reworked ("have another
 fable agent review all skills/claude/rule files", "let's do all the suggested changes for the
-hooks/skills/claudes etc", inbox #1267). The rework made the skills true against the code; while
+hooks/skills/claudes etc", inbox #1267 in olive-ferret). The rework made the skills true against the code; while
 matching each rule to the suite that holds it, its builders and reviewers found things outside the
 rule files that the rework could not fix. They are filed here so they are not lost.
 

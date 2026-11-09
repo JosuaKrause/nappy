@@ -9,7 +9,7 @@ interface then being what `docs/EVENTS.md` and `docs/ARCHITECTURE.md` describe.
 
 **Whose it is.** The design is a design agent's, from the player's rules below. The player, on
 which model does what: "consider using fable for tasks that need planning / complex reasoning",
-and "for code I'm fine with your choice as long as fable did the design" (inbox #1264); *read as*
+and "for code I'm fine with your choice as long as fable did the design" (inbox #1264 in olive-ferret); *read as*
 a design being that model's work. **The player has not read this design.**
 
 **Proposed, not asked for:** every mechanism in it that the player's words below do not name, among
@@ -18,10 +18,9 @@ no longer being a `Resource`, the narrow interface a behaviour asks its event th
 and the one object for where she is (`WhereSheIs`). The plainer alternative each replaces is a
 method per field on the three classes as they stand.
 
-**Its open points are answered, but for one.** Section 7 holds what the player's recorded words answer and
+**Its open points are answered.** Section 7 holds what the player's recorded words answer and
 the six points the design put as questions, each with the player's answer from the board
-(inbox #1278); the last answer has two readings, put back to the player, and until they
-answer every step keeps things as they are.
+(inbox #1278 in olive-ferret).
 
 The rule it applies is the player's: "provide a consistent interface for events that can be used without
 knowing details of the event. that applies to all aspects of events ... don't forget about
@@ -78,9 +77,8 @@ Three objects are meant by "an event" below, and each is named this way througho
    hundreds of agents, and rows that cannot change take per-frame reads out of the baby's sweep
    and the danger prediction. Section 6 names the probes.
 10. **Nothing the player sees or the logs say changes.** Every step is at test parity, the run
-    log and GoatCounter names included. What happens to three answers that are slightly wrong
-    today is open until the player confirms a reading of their answer (section 7, point 6); until
-    then every step keeps them as they are.
+    log and GoatCounter names included. Three answers that are slightly wrong today are each
+    made correct in a pull request of its own, after the step that names it (section 7, point 6).
 
 ## 1. The parts
 
@@ -544,8 +542,9 @@ conversion finds nothing to redo in those files.
 
 Two notes for the track. **`blocking_radius()` reads a lethal row's field core
 (`inner_radius`), not `lethal_reach()`**; the two differ only for a row whose catch is narrower
-than its core (the masked man on the escape's stairs, a hunting roadblock's guard). It is kept as
-it is, under its name, and listed for the end remeasure. **Where a plan's body stands on its
+than its core (the masked man on the escape's stairs, a hunting roadblock's guard). The placement
+track keeps it as it is, under its name; it is made correct in a pull request of its own (section
+7, point 6). **Where a plan's body stands on its
 sidewalk band and which tiles it takes** is worked out today by the live event's picture geometry
 (`EventFootprints.stands_at()`, `body_axis()`), which the dawn reads across a layer
 (`tools/layer_map.py` lists it); the breakup's `PlanBuilder` is where that answer moves, and the
@@ -847,7 +846,7 @@ tuned for them.
    request's record keeps the names, since they are written text.
 ### Answered by the player on the board
 
-Six points the design put as questions, each with the player's answer (inbox #1278, which holds
+Six points the design put as questions, each with the player's answer (inbox #1278 in olive-ferret, which holds
 each question as it was shown).
 
 1. **Where do the settings files live?** Offered a new folder `src/events/parts/` for the
@@ -870,21 +869,21 @@ each question as it was shown).
    events' step and the baby's sweep with the probes of section 6 and reports the numbers in its
    pull request, so that there are numbers to look at later; no step is held, tuned or sent back for
    its cost.
-6. **Does a step fix an answer that is slightly wrong today?** Offered keeping the three below and
-   listing them for the end remeasure (a), or fixing each as a change made on purpose (b): "the
-   shape change is desired. as I said earlier the main real measure will be playtests. This will
-   tell us what needs fixing. Let's not obsess over theoretical numbers. We currently have no
-   established base anymore since we changed a lot. Playtest will decide which deviations need to be
-   fixed". **Two readings, neither confirmed** (put back to the player on the board; until
-   they answer, every step keeps all three as they are):
-   - *All three are made right.* "The shape change is desired" speaks of the first, and "let's not
-     obsess over theoretical numbers" and "no established base anymore" say nothing is kept wrong
-     to hold old numbers: each of the three is a pull request of its own after the step that gives
-     it a name, saying what it changes in play and in the run log, and playtests decide what then
-     needs fixing.
-   - *Only the field's shape is made right.* "Desired" is said of the shape alone, and "playtest
-     will decide which deviations need to be fixed" leaves the other two as they are until a
-     playtest shows them to matter.
+6. **Does a step fix an answer that is slightly wrong today?** Offered keeping the three below
+   and listing them for the end remeasure (a), or (b), in the board's words, "fix each in the step
+   that names it, as a change made on purpose with pictures": "the shape change is desired. as I
+   said earlier the main real measure will be playtests. This will tell us what needs fixing.
+   Let's not obsess over theoretical numbers. We currently have no established base anymore since
+   we changed a lot. Playtest will decide which deviations need to be fixed". Read back on the
+   board as "I read this as b, not a: each of the three is made right, the field's real shape
+   first, and nothing is kept wrong to hold old numbers. Each is its own small pull request after
+   the step that names it, saying what it changes, and playtests decide what then needs fixing.
+   Tell me if you meant only the field's shape.": "whatever is the *correct* implementation. if
+   that is b then let's do that" (inbox #1278 in olive-ferret). **Read as:** all three are made
+   correct. The timing is the read-back's, which is what the player answered: each is a pull
+   request of its own after the step that gives it a name, not a change inside that step, saying
+   what it changes in play and in the run log, with its pictures. Playtests decide what then
+   needs fixing.
    - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
      its five callers do, though the field of a row with a long body is a capsule about that body.
      Answering with the real field changes when the run log says "out of range" and when the
@@ -892,5 +891,5 @@ each question as it was shown).
    - `blocking_radius()` shuts a lethal row's field core, not its lethal reach (section 3).
    - The ground a row that ends the day shuts is stated four ways (`clearance()`,
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
-     lethal disc less her radius). Each stays one named question; whether they are one fact is
-     the remeasure's to say.
+     lethal disc less her radius). *Read as* (the filer's, open to the player's correction):
+     made correct means they become one stated fact, asked under one name.
