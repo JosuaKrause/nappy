@@ -174,7 +174,7 @@ func ground_shape() -> GroundShape:
 
 ## Overrides LaneStrategy.lane_offsets_at.
 func lane_offsets_at(along_tile: int) -> Array[int]:
-	return CrowdLanes.walkable_offsets(_mover._map, _mover._vertical, _mover._corridor, along_tile)
+	return CrowdLanes.walkable_offsets(_map, _lane.is_vertical(), _lane.corridor_index(), along_tile)
 
 ## Overrides LaneStrategy.speed_range.
 func speed_range() -> Vector2:
@@ -187,7 +187,7 @@ func speed_range() -> Vector2:
 ##
 ## Overrides LaneStrategy.may_be_placed_on.
 func may_be_placed_on(tile: Vector2i) -> bool:
-	return _mover._map.tile_at(tile) != GameEnums.TileType.ROAD
+	return _map.tile_at(tile) != GameEnums.TileType.ROAD
 
 ## **The door's carve-out is per walker**, which is the one thing about a held segment that is not a
 ## fact about the day: a walker whose own answer is `TURNS_BACK` gets no carve-out at all, so a door
@@ -215,7 +215,7 @@ func begin_frame(delta: float) -> bool:
 	if _detour_left > 0.0:
 		_detour_left = maxf(0.0, _detour_left - delta)
 		if _detour_left <= 0.0 and not _body_detour_held:
-			_mover._detour = 0.0
+			_lane.set_detour(0.0)
 	_yield_left = maxf(0.0, _yield_left - delta)
 	if not _is_inside_a_hut():
 		return false
@@ -267,25 +267,25 @@ func stride_length() -> float:
 ##
 ## Overrides LaneStrategy.choose_lane.
 func choose_lane(roll: float) -> void:
-	_mover._vertical = roll < 0.5
-	_mover._corridor = CrowdLanes.pick_corridor_in_range(_mover._rng, _mover._map,
-			_mover._vertical, _mover.field.corridor_range(_mover._vertical), false)
-	if _mover.field.weighs_walkers_uniformly():
-		var corridors := _mover.field.corridor_range(_mover._vertical)
-		_mover._corridor = _mover._rng.randi_range(corridors.x, corridors.y)
-	var offsets := CrowdLanes.walkable_offsets(_mover._map, _mover._vertical, _mover._corridor,
+	_lane.set_vertical(roll < 0.5)
+	_lane.set_corridor_index(CrowdLanes.pick_corridor_in_range(_rng, _map,
+			_lane.is_vertical(), _field.corridor_range(_lane.is_vertical()), false))
+	if _field.weighs_walkers_uniformly():
+		var corridors := _field.corridor_range(_lane.is_vertical())
+		_lane.set_corridor_index(_rng.randi_range(corridors.x, corridors.y))
+	var offsets := CrowdLanes.walkable_offsets(_map, _lane.is_vertical(), _lane.corridor_index(),
 			floori(_mover._along() / float(Tuning.TILE_SIZE)))
-	_mover._lane = offsets[_mover._rng.randi_range(0, offsets.size() - 1)]
-	_mover._direction = 1.0 if _mover._rng.randf() < 0.5 else -1.0
-	_mover._speed = _mover._rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y)
+	_lane.set_lane_index(offsets[_rng.randi_range(0, offsets.size() - 1)])
+	_lane.set_direction(1.0 if _rng.randf() < 0.5 else -1.0)
+	_lane.set_speed(_rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y))
 
 ## A walker is pushed toward the outer edge of its own footway, which is what leaves a gap between
 ## the two lanes of a pavement worth aiming at. See `CrowdLanes.SIDEWALK_LANE_SPREAD`.
 ##
 ## Overrides LaneStrategy.lane_centre_here.
 func lane_centre_here() -> float:
-	return CrowdLanes.walker_lane_centre(_mover._corridor, _mover._lane,
-			CrowdLanes.walkable_offsets(_mover._map, _mover._vertical, _mover._corridor,
+	return CrowdLanes.walker_lane_centre(_lane.corridor_index(), _lane.lane_index(),
+			CrowdLanes.walkable_offsets(_map, _lane.is_vertical(), _lane.corridor_index(),
 			floori(_mover._along() / float(Tuning.TILE_SIZE))))
 
 ## Overrides LaneStrategy.forget_the_detour.
@@ -314,12 +314,12 @@ func on_recycled() -> void:
 ##
 ## Overrides LaneStrategy.enter_at_an_end.
 func enter_at_an_end(along_tile: int) -> bool:
-	var offsets := CrowdLanes.walkable_offsets(_mover._map, _mover._vertical, _mover._corridor,
+	var offsets := CrowdLanes.walkable_offsets(_map, _lane.is_vertical(), _lane.corridor_index(),
 			along_tile)
 	if offsets.is_empty():
 		return false
-	_mover._lane = offsets[_mover._rng.randi_range(0, offsets.size() - 1)]
-	_mover._speed = _mover._rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y)
+	_lane.set_lane_index(offsets[_rng.randi_range(0, offsets.size() - 1)])
+	_lane.set_speed(_rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y))
 	return true
 
 # ------------------------------------------------------- checkpoint doors ---
@@ -346,7 +346,7 @@ func enter_at_an_end(along_tile: int) -> bool:
 ##
 ## Overrides LaneStrategy.draw_the_door_answer.
 func draw_the_door_answer() -> void:
-	_door_answer = door_answer_for(_mover._rng.randf())
+	_door_answer = door_answer_for(_rng.randf())
 
 ## The answer a roll in `[0, 1)` gives at a door: the fractions `WALKER_DOOR_PASS_FRACTION` and
 ## `WALKER_DOOR_TURN_BACK_FRACTION` cut the roll, and the rest are held. A walker's placement draws
@@ -380,7 +380,7 @@ func advance_the_door_hold(delta: float) -> void:
 				_door_hold = null
 				_door_state = DoorState.WALKING
 		DoorState.WAITING:
-			if _door_hold != _mover.door_ahead:
+			if _door_hold != _lane.door_ahead():
 				# The hut is no longer in front of it: it turned off at the junction, was turned
 				# round by a barrier, or was moved. Standing in a queue for a door it is no longer
 				# walking to would hold that door's line shut against everybody behind it.
@@ -398,23 +398,23 @@ func advance_the_door_hold(delta: float) -> void:
 ## decide against a door and turn at a junction — walking up to a full line and then about-facing
 ## on the sidewalk is not a move a walker has.
 func _consider_the_hut_ahead() -> void:
-	if _refused_hut and _refused_hut != _mover.door_ahead:
+	if _refused_hut and _refused_hut != _lane.door_ahead():
 		# Out of sight of the door it turned away from — a fresh approach is a fresh decision.
 		_forget_the_refusal()
-	if _door_answer != DoorAnswer.HELD or _mover.door_ahead == null:
+	if _door_answer != DoorAnswer.HELD or _lane.door_ahead() == null:
 		if _door_hold:
 			_let_go_of_the_hut()
 		return
-	if _refused_hut == _mover.door_ahead:
+	if _refused_hut == _lane.door_ahead():
 		return
-	if _door_hold != _mover.door_ahead:
+	if _door_hold != _lane.door_ahead():
 		_let_go_of_the_hut()
-		if _mover.door_ahead.committed() > WALKER_DOOR_QUEUE_MAX:
-			_refuse_the_door(_mover.door_ahead)
+		if _lane.door_ahead().committed() > WALKER_DOOR_QUEUE_MAX:
+			_refuse_the_door(_lane.door_ahead())
 			return
-		_door_hold = _mover.door_ahead
+		_door_hold = _lane.door_ahead()
 		_door_hold.join(_mover)
-	if _mover.door_ahead_along <= _door_stop_distance():
+	if _lane.door_ahead_along() <= _door_stop_distance():
 		_door_state = DoorState.WAITING
 
 ## Decides against a door whose line is already as long as it is allowed to get — the player's
@@ -430,16 +430,16 @@ func _consider_the_hut_ahead() -> void:
 func _refuse_the_door(hold: WalkerDoorHold) -> void:
 	_refused_hut = hold
 	_refused_door_key = NO_DOOR
-	var segment := _mover._map.street_network().segment_containing(_mover._map.world_to_tile(hold.stands_at()))
+	var segment := _map.street_network().segment_containing(_map.world_to_tile(hold.stands_at()))
 	if segment:
 		_refused_door_key = segment.key()
 	# The lookahead is cached per tile and was worked out before this walker decided anything.
-	_mover._scan_at = Vector2i(-9999, -9999)
+	_lane.set_scanned_at(Vector2i(-9999, -9999))
 
 func _forget_the_refusal() -> void:
 	_refused_hut = null
 	_refused_door_key = NO_DOOR
-	_mover._scan_at = Vector2i(-9999, -9999)
+	_lane.set_scanned_at(Vector2i(-9999, -9999))
 
 ## Where this walker stops short of the hut, in px along its own line of travel: beside the hut if
 ## it is at the front of the line, and one spacing further back for everybody behind it. Recomputed
@@ -459,8 +459,8 @@ func _enter_the_hut() -> void:
 	_door_state = DoorState.INSPECTION
 	_inspection_left = WALKER_DOOR_HOLD_SECONDS
 	_mover.visible = false
-	_mover._set_along(_door_hold.stands_at().y if _mover._vertical else _door_hold.stands_at().x)
-	_mover._set_cross(_door_hold.stands_at().x if _mover._vertical else _door_hold.stands_at().y)
+	_mover._set_along(_door_hold.stands_at().y if _lane.is_vertical() else _door_hold.stands_at().x)
+	_mover._set_cross(_door_hold.stands_at().x if _lane.is_vertical() else _door_hold.stands_at().y)
 
 ## Out again on the far side of the door, back on its own lane, just past the hut's body — the same
 ## `WALKER_DOOR_STOP_DISTANCE` it waited at on the way in, so the two sides of a door are
@@ -473,18 +473,18 @@ func _emerge_from_the_hut() -> void:
 		_door_state = DoorState.WALKING
 		return
 	_door_hold.release(_mover)
-	var door_along: float = _door_hold.stands_at().y if _mover._vertical else _door_hold.stands_at().x
-	_mover._set_along(door_along + WALKER_DOOR_STOP_DISTANCE * _mover._direction)
-	_mover._set_cross(_mover._lane_centre)
+	var door_along: float = _door_hold.stands_at().y if _lane.is_vertical() else _door_hold.stands_at().x
+	_mover._set_along(door_along + WALKER_DOOR_STOP_DISTANCE * _lane.direction())
+	_mover._set_cross(_lane.lane_centre())
 	# Out from the hut's middle is a jump, so it is drawn from where it comes out rather than
 	# interpolated out of the hut; shown again above, so the reset is not the no-op it is on a node
 	# hidden in the tree.
 	_mover.reset_physics_interpolation()
 	# The lookahead is a cached answer about the tile it was standing on, and it is not standing
 	# there any more.
-	_mover._scan_at = Vector2i(-9999, -9999)
-	_mover.door_ahead = null
-	_mover.door_ahead_along = INF
+	_lane.set_scanned_at(Vector2i(-9999, -9999))
+	_lane.set_door_ahead(null)
+	_lane.set_door_ahead_along(INF)
 
 ## Gives up whatever claim this walker has on a hut and goes back to walking. **Every way a walker
 ## can stop being where it was goes through here** — recycling at the edge of the field, being
@@ -507,7 +507,7 @@ func _let_go_of_the_hut() -> void:
 func _hold_factor() -> float:
 	if _door_state == DoorState.INSPECTION:
 		return 0.0
-	if _door_state == DoorState.WAITING and _mover.door_ahead_along <= _door_stop_distance():
+	if _door_state == DoorState.WAITING and _lane.door_ahead_along() <= _door_stop_distance():
 		return 0.0
 	return 1.0
 
@@ -533,12 +533,12 @@ func _is_inside_a_hut() -> bool:
 ##
 ## Overrides LaneStrategy.step_aside.
 func step_aside(away: Vector2, distance: float, seconds: float) -> void:
-	var across := away.x if _mover._vertical else away.y
-	var along := away.y if _mover._vertical else away.x
+	var across := away.x if _lane.is_vertical() else away.y
+	var along := away.y if _lane.is_vertical() else away.x
 	if absf(across) >= absf(along):
 		var band := _pavement_band()
-		_mover._detour = clampf(_mover._lane_centre + _mover._detour + signf(across) * distance,
-				band.x, band.y) - _mover._lane_centre
+		_lane.set_detour(clampf(_lane.lane_centre() + _lane.detour() + signf(across) * distance,
+				band.x, band.y) - _lane.lane_centre())
 		_detour_left = maxf(_detour_left, seconds)
 		return
 
@@ -551,7 +551,7 @@ func step_aside(away: Vector2, distance: float, seconds: float) -> void:
 	# whether carrying on takes them further from her line. Both are a speed for a moment; neither
 	# touches the lane, the corridor or the path, so a walker that yields is still going exactly
 	# where it was going.
-	_yield_hurry = signf(along) == signf(_mover._direction)
+	_yield_hurry = signf(along) == signf(_lane.direction())
 	_yield_left = maxf(_yield_left, seconds)
 
 ## **Somebody coming at `here`, going `velocity`, finds this walker moved over**: her, from the
@@ -637,10 +637,10 @@ func make_way_for(here: Vector2, velocity: Vector2) -> void:
 ##
 ## Overrides LaneStrategy.give_way_on_the_step.
 func give_way_on_the_step(delta: float) -> void:
-	var separation := _mover._map.separation
-	if not separation.walker_is_near(_mover._move.stands_at(), Tuning.CROWD_YIELD_DISTANCE):
+	var separation := _map.separation
+	if not separation.walker_is_near(_move.stands_at(), Tuning.CROWD_YIELD_DISTANCE):
 		return
-	var move := _mover._move
+	var move := _move
 	var near := false
 	for keeper in separation.walker_keepers():
 		if keeper.at.distance_squared_to(move.stands_at()) > _FIGURE_NOTICE_SQUARED:
@@ -654,7 +654,7 @@ func give_way_on_the_step(delta: float) -> void:
 	if cleared == move.steps_to():
 		return
 	var away := (cleared - move.steps_to()).normalized()
-	if may_stand_on(_mover._map.world_to_tile(cleared)):
+	if may_stand_on(_map.world_to_tile(cleared)):
 		if absf(away.dot(forward)) > 0.5:
 			away = _side_to_step_to(forward, away)
 	else:
@@ -682,7 +682,7 @@ func _side_to_step_to(forward: Vector2, away: Vector2) -> Vector2:
 	var side := Vector2(-forward.y, forward.x)
 	var band := _pavement_band()
 	var cross := _mover._cross()
-	var toward_high := (side.x if _mover._vertical else side.y) > 0.0
+	var toward_high := (side.x if _lane.is_vertical() else side.y) > 0.0
 	var room := (band.y - cross) if toward_high else (cross - band.x)
 	var room_other := (cross - band.x) if toward_high else (band.y - cross)
 	var lean := away.dot(side)
@@ -710,16 +710,16 @@ const _FIGURE_NOTICE_SQUARED := Tuning.CROWD_YIELD_DISTANCE * Tuning.CROWD_YIELD
 ## kerbwards must stop at the kerb — the first version clamped by distance and would happily have
 ## put somebody 48px into the road to get out of her way, which is a pedestrian under a car.
 func _pavement_band() -> Vector2:
-	var offsets := CrowdLanes.walkable_offsets(_mover._map, _mover._vertical, _mover._corridor,
+	var offsets := CrowdLanes.walkable_offsets(_map, _lane.is_vertical(), _lane.corridor_index(),
 			floori(_mover._along() / float(Tuning.TILE_SIZE)))
 	# A precinct has one footway and it is the whole street, so there is no far side to be on.
 	if offsets.size() > 4:
 		var slack_all := float(Tuning.TILE_SIZE) * 0.5
-		return Vector2(CrowdLanes.lane_centre(_mover._corridor, offsets[0]) - slack_all,
-				CrowdLanes.lane_centre(_mover._corridor, offsets[offsets.size() - 1]) + slack_all)
-	var near_side: bool = _mover._lane <= offsets[1]
-	var low := CrowdLanes.lane_centre(_mover._corridor, offsets[0] if near_side else offsets[2])
-	var high := CrowdLanes.lane_centre(_mover._corridor, offsets[1] if near_side else offsets[3])
+		return Vector2(CrowdLanes.lane_centre(_lane.corridor_index(), offsets[0]) - slack_all,
+				CrowdLanes.lane_centre(_lane.corridor_index(), offsets[offsets.size() - 1]) + slack_all)
+	var near_side: bool = _lane.lane_index() <= offsets[1]
+	var low := CrowdLanes.lane_centre(_lane.corridor_index(), offsets[0] if near_side else offsets[2])
+	var high := CrowdLanes.lane_centre(_lane.corridor_index(), offsets[1] if near_side else offsets[3])
 	# Half a tile of slack at each end: a lane centre is the middle of a tile, and the footway
 	# reaches to that tile's edge.
 	var slack := float(Tuning.TILE_SIZE) * 0.5
@@ -746,12 +746,12 @@ const YIELD_HURRY := 1.7
 func _consider_turning() -> void:
 	var crossing := CrowdLanes.corridor_at(_mover._along())
 	if crossing < 0:
-		_mover._junction = -1
+		_lane.set_junction_index(-1)
 		return
-	if crossing == _mover._junction:
+	if crossing == _lane.junction_index():
 		return
-	_mover._junction = crossing
-	if _mover._rng.randf() >= PEDESTRIAN_TURN_CHANCE:
+	_lane.set_junction_index(crossing)
+	if _rng.randf() >= PEDESTRIAN_TURN_CHANCE:
 		return
 
 	# A turn is the one move that commits without looking, and that is free only while the only
@@ -764,10 +764,10 @@ func _consider_turning() -> void:
 	# **Ground only, never today's barriers** — see `_no_street_ahead()`. A street sealed further
 	# along is a street to walk into as far as the seal, and refusing it here is what left every
 	# offshoot of the day's route empty.
-	var turning := 1.0 if _mover._rng.randf() < 0.5 else -1.0
-	if _no_street_ahead(not _mover._vertical, turning, LaneMover.LOOKAHEAD):
+	var turning := 1.0 if _rng.randf() < 0.5 else -1.0
+	if _no_street_ahead(not _lane.is_vertical(), turning, LaneMover.LOOKAHEAD):
 		turning = -turning
-		if _no_street_ahead(not _mover._vertical, turning, LaneMover.LOOKAHEAD):
+		if _no_street_ahead(not _lane.is_vertical(), turning, LaneMover.LOOKAHEAD):
 			return
 
 	# The two axes swap roles and the position does not move: what was the distance along
@@ -779,20 +779,20 @@ func _consider_turning() -> void:
 	# with no room left in the junction to cross to the other lane of that footway. Nothing is
 	# blocking the street it is already walking, so it carries straight on — an unmade turn is
 	# invisible where a walker clipping a café's tables is not.
-	var lane := _sidewalk_after_a_turn(not _mover._vertical, crossing, turning)
+	var lane := _sidewalk_after_a_turn(not _lane.is_vertical(), crossing, turning)
 	if lane < 0:
 		return
 
-	var kept := _mover._corridor
-	_mover._vertical = not _mover._vertical
-	_mover._corridor = crossing
-	_mover._direction = turning
-	_mover._lane = lane
-	_mover._lane_centre = _mover._lane_centre_here()
+	var kept := _lane.corridor_index()
+	_lane.set_vertical(not _lane.is_vertical())
+	_lane.set_corridor_index(crossing)
+	_lane.set_direction(turning)
+	_lane.set_lane_index(lane)
+	_lane.set_lane_centre(_mover._lane_centre_here())
 	_mover._forget_the_detour()
 	# It is now travelling through the corridor it just came down, so that is the junction
 	# it is in — otherwise it would roll a second turn before clearing the first.
-	_mover._junction = kept
+	_lane.set_junction_index(kept)
 
 ## Whether the street `distance` ahead along an axis is one this agent could never travel **at all**
 ## — off the map, not a street, a precinct to a car — with nothing today has placed in it counted.
@@ -836,7 +836,7 @@ func _no_street_ahead(vertical: bool, direction: float, distance: float,
 ## instead of slowing to a stop at the body with the walkers behind it queueing.
 func _footway_is_shut(vertical: bool, tile: Vector2i) -> bool:
 	# The cheap half first: a walker's own tile is nearly always clear, and this runs per probe.
-	if _mover._map.passable(tile, _bodies_today):
+	if _map.passable(tile, _bodies_today):
 		return false
 	var across := tile.x if vertical else tile.y
 	var offset := CityMap.corridor_offset(across)
@@ -844,13 +844,13 @@ func _footway_is_shut(vertical: bool, tile: Vector2i) -> bool:
 		return false
 	var along_tile := tile.y if vertical else tile.x
 	var corridor := across / CityMap.period()
-	var offsets := CrowdLanes.walkable_offsets(_mover._map, vertical, corridor, along_tile)
+	var offsets := CrowdLanes.walkable_offsets(_map, vertical, corridor, along_tile)
 	# On an ordinary street the carriageway is not a footway; in a precinct it is paving like the
 	# rest.
 	if not offsets.has(offset):
 		return false
-	if offsets.size() != CrowdLanes.SIDEWALK_OFFSETS.size() and vertical == _mover._vertical \
-			and corridor == _mover._corridor:
+	if offsets.size() != CrowdLanes.SIDEWALK_OFFSETS.size() and vertical == _lane.is_vertical() \
+			and corridor == _lane.corridor_index():
 		return _precinct_way_is_shut_cached(vertical, corridor)
 	var base := corridor * CityMap.period()
 	for lane_offset in _footway_of(offsets, offset):
@@ -863,14 +863,14 @@ func _footway_is_shut(vertical: bool, tile: Vector2i) -> bool:
 ## `_precinct_way_is_shut()` worked out once per look-ahead scan: the answer reads only the walker's
 ## own tile, heading and the map, so every blocked tile the scan probes shares it.
 func _precinct_way_is_shut_cached(vertical: bool, corridor: int) -> bool:
-	var here := _mover._map.world_to_tile(_mover.position)
+	var here := _map.world_to_tile(_mover.position)
 	if _way_shut_known and here == _way_shut_at and vertical == _way_shut_vertical \
-			and _mover._direction == _way_shut_direction:
+			and _lane.direction() == _way_shut_direction:
 		return _way_shut
 	_way_shut_known = true
 	_way_shut_at = here
 	_way_shut_vertical = vertical
-	_way_shut_direction = _mover._direction
+	_way_shut_direction = _lane.direction()
 	_way_shut = _precinct_way_is_shut(vertical, corridor)
 	return _way_shut
 
@@ -885,14 +885,14 @@ func _precinct_way_is_shut_cached(vertical: bool, corridor: int) -> bool:
 ## ground that is no longer a precinct, is a way out. Run only for a probe on a blocked tile, so it
 ## costs nothing in a clear street.
 func _precinct_way_is_shut(vertical: bool, corridor: int) -> bool:
-	var step := signi(int(_mover._direction))
-	var row0 := _mover._map.world_to_tile(_mover.position)
+	var step := signi(int(_lane.direction()))
+	var row0 := _map.world_to_tile(_mover.position)
 	var from_row := row0.y if vertical else row0.x
 	var cross_tile := row0.x if vertical else row0.y
 	var base := corridor * CityMap.period()
 	var lane := cross_tile - base
 	if lane < 0 or lane >= CrowdLanes.PRECINCT_OFFSETS.size():
-		lane = _mover._lane
+		lane = _lane.lane_index()
 	var reach: Array[bool] = []
 	reach.resize(CrowdLanes.PRECINCT_OFFSETS.size())
 	reach.fill(false)
@@ -903,7 +903,7 @@ func _precinct_way_is_shut(vertical: bool, corridor: int) -> bool:
 	var met_a_body := false
 	for i in range(1, BODY_SCAN_TILES + 1):
 		var row := from_row + step * i
-		if CrowdLanes.walkable_offsets(_mover._map, vertical, corridor, row).size() \
+		if CrowdLanes.walkable_offsets(_map, vertical, corridor, row).size() \
 				== CrowdLanes.SIDEWALK_OFFSETS.size():
 			return false
 		var carried: Array[bool] = []
@@ -953,7 +953,7 @@ static func _footway_of(offsets: Array[int], offset: int) -> Array[int]:
 ## `_walker_today`). Deliberately **not** `cannot_go_on`, which asks this one's own caller and
 ## would come back round; the segment's own state is already decided by the time anything here runs.
 func _walker_lane_is_open(tile: Vector2i) -> bool:
-	return _mover._map.passable(tile, _walker_today) and _mover._map.in_bounds(tile) and _mover._map.is_street(tile)
+	return _map.passable(tile, _walker_today) and _map.in_bounds(tile) and _map.is_street(tile)
 
 ## How far a lane scan looks, in tiles: far enough past the distance a sidestep begins at that the
 ## lane chosen is the one with more road in it rather than the one that happens to be clear for a
@@ -980,30 +980,30 @@ const BODY_SCAN_TILES := WALKER_BODY_SIDESTEP_TILES + LaneMover.LOOKAHEAD_TILES
 ## on. Ties go to `_lane` for the same reason — that is what makes "and steps back after" happen at
 ## all rather than leaving a walker one lane over for the rest of the street.
 func _step_around_a_body(here: Vector2i) -> void:
-	if _mover._map.obstructed_tiles.is_empty():
+	if _map.obstructed_tiles.is_empty():
 		_stop_going_round_a_body()
 		return
-	var along_tile := here.y if _mover._vertical else here.x
-	var offsets := CrowdLanes.walkable_offsets(_mover._map, _mover._vertical, _mover._corridor, along_tile)
+	var along_tile := here.y if _lane.is_vertical() else here.x
+	var offsets := CrowdLanes.walkable_offsets(_map, _lane.is_vertical(), _lane.corridor_index(), along_tile)
 	# A lane that is not one of this stretch's own is a walker that has walked out of a precinct
 	# still carrying one of its six, which on an ordinary street is the carriageway. The nearest
 	# sidewalk is the footway it is measured against then, so a stray is steered onto a pavement by
 	# the same move that takes it round a body rather than being left to walk down the road.
-	var lane := _mover._lane if offsets.has(_mover._lane) else CrowdLanes.nearest_sidewalk(_mover._corridor, _mover._cross())
-	var base := _mover._corridor * CityMap.period()
+	var lane := _lane.lane_index() if offsets.has(_lane.lane_index()) else CrowdLanes.nearest_sidewalk(_lane.corridor_index(), _mover._cross())
+	var base := _lane.corridor_index() * CityMap.period()
 	var best := lane
-	var best_clear := _open_tiles_ahead(base + lane, along_tile, _mover._vertical, _mover._direction)
+	var best_clear := _open_tiles_ahead(base + lane, along_tile, _lane.is_vertical(), _lane.direction())
 	if best_clear > WALKER_BODY_SIDESTEP_TILES:
 		_stop_going_round_a_body()
 		return
 	for lane_offset in _footway_of(offsets, lane):
 		if lane_offset == lane:
 			continue
-		var clear := _open_tiles_ahead(base + lane_offset, along_tile, _mover._vertical, _mover._direction)
+		var clear := _open_tiles_ahead(base + lane_offset, along_tile, _lane.is_vertical(), _lane.direction())
 		if clear > best_clear:
 			best = lane_offset
 			best_clear = clear
-	if best == _mover._lane:
+	if best == _lane.lane_index():
 		# Nothing on this footway is better than the lane it is already in. Where that is because
 		# every lane is taken at one point, or in a precinct no lane runs through the rows ahead,
 		# `_footway_is_shut` has already told `_look_ahead` and `divert` turns this walker; there is
@@ -1011,8 +1011,8 @@ func _step_around_a_body(here: Vector2i) -> void:
 		_stop_going_round_a_body()
 		return
 	var band := _pavement_band()
-	var target := CrowdLanes.walker_lane_centre(_mover._corridor, best, offsets)
-	_mover._detour = clampf(target, band.x, band.y) - _mover._lane_centre
+	var target := CrowdLanes.walker_lane_centre(_lane.corridor_index(), best, offsets)
+	_lane.set_detour(clampf(target, band.x, band.y) - _lane.lane_centre())
 	_body_detour_held = true
 
 ## How much of its own lane a walker needs in front of it to turn into an arm at all, in tiles: the
@@ -1042,10 +1042,10 @@ func _sidewalk_after_a_turn(vertical: bool, corridor: int, direction: float) -> 
 	var cross := _mover.position.x if vertical else _mover.position.y
 	var along := _mover.position.y if vertical else _mover.position.x
 	var lane := CrowdLanes.nearest_sidewalk(corridor, cross)
-	if _mover._map.obstructed_tiles.is_empty():
+	if _map.obstructed_tiles.is_empty():
 		return lane
 	var along_tile := floori(along / float(Tuning.TILE_SIZE))
-	var offsets := CrowdLanes.walkable_offsets(_mover._map, vertical, corridor, along_tile)
+	var offsets := CrowdLanes.walkable_offsets(_map, vertical, corridor, along_tile)
 	if not offsets.has(lane):
 		return lane
 	var base := corridor * CityMap.period()
@@ -1082,7 +1082,7 @@ func _stop_going_round_a_body() -> void:
 	if not _body_detour_held:
 		return
 	_body_detour_held = false
-	_mover._detour = 0.0
+	_lane.set_detour(0.0)
 	_detour_left = 0.0
 
 ## Whether the agent is far enough into a junction to turn without landing on the wrong surface.
@@ -1127,7 +1127,7 @@ func may_stand_on(tile: Vector2i) -> bool:
 func cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _never_a_street_here(vertical, tile):
 		return true
-	if not _mover._map.passable(tile, _closed_today):
+	if not _map.passable(tile, _closed_today):
 		return true
 	# A street held for today has a hard seal, a region wall or a closure's barriers standing across
 	# the whole of it somewhere along its length. **That is a car's warning and not a walker's** —
@@ -1136,7 +1136,7 @@ func cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _mover._segment_is_shut(tile):
 		return true
 	# A soft seal takes both pavements and leaves the carriageway to the cars.
-	if not _mover._map.passable(tile, _soft_sealed_today):
+	if not _map.passable(tile, _soft_sealed_today):
 		return true
 	# A stationary solid body standing in the street — a café, a construction band, a kerbed van.
 	# **A walker has the other lane of its own footway** and goes round (`_step_around_a_body`), so
@@ -1149,9 +1149,9 @@ func cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 ## it: off the map, or not a street at all. **Out of bounds is blocked** for every walker: only cars
 ## leave by the spine's tunnel and bridge, playtest 16, finding 3, *"only cars should be able to"*.
 func _never_a_street_here(_vertical: bool, tile: Vector2i) -> bool:
-	if not _mover._map.in_bounds(tile):
+	if not _map.in_bounds(tile):
 		return true
-	return not _mover._map.is_street(tile)
+	return not _map.is_street(tile)
 
 ## A walker meets the thing it cannot pass with the barrier one tile away, and turns where it
 ## stands: a person changes direction in a stride, has no lane to be on the correct side of and no
@@ -1175,11 +1175,11 @@ func divert(_delta: float) -> void:
 		# costs a tile of waiting. It costs everything when the wall is the next tile: a walker
 		# leaving a junction straight into a cul-de-sac's plug has no tile left to wait for the
 		# right band in, so it turns round instead.
-		if _mover._blocked_in <= 1:
+		if _lane.blocked_in() <= 1:
 			_mover._turn_round()
 		return
 
-	var turning := _pick_an_arm(crossing, 1.0 if _mover._rng.randf() < 0.5 else -1.0)
+	var turning := _pick_an_arm(crossing, 1.0 if _rng.randf() < 0.5 else -1.0)
 	if turning == 0.0:
 		_mover._turn_round()   # boxed in on three sides; go back the way it came
 		return
@@ -1188,22 +1188,22 @@ func divert(_delta: float) -> void:
 	# it there. **A refusal is only advice here**: this turn is being made because the way ahead is
 	# shut, so there has to be a turn — it falls back to the pavement it is nearest, which is where
 	# it would have landed anyway.
-	var sidewalk := _sidewalk_after_a_turn(not _mover._vertical, crossing, turning)
-	var kept := _mover._corridor
-	_mover._vertical = not _mover._vertical
-	_mover._corridor = crossing
-	_mover._direction = turning
-	_mover._lane = sidewalk if sidewalk >= 0 \
-			else CrowdLanes.nearest_sidewalk(_mover._corridor, _mover._cross())
-	_mover._lane_centre = lane_centre_here()
+	var sidewalk := _sidewalk_after_a_turn(not _lane.is_vertical(), crossing, turning)
+	var kept := _lane.corridor_index()
+	_lane.set_vertical(not _lane.is_vertical())
+	_lane.set_corridor_index(crossing)
+	_lane.set_direction(turning)
+	_lane.set_lane_index(sidewalk if sidewalk >= 0
+			else CrowdLanes.nearest_sidewalk(_lane.corridor_index(), _mover._cross()))
+	_lane.set_lane_centre(lane_centre_here())
 	_mover._forget_the_detour()
-	_mover._junction = kept
+	_lane.set_junction_index(kept)
 
 ## Which way to turn out of `crossing`, trying `first` before the other one, or `0.0` for neither.
 ## A walker asks only whether the arm is street at all, because it can walk in, meet whatever is
 ## down there and turn round (`_no_street_ahead()`), and it asks from where it stands.
 func _pick_an_arm(crossing: int, first: float) -> float:
 	for turning: float in [first, -first]:
-		if not _no_street_ahead(not _mover._vertical, turning, LaneMover.LOOKAHEAD):
+		if not _no_street_ahead(not _lane.is_vertical(), turning, LaneMover.LOOKAHEAD):
 			return turning
 	return 0.0

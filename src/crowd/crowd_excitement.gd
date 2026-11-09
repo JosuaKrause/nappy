@@ -115,7 +115,7 @@ var _reach_scale := 1.0
 func _init(agent: CrowdAgent) -> void:
 	super(agent)
 	_agent = agent
-	take_kind(agent.kind)
+	take_kind(agent.lane().kind())
 
 ## Takes up the field of a body of `kind`, told by the body whenever its kind is installed.
 func take_kind(kind: CrowdAgent.Kind) -> void:
@@ -208,7 +208,7 @@ func _falloff_at(distance: float) -> float:
 ##
 ## Overrides ExcitementSource.wall_grid.
 func wall_grid() -> WorldMap:
-	return _agent._map
+	return _agent.lane().map()
 
 ## The body's velocity, which already carries its turns, yields, door holds and pockets.
 ##
@@ -266,7 +266,7 @@ func _projected_field(sample: Vector2, velocity: Vector2) -> float:
 ## Overrides ExcitementSource.will_be_lethal.
 func will_be_lethal(player_position: Vector2) -> bool:
 	var agent := _agent
-	if not _car or agent._speed < Tuning.CAR_STRIKE_MIN_SPEED:
+	if not _car or agent.lane().speed() < Tuning.CAR_STRIKE_MIN_SPEED:
 		return false
 	var vel := agent.velocity()
 	var forward := agent.heading()

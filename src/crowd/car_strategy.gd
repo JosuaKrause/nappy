@@ -137,7 +137,7 @@ func lane_offsets_at(_along_tile: int) -> Array[int]:
 
 ## Overrides LaneStrategy.placement_problem.
 func placement_problem() -> String:
-	if _mover._direction != CrowdLanes.road_direction(_mover._vertical, _mover._lane):
+	if _lane.direction() != CrowdLanes.road_direction(_lane.is_vertical(), _lane.lane_index()):
 		return "car direction contradicts right-hand traffic"
 	return ""
 
@@ -150,8 +150,8 @@ func speed_range() -> Vector2:
 ##
 ## Overrides LaneStrategy.may_stand_off_the_map.
 func may_stand_off_the_map(tile: Vector2i) -> bool:
-	return _mover._map.is_main_road(_mover._vertical, _mover._corridor) \
-			and (tile.y < 0 or tile.y >= _mover._map.size_in_tiles().y)
+	return _map.is_main_road(_lane.is_vertical(), _lane.corridor_index()) \
+			and (tile.y < 0 or tile.y >= _map.size_in_tiles().y)
 
 ## A precinct is paved end to end, so every tile of it says "street" and a car placed there would
 ## look perfectly settled right up to the moment it drove off down the paving. Asked at placement
@@ -160,7 +160,7 @@ func may_stand_off_the_map(tile: Vector2i) -> bool:
 ##
 ## Overrides LaneStrategy.may_be_placed_on.
 func may_be_placed_on(tile: Vector2i) -> bool:
-	return _mover._map.is_driveable_at(_mover._vertical, tile)
+	return _map.is_driveable_at(_lane.is_vertical(), tile)
 
 ## A car's bob and its give-way run every frame. **A car in a turn is following a path that was
 ## checked before it started**, so none of the lane steering, look-ahead or diverting applies to it:
@@ -178,7 +178,7 @@ func may_be_placed_on(tile: Vector2i) -> bool:
 func begin_frame(delta: float) -> bool:
 	_mover.advance_the_picture(delta)
 	_give_way(delta)
-	if _mover._turn:
+	if _lane.turn():
 		_follow_the_turn(delta)
 		_claim_the_turn()
 		return true
@@ -212,8 +212,8 @@ func on_the_road_clear() -> void:
 ##
 ## Overrides LaneStrategy.on_turned_round.
 func on_turned_round() -> void:
-	_mover._lane = CrowdLanes.road_lane(_mover._vertical, _mover._direction)
-	_mover._lane_centre = lane_centre_here()
+	_lane.set_lane_index(CrowdLanes.road_lane(_lane.is_vertical(), _lane.direction()))
+	_lane.set_lane_centre(lane_centre_here())
 	claim_the_road_here()
 
 ## A car has no gait, and its stride is its own length, the same 52px the body is measured over.
@@ -232,25 +232,25 @@ func stride_length() -> float:
 ##
 ## Overrides LaneStrategy.choose_lane.
 func choose_lane(_roll: float) -> void:
-	_mover._vertical = _pick_axis_by_weight()
-	_mover._corridor = CrowdLanes.pick_corridor_in_range(_mover._rng, _mover._map,
-			_mover._vertical, _mover.field.corridor_range(_mover._vertical), true)
-	_mover._lane = CrowdLanes.ROAD_OFFSETS[_mover._rng.randi_range(0, 1)]
-	_mover._direction = CrowdLanes.road_direction(_mover._vertical, _mover._lane)
-	_mover._speed = _mover._rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y)
+	_lane.set_vertical(_pick_axis_by_weight())
+	_lane.set_corridor_index(CrowdLanes.pick_corridor_in_range(_rng, _map,
+			_lane.is_vertical(), _field.corridor_range(_lane.is_vertical()), true))
+	_lane.set_lane_index(CrowdLanes.ROAD_OFFSETS[_rng.randi_range(0, 1)])
+	_lane.set_direction(CrowdLanes.road_direction(_lane.is_vertical(), _lane.lane_index()))
+	_lane.set_speed(_rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y))
 
 ## A car sits on the tile centre of its lane.
 ##
 ## Overrides LaneStrategy.lane_centre_here.
 func lane_centre_here() -> float:
-	return CrowdLanes.lane_centre(_mover._corridor, _mover._lane)
+	return CrowdLanes.lane_centre(_lane.corridor_index(), _lane.lane_index())
 
 ## A car at a stretch's end enters on the lane that drives that way, at its ordinary speed.
 ##
 ## Overrides LaneStrategy.enter_at_an_end.
 func enter_at_an_end(_along_tile: int) -> bool:
-	_mover._lane = CrowdLanes.road_lane(_mover._vertical, _mover._direction)
-	_mover._speed = _mover._rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y)
+	_lane.set_lane_index(CrowdLanes.road_lane(_lane.is_vertical(), _lane.direction()))
+	_lane.set_speed(_rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y))
 	return true
 
 # -------------------------------------------------------- what a car does ---
@@ -274,9 +274,9 @@ func enter_at_an_end(_along_tile: int) -> bool:
 ##
 ## Overrides LaneStrategy.is_in_a_pocket.
 func is_in_a_pocket() -> bool:
-	if _mover.pockets == null:
+	if _pockets == null:
 		return false
-	return _mover.pockets.holds(_mover._map.world_to_tile(_mover.position))
+	return _pockets.holds(_map.world_to_tile(_mover.position))
 
 ## How fast this car is going as a fraction of its own pace while a pocket has caught it: nothing at
 ## all while it is standing where the seal caught it, its ordinary pace otherwise. Always one for a
@@ -288,9 +288,9 @@ func is_in_a_pocket() -> bool:
 ## so a car whose step simply stopped advancing would still be drawn and predicted as travelling.
 ## Reading `velocity()` down to zero here is the same trick a door hold already relies on.
 func _pocket_factor() -> float:
-	if _mover.pockets == null:
+	if _pockets == null:
 		return 1.0
-	return 0.0 if _mover.pockets.holds(_mover._map.world_to_tile(_mover.position)) else 1.0
+	return 0.0 if _pockets.holds(_map.world_to_tile(_mover.position)) else 1.0
 
 ## Which way a car drives, weighted by the traffic each axis is carrying **inside the field**.
 ##
@@ -304,14 +304,14 @@ func _pick_axis_by_weight() -> bool:
 	var horizontal_weight := _axis_weight(false)
 	var total := vertical_weight + horizontal_weight
 	if total <= 0.0:
-		return _mover._rng.randf() < 0.5
-	return _mover._rng.randf() * total < vertical_weight
+		return _rng.randf() < 0.5
+	return _rng.randf() * total < vertical_weight
 
 func _axis_weight(vertical: bool) -> float:
-	var span := _mover.field.corridor_range(vertical)
+	var span := _field.corridor_range(vertical)
 	var total := 0.0
 	for index in range(span.x, span.y + 1):
-		total += CrowdLanes.busyness_for(_mover._map, vertical, index, true)
+		total += CrowdLanes.busyness_for(_map, vertical, index, true)
 	return total
 
 ## **A zebra is only the safe way over if the traffic honours it** — otherwise it is paint, and the
@@ -327,19 +327,19 @@ func _axis_weight(vertical: bool) -> float:
 ## the same behaviour asked for by different things, and giving any one of them its own brake would
 ## be a second answer to a question that already has one.
 func _give_way(delta: float) -> void:
-	var wanted := _mover._cruise
-	if _mover.junction_hold < INF:
-		wanted = minf(wanted, sqrt(2.0 * CAR_ZEBRA_APPROACH_BRAKE * _mover.junction_hold))
-	if _mover.gate_hold < INF:
-		wanted = minf(wanted, sqrt(2.0 * CAR_ZEBRA_APPROACH_BRAKE * _mover.gate_hold))
+	var wanted := _lane.cruise_speed()
+	if _lane.junction_hold() < INF:
+		wanted = minf(wanted, sqrt(2.0 * CAR_ZEBRA_APPROACH_BRAKE * _lane.junction_hold()))
+	if _lane.gate_hold() < INF:
+		wanted = minf(wanted, sqrt(2.0 * CAR_ZEBRA_APPROACH_BRAKE * _lane.gate_hold()))
 	# A turn it has committed to: ease toward the speed the arc is taken at over whatever run-up is
 	# left, and hold that speed for the whole curve. When the junction came into sight too late for
 	# the easing to finish — which the lookahead makes the ordinary case rather than the unlucky one
 	# — the car is still braking as it turns, which is what a driver who took a corner a little fast
 	# does. See `Tuning.CAR_TURN_SPEED`.
-	if _mover._turn:
+	if _lane.turn():
 		wanted = minf(wanted, sqrt(Tuning.CAR_TURN_SPEED * Tuning.CAR_TURN_SPEED
-				+ 2.0 * CAR_ZEBRA_APPROACH_BRAKE * _mover._turn_run_up))
+				+ 2.0 * CAR_ZEBRA_APPROACH_BRAKE * _lane.turn_run_up()))
 	# And the wall itself, for the car that has no manoeuvre that fits. Nothing used to brake for a
 	# blockage at all, because reversing on the spot was always available; refusing that has to leave
 	# the car somewhere it could have stopped.
@@ -361,8 +361,8 @@ func _give_way(delta: float) -> void:
 		# `CAR_ZEBRA_APPROACH_BRAKE` for what shaping it with `CAR_BRAKE` does instead.
 		wanted = minf(wanted, sqrt(2.0 * CAR_ZEBRA_APPROACH_BRAKE * to_line))
 	wanted = minf(wanted, _following_speed())
-	var rate := CAR_BRAKE if wanted < _mover._speed else CAR_ACCELERATE
-	_mover._speed = move_toward(_mover._speed, wanted, rate * delta)
+	var rate := CAR_BRAKE if wanted < _lane.speed() else CAR_ACCELERATE
+	_lane.set_speed(move_toward(_lane.speed(), wanted, rate * delta))
 
 ## How far this car has to the stop line of a crossing it should give way at, or `INF` when
 ## there is nothing to give way to — nobody waiting, or **it is already too late to stop**.
@@ -381,7 +381,7 @@ func _distance_to_stop_line() -> float:
 	# the rule exists to prevent. Written the other way round — commit when it cannot stop at
 	# the *line* — a car that has come to rest exactly there has a braking distance of nothing,
 	# decides it is too late, and drives off over the crossing it just stopped for.
-	if crossing < braking_distance(_mover._speed):
+	if crossing < braking_distance(_lane.speed()):
 		return INF
 	return maxf(0.0, GiveWay.stop_line(crossing))
 
@@ -416,8 +416,8 @@ func _distance_to_a_figure() -> float:
 ##
 ## Overrides LaneStrategy.road_before_a_figure.
 func road_before_a_figure(reach := Tuning.CAR_ZEBRA_SIGHT) -> float:
-	var separation := _mover._map.separation
-	if not separation.has_keepers_for_cars() or (_mover._turn and _mover._turn_run_up <= 0.0):
+	var separation := _map.separation
+	if not separation.has_keepers_for_cars() or (_lane.turn() and _lane.turn_run_up() <= 0.0):
 		return INF
 	var edge := separation.edge_ahead(_mover.global_position, _mover.heading(), SHADOW_ACROSS * 0.5,
 			FIGURE_WIDEST, reach, FIGURE_LEAD_TICKS)
@@ -431,8 +431,8 @@ func road_before_a_figure(reach := Tuning.CAR_ZEBRA_SIGHT) -> float:
 ## same turn round. Read into `_distance_to_the_blockage()`, so the brake that leaves it room to
 ## turn and every arc the planner tries stop short of it.
 func road_before_a_parked_figure() -> float:
-	var separation := _mover._map.separation
-	if not separation.has_keepers_for_cars() or (_mover._turn and _mover._turn_run_up <= 0.0):
+	var separation := _map.separation
+	if not separation.has_keepers_for_cars() or (_lane.turn() and _lane.turn_run_up() <= 0.0):
 		return INF
 	var edge := separation.edge_ahead(_mover.global_position, _mover.heading(), SHADOW_ACROSS * 0.5,
 			FIGURE_WIDEST, float(LaneMover.LOOKAHEAD), 0.0, true)
@@ -471,20 +471,20 @@ const FIGURE_WIDEST := Tuning.CAR_STRIKE_HALF_WIDTH
 ##
 ## Overrides LaneStrategy.give_way_on_the_step.
 func give_way_on_the_step(delta: float) -> void:
-	var separation := _mover._map.separation
+	var separation := _map.separation
 	if not separation.has_keepers_for_cars():
 		return
-	var move := _mover._move
+	var move := _move
 	var forward := _mover.heading()
 	var step := (move.steps_to() - move.stands_at()).dot(forward)
 	if step <= 0.0:
 		return
-	var room := separation.room_ahead(move.stands_at(), forward, _mover.shape.spine_half_length(),
-			_mover.shape.rounding_radius(), FIGURE_WIDEST)
+	var room := separation.room_ahead(move.stands_at(), forward, _lane.shape().spine_half_length(),
+			_lane.shape().rounding_radius(), FIGURE_WIDEST)
 	if room >= step:
 		return
 	move.step_to(move.steps_to() - forward * (step - room))
-	_mover._speed = minf(_mover._speed, room / delta)
+	_lane.set_speed(minf(_lane.speed(), room / delta))
 
 ## The fastest this car may go and still keep `CAR_HEADWAY_TIME` of clear road in front of it.
 ##
@@ -493,9 +493,9 @@ func give_way_on_the_step(delta: float) -> void:
 ## without it the arithmetic asks for zero speed at zero gap, which is a car parked inside
 ## another car rather than behind it.
 func _following_speed() -> float:
-	if _mover.gap_ahead == INF:
-		return _mover._cruise
-	return maxf(0.0, (_mover.gap_ahead - Tuning.CAR_GAP_MIN) / Tuning.CAR_HEADWAY_TIME)
+	if _lane.gap_ahead() == INF:
+		return _lane.cruise_speed()
+	return maxf(0.0, (_lane.gap_ahead() - Tuning.CAR_GAP_MIN) / Tuning.CAR_HEADWAY_TIME)
 
 ## Distance along the street to the **near edge** of the first crossing ahead that somebody is
 ## standing at, or `INF` for none.
@@ -509,23 +509,23 @@ func _following_speed() -> float:
 ## Which zebra, and whether this street gives way to her at all (**a main road does not**: its
 ## crossings are the light's), is `GiveWay`'s, the one answer the event cars read too.
 func _crossing_ahead_somebody_is_waiting_at() -> float:
-	if _mover.pedestrian_ahead == Vector2.INF:
+	if _lane.pedestrian_ahead() == Vector2.INF:
 		return INF
 	# **A car mid-turn is inside the box and has nothing to give way at.** The scan below walks
 	# tiles down one axis from the car's own tile, which is a question about a lane the car is not
 	# in while it is on an arc — and stopping there would be stopping in the junction, which is the
 	# one thing the box rules exist to prevent. The zebras a turn crosses are at the box's own edges
 	# and the car gave way at them, or committed, on the way in.
-	if _mover._turn and _mover._turn_run_up <= 0.0:
+	if _lane.turn() and _lane.turn_run_up() <= 0.0:
 		return INF
-	if not GiveWay.owes_her_way(_mover._map, _mover._vertical, _mover.global_position,
-			_mover.pedestrian_ahead):
+	if not GiveWay.owes_her_way(_map, _lane.is_vertical(), _mover.global_position,
+			_lane.pedestrian_ahead()):
 		return INF
-	var edge := GiveWay.zebra_edge_ahead(_mover._map, _mover.global_position, _mover._vertical,
-			_mover._direction, _mover.pedestrian_ahead)
+	var edge := GiveWay.zebra_edge_ahead(_map, _mover.global_position, _lane.is_vertical(),
+			_lane.direction(), _lane.pedestrian_ahead())
 	if edge == INF:
 		return INF
-	return (edge - _mover._along()) * _mover._direction
+	return (edge - _mover._along()) * _lane.direction()
 
 ## Whether the street `distance` ahead along an axis is one this agent cannot travel: shut for
 ## the day, or not a street at all.
@@ -551,14 +551,14 @@ func _blocked_ahead(vertical: bool, direction: float, distance: float,
 ## Walkers are exempt: two people on a pavement are not two cars in a lane, `space_out_the_traffic`
 ## has never looked at them, and there is nothing for this to prevent.
 func _has_room_to_turn(crossing: int, turning: float) -> bool:
-	if not _mover.traffic:
+	if not _traffic:
 		return true
-	var vertical := not _mover._vertical
+	var vertical := not _lane.is_vertical()
 	var lane := CrowdLanes.road_lane(vertical, turning)
 	# After the turn the axes swap: what is currently the coordinate *across* this corridor becomes
 	# the one *along* the new one, which is where in that queue the car would appear.
 	var landing := _mover._cross() * turning
-	return _mover.traffic.room_at(LaneMover.make_lane_key(vertical, crossing, lane, turning),
+	return _traffic.room_at(LaneMover.make_lane_key(vertical, crossing, lane, turning),
 			landing, Tuning.CAR_GAP_MIN)
 
 # -------------------------------------------------------------- car turns ---
@@ -600,7 +600,7 @@ func _has_room_to_turn(crossing: int, turning: float) -> bool:
 ##    car nose-to-wall in a dead end takes its whole street with it. Nothing else is relaxed — the
 ##    wall, the closure, the seal and the building are all still refused.
 func _plan_a_turn(delta: float) -> void:
-	if _mover._turn:
+	if _lane.turn():
 		return
 	_forget_the_last_plan()
 	# Standing on ground it may not be on at all, which is a day that started behind a barrier. There
@@ -610,12 +610,12 @@ func _plan_a_turn(delta: float) -> void:
 		_turn_round_cause = TurnRoundCause.OFF_THE_STREET
 		_mover._turn_round()
 		return
-	var band := GiveWay.box_index(_mover._along(), _mover._direction)
+	var band := GiveWay.box_index(_mover._along(), _lane.direction())
 	if band < 0:
 		return
 	var box := _mover.junction_ahead()
-	var probe := CarTurn.world(_mover._vertical, CarTurn.carriageway_centre(band), _mover._cross())
-	var first := 1.0 if _mover._rng.randf() < 0.5 else -1.0
+	var probe := CarTurn.world(_lane.is_vertical(), CarTurn.carriageway_centre(band), _mover._cross())
+	var first := 1.0 if _rng.randf() < 0.5 else -1.0
 	var turning := _pick_an_arm(band, first, probe)
 	if turning != 0.0:
 		if _try_a_turn(TurnCandidate.NEAR_ARM, _arm_turn(band, turning, box)):
@@ -637,14 +637,14 @@ func _plan_a_turn(delta: float) -> void:
 	# between the two lanes and there is no other value that lands on one. Clamping makes the
 	# question the one that actually matters: from here, is the ground the body sweeps still clear.
 	if _try_a_turn(TurnCandidate.STREET_ABOUT_FACE,
-			_about_face_at(_mover._along() + maxf(0.0, blockage - CarTurn.about_face_reach()) * _mover._direction,
+			_about_face_at(_mover._along() + maxf(0.0, blockage - CarTurn.about_face_reach()) * _lane.direction(),
 			Vector2i(-1, -1)), true):
 		return
 	# **Nothing fits, and everything below is about the car that has run out of road to look with.** A
 	# car still rolling keeps asking and nothing else happens to it, since a few pixels further on
 	# the answer changes; one that has come to rest a half turn short of the barrier has arrived
 	# where its own brake was aiming and has nowhere left to ask from.
-	if _mover._speed >= Tuning.CAR_STOPPED_SPEED or _room_to_stop_in() >= nose:
+	if _lane.speed() >= Tuning.CAR_STOPPED_SPEED or _room_to_stop_in() >= nose:
 		return
 	# **But "no arc fitted this frame" is not "no arc can fit here".** The lane a half turn lands in
 	# is the other side of this carriageway, and the traffic on it is going somewhere: a car standing
@@ -703,13 +703,13 @@ func _an_arc_may_yet_fit() -> bool:
 ## flicker: the reversal costs a stride (`_turn_round()`), the stride runs out, the state is
 ## unchanged, and the car reverses again for ever.
 func _no_road_the_other_way() -> bool:
-	var lane := CrowdLanes.road_lane(_mover._vertical, -_mover._direction)
-	var centre := CrowdLanes.lane_centre(_mover._corridor, lane)
-	var from := _mover._map.world_to_tile(CarTurn.world(_mover._vertical, _mover._along(), centre))
-	var step := (Vector2i.DOWN if _mover._vertical else Vector2i.RIGHT) * -int(signf(_mover._direction))
+	var lane := CrowdLanes.road_lane(_lane.is_vertical(), -_lane.direction())
+	var centre := CrowdLanes.lane_centre(_lane.corridor_index(), lane)
+	var from := _map.world_to_tile(CarTurn.world(_lane.is_vertical(), _mover._along(), centre))
+	var step := (Vector2i.DOWN if _lane.is_vertical() else Vector2i.RIGHT) * -int(signf(_lane.direction()))
 	var needed := ceili((CarTurn.about_face_reach() + nose) / float(Tuning.TILE_SIZE))
 	for i in range(1, needed + 1):
-		if cannot_go_on(_mover._vertical, from + step * i):
+		if cannot_go_on(_lane.is_vertical(), from + step * i):
 			return true
 	return false
 
@@ -732,15 +732,15 @@ func _try_a_turn(slot: TurnCandidate, turn: CarTurn, over_the_kerb := false) -> 
 
 ## The half turn back down the other lane, taken at a given point along this corridor.
 func _about_face_at(at_along: float, box: Vector2i) -> CarTurn:
-	return CarTurn.about_face(_mover._vertical, _mover._direction, _mover._corridor, _mover._lane, _mover._cross(), at_along,
-			CrowdLanes.road_lane(_mover._vertical, -_mover._direction), box)
+	return CarTurn.about_face(_lane.is_vertical(), _lane.direction(), _lane.corridor_index(), _lane.lane_index(), _mover._cross(), at_along,
+			CrowdLanes.road_lane(_lane.is_vertical(), -_lane.direction()), box)
 
 ## The arc into one arm of the junction ahead. The lane it lands in is the one on its own right for
 ## the way it will then be pointing, which is the **new** axis's answer — driving on the right flips
 ## with the axis, exactly as it did when this was a lane swap.
 func _arm_turn(band: int, turning: float, box: Vector2i) -> CarTurn:
-	return CarTurn.into_an_arm(_mover._vertical, _mover._direction, _mover._corridor, _mover._cross(), band,
-			CrowdLanes.road_lane(not _mover._vertical, turning), turning, box)
+	return CarTurn.into_an_arm(_lane.is_vertical(), _lane.direction(), _lane.corridor_index(), _mover._cross(), band,
+			CrowdLanes.road_lane(not _lane.is_vertical(), turning), turning, box)
 
 ## Takes a planned turn if it fits, and says what turned it away if it does not.
 ##
@@ -754,7 +754,7 @@ func _arm_turn(band: int, turning: float, box: Vector2i) -> CarTurn:
 ## caller's next move depends on it: the lane the arc lands in empties by itself and the ground it
 ## sweeps does not. See `TurnRefusal`.
 func _commit_to_a_turn(turn: CarTurn, over_the_kerb := false) -> TurnRefusal:
-	var run_up := (turn.entry_point_along() - _mover._along()) * _mover._direction
+	var run_up := (turn.entry_point_along() - _mover._along()) * _lane.direction()
 	# Further off than the car watches a junction from is further off than it can know the road is
 	# still going to be clear when it gets there.
 	if run_up > Tuning.CAR_JUNCTION_SIGHT:
@@ -792,27 +792,28 @@ func _commit_to_a_turn(turn: CarTurn, over_the_kerb := false) -> TurnRefusal:
 ## point rather than from wherever the last straight step happened to leave it. The same split
 ## happens at the far end, where what is left over is spent going straight down the new lane.
 func _follow_the_turn(delta: float) -> void:
-	var travel := _mover._speed * delta
-	if _mover._turn_run_up > 0.0:
-		var straight := minf(travel, _mover._turn_run_up)
-		_mover._set_along(_mover._along() + straight * _mover._direction)
-		_mover._set_cross(move_toward(_mover._cross(), _mover._lane_centre, LaneMover.STEER_SPEED * delta))
-		_mover._turn_run_up -= straight
+	var travel := _lane.speed() * delta
+	var turn := _lane.turn()
+	if _lane.turn_run_up() > 0.0:
+		var straight := minf(travel, _lane.turn_run_up())
+		_mover._set_along(_mover._along() + straight * _lane.direction())
+		_mover._set_cross(move_toward(_mover._cross(), _lane.lane_centre(), LaneMover.STEER_SPEED * delta))
+		_lane.set_turn_run_up(_lane.turn_run_up() - straight)
 		travel -= straight
-		if _mover._turn_run_up > 0.0:
+		if _lane.turn_run_up() > 0.0:
 			return
 		# The arc is put on the car rather than the car on the arc: whatever fraction of a pixel it
 		# is off its own lane centre is where the curve begins. A quarter turn still lands on its
 		# exit lane exactly — see `CarTurn.begin_at`.
-		_mover._turn.begin_at(_mover._cross())
-	_mover._turn.travel_on(travel)
-	if _mover._turn.distance_travelled() < _mover._turn.length():
-		_mover.position = _mover._turn.point_at(_mover._turn.distance_travelled())
+		turn.begin_at(_mover._cross())
+	turn.travel_on(travel)
+	if turn.distance_travelled() < turn.length():
+		_mover.position = turn.point_at(turn.distance_travelled())
 		_mover.place_its_move()
 		return
-	var overshoot := _mover._turn.distance_travelled() - _mover._turn.length()
+	var overshoot := turn.distance_travelled() - turn.length()
 	_land_the_turn()
-	_mover._set_along(_mover._along() + overshoot * _mover._direction)
+	_mover._set_along(_mover._along() + overshoot * _lane.direction())
 
 ## The end of a turn: the car takes up the axis, corridor, lane and direction it turned into.
 ##
@@ -844,19 +845,20 @@ func _follow_the_turn(delta: float) -> void:
 ## kept it would refuse the next car to turn into that piece of road for the rest of the day. See
 ## `TrafficIndex.give_back()`.
 func _land_the_turn() -> void:
-	if _mover.traffic:
-		_mover.traffic.give_back(_mover.turn_lane_key(), _mover._turn.landing())
-	_mover.position = _mover._turn.point_at(_mover._turn.length())
+	var turn := _lane.turn()
+	if _traffic:
+		_traffic.give_back(_mover.turn_lane_key(), turn.landing())
+	_mover.position = turn.point_at(turn.length())
 	_mover.place_its_move()
-	_mover._vertical = _mover._turn.exits_vertically()
-	_mover._corridor = _mover._turn.exit_corridor_index()
-	_mover._lane = _mover._turn.exit_lane_index()
-	_mover._direction = _mover._turn.exit_heading()
-	_mover._junction = _mover._turn.entry_corridor_index()
+	_lane.set_vertical(turn.exits_vertically())
+	_lane.set_corridor_index(turn.exit_corridor_index())
+	_lane.set_lane_index(turn.exit_lane_index())
+	_lane.set_direction(turn.exit_heading())
+	_lane.set_junction_index(turn.entry_corridor_index())
 	_mover.drop_the_turn()
-	_mover._lane_centre = _mover._lane_centre_here()
+	_lane.set_lane_centre(_mover._lane_centre_here())
 	_mover._forget_the_detour()
-	_mover._scan_at = Vector2i(-9999, -9999)
+	_lane.set_scanned_at(Vector2i(-9999, -9999))
 	claim_the_road_here()
 
 ## Whether every tile the car's own body passes over during the arc is road it may drive on.
@@ -888,7 +890,7 @@ func _the_ground_a_turn_sweeps_is_clear(turn: CarTurn, over_the_kerb: bool) -> b
 			var along := lerpf(-1.0, 1.0, float(a) / float(TURN_BODY_SAMPLES.x - 1))
 			for b in TURN_BODY_SAMPLES.y:
 				var across := lerpf(-1.0, 1.0, float(b) / float(TURN_BODY_SAMPLES.y - 1))
-				var tile := _mover._map.world_to_tile(centre
+				var tile := _map.world_to_tile(centre
 						+ forward * (along * Tuning.CAR_STRIKE_HALF_LENGTH)
 						+ side * (across * Tuning.CAR_STRIKE_HALF_WIDTH))
 				if seen.has(tile):
@@ -913,9 +915,9 @@ const TURN_BODY_SAMPLES := Vector2i(5, 3)
 ## paving, and road rather than pavement. See `_the_ground_a_turn_sweeps_is_clear` for why the last
 ## one is asked here and nowhere else.
 func _cannot_drive_over(tile: Vector2i, over_the_kerb: bool) -> bool:
-	if cannot_go_on(_mover._vertical, tile):
+	if cannot_go_on(_lane.is_vertical(), tile):
 		return true
-	return not over_the_kerb and not Tile.is_road(_mover._map.tile_at(tile))
+	return not over_the_kerb and not Tile.is_road(_map.tile_at(tile))
 
 ## Whether there is enough road past the end of the arc for the car to have got itself out of the
 ## turn — *nothing enters a junction it cannot leave*, asked of the street it is leaving into.
@@ -935,7 +937,7 @@ func _the_exit_has_room_to_leave(turn: CarTurn) -> bool:
 	var forward := turn.heading_at(turn.length())
 	var step := Vector2i(roundi(forward.x), roundi(forward.y))
 	var needed := ceili((CarTurn.about_face_reach() + nose) / float(Tuning.TILE_SIZE))
-	var here := _mover._map.world_to_tile(end)
+	var here := _map.world_to_tile(end)
 	for i in range(1, needed + 1):
 		if _cannot_drive_over(here + step * i, false):
 			return false
@@ -948,9 +950,9 @@ func _the_exit_has_room_to_leave(turn: CarTurn) -> bool:
 ## one to choose between arms and this one to refuse a turn outright, and this one knows exactly
 ## where the car will be standing.
 func _has_room_to_land(turn: CarTurn) -> bool:
-	if not _mover.traffic:
+	if not _traffic:
 		return true
-	return _mover.traffic.room_at(LaneMover.make_lane_key(turn.exits_vertically(), turn.exit_corridor_index(),
+	return _traffic.room_at(LaneMover.make_lane_key(turn.exits_vertically(), turn.exit_corridor_index(),
 			turn.exit_lane_index(), turn.exit_heading()), turn.landing(), Tuning.CAR_GAP_MIN)
 
 ## Holds the piece of road a committed turn is going to land on, once a frame for as long as the
@@ -962,9 +964,9 @@ func _has_room_to_land(turn: CarTurn) -> bool:
 ## the whole manoeuvre rather than one frame, because the car is not in that lane yet and nothing
 ## else would put it in the index. Re-made every frame, since every rebuild throws it away.
 func _claim_the_turn() -> void:
-	if not _mover.traffic or not _mover._turn:
+	if not _traffic or not _lane.turn():
 		return
-	_mover.traffic.claim(_mover.turn_lane_key(), _mover._turn.landing())
+	_traffic.claim(_mover.turn_lane_key(), _lane.turn().landing())
 
 ## How far this car has to the near edge of the first thing it cannot drive past, or `INF` when the
 ## road ahead is clear as far as it looks: a tile it cannot go on, or a parked figure in its lane
@@ -977,17 +979,17 @@ func _claim_the_turn() -> void:
 func _distance_to_the_blockage() -> float:
 	# Nothing to answer on the arc itself: the lookahead is a cached scan down the lane the car has
 	# left, and the ground the curve covers was checked before it started.
-	if _mover._turn and _mover._turn_run_up <= 0.0:
+	if _lane.turn() and _lane.turn_run_up() <= 0.0:
 		return INF
 	var figure := road_before_a_parked_figure()
-	if _mover._blocked_in > LaneMover.LOOKAHEAD_TILES:
+	if _lane.blocked_in() > LaneMover.LOOKAHEAD_TILES:
 		return figure
 	var here := floori(_mover._along() / float(Tuning.TILE_SIZE))
-	var tile := here + _mover._blocked_in * signi(int(_mover._direction))
+	var tile := here + _lane.blocked_in() * signi(int(_lane.direction()))
 	var edge := float(tile * Tuning.TILE_SIZE)
-	if _mover._direction < 0.0:
+	if _lane.direction() < 0.0:
 		edge += float(Tuning.TILE_SIZE)
-	return minf(figure, maxf(0.0, (edge - _mover._along()) * _mover._direction - nose))
+	return minf(figure, maxf(0.0, (edge - _mover._along()) * _lane.direction() - nose))
 
 ## Where a car braking for a blockage aims to come to rest: a half turn's worth of road short of it,
 ## so that a car which has to turn round has somewhere to do it. A driver meeting a dead end stops a
@@ -998,7 +1000,7 @@ func _room_to_stop_in() -> float:
 	# same point, and a car easing to *zero* there never reaches the entry it was easing toward. The
 	# turn's own brake is what governs the approach once there is a turn, and the road it runs over
 	# was checked before the car committed.
-	if _mover._turn:
+	if _lane.turn():
 		return INF
 	var blockage := _distance_to_the_blockage()
 	if blockage == INF:
@@ -1043,8 +1045,8 @@ const TURN_ROOM_MARGIN := float(Tuning.TILE_SIZE) - 2.0 * Tuning.CAR_STRIKE_HALF
 func has_left_the_map(at: float, limit: float) -> bool:
 	var north_room := float(Tuning.TILE_SIZE)
 	var south_room := north_room
-	if _mover._map.is_main_road(_mover._vertical, _mover._corridor):
-		north_room = entry_room(false) if _mover._direction > 0.0 else TUNNEL_ROOM
+	if _map.is_main_road(_lane.is_vertical(), _lane.corridor_index()):
+		north_room = entry_room(false) if _lane.direction() > 0.0 else TUNNEL_ROOM
 		south_room = BRIDGE_RUN
 	return at < -north_room or at > limit + south_room
 
@@ -1079,14 +1081,14 @@ func _spine_room(south: bool) -> float:
 ##
 ## Overrides LaneStrategy.hide_the_spine_entry.
 func hide_the_spine_entry() -> void:
-	if not _mover._map.is_main_road(_mover._vertical, _mover._corridor):
+	if not _map.is_main_road(_lane.is_vertical(), _lane.corridor_index()):
 		return
-	var extent := _mover._map.world_size()
-	var limit: float = extent.y if _mover._vertical else extent.x
+	var extent := _map.world_size()
+	var limit: float = extent.y if _lane.is_vertical() else extent.x
 	var at := _mover._along()
-	if _mover._direction > 0.0 and at < 0.0:
+	if _lane.direction() > 0.0 and at < 0.0:
 		_mover._set_along(minf(at, -TUNNEL_ROOM))
-	elif _mover._direction < 0.0 and at > limit:
+	elif _lane.direction() < 0.0 and at > limit:
 		_mover._set_along(maxf(at, limit + BRIDGE_ENTRY_MIN))
 
 ## How far past the true edge a **fresh** recycle may land. Departures have their own room in
@@ -1102,7 +1104,7 @@ func hide_the_spine_entry() -> void:
 ##
 ## Overrides LaneStrategy.entry_room.
 func entry_room(south: bool) -> float:
-	if not _mover._map.is_main_road(_mover._vertical, _mover._corridor):
+	if not _map.is_main_road(_lane.is_vertical(), _lane.corridor_index()):
 		return 0.0
 	return _spine_room(south)
 
@@ -1130,15 +1132,15 @@ func entry_room(south: bool) -> float:
 ##
 ## Overrides LaneStrategy.join_the_back_of_the_queue.
 func join_the_back_of_the_queue() -> void:
-	if not _mover.traffic or has_room_here():
+	if not _traffic or has_room_here():
 		return
-	var last := _mover.traffic.rearmost(_mover.lane_key())
+	var last := _traffic.rearmost(_mover.lane_key())
 	if last == INF:
 		return
-	var target := (last - Tuning.CAR_GAP_MIN) * _mover._direction
-	var probe := Vector2(_mover._cross(), target) if _mover._vertical \
+	var target := (last - Tuning.CAR_GAP_MIN) * _lane.direction()
+	var probe := Vector2(_mover._cross(), target) if _lane.is_vertical() \
 			else Vector2(target, _mover._cross())
-	if cannot_go_on(_mover._vertical, _mover._map.world_to_tile(probe)):
+	if cannot_go_on(_lane.is_vertical(), _map.world_to_tile(probe)):
 		return
 	_mover._set_along(target)
 
@@ -1147,24 +1149,24 @@ func join_the_back_of_the_queue() -> void:
 ##
 ## Overrides LaneStrategy.claim_the_road_here.
 func claim_the_road_here() -> void:
-	if not _mover.traffic:
+	if not _traffic:
 		return
-	_mover.traffic.claim(_mover.lane_key(), _mover.queue_position())
+	_traffic.claim(_mover.lane_key(), _mover.queue_position())
 
 ## Whether this car is standing in a piece of its own lane that no other car is in.
 ##
 ## Overrides LaneStrategy.has_room_here.
 func has_room_here() -> bool:
-	if not _mover.traffic:
+	if not _traffic:
 		return true
-	return _mover.traffic.room_at(_mover.lane_key(), _mover.queue_position(), Tuning.CAR_GAP_MIN)
+	return _traffic.room_at(_mover.lane_key(), _mover.queue_position(), Tuning.CAR_GAP_MIN)
 
 ## Whether this car's own centre may be on a tile: its whole predicate, the same one its
 ## look-ahead and its turns use.
 ##
 ## Overrides LaneStrategy.may_stand_on.
 func may_stand_on(tile: Vector2i) -> bool:
-	return not cannot_go_on(_mover._vertical, tile)
+	return not cannot_go_on(_lane.is_vertical(), tile)
 
 ## Whether a *tile* is somewhere this car may be. The predicate under the look-ahead, the turns and
 ## the queue's nudges, so "the way is shut" means one thing however it is asked.
@@ -1178,7 +1180,7 @@ func may_stand_on(tile: Vector2i) -> bool:
 func cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	if _never_a_street_here(vertical, tile):
 		return true
-	if not _mover._map.passable(tile, _closed_today):
+	if not _map.passable(tile, _closed_today):
 		return true
 	# A street held for today has a hard seal, a region wall or a closure's barriers standing across
 	# the whole of it somewhere along its length. **That is a car's warning** — see
@@ -1193,7 +1195,7 @@ func cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 	# does for a closure. The oncoming lane is a different tile and is untouched, which is the whole
 	# difference between a body and a seal. A soft seal takes only the pavements, so it is not
 	# asked here.
-	return not _mover._map.passable(tile, _car_today)
+	return not _map.passable(tile, _car_today)
 
 ## Whether a tile is ground a car could never travel, whatever today has or has not placed on it:
 ## off the map, not a street at all, or a precinct.
@@ -1209,13 +1211,13 @@ func cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 ## so — it is paving either way — so the street kind has to, or a car reaching the three blocks of a
 ## precinct drives onto them instead of turning off.
 func _never_a_street_here(vertical: bool, tile: Vector2i) -> bool:
-	if not _mover._map.in_bounds(tile):
-		var leaves_by_the_spine := _mover._map.is_main_road(vertical, _mover._corridor) \
-				and (tile.y < 0 or tile.y >= _mover._map.size_in_tiles().y)
+	if not _map.in_bounds(tile):
+		var leaves_by_the_spine := _map.is_main_road(vertical, _lane.corridor_index()) \
+				and (tile.y < 0 or tile.y >= _map.size_in_tiles().y)
 		return not leaves_by_the_spine
-	if not _mover._map.is_driveable_at(vertical, tile):
+	if not _map.is_driveable_at(vertical, tile):
 		return true
-	return not _mover._map.is_street(tile)
+	return not _map.is_street(tile)
 
 ## Traffic goes round a closure, and that is half of what makes one legible: the street with
 ## nobody on it is the street that is shut, which reads from a block away — further than the
@@ -1254,12 +1256,12 @@ func _pick_an_arm(crossing: int, first: float, from := Vector2.INF) -> float:
 	# paved end to end, so the tile map says it is a street, and there is never a car in it to
 	# leave no room. A car with nowhere else to go turns round instead, which is what a driver
 	# meeting a bollarded street actually does.
-	if not _mover._map.is_driveable(not _mover._vertical, crossing,
+	if not _map.is_driveable(not _lane.is_vertical(), crossing,
 			floori(_mover._cross() / float(Tuning.TILE_SIZE))):
 		return 0.0
 	var open: Array[float] = []
 	for turning: float in [first, -first]:
-		if not _blocked_ahead(not _mover._vertical, turning, LaneMover.LOOKAHEAD, from):
+		if not _blocked_ahead(not _lane.is_vertical(), turning, LaneMover.LOOKAHEAD, from):
 			open.append(turning)
 	if open.is_empty():
 		return 0.0

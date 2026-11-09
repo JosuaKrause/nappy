@@ -381,10 +381,7 @@ func set_focus(at: Vector2) -> void:
 func _make_an_agent() -> CrowdAgent:
 	var agent := CrowdAgent.new()
 	agent.skip_drawing(skip_agent_drawing)
-	agent.traffic = _traffic
-	agent.pockets = _pockets
-	agent.view = view
-	agent.frame_timing = timing
+	agent.lane().use_crowd_parts(_traffic, _pockets, view, timing)
 	agent.use_atlas(atlas)
 	agent.mood().hear_in(sources)
 	return agent
@@ -642,8 +639,7 @@ func _resolve_the_queues() -> Dictionary:
 	_sort_by_kind()
 	var lanes := {}
 	for agent in _cars:
-		agent.gap_ahead = INF
-		agent.leader_speed = 0.0
+		agent.lane().clear_what_is_ahead()
 		var key := agent.lane_key()
 		if not lanes.has(key):
 			lanes[key] = [] as Array[CrowdAgent]
@@ -997,10 +993,10 @@ func _hold_walkers_at_doors(delta: float) -> void:
 	# at all of them.
 	var lines := _bucket_by_line(_door_holds.map(func(hold): return hold.stands_at()))
 	for agent in _walkers:
-		agent.door_ahead = null
-		agent.door_ahead_along = INF
+		agent.lane().set_door_ahead(null)
+		agent.lane().set_door_ahead_along(INF)
 		_find_the_hut_in_front_of(agent, lines)
-		agent.strategy.advance_the_door_hold(delta)
+		agent.lane().strategy().advance_the_door_hold(delta)
 
 func _find_the_hut_in_front_of(agent: CrowdAgent, lines: Array[Dictionary]) -> void:
 	var forward := agent.heading()
@@ -1028,17 +1024,17 @@ func _consider_the_hut(agent: CrowdAgent, forward: Vector2, vertical: bool, inde
 	var hold := _door_holds[index]
 	var offset: Vector2 = hold.stands_at() - agent.global_position
 	var along := offset.dot(forward)
-	if along < 0.0 or along > CrowdAgent.LOOKAHEAD or along > agent.door_ahead_along:
+	if along < 0.0 or along > CrowdAgent.LOOKAHEAD or along > agent.lane().door_ahead_along():
 		return
-	if along == agent.door_ahead_along and _door_holds.find(agent.door_ahead) < index:
+	if along == agent.lane().door_ahead_along() and _door_holds.find(agent.lane().door_ahead()) < index:
 		return
 	if (offset - forward * along).length() > WALKER_DOOR_LANE_TOLERANCE:
 		return
 	var across_coordinate: float = hold.stands_at().x if vertical else hold.stands_at().y
 	if CityMap.corridor_offset(floori(across_coordinate / float(Tuning.TILE_SIZE))) < 0:
 		return
-	agent.door_ahead = hold
-	agent.door_ahead_along = along
+	agent.lane().set_door_ahead(hold)
+	agent.lane().set_door_ahead_along(along)
 
 ## Whether there is somewhere on the far side for this car to be.
 ##
@@ -1060,13 +1056,13 @@ func _can_clear_the_box(agent: CrowdAgent, distance: float) -> bool:
 	# leader's speed is credited. Looked for as far as the box's far side and a gap past it, which is
 	# further than a car's brake looks.
 	var needed := far_side + Tuning.CAR_GAP_MIN
-	if agent.strategy.road_before_a_figure(needed + agent.strategy.nose) < needed:
+	if agent.lane().strategy().road_before_a_figure(needed + agent.lane().strategy().body_nose()) < needed:
 		return false
-	if agent.gap_ahead == INF:
+	if agent.lane().gap_ahead() == INF:
 		return true
-	var room := agent.gap_ahead
+	var room := agent.lane().gap_ahead()
 	if room >= far_side:
-		room += agent.leader_speed * Tuning.CAR_HEADWAY_TIME
+		room += agent.lane().leader_speed() * Tuning.CAR_HEADWAY_TIME
 	return room >= far_side + Tuning.CAR_GAP_MIN
 
 ## Two cars from crossing arms that have ended up in the same box anyway.
@@ -1182,7 +1178,7 @@ func _meet_the_player() -> void:
 			if (agent.global_position - here).length_squared() > _BEYOND_CONTACT_SQUARED:
 				agent.be_touched(false)
 				continue
-			agent.strategy.make_way_for(here, going)
+			agent.lane().strategy().make_way_for(here, going)
 			shove += _bump(agent, here)
 			continue
 		# One query, two watches. `CAR_ZEBRA_SIGHT` is the strike's own reach and the give-way
