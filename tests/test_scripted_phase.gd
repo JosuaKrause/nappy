@@ -7,7 +7,9 @@ extends RefCounted
 ## (`_Ground`, whose offers a check sets). The real ground is the dawn draw's own
 ## (`EventScheduler.RuledLocationGround`); the phase on a real day is `tests/test_events_scheduler.gd`'s.
 ##
-## - **A location weighed nothing is never drawn**, over many streams.
+## - **A location weighed nothing is never drawn**, over many streams, and not once every location
+##   weighed something has refused either: the row then does not happen, rather than landing where
+##   its ground gives it no copies (for a wall, on a route).
 ## - **The draw follows the weights**: three to one comes out near three in four.
 ## - **A location that takes nothing is passed over**, and the row goes to the next it draws; none
 ##   left that takes it, and the row does not happen.
@@ -48,6 +50,7 @@ class _Ground extends LocationGround:
 
 func run(t) -> void:
 	_test_a_location_weighed_nothing_is_never_drawn(t)
+	_test_a_location_weighed_nothing_is_not_drawn_once_the_rest_refuse(t)
 	_test_the_draw_follows_the_weights(t)
 	_test_a_location_that_takes_nothing_is_passed_over(t)
 	_test_what_it_takes_is_assigned_and_stood(t)
@@ -134,3 +137,20 @@ func _test_what_it_takes_is_assigned_and_stood(t) -> void:
 	var plan := phase.place(_row(), _rng(0))
 	t.check(plan != null and one.is_taken(), "the location it drew is taken for the day")
 	t.check(ground.stood.size() == 1 and ground.stood[0] == plan, "and the ground stands the plan")
+
+func _test_a_location_weighed_nothing_is_not_drawn_once_the_rest_refuse(t) -> void:
+	var landed := 0
+	for i in SEEDS:
+		var locations := _Locations.new()
+		var refusing := _location(0)
+		var zero := _location(1)
+		locations.open = [refusing, zero]
+		var ground := _Ground.new()
+		ground.refused[refusing] = true
+		var weights := {refusing: 1.0, zero: 0.0}
+		var phase := ScriptedPhase.new(locations, ground,
+				func(_def: EventDef, location: Location) -> float: return weights[location])
+		if phase.place(_row(), _rng(i)) != null or zero.is_taken():
+			landed += 1
+	t.check(landed == 0, "with every weighed location refusing, the row lands on none weighed nothing"
+			+ " (%d of %d)" % [landed, SEEDS])

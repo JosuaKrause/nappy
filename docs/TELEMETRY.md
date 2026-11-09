@@ -1432,8 +1432,6 @@ Every **sited** event is drawn where the day put it, carrying the three things `
 - **An unplaced plan is not drawn**, and that is the honest answer rather than a gap. An
   `AHEAD_OF_PLAYER` row has no position at dawn, so drawing it anywhere would be the picture
   claiming a placement nothing made.
-- **A spent plan, one of a group whose other member happened, is drawn like any other.** It comes
-  out without a pip, which is right: she never reached it.
 - A **routed** event also gets a faint band along the ground it covers. It is much fainter than
   the mark, and that number was set by looking: at the mark's own strength the routes were the
   loudest thing in the picture and read as *corridor* — thin coloured lines down the middle of

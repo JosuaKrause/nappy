@@ -255,10 +255,6 @@ class Planned extends RefCounted:
 	## in front of her, and the telemetry map has to be able to say which. Nothing in the game reads
 	## it — it decides where the plan went, it does not decide anything afterwards.
 	var role := GameEnums.BlockerRole.NONE
-	## Which set of mutually exclusive placements this one belongs to, or "" for anything that is
-	## simply itself. A one-shot is a group of one (`EventScheduler._place_one_shots()`), and
-	## `EventStreaming.stream_in` spends the rest of a group the moment one of it enters the world.
-	var set_piece_group := ""
 	## True once it has been in the world at least once. What it is *for* is the bookkeeping
 	## that must happen exactly once however many times an event is streamed in and out: a
 	## burnt-out shell records the fire that made it the first time it is seen and never again.
@@ -752,9 +748,10 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 		leave_alone.append(calm.ground_of(kept_clean))
 	_place_the_roadblocks(beside_the_routes, day, base, map, events, ground, leave_alone,
 			corridor, doors, spec, locations, trace, reach)
-	# **The scripted rows' and the one-shots' dawn phases**: each draws one of the day's open
-	# locations its ground takes and is assigned it (`ScriptedPhase`), offered through the dawn
-	# draw's own path and judged by the day's rules, so the draw after passes over it.
+	# **The scripted rows' dawn phase**: each draws one of the day's open locations its ground
+	# takes and is assigned it (`ScriptedPhase`), offered through the dawn draw's own path and
+	# judged by the day's rules, so the draw after passes over it. The one-shots are owed to her
+	# walk (`_place_one_shots()`).
 	var phase_ground := RuledLocationGround.new(day, base, map, events, corridor,
 			LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets),
 			StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false, null, reach))
@@ -762,7 +759,7 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 		return _weight_in(def, location, day, map, ground, corridor, spec.holds_the_home_streets)
 	var phase := ScriptedPhase.new(locations, phase_ground, weigh)
 	_place_scripted(day, _stream(base, 1), events, phase, heat)
-	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, events, phase, heat, trace)
+	_place_one_shots(day, consumed_one_shots, events, heat, trace)
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, events, calm, kept_clean,
 			reach, heat, trace)
 	_owe_the_moments(day, _stream(base, MOMENTS_SALT), events, heat, spec.caps_per_day)
@@ -1753,63 +1750,26 @@ static func _weight_in(def: EventDef, location: Location, day: int, map: CityMap
 				weight += int(by_tile[tile])
 	return float(weight)
 
-static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
-		consumed: Array[String], events: DayEvents, phase: ScriptedPhase, heat: int = 0,
+static func _place_one_shots(day: int, consumed: Array[String], events: DayEvents, heat: int = 0,
 		trace: RunTrace = null) -> void:
+	# **A one-shot is owed to her walk, never rolled for.** Every one-shot is sited from her walk
+	# (`EventDef.validate()` refuses one that is not): it is the day's authored beat and has to
+	# happen whichever way she goes, so the plan is made here, at dawn, and only its *position* is
+	# left for `EventDirector.site_what_is_on_her_way()` to choose, the same split an
+	# `AHEAD_OF_PLAYER` row is owed and sited under.
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, heat):
 		if def.id in consumed:
 			continue
-		# **A one-shot the day sites from her walk is owed rather than rolled for.** The roll below
-		# spreads an ordinary one over the days it is eligible for so that meeting it feels like an
-		# accident; this one is the day's authored beat and has to happen whichever way she goes, so
-		# a roll here would be a guarantee resting on a coin flip the first time the row's eligible
-		# window was widened. The plan is made here, at dawn, and only its *position* is left for
-		# `EventDirector.site_what_is_on_her_way()` to choose, the same split an `AHEAD_OF_PLAYER` row
-		# is owed and sited under.
-		if def.on_her_way != null:
-			var owed := Planned.new(def, Vector2.INF)
-			owed.role = role_for(def, day)
-			# Tagged as a group of one, as every one-shot is: a plan outside the group system is one
-			# `EventStreaming.stream_in` can never spend, silently exempt from the machinery the row
-			# is written against.
-			owed.set_piece_group = "%s@%d" % [def.id, day]
-			events.add(owed)
-			# **And it is not consumed here.** Every other one-shot is spent the moment the day plans
-			# it, because planning it *is* siting it; this one has no position yet, so planning it
-			# promises nothing. It is spent where it becomes real instead —
-			# `EventStreaming.stream_in()`. What that buys is the retry: *"what the run has spent stays
-			# spent ... a fire that burnt a block down did happen"* (`RunCalendar.finish_day`),
-			# and a fire that was never lit did not, so a lost day 3 is offered it again.
-			_note(trace, "roll", "one-shot %s: owed to her walk, sited when her heading is clear"
-					% def.id)
-			continue
-		# Spread a one-shot over the days it is eligible for rather than always firing it
-		# on the first: 1/n chance per remaining day makes it feel like an accident.
-		var remaining := maxi(1, (def.last_day if def.last_day > 0 else def.first_day + 2) - day + 1)
-		# Hoisted out of the comparison purely so it can be written down. A one-shot depends
-		# on which days the run has already spent, so no seed reproduces it from the outside:
-		# this roll is part of the story of the run and nothing else records it.
-		var roll := rng.randf()
-		var threshold := 1.0 / float(remaining)
-		if roll > threshold:
-			_note(trace, "roll", "one-shot %s: %.2f > %.2f — not today"
-					% [def.id, roll, threshold])
-			continue
-		var sited := phase.place(def.for_day(day), rng)
-		if sited == null:
-			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
-			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
-			# the outside this looks identical to a roll that failed.
-			_note(trace, "roll", "one-shot %s: %.2f <= %.2f but nowhere to place it"
-					% [def.id, roll, threshold])
-			continue
-		# A group of one, as every one-shot is: `EventStreaming.stream_in` spends the rest of a
-		# group the moment one of it fires, and a plan outside the group system is one it never
-		# spends, silently exempt from the machinery the row is written against.
-		sited.set_piece_group = "%s@%d" % [def.id, day]
-		consumed.append(def.id)
-		_note(trace, "roll", "one-shot %s: %.2f <= %.2f — waiting at %s"
-				% [def.id, roll, threshold, RunTrace.tile(map.world_to_tile(sited.placed_at()))])
+		var owed := Planned.new(def, Vector2.INF)
+		owed.role = role_for(def, day)
+		events.add(owed)
+		# **And it is not consumed here.** It has no position yet, so planning it promises nothing.
+		# It is spent where it becomes real instead — `EventStreaming.stream_in()`. What that buys is
+		# the retry: *"what the run has spent stays spent ... a fire that burnt a block down did
+		# happen"* (`RunCalendar.finish_day`), and a fire that was never lit did not, so a lost day 3
+		# is offered it again.
+		_note(trace, "roll", "one-shot %s: owed to her walk, sited when her heading is clear"
+				% def.id)
 
 # ------------------------------------------------- a placement made after dawn ---
 

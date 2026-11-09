@@ -105,27 +105,26 @@ func _test_scheduler_respects_placement_and_caps(t) -> void:
 					"day %d: '%s' was placed on an allowed tile type" % [day, plan.def.id])
 		for id in counts:
 			var def: EventDef = EventCatalogue.by_id(id)
-			# A one-shot is exempt: it is a group of one, `max_per_day` is a cap on instances and
-			# the group is one instance by construction; the count that would break it is asserted
-			# in `tests/test_event_manager.gd`, where an instance actually exists.
+			# A one-shot is exempt: it is owed to her walk as one plan, and that it is one is
+			# asserted in `tests/test_event_manager.gd`.
 			if def.kind == GameEnums.EventKind.AMBIENT \
 					or def.kind == GameEnums.EventKind.ONE_SHOT:
 				continue
 			t.check(counts[id] <= def.max_per_day,
 					"day %d: '%s' respects max_per_day" % [day, id])
 
-## **A one-shot is planned on at most one day of a run, as a group of one.** The day half is asserted
-## here, over the plan; that exactly one of it happens is asserted where an instance exists:
-## `tests/test_event_manager.gd`, against a real `EventManager` with the plans streamed in.
+## **A one-shot is planned on at most one day of a run.** Asserted here, over the plan; that it is
+## one plan owed to her walk is asserted where the manager plans it: `tests/test_event_manager.gd`.
 ##
 ## **Two seeds, both runs whole.** Fourteen days is the unit and cannot shrink — "planned on one
 ## day of a *run*" is a statement about carrying `consumed` across the whole calendar, and a
 ## sampled day cannot say it. What it asserts is true of every run rather than of the average, so a
 ## second city is there to keep it from being a fact about one layout and a third would add nothing.
 func _test_one_shots_fire_once_per_run(t) -> void:
-	var groups_seen := 0
+	var one_shots_seen := 0
 	for seed_value in [4242, 5150]:
 		var map := CityGenerator.generate(seed_value)
+		var sites := MastSites.compute(map)
 		var consumed: Array[String] = []
 		var seen := {}
 		var rng_for := func(day: int) -> RandomNumberGenerator:
@@ -133,20 +132,15 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 			rng.seed = hash("%d:%d" % [seed_value, day])
 			return rng
 		for day in range(1, 15):
-			var groups := {}
 			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng_for.call(day), map,
-					CalmAreas.of(map), MastSites.compute(map), consumed).placements():
+					CalmAreas.of(map), sites, consumed).placements():
 				if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
 					continue
 				t.check(int(seen.get(plan.def.id, day)) == day,
 						"one-shot '%s' is planned on one day of a run" % plan.def.id)
 				seen[plan.def.id] = day
-				groups[plan.def.id] = int(groups.get(plan.def.id, 0)) + 1
-				t.check(plan.set_piece_group != "",
-						"one-shot '%s' is planned as one of a group" % plan.def.id)
-			for id: String in groups:
-				groups_seen += 1
-	t.check(groups_seen > 0, "some run had a one-shot to check (%d)" % groups_seen)
+				one_shots_seen += 1
+	t.check(one_shots_seen > 0, "some run had a one-shot to check (%d)" % one_shots_seen)
 
 ## **No robber stands in an alley she has to walk down.** *(2026-09-03: "alley robber should not
 ## happen on required alleys".)* `EventScheduler._refuses_required_alleys` excludes `alley_robbery`

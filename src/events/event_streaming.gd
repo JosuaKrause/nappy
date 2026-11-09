@@ -169,28 +169,6 @@ func stream_in(plan: EventScheduler.Planned) -> void:
 	plan.live.silenced = plan.silenced
 	plan.was_live = true
 	world.instances.append(plan.live)
-	_spend_the_rest_of_the_group(plan)
-
-## **The rest of a group stops being possible the moment one of it enters the world.** A group is a
-## set of mutually exclusive placements (`Planned.set_piece_group`); a one-shot is a group of one.
-## It has to be here rather than anywhere later: the moment an event enters the world it is real —
-## `EventSpawner.create()` records its scar and moves its block along its arc — so the alternatives
-## have to stop being possible on the same frame, not when it finishes.
-func _spend_the_rest_of_the_group(chosen: EventScheduler.Planned) -> void:
-	if chosen.set_piece_group == "":
-		return
-	for plan in _walk.plans():
-		if plan == chosen or plan.set_piece_group != chosen.set_piece_group:
-			continue
-		plan.spent = true
-		# A sibling that will now never be placed is a body that is not in the street, so the
-		# ground it was holding opens again.
-		world.map.release_obstruction(plan.get_instance_id())
-		# A sibling cannot already be live — the group is spent the first time any of them enters
-		# the world, and `stream_around` skips a spent plan — but taking one out is the only safe
-		# thing to do if that ever stops being true, because a second live one is a second scar.
-		if plan.live:
-			stream_out(plan)
 
 ## **Whether `instance` is near enough to `at` for her to be watching it** — within
 ## `Tuning.OUT_OF_SIGHT`, the distance beyond which nothing can be seen. A plan is streamed out by

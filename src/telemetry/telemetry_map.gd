@@ -247,9 +247,6 @@ static func _mark_the_corridor(image: Image, tree: RouteTree) -> void:
 ## she turns out to walk — so drawing it anywhere would be the picture claiming a placement that
 ## nothing made. `EventScheduler.role_for()` gives it `NONE` for the same reason.
 ##
-## A **spent** plan, one of a group whose other member happened, is drawn like any other. It comes
-## out without a pip, which is right — she never reached it.
-##
 ## `met` says which of `plans` she actually met — `TelemetryObserver._watch_met_events`, keyed by
 ## the plan itself. Empty on the dawn map, so nothing carries a pip there, which is correct: there
 ## is no walk yet to have met anything.

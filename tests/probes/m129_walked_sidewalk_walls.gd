@@ -332,8 +332,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 
 	before = events.size()
 	var consumed: Array[String] = []
-	EventScheduler._place_one_shots(day, EventScheduler._stream(base, 2), map, consumed, events,
-			phase, 0)
+	EventScheduler._place_one_shots(day, consumed, events, 0)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
 	before = events.size()

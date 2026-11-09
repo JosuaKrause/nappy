@@ -212,7 +212,7 @@ static func without_its_aftermath(def: EventDef) -> EventDef:
 ## burns and closes the shaft it stands in: a 30px body (five flames spanning ±31px) that casts its
 ## shadow, 18 over the row's 60–260px field, and a 3s pulse, so it breathes between a quarter of
 ## that and all of it (11.25/s on average) and its flames roar and die back with it. The building
-## places it (`BuildingPlan`), not her walk. Its id stays the row's, being the same fire to
+## places it (`BuildingPlan`), not her walk, so it is a scripted row on no day rather than a one-shot. Its id stays the row's, being the same fire to
 ## everything that counts or logs it.
 static func building_fire() -> EventDef:
 	if _building_fire == null:
@@ -222,6 +222,11 @@ static func building_fire() -> EventDef:
 		variant.pulse_period = 3.0
 		variant.draws_body_shadow = true
 		variant.on_her_way = null
+		# The building's own row, placed by its plan and nothing else: `SCRIPTED` on day 0, the day
+		# nobody plays, like the escape's other rows, so no day's dawn reaches it and the rule that
+		# a one-shot is sited from her walk does not apply to it.
+		variant.kind = GameEnums.EventKind.SCRIPTED
+		variant.scripted_day = 0
 		_building_fire = variant
 	return _building_fire
 

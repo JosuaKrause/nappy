@@ -1182,6 +1182,16 @@ func validate() -> bool:
 				% [id, from_day_after.after_day + 1, obstructs_radius])
 				+ "nothing checks that it leaves a route to a park")
 		return false
+	# **A one-shot she has to meet is sited on her way.** A one-shot is a set piece, which has to be
+	# met: something she must meet exists wherever she goes, since she can take either way
+	# (M50-the-city-points-somewhere). Sited from her walk it is (`on_her_way`); placed at dawn it
+	# would stand in one location and be met only if she walked there, so it is refused until the
+	# walk's draw can carry it, a rigged marble on the next location she comes to (placement by
+	# construction's walk draws).
+	if kind == GameEnums.EventKind.ONE_SHOT and on_her_way == null:
+		push_error("event '%s' is a one-shot not sited from her walk: a set piece has to be met " % id
+				+ "wherever she goes, and one placed at dawn is met only if she walks there")
+		return false
 	# **A row sited from her walk is a `MAP` row that stands still, or it is nothing.** Only
 	# `EventScheduler._place_one_shots` and `_hand_to_her_walk` read the flag, and only
 	# `EventDirector` sites what they leave unplaced. The siting is a tile with the corridor's own

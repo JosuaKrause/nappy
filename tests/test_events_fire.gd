@@ -391,7 +391,6 @@ func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 			t.check(day == Tuning.RUN_TAUGHT_DAY and plan.def.id == "burning_building",
 					"day %d: the only set piece the day leaves for her walk is day 3's fire, not '%s'"
 					% [day, plan.def.id])
-			t.check(plan.set_piece_group != "", "day %d: and it is tagged as a set piece" % day)
 	t.check(owed == 1, "exactly one set piece in a fourteen-day run is owed to her walk (%d)" % owed)
 	t.check(crews > 0, "and there are poster crews for her walk to site (%d)" % crews)
 
