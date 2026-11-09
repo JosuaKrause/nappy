@@ -12,6 +12,22 @@ func offer(_def: EventDef, _location: Location) -> EventScheduler.Planned:
 	assert(false, "LocationGround.offer() is overridden by every implementation")
 	return null
 
+## **The same offer, a candidate at a time** (`Offer.step()`), for a draw spread over ticks: here the
+## offer is made whole on the first step, which a ground whose offer is cheap leaves as it is.
+func begin_offer(def: EventDef, location: Location) -> Offer:
+	return Offer.new(offer(def, location))
+
+## An offer under way: `step()` until it answers true, and then `plan` is what `offer()` answers.
+class Offer extends RefCounted:
+	var plan: EventScheduler.Planned = null
+
+	func _init(made: EventScheduler.Planned = null) -> void:
+		plan = made
+
+	## Asks the next candidate, and answers whether the offer is made.
+	func step() -> bool:
+		return true
+
 ## How many times over `location` weighs `def` against its view bag's weight for it: 1 for an
 ## ordinary location (the player's "yes" to a weight per location, issue #1185).
 func scale(_def: EventDef, _location: Location) -> float:

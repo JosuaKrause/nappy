@@ -1,23 +1,30 @@
 extends RefCounted
 ## `WalkDraw`, the day's open locations drawn as she walks: every location out of her view within
-## `WalkDraw.MUST_DRAW` of her is drawn at once, however many, so none reaches the stream radius
-## undrawn; one more, the nearest ahead of her within `WalkDraw.BAND_FAR`, is drawn a tick; a
-## location in her view is never drawn; and `draw_within()` draws every location within a radius.
+## `WalkDraw.MUST_DRAW` of her is drawn whole at once, however many, so none reaches the stream
+## radius undrawn; the nearest ahead of her within `WalkDraw.BAND_FAR` is drawn a marble ask a tick;
+## a location in her view is never drawn; and `draw_within()` draws every location within a radius.
 ## Run on a bare city's lattice (`CityMap.new()`, every street present, laid out with a corridor
-## stand-in), with a stand-in for the draw (`_Draw`) that records which locations it was asked to
-## draw and marks each drawn, empty: what a location draws is `LocationDraw`'s, checked in
-## `tests/test_location_draw.gd`.
+## stand-in), with a stand-in for the draw (`_Draw`) whose every draw takes `_Draw.ASKS` asks,
+## records which locations it was asked to draw and marks each drawn, empty: what a location draws
+## is `LocationDraw`'s, checked in `tests/test_location_draw.gd`.
 ##
 ## - **A sharp turn draws everything that comes near at once**: standing at a junction, every
-##   location within `MUST_DRAW` and out of her view is drawn on the one tick, behind her and to
-##   the side included.
-## - **Her view is never drawn**: a location she can see stays undrawn.
-## - **The band ahead draws one a tick**: of the locations beyond `MUST_DRAW` and within `BAND_FAR`,
-##   only the nearest ahead of her heading is drawn on a tick, and none behind her.
+##   location within `MUST_DRAW` and out of her view is drawn whole on the one tick, behind her and
+##   to the side included, and `forced()` counts each.
+## - **Her view is never drawn**: a location she can see stays undrawn, and a band draw under way
+##   asks nothing while she can see its location.
+## - **The band ahead asks once a tick**: of the locations beyond `MUST_DRAW` and within `BAND_FAR`,
+##   only the nearest ahead of her heading is begun, one ask a tick; it holds nothing and is handed
+##   to nobody until its last ask, and the next is begun only then.
+## - **A band draw that comes within `MUST_DRAW` is finished whole**: the draw under way is ended
+##   that tick, not begun again.
 ## - **`draw_within()` draws all**: every location within the radius, and none beyond it.
 
-## The draw: records each location it is asked to draw and marks it drawn, with nothing in it.
+## The draw: every draw takes `ASKS` asks; records each location it begins, and each it ends, and
+## marks it drawn with nothing in it.
 class _Draw extends LocationDraw:
+	const ASKS := 3
+	var begun: Array[Location] = []
 	var asked: Array[Location] = []
 
 	func _init(locations: DayLocations) -> void:
@@ -25,9 +32,29 @@ class _Draw extends LocationDraw:
 
 	## Overrides LocationDraw.draw.
 	func draw(location: Location) -> EventScheduler.Planned:
-		asked.append(location)
-		location.record(null)
+		return finish(begin(location))
+
+	## Overrides LocationDraw.begin.
+	func begin(location: Location) -> LocationDraw.Asking:
+		begun.append(location)
+		return _Asking.new(location)
+
+	## Overrides LocationDraw.finish.
+	func finish(asking: LocationDraw.Asking) -> EventScheduler.Planned:
+		while not asking.step():
+			pass
+		asked.append(asking.location)
+		asking.location.record(null)
 		return null
+
+## A draw under way that ends on its `_Draw.ASKS`th ask.
+class _Asking extends LocationDraw.Asking:
+	var asks := 0
+
+	## Overrides LocationDraw.Asking.step.
+	func step() -> bool:
+		asks += 1
+		return asks >= _Draw.ASKS
 
 ## The corridor's view of every street: off the route.
 class _Views extends Corridor:
@@ -42,7 +69,8 @@ class _Views extends Corridor:
 func run(t) -> void:
 	_test_a_sharp_turn_draws_everything_that_comes_near_at_once(t)
 	_test_her_view_is_never_drawn(t)
-	_test_the_band_ahead_draws_one_a_tick(t)
+	_test_the_band_ahead_asks_once_a_tick(t)
+	_test_a_band_draw_that_comes_near_is_finished_whole(t)
 	_test_draw_within_draws_all_within_the_radius(t)
 
 ## Where she stands: the middle of a junction box in the middle of the bare city.
@@ -78,6 +106,7 @@ func _test_a_sharp_turn_draws_everything_that_comes_near_at_once(t) -> void:
 	t.check(near > 20, "many locations are within the must-draw radius of a junction (%d)" % near)
 	t.check(left == 0, "every one of them is drawn on the one tick, behind her and beside her too (%d left)"
 			% left)
+	t.check(walk.forced() == near, "and each is counted as forced (%d of %d)" % [walk.forced(), near])
 
 func _test_her_view_is_never_drawn(t) -> void:
 	var locations := _laid()
@@ -96,25 +125,73 @@ func _test_her_view_is_never_drawn(t) -> void:
 				seen_drawn += 1
 	t.check(seen > 0 and seen_drawn == 0, "no location in her view is drawn (%d of %d)" % [seen_drawn, seen])
 
-func _test_the_band_ahead_draws_one_a_tick(t) -> void:
+func _test_the_band_ahead_asks_once_a_tick(t) -> void:
+	var locations := _laid()
+	var draw := _Draw.new(locations)
+	var walk := WalkDraw.new(locations, draw)
+	var at := _junction()
+	var nobody_sees := func(_rect: Rect2) -> bool: return false
+	var handed := walk.draw_ahead(at, Vector2.RIGHT, nobody_sees).size()
+	var near := draw.asked.size()
+	var band := _beyond_must_draw(at, draw.begun)
+	t.check(band.size() == 1, "one location beyond the must-draw radius is begun on a tick (%d)" % band.size())
+	if band.size() != 1:
+		return
+	var first := band[0]
+	t.check(_rect_of(first).get_center().x > at.x, "and it is ahead of her heading")
+	t.check(not first.is_drawn() and not draw.asked.has(first) and handed == 0,
+			"a draw under way holds nothing and is handed to nobody (%d handed)" % handed)
+	for tick in _Draw.ASKS - 1:
+		walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
+	t.check(first.is_drawn() and draw.asked.size() == near + 1,
+			"its last ask, %d ticks on, ends it (%d ended)" % [_Draw.ASKS, draw.asked.size() - near])
+	t.check(_beyond_must_draw(at, draw.begun).size() == 1, "and nothing else is begun before it ends")
+	walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
+	t.check(_beyond_must_draw(at, draw.begun).size() == 2, "the tick after begins the next one ahead")
+	t.check(walk.forced() == near, "no band draw was forced (%d forced, %d near)" % [walk.forced(), near])
+
+	# A band draw under way asks nothing while she can see its location.
+	var paused := _laid()
+	var paused_draw := _Draw.new(paused)
+	var paused_walk := WalkDraw.new(paused, paused_draw)
+	paused_walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
+	var under_way := _beyond_must_draw(at, paused_draw.begun)
+	if under_way.size() != 1:
+		t.check(false, "one band draw is begun on the paused city (%d)" % under_way.size())
+		return
+	var its_rect := _rect_of(under_way[0])
+	var sees_it := func(rect: Rect2) -> bool: return rect == its_rect
+	for tick in _Draw.ASKS * 2:
+		paused_walk.draw_ahead(at, Vector2.RIGHT, sees_it)
+	t.check(not under_way[0].is_drawn() and _beyond_must_draw(at, paused_draw.begun).size() == 1,
+			"a band draw under way waits while she can see its location, and nothing else is begun")
+
+func _test_a_band_draw_that_comes_near_is_finished_whole(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
 	var walk := WalkDraw.new(locations, draw)
 	var at := _junction()
 	var nobody_sees := func(_rect: Rect2) -> bool: return false
 	walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
-	var in_band: Array[Location] = []
-	for location in draw.asked:
+	var band := _beyond_must_draw(at, draw.begun)
+	if band.size() != 1:
+		t.check(false, "one band draw is begun (%d)" % band.size())
+		return
+	var target := band[0]
+	var forced_before := walk.forced()
+	var there := _rect_of(target).get_center()
+	walk.draw_ahead(there, Vector2.RIGHT, nobody_sees)
+	t.check(target.is_drawn(), "a band draw under way that comes within the must-draw radius ends that tick")
+	t.check(draw.begun.count(target) == 1, "and is ended, not begun again (%d begun)" % draw.begun.count(target))
+	t.check(walk.forced() > forced_before, "and counts as forced")
+
+## Of `drawn`, those beyond `WalkDraw.MUST_DRAW` of `at`.
+static func _beyond_must_draw(at: Vector2, drawn: Array[Location]) -> Array[Location]:
+	var beyond: Array[Location] = []
+	for location in drawn:
 		if _distance(at, _rect_of(location)) > WalkDraw.MUST_DRAW:
-			in_band.append(location)
-	t.check(in_band.size() == 1, "one location beyond the must-draw radius is drawn on a tick (%d)"
-			% in_band.size())
-	if in_band.size() == 1:
-		t.check(_rect_of(in_band[0]).get_center().x > at.x, "and it is ahead of her heading")
-	var before := draw.asked.size()
-	walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
-	t.check(draw.asked.size() == before + 1, "the next tick draws the next one ahead (%d)"
-			% (draw.asked.size() - before))
+			beyond.append(location)
+	return beyond
 
 func _test_draw_within_draws_all_within_the_radius(t) -> void:
 	var locations := _laid()

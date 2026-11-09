@@ -44,6 +44,12 @@ func _init(map: CityMap, corridor: Corridor) -> void:
 	_map = map
 	_corridor = corridor
 
+## **Works out the reach among `around`'s bodies now**, so the next body asked about pays only for
+## itself: the dawn calls it before the walk's first draw, which comes on a frame.
+func prepare(around: Array[EventScheduler.Planned]) -> void:
+	if _corridor:
+		_catch_up(around, null)
+
 ## Overrides StreetRule.allows.
 func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 		_placed: Array[EventScheduler.Planned], around: Array[EventScheduler.Planned]) -> bool:
@@ -53,10 +59,8 @@ func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 	var disc := _disc_of(candidate)
 	if not _touches(disc) or _goes_round(disc):
 		return true
-	var after := _flood(disc)
-	for i in _reached.size():
-		if _reached[i] == 1 and after[i] == 0 and not disc.has(i) \
-				and _corridor.carries_a_route(Vector2i(i % _size.x, i / _size.x)):
+	for i in _cut_off(disc):
+		if _corridor.carries_a_route(Vector2i(i % _size.x, i / _size.x)):
 			return false
 	return true
 
@@ -78,11 +82,11 @@ func _catch_up(around: Array[EventScheduler.Planned], candidate: EventScheduler.
 		var goes_round := not _touches(disc) or _goes_round(disc)
 		for i: int in disc:
 			_blocked[i] = 1
-		if goes_round:
-			for i: int in disc:
-				_reached[i] = 0
-		else:
-			_reached = _flood({})
+		var lost := PackedInt32Array() if goes_round else _cut_off(disc)
+		for i: int in disc:
+			_reached[i] = 0
+		for i in lost:
+			_reached[i] = 0
 		_seen[body.get_instance_id()] = true
 
 func _rebuild(bodies: Array[EventScheduler.Planned]) -> void:
@@ -163,6 +167,124 @@ func _goes_round(disc: Dictionary) -> bool:
 		if not seen.has(i):
 			return false
 	return true
+
+## **The tiles home reaches now that `disc` would cut off**, but the disc's own: the reached ground
+## beside the disc falls into pieces, and each piece is walked outward a tile at a time in turn,
+## pieces that meet joining, until one piece is left, which holds home's way in. A piece that runs
+## out of ground first is closed off from the rest, and so from home: what it walked is lost, unless
+## it holds home, when everything else is. The answer is the flood's, from home among the bodies and
+## the disc, at the cost of walking the smaller side of the cut rather than the city.
+##
+## Home's way to the disc comes in beside it, so home and some piece always share a side, and the
+## last piece standing is home's: a way from home to a piece that never passes beside the disc
+## would be a way to the disc that never came next to it.
+func _cut_off(disc: Dictionary) -> PackedInt32Array:
+	var home := _index(_map.home_tile())
+	var width := _size.x
+	var count := _size.x * _size.y
+	# Per tile, the piece that walked it first, or -1; per piece, the piece it joined (itself while it
+	# stands), every tile it and the pieces it joined walked, the tiles it has still to walk from
+	# (`frontier` from `heads`), and whether it holds home.
+	var piece := PackedInt32Array()
+	piece.resize(count)
+	piece.fill(-1)
+	var parent := PackedInt32Array()
+	var members: Array[PackedInt32Array] = []
+	var frontier: Array[PackedInt32Array] = []
+	var heads := PackedInt32Array()
+	var holds_home := PackedByteArray()
+	for i: int in disc:
+		var x := i % width
+		for j in [i - 1 if x > 0 else -1, i + 1 if x < width - 1 else -1, i - width, i + width]:
+			if j < 0 or j >= count or _reached[j] == 0 or disc.has(j) or piece[j] != -1:
+				continue
+			piece[j] = parent.size()
+			parent.append(parent.size())
+			members.append(PackedInt32Array([j]))
+			frontier.append(PackedInt32Array([j]))
+			heads.append(0)
+			holds_home.append(1 if j == home else 0)
+	var lost := PackedInt32Array()
+	var live: Array[int] = []
+	for p in parent.size():
+		live.append(p)
+	while live.size() > 1:
+		var standing: Array[int] = []
+		for p in live:
+			if parent[p] != p:
+				continue
+			if heads[p] >= frontier[p].size():
+				# Closed off from every other piece, and so from home, or holding home alone.
+				if holds_home[p] == 1:
+					return _reached_but(p, piece, parent, disc)
+				lost.append_array(members[p])
+				continue
+			var i := frontier[p][heads[p]]
+			heads[p] += 1
+			var x := i % width
+			# The four sides in turn, written out, as `_flood()` does.
+			for side in 4:
+				var j := i
+				if side == 0:
+					if x == 0:
+						continue
+					j = i - 1
+				elif side == 1:
+					if x == width - 1:
+						continue
+					j = i + 1
+				elif side == 2:
+					j = i - width
+				else:
+					j = i + width
+				if j < 0 or j >= count or _open[j] == 0 or _blocked[j] == 1 or disc.has(j):
+					continue
+				if piece[j] == -1:
+					piece[j] = p
+					members[p].append(j)
+					frontier[p].append(j)
+					if j == home:
+						holds_home[p] = 1
+					continue
+				var q := _root(parent, piece[j])
+				if q != p:
+					p = _join(parent, members, frontier, heads, holds_home, p, q)
+			standing.append(p)
+		live = []
+		for p in standing:
+			if parent[p] == p and not live.has(p):
+				live.append(p)
+	return lost
+
+## The piece `p` stands for: the one it joined, and so on, to the piece that stands.
+static func _root(parent: PackedInt32Array, p: int) -> int:
+	while parent[p] != p:
+		p = parent[p]
+	return p
+
+## Joins pieces `p` and `q`, the smaller into the larger, and answers the one that stands.
+static func _join(parent: PackedInt32Array, members: Array[PackedInt32Array],
+		frontier: Array[PackedInt32Array], heads: PackedInt32Array, holds_home: PackedByteArray,
+		p: int, q: int) -> int:
+	var big := p if members[p].size() >= members[q].size() else q
+	var small := q if big == p else p
+	parent[small] = big
+	members[big].append_array(members[small])
+	frontier[big].append_array(frontier[small].slice(heads[small]))
+	members[small] = PackedInt32Array()
+	frontier[small] = PackedInt32Array()
+	holds_home[big] = holds_home[big] | holds_home[small]
+	return big
+
+## Every reached tile but the disc's and those piece `p` (with what it joined) walked: what is lost
+## when the piece holding home is closed off from the rest.
+func _reached_but(p: int, piece: PackedInt32Array, parent: PackedInt32Array,
+		disc: Dictionary) -> PackedInt32Array:
+	var lost := PackedInt32Array()
+	for i in _reached.size():
+		if _reached[i] == 1 and not disc.has(i) and (piece[i] == -1 or _root(parent, piece[i]) != p):
+			lost.append(i)
+	return lost
 
 ## The tiles home reaches among `_blocked` and `disc` besides, as a per-tile array.
 func _flood(disc: Dictionary) -> PackedByteArray:

@@ -771,6 +771,11 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	_owe_the_moments(day, _stream(base, MOMENTS_SALT), events, heat, spec.caps_per_day)
 	# **The rest is drawn as she walks** (`WalkDraw`): every location the dawn did not fix is left
 	# undrawn, and the walk draws each from its view's bag as she comes near it.
+	# The reach among what the dawn stood is worked out here, on the loading screen, rather than on
+	# the frame the walk first asks it.
+	var stood := events.placements()
+	stood.append_array(events.standing())
+	reach.prepare(stood)
 	events.use_walk_draw(WalkDraw.new(locations, _draw_the_locations(day, base, map, events, ground,
 			leave_alone, corridor, doors, spec, locations, heat, beside_the_routes, reach)))
 
@@ -2677,9 +2682,14 @@ class RuledLocationGround extends LocationGround:
 
 	## Overrides LocationGround.offer.
 	func offer(def: EventDef, location: Location) -> Planned:
+		var made := begin_offer(def, location)
+		while not made.step():
+			pass
+		return made.plan
+
+	## Overrides LocationGround.begin_offer.
+	func begin_offer(def: EventDef, location: Location) -> LocationGround.Offer:
 		var fits := _fit.tiles(def, location)
-		if fits.is_empty():
-			return null
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%s:%s" % [_base, location.tiles(), def.id])
 		for i in range(fits.size() - 1, 0, -1):
@@ -2689,7 +2699,16 @@ class RuledLocationGround extends LocationGround:
 			fits[j] = kept
 		if def.id == EventScheduler._MOUSE_ID:
 			fits = _beside_a_pile_first(fits)
-		var role := EventScheduler.role_for(def, _day)
+		return RuledOffer.new(self, def, fits, rng, EventScheduler.role_for(def, _day))
+
+	## **Builds `def` at `tile` and asks the day's rules of it**: the candidate and its room
+	## (`StreetInvalidation.room()`, INF for one that stands clear, -INF for one refused), or null
+	## where the row does not build there, judged against what stands now: the dawn's plan, or the
+	## walk's once it has started.
+	func ask(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator, role: GameEnums.BlockerRole) -> Array:
+		var candidate := _fit.build(def, tile, rng)
+		if not candidate:
+			return []
 		var already: Array[Planned] = []
 		var reach_context: Array[Planned] = []
 		if _walk == null:
@@ -2701,19 +2720,24 @@ class RuledLocationGround extends LocationGround:
 			_catch_up_with_the_walk()
 			already = _walk_placed
 			reach_context = _walk_around
-		var best: Planned = null
-		var best_room := -INF
-		for tile in fits:
-			var candidate := _fit.build(def, tile, rng)
-			if not candidate:
-				continue
-			var room := _rules.room(candidate, role, tile, already, reach_context)
-			if room == INF:
-				return candidate
-			if room > best_room:
-				best_room = room
-				best = candidate
-		return best
+		return [candidate, _rules.room(candidate, role, tile, already, reach_context)]
+
+	## Asks the day's rules again of a candidate asked before, against what stands now.
+	func ask_again(candidate: Planned, tile: Vector2i, role: GameEnums.BlockerRole) -> float:
+		if _walk == null:
+			var events: DayEvents = _events.get_ref()
+			var around := events.placements()
+			around.append_array(events.standing())
+			return _rules.room(candidate, role, tile, events.placements(), around)
+		_catch_up_with_the_walk()
+		return _rules.room(candidate, role, tile, _walk_placed, _walk_around)
+
+	## How many plans the walk has, as what the rules read is worked out from: a candidate asked at
+	## one count and kept to another is asked again (`RuledOffer`). -1 while dawn draws.
+	func judged_at() -> int:
+		if _walk:
+			_catch_up_with_the_walk()
+		return _walk_counted
 
 	## Overrides LocationGround.scale.
 	func scale(def: EventDef, location: Location) -> float:
@@ -2782,6 +2806,60 @@ class RuledLocationGround extends LocationGround:
 				if _piles.has(Vector2i(x, y)):
 					return true
 		return false
+
+## **A ruled ground's offer, a candidate at a time** (`RuledLocationGround.begin_offer()`): the
+## row's tiles at the location in the offer's shuffled order, each built and asked the day's rules
+## on its own step; the first that stands clear is the offer at once, and otherwise the one with the
+## most room once every tile is asked. **The one kept is asked again on the last step** if the walk
+## gained a plan since it was asked, and the offer is nothing if that plan now refuses it: a draw
+## spread over ticks never stands a row against what it was not judged with. Asked to the end in
+## one go, it offers what the whole offer always did. Model: no node.
+class RuledOffer extends LocationGround.Offer:
+	var _ground: RuledLocationGround
+	var _def: EventDef
+	var _fits: Array[Vector2i]
+	var _rng: RandomNumberGenerator
+	var _role: GameEnums.BlockerRole
+	var _next := 0
+	var _best_room := -INF
+	var _best_tile := Vector2i.ZERO
+	var _best_at := -1
+	var _made := false
+
+	func _init(ground: RuledLocationGround, def: EventDef, fits: Array[Vector2i],
+			rng: RandomNumberGenerator, role: GameEnums.BlockerRole) -> void:
+		_ground = ground
+		_def = def
+		_fits = fits
+		_rng = rng
+		_role = role
+
+	## Overrides LocationGround.Offer.step.
+	func step() -> bool:
+		if _made:
+			return true
+		if _next < _fits.size():
+			var tile := _fits[_next]
+			_next += 1
+			var asked := _ground.ask(_def, tile, _rng, _role)
+			if not asked.is_empty():
+				var room: float = asked[1]
+				if room == INF:
+					plan = asked[0]
+					_made = true
+					return true
+				if room > _best_room:
+					_best_room = room
+					plan = asked[0]
+					_best_tile = tile
+					_best_at = _ground.judged_at()
+		if _next < _fits.size():
+			return false
+		if plan and _best_at != _ground.judged_at() \
+				and _ground.ask_again(plan, _best_tile, _role) == -INF:
+			plan = null
+		_made = true
+		return true
 
 ## **An authored scene's row at the location its tile names**, or null with the reason appended to
 ## `why`. A recipe keeps its data: `at` names the tile, and so the location holding it

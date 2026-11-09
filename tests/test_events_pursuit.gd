@@ -16,8 +16,6 @@ extends "res://tests/events_shared_city.gd"
 ## `events_shared_city.gd` for `_test_a_pursuer_stops_at_walls`'s `_map()`, the one test here that
 ## needs a real generated city rather than a hand-built rig.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:

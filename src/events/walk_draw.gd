@@ -7,13 +7,15 @@ extends RefCounted
 ## undrawn; this draws one the first time it comes near her, through the same draw the dawn used
 ## (`LocationDraw`: the view's bag, the day's caps, the location's own ground and the day's rules).
 ##
-## **When a location is drawn** (the orchestrator's reading, open to the player's overturn): one a
-## tick, the nearest out of her view whose ground has come within `BAND_FAR` of her, those ahead of
-## her heading first; and at once, however many, any out of her view within `MUST_DRAW`, so no
-## location reaches the stream radius undrawn, even after a sharp turn brings many near together.
-## One a tick drains the band long before anything in it nears the stream radius, so a draw's cost
-## is spread a draw a tick rather than landing in one. A location in her view is never drawn: an
-## event drawn there would appear where she is looking. Model: no node.
+## **When a location is drawn** (the orchestrator's reading, open to the player's overturn): the
+## nearest out of her view whose ground has come within `BAND_FAR` of her, those ahead of her heading
+## first, is drawn a step a tick (`LocationDraw.begin()`, `Asking.step()`: a marble from the bag or
+## one tile of a row's offer), so no tick pays for more than one candidate of the band's draws; and any out of her view within `MUST_DRAW` is drawn
+## whole on the tick it gets there, however many and whatever it costs, so no location reaches the
+## stream radius undrawn, even after a sharp turn brings many near together (`forced()` counts those
+## draws). A location part-way drawn holds nothing until its draw ends, so nothing of it can stream
+## in. A location in her view is never drawn: an event drawn there would appear where she is
+## looking. Model: no node.
 
 ## Within this of her a location out of her view is drawn at once: the stream radius
 ## (`Tuning.EVENT_STREAM_RADIUS`) and a second of walking, so it is drawn before anything in it can
@@ -38,6 +40,10 @@ var _rects := {}
 ## again once she has walked `RESCAN` from it.
 var _near: Array = []
 var _scanned_at := Vector2.INF
+## The band's draw under way, a step a tick, or null.
+var _asking: LocationDraw.Asking = null
+## How many draws a tick had to make whole (`forced()`).
+var _forced := 0
 
 ## The walk's draw over the day's `locations`, drawing through `draw`.
 func _init(locations: DayLocations, draw: LocationDraw) -> void:
@@ -57,16 +63,18 @@ func _init(locations: DayLocations, draw: LocationDraw) -> void:
 				(_index[key] as Array).append(location)
 
 ## **Draws what a tick of her walk owes**: every undrawn location within `MUST_DRAW` of `at` that
-## `in_view` (a world rect -> whether she can see it) says she cannot see, and then one more, the
-## nearest out of her view within `BAND_FAR`, ahead of her `heading` before any behind. Answers the
-## plans the draws placed, for the walk to stand.
+## `in_view` (a world rect -> whether she can see it) says she cannot see, whole; then one step
+## of the band's draw under way, or of a new one, the nearest out of her view within `BAND_FAR`, ahead
+## of her `heading` before any behind. Answers the plans the draws placed, for the walk to stand.
 func draw_ahead(at: Vector2, heading: Vector2, in_view: Callable) -> Array[EventScheduler.Planned]:
 	var placed: Array[EventScheduler.Planned] = []
-	var next: Location = null
-	var next_rank := INF
 	if _scanned_at == Vector2.INF or at.distance_to(_scanned_at) > RESCAN:
+		var t0 := Time.get_ticks_usec()
 		_near = _undrawn_within(at, BAND_FAR + RESCAN, false)
 		_scanned_at = at
+		if Time.get_ticks_usec() - t0 > 3000: print("SLOW rescan %d" % (Time.get_ticks_usec() - t0))
+	var next: Location = null
+	var next_rank := INF
 	for entry: Array in _near:
 		var location: Location = entry[1]
 		if location.is_drawn() or location.is_taken():
@@ -77,24 +85,47 @@ func draw_ahead(at: Vector2, heading: Vector2, in_view: Callable) -> Array[Event
 		if distance > BAND_FAR or in_view.call(rect):
 			continue
 		if distance <= MUST_DRAW:
-			_draw_one(location, placed)
+			_forced += 1
+			var t1 := Time.get_ticks_usec()
+			_draw_whole(location, placed)
+			if Time.get_ticks_usec() - t1 > 3000: print("SLOW forced %d %s" % [Time.get_ticks_usec() - t1, location.view()])
 			continue
 		var behind := heading == Vector2.ZERO \
-				or (_rects[location] as Rect2).get_center().direction_to(at).dot(heading) >= 0.0
+				or rect.get_center().direction_to(at).dot(heading) >= 0.0
 		var rank := distance + (BAND_FAR if behind else 0.0)
 		if rank < next_rank:
 			next_rank = rank
 			next = location
-	if next:
-		_draw_one(next, placed)
+	if _asking == null and next != null:
+		_asking = _draw.begin(next)
+	if _asking and _asking.location.is_taken():
+		_asking = null
+	# A draw under way waits while she can see its location: a marble it took there would appear
+	# where she is looking.
+	if _asking and not in_view.call(_rects[_asking.location]):
+		var t2 := Time.get_ticks_usec()
+		var over := _asking.step()
+		if Time.get_ticks_usec() - t2 > 3000: print("SLOW step %d view %s asked %s" % [Time.get_ticks_usec() - t2, _asking.location.view(), _asking.offered.keys()])
+		if over:
+			var t3 := Time.get_ticks_usec()
+			var plan := _draw.finish(_asking)
+			if Time.get_ticks_usec() - t3 > 3000: print("SLOW finish %d" % (Time.get_ticks_usec() - t3))
+			_asking = null
+			if plan:
+				placed.append(plan)
 	return placed
+
+## How many locations the walk has had to draw whole on one tick because they came within
+## `MUST_DRAW` undrawn: what the band's one ask a tick did not reach in time.
+func forced() -> int:
+	return _forced
 
 ## **Draws every undrawn location within `radius` of `at`**, nearest first, whether she can see it
 ## or not: what a walk starting at `at` owes before its first step, drawn while the day is set up.
 func draw_within(at: Vector2, radius: float) -> Array[EventScheduler.Planned]:
 	var placed: Array[EventScheduler.Planned] = []
 	for entry: Array in _undrawn_within(at, radius, true):
-		_draw_one(entry[1], placed)
+		_draw_whole(entry[1], placed)
 	return placed
 
 ## Hands the draw the walk it now judges against (`LocationDraw.judge_against()`): from the walk's
@@ -102,10 +133,15 @@ func draw_within(at: Vector2, radius: float) -> Array[EventScheduler.Planned]:
 func judge_against(walk: WalkEvents) -> void:
 	_draw.judge_against(walk)
 
-func _draw_one(location: Location, placed: Array[EventScheduler.Planned]) -> void:
+func _draw_whole(location: Location, placed: Array[EventScheduler.Planned]) -> void:
 	if location.is_drawn() or location.is_taken():
 		return
-	var plan := _draw.draw(location)
+	var plan: EventScheduler.Planned = null
+	if _asking and _asking.location == location:
+		plan = _draw.finish(_asking)
+		_asking = null
+	else:
+		plan = _draw.draw(location)
 	if plan:
 		placed.append(plan)
 

@@ -39,23 +39,86 @@ func _init(fill: Dictionary, seed_value: int) -> void:
 ## left is given a second fill beside what it still holds, so the marbles refused here stay for the
 ## locations after it; `EMPTY` where even that holds nothing accepted.
 func draw(accepts: Callable, scale: Callable) -> String:
+	var drawing := begin(accepts, scale)
+	while not drawing.step():
+		pass
+	return drawing.drawn
+
+## **The same draw, a step at a time** (`Drawing.step()`): what a walk spreads over ticks. `accepts`
+## may also answer null, still weighing the marble, and is asked of the same marble again on the next
+## step, so one marble's ask can be spread over steps too. Asked to the end, it draws exactly what
+## `draw()` would; `draw()` with an `accepts` that answers null steps it until it answers.
+func begin(accepts: Callable, scale: Callable) -> Drawing:
 	if _total() <= 0:
 		_left = _fill.duplicate()
-	var refused := {}
-	for _round in 2:
-		while true:
-			var pick: Variant = _weighed(refused, scale)
-			if pick == null:
-				break
-			var marble: String = pick
-			if marble == EMPTY or accepts.call(marble):
-				_left[marble] = int(_left[marble]) - 1
-				return marble
-			refused[marble] = true
-		if _round == 0:
-			for marble: String in _fill:
-				_left[marble] = int(_left.get(marble, 0)) + int(_fill[marble])
-	return EMPTY
+	return Drawing.new(self, accepts, scale)
+
+## One draw from the bag, under way: each `step()` asks one marble, or asks again of the one still
+## being weighed, and `drawn` is the marble taken,
+## `EMPTY` for the empty event or a bag that ran out of marbles to ask twice over.
+class Drawing extends RefCounted:
+	var drawn := ""
+	var _bag: ViewBag
+	## The marble `_accepts` is still weighing, or null.
+	var _weighing: Variant = null
+	var _accepts: Callable
+	var _scale: Callable
+	var _refused := {}
+	var _round := 0
+	var _done := false
+
+	func _init(bag: ViewBag, accepts: Callable, scale: Callable) -> void:
+		_bag = bag
+		_accepts = accepts
+		_scale = scale
+
+	## Asks the next marble, or asks again of the one still being weighed, and answers whether the
+	## draw is over.
+	func step() -> bool:
+		if _done:
+			return true
+		if _weighing != null:
+			return _answer(_weighing)
+		var pick: Variant = _bag._weighed(_refused, _scale)
+		if pick == null:
+			if _round == 0:
+				# Every marble left refused: a second fill beside what is left, so what this
+				# location refused stays for the next one.
+				for marble: String in _bag._fill:
+					_bag._left[marble] = int(_bag._left.get(marble, 0)) + int(_bag._fill[marble])
+				_round = 1
+				return false
+			drawn = EMPTY
+			_done = true
+			return true
+		var marble: String = pick
+		if marble == EMPTY:
+			return _take(marble)
+		return _answer(marble)
+
+	## Asks `accepts` of `marble`, and takes it on yes.
+	func _answer(marble: String) -> bool:
+		var accepted: Variant = _accepts.call(marble)
+		if accepted == null:
+			_weighing = marble
+			return false
+		_weighing = null
+		# A marble weighed over steps may have been taken by another draw from the bag meanwhile.
+		if accepted and int(_bag._left.get(marble, 0)) > 0:
+			return _take(marble)
+		_refused[marble] = true
+		return false
+
+	func _take(marble: String) -> bool:
+		_bag._left[marble] = int(_bag._left[marble]) - 1
+		drawn = marble
+		_done = true
+		return true
+
+	## Whether the draw is over.
+	func is_done() -> bool:
+		return _done
+
 
 ## One marble left, weighed by its count and its scale, none refused, or null where none is.
 func _weighed(refused: Dictionary, scale: Callable) -> Variant:

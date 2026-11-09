@@ -11,8 +11,6 @@ extends "res://tests/events_shared_city.gd"
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again". Extends
 ## `events_shared_city.gd` since every helper below sites against the one shared generated city.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:

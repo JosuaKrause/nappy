@@ -11,8 +11,6 @@ extends "res://tests/events_shared_city.gd"
 ## `events_shared_city.gd` for the three placement tests that ask what the scheduler actually put
 ## on the shared city's own streets.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:

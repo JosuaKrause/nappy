@@ -11,8 +11,6 @@ extends "res://tests/events_shared_city.gd"
 ## on its own -- `test_events_scheduler.gd` keeps the scheduler's determinism and safety rules,
 ## which share nothing but the inherited `_map()`/`_planned()` with this half.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:

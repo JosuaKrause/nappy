@@ -28,8 +28,6 @@ extends "res://tests/events_shared_city.gd"
 ## judgements, and one that keeps nothing (`ForgetfulVerdicts`) is a placement that judges every try
 ## afresh, which is the answer a kept verdict has to agree with.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:

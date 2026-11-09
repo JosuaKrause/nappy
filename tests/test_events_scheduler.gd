@@ -19,8 +19,6 @@ extends "res://tests/events_shared_city.gd"
 ## `build_day()`, with the day's calm areas made the way `DayPlanner` makes them (`CalmAreas.of()`
 ## from the day and its target, which is where the swing's park is set aside).
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:
