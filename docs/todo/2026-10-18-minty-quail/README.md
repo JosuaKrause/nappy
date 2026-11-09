@@ -103,11 +103,13 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      hand-ins pull request.
    - **Tools:** `baseline-measurements.md`, and the field-read check made to see every read
      (`field-reads.md`).
-   - **The event interface's design** (a body, a hold on her, a lethal field and a pursuit as parts
-     an event has; `field-reads.md`) is written beside the placement track. After placement come
-     the events' field reads and suites, the resistance and the scene recipes
-     (`re-derived-cases.md` closes with the scheduler's breakup); `system-map.md` once the redesign
-     is complete.
+   - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a
+     pursuit and the rest as parts an event has, and every caller asking through methods). Its
+     first steps, the callers outside the events folder and the live event's own behaviours and
+     looks, run beside the placement track; the dawn, the event manager's parts, the resistance
+     and the scene recipes follow placement and the scheduler's breakup; then a row written as its
+     parts, and the events' suites (`re-derived-cases.md` closes with the scheduler's breakup);
+     `system-map.md` once the redesign is complete.
 4. **Remeasuring**, once, after the last item: winnability across seeds, route costs, the cost
    table, GoatCounter's names and counts against `docs/stats/`, the run log for the same run against
    one from before the refactor, and pictures of every behavior a step changed on purpose. Each
