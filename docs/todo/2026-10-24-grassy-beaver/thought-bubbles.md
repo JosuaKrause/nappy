@@ -19,8 +19,19 @@ mark: "also a thought bubble should hint on going into the alley to get the mark
 to touch, with the alley's robber at its far end; day 6's brief names the rumor of chalk and the task
 has its red arrow (`CLAUDE.md`, "Things deliberately not done"). **Read as:** on the day the chalk
 mark is first there, a bubble hints that she can go into the alley to reach it, beside the brief and
-the arrow. **Open:** whether it shows once or on every day a mark is there, and what sets it off (the
-alley mouth coming into view, or her passing it).
+the arrow. What sets it off, the player: "I mean it's obvious, no? when the mark becomes visible to
+the player for the first time it causes a thought bubble", and "how else would that make sense?"
+(gentle-owl #1234). **Read as:** the bubble shows when a chalk mark first comes into view on screen,
+and like every lesson's bubble only a few times in all ("a few times for each new lesson",
+curly-moose #819).
+
+**A bubble that points her back to day 1's tutorial route.** Of day 1's tutorial
+(`hand-crafted-day-one.md`): "every time she tries to leave the tutorial route there is a thought
+bubble that guides her back to the tutorial route. she can choose to ignore it" (gentle-owl #1253).
+**Read as:** each time she starts to leave the tutorial route, a bubble points her back to it; it
+shows every time, unlike the few-times rule of the other bubbles, and she may walk on regardless.
+It shows wherever she leaves the route: past the first block the side streets carry soft seals,
+which leave the carriageway open, so she can still leave there in the road (`hand-crafted-day-one.md`).
 
 *Proposed, not asked for:* the bubble looks unlike the danger exclamation mark already drawn over
 her, since **cues** keeps that vocabulary short; the icons are SVG, drawn by Opus under **svg-art**

@@ -1,5 +1,5 @@
 extends RefCounted
-## `DayLocations`, every street's locations for one day laid out at dawn (inbox #1185), with the
+## `DayLocations`, every street's locations for one day laid out at dawn (inbox #1185 in gentle-owl), with the
 ## `StreetLocations` and `Location` it is made of, the state it holds: a street split into three
 ## sections along its length, each with two sidewalk locations; each street's sections filed under
 ## the view it is told; a street a fixed part holds left with no section open; a section an event
@@ -178,7 +178,7 @@ static func _grounds_of(locations: DayLocations, kind: int) -> Array[Location]:
 	return found
 
 ## **The ground beyond the streets** (the player's "yes" to a group of locations per kind of ground,
-## issue #1185): on a bare lattice painted with an alley six tiles long, a square eight tiles across
+## inbox #1185 in gentle-owl): on a bare lattice painted with an alley six tiles long, a square eight tiles across
 ## and one crossing in a junction box, the alley is three locations along its length, the square a
 ## grid of four cells, and the junction box one location, each told the view the corridor gives it.
 func _test_the_ground_beyond_the_streets_has_its_own_locations(t) -> void:

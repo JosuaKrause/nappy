@@ -13,7 +13,7 @@ func offer(_def: EventDef, _location: Location) -> EventScheduler.Planned:
 	return null
 
 ## How many times over `location` weighs `def` against its view bag's weight for it: 1 for an
-## ordinary location (the player's "yes" to a weight per location, issue #1185).
+## ordinary location (the player's "yes" to a weight per location, inbox #1185 in gentle-owl).
 func scale(_def: EventDef, _location: Location) -> float:
 	assert(false, "LocationGround.scale() is overridden by every implementation")
 	return 1.0

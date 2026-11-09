@@ -356,8 +356,8 @@ class Planned extends RefCounted:
 	## region wall's body (`is_in_the_wall()`), a door's (`is_door()`), a seal (`stand_as_a_seal()`), a
 	## loudspeaker mast (`mast_id`) or an ambient row (a playground). The player's fixed parts: "the
 	## wall, doors, closures, seals, scars, masts and ambient rows" each "get phases during either dawn
-	## or beginning of the game" (inbox #1185); a closure is no plan, and the code's scar, the burnt
-	## shell a fire leaves, is a regular event ("your scars are just regular events", inbox #1185).
+	## or beginning of the game" (inbox #1185 in gentle-owl); a closure is no plan, and the code's scar, the burnt
+	## shell a fire leaves, is a regular event ("your scars are just regular events", inbox #1185 in gentle-owl).
 	## Day 13's swap never takes the section of one (`ResistanceDirector._section_to_swap()`).
 	func is_a_fixed_part() -> bool:
 		return _is_door or _in_the_wall or _is_a_seal or mast_id != "" \
@@ -768,7 +768,7 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	return _draw_the_locations(day, base, map, events, ground, leave_alone, corridor, doors, spec,
 			locations, heat, beside_the_routes, reach)
 
-## **The roadblock phase at dawn** (inbox #1185: the day's routes first, then roadblocks next to
+## **The roadblock phase at dawn** (inbox #1185 in gentle-owl: the day's routes first, then roadblocks next to
 ## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
 ## route-adjacent sections, spread by a bias toward the section farthest from those already placed,
 ## until every route tile has one close by, no section still offered could bring one close by a
@@ -781,7 +781,7 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 ##
 ## **What a section is offered, and what close by is, are the day's**: `RuledRoadblockGround`
 ## stands the roadblock where it fits in the section and asks today's placement rules of it
-## (`StreetInvalidation`), never on the main road (inbox #1186); close by is the walk her paths take from
+## (`StreetInvalidation`), never on the main road (inbox #1186 in gentle-owl); close by is the walk her paths take from
 ## the ground she touches it from without leaving the circle of `TASK_ROW_CLOSE_BY` round it
 ## (`DayReach.paths_over()`), the widest the task searches (`ResistanceDirector.ROADBLOCK_WIDER_REACH`).
 ##
@@ -814,7 +814,7 @@ static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityM
 			phase.left_uncovered()])
 
 ## **Whether `section` is on the main road**, where nothing that closes a street stands outside the
-## escape (inbox #1186): neither a roadblock the phase places nor one day 13's task swaps in.
+## escape (inbox #1186 in gentle-owl): neither a roadblock the phase places nor one day 13's task swaps in.
 static func _is_on_the_main_road(map: CityMap, section: Location) -> bool:
 	var segment := section.segment()
 	return map.is_main_road(not segment.horizontal, segment.a.x)
@@ -823,7 +823,7 @@ static func _is_on_the_main_road(map: CityMap, section: Location) -> bool:
 ## the section nearest its middle, built as any placement is (`build_placement()`), or null where the
 ## section is on the main road (`_is_on_the_main_road()`) or has no carriageway. Nothing is judged:
 ## day 13's task replaces the section's whole content with it, a route-adjacent section being valid
-## ground under the route-adjacent rules already (inbox #1185); what the section held is spent by
+## ground under the route-adjacent rules already (inbox #1185 in gentle-owl); what the section held is spent by
 ## the caller (`EventStreaming.swap_section()`).
 static func across_the_section(def: EventDef, map: CityMap, section: Location,
 		rng: RandomNumberGenerator) -> Planned:
@@ -854,12 +854,12 @@ static func across_the_section(def: EventDef, map: CityMap, section: Location,
 ##   street, the home block, a tree) nearest the section's middle that the day's rules
 ##   (`StreetInvalidation`) refuse nothing, asked against the day's plans and what stands
 ##   (`DayEvents.standing()`). A section with no such tile is offered none, and none is ever offered
-##   on the main road (inbox #1186). **Every rule invalidates here, the spacing between two of a row
+##   on the main road (inbox #1186 in gentle-owl). **Every rule invalidates here, the spacing between two of a row
 ##   included**: a tile with
 ##   another roadblock within `EVENT_SPACING_SAME` (256px), the one rule that bends elsewhere, is
 ##   not offered, so construction keeps the day's roadblocks apart and the phase's bias ranks what is
 ##   left. *Read as, the orchestrator's and open to correction:* which events make others invalid is
-##   "what your current rules accomplish. the same applies still" (inbox #1185), and the spacing is
+##   "what your current rules accomplish. the same applies still" (inbox #1185 in gentle-owl), and the spacing is
 ##   one of those rules.
 ## - **Close by** is the walk her paths take, without leaving the circle of `TASK_ROW_CLOSE_BY` round
 ##   it, from the ground she touches it from (`_touched_from()`), with its own body standing.
@@ -1034,7 +1034,7 @@ static func _hand_to_her_walk(events: DayEvents) -> void:
 ## ever asked for all four events on *every* street. that doesn't make any sense and cannot feasibly
 ## work at all. that is why the density is so high that it's impossible to get anywhere. yes, a
 ## marble bag is absolutely needed with empty events (nothing happening) as well. we need a fair
-## mix". Of how many a street holds, inbox #1185's board answer: "one per street. fill empty in if
+## mix". Of how many a street holds, inbox #1185 in gentle-owl's board answer: "one per street. fill empty in if
 ## any segment or location in the street has an event".)*
 ##
 ## Each street of the walk (`RouteSource.streets_on_the_walk()`, in its own order) draws one marble
@@ -2364,7 +2364,7 @@ class WalkSiting extends RefCounted:
 
 # ------------------------------------------------- the day's locations, from the bags ---
 
-## **Every open location of the day drawn from its view's bag** (`LocationDraw`, inbox #1185): the
+## **Every open location of the day drawn from its view's bag** (`LocationDraw`, inbox #1185 in gentle-owl): the
 ## bags (`_view_bags()`) hold every recurring row the catalogue places on the map today, each as many
 ## times as its weight in the view (`view_weight()`), and the empty event; the day's ground answers
 ## which row is valid where and how much each location weighs it (`RuledLocationGround`). The rows
@@ -2419,7 +2419,7 @@ const CAPS_SALT := 8
 
 ## **A row's weight in a view's bag**: its own `EventDef.weight` times what the view is to its role,
 ## the offers today's placement made per tile of the view's ground (`_copies_of()`'s gradient),
-## stated per view (inbox #1185: "all possible events for that view multiplied by their
+## stated per view (inbox #1185 in gentle-owl: "all possible events for that view multiplied by their
 ## probability/weight"):
 ##
 ## - **friction** is aimed at the routes: four times over on the route, once elsewhere
@@ -2548,7 +2548,7 @@ const VIEW_SHARE_SCALES := [
 ## **How often a row is drawn on each kind of ground** (`row id -> {Location.Kind -> weight}`),
 ## a weight a location of that kind scales the row's share of its view's bag by
 ## (`RuledLocationGround.scale()`; the player's "yes" to a group of locations per kind of ground
-## and a weight per location scaling its view's bag, issue #1185). **Why it is needed:** each
+## and a weight per location scaling its view's bag, inbox #1185 in gentle-owl). **Why it is needed:** each
 ## location draws one marble, so a row whose own ground is rare (a square's few cells, an alley's
 ## three locations, the junction boxes) would be drawn only as often as its share of the bag times
 ## the few locations that take it, where today's placement picked the row by weight against the
@@ -2630,7 +2630,7 @@ const MOMENTS_PER_DAY: Array[int] = [23, 26, 29, 25, 26, 28, 29, 28, 28, 30, 31,
 ##   of the location's own stream, and is asked of the day's rules (`StreetInvalidation`) against
 ##   the day's plans and what stands: the first tile with room all round, else the roomiest a rule
 ##   leaves valid, else none.
-## - **The weight** (the player's "yes" to a weight per location, issue #1185): four times over on a
+## - **The weight** (the player's "yes" to a weight per location, inbox #1185 in gentle-owl): four times over on a
 ##   precinct street (`EVENT_PRECINCT_WEIGHT`), six times over for a costly wall on the street between
 ##   two strands of the routes (`EVENT_WALL_GAP_WEIGHT`), and five times over for the mouse in an
 ##   alley beside a sack pile (`_MOUSE_PILE_EXTRA_COPIES` and one). And the mouse a location draws

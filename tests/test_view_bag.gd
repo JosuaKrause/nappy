@@ -1,5 +1,5 @@
 extends RefCounted
-## `ViewBag`, one view's bag (inbox #1185: "each of the views has their own bag to draw from"): every
+## `ViewBag`, one view's bag (inbox #1185 in gentle-owl: "each of the views has their own bag to draw from"): every
 ## marble drawn without putting back and the bag filled again once empty, a marble the location does
 ## not accept never drawn and left in the bag for the next, and each marble's share scaled by the
 ## location's weight. Bags of a handful of marbles built by hand.

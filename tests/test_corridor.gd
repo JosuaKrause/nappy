@@ -1,6 +1,6 @@
 extends RefCounted
 ## `Corridor`, the ground today's routes run through, here only for the view a whole street is in
-## (`view_of()`, inbox #1185): on the route, route-adjacent (beside the routes, where day 13's dawn
+## (`view_of()`, inbox #1185 in gentle-owl): on the route, route-adjacent (beside the routes, where day 13's dawn
 ## stands its roadblocks and the task's swap takes a section), or off the route. Checked on a
 ## corridor made of a tree whose routes are set by hand (`tests/fake_route_tree.gd`): a route east
 ## along the street from junction (2, 2) to (4, 2), which crosses the junctions (2, 2), (3, 2) and

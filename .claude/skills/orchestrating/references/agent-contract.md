@@ -95,7 +95,7 @@ the player's screen, so a wait that wakes every minute floods both with nothing 
 what you can into one command, so one wait gives one notification.
 
 **Headless first.** Any game run carries a dev flag or `--no-save`, since worktrees share the
-player's save. **No agent opens the Godot editor** (inbox #1203, inbox #1242), a Godot MCP tool
+player's save. **No agent opens the Godot editor** (inbox #1203 in gentle-owl, inbox #1242 in gentle-owl), a Godot MCP tool
 that launches it included; the game's own windows follow the rules here. At most one or two
 `tools/shot.sh` captures at the end for evidence; the brief says
 whether a still or a burst, and whether `--invincible` may be used. The player's CLI cannot show
@@ -141,7 +141,7 @@ internal revision loop. For artwork, sound or any visual or audible result:
 ## Forks come back, never guessed
 
 Implement the unambiguous part and state any fork precisely. **Nothing is called silent before the
-player's words behind it are read** (inbox #1232, inbox #1234): the item's whole entry (items filed
+player's words behind it are read** (inbox #1232 in gentle-owl, inbox #1234 in gentle-owl): the item's whole entry (items filed
 from one note belong together), the playtest statements and inbox notes it cites, and their appended
 words. A point those words answer by their plain meaning, even without naming it, is not silent: it
 is built, and the PR description cites the words it rests on. Only where they truly say nothing,

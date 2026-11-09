@@ -10,7 +10,7 @@ fixed part holds is recorded on its location (the design's fixed parts' phases, 
   event manager is handed its city (`EventWorld.work_out_mast_sites()`, `mast_sites()`), and handed
   to every dawn (`EventScheduler.build_day()`'s `mast_sites`, which every caller hands in: no
   fallback, so a probe measures the dawn the game plans). That is the player's "the mast locations
-  are known from the beginning of the game" (inbox #1185), and a change made on purpose: worked out
+  are known from the beginning of the game" (inbox #1185 in gentle-owl), and a change made on purpose: worked out
   on each day's paint, as main does, a calm area grown or a tile changed can let a newly eligible
   candidate win the pick, and the reviewer found main's sites differ from the run's on 23 of 400
   city-days (5 of 40 cities from 55501 in steps of 29, from day 8).
@@ -104,7 +104,7 @@ player's overturn):
 the measurement above. Its output, verbatim:
 
     (a) Changed on purpose:
-    - The masts' sites are fixed for the run, worked out once on the city as built (EventWorld.mast_sites()), the player's 'the mast locations are known from the beginning of the game' (inbox #1185); main works them out on each day's paint, and the reviewer found the two differ on 23 of 400 city-days (5 of 40 cities from 55501 in steps of 29, from day 8). Each mast holds the location under it from day 5, so the draw passes over it.
+    - The masts' sites are fixed for the run, worked out once on the city as built (EventWorld.mast_sites()), the player's 'the mast locations are known from the beginning of the game' (inbox #1185 in gentle-owl); main works them out on each day's paint, and the reviewer found the two differ on 23 of 400 city-days (5 of 40 cities from 55501 in steps of 29, from day 8). Each mast holds the location under it from day 5, so the draw passes over it.
     - The region wall's bodies hold the location under each at dawn, and a seal's bodies stand and hold none (a soft seal is not held, docs/EVENTS.md's held streets); the probe plans each day's closures, region wall and seals as the game does and hands the seals and the wall's bodies in as standing, on main and on the branch alike, so it sees the wall's hold from day 1.
     - The scripted rows each draw one location at dawn, weighted by their role over its tiles, and are assigned it (ScriptedPhase), where a tile was rolled from their ground; the draw passes over the location. Of the 64 cities, where they stand: night_raid: junction 20 -> 19, sidewalk 44 -> 45, route-adjacent 20 -> 17, off the route 44 -> 47; firefight: junction 59 -> 62, open 5 -> 2, off the route 64 -> 64.
     - A one-shot is sited on her way: EventDef.validate() refuses one without on_her_way, and the dawn neither rolls nor places one; burning_building already was, so the probe sees no change from it.

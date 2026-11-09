@@ -1,6 +1,6 @@
 class_name Location
 extends RefCounted
-## **One location of a street**, the place a drawn event stands (inbox #1185): a street is split
+## **One location of a street**, the place a drawn event stands (inbox #1185 in gentle-owl): a street is split
 ## along its length into three sections, an event that spans the street takes a whole section, and
 ## otherwise a section holds two locations, one per sidewalk, so a street has up to six. A
 ## `Location` is either of the two kinds: a sidewalk location (one sidewalk band of one section) or
@@ -20,7 +20,7 @@ extends RefCounted
 ## drives it), an alley, an open lot (a square or a park), or a junction box. *(The player, of ground
 ## beyond a street's six locations: "yes" to the pick, a group of locations per kind of ground, an
 ## alley a one-sided street of three, a square or park a grid of section-sized locations, a junction
-## box one location its streets share, a carriageway event taking its section; issue #1185.)*
+## box one location its streets share, a carriageway event taking its section; inbox #1185 in gentle-owl.)*
 enum Kind { SIDEWALK, SECTION, ALLEY, OPEN, JUNCTION }
 
 var _segment: StreetNetwork.Segment

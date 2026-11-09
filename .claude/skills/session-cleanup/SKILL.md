@@ -184,7 +184,7 @@ player's correction:
 6. `## Plan`;
 7. `## Fences`.
 
-**`## Plan` holds what is already decided about what comes when** (inbox #1235): the phases in
+**`## Plan` holds what is already decided about what comes when** (inbox #1235 in gentle-owl): the phases in
 order, what starts each (a merge, an agent's report, the player's go-ahead), what runs in parallel
 within one, and where the next release falls with what it waits for. Each line rests on the player's
 words or a recorded decision and cites it, and the readings settled on the player's words that wait
