@@ -1493,7 +1493,7 @@ func _test_the_morning_is_indexed_before_the_first_frame(t) -> void:
 			if agent.kind != CrowdAgent.Kind.CAR:
 				continue
 			cars += 1
-			if agent.traffic.room_at(agent.lane_key(), agent.queue_position(), 1.0):
+			if agent.lane().traffic().room_at(agent.lane_key(), agent.queue_position(), 1.0):
 				unseen += 1
 	t.check(cars > 0, "the rig days put cars on the road to look for (%d)" % cars)
 	t.check(unseen == 0,
@@ -1784,7 +1784,7 @@ func _test_the_traffic_index_is_emptied_every_frame(t) -> void:
 		if agent.is_turning():
 			rearmost[agent.turn_lane_key()] = minf(rearmost.get(agent.turn_lane_key(), INF),
 					agent.turn_landing())
-	var index: TrafficIndex = _city.crowd.agents()[0].traffic
+	var index: TrafficIndex = _city.crowd.agents()[0].lane().traffic()
 	var stale := 0
 	for key: int in rearmost:
 		if absf(index.rearmost(key) - float(rearmost[key])) > 0.01:

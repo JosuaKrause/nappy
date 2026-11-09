@@ -35,6 +35,11 @@ the event instance, then the city map and the city, so the events go first, as t
 
 Left, each its own design question:
 
+- **The strategies' calls on the mover's underscore methods.** The car and walker strategies still
+  make about 55 calls to 13 of `LaneMover`'s underscore methods (`_along()`, `_cross()`,
+  `_set_along()`, `_set_cross()`, `_turn_round()`, `_tile_ahead()` and the like); a later pull
+  request turns those into the strategy's questions on the narrow lane interface (`LaneMover.Lane`),
+  named for what is asked and what happens.
 - **A run's parts.** `RunState` hands out `header`, `calendar`, `resistance`, `attempt_spend`,
   `posters` and `facts`, and a read through one is two field reads (`RunHeader`, `RunCalendar`,
   `ResistanceRunState`, `RunFacts`, `SettledState`): the parts reached through methods and each

@@ -266,7 +266,7 @@ func _projected_field(sample: Vector2, velocity: Vector2) -> float:
 ## Overrides ExcitementSource.will_be_lethal.
 func will_be_lethal(player_position: Vector2) -> bool:
 	var agent := _agent
-	if not _car or agent.lane().speed() < Tuning.CAR_STRIKE_MIN_SPEED:
+	if not _car or agent.speed() < Tuning.CAR_STRIKE_MIN_SPEED:
 		return false
 	var vel := agent.velocity()
 	var forward := agent.heading()

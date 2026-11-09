@@ -561,7 +561,7 @@ func _test_no_car_in_sight_ever_moves_further_than_it_drove(t) -> void:
 		# frame's landing sees. See `TrafficIndex.claim()`.
 		for agent: CrowdAgent in _city.crowd.agents():
 			if agent.is_turning():
-				agent.traffic.claim(agent.turn_lane_key(),
+				agent.lane().traffic().claim(agent.turn_lane_key(),
 						agent.turn_landing() - Tuning.CAR_GAP_MIN * 0.5)
 		for agent: CrowdAgent in _city.crowd.agents():
 			var was: Array = before.get(agent.get_instance_id(), [])

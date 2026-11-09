@@ -381,7 +381,7 @@ func set_focus(at: Vector2) -> void:
 func _make_an_agent() -> CrowdAgent:
 	var agent := CrowdAgent.new()
 	agent.skip_drawing(skip_agent_drawing)
-	agent.lane().use_crowd_parts(_traffic, _pockets, view, timing)
+	agent.use_crowd_parts(_traffic, _pockets, view, timing)
 	agent.use_atlas(atlas)
 	agent.mood().hear_in(sources)
 	return agent
@@ -658,8 +658,7 @@ func _resolve_the_queues() -> Dictionary:
 			if gap < Tuning.CAR_GAP_MIN:
 				queue[i].nudge_back(Tuning.CAR_GAP_MIN - gap)
 				gap = Tuning.CAR_GAP_MIN
-			queue[i].lane().set_gap_ahead(gap)
-			queue[i].lane().set_leader_speed(queue[i + 1].speed())
+			queue[i].lane().follow_at_a_gap(gap, queue[i + 1].speed())
 	return lanes
 
 ## Fills `_cars` and `_walkers` from `_agents` — see `_cars` for why once a frame rather than once a
@@ -733,8 +732,7 @@ func _keep_room_for_the_turning(lanes: Dictionary) -> void:
 			closest = behind
 			follower = other
 		if follower and closest < follower.lane().gap_ahead():
-			follower.lane().set_gap_ahead(closest)
-			follower.lane().set_leader_speed(0.0)
+			follower.lane().follow_at_a_gap(closest, 0.0)
 
 ## Decides, once per frame and per junction, whose turn it is to be in the box.
 ##
@@ -993,8 +991,7 @@ func _hold_walkers_at_doors(delta: float) -> void:
 	# at all of them.
 	var lines := _bucket_by_line(_door_holds.map(func(hold): return hold.stands_at()))
 	for agent in _walkers:
-		agent.lane().set_door_ahead(null)
-		agent.lane().set_door_ahead_along(INF)
+		agent.lane().clear_the_door_ahead()
 		_find_the_hut_in_front_of(agent, lines)
 		agent.lane().strategy().advance_the_door_hold(delta)
 
@@ -1033,8 +1030,7 @@ func _consider_the_hut(agent: CrowdAgent, forward: Vector2, vertical: bool, inde
 	var across_coordinate: float = hold.stands_at().x if vertical else hold.stands_at().y
 	if CityMap.corridor_offset(floori(across_coordinate / float(Tuning.TILE_SIZE))) < 0:
 		return
-	agent.lane().set_door_ahead(hold)
-	agent.lane().set_door_ahead_along(along)
+	agent.lane().see_a_door_ahead(hold, along)
 
 ## Whether there is somewhere on the far side for this car to be.
 ##
@@ -1056,7 +1052,7 @@ func _can_clear_the_box(agent: CrowdAgent, distance: float) -> bool:
 	# leader's speed is credited. Looked for as far as the box's far side and a gap past it, which is
 	# further than a car's brake looks.
 	var needed := far_side + Tuning.CAR_GAP_MIN
-	if agent.lane().strategy().road_before_a_figure(needed + agent.lane().strategy().body_nose()) < needed:
+	if agent.lane().strategy().road_before_a_figure(needed + agent.nose()) < needed:
 		return false
 	if agent.lane().gap_ahead() == INF:
 		return true

@@ -212,8 +212,8 @@ func on_the_road_clear() -> void:
 ##
 ## Overrides LaneStrategy.on_turned_round.
 func on_turned_round() -> void:
-	_lane.set_lane_index(CrowdLanes.road_lane(_lane.is_vertical(), _lane.direction()))
-	_lane.set_lane_centre(lane_centre_here())
+	_lane.change_lane(CrowdLanes.road_lane(_lane.is_vertical(), _lane.direction()))
+	_lane.keep_to_lane_centre(lane_centre_here())
 	claim_the_road_here()
 
 ## A car has no gait, and its stride is its own length, the same 52px the body is measured over.
@@ -232,12 +232,12 @@ func stride_length() -> float:
 ##
 ## Overrides LaneStrategy.choose_lane.
 func choose_lane(_roll: float) -> void:
-	_lane.set_vertical(_pick_axis_by_weight())
-	_lane.set_corridor_index(CrowdLanes.pick_corridor_in_range(_rng, _map,
-			_lane.is_vertical(), _field.corridor_range(_lane.is_vertical()), true))
-	_lane.set_lane_index(CrowdLanes.ROAD_OFFSETS[_rng.randi_range(0, 1)])
-	_lane.set_direction(CrowdLanes.road_direction(_lane.is_vertical(), _lane.lane_index()))
-	_lane.set_speed(_rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y))
+	var vertical := _pick_axis_by_weight()
+	var corridor := CrowdLanes.pick_corridor_in_range(_rng, _map, vertical,
+			_field.corridor_range(vertical), true)
+	var lane: int = CrowdLanes.ROAD_OFFSETS[_rng.randi_range(0, 1)]
+	_lane.join_a_lane(vertical, corridor, lane, CrowdLanes.road_direction(vertical, lane))
+	_lane.drive_at(_rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y))
 
 ## A car sits on the tile centre of its lane.
 ##
@@ -249,8 +249,8 @@ func lane_centre_here() -> float:
 ##
 ## Overrides LaneStrategy.enter_at_an_end.
 func enter_at_an_end(_along_tile: int) -> bool:
-	_lane.set_lane_index(CrowdLanes.road_lane(_lane.is_vertical(), _lane.direction()))
-	_lane.set_speed(_rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y))
+	_lane.change_lane(CrowdLanes.road_lane(_lane.is_vertical(), _lane.direction()))
+	_lane.drive_at(_rng.randf_range(Tuning.CAR_SPEED.x, Tuning.CAR_SPEED.y))
 	return true
 
 # -------------------------------------------------------- what a car does ---
@@ -362,7 +362,7 @@ func _give_way(delta: float) -> void:
 		wanted = minf(wanted, sqrt(2.0 * CAR_ZEBRA_APPROACH_BRAKE * to_line))
 	wanted = minf(wanted, _following_speed())
 	var rate := CAR_BRAKE if wanted < _lane.speed() else CAR_ACCELERATE
-	_lane.set_speed(move_toward(_lane.speed(), wanted, rate * delta))
+	_lane.drive_at(move_toward(_lane.speed(), wanted, rate * delta))
 
 ## How far this car has to the stop line of a crossing it should give way at, or `INF` when
 ## there is nothing to give way to — nobody waiting, or **it is already too late to stop**.
@@ -484,7 +484,7 @@ func give_way_on_the_step(delta: float) -> void:
 	if room >= step:
 		return
 	move.step_to(move.steps_to() - forward * (step - room))
-	_lane.set_speed(minf(_lane.speed(), room / delta))
+	_lane.drive_at(minf(_lane.speed(), room / delta))
 
 ## The fastest this car may go and still keep `CAR_HEADWAY_TIME` of clear road in front of it.
 ##
@@ -798,7 +798,7 @@ func _follow_the_turn(delta: float) -> void:
 		var straight := minf(travel, _lane.turn_run_up())
 		_mover._set_along(_mover._along() + straight * _lane.direction())
 		_mover._set_cross(move_toward(_mover._cross(), _lane.lane_centre(), LaneMover.STEER_SPEED * delta))
-		_lane.set_turn_run_up(_lane.turn_run_up() - straight)
+		_lane.use_up_the_run_up(_lane.turn_run_up() - straight)
 		travel -= straight
 		if _lane.turn_run_up() > 0.0:
 			return
@@ -850,15 +850,13 @@ func _land_the_turn() -> void:
 		_traffic.give_back(_mover.turn_lane_key(), turn.landing())
 	_mover.position = turn.point_at(turn.length())
 	_mover.place_its_move()
-	_lane.set_vertical(turn.exits_vertically())
-	_lane.set_corridor_index(turn.exit_corridor_index())
-	_lane.set_lane_index(turn.exit_lane_index())
-	_lane.set_direction(turn.exit_heading())
-	_lane.set_junction_index(turn.entry_corridor_index())
+	_lane.join_a_lane(turn.exits_vertically(), turn.exit_corridor_index(), turn.exit_lane_index(),
+			turn.exit_heading())
+	_lane.be_in_junction(turn.entry_corridor_index())
 	_mover.drop_the_turn()
-	_lane.set_lane_centre(_mover._lane_centre_here())
+	_lane.keep_to_lane_centre(_mover._lane_centre_here())
 	_mover._forget_the_detour()
-	_lane.set_scanned_at(Vector2i(-9999, -9999))
+	_lane.look_ahead_afresh()
 	claim_the_road_here()
 
 ## Whether every tile the car's own body passes over during the arc is road it may drive on.
