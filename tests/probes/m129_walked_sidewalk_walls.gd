@@ -334,8 +334,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 
 	before = events.size()
 	EventScheduler._spoil_the_parks_she_used(day, EventScheduler._stream(base, 3), map, events,
-			calm, CalmAreas.NONE, StreetInvalidation.new(map, corridor, ground, [] as Array[Rect2],
-					PackedVector2Array(), false), 0)
+			calm, CalmAreas.NONE, RouteReachRule.new(map, corridor), 0)
 	_tag_new(events.placements(), provenance, before, Source.CALM_GROUND)
 
 	before = events.size()

@@ -482,6 +482,8 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 				offered += 1
 				if events.is_spoiled(block):
 					spoiled += 1
+				t.check(events.is_spoiled(block), "seed %d day %d: the used area %s is spoiled"
+						% [map.seed_used, day, block])
 			var clean := 0
 			for block in calm.blocks():
 				if not events.is_spoiled(block):

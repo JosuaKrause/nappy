@@ -2298,12 +2298,15 @@ the route you memorised on day 2 stops existing.
 From Act II several events physically close streets, and from Act IV the seals close every
 street off the day's routes. Any combination that seals the home off from every park makes the day
 unwinnable in a way the player cannot see coming, so **no body is placed that would cut home off
-from the day's routes**, and the routes run to the calm. Every obstructing body any phase places,
+from the day's routes**, and the routes run to the calm. Every obstructing body dawn places,
 the run's scars and the park spoilers included, is asked `RouteReachRule` against everything
 already down, the seals and the region wall's bodies included: one whose disc would leave a route
 tile home reached without it unreached is refused where it would stand. Hard-fail events count as
 walls for this rule: an abduction in progress is not something you walk through to reach the park
-behind it. Nothing is dropped after planning, so the day is never illegal on the way.
+behind it. Nothing is dropped after planning, so the day is never illegal on the way. A walk's
+sitings (the dusk fire, day 7's route van, day 11's added mast and the rest) are not asked it: the
+rule is the dawn's, as the repair it replaces was, and whether the walk's draws ask it is decided
+with them.
 
 **On the three days the resistance sends her to one narrow place** — day 9's region door, day
 12's swing, the power station's front door on the last night — the day's routes run to that place

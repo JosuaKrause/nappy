@@ -708,16 +708,14 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 		leave_alone = calm.unused_ground()
 	var locations := DayLocations.lay_out(map, corridor)
 	events.use_locations(locations)
-	# What may not close the day's routes, asked of the run's scars and the spoilers too: their
-	# ground is not the bags', but a body they stand on a route is a route closed all the same.
 	# Where home reaches among the day's bodies, worked out once and kept in step for every judge
-	# below (`RouteReachRule`).
+	# below (`RouteReachRule`). The run's scars and the spoilers are asked it alone: their ground
+	# is not the bags', and they keep the spacing and the line rules they always stood without,
+	# but a body that cuts the routes off from home is not stood.
 	var reach := RouteReachRule.new(map, corridor)
-	var keeps_the_routes := StreetInvalidation.new(map, corridor, ground, [] as Array[Rect2],
-			PackedVector2Array(), false, null, reach)
 
 	events.add_all(_place_ambient(day, map, heat))
-	_place_scars(day, scars, map, events, keeps_the_routes, heat)
+	_place_scars(day, scars, map, events, reach, heat)
 	events.add_all(_place_masts(day, map, heat, doors, scars))
 	# **One calm area stays clean by construction**: where she has settled in every area this act,
 	# the one the spoilers leave alone joins the calm ground nothing may reach. See
@@ -733,7 +731,7 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, events, ground,
 			leave_alone, corridor, heat, doors, trace, spec.holds_the_home_streets, reach)
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, events, calm, kept_clean,
-			keeps_the_routes, heat, trace)
+			reach, heat, trace)
 	_owe_the_moments(day, _stream(base, MOMENTS_SALT), events, heat, spec.caps_per_day)
 	return _draw_the_locations(day, base, map, events, ground, leave_alone, corridor, doors, spec,
 			locations, heat, beside_the_routes, reach)
@@ -1395,7 +1393,7 @@ static func _ensure_the_run_is_taught(day: int, events: DayEvents, heat: int = 0
 ## is next to the loop. A merely-`shut_calm` area is not skipped: it is still calm ground, and this
 ## is exactly what stands in it.
 static func _spoil_the_parks_she_used(day: int, rng: RandomNumberGenerator, map: CityMap,
-		events: DayEvents, calm: CalmAreas, kept_clean: Vector2i, rules: StreetInvalidation,
+		events: DayEvents, calm: CalmAreas, kept_clean: Vector2i, reach: RouteReachRule,
 		heat: int = 0, trace: RunTrace = null) -> void:
 	var blocks := calm.blocks()
 	var spoilable := blocks.size() - 1
@@ -1404,7 +1402,7 @@ static func _spoil_the_parks_she_used(day: int, rng: RandomNumberGenerator, map:
 			return
 		if block.x >= 0 and block in blocks and block != kept_clean:
 			spoilable -= 1
-			_spoil_one_park(day, rng, map, events, calm, block, rules, heat, trace)
+			_spoil_one_park(day, rng, map, events, calm, block, reach, heat, trace)
 
 ## **The calm area the day keeps clean, where only construction can keep one**: `NONE` while an area
 ## counted today (any but `calm.besides()`, day 12's swing park) is one she has not used this act,
@@ -1435,7 +1433,7 @@ static func _calm_kept_clean(calm: CalmAreas, events: DayEvents) -> Vector2i:
 	return least
 
 static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
-		events: DayEvents, calm: CalmAreas, block: Vector2i, rules: StreetInvalidation,
+		events: DayEvents, calm: CalmAreas, block: Vector2i, reach: RouteReachRule,
 		heat: int = 0, trace: RunTrace = null) -> void:
 
 	var lot := calm.rect_of(block)
@@ -1458,8 +1456,9 @@ static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
 		# outside the calm ground the cell was measured from.
 		var at := map.tile_to_world(_nearest_of(open, map.world_to_tile(cell)))
 		var plan := Planned.new(def, at)
-		# A body the routes cannot pass is not stood: the park stays busy without it.
-		if not _keeps_the_routes(plan, day, map, events, rules):
+		# A body that would cut the routes off from home is not stood: the park stays busy
+		# without it.
+		if not _keeps_the_routes(plan, map, events, reach):
 			continue
 		events.add(plan)
 		placed.append(def.id)
@@ -1683,11 +1682,11 @@ static func _was_silenced(foot: Vector2, day: int, scars: Array[Dictionary]) -> 
 	return false
 
 ## Permanent marks left by earlier days, placed again exactly where they happened, each into
-## `events`, unless a body of one would close the day's routes (`rules`, the route rules): then it is
-## not stood today, which is the day's routes kept open by construction rather than a repair taking
-## it away afterwards.
+## `events`, unless a body of one would cut a route tile off from home (`reach`): then it is not
+## stood today, which is the day's routes kept open by construction rather than a repair taking it
+## away afterwards.
 static func _place_scars(day: int, scars: Array[Dictionary], map: CityMap, events: DayEvents,
-		rules: StreetInvalidation, heat: int = 0) -> void:
+		reach: RouteReachRule, heat: int = 0) -> void:
 	for scar in scars:
 		if int(scar["since_day"]) >= day or String(scar["id"]) == SILENCED_MAST:
 			continue
@@ -1695,18 +1694,19 @@ static func _place_scars(day: int, scars: Array[Dictionary], map: CityMap, event
 		if def:
 			var plan := Planned.new(EventCatalogue.heated(def, heat), scar["position"])
 			plan.permanent = true
-			if _keeps_the_routes(plan, day, map, events, rules):
+			if _keeps_the_routes(plan, map, events, reach):
 				events.add(plan)
 
-## Whether `plan`, stood where it is, leaves the day's routes open: the route rules (`rules`) asked
-## of it against what the day holds and what stands.
-static func _keeps_the_routes(plan: Planned, day: int, map: CityMap, events: DayEvents,
-		rules: StreetInvalidation) -> bool:
+## Whether `plan`, stood where it is, leaves every route tile home reaches reached (`reach`), asked
+## against what the day holds and what stands. Only the reach, which is what the repair this
+## replaces asked: a scar or a spoiler is not spaced and not given a role, and stands on a route's
+## line as it always did.
+static func _keeps_the_routes(plan: Planned, map: CityMap, events: DayEvents,
+		reach: RouteReachRule) -> bool:
 	var placed := events.placements()
 	var around := placed.duplicate()
 	around.append_array(events.standing())
-	return rules.room(plan, _role_for(plan.def, day), map.world_to_tile(plan.position), placed,
-			around) != -INF
+	return reach.allows(plan, map.world_to_tile(plan.position), placed, around)
 
 # ----------------------------------------------------------------- placement ---
 

@@ -13,7 +13,11 @@ extends "res://tests/events_shared_city.gd"
 ##
 ## **Why these checks build a city.** The suite's checks still build the shared city and are not
 ## converted to stand-ins yet: only as far as a pull request's change reaches is a suite converted
-## (inbox #1159 in gray-dolphin).
+## (inbox #1159 in gray-dolphin). One check builds a city for a reason of its own: the closed-streets
+## day (`_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood`) is the integration check of
+## day 12's route to a clean calm area other than the swing's, on a real day planned through
+## `build_day()`, with the day's calm areas made the way `DayPlanner` makes them (`CalmAreas.of()`
+## from the day and its target, which is where the swing's park is set aside).
 
 const STEP := 1.0 / 60.0
 
@@ -25,6 +29,7 @@ func run(t) -> void:
 	_test_the_mouse_crosses_the_alleys_own_short_axis(t)
 	_test_the_mouse_waits_until_she_is_near(t)
 	_test_one_park_stays_usable(t)
+	_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t)
 	_test_calm_she_has_not_used_is_left_alone(t)
 	_test_successors_resolve(t)
 	_test_sighted_successors_resolve(t)
@@ -743,3 +748,132 @@ func _test_a_roadblock_leaves_no_section_within_its_spacing_offered(t) -> void:
 			% [EventScheduler.EVENT_SPACING_SAME, near_before])
 	t.check(near_after == 0, "once it stands, none within %.0fpx of it is (%d)"
 			% [EventScheduler.EVENT_SPACING_SAME, near_after])
+
+## The city, and the seed of the day's draw, for the test below. The case is live by construction:
+## the body that cuts the clean area off is stood there by hand (`_CUTTING_BODY`), so the city and the
+## draw only have to give the area she used a row that spoils it, which the test's guard checks. If it
+## trips because the catalogue, the planner or the tuning moved, pin another draw seed that passes.
+const _CHOICE_CITY_SEED := 1000
+const _CHOICE_DRAW_SEED := 3855935566
+## The body stood on the clean area's one way in: a burst water main, whose body reaches 96px each
+## way from the middle of the street, across its 192px. Stood through the run's scars, the one way a
+## day stands a catalogue body on a spot of the caller's choosing (`build_day()`'s `scars`).
+const _CUTTING_BODY := "burst_water_main"
+
+## **On the swing day, a scar that would cut the clean calm area off is not stood.** Day 12's route
+## to calm ground besides the swing's that no event's field reaches (`docs/CITY.md`, "Guarantees")
+## is kept by construction: the day's routes run to it, and a scar is asked `RouteReachRule` before
+## it stands (`EventScheduler._place_scars()`), so a body that would leave the clean area's route
+## tiles unreached from home is refused where it would stand.
+##
+## The route tree keeps calm ground reachable, so no day the game plans on its own puts a body on the
+## one street to a clean area. The day here is built so it does: every street but the three the home,
+## the swing and the two other calm areas need is closed (`CityMap.close_streets()`, the game's own
+## writer), the area the day spoils is the one she used, the clean one is reached by those streets
+## alone, and a scar stands across the middle of a street only the clean area's walk uses
+## (`_CUTTING_BODY`). The guards say the case is live: that body alone cuts the clean area off and
+## leaves the spoiled one reached, so the check fails when the scar is stood regardless.
+func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t) -> void:
+	var map := CityGenerator.generate(_CHOICE_CITY_SEED)
+	var day := ResistanceSteps.swing_day()
+	var target := ResistanceSteps.target_candidates(ResistanceSteps.narrow_target_on(day), map, null)
+	var park := CityGenerator.swing_park(map)
+	var others: Array[Vector2i] = []
+	for block in map.calm_blocks:
+		if block != park:
+			others.append(block)
+	t.check(not target.is_empty() and others.size() >= 2,
+			"the choice city has a swing target and two calm areas besides the swing's")
+	if target.is_empty() or others.size() < 2:
+		return
+	var clean_block := others[0]
+	var spoiled_block := others[1]
+	var used: Array[Vector2i] = [spoiled_block]
+	var calm := CalmAreas.of(map, used, day, target)
+	t.check(calm.besides() == park, "the swing day sets the swing's park aside")
+	var calm_tile := func(block: Vector2i) -> Vector2i:
+		for tile in map.rect_tiles(calm.rect_of(block)):
+			if map.is_walkable(tile):
+				return tile
+		return Vector2i(-1, -1)
+	var walks := {}   # which place -> the street segments its walk from home uses
+	var keep := {}
+	for place: String in ["target", "clean", "spoiled"]:
+		var to: Vector2i = target[0]
+		if place == "clean":
+			to = calm_tile.call(clean_block)
+		elif place == "spoiled":
+			to = calm_tile.call(spoiled_block)
+		walks[place] = {}
+		t.check(_keep_streets_to(map, to, walks[place]), "home reaches the %s on open streets" % place)
+		keep.merge(walks[place])
+	var shut: Array[RoadClosure] = []
+	for segment in map.network.segments():
+		if not keep.has(segment.key()):
+			shut.append(RoadClosure.new(RoadClosure.Kind.ROADWORKS, segment))
+	map.close_streets(shut)
+	var grid := ReachabilityGrid.build(map)
+	# The body, across the middle of the first street only the clean area's walk uses.
+	var cutting: EventScheduler.Planned = null
+	for key: Vector3i in walks["clean"]:
+		if cutting == null and not walks["target"].has(key) and not walks["spoiled"].has(key):
+			var street: StreetNetwork.Segment = walks["clean"][key]
+			cutting = EventScheduler.Planned.new(EventCatalogue.by_id(_CUTTING_BODY),
+					map.tile_rect_to_world(street.tile_rect()).get_center())
+	t.check(cutting != null, "the clean area has a street of its own to reach it by")
+	if cutting == null:
+		map.close_streets([])
+		return
+	var alone := EventScheduler.blocked_by(map, [cutting] as Array[EventScheduler.Planned])
+	var reached_alone := grid.flood([map.home_rect.position], alone)
+	t.check(not grid.reaches(calm_tile.call(clean_block), alone, reached_alone)
+			and grid.reaches(calm_tile.call(spoiled_block), alone, reached_alone),
+			"the case is live: that body alone cuts the clean area off and leaves the spoiled one reached")
+	var scars: Array[Dictionary] = [{"id": _CUTTING_BODY, "position": cutting.position,
+			"since_day": day - 1}]
+	var rng := RandomNumberGenerator.new()
+	rng.seed = _CHOICE_DRAW_SEED
+	var consumed: Array[String] = []
+	var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm, consumed, scars)
+	t.check(events.is_spoiled(spoiled_block),
+			"the area she used is spoiled, so the day has a spoiled area besides the clean one")
+	t.check(not events.is_spoiled(clean_block), "the area she has not used is clean")
+	var blockers: Array[EventScheduler.Planned] = []
+	var stood_the_cut := false
+	var everything := events.placements()
+	everything.append_array(events.standing())
+	for body in everything:
+		if body.obstructs():
+			blockers.append(body)
+		stood_the_cut = stood_the_cut or (body.def.id == _CUTTING_BODY and body.position == cutting.position)
+	t.check(not stood_the_cut, "the scar across the clean area's one way in is not stood")
+	var blocked := EventScheduler.blocked_by(map, blockers)
+	var reached := grid.flood([map.home_rect.position], blocked)
+	t.check(grid.reaches(calm_tile.call(clean_block), blocked, reached),
+			"with every body the day stands, the clean calm area is still reached from home")
+	map.close_streets([])
+
+## Marks in `keep` (by key) every street segment on the shortest walk from the doorstep to `to`.
+## False when no walk exists.
+func _keep_streets_to(map: CityMap, to: Vector2i, keep: Dictionary) -> bool:
+	var start := map.world_to_tile(map.doorstep_world_position())
+	var came := {start: start}
+	var queue: Array[Vector2i] = [start]
+	var head := 0
+	while head < queue.size() and not came.has(to):
+		var at := queue[head]
+		head += 1
+		for step: Vector2i in [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]:
+			var next := at + step
+			if not came.has(next) and map.is_walkable(next):
+				came[next] = at
+				queue.append(next)
+	if not came.has(to):
+		return false
+	var tile := to
+	while tile != start:
+		var segment := map.network.segment_containing(tile)
+		if segment:
+			keep[segment.key()] = segment
+		tile = came[tile]
+	return true

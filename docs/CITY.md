@@ -224,14 +224,15 @@ bodies never seal it off:
 - **`ClosurePlanner` asks for it before accepting each closure**, beside the calm: a closure that
   would cut off every tile of it is refused. The second opinion, as it is for the calm.
 - **The catalogue's own bodies keep the tree open as they are placed**, since friction stands on the
-  corridor: every body the day places, the run's scars and the park spoilers included, is judged by
-  the rules that keep a route's junctions and its walked sidewalk open (`RouteJunctionsRule`,
-  `RouteSidewalkRule`, `PacingOpeningRule`) and the one that keeps every route tile home reaches
-  reached (`RouteReachRule`: an obstructing body whose disc would cut home off from a route tile it
-  reaches without it), asked against everything already down, the seals and the region wall's own
-  bodies included. A body that would close the tree is not placed. The last rule asks a body off
-  the routes too, since the last body of a ring that seals home in can stand beside a route an
-  earlier one already crossed. A soft seal
+  corridor: every body dawn draws or rolls is judged by the rules that keep a route's junctions and
+  its walked sidewalk open (`RouteJunctionsRule`, `RouteSidewalkRule`, `PacingOpeningRule`) and the
+  one that keeps every route tile home reaches reached (`RouteReachRule`: an obstructing body whose
+  disc would cut home off from a route tile it reaches without it), asked against everything
+  already down, the seals and the region wall's own bodies included. The run's scars and the park
+  spoilers are asked `RouteReachRule` alone, since they stand where they stand rather than where a
+  draw put them. A body that would close the tree is not placed. The reach rule asks a body off the
+  routes too, since the last body of a ring that seals home in can stand beside a route an earlier
+  one already crossed. A walk's sitings are not asked it. A soft seal
   stands only off the tree, so its bands never cut the tree's way to the place.
 
 **What it promises is one tile of the place, not every tile of it and not a tile chosen ahead.** The

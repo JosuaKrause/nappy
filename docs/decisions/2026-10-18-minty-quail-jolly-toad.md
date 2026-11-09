@@ -24,7 +24,13 @@ reached without it unreached, and asks bodies off the routes too, since the last
 seals home in can stand beside a route the ring's first body crossed; one is built per dawn and
 handed to every dawn judge, holding the reach tile by tile and keeping it in step (a body the
 ground round goes round takes only its disc off it). The run's scars and the park spoilers are
-asked the route rules before they stand. **One calm area clean:** on the day she has used every
+asked `RouteReachRule` alone before they stand, the one question the repair asked of them: not the
+line rules, not the spacing, and no role is written onto them. The first version asked them the
+whole invalidation, the spacing included, and the review measured what that cost a used park
+(24 cities from 61003 in steps of 41, days 2 to 14, yesterday's area used): 1668 → 1493 events
+standing in 307 used areas (−10.5%), and 1 → 11 areas with nothing in them, against PLAYTEST-140 8
+(a used park is shut by the events placed in it). Asked the reach alone it is main's again, 1668
+and 1. **One calm area clean:** on the day she has used every
 counted calm area this act, the one she used longest ago that nothing spoils, else the least
 spoiled, is chosen before the spoilers and its ground joins what nothing may reach
 (`EventScheduler._calm_kept_clean()`). Without the reach rule, `test_acts`' rings of barricades
@@ -65,7 +71,14 @@ ahead of her on the street she walks, out of her view, passes unchanged on every
 `test_route_rules`' ring of barricades round home keeps every barricade and cuts 2025 route tiles
 off, and `test_acts` fails "day N leaves a walkable route from home to a park" on days 2 to 14.
 With `_calm_kept_clean()` keeping nothing, `test_spent_park`'s days with every calm area used
-leave none clean, on every seed.
+leave none clean, on every seed. `test_spent_park` asserts that every used, open, unfenced area is
+spoiled, where it printed a count. **Day 12's route to a clean area other than the swing's** has
+its integration case back, converted (`test_events_scheduler`,
+`_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood`): every street but the ones home needs
+to the swing, the clean area and the spoiled one is closed, and a burst water main stood through
+the scars across the clean area's one street, alone, cuts it off; `_place_scars()` refuses it and
+the clean area is reached under every body the day stands. With `RouteReachRule` answering yes,
+the scar is stood and the case fails.
 
 **Choices where the design was silent, open to overturn:**
 
