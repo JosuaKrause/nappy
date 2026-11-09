@@ -2424,10 +2424,31 @@ static func _caps_of(rows: Dictionary, day: int, spec: DaySpec,
 	for id: String in ids:
 		var def: EventDef = rows[id]
 		var most := float(def.most_in_a_day())
+		var walked: Array = WALK_CAPS.get(id, [])
+		if not walked.is_empty() and float(walked[clampi(day, 1, 14) - 1]) > 0.0:
+			most = minf(most, float(walked[clampi(day, 1, 14) - 1]))
 		if role_for(def, day) == GameEnums.BlockerRole.WALL:
 			most *= spec.wall_row_share
 		caps[id] = floori(most) + (1 if rng.randf() < most - floorf(most) else 0)
 	return caps
+
+## **The most of a row the walk's draw stands a day** (`row id -> [day - 1]`), where it is less than
+## the row's own cap (`EventDef.max_per_day`): what she met of it on her walk when the dawn drew every
+## location of the city and the cap was spent across all of them. The walk draws only what she comes
+## near (`WalkDraw`), so a cap the dawn spread over the city would be met whole on her walk; these
+## keep what she meets, a capped row as often as before (the orchestrator's reading, open to the
+## player's overturn). A share is rounded up or down as `_caps_of()` rounds every cap, and the
+## gatehouse day's thinning is on top. Fitted, not derived: stepped toward what she meets on main's
+## walks by `tests/probes/walk_rows.gd`, with `GROUND_WEIGHTS`, at heat 0; 0 on a day she met none,
+## which leaves the row's own cap.
+const WALK_CAPS := {
+	"abduction": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1.08, 1.44, 1.09, 1.25, 0.69, 1.82, 0.96],
+	"alley_mouse": [2.08, 3.23, 3.07, 2.00, 2.12, 2.51, 2.68, 2.45, 2.32, 2.65, 2.39, 1.58, 2.06, 2.59],
+	"charging_dog": [0.00, 0.00, 0.00, 1.03, 1.03, 1.14, 1.17, 1.06, 1.47, 1.06, 0.61, 0.38, 1.27, 0.61],
+	"chatting_mother": [0.89, 1.06, 1.19, 1.22, 1.06, 1.14, 0.86, 1.17, 0.97, 1.11, 0.75, 0.78, 1.06, 0.83],
+	"pigeon_flock": [2.62, 2.69, 3.27, 2.46, 3.02, 3.34, 2.84, 2.81, 3.22, 2.65, 2.44, 2.36, 3.02, 2.66],
+	"roadblock": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 4.15, 4.39, 4.05, 4.15, 3.84, 3.10, 0.00, 3.92],
+}
 
 ## The phase salt the view bags' streams start from: apart from every other phase's.
 const LOCATIONS_SALT := 6
@@ -2576,27 +2597,27 @@ const VIEW_SHARE_SCALES := [
 ## eighteen seeds), the way the view scales are; a row or a kind not listed weighs one. Measured, not
 ## derived, and fitted again with the view scales whenever the draw's rules change.
 const GROUND_WEIGHTS := {
-	"abduction": {Location.Kind.SIDEWALK: 0.14, Location.Kind.JUNCTION: 91.19},
-	"alley_mouse": {Location.Kind.ALLEY: 14.67},
+	"abduction": {Location.Kind.SIDEWALK: 8.96, Location.Kind.JUNCTION: 54.59},
+	"alley_mouse": {Location.Kind.ALLEY: 19.58},
 	"alley_robbery": {Location.Kind.ALLEY: 4.46},
 	"busker": {Location.Kind.OPEN: 150},
 	"cafe_tables": {Location.Kind.SIDEWALK: 0.43},
-	"charging_dog": {Location.Kind.SIDEWALK: 0.21, Location.Kind.OPEN: 0.78, Location.Kind.JUNCTION: 319},
-	"chatting_mother": {Location.Kind.SIDEWALK: 0.25, Location.Kind.JUNCTION: 400},
+	"charging_dog": {Location.Kind.SIDEWALK: 13.44, Location.Kind.OPEN: 3.12, Location.Kind.JUNCTION: 99.54},
+	"chatting_mother": {Location.Kind.SIDEWALK: 16, Location.Kind.JUNCTION: 14.35},
 	"construction": {Location.Kind.SIDEWALK: 0.49},
 	"delivery_van": {Location.Kind.SIDEWALK: 1.48},
 	"dog_walker": {Location.Kind.SIDEWALK: 0.82, Location.Kind.JUNCTION: 2.27},
-	"homeless_yeller": {Location.Kind.SIDEWALK: 0.87, Location.Kind.OPEN: 0.57, Location.Kind.JUNCTION: 2.27},
+	"homeless_yeller": {Location.Kind.SIDEWALK: 0.87, Location.Kind.OPEN: 0.57, Location.Kind.JUNCTION: 2.25},
 	"ice_cream_van": {Location.Kind.SIDEWALK: 0.83},
 	"leaf_blower": {Location.Kind.SIDEWALK: 0.59, Location.Kind.OPEN: 0.38, Location.Kind.JUNCTION: 1.21},
 	"market_stall": {Location.Kind.SIDEWALK: 0.44, Location.Kind.OPEN: 0.34},
-	"military_convoy": {Location.Kind.SECTION: 0.77, Location.Kind.JUNCTION: 1.43},
-	"pigeon_flock": {Location.Kind.SIDEWALK: 0.7, Location.Kind.OPEN: 1.56, Location.Kind.JUNCTION: 6.95},
-	"police_patrol": {Location.Kind.SECTION: 1.33, Location.Kind.JUNCTION: 5.54},
+	"military_convoy": {Location.Kind.SECTION: 0.77, Location.Kind.JUNCTION: 5.72},
+	"pigeon_flock": {Location.Kind.SIDEWALK: 1.31, Location.Kind.OPEN: 1.97, Location.Kind.JUNCTION: 6.95},
+	"police_patrol": {Location.Kind.SECTION: 1.33, Location.Kind.JUNCTION: 4.66},
 	"poster_crew_square": {Location.Kind.OPEN: 27.86},
-	"protest": {Location.Kind.OPEN: 8.88, Location.Kind.JUNCTION: 16.89},
+	"protest": {Location.Kind.OPEN: 8.88, Location.Kind.JUNCTION: 18.99},
 	"reversing_lorry": {Location.Kind.SIDEWALK: 1.46},
-	"roadblock": {Location.Kind.SECTION: 2.69},
+	"roadblock": {Location.Kind.SECTION: 3.12},
 }
 
 ## A row's weight on a location of `kind` (`Location.Kind`): `GROUND_WEIGHTS`', one where it lists
