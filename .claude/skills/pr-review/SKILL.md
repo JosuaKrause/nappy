@@ -126,12 +126,15 @@ touches (the path table in `CLAUDE.md`). Look for:
 
 The reviewer does not edit the branch, check it out in a worktree an agent is using, or merge. It
 may run a suite from a checkout of its own, sparse unless the PR's evidence or references are what
-it is checking (**orchestrating** says what a sparse worktree leaves out; `tools/agent-setup.sh --detach <ref>
-<name>` makes it, detached at the PR head, with no branch and no brief), and never runs `git grep`
-over a folder that holds images (see **using-tools**). **A review checkout is removed once the
-review is posted, with `tools/agent-setup.sh --remove <name>`**, which takes a clean detached
-checkout and nothing else; it has no branch, so `tools/prune-merged.sh`, the script that retires a
-merged branch and its worktree, never takes it.
+it is checking (`../orchestrating/references/worktrees-and-disk.md`, "The worktree", says what a
+sparse worktree leaves out; `tools/agent-setup.sh --detach <ref> <name>` makes it, detached at the
+PR head, with no branch and no brief), and never runs `git grep` over a folder that holds images
+(see **using-tools**). **A review checkout is removed once the review is posted, with
+`tools/agent-setup.sh --remove <name>`**: a plain `git worktree remove`, never forced, of the
+detached checkout of that name under `.claude/worktrees/`, which refuses one that has a branch, is
+locked, or holds a changed, untracked or non-regenerable ignored file (its `--help` has the whole
+list). The checkout has no branch, so `tools/prune-merged.sh`, the script that retires a merged
+branch and its worktree, never takes it.
 
 ## The findings go on the PR
 
@@ -174,8 +177,9 @@ request as much as on one that changes code. **When the role is not usable, the 
 and is reported to the player instead — it is never posted as the player** (tall-egret): its
 findings are never sent as a `gh pr comment` or any other write the guard's prompt would let
 through as the player. **A review's text is written to a file first and passed to the API with
-capital `-F`** (`-F body=@file`): lowercase `-f` (`--raw-field`) sends the literal text `@file` as
-the body, and the review then has to be edited.
+capital `-F`** (`-F body=@file`; **committing**, "Text handed to a write goes through a file",
+spells the calls that make the file): lowercase `-f` (`--raw-field`) sends the literal text `@file`
+as the body, and the review then has to be edited.
 
 The conversation still gets the recap, since the player reads that first; the PR is where the
 findings live.
@@ -213,9 +217,12 @@ How the rethink runs:
 The brief names the PR, its branch, the playtests and queue entry it answers, and anything the
 orchestrator already knows is contested. It asks for this skill's order (semantic first, then code),
 one review posted on the PR, and a report back: the verdict, each finding with its severity, and the
-review's URL. **Which model reviews is orchestrating's to say**: its table of task kinds and
-models has the rows for a review, by what the pull request carries, and this skill names no model
-of its own beside it.
+review's URL. **Which model reviews is decided by the orchestrating skill's model table**, whose
+rows for a review go by what the pull request carries, apart from the one case this skill fixes
+itself: a queue update's review is Sonnet's (bouncy-heron 8; "A queue update is reviewed for
+faithfulness and merged first"). The one other model this skill names, Haiku under "Three verdicts
+of *not ready* mean the approach is rethought", is the player's example of a builder and not of a
+reviewer.
 
 ## A queue update is reviewed for faithfulness and merged first
 
