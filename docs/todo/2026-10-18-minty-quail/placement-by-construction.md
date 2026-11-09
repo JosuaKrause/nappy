@@ -39,12 +39,19 @@ by line; its numbered list says where the code differs.
   other location is drawn as she walks, the rows with a body among them.
 - **A route stays open by the street's own rules, never by a flood.** The orchestrator's earlier
   ruling, that every row with a body is drawn at dawn so the reach rule (`RouteReachRule`, a flood
-  of the whole city from home) can judge it, is overturned by the player's question above; it
+  of the whole city from home) can judge it (stated on the walk draw's pull request, #1262, after
+  its first review), is overturned by the player's question above; it
   rested on "no live reachability check" (inbox #1173 in gray-dolphin), which the design satisfies by needing no
   check at all: "there is no reason to check whether a route is open during game play because it
   cannot be closed to begin with" (inbox #1173 in gray-dolphin).
 - **A retry is the same day** (PLAYTEST-119 27: "the same day exactly how the player encountered
-  it the first time this run"), so what a street holds does not depend on the path she takes to it.
+  it the first time this run. exact same state at the beginning of the day. nothing else").
+  *Read as* (the orchestrator's, put to the player as "draw a whole street at once when she first
+  comes near it, seeded by the day and the street, so a street holds the same events whatever her
+  path" and agreed with the review's points, inbox #1268): the events a street's draw gives it do
+  not depend on the path she takes to it. The beats sited from her walk are the exception the
+  player's own ruling makes: a retried day 3 has its fire "sited from the walk she takes then"
+  (PLAYTEST-119 26), and step 4's rigged marbles are of that kind.
 - **Exact parity with main is not the bar for this item.** A step lists what moved for the end
   remeasure; a playtest judges it. No table is fitted in a loop.
 
@@ -60,10 +67,10 @@ for the walk's draw, which lands it with the game drawing every open location on
 
 ## What is left, in order
 
-The steps are the design review's, which the player approved: "agree on all design review points.
-let's do it", and, of an earlier draft of this item that marked them as proposed and not asked for,
-"I saw the review and approved it" (inbox #1268). The detail under each step was worked out by the
-same review after the approval; its full text names the files each step owns.
+The steps are the design review's points, which the player approved: "agree on all design review
+points. let's do it", and "I saw the review and approved it" (inbox #1268). The mechanism under
+each step is the same review's worked-out detail, written after the player had read its points; its
+full text names the files each step owns.
 
 1. **The route's ground rule replaces the flood.** Three of the route rules are already local to a
    street and count bodies as well as fields: a junction box on a route keeps a free crossing
@@ -86,7 +93,10 @@ same review after the approval; its full text names the files each step owns.
    second set of bags, the split of rows by whether they block, and the daily caps for drawn rows go
    (a cap depends on order; "at most one of a row per street" replaces the same-row spacing and the
    roomiest-tile ranking). A body drawn out of her view onto a lane a car stands in has the crowd
-   recycle that car. `docs/MECHANICS.md`'s "A retry is the same day" stays true and gains a test.
+   recycle that car. `docs/MECHANICS.md`'s "A retry is the same day" stays true of every drawn row and gains a
+   test: the same city and day drawn along two different walks hold the same drawn rows on the same
+   tiles. The test does not cover what is sited from her walk (the moments and step 4's rigged
+   marbles), and the doc's sentence says so.
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS`, `MOMENTS_PER_DAY` and
    `WALK_SHARE_SCALES` go. In their place: the events per hundred locations by view, kind of ground
@@ -120,7 +130,11 @@ Steps 3, 4 and 5 touch different files and run in parallel once step 2 is in. Th
 breakup (`scheduler-breakup.md`) is interleaved: its rename lands before step 1, its moves beside
 step 1, and its dawn context before step 2, so step 2 edits a small file.
 
-**How a step is accepted.** Its suites pass; `tests/probes/walk_rows.gd` draws every unit over its
-cities and prints the route tiles cut off from home (none), the longest chain of units one draw
-pulled in, and the events she meets per walk by view beside the baseline
-(`baseline-measurements.md`); what moved is listed for the end remeasure.
+**How a step is accepted.** Its suites pass, as for every step of this entry ("for the refactor
+test parity is enough", inbox #813 in curly-moose), with the tests that held main's exact counts changed to hold
+the rule instead. One probe run checks the step's own guarantee: `tests/probes/walk_rows.gd` draws
+every unit over its cities and prints the route tiles cut off from home, which is none or the step
+is not done, and the longest chain of units one draw pulled in. The same run prints the events she
+meets per walk by view beside the baseline (`baseline-measurements.md`); those are listed for the
+end remeasure and no step waits on them or fits to them ("let's do remeasuring at the very end and
+not get blocked by it", inbox #813 in curly-moose).

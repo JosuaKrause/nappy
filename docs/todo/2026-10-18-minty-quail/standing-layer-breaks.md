@@ -32,7 +32,8 @@ review; a builder runs it again):
 - **The rest**, small misplacements: lane constants, the dev rig named by the day director, the
   task calendar computing on the map.
 
-**How each group is settled**, from the design review the player approved (inbox #1268):
+**How each group is settled.** The player approved the review's point that these are not forgotten
+(inbox #1268); how each is settled is the review's worked-out detail:
 
 - The bus is handed to the emitters, which is mechanical.
 - Who builds the event manager and the crowd is decided in the third hand-ins pull request

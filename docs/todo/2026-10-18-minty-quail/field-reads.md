@@ -35,8 +35,8 @@ field-read check skips about two thirds of reads because it cannot tell the rece
 player: "isn't that the point of a class hierarchy? it should be made working".
 
 **Read as:** every receiver under `src/` has a class the check can tell, so a read of another
-class's field cannot hide behind an untyped name. **How**, from the design review the player approved (inbox #1268), the mechanism worked out by the
-same review after the approval: the engine sees
+class's field cannot hide behind an untyped name. **How** is the design review's worked-out detail, written after the player had approved its points
+(inbox #1268): the engine sees
 what the script cannot. GDScript's own warnings for an access the engine cannot type
 (`unsafe_property_access`, `unsafe_method_access`, `untyped_declaration`) are turned into errors in
 `project.godot`, with a file-level ignore at the top of every file not yet converted (the builder
