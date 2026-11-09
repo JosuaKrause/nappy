@@ -8,10 +8,14 @@ file under `art/` and drawn as a texture, never assembled at runtime out of `dra
 `draw_rect`, `draw_line`, `draw_arc` or `draw_colored_polygon`** (PLAYTEST-29 3). The **godot**
 skill carries the short version for every `_draw()`; this is the rule in full.
 
-**The caret is the one exemption.** `Sprites.draw_caret()` assembles it from
-`draw_colored_polygon()` and an outline, because its width and colour are live state: it breathes
-with the emission and its colour is the projection. It stays one shape drawn from one place, which
-is what the rule protects, and nothing else in the vocabulary takes the exemption by analogy.
+**Three symbols are drawn in code today**, each a filled polygon with an outline
+(`draw_colored_polygon()` and `draw_polyline()`): the caret above an entity
+(`Sprites.draw_caret()`); the arrow that points the way home and, from a second instance, to the
+day's resistance task (`HomeArrow._draw_chevron()`); and the pointer on the screen-edge badge
+(`DangerEdge._draw_chevron()`), whose backing disc and rim are a `draw_circle()` and a
+`draw_arc()`. The player's rule names none of them as an exemption (PLAYTEST-29 3), and whether
+they stay drawn in code or become pictures is not decided (the skill's closing list). A new symbol
+is an image file.
 
 **SVG or PNG, and which one is the asset's own question rather than this rule's.** SVG is the
 default for a glyph or a flat symbol, because it stays hand-editable; a painted or generated sheet

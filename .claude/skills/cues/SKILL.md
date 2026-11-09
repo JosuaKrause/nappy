@@ -15,7 +15,8 @@ description: The visual danger vocabulary — what may be drawn to signal danger
 - **A mark shows what a thing is projected to net her**, computed on its own source, never a second table.
 - **Only a `hard_fail` event and a closing car raise the exclamation mark.**
 - **Every caret is `Sprites.draw_caret()`**: no second hand-drawn chevron.
-- **A picture is an asset, never code** (PLAYTEST-29 3); the caret is the one exemption.
+- **A picture is an asset, never code** (PLAYTEST-29 3): a new symbol is an image file. Three
+  symbols are drawn in code today (the caret, the home arrow, the badge's pointer).
 - **Audio is never the only channel**: the game plays identically with the sound off.
 
 Three reference files beside this one are read whole before the first edit in their area:
@@ -196,8 +197,8 @@ already exists.** The vocabulary is deliberately short and adding to it is a des
 drawing one. Never a ring.
 
 **Add a HUD element** — `scenes/ui/hud.tscn` plus `src/ui/hud.gd`. The HUD listens to `EventBus` and
-holds **no reference to the world or the event system**; the two things it keeps are the baby and
-the stroller, each found by a group lookup. Anything that has to *ask the world* where things are every
+holds **no reference to the world or the event system**; it keeps the run it is handed (a
+`RunState`, through `use_run()`) and the baby and the stroller, each found by a group lookup. Anything that has to *ask the world* where things are every
 frame does not belong in it: `DangerEdge` is its own layer, created by `main`, for exactly that
 reason.
 
@@ -210,10 +211,13 @@ feedback loop (woolly-finch 3): a file can be opened and judged on its own, and 
 in `_draw()` can only be judged by booting the game. Layout is not a picture: a bar's fill, a scrim,
 a debug overlay, a knob whose position is live state.
 
-**The caret is the one exemption.** `Sprites.draw_caret()` assembles it from
-`draw_colored_polygon()` and an outline, because its width and colour are live state: it breathes
-with the emission and its colour is the projection. It stays one shape drawn from one place, which
-is what the rule protects, and nothing else in the vocabulary takes the exemption by analogy.
+**Three symbols are drawn in code today**, each a filled polygon with an outline
+(`draw_colored_polygon()` and `draw_polyline()`): the caret above an entity
+(`Sprites.draw_caret()`); the arrow that points the way home and, from a second instance, to the
+day's resistance task (`HomeArrow._draw_chevron()`); and the pointer on the screen-edge badge
+(`DangerEdge._draw_chevron()`), whose backing disc and rim are a `draw_circle()` and a
+`draw_arc()`. The player's rule names none of them as an exemption (PLAYTEST-29 3). A new symbol is
+an image file.
 
 The rule in full — SVG or PNG, why an icon on a control is no exception, where the line between a
 picture and layout runs, and the engine's own data before any drawing — is
@@ -222,6 +226,8 @@ picture and layout runs, and the engine's own data before any drawing — is
 
 ## Proposed, not asked for
 
-- **The caret's exemption from "a picture is an asset, never code"** is the filer's reading of the
-  code as it stands, where `Sprites.draw_caret()` has always drawn the caret as a polygon; the
-  player's words name no exemption (PLAYTEST-29 3).
+- **Whether the three symbols drawn in code stay drawn in code or become pictures is not decided**:
+  the caret above an entity (`Sprites.draw_caret()`), the arrow that points home or to the day's
+  task (`HomeArrow._draw_chevron()`) and the pointer on the screen-edge badge
+  (`DangerEdge._draw_chevron()`). The player's rule names no exemption (PLAYTEST-29 3). A new symbol
+  is a picture.
