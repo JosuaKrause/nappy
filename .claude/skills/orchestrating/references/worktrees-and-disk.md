@@ -46,9 +46,10 @@ starting.
 
 **A low-disk warning from a tool, or a check that leaves less than the reserve, stops new work**
 (quiet-yak #496). It is guidance, not a hard hook. The orchestrator starts no new agent or worktree
-and an agent starts no new task or batch until the space is sorted out by **session-cleanup**'s
-storage steps; work already running may finish, and an agent reports the warning in its report
-and does not leave it in a log.
+and an agent starts no new task, build or capture batch until the space is sorted out by
+**session-cleanup**'s storage steps (the worktree inventory, job-owned scratch, then `df` again);
+work already running may finish, an agent reports the warning in its report and does not leave it
+in a log, and the warning is reported to the player if the space cannot be found.
 
 Record scratch paths and cleanup ownership in the brief, and follow **session-cleanup**'s job-owned
 storage rules. Release a finished agent's brief only after its processes stop and useful artifacts
