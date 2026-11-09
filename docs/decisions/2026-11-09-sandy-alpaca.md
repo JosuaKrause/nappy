@@ -71,7 +71,10 @@ the catalogue of what each entry point under `tools/` is for.
   skill and `CLAUDE.md` changes.
 - The catalogue rows for the two old-queue tools are cut to a line and kept, since the tools exist.
 - Three sentences describe what the sibling pull request for the hooks adds (a review checkout's
-  removal, a released brief going with its branch, a hook naming the skills that govern a file).
+  removal, a released brief going with its branch, a hook naming the skills that govern a file),
+  and one what the sibling pull request for the domain skills adds (the illustrated-png skill says
+  in its opening rules that Claude Code has no image generator, which is where orchestrating now
+  points for it).
 
 ## History taken out of the skills
 
@@ -81,7 +84,10 @@ Kept here word for word, each with the rule it stood beside.
 
 > Use Sonnet in Claude Code for implementation, Haiku for a wait — polling a check, retargeting a PR, removing a worktree, pulling `main` — and a stronger model when a milestone's geometry or contracts warrant it, by judgement (woolly-finch 15).
 
-The judgement and its citation stay. "Haiku for a wait" is overturned by the player's word that the
+What the player's words still carry stays with its citation: which model a task gets is chosen by
+judgement. That a stronger model takes a milestone whose geometry or contracts warrant it is the
+skill's own clause, kept without the citation and listed in the skill's closing list as the filer's
+proposal. "Haiku for a wait" is overturned by the player's word that the
 wait after a merge is polled by a script, not an agent (inbox #1070 in gentle-walrus).
 
 **orchestrating, the measuring rows of the model table:**
