@@ -64,6 +64,11 @@ other suites that named it. One assertion changed meaning: `test_badge_model`'s 
 single badge's seconds-left sorted first now checks that it is the one badge on the edge,
 because the seconds are internal to the model and sorting is checked by the test that follows it.
 
+`FrameTiming.is_on()` replaces the `timing.on` read in `Baby._physics_process`, `DangerEdge` and
+`ExcitementHalo`, which run it every tick or frame: the per-tick call was weighed against the
+field read, and one method call a tick is negligible beside the tick's own work. The reads in the
+fenced event files stay listed.
+
 ## Skipped, and why
 
 - **The fence** (placement is being rewritten, and the third hand-ins pull request is to come):

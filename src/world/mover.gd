@@ -43,7 +43,6 @@ func _init(layers := GROUND | POSTS, body_radius := 0.0) -> void:
 	blocked_by = layers
 	radius = body_radius
 
-## Whether `layer` (one of the constants above) stops this mover.
 ## Every layer this mover is stopped by, as the `blocked_by` bits.
 func layers_blocked() -> int:
 	return blocked_by
@@ -52,6 +51,7 @@ func layers_blocked() -> int:
 func body_reach() -> float:
 	return radius
 
+## Whether `layer` (one of the constants above) stops this mover.
 func is_blocked_by(layer: int) -> bool:
 	return blocked_by & layer != 0
 
