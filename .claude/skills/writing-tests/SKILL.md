@@ -28,16 +28,18 @@ component's correctness by injecting its dependencies through the paths the game
 fake or a mock that records what it is asked handed in where the game hands the real one. A test
 that reads a private member or opens an escape hatch is a sign to look again: it is a sign of
 testing too much at once, of not injecting as intended, or of testing internals where the outside
-behaviour is what matters, and those are examples, not the only reasons. Where a component has
-nothing to hand a fake to, **designing-classes** says what its design owes.
+behaviour is what matters, and those are examples, not the only reasons
+(inbox #1018 in brisk-ferret). Where a component has nothing to hand a fake to,
+**designing-classes** says what its design owes.
 
 - **Only mock what you do not want to test** (inbox #1159 in gray-dolphin). A check whose subject
   is another object's answers is not this suite's; it
   moves to that object's own suite, rather than keeping that object real here.
 - **The real logic is checked once, in the real object's own suite** (inbox #1156 in gray-dolphin). Do not retest
   a component another suite already tests: the general drawing code is tested once, not again by
-  everything that draws through it. The city is built only by a direct test of the city, or by a
-  suite that gives its reason (inbox #1156 in gray-dolphin; inbox #1159 in gray-dolphin).
+  everything that draws through it (inbox #1018 in brisk-ferret). The city is built only by a
+  direct test of the city, or by a suite that gives its reason (inbox #1156 in gray-dolphin;
+  inbox #1159 in gray-dolphin).
 - **Mocking makes the suites faster** (inbox #1159 in gray-dolphin): a fake holding a handful of answers is built
   in no time, where generating a city and planning a day is slow setup.
 - **Plain values and data are built as they are** (a position, a day's spec, a `Tuning`

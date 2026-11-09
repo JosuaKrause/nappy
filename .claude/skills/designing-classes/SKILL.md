@@ -145,15 +145,17 @@ names, `## Overrides Class.method.` (inbox #1154 in gray-dolphin).
 ## Proposed, not asked for
 
 These rules above are the filer's or the builder's proposals and readings, not the player's words,
-and hold until the player corrects them. The citation is the player's word each one extends, or the
-record that proposes it:
+and hold until the player corrects them. An entry cites the player's word it extends or the record
+that proposes it, and says so where the player's words name nothing on the point:
 
 - **Which layers there are**, apart from the two points the player decided, the observers and the
   view as siblings and the map lookup in the model (plush-kestrel).
 - **A fix lands in the shared mechanism, new code follows the target shape, and a brief names its
   layer** (plush-kestrel).
 - **The composition root above everything, and each thing's drawing on the layer of the thing it
-  draws**, proposed by the layer map's builder.
+  draws**, proposed by the layer map's builder (minty-quail-35). The player's words on the layers
+  (inbox #904 in freckled-moose) decide the siblings and the map lookup, and name neither of
+  these.
 - **A member a test holds on purpose is not deleted as unreached, and the minimal-fix exception
   does not reach the deletion rule**, a reading of inbox #1180 in gray-dolphin.
 - **One interface and composition for anything many classes use, not only events**, a reading of
