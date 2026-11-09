@@ -17,6 +17,12 @@ a fake to. Each module's pull request says each suite's time before and after.
 test counts as another object under "fields are not API", "yes" (inbox #1182 in gray-dolphin). A var a test reads
 gets a method, and suites move as a pull request touches them.
 
+**A suite that plans one city over many days hands in its mast sites worked out once per city**,
+as the game does (`EventWorld.work_out_mast_sites()` on the city as built): today about forty suites
+work them out at each `EventScheduler.build_day()` call, on the day's paint, so a test can measure
+masts that move between days, which the game never shows (the orchestrator's choice in placement
+step 3c, open to overturn). Each module's pass hoists them as it touches the suite.
+
 **The order** is by module, those whose suites build a city before those that boot `main`, one
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
 `booted_main` and `build_day`/`start_day`/`begin_day` first:

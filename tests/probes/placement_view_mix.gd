@@ -32,6 +32,8 @@ func _mix_on(day: int) -> void:
 	var placed := 0
 	for i in SEEDS:
 		var map := CityGenerator.generate(90210 + i * 31)
+		# The run's mast sites, worked out once on the city as built, as the game does.
+		var sites := MastSites.compute(map)
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
@@ -43,7 +45,7 @@ func _mix_on(day: int) -> void:
 		var rng := _rng(i, day)
 		var guarded := ResistanceSteps.guarded_row_on(day)
 		var consumed: Array[String] = []
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map),
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), sites,
 				consumed, [], tree, 0, PackedVector2Array(),
 				[] as Array[EventScheduler.Planned], null,
 				EventCatalogue.by_id(guarded) if guarded != "" else null).placements():

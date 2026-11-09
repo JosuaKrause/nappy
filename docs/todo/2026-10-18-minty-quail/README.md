@@ -91,7 +91,12 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    worth an entry of its own. It also reruns `tests/probes/placement_rows.gd` on main and on the
    refactor's head, and turns the script that compares the two into a `tools/` entry point, since
    it is then a manual sequence done a second time (woolly-finch 23): the record grassy-magpie
-   states its rule and carries the output of its first run.
+   states its rule and carries the output of its first run. Before it does, both probes are settled
+   on `DayPlanner`'s planning: `placement_rows.gd` plans each day's closures, region wall and seals
+   and hands the seals and the wall's bodies in as standing since placement step 3c, which moved
+   main's own route-adjacent walls from 30.54 to 19.41 a city a day, and
+   `tests/probes/placement_view_mix.gd`, which `VIEW_SHARES` is measured with, still plans no
+   closures or seals.
 
 The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer", whose
 proposal paragraph refers to this entry, and **removes its exception for downy-tapir's minimal

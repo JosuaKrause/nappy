@@ -960,12 +960,11 @@ door, the last night's task — see "The power station" and "Guarantees".
 ground on the way out and separate later, since they end in distinct places. Where several
 corridors run together, that shared stretch is a **chokepoint**.
 
-**A chokepoint is a bundle, not a guarantee.** It narrows *how many places* a thing has to be in
-order to be met; it never narrows it to one. Even in the ideal case — a day with exactly two
-distinct paths — anything that must be encountered has to exist in **at least two** places. So the
-value of a chokepoint is arithmetic: it is what makes "every route touches one of these" cost two
-or three candidate sites instead of a dozen. **Anything written as "the tile she must cross" is
-wrong**, and it is the easiest sentence in this section to write by accident.
+**A chokepoint is a bundle, not a guarantee.** Even in the ideal case — a day with exactly two
+distinct paths — she can take either, so nothing placed at dawn on one of them is met whichever way
+she goes. **Anything written as "the tile she must cross" is wrong**, and it is the easiest sentence
+in this section to write by accident. What she has to meet is sited from the walk she is taking
+(day 3's fire; "A set piece has to be met" below).
 
 **A calm area is reached two distinct ways where the map allows it**, and one will often be longer
 than the other. That asymmetry is **incidental**: nothing should be tuned to produce it and no rule
@@ -1227,33 +1226,22 @@ An authored set piece that fires once per run and is missed is a fairness contra
 spent on nothing — which is what placing it like everything else, at a legal spot somewhere on the
 map, produces on a day she may never walk that way.
 
-There are two ways to make that impossible and the day picks between them per row. A **set piece
-sited against the tree** picks a **set** of candidate sites such that **every corridor passes at
-least one**, and the one she reaches is the one that fires: it needs no knowledge of what she chose,
-so the guarantee is structural and holds whichever way she goes. A **set piece sited from her walk**
-waits instead — the day plans it with no position and puts it on a building face **on the branch
-of the tree she is actually walking**, ahead of her by distance along that route, once her heading
-is clear. That is what day 3's fire does, and it is steered onto her on purpose: *"the fire needs to
-spawn on the current path the player is on"* (PLAYTEST-119). `docs/EVENTS.md`, "A set piece happens
-where she is going", is the built mechanism for both.
+A **set piece sited from her walk** makes that impossible: the day plans it with no position and
+puts it on a building face **on the branch of the tree she is actually walking**, ahead of her by
+distance along that route, once her heading is clear. That is what day 3's fire does, and it is
+steered onto her on purpose: *"the fire needs to spawn on the current path the player is on"*
+(PLAYTEST-119). `docs/EVENTS.md`, "A set piece happens where she is going", is the built mechanism.
 
-Either way it stays a **place** rather than a moment: a tile, a body, a field, and every question
-the corridor asks of a placement asked of it. `AHEAD_OF_PLAYER` is for moments, and a burning
-building is not one. What the second way changes is *when* the tile is chosen, never what it is.
+**Something she must meet exists wherever she goes**, since she can take either way: things are to
+be accounted for as potentially in one of two places at the very least
+(M50-the-city-points-somewhere). So a row she must meet is sited on her way, and
+`EventDef.validate()` refuses a one-shot that is not (`on_her_way`): placed at dawn it would stand in
+one place and be met only if she walked there. The walk's draw is to carry it next, a rigged marble
+landing on the next location she comes to (placement by construction's walk draws).
 
-**"All routes" is load-bearing and means routes, not destinations.** A covering set that counts an
-area as met when **either**
-of its two ways in is met comes back as a **single** street on nine planned days out of 32 — the
-one they all share on the way out. Placed there, the set piece is met by a player who takes the
-first way out of everywhere and missed by one who takes the second, which is the "tile she must
-cross" mistake with a covering set drawn round it. Covering every route costs nothing extra and
-almost never goes wrong that way: the two routes to one area share no **cell** by construction —
-`ReachabilityGrid`'s two-tile-square unit, the grain the whole corridor is now grown on — so a
-single site covers both only on the rare street where the two routes' cells still resolve to the
-same `StreetNetwork.Segment`, a street being three cells wide. *"At least two places"* is arithmetic
-on the common case rather than a rule anybody enforces, and the rare exception is measured, not
-guarded against, in `tests/test_events.gd`.
-It comes out at two to six sites against about fifteen routes.
+It stays a **place** rather than a moment: a tile, a body, a field, and every question the corridor
+asks of a placement asked of it. `AHEAD_OF_PLAYER` is for moments, and a burning building is not
+one. What siting it from her walk changes is *when* the tile is chosen, never what it is.
 
 **Two invariants this runs into, and both are smaller than they look.**
 
@@ -1695,8 +1683,8 @@ no event may stand, no event's field may reach, and no mover's beat or run may p
 is taken to the nearest point of a candidate's whole route, and the candidate's own
 `EventDef.field_reach()` is added to the gap, so a patrol that merely walks through it and a row
 sitting outside it with a radius that crosses it are both refused. **Refused at placement, never
-cleared away afterwards** — `EventScheduler._place_one()` rolls again and `EventDirector.due()`
-waits, the same way every closure in this city is checked before it is accepted. A row that can
+cleared away afterwards** — the day's rules refuse the candidate (`DoorClearanceRule`) and
+`EventDirector.due()` waits, the same way every closure in this city is checked before it is accepted. A row that can
 find no ground outside every door simply is not placed that day, which is the failure direction
 the scheduler already has everywhere else; measured over six seeds on days 7 and 11 it costs under
 one percent of what a day places.

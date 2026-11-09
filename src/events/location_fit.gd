@@ -53,7 +53,7 @@ func _own_ground(def: EventDef) -> Dictionary:
 	if not _own.has(def):
 		var found := {}
 		for tile in EventScheduler.ground_for(def, _map, _ground, _corridor,
-				EventScheduler.role_for(def, _day), EventScheduler.NO_SITE, _holds_the_home_streets):
+				EventScheduler.role_for(def, _day), _holds_the_home_streets):
 			found[tile] = true
 		_own[def] = found
 	return _own[def]

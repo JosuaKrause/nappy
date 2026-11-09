@@ -26,8 +26,8 @@ func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 ## A junction is the only place a line may change pavement, so a crossing the day's rows have
 ## closed between them is a cut nothing on either side can answer — the shape
 ## `tests/probes/m129_zero_cost_line.gd` measured breaking more routes than every other shape put
-## together. The refusal is *this ground*, not *this row*: `EventScheduler._place_one` simply rolls again, and the
-## row lands somewhere it leaves the crossing open.
+## together. The refusal is *this ground*, not *this row*: the placement asks
+## the row's next tile or location, and the row lands somewhere it leaves the crossing open.
 ##
 ## **It is stated over the candidate together with what is already down**, which is what makes it
 ## the rule the measurement asked for rather than a weaker one: the crossing the probe names most

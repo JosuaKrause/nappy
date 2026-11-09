@@ -6,7 +6,7 @@ extends RefCounted
 ## tutorial dog may appear later but not as tutorial."* `EventDef.spawn_mode_on(day)` is what
 ## switches: `AHEAD_OF_PLAYER` through the teaching day, `MAP` after it, so the row is placed on a
 ## tile and met by routing into it, the way `alley_robbery` is, rather than sited by the director on
-## her heading or off it. See `EventScheduler._place_one()` and `EventDirector.start_day()`.
+## her heading or off it. See `EventScheduler._draw_the_locations()` and `EventDirector.start_day()`.
 ##
 ## Two things past the switch, both below. **The map-placed dog waits** inside its own field for
 ## her rather than announcing itself the moment it streams in — `EventDef.for_day(day)`,
@@ -104,7 +104,7 @@ func _test_day_4_is_a_map_placement(t) -> void:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
 			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,
-					CalmAreas.of(map), consumed, [], tree).placements():
+					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 				if plan.def.id != "charging_dog":
 					continue
 				checked += 1

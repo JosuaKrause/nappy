@@ -42,6 +42,9 @@ var timing := FrameTiming.new()
 ## The baked atlas pages every instance made here draws from (`AtlasLibrary`): the manager's,
 ## which holds the events' group on it; none until the manager is handed or makes one.
 var atlas: AtlasLibrary
+## The run's mast sites (`MastSites.compute()`), worked out once when the manager is handed its city
+## (`work_out_mast_sites()`) and handed to every dawn after (`mast_sites()`); none before.
+var _mast_sites: Array[MastSites.Site] = []
 ## What every instance made here paints its pictures through (`EventDrawer`): the manager's, built
 ## over its atlas; none until the manager is handed or makes one, and an instance handed none draws
 ## through one of its own.
@@ -85,3 +88,15 @@ func has_player() -> bool:
 ## `points_at` asked now, so an instance made before the resistance handed it in points too.
 func where_protests_point() -> Vector2:
 	return points_at.call() if points_at.is_valid() else Vector2.INF
+
+## **Works out the run's mast sites on `map`**, once, when the manager is handed its city: a mast's
+## location is known from the start of the run (inbox #1185; `docs/EVENTS.md`, "The three views and
+## the placement order"). The sites are the city's as built and are kept for the run: worked out on
+## a later day's paint, a calm area grown or a tile changed can let a newly eligible candidate win
+## the pick, so they are worked out once, here, and never again.
+func work_out_mast_sites(map: CityMap) -> void:
+	_mast_sites = MastSites.compute(map)
+
+## The run's mast sites, as `work_out_mast_sites()` found them; empty before.
+func mast_sites() -> Array[MastSites.Site]:
+	return _mast_sites

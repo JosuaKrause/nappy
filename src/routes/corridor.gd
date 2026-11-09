@@ -77,9 +77,6 @@ var _node_depth := PackedByteArray()
 ## Segment key -> how many turnings off the corridor that whole street is. See
 ## `RouteTree.segment_depths()`.
 var _segment_depth := {}
-## The covering set: the smallest set of streets such that every route touches one of them. Kept in
-## order rather than as a set, because a **set piece** is placed once at each of them.
-var _sites: Array[Vector3i] = []
 ## The streets between two adjacent strands of corridor, as a set. See `RouteTree.gaps()`.
 var _gaps := {}
 ## The junctions today's routes cross. See `RouteTree.junctions()` and `route_junctions()`.
@@ -105,7 +102,6 @@ static func of(tree: RouteTree) -> Corridor:
 	for node: int in depths:
 		corridor._node_depth[node] = mini(int(depths[node]), DEEP)
 	corridor._segment_depth = tree.segment_depths()
-	corridor._sites = tree.covering_sites()
 	for key in tree.gaps():
 		corridor._gaps[key] = true
 	corridor._junctions = tree.junctions()
@@ -121,14 +117,6 @@ static func of(tree: RouteTree) -> Corridor:
 ## junction* and could not say *that crossing is still open*, which is the whole question.
 func route_junctions() -> Array[Vector2i]:
 	return _junctions
-
-## The streets a set piece is placed on: every route touches one of them.
-##
-## *"We can have multiple candidate places and make sure all routes touch at least one of them."*
-## It is deliberately **the whole list** rather than a pick — the guarantee is that she meets one
-## whichever way she goes, and choosing one of them here would throw exactly that away.
-func sites() -> Array[Vector3i]:
-	return _sites
 
 ## How many grid steps off the corridor a tile is. Zero is on it, one is the rim, and it counts
 ## outwards; `DEEP` is the answer for ground the day's routes cannot reach at all or for a tile off

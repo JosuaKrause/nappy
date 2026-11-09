@@ -21,9 +21,18 @@ extends RefCounted
 ## file asserting about a city that no longer exists.
 var _shared_map: CityMap
 
+var _shared_sites: Array[MastSites.Site] = []
+
+## The shared city's mast sites, worked out once on it as built.
+func _sites() -> Array[MastSites.Site]:
+	_map()
+	return _shared_sites
+
 func _map() -> CityMap:
 	if not _shared_map:
 		_shared_map = CityGenerator.generate(4242)
+		# The run's mast sites, worked out once on the city as built, as the game does.
+		_shared_sites = MastSites.compute(_shared_map)
 	return _shared_map
 
 func _rng(day: int) -> RandomNumberGenerator:
@@ -56,5 +65,5 @@ func _day_events(day: int) -> DayEvents:
 	if not _plans.has(day):
 		var consumed: Array[String] = []
 		_plans[day] = EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map(),
-				CalmAreas.of(_map()), consumed)
+				CalmAreas.of(_map()), _sites(), consumed)
 	return _plans[day]

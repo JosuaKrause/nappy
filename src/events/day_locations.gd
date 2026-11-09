@@ -57,6 +57,53 @@ func record(location: Location, plan: EventScheduler.Planned) -> void:
 		(_streets[location.segment().key()] as StreetLocations).take_section(location, plan)
 	location.record(plan)
 
+## **Every location still open to a phase**: available and neither taken nor drawn, street by
+## street in the lattice's order (each street's sidewalk locations, then its sections), then the
+## ground beyond the streets. Unshuffled, so a phase that draws among them draws on its own stream.
+func open_locations() -> Array[Location]:
+	var found: Array[Location] = []
+	for key: Vector3i in _streets:
+		var street := _streets[key] as StreetLocations
+		for location in street.sidewalks() + street.sections():
+			if location.is_available() and not location.is_taken() and not location.is_drawn():
+				found.append(location)
+	for location in _grounds:
+		if location.is_available() and not location.is_taken() and not location.is_drawn():
+			found.append(location)
+	return found
+
+## **The location holding `tile`, of ground `type`**: the one whose tiles hold it and whose kind takes
+## that ground (`Location.takes()`), so a sidewalk tile names its sidewalk location and a carriageway
+## tile its section; null where none does (a building, a corner a junction box leaves). What a fixed
+## part's phase records on, and what an authored scene's tile names (`EventScheduler.recipe_placement()`).
+func holding(tile: Vector2i, type: int) -> Location:
+	for key: Vector3i in _streets:
+		var street := _streets[key] as StreetLocations
+		for location in street.sidewalks() + street.sections():
+			if location.tiles().has_point(tile) and location.takes(type):
+				return location
+	for location in _grounds:
+		if location.tiles().has_point(tile) and location.takes(type):
+			return location
+	return null
+
+## **Records a fixed part on the location holding where it stands**, so no draw happens there (the
+## design's fixed parts' phases: "a wall makes its location unavailable throughout"; a mast's
+## location holds its mast on a day with one). `type` is the ground under it. A part standing where
+## no location is records nothing.
+func hold_fixed_part(plan: EventScheduler.Planned, tile: Vector2i, type: int) -> void:
+	var location := holding(tile, type)
+	if location:
+		assign_to(location, plan)
+
+## Assigns `plan`, which a dawn phase placed in `location`, for the day, so no draw happens there:
+## a section takes its two sidewalk locations with it.
+func assign_to(location: Location, plan: EventScheduler.Planned) -> void:
+	if location.kind() == Location.Kind.SECTION and location.segment():
+		(_streets[location.segment().key()] as StreetLocations).take_section(location, plan)
+	else:
+		location.take(plan)
+
 ## The alleys of `map`, each as the rect of its connected `ALLEY` tiles.
 static func _alleys(map: CityMap) -> Array[Rect2i]:
 	var seen := {}

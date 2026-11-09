@@ -544,7 +544,7 @@ func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -
 ## real frames of a real day, with the log on, and requires the day after to plan exactly as it
 ## would have if the drive had never happened — the only way that can hold is if nothing either
 ## watcher did changed `map`, the one input the next day's plan reads here (the plan is made from
-## a fresh random stream and a fresh one-shot ledger, so what the check pins is the map).
+## a fresh random stream, so what the check pins is the map).
 func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
 	var map := CityMapCache.of(CITY_SEED)
 	var day := DayWorld.new(map)

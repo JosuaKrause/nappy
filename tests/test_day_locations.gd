@@ -2,8 +2,10 @@ extends RefCounted
 ## `DayLocations`, every street's locations for one day laid out at dawn (inbox #1185), with the
 ## `StreetLocations` and `Location` it is made of, the state it holds: a street split into three
 ## sections along its length, each with two sidewalk locations; each street's sections filed under
-## the view it is told; a street a fixed part holds left with no section open; and a section an event
-## that spans the street is assigned taken for the day, its two sidewalk locations with it. Laid out
+## the view it is told; a street a fixed part holds left with no section open; a section an event
+## that spans the street is assigned taken for the day, its two sidewalk locations with it; a tile
+## naming the location holding it, of the ground under it; and a fixed part (a mast)
+## holding its location, so it leaves the locations still open to a phase or a draw. Laid out
 ## on a bare city's lattice (`CityMap.new()`, every street present), with a stand-in for the corridor
 ## whose views the check sets (`_Views`); which view a street really is in is `Corridor.view_of()`'s,
 ## checked in `tests/test_corridor.gd`.
@@ -18,6 +20,8 @@ func run(t) -> void:
 	_test_the_ground_beyond_the_streets_has_its_own_locations(t)
 	_test_a_carriageway_event_drawn_takes_its_section(t)
 	_test_each_kind_of_location_takes_its_own_ground(t)
+	_test_a_tile_names_the_location_holding_it(t)
+	_test_a_fixed_part_holds_its_location(t)
 
 const ON := Vector3i(2, 2, 0)
 const BESIDE := Vector3i(3, 2, 1)
@@ -271,3 +275,44 @@ func _test_each_kind_of_location_takes_its_own_ground(t) -> void:
 			and (at.call(Location.Kind.JUNCTION) as Location).takes(GameEnums.TileType.ROAD)
 			and not (at.call(Location.Kind.JUNCTION) as Location).takes(GameEnums.TileType.PARK),
 			"an alley its alley, an open lot its park or square, a junction box its corners, carriageway and crossings")
+
+## A sidewalk tile names its sidewalk location, a carriageway tile its section, a square tile the
+## open cell holding it; a tile no location holds names none.
+func _test_a_tile_names_the_location_holding_it(t) -> void:
+	var map := CityMap.new()
+	var square := Rect2i(Vector2i(48, 48), Vector2i(8, 8))
+	map.fill_rect(square, GameEnums.TileType.SQUARE)
+	var locations := DayLocations.lay_out(map, _views())
+	var segment := _segment(BESIDE)
+	var bands := Corridor.sidewalk_bands(segment.tile_rect(), segment.horizontal)
+	var sidewalk_tile: Vector2i = (bands[0] as Rect2i).get_center()
+	var road_tile := segment.tile_rect().get_center()
+	var on_sidewalk := locations.holding(sidewalk_tile, GameEnums.TileType.SIDEWALK)
+	var on_road := locations.holding(road_tile, GameEnums.TileType.ROAD)
+	t.check(on_sidewalk != null and on_sidewalk.kind() == Location.Kind.SIDEWALK
+			and on_sidewalk.tiles().has_point(sidewalk_tile),
+			"a sidewalk tile names the sidewalk location holding it")
+	t.check(on_road != null and on_road.kind() == Location.Kind.SECTION
+			and on_road.tiles().has_point(road_tile), "a carriageway tile names its section")
+	var cell := locations.holding(square.position + Vector2i.ONE, GameEnums.TileType.SQUARE)
+	t.check(cell != null and cell.kind() == Location.Kind.OPEN, "a square tile names its open cell")
+	t.check(locations.holding(Vector2i(8, 8), map.tile_at(Vector2i(8, 8))) == null,
+			"a tile inside a block names no location")
+
+## A fixed part recorded on its tile takes the location holding it, and that location is no longer
+## open to a phase; every other location stays open.
+func _test_a_fixed_part_holds_its_location(t) -> void:
+	var map := CityMap.new()
+	var square := Rect2i(Vector2i(48, 48), Vector2i(8, 8))
+	map.fill_rect(square, GameEnums.TileType.SQUARE)
+	var locations := DayLocations.lay_out(map, _views())
+	var open_before := locations.open_locations().size()
+	var tile := square.position + Vector2i.ONE
+	var cell := locations.holding(tile, GameEnums.TileType.SQUARE)
+	var mast := EventScheduler.Planned.new(EventCatalogue.mast(), map.tile_to_world(tile))
+	locations.hold_fixed_part(mast, tile, GameEnums.TileType.SQUARE)
+	t.check(cell.is_taken(), "the location holding a fixed part is taken for the day")
+	t.check(not cell in locations.open_locations()
+			and locations.open_locations().size() == open_before - 1,
+			"and only it leaves the locations open to a phase (%d of %d open)"
+			% [locations.open_locations().size(), open_before])

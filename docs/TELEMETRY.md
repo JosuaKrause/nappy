@@ -598,7 +598,7 @@ back.
 | Record | Do not record |
 | --- | --- |
 | The seed the generator actually used, and the version it ran on | The city layout, block purposes, building rects — recomputable from that seed |
-| **Random outcomes that branch the run**: a one-shot that fired, with the roll and the threshold; which block arc advanced and what caused it; the alley trap roll; the scar an event left | Falloff curves, meter rates, event intensities and radii — they are in `Tuning` and the catalogue |
+| **Random outcomes that branch the run**: a one-shot that was owed her walk and the day it fired; which block arc advanced and what caused it; the alley trap roll; the scar an event left | Falloff curves, meter rates, event intensities and radii — they are in `Tuning` and the catalogue |
 | What the player did, in order: where they went, when they turned back, when they ran, when they crossed a road | Derived aggregates — the circling ratio, total distance. Computable when reading, and a reading aid at best |
 | What the world did to them: what came within range and how close, when sleep froze and what was near, which closure they saw | Which tiles are calm, which streets exist — recomputable |
 | The outcome and its cause: result, elapsed, margin, what was nearby at the moment of a loss, which nerve went and on which day | — |
@@ -631,7 +631,7 @@ is made as the warning goes up, so the first line already knows.
 | Kind | Written by | Answers |
 | --- | --- | --- |
 | `plan` | `RunSession`, `main.gd`, `City`, `ClosurePlanner`, `EventScheduler` | What today is: what is shut, where the calm is, what is out, and the region wall's own shape — how many boundary segments, walls and doors, and which regions hold calm; and, on the escape's city, how many marbles its bag drew for how many rows |
-| `roll` | `EventScheduler`, `ResistanceDirector`, `PosterWalls`, `EventManager` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot the day owes her walk rather than rolls for, that it is owed. A torn poster's marble is one: which marble the tear drew and how many are left in the bag, and, on a pursuit marble, who was sent after her, from where and whether with a clear run at her (or that nobody was, with no ground out of her sight). So is the bag day 6's or day 11's mark rigs her route with: which marbles the next events on it are drawn from |
+| `roll` | `EventScheduler`, `ResistanceDirector`, `PosterWalls`, `EventManager` | Which way a run-branching roll went, with the number and the threshold — and, for a one-shot, that the day owes it her walk (none is rolled for). A torn poster's marble is one: which marble the tear drew and how many are left in the bag, and, on a pursuit marble, who was sent after her, from where and whether with a clear run at her (or that nobody was, with no ground out of her sight). So is the bag day 6's or day 11's mark rigs her route with: which marbles the next events on it are drawn from |
 | `arc` | `CityState` | Which block became something else, and what caused it |
 | `scar` | `EventManager`, `PosterWalls` | Where the city stopped being recomputable — a scar an event left, a crew starting and finishing a wall, a poster she tore down |
 | `ahead` | `EventManager` | Where the director put something from her own walk and where she was standing: a run across her line, a row down her line at the moment its warning is over and it is created, day 3's fire sited or moved on the branch she is walking, a place a marble from her route's bag put on it (the man shouting after day 6's mark, the mast after day 11's), the men a vehicle let out where it stopped for her — the investigating patrol's one or a hunting van's two, where it stood, how far from her, and who got out (`EventsAhead.let_the_officers_out()`) — or — on a day she won without it ever entering the world — where it was lit at dusk instead. The only record of a placement no seed reproduces, since it depends on the route she took |
@@ -1432,8 +1432,6 @@ Every **sited** event is drawn where the day put it, carrying the three things `
 - **An unplaced plan is not drawn**, and that is the honest answer rather than a gap. An
   `AHEAD_OF_PLAYER` row has no position at dawn, so drawing it anywhere would be the picture
   claiming a placement nothing made.
-- **A spent set-piece offer is drawn like any other**, because the sites that did not fire are what
-  makes the covering set visible at all. They come out without a pip, which is right.
 - A **routed** event also gets a faint band along the ground it covers. It is much fainter than
   the mark, and that number was set by looking: at the mark's own strength the routes were the
   loudest thing in the picture and read as *corridor* — thin coloured lines down the middle of

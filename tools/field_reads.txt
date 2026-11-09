@@ -226,7 +226,6 @@ src/events/calm_areas.gd calm_blocks
 src/events/day_planner.gd home_block
 src/events/day_planner.gd network
 src/events/event_scheduler.gd closed_tiles
-src/events/event_scheduler.gd network
 src/events/event_scheduler.gd playgrounds
 src/events/event_scheduler.gd power_station
 src/events/event_spawner.gd block_plans

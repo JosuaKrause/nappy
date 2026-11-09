@@ -10,7 +10,6 @@ extends RefCounted
 ##   merge" and the only reason a second route is worth offering at all;
 ## - different areas **do** share, because the sharing is what makes placement cheap and a tree
 ##   that has quietly become a star still passes everything else here;
-## - the fan-out **meets every route**, not every branch — see `RouteTree.covering_sites`;
 ## - and the same day grows the same tree, twice, on a different afternoon.
 ##
 ## The numbers below are measurements taken over the days this suite plans, kept as floors with
@@ -52,8 +51,6 @@ func run(t) -> void:
 	_test_different_areas_share_ground(t)
 	_test_every_reachable_calm_area_is_on_the_tree(t)
 	_test_a_second_route_is_offered_where_the_map_allows_one(t)
-	_test_the_fan_out_meets_every_route(t)
-	_test_the_fan_out_is_never_one_place(t)
 	_test_a_gap_joins_two_parallel_strands(t)
 	_test_a_gap_is_a_small_part_of_the_rim(t)
 	_test_the_same_day_grows_the_same_tree(t)
@@ -212,8 +209,7 @@ func _test_a_route_crosses_a_carriageway_only_at_a_junction(t) -> void:
 
 ## **Same colours may not merge.** The two probes from one area can never become one path, so
 ## where a second route exists at all the area is reached two genuinely distinct ways. This is
-## the property the whole colour mechanism exists to maintain, and it is what the fan-out's
-## "at least two places" falls out of.
+## the property the whole colour mechanism exists to maintain.
 func _test_the_two_routes_of_one_area_share_no_cell(t) -> void:
 	var pairs := 0
 	for planned in _days:
@@ -320,56 +316,6 @@ func _test_a_second_route_is_offered_where_the_map_allows_one(t) -> void:
 	t.check(possible > 0, "the map allowed a choice somewhere (%d)" % possible)
 	t.check(float(offered) / maxf(1.0, float(possible)) > 0.6,
 			"%d of %d areas that could have two routes were offered two" % [offered, possible])
-
-# ---------------------------------------------------------------- the fan-out ---
-
-## What a set piece needs: a small set of streets such that whichever way she goes, she meets one.
-## `covering_sites()` stays segment-keyed, so a route (a chain of cells) meets a site when one of
-## its cells resolves to that street.
-func _test_the_fan_out_meets_every_route(t) -> void:
-	for planned in _days:
-		var sites := planned.tree.covering_sites()
-		t.check(not sites.is_empty(), "seed %d day %d: the day has a fan-out at all"
-				% [planned.map.seed_used, planned.day])
-		for branch in planned.tree.branches:
-			for route: Array in branch.routes:
-				t.check(_route_meets(planned.map.network, route, sites), "seed %d day %d: %s's route meets the fan-out"
-						% [planned.map.seed_used, planned.day, branch.area])
-		# Every site earns its place, or the answer is not a smallest one.
-		for dropped in sites:
-			var without: Array[Vector3i] = sites.duplicate()
-			without.erase(dropped)
-			t.check(not _covers_everything(planned.tree, without),
-					"seed %d day %d: no street in the fan-out is spare"
-					% [planned.map.seed_used, planned.day])
-
-## **A bundle is a bundle and never a guarantee.** *"Anything that must be encountered has to
-## exist in at least two places"*, even on a day with one perfect chokepoint — because a
-## chokepoint on route one is not on route two, by construction. Any code that assumes a single
-## site is wrong, and the first version of `covering_sites` assumed exactly that.
-##
-## **A proportion rather than an absolute, since the move to cells.** "Share no cell" is a weaker
-## promise than "share no street": two routes can use different cells of the very same street —
-## opposite ends of it, say — that a segment-keyed covering site cannot tell apart, so a single
-## street can end up covering both after all. That is a real, if rare, consequence of routes being
-## finer-grained than the sites placed against them, not a bug in either — a set piece sited there
-## is still met by both routes, which is a fairness contract nobody breaks.
-func _test_the_fan_out_is_never_one_place(t) -> void:
-	var narrow := 0
-	var with_a_choice := 0
-	for planned in _days:
-		var choices := 0
-		for branch in planned.tree.branches:
-			if branch.routes.size() >= 2:
-				choices += 1
-		if choices == 0:
-			continue
-		with_a_choice += 1
-		if planned.tree.covering_sites().size() < 2:
-			narrow += 1
-	t.check(with_a_choice > 0, "some day had a choice to check (%d)" % with_a_choice)
-	t.check(float(narrow) / maxf(1.0, float(with_a_choice)) < 0.15,
-			"%d of %d days with a choice narrowed the fan-out to one place" % [narrow, with_a_choice])
 
 # ------------------------------------------------------------------- the gaps ---
 
@@ -585,16 +531,3 @@ func _cells(branch: RouteTree.Branch) -> Array:
 		found.append_array(route)
 	return found
 
-func _route_meets(network: StreetNetwork, route: Array, sites: Array[Vector3i]) -> bool:
-	for cell: Vector2i in route:
-		var segment := network.segment_containing(cell * ReachabilityGrid.CELL)
-		if segment and sites.has(segment.key()):
-			return true
-	return false
-
-func _covers_everything(tree: RouteTree, sites: Array[Vector3i]) -> bool:
-	for branch in tree.branches:
-		for route: Array in branch.routes:
-			if not _route_meets(tree.network(), route, sites):
-				return false
-	return true

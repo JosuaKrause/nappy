@@ -149,6 +149,7 @@ FILES: dict[str, str] = {
     "src/events/mast_sites.gd": "model",
     "src/events/roadblock_ground.gd": "model",
     "src/events/roadblock_phase.gd": "model",
+    "src/events/scripted_phase.gd": "model",
     "src/events/street_locations.gd": "model",
     "src/events/street_invalidation.gd": "model",
     "src/events/street_rule.gd": "model",
