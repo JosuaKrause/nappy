@@ -397,7 +397,6 @@ func build(city_map: CityMap) -> void:
 	crowd.view = crowd_view
 	crowd.timing = crowd_timing
 	crowd.atlas = atlas
-	crowd.use_traffic(TrafficIndex.new())
 	add_child(crowd)
 	crowd.setup(self, map, signals, _streets, navigator)
 	# What charges her here, as the baby and the halo ask it: the events, then the crowd.
