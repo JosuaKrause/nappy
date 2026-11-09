@@ -891,4 +891,5 @@ each question as it was shown).
    - `blocking_radius()` shuts a lethal row's field core, not its lethal reach (section 3).
    - The ground a row that ends the day shuts is stated four ways (`clearance()`,
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
-     lethal disc less her radius). They become one stated fact, asked under one name.
+     lethal disc less her radius). *Read as* (the filer's, open to the player's correction):
+     made correct means they become one stated fact, asked under one name.
