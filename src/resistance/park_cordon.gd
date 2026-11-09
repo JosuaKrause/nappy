@@ -511,7 +511,7 @@ func _ground_outside() -> PackedInt32Array:
 	var blocked := _blocked.duplicate()
 	for tile in _map.rect_tiles(_rect):
 		blocked[tile] = true
-	return _map.walk_field(_map.home_rect.position, blocked)
+	return _map.walk_field(_map.home_tile_rect().position, blocked)
 
 ## Whether the ground outside a stretch — the tile beyond each of its edge tiles — reaches home.
 func _outside_reaches(stretch: Stretch, ground: PackedInt32Array) -> bool:

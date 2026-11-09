@@ -49,7 +49,7 @@ static func placed(map: CityMap, day: int) -> Array[Placed]:
 			if not _ELIGIBLE.has(map.tile_at(tile)):
 				continue
 			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("litter:%d:%d:%d" % [map.seed_used, x, y])
+			rng.seed = hash("litter:%d:%d:%d" % [map.city_seed(), x, y])
 			if rng.randf() >= density:
 				continue
 			var entry := Placed.new()
