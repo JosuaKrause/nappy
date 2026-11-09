@@ -55,10 +55,11 @@ she can pass wide, "we should do that before we teach crossing"; then, of its #3
 with less room, "we can keep the original #3 between the new #2 and #3 -- I liked both
 progressions". **Read as**, the order: (1) get to the park (the opening shot and the direction
 bubble); (2) a noise source she can pass wide; (3) a noise source with less room; (4) crossing the
-road with no cars about, where her sidewalk is blocked; (5) crossing the road with cars, where the
-cars start (`car-free-start.md`); (6) timing the yeller; then the park. The crossing is taught
+road with no cars about, where her sidewalk is blocked next to a zebra crossing; (5) crossing the
+road with cars, at a zebra crossing, where the cars start (`car-free-start.md`); (6) timing the yeller; then the park. The crossing is taught
 twice, first with no cars about. *Proposed, not asked for* (the
-orchestrator's sketch, which the player's words name only by number): the market stall on the far
+orchestrator's sketch, which the player's words name only by number; each list as shown is quoted
+before the answer it drew, gentle-owl #1253): the market stall on the far
 sidewalk as the noise passed wide, and the dog walker coming toward her on her own sidewalk as the
 one with less room.
 
@@ -73,12 +74,21 @@ need to be blocked -- no valid route goes off of the tutorial route past the fir
 carries a soft seal, both sidewalks blocked and the carriageway open, so no valid route leaves the
 tutorial route past its first block; on the first block she can still turn off, and the day's other
 routes start there with every guarantee they have (two cost-free routes, the day winnable). Past
-its first block no shortcut skips a lesson, so the route need not be the shortest walk to its park.
-*Proposed, not asked for:* the soft seals' objects are day-1 rows (a delivery van, café tables, a
-market stall), since construction starts on day 2; the count of 5 streets is the orchestrator's.
+its first block no valid route gives a shortcut that skips a lesson, so the route need not be the
+shortest walk to its park. She can still leave it there in the road, round a soft seal, since the
+carriageway stays open: the back-to-the-route bubble (`thought-bubbles.md`) and the cars starting
+once she is a full block off the route (`car-free-start.md`) hold wherever she leaves it.
+*Proposed, not asked for:* the soft seals are day 1's own soft-seal rows, `skip` facing
+`scaffolding` and `moving_van`, both scripted from day 1 (`docs/EVENTS.md`), with the delivery van
+and the café tables as further day-1 candidates; not the market stall, which is lesson (2)'s
+proposed noise source, so a stall sealing a side street would blur that lesson. The count of 5
+streets is the orchestrator's.
 
 **Measured** (120 seeds, day 1's street network, a street counted as one segment between junctions,
-the doorstep's own segment included, as the note records it): the nearest calm area is 3 streets
-from the door on 107 seeds and 4 on 13; every seed has a calm area whose shortest walk is 5 or 6
-streets, 113 of 120 one at exactly 5. With the route sealed past its first block it need not be the
-shortest walk, so a 5-street tutorial route to a park exists on every seed measured.
+the doorstep's own segment included, as the note records it), of calm areas, parks, zones, squares
+and courtyards counted together, by their shortest walk from the door: the nearest is 3 streets out
+on 107 seeds and 4 on 13; every one of the 120 seeds has one whose shortest walk is 5 or 6 streets;
+113 of them have one at exactly 5. **Inferred, not measured:** since the sealed route need not be the
+shortest walk, a 5-street tutorial route exists on every seed, the 7 seeds with no calm area at
+exactly 5 by a longer walk to a nearer one. The probe did not count parks apart from the other calm
+areas, nor 5-street walks that are not the shortest; both are the builder's to count.

@@ -30,8 +30,8 @@ curly-moose #819).
 bubble that guides her back to the tutorial route. she can choose to ignore it" (gentle-owl #1253).
 **Read as:** each time she starts to leave the tutorial route, a bubble points her back to it; it
 shows every time, unlike the few-times rule of the other bubbles, and she may walk on regardless.
-With the route closed off past its first block, its first block is the only place she can leave
-it.
+It shows wherever she leaves the route: past the first block the side streets carry soft seals,
+which leave the carriageway open, so she can still leave there in the road (`hand-crafted-day-one.md`).
 
 *Proposed, not asked for:* the bubble looks unlike the danger exclamation mark already drawn over
 her, since **cues** keeps that vocabulary short; the icons are SVG, drawn by Opus under **svg-art**

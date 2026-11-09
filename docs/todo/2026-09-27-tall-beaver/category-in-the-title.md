@@ -12,4 +12,7 @@ with the pick the player accepted, matching today's two sections.
 
 **Proposed, not asked for:** what a title with no bracket does (falls back to today's path rule,
 so the tags before this change still sort); and a check that rejects a PR title with no known
-category, in CI or in the PR-opening step of **committing**. Each is open to the player's correction.
+category, in CI or in the PR-opening step of **committing**. Neither waits for the player before
+this is built, since only a question very costly to pivot on blocks (inbox #1194 in gentle-owl),
+and draft pull request #1215, paused for the refactor, is built on these picks (the prefix and the
+fallback; no title check). Each is open to the player's correction.

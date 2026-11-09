@@ -19,12 +19,16 @@ bag"). A builder re-reads this, since the refactor changes how dawn plans the da
 of the city's fixed parts, with a phase of their own (`docs/EVENTS.md`, "The three views and the
 placement order").
 
-**Read as:** how many streets close is drawn from a marble bag like the route events, in place of
-a fixed quota, since the question was about the count of 120. Nothing about it is designed or built until
-minty-quail (the refactor) is done; it is planned then, with the player.
+**Read as:** road closures are to come from a bag, as the route events do, in place of a fixed
+quota. Nothing about it is designed or built until minty-quail (the refactor) is done; it is planned
+then, with the player.
 
-**Open, for that planning:** whether the closures' kinds come from the bag too, in place of their
-independent roll (the orchestrator's pick on the board, closures-bag, was both); what the bag holds; and how it sits with the closures' dawn phase.
+**Open, for that planning:** what "a bag" means here: either the count of closures a day is drawn
+from a bag as a number, or the closures are drawn like any event, from a view's bag, with the count
+falling out of the draw, as placement by construction's bags work, the closures having a phase of
+their own (gentle-owl #1185). Also whether the closures' kinds come from the bag in place of their
+independent roll (the orchestrator's pick on the board, closures-bag, was the count and the kinds
+both); what the bag holds; and how it sits with the closures' dawn phase.
 
 *Proposed, not asked for:* the band `next`, after minty-quail, since the player tied the planning to
 the refactor's end and named no band.

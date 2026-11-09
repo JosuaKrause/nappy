@@ -24,9 +24,12 @@ on the orchestrator's pick (a line under every time that adds up more than the d
 none on a day's own time), the player: "do your research into my answer" (gentle-owl #1240).
 **Read as:** the player's own words already answer it, chiefly the note this entry quotes ("A
 reload breaks the time counter", "indicate that the displayed times are inaccurate due to
-reloading", inbox #965 in brisk-pelican), and it is not asked again: the builder reads them, with
-the whole entry and the records it names, when the work starts (gentle-owl #1244), states the
-answer they give, and builds that, with the pick standing only as far as the words bear it out.
+reloading", inbox #965 in brisk-pelican), and it is not asked again. The work has started: draft
+pull request #1207, paused for the refactor, is built on the pick (the mark under "Time played" on
+the ending screen alone). When it resumes after minty-quail, the research into the player's words,
+with the whole entry and the records it names (gentle-owl #1244), goes into #1207 before it merges:
+it states the answer the words give and changes the build to it, the pick standing only as far as
+the words bear it out.
 
 *Proposed, not asked for:* the band, `now`, as a note from playing (the player named none).
 

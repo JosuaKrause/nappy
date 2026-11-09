@@ -661,75 +661,215 @@
 
    Day 1's tutorial obstacles are a placement phase at dawn: fixed, authored events in the locations along the path to the park the player is meant to reach, in an order that teaches one lesson after another. Every location off that path draws from its view's bag during the walk as on any other day, so a player who walks another way at any point meets ordinary placement. The authored order is the progression, sketched next with the player.
 
-4. **The player's words.**
+4. **Context** (the assistant's):
+
+   The orchestrator's message on 2026-11-08 at 14:06 UTC, which these words answer, verbatim:
+
+   I captured your words as inbox #1253, with this reading: day 1's lessons are fixed events placed at dawn along the path to the close park, and every location off that path draws normally during the walk. This sketch builds on what you already settled for day one (grassy-beaver's notes, curly-moose #819 and minty-dolphin #834/#867). Nothing here is built until the refactor is done.
+
+   **The path:** at dawn, one park "relatively close" to her door is picked, along with a path to it. The lesson events are fixed on that path's locations, and the rest of the path stays empty. Each lesson has its own street, and the lessons get harder in order.
+
+   | # | Where on the path | What she meets | What it teaches | Thought bubble |
+   |---|---|---|---|---|
+   | 0 | Before play | The opening shot, an experiment: the camera rests on the park, then follows the path back to her door. A tap skips it, and no new cars spawn while it plays. | (a) where she's going | — |
+   | 1 | Her first blocks | No cars spawn here. The path's first crossing is a zebra crossing. | the controls; crossing at a zebra crossing | the park and its direction at the start; a zebra-crossing bubble when she steps into the road away from a crossing |
+   | 2 | First street | A noise source she can pass wide | (b) noise costs; keep away from it | avoid it |
+   | 3 | Next street | A noise source with less room | (b) harder | avoid it |
+   | 4 | Next street | Her sidewalk fully blocked | (d) cross the street | cross |
+   | 5 | Last street before the park | The homeless yeller, the man who paces eight tiles of sidewalk yelling every 5s, placed so she has to time her pass along his beat | (e) timing a moving obstacle | — |
+   | 6 | The park | She settles the baby there | (a) | — |
+
+   The loud car accident is no longer on day 1; you moved it to day 2. Day 2 starts with a dead end, and offers a path past day 1's park, which is spoiled but still walkable.
+
+   **One gap in the catalogue, for steps 2 and 3:** none of day 1's events is a still, loud thing she can pass on her own sidewalk. The café tables, the market stall and the parked delivery van each leave too little of a 64px sidewalk to get past, so each one already forces step 4's crossing. The dog walker barks loudly but has a tight field, and the yeller is step 5. What I'd use, using only events that already exist:
+   - **Step 2:** the market stall on the far sidewalk. She hears it from her side, and the bar rises a little if she drifts toward it.
+   - **Step 3:** the dog walker coming toward her on her own sidewalk. The cheap way past is the far edge of the sidewalk, so the room is tighter.
+   - **Step 4:** the café tables, or the delivery van, across her sidewalk.
+
+   The other way is to bring the street musician (the busker, now from day 2) forward to day 1 for step 2.
+
+   **Already open in the notes:** what ends the car-free stretch (a distance, a number of blocks, her first crossing, or a time). I'd end it at her first crossing of a street with traffic.
+
+   **My readings, open to your correction:**
+   - The tutorial path's locations that hold no lesson stay empty.
+   - A street next to the path is "route-adjacent" (one of the three views) and draws normally.
+   - A retry of day 1 replays the same order.
+
+   **For the refactor:** the tutorial path becomes one more fixed-part phase at dawn, run before the bags. Placement by construction step 3, building now, already has phases, so the refactor needs no extra work for it.
+
+5. **The player's words.**
 
    > no cars on the first block. what lessons do we want to teach? crossing the road should first be when the cars are still not there. then one crossing the road with cars. timing the yeller should be one lesson, too
 
-5. **Read as:** (the assistant's interpretation, not the player's words)
+6. **Read as:** (the assistant's interpretation, not the player's words)
 
    The car-free stretch is her first block: no cars spawn there, and they spawn as normal after it (this settles car-free-start.md's open point of what ends it). Crossing the road is taught twice, first on the car-free block, where her sidewalk is blocked and she crosses with no cars around, then again later at a crossing with cars, where the zebra-crossing bubble applies. Timing the yeller (the man pacing eight tiles of sidewalk, yelling every 5s) is a lesson of its own. The lessons in order: get to the park (the opening shot and the direction bubble), cross with no cars, cross with cars, avoid noise passed wide, avoid noise with less room, time the yeller, then the park. Where the two noise steps sit relative to the crossing with cars is the orchestrator's proposal, open to correction.
 
-6. **The player's words.**
+7. **Context** (the assistant's):
+
+   Two messages of the orchestrator's on 2026-11-08, verbatim. The first line of the words below, "what was your initial #2?", answers the first; the rest answers the second.
+
+   The revised list, at 14:06 UTC:
+
+   I added your words to note #1253. The lessons you've settled, in the order I'd place them along the path to the close park:
+
+   | # | Lesson | Where | What sets it up |
+   |---|---|---|---|
+   | 1 | Get to the park | Before play and at her door | The opening shot (park, then the path back home), and the park-direction bubble |
+   | 2 | Cross the road, with no cars | Her first block, where no cars spawn | Her sidewalk blocked by the café tables or the delivery van, next to a zebra crossing. If she steps into the road away from it, the zebra-crossing bubble shows with no risk. |
+   | 3 | Cross the road, with cars | The first street after it, now with traffic | The path crosses at a zebra crossing, where cars stop |
+   | 4 | Avoid noise, passed wide | Next street | A loud source with room to keep away, e.g. the market stall on the far sidewalk |
+   | 5 | Avoid noise, with less room | Next street | e.g. the dog walker coming toward her on her own sidewalk |
+   | 6 | Time the yeller | Last street before the park | The man who paces eight tiles of sidewalk yelling every 5s, placed so she has to time her pass along his beat |
+   | — | The park | | She settles the baby |
+
+   **Not on day 1, as already settled:**
+   - turning around at a dead end and the loud car accident are on day 2;
+   - not going the same way every day is learned on day 2, when day 1's park is spoiled.
+
+   **Your new words settle three things:**
+   - The car-free stretch is her first block. That answers the open point of what ends it.
+   - Crossing is taught twice, first with no cars, then with cars.
+   - The yeller is a lesson of its own.
+
+   **My readings, open to your correction:**
+   - The two noise lessons (4 and 5) come after both crossings, so the controls and the road come first and noise builds from there.
+   - Lesson 2 doubles as the blocked-sidewalk lesson: she crosses because her side is blocked.
+
+   The answer to "what was your initial #2?", at 14:08 UTC:
+
+   In my first sketch, #2 was the first street: a noise source she can pass wide, teaching that noise costs and she should keep away from it, with an "avoid it" thought bubble. For it I suggested the market stall on the far sidewalk, so she hears it from her side and the bar rises a little if she drifts toward it.
+
+   In the revised list, that lesson is now #4. Your words put the two crossings (no cars, then cars) ahead of it.
+
+8. **The player's words.**
 
    > what was your initial #2?
    >
    > we should do that before we teach crossing. cars only spawn on the second crossing tutorial or if she leaves the tutorial route. every time she tries to leave the tutorial route there is a thought bubble that guides her back to the tutorial route. she can choose to ignore it
 
-7. **Read as:** (the assistant's interpretation, not the player's words)
+9. **Read as:** (the assistant's interpretation, not the player's words)
 
    "That" is the lesson the orchestrator's first sketch numbered #2: a noise source she can pass wide (proposed: the market stall on the far sidewalk). It comes before the crossing lessons. The order becomes: get to the park (opening shot, direction bubble), avoid noise passed wide, cross with no cars, cross with cars, avoid noise with less room, time the yeller, the park. Cars spawn from the second crossing lesson on, or as soon as she leaves the tutorial route, whichever comes first; this replaces "no cars on the first block" as what ends the car-free stretch. Each time she starts to leave the tutorial route, a thought bubble points her back to it; it shows every time, unlike the few-times-per-lesson rule for other bubbles, and she may ignore it and walk on, where placement is the normal one. Left open: whether cars stop spawning again when she comes back to the tutorial route before the second crossing lesson (the orchestrator's pick: they keep spawning once started).
 
-8. **The player's words.**
+10. **Context** (the assistant's):
 
-   > we can keep the original #3 between the new #2 and #3 -- I liked both progressions. how much budget in number of streets do we have? should we guarantee a budget?
+    The orchestrator's message on 2026-11-08 at 14:09 UTC, which these words answer, verbatim. The two answers below that begin "If she steps off" and "If she wanders off" quote lines of it before their dash.
 
-9. **Read as:** (the assistant's interpretation, not the player's words)
+    I added this to note #1253. The progression is now:
 
-   The original #3 is the noise lesson with less room (proposed: the dog walker coming toward her on her own sidewalk). The order becomes: get to the park, avoid noise passed wide, avoid noise with less room, cross with no cars, cross with cars (cars start spawning here), time the yeller, the park. The question of how many streets the path to the close park offers, and whether day 1 guarantees that many, is being measured.
+    | # | Lesson | Cars |
+    |---|---|---|
+    | 1 | Get to the park: the opening shot and the park-direction bubble | none |
+    | 2 | Avoid noise, passed wide: the market stall on the far sidewalk | none |
+    | 3 | Cross the road with no cars: her sidewalk blocked, next to a zebra crossing | none |
+    | 4 | Cross the road with cars, at a zebra crossing | **cars start spawning here** |
+    | 5 | Avoid noise, with less room: the dog walker on her own sidewalk | yes |
+    | 6 | Time the yeller | yes |
+    | — | The park | yes |
 
-10. **The player's words.**
+    **Leaving the tutorial route:**
+    - If she steps off the route before lesson 4, cars start spawning right away.
+    - Each time she starts to leave, a thought bubble points her back. It shows every time, unlike the other bubbles, which show only a few times per lesson. She can ignore it and walk on, and off the route placement is the normal one.
+
+    **My readings, open to your correction:**
+    - "That" moves only the passed-wide noise lesson ahead of the crossings. The less-room noise lesson stays after them.
+    - If she wanders off before lesson 4 and comes back, cars keep spawning. Stopping them again would leave the road thinning out around her for no lesson.
+
+11. **The player's words.**
+
+    > we can keep the original #3 between the new #2 and #3 -- I liked both progressions. how much budget in number of streets do we have? should we guarantee a budget?
+
+12. **Read as:** (the assistant's interpretation, not the player's words)
+
+    The original #3 is the noise lesson with less room (proposed: the dog walker coming toward her on her own sidewalk). The order becomes: get to the park, avoid noise passed wide, avoid noise with less room, cross with no cars, cross with cars (cars start spawning here), time the yeller, the park. The question of how many streets the path to the close park offers, and whether day 1 guarantees that many, is being measured.
+
+13. **The player's words.**
 
     > If she steps off the route before lesson 4, cars start spawning right away. -- one full block away
     >
     > so she can turn around
 
-11. **Read as:** (the assistant's interpretation, not the player's words)
+14. **Read as:** (the assistant's interpretation, not the player's words)
 
     Leaving the tutorial route starts the cars only once she is one full block away from it, so a player who steps off and turns back at the bubble meets no cars. The first line quoted is the orchestrator's summary the player answered.
 
-12. **The player's words.**
+15. **The player's words.**
 
     > If she wanders off before lesson 4 and comes back, cars keep spawning.  -- yes that's fine
 
-13. **Read as:** (the assistant's interpretation, not the player's words)
+16. **Read as:** (the assistant's interpretation, not the player's words)
 
     Settled: once she has been a full block off the tutorial route and the cars have started, they keep spawning when she comes back to it. The words before the dash are the orchestrator's summary the player answered.
 
-14. **The player's words.**
+17. **Context** (the assistant's):
 
-    > okay, we can make it even more guaranteed and seal off the tutorial route except for the first block (so other routes can be placed)
+    The orchestrator's message on 2026-11-08 at 14:12 UTC, which these words answer, verbatim:
 
-15. **Read as:** (the assistant's interpretation, not the player's words)
+    I recorded your last answers on note #1253:
+    - Cars start once she's a full block off the tutorial route, so she can turn back first.
+    - Once they've started, they keep spawning even if she comes back.
 
-    Answering the orchestrator's proposal to guarantee a park exactly 5 streets out (one street per lesson 2 to 6): the tutorial route is sealed along its length, every side street off it closed, except on its first block, where she can still turn off and the other routes of the day start. Past the first block she cannot leave it, so no shortcut skips a lesson, and the route need not be the shortest walk to its park: any 5-street path to a park will do. The back-to-the-route bubble and the cars starting a full block off the route apply on the first block, the only place she can leave. The seals are the city's existing closures, placed at dawn as a fixed part; the routes from the first block keep every guarantee (cost-free routes, the day winnable). The seals' look and the exact count of 5 streets are the orchestrator's readings, open to correction.
+    The progression now runs: park shown → noise passed wide → noise with less room → cross with no cars → cross with cars (cars start) → time the yeller → the park.
 
-16. **The player's words.**
+    **Budget, from the city's geometry:**
+    - A street, one block plus the road, is 448px, about 5s at her walking pace.
+    - Parks are kept at least 3 blocks from the home's block, and never in the city's outer ring. So every park is 3 to 4 blocks out on each axis, and the shortest walk to one is roughly 3 streets (straight out) to 8 (diagonal).
+    - The lessons need **5 streets**, one each for lessons 2 to 6. Lesson 1 happens at her door. Five streets is about 2,240px, roughly 25s of walking plus the lessons' own delays, so the walk stays inside the first minute.
 
-    > so every side street after the first one on the tutorial route has blocking obstacles and no branching
+    **Should we guarantee it? Yes, I'd guarantee it.** Day 1's city would be accepted only if some park's shortest walk from her door is exactly 5 streets, checked before the city is accepted like the other city guarantees. That park becomes the tutorial park.
+    - **Why exactly 5:** with a shorter walk, she can cut past lessons on a shorter way. With a longer one, the extra streets carry no lesson and the park stops being "relatively close".
+    - **The other way:** lessons share streets, up to three per street since each street has three sections. That's more authoring and cramped lessons.
 
-17. **Read as:** (the assistant's interpretation, not the player's words)
-
-    The tutorial route branches only at its first side streets; every side street after them is closed by obstacles that block it fully, so the route has no branch past its first block. Fully, since before the crossing-with-cars lesson there are no cars and a soft seal, which leaves the carriageway open, could be walked round in the road.
+    I'm measuring how often a city already has a park exactly 5 streets out, over 100+ seeds, which shows whether the guarantee would make the generator throw many cities away. I'll report the numbers when they're in.
 
 18. **The player's words.**
 
-    > doesn't have to be a full hard seal -- street can be open -- just both sidewalks need to be blocked -- no valid route goes off of the tutorial route past the first block
+    > okay, we can make it even more guaranteed and seal off the tutorial route except for the first block (so other routes can be placed)
 
 19. **Read as:** (the assistant's interpretation, not the player's words)
 
+    Answering the orchestrator's proposal to guarantee a park exactly 5 streets out (one street per lesson 2 to 6): the tutorial route is sealed along its length, every side street off it closed, except on its first block, where she can still turn off and the other routes of the day start. Past the first block she cannot leave it, so no shortcut skips a lesson, and the route need not be the shortest walk to its park: any 5-street path to a park will do. The back-to-the-route bubble and the cars starting a full block off the route apply on the first block, the only place she can leave. The seals are the city's existing closures, placed at dawn as a fixed part; the routes from the first block keep every guarantee (cost-free routes, the day winnable). The seals' look and the exact count of 5 streets are the orchestrator's readings, open to correction.
+
+20. **The player's words.**
+
+    > so every side street after the first one on the tutorial route has blocking obstacles and no branching
+
+21. **Read as:** (the assistant's interpretation, not the player's words)
+
+    The tutorial route branches only at its first side streets; every side street after them is closed by obstacles that block it fully, so the route has no branch past its first block. Fully, since before the crossing-with-cars lesson there are no cars and a soft seal, which leaves the carriageway open, could be walked round in the road.
+
+22. **Context** (the assistant's):
+
+    The orchestrator's message on 2026-11-08 at 14:15 UTC, after "so every side street after the first one on the tutorial route has blocking obstacles and no branching", which these words answer, verbatim:
+
+    Your no-branching rule is on note #1253: past the tutorial route's first block, every side street is fully blocked, so the route doesn't branch. It has to be a full block. Before the crossing-with-cars lesson there are no cars, so anything that left the road open could be walked around in the road.
+
+    **Budget, measured on 120 city seeds:**
+
+    | Measure | Result |
+    |---|---|
+    | Nearest calm area | 3 streets from her door on 107 seeds, 4 on 13 |
+    | A calm area whose shortest walk is 5 or 6 streets | every seed |
+    | One at exactly 5 streets | 113 of 120 (median walk 2,304px, about 25s at her walking pace) |
+
+    Here a street counts as one stretch between junctions, her doorstep's included. "Calm area" counts parks, zones, squares and courtyards together.
+
+    With the route sealed, it doesn't need to be the shortest walk to its park. So a 5-street route, one street per lesson, fits every seed measured, and the guarantee costs essentially nothing.
+
+    **One choice is yours: what blocks the side streets on day 1?**
+    - **Day-1 objects across the whole street (my pick):** parked delivery vans, market stalls or café tables, set kerb to kerb across each side street's mouth. She already meets these on day 1, and it keeps day 1 light, as you asked. The cost is a small addition: the hard-seal code already spaces objects across the full width, but it only does so with the barricade, so day 1 needs these objects added to it.
+    - **The barricade:** the hard seal the city puts on streets off the route from act IV, objects standing kerb to kerb so nothing gets past. It needs nothing new, but it shows day 1 the later, heavier look of the city.
+
+23. **The player's words.**
+
+    > doesn't have to be a full hard seal -- street can be open -- just both sidewalks need to be blocked -- no valid route goes off of the tutorial route past the first block
+
+24. **Read as:** (the assistant's interpretation, not the player's words)
+
     This corrects the orchestrator's earlier reading that the side streets are fully blocked. Each side street off the tutorial route past its first block carries a soft seal: both sidewalks blocked, the carriageway open, so no valid route leaves the tutorial route past the first block, while the road itself stays there. The soft seal's objects on day 1 are day-1 rows (delivery van, café tables, market stall; construction starts on day 2).
 
-20. **Note** (the assistant's):
+25. **Note** (the assistant's):
 
     Measured (120 seeds, the base day-1 street network, a street counted as one segment between junctions, the doorstep's own segment included): the nearest calm area (parks, zones, squares and courtyards counted together) is 3 streets from the door on 107 seeds and 4 on 13; every seed has a calm area whose shortest walk is 5 or 6 streets, and 113 of 120 one at exactly 5 (median walk 2,304px, 25s at her walking pace). With the route sealed past its first block it need not be the shortest walk, so a 5-street tutorial route to a park exists on every seed measured.
 

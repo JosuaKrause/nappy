@@ -9,14 +9,18 @@ itself waited only for that agent's completion notice: "also never sleep longer 
 then "when waiting for subagents to complete check every 45min to see if they got stuck"
 (gentle-owl #1255). The note carries the band `now`.
 
-**Read as:** no wait, by the orchestrating session or by an agent it runs, goes longer than 45
-minutes without a check-in. While a subagent runs, the orchestrator checks its output, its worktree
-and its pushes at least every 45 minutes for signs it is stuck (no new commits, a loop that has
-stopped improving, a wait with no end) rather than relying only on the completion notice. An agent's
-own waits (a background run, a fit loop, CI) are bounded the same way: within 45 minutes it pushes
-what it has or reports, rather than waiting on. The second sentence of the player's confirms the
-orchestrator's side; the agent's side rests on the first, "never sleep longer than 45min", said of
-the builder's waits.
+**Read as:** the player's words govern the orchestrator's waits. While a subagent runs, the
+orchestrator checks its output, its worktree and its pushes at least every 45 minutes for signs it
+is stuck (no new commits, a loop that has stopped improving, a wait with no end), rather than
+relying only on the completion notice; no wait of its own runs past 45 minutes without such a
+check. The second quote says so of the orchestrator alone, and the wait the context shows running past 45
+minutes is the orchestrator's own, on one completion notice while nothing was pushed in three
+hours; the builder's sleeps were up to 10 minutes each.
+
+*Proposed, not asked for* (the filer's; the reading captured with the note included it): an agent's own waits (a background run, a fit loop, a CI wait) are bounded by the same 45
+minutes, the agent pushing what it has or reporting rather than waiting on. **Open,** for whoever
+picks this up: whether "never sleep longer than 45min" reaches an agent's own waits at all; a bound
+written into the agent contract would cut runs that are legitimately long.
 
 **Item:** `forty-five-minute-check.md`.
 

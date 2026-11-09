@@ -31,7 +31,9 @@ crossing-with-cars lesson, "one full block away", "so she can turn around"; and 
 she wanders off before that lesson and comes back, cars keep spawning, "yes that's fine"
 (gentle-owl #1253). **Read as:** no new cars spawn until she reaches the tutorial's second crossing
 lesson, the crossing with cars, or until she is one full block away from the tutorial route,
-whichever comes first, so a player who steps off and turns back at the bubble meets no cars. Once
+whichever comes first, so a player who steps off and turns back at the bubble meets no cars. That
+holds wherever she leaves the route, past its first block too, where she can leave it in the road
+round a soft seal (`hand-crafted-day-one.md`). Once
 the cars have started they keep spawning, also when she comes back to the route. The player's
 earlier "the first few blocks shouldn't have cars spawning in" (minty-dolphin #867) is answered
 by this as to what ends the stretch.
