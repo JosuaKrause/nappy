@@ -13,17 +13,21 @@ added to `LaneMover`.
 `LaneMover.lane()`.
 
 - **Questions**, asked by the car and walker strategies, the crowd and the agent's look and excitement:
-  `is_vertical()`, `corridor_index()`, `lane_index()`, `direction()`, `speed()`, `lane_centre()`,
-  `junction_index()`, `detour()`, `turn()`, `turn_run_up()`, `cruise_speed()`, `blocked_in()`, `shape()`,
-  `map()`, `kind()`, `strategy()`, `gap_ahead()`, `leader_speed()`, `pedestrian_ahead()`,
-  `junction_hold()`, `gate_hold()`, `door_ahead()`, `door_ahead_along()`. `traffic()` is asked only by
-  two test rigs (`tests/crowd_rig.gd`, `tests/crowd_closures_rig.gd`), which read the day's traffic
-  index through it.
-- **Events**, named for what happens, each one call where several fields change together:
-  `join_a_lane(vertical, corridor, lane, direction)` (a morning's choice, a turn landing, a walker's
-  about-face), `change_lane()`, `keep_to_lane_centre()`, `drive_at()`, `be_in_junction()`,
-  `detour_by()`, `look_ahead_afresh()`, `use_up_the_run_up()`, `see_a_door_ahead()`,
-  `clear_the_door_ahead()`, `follow_at_a_gap()` and `clear_what_is_ahead()`.
+  `is_vertical()`, `corridor_index()`, `lane_index()`, `direction()`, `lane_centre()`,
+  `junction_index()`, `detour()`, `turn()`, `is_in_the_arc()`, `turn_run_up()`, `cruise_speed()`,
+  `blocked_in()`, `shape()`, `map()`, `kind()`, `strategy()`, `gap_ahead()`, `leader_speed()`,
+  `pedestrian_ahead()`, `junction_hold()`, `gate_hold()`, `door_ahead()`, `door_ahead_along()`.
+  A strategy asks the mover itself for its speed (`speed()`) and whether it is mid-turn
+  (`is_turning()`).
+- **Events**, each carrying the whole change, the mover working out what it already knows:
+  `start_in_a_lane()` (a morning's choice), `enter_a_lane()` (a body recycled at a stretch's end),
+  `turn_round_into()`, `turn_into(vertical, corridor, direction, lane, from_corridor)` (a walker's
+  corner and a car's landing: one call, so the order of the parts cannot drift; a negative lane is the
+  pavement nearest where it stands once turned, worked out by the mover after the switch),
+  `be_in_junction()`, `leave_the_junction()`, `ease_speed_toward()`, `limit_speed_to()`,
+  `drive_the_run_up()`, `keep_to_its_lane_centre()`, `detour_to_within()`, `end_the_detour()`,
+  `look_ahead_afresh()`, `see_a_door_ahead()`, `clear_the_door_ahead()`, `follow_at_a_gap()` and
+  `clear_what_is_ahead()`.
 - `LaneMover.use_crowd_parts()` is the crowd's one setup call and `LaneMover.nose()` its question about
   the body's length; `LaneStrategy` answers `body_nose()`, `acts_within_tiles()`,
   `scans_from_its_lane_centre()`, `is_shut_by_a_hold()`, `has_nowhere_to_turn()` and
@@ -32,7 +36,10 @@ added to `LaneMover`.
   the day's traffic and pockets, the mover's random stream and its held move are given to the strategy
   by `LaneStrategy.take_parts()` whenever the mover learns them (setup, kind installed,
   `use_crowd_parts()`) and held as members. The mover's `_field`, `_traffic` and `_pockets` are private
-  and are set only through those calls, so the strategy's copies cannot go stale.
+  and are set only through those calls, so the strategy's copies cannot go stale. `Crowd.use_traffic()` hands the crowd the index of where its
+cars are before a day starts; the two crowd rigs that read and claim into it hand in their own (it is a
+line of the kept hand-ins in `tools/test_only_members.txt`, since the world layer may not name the
+index to hand one in).
 
 Which fields stay public: the mover's lane fields (`_vertical`, `_corridor`, `_lane`, `_direction`,
 `_speed` and the like, underscore names that some tests and probes read) and its public `kind`,
@@ -54,11 +61,12 @@ round, since one configuration alone moves by up to 30 points between rounds:
 
 - **The chain is identical on every configuration**: no agent is anywhere else on any tick.
 - **The first form**, every read a call on the interface, cost about 3.5 times main's tick.
-- **The form with the handed parts** (before the interface was narrowed to the above) measured +3.6% and
-  +6.0% in the author's two rounds and +7.9% and +9.1% in the reviewer's, day 9 near +10%.
-- **The narrowed form** (this record's), two paired rounds: +5.3% (46.0 ms on main, 48.4 ms on the
-  branch) and +5.4% (28.0 ms and 29.5 ms). Per day, summed over the seeds and walks: +4.6% to +5.6% on
-  day 1, +4.7% to +8.8% on day 9, +4.8% to +5.1% on day 14.
+- **The form with the handed parts** (before the interface was narrowed) measured +3.6% and +6.0% in
+  the author's two rounds and +7.9% and +9.1% in the reviewer's, day 9 near +10%.
+- **This form** (events instead of setters), two paired rounds on a heavily loaded machine (the
+  absolute figures are about 1.7 times the earlier rounds'): +6.7% (80.5 ms on main, 85.9 ms on the
+  branch) and +8.8% (83.6 ms and 91.0 ms) in total. Per day, summed over the seeds and walks: +6.7% and
+  +8.0% on day 1, +8.4% and +13.6% on day 9, +5.9% and +7.5% on day 14.
 - **A release build was not measured**: the pair needs the export templates and a separate export of
   each revision, which was not set up for this change. The debug build runs GDScript calls slower than
   a release one, so the figures are likely an upper bound.
@@ -71,10 +79,24 @@ API) and give up separation of concerns and cohesion for a file of about 3,700 l
 
 ## Checked
 
+**Behaviour is unchanged only because a divert regression was found and fixed.** The first events
+form worked a walker's fallback pavement out on the old corridor and axis in `WalkerStrategy.divert()`
+(the arguments of the join were evaluated before it); the cost probe's chain did not reach that path,
+and `m110_bodies.gd` moved on one seed. `turn_into()` now switches the axis and corridor first and
+chooses the nearest pavement after, as main did, and `_test_a_walker_turned_into_a_corridor_lands_on_the_pavement_nearest_it_once_turned`
+in the crowd rig's streets part checks it (it fails when the choice is made before the switch).
+
+Every crowd probe under `tests/probes/` was run on main (at the tip this branch is merged with) and on
+this head and its output compared with timing figures and object ids removed: identical for
+`entity_frame_profile_observer`, `excitement_fingerprint`, `m100_map_edge_entries` (which places its
+agent through `setup()` now), `m108_walker_stride_sheet`, `m110_bodies`, `m117_decay`, `m152_car_jumps`,
+`m156_car_turns`, `m159_contribution_cost`, `m219_precinct_pile`, `m96_crying_at_the_top`,
+`minty_quail_lane_parity` (its chains and drawn hashes) and `m159_crowd_tick_cost`'s SHA-256 chain on
+all twelve configurations, and the same outcome, differing only in object ids and a timing line, for
+`m191_horn_watch`, `minty_quail_crowd_cadence`, `minty_quail_crowd_frames` and
+`minty_quail_crowd_yields` (whose three leak failures are main's too). `m128_park_beats` ran to the
+end only on the head; main's run reached the probe's time limit, and the part both ran is identical.
 The crowd, car, walker, lane, separation, traffic, yields, door and hut, observers (the run-log
-baseline), excitement, closure, pocket, signal, gate, recycle, stretch and checkpoint suites pass. The
-probes under `tests/probes/` that touch crowd agents were run on main and on the branch: the same
-outcome on every one that finished, `m100_map_edge_entries.gd` included (it places its agent through
-`setup()` now, and the output is identical to main's), and `excitement_fingerprint.gd`'s output differs
-from main's only in its cost lines. `polite_rabbit_wall_costs`, `m159_tick_sweep_events_cost` and
-`calm_pelican_fields_layer_cost`, which measure event and layer costs, were not completed.
+baseline), excitement, closure, pocket, signal, gate, recycle, stretch and checkpoint suites pass.
+`polite_rabbit_wall_costs`, `m159_tick_sweep_events_cost` and `calm_pelican_fields_layer_cost`, which
+measure event and layer costs, were not completed.
