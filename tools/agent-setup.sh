@@ -55,9 +55,14 @@ origin/main (one list, so the checks that read docs/evidence/ keep what they rea
   --remove <name>         removes a --detach checkout, .claude/worktrees/<name>, with a plain
                           `git worktree remove`, never forced. Refuses one that has a branch
                           (tools/prune-merged.sh retires those), is locked, is the caller's own,
-                          has a changed or untracked file, or holds an ignored file other than
-                          the regenerable caches tools/prune-merged.sh --help lists. Takes a
-                          name, never a path, so nothing outside .claude/worktrees/ is reached.
+                          has a changed or untracked file, holds an ignored file other than
+                          the regenerable caches tools/prune-merged.sh --help lists, or holds
+                          a commit nothing else does: one its HEAD is at or has been at that no
+                          ref reaches, as a commit made in the checkout is. The commit the
+                          checkout was made at is exempt, so a stale review checkout whose
+                          branch is gone is still removed. That refusal names each commit; a
+                          branch at one (git branch <name> <commit>) keeps it. Takes a name,
+                          never a path, so nothing outside .claude/worktrees/ is reached.
   --help, -h              print this and do nothing else.
 
   tools/agent-setup.sh jolly-bunny feature-jolly-bunny-agent-setup
@@ -187,9 +192,9 @@ err() { echo "tools/agent-setup.sh: $*" >&2; }
 
 # --- --remove ---------------------------------------------------------------------------------
 # A review checkout has no branch and no pull request, so tools/prune-merged.sh never takes it.
-# This removes one, and only one that nothing can be lost with: every refusal below leaves the
-# worktree as it stands, and the removal itself is git's own unforced one, which refuses a
-# changed or untracked file a second time.
+# This removes one, and only one that nothing can be lost with, a file or a commit: every refusal
+# below leaves the worktree as it stands, and the removal itself is git's own unforced one, which
+# refuses a changed or untracked file a second time.
 if [[ $mode == remove ]]; then
     [[ -d "$worktree" ]] || { err "no worktree at $worktree"; exit 1; }
     real="$(cd "$worktree" && pwd -P)"
@@ -225,6 +230,47 @@ if [[ $mode == remove ]]; then
         printf '%s\n' "$kept" | head -5 >&2
         exit 1
     }
+    # A commit made in the checkout is on no branch, and `git status` calls a checkout with one
+    # clean. The worktree's own HEAD reflog is all that names such a commit, and it goes with the
+    # worktree, so every commit that log names, HEAD's first, must be reachable from a ref
+    # (refs/ only: a worktree's HEAD is not one). The one exception is the commit the checkout
+    # was made at, the entry that follows no other: it was there before the checkout was, and a
+    # review checkout of a pull request whose branch is since deleted has to stay removable.
+    head_commit="$(git -C "$real" rev-parse --verify --quiet 'HEAD^{commit}')" \
+        || { err "cannot read the HEAD of $worktree"; exit 1; }
+    head_log="$(git -C "$real" rev-parse --git-path logs/HEAD)" \
+        || { err "cannot find the HEAD reflog of $worktree"; exit 1; }
+    [[ "$head_log" == /* ]] || head_log="$real/$head_log"
+    made_at=""
+    visited="$head_commit"
+    if [[ -f "$head_log" ]]; then
+        made_at="$(awk 'NR == 1 && $1 ~ /^0+$/ { print $2 }' "$head_log")" \
+            || { err "cannot read the HEAD reflog of $worktree"; exit 1; }
+        visited="$visited
+$(awk '$2 !~ /^0+$/ { print $2 }' "$head_log")" \
+            || { err "cannot read the HEAD reflog of $worktree"; exit 1; }
+    fi
+    candidates=()
+    while IFS= read -r commit; do
+        [[ -n "$commit" && "$commit" != "$made_at" ]] && candidates+=("$commit")
+    done < <(printf '%s\n' "$visited" | awk '!seen[$0]++')
+    if [[ ${#candidates[@]} -gt 0 ]]; then
+        unheld="$(git -C "$main" rev-list "${candidates[@]}" --not --glob='refs/*')" \
+            || { err "cannot tell whether a ref holds the commits of $worktree"; exit 1; }
+        only_here=()
+        for commit in "${candidates[@]}"; do
+            ! grep -qxF -- "$commit" <<<"$unheld" || only_here+=("$commit")
+        done
+        if [[ ${#only_here[@]} -gt 0 ]]; then
+            err "$worktree holds commits that are on no branch and under no other ref, so" \
+                "removing it would lose them:"
+            git -C "$main" log --no-walk=unsorted --format='  %H %s' "${only_here[@]}" \
+                | head -5 >&2
+            err "keep one with a branch at it (git -C $main branch <name> <commit>);" \
+                "--remove passes once each is on a branch"
+            exit 1
+        fi
+    fi
     git -C "$main" worktree remove "$real" || { err "git refused to remove $worktree"; exit 1; }
     echo "removed: $worktree"
     exit 0
