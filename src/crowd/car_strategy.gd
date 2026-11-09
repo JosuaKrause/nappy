@@ -848,7 +848,6 @@ func _land_the_turn() -> void:
 	_lane.turn_into(turn.exits_vertically(), turn.exit_corridor_index(), turn.exit_heading(),
 			turn.exit_lane_index(), turn.entry_corridor_index())
 	_mover.drop_the_turn()
-	_mover._forget_the_detour()
 	_lane.look_ahead_afresh()
 	claim_the_road_here()
 

@@ -272,8 +272,9 @@ class Lane:
 	## **It turns into a corridor**: a walker's corner or a car's landing. It now travels along an axis
 	## that is vertical or not, `direction_along` corridor `corridor`, in lane `lane` (a negative one
 	## is the pavement nearest where it stands once turned), on that lane's centre line, and is inside
-	## the junction of corridor `from_corridor`, so it rolls no second turn before clearing the first.
-	## One call, so the order of the parts cannot drift.
+	## the junction of corridor `from_corridor`, so it rolls no second turn before clearing the first;
+	## any sidestep it was making is dropped, since a detour means nothing in another corridor. One
+	## call, so the order of the parts cannot drift.
 	func turn_into(vertical: bool, corridor: int, direction_along: float, lane: int,
 			from_corridor: int) -> void:
 		_of._vertical = vertical
@@ -281,6 +282,7 @@ class Lane:
 		_of._direction = direction_along
 		_of._lane = lane if lane >= 0 else CrowdLanes.nearest_sidewalk(corridor, _of._cross())
 		_of._lane_centre = _of._lane_centre_here()
+		_of._forget_the_detour()
 		_of._junction = from_corridor
 
 	## It is inside the junction of corridor `corridor`.
@@ -307,10 +309,6 @@ class Lane:
 		_of._set_cross(move_toward(_of._cross(), _of._lane_centre, STEER_SPEED * delta))
 		_of._turn_run_up -= straight
 		return travel - straight
-
-	## It keeps to its lane's centre line.
-	func keep_to_its_lane_centre() -> void:
-		_of._lane_centre = _of._lane_centre_here()
 
 	## It walks across its lane to `target`, kept within `band`.
 	func detour_to_within(target: float, band: Vector2) -> void:

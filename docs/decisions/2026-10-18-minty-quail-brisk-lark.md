@@ -22,10 +22,12 @@ added to `LaneMover`.
 - **Events**, each carrying the whole change, the mover working out what it already knows:
   `start_in_a_lane()` (a morning's choice), `enter_a_lane()` (a body recycled at a stretch's end),
   `turn_round_into()`, `turn_into(vertical, corridor, direction, lane, from_corridor)` (a walker's
-  corner and a car's landing: one call, so the order of the parts cannot drift; a negative lane is the
-  pavement nearest where it stands once turned, worked out by the mover after the switch),
+  corner and a car's landing: one call that switches the axis, corridor and way, settles the lane
+  and its centre line, drops any sidestep and marks the junction it came down, so the order of the
+  parts cannot drift; a negative lane is the pavement nearest where it stands once turned, worked out
+  by the mover after the switch),
   `be_in_junction()`, `leave_the_junction()`, `ease_speed_toward()`, `limit_speed_to()`,
-  `drive_the_run_up()`, `keep_to_its_lane_centre()`, `detour_to_within()`, `end_the_detour()`,
+  `drive_the_run_up()`, `detour_to_within()`, `end_the_detour()`,
   `look_ahead_afresh()`, `see_a_door_ahead()`, `clear_the_door_ahead()`, `follow_at_a_gap()` and
   `clear_what_is_ahead()`.
 - `LaneMover.use_crowd_parts()` is the crowd's one setup call and `LaneMover.nose()` its question about
@@ -36,16 +38,16 @@ added to `LaneMover`.
   the day's traffic and pockets, the mover's random stream and its held move are given to the strategy
   by `LaneStrategy.take_parts()` whenever the mover learns them (setup, kind installed,
   `use_crowd_parts()`) and held as members. The mover's `_field`, `_traffic` and `_pockets` are private
-  and are set only through those calls, so the strategy's copies cannot go stale. `Crowd.use_traffic()` hands the crowd the index of where its
-cars are before a day starts; the two crowd rigs that read and claim into it hand in their own (it is a
-line of the kept hand-ins in `tools/test_only_members.txt`, since the world layer may not name the
-index to hand one in).
+  and are set only through those calls, so the strategy's copies cannot go stale.
+- `Crowd.use_traffic()` hands the crowd the index of where its cars are before a day starts. The two
+  crowd rigs that read and claim into it hand in their own; it is a line of the kept hand-ins in
+  `tools/test_only_members.txt`, since the world layer may not name the index to hand one in.
 
 Which fields stay public: the mover's lane fields (`_vertical`, `_corridor`, `_lane`, `_direction`,
 `_speed` and the like, underscore names that some tests and probes read) and its public `kind`,
 `strategy`, `shape`, `gap_ahead`, `leader_speed`, `pedestrian_ahead`, `junction_hold`, `gate_hold`,
 `door_ahead`, `door_ahead_along`, `view` and `frame_timing`; the fenced `kind` readers keep `kind`.
-The strategies still make about 55 calls to 13 of the mover's underscore methods (`_along()`,
+The strategies still make 49 calls to 11 of the mover's underscore methods (`_along()`,
 `_cross()`, `_set_along()` and the like); a later pull request turns those into questions on this
 interface (the queue item says so).
 

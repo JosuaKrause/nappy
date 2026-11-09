@@ -787,7 +787,6 @@ func _consider_turning() -> void:
 	# It is now travelling through the corridor it just came down, so that is the junction
 	# it is in — otherwise it would roll a second turn before clearing the first.
 	_lane.turn_into(not _lane.is_vertical(), crossing, turning, lane, kept)
-	_mover._forget_the_detour()
 
 ## Whether the street `distance` ahead along an axis is one this agent could never travel **at all**
 ## — off the map, not a street, a precinct to a car — with nothing today has placed in it counted.
@@ -1186,7 +1185,6 @@ func divert(_delta: float) -> void:
 	var sidewalk := _sidewalk_after_a_turn(not _lane.is_vertical(), crossing, turning)
 	var kept := _lane.corridor_index()
 	_lane.turn_into(not _lane.is_vertical(), crossing, turning, sidewalk, kept)
-	_mover._forget_the_detour()
 
 ## Which way to turn out of `crossing`, trying `first` before the other one, or `0.0` for neither.
 ## A walker asks only whether the arm is street at all, because it can walk in, meet whatever is

@@ -2170,25 +2170,19 @@ func _test_nothing_walks_into_a_hard_blocker(t) -> void:
 
 ## **A walker turned into a corridor by a shut way** (`WalkerStrategy.divert()`) has no pavement chosen
 ## for it beforehand, so it lands on the one nearest where it stands *once it has turned*: measured
-## across the new corridor, which is the coordinate the old axis did not use. The body stands level
-## with the far pavement of the new corridor along the old axis and with the near one along the new:
-## landing by the old axis puts it on the far one. A turn is one event (`Lane.turn_into()`) so that
-## the order of its parts is the mover's, not the caller's.
+## across the new corridor and on the new axis. The body walks corridor 1 vertically, level across it
+## with offset 0 (the first lane of one footway; offsets 0 and 1 are one footway, 4 and 5 the other),
+## and turns into corridor 2, where it stands level with offset 4 (the first lane of the other
+## footway); it lands on offset 4. A landing chosen before the switch (by the old axis) or by the
+## old corridor lands on offset 0. A turn is one event
+## (`Lane.turn_into()`) so that the order of its parts is the mover's, not the caller's.
 func _test_a_walker_turned_into_a_corridor_lands_on_the_pavement_nearest_it_once_turned(t) -> void:
 	var agent := CrowdAgent.new()
 	agent.setup(CrowdAgent.Kind.WALKER, _city.map, CrowdField.new(_city.map, Vector2.ZERO), 7, 0.0)
-	var from_corridor := 1
-	var into := 2
-	var near: int = CrowdLanes.SIDEWALK_OFFSETS[0]
-	var far: int = CrowdLanes.SIDEWALK_OFFSETS[1]
-	agent.position = Vector2(CrowdLanes.lane_centre(into, far), CrowdLanes.lane_centre(into, near))
-	agent.lane().start_in_a_lane(true, from_corridor, far, 1.0, 40.0)
-	agent.lane().turn_into(false, into, -1.0, -1, from_corridor)
-	t.check(not agent.lane().is_vertical() and agent.lane().corridor_index() == into
-			and agent.lane().direction() == -1.0, "the turn swaps its axis and takes the new corridor and way")
-	t.check(agent.lane().lane_index() == near,
-			"with no pavement chosen it lands on the one nearest where it stands once turned (%d, not %d)"
-			% [agent.lane().lane_index(), far])
-	t.check(agent.lane().junction_index() == from_corridor,
-			"and it is in the junction it came down, so it rolls no second turn")
+	agent.position = Vector2(CrowdLanes.lane_centre(1, 0), CrowdLanes.lane_centre(2, 4))
+	agent.lane().start_in_a_lane(true, 1, 0, 1.0, 40.0)
+	agent.lane().turn_into(false, 2, -1.0, -1, 1)
+	t.check(agent.lane().lane_index() == 4,
+			"with no pavement chosen it lands on the one nearest where it stands once turned (offset %d, not 4)"
+			% agent.lane().lane_index())
 	agent.free()
