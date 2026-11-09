@@ -96,6 +96,15 @@ lint_output=$("$root/tools/lint.sh" "$root/$rel" 2>&1)
 lint_status=$?
 [ "$lint_status" -eq 0 ] && exit 0
 
+# The harness places a hook's context inline only up to 10,000 characters and cuts anything longer
+# to its opening, so a doc with many hits is answered with the first of them and where the rest
+# are, all of it well under that size.
+LINT_OUTPUT_MAX=6000
+if [ "$(printf '%s' "$lint_output" | wc -c)" -gt "$LINT_OUTPUT_MAX" ]; then
+	lint_output="$(printf '%s' "$lint_output" | head -c "$LINT_OUTPUT_MAX" | sed '$d')
+... (more hits than fit here: run tools/lint.sh $rel in $root for all of them)"
+fi
+
 printf '%s' "$lint_output" | jq -Rs --arg p "$path" '{
   hookSpecificOutput: {
     hookEventName: "PostToolUse",

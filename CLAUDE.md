@@ -2,9 +2,9 @@
 
 Working guidelines for this repo. The *game* is documented in `docs/`.
 
-**These guidelines and `.claude/skills/` are written for Claude Code; Codex support is frozen (below).** Hooks inject
-**orchestrating** at session start and the path rules before each edit (the table below); if a
-rule did not arrive, or is no longer in context, read its skill file before the governed work.
+**These guidelines and `.claude/skills/` are written for Claude Code; Codex support is frozen (below).** Hooks name
+the skills that govern the work (below): read a named skill whole before that work, and again once
+it is no longer in context.
 Every matching skill applies, to edits through any tool, patches and scripts included, and so
 does any skill whose description matches the task; one asked for by name is read from its file
 even if the skill picker does not list it. A skill's relative resource paths resolve from its own
@@ -29,20 +29,24 @@ request** once **committing**'s merge gates hold (its review ready against the h
 review of what came after; green CI); a release still needs its own go-ahead (inbox #1063 in gentle-walrus). **committing**'s "Merging" says where that permission has to live for Claude Code's auto-mode classifier to act on it (the
 player's `~/.claude/settings.json`) and what is done on a refusal (the filer's proposal, curly-rabbit #1094).
 
+**The orchestrating session is the top-level session the player started to run the queue**; a
+sub-agent never is, and a second top-level session is one only when the player says so. Any other
+session merges nothing and writes neither the board nor `.claude/restart-prompt.md` (inbox #1267).
+
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
 what was tried and rejected, or what a number used to be, that is the records under
 `docs/decisions/`, one file each, fetched on demand with `tools/decisions.sh <noun>`
 ([docs/DECISIONS.md](docs/DECISIONS.md) says how). Nothing outside them describes a past state.
 
 **Where to pick up is read from the live state, not from a checked-in document.** The
-orchestrating session first reads the local, git-ignored `.claude/restart-prompt.md` when there is
-one (frosty-owl #1062), whole and top to bottom in the fixed layout **session-cleanup** gives it
-(frosty-owl #1065); the live state wins where the two differ. Then fetch (`git fetch --prune`), then
+orchestrating session first reads the local, git-ignored `.claude/restart-prompt.md`, the last
+session's note to the next, when there is one (frosty-owl #1062), whole and top to bottom in the
+fixed layout **session-cleanup** gives it (frosty-owl #1065); the live state wins where the two differ. Then fetch (`git fetch --prune`), then
 `gh pr list` for the open pull requests, `tools/agent-status.sh` for the agent worktrees and their
 briefs, `tools/queue.sh` for the queue's order ([docs/TODO.md](docs/TODO.md) says how an entry's
-band sets it), and `uv run python tools/inbox.py list` for the player's inbox, the notes on GitHub
-Issues not yet filed (**inbox**); the items under `docs/review/` are what waits on a person. The
-restart prompt is the last session's note to the next (**session-cleanup**).
+band sets it), `uv run python tools/inbox.py list` for the player's inbox, the notes on GitHub
+Issues not yet filed (**inbox**), and the Nappy board, the shared doc of open questions and
+running work (**board**); the items under `docs/review/` are what waits on a person.
 
 ---
 
@@ -56,59 +60,55 @@ does to the route decision. If the answer is "nothing", it is decoration.
 
 ## The rules load themselves
 
-The rules live in `.claude/skills/`, one per kind of work. **Most of them arrive on their own.** A
-`PreToolUse` hook (`.claude/hooks/project-rules.sh`, wired in `.claude/settings.json`) fires on every
-`Edit`/`Write`, maps the path to the skills that govern it, and puts their text into context
-**before the edit is made** — once per area per session, so the same rules are not repeated on every
-subsequent edit to the same place.
+The rules live in `.claude/skills/`, one per kind of work. **A `PreToolUse` hook names the skills
+that govern a path before the first edit there, and the edit waits until they are read**
+(inbox #1267): `.claude/hooks/project-rules.sh` refuses the first `Edit`/`Write` of an area, naming
+each skill with its path and size, and passes the same edit made again once they are read whole.
+No hook prints a skill's text, since the harness cuts a long hook output down to its opening.
 
-**A rule you have to remember to load is not a rule.** That is why the path-triggered ones are a
-hook rather than an instruction: every skill exists to stop a mistake that has already been made
-here at least once and that nothing in the code or the engine warns about, and the moment it matters
-is the moment somebody is about to touch the file.
+**A rule you have to remember to load is not a rule**: every skill exists to stop a mistake already
+made here at least once that nothing in the code or the engine warns about, and the moment it
+matters is the moment somebody is about to touch the file.
 
 | Path | Rules that arrive |
 |---|---|
 | `src/events/**` | **events** |
 | `src/city/**`, `src/routes/**` | **city** |
-| `src/crowd/**` | **crowd-traffic** |
-| `src/city/traffic_signals.gd`, `src/city/traffic_light.gd`, `src/ground_shape.gd` | **crowd-traffic** |
-| `src/ui/**`, `sprites.gd`, `palette.gd` | **cues** |
+| `src/crowd/**`, `src/city/traffic_signals.gd`, `src/city/traffic_light.gd`, `src/ground_shape.gd` | **crowd-traffic** |
+| `src/ui/**`, `sprites.gd`, `palette.gd`, `src/events/views/event_look.gd`, `src/crowd/crowd_agent.gd`, `src/player/stroller.gd`, `src/events/warning_board.gd` | **cues** |
 | `src/telemetry/**`, `src/autoload/telemetry.gd` | **telemetry** |
-| `src/autoload/tuning.gd` | **balance** |
+| `src/autoload/tuning.gd`, `src/events/event_catalogue.gd`, `src/events/event_scheduler.gd`, `src/crowd/crowd_lanes.gd`, `src/player/baby.gd`, `src/city/city.gd`, `src/field.gd` | **balance** |
 | `tools/*.py`, `pyproject.toml`, `uv.lock`, `.python-version` | **python-tooling** |
-| `tools/synthesize-sfx.py`, any `*.wav`, `*.ogg`, `*.flac` or `*.mp3` | **sound-effects** |
+| `tools/synthesize-sfx.py` | **sound-effects** |
+| `tools/reference.sh`, `tools/reference.py`, `docs/reference/**`, `docs/style-references/**` | **reference-photos** |
 | `tools/**`, `src/dev/dev_flags.gd`, `src/dev/auto_screenshot.gd` | **cli-tools** |
 | `tests/**` | **verify**, **writing-tests** |
 | `docs/playtests/*.md`, `docs/TODO.md`, `docs/todo/**`, `docs/review/**` | **playtest-feedback** |
 | `art/illustrated/**` | **illustrated-png** |
+| `assets/atlases/membership.json` | **svg-art**, **illustrated-png** |
 | `docs/evidence/archive/rejected-graphics/**` | **rejected-graphics** |
-| `docs/evidence/archive/session-captures/**` | **session-captures** |
-| `docs/evidence/**` | **verify** |
-| `docs/reference/**`, `docs/style-references/**` | **reference-photos** |
-| any `*.gd` | **godot** |
+| `docs/evidence/**` | **verify**, **session-captures** |
+| `.github/workflows/**` | **verify** |
+| `.claude/hooks/**`, `.claude/settings.json`, `docs/decisions/**` | **committing** |
+| any `*.gd`, `*.tscn` or `*.gdshader`, `project.godot` | **godot** |
 | `src/**/*.gd` | **designing-classes** |
 | any `*.svg` | **svg-art** |
-| `src/**`, `tests/**` | **orchestrating** |
+| `src/**`, `tests/**`, outside a sub-agent | **orchestrating** |
 | spawning a sub-agent (the `Agent`/`Task` tool, not a path) | **orchestrating** |
 
-**And one arrives before anything at all.** `.claude/hooks/session-rules.sh`, wired to `SessionStart`
-in `.claude/settings.json`, loads **orchestrating** at the start of every session, because
-*delegating is the default* is decided before the first tool call — an `Agent` spawn is that
-decision already going the right way and a first edit to `src/` or `tests/` is it already going the
-wrong one. The table's two **orchestrating** rows are backstops that share its marker, so a
-session gets it once however it is triggered, and again after compaction.
-
-**Keep that list to one skill unless there is a real second.** Everything loaded at the start is
-paid for in every session whether or not it turns out to be relevant, which is the exact cost the
-path-triggered hook exists to avoid.
+**And one is named before anything at all.** `.claude/hooks/session-rules.sh` (`SessionStart`) names
+**orchestrating** at the start of every session, to be read whole before the first tool call,
+because *delegating is the default* is decided by then. It is the orchestrating session's skill,
+so a sub-agent's edit never brings it. **Keep that list to one skill unless there is a real
+second**: what is named at the start is read in every session whether or not it turns out to be
+relevant, the exact cost the path-triggered hook exists to avoid.
 
 **These skills have no file to trigger on and are yours to invoke**, because they are about a *moment*
 rather than a place:
 
 | Before you… | Load |
 |---|---|
-| run a sequence of shell commands by hand — git/gh housekeeping, checking on agents, verification, a capture, a build | **using-tools** |
+| need a tool for a job and do not know its name, or are about to repeat a manual sequence | **using-tools** |
 | respond to a playtest or a design instruction, *before* any file is touched | **playtest-feedback** |
 | write a brief or a design that shapes classes | **designing-classes** |
 | brief an agent to write or change tests, or write them | **writing-tests** |
@@ -116,24 +116,22 @@ rather than a place:
 | review a pull request, brief a review agent, or decide a PR is ready to merge — every PR is reviewed adversarially first | **pr-review** |
 | merge main into a PR or branch | **merging-main** |
 | build a worksheet for the player to answer the review items in | **review-answers** |
-| ask the player a question — never in a dialog; the orchestrating Claude Code session's go on the board, and one about an inbox note may go on its issue — or read or write the Nappy board, the shared doc of open questions and running work | **board** |
+| ask the player a question — never in a dialog; the orchestrating session's go on the board, and one about an inbox note may go on its issue — or read or write the Nappy board | **board** |
+| start a session, or capture, read, ask on or file a note | **inbox** |
+| change anything under `src/` | **verify** |
 | **end a session** | **session-cleanup** |
 
-**A manual sequence done a second time becomes a script** (woolly-finch 23). It follows
-**cli-tools** for what a command-line entry point owes, and its row goes into the **using-tools**
-catalogue in the same commit. This is a conversation rule rather than a hook: the moment a second
-manual pass is noticed, nothing has been edited yet, so there is no file to hang it on.
+**A manual sequence done a second time becomes a script** (woolly-finch 23); **using-tools** says
+what the script owes.
 
 If a skill turns out not to cover something it should, add it there rather than here — **anything
 too long for one file becomes a file of its own, and this one does not grow.** If a new area of the
-tree needs rules, add the path to the hook script as well, or the rule is only a suggestion.
-
-Two things to know before extending the mapping. **A path may match several skills** and all of them
-fire together, so a `.gd` file under `src/events/` brings both `events` and `godot` — keep an eye on
-the combined size, because a large injection is written to a file and summarised rather than placed
-inline. And **the hook cannot reach a rule about a conversation**: anything that governs what you
-*say* rather than what you *edit* has to live in this file, because there is no tool call to hang it
-on.
+tree needs rules, add its row to the hook script and to the table above (`tools/test_rules_hooks.sh`
+compares the two), or the rule is only a suggestion. **Only a file an edit tool writes
+can have a row**: the tools that write a picture, a recording or a sound name their skill
+themselves. And **the hook cannot reach a rule about a conversation**: anything that governs what
+you *say* rather than what you *edit* has to live in this file, because there is no tool call to
+hang it on.
 
 **A skill found wrong is fixed, and the fix is flagged to the player** (woolly-finch 24). Wrong
 includes a step that fails in practice, a sentence that is no longer true, a broken or duplicated
@@ -180,13 +178,10 @@ ends them with the name of the file that records the words and, where that file 
 statements, the statement's number: `(woolly-penguin #759)`, `(PLAYTEST-16 7)`. A name such as
 `woolly-penguin` or `PLAYTEST-16` is the playtest `docs/playtests/<date>-<name>.md`, or
 `docs/playtests/<name>.md` for a numbered one; words no playtest holds cite the record under
-`docs/decisions/` that does, named the same way. The number is `#N` in a file whose statements are
-`## #N` headings, the note of that number there, and otherwise the file's own number for the
-statement, a numbered heading (`## 7. …`) or a numbered statement (`7. **…**`), with a range as
-`18-23`. Where a number is both a numbered heading and a numbered statement in its file, the heading
-is meant. The one other form is what `tools/inbox.py cite` writes after an inbox number, `inbox #N
-in woolly-penguin`, the playtest holding that note. A citation is never a Markdown link, a path or
-an anchor, and `tools/check_citations.py`, which `tools/lint.sh` runs, checks every one. Whether a
+`docs/decisions/` that does, named the same way. The one other form is what `tools/inbox.py cite`
+writes after an inbox number, `inbox #N in woolly-penguin`, the playtest holding that note. A
+citation is never a Markdown link, a path or an anchor; `tools/check_citations.py`, which
+`tools/lint.sh` runs, checks every one, and its header says which number a statement has. Whether a
 rule reads the player right is established once, by the review of the change that writes it, so a
 reader does not re-check it on every read, and a quote in the rule is only a distraction.
 
@@ -232,9 +227,16 @@ for telemetry on something is a request for its own GoatCounter events (`VisitCo
 counts visits in `docs/TELEMETRY.md`); the run log is "logs", which name each thing correctly from
 its first line as well.
 
-**This rule is about conversation, so nothing can trigger it but you.** It lives here rather than in
-a skill because no file edit precedes it — it applies to the first sentence of a turn as much as the
-last.
+**This rule is about conversation, so nothing can trigger it but you**: it applies to the first
+sentence of a turn as much as the last.
+
+## A pasted picture has no file
+
+**An image pasted from the clipboard is image data with no file behind it**: the session sees it,
+shown as `[Image #n]`, and has nothing to hand a script or an agent, while one attached from a saved
+file has a path. The CLI shows both the same way, so when a picture comes with no path, ask where
+it is saved, or for it to be dragged in from Finder or the Downloads folder, rather than describing
+what it shows.
 
 ## Moving files
 
@@ -285,9 +287,7 @@ Each was a decision. Do not "fix" one without a reason; the reasoning is in the 
   counting distinct routes is a max flow; the home's doorstep is exempt from the route-redundancy
   guarantee (**city**); no spatial hash, no `impulse` field, and events defined in code rather
   than `.tres` (**events**).
-- **No quest log for the resistance** — *asked for no marker and no quest log (PLAYTEST-02 14) ·
-  overturned on 2026-08-31 to only the first encounter, the chalk mark, coming without a hint
-  (PLAYTEST-16 7) · overturned again on 2026-09-23 to the first task being hinted at too
-  (PLAYTEST-122 12).* Nothing lists the tasks and the day brief carries none; day 6's brief names
-  the rumor of chalk, and every task has a red arrow (M181, the resistance has a reason, and a task
-  is one day).
+- **No quest log for the resistance.** Nothing lists the tasks and the day brief carries none
+  (PLAYTEST-02 14). Every task is hinted at, the first included (PLAYTEST-16 7, PLAYTEST-122 12):
+  day 6's brief names the rumor of chalk, and every task has a red arrow (M181, the resistance has
+  a reason, and a task is one day).
