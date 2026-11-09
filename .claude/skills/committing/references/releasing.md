@@ -56,7 +56,7 @@ of who types the command.
 **A fix on `main` is not a fix on the site**, and that is the sentence to keep in mind before
 telling anybody the page is well. The site serves whatever the newest tag points at, so `git tag
 --list 'v*'` and `tools/release.sh`'s own dry run are what say whether a given commit is out there.
-A release has carried a game-ending bug before (`tools/decisions.sh M73`).
+The record of why is `tools/decisions.sh M73`.
 
 **A browser fetches a new release whole.** The export publishes `index.js`, `index.wasm` and
 `index.pck` under a directory named for the release tag, because GitHub Pages sends
