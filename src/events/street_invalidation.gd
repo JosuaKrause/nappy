@@ -49,9 +49,9 @@ func _init(map: CityMap, corridor: Corridor, ground: Dictionary, leave_alone: Ar
 ## is what the walk has placed, `around` that with what stands for the day besides.
 func room(candidate: EventScheduler.Planned, role: GameEnums.BlockerRole, tile: Vector2i,
 		placed: Array[EventScheduler.Planned], around: Array[EventScheduler.Planned]) -> float:
-	candidate.role = role
+	candidate.give_role(role)
 	if _a_pacing_beat_walls_a_sidewalk(candidate, _map):
-		candidate.role = GameEnums.BlockerRole.WALL
+		candidate.give_role(GameEnums.BlockerRole.WALL)
 		if _corridor and _corridor.carries_a_route(tile):
 			return -INF
 	for rule in _rules:
@@ -83,7 +83,7 @@ func room(candidate: EventScheduler.Planned, role: GameEnums.BlockerRole, tile: 
 ## A beat with neither leaves her the choice of walking through him or turning round, and that
 ## placement is the wall.
 static func _a_pacing_beat_walls_a_sidewalk(plan: EventScheduler.Planned, map: CityMap) -> bool:
-	if not plan.def.paces or not EventScheduler.leaves_no_line_along_a_sidewalk(plan.def):
+	if not plan.row().paces or not EventScheduler.leaves_no_line_along_a_sidewalk(plan.row()):
 		return false
 	return not _a_beat_reaches_a_way_out(plan, map)
 
@@ -91,10 +91,10 @@ static func _a_pacing_beat_walls_a_sidewalk(plan: EventScheduler.Planned, map: C
 ## between them (`EventScheduler._along_street_path`), so the tiles are a step along one axis; a row with no beat
 ## laid at all answers no, which is the conservative side of a rule that only ever refuses ground.
 static func _a_beat_reaches_a_way_out(plan: EventScheduler.Planned, map: CityMap) -> bool:
-	if plan.path.size() < 2:
+	if plan.walks().size() < 2:
 		return false
-	var from := map.world_to_tile(plan.path[0])
-	var to := map.world_to_tile(plan.path[plan.path.size() - 1])
+	var from := map.world_to_tile(plan.walks()[0])
+	var to := map.world_to_tile(plan.walks()[plan.walks().size() - 1])
 	var step := Vector2i(signi(to.x - from.x), signi(to.y - from.y))
 	# **Bounded by the run's own length rather than by reaching its end**: a run along one axis
 	# reaches `to` in exactly this many steps, and one that did not lie along an axis would step
@@ -174,15 +174,15 @@ static func room_around(candidate: EventScheduler.Planned, already: Array[EventS
 		# is exactly the sum the clearance rule refuses. Siblings still space against each other —
 		# the group is compared normally against its own — because two offers on top of one another
 		# would be a real overlap on whichever of them fires.
-		var elsewhere := plan.set_piece_group != "" \
-				and plan.set_piece_group != candidate.set_piece_group
+		var elsewhere := plan.set_piece() != "" \
+				and plan.set_piece() != candidate.set_piece()
 		if not elsewhere:
 			if gap < EventScheduler.EVENT_SPACING_ANY:
 				return -INF
-			if plan.keeps_its_field_clear() and gap < plan.def.field_reach():
+			if plan.keeps_its_field_clear() and gap < plan.row().field_reach():
 				return -INF
-			if plan.def.id == candidate.def.id:
+			if plan.row().id == candidate.row().id:
 				room_same = minf(room_same, gap)
-		if candidate.keeps_its_field_clear() and gap < candidate.def.field_reach():
+		if candidate.keeps_its_field_clear() and gap < candidate.row().field_reach():
 			return -INF
 	return INF if room_same >= EventScheduler.EVENT_SPACING_SAME else room_same

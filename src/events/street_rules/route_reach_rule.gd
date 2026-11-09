@@ -104,7 +104,7 @@ func _rebuild(bodies: Array[EventScheduler.Planned]) -> void:
 ## The tiles (by index) a body's disc covers.
 func _disc_of(plan: EventScheduler.Planned) -> Dictionary:
 	var tiles := {}
-	EventScheduler.block_a_disc(_map, tiles, plan.position, plan.blocking_radius())
+	EventScheduler.block_a_disc(_map, tiles, plan.placed_at(), plan.blocking_radius())
 	var disc := {}
 	for tile: Vector2i in tiles:
 		if _inside(tile):

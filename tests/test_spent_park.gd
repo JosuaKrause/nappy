@@ -29,6 +29,7 @@ func run(t) -> void:
 	_test_a_never_used_park_is_unaffected(t)
 	_test_the_day_spoils_every_shut_area_but_the_fenced_one(t)
 	_test_with_every_area_used_one_stays_clean(t)
+	_test_a_used_courtyard_keeps_what_was_put_in_it(t)
 	_test_shutting_is_refused_rather_than_breaking_a_guarantee(t)
 	_test_the_swing_park_is_never_shut_or_fenced_on_its_day(t)
 	_test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t)
@@ -484,6 +485,9 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 					spoiled += 1
 				t.check(events.is_spoiled(block), "seed %d day %d: the used area %s is spoiled"
 						% [map.seed_used, day, block])
+				t.check(_a_body_stands_inside(map, events, calm, block),
+						"seed %d day %d: something stands inside the used area %s at the end of the plan"
+						% [map.seed_used, day, block])
 			var clean := 0
 			for block in calm.blocks():
 				if not events.is_spoiled(block):
@@ -492,6 +496,45 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 					% [map.seed_used, day])
 	t.check(offered > 0, "the sweep had used, open areas to spoil (%d)" % offered)
 	print("  spent parks: %d of %d used-and-open areas were spoiled with events" % [spoiled, offered])
+
+## Whether a placed plan stands inside `block`'s lot as the day's plan ends: what shuts a used area
+## is the events placed in it (PLAYTEST-140 8), not a field reaching in from outside.
+func _a_body_stands_inside(map: CityMap, events: DayEvents, calm: CalmAreas, block: Vector2i) -> bool:
+	var lot := map.tile_rect_to_world(calm.rect_of(block))
+	for plan in events.placements():
+		if plan.is_placed() and lot.has_point(plan.position):
+			return true
+	return false
+
+## **A used area keeps what the spoil pass put in it.** A row owed to her walk is taken off the map
+## when the plan ends (`EventScheduler._hand_to_her_walk()`), so a spoiler of that kind left the area
+## it spoiled empty; the spoil pass offers none (`EventScheduler._things_to_put_in_a_park()`). The
+## city is the one where that happened: seed 61823 on day 14, with the four-tile courtyard at block
+## (3, 2) used yesterday, whose one spoiler was a poster crew.
+func _test_a_used_courtyard_keeps_what_was_put_in_it(t) -> void:
+	var map := CityGenerator.generate(61823)
+	var day := 14
+	var block := Vector2i(3, 2)
+	var used: Array[Vector2i] = [block]
+	# Repainted with the area handed over and nothing fenced before, the run as it stood that day.
+	var state := CityState.new()
+	state.begin_day(map.block_plans, day)
+	map.set_spent_calm(used)
+	map.repaint(state)
+	var tree := RouteTree.for_day(map, day)
+	map.close_streets(ClosurePlanner.plan_day(map, DaySpec.for_day(day), _closure_rng(map, day), tree))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("events:%d:%d" % [map.seed_used, day])
+	var calm := CalmAreas.of(map, used)
+	t.check(block in calm.blocks() and block != map.fenced_park,
+			"the courtyard is a counted, unfenced calm area that day")
+	var no_one_shots: Array[String] = []
+	var no_scars: Array[Dictionary] = []
+	var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm, no_one_shots,
+			no_scars, tree)
+	t.check(_a_body_stands_inside(map, events, calm, block),
+			"something stands inside the used courtyard at the end of the plan")
+	map.close_streets([])
 
 ## **With every calm area she could settle in used this act, one is still clean**: the day she has
 ## settled in all of them is the one the calm rule protects nothing on, so dawn keeps one clean by

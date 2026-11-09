@@ -372,7 +372,6 @@ src/events/mast_sites.gd boundary_wall_at_a
 src/events/mast_sites.gd calm_blocks
 src/events/mast_sites.gd main_road
 src/events/mast_sites.gd square_rects
-src/events/walk_ground.gd closed_tiles
 src/finale/finale_planner.gd home_block
 src/finale/finale_planner.gd main_road
 src/finale/finale_planner.gd network

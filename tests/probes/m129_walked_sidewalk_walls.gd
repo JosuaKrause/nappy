@@ -185,7 +185,6 @@ func _measure() -> void:
 			var tree := _plan_the_day(map, day)
 			var gathered := _gather_bodies(map, day, tree)
 			var bodies: Array = gathered["bodies"]
-			var closed_tiles: Dictionary = gathered["closed_tiles"]
 			var corridor: Corridor = gathered["corridor"]
 			days_measured += 1
 
@@ -197,10 +196,10 @@ func _measure() -> void:
 				per_act[1] += 1
 
 				var ground_alone := RouteSidewalkRule.closes_a_walked_sidewalk_band(
-						map, band, segment.horizontal, [], closed_tiles)
+						map, band, segment.horizontal, [])
 				var candidates := _bodies_touching(world, bodies)
 				var full := RouteSidewalkRule.closes_a_walked_sidewalk_band(
-						map, band, segment.horizontal, _as_vectors(candidates), closed_tiles)
+						map, band, segment.horizontal, _as_vectors(candidates))
 				if not full:
 					continue
 				per_act[0] += 1
@@ -220,7 +219,7 @@ func _measure() -> void:
 						closed_examples.append(record)
 					continue
 
-				var culprits := _culprits_of(map, band, segment.horizontal, candidates, closed_tiles)
+				var culprits := _culprits_of(map, band, segment.horizontal, candidates)
 				if culprits.is_empty():
 					# Closed with a touching candidate list that could not reproduce it alone,
 					# together or as the ground: the proximity filter under-reached. Recorded as
@@ -376,7 +375,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		body.paces = def.paces
 		bodies.append(body)
 
-	return {"bodies": bodies, "corridor": corridor, "closed_tiles": map.closed_tiles.duplicate()}
+	return {"bodies": bodies, "corridor": corridor}
 
 ## Tags every `Planned` appended to `planned` since index `before` with `source`.
 func _tag_new(planned: Array[EventScheduler.Planned], provenance: Dictionary, before: int,
@@ -427,20 +426,19 @@ func _as_vectors(bodies: Array) -> Array:
 ## the whole touching set. The same order `tests/probes/m129_zero_cost_line.gd`'s `_barrier_of`
 ## tries in, and for the same reason: a body on each of two lanes closes the band between them
 ## while neither closes it alone, and the smallest-removal answer would blame only one of the pair.
-func _culprits_of(map: CityMap, band: Rect2i, horizontal: bool, candidates: Array,
-		closed_tiles: Dictionary) -> Array:
+func _culprits_of(map: CityMap, band: Rect2i, horizontal: bool, candidates: Array) -> Array:
 	for body: Body in candidates:
 		if RouteSidewalkRule.closes_a_walked_sidewalk_band(
-				map, band, horizontal, _as_vectors([body]), closed_tiles):
+				map, band, horizontal, _as_vectors([body])):
 			return [body]
 	for i in candidates.size():
 		for j in range(i + 1, candidates.size()):
 			var pair: Array = [candidates[i], candidates[j]]
 			if RouteSidewalkRule.closes_a_walked_sidewalk_band(
-					map, band, horizontal, _as_vectors(pair), closed_tiles):
+					map, band, horizontal, _as_vectors(pair)):
 				return pair
 	if candidates.size() > 2 and RouteSidewalkRule.closes_a_walked_sidewalk_band(
-			map, band, horizontal, _as_vectors(candidates), closed_tiles):
+			map, band, horizontal, _as_vectors(candidates)):
 		return candidates
 	return []
 

@@ -67,24 +67,24 @@ func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 ## gap, over the same `standing` list.
 static func _leaves_the_routes_sidewalk_open(candidate: EventScheduler.Planned, map: CityMap, corridor: Corridor,
 		already: Array[EventScheduler.Planned]) -> bool:
-	if not corridor or candidate.def.paces or not candidate.counts_against_the_line():
+	if not corridor or candidate.row().paces or not candidate.counts_against_the_line():
 		return true
-	var reach := _cumulative_lane_reach_of(candidate.def)
+	var reach := _cumulative_lane_reach_of(candidate.row())
 	for entry: Array in corridor.walked_sidewalks(map):
 		var world: Rect2 = entry[2]
 		if not candidate.reach_touches(world, reach):
 			continue
 		var standing: Array[EventScheduler.Planned] = [candidate]
 		for plan in already:
-			if plan == candidate or plan.def.paces or not plan.counts_against_the_line():
+			if plan == candidate or plan.row().paces or not plan.counts_against_the_line():
 				continue
-			if plan.reach_touches(world, _cumulative_lane_reach_of(plan.def)):
+			if plan.reach_touches(world, _cumulative_lane_reach_of(plan.row())):
 				standing.append(plan)
 		var segment: StreetNetwork.Segment = entry[0]
 		if closes_the_run(map, entry[1], segment.horizontal, standing):
 			return false
 		if closes_a_walked_sidewalk_band(map, entry[1], segment.horizontal,
-				_physical_bodies_of(standing), map.closed_ground()):
+				_physical_bodies_of(standing)):
 			return false
 	return true
 
@@ -105,8 +105,8 @@ static func _cumulative_lane_reach_of(def: EventDef) -> float:
 static func _physical_bodies_of(rows: Array[EventScheduler.Planned]) -> Array:
 	var found: Array = []
 	for plan in rows:
-		if plan.def.obstructs_within() > 0.0:
-			found.append(Vector3(plan.position.x, plan.position.y, plan.def.obstructs_within()))
+		if plan.row().obstructs_within() > 0.0:
+			found.append(Vector3(plan.placed_at().x, plan.placed_at().y, plan.row().obstructs_within()))
 	return found
 
 ## The same question over an arbitrary run of a street's ground, which is what lets the width rule
@@ -123,7 +123,7 @@ static func closes_the_run(map: CityMap, rect: Rect2i, horizontal: bool,
 			var at := map.tile_to_world(tile)
 			var taken := false
 			for plan in rows:
-				if plan.denies(at, plan.def.line_reach()):
+				if plan.denies(at, plan.row().line_reach()):
 					taken = true
 					break
 			if not taken:
@@ -194,7 +194,7 @@ const HER_LANE_CLEARANCE := 2.0 * Tuning.PLAYER_BODY_RADIUS
 ## `SIDEWALK`, and a band with none at all — every tile built over or absorbed into a calm zone's
 ## park — has nothing to close and answers `false`.
 static func closes_a_walked_sidewalk_band(map: CityMap, band: Rect2i, horizontal: bool,
-		bodies: Array, closed_tiles: Dictionary) -> bool:
+		bodies: Array) -> bool:
 	var free := {}
 	var first := -1
 	var last := -1
@@ -206,7 +206,7 @@ static func closes_a_walked_sidewalk_band(map: CityMap, band: Rect2i, horizontal
 			var along := x if horizontal else y
 			first = along if first < 0 else mini(first, along)
 			last = maxi(last, along)
-			if closed_tiles.has(tile):
+			if map.is_closed(tile):
 				continue
 			var at := map.tile_to_world(tile)
 			var taken := false

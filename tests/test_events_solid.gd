@@ -401,7 +401,7 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 				var band: Rect2i = entry[1]
 				bands_checked += 1
 				t.check(not RouteSidewalkRule.closes_a_walked_sidewalk_band(
-						map, band, segment.horizontal, bodies, map.closed_tiles),
+						map, band, segment.horizontal, bodies),
 						"seed %d day %d: street %s's walked sidewalk keeps a lane she fits through"
 						% [map.seed_used, day, segment.key()])
 	t.check(bands_checked > 50,

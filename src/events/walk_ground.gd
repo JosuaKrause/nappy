@@ -267,7 +267,7 @@ func leaves_a_sidewalk_open(own: Array[Solid]) -> bool:
 					if reach.grow(disc.z).has_point(Vector2(disc.x, disc.y)):
 						bodies.append(disc)
 			if not RouteSidewalkRule.closes_a_walked_sidewalk_band(_map, band, segment.horizontal,
-					bodies, _map.closed_tiles):
+					bodies):
 				open = true
 				break
 		if not open:

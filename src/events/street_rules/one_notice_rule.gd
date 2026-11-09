@@ -41,13 +41,13 @@ func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 ## side are drawn over him.
 static func _keeps_its_notice_to_itself(map: CityMap, candidate: EventScheduler.Planned,
 		already: Array[EventScheduler.Planned]) -> bool:
-	var reach := candidate.def.notice_within()
+	var reach := candidate.row().notice_within()
 	if reach <= 0.0:
 		return true
 	var at := EventScheduler.body_stands_at(map, candidate)
 	for plan in already:
-		if plan.def.notice_within() <= 0.0 or not plan.is_placed():
+		if plan.row().notice_within() <= 0.0 or not plan.is_placed():
 			continue
-		if at.distance_to(EventScheduler.body_stands_at(map, plan)) < reach + plan.def.notice_within():
+		if at.distance_to(EventScheduler.body_stands_at(map, plan)) < reach + plan.row().notice_within():
 			return false
 	return true

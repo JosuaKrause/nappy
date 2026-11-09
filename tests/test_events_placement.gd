@@ -609,8 +609,8 @@ func _beat_tiles(map: CityMap, plan: EventScheduler.Planned) -> Array[Vector2i]:
 ## **The assertion is about the finished day rather than about the refusal**, which is what keeps it
 ## from being the rule read back to itself. `RouteJunctionsRule._leaves_the_route_junctions_open` refuses
 ## one candidate at a time, against what is already down; what has to be true afterwards is that
-## nothing *else* the morning does — a scar prepended, an ambient placed, a park spoiled, the
-## walkability strip — has left a crossing closed. Measured over the five sampled days of seed 4242:
+## nothing *else* the morning does — a scar prepended, an ambient placed, a park spoiled — has
+## left a crossing closed. Measured over the five sampled days of seed 4242:
 ## 50 of 360 route junctions were closed before the rule existed and none are with it.
 ##
 ## **The geometry is stated here rather than borrowed**, for the same reason: the box's own flood

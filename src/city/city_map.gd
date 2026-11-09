@@ -852,12 +852,6 @@ func lot_at(tile: Vector2i) -> Rect2i:
 func is_closed(tile: Vector2i) -> bool:
 	return closed_tiles.has(tile)
 
-## Today's closed tiles (`tile -> true`), the set `closed_tiles` holds, for a question asked of a
-## whole set of them at once (`RouteSidewalkRule.closes_a_walked_sidewalk_band()`). Read, never
-## written through.
-func closed_ground() -> Dictionary:
-	return closed_tiles
-
 ## The street segment `tile` is on, or null off the streets (`StreetNetwork.segment_containing()`).
 func segment_containing(tile: Vector2i) -> StreetNetwork.Segment:
 	return network.segment_containing(tile)

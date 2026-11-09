@@ -12,8 +12,8 @@ func _init(doors: PackedVector2Array) -> void:
 ## Overrides StreetRule.allows.
 func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 		_placed: Array[EventScheduler.Planned], _around: Array[EventScheduler.Planned]) -> bool:
-	return clear_of_the_doors(candidate.position, candidate.path, _doors,
-			candidate.def.field_reach())
+	return clear_of_the_doors(candidate.placed_at(), candidate.walks(), _doors,
+			candidate.row().field_reach())
 
 ## Whether a placement keeps `Tuning.CHECKPOINT_EVENT_GAP` of clear ground around every one of
 ## today's region-door bodies — *"there should be a gap for events immediately surrounding the

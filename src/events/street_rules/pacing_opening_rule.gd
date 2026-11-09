@@ -38,15 +38,15 @@ static func _leaves_a_pacing_beats_opening(candidate: EventScheduler.Planned, ma
 		already: Array[EventScheduler.Planned]) -> bool:
 	if not corridor or not candidate.counts_against_the_line():
 		return true
-	var reach := candidate.def.line_reach()
+	var reach := candidate.row().line_reach()
 	var streets := {}
-	var here := map.segment_containing(map.world_to_tile(candidate.position))
-	if candidate.def.paces and here and corridor.depth(here.tile_rect().position) == 0:
+	var here := map.segment_containing(map.world_to_tile(candidate.placed_at()))
+	if candidate.row().paces and here and corridor.depth(here.tile_rect().position) == 0:
 		streets[here.key()] = here
 	for plan in already:
-		if plan == candidate or not plan.def.paces or not plan.counts_against_the_line():
+		if plan == candidate or not plan.row().paces or not plan.counts_against_the_line():
 			continue
-		var theirs := map.segment_containing(map.world_to_tile(plan.position))
+		var theirs := map.segment_containing(map.world_to_tile(plan.placed_at()))
 		if not theirs or corridor.depth(theirs.tile_rect().position) != 0:
 			continue
 		if candidate.reach_touches(map.tile_rect_to_world(theirs.tile_rect()), reach):
@@ -59,7 +59,7 @@ static func _leaves_a_pacing_beats_opening(candidate: EventScheduler.Planned, ma
 		for plan in already:
 			if plan == candidate or not plan.counts_against_the_line():
 				continue
-			if plan.reach_touches(rect, plan.def.line_reach()):
+			if plan.reach_touches(rect, plan.row().line_reach()):
 				standing.append(plan)
 		if _closes_the_street(map, segment, standing):
 			return false

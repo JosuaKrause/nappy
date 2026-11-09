@@ -383,6 +383,23 @@ class Planned extends RefCounted:
 	func row() -> EventDef:
 		return def
 
+	## The route its body walks (`path`): a mover's beat or its run, empty for one that stands.
+	func walks() -> PackedVector2Array:
+		return path
+
+	## The role its placement gave it (`role`): a wall, friction, or none.
+	func blocker_role() -> GameEnums.BlockerRole:
+		return role
+
+	## Gives it the role a judge decided (`StreetInvalidation.room()`), which is where it went.
+	func give_role(given: GameEnums.BlockerRole) -> void:
+		role = given
+
+	## The set of mutually exclusive placements it belongs to (`set_piece_group`), "" for one that is
+	## simply itself.
+	func set_piece() -> String:
+		return set_piece_group
+
 	## **How far from this event a point has to be to stand clear of it**, for a figure `her_reach`
 	## across: its body and her whole shape, the field it carries where it carries one (a car
 	## crash's, there to stop her walking past it), and a hard fail's lethal reach and her shape;
@@ -672,9 +689,9 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 
 	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in
 	# the park that is taken once she has reached it (PLAYTEST-122: "the day guarantees a second
-	# open park she can reach from the swing"). Both repairs below are asked about the calm
-	# *other* than `calm.besides()`: one of those areas is left clean, and a route to it is
-	# kept.
+	# open park she can reach from the swing"). Dawn keeps it by construction: the calm other than
+	# `calm.besides()` is the ground the calm rule and `_calm_kept_clean()` keep clean, and the
+	# day's routes, which `RouteReachRule` keeps reached, run to it.
 	_hand_to_her_walk(events)
 	_count_what_is_left_uncovered(beside_the_routes, map, events, route, trace)
 	return events
@@ -754,8 +771,8 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 ## (`DayReach.paths_over()`), the widest the task searches (`ResistanceDirector.ROADBLOCK_WIDER_REACH`).
 ##
 ## **What it does not promise.** Close by is measured over the ground as it stands when this runs:
-## the scripted rows, the one-shots, the spoilers and the dawn draw after it shut more, and a repair may take
-## a roadblock away. `_count_what_is_left_uncovered()` writes to the run log how many route tiles have
+## the scripted rows, the one-shots, the spoilers and the dawn draw after it shut more.
+## `_count_what_is_left_uncovered()` writes to the run log how many route tiles have
 ## none as the day finally stands.
 ##
 ## **Outside the bags and on a stream of its own** (`RoadblockPhase.SALT`): the dawn draw after it
@@ -918,12 +935,12 @@ class RuledRoadblockGround extends RoadblockGround:
 		EventScheduler.block_a_disc(_map, _shut, plan.placed_at(), plan.blocking_radius())
 
 ## **How many of the day's route tiles have none of `def`'s rows close by as the day stands**,
-## written to the run log: once every pass and repair is done, each placed `def` the day stands
+## written to the run log: once every pass is done, each placed `def` the day stands
 ## (not a region door's body or the wall's own) is read as close by every route tile its paths
 ## reach within `TASK_ROW_CLOSE_BY` over the day's whole obstruction (`DayReach.shut_by()`), and the
 ## route tiles it leaves are counted. The roadblock phase (`_place_the_roadblocks()`) aims at none,
-## but a route tile no section within reach took one for, ground the later passes shut and a
-## roadblock a repair took away all leave some. A
+## but a route tile no section within reach took one for and ground the later passes shut both
+## leave some. A
 ## count and nothing more: nothing is placed or moved here. Nothing on a day with no `def`.
 static func _count_what_is_left_uncovered(def: EventDef, map: CityMap, events: DayEvents,
 		route: RouteSource, trace: RunTrace) -> void:
@@ -1518,6 +1535,11 @@ static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 ## a wall across a four-tile courtyard, and a fixed number cannot be both — so it is a sixteenth of
 ## the shortest side of the calm ground, floored at that constant. That is what lets a market take
 ## over a whole park and keeps it out of a back yard.
+##
+## **And it has to stay where it was put.** A row owed to her walk (`EventDef.on_her_way`, the poster
+## crews among them) is handed to the walk at the end of the day's plan (`_hand_to_her_walk()`) and
+## taken off the map, so a park it was meant to spoil would stand empty, against PLAYTEST-140 8 (a
+## used park is shut by the events placed in it). None is offered.
 static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> Array[EventDef]:
 	var allowed := maxf(OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(ground.size.x, ground.size.y) / 16.0)
@@ -1528,6 +1550,8 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 		if def.obstructs_radius > allowed:
 			continue
 		if def.spawn_mode != EventDef.SpawnMode.MAP:
+			continue
+		if def.on_her_way != null:
 			continue
 		suitable.append(def)
 	return suitable

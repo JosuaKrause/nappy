@@ -39,7 +39,7 @@ static func _leaves_the_route_junctions_open(candidate: EventScheduler.Planned, 
 		corridor: Corridor, ground: Dictionary, already: Array[EventScheduler.Planned]) -> bool:
 	if not corridor or not candidate.counts_against_the_line():
 		return true
-	var reach := candidate.def.line_reach()
+	var reach := candidate.row().line_reach()
 	for entry: Array in _route_junctions(map, ground, corridor):
 		var centre: Vector2 = entry[1]
 		var box_reach: float = entry[2]
@@ -52,7 +52,7 @@ static func _leaves_the_route_junctions_open(candidate: EventScheduler.Planned, 
 ## The day's route junctions with the geometry the rule asks about, worked out once per day and
 ## kept in the same `ground` dictionary every other day-lifetime answer in this file lives in.
 ## Each entry is `[junction, the box's world centre, the box's own reach from that centre]`.
-const _ROUTE_JUNCTIONS_KEY := "route junctions"
+const _ROUTE_JUNCTIONS_KEY := "route_junctions"
 
 static func _route_junctions(map: CityMap, ground: Dictionary, corridor: Corridor) -> Array:
 	if not ground.has(_ROUTE_JUNCTIONS_KEY):
@@ -81,7 +81,7 @@ static func _a_crossing_stays_open(map: CityMap, corridor: Corridor, entry: Arra
 	for plan in already:
 		if plan == candidate or not plan.counts_against_the_line():
 			continue
-		if plan.distance_from(centre) <= plan.def.line_reach() + box_reach:
+		if plan.distance_from(centre) <= plan.row().line_reach() + box_reach:
 			standing.append(plan)
 
 	var origin := junction * CityMap.period()
@@ -94,7 +94,7 @@ static func _a_crossing_stays_open(map: CityMap, corridor: Corridor, entry: Arra
 			var at := map.tile_to_world(tile)
 			var taken := false
 			for plan in standing:
-				if plan.denies(at, plan.def.line_reach()):
+				if plan.denies(at, plan.row().line_reach()):
 					taken = true
 					break
 			if not taken:

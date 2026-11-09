@@ -1537,9 +1537,9 @@ be taken and discovered rather than reading as a wall on sight the moment she gl
 **The winnability guarantee is not repeated here, it is true by construction.** A seal never
 stands on tree ground or the doorstep — the two things the tree and `ClosurePlanner` already
 guarantee a route through, and the trunk above is what makes the first of those cover the join as
-well — so nothing a seal does can cut the corridor. `EventScheduler._ensure_the_city_is_still_
-walkable` stays what it always was, a repair pass for the catalogue's own placements; sealing needs
-no equivalent; `tests/test_seals.gd` measures the guarantee over many seeds and days instead of
+well — so nothing a seal does can cut the corridor. The catalogue's own placements are kept off
+it as they are placed (`RouteReachRule`); sealing needs no equivalent; `tests/test_seals.gd`
+measures the guarantee over many seeds and days instead of
 asserting it at runtime.
 
 ### The escape is a chain, not a tree
