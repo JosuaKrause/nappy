@@ -58,15 +58,19 @@ var _rider: EventInstance
 var _rider_offset := Vector2.ZERO
 ## The baked atlas pages this contact draws from (`AtlasLibrary`), handed by its director before
 ## it is added; a contact nobody handed one makes its own when it first enters the tree.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
+
+## Hands this the atlas library its pictures are read from, once, before it enters the tree.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
 
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(ATLAS_GROUP)
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	_atlas.acquire(ATLAS_GROUP)
 
 func _exit_tree() -> void:
-	atlas.release(ATLAS_GROUP)
+	_atlas.release(ATLAS_GROUP)
 
 ## A pickup: a bare chalk mark at a fixed point.
 func setup(which: ResistanceSteps.Step, at: Vector2) -> void:
@@ -82,6 +86,30 @@ func ride(which: ResistanceSteps.Step, instance: EventInstance, offset: Vector2)
 	position = instance.global_position + offset
 
 ## Whether the thing this rides on is still there to be touched.
+## Whether the task this point marks is done.
+func is_finished() -> bool:
+	return is_done
+
+## The task this point marks.
+func task_step() -> ResistanceSteps.Step:
+	return step
+
+## How near to the point she has to come to complete it.
+func touch_reach() -> float:
+	return reach
+
+## Has this point completed by crossing its line rather than touching it.
+func complete_by_crossing() -> void:
+	by_crossing = true
+
+## Has this point completed within `within` of it.
+func complete_within(within: float) -> void:
+	reach = within
+
+## Has this point completed by her body overlapping the ground ellipse of semi-axes `semi`.
+func complete_on_ellipse(semi: Vector2) -> void:
+	touch_ellipse = semi
+
 func rider_alive() -> bool:
 	return not _rider or (is_instance_valid(_rider) and not _rider.is_finished)
 
@@ -207,7 +235,7 @@ func draws_a_mark() -> bool:
 ## the same 32×32 scale, so nothing about its size or its reading on the pavement moves.
 func _draw_chalk() -> void:
 	var picture := MARK_TOUCHED if is_done else MARK
-	var texture := atlas.region(picture)
+	var texture := _atlas.region(picture)
 	if not texture:
 		return
 	var flicker := 0.75 + 0.25 * sin(_pulse * 2.0)

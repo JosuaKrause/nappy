@@ -43,7 +43,7 @@ static func car_look(agent: CrowdAgent) -> CarLook:
 ## A fresh agent of `kind` placed by `setup()`, as its rolled `seed_value` has it.
 func rolled(kind: CrowdAgent.Kind, seed_value: int) -> CrowdAgent:
 	var agent := CrowdAgent.new()
-	agent.atlas = city.atlas
+	agent.use_atlas(city.atlas)
 	agent.setup(kind, city.map, city.crowd.field(), seed_value, 0.5 * float(seed_value % 2))
 	return agent
 
@@ -66,7 +66,7 @@ func place_at_speed(kind: CrowdAgent.Kind, heading: Vector2, speed: float) -> Cr
 	var at := scout.position
 	scout.free()
 	var agent := CrowdAgent.new()
-	agent.atlas = city.atlas
+	agent.use_atlas(city.atlas)
 	var problem := agent.setup_at(kind, city.map, city.crowd.field(), 1, at, heading, speed)
 	if not problem.is_empty():
 		agent.free()

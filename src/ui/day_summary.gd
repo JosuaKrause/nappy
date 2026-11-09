@@ -73,8 +73,8 @@ func use_touch(touch: bool) -> void:
 ## (`AtlasLibrary`). Called by `main` before the screen enters the tree, so they acquire on it; a
 ## screen built anywhere else leaves them to make their own.
 func use_atlas(atlas: AtlasLibrary) -> void:
-	(get_node(^"Root/Center/Lines/Buttons/ContinueColumn/Continue") as ModeButton).atlas = atlas
-	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).atlas = atlas
+	(get_node(^"Root/Center/Lines/Buttons/ContinueColumn/Continue") as ModeButton).use_atlas(atlas)
+	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).use_atlas(atlas)
 
 func _ready() -> void:
 	# The summary has to keep running while it pauses everything behind it.

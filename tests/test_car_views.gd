@@ -284,7 +284,7 @@ class TracingAtlas extends AtlasLibrary:
 func _lit_and_traced(t, agent: CrowdAgent) -> TracingAtlas:
 	var atlas := TracingAtlas.new()
 	atlas.acquire(Crowd.ATLAS_GROUP)
-	agent.atlas = atlas
+	agent.use_atlas(atlas)
 	t.add_child(agent)
 	agent.excitement.rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	atlas.watch(agent.excitement.rim.entity_halo())

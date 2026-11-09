@@ -31,10 +31,7 @@ static func touches_from(t, director: ResistanceDirector, points: Array[Vector2]
 			twin.ride(live.step, director.rider(), live.global_position - director.rider().global_position)
 		else:
 			twin.setup(live.step, live.global_position)
-		twin.reach = live.reach
-		twin.touch_ellipse = live.touch_ellipse
-		twin.by_crossing = live.by_crossing
-		twin.atlas = live.atlas
+		director._shape_the_touch(twin, live.task_step())
 		twin.use_player(player)
 		t.add_child(twin)
 		if director.rider() == null:

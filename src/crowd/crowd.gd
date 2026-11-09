@@ -385,7 +385,7 @@ func _make_an_agent() -> CrowdAgent:
 	agent.pockets = _pockets
 	agent.view = view
 	agent.frame_timing = timing
-	agent.atlas = atlas
+	agent.use_atlas(atlas)
 	agent.mood().hear_in(sources)
 	return agent
 

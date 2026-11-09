@@ -573,7 +573,7 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
 		player.free()
 		director.free()
 		return
-	var semi := contact.touch_ellipse
+	var semi := director._swing_base()
 	var frame := Prop.new()
 	frame.kind = Prop.Kind.PLAYGROUND_FRAME
 	t.add_child(frame)

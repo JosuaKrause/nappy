@@ -480,8 +480,8 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	# The mark she has just read, when this is the task it unlocks: the task is placed near it
 	# (`NEAR_THE_MARK`). `Vector2.INF` at dawn, for a mark or the last night, which have none.
 	var mark := Vector2.INF
-	if _contact and is_instance_valid(_contact) and _contact.step != null \
-			and _contact.step.is_pickup:
+	if _contact and is_instance_valid(_contact) and _contact.task_step() != null \
+			and _contact.task_step().is_pickup:
 		mark = _contact.global_position
 	var at: Vector2
 	# Day 13's roadblock is one the day placed, or one put across a section in place of what it held;
@@ -512,12 +512,12 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	# mark should vanish at once or stay, "Stays crossed, until the day ends". Anything else is
 	# freed.
 	if _contact and is_instance_valid(_contact):
-		if _contact.step != null and _contact.step.is_pickup:
+		if _contact.task_step() != null and _contact.task_step().is_pickup:
 			_read_mark = _contact
 		else:
 			_contact.queue_free()
 	_contact = ContactPoint.new()
-	_contact.atlas = _atlas
+	_contact.use_atlas(_atlas)
 	_contact.use_player(_player)
 	if neighbor:
 		_rider = neighbor
@@ -584,7 +584,7 @@ func _begin_step(step: ResistanceSteps.Step, at_dawn: bool) -> void:
 	# (`ContactPoint.touches_the_body()`), and the guard's band is worked out from that.
 	if _keeps_a_waiting_guard(_step):
 		var guarded_at := at
-		var guarded_reach := _contact.reach
+		var guarded_reach := _contact.touch_reach()
 		var approach := Vector2.ZERO
 		if _rider and ContactPoint.has_a_body(_rider) and _step.target_kind \
 				== ResistanceSteps.TargetKind.EVENT:
@@ -630,15 +630,16 @@ static func _body_touch_reach(instance: EventInstance) -> float:
 func _shape_the_touch(contact: ContactPoint, step: ResistanceSteps.Step) -> void:
 	match step.target_kind:
 		ResistanceSteps.TargetKind.DOOR:
-			contact.by_crossing = true
+			contact.complete_by_crossing()
 		ResistanceSteps.TargetKind.MAST:
-			contact.reach = EventCatalogue.mast().solid_reach() \
-					+ Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH
+			contact.complete_within(EventCatalogue.mast().solid_reach()
+					+ Tuning.PLAYER_BODY_RADIUS + ContactPoint.REACH)
 		ResistanceSteps.TargetKind.PARK_SWING:
-			contact.touch_ellipse = _swing_base()
-			contact.reach = contact.touch_ellipse.x + Tuning.PLAYER_BODY_RADIUS
+			var base := _swing_base()
+			contact.complete_on_ellipse(base)
+			contact.complete_within(base.x + Tuning.PLAYER_BODY_RADIUS)
 		ResistanceSteps.TargetKind.STATION_DOOR:
-			contact.reach = DOOR_REACH
+			contact.complete_within(DOOR_REACH)
 
 ## **The ground ellipse at the swing frame's base** that day 12's task is touched at: semi-axes in
 ## px, centred on `CityMap.swing_position()`, the bottom-centre the frame is drawn standing on. Read
@@ -723,7 +724,7 @@ func _ride_to_the_door(shell: EventInstance) -> void:
 	if door == Vector2.INF:
 		door = shell.global_position + Vector2.UP * Tuning.TILE_SIZE
 	_contact.ride(_step, shell, door - shell.global_position)
-	_contact.reach = DOOR_REACH
+	_contact.complete_within(DOOR_REACH)
 
 ## Whether she can stand within `DOOR_REACH` of the door point `door` today: one of the three
 ## frontage-lane tiles the reach covers — the one straight below the door and the one either side of
@@ -1973,7 +1974,7 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 ## that into `_on_contact_completed()`, which `complete_now()` calls before it returns.
 func _on_door_crossed(at: Vector2, axis: Vector2, inspected: bool) -> void:
 	if not _step or _step.target_kind != ResistanceSteps.TargetKind.DOOR or not _contact \
-			or _contact.is_done or _door_at == Vector2.INF:
+			or _contact.is_finished() or _door_at == Vector2.INF:
 		return
 	if absf((at - _door_at).dot(_door_axis)) > 1.0 or absf(axis.dot(_door_axis)) < 0.99 \
 			or at.distance_to(_door_at) > Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5:
@@ -2530,7 +2531,7 @@ func tick(delta: float) -> void:
 		_take_the_neighbor_away()
 	if _lingering_rider:
 		_tick_lingering_rider(delta)
-	if not _step or _expired or not _contact or _contact.is_done:
+	if not _step or _expired or not _contact or _contact.is_finished():
 		return
 	_elapsed += delta
 	if _rider and not _contact.rider_alive():
@@ -3170,7 +3171,7 @@ func _pointable_objective() -> Vector2:
 ## (`_point_the_arrow_at()`), so the contact's position is the arrow's.
 func red_arrow_target() -> Vector2:
 	var step := current_step()
-	if step == null or step.is_pickup or _contact.is_done:
+	if step == null or step.is_pickup or _contact.is_finished():
 		return Vector2.INF
 	if not ResistanceSteps.answers_at_several_places(step) \
 			or step.target_kind == ResistanceSteps.TargetKind.MAST:
@@ -3434,7 +3435,7 @@ func _point_the_arrow_at(key: Variant, at: Vector2, step: ResistanceSteps.Step) 
 				% step.index)
 	_arrow_key = key
 	if step.target_kind == ResistanceSteps.TargetKind.MAST and key is String \
-			and _contact and not _contact.is_done:
+			and _contact and not _contact.is_finished():
 		_mast_id = key
 		_contact.global_position = at
 

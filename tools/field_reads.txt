@@ -403,21 +403,6 @@ src/city/city.gd span
 # [ContactPoint] src/resistance/contact_point.gd
 src/dev/scene_recipe_runtime.gd is_done
 src/dev/scene_recipe_runtime.gd step
-src/resistance/resistance_director.gd atlas
-src/resistance/resistance_director.gd by_crossing
-src/resistance/resistance_director.gd is_done
-src/resistance/resistance_director.gd reach
-src/resistance/resistance_director.gd step
-src/resistance/resistance_director.gd touch_ellipse
-
-# [CordonOfficer] src/resistance/cordon_officer.gd
-src/resistance/park_cordon.gd atlas
-
-# [CordonTape] src/resistance/cordon_tape.gd
-src/resistance/park_cordon.gd across
-src/resistance/park_cordon.gd atlas
-src/resistance/park_cordon.gd length
-src/resistance/park_cordon.gd piece
 
 # [Crowd] src/crowd/crowd.gd
 src/city/city.gd atlas
@@ -429,9 +414,6 @@ src/city/city.gd view
 src/telemetry/run_session.gd sources
 
 # [CrowdAgent] src/crowd/crowd_agent.gd
-src/crowd/car_look.gd atlas
-src/crowd/crowd.gd atlas
-src/crowd/walker_look.gd atlas
 src/run/day_director.gd excitement
 
 # [DayController] src/day/day_controller.gd
@@ -1173,10 +1155,6 @@ src/events/walk_ground.gd half_length
 src/events/walk_ground.gd kind
 src/events/walk_ground.gd radius
 
-# [HelpText] src/ui/help_text.gd
-src/ui/hud.gd atlas
-src/ui/pause_screen.gd atlas
-
 # [HuntSpec] src/events/hunt_spec.gd
 src/events/event_def.gd ends_the_day
 src/events/event_def.gd lets_out
@@ -1281,11 +1259,6 @@ src/crowd/lane_mover.gd today
 src/city/poster_walls.gd drawn
 src/events/event_scheduler.gd drawn
 src/events/event_spawner.gd drawn
-
-# [ModeButton] src/ui/mode_button.gd
-src/ui/day_summary.gd atlas
-src/ui/pause_screen.gd atlas
-src/ui/title_screen.gd atlas
 
 # [MoveProposal] src/world/move_proposal.gd
 src/events/behaviours/event_car_driving.gd from

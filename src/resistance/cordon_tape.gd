@@ -32,6 +32,13 @@ var across := true
 ## A stretch's length, in pixels along its line.
 var length := Tuning.TILE_SIZE * 1.0
 
+## Sets this out as `which` piece, and for a tape its direction (`across` the way or along it) and
+## its `reach` along that direction, once, before it enters the tree.
+func set_out(which: Piece, runs_across: bool, reach: float) -> void:
+	piece = which
+	across = runs_across
+	length = reach
+
 func _ready() -> void:
 	if piece != Piece.TAPE:
 		return
@@ -46,25 +53,29 @@ func _ready() -> void:
 
 ## The baked atlas pages this piece is drawn from (`AtlasLibrary`): the city's, handed by the cordon
 ## that strings it; a piece nobody handed one makes its own when it first enters the tree.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
+
+## Hands this the atlas library its pictures are read from, once, before it enters the tree.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
 
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(&"street_kit")
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	_atlas.acquire(&"street_kit")
 
 func _exit_tree() -> void:
-	atlas.release(&"street_kit")
+	_atlas.release(&"street_kit")
 
 func _draw() -> void:
 	if piece == Piece.POST:
-		Sprites.draw_standing(self, atlas.region(POST), Vector2.ZERO)
+		Sprites.draw_standing(self, _atlas.region(POST), Vector2.ZERO)
 		return
 	if across:
 		var native := Vector2(AtlasTable.baked().native_size(TAPE_ACROSS))
-		draw_texture_rect(atlas.region(TAPE_ACROSS),
+		draw_texture_rect(_atlas.region(TAPE_ACROSS),
 				Rect2(-length * 0.5, -native.y, length, native.y), false)
 		return
 	var width := float(AtlasTable.baked().native_size(TAPE_ALONG).x)
-	draw_texture_rect(atlas.region(TAPE_ALONG),
+	draw_texture_rect(_atlas.region(TAPE_ALONG),
 			Rect2(-width * 0.5, -length - LIFT, width, length), false)

@@ -143,7 +143,7 @@ func _test_street_kit_consumers_share_one_reference_count(t) -> void:
 	park.atlas = atlas
 	t.add_child(park)
 	var tape := CordonTape.new()
-	tape.atlas = atlas
+	tape.use_atlas(atlas)
 	t.add_child(tape)
 	t.check(pages.loads(&"street_kit") == 1,
 			"the traffic light, the city edge, the park fence and the cordon tape share the same "
@@ -182,7 +182,7 @@ func _test_each_street_kit_consumer_holds_its_own_reference(t) -> void:
 			return node,
 		"the cordon tape": func(atlas: AtlasLibrary) -> Node:
 			var node := CordonTape.new()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 	}
 	for label in makers:
@@ -231,7 +231,7 @@ func _test_every_ui_region_is_baked_on_its_group(t) -> void:
 	var atlas := AtlasLibrary.new()
 	for symbol in ModeButton.Symbol.values():
 		var button := ModeButton.new()
-		button.atlas = atlas
+		button.use_atlas(atlas)
 		button.symbol = symbol
 		t.add_child(button)
 		t.check(button.icon != null, "the mode button's symbol %d has a picture from the page" % symbol)
@@ -246,7 +246,7 @@ func _test_ui_consumers_share_one_reference_count(t) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var button := ModeButton.new()
-	button.atlas = atlas
+	button.use_atlas(atlas)
 	t.add_child(button)
 	t.check(pages.held(&"ui"), "the mode button takes the page")
 	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
@@ -256,7 +256,7 @@ func _test_ui_consumers_share_one_reference_count(t) -> void:
 	indicator.atlas = atlas
 	t.add_child(indicator)
 	var help := HelpText.new()
-	help.atlas = atlas
+	help.use_atlas(atlas)
 	t.add_child(help)
 	t.check(pages.loads(&"ui") == 1,
 			"touch controls, the save indicator and the help text share the same page rather than "
@@ -277,7 +277,7 @@ func _test_each_ui_consumer_holds_its_own_reference(t) -> void:
 	var makers := {
 		"the mode button": func(atlas: AtlasLibrary) -> Node:
 			var node := ModeButton.new()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 		"touch controls": func(atlas: AtlasLibrary) -> Node:
 			var node: TouchControls = TOUCH_CONTROLS.instantiate()
@@ -289,7 +289,7 @@ func _test_each_ui_consumer_holds_its_own_reference(t) -> void:
 			return node,
 		"the help text": func(atlas: AtlasLibrary) -> Node:
 			var node := HelpText.new()
-			node.atlas = atlas
+			node.use_atlas(atlas)
 			return node,
 	}
 	for label in makers:
