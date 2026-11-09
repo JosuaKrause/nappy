@@ -1781,3 +1781,56 @@ static func _band_crossing(intensity: float, inner: float, outer: float, rate: f
 	var t := sqrt(left) if is_equal_approx(power, 2.0) else pow(left, 1.0 / power)
 	return inner + t * (outer - inner)
 
+
+# --------------------------------------------------------- what a caller asks ---
+# The questions a caller outside the events asks a row, each answered from the row's own settings,
+# so the caller never reads one to work the answer out itself.
+
+## **Whether its coming gets a badge at the screen edge**, for her walking at `walk_speed`: lethal
+## always, and otherwise only what she cannot outwalk (a thing slower than a walk is one she can
+## turn round and leave). A thing that does not telegraph its coming (`telegraphs`) is outside the
+## badge; an `AHEAD_OF_PLAYER` crossing is sited close and gone in seconds and is its own moment,
+## except a pursuer, which is warned of first and then placed just out of sight to close in.
+## `TOWARD_PLAYER` falls through on purpose: a road, not an ambush. Whether there is a silhouette
+## to put in the badge is the badge's own question (`DangerEdge.subject_for_def()`).
+func announces_its_coming(walk_speed: float) -> bool:
+	if not telegraphs:
+		return false
+	if spawn_mode == SpawnMode.AHEAD_OF_PLAYER and pursuit == null:
+		return false
+	if hard_fail:
+		return true
+	return mobile and speed > walk_speed
+
+## How fast it comes at her under its own steam: its chase speed for a pursuer, otherwise its
+## `speed`. What the badge starts a thing that arrives under its warning closing at.
+func approach_speed() -> float:
+	return chase_speed() if pursuit != null else speed
+
+## How far from its centre its field reaches her at all (`outer_radius`): where the badge measures
+## the gap to.
+func heard_within() -> float:
+	return outer_radius
+
+## Whether walking into its reach ends her day (`hard_fail`): a place that ends the day. A car's
+## strike is its driving's (`EventCarDriving`), not this.
+func ends_the_day() -> bool:
+	return hard_fail
+
+## The picture it is drawn as, which is the silhouette its badge carries (`EventPictures.icon_for()`).
+func picture() -> Look:
+	return look
+
+## Whether it holds her when she comes to it (`detain_seconds`): a chatting mother's conversation,
+## a door's hut or post. What the crowd's walkers are held at.
+func detains_her() -> bool:
+	return detain_seconds > 0.0
+
+## How long its telegraph lasts, in seconds (`telegraph_time`).
+func telegraphs_for() -> float:
+	return telegraph_time
+
+## Seconds from one of its instances coming to the next, kept on its own clock, or 0 for a row that
+## does not come again on a clock (`repeat_every`). A plan made of it starts from this.
+func comes_again_every() -> float:
+	return repeat_every

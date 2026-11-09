@@ -11,6 +11,9 @@ func run(t) -> void:
 	_test_the_wall_s_body_says_so(t)
 	_test_what_stands_clear_of_it(t)
 	_test_which_plans_are_fixed_parts(t)
+	_test_what_a_door_body_does_to_a_walker(t)
+	_test_what_its_field_reaches_and_whether_it_ends_the_day(t)
+	_test_a_plan_told_to_come_again_repeats(t)
 
 ## A body of the row `id` as the region planner stands it, at `at`.
 func _sealed(id: String, at := Vector2(320, 320)) -> EventScheduler.Planned:
@@ -100,3 +103,44 @@ func _test_which_plans_are_fixed_parts(t) -> void:
 	t.check(mast.is_a_fixed_part(), "and a loudspeaker mast")
 	var playground := EventScheduler.Planned.new(EventCatalogue.by_id("playground"), Vector2(320, 320))
 	t.check(playground.is_a_fixed_part(), "and an ambient row")
+
+## **Which door bodies hold a walker** (`detains_her()`): the hut on each sidewalk and the alley
+## door's post hold her, the boom over the road holds nobody, and a body stops her as far out as its
+## row's body does (`obstructs_within()`), what a siting reads off the wall and the doors.
+func _test_what_a_door_body_does_to_a_walker(t) -> void:
+	t.check(_door("checkpoint_hut").detains_her() and _door("checkpoint_post").detains_her(),
+			"a door's hut and an alley door's post hold a walker")
+	t.check(not _door("checkpoint_gate").detains_her(), "the boom over the road holds nobody")
+	t.check(not EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
+			.detains_her(), "and the day's cafe tables hold nobody")
+	var wall := _sealed("roadblock")
+	t.check(wall.obstructs_within() > 0.0 and wall.obstructs_within() == wall.row().obstructs_within(),
+			"the wall's body stops her as far out as its row's body does")
+	var cat := EventScheduler.Planned.new(EventCatalogue.by_id("cat_dash"), Vector2(320, 320))
+	t.check(cat.obstructs_within() == 0.0, "and a crossing cat stops her nowhere")
+
+## **Whether its field reaches a point** (`field_reaches()`), from where it stands now: where it was
+## placed while it is not in the world, and **measured from its centre**, out to where its row is
+## heard. And whether walking into its reach ends her day (`ends_the_day()`).
+func _test_what_its_field_reaches_and_whether_it_ends_the_day(t) -> void:
+	var row := EventCatalogue.by_id("alley_robbery")
+	var plan := EventScheduler.Planned.new(row, Vector2(320, 320))
+	t.check(plan.field_reaches(Vector2(320, 320) + Vector2(row.heard_within() - 1.0, 0.0)),
+			"its field reaches a point just inside where its row is heard")
+	t.check(not plan.field_reaches(Vector2(320, 320) + Vector2(row.heard_within() + 1.0, 0.0)),
+			"and not one just outside")
+	t.check(plan.ends_the_day(), "an alley robbery ends her day")
+	t.check(not EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
+			.ends_the_day(), "the day's cafe tables do not")
+
+## **A plan told to come again on a clock repeats** (`come_again_every()`, `repeats()`): each of the
+## building's vents is given its own period, whatever its row's.
+func _test_a_plan_told_to_come_again_repeats(t) -> void:
+	var plan := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
+	t.check(not plan.repeats(), "a plan of a row that does not come again does not repeat")
+	plan.come_again_every(4.0)
+	t.check(plan.repeats(), "told to come again every four seconds, it does")
+	var bang := EventCatalogue.explosion_outside()
+	t.check(bang.comes_again_every() > 0.0
+			and EventScheduler.Planned.new(bang, Vector2.INF).repeats(),
+			"a row that comes again on its own clock makes plans that repeat")

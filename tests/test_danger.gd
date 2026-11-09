@@ -30,6 +30,7 @@ func run(t) -> void:
 	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
 	_test_only_what_she_cannot_outwalk_earns_an_arrow(t)
 	_test_a_director_sited_pursuer_earns_an_arrow(t)
+	_test_a_row_with_no_silhouette_earns_no_arrow(t)
 	_test_the_screen_edge_is_the_same_size_for_everyone(t)
 	await _test_the_badge_measures_the_things_own_speed(t)
 	await _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t)
@@ -629,7 +630,7 @@ func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 		if not def:
 			continue
 		var instance := _instance(def)
-		t.check(DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
+		t.check(DangerEdge.subject_for_def(instance.row()).announces,
 				"'%s' is announced from off-screen: it is lethal or faster than a walk" % id)
 		instance.free()
 
@@ -638,7 +639,7 @@ func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
 		if not def:
 			continue
 		var instance := _instance(def)
-		t.check(not DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
+		t.check(not DangerEdge.subject_for_def(instance.row()).announces,
 				"'%s' is not, because turning round and leaving is enough" % id)
 		instance.free()
 
@@ -657,7 +658,7 @@ func _test_a_director_sited_pursuer_earns_an_arrow(t) -> void:
 			"charging_dog is still a director-sited pursuer")
 	if dog:
 		var instance := _instance(dog)
-		t.check(DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
+		t.check(DangerEdge.subject_for_def(instance.row()).announces,
 				"the day-3 dog is announced off screen once it is sited there")
 		instance.free()
 
@@ -666,10 +667,22 @@ func _test_a_director_sited_pursuer_earns_an_arrow(t) -> void:
 	var cat := EventCatalogue.by_id("cat_dash")
 	if cat:
 		var instance := _instance(cat)
-		t.check(not DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
+		t.check(not DangerEdge.subject_for_def(instance.row()).announces,
 				"a three-second crossing still has nothing to announce before it arrives")
 		instance.free()
 	edge.free()
+
+## **A badge says what is coming, so a row with no silhouette has nothing to say**: its coming may
+## be one its row announces (`EventDef.announces_its_coming()`), and still the edge raises no arrow
+## for it.
+func _test_a_row_with_no_silhouette_earns_no_arrow(t) -> void:
+	var truck := EventCatalogue.by_id("fire_truck")
+	t.check(DangerEdge.subject_for_def(truck).announces, "the fire engine earns an arrow")
+	var blank := truck.duplicate() as EventDef
+	blank.look = EventDef.Look.NONE
+	t.check(blank.announces_its_coming(Tuning.WALK_SPEED)
+			and not DangerEdge.subject_for_def(blank).announces,
+			"drawn as nothing, its coming is still announced by its row, and the edge has no arrow for it")
 
 ## `MARGIN` and `SCREEN_MARGIN` are screen px, which is only a fair unit if every player's screen
 ## shows the same slice of world. `"expand"` would let a wide monitor see more city than a laptop

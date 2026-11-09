@@ -28,7 +28,6 @@ func run(t) -> void:
 	_test_a_pending_warning_is_ranked_by_its_arrival_among_live_dangers(t)
 	_test_a_subject_no_longer_handed_over_is_forgotten(t)
 	_test_the_lead_window_is_a_time_and_not_a_distance(t)
-	_test_what_is_worth_an_arrow(t)
 
 ## The view as the model asks it: `margin_px` screen px past the edge are in sight too, at the
 ## camera's zoom of 2 (half a world px per screen px).
@@ -40,15 +39,13 @@ static func _vehicle(key: int, at: Vector2, speed := 190.0) -> BadgeModel.Subjec
 	s.key = key
 	s.position = at
 	s.speed = speed
-	s.chase_speed = speed
-	s.hard_fail = true
-	s.mobile = true
+	s.approach_speed = speed
 	return s
 
 static func _step(model: BadgeModel, subjects: Array) -> void:
 	for s: BadgeModel.Subject in subjects:
 		s.shown = VIEW.has_point(s.position)
-	model.step(STEP, Vector2.ZERO, subjects, _sees, Tuning.WALK_SPEED)
+	model.step(STEP, Vector2.ZERO, subjects, _sees)
 
 static func _up(model: BadgeModel, id: String) -> bool:
 	for b in model.announcing():
@@ -111,7 +108,6 @@ func _test_a_raised_badge_stays_up_while_she_walks_away_and_while_it_turns_away(
 		var model := BadgeModel.new()
 		var thing := _vehicle(1, Vector2(1000.0 if kind == "lethal vehicle" else 560.0, 0.0),
 				190.0 if kind == "lethal vehicle" else 120.0)
-		thing.hard_fail = kind == "lethal vehicle"
 		thing.logged_name = "thing"
 		for i in 30:
 			thing.position.x -= thing.speed * STEP
@@ -334,7 +330,7 @@ func _test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_
 	var in_view := func(p: Vector2, m: float) -> bool: return VIEW.grow(m * 0.5).has_point(p - her["at"])
 	for i in 10:
 		man.shown = VIEW.has_point(man.position - here)
-		model.step(STEP, here, [man], in_view, Tuning.WALK_SPEED)
+		model.step(STEP, here, [man], in_view)
 	man.charging = true
 	var first := -1
 	var dropped := 0
@@ -345,7 +341,7 @@ func _test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_
 		here.x -= 92.0 * STEP
 		her["at"] = here
 		man.shown = VIEW.has_point(man.position - here)
-		model.step(STEP, here, [man], in_view, Tuning.WALK_SPEED)
+		model.step(STEP, here, [man], in_view)
 		if man.shown:
 			break
 		var rel := man.position.x - here.x
@@ -383,7 +379,7 @@ func _test_a_pending_warning_is_announced_for_its_whole_warning(t) -> void:
 	w.position = Vector2(100.0, 0.0)  # in view: still announced, nothing there to see
 	w.left = 0.7
 	w.logged_name = "cyclist"
-	model.step(STEP, Vector2.ZERO, [w], _sees, Tuning.WALK_SPEED)
+	model.step(STEP, Vector2.ZERO, [w], _sees)
 	t.check(_up(model, "cyclist"), "a warning with nothing in the world yet is up, on screen or off")
 
 ## A pending warning with 0.7s left is ranked against a live thing by when each arrives: the live
@@ -425,7 +421,7 @@ func _test_the_warning_with_less_time_left_is_listed_first(t) -> void:
 		soon.left = 0.7
 		soon.logged_name = "soon"
 		var handed: Array = [soon, late] if sooner_first else [late, soon]
-		model.step(STEP, Vector2.ZERO, handed, _sees, Tuning.WALK_SPEED)
+		model.step(STEP, Vector2.ZERO, handed, _sees)
 		var names := []
 		for b in model.announcing():
 			names.append(b["id"])
@@ -464,23 +460,3 @@ func _test_a_subject_no_longer_handed_over_is_forgotten(t) -> void:
 	truck.position.x -= truck.speed * STEP
 	_step(model, [truck])
 	t.check(not _up(model, "fire_truck"), "handed over again it is a fresh thing, not badged on its first frame")
-
-func _test_what_is_worth_an_arrow(t) -> void:
-	var walk := Tuning.WALK_SPEED
-	var s := _vehicle(1, Vector2.ZERO)
-	t.check(s.worth_an_arrow(walk), "lethal and fast")
-	s.telegraphs = false
-	t.check(not s.worth_an_arrow(walk), "a thing that does not telegraph is outside the badge")
-	s.telegraphs = true
-	s.has_icon = false
-	t.check(not s.worth_an_arrow(walk), "no silhouette, nothing to say")
-	s.has_icon = true
-	s.ahead_of_player = true
-	t.check(not s.worth_an_arrow(walk), "an ahead-of-her crossing is its own moment")
-	s.pursues = true
-	t.check(s.worth_an_arrow(walk), "except a pursuer")
-	var cyclist := _vehicle(2, Vector2.ZERO, walk + 10.0)
-	cyclist.hard_fail = false
-	t.check(cyclist.worth_an_arrow(walk), "faster than a walk")
-	cyclist.speed = walk - 10.0
-	t.check(not cyclist.worth_an_arrow(walk), "slower than a walk, not lethal: she can turn round")

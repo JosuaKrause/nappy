@@ -517,7 +517,7 @@ from that frame, pointing at the place the thing will come from.
   beat that has it reach her at its loudest, `EventSpawner.age_when_warned()`). **A pursuer is
   created with its telegraph still to run**, since a pursuer's telegraph is its approach, the sight
   of it closing that she is owed. It keeps the badge it had until it has come into view
-  (`EventInstance.came_under_a_warning`), which is as soon as it moves.
+  (`EventInstance.was_warned_of()`), which is as soon as it moves.
 - **Where its ground has no place for it when the second is up, the warning is withdrawn**: the badge
   goes down, nothing comes, and the run log says so. A fire engine withdrawn this way is summoned
   again while the fire is in sight.
@@ -642,7 +642,7 @@ sited against the view in the first place.
 
 **The screen-edge badge is what makes the offscreen phase worth anything.** For a warned row it *is*
 the warning: up for the whole of it, since there is nothing in the world to see yet. Once the thing
-exists just off screen, `BadgeModel.Subject.worth_an_arrow()` keeps announcing it the way it announces
+exists just off screen, `EventDef.announces_its_coming()` keeps announcing it the way it announces
 anything lethal or faster than a walk that is out of sight and closing, until she can see it.
 
 ## Solid things are solid

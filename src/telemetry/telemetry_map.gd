@@ -79,8 +79,8 @@ const NO_ROLE_MARK := Color("8c93a1")
 ## carry it — what is stored is the mix.
 const CORRIDOR_ALPHA := 0.55
 
-## The single tile put through the middle of an event she **met** — came within `def.outer_radius`
-## of, the field she can actually feel — which is what tells a placement that cost her something
+## The single tile put through the middle of an event she **met** — came within the field she can
+## actually feel (`EventScheduler.Planned.field_reaches()`) — which is what tells a placement that cost her something
 ## from one that merely stood there.
 ##
 ## **It is a mark added rather than strength taken away, and the first version was the other way
@@ -88,8 +88,8 @@ const CORRIDOR_ALPHA := 0.55
 ## a wall placed in the far corner of a map she never walked into is still a wall in the wrong
 ## place, and it is the placement no trace can report — so the picture would have whispered exactly
 ## the thing it exists to shout. Drawn instead, every mark stays at full strength and the ones she
-## met carry a white pip. `TelemetryObserver._watch_met_events` decides "met" against the outer
-## radius rather than against `EventScheduler.Planned.was_live`, which only says the plan was once
+## met carry a white pip. `TelemetryObserver._watch_met_events` decides "met" against the field
+## rather than against `EventScheduler.Planned.was_live`, which only says the plan was once
 ## loaded into the world at `Tuning.EVENT_STREAM_RADIUS` — more than twice the reach of a typical
 ## row, so it would mark a great deal of decoration as if it had cost her something.
 const MET_MARK := Color("ffffff")
@@ -256,10 +256,10 @@ static func _mark_the_events(image: Image, map: CityMap,
 		if not plan.is_placed():
 			continue
 		var colour := _role_mark(plan.role)
-		if plan.path.size() >= 2:
-			_blend_tiles(image, _route_stroke(map, plan.path), colour, ROUTE_ALPHA)
-		_mark_one_event(image, map.world_to_tile(plan.position), colour,
-				plan.def.effect() == GameEnums.BlockerEffect.LETHAL, met.has(plan))
+		if not plan.stands_still():
+			_blend_tiles(image, _route_stroke(map, plan.walks()), colour, ROUTE_ALPHA)
+		_mark_one_event(image, map.world_to_tile(plan.placed_at()), colour, plan.ends_the_day(),
+				met.has(plan))
 
 ## One event's glyph, three tiles across whatever it is.
 ##

@@ -55,22 +55,21 @@ class Subject extends RefCounted:
 	## Identity across frames (the instance id); unused for a pending warning.
 	var key := 0
 	var position := Vector2.ZERO
-	## The row's own facts the rule reads.
+	## Whether it deserves an arrow at all: its row announces its coming
+	## (`EventDef.announces_its_coming()`, asked at her walk) and has a silhouette to put in the
+	## badge. Neither changes while it is handed over, so the adapter asks once.
+	var announces := true
+	## How fast it comes at her under its own steam (`EventDef.approach_speed()`): what a thing
+	## that arrives under its warning starts closing at.
+	var approach_speed := 0.0
+	## Its row's own speed, the approach a warning with nothing in the world yet is listed with.
 	var speed := 0.0
-	var outer_radius := 0.0
-	## Its speed while pursuing, where the row pursues.
-	var chase_speed := 0.0
-	var telegraphs := true
-	## Whether there is a silhouette to put in the badge.
-	var has_icon := true
-	## Sited ahead of her across her line (`EventDef.SpawnMode.AHEAD_OF_PLAYER`).
-	var ahead_of_player := false
-	var pursues := false
-	var hard_fail := false
-	var mobile := false
+	## How far from its centre its field reaches her (`EventDef.heard_within()`): the badge's gap is
+	## measured to there.
+	var heard_within := 0.0
 	## Over and done with: ignored.
 	var finished := false
-	## It was created under a warning that already ran (`EventInstance.came_under_a_warning`).
+	## It was created under a warning that already ran (`EventInstance.was_warned_of()`).
 	var warned := false
 	## It is charging this frame (`EventInstance.has_charged()`).
 	var charging := false
@@ -83,20 +82,6 @@ class Subject extends RefCounted:
 	var pending := false
 	var left := 0.0
 
-	## Whether something with these facts deserves an arrow at all: lethal always, and otherwise
-	## only what she cannot outwalk (an event slower than a walk is one she can turn round and leave).
-	## A thing that does not telegraph is outside the badge; one with no silhouette has nothing to
-	## say; an `AHEAD_OF_PLAYER` crossing is sited close and gone in seconds and is its own moment,
-	## except a pursuer, which is warned of first and then placed just out of sight to close in.
-	## `TOWARD_PLAYER` falls through on purpose: a road, not an ambush.
-	func worth_an_arrow(walk_speed: float) -> bool:
-		if not telegraphs or not has_icon:
-			return false
-		if ahead_of_player and not pursues:
-			return false
-		if hard_fail:
-			return true
-		return mobile and speed > walk_speed
 
 ## What to put on the edge this frame, soonest arrival first:
 ## `[time_to_reach, distance, payload, world position, approach, logged name]`.
@@ -120,8 +105,7 @@ static func _announces(approach: float, gap: float) -> bool:
 	return approach >= CLOSING_SPEED and gap <= approach * LEAD_TIME
 
 ## One frame. `here` is where she stands; `sees(point, margin_px)` is whether a world point is in
-## sight with `margin_px` screen px past the edge counted as in sight; `walk_speed` is her walk
-## (`Tuning.WALK_SPEED`). Replaces `coming`.
+## sight with `margin_px` screen px past the edge counted as in sight. Replaces `coming`.
 ##
 ## **Two paths, and only the first is the design.** `_announce_the_warnings()` is the end state: a
 ## warning is put up before its danger is placed, the badge points at where it will come from, and
@@ -129,31 +113,31 @@ static func _announces(approach: float, gap: float) -> bool:
 ## `CLOSING_SPEED`, `SCREEN_MARGIN`, `_announces()`, `_approach_speed()` and the `Subject` fields only it
 ## reads) badges dangers that are already in the world; the stairwell's masked man and the army truck
 ## still need it, and it goes, as a deletion, in the follow-up that places those two after their badge.
-func step(delta: float, here: Vector2, subjects: Array, sees: Callable, walk_speed: float) -> void:
+func step(delta: float, here: Vector2, subjects: Array, sees: Callable) -> void:
 	coming.clear()
 	if delta <= 0.0:
 		return
-	_measure_dangers_in_the_world(delta, here, subjects, sees, walk_speed)
-	_announce_the_warnings(here, subjects, walk_speed)
+	_measure_dangers_in_the_world(delta, here, subjects, sees)
+	_announce_the_warnings(here, subjects)
 	coming.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 
 ## A warning with nothing in the world yet is announced for the whole of its warning, on screen or
 ## off: it points at where the thing will come from, and there is nothing there to see yet. Sorted
 ## by when the thing will exist, which is the soonest it can arrive.
-func _announce_the_warnings(here: Vector2, subjects: Array, walk_speed: float) -> void:
+func _announce_the_warnings(here: Vector2, subjects: Array) -> void:
 	for subject: Subject in subjects:
-		if not subject.pending or not subject.worth_an_arrow(walk_speed):
+		if not subject.pending or not subject.announces:
 			continue
 		coming.append([maxf(subject.left, 0.0), subject.position.distance_to(here), subject.payload,
 				subject.position, subject.speed, subject.logged_name])
 
 ## The in-the-world path: see `step()`.
-func _measure_dangers_in_the_world(delta: float, here: Vector2, subjects: Array, sees: Callable,
-		walk_speed: float) -> void:
+func _measure_dangers_in_the_world(delta: float, here: Vector2, subjects: Array,
+		sees: Callable) -> void:
 	_generation += 1
 	for subject: Subject in subjects:
 		if not subject.pending and not subject.finished:
-			_measure(subject, delta, here, sees, walk_speed)
+			_measure(subject, delta, here, sees)
 	# Only the subjects alive this frame carry state forward; a key not touched above still reads an
 	# earlier generation and is erased here, which also keeps a freshly streamed thing from
 	# flashing an arrow on the frame it appears, and ends the badge of a danger that left the world.
@@ -161,8 +145,7 @@ func _measure_dangers_in_the_world(delta: float, here: Vector2, subjects: Array,
 		if _watch[key]["generation"] != _generation:
 			_watch.erase(key)
 
-func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
-		walk_speed: float) -> void:
+func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable) -> void:
 	var at := subject.position
 	var state: Dictionary
 	if _watch.has(subject.key):
@@ -174,8 +157,7 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 		# for the frames before it comes into view. So it starts closing at its own speed (a
 		# pursuer's at its pursuing speed), already raised, and the margin waits until it has been
 		# seen once.
-		var own_speed := subject.chase_speed if subject.pursues else subject.speed
-		state = {"was": at, "approach": own_speed if subject.warned else 0.0,
+		state = {"was": at, "approach": subject.approach_speed if subject.warned else 0.0,
 				"up": subject.warned, "seen": not subject.warned}
 		_watch[subject.key] = state
 	# The event's own approach: how much closer *it* got to where she is standing now. Both
@@ -198,7 +180,7 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 	var distance := at.distance_to(here)
 	# The gap to its *field*, not to its centre: an event reaches her when its outer radius
 	# does, and for a fire engine that is a third of a block earlier.
-	var gap := maxf(0.0, distance - subject.outer_radius)
+	var gap := maxf(0.0, distance - subject.heard_within)
 	# **A badge, once up, stays up until the danger is in sight or gone** *(the player: "a badge
 	# shouldn't disappear before the entity is visible")*: no timer ends it and neither does turning
 	# away, slowing, or the approach test lapsing. It is raised only for what announces and is outside
@@ -208,7 +190,7 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 	if subject.shown:
 		state["seen"] = true
 		state["up"] = false
-	elif subject.worth_an_arrow(walk_speed) and _announces(approach, gap) \
+	elif subject.announces and _announces(approach, gap) \
 			and not sees.call(at, SCREEN_MARGIN if state["seen"] else 0.0):
 		state["up"] = true
 	state["was"] = at
