@@ -57,7 +57,16 @@ var _forced := 0
 func _init(locations: DayLocations, draw: LocationDraw) -> void:
 	_locations = locations
 	_draw = draw
-	for location in locations.open_locations():
+	_index_what_is_open()
+
+## Indexes the locations still open by the buckets their ground touches, and only those: after the
+## dawn's draw none is, so a tick asks nothing.
+func _index_what_is_open() -> void:
+	_index = {}
+	_rects = {}
+	_near = []
+	_scanned_at = Vector2.INF
+	for location in _locations.open_locations():
 		var rect := Rect2(Vector2(location.tiles().position) * Tuning.TILE_SIZE,
 				Vector2(location.tiles().size) * Tuning.TILE_SIZE)
 		_rects[location] = rect
@@ -139,6 +148,7 @@ func draw_everywhere(order: Array[Location]) -> void:
 	var placed: Array[EventScheduler.Planned] = []
 	for location in order:
 		_draw_whole(location, placed)
+	_index_what_is_open()
 
 ## Hands the draw the walk it now judges against (`LocationDraw.judge_against()`): from the walk's
 ## start, what stands is the walk's.
