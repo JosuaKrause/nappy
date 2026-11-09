@@ -35,13 +35,15 @@ step, the callers outside the events folder.
 - **Two reads stay, because a method and a variable cannot share a name in GDScript** and both
   fields are still public for other callers: the plan's role, read by the run log's map, until the
   dawn's step makes the plan's fields private; and the row's speed, read where a badge is made
-  for a warning with nothing in the world yet, until rows are written as parts.
+  for a warning with nothing in the world yet, until that badge asks the row how fast it comes
+  (below).
 
 ## Choices the builder made where the design was silent, open to the player's overturn
 
 - **A warning with nothing in the world yet is logged with the row's plain speed**, which for a
-  pursuer warned of first is 0 and not its chase speed, as before. It is kept for parity, like the
-  three answers the design lists as slightly wrong.
+  pursuer warned of first is 0 and not its chase speed, as before this step: the run log says the
+  day-3 charging dog's badge is "closing 0px/s". It is kept here so the step stays at parity, and
+  is queued to be made correct in a pull request of its own (the item's section 7, point 6).
 - **The building's plan writing when an event first comes** has no name in the design; it is
   `come_first_in(seconds)`.
 - **The badge's subject stays a plain record** that carries answers in place of nine copied
