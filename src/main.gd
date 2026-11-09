@@ -628,11 +628,23 @@ func _settle_the_run() -> void:
 ## `run_begun`, since nothing about it is a run the page should count.
 func _start_the_flags_run() -> void:
 	_flow.opening = RunFlow.Opening.ESCAPE_BY_FLAG
+	_press_the_escape_briefs_for_a_rig()
 	_run.start_run(config.seed_override)
 	_apply_the_parent_flag()
 	if _flow.authored:
 		_run.header.day = config.day_override
 	_apply_the_mode_flags()
+
+## A rig on `--start-escape` that is not a `--route` walker (`--walk`, `--after`, `--press`, a
+## script) has each escape section's first brief pressed for it, as `--route`'s walkers do
+## (`BriefPresser`): a capture rig never wants the brief standing, which holds the tree paused over
+## a walk that goes nowhere. The retry brief after a loss is left to a person, as there.
+func _press_the_escape_briefs_for_a_rig() -> void:
+	if not config.is_rig or not config.route_targets.is_empty():
+		return
+	var presser := BriefPresser.new([DaySpec.Section.BUILDING, DaySpec.Section.CITY])
+	presser.use_continue(_on_summary_continued)
+	_flow.brief_opened.connect(func(spec: DaySpec) -> void: await presser.press(get_tree(), spec))
 
 ## The day this boot opens on: the run's own day, or one of the escape's two sections. **Which
 ## section is the run's own record where there is one** (`run.facts.escape_section`, which a save

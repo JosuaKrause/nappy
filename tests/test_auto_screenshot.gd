@@ -44,6 +44,9 @@ func run(t) -> void:
 	await _test_a_pursuit_stops_the_script_from_resuming(t)
 	await _test_a_pursuit_reverses_an_angled_step_too(t)
 	_test_a_headless_run_has_nothing_to_photograph(t)
+	_test_a_direction_is_still_held_when_the_capture_starts(t)
+	await _test_a_held_key_presses_the_bound_action(t)
+	await _test_a_key_tap_carries_its_physical_keycode(t)
 	_test_the_scan_finds_a_bare_wait_on_the_render_loop(t)
 	_test_only_a_covered_recording_needs_an_on_demand_frame(t)
 	_test_no_capture_under_src_waits_on_the_render_loop_alone(t)
@@ -86,6 +89,87 @@ func _test_a_headless_run_has_nothing_to_photograph(t) -> void:
 	DirAccess.remove_absolute(stem + ".tscn")
 	DirAccess.remove_absolute(stem + ".gd")
 	DirAccess.remove_absolute(stem + ".gd.uid")
+
+## The scene a child process runs to see what is held when the capture starts: `--walk east` and a
+## held `key:w`, the picture asked for at once, and a `before_capture` that prints what `Input`
+## says. The run is headless, so the capture refuses and quits after that line, which is all this
+## reads.
+const HOLD_PROBE := """extends Node
+func _ready() -> void:
+	var words := PackedStringArray(["--screenshot", OS.get_cmdline_user_args()[0], "--after", "0",
+			"--walk", "east", "--press", "key:w", "0"])
+	var rig := AutoScreenshot.from_config(RunConfig.parse(words, "", true))
+	rig.before_capture = func() -> void:
+		print("HELD east=%s north=%s" % [Input.is_action_pressed("move_right"),
+				Input.is_action_pressed("move_up")])
+	add_child(rig)
+"""
+
+## `--walk` and a held `--press` are still down on the frame the capture draws, since the rig let go
+## of them before the capture began. Asked of a process of its own, as the headless guard above is.
+func _test_a_direction_is_still_held_when_the_capture_starts(t) -> void:
+	var stem := "user://auto_screenshot_hold_probe_%d" % OS.get_process_id()
+	var script := FileAccess.open(stem + ".gd", FileAccess.WRITE)
+	script.store_string(HOLD_PROBE)
+	script.close()
+	var scene := FileAccess.open(stem + ".tscn", FileAccess.WRITE)
+	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s.gd\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % stem)
+	scene.close()
+	var output: Array = []
+	OS.execute(OS.get_executable_path(), PackedStringArray([
+			"--headless", "--path", ProjectSettings.globalize_path("res://"), "--quit-after", "600",
+			stem + ".tscn", "--", ProjectSettings.globalize_path(stem + ".png")]), output, true)
+	var text_output := "\n".join(output)
+	t.check(text_output.contains("HELD east=true north=true"),
+			"a walked direction and a held key are both down when the capture starts: %s" % text_output)
+	DirAccess.remove_absolute(stem + ".tscn")
+	DirAccess.remove_absolute(stem + ".gd")
+	DirAccess.remove_absolute(stem + ".gd.uid")
+
+## `--press key:d` held presses `move_right`, stays down however many frames pass, and lets go when
+## the rig releases its inputs.
+func _test_a_held_key_presses_the_bound_action(t) -> void:
+	var clock := UI.FakeClock.new()
+	var words := PackedStringArray(["--screenshot", "scratch_unused.png", "--after", "600",
+			"--press", "key:d", "1"])
+	var rig := AutoScreenshot.from_config(RunConfig.parse(words, "", true))
+	rig.simulation_clock = clock.read
+	t.add_child(rig)
+	await UI.frames(t)
+	t.check(not Input.is_action_pressed("move_right"), "a held key waits for its time")
+	await _at(t, clock, 1.5)
+	await UI.frames(t)
+	t.check(Input.is_action_pressed("move_right"), "key:d presses move_right at its time")
+	await _at(t, clock, 30.0)
+	t.check(Input.is_action_pressed("move_right"), "and is still down frames later")
+	rig._release_inputs()
+	t.check(not Input.is_action_pressed("move_right"), "until the rig lets go")
+	_let_go(rig)
+
+## A `key:` tap sets `physical_keycode` as well as `keycode`, the one the move bindings match.
+func _test_a_key_tap_carries_its_physical_keycode(t) -> void:
+	var clock := UI.FakeClock.new()
+	var seen: Array[InputEventKey] = []
+	var words := PackedStringArray(["--screenshot", "scratch_unused.png", "--after", "600",
+			"--press", "key:r", "0"])
+	var rig := AutoScreenshot.from_config(RunConfig.parse(words, "", true))
+	rig.simulation_clock = clock.read
+	var listener := _KeyListener.new()
+	listener.seen = seen
+	t.add_child(listener)
+	t.add_child(rig)
+	await UI.frames(t)
+	Input.flush_buffered_events()
+	t.check(seen.size() == 2 and seen[0].physical_keycode == KEY_R and seen[0].keycode == KEY_R,
+			"a tapped key carries both codes (got %d events)" % seen.size())
+	rig.free()
+	listener.free()
+
+class _KeyListener extends Node:
+	var seen: Array[InputEventKey] = []
+	func _unhandled_input(event: InputEvent) -> void:
+		if event is InputEventKey and event.keycode == KEY_R:
+			seen.append(event)
 
 # ------------------------------------------------------------------ the rig ---
 
