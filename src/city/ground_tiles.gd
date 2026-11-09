@@ -182,7 +182,7 @@ static func _cracked(map: CityMap, tile: Vector2i, day: int, source: int, plain:
 	if source != plain:
 		return source
 	if map.has_stretch():
-		var listed: Variant = map.stretch_cracks.get(tile)
+		var listed: Variant = map.stretch_crack_at(tile)
 		if listed == null:
 			return source
 		var crack: Vector2i = listed
@@ -191,7 +191,7 @@ static func _cracked(map: CityMap, tile: Vector2i, day: int, source: int, plain:
 	if scaled <= 0.0:
 		return source
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("crack:%d:%d:%d" % [map.seed_used, tile.x, tile.y])
+	rng.seed = hash("crack:%d:%d:%d" % [map.city_seed(), tile.x, tile.y])
 	var severity := rng.randf()
 	if severity > scaled:
 		return source

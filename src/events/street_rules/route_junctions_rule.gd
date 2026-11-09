@@ -103,7 +103,7 @@ static func _a_crossing_stays_open(map: CityMap, corridor: Corridor, entry: Arra
 		return false
 
 	var arms: Array = []
-	for segment in map.streets_at_junction(junction):
+	for segment in map.street_network().at_junction(junction):
 		if corridor.depth(segment.tile_rect().position) != 0:
 			continue
 		var open_here: Array[Vector2i] = []

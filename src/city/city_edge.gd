@@ -75,6 +75,11 @@ const RAMP_STEP_PX := 8.0
 ## added; an exit nobody handed one (a suite's) makes its own when it first enters the tree.
 var atlas: AtlasLibrary = null
 
+## Dresses the exit before it is added: drawn from `library` as `as_kind`.
+func dress(library: AtlasLibrary, as_kind: Kind) -> void:
+	atlas = library
+	kind = as_kind
+
 ## `AtlasLibrary` reference-counts, so acquiring both groups on every piece of every exit is one
 ## page load each, regardless of how many `CityEdge` instances the city spawns.
 func _enter_tree() -> void:

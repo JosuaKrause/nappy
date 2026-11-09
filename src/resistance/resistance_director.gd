@@ -1211,7 +1211,7 @@ func _through_alley_span(at: Vector2) -> Array[Vector2]:
 	if not _map:
 		return span
 	var tile := _map.world_to_tile(at)
-	for rect in _map.alley_rects:
+	for rect in _map.alley_lots():
 		if not rect.has_point(tile):
 			continue
 		var ends := _alley_ends(at)
@@ -1391,7 +1391,7 @@ func _alley_ends(at: Vector2) -> Array[Vector2]:
 	if not _map:
 		return ends
 	var tile := _map.world_to_tile(at)
-	for rect in _map.alley_rects:
+	for rect in _map.alley_lots():
 		if not rect.has_point(tile):
 			continue
 		var a: Vector2
@@ -1449,7 +1449,7 @@ func _alley_ends(at: Vector2) -> Array[Vector2]:
 ## Ties go to the first tile in row order, so the answer is the same every time it is asked.
 ## `Vector2.INF` when no courtyard rect holds `entrance`.
 func _courtyard_inner_end(at: Vector2, entrance: Vector2i) -> Vector2:
-	for court in _map.courtyard_rects:
+	for court in _map.courtyard_lots():
 		if not court.has_point(entrance):
 			continue
 		var farthest := Vector2.INF
@@ -1552,7 +1552,7 @@ func _marks() -> Array[Vector2i]:
 ## next tile toward the courtyard, which is courtyard ground where the passage is one tile long.
 ## `mouth` itself when no tile lies in from it.
 static func _mark_tile_of(map: CityMap, mouth: Vector2i) -> Vector2i:
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		if not rect.has_point(mouth):
 			continue
 		var step := Vector2i.ZERO
@@ -1586,7 +1586,7 @@ static func _is_mark_tile(map: CityMap, tile: Vector2i) -> bool:
 static func _is_alley_mouth(map: CityMap, tile: Vector2i) -> bool:
 	if map.tile_at(tile) != GameEnums.TileType.ALLEY:
 		return false
-	for rect in map.alley_rects:
+	for rect in map.alley_lots():
 		if not rect.has_point(tile):
 			continue
 		if rect.size.y >= rect.size.x:
@@ -2005,8 +2005,8 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 			_step_of_kind(ResistanceSteps.TargetKind.PARK_SWING), _map, null), rng)
 	if tile == Vector2.INF:
 		return Vector2.INF
-	var layout: BlockLayout = _map.block_layouts.get(CityGenerator.swing_park(_map))
-	return _map.swing_position(layout.playground) if layout else tile
+	var layout: BlockLayout = _map.layout_of(CityGenerator.swing_park(_map))
+	return _map.swing_position(layout.playground_rect()) if layout else tile
 
 ## **The station's door point on its facade**: the middle of the drawn door
 ## (`Building._draw_front_overlay()`, centred on the two pavement tiles of

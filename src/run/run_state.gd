@@ -77,7 +77,7 @@ static func format_clock_seconds(seconds: float) -> String:
 ## run session's at every boot; a run nobody hands one, as a test's own run is, writes nowhere.
 func use_trace(sink: RunTrace) -> void:
 	calendar.use_trace(sink)
-	attempt_spend.city_state.trace = sink
+	attempt_spend.city_state.use_trace(sink)
 
 # ------------------------------------------------------------------ lifecycle ---
 

@@ -17,8 +17,10 @@ this step), and what the scheduler still shares is public there (`EventScheduler
 `leaves_no_line_along_a_sidewalk()`), or public on the rule that owns it
 (`StreetInvalidation.room_around()`, `DoorClearanceRule.clear_of_the_doors()`,
 `RouteSidewalkRule.closes_the_run()` and `closes_a_walked_sidewalk_band()`). The moved code asks
-rather than reads fields: `CityMap` gained two questions (`segment_containing()`,
-`streets_at_junction()`), `EventDef` one (`obstructs_within()`), and `Planned` the accessors the
+rather than reads fields: the rules reach the street network through `CityMap.street_network()`
+(#1257's accessor, merged in; this branch's own two delegating questions, `segment_containing()` and
+`streets_at_junction()`, went at the merge so the network has one way in), `EventDef` gained one
+question (`obstructs_within()`), and `Planned` the accessors the
 rules read and write it through (`walks()`, `give_role()`, `set_piece()`, beside
 its `row()` and `placed_at()`); the walked-sidewalk check asks `CityMap.is_closed()`. The move
 places every cell of the probe as before it. They replace `_judge()` as the dawn draw's invalidation

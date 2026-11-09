@@ -170,7 +170,7 @@ static func _busyness(map: CityMap, vertical: bool, index: int) -> float:
 	if map.is_main_road(vertical, index):
 		return ARTERIAL_BUSYNESS
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("busy:%d:%s:%d" % [map.seed_used, "v" if vertical else "h", index])
+	rng.seed = hash("busy:%d:%s:%d" % [map.city_seed(), "v" if vertical else "h", index])
 	return rng.randf_range(0.5, 1.7)
 
 ## How busy a corridor is *for one kind of traffic*.
@@ -182,7 +182,7 @@ static func _busyness(map: CityMap, vertical: bool, index: int) -> float:
 ## other end of the trade it offers: nothing on it can kill you and a great deal of it is in
 ## your way.
 static func busyness_for(map: CityMap, vertical: bool, index: int, cars: bool) -> float:
-	for span in map.precinct_spans:
+	for span in map.precinct_stretches():
 		if (span.x == 1) != vertical or span.y != index:
 			continue
 		# Walkers only. A precinct is three blocks of an otherwise ordinary street, so the cars
@@ -225,5 +225,5 @@ static func pick_corridor_in_range(rng: RandomNumberGenerator, map: CityMap, ver
 ## A point on the pavement beside the north-south arterial, half way down the map. The one
 ## place the crowd's noise floor is highest, which makes it the place worth measuring.
 static func arterial_pavement(map: CityMap) -> Vector2:
-	var x := map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
+	var x := map.main_road_corridor() * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
 	return map.tile_to_world(Vector2i(x, map.size.y / 2))

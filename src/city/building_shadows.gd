@@ -65,6 +65,14 @@ var drawer: ShadowDrawer
 ## geometry is still prepared per nearby chunk and reconstructed when a chunk returns.
 var skip_draw := false
 
+## Lays the shaded tiles through `through` (see `drawer`).
+func draw_through(through: ShadowDrawer) -> void:
+	drawer = through
+
+## Draws no shadows when `skipped` (see `skip_draw`).
+func skip_drawing(skipped: bool) -> void:
+	skip_draw = skipped
+
 ## Stores `rects` — a city's building footprints, in tile coordinates
 ## (`CityMap.building_rects`) — as the source for shadow geometry. Non-streamed use also computes
 ## and builds all drawing chunks here; streamed use prepares nearby chunks on demand.
