@@ -721,10 +721,6 @@ func plan_of(block: Vector2i) -> BlockPlan:
 func carve_block(block: Vector2i, layout: BlockLayout) -> void:
 	block_layouts[block] = layout
 
-## Records a courtyard's open ground (`courtyard_rects`).
-func add_courtyard(rect: Rect2i) -> void:
-	courtyard_rects.append(rect)
-
 ## Records a plaza (`square_rects`).
 func add_square(rect: Rect2i) -> void:
 	square_rects.append(rect)
@@ -732,11 +728,6 @@ func add_square(rect: Rect2i) -> void:
 ## Records a through-alley (`alley_rects`).
 func add_alley(rect: Rect2i) -> void:
 	alley_rects.append(rect)
-
-## Records her front-door notch and the block it is on (`home_rect`, `home_block`).
-func place_home(rect: Rect2i, block: Vector2i) -> void:
-	home_rect = rect
-	home_block = block
 
 ## The landmarks, each as the pair of blocks it joins (`big_buildings`).
 func big_building_pairs() -> Array[Rect2i]:

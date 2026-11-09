@@ -201,31 +201,9 @@ src/telemetry/run_session.gd map
 
 # [CityMap] src/city/city_map.gd
 src/city/blackout.gd power_station
-src/city/city_generator.gd absent_segments
-src/city/city_generator.gd alley_rects
-src/city/city_generator.gd big_buildings
-src/city/city_generator.gd block_layouts
-src/city/city_generator.gd block_plans
-src/city/city_generator.gd building_rects
-src/city/city_generator.gd built_over
-src/city/city_generator.gd calm_blocks
 src/city/city_generator.gd courtyard_rects
-src/city/city_generator.gd dead_ends
 src/city/city_generator.gd home_block
 src/city/city_generator.gd home_rect
-src/city/city_generator.gd main_road
-src/city/city_generator.gd network
-src/city/city_generator.gd power_station
-src/city/city_generator.gd power_station_door
-src/city/city_generator.gd power_station_door_key
-src/city/city_generator.gd power_station_industrial_blocks
-src/city/city_generator.gd precinct_spans
-src/city/city_generator.gd recipe_diagnostics
-src/city/city_generator.gd seed_used
-src/city/city_generator.gd square_rects
-src/city/city_generator.gd tiles
-src/city/city_generator.gd zone_anchor
-src/city/city_generator.gd zone_rects
 src/city/recipe_city_builder.gd block_plans
 src/city/recipe_city_builder.gd building_rects
 src/city/recipe_city_builder.gd network

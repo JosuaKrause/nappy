@@ -32,3 +32,19 @@ that replace them, then one pull request per area.
 from `tools/field_reads.txt` (its `# [Class] path` groups say which class's fields are read and
 from where; `--summary` prints the counts). The reads are heaviest on the event definition and
 the event instance, then the city map and the city, so the events go first, as the ask says.
+
+- **The city's own classes** have their readers converted except what follows. The authored-scene
+  builder (`RecipeCityBuilder`) and the map's capture and restore (`RecipeCityContext`) fill and read
+  the map's fields wholesale, some by name, so they wait for a design: the map capturing and
+  restoring itself, or a builder it takes whole. `City.events` and `City.crowd` are read by the
+  poster walls and the frame recorder and trace, and an accessor on `City` adds uses of `EventManager`
+  and `Crowd` to breaks `tools/layer_map.py` lists, so those readers are handed the parts instead.
+  A field only a test still reads (`CityMap.home_rect`, `home_block`, `courtyard_rects`,
+  `Building.scenery_clock`, `door_world_x_range`, `power_station`, `station_door_col`,
+  `station_yard_cols`, `BuildingShadows.streamed`, `falls_on`, `PosterState.pasted_through`) keeps its
+  direct write in the city until its tests read through a method the game also calls.
+- **The lines the placement rewrite and the third hand-ins pull request touch** (`src/events/`,
+  `src/routes/`, `src/dev/`, `scene_recipe*`, `day_director.gd`, `main.gd`, `day_planner.gd`,
+  `run_session.gd`, the event manager and `EventWorld`, scenery residency and ground, the blackout,
+  the still watch and the debug readout) are converted after those land, and the fields they read
+  become underscore-private with the method taking the field's name.
