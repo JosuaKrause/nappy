@@ -5,12 +5,23 @@ description: Rules for the run log — the one invariant it must never break, wh
 
 # Telemetry
 
+**The rules not to miss:**
+
+- **Telemetry never touches gameplay**: no RNG, no `day_rng()` stream, nothing that changes a
+  placement or a roll. A logged roll is the existing roll hoisted into a variable, never a new one.
+- **Anything derivable from the seed, `Tuning` or the catalogue stays out of the log.**
+- **A per-frame check goes in `TelemetryObserver`**, never in the gameplay class. The frame
+  record's timing wrap is the one exception.
+- **A timed system wraps its unchanged body in `if timing.on:`** on the `FrameTiming` it is handed,
+  and a `_draw()` override carries no counting code.
+- **Game logic writes through the `RunTrace` it is handed**, never `Telemetry` itself.
+- **A new entry answers a question open in the queue or a playtest doc**, and reuses a kind from
+  the table in `docs/TELEMETRY.md`.
+
 The run log is an **ordered log, not a metrics dump** — what happened, in what order, readable top
 to bottom with no tool. It records what the code **cannot recompute**, above all the random outcomes
 that branch a run: a one-shot that fired, a block arc that advanced. Those depend on run history, so
 no seed reproduces them.
-
-**Anything derivable from the seed, `Tuning` or the catalogue stays out.**
 
 Read a run back with `./tools/telemetry.sh`. The table of entry kinds is `docs/TELEMETRY.md`.
 
@@ -41,79 +52,51 @@ again handed one that keeps every line, and requires the plans to be **identical
 Anything needing a per-frame check goes in `TelemetryObserver`, **not** in the gameplay class. The
 telemetry stays out of the files that decide things, which is what makes the rule easy to keep.
 
-**The one exception is the per-system frame record's timing wrap** (`FrameRecord`,
-docs/TELEMETRY.md, "Per-system frame records"). It records what makes a frame spill over its 2ms
-budget (quiet-yak #510), since the stutter comes with many objects on screen and influence, pathing
-or drawing may each be the culprit, and the player accepted the exception itself (azure-tapir #526)
-on 2026-10-04. A phone has no profiler, so the only way to know what a system cost in a frame is to
-time it where it runs, and an observer cannot do that from outside. The wrap is a single branch in
-front of an unchanged body, and it takes one of two shapes by how often it runs, because what it
-costs with the record off is paid by every player; the scenery queue alone has a third.
+**The one exception is the frame record's timing wrap** (docs/TELEMETRY.md, "Per-system frame
+records"). It records what makes a frame spill over its 2ms budget (quiet-yak #510), and the
+player accepted the exception itself (azure-tapir #526): a phone has no profiler, so what a system
+cost in a frame can only be timed where it runs, which an observer cannot do from outside.
 
-A system timed **once a frame** (the crowd's and the event manager's physics steps, the sweep, the
-halo, the edge) reads `FrameRecord.on` and moves its body into a private function of its own (the
-crowd reads and charges through the `CrowdTiming` sink it is handed, `timing.running()`,
-`timing.enter()`, `timing.leave()`, which `FrameRecordTiming` in `src/telemetry/` forwards to the same
-statics, so `src/crowd/` names none of the record):
+**A timed system is handed its timing sink and wraps its body.** The sink is a `FrameTiming`
+(`src/frame_timing.gd`, the null sink whose `on` is false; `FrameRecord` in `src/telemetry/` is the
+subclass that feeds the record), kept in a member that whoever builds the system sets. The body
+moves into a private function behind one branch, as in `EventManager`:
 
 ```gdscript
 func _physics_process(delta: float) -> void:
-	if FrameRecord.on:
-		var outer := FrameRecord.enter(FrameRecord.CROWD)
-		_tick_the_crowd(delta)
-		FrameRecord.leave(outer)
+	if timing.on:
+		var outer := timing.enter(FrameTiming.EVENTS)
+		_tick_the_events(delta)
+		timing.leave(outer)
 	else:
-		_tick_the_crowd(delta)
+		_tick_the_events(delta)
 ```
 
-A thing timed **once per body per frame** (a live event) copies the switch when it is made, so off
-it pays one member read: a
-static read and a second call on each of a couple of hundred bodies made every player's frame
-measurably longer on a desktop (docs/evidence/m159-frame-record-2026-10-04/). It is made per day,
-after the recorder has started. A live event times its drawn frame, its look's redraw gate, with
-no call to itself; its step runs inside the event manager's physics tick, which is timed once:
+`on`, `enter()` and `leave()` are the handed sink's, never statics of a class. `enter()` answers
+the bucket that was being charged, so a timed system inside another is charged to itself alone.
+Off, the wrap is two reads and no call, which every player pays: a live event wraps its
+`_process()` the same way, a couple of hundred of them a frame. An event's step and a crowd
+agent's step are not timed on their own, since each runs inside a tick that is. `src/crowd/` names
+none of the record: it is handed a `CrowdTiming`, which `FrameRecordTiming` in `src/telemetry/`
+forwards to it.
 
-```gdscript
-var _timed := FrameRecord.on
+- **A new bucket** is a constant and its `BUCKET_NAMES` entry in `src/frame_timing.gd`, its short
+  name in `FrameLedger.SHORT_NAMES`, and a row in the bucket table of docs/TELEMETRY.md.
+- **A `_draw()` override carries no counting code.** The per-kind `_draw()` counts the player
+  asked for (jolly-trout #541) are taken by `FrameRecorder` from each counted node's `draw`
+  signal. A new node that draws is added by class to `FrameRecorder._draw_kind()`, or, where the
+  recorder may not name it (a node of the view, a canvas that is no class of its own), sets the
+  meta `FrameTiming.DRAW_KIND_META` to its `FrameTiming.Draw` kind. A crowd agent alone counts
+  itself, through `drew()` on its `CrowdTiming`.
+- **A new drawn kind** is a member of `FrameTiming.Draw`, its name in `FrameLedger.COUNTER_NAMES`
+  in the same order, and its column in docs/TELEMETRY.md.
+- **The scenery queue's wrap is its own and is not a pattern to copy.**
+  `SceneryResidency.update()` also counts its jobs by kind and times what they leave to the
+  engine's deferred flush, which is what the player's question was about: the scenery queue's
+  time, how far past its 2ms, and which jobs.
 
-func _process(_delta: float) -> void:
-	if _timed and FrameRecord.on:
-		var outer := FrameRecord.enter(FrameRecord.EVENTS)
-		look.redraw_if_the_picture_changed()
-		FrameRecord.leave(outer)
-		return
-	look.redraw_if_the_picture_changed()
-```
-
-A step that re-ran itself could not take back what the inner run emitted, which is why a car's
-frame is proposed and committed by its driving (`EventCarDriving`) rather than by a second run. A
-crowd agent is not timed on its own: it steps inside the crowd's physics tick
-(`Crowd._step_the_agents()`), which is timed once, and keeps its `CrowdTiming` only to count its
-draws.
-
-The **scenery queue** (`SceneryResidency.update()`) is the third shape, and it is the scenery
-queue's alone. It reads `FrameRecord.on` once into a local and, under the record, also times what
-its jobs leave to the engine's deferred flush, by queuing two window markers with `call_deferred`
-either side of everything it queues there (`_record_deferred_scenery(true)` before, `(false)`
-after), keeps a `kind` on each pending job, and counts the jobs it runs by kind and the time it
-spent past its budget (`FrameRecord.scenery_job()`, `FrameRecord.scenery_update()`). That is what
-the player's question was about — the scenery queue's time, how far past its 2ms, and which jobs —
-and none of it changes what the queue does or in what order. It is not a pattern to copy into
-another system.
-
-A **`_draw()` counter** is the fourth shape, and it counts and nothing else. The first statement of
-a game `_draw()` override is `if FrameRecord.on: FrameRecord.drew(FrameLedger.DRAWS_<KIND>)` (a
-crowd agent's is `if frame_timing != null and frame_timing.running(): frame_timing.drew()`, through
-the sink it is handed): one guarded read off, one added integer on, never a time (the page's clock steps in 100µs, and a
-`_draw()` is far shorter) and never a branch in the body. It exists because the player asked which
-kinds of node redraw each frame, the per-kind `_draw()` counts (jolly-trout #541), and a node's own
-`_draw()` is the only place that is known. A new `_draw()` override in `src/` takes the line with
-the kind it belongs to, or the kind `other`; dev-only layers are not counted.
-
-Nothing else about the frame record goes in a gameplay class — no reading of state, no counting
-beyond the scenery queue's own jobs and the `_draw()` counter, no deferred markers beyond the
-scenery queue's, no branch that changes what the body does — and a new timed system takes one of
-the first two shapes, with its bucket added to `FrameRecord` and the table in docs/TELEMETRY.md.
+Nothing else about the frame record goes in a gameplay class: no reading of state, no counting, no
+deferred markers, no branch that changes what the body does.
 
 ## Game logic never names the run log
 
