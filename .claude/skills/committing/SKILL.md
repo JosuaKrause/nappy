@@ -5,10 +5,25 @@ description: The git workflow for this repo — one branch per work item, one co
 
 # Git workflow
 
-**Manage local branches and commits autonomously. Merging a PR is the orchestrating Claude Code
-session's under the player's standing permission, and any other session's only when the
-orchestrating session hands it the merge or the player gives their word in that session** — see
-"Merging".
+**Manage local branches and commits autonomously.** The rules nobody may miss, one line each; the
+sections below hold the detail and the reasons.
+
+- **Every GitHub write goes out as an agent identity**, as `uv run python tools/agent-identity.py
+  run <role> -- <command>`: `claude-coder` on a pull request that changes code,
+  `claude-orchestrator` on a docs-only one and for every issue write, `claude-reviewer` for a
+  review. A write the guard denies is a stop, never tried another way.
+- **Text handed to a write goes through a file in a fresh directory**, in three calls.
+- **One branch per work item, named `feature-<thing>`**, pushed and with its pull request before
+  the session ends.
+- **A pull request carries its queue move, its record and every doc it makes false** before it
+  merges.
+- **A pull request merges only after a review posted *ready* against its head**, with one approval
+  and a green `test`. Merging is the orchestrating session's: squashed, by auto-merge, confirmed
+  by `tools/await-merge.sh` in the background.
+- **A merged branch is retired at once** with the wrapped `tools/prune-merged.sh` line.
+- **A picture in a description is linked by commit hash and embedded as an image.**
+- **A release needs the player's own go-ahead in the current session.**
+- **Before committing, run verify's checks**, and `./tools/lint.sh` for a governed doc.
 
 ## Who a commit and a pull request are from
 
@@ -23,9 +38,9 @@ the guard's prompt, below.
   labels, asking a question on one, closing a filed batch and reopening it, each through
   `tools/inbox.py` (**inbox**), never a direct `gh issue` or `gh api` command; the script changes
   no label on a note once it is open, and a label to change is asked about on the note instead —
-  and every write on a pull request
-  with no code changes: its commits, its push, the pull request itself, its comments, merging
-  `main` into it, its merge once the player has said go, and retiring its branch.
+  and every write on a pull request with no code changes: its commits, its push, the pull request
+  itself, its comments, merging `main` into it, its merge under the standing permission
+  ("Merging"), and retiring its branch.
 - **`claude-coder`** makes every write on a pull request that changes code — a queue move or a
   decision record committed inside it included, merging `main` into it, fixing its CI, its merge
   and retiring its branch — and cuts a release. The orchestrator identity never writes on such a
@@ -33,9 +48,8 @@ the guard's prompt, below.
 - **`claude-reviewer`** posts every review and its findings, on either kind of pull request
   (**pr-review**), and **is the only Claude Code identity that approves one** (busy-ibis 9): GitHub
   stops only a pull request's own author from approving it, so without the rule the coder and the
-  orchestrator could approve each other's pull requests toward the approval `main` requires. The
-  guard below denies an approving review under any other identity; a COMMENT or REQUEST_CHANGES
-  review stays open to every one.
+  orchestrator could approve each other's pull requests toward the approval `main` requires. A
+  COMMENT or REQUEST_CHANGES review stays open to every identity.
 
 A pull request has no code changes when CI calls it docs-only: `tools/ci_classify.py` decides that
 from the files it changes, and **verify**'s "What `test` means on each kind of pull request" says
@@ -48,105 +62,111 @@ no hook, no CI check — compares a pull request's authors with what it contains
 orchestrator identity: its issue writes and its docs-only pull requests stay `codex-coder`'s, and
 its reviews `codex-reviewer`'s.
 
-`uv run python tools/agent-identity.py status <role>` (**using-tools**) says whether the role is
+**The wrapper.** `uv run python tools/agent-identity.py status <role>` says whether the role is
 usable; every command that **writes** to GitHub for that piece of work — a commit, a push, a `gh`
-post — then runs through `uv run python tools/agent-identity.py run <role> -- <command>` instead of
-running it directly, so the commit, the push and the pull request all show as `<role>[bot]` rather
-than as the player talking to themself. An issue write is the one exception: it runs through
-`tools/inbox.py`, which takes the role from `--role` or `NAPPY_AGENT_ROLE` and runs each of its own
-writes through that wrapper itself, and never as a wrapped `gh issue` command. A read (`git status`,
-`gh pr view`, ...) runs unwrapped; minting a token for one is wasted work the player never asked
-for. **When `status` reports the role not usable (not created yet, not installed on the repository,
-or a cloud session — see `tools/agent-identity.py`'s own module docstring), the session never runs
-the write under the player's own account on its own say-so.** Where no identity can work at all — a
-Claude Code cloud session, or a machine with no identity directory — the guard below can ask the
-player about an ordinary write instead of denying it: a local commit or history step (`git commit`,
-`merge`, `rebase`, `pull`, `cherry-pick`, `revert`, `am`), a push of a branch, or a pull-request
-write (`gh pr create`, `comment`, `edit`, `ready`) goes to them as a permission prompt
-(frosty-pelican) for that one command, which only they can approve. Every other write is never asked
-about, only denied — among them a push of a tag, of every branch or of a `*` pattern (a pushed `v*`
-tag publishes the site), a push naming a shell expansion (`"$TAG"` can be a `v*` tag) or one the
-guard cannot read to its end, a forced, deleting, mirroring or pruning push, a pull request's merge,
-a release and a `gh issue` write — since a prompt is too easy to click through for any of them, and
-for the last because the player wants an agent's issue writes to go through a script
-(bouncy-heron 14) rather than a direct `gh issue` command; that script, `tools/inbox.py`, never
-writes as the player, so where no identity can work an issue write is not made at all. **That asking
-is off unless the player switches it on** with `NAPPY_ASK_FOR_PLAYER_WRITES=1` in the environment a
-session starts with (a cloud environment's own variables, or the launching shell); unset, every
-unwrapped write is denied (frosty-pelican). A session never sets or clears it for itself. Anything
-the guard denies the session stops on and tells the player about, and Codex stops on every one of
-them — except a direct `gh issue` write, which is made again through `tools/inbox.py` instead. A
-`PreToolUse` Bash hook (`.claude/hooks/github-write-guard.sh`) makes this mechanical: it denies a
-`git push`, a commit-making git verb, a GitHub-writing `gh` call, or one of the `tools/` scripts
-that pushes or posts internally, in command position, unless the same command is wrapped in `run
-<role> --`, so the rule holds even when a session forgets it. **A `gh issue` write it denies wrapped
-or not, and an issue write through `gh api` the same way** (all but a comment, which a pull
-request's own conversation shares), since an agent writes an issue only through `tools/inbox.py`,
-whose own writes run in a process of their own that the hook never sees. **An approving review it
-denies under every identity but a reviewer's**, and a review whose event it cannot read (a body from
-`--input`, a `$(...)` among `gh pr review`'s words) counts as one, so a coder's or the
-orchestrator's review names its event inline (`-f event=COMMENT`, `gh pr review --comment`) and
-sends its body from a file (`-F body=@file`, `--body-file file`). **A git alias it reads as the
-command it stands for**, asking git in the session's directory, and an alias set on the command line
-(`git -c alias.*`) it denies whatever it says. A write named in a commit message or a PR body denies
-like the write itself, so a message is written to a file and passed with `-F file` or `--body-file
-file`, or given to a wrapped `git commit -F - <<'EOF'` that is the whole command, one of the three
-shapes whose text the hook reads as text (**using-tools** lists them). A read stays unguarded — the
-hook's own header comment carries the current, exact list, rather than a second copy of it here that
-can drift from it. **An admin action no bot identity can perform** — changing a repository ruleset,
-a GitHub App's own permissions — **is the player's to do directly, in GitHub's own settings, never
-something to wrap and retry.**
+post — then runs as `uv run python tools/agent-identity.py run <role> -- <command>`, so the commit,
+the push and the pull request all show as `<role>[bot]` and not as the player talking to themself.
+An issue write is the one exception: it runs through `tools/inbox.py`, which takes the role from
+`--role` or `NAPPY_AGENT_ROLE` and wraps each of its own writes itself. A read (`git status`, `gh pr
+view`, ...) runs unwrapped; minting a token for one is wasted work. **Inside an agent worktree,
+Claude Code's permission check can refuse the `uv run` form; the same wrapper run by the worktree's
+own interpreter, `.venv/bin/python tools/agent-identity.py run <role> -- <command>`, is the
+fallback** (round-moose 3): the same script, token and identity, which the guard accepts as
+wrapped, in a `.venv` that `uv sync` makes. **When `status` reports the role not usable** (not
+created yet, not installed on the repository, or a cloud session) **or the fallback is refused too,
+the session stops and reports; it never runs the write bare under the player's account.**
 
-**Inside an isolated agent worktree, Claude Code's permission check can refuse the `uv run` form of
-the wrapper; the same wrapper run by the worktree's own interpreter, `.venv/bin/python
-tools/agent-identity.py run <role> -- <command>`, is the fallback** (round-moose 3). It is the same
-script with the same token and the same identity, and `github-write-guard.sh` accepts it as wrapped.
-A worktree with no `.venv` yet gets one from `uv sync`. The fallback changes only how the wrapper is
-started: when it is refused too, or `status` reports the role not usable, the agent stops and
-reports, as above, and never runs the command bare.
+**The guard.** `.claude/hooks/github-write-guard.sh`, a `PreToolUse` hook on every shell call,
+denies a GitHub write that is not wrapped in `run <role> --`, so the rule holds when a session
+forgets it; its header comment holds the exact, current list of what counts as a write, and its
+denial names the way out. What a session needs beyond that:
+
+- **A denial is a stop.** The session tells the player and tries no other command shape, and Codex
+  stops on every one of them. The one exception is a direct `gh issue` write, denied wrapped or
+  not, which is made again through `tools/inbox.py`: the player wants an agent's issue writes to go
+  through a script (bouncy-heron 14), and the script never writes as the player, so where no
+  identity can work an issue write is not made at all.
+- **An approving review is denied under every identity but a reviewer's**, and a review whose event
+  the guard cannot read counts as one. So a coder's or the orchestrator's review names its event
+  inline (`-f event=COMMENT`, `gh pr review --comment`) and sends its body from a file.
+- **Where no identity can work at all** (a Claude Code cloud session, a machine with no identity
+  directory) **the guard can ask the player about one ordinary write at a time instead of denying
+  it** (frosty-pelican): a local commit, a push of a branch, a pull-request write. A tag push, a
+  merge, a release and an issue write are never asked about, only denied. **The asking is off
+  unless the player switches it on** with `NAPPY_ASK_FOR_PLAYER_WRITES=1` in the environment a
+  session starts with (frosty-pelican); a session never sets or clears it for itself.
+  `references/write-guard.md` has the whole list of what is asked and what is denied.
+- **An admin action no bot identity can perform** — changing a repository ruleset, a GitHub App's
+  own permissions — **is the player's to do directly, in GitHub's own settings, never something to
+  wrap and retry.**
 
 **The commit still carries the session's own attribution trailer.** `run` changes who git says
-authored and committed the change (the bot's name and noreply address), not what the message
-says: the `Co-Authored-By` line the session's own instructions ask for is added exactly as it
-always was.
+authored and committed the change (the bot's name and noreply address), not what the message says:
+the `Co-Authored-By` line the session's own instructions ask for is added as always.
+
+## Text handed to a write goes through a file
+
+**A commit message, a pull request's body, a review, a comment, a note for the inbox: each is
+written to a file in a directory made for it, and the file is passed by name.** Never a fixed name
+such as `/tmp/pr_body.md`: `/tmp` outlives a session, so a fixed name can already hold another
+run's text, and a write of one's own that did not land then publishes theirs. Three calls, each a
+command of its own:
+
+1. `mktemp -d`, which prints the new directory.
+2. `cat > <that literal path>/<name> <<'EOF'`, the text, `EOF`, and nothing else in the command:
+   the path pasted as printed, no variable, no quotes around it, no second command.
+3. The write, passing the file: `git commit -F <file>`, `gh pr create --body-file <file>`, `gh api
+   -F body=@<file>` (capital `-F`; lowercase `-f` sends the literal text `@<file>`),
+   `tools/inbox.py capture --body-file <file>`. Read the file back first when the text is long.
+
+The second call stands alone because of the guard: **a write's words in text deny like a call** —
+in an echo, a commit message, a body, a heredoc — **except in three shapes, each the whole command
+and nothing else in it** (plaid-tapir 4):
+
+- `cat > FILE <<'EOF'` (or `cat <<'EOF' > FILE`, `>>`), the delimiter quoted, whose body is text;
+- a coder's or the orchestrator's wrapped `git commit -F - <<'EOF'`, whose body is text and which
+  is judged as the wrapped commit;
+- `rg` or `grep` with one quoted pattern, plain options and paths, whose pattern is text.
+
+Anything else — `d=$(mktemp -d)` or `mkdir -p … &&` in front, a second command after the body, an
+unquoted delimiter, `<<-`, a `$` in a double-quoted pattern, a pipe — is read as the guard reads
+every command, and a body that names a write then denies.
 
 ## Pushing
 
 **Always push branch work and create or update its pull request before ending the session**
-(woolly-finch 12).
+(woolly-finch 12). Work is not left only on a local branch, nor a remote work branch without a pull
+request, unless there is a specific good reason, documented in the final report with the pull
+request's link. This is standing authorization; no separate request to push or open it is needed.
 
-Do not leave work only on a local branch or leave a remote work branch without a PR unless there is
-a specific good reason, documented in the final report. Use a draft PR when the work is unfinished,
-and include the PR link in the final report. This is standing authorization; no separate request to
-push or open the PR is needed.
-
-**A ready-for-review PR carries the completed work and its verification** (see "Before
-committing"). An unfinished draft may be pushed with failing or outstanding checks, stated in the
-PR; backing it up does not claim that it is ready to merge. Unfinished work stays out of `main`,
-which is the tree a fresh clone receives.
+**Finished work opens a ready pull request, never a draft**: it carries the completed work and its
+verification (see "Before committing"). **A draft is for unfinished work only**, pushed so that it
+is not lost, with its failing or outstanding checks stated in it; backing work up does not claim it
+is ready to merge. Unfinished work stays out of `main`, which is the tree a fresh clone receives.
 
 ## Merging
 
 **The orchestrating Claude Code session holds the player's standing permission to merge a PR**
-(`CLAUDE.md`, inbox #1063 in gentle-walrus), once the gates below hold. Merging includes enabling auto-merge,
-merging by hand, and asking an agent or monitor to merge. Every other session (an implementation
-agent, a Codex session) merges only a PR the orchestrating session hands it, an agent or monitor
-running its merge (`tools/land-prs.sh` for one) under the orchestrating session's standing
-permission (inbox #1063 in gentle-walrus), or one the player authorizes in that session; a permission given in
-another session does not carry over to it. A review agent never merges (**pr-review**).
-Finishing implementation, opening a PR and green CI do not by themselves make a PR mergeable.
-Leave the PR open and report its link when the session has no permission to merge it.
+(`CLAUDE.md`, inbox #1063 in gentle-walrus), once the gates below hold. Merging includes enabling
+auto-merge, merging by hand, and asking an agent or monitor to merge. Every other session (an
+implementation agent, a Codex session) merges only a PR the orchestrating session hands it, an agent
+or monitor running its merge (`tools/land-prs.sh` for one) under the orchestrating session's
+standing permission (inbox #1063 in gentle-walrus), or one the player authorizes in that session; a
+permission given in another session does not carry over to it. A review agent never merges
+(**pr-review**). Finishing implementation, opening a PR and green CI do not by themselves make a PR
+mergeable. Leave the PR open and report its link when the session has no permission to merge it.
 
-**A standing permission reaches Claude Code's auto-mode classifier reliably only through the player's own Claude Code
-settings** (`~/.claude/settings.json`: `permissions.allow` rules for a command, `autoMode.environment` or
-`autoMode.allow` lines for anything else; a reviewer spawn only by an `autoMode` line, since auto mode drops `Agent`
-allow rules). The classifier reads `CLAUDE.md`, yet writes its standing permission covered were refused until the
-player's settings carried it, so `CLAUDE.md` and the skills are not relied on as the player's consent. The player's
-own approval of one action (their next message, or the `/permissions` recently-blocked list) is a different thing
-and is fine. When the classifier refuses a write the player's standing permission covers, report the refusal to the
-player naming their settings; never work around it: no other command shape, no `gh api` substitute, no
-player-write prompt, no allow rule added to the repository's own settings files, to get the same write through. *Proposed by the filer, not asked for, open to the player's
-correction: the player asked only for the standing permission in their own settings (curly-rabbit #1094).*
+**A standing permission reaches Claude Code's auto-mode classifier reliably only through the
+player's own Claude Code settings** (`~/.claude/settings.json`: `permissions.allow` rules for a
+command, `autoMode.environment` or `autoMode.allow` lines for anything else; a reviewer spawn only
+by an `autoMode` line, since auto mode drops `Agent` allow rules). The classifier reads `CLAUDE.md`
+and still refuses writes its standing permission covers when the player's settings do not carry it,
+so `CLAUDE.md` and the skills are not relied on as the player's consent (curly-rabbit #1094). The
+player's own approval of one action (their next message, or the `/permissions` recently-blocked
+list) is a different thing and is fine. When the classifier refuses a write the standing permission
+covers, report the refusal to the player naming their settings; never work around it: no other
+command shape, no `gh api` substitute, no player-write prompt, no allow rule added to the
+repository's own settings files, to get the same write through.
 
 **A PR merges only after its review**
 (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it). A review under
@@ -154,138 +174,61 @@ correction: the player asked only for the standing permission in their own setti
 whose later pushes were reviewed too; a merge of `main` whose result is Git's own needs no second
 review (**pr-review**). The standing permission and green CI do not replace it.
 
-**Merging needs one approving review, from a reviewer bot or the player, in addition to the green
-`test` check** — the live `main approvals` ruleset exempts the player (a repository admin) from the
-approval rule on *any* PR they merge, not only their own. A reviewer bot's own APPROVE (posted as
-`claude-reviewer`/`codex-reviewer`, under **pr-review**) counts the same as the player's.
+**Two rulesets guard `main`**, and `references/rulesets.md` explains them once. What they come to:
 
-**The `main approvals` ruleset dismisses stale approvals when new commits are pushed** (the player
-set it on 2026-11-04, inbox #1068 in gentle-walrus; `gh api repos/JosuaKrause/nappy/rules/branches/main` shows it as
-`dismiss_stale_reviews_on_push`). A push after an approval therefore blocks the merge until a new
-approval, so auto-merge left on is safe against a later push: it cannot merge what nobody
-approved. **Whether a merge of `main` that is Git's own** (**pr-review**'s exception, which needs
-no review of new content) **keeps the approval is GitHub's to say**: where it dismisses the
-approval, the PR needs a re-approval against the new head, not a review of new content, and the
-reviewer posts it after the one check that `git show --remerge-diff <merge>` prints nothing. The
-exception is about what is reviewed, not about whether the ruleset sees an approval.
-
-**A review thread is resolved only by whoever opened it, and that is a convention, not a gate**
-(**pr-review** says who and why): an open thread never blocks an approval or a merge on its own.
-
-When the session may merge, check mergeability and let CI gate the merge. Resolve
-conflicts under the **merging-main** skill before enabling auto-merge. **Squash-merge**, and
-**prefer auto-merge** (inbox #1068 in gentle-walrus): once the review is ready, turn auto-merge on
-(`gh pr merge <n> --squash --auto`, or `tools/land-prs.sh`, which does that for a list and merges
-directly a PR GitHub already calls clean) and move on to the next thing. **No polling monitor and
-no background wait just to trigger the merge** (inbox #1068 in gentle-walrus): GitHub merges the PR when its checks
-are green and its approval is in, and nothing needs to be held open for that.
-
-**Auto-merge is confirmed by a timer or a script, the orchestrator's choice, as long as the wait
-and reading its result cost no tokens** (inbox #1072 in gentle-walrus). The player said to check
-back later that it went through and that a timer is enough (inbox #1068 in gentle-walrus); then
-that a fixed timer was overly safe, and to estimate better, undershoot a little and poll the rest
-with a script, not an agent (inbox #1070 in gentle-walrus). That overturns the player's earlier word that a timer needs no polling (inbox #1068 in gentle-walrus) for the tail after the estimate only; the player's word that no polling monitor is wanted just to trigger the merge (inbox #1068 in gentle-walrus) stands. The script meets the rule now: right after turning auto-merge on, run
-`tools/await-merge.sh <the PRs>` with the Bash tool's `run_in_background`, which re-invokes the
-session when it exits. It estimates when the PR's CI ends from the unfinished jobs of its latest
-run and how long the same jobs took in recent green runs on `main`, sleeps until then, and polls
-every 20 seconds until every PR is MERGED. Its output is quiet by default (one estimate line, then
-one line per PR and `main`'s CI run; `--verbose` keeps per-poll lines), because reading it costs
-tokens. **The numbers are the filer's proposal, not the player's**: the shortest of the last three
-runs per job, the latest job's end minus one minute, 20 seconds between polls, and a cap of 30
-minutes past the estimate (`--max-poll`). When it exits, a PR that shows MERGED is retired (`tools/prune-merged.sh <branch>`, see "Branches"; the
-main checkout pulls `main` first); a red check or a conflict it names is fixed (under
-**merging-main** for a conflict, with the fix reviewed under **pr-review**: a push dismisses the
-approval, so auto-merge left on waits for the new approval and cannot land the fix unseen, and
-`tools/land-prs.sh` turns it off on a stop so that the new approval does not fire a merge before it
-is chosen); a PR with auto-merge off or not approved is reported at once, and one still unmerged
-when the cap runs out is for the orchestrator to look at, not to loop on. A batch runs one script
-for all of its PRs, confirms every one and names each failure. When every PR has merged it prints
-`main`'s CI run on the last merge commit. No agent holds the wait.
-
-**Several PRs can merge in a row without re-greening each one.** Two rulesets guard `main`. The
-`main` ruleset requires a pull request and the `test` check, run on the merge result — every
-consistency check and every test of the game, except on a docs-only pull request, where the game's
-tests are skipped and every consistency check still runs (**verify** says what each kind of pull
-request gets). The `main approvals` ruleset requires one approving review, from a reviewer bot or
-the player, and dismisses it when a commit is pushed afterwards; repository admins (the player) may bypass it on any pull request they merge, not only
-their own, and resolving the review threads is not required (a convention, not a gate — see
-above). So green CI alone is not the gate.
-Neither ruleset requires a branch to be up to date with `main`
-(`strict_required_status_checks_policy` is off), so an approved PR whose `test` check is green
-merges after `main` has moved under it as long as the merge is still clean; a conflict still blocks
-it and is resolved on the branch. **What that trades away is real**: the check ran on that branch's
-merge result, not on the one it actually gets, so a semantic conflict between two PRs that touch
-different files passes both gates and lands broken. Watch `main`'s own CI run after a batch rather
-than assuming the last green PR spoke for it; `tools/await-merge.sh` names the run on the last merge commit once every PR has merged,
-and `.github/workflows/ci.yml` never cancels a run on `main`, so every merge commit gets one.
+- **A merge needs a green `test` check and one approving review**, from a reviewer bot or the
+  player; green CI alone is not the gate.
+- **A push after an approval dismisses it** (inbox #1068 in gentle-walrus), so auto-merge left on
+  cannot merge what nobody approved. A merge of `main` that is Git's own may lose the approval too,
+  and then needs a re-approval, not a review of new content.
+- **An open review thread blocks nothing**: resolving one is a convention, not a gate
+  (**pr-review**).
+- **No branch has to be up to date with `main`**, so an approved, green PR merges after `main` has
+  moved under it while the merge is clean. Two PRs that are wrong only together pass both gates:
+  `main`'s own CI run on the last merge commit of a batch is the check for that.
 
 **PRs land without waiting for each other or for `main`'s CI, and when `main` breaks after a
-merge, a fix for it is landed on `main`** (freckled-moose #914). Nothing requires landing
-one at a time or an up-to-date branch; the player asks for tests that are isolated and not flaky
-instead.
+merge, a fix for it is landed on `main`** (freckled-moose #914). Nothing requires landing one at a
+time; the player asks for tests that are isolated and not flaky instead.
+
+**How a merge goes**, once the review is ready:
+
+1. Check mergeability. A conflict is resolved on the PR's branch under **merging-main**, and the
+   resolution is reviewed under **pr-review** before anything merges.
+2. **Squash-merge, by auto-merge** (inbox #1068 in gentle-walrus): `gh pr merge <n> --squash --auto`,
+   or `tools/land-prs.sh <n>...`, which does that for a list and merges directly a PR GitHub
+   already calls clean. It handles every PR it is given as the one role it runs under, so docs-only
+   PRs go in a call under `run claude-orchestrator --` and code PRs in one under `run claude-coder
+   --`. Then move on: **no polling monitor and no background wait just to trigger the merge**
+   (inbox #1068 in gentle-walrus), since GitHub merges the PR when its checks are green and its
+   approval is in.
+3. **Confirm that it went through, at no cost in tokens** (inbox #1072 in gentle-walrus): the wait
+   is sized to what is left of the PR's CI, undershot a little, and the tail is polled by a script,
+   not an agent (inbox #1070 in gentle-walrus). `tools/await-merge.sh <the PRs>`, run right after
+   step 2 with the Bash tool's `run_in_background`, does both and re-invokes the session when it
+   exits; its output is short because reading it costs tokens. One call confirms a whole batch. No
+   agent holds the wait.
+4. **Act on what it prints.** A PR that shows MERGED is retired ("Branches"; the main checkout
+   pulls `main` first). A red check or a conflict it names is fixed on the branch (a conflict
+   under **merging-main**) and the fix reviewed under **pr-review**: the push dismisses the approval, so auto-merge left on waits for the new one and
+   cannot land the fix unseen, and `tools/land-prs.sh` turns auto-merge off on a stop so that the
+   new approval does not fire a merge before it is chosen. A PR with auto-merge off or not approved
+   is reported at once. One still unmerged when the script's cap runs out is the orchestrator's to
+   look at, not to loop on.
+5. **Watch `main`'s CI run on the last merge commit**, which the script prints once every PR has
+   merged.
 
 ## Releasing
 
-**A push is a check and a tag is a release.** `https://nappy.josuakrause.com/` serves the game.
-`.github/workflows/ci.yml` runs lint, check, the full suite, sharded, and the browser check — the
-release Web export, built and played in Chrome exactly as the deploy builds and plays it — on
-every push to `main` and every pull request but a docs-only one, which gets the consistency checks
-alone (**verify**)
-— a new push to a pull request cancels that pull request's older runs, and a run on `main` is never
-cancelled. A push to `main` is never docs-only, so the commit a tag points at has had every check.
-`.github/workflows/deploy.yml` fires on a `v*` tag and nothing else: verify, boot check, export,
-upload, publish, then the GitHub release, in that order. **The deploy does not run the suite
-again.** The `version tags` ruleset requires the `test` check on the commit a tag points at, so a
-tag on a red or untested commit cannot be pushed, and the deploy's first job asks the API for that
-check's outcome and refuses to build without it — the same read `tools/release.sh` waits on before
-it tags. So a commit that fails in the browser cannot be tagged at all; the deploy's own browser
-check, on the very files it publishes, is the second look rather than the first.
-
-**The release's notes are generated, not written.** The deploy's last job runs `tools/release-notes.py
-<tag>` — deterministic from git alone, no model and no network call to compute — and publishes its
-Markdown as the tag's GitHub Release (`gh release create --notes-file`, or `gh release edit` when a
-release for that tag already exists, so a re-run of the deploy is idempotent). One bullet per
-commit's own subject line on `main`'s first-parent history, grouped into a Game and a Tooling and
-docs section by what each commit changed. A patch tag (`vX.Y.Z`, `Z>0`) covers everything since the
-previous tag; a minor tag (`vX.Y.0`) covers everything since the previous `.0` tag, folding in every
-patch between them, and a major tag is treated the same way. `tools/release.sh`'s dry run previews
-the same notes before anything is tagged.
-
-**Publishing is a separate, deliberate act, and it needs its own go-ahead from the player in the
-current session**; the standing merge permission is not release permission. Completed work may be
-pushed without asking, since pushing `main` publishes nothing.
-
-**Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest version tag
-and prints what it would do. It acts only when given a second literal `push` argument, and it
-refuses a dirty tree, any branch but `main`, a `main` that is not level with `origin/main`, a
-commit that already carries the newest `v*` tag, and a machine with no `gh` — every refusal fires
-in the dry run too, so the dry run tells the truth about whether the real thing would work. **It
-tags nothing until it has read the `test` check on `main`'s commit as green.** That check is CI's
-last job (it needs every other job: classify, gates, hooks, cost-table, game, plan, shards, costs and browser), so it reads `none` for
-the first minutes after a merge and the `push` form waits, polling every 20 seconds. A read that
-fails is retried with `gh`'s own error printed, never taken as a pass; a failed check refuses, and
-so does a check still not green after 30 minutes, a bound that exists so an unattended run cannot
-hang forever and that a normal run never reaches. Ctrl-C while it waits is safe, since nothing is
-tagged yet. Semver, and **`major` is reserved for a change that breaks or fundamentally alters the
-game**. An agent's own `push` run goes through
-`uv run python tools/agent-identity.py run claude-coder -- tools/release.sh <part> push` (Codex the
-same as `codex-coder`) — "Who a commit and a pull request are from" is why, and
-`.claude/hooks/github-write-guard.sh` denies the bare form. The player's own run at their own
-terminal is unwrapped either way (`tools/lib_agent_role.sh`'s `agent_run` only wraps when
-`NAPPY_AGENT_ROLE` is set); the player's own go-ahead above is what release still needs regardless
-of who types the command.
-
-**A fix on `main` is not a fix on the site**, and that is the sentence to keep in mind before
-telling anybody the page is well. The site serves whatever the newest tag points at, so `git tag
---list 'v*'` and `tools/release.sh`'s own dry run are what say whether a given commit is out there.
-A release has carried a game-ending bug before (`tools/decisions.sh M73`).
-
-**A browser fetches a new release whole.** The export publishes `index.js`, `index.wasm` and
-`index.pck` under a directory named for the release tag, because GitHub Pages sends
-`Cache-Control: max-age=600` on everything with no header surface to change it, and under fixed
-names each file's ten minutes would run independently, pairing a fresh `index.html` with the
-previous release's `index.pck` (`tools/decisions.sh M80`). So a report of a stale build is worth
-believing rather than explaining away.
+**A push is a check and a tag is a release**: `https://nappy.josuakrause.com/` serves whatever the
+newest `v*` tag points at, so **a fix on `main` is not a fix on the site**. **Publishing needs its
+own go-ahead from the player in the current session**; the standing merge permission is not release
+permission. A release is cut with `tools/release.sh <major|minor|patch>`, which prints its plan and
+acts only with a trailing `push`; an agent runs that form as `uv run python tools/agent-identity.py
+run claude-coder -- tools/release.sh <part> push`. `major` is reserved for a change that breaks or
+fundamentally alters the game. `references/releasing.md` holds what CI and the deploy check, how
+the notes are generated, what the script refuses and why a browser fetches a release whole: read it
+before cutting a release or answering whether a commit is live.
 
 ## The squash commit is the pull request's title and description
 
@@ -320,19 +263,22 @@ whoever later merges `main` into another branch: the edit is part of the change 
 same PR. A doc the change makes false is the commonest case, but a picture it makes stale, a test it
 makes wrong and the text of another open PR it makes untrue (a sentence, a strip picture, a side
 view) are fixed the same way, by the change that made them; the reconciliation when `main` is
-merged into the other PR is not where the omission is meant to be found. That covers the queue — the entry's folder under `docs/todo/`, which goes
-stale fastest because it holds the work the PR just did — and every other governed doc the change
-touches: `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`, `ARCHITECTURE`, `NARRATIVE`, `README`,
-`CLAUDE.md`, the skills, and the docstrings on anything edited. **A PR that finishes an item deletes
-the item's file and files what it built as a decision**, `docs/decisions/<entry name>.md` (made with
-`tools/new-name.sh decision --entry <name> "<title>"`, which names a further record of an entry
-`<entry name>-<adjective>-<animal>`, never `-2` (inbox #937 in plaid-penguin, inbox #941 in breezy-alpaca; read as: two branches building at once
-draw the same next number, the filer's reading of the player's remark that the reason is known, open to overturn)); **when that was the entry's last item, the entry's folder goes in the same PR, after the record is drawn** (`new-name.sh --entry` finds the entry by its folder, so a record drawn once the folder is deleted fails),
-because the queue holds open work only and the entry stops being open the moment the PR merges.
-Another entry's `after:` line naming it stays as it is: the record is what makes the wait count
-as over (`tools/queue.sh` prints it as `<name>, closed`, and the lint accepts it), so closing an
-entry never edits a second one, and the end-of-session pass (**session-cleanup**) deletes the
-line.
+merged into the other PR is not where the omission is meant to be found. That covers the queue — the entry's
+folder under `docs/todo/`, which goes stale fastest because it holds the work the PR just did — and
+every other governed doc the change touches: `CITY`, `EVENTS`, `MECHANICS`, `TELEMETRY`,
+`ARCHITECTURE`, `NARRATIVE`, `README`, `CLAUDE.md`, the skills, and the docstrings on anything
+edited.
+
+**A PR that finishes an item deletes the item's file and files what it built as a decision**,
+`docs/decisions/<entry name>.md`, made with `tools/new-name.sh decision --entry <name> "<title>"`,
+which names a further record of an entry `<entry name>-<adjective>-<animal>`, never `-2` (inbox #937
+in plaid-penguin, inbox #941 in breezy-alpaca). **When that was the entry's last item, the entry's
+folder goes in the same PR, after the record is drawn** (`new-name.sh --entry` finds the entry by
+its folder, so a record drawn once the folder is deleted fails), because the queue holds open work
+only and the entry stops being open the moment the PR merges. Another entry's `after:` line naming
+it stays as it is: the record is what makes the wait count as over (`tools/queue.sh` prints it as
+`<name>, closed`, and the lint accepts it), so closing an entry never edits a second one, and the
+end-of-session pass (**session-cleanup**) deletes the line.
 
 **The queue's order is each entry's band line**, the first lines of its `README.md`
 (`priority: bug|now|next|later|parked`, then any `after:` lines), and `tools/queue.sh` prints it.
@@ -348,33 +294,34 @@ the pass that untangles it is a milestone rather than a review comment.
 
 **The test is the same one the docs rule uses:** if `main` at the squashed commit would hand a fresh
 reader a sentence that is no longer true, or a picture, a test or another PR's text that no longer
-matches what the change did, the PR is not finished. Read the entry's own folder
-before proposing, not after.
+matches what the change did, the PR is not finished. Read the entry's own folder before proposing,
+not after.
 
 **And every doc the change owes is in the PR before it merges. This is a hard requirement**
 (woolly-finch 13). The entry's files, the decision record, the review item and every other doc the
 change touches are committed on the branch by the time the merge button is pressed. Pushing them
 onto an open PR is fine; filing them in the next PR, or in a cleanup afterwards, is not — once the
 squashed commit exists, `main` has handed every reader a false sentence until something else lands.
-Before merging, re-read the branch's own diff against the list above and ask what it left stale. The
-end-of-session cleanup pass is for drift no single PR caused, not for finishing a PR's own doc work.
+Before merging, re-read the branch's own diff against the list above and ask what it left stale.
 
 **A work item never merges while its queue item is unresolved** (woolly-finch 14). Resolved means
 the item's file is gone from its entry's folder and its record — what was built, the measurement,
 the rejected options — is filed under `docs/decisions/`, both on the branch. A PR whose own item
 still sits open in the queue is not finished, however green its checks are; if the item is only
 partly built, the PR either finishes it or rewrites the item's file on the branch to hold exactly
-what is still open, with the built half filed as a decision.
+what is still open, with the built half filed as a decision. CI holds a pull request that changes
+`src/` or `tests/` to this (`tools/ci_code_pr_queue.py`, which also accepts a description line `No
+queue item: <reason>`).
 
 **And work that only a person can judge adds its review item in the same PR**: a file
 `docs/review/<entry name>.md`, made with `tools/new-name.sh review --entry <name> "<title>"`, which
 names a second item from the same entry `<entry name>-<adjective>-<animal>`, never a number
-(woolly-finch 18, inbox #941 in breezy-alpaca). The item says what to do,
-where to look, and the question a run answers, its steps written as prose rather than numbered; the
-record of what was built stays in the decision. The review items are the list a playtest is asked
-against, so an item missing from them is an item no run will ever be asked to look at.
+(woolly-finch 18, inbox #941 in breezy-alpaca). The item says what to do, where to look, and the
+question a run answers, its steps written as prose and not numbered; the record of what was built
+stays in the decision. The review items are the list a playtest is asked against, so an item missing
+from them is an item no run will ever be asked to look at.
 
-The **session-cleanup** skill still runs at the end of a session — it catches drift that no single
+The **session-cleanup** skill still runs at the end of a session: it catches drift that no single
 change is responsible for, reassesses long-open items and re-reads the numbers. It is not where a
 PR's own doc work goes.
 
@@ -382,11 +329,11 @@ PR's own doc work goes.
 
 **An image or file in a PR description is linked by commit hash, never by branch**
 (tooling-audit-python-3-14-ruff-mypy-and-links-that-outlive-a-branch). A URL of the shape
-`.../blob/feature/<thing>/docs/evidence/x.png?raw=true` or
-`raw.githubusercontent.com/<owner>/<repo>/feature/<thing>/...` works while the branch exists and
+`.../blob/feature-<thing>/docs/evidence/x.png?raw=true` or
+`raw.githubusercontent.com/<owner>/<repo>/feature-<thing>/...` works while the branch exists and
 returns a 404 the moment the branch is deleted — and this workflow deletes every branch as soon as
-it is merged, so every such link in every merged PR is dead. The description is the one place the
-before-and-after pictures live once the PR is closed, so a dead link there is the evidence gone.
+it is merged. The description is the one place the before-and-after pictures live once the PR is
+closed, so a dead link there is the evidence gone.
 
 Link the commit instead, and **embed a picture with image syntax, never as a bare URL**
 (woolly-finch 28):
@@ -409,16 +356,8 @@ A branch commit's URL survives both the squash and the branch's deletion
 the branch**, so write the description after the evidence commit exists — `git rev-parse HEAD` — and
 if the evidence is amended, update the link.
 
-GitHub-hosted attachments are an alternative to committed media: dragging an image or video into
-the PR text box uploads it and supplies its URL. GitHub also documents `--attach` for PR creation,
-editing and comments in [Attaching files with GitHub CLI](https://docs.github.com/en/github-cli/github-cli/attaching-files-with-github-cli).
-Check that the installed CLI and the required agent identity support that route before using it.
-The [CLI upload token allowlist](https://github.com/cli/cli/blob/2c7ec97fddb8da331803e18e8c33395a3b6537ee/internal/attachments/client.go#L65-L79)
-excludes, at that pinned commit, the GitHub App installation tokens this repository's bots use,
-so changing the apps' permissions does not enable that CLI route; check the current allowlist
-before relying on it either way. The player can upload through the browser. Attachment uploads
-follow the same identity and publication authorization rules as other PR writes, and issue writes
-still use `tools/inbox.py`.
+GitHub-hosted attachments are an alternative to committed media; `references/attachments.md` says
+which routes work for the bots' tokens, and is read before relying on one.
 
 ## Reviewing a pull request
 
@@ -429,59 +368,43 @@ on the PR as comments. How is the **pr-review** skill's.
 
 **Before merging main into an existing PR or branch, read
 [merging-main](../merging-main/SKILL.md).** It requires showing theirs, ours and base for each
-conflict, reviewing semantic alignment for every merge (clean or conflicted), keeping
-independently authored records distinct, and converting a branch still on the old single-file
-queue with `tools/convert-queue-edits.py`. Side-selection shortcuts such as `--ours` and
-`--theirs` do not satisfy that review.
+conflict, reviewing semantic alignment for every merge (clean or conflicted), and keeping
+independently authored records distinct. Side-selection shortcuts such as `--ours` and `--theirs`
+do not satisfy that review.
 
-**One branch per work item** (which may span several queue entries), named
-`feature/<thing>`; `main` receives it as one squashed commit.
+**One branch per work item** (which may span several queue entries), named `feature-<thing>`;
+`main` receives it as one squashed commit.
 
 **Delete a branch as soon as its pull request is merged, always, without being asked.** The
 squashed commit is what the project keeps; the branch pointer is scaffolding. Left alone they
 accumulate one per work item, and the cost is not clutter — it is that `git branch` stops being
 able to answer the only question it is good for: **is there work that is not on `main`?**
 
-**Git cannot see a squash as a merge, so the PR's state is the check, not `git branch -d`.**
-`-d` refuses every squash-merged branch, which makes its refusal say nothing. Use the retirement
-script below: GitHub must confirm MERGED and git must prove the local tip equals or is an
-ancestor of the merged head. A different tip alone does not prove unpushed work; a stale ancestor
-contains no work outside that PR. Missing commit objects are kept for explicit inspection and
-fetching, never fetched by the dry run. A harness
-`worktree-agent-*` branch has no PR and points at its worktree's base, so `-d` still answers
-for it.
+**Git cannot see a squash as a merge, so the PR's state is the check, not `git branch -d`**, which
+refuses every squash-merged branch and so says nothing. **`tools/prune-merged.sh <branch>...` is
+that check, executable, and the way a merged branch is retired**: GitHub must confirm MERGED and
+git must prove the local tip equals or is an ancestor of the merged head (a different tip alone
+does not prove unpushed work; a stale ancestor contains no work outside that PR). It then deletes
+the remote with an exact-tip lease, removes the clean worktree without force, deletes the local ref
+and the agent's released brief, and a failed stage keeps what is left and reports it. Its `--help`
+lists what keeps a branch (an open PR, unpushed or dirty work, a lock, an unreleased brief) and its
+read-only modes. A brief is released by its owner, with `cleanup: ready` in its header, only after
+the agent has stopped and its useful ignored artifacts are kept (**orchestrating**).
 
-**`tools/prune-merged.sh <branch>...` is that check, executable, and the way a merged branch is
-retired.** `--all` inventories candidates and allocated KiB without mutations; `--all --apply`
-retires eligible candidates, and `--dry-run <branch>...` previews named branches. Applying checks
-state again before removal. An open PR, remote tip outside the merged head, dirty/untracked work,
-an ignored file outside the regenerable caches (the script's own `REGENERABLE_IGNORED` list,
-which `--help` prints), worktree lock or unreleased agent brief keeps the branch. After confirming the agent has stopped
-and useful ignored artifacts are retained, its owner adds `cleanup: ready` to the brief's opening
-header in the main and target checkout wherever a copy exists. A lock still vetoes removal and
-is never cleared automatically. The script deletes the remote with an exact-tip lease, removes
-the clean worktree without force, then compares and deletes the local ref. A failed stage keeps
-remaining local work and reports the incomplete cleanup. It also sweeps the harness's
-`worktree-agent-*` branches whose worktree is gone. Run it from the main checkout, through `uv run python
+**Run it from the main checkout, as the pull request's own identity**: `uv run python
 tools/agent-identity.py run claude-coder -- tools/prune-merged.sh <branch>...` for a pull request
 that changed code and `uv run python tools/agent-identity.py run claude-orchestrator --
-tools/prune-merged.sh <branch>...` for a docs-only one ("Who a commit and a pull request are
-from") — its own remote delete is a write, so `github-write-guard.sh` denies it bare in every
-shape, and the read-only `--all` inventory and `--dry-run` run through the same wrapped line as
-the apply (Codex runs the same line with `codex-coder` for both). **Use it rather than the bare commands**: Claude
+tools/prune-merged.sh <branch>...` for a docs-only one (Codex runs the same line as `codex-coder`
+for both). Its remote delete is a write, so the guard denies the script bare in every shape, the
+read-only `--all` inventory and `--dry-run` included. **Use it, never the bare commands**: Claude
 Code's auto-mode classifier refuses `git worktree remove` and `git branch -D` as destructive
-however the check came out, and `.claude/settings.json` allows exactly those two wrapped lines, one
-per role, because the script cannot delete anything the check did not clear. The allow rules are a
+however the check came out, and `.claude/settings.json` allows the wrapped line for each of the two
+roles, because the script cannot delete anything the check did not clear. The allow rules are a
 prefix match on the command's text, so the line has to be spelled as above: `./tools/…`, another
 role, or anything else in front of `tools/prune-merged.sh` is not covered and goes to the
-classifier. There is no `codex-coder` rule: Codex does not read this file (its approvals are its
-own sandbox's), and Claude Code never runs as `codex-coder`.
-
-**`tools/land-prs.sh` handles every pull request it is given as the one role it runs under**, since
-it turns on auto-merge or merges through that role (the prune at the confirming check is its own
-call, under the role that owns the PR). So a batch of docs-only pull requests and a
-batch of code pull requests are two calls, one as `claude-orchestrator` and one as `claude-coder`,
-rather than one mixed call.
+classifier. There is no `codex-coder` rule: Codex does not read that file (its approvals are its
+own sandbox's), and Claude Code never runs as `codex-coder`. **A review agent's detached checkout
+has no branch for the script to take, and is removed with `tools/agent-setup.sh --remove <name>`.**
 
 **A PR stacked on another is retargeted to `main` before its base branch goes.** The repository
 deletes a merged head branch on GitHub by itself; for a branch deleted by hand (`git push
@@ -555,3 +478,18 @@ fix the sentence or commit nothing. And `./tools/pycheck.sh` if it touches `tool
 - **`.godot/`.** It is gitignored, which means a fresh clone has no `class_name` registry and every
   typed reference fails to parse until `check.sh` runs the import pass.
 - **A doc that contradicts the code it ships with.**
+
+## Proposed, not asked for
+
+The rules in this file that are the filer's proposal or reading, not the player's words, each open
+to the player's correction:
+
+- **What is done when the classifier refuses a write the standing permission covers** ("Merging":
+  report it naming the player's settings, never work around it). The player asked only for the
+  standing permission in their own settings (curly-rabbit #1094).
+- **The numbers `tools/await-merge.sh` waits by**, which its `--help` gives: how the end of CI is
+  estimated, the undershoot, the time between polls and the cap. The player asked for a better
+  estimate, undershot a little, with the rest polled by a script (inbox #1070 in gentle-walrus).
+- **Why a further record of an entry is named with a pair of words and never `-2`**: read as, two
+  branches building at once draw the same next number. That is the filer's reading of the player's
+  remark that the reason is known (inbox #937 in plaid-penguin, inbox #941 in breezy-alpaca).
