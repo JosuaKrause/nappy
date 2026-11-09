@@ -85,7 +85,6 @@ func ride(which: ResistanceSteps.Step, instance: EventInstance, offset: Vector2)
 	_rider_offset = offset
 	position = instance.global_position + offset
 
-## Whether the thing this rides on is still there to be touched.
 ## Whether the task this point marks is done.
 func is_finished() -> bool:
 	return is_done
@@ -110,6 +109,7 @@ func complete_within(within: float) -> void:
 func complete_on_ellipse(semi: Vector2) -> void:
 	touch_ellipse = semi
 
+## Whether the thing this rides on is still there to be touched.
 func rider_alive() -> bool:
 	return not _rider or (is_instance_valid(_rider) and not _rider.is_finished)
 
@@ -130,7 +130,7 @@ func _physics_process(delta: float) -> void:
 	# touched.
 	if not _player or not is_instance_valid(_player) or not _player.is_in_group("player"):
 		return
-	if _would_complete_at(_player.global_position):
+	if would_complete_at(_player.global_position):
 		_complete()
 	queue_redraw()
 
@@ -146,7 +146,7 @@ func _physics_process(delta: float) -> void:
 ## - **an area on the ground** (`touch_ellipse`, the swing's base) completes the moment her body
 ##   overlaps it (`overlaps_the_ellipse()`);
 ## - anything else within `reach` of this contact.
-func _would_complete_at(her: Vector2) -> bool:
+func would_complete_at(her: Vector2) -> bool:
 	if by_crossing:
 		return false
 	if _rider and step and step.completes_at_inner_radius:

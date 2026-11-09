@@ -26,6 +26,15 @@ different objects need to go through APIs"; open to the player's overturn). 42 m
   `start_position`, `exit_position`, `rubble_area` and the like. A kind asked of a tile with none is
   `NONE`, as the plan's own lookups already read it.
 
+`ContactPoint.would_complete_at(her)` is the contact's own pure touch question, which its physics frame
+asks; the suites that ask it of many places (`tests/contact_touches.gd`) now ask the day's own contact
+directly instead of a re-shaped twin, so the contact as the day shaped it is what is measured. Its only
+other reader is its own class, so it is a line of `tools/test_only_members.txt`'s kept group, with that
+reason. The swing's test derives its places from the frame's shadow and asks the contact about them.
+The atlas boot test no longer reads a private library by string: it checks the nodes that still
+hold a public one, and a new test in `test_atlas_stroller_crowd` checks that every agent the crowd
+makes draws a region from the crowd's library (it fails, 0 of 234, when the hand-in is removed).
+
 Tests that read the plan or the atlas follow: `test_interior` and its siblings ask the plan through
 the new methods (its check that no tile needs collision cleared walks the plan's tiles), the
 atlas boot test finds a node's library under either name, and the contact twin is shaped the way

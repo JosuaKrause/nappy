@@ -140,7 +140,9 @@ func _test_two_days_never_reload_a_page(t) -> void:
 ## second load line for it. So every node under a booted `main` that holds a library — the city and
 ## its furniture, crowd and events, her, the screens' buttons and lines, the badge, the symbol, and
 ## in the escape's building the interior and its events — holds the sitting's, on the day and in
-## the building alike. A node with an `atlas` it was never handed fails this by name. And the pages
+## the building alike. A node with an `atlas` it was never handed fails this by name; the nodes handed theirs through
+## `use_atlas()` keep it private, and one never handed makes a library of its own, which the loading-moment
+## check below fails. And the pages
 ## the boot took for the process are the sitting's library's: they still answer on it once
 ## everything the boot built is gone.
 func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
@@ -160,14 +162,12 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
 		while not stack.is_empty():
 			var node: Node = stack.pop_back()
 			stack.append_array(node.get_children())
-			# A node that was handed its library through `use_atlas()` keeps it in `_atlas`.
-			var held := &"atlas" if "atlas" in node else &"_atlas"
-			if node is Sitting or not held in node:
+			if node is Sitting or not "atlas" in node:
 				continue
 			holders += 1
-			if node.get(held) != atlas and strays.size() < 5:
+			if node.get("atlas") != atlas and strays.size() < 5:
 				strays.append(str(main.get_path_to(node)))
-		t.check(holders > 10, "%s: the boot built nodes that draw from a library (%d)"
+		t.check(holders > 5, "%s: the boot built nodes that draw from a library (%d)"
 				% [where, holders])
 		t.check(strays.is_empty(), "%s: every one draws from the sitting's library (not: %s)"
 				% [where, ", ".join(strays)])

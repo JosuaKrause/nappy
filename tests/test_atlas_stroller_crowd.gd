@@ -19,6 +19,7 @@ extends RefCounted
 ## a suite makes the gate red whether or not a test expected it. Every check below reads the run
 ## log, without ever calling `region()` on a group it already knows is not acquired.
 
+const BakedRegions := preload("res://tests/baked_regions.gd")
 const StreetMap := preload("res://tests/fixtures/street_map.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 
@@ -27,6 +28,7 @@ func run(t) -> void:
 	_test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t)
 	_test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t)
 	_test_a_crowd_freed_without_clear_still_releases_its_page(t)
+	_test_every_agent_the_crowd_makes_draws_from_the_crowds_library(t)
 
 # ------------------------------------------------------------------ stroller ---
 
@@ -148,3 +150,20 @@ func _test_a_crowd_freed_without_clear_still_releases_its_page(t) -> void:
 	t.check(not pages.held(Crowd.ATLAS_GROUP),
 			"freeing the crowd mid-day releases the crowd's page too, with no clear() in between")
 	pages.stop()
+
+## The crowd hands each agent it makes the library it holds the crowd's page on, so an agent's look
+## draws its regions from the page the crowd holds. An agent handed none has no library to draw from.
+func _test_every_agent_the_crowd_makes_draws_from_the_crowds_library(t) -> void:
+	var atlas := AtlasLibrary.new()
+	var crowd := _crowd(t, atlas)
+	crowd.start_day(1, _rng("agents-draw"), Vector2.INF, true)
+	var region: StringName = BakedRegions.on(Crowd.ATLAS_GROUP)[0]
+	var found := 0
+	var drawing := 0
+	for agent in crowd.agents():
+		found += 1
+		if agent.picture_region(region) != null:
+			drawing += 1
+	t.check(found > 0, "a populated day makes agents (%d)" % found)
+	t.check(drawing == found, "every agent draws a region from the crowd's library (%d of %d)" % [drawing, found])
+	crowd.get_parent().queue_free()
