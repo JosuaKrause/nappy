@@ -167,8 +167,8 @@ func _ready() -> void:
 	# standing in front of; see the note there for why it is not one of the danger colours.
 	_name.add_theme_color_override("font_color", Palette.TITLE_TEXT)
 	_name.text = Texts.TITLE_NAME
-	_left_button.letter = Texts.TITLE_LETTER_LEFT
-	_right_button.letter = Texts.TITLE_LETTER_RIGHT
+	_left_button.use_letter(Texts.TITLE_LETTER_LEFT)
+	_right_button.use_letter(Texts.TITLE_LETTER_RIGHT)
 	_premise.text = Texts.TITLE_PREMISE
 	_left_caption.text = Texts.TITLE_CAPTION_JOYSTICK
 	_tap_caption.text = Texts.TITLE_CAPTION_TAP
@@ -526,7 +526,7 @@ func _acknowledge_and_begin(mode: ControlsMode.Mode, side: ControlsMode.Side,
 ## which of them fired. See `_unhandled_input()`'s own doc for what the guard still answers now
 ## that a bare press elsewhere on the screen can no longer reach this function at all.
 func _begin(mode: ControlsMode.Mode, side: ControlsMode.Side, by_key := false) -> void:
-	var restarted_at_msec: float = _sitting.restarted_at_msec if _sitting else -INF
+	var restarted_at_msec: float = _sitting.restart_requested_at_msec() if _sitting else -INF
 	if (_now_msec() - restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
 		return
 	start_requested.emit(mode, by_key, side)

@@ -72,6 +72,10 @@ var _agent: CrowdAgent
 ## made.
 var heard_in: CrowdSources = null
 
+## Tells the body which crowd set it is heard in.
+func hear_in(sources: CrowdSources) -> void:
+	heard_in = sources
+
 ## The body's own simulation clock, in seconds, advanced once a frame by its own step
 ## (`advance()`). `landed()` is measured against it rather than the wall clock, so a paused game
 ## does not empty the halo and a rig measures the window on simulated time.

@@ -197,7 +197,7 @@ func setup(sets: Array[ExcitementSources], player: Node2D, baby: Baby) -> void:
 ## the candidates still counts while its rim exists, and one whose body is queued for deletion gives
 ## its rim back on the spot here and is never lit again.
 func _process(_delta: float) -> void:
-	if timing.on:
+	if timing.is_on():
 		var outer := timing.enter(FrameTiming.CUES)
 		_pick_and_predict()
 		timing.leave(outer)

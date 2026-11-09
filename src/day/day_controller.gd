@@ -82,6 +82,22 @@ func fraction_remaining() -> float:
 		return 1.0
 	return clampf(time_remaining / time_total, 0.0, 1.0)
 
+## The seconds left on the day's clock.
+func seconds_left() -> float:
+	return time_remaining
+
+## The seconds the day's clock started with.
+func seconds_total() -> float:
+	return time_total
+
+## What the day's loss says (`Texts`), `""` while it is not lost.
+func loss_reason() -> String:
+	return failure_reason
+
+## Which way out of the city she took (`CityEdge.Kind`, as an `int`), or -1 when she took none.
+func exit_taken() -> int:
+	return exit_reached
+
 func is_running() -> bool:
 	return phase != GameEnums.DayPhase.OVER
 
@@ -115,7 +131,7 @@ func tick(delta: float) -> void:
 	# "escape clocke we can try 100s but it's not going to be much better? framerate is too low? all
 	# of this was on phone.")*; a frozen `invincible` clock never reaches this line's emit twice.
 	var second := int(displayed)
-	if spec.clock_hundredths and not invincible:
+	if spec.counts_in_hundredths() and not invincible:
 		_last_emitted_second = second
 		EventBus.day_time_changed.emit(displayed, time_total)
 	elif second != _last_emitted_second:
@@ -143,17 +159,17 @@ func tick(delta: float) -> void:
 ## It changes nothing: the countdown, dusk and the goal are the tick's. A frozen `invincible` clock,
 ## a day's whole-second clock and a day that is over are told nothing here.
 func _process(_delta: float) -> void:
-	if not spec.clock_hundredths or invincible or not is_running():
+	if not spec.counts_in_hundredths() or invincible or not is_running():
 		return
 	var into_the_tick := Engine.get_physics_interpolation_fraction() \
 			/ Engine.physics_ticks_per_second
 	EventBus.day_time_changed.emit(maxf(time_remaining - into_the_tick, 0.0), time_total)
 
-## Whether she is standing on the day's goal this tick — `spec.goal`: her front door with the baby
+## Whether she is standing on the day's goal this tick — `spec.goal_kind()`: her front door with the baby
 ## asleep, or one of the city's two ways out however the baby is. The building's service exit is
 ## never reached by position here; the building says when she is through it (`reach_the_exit()`).
 func _reached_the_goal() -> bool:
-	match spec.goal:
+	match spec.goal_kind():
 		DaySpec.Goal.HOME:
 			return phase == GameEnums.DayPhase.RETURNING and _is_home()
 		DaySpec.Goal.CITY_EDGE:
@@ -161,13 +177,13 @@ func _reached_the_goal() -> bool:
 	return false
 
 ## Whether she has reached the tunnel mouth or the bridge deck — within `FINALE_EXIT_REACH`
-## of the last walkable tile of the spine at either end (`spec.exits`), past her body and under two
+## of the last walkable tile of the spine at either end (`spec.exit_points()`), past her body and under two
 ## tiles — and which, kept in `exit_reached`.
 func _reached_an_exit() -> bool:
 	if not _player:
 		return false
-	for kind: int in spec.exits:
-		if _player.global_position.distance_to(spec.exits[kind]) <= FINALE_EXIT_REACH:
+	for kind: int in spec.exit_points():
+		if _player.global_position.distance_to(spec.exit_points()[kind]) <= FINALE_EXIT_REACH:
 			exit_reached = kind
 			return true
 	return false
@@ -175,7 +191,7 @@ func _reached_an_exit() -> bool:
 ## The building's service exit, reached: its fade has covered the screen
 ## (`InteriorScene.exit_requested`), and on a `DaySpec.Goal.SERVICE_EXIT` day that is the win.
 func reach_the_exit() -> void:
-	if spec.goal == DaySpec.Goal.SERVICE_EXIT and is_running():
+	if spec.goal_kind() == DaySpec.Goal.SERVICE_EXIT and is_running():
 		_end(GameEnums.DayResult.WON)
 
 func _is_home() -> bool:
@@ -190,7 +206,7 @@ func _on_baby_asleep() -> void:
 		_remember_the_calm_she_found()
 		phase = GameEnums.DayPhase.RETURNING
 		# Falling asleep on the doorstep should not need a lap of the block to register.
-		if spec.goal == DaySpec.Goal.HOME and _is_home():
+		if spec.goal_kind() == DaySpec.Goal.HOME and _is_home():
 			_end(GameEnums.DayResult.WON)
 
 ## The one thing the city learns about how the player actually played, recorded at the only moment

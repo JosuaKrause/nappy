@@ -331,7 +331,7 @@ var _hundredths := false
 
 ## The day or section about to be walked (`RunFlow.day_started`, which `main` connects).
 func use_the_day(spec: DaySpec) -> void:
-	_hundredths = spec.clock_hundredths
+	_hundredths = spec.counts_in_hundredths()
 
 func _process(delta: float) -> void:
 	_teach_the_pause(delta)

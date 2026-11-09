@@ -210,7 +210,7 @@ static func _covered_right() -> Rect2:
 ## the covered footprint.
 static func _covered_screen(in_force := true) -> ScreenCover:
 	var made := ScreenCover.new(ScreenOrientation.DESIGN_SIZE, _covered_left(), _covered_right())
-	made.in_force = in_force
+	made.put_in_force(in_force)
 	return made
 
 ## The focus `Mode.JOYSTICK` steers from, `FOCUS_LEFT` or `FOCUS_RIGHT`; Run is the other one. Set
@@ -231,7 +231,7 @@ func set_mode(mode: ControlsMode.Mode, side := ControlsMode.Side.LEFT) -> void:
 		_run_before_pause = false
 	_mode = mode
 	_steering_focus = focus
-	covering.in_force = mode == ControlsMode.Mode.JOYSTICK
+	covering.put_in_force(mode == ControlsMode.Mode.JOYSTICK)
 	if mode != ControlsMode.Mode.JOYSTICK:
 		# The buttons exist only in `JOYSTICK`; a finger still down on one must not keep running on.
 		_let_go_of_the_run_button()

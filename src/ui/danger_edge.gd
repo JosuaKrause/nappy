@@ -133,7 +133,7 @@ func _warnings() -> Array[PendingWarning]:
 	return _events.pending_warnings()
 
 func _process(delta: float) -> void:
-	if timing.on:
+	if timing.is_on():
 		var outer := timing.enter(FrameTiming.CUES)
 		_watch_the_edge(delta)
 		timing.leave(outer)
@@ -149,7 +149,7 @@ func _process(delta: float) -> void:
 ## not redraw at all.
 func _watch_the_edge(delta: float) -> bool:
 	_measure(delta)
-	var badges := not model.coming.is_empty()
+	var badges := model.has_badges()
 	var asked := badges or _drew_badges
 	_drew_badges = badges
 	if asked:
@@ -166,7 +166,7 @@ var _drew_badges := false
 ## be called for reasons that have nothing to do with a frame elapsing. Everything below the line is
 ## drawing.
 func _measure(delta: float) -> void:
-	model.coming.clear()
+	model.clear_badges()
 	if not _events or not _player or delta <= 0.0:
 		return
 	if not (_events.has_method("visible_view")):

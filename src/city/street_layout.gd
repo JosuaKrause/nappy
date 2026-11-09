@@ -20,18 +20,18 @@ static func _lay_streets(map: CityMap) -> void:
 	# The offsets are a modulo and the kinds are a short scan of the precinct list, so both are
 	# hoisted per row and per column rather than asked once per tile of a lattice this size.
 	var x_offsets := PackedInt32Array()
-	x_offsets.resize(map.size.x)
-	for x in map.size.x:
+	x_offsets.resize(map.size_in_tiles().x)
+	for x in map.size_in_tiles().x:
 		x_offsets[x] = CityMap.corridor_offset(x)
-	for y in map.size.y:
+	for y in map.size_in_tiles().y:
 		var y_offset := CityMap.corridor_offset(y)
 		# The kind of each corridor *at this row*: a precinct is three blocks of a street, so a
 		# vertical corridor's kind changes as the row moves down it.
 		var x_kinds := PackedByteArray()
-		x_kinds.resize(map.size.x)
-		for x in map.size.x:
+		x_kinds.resize(map.size_in_tiles().x)
+		for x in map.size_in_tiles().x:
 			x_kinds[x] = map.street_kind_at(true, Vector2i(x, y))
-		for x in map.size.x:
+		for x in map.size_in_tiles().x:
 			var x_offset := x_offsets[x]
 			if x_offset < 0 and y_offset < 0:
 				map.set_tile(Vector2i(x, y), GameEnums.TileType.BUILDING)
@@ -111,10 +111,10 @@ static func _seal_border_stubs(map: CityMap) -> void:
 	var spine_lo := map.main_road_corridor() * CityMap.period()
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH
 	var strips := [
-		Rect2i(0, 0, map.size.x, band),
-		Rect2i(0, map.size.y - band, map.size.x, band),
-		Rect2i(0, 0, band, map.size.y),
-		Rect2i(map.size.x - band, 0, band, map.size.y),
+		Rect2i(0, 0, map.size_in_tiles().x, band),
+		Rect2i(0, map.size_in_tiles().y - band, map.size_in_tiles().x, band),
+		Rect2i(0, 0, band, map.size_in_tiles().y),
+		Rect2i(map.size_in_tiles().x - band, 0, band, map.size_in_tiles().y),
 	]
 	for i in strips.size():
 		var north_or_south := i < 2

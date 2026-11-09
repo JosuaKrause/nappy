@@ -19,9 +19,29 @@ const MARK_WIDTH := 15.0
 
 var colour := Color.WHITE
 
+## What this agent is dressed in, the colour its picture is drawn in.
+func clothing_colour() -> Color:
+	return colour
+
 ## `--skip crowd`, handed in by the `Crowd` that makes this agent: `_draw()` returns before
 ## drawing anything.
 var skip_draw := false
+
+## Whether the player is touching this agent now (`touching`).
+func is_touched() -> bool:
+	return touching
+
+## Notes that the player is touching this agent, or no longer is.
+func be_touched(now: bool) -> void:
+	touching = now
+
+## Has this agent draw nothing (`--skip crowd`), or draw again.
+func skip_drawing(now: bool) -> void:
+	skip_draw = now
+
+## This body as the thing that charges the baby: its jolt, its field, its caret (`excitement`).
+func mood() -> CrowdExcitement:
+	return excitement
 
 ## True while the player is touching this agent. Owned by `Crowd`, and the reason it exists is
 ## that a contact is not instantaneous: she walks faster than a pedestrian does, so a person
@@ -186,7 +206,7 @@ var _carets := false
 func _init() -> void:
 	super()
 	_look = WalkerLook.new(self)
-	excitement.rim = _rim
+	excitement.use_rim(_rim)
 
 ## A new kind brings its look; a walker's stride and a car's travelled ground start afresh with it.
 ##

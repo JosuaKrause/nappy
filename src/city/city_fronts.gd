@@ -69,10 +69,8 @@ static func over(buildings: Array[Building], home_door: City.HomeDoor, door_x_ra
 func mark_the_burnt_frontage() -> void:
 	if _run == null:
 		return
-	for scar in _run.attempt_spend.scars:
-		if String(scar["id"]) != City.BURNT_FRONTAGE_SCAR:
-			continue
-		var wall_tile := _map.world_to_tile(scar["position"] as Vector2) + Vector2i.UP
+	for scar_at in _run.attempt_spend.scar_positions(City.BURNT_FRONTAGE_SCAR):
+		var wall_tile := _map.world_to_tile(scar_at) + Vector2i.UP
 		for building in _buildings:
 			if building.lot.has_point(wall_tile):
 				building.condition = Building.Condition.BURNT

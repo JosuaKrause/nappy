@@ -39,8 +39,8 @@ static func placed(map: CityMap, day: int) -> Array[Placed]:
 	var density := Tuning.degradation_for(day)
 	if density <= 0.0:
 		return found
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			var entry := _candidate(map, tile, day, density)
 			if entry:
@@ -54,8 +54,8 @@ static func alley_pile_tiles(map: CityMap, day: int) -> Array[Vector2i]:
 	var density := Tuning.degradation_for(day)
 	if density <= 0.0:
 		return tiles
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.tile_at(tile) != GameEnums.TileType.ALLEY:
 				continue

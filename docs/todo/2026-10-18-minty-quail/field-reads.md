@@ -33,6 +33,19 @@ from `tools/field_reads.txt` (its `# [Class] path` groups say which class's fiel
 from where; `--summary` prints the counts). The reads are heaviest on the event definition and
 the event instance, then the city map and the city, so the events go first, as the ask says.
 
+Left, each its own design question:
+
+- **A strategy and its mover.** `LaneMover`'s underscore fields and callables are read by
+  `CarStrategy` and `WalkerStrategy`, and `LaneStrategy`'s by `LaneMover`: whether a strategy is
+  handed a narrow interface of the lane state it may read.
+- **A run's parts.** `RunState` hands out `header`, `calendar`, `resistance`, `attempt_spend`,
+  `posters` and `facts`, and a read through one is two field reads (`RunHeader`, `RunCalendar`,
+  `ResistanceRunState`, `RunFacts`, `SettledState`): whether the parts become methods, and the
+  names of the parts' own questions.
+- **`InteriorMapPlan`**, converted with its builder; **`BlockedLayer`**, with the map's property
+  wrappers; **the atlas injection** (`node.atlas = atlas` on the crowd agent, the help text, the mode
+  button, the cordon's tape and officer and the contact point), one design for all; **the writes that
+  configure a node** (`CordonTape`, `ContactPoint`), with it.
 - **The city's own classes** have their readers converted except three groups, each with a home:
   - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
     (`RecipeCityContext`) are the scene recipes' city. They go with or after `placement-by-construction.md`'s bullet on the

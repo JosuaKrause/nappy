@@ -87,7 +87,7 @@ static func build(data: Dictionary) -> Dictionary:
 	_plan_closures(data, map, errors)
 	if not errors.is_empty():
 		return result
-	var bounds := Rect2i(Vector2i.ZERO, map.size)
+	var bounds := Rect2i(Vector2i.ZERO, map.size_in_tiles())
 	if data.extent.scope == "bounded":
 		bounds = SceneRecipe.rect(data.extent.bounds)
 		# A bounded view must retain whole footprints. Cutting a building at a camera-sized
@@ -148,7 +148,7 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 	var map := RecipeCityContext.restore(data.context)
 	var result := {"map": null, "anchors": {}, "errors": errors, "manifest": {}}
 	var stretch: Dictionary = data.stretch
-	map.stretch.resize(map.size.x * map.size.y)
+	map.stretch.resize(map.size_in_tiles().x * map.size_in_tiles().y)
 	for type_name: String in stretch.tiles:
 		var type: int = GameEnums.TileType[type_name.to_upper()]
 		for run: Array in stretch.tiles[type_name]:
@@ -157,7 +157,7 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 				if not map.in_bounds(tile):
 					errors.append("stretch.tiles: %s outside the map" % tile)
 					continue
-				var index := tile.y * map.size.x + tile.x
+				var index := tile.y * map.size_in_tiles().x + tile.x
 				if map.stretch[index] != 0:
 					errors.append("stretch.tiles: %s listed twice" % tile)
 				map.stretch[index] = 1
@@ -171,7 +171,7 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 	map.building_rects = retained
 	for listed: Dictionary in stretch.get("buildings", []):
 		var lot := SceneRecipe.rect(listed.lot)
-		if not Rect2i(Vector2i.ZERO, map.size).encloses(lot) or not lot.has_area():
+		if not Rect2i(Vector2i.ZERO, map.size_in_tiles()).encloses(lot) or not lot.has_area():
 			errors.append("stretch.buildings: lot outside the map or empty")
 			continue
 		if not _fronts_the_stretch(map, lot):
@@ -238,7 +238,7 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 		return result
 	result.map = map
 	result.manifest = {"classification": data.get("classification", "normal"), "scope": "stretch",
-			"bounds": [0, 0, map.size.x, map.size.y], "seed": int(data.seed),
+			"bounds": [0, 0, map.size_in_tiles().x, map.size_in_tiles().y], "seed": int(data.seed),
 			"checks": ["construction_schema", "explicit_city_context", "authored_placements"],
 			"expected_violations": [], "violations": [], "context_sha256":
 			JSON.stringify(data.context, "", true).sha256_text()}

@@ -63,7 +63,7 @@ var _metadata: Dictionary = {}
 ## The window's viewport, whose render time the engine measures while the record is on.
 var _viewport: RID
 
-## The sitting that keeps where a native record is written (`Sitting.frame_record_path`), handed
+## The sitting that keeps where a native record is written (`Sitting.frame_record_file()`), handed
 ## in by `setup()`: chosen by the first save of the sitting, so every scene exit rewrites the same
 ## file and a restart, which builds a new recorder, does not start a second.
 var _sitting: Sitting
@@ -91,7 +91,7 @@ func setup(in_the_title: Callable, city: City, player: Stroller, day: DayControl
 	var budget_usec := roundi(1000000.0 / (refresh if refresh > 0.0 else 60.0))
 	var resolution := _clock_resolution()
 	var pair := _calibrate()
-	_record = _sitting.frame_timing as FrameRecord
+	_record = _sitting.kept_frame_timing() as FrameRecord
 	_record.start(_record.frame_ledger() if _record.frame_ledger() != null
 			else FrameLedger.new(FrameLedger.CAPACITY, budget_usec))
 	ledger = _record.frame_ledger()
@@ -321,8 +321,8 @@ func save() -> String:
 		JavaScriptBridge.download_buffer(text.to_utf8_buffer(), file_name, "application/json")
 		return file_name
 	if _sitting.frame_record_file() == "":
-		_sitting.frame_record_path = "%s/record-%s-seed%d.json" % [_records_dir,
-			Time.get_datetime_string_from_system().replace(":", "-"), _run.header.run_seed]
+		_sitting.keep_frame_record_file("%s/record-%s-seed%d.json" % [_records_dir,
+			Time.get_datetime_string_from_system().replace(":", "-"), _run.header.run_seed])
 	var path := _sitting.frame_record_file()
 	if DirAccess.make_dir_recursive_absolute(path.get_base_dir()) != OK:
 		push_error("Cannot create the frame record directory")

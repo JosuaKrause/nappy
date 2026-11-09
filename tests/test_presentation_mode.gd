@@ -174,11 +174,11 @@ func _test_seed_from_query_refuses_non_positive_and_malformed_values(t) -> void:
 
 ## `live_debug_requested()`'s own truth table: a debug build, or a page that asked `?debug=1`.
 func _test_live_debug_requested_is_debug_or_readout(t) -> void:
-	t.check(_debug_build([]).live_debug,
+	t.check(_debug_build([]).is_live_debug(),
 		"a debug build opens the bundle even without ?debug=1 in the page")
-	t.check(_page("?debug=1").live_debug, "a release page carrying ?debug=1 opens the bundle too")
-	t.check(_debug_build([], "?debug=1").live_debug, "both together still opens it")
-	t.check(not _page("").live_debug, "a release page nobody asked ?debug=1 of opens nothing")
+	t.check(_page("?debug=1").is_live_debug(), "a release page carrying ?debug=1 opens the bundle too")
+	t.check(_debug_build([], "?debug=1").is_live_debug(), "both together still opens it")
+	t.check(not _page("").is_live_debug(), "a release page nobody asked ?debug=1 of opens nothing")
 
 ## `?day=`, clamped the same way `--day` itself is rather than refused outright.
 func _test_day_from_query_clamps_the_same_way_as_the_command_line(t) -> void:
@@ -207,16 +207,16 @@ func _test_day_from_query_is_not_given_when_absent(t) -> void:
 func _test_web_debug_flag_used_names_the_bundles_own_parameters(t) -> void:
 	for key in ["day", "invincible", "layers", "controls", "escape", "meters", "daylength",
 			"ending", "blackout", "groundmode", "framerecord"]:
-		t.check(_page("?debug=1&%s=1" % key).web_debug_flag_used,
+		t.check(_page("?debug=1&%s=1" % key).used_a_web_debug_flag(),
 			"'%s' is one of the bundle's own parameters" % key)
 
 func _test_web_debug_flag_used_ignores_debug_alone_and_the_older_bundle(t) -> void:
-	t.check(not _page("").web_debug_flag_used, "an empty query used nothing")
-	t.check(not _page("?debug=1").web_debug_flag_used,
+	t.check(not _page("").used_a_web_debug_flag(), "an empty query used nothing")
+	t.check(not _page("?debug=1").used_a_web_debug_flag(),
 		"?debug=1 alone opens the bundle without having used anything in it")
-	t.check(not _page("?debug=1&seed=1234&skip=events").web_debug_flag_used,
+	t.check(not _page("?debug=1&seed=1234&skip=events").used_a_web_debug_flag(),
 		"the always-open seed and skip flags are not part of this bundle")
-	t.check(not _page("?day=3").web_debug_flag_used,
+	t.check(not _page("?day=3").used_a_web_debug_flag(),
 		"a parameter of the bundle on a page that never opened it is not used")
 
 ## `?layers=`: the bundle's gate is `live_debug_requested()`, which the truth table above pins.

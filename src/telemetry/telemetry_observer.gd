@@ -339,7 +339,7 @@ func start_section(restarted: bool) -> void:
 	_log.note("start", "%s %s at %s, facing %s" % [
 		"restarted" if restarted else "entered", _escape_section,
 		RunTrace.tile(_tile_of(_player.global_position)),
-		RunTrace.compass(_player.facing)])
+		RunTrace.compass(_player.facing_direction())])
 
 ## Clears yesterday. Called after the day's plan has been written, so the `start` line is the
 ## first thing under the header that the player is responsible for.
@@ -349,7 +349,7 @@ func start_day() -> void:
 	_corridor = Corridor.of(_tree)
 	_log.note("start", "doorstep %s, facing %s" % [
 		RunTrace.tile(_map.world_to_tile(_player.global_position)),
-		RunTrace.compass(_player.facing)])
+		RunTrace.compass(_player.facing_direction())])
 
 ## Everything one walk leaves behind, cleared for the next — a day's, or a section's. The ground
 ## state is only read where there is a map to read it from.
@@ -428,9 +428,9 @@ func day_finished(result: GameEnums.DayResult, cause := "") -> void:
 	# A section of the escape is named on its line: the building or the city.
 	var where := " in %s" % _escape_section if _escape_section != "" else ""
 	_log.note("lost", "%s%s after %.1fs%s — %s | %s | near: %s" % [
-		name.to_lower(), where, _day.time_total - _day.time_remaining,
+		name.to_lower(), where, _day.seconds_total() - _day.seconds_left(),
 		" to %s" % cause if cause != "" else "",
-		_day.failure_reason, _meters(), _nearest()])
+		_day.loss_reason(), _meters(), _nearest()])
 	# The single most useful frame in a run, and the only one that is always worth the file: what
 	# the street looked like at the moment the day ended.
 	_log.snapshot("lost-%s" % name.to_lower())
@@ -440,11 +440,11 @@ func day_finished(result: GameEnums.DayResult, cause := "") -> void:
 ## (`DayController.exit_reached`, a `CityEdge.Kind`).
 func _won_line() -> String:
 	if _escape_section == "":
-		return "WON, %.1fs to spare" % _day.time_remaining
-	if _day.exit_reached < 0:
-		return "out of %s, %.1fs to spare | %s" % [_escape_section, _day.time_remaining, _meters()]
+		return "WON, %.1fs to spare" % _day.seconds_left()
+	if _day.exit_taken() < 0:
+		return "out of %s, %.1fs to spare | %s" % [_escape_section, _day.seconds_left(), _meters()]
 	return "escaped by the %s, %.1fs to spare | %s" % [
-		"tunnel" if _day.exit_reached == CityEdge.Kind.TUNNEL else "bridge", _day.time_remaining,
+		"tunnel" if _day.exit_taken() == CityEdge.Kind.TUNNEL else "bridge", _day.seconds_left(),
 		_meters()]
 
 # ------------------------------------------------------------------- watching ---
@@ -452,7 +452,7 @@ func _won_line() -> String:
 func _process(delta: float) -> void:
 	if not _day or not _day.is_running():
 		return
-	_log.set_clock(_day.time_total - _day.time_remaining)
+	_log.set_clock(_day.seconds_total() - _day.seconds_left())
 	var here := _player.global_position
 	_watch_the_corridor(here)
 	_watch_the_ground(here, delta)
@@ -610,10 +610,10 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 	if calm != _was_calm:
 		var block := _map.block_at(here)
 		var what := RunTrace.purpose(
-				_run.attempt_spend.city_state.purpose_of(_map.plans_by_block(), block))
+				_run.attempt_spend.block_arcs().purpose_of(_map.plans_by_block(), block))
 		_log.note("calm" if calm else "left", "%s %s %s, sleep %.0f" % [
 			"entered" if calm else "left", what, RunTrace.tile(block),
-			_baby.sleepiness])
+			_baby.sleepiness_level()])
 	_was_calm = calm
 
 ## Writes down a stretch on the road, if it lasted longer than crossing one takes.
@@ -752,8 +752,8 @@ func _what_raised_the_mark() -> String:
 ## A result code alone never distinguishes a day lost to noise from a day lost to the clock,
 ## which is the entire reason this entry exists.
 func _watch_the_meters() -> void:
-	var frozen := _baby.state != GameEnums.BabyState.ASLEEP \
-			and _baby.excitement >= Tuning.EXCITEMENT_CALM_THRESHOLD
+	var frozen := not _baby.is_asleep() \
+			and _baby.excitement_level() >= Tuning.EXCITEMENT_CALM_THRESHOLD
 	if frozen == _was_frozen:
 		return
 	_was_frozen = frozen
@@ -781,15 +781,15 @@ func _watch_idling(_delta: float) -> void:
 	_idling = idle
 	if idle:
 		_idle_since = _log.clock()
-		_idle_excitement = _baby.excitement
-		_idle_sleepiness = _baby.sleepiness
+		_idle_excitement = _baby.excitement_level()
+		_idle_sleepiness = _baby.sleepiness_level()
 		return
 	var duration := _log.clock() - _idle_since
 	if duration < IDLE_MIN_TIME:
 		return
 	_log.note("idle", "stood still %.1fs on %s, exc %.0f -> %.0f, sleep %.0f -> %.0f" % [
 		duration, _ground_at(_player.global_position),
-		_idle_excitement, _baby.excitement, _idle_sleepiness, _baby.sleepiness])
+		_idle_excitement, _baby.excitement_level(), _idle_sleepiness, _baby.sleepiness_level()])
 
 ## The ground she is standing on, for the `idle` line: the tile type where there is a map, and the
 ## building where there is not — every floor in it is one kind of ground as far as the meters go.
@@ -859,14 +859,14 @@ func _watch_running() -> void:
 	_running = running
 	if running:
 		_run_started = _log.clock()
-		_run_excitement = _baby.excitement
+		_run_excitement = _baby.excitement_level()
 		_run_nearest = _nearest()
 		return
 	var duration := _log.clock() - _run_started
 	if duration < RUN_MIN_TIME:
 		return
 	_log.note("run", "ran %.1fs, exc %.0f -> %.0f, nearest when it started: %s" % [
-		duration, _run_excitement, _baby.excitement, _run_nearest])
+		duration, _run_excitement, _baby.excitement_level(), _run_nearest])
 
 ## Doubling back. Not every turn — a lap of a block is four corners and no decision, whereas
 ## walking back the way you came means something in front of you changed the plan.
@@ -1149,7 +1149,7 @@ func _on_baby_state_changed(state: GameEnums.BabyState) -> void:
 	if state == GameEnums.BabyState.AWAKE:
 		_log.note("woke", "woken %s, sleep back to %.0f | near: %s" % [
 			"on the way home" if _escape_section == "" else "in %s" % _escape_section,
-			_baby.sleepiness, _nearest()])
+			_baby.sleepiness_level(), _nearest()])
 
 func _on_city_went_quiet() -> void:
 	_log.note("quiet", "the blackout came; every city-wide source is off")
@@ -1223,7 +1223,7 @@ func _meters() -> String:
 	var from_events: float = source.sources.total_at(here) if source else 0.0
 	var from_crowd := _crowd.total_at(here) if _crowd else 0.0
 	return "exc %.0f, in %.1f/s (crowd %.1f, events %.1f), sleep %.0f" % [
-		_baby.excitement, _baby.last_incoming, from_crowd, from_events, _baby.sleepiness]
+		_baby.excitement_level(), _baby.last_frame_incoming(), from_crowd, from_events, _baby.sleepiness_level()]
 
 ## The closest live event and how far off it is, for the lines where "what was around when
 ## this happened" is the answer being looked for. Says how far, never "in reach" — the nearest

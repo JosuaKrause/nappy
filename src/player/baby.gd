@@ -223,7 +223,7 @@ func force_sleep() -> void:
 
 ## One physics tick of her meters, which the engine runs on every one while she is in the tree.
 func _physics_process(delta: float) -> void:
-	if timing.on:
+	if timing.is_on():
 		var outer := timing.enter(FrameTiming.INFLUENCE)
 		_feel_the_frame(delta)
 		timing.leave(outer)
@@ -414,6 +414,26 @@ func decay_rate() -> float:
 	elif _stroller.run_excess_ratio() > 0.0:
 		rate = EXCITEMENT_DECAY_RUNNING
 	return rate * _world.decay_multiplier(_stroller.global_position)
+
+## How full her excitement bar is now.
+func excitement_level() -> float:
+	return excitement
+
+## How sleepy she is now, the meter that puts her to sleep and wakes her.
+func sleepiness_level() -> float:
+	return sleepiness
+
+## What the last frame added to her excitement before decay and sensitivity (for the debug overlay and the run log).
+func last_frame_incoming() -> float:
+	return last_incoming
+
+## Whether she is awake, neither crying, asleep nor stirring.
+func is_awake() -> bool:
+	return state == GameEnums.BabyState.AWAKE
+
+## Whether she is fast asleep (stirring is not asleep).
+func is_asleep() -> bool:
+	return state == GameEnums.BabyState.ASLEEP
 
 ## `SLEEPING_SENSITIVITY` while asleep, `1.0` otherwise — the same fraction
 ## `_update_excitement()` scales `incoming` by, pulled out so the caret's own projection can read

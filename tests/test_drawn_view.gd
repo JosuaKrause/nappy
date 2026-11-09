@@ -385,13 +385,13 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t) -> void:
 	for i in 120:
 		engine.global_position -= Vector2(def.speed * t.get_process_delta_time(), 0.0)
 		var asked := await _redraws(t, edge, drawn)
-		if not edge.model.coming.is_empty() and not went_up:
+		if edge.model.has_badges() and not went_up:
 			went_up = true
 			asked_when_up = asked
 		if went_up:
 			break
 	t.check(went_up and asked_when_up, "the frame the badge goes up is the frame it is drawn")
-	t.check(await _redraws(t, edge, drawn) and not edge.model.coming.is_empty(),
+	t.check(await _redraws(t, edge, drawn) and edge.model.has_badges(),
 			"and it is redrawn every frame it stays up, the camera moving under it")
 
 	manager.retire(engine)

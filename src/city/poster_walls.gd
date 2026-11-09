@@ -323,7 +323,7 @@ func _physics_process(delta: float) -> void:
 		if not _player:
 			return
 	_work_the_crews(delta)
-	_push_to_tear(delta, _player.global_position, _player.steering)
+	_push_to_tear(delta, _player.global_position, _player.steering_direction())
 
 ## Every poster crew in the world pastes the wall it stands at, one sheet every `PASTE_EVERY`
 ## seconds while she can see it (`EventManager.sees()`, the one answer to what she can see: the

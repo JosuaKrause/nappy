@@ -59,8 +59,8 @@ var readout_requested := false:
 var live_debug := false:
 	set(value): live_debug = _write(live_debug, value)
 ## The page's query named one of the bundle's parameters while the bundle was open.
-var web_debug_flag_used := false:
-	set(value): web_debug_flag_used = _write(web_debug_flag_used, value)
+var _web_debug_flag_used := false:
+	set(value): _web_debug_flag_used = _write(_web_debug_flag_used, value)
 ## The page's query string as the browser gave it at boot, or "" off the web — for the few readers
 ## that parse a parameter of their own (`Telemetry`'s `?telemetry=1`, `WebDisplay`'s `?dpr=`).
 var page_query := "":
@@ -231,7 +231,7 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 	config.headless = headless_display
 	config.readout_requested = flags.readout_requested()
 	config.live_debug = flags.live_debug_requested()
-	config.web_debug_flag_used = flags.web_debug_flag_used()
+	config._web_debug_flag_used = flags.web_debug_flag_used()
 	config.page_query = query
 	config.active_args = flags.active_args()
 	config.no_telemetry = flags.no_telemetry()
@@ -304,6 +304,50 @@ func with_recipe(recipe_data: Dictionary) -> RunConfig:
 	return parse(_given, page_query, debug_build, _movie, recipe_data, headless)
 
 # --------------------------------------------------------------- what follows ---
+
+## Whether this is a headless run: the null display server, so no player and no save.
+func is_headless() -> bool:
+	return headless
+
+## Whether this is a debug build, the gate on every command-line flag.
+func is_debug_build() -> bool:
+	return debug_build
+
+## Whether `?debug=1` or `--debug` asked for the readout.
+func asks_for_the_readout() -> bool:
+	return readout_requested
+
+## Whether the release-safe bundle of query flags is open.
+func is_live_debug() -> bool:
+	return live_debug
+
+## Whether the page's query named one of the open bundle's parameters.
+func used_a_web_debug_flag() -> bool:
+	return _web_debug_flag_used
+
+## The page's query string as the browser gave it at boot, `""` off the web.
+func page_query_string() -> String:
+	return page_query
+
+## Every dev flag given on a debug build, as words (a copy), or nothing.
+func dev_flag_words() -> PackedStringArray:
+	return active_args
+
+## Whether `--invincible` was given.
+func is_invincible() -> bool:
+	return invincible
+
+## Whether `--no-save` was given.
+func refuses_saving() -> bool:
+	return no_save
+
+## Whether `--touch` forces the touch controls.
+func forces_touch() -> bool:
+	return touch_forced
+
+## Whether `--web` previews the web shape from a desktop debug build.
+func previews_the_web() -> bool:
+	return web_preview
 
 ## How long day `day` runs: `--day-length` when given, else the day's own (`Tuning.day_length()`).
 ## The one place a day's length is decided, handed to the day as a plain number.

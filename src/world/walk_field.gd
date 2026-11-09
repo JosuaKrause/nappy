@@ -30,7 +30,7 @@ const BLOCKED := -2
 
 ## The key of each target, by label: an `EventInstance`'s instance id or a mast's id.
 var keys: Array = []
-## Where each key stood when the sweep started (`anchor_of()`), so a caller can tell whether the
+## Where each key stood when the sweep started (`_anchor_of()`), so a caller can tell whether the
 ## targets are still the ones this field measures.
 var anchors := {}
 ## The two versions of what blocks her that this field was started under
@@ -52,7 +52,7 @@ var _tail := 0
 
 ## Where `target` (`{key, at, reach, beat}`) counts as standing for `anchors`: the tile of the
 ## start of its beat when it paces one, which does not move as it walks it, or else its own tile.
-static func anchor_of(map: WorldMap, target: Dictionary) -> Vector2i:
+static func _anchor_of(map: WorldMap, target: Dictionary) -> Vector2i:
 	var beat: PackedVector2Array = target["beat"]
 	return map.world_to_tile(beat[0] if not beat.is_empty() else target["at"])
 
@@ -66,7 +66,7 @@ static func start(map: WorldMap, targets: Array[Dictionary],
 	field._targets = targets
 	for target in targets:
 		field.keys.append(target["key"])
-		field.anchors[target["key"]] = anchor_of(map, target)
+		field.anchors[target["key"]] = _anchor_of(map, target)
 	return field
 
 ## The ground a sweep runs over: each tile `UNREACHED`, or `BLOCKED` where she cannot walk right
@@ -85,8 +85,8 @@ static func ground_for(map: WorldMap) -> PackedInt32Array:
 ## today (`ResistanceDirector._ground_for_the_arrow()`) — and seeds the targets.
 func _begin(map: WorldMap, ground: PackedInt32Array) -> void:
 	_begun = true
-	_width = map.size.x
-	_cells = map.size.x * map.size.y
+	_width = map.size_in_tiles().x
+	_cells = map.size_in_tiles().x * map.size_in_tiles().y
 	_tiles = map.walk_tiles()
 	_walkable = map.walkable_lut()
 	_distance = ground.duplicate()
@@ -195,6 +195,29 @@ func advance(map: WorldMap, ground: PackedInt32Array, budget: int) -> int:
 		# The queue is only needed while sweeping; a finished field keeps its answer alone.
 		_queue = queue
 	return swept
+
+## Whether the sweep is finished: nothing is left to measure.
+func is_done() -> bool:
+	return done
+
+## The two versions of what blocks her that this field was started under.
+func started_under() -> Vector2i:
+	return versions
+
+## The key of the target at `index`, in the order the targets were given.
+func key_at(index: int) -> Variant:
+	return keys[index]
+
+## Whether this field (finished or under way) was swept from exactly `found`, each standing where it
+## stood then (`_anchor_of()`), under the blocking `blocked_versions`.
+func swept_for(map: WorldMap, found: Array[Dictionary], blocked_versions: Vector2i) -> bool:
+	if versions != blocked_versions or anchors.size() != found.size():
+		return false
+	for target in found:
+		var key: Variant = target["key"]
+		if not anchors.has(key) or anchors[key] != _anchor_of(map, target):
+			return false
+	return true
 
 ## How many tiles she walks from `tile` to the nearest target this field was swept from, or -1
 ## when none can be walked to. A tile a body or a closure covers — her centre pressed against a

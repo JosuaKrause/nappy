@@ -138,6 +138,42 @@ func begin_at(cross: float) -> void:
 func length() -> float:
 	return radius * sweep
 
+## Where along its entry lane the arc begins.
+func entry_point_along() -> float:
+	return entry_along
+
+## The corridor the car turned from.
+func entry_corridor_index() -> int:
+	return entry_corridor
+
+## Whether the car leaves the arc heading along a vertical street.
+func exits_vertically() -> bool:
+	return exit_vertical
+
+## The corridor the car turns into.
+func exit_corridor_index() -> int:
+	return exit_corridor
+
+## The lane of that corridor the car turns into.
+func exit_lane_index() -> int:
+	return exit_lane
+
+## The way along its exit lane the car leaves heading, `1.0` or `-1.0`.
+func exit_heading() -> float:
+	return exit_direction
+
+## The junction box the arc crosses, `Vector2i(-1, -1)` for none.
+func junction_box() -> Vector2i:
+	return junction
+
+## How far along the arc the car has gone.
+func distance_travelled() -> float:
+	return travelled
+
+## Takes the car on `by` further along the arc.
+func travel_on(by: float) -> void:
+	travelled += by
+
 func is_about_face() -> bool:
 	return exit_vertical == entry_vertical
 

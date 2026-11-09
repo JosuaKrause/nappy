@@ -60,6 +60,10 @@ var rim: RefCounted = null
 ## structures charge as their strongest (`EventSources`). False until somebody says otherwise.
 var outranked := false
 
+## Gives the source the rim `ExcitementHalo` lights on its body.
+func use_rim(the_rim: RefCounted) -> void:
+	rim = the_rim
+
 func _init(the_body: Node2D) -> void:
 	body = the_body
 

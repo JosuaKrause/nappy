@@ -24,3 +24,31 @@ var hands_over_to_the_escape := false
 var goes_back := false
 ## Whether the run ended with this day (`RunCalendar.finish_day()` returned false).
 var run_over := false
+
+## Whether the day was won, lost to the clock or lost to the baby (`GameEnums.DayResult`).
+func outcome() -> GameEnums.DayResult:
+	return result
+
+## What the day's loss says, `""` for a win.
+func loss_reason() -> String:
+	return reason
+
+## The day's clock at the instant it ended, in seconds.
+func lasted_seconds() -> float:
+	return elapsed_seconds
+
+## Which way out of the city she took (`CityEdge.Kind`, as an `int`), or -1 when she took none.
+func exit_taken() -> int:
+	return exit_reached
+
+## Whether the run goes on into the escape instead of closing the calendar.
+func continues_into_the_escape() -> bool:
+	return hands_over_to_the_escape
+
+## Whether this loss sends the run back to its checkpoint.
+func sends_the_run_back() -> bool:
+	return goes_back
+
+## Whether the run ended with this day.
+func ends_the_run() -> bool:
+	return run_over

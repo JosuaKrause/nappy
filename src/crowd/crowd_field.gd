@@ -58,6 +58,38 @@ func _init(city_map: CityMap, at := Vector2.ZERO) -> void:
 	map = city_map
 	centre = at
 
+## Centres the box on `at`, which re-sizes it (`centre`).
+func centre_on(at: Vector2) -> void:
+	centre = at
+
+## Where the box is centred.
+func centre_point() -> Vector2:
+	return centre
+
+## Half the box's extent: how far from its centre an agent is placed or recycled.
+func half_extent() -> float:
+	return radius
+
+## Whether the box covers the whole city, as a recipe's overview asks.
+func is_city_view() -> bool:
+	return city_view
+
+## Whether every pedestrian corridor weighs the same.
+func weighs_walkers_uniformly() -> bool:
+	return uniform_walkers
+
+## Makes the box the whole city or the moving field.
+func use_city_view(now: bool) -> void:
+	city_view = now
+
+## Gives every pedestrian corridor equal weight, or the street hierarchy's.
+func use_uniform_walkers(now: bool) -> void:
+	uniform_walkers = now
+
+## Where a stretch's streets run into the void, as the places the crowd enters it.
+func ends_of_the_stretch() -> Array[Dictionary]:
+	return stretch_ends
+
 func has_stretch() -> bool:
 	return _stretch_box.has_area()
 
@@ -65,8 +97,8 @@ func has_stretch() -> bool:
 ## scene walks the stretch and nothing else.
 func use_stretch() -> void:
 	var box := Rect2i()
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			if map.in_stretch(Vector2i(x, y)):
 				box = Rect2i(x, y, 1, 1) if not box.has_area() else box.expand(Vector2i(x, y)) \
 						.expand(Vector2i(x + 1, y + 1))
@@ -89,8 +121,8 @@ func looking_at() -> Vector2:
 static func _stretch_ends_of(stretch_map: CityMap) -> Array[Dictionary]:
 	var ends: Array[Dictionary] = []
 	var seen := {}
-	for y in stretch_map.size.y:
-		for x in stretch_map.size.x:
+	for y in stretch_map.size_in_tiles().y:
+		for x in stretch_map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if not stretch_map.in_stretch(tile):
 				continue
