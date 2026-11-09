@@ -228,15 +228,14 @@ func has_badges() -> bool:
 func clear_badges() -> void:
 	coming.clear()
 
-## What is on the edge right now, nearest arrival first, one entry per badge: `{id, arrives_in,
-## distance, approach}` for the log, and `{def, position}` (the row and where it points) for the drawing. There
+## What is on the edge right now, nearest arrival first, one entry per badge: `{id, distance,
+## approach}` for the log, and `{def, position}` (the row and where it points) for the drawing. There
 ## is nothing between `coming` and this list: every badge is in it, and `DangerEdge` draws exactly it.
 func announcing() -> Array[Dictionary]:
 	var badges: Array[Dictionary] = []
 	for i in coming.size():
 		badges.append({
 			"id": str(coming[i][5]),
-			"arrives_in": float(coming[i][0]),
 			"distance": float(coming[i][1]),
 			"approach": float(coming[i][4]),
 			"def": coming[i][2],
