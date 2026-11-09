@@ -14,4 +14,4 @@ over it too (`CityMap.ground_for()`, the closures, the soft seals and the bodies
 Only `wall_between()`'s sight walk (`_open()`) leaves the posts open, on purpose; `clear_line()`, the
 pursuers' notice and lunge line, asks `passable()` for the mover it is handed and is blocked by a
 post. The rest of flood-fill performance
-(a `Vector2i`-keyed `Dictionary` against a flat array) is the **godot** skill, "Performance".
+(a `Vector2i`-keyed `Dictionary` against a flat array) is the **godot** skill's `references/rare-traps.md`, "Performance".

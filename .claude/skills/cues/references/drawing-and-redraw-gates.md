@@ -3,8 +3,9 @@
 Read this before touching what `EventLook`, `CrowdAgent` or `EntityHalo` draw, the key a redraw
 gate compares, `DrawnView`, or any caller of `Sprites.draw_standing()`.
 
-The engine traps — a negative `Rect2`, `draw_set_transform` replacing rather than composing, Y-sort,
-retained `_draw()` — are the **godot** skill, "Physics and drawing". Two things are specific to the
+The engine traps — a negative `Rect2`, `draw_set_transform` replacing rather than composing,
+retained `_draw()` — are the **godot** skill, "Physics and drawing", and Y-sort its
+`references/rare-traps.md`, "Drawing". Two things are specific to the
 cues' own drawing:
 
 **A caller that sets a canvas transform around a mirrored sprite publishes it.**
