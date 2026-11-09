@@ -233,7 +233,7 @@ static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
 ## would stand at (two huts and a gate) are `RegionPlanner._add_door_bodies()`'s own math, read
 ## from the same public calls it makes; an alley door is not checked here, since a through-alley's
 ## own crossing needs `RegionPlanner`'s private detection of which alleys actually cross a
-## boundary — `EventScheduler._place_masts()`'s own `_clear_of_the_doors()` check is the safety net
+## boundary — `EventScheduler._place_masts()`'s own `DoorClearanceRule.clear_of_the_doors()` check is the safety net
 ## for that and for anything this misses, exactly as it is for held ground.
 ## *(2026-09-23, CI on PR 292, tests/test_checkpoints.gd: "nothing the day placed reaches inside a
 ## door's 176px gap" — the gap this had never checked at all.)*

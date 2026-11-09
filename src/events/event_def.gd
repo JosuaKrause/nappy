@@ -610,6 +610,13 @@ func lets_out() -> int:
 func obstructs_within() -> float:
 	return obstructs_radius
 
+## **Whether a recurring row the day rolls is handed to her walk to site** (`on_her_way`, the
+## sidewalk poster crew): the day's plan rolls it like any other and, at the end, takes it off the
+## map for the walk to put on her way (`EventScheduler._hand_to_her_walk()`). Asked too by the park
+## spoilers, which offer none such, since a park it spoiled would be left empty.
+func is_handed_to_her_walk() -> bool:
+	return on_her_way != null and kind == GameEnums.EventKind.RECURRING
+
 ## Its notice radius, or 0 for a row with no wait: the number every "how close before it notices"
 ## rule reads.
 func notice_within() -> float:

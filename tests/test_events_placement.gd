@@ -51,9 +51,9 @@ func run(t) -> void:
 ## asserted: a corridor carrying nearly all of it would mean every street off the route is empty,
 ## which reads as a set rather than as a city. **The floor is a relation, not a number**: the share
 ## depends on the city (three rules take corridor ground away from a row: one covering a whole
-## crossing is refused it, `_leaves_the_route_junctions_open`; one that would close the route's
-## sidewalk, `_leaves_the_routes_sidewalk_open`; a pacing row with no way off its sidewalk,
-## `_a_pacing_beat_walls_a_sidewalk`), so the costly rows placed on the corridor are compared with
+## crossing is refused it, `RouteJunctionsRule`; one that would close the route's sidewalk,
+## `RouteSidewalkRule`; a pacing row with no way off its sidewalk,
+## `StreetInvalidation._a_pacing_beat_walls_a_sidewalk`), so the costly rows placed on the corridor are compared with
 ## what a draw without the weight would put there: for each, the corridor's share of the ground
 ## `EventScheduler.open_ground_for()` offers that row, summed. With the weight at 1 the placed count
 ## falls under that sum; with it on, it stands well over it on every city tried.
@@ -67,7 +67,7 @@ func run(t) -> void:
 ## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
 ## than a hole: the charging dog is sited by `EventDirector` in front of wherever she turns out to
 ## be walking, so it is by construction on her route and the scheduler never chose a tile for it.
-## That is why `_role_for` calls it `NONE` — see the note there.
+## That is why `EventScheduler.role_for()` calls it `NONE` — see the note there.
 ##
 ## Five days rather than fourteen. What is being checked is a property of the construction, and the
 ## days are sampled across the acts so that the catalogue's lethal rows (none before day 5) and its
@@ -949,7 +949,7 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 ## **A flock is scenery — overturned on 2026-09-13**, PLAYTEST-71: *"flocks are basically free
 ## already — don't count it as block, just count is scenery."* Under the plain cost rule a
 ## 42-over-168px field crosses `EventScheduler.WALL_WORTH_OF_COST`, so without `EventDef.Role.SCENERY`
-## `_role_for` would call `pigeon_flock` a `WALL` and `_copies_of` would pull it off every route
+## `EventScheduler.role_for()` would call `pigeon_flock` a `WALL` and `_copies_of` would pull it off every route
 ## corridor the way any other expensive row is. `Role.SCENERY` is checked first and answers `NONE`.
 ##
 ## Two claims. The role is a fact about the def, checked directly on every placement the day

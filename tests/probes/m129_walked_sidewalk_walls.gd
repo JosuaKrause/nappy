@@ -273,7 +273,7 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 ## Every solid body the day stands, tagged with the pass that placed it. Reimplements
 ## `EventScheduler.build_day`'s own phase order by calling its private phase functions directly —
 ## the same access `tests/probes/m129_zero_cost_line.gd` already relies on for `EventDef.line_reach()`,
-## `_role_for` and the rest — so each phase's own output can be told apart, which `build_day`'s
+## `EventScheduler.role_for()` and the rest — so each phase's own output can be told apart, which `build_day`'s
 ## single merged return cannot.
 func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)

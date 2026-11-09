@@ -387,10 +387,6 @@ class Planned extends RefCounted:
 	func walks() -> PackedVector2Array:
 		return path
 
-	## The role its placement gave it (`role`): a wall, friction, or none.
-	func blocker_role() -> GameEnums.BlockerRole:
-		return role
-
 	## Gives it the role a judge decided (`StreetInvalidation.room()`), which is where it went.
 	func give_role(given: GameEnums.BlockerRole) -> void:
 		role = given
@@ -1004,8 +1000,7 @@ static func _touched_from(map: CityMap, shut: Dictionary, plan: Planned) -> Arra
 ## to her walk arrives already unplaced from `_place_one_shots` and is left alone.
 static func _hand_to_her_walk(events: DayEvents) -> void:
 	for plan in events.placements():
-		if plan.def.on_her_way == null or plan.def.kind != GameEnums.EventKind.RECURRING \
-				or not plan.is_placed():
+		if not plan.def.is_handed_to_her_walk() or not plan.is_placed():
 			continue
 		var owed := Planned.new(plan.def, Vector2.INF)
 		owed.role = plan.role
@@ -1536,10 +1531,10 @@ static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 ## the shortest side of the calm ground, floored at that constant. That is what lets a market take
 ## over a whole park and keeps it out of a back yard.
 ##
-## **And it has to stay where it was put.** A row owed to her walk (`EventDef.on_her_way`, the poster
-## crews among them) is handed to the walk at the end of the day's plan (`_hand_to_her_walk()`) and
-## taken off the map, so a park it was meant to spoil would stand empty, against PLAYTEST-140 8 (a
-## used park is shut by the events placed in it). None is offered.
+## **And it has to stay where it was put.** A row handed to her walk (`EventDef.is_handed_to_her_walk()`,
+## the sidewalk `poster_crew`) is taken off the map at the end of the day's plan
+## (`_hand_to_her_walk()`), so a park it was meant to spoil would stand empty, against PLAYTEST-140 8
+## (a used park is shut by the events placed in it). None is offered.
 static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> Array[EventDef]:
 	var allowed := maxf(OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(ground.size.x, ground.size.y) / 16.0)
@@ -1551,7 +1546,7 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 			continue
 		if def.spawn_mode != EventDef.SpawnMode.MAP:
 			continue
-		if def.on_her_way != null:
+		if def.is_handed_to_her_walk():
 			continue
 		suitable.append(def)
 	return suitable

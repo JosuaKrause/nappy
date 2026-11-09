@@ -19,7 +19,7 @@ const BASE_SEED := 90210
 const SAMPLE_DAYS := [1, 5, 8, 11, 14]
 
 func run(t) -> void:
-	_role_for_the_named_rows()
+	_roles_of_the_named_rows()
 	_role_and_depth_sweep()
 	_closure_access_vs_rim_sweep()
 	# Satisfy the runner, which wants at least one check to not report a suite that found nothing.
@@ -27,8 +27,8 @@ func run(t) -> void:
 
 # ---------------------------------------------------------- hypothesis: role by row ---
 
-func _role_for_the_named_rows() -> void:
-	print("\n== _role_for and walk_through_cost() for the named rows (static, no city needed) ==")
+func _roles_of_the_named_rows() -> void:
+	print("\n== role_for() and walk_through_cost() for the named rows (static, no city needed) ==")
 	print("WALL_WORTH_OF_COST = %.2f" % EventScheduler.WALL_WORTH_OF_COST)
 	var ids := ["cafe_tables", "market_stall", "construction", "delivery_van",
 			"dog_walker", "homeless_yeller", "loose_dog"]

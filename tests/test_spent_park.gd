@@ -497,20 +497,22 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 	t.check(offered > 0, "the sweep had used, open areas to spoil (%d)" % offered)
 	print("  spent parks: %d of %d used-and-open areas were spoiled with events" % [spoiled, offered])
 
-## Whether a placed plan stands inside `block`'s lot as the day's plan ends: what shuts a used area
-## is the events placed in it (PLAYTEST-140 8), not a field reaching in from outside.
+## Whether a plan that spoils `block`'s lot (`Planned.spoils()`: not a playground, not a scar) stands
+## inside it as the day's plan ends: what shuts a used area is the events placed in it (PLAYTEST-140
+## 8), not a field reaching in from outside.
 func _a_body_stands_inside(map: CityMap, events: DayEvents, calm: CalmAreas, block: Vector2i) -> bool:
 	var lot := map.tile_rect_to_world(calm.rect_of(block))
 	for plan in events.placements():
-		if plan.is_placed() and lot.has_point(plan.position):
+		if plan.spoils(lot) and lot.has_point(plan.placed_at()):
 			return true
 	return false
 
-## **A used area keeps what the spoil pass put in it.** A row owed to her walk is taken off the map
-## when the plan ends (`EventScheduler._hand_to_her_walk()`), so a spoiler of that kind left the area
-## it spoiled empty; the spoil pass offers none (`EventScheduler._things_to_put_in_a_park()`). The
+## **A used area keeps what the spoil pass put in it.** A row handed to her walk
+## (`EventDef.is_handed_to_her_walk()`) is taken off the map when the plan ends
+## (`EventScheduler._hand_to_her_walk()`), so a spoiler of that kind left the area it spoiled empty;
+## the spoil pass offers none (`EventScheduler._things_to_put_in_a_park()`). The
 ## city is the one where that happened: seed 61823 on day 14, with the four-tile courtyard at block
-## (3, 2) used yesterday, whose one spoiler was a poster crew.
+## (3, 2) used yesterday, whose one spoiler was the sidewalk `poster_crew`.
 func _test_a_used_courtyard_keeps_what_was_put_in_it(t) -> void:
 	var map := CityGenerator.generate(61823)
 	var day := 14

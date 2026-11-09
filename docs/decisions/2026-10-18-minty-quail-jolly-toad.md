@@ -19,7 +19,7 @@ this step), and what the scheduler still shares is public there (`EventScheduler
 `RouteSidewalkRule.closes_the_run()` and `closes_a_walked_sidewalk_band()`). The moved code asks
 rather than reads fields: `CityMap` gained two questions (`segment_containing()`,
 `streets_at_junction()`), `EventDef` one (`obstructs_within()`), and `Planned` the accessors the
-rules read and write it through (`walks()`, `blocker_role()`, `give_role()`, `set_piece()`, beside
+rules read and write it through (`walks()`, `give_role()`, `set_piece()`, beside
 its `row()` and `placed_at()`); the walked-sidewalk check asks `CityMap.is_closed()`. The move
 places every cell of the probe as before it. They replace `_judge()` as the dawn draw's invalidation
 (`RuledLocationGround`) and the roadblock phase's (`RuledRoadblockGround`), and `_best_of()` asks
@@ -44,11 +44,13 @@ whole invalidation, the spacing included, and the review measured what that cost
 standing in 307 used areas (−10.5%), and 1 → 11 areas with nothing in them, against PLAYTEST-140 8
 (a used park is shut by the events placed in it). Asked the reach alone it is main's again, 1668
 and 1. The one left empty, on main too, is a four-tile courtyard (seed 61823, day 14) whose one
-spoiler was a poster crew, a row owed to her walk, which the end of the plan takes off the map; the
+spoiler was the sidewalk `poster_crew`, a row handed to her walk, which the end of the plan takes off
+the map; the
 park counted as spoiled only because fields from outside reached in. So the spoil pass offers no
 such row (`_things_to_put_in_a_park()`): 1655 events and no used area empty. `test_spent_park`
 asserts that something stands inside every used, open, unfenced area at the end of the plan, and
-holds that courtyard as a case of its own, which fails with the poster crews back in the pool. **One calm area clean:** on the day she has used every
+holds that courtyard as a case of its own, which fails with the sidewalk `poster_crew` back in the
+pool. Whether a row is handed to her walk is one question both ask (`EventDef.is_handed_to_her_walk()`). **One calm area clean:** on the day she has used every
 counted calm area this act, the one she used longest ago that nothing spoils, else the least
 spoiled, is chosen before the spoilers and its ground joins what nothing may reach
 (`EventScheduler._calm_kept_clean()`). Without the reach rule, `test_acts`' rings of barricades
@@ -123,7 +125,7 @@ verbatim:
     - DayRepairs is gone: a body that would cut a route tile off from home is refused where it would stand (RouteReachRule), where the repair dropped the widest body after the plan, and on a day she has used every calm area the one kept clean is chosen before the spoilers, where the repair stripped one after.
     - The run's scars and the park spoilers are asked RouteReachRule alone before they stand, as the repair asked them only whether home stays reached.
     - The escape draws one marble a street, offered at the street's locations in their drawing order; a row no location takes is spent unmet.
-    - The park spoilers offer no row owed to her walk (the poster crews among them), which the end of the plan took off the map and left the park it spoiled empty, against PLAYTEST-140 8. The reviewers' spent-park probe (24 cities from 61003 in steps of 41, days 2 to 14, yesterday's area used): events standing in the 307 used areas 1668 -> 1655, areas with none 1 -> 0.
+    - The park spoilers offer no row handed to her walk (EventDef.is_handed_to_her_walk(): the sidewalk poster_crew), which the end of the plan took off the map and left the park it spoiled empty, against PLAYTEST-140 8. The reviewers' spent-park probe (24 cities from 61003 in steps of 41, days 2 to 14, yesterday's area used): events standing in the 307 used areas 1668 -> 1655, areas with none 1 -> 0.
 
     What the probe cannot see:
     - Dawn planning time inside EventScheduler.build_day(), main and head run at once on every sample, timed per call: 2433 s → 2458 s (+1.0%; 90210+31i +1.7%, 70001+37i +1.4%, 31337+43i +0.3%, 24601+41i +0.6%).

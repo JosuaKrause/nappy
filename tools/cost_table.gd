@@ -136,7 +136,7 @@ func _assert_pass_offsets_match() -> bool:
 # --------------------------------------------------------------------- row data ---
 
 func _role_str(def: EventDef) -> String:
-	match EventScheduler._role_for(def):
+	match EventScheduler.role_for(def):
 		GameEnums.BlockerRole.WALL:
 			return "wall"
 		GameEnums.BlockerRole.FRICTION:
@@ -326,7 +326,7 @@ func _header_text() -> String:
 	lines.append("- `EventScheduler.WALL_WORTH_OF_COST` = %.1f points" % EventScheduler.WALL_WORTH_OF_COST)
 	lines.append("")
 	lines.append("**`" + TITLE_GEOMETRY + "`** is what a row's own data says, unconditionally: " +
-			"`role` is `EventScheduler._role_for()` at day 0 (a row's cold shape, before any " +
+			"`role` is `EventScheduler.role_for()` at day 0 (a row's cold shape, before any " +
 			"resistance heat); `core_intensity`/`core_radius` are a dash where a row has no core; " +
 			"`pulse_trough` is `intensity * 0.25`, the low point of the pulse envelope " +
 			"`current_intensity()` uses, and a dash where a row does not pulse; `speed` is a " +

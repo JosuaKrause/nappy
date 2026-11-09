@@ -1355,7 +1355,7 @@ static func _pigeon_flock() -> EventDef:
 	def.weight = 1.5
 	def.max_per_day = 5
 	# **A flock is scenery, not a block** (PLAYTEST-71). Left unset, a 42-over-168px field crosses
-	# `EventScheduler.WALL_WORTH_OF_COST` and `_role_for` would call this a `WALL`, pulling it off
+	# `EventScheduler.WALL_WORTH_OF_COST` and `EventScheduler.role_for()` would call this a `WALL`, pulling it off
 	# every route; `Role.SCENERY` answers `NONE` first, so it lands on a route corridor exactly as
 	# it lands anywhere else.
 	def.role = EventDef.Role.SCENERY

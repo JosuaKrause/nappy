@@ -1165,7 +1165,7 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## forward reach growing past what its telegraph already priced is a fairness question; growing
 ## far enough to touch an unvisited calm area it used to clear is a different one —
 ## `EventScheduler` refuses that placement outright (`CalmAreas.unused_ground()`,
-## `_reaches_any`), so a row whose whole path is long enough to brush one can lose its only site
+## `UnusedCalmRule`), so a row whose whole path is long enough to brush one can lose its only site
 ## and simply not happen that day, however fair its telegraph is. The value was set by measuring
 ## exactly that on the longest-routed scheduled row of the day (`docs/DECISIONS.md`, M114); no
 ## scheduled row currently drives a route that long — the fire engine is summoned to a route

@@ -46,9 +46,9 @@ and director-sited rows get none; a one-shot is a **set piece** (sited where eve
 it); `hard_fail`, a `walk_through_cost()` at or over `EventScheduler.WALL_WORTH_OF_COST` (48 points), or a
 reach that leaves no line past it along a sidewalk makes a **wall** (zero copies on any cell a
 route runs along); anything else is **friction** (weighted onto the corridor). A `paces` row's role
-depends on where its beat runs, so `_a_pacing_beat_walls_a_sidewalk` decides it in the candidate
+depends on where its beat runs, so `StreetInvalidation._a_pacing_beat_walls_a_sidewalk()` decides it in the candidate
 loop, where the beat exists. A row that wants a role its data does not imply needs a change to
-`_role_for`, not a new field.
+`EventScheduler.role_for()`, not a new field.
 
 **`obstructs_radius` is not a decision.** If it stands still and it is drawn, it is solid at half
 its silhouette.

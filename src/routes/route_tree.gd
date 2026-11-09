@@ -885,7 +885,7 @@ func start() -> Vector2:
 ## whose box is covered is a route cut in a way no amount of ground on either side can answer:
 ## `tests/probes/m129_zero_cost_line.gd` measured it as the shape that breaks more routes than
 ## every other shape together (135 of 298 routes, 401 of the cuts). `EventScheduler` refuses a row
-## the ground that would close one — see `_leaves_the_route_junctions_open`.
+## the ground that would close one — see `RouteJunctionsRule`.
 ##
 ## **Both halves are needed and neither implies the other.** A street on the tree is walked end to
 ## end, so both of its junctions are crossings the route uses, even though no route *cell* need

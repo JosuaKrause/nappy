@@ -859,8 +859,9 @@ reachable, through rules the day already follows for the rest of the tree: a bou
 the spur takes is a door rather than wall, no seal stands on it, and no closure lands on it. And
 `ClosurePlanner` asks for the door beside the calm before accepting each closure that day, so a
 closure that would cut it off is refused, not repaired — the second opinion, as it is for the calm —
-and the scheduler's walkability pass keeps a route to it among the day's bodies, since it is the
-last night's narrow resistance target (see "Guarantees").
+and the dawn keeps a route to it among the day's bodies (`RouteReachRule`: no body cuts a route
+tile off from home), since it is the last night's narrow resistance target and the day's routes run
+to it (see "Guarantees").
 Because the door is outside the home's region, every way there crosses a region door;
 `tests/test_power_station.gd` plans the day with its walls, seals and closures standing, finds the
 door reachable, and finds it out of reach again with the doors shut. On every other day the tree

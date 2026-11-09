@@ -13,7 +13,7 @@ func run(t) -> void:
 ## event to be generated"* (quiet-yak, inbox #503). On the test city's day 11, a stationary `reversing_lorry`
 ## (hard_fail, 175px field) is planned on a sidewalk, and the mast is queued with only the sidewalk
 ## inside that field to stand on: the scheduler's acceptance refuses every tile, so no mast is
-## generated, as `_room_around()` refuses any row inside a lethal field ("Nothing else happens
+## generated, as `StreetInvalidation.room_around()` refuses any row inside a lethal field ("Nothing else happens
 ## inside a lethal event's field"). Offered sidewalk well clear of it, the mast is generated, joins
 ## the day's plan under an added id, and has room by the same rule. A mast put down where the
 ## director pointed, as before, fails the first half.
