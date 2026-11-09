@@ -6,8 +6,8 @@ description: The Nappy board, the shared Claude Doc where the player and the orc
 # The Nappy board
 
 - **A question to the player goes on the board, never in a modal dialog in the chat**; one about an inbox note may go on its issue.
-- **Only the orchestrating Claude Code session reads or writes it**, and Claude is never @-mentioned on it.
-- **It is read at session start, when the player says "doc" or "check the doc", and before every write to it**; it is not polled on other turns.
+- **Only the orchestrating Claude Code session acts on it**, changing it or answering on it, and Claude is never @-mentioned on it.
+- **It is read at session start, when the player says "doc" or "check the doc", and before the first write of a turn**; it is not polled on other turns.
 - **A question the player's recorded words already answer is not asked**: the reading is built and stated.
 - **A question blocks only when changing course after the answer would be very costly**; everything else is built on My pick.
 - **A question is a level-3 heading over one nested list** (Question, Context, My pick, You, Me) and asks one thing.
@@ -32,10 +32,12 @@ separate session that has none of this context.
 ## When it is read
 
 **The board is read at session start, when the player says "doc" or "check the doc", and before
-every write to it; it is not polled on other turns** (inbox #830 in minty-dolphin, inbox #1267).
-Nothing notifies the terminal session of an edit, and the player gives a heads-up when it matters
-rather than have the board polled (inbox #830 in minty-dolphin); the read before a write is what
-keeps a write from landing on a page the player has changed since. A report from an agent, a merge or
+the first write to it in a turn; it is not polled on other turns** (inbox #830 in minty-dolphin,
+inbox #1267). Nothing notifies the terminal session of an edit, and the player gives a heads-up
+when it matters rather than have the board polled (inbox #830 in minty-dolphin); the read before a
+turn's first write is what keeps a write from landing on a page the player has changed since.
+Between the session's own consecutive writes there is no read: each write's acknowledgement is the
+next one's anchor ("Keeping it cheap"). A report from an agent, a merge or
 a review verdict is not written to the Running table at once: the board is the player's information
 and the channel they answer on, so it is updated in batches, and the orchestrator's own temporary
 working state is kept in the local restart prompt (**session-cleanup**, step 8), which a fresh session
@@ -161,6 +163,12 @@ words, a settled answer, or a decision about how work goes on. Where it goes, an
 - **in the restart prompt's `## Plan`, until the queue item holds it** (**session-cleanup**,
   step 8).
 
+**A conclusion that rests on a note with nothing to append to goes into the restart prompt's
+`## Plan` in that turn**, and into the queue item at the next queue update as above. That is a note
+already filed, which is closed, and a note the player wrote themself, which takes only the player's
+own comments: `tools/inbox.py append`, the command that adds a block to an open captured note,
+refuses both.
+
 The next session reads the note, the queue and the records and not this conversation; the local
 restart prompt alone is not enough.
 
@@ -238,8 +246,8 @@ The editor's traps that have each cost a failed call:
 
 ## Proposed, not asked for
 
-These rules above are the filer's proposals, not the player's words, and hold until the player
-corrects them. The citation is the player's word each one extends:
+These rules above are the filer's proposals and readings, not the player's words, and hold until
+the player corrects them. The citation is the player's word each one extends:
 
 - **What a batch is** ("When it is read"): the orchestrator's next write for the player
   (inbox #986 in brisk-pelican).
@@ -251,3 +259,9 @@ corrects them. The citation is the player's word each one extends:
   inbox #1163 in gray-dolphin).
 - **Where a question's outcome is recorded before it leaves the board** ("Settling";
   inbox #1163 in gray-dolphin).
+- **One read covers a turn's run of writes** ("When it is read"): the pick the player took is a
+  read before each write (inbox #1267), read as before the first of a turn, since each later write
+  is anchored on the acknowledgement of the one before it.
+- **Where a conclusion goes when its note takes no appended block** ("Blocking, and no dialogs"):
+  the restart prompt's plan in that turn, and the queue item at the next queue update
+  (inbox #1244 in gentle-owl).
