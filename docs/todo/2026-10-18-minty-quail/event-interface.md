@@ -18,10 +18,9 @@ no longer being a `Resource`, the narrow interface a behaviour asks its event th
 and the one object for where she is (`WhereSheIs`). The plainer alternative each replaces is a
 method per field on the three classes as they stand.
 
-**Its open points are answered, but for one.** Section 7 holds what the player's recorded words answer and
+**Its open points are answered.** Section 7 holds what the player's recorded words answer and
 the six points the design put as questions, each with the player's answer from the board
-(inbox #1278); the last answer has two readings, put back to the player, and until they
-answer every step keeps things as they are.
+(inbox #1278).
 
 The rule it applies is the player's: "provide a consistent interface for events that can be used without
 knowing details of the event. that applies to all aspects of events ... don't forget about
@@ -78,9 +77,8 @@ Three objects are meant by "an event" below, and each is named this way througho
    hundreds of agents, and rows that cannot change take per-frame reads out of the baby's sweep
    and the danger prediction. Section 6 names the probes.
 10. **Nothing the player sees or the logs say changes.** Every step is at test parity, the run
-    log and GoatCounter names included. What happens to three answers that are slightly wrong
-    today is open until the player confirms a reading of their answer (section 7, point 6); until
-    then every step keeps them as they are.
+    log and GoatCounter names included. Three answers that are slightly wrong today are each
+    made correct in a pull request of its own, after the step that names it (section 7, point 6).
 
 ## 1. The parts
 
@@ -544,8 +542,9 @@ conversion finds nothing to redo in those files.
 
 Two notes for the track. **`blocking_radius()` reads a lethal row's field core
 (`inner_radius`), not `lethal_reach()`**; the two differ only for a row whose catch is narrower
-than its core (the masked man on the escape's stairs, a hunting roadblock's guard). It is kept as
-it is, under its name, and listed for the end remeasure. **Where a plan's body stands on its
+than its core (the masked man on the escape's stairs, a hunting roadblock's guard). The placement
+track keeps it as it is, under its name; it is made correct in a pull request of its own (section
+7, point 6). **Where a plan's body stands on its
 sidewalk band and which tiles it takes** is worked out today by the live event's picture geometry
 (`EventFootprints.stands_at()`, `body_axis()`), which the dawn reads across a layer
 (`tools/layer_map.py` lists it); the breakup's `PlanBuilder` is where that answer moves, and the
@@ -716,7 +715,7 @@ questions, and is at test parity with the run log and GoatCounter's names unchan
 
 | # | What | Files it owns | When |
 |---|---|---|---|
-| **1** | **Callers outside the events folder ask the event.** The questions of sections 2.3 to 2.6 are added to the row, the live event, the plan and the pending warning, and their callers converted. `BadgeModel.Subject.worth_an_arrow()`'s rule moves to the row as `announces_its_coming()`. | `src/ui/danger_edge.gd`, `badge_model.gd`, `hud.gd`; `src/telemetry/telemetry_observer.gd`, `telemetry_map.gd`; `src/crowd/crowd.gd` (one read); `src/city/day_streets.gd`, `poster_walls.gd`; `src/finale/building_plan.gd`. Adds methods, and changes no existing line, in `event_def.gd`, `event_instance.gd`, `pending_warning.gd` and `event_plan.gd` | **Now, beside placement.** The plan's methods wait for the rename, which lands before placement's step 1. Where another open pull request holds one of these files, its reads move to that pull request under the names here |
+| **1** | **Two reads left of the callers outside the events folder**, which otherwise ask the event (the record minty-quail-rosy-lynx). A method and a variable cannot share a name, so each waits for its field to go private: the plan's `role`, read by the run log's map, becomes `role()` in 3a; the row's `speed`, read where a badge is made for a warning with nothing in the world yet, becomes a question of the route part in 4b | `src/telemetry/telemetry_map.gd` (in 3a); `src/ui/danger_edge.gd` (in 4b) | With 3a and with 4b |
 | **2a** | **The live event's behaviours ask it through `Figure`, and are handed the rest.** `WhereSheIs`, and `EventBody` taken out of `EventInstance`; the composer hands each behaviour its settings, the map, the navigator and its siblings; the eight existing specs get their methods; `EncounterWatch` keeps its own records | `src/events/event_instance.gd`, `behaviours/*`, `event_excitement.gd`, `event_sources.gd`, `encounter_watch.gd`, `checkpoint_controller.gd`, `charge_record.gd`, `warning.gd`, the eight spec files (methods added). One function of `event_manager.gd`, the write of where she is | **Now, beside placement**, after 1 (both add to `event_instance.gd`). The one foreign function is coordinated with the third hand-ins pull request, which rewrites the manager's setup |
 | **2b** | **The looks ask the live event and are handed their settings.** | `src/events/views/*`, `event_footprints.gd`, `event_scenery.gd` | **Now**, beside 2a once `Figure` and the outward questions are in |
 | **3a** | **The dawn and the walk's ground ask rows and plans.** The plan's fields go private. Small where placement wrote against section 3 | `event_plan.gd`, `event_scheduler.gd` and what the breakup made of it (`dawn_phases/`, `plan_builder.gd`, `row_ground.gd`, `dawn_context.gd`), `street_rules/*`, `street_invalidation.gd`, the location files, `walk_draw.gd`, `view_bag.gd`, `walk_ground.gd`, `day_events.gd`, `walk_events.gd`, `day_reach.gd`, `mast_sites.gd`, `day_planner.gd`, `src/routes/seal_planner.gd`, `region_planner.gd` | After placement and the scheduler's breakup close |
@@ -875,16 +874,13 @@ each question as it was shown).
    shape change is desired. as I said earlier the main real measure will be playtests. This will
    tell us what needs fixing. Let's not obsess over theoretical numbers. We currently have no
    established base anymore since we changed a lot. Playtest will decide which deviations need to be
-   fixed". **Two readings, neither confirmed** (put back to the player on the board; until
-   they answer, every step keeps all three as they are):
-   - *All three are made right.* "The shape change is desired" speaks of the first, and "let's not
-     obsess over theoretical numbers" and "no established base anymore" say nothing is kept wrong
-     to hold old numbers: each of the three is a pull request of its own after the step that gives
-     it a name, saying what it changes in play and in the run log, and playtests decide what then
-     needs fixing.
-   - *Only the field's shape is made right.* "Desired" is said of the shape alone, and "playtest
-     will decide which deviations need to be fixed" leaves the other two as they are until a
-     playtest shows them to matter.
+   fixed". Read back as (b) for all three, "each of the three is made right, the field's real
+   shape first, and nothing is kept wrong to hold old numbers", with "tell me if you meant only
+   the field's shape": "whatever is the *correct* implementation. if that is b then let's do that"
+   (inbox #1278). **Read as:** all three are made correct. Each is a pull request of its own
+   after the step that gives it a name, saying what it changes in play and in the run log, with
+   its pictures; a step that is not that pull request keeps the answer as it is, and playtests
+   decide what then needs fixing.
    - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
      its five callers do, though the field of a row with a long body is a capsule about that body.
      Answering with the real field changes when the run log says "out of range" and when the
@@ -892,5 +888,4 @@ each question as it was shown).
    - `blocking_radius()` shuts a lethal row's field core, not its lethal reach (section 3).
    - The ground a row that ends the day shuts is stated four ways (`clearance()`,
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
-     lethal disc less her radius). Each stays one named question; whether they are one fact is
-     the remeasure's to say.
+     lethal disc less her radius). They become one stated fact, asked under one name.
