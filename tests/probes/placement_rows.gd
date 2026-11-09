@@ -14,7 +14,8 @@ extends RefCounted
 ## or the depth of its tile off the streets) and its kind of ground (a junction box, an alley, a
 ## park or square, a carriageway, a sidewalk). The moments she is owed are counted apart. Prints
 ## `RD day seeds placed moments`, `RV day row view count` and `RK day row kind count`, each summed
-## over the seeds.
+## over the seeds. Each day is planned as the game plans it: its closures, holds, region wall and
+## seals first, the seals and the wall's bodies handed in as standing.
 
 const SEEDS := 18
 const BASE := 90210
@@ -35,14 +36,54 @@ func run(t) -> void:
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
+			var spec := DaySpec.for_day(day)
+			# The day's own closures, holds, region wall and seals, planned as the game plans them
+			# (`City.start_day()`, `DayPlanner._plan_a_day()`), so the seals and the wall's bodies
+			# stand as the day's standing and hold their locations.
+			var region_plan := RegionPlanner.plan_day(map, spec, tree)
+			var closure_rng := RandomNumberGenerator.new()
+			closure_rng.seed = hash("placement_rows closures:%d:%d" % [i, day])
+			var closures := ClosurePlanner.plan_day(map, spec, closure_rng, tree, region_plan)
+			map.close_streets(closures)
+			map.clear_day_holds()
+			for closure: RoadClosure in closures:
+				map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
+			for segment: StreetNetwork.Segment in region_plan.walls:
+				map.hold_segment(segment.key(), HeldStreets.Why.WALL)
+			for segment: StreetNetwork.Segment in region_plan.doors:
+				map.hold_segment(segment.key(), HeldStreets.Why.DOOR)
+			for segment: StreetNetwork.Segment in map.network.around_blocks(
+					Rect2i(map.home_block, Vector2i.ONE)):
+				map.hold_segment(segment.key(), HeldStreets.Why.HOME)
+			var boundary := {}
+			for segment in region_plan.walls:
+				boundary[segment.key()] = true
+			for segment in region_plan.doors:
+				boundary[segment.key()] = true
+			for rect in region_plan.alley_walls:
+				boundary[rect.position] = true
+			for rect in region_plan.alley_doors:
+				boundary[rect.position] = true
+			var seal_rng := RandomNumberGenerator.new()
+			seal_rng.seed = hash("placement_rows seals:%d:%d" % [i, day])
+			var seals := SealPlanner.plan_day(map, spec, tree, seal_rng, boundary, map.held_streets())
+			for seal in seals:
+				seal.stand_as_a_seal()
+			var doors := PackedVector2Array()
+			for body in region_plan.door_bodies:
+				doors.append(body.position)
+			var standing: Array[EventScheduler.Planned] = []
+			standing.append_array(seals)
+			standing.append_array(region_plan.wall_bodies)
+			for body in region_plan.wall_bodies:
+				body.stand_in_the_wall()
 			var corridor := Corridor.of(tree)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("placement_view_mix:%d:%d" % [i, day])
 			var guarded := ResistanceSteps.guarded_row_on(day)
 			var consumed: Array[String] = []
-			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), sites,
-					consumed, [], tree, 0, PackedVector2Array(),
-					[] as Array[EventScheduler.Planned], null,
+			for plan in EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), sites,
+					consumed, [], tree, 0, doors, standing, null,
 					EventCatalogue.by_id(guarded) if guarded != "" else null).placements():
 				var mode := plan.def.spawn_mode_on(day)
 				if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:

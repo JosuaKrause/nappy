@@ -614,7 +614,7 @@ func obstructs_within() -> float:
 ## a one-shot is a set piece, which has to be met wherever she goes, so one without `on_her_way`
 ## would stand in one place and be met only if she walked there. `validate()` refuses a row this
 ## answers for.
-func met_wherever_she_goes_refusal() -> String:
+func _met_wherever_she_goes_refusal() -> String:
 	if kind == GameEnums.EventKind.ONE_SHOT and on_her_way == null:
 		return ("event '%s' is a one-shot not sited from her walk: a set piece has to be met " % id
 				+ "wherever she goes, and one placed at dawn is met only if she walks there")
@@ -1198,8 +1198,8 @@ func validate() -> bool:
 	# would stand in one location and be met only if she walked there, so it is refused until the
 	# walk's draw can carry it, a rigged marble on the next location she comes to (placement by
 	# construction's walk draws).
-	if met_wherever_she_goes_refusal() != "":
-		push_error(met_wherever_she_goes_refusal())
+	if _met_wherever_she_goes_refusal() != "":
+		push_error(_met_wherever_she_goes_refusal())
 		return false
 	# **A row sited from her walk is a `MAP` row that stands still, or it is nothing.** Only
 	# `EventScheduler._place_one_shots` and `_hand_to_her_walk` read the flag, and only
