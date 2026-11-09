@@ -16,7 +16,7 @@ static func of(map: CityMap, day: int, trace: RunTrace = null) -> String:
 	var parts: Array[String] = []
 	for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map),
 			consumed, [], null, 0,
-			PackedVector2Array(), [], [], trace).placements():
+			PackedVector2Array(), [], trace).placements():
 		parts.append("%s@%.2f,%.2f" % [plan.def.id, plan.position.x, plan.position.y])
 	# The one-shot ledger is part of the answer: a roll that fires on day 3 rather than day 4
 	# is exactly the divergence this is looking for.

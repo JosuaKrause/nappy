@@ -25,6 +25,7 @@ func run(t) -> void:
 	_test_a_pending_warning_is_announced_for_its_whole_warning(t)
 	_test_every_badge_is_listed_soonest_arrival_first(t)
 	_test_the_warning_with_less_time_left_is_listed_first(t)
+	_test_a_pending_warning_is_ranked_by_its_arrival_among_live_dangers(t)
 	_test_a_subject_no_longer_handed_over_is_forgotten(t)
 	_test_the_lead_window_is_a_time_and_not_a_distance(t)
 	_test_what_is_worth_an_arrow(t)
@@ -384,9 +385,33 @@ func _test_a_pending_warning_is_announced_for_its_whole_warning(t) -> void:
 	w.logged_name = "cyclist"
 	model.step(STEP, Vector2.ZERO, [w], _sees, Tuning.WALK_SPEED)
 	t.check(_up(model, "cyclist"), "a warning with nothing in the world yet is up, on screen or off")
-	t.check(model.announcing().size() == 1 and model.announcing()[0]["id"] == "cyclist"
-			and is_equal_approx(float(model.announcing()[0]["arrives_in"]), 0.7),
-			"the warning with 0.7s left is the one badge on the edge, arriving in 0.7s")
+
+## A pending warning with 0.7s left is ranked against a live thing by when each arrives: the live
+## one, still 0.6s off, is listed ahead of it, and once it is 0.75s off the warning is. A warning's
+## arrival time that was read wrong by a tenth of a second would swap the second order.
+func _test_a_pending_warning_is_ranked_by_its_arrival_among_live_dangers(t) -> void:
+	var model := BadgeModel.new()
+	var live := _vehicle(1, Vector2(900.0, 0.0), 600.0)
+	live.logged_name = "live"
+	var warning := _vehicle(2, Vector2(100.0, 0.0), 190.0)
+	warning.pending = true
+	warning.left = 0.7
+	warning.logged_name = "warning"
+	var before_it := []
+	var after_it := []
+	for i in 120:
+		live.position.x -= live.speed * STEP
+		_step(model, [live, warning])
+		var arrives := live.position.x / live.speed
+		var names := []
+		for b in model.announcing():
+			names.append(b["id"])
+		if arrives >= 0.72 and arrives <= 0.78 and after_it.is_empty():
+			after_it = names
+		if arrives >= 0.6 and arrives <= 0.68 and before_it.is_empty():
+			before_it = names
+	t.check(before_it == ["live", "warning"], "0.6s off, the live danger comes before a warning with 0.7s left (%s)" % str(before_it))
+	t.check(after_it == ["warning", "live"], "0.75s off, the warning with 0.7s left comes first (%s)" % str(after_it))
 
 func _test_the_warning_with_less_time_left_is_listed_first(t) -> void:
 	for sooner_first in [true, false]:

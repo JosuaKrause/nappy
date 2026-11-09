@@ -52,29 +52,7 @@ src/city/city.gd dark_from_the_start
 src/city/city.gd forced
 
 # [BlockLayout] src/city/block_layout.gd
-src/city/city.gd open_rect
-src/city/city.gd playground
-src/city/city_generator.gd alley
-src/city/city_generator.gd open_rect
-src/city/city_generator.gd passage
-src/city/city_generator.gd playground
-src/city/city_generator.gd square
-src/city/city_map.gd alley
-src/city/city_map.gd open_rect
-src/city/city_map.gd passage
-src/city/city_map.gd playground
-src/city/city_map.gd square
-src/resistance/resistance_director.gd playground
-src/resistance/resistance_steps.gd playground
 src/routes/closure_planner.gd open_rect
-
-# [BlockPlan] src/city/block_plan.gd
-src/city/city_generator.gd forced_open_on
-src/city/city_generator.gd steps
-src/city/city_state.gd forced_open_on
-src/city/city_state.gd steps
-src/city/recipe_city_context.gd forced_open_on
-src/city/recipe_city_context.gd steps
 
 # [BlockedLayer] src/world/blocked_layer.gd
 src/city/city_map.gd closed
@@ -84,25 +62,11 @@ src/world/world_map.gd bodies
 src/world/world_map.gd body_version
 
 # [Building] src/city/building.gd
-src/city/city.gd atlas
-src/city/city.gd district
 src/city/city.gd door_world_x_range
-src/city/city.gd footprint
-src/city/city.gd front_drawer
-src/city/city.gd height
-src/city/city.gd is_home_building
-src/city/city.gd lot
 src/city/city.gd power_station
-src/city/city.gd roof_drawer
-src/city/city.gd roof_object_parent
 src/city/city.gd scenery_clock
-src/city/city.gd scenery_resident
 src/city/city.gd station_door_col
 src/city/city.gd station_yard_cols
-src/city/city.gd variant
-src/city/poster_walls.gd condition
-src/city/poster_walls.gd neighbor_taken
-src/city/poster_walls.gd posters
 src/dev/roof_context_preview.gd atlas
 src/dev/roof_context_preview.gd district
 src/dev/roof_context_preview.gd footprint
@@ -124,9 +88,7 @@ src/dev/roof_scale_preview.gd roof_object_parent
 src/dev/roof_scale_preview.gd variant
 
 # [BuildingShadows] src/city/building_shadows.gd
-src/city/city.gd drawer
 src/city/city.gd falls_on
-src/city/city.gd skip_draw
 src/city/city.gd streamed
 
 # [ChargeRecord] src/events/charge_record.gd
@@ -200,71 +162,17 @@ src/run/day_director.gd map
 src/run/day_director.gd scenery
 src/telemetry/frame_recorder.gd crowd
 src/telemetry/frame_recorder.gd events
-src/telemetry/frame_recorder.gd ground_mode
 src/telemetry/frame_trace.gd crowd
 src/telemetry/frame_trace.gd events
 src/telemetry/run_session.gd crowd
 src/telemetry/run_session.gd events
 src/telemetry/run_session.gd map
 
-# [CityDecals] src/city/city_decals.gd
-src/city/city.gd atlas
-src/city/city.gd drawer
-src/city/city.gd streamed
-
-# [CityEdge] src/city/city_edge.gd
-src/city/city.gd atlas
-src/city/city.gd kind
-
 # [CityMap] src/city/city_map.gd
 src/city/blackout.gd power_station
-src/city/city.gd block_layouts
-src/city/city.gd block_plans
-src/city/city.gd building_rects
-src/city/city.gd calm_blocks
-src/city/city.gd fenced_park
-src/city/city.gd home_block
-src/city/city.gd home_rect
-src/city/city.gd main_road
-src/city/city.gd power_station
-src/city/city.gd power_station_door
-src/city/city.gd recipe_bounds
-src/city/city.gd recipe_closures
-src/city/city.gd recipe_exterior
-src/city/city.gd seed_used
-src/city/city.gd stretch_buildings
-src/city/city.gd stretch_litter
-src/city/city.gd stretch_props
-src/city/city_fronts.gd block_plans
-src/city/city_generator.gd absent_segments
-src/city/city_generator.gd alley_rects
-src/city/city_generator.gd big_buildings
-src/city/city_generator.gd block_layouts
-src/city/city_generator.gd block_plans
-src/city/city_generator.gd building_rects
-src/city/city_generator.gd built_over
-src/city/city_generator.gd calm_blocks
 src/city/city_generator.gd courtyard_rects
-src/city/city_generator.gd dead_ends
 src/city/city_generator.gd home_block
 src/city/city_generator.gd home_rect
-src/city/city_generator.gd main_road
-src/city/city_generator.gd network
-src/city/city_generator.gd power_station
-src/city/city_generator.gd power_station_door
-src/city/city_generator.gd power_station_door_key
-src/city/city_generator.gd power_station_industrial_blocks
-src/city/city_generator.gd precinct_spans
-src/city/city_generator.gd recipe_diagnostics
-src/city/city_generator.gd seed_used
-src/city/city_generator.gd square_rects
-src/city/city_generator.gd tiles
-src/city/city_generator.gd zone_anchor
-src/city/city_generator.gd zone_rects
-src/city/garbage_sacks.gd seed_used
-src/city/ground_tiles.gd seed_used
-src/city/ground_tiles.gd stretch_cracks
-src/city/litter.gd seed_used
 src/city/recipe_city_builder.gd block_plans
 src/city/recipe_city_builder.gd building_rects
 src/city/recipe_city_builder.gd network
@@ -297,21 +205,6 @@ src/city/recipe_city_context.gd tiles
 src/city/recipe_city_context.gd zone_anchor
 src/city/recipe_city_context.gd zone_rects
 src/city/scenery_ground.gd seed_used
-src/city/street_layout.gd main_road
-src/city/street_trees.gd block_plans
-src/city/street_trees.gd home_rect
-src/city/street_trees.gd network
-src/city/street_trees.gd recipe_dawn_tiles
-src/city/street_trees.gd recipe_tree_moves
-src/city/street_trees.gd recipe_trees
-src/city/street_trees.gd seed_used
-src/crowd/crowd_lanes.gd main_road
-src/crowd/crowd_lanes.gd precinct_spans
-src/crowd/crowd_lanes.gd seed_used
-src/crowd/crowd_pockets.gd closed_tiles
-src/crowd/crowd_pockets.gd network
-src/crowd/lane_mover.gd network
-src/crowd/walker_strategy.gd network
 src/dev/dev_rig.gd big_buildings
 src/dev/dev_rig.gd main_road
 src/dev/dev_rig.gd precinct_spans
@@ -332,32 +225,15 @@ src/dev/scene_recipe_runtime.gd recipe_bounds
 src/events/calm_areas.gd calm_blocks
 src/events/day_planner.gd home_block
 src/events/day_planner.gd network
-src/events/day_repairs.gd closed_tiles
 src/events/event_scheduler.gd closed_tiles
 src/events/event_scheduler.gd network
 src/events/event_scheduler.gd playgrounds
 src/events/event_scheduler.gd power_station
-src/events/event_scheduler.gd tiles
 src/events/event_spawner.gd block_plans
 src/events/mast_sites.gd boundary_wall_at_a
 src/events/mast_sites.gd calm_blocks
 src/events/mast_sites.gd main_road
 src/events/mast_sites.gd square_rects
-src/events/walk_ground.gd closed_tiles
-src/finale/finale_planner.gd home_block
-src/finale/finale_planner.gd main_road
-src/finale/finale_planner.gd network
-src/resistance/happenings.gd block_plans
-src/resistance/happenings.gd main_road
-src/resistance/park_cordon.gd home_rect
-src/resistance/resistance_director.gd alley_rects
-src/resistance/resistance_director.gd block_layouts
-src/resistance/resistance_director.gd courtyard_rects
-src/resistance/resistance_steps.gd block_layouts
-src/resistance/resistance_steps.gd home_block
-src/resistance/resistance_steps.gd network
-src/resistance/resistance_steps.gd playgrounds
-src/resistance/resistance_steps.gd power_station_door
 src/routes/closure_planner.gd absent_segments
 src/routes/closure_planner.gd block_layouts
 src/routes/closure_planner.gd calm_blocks
@@ -383,14 +259,6 @@ src/run/day_director.gd block_plans
 src/run/day_director.gd fenced_park
 src/run/day_director.gd fenced_park_act
 src/telemetry/run_session.gd seed_used
-src/telemetry/telemetry_map.gd built_over
-src/telemetry/telemetry_map.gd calm_blocks
-src/telemetry/telemetry_map.gd home_rect
-src/telemetry/telemetry_map.gd main_road
-src/telemetry/telemetry_observer.gd block_plans
-
-# [CityState] src/city/city_state.gd
-src/run/run_state.gd trace
 
 # [ClosureMarker] src/routes/closure_marker.gd
 src/city/city.gd across
@@ -477,7 +345,6 @@ src/events/event_scheduler.gd keeps_the_walk_open
 src/events/event_scheduler.gd keeps_unused_calm_clear
 src/events/event_scheduler.gd number
 src/events/event_scheduler.gd one_notice_at_a_time
-src/events/event_scheduler.gd slots_per_street
 src/events/event_scheduler.gd wall_row_share
 src/main.gd exits
 src/main.gd goal
@@ -1231,7 +1098,6 @@ src/crowd/lane_mover.gd shut_by_a_hold
 src/crowd/lane_mover.gd today
 
 # [MarbleBag] src/city/marble_bag.gd
-src/city/poster_walls.gd drawn
 src/events/event_scheduler.gd drawn
 src/events/event_spawner.gd drawn
 
@@ -1285,22 +1151,11 @@ src/ui/danger_edge.gd place
 
 # [PosterState] src/city/poster_state.gd
 src/city/city.gd pasted_through
-src/city/poster_walls.gd cells
 src/city/poster_walls.gd pasted_through
-src/city/poster_walls.gd tears
 src/dev/scene_recipe_draft.gd cells
 src/events/events_ahead.gd tears
 
-# [PosterWalls] src/city/poster_walls.gd
-src/city/city.gd art
-src/city/city.gd atlas
-src/city/city.gd trace
-
 # [Prop] src/city/prop.gd
-src/city/city.gd atlas
-src/city/city.gd kind
-src/city/city.gd scale_factor
-src/city/city.gd variant
 src/dev/debug_layers.gd shape
 src/dev/scene_recipe_draft.gd kind
 src/dev/scene_recipe_draft.gd scale_factor
@@ -1502,9 +1357,6 @@ src/city/scenery_residency.gd mode
 src/city/scenery_residency.gd pending
 
 # [SceneryLayer] src/city/scenery_layer.gd
-src/city/building.gd drawer
-src/city/building.gd frame_b
-src/city/city_decals.gd drawer
 src/events/event_scenery.gd drawer
 
 # [SceneryResidency] src/city/scenery_residency.gd
@@ -1537,16 +1389,8 @@ src/main.gd is_male
 # [TelemetryLog] src/telemetry/telemetry_log.gd
 src/dev/still_watch.gd path
 
-# [TrafficLight] src/city/traffic_light.gd
-src/city/city.gd atlas
-src/city/city.gd drawer
-src/city/city.gd junction
-src/city/city.gd signals
-
 # [TrafficSignals] src/city/traffic_signals.gd
 src/city/blackout.gd powered
-src/city/traffic_light.gd powered
-src/crowd/crowd.gd elapsed
 src/dev/scene_recipe_runtime.gd elapsed
 src/dev/scene_recipe_runtime.gd powered
 

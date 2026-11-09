@@ -42,7 +42,7 @@ func _draw_figure(canvas: CanvasItem) -> void:
 					else EventPictures.POSTER_CREW_BY_VIEW
 			_draw_eight_view(crew, event.facing_now(), canvas)
 		EventDef.Look.POSTER_CREW_SQUARE:
-			# Sited with no pavement side to turn it, so `_build_placement` leaves its facing at
+			# Sited with no pavement side to turn it, so `EventScheduler.build_placement()` leaves its facing at
 			# due east and the row draws its `side` view unmirrored, every time — the same dead
 			# branch `reversing_lorry` has above. The other four views exist so the family is
 			# whole if anything ever does turn one.

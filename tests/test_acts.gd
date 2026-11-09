@@ -298,8 +298,11 @@ func _test_a_park_stays_reachable_every_day(t) -> void:
 	# is the plain plan whose route to a park nothing else checks.
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var consumed: Array[String] = []
-		var blockers := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
-				CalmAreas.of(_map), consumed, run.attempt_spend.scars).obstructions()
+		var blockers: Array[EventScheduler.Planned] = []
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
+				CalmAreas.of(_map), consumed, run.attempt_spend.scars).placements():
+			if plan.obstructs():
+				blockers.append(plan)
 		t.check(_a_park_is_reachable(grid, blockers),
 				"day %d leaves a walkable route from home to a park" % day)
 

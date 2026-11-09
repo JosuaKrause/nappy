@@ -59,10 +59,6 @@ func keys() -> Array:
 func size() -> int:
 	return _reasons.size()
 
-## A hash of what is held and why, for a cache that must notice a change.
-func fingerprint() -> int:
-	return _reasons.hash()
-
 ## A copy that holds the same segments for the same reasons.
 func duplicate() -> HeldStreets:
 	var twin := HeldStreets.new()

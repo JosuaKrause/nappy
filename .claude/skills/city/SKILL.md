@@ -55,7 +55,8 @@ asserts that sentence directly, about the city rather than about each area.
 
 **A day's narrow target is kept reachable the same way.** On day 9 (a named door), day 12 (a
 park's swing) and day 14 (the finale's district), the route tree, `ClosurePlanner` and the
-scheduler's walkability pass each keep at least one tile of the day's target pool
+dawn's reach rule (`RouteReachRule`, no body cutting a route tile off from home) each keep at least
+one tile of the day's target pool
 (`ResistanceSteps.target_candidates()`) reachable from home, checked before a closure or a body is
 accepted, as the power station's door already is. Anything new that closes a street or stands a
 body on those days goes through the same checks; `docs/CITY.md`, "Guarantees", states what the

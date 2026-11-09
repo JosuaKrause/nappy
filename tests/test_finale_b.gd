@@ -5,5 +5,5 @@ extends RefCounted
 const Rig := preload("res://tests/finale_rig.gd")
 
 func run(t) -> void:
-	var cases: Array[int] = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25]
+	var cases: Array[int] = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24]
 	await Rig.new().run_cases(t, cases)

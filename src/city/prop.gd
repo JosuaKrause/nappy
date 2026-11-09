@@ -24,6 +24,14 @@ const SACK_PILE := &"props/garbage_sacks_pile"
 ## decoration group on it, and the prop draws its regions from it.
 var atlas: AtlasLibrary
 
+## Dresses the prop before it is added: drawn from `library` as `as_kind`, with `with_variant` and
+## `scaled` varying its look. See `atlas`, `kind`, `variant` and `scale_factor`.
+func dress(library: AtlasLibrary, as_kind: Kind, with_variant := 0, scaled := 1.0) -> void:
+	atlas = library
+	kind = as_kind
+	variant = with_variant
+	scale_factor = scaled
+
 ## This prop's own ground shape — a point for a tree, a street tree, the bollard, a sack or a
 ## sack pile, sized off the same texture fraction the shadow always used; a capsule for the swing
 ## frame (`_playground_frame_shape()`). Computed once `_ready()` fires, by which point `city.gd`

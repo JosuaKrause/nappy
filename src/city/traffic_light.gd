@@ -53,6 +53,15 @@ var atlas: AtlasLibrary = null
 ## its own over its `atlas` when it first enters the tree.
 var drawer: TrafficLightDrawer = null
 
+## Mounts the head at `at_junction`, drawing from `library` through `heads` and showing what `lights`
+## says, before the city adds it. See `atlas`, `drawer`, `junction` and `signals`.
+func mount(library: AtlasLibrary, heads: TrafficLightDrawer, at_junction: Vector2i,
+		lights: TrafficSignals) -> void:
+	atlas = library
+	drawer = heads
+	junction = at_junction
+	signals = lights
+
 func _enter_tree() -> void:
 	if atlas == null:
 		atlas = AtlasLibrary.new()
@@ -104,7 +113,7 @@ func _process(_delta: float) -> void:
 func _lamp() -> int:
 	if not signals:
 		return 0
-	if not signals.powered:
+	if not signals.is_powered():
 		return DARK
 	if signals.green_for(junction, arm_is_vertical):
 		return 2

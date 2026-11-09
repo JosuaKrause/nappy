@@ -178,7 +178,7 @@ static func stands_at(map: WorldMap, row: EventDef, at: Vector2) -> Vector2:
 ##
 ## **Exempt: anything `pavement_side` pins to an edge on purpose.** `delivery_van` belongs at the
 ## kerb and `reversing_lorry` belongs against the building — re-centring either would undo the one
-## thing `pavement_side` exists to do. Both stay exactly where `EventScheduler._build_placement`
+## thing `pavement_side` exists to do. Both stay exactly where `EventScheduler.build_placement`
 ## put them, still measured against the same 64px band: a kerbed `VEHICLE_BODY` (44px) leaves a
 ## 26px gap to the frontage, narrower than the 28px pram, which is how `docs/EVENTS.md`'s
 ## `delivery_van` row reads that placement — a **wall** by physical fit, so a van at the kerb is

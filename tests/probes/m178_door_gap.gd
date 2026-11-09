@@ -12,7 +12,7 @@ extends RefCounted
 ## RNG stream planning the same city. What moves between them is only which candidates were
 ## refused.
 ##
-## **Inside the gap** is `EventScheduler.clear_of_the_doors()` answering false: the candidate's own
+## **Inside the gap** is `DoorClearanceRule.clear_of_the_doors()` answering false: the candidate's own
 ## `EventDef.field_reach()` arrives within `Tuning.CHECKPOINT_EVENT_GAP` of a door body, measured to
 ## the nearest point of its route rather than to the spot it starts at. That is the rule itself
 ## rather than a second copy of it, which is the only way the count can be trusted.
@@ -91,7 +91,7 @@ func _inside(plans: Array[EventScheduler.Planned], doors: PackedVector2Array) ->
 	for plan in plans:
 		if not plan.is_placed():
 			continue
-		if not EventScheduler.clear_of_the_doors(plan.position, plan.path, doors,
+		if not DoorClearanceRule.clear_of_the_doors(plan.position, plan.path, doors,
 				plan.def.field_reach()):
 			total += 1
 	return total

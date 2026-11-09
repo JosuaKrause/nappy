@@ -92,7 +92,7 @@ func _flood(map: CityMap) -> PackedByteArray:
 		for x in map.size_in_tiles().x:
 			ground[row + x] = 1 if _is_a_lane(map, Vector2i(x, y)) else 0
 	_shut_the_held_segments(map, ground, width)
-	for tile: Vector2i in map.closed_tiles:
+	for tile: Vector2i in map.closed_tile_set():
 		if map.in_bounds(tile):
 			ground[tile.y * width + tile.x] = 0
 
@@ -176,7 +176,7 @@ func _shut_the_held_segments(map: CityMap, ground: PackedByteArray, width: int) 
 	for key: Vector3i in map.held_streets().keys():
 		if map.held_streets().is_crossable(key):
 			continue
-		var segment := map.network.by_key(key)
+		var segment := map.street_network().by_key(key)
 		if segment == null:
 			continue
 		var rect := segment.tile_rect()

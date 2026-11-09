@@ -148,7 +148,7 @@ static func route(map: CityMap) -> Plan:
 	var start := _service_exit_tile(map)
 	var areas := calm_areas(map, grid)
 	var result := Plan.new()
-	result._network = map.network
+	result._network = map.street_network()
 	# Sorted north to south, so the tunnel chain takes the calm nearest the top of the map and the
 	# bridge chain the calm nearest the bottom. The home lot sits between the two ends of the
 	# spine, so neither exit is trivially nearer and neither chain is the short one.
@@ -181,7 +181,7 @@ static func route(map: CityMap) -> Plan:
 	for segment in result.open_streets:
 		result._open_keys[segment.key()] = true
 	result._start = map.tile_to_world(start)
-	result._starts_in = map.network.segment_containing(start)
+	result._starts_in = map.street_network().segment_containing(start)
 	result._ends = [map.tile_to_world(exit_tile(map, CityEdge.Kind.TUNNEL)),
 			map.tile_to_world(exit_tile(map, CityEdge.Kind.BRIDGE))]
 	return result
@@ -267,7 +267,7 @@ static func _cell_of(tile: Vector2i) -> Vector2i:
 ## walkable tile on the block's own perimeter is taken instead, so this always answers with ground
 ## she can stand on.
 static func _service_exit_tile(map: CityMap) -> Vector2i:
-	var lot := map.lot_blocks(map.home_block)
+	var lot := map.lot_blocks(map.home_block_coordinate())
 	var tiles := CityMap.blocks_tile_rect(lot)
 	var row := tiles.position.y + tiles.size.y / 2
 	var west := Vector2i(tiles.position.x - 1, row)
@@ -278,7 +278,7 @@ static func _service_exit_tile(map: CityMap) -> Vector2i:
 	var fallback := west if wanted == east else east
 	if map.is_walkable(fallback):
 		return fallback
-	for tile in map.perimeter_tiles(map.home_block):
+	for tile in map.perimeter_tiles(map.home_block_coordinate()):
 		if map.is_walkable(tile):
 			return tile
 	return map.world_to_tile(map.doorstep_world_position())
@@ -290,7 +290,7 @@ static func service_exit_world_position(map: CityMap) -> Vector2:
 ## portal, or the one running out onto the bridge deck. `City.tunnel_world_position()` draws the
 ## picture at the same place; this is the tile the chain has to reach to be standing in it.
 static func exit_tile(map: CityMap, exit_kind: int) -> Vector2i:
-	var column := map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH
+	var column := map.main_road_corridor() * CityMap.period() + Tuning.SIDEWALK_WIDTH
 	var row := 0 if exit_kind == CityEdge.Kind.TUNNEL else map.size_in_tiles().y - 1
 	var step := 1 if exit_kind == CityEdge.Kind.TUNNEL else -1
 	# The outermost rows are painted as the border band rather than as city, so the first walkable
@@ -366,7 +366,7 @@ static func _flood_calm(map: CityMap, grid: ReachabilityGrid, from: Vector2i,
 ## truck on it would put one behind a wall.
 static func _streets_covering(map: CityMap, open_cells: Dictionary) -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if map.has_street(segment.key()) and SealPlanner.runs_through(segment, open_cells):
 			found.append(segment)
 	return found

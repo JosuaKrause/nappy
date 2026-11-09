@@ -27,8 +27,8 @@ func run(_t) -> void:
 				print("GATE ", body.position)
 		var def := EventCatalogue.by_id("leaf_blower" if day == 1 else "military_convoy")
 		var ground := {}
-		var tiles := EventScheduler._ground_for(def, map, ground, corridor,
-				EventScheduler._role_for(def, day))
+		var tiles := EventScheduler.ground_for(def, map, ground, corridor,
+				EventScheduler.role_for(def, day))
 		tiles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
 			return a.distance_squared_to(Vector2i(65, 60)) < b.distance_squared_to(Vector2i(65, 60)))
 		var accepted := 0

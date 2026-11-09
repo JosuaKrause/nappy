@@ -99,7 +99,7 @@ func way_in_behind(sidewalk: Vector2) -> Vector2:
 func present_block(block: Vector2i, state: CityState) -> void:
 	if _map == null:
 		return
-	var condition := City.condition_for(state.purpose_of(_map.block_plans, block))
+	var condition := City.condition_for(state.purpose_of(_map.plans_by_block(), block))
 	for building in _buildings:
 		if City.block_of(building.lot) == block:
 			building.condition = condition

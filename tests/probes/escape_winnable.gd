@@ -40,19 +40,17 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 1, 77, 9001, 23, 5, 31337, 2024, 7, 808, 4216201080, 11, 13, 17,
 		19, 29, 31, 37, 41, 43, 47, 53, 59, 61]
 const ROWS: Array[String] = ["military_convoy", "finale_explosion", "abduction", "roadblock"]
-## The mixes planned: `slots` a street and the bag's marbles, trucks, explosions, vans, roadblocks
-## and empty, in the player's order. `as built` is the city section's own spec, through
+## The mixes planned: the bag's marbles, trucks, explosions, vans, roadblocks and empty, in the
+## player's order, one drawn a street. `as built` is the city section's own spec, through
 ## `DayPlanner.plan_the_escape_city()` exactly as the game plans it, and the one walked; the others are the
 ## candidates it was chosen against, and the last stands nothing at all. `ESCAPE_WINNABLE_MIX`
-## replaces the list, as `as built` or `<slots>:<trucks>,<explosions>,<vans>,<roadblocks>,<empty>`
-## mixes separated by `;`.
+## replaces the list, as `as built` or `<trucks>,<explosions>,<vans>,<roadblocks>,<empty>` mixes
+## separated by `;`.
 const MIXES: Array[Dictionary] = [
 	{"name": "as built"},
-	{"name": "1:5,4,3,2,1", "slots": 1, "counts": [5, 4, 3, 2, 1]},
-	{"name": "1:6,5,4,3,2", "slots": 1, "counts": [6, 5, 4, 3, 2]},
-	{"name": "2:10,8,3,2,1", "slots": 2, "counts": [10, 8, 3, 2, 1]},
-	{"name": "2:12,10,3,2,1", "slots": 2, "counts": [12, 10, 3, 2, 1]},
-	{"name": "1:0,0,0,0,1", "slots": 1, "counts": [0, 0, 0, 0, 1]},
+	{"name": "5,4,3,2,1", "counts": [5, 4, 3, 2, 1]},
+	{"name": "6,5,4,3,2", "counts": [6, 5, 4, 3, 2]},
+	{"name": "0,0,0,0,1", "counts": [0, 0, 0, 0, 1]},
 ]
 const EXITS: Array[String] = ["tunnel", "bridge"]
 ## How many walks run side by side by default: each is one Godot process at the game's own clock,
@@ -101,11 +99,10 @@ func _mixes() -> Array[Dictionary]:
 		if text == "as built":
 			found.append({"name": text})
 			continue
-		var halves := text.split(":")
 		var counts: Array[int] = []
-		for word in halves[1].split(","):
+		for word in text.split(","):
 			counts.append(int(word))
-		found.append({"name": text, "slots": int(halves[0]), "counts": counts})
+		found.append({"name": text, "counts": counts})
 	return found
 
 # ------------------------------------------------------------------- the plans ---
@@ -132,17 +129,16 @@ func _plan_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionar
 	return found
 
 ## The section's plan, drawn the way a straight city boot draws it; for a mix other than `as built`,
-## the same plan under a spec whose bag and slots are that mix's, drawn on the stream the game's own
+## the same plan under a spec whose bag is that mix's, drawn on the stream the game's own
 ## bag is drawn on (`EventScheduler.street_bag_seed()`).
 func _plan(map: CityMap, own_run: RunState, walk: FinalePlanner.Plan, day: int,
 		mix: Dictionary) -> Array[EventScheduler.Planned]:
 	var rng := own_run.calendar.day_rng(day, "finale")
 	var spec := _city_spec()
-	if mix.has("slots"):
+	if mix.has("counts"):
 		var counts: Array = mix["counts"]
 		spec.bag = {"military_convoy": counts[0], "finale_explosion": counts[1],
 				"abduction": counts[2], "roadblock": counts[3], DaySpec.EMPTY_MARBLE: counts[4]}
-		spec.slots_per_street = int(mix["slots"])
 	return DayPlanner.plan_the_escape_city(map, walk, rng, spec)
 
 ## `{streets, empty, dangers, rows}`: the open streets, those standing none of the four rows, how

@@ -288,7 +288,7 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 ## where the director points: it is generated the way every row the day plans is, a `loudspeaker`
 ## heated like the day's own (`world.run.resistance.progress`) placed by `EventScheduler._best_of()`
 ## among `offered` — the tiles the director found near her and out of her view — against the whole
-## of the day's plan: `EventScheduler._room_around()`'s spacing, so it never stands inside anything else or inside
+## of the day's plan: `StreetInvalidation.room_around()`'s spacing, so it never stands inside anything else or inside
 ## a lethal row's field, the region doors' clear ground and the calm she has not used; a mast is
 ## exempt from the three rules that keep a line along her routes (the route junctions, the route
 ## sidewalks and a pacing beat's opening), as the fixed ones are (inbox #684 in coral-lark).

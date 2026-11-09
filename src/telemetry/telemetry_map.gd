@@ -201,9 +201,9 @@ static func render(map: CityMap, closures: Array[RoadClosure] = [],
 ## darkest thing in the picture and a line on it would be invisible — and because what the reader
 ## is looking for is the *edge* of the barrier the spine is, which is where she walks.
 static func _mark_the_spine(image: Image, map: CityMap) -> void:
-	if map.main_road < 0:
+	if map.main_road_corridor() < 0:
 		return
-	var corridor := map.main_road * CityMap.period()
+	var corridor := map.main_road_corridor() * CityMap.period()
 	for offset in [0, Tuning.STREET_WIDTH - 1]:
 		_fill_tiles(image, Rect2i(Vector2i(corridor + offset, 0), Vector2i(1, map.size_in_tiles().y)),
 				SPINE_MARK)
@@ -245,7 +245,7 @@ static func _mark_the_corridor(image: Image, tree: RouteTree) -> void:
 ## **An unplaced plan is skipped and that is the honest answer, not a gap.** An `AHEAD_OF_PLAYER`
 ## row has no position — the day budgets one more cat and the director decides where out of where
 ## she turns out to walk — so drawing it anywhere would be the picture claiming a placement that
-## nothing made. `_role_for` gives it `NONE` for the same reason.
+## nothing made. `EventScheduler.role_for()` gives it `NONE` for the same reason.
 ##
 ## A **spent** offer is drawn like any other: a set piece is planned at every site of a covering set
 ## and exactly one happens, so the sites that did not are what makes the covering set visible at
@@ -344,13 +344,13 @@ static func _mark_the_trail(image: Image, map: CityMap, trail: Array[Vector3]) -
 ## thing nobody spots, and a hard blocker nobody can spot in the one picture built to check
 ## placements might as well not have been placed.
 static func _mark_the_dead_ends(image: Image, map: CityMap) -> void:
-	for key: Vector3i in map.built_over:
-		_fill_tiles(image, map.built_over[key] as Rect2i, DEAD_END_MARK)
+	for key: Vector3i in map.streets_built_over():
+		_fill_tiles(image, map.streets_built_over()[key] as Rect2i, DEAD_END_MARK)
 
 ## Every calm area, outlined at its lot. Outlined rather than tinted because *how big it is* is
 ## most of what this picture is being asked, and a tint over grass answers that worse than a box.
 static func _mark_the_calm(image: Image, map: CityMap) -> void:
-	for block in map.calm_blocks:
+	for block in map.calm_blocks_now():
 		_outline_tiles(image, map.lot_rect(block), CALM_MARK)
 
 ## Both mouths of every street closed today, where the barriers actually stand.
@@ -371,7 +371,7 @@ static func _mark_the_closures(image: Image, closures: Array[RoadClosure]) -> vo
 ## out: it is the only red in a picture with no other red in it, and it was already the first thing
 ## the eye lands on — so the reach was buying nothing and covering two streets to buy it.
 static func _mark_the_home(image: Image, map: CityMap) -> void:
-	_fill_tiles(image, map.home_rect, HOME_MARK)
+	_fill_tiles(image, map.home_tile_rect(), HOME_MARK)
 
 # ------------------------------------------------------------------ tile drawing ---
 # All three take a rect in **tiles** and scale it here, so nothing above multiplies by SCALE and

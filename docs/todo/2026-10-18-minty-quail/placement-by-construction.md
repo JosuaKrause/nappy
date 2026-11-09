@@ -15,27 +15,36 @@ by line; its numbered list says where the code differs. Nothing in that section 
 
 **Build:** what is left of the design, on the locations of every day (`DayLocations`,
 `StreetLocations`, `Location`, each location's view from `Corridor.view_of_ground()`), the bag per
-view and its draw (`ViewBag`, `LocationDraw`, asking `LocationGround`), the roadblock phase
-(`RoadblockPhase`) and day 13's section swap that are built:
-- the events the street's other draws make invalid left out of a location's draw: today's placement
-  rules become that invalidation, in place of `JudgedLocationGround`, which still asks `_judge()`
-  whether a candidate fits (the roadblock phase's own use of `_judge()` included), and
-  `DayRepairs` goes with them; the fitted tables that encode how often `_judge()` refuses
-  (`EventScheduler.VIEW_SHARE_SCALES`, `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES` and
-  `GROUND_WEIGHTS`) are fitted again against main in the same step, with
-  `tests/probes/placement_rows.gd`;
-- the escape on the same draw, one draw per street and the rest of the street empty once any
-  location holds an event (inbox #1185's board answer), `_fill_the_walk_from_the_bag`, `KeptGround`
-  and the escape's `Rules` going with it;
-- the scene recipes assigning locations;
+view and its draw (`ViewBag`, `LocationDraw`, asking `LocationGround`), the day's placement rules as
+the invalidation (`StreetRule`, one class per rule, composed by `StreetInvalidation`, with a
+location's own ground in `LocationFit`), the roadblock phase (`RoadblockPhase`), day 13's section
+swap and the escape's one draw a street that are built:
+- the scene recipes assigning locations; with them `recipe_placement()` and `place_at()` stop
+  rolling a tile;
 - the fixed parts' phases at dawn or at the start of the run (the region wall, its doors, the
   closures, the seals, the masts, the ambient rows), a mast's location known from the run's start;
-- every other location drawn during the walk. **Read as** (the orchestrator's reading): a rigged marble, such as the day-6 man
-  shouting due within the next two events after the mark (olive-koala 2), lands on the next
-  location she comes to on her way, so a player who turns at a junction still meets him; today a
-  body sited ahead of her is never moved, and she can turn away from it.
+  and the scripted rows and the one-shots, which are placed at dawn for a reason of their own and so
+  get dawn phases that assign their locations (the builder's reading, open to correction), so
+  `_place_scripted()` and `_place_one_shots()` stop calling `_place_one()`;
+- every other location drawn during the walk, the walk's sitings among them (`WalkSiting`: day 3's
+  fire, the poster crews, day 6's man shouting, day 7's route van, day 11's added mast, the dusk
+  fire). **Read as** (the orchestrator's reading): a rigged marble, such as the day-6 man shouting
+  due within the next two events after the mark (olive-koala 2), lands on the next location she
+  comes to on her way, so a player who turns at a junction still meets him; today a body sited ahead
+  of her is never moved, and she can turn away from it. This step also decides whether a placement
+  made during the walk is asked the reach rule (`RouteReachRule`, no body cutting a route tile off
+  from home), which today is a dawn rule and a walk's siting is not asked.
 
-It replaces, and deletes: the roll and judgement of `EventScheduler._place_one()`, `_best_of()`,
-`_judge()` as a placement step and `_copies_of()`; and whatever only they used.
+Each of the last three takes some of the callers of `EventScheduler._place_one()` and `_best_of()`,
+which roll tiles and take the roomiest while asking the day's rules of each (the orchestrator's
+choice in step 3b, so their behaviour moves once, with their callers): the scene recipes
+`recipe_placement()`; the dawn phases the scripted rows and the one-shots; the walk's draws
+`WalkSiting`. **Whichever moves the last caller deletes the roll**: `_place_one()`'s roll,
+`_best_of()`, `Verdicts`, `EVENT_PLACEMENT_TRIES`, `_copies_of()`'s weights, and whatever only they
+used; `_copies_of()`'s zero for a wall on a route tile stays with `ground_for()`, since it is the
+filter that keeps a wall's location ground off the routes and `LocationFit` asks it. The
+fitted tables that encode how often the rules refuse (`EventScheduler.VIEW_SHARE_SCALES`,
+`WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES` and `GROUND_WEIGHTS`) are fitted again against main with
+`tests/probes/placement_rows.gd` in any step that changes what the draw accepts.
 A step is done at test parity (minty-quail's README); what changes on purpose is listed
 for the remeasure.

@@ -1772,9 +1772,9 @@ so the line on the screen and the line in the HUD are one instruction rather tha
 
 **Section two is the city she knows with the men in it.** Army trucks, off-screen explosions,
 unmarked vans and roadblocks at full resistance progress stand on the streets either chain walks,
-drawn from one marble bag for the whole escape: each street has one slot
-(`DaySpec.FINALE_SLOTS_PER_STREET`), and the bag holds the most trucks, then explosions, then vans,
-then roadblocks, and fewest of all the empty marbles that leave a slot with nothing
+drawn from one marble bag for the whole escape: each street draws one marble and holds one row at
+most, and the bag holds the most trucks, then explosions, then vans, then roadblocks, and fewest of
+all the empty marbles that leave a street with nothing
 (`DaySpec.FINALE_BAG_TRUCKS` and the four after it), so most streets stand one danger and some stand
 none. *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
 happening) as well. we need a fair mix"; "frequency order is trucks > explosions > vans >

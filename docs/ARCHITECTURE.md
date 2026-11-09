@@ -194,12 +194,10 @@ src/
 	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    builds a day's event set from seed + the day's spec: the day's locations drawn from
 	                      a bag per view, or the escape city's streets from its marble bag
-	day_events.gd         the day's planned rows read through one object: what each spoils, what
-	                      blocks the way, a pursuit; kept in step as the plan is built, never saved
-	calm_areas.gd         the day's calm areas as dawn sees them: their ground and calm tiles,
-	                      which she used this act, the one that does not count today
-	day_repairs.gd        the two repairs that keep a planned day winnable: one calm area clean,
-	                      and a route to it from home
+	day_events.gd         the day's planned rows read through one object: what each spoils, a
+	                      pursuit; kept in step as the plan is built, never saved
+	calm_areas.gd         the day's calm areas as dawn sees them: their ground, which she used
+	                      this act, the one that does not count today
 	walk_events.gd        the walk's plans read through one object once it has started: the plans
 	                      in the order they stream, everything but one, what stands in an area, the
 	                      doors, the calm areas, the reach and the day's locations
@@ -222,10 +220,19 @@ src/
 	                      the empty event, drawn without putting back, only what a location accepts
 	location_draw.gd      the day's open locations drawn at dawn, each from its view's bag
 	location_ground.gd    what the dawn draw asks of the day: a row's event at a location if valid, the
-	                      location's own weight, standing one; the day's own is the scheduler's judged ground
+	                      location's own weight, standing one; the day's own is the scheduler's ruled ground
+	location_fit.gd       a location's own ground for a row: the tiles it takes that are the row's
+	                      ground on the day, and the candidate built on one
+	street_rule.gd        one of the day's placement rules, as the invalidation: whether a candidate
+	                      may stand, given what the walk placed and what stands round it
+	street_rules/         one file per rule: the unused calm, a door's clear ground, a route's
+	                      junctions, its walked sidewalk, a pacing beat's opening, its tiles kept
+	                      reached from home, the escape's one notice at a time and its walk kept open
+	street_invalidation.gd the rules a walk composes from its spec, asked of a candidate: no room
+	                      where one refuses, else the room round it
 	roadblock_ground.gd   what the roadblock phase asks of the day: route tiles, a section's roadblock
 	                      if valid, the route tiles one is close by, standing one; the day's own is
-	                      the scheduler's judged ground
+	                      the scheduler's ruled ground
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
 	                       junction corners, squares and the main road; a pure function of the map
 	event_manager.gd      a day's events as the rest of the game sees them: handed the world, the

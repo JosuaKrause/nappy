@@ -292,7 +292,7 @@ func _report_text() -> String:
 	metadata["build"] = BuildInfo.build_text()
 	metadata["run_seed"] = _run.header.run_seed
 	# The mode the city was handed, or a city's default for a recorder that watches none.
-	metadata["ground_mode"] = int(_city.ground_mode if _city else SceneryGround.Mode.ONE)
+	metadata["ground_mode"] = int(_city.ground_mode_in_force() if _city else SceneryGround.Mode.ONE)
 	metadata["scenery_budget_usec"] = SceneryResidency.BUDGET_USEC
 	metadata["engine"] = Engine.get_version_info()
 	metadata["renderer"] = RenderingServer.get_current_rendering_method()

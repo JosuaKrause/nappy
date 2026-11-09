@@ -760,11 +760,11 @@ const AHEAD_MIN_SPEED := 40.0
 # Both are stated as **how many times over a row weighs in a view's bag**, which
 # `EventScheduler.view_weight()` reads for a row's role: friction four times over on the route, a
 # costly wall four times over beside it. The precinct weight above is a location's own weight, which
-# scales every row a precinct's location draws (`EventScheduler.JudgedLocationGround.scale()`), so a
+# scales every row a precinct's location draws (`EventScheduler.RuledLocationGround.scale()`), so a
 # friction row on a precinct route street weighs sixteen times over.
 #
 # Neither is a filter, and the one filter there is lives in the row's own ground
-# (`EventScheduler._ground_for()`): **a wall never stands on ground a route runs along.** That one
+# (`EventScheduler.ground_for()`): **a wall never stands on ground a route runs along.** That one
 # can be absolute because the whole off-corridor city remains available to it, so it cannot starve
 # a row of ground. It is stated per **sidewalk**, so the far side of a route's own street is legal
 # ground for a wall, which is where a wall the route view's bag draws stands.
@@ -1165,7 +1165,7 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## forward reach growing past what its telegraph already priced is a fairness question; growing
 ## far enough to touch an unvisited calm area it used to clear is a different one —
 ## `EventScheduler` refuses that placement outright (`CalmAreas.unused_ground()`,
-## `_reaches_any`), so a row whose whole path is long enough to brush one can lose its only site
+## `UnusedCalmRule`), so a row whose whole path is long enough to brush one can lose its only site
 ## and simply not happen that day, however fair its telegraph is. The value was set by measuring
 ## exactly that on the longest-routed scheduled row of the day (`docs/DECISIONS.md`, M114); no
 ## scheduled row currently drives a route that long — the fire engine is summoned to a route
