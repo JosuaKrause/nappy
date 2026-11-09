@@ -362,6 +362,15 @@ worktrees — merging is what collides — so parallelism is planned at the file
   is left. *Proposed, not asked for, open to the player's correction:* a task that waits only on
   the player, a blocking board question or a review item, does not keep the session open, since
   nothing this side can advance it.
+- **A wait is checked at least every 45 minutes** (gentle-owl #1255). While a sub-agent runs,
+  the orchestrator looks at it at least every 45 minutes (its output, its worktree and its
+  pushes) for signs it is stuck: no new commits, a loop that has stopped improving, a wait with
+  no end. The completion notice alone is not enough, since an agent that is stuck never sends
+  it. No wait of the orchestrator's own runs past 45 minutes without such a check. *Proposed, not
+  asked for:* the check is a recurring job about every 30 minutes, since a scheduler can fire up
+  to half its period late, and the job is deleted when no agent is left running. *Read as, open
+  to correction:* this check is not a tick in the sense of the agent contract's
+  one-notification rule, which keeps a wait from ending a turn on every minute.
 - **The queue and the archive.** Agents never edit the queue or the archive; two writers on one
   entry is how a queue lies.
 - **The queue as it stands on `origin/main`, not as it stood when the session started.** More
