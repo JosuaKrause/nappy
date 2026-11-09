@@ -84,3 +84,13 @@ func take_section(section: Location, plan: EventScheduler.Planned) -> void:
 	for sidewalk in _sidewalks:
 		if sidewalk.shares_a_section_with(section):
 			sidewalk.take(plan)
+
+## **Closes `sidewalk`'s section to a draw once the sidewalk holds an event**: an event that spans the
+## street takes its whole section, the sidewalks with it, so a section one of whose sidewalks a dawn
+## phase or a draw has filled is drawn as the empty event rather than taking the section over the
+## sidewalk's event. A section already drawn or taken is left as it is.
+func close_the_section_of(sidewalk: Location) -> void:
+	for section in _sections:
+		if sidewalk.shares_a_section_with(section) and not section.is_drawn() \
+				and not section.is_taken():
+			section.record(null)

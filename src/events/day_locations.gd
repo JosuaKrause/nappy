@@ -51,11 +51,14 @@ func drawing_order(rng: RandomNumberGenerator) -> Array[Location]:
 
 ## **Records the draw's `plan` at `location`**, or nothing there for the empty event. An event drawn
 ## into a section (it spans the street or drives its carriageway) takes the section's sidewalk
-## locations with it, as a roadblock assigned there does.
+## locations with it, as a roadblock assigned there does; an event drawn on a sidewalk closes its
+## section to a draw (`StreetLocations.close_the_section_of()`), so nothing takes the section over it.
 func record(location: Location, plan: EventScheduler.Planned) -> void:
 	if plan and location.kind() == Location.Kind.SECTION and location.segment():
 		(_streets[location.segment().key()] as StreetLocations).take_section(location, plan)
 	location.record(plan)
+	if plan and location.kind() == Location.Kind.SIDEWALK and location.segment():
+		(_streets[location.segment().key()] as StreetLocations).close_the_section_of(location)
 
 ## **The location drawn before `location`, while it is still open**: a sidewalk's section, since an
 ## event that takes its section (one that spans the street or drives its carriageway) takes the
@@ -111,12 +114,15 @@ func hold_fixed_part(plan: EventScheduler.Planned, tile: Vector2i, type: int) ->
 		assign_to(location, plan)
 
 ## Assigns `plan`, which a dawn phase placed in `location`, for the day, so no draw happens there:
-## a section takes its two sidewalk locations with it.
+## a section takes its two sidewalk locations with it, and a sidewalk closes its section to a draw
+## (`StreetLocations.close_the_section_of()`).
 func assign_to(location: Location, plan: EventScheduler.Planned) -> void:
 	if location.kind() == Location.Kind.SECTION and location.segment():
 		(_streets[location.segment().key()] as StreetLocations).take_section(location, plan)
 	else:
 		location.take(plan)
+		if location.kind() == Location.Kind.SIDEWALK and location.segment():
+			(_streets[location.segment().key()] as StreetLocations).close_the_section_of(location)
 
 ## The alleys of `map`, each as the rect of its connected `ALLEY` tiles.
 static func _alleys(map: CityMap) -> Array[Rect2i]:
