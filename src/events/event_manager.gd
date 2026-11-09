@@ -317,8 +317,7 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	# What the walk owes before her first step, drawn while the day is set up: every location near
 	# where she starts (`WalkDraw.draw_within()`).
 	if _walk_draw:
-		for drawn in _walk_draw.draw_within(focus, WalkDraw.MUST_DRAW):
-			streaming.add(drawn)
+		_stand_what_was_drawn(_walk_draw.draw_within(focus, WalkDraw.MUST_DRAW))
 	streaming.stream_around(focus)
 
 ## The walk the plan `start_day()` started is stated against (`RouteSource`): the day's route tree,
@@ -449,6 +448,17 @@ func sees(world_position: Vector2, margin := 0.0) -> bool:
 func on_screen(world_position: Vector2) -> bool:
 	return world.visible.view.has_point(world_position)
 
+## **Stands what the walk's draws placed**: each joins the walk and streams in like a planned row,
+## but one drawn unplaced, a row handed to her walk (`LocationDraw.finish()`, the poster crew), which
+## joins it for the director to site on her way.
+func _stand_what_was_drawn(drawn: Array[EventScheduler.Planned]) -> void:
+	for plan in drawn:
+		if plan.is_placed():
+			streaming.add(plan)
+		else:
+			_walk_events.add(plan)
+			ahead.hand_to_her_walk(plan)
+
 ## Tells `world.visible` this frame's view and scheme (`VisibleView.look_through()`): the camera's
 ## view, `Tuning.VIEW_HALF_EXTENT` about the centre of the screen, which her look-ahead moves off
 ## her a little, and whether the on-screen controls are the joystick scheme, whose rings and buttons
@@ -522,9 +532,8 @@ func _tick_the_events(delta: float) -> void:
 		if _walk_draw:
 			var her := world.player as CharacterBody2D
 			var heading := her.velocity.normalized() if her else Vector2.ZERO
-			for drawn in _walk_draw.draw_ahead(world.player.global_position, heading,
-					visible_view().sees_any):
-				streaming.add(drawn)
+			_stand_what_was_drawn(_walk_draw.draw_ahead(world.player.global_position, heading,
+					visible_view().sees_any))
 		streaming.stream_around(world.player.global_position)
 		if not _recipe_plan and ahead.has_director():
 			ahead.place_what_is_owed_ahead(delta)

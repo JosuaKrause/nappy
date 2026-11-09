@@ -1032,9 +1032,15 @@ static func _hand_to_her_walk(events: DayEvents) -> void:
 	for plan in events.placements():
 		if not plan.def.is_handed_to_her_walk() or not plan.is_placed():
 			continue
-		var owed := Planned.new(plan.def, Vector2.INF)
-		owed.role = plan.role
-		events.replace(plan, owed)
+		events.replace(plan, owed_to_her_walk(plan))
+
+## **`plan`'s row, unplaced, for her walk to site** (`EventDirector.site_what_is_on_her_way()`): what
+## a placed row handed to her walk becomes, at dawn (`_hand_to_her_walk()`) or when a location draws
+## one (`LocationDraw.finish()`).
+static func owed_to_her_walk(plan: Planned) -> Planned:
+	var owed := Planned.new(plan.def, Vector2.INF)
+	owed.role = plan.role
+	return owed
 
 # ------------------------------------------------------ the walk's streets from a bag ---
 

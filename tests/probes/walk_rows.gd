@@ -12,8 +12,8 @@ extends RefCounted
 ## director siting what it sites on her way (`EventDirector.due()`, `site_what_is_on_her_way()`) and,
 ## where the tree draws its locations during the walk (`WalkDraw`), the walk's draw ahead of her. A
 ## placed row counts once it comes within the stream radius of her (`Tuning.EVENT_STREAM_RADIUS`),
-## the moment it would stream in, under its row, its view and its kind of ground; the director's own
-## sitings are not counted. It asks only what every tree has, and the walk's draw by name where the
+## the moment it would stream in, under its row, its view and its kind of ground: a row the director
+## sites on her way among them, once sited (a poster crew), but not a place her route's bag hands it. It asks only what every tree has, and the walk's draw by name where the
 ## tree has one, so the same file measures main and a branch alike. Prints `WD day seeds streamed`,
 ## `WV day row view count` and `WK day row kind count`, summed over the seeds, and per seed and day
 ## `WT` lines of the tick costs, in microseconds: the walk's draw (`draw`) and the director's siting
@@ -96,10 +96,9 @@ func run(t) -> void:
 			var walk_draw = events.call("walk_draw") if events.has_method("walk_draw") else null
 			var walk := WalkEvents.new()
 			walk.take(plans, CalmAreas.of(map), doors)
-			var fake := FakeWalkEvents.new()
-			fake.set_plans(plans)
-			fake.set_calm(CalmAreas.of(map))
-			var siting := EventScheduler.WalkSiting.new(day, map, tree, fake, EventScheduler.Verdicts.new())
+			# The walk's sitings are judged against the walk itself, as the game's are, so a siting
+			# sees what the walk drew and a draw what the walk sited.
+			var siting := EventScheduler.WalkSiting.new(day, map, tree, walk, EventScheduler.Verdicts.new())
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("walk_rows director:%d:%d" % [i, day])
@@ -119,8 +118,7 @@ func run(t) -> void:
 			if walk_draw:
 				open_before = events.call("locations").open_locations().size()
 				walk_draw.judge_against(walk)
-				for drawn in walk_draw.draw_within(at, walk_draw.MUST_DRAW):
-					walk.add(drawn)
+				_stand(walk_draw.draw_within(at, walk_draw.MUST_DRAW), walk, director)
 			var tick := 0
 			for k in range(1, path.size()):
 				var toward: Vector2 = path[k] - at
@@ -135,8 +133,7 @@ func run(t) -> void:
 						var t0 := Time.get_ticks_usec()
 						var drawn_now: Array = walk_draw.draw_ahead(at, heading, sees)
 						draw_ticks.append(Time.get_ticks_usec() - t0)
-						for drawn in drawn_now:
-							walk.add(drawn)
+						_stand(drawn_now, walk, director)
 					var t1 := Time.get_ticks_usec()
 					director.due(TICK, at, velocity)
 					director.site_what_is_on_her_way(TICK, at, velocity)
@@ -200,6 +197,15 @@ static func _view_of(her: Vector2) -> Rect2:
 	return Rect2(her - Tuning.VIEW_HALF_EXTENT - lead, (Tuning.VIEW_HALF_EXTENT + lead) * 2.0)
 
 ## `ticks median p99 worst total` of `ticks`, in microseconds; zeros for none.
+## Stands what the walk drew as `EventManager` does: a row drawn unplaced, handed to her walk, joins
+## it and goes to the director (asked by name, so the probe still runs on a tree without it), the
+## rest join it placed.
+static func _stand(drawn: Array, walk: WalkEvents, director: EventDirector) -> void:
+	for plan: EventScheduler.Planned in drawn:
+		walk.add(plan)
+		if not plan.is_placed():
+			director.call("hand_to_her_walk", plan)
+
 static func _costs(ticks: Array[int]) -> String:
 	if ticks.is_empty():
 		return "0 0 0 0 0"

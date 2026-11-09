@@ -4,7 +4,7 @@ extends RefCounted
 ## location taken, unavailable or already drawn left alone, a row the day's ground refuses at a
 ## location never drawn there, a row not drawn once it has stood as many times as the caps handed in say, and
 ## each location's weight handed to its bag, and a draw taken a step at a time holding nothing until
-## it ends, a row's offer taking steps of its own. Run with stand-ins for what it is handed: the day's
+## it ends, a row's offer taking steps of its own, and a row handed to her walk drawn unplaced. Run with stand-ins for what it is handed: the day's
 ## locations (`_Locations`, a handful built by hand), the ground (`_Ground`, whose refusals, weights
 ## and offer steps a check sets); the bags are real (`ViewBag`), of a few marbles each. The walk
 ## draws its locations nearest first (`WalkDraw`); here they are drawn in the order a check lists.
@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_a_row_at_its_cap_is_not_drawn(t)
 	_test_a_locations_weight_reaches_its_bag(t)
 	_test_a_draw_a_step_at_a_time_holds_nothing_until_it_ends(t)
+	_test_a_row_handed_to_her_walk_is_drawn_unplaced(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 
@@ -200,3 +201,17 @@ func _test_a_draw_a_step_at_a_time_holds_nothing_until_it_ends(t) -> void:
 	t.check(plan != null and location.is_drawn() and locations.recorded[location] == plan
 			and ground.stood == ([plan] as Array[EventScheduler.Planned]),
 			"finished, the cafe is recorded at the location and stood")
+
+## A bag of one poster crew, a row her walk sites (`EventDef.is_handed_to_her_walk()`): the location
+## draws it, and what is recorded, stood and answered is the crew with no position, for the walk.
+func _test_a_row_handed_to_her_walk_is_drawn_unplaced(t) -> void:
+	var location := _location(0)
+	var locations := _Locations.new()
+	locations.order = [location] as Array[Location]
+	var ground := _Ground.new()
+	var placed := _drawn(locations, {"poster_crew": 1}, {"poster_crew": _row("poster_crew")}, ground)
+	var recorded: EventScheduler.Planned = locations.recorded.get(location)
+	t.check(placed.size() == 1 and placed[0].row_id() == "poster_crew" and not placed[0].is_placed(),
+			"a drawn crew is answered with no position")
+	t.check(recorded == placed[0] and ground.stood == placed,
+			"and it is what the location records and the day stands")

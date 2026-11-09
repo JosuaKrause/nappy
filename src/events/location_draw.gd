@@ -77,12 +77,16 @@ func begin(location: Location) -> Asking:
 	return asking
 
 ## **Ends `asking`'s draw**, asking what is left of it at once, records what it drew at its location,
-## stands it, and answers it: null for the empty event.
+## stands it, and answers it: null for the empty event. A row handed to her walk
+## (`EventDef.is_handed_to_her_walk()`, the poster crew) is recorded and stood unplaced
+## (`EventScheduler.owed_to_her_walk()`), for her walk to site, as the dawn hands one over.
 func finish(asking: Asking) -> EventScheduler.Planned:
 	while not asking.step():
 		pass
 	var drawn := asking.drawing.drawn
 	var plan: EventScheduler.Planned = null if drawn == ViewBag.EMPTY else asking.offered[drawn]
+	if plan and plan.def.is_handed_to_her_walk():
+		plan = EventScheduler.owed_to_her_walk(plan)
 	_locations.record(asking.location, plan)
 	if plan:
 		_ground.stand(plan)
