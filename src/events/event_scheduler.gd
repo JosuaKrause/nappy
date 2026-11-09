@@ -2493,7 +2493,7 @@ static func view_weight(def: EventDef, view: int, day: int, wall_share: float) -
 ## what her route holds is what the route decision faces. Measured, not derived, and fitted again with
 ## the view scales and `GROUND_WEIGHTS` whenever the draw's rules change.
 const WALL_VIEW_SCALES := [
-	[1.07, 1.08, 1.15, 1.14],
+	[0.94, 0.95, 1.07, 1.07],
 	[1.04, 1.01, 1.01, 1.01],
 	[0.96, 0.95, 0.88, 0.89],
 ]
@@ -2572,9 +2572,9 @@ const VIEW_SHARE_SCALES := [
 ## until what she meets of those rows is what she met when the dawn drew every location. Fitted, not
 ## derived, with `tests/probes/walk_rows.gd` against main.
 const WALK_SHARE_SCALES := [
-	[1.21, 1.34, 1.27, 1.32, 1.33, 1.26, 1.42, 1.34, 1.24, 1.18, 1.31, 1.26, 1.25, 1.21],
-	[1.4, 1.42, 1.53, 1.44, 1.26, 1.25, 1.37, 1.0, 1.2, 1.32, 1.45, 1.46, 1.0, 1.43],
-	[1.25, 1.11, 1.1, 1.0, 1.15, 1.21, 1.0, 1.1, 1.12, 1.0, 1.0, 1.0, 1.15, 1.0],
+	[1.47, 1.34, 1.43, 1.32, 1.23, 1.26, 1.32, 1.34, 1.24, 1.09, 1.12, 1.17, 1.25, 1.21],
+	[1.40, 1.26, 1.45, 1.44, 1.38, 1.25, 1.37, 1.00, 1.20, 1.75, 1.45, 1.46, 1.00, 1.29],
+	[1.25, 1.11, 1.18, 1.00, 1.15, 1.21, 1.11, 1.10, 1.12, 1.07, 1.07, 1.00, 1.11, 1.18],
 ]
 
 ## **How often a row is drawn on each kind of ground** (`row id -> {Location.Kind -> weight}`),
@@ -2590,22 +2590,22 @@ const WALK_SHARE_SCALES := [
 ## derived, and fitted again with the view scales whenever the draw's rules change.
 const GROUND_WEIGHTS := {
 	"abduction": {Location.Kind.SIDEWALK: 0.14, Location.Kind.JUNCTION: 91.19},
-	"alley_mouse": {Location.Kind.ALLEY: 14.67},
+	"alley_mouse": {Location.Kind.ALLEY: 25.8},
 	"alley_robbery": {Location.Kind.ALLEY: 4.46},
 	"busker": {Location.Kind.OPEN: 150},
 	"cafe_tables": {Location.Kind.SIDEWALK: 0.43},
 	"charging_dog": {Location.Kind.SIDEWALK: 0.21, Location.Kind.OPEN: 0.78, Location.Kind.JUNCTION: 319},
-	"chatting_mother": {Location.Kind.SIDEWALK: 0.25, Location.Kind.JUNCTION: 400},
+	"chatting_mother": {Location.Kind.SIDEWALK: 6.2, Location.Kind.JUNCTION: 11},
 	"construction": {Location.Kind.SIDEWALK: 0.49},
 	"delivery_van": {Location.Kind.SIDEWALK: 1.48},
-	"dog_walker": {Location.Kind.SIDEWALK: 0.82, Location.Kind.JUNCTION: 2.27},
-	"homeless_yeller": {Location.Kind.SIDEWALK: 0.87, Location.Kind.OPEN: 0.57, Location.Kind.JUNCTION: 2.27},
+	"dog_walker": {Location.Kind.SIDEWALK: 0.82, Location.Kind.JUNCTION: 1.95},
+	"homeless_yeller": {Location.Kind.SIDEWALK: 0.76, Location.Kind.OPEN: 0.57, Location.Kind.JUNCTION: 2.27},
 	"ice_cream_van": {Location.Kind.SIDEWALK: 0.83},
 	"leaf_blower": {Location.Kind.SIDEWALK: 0.59, Location.Kind.OPEN: 0.38, Location.Kind.JUNCTION: 1.21},
 	"market_stall": {Location.Kind.SIDEWALK: 0.44, Location.Kind.OPEN: 0.34},
 	"military_convoy": {Location.Kind.SECTION: 0.77, Location.Kind.JUNCTION: 1.43},
-	"pigeon_flock": {Location.Kind.SIDEWALK: 0.7, Location.Kind.OPEN: 1.56, Location.Kind.JUNCTION: 6.95},
-	"police_patrol": {Location.Kind.SECTION: 1.33, Location.Kind.JUNCTION: 5.54},
+	"pigeon_flock": {Location.Kind.SIDEWALK: 1.03, Location.Kind.OPEN: 1.56, Location.Kind.JUNCTION: 6.95},
+	"police_patrol": {Location.Kind.SECTION: 1.65, Location.Kind.JUNCTION: 5.54},
 	"poster_crew_square": {Location.Kind.OPEN: 27.86},
 	"protest": {Location.Kind.OPEN: 8.88, Location.Kind.JUNCTION: 16.89},
 	"reversing_lorry": {Location.Kind.SIDEWALK: 1.46},
