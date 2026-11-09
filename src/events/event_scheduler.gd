@@ -2491,9 +2491,11 @@ static func view_weight(def: EventDef, view: int, day: int, wall_share: float) -
 ## One location draws one marble, and today's rules refuse a wall on her route more often than they
 ## refused today's per-tile offers, so without it the walls leave her route for the ground off it:
 ## what her route holds is what the route decision faces. Measured, not derived, and fitted again with
-## the view scales and `GROUND_WEIGHTS` whenever the draw's rules change.
+## the view scales and `GROUND_WEIGHTS` whenever the draw's rules change; the walls on her route are
+## stepped down with `tests/probes/walk_rows.gd` too, since the dawn now sweeps the bodies with no
+## row that blocks nothing standing to refuse them, as the walk meets them.
 const WALL_VIEW_SCALES := [
-	[0.94, 0.95, 1.07, 1.07],
+	[0.89, 0.90, 1.02, 1.02],
 	[1.04, 1.01, 1.01, 1.01],
 	[0.96, 0.95, 0.88, 0.89],
 ]
@@ -2572,9 +2574,9 @@ const VIEW_SHARE_SCALES := [
 ## until what she meets of those rows is what she met when the dawn drew every location. Fitted, not
 ## derived, with `tests/probes/walk_rows.gd` against main.
 const WALK_SHARE_SCALES := [
-	[1.47, 1.34, 1.43, 1.32, 1.23, 1.26, 1.32, 1.34, 1.24, 1.09, 1.12, 1.17, 1.25, 1.21],
+	[1.41, 1.29, 1.37, 1.27, 1.18, 1.21, 1.27, 1.29, 1.19, 1.05, 1.08, 1.12, 1.20, 1.16],
 	[1.40, 1.26, 1.45, 1.44, 1.38, 1.25, 1.37, 1.00, 1.20, 1.75, 1.45, 1.46, 1.00, 1.29],
-	[1.25, 1.11, 1.18, 1.00, 1.15, 1.21, 1.11, 1.10, 1.12, 1.07, 1.07, 1.00, 1.11, 1.18],
+	[1.31, 1.17, 1.24, 1.05, 1.21, 1.27, 1.17, 1.16, 1.18, 1.12, 1.12, 1.05, 1.17, 1.24],
 ]
 
 ## **How often a row is drawn on each kind of ground** (`row id -> {Location.Kind -> weight}`),
@@ -2586,7 +2588,9 @@ const WALK_SHARE_SCALES := [
 ## the few locations that take it, where today's placement picked the row by weight against the
 ## whole day and then found it any tile of its ground. So each row's weight on each kind of ground
 ## is fitted until its daily count there is today's (`tests/probes/placement_rows.gd` against main,
-## eighteen seeds), the way the view scales are; a row or a kind not listed weighs one. Measured, not
+## eighteen seeds), the way the view scales are, and a row the walk draws (one that blocks nothing)
+## until what she meets of it on each kind of ground is what she met when the dawn drew every
+## location (`tests/probes/walk_rows.gd`); a row or a kind not listed weighs one. Measured, not
 ## derived, and fitted again with the view scales whenever the draw's rules change.
 const GROUND_WEIGHTS := {
 	"abduction": {Location.Kind.SIDEWALK: 0.14, Location.Kind.JUNCTION: 91.19},

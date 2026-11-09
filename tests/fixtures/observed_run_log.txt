@@ -3,7 +3,7 @@ begin_day 1 1 4242 4242 210.0
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks v(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse, burst_water_main x17, cafe_tables x37, car_accident x19, cat_dash x8, chatting_mother, delivery_van x51, dog_walker x5, fallen_tree x2, homeless_yeller x3, leaf_blower, loose_dog x15, market_stall x52, moving_van x53, playground x2, scaffolding x23, skip x22
+0.0 plan events: burst_water_main x17, cafe_tables x52, car_accident x19, cat_dash x8, chatting_mother, delivery_van x57, dog_walker, fallen_tree x2, homeless_yeller x2, leaf_blower x9, loose_dog x15, market_stall x58, moving_van x53, playground x2, scaffolding x23, skip x22
 0.0 start doorstep (80,84), facing 180°
 0.0 nerve normal mode: the last nerve goes back to the latest checkpoint
 0.0 nerve normal mode: the last nerve goes back to the latest checkpoint
@@ -15,7 +15,7 @@ begin_day 1 1 4242 4242 210.0
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks v(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse, burst_water_main x17, cafe_tables x37, car_accident x19, cat_dash x8, chatting_mother, delivery_van x51, dog_walker x5, fallen_tree x2, homeless_yeller x3, leaf_blower, loose_dog x15, market_stall x52, moving_van x53, playground x2, scaffolding x23, skip x22
+0.0 plan events: burst_water_main x17, cafe_tables x52, car_accident x19, cat_dash x8, chatting_mother, delivery_van x57, dog_walker, fallen_tree x2, homeless_yeller x2, leaf_blower x9, loose_dog x15, market_stall x58, moving_van x53, playground x2, scaffolding x23, skip x22
 0.0 start doorstep (80,84), facing 180°
 0.0 path 0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
 0.0 lost lost_crying after 0.0s to self — She started crying. There is no settling her now. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0 | near: neighbor 48px (out of range)
@@ -25,7 +25,7 @@ begin_day 1 1 4242 4242 210.0
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks v(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse, burst_water_main x17, cafe_tables x37, car_accident x19, cat_dash x8, chatting_mother, delivery_van x51, dog_walker x5, fallen_tree x2, homeless_yeller x3, leaf_blower, loose_dog x15, market_stall x52, moving_van x53, playground x2, scaffolding x23, skip x22
+0.0 plan events: burst_water_main x17, cafe_tables x52, car_accident x19, cat_dash x8, chatting_mother, delivery_van x57, dog_walker, fallen_tree x2, homeless_yeller x2, leaf_blower x9, loose_dog x15, market_stall x58, moving_van x53, playground x2, scaffolding x23, skip x22
 0.0 start doorstep (80,84), facing 180°
 0.0 path 0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
 0.0 lost lost_hard_fail after 0.0s to homeless-yeller — It went wrong. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0 | near: neighbor 48px (out of range)
@@ -35,7 +35,7 @@ begin_day 1 1 4242 4242 210.0
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks v(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse, burst_water_main x17, cafe_tables x37, car_accident x19, cat_dash x8, chatting_mother, delivery_van x51, dog_walker x5, fallen_tree x2, homeless_yeller x3, leaf_blower, loose_dog x15, market_stall x52, moving_van x53, playground x2, scaffolding x23, skip x22
+0.0 plan events: burst_water_main x17, cafe_tables x52, car_accident x19, cat_dash x8, chatting_mother, delivery_van x57, dog_walker, fallen_tree x2, homeless_yeller x2, leaf_blower x9, loose_dog x15, market_stall x58, moving_van x53, playground x2, scaffolding x23, skip x22
 0.0 start doorstep (80,84), facing 180°
 0.0 path 0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
 0.0 lost lost_timeout after 210.0s — Dusk. You are still out. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0 | near: neighbor 48px (out of range)
@@ -45,7 +45,7 @@ begin_day 1 1 4242 4242 210.0
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks v(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse, burst_water_main x17, cafe_tables x37, car_accident x19, cat_dash x8, chatting_mother, delivery_van x51, dog_walker x5, fallen_tree x2, homeless_yeller x3, leaf_blower, loose_dog x15, market_stall x52, moving_van x53, playground x2, scaffolding x23, skip x22
+0.0 plan events: burst_water_main x17, cafe_tables x52, car_accident x19, cat_dash x8, chatting_mother, delivery_van x57, dog_walker, fallen_tree x2, homeless_yeller x2, leaf_blower x9, loose_dog x15, market_stall x58, moving_van x53, playground x2, scaffolding x23, skip x22
 0.0 start doorstep (80,84), facing 180°
 0.0 path 0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
 0.0 home WON, 210.0s to spare
@@ -54,7 +54,7 @@ begin_day 2 1 4242 4242 210.0
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks v(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse, burst_water_main x21, cafe_tables x46, car_accident x20, cat_dash x6, chatting_mother, construction x37, cyclist x8, delivery_van x33, dog_walker x5, fallen_tree, homeless_yeller x3, ice_cream_van, leaf_blower, loose_dog x12, market_stall x41, moving_van x43, pigeon_flock, playground x2, scaffolding x21, skip x22
+0.0 plan events: burst_water_main x21, busker x6, cafe_tables x51, car_accident x20, cat_dash x6, construction x39, cyclist x8, delivery_van x36, dog_walker x5, fallen_tree, homeless_yeller x2, ice_cream_van x4, leaf_blower x11, loose_dog x12, market_stall x43, moving_van x43, playground x2, scaffolding x21, skip x22
 0.0 start doorstep (80,84), facing 180°
 === the escape
 begin_section 15 Escape the building 4242 180.0
