@@ -12,7 +12,7 @@ extends RefCounted
 ## of her view he is re-placed in it, out of her reach, and each guard he was is gone; and he follows
 ## her again to the next one she approaches.
 ##
-## **He stands on the far side of the roadblock from the way she comes** (inbox #1185), and the way
+## **He stands on the far side of the roadblock from the way she comes** (inbox #1185 in gentle-owl), and the way
 ## she comes is decided once, the first frame the roadblock she approaches is on screen: walked round
 ## to its other side after that, he stays where he stood; before it, the side follows where she
 ## stands. Nothing floods for a way past him.
@@ -25,7 +25,7 @@ extends RefCounted
 ## stalls, he walks round it to her while she stands; and a guard who already noticed her is left on her exactly as he was.
 ##
 ## And day 13's own roadblock is one the day placed, close by *(inbox #650 in mossy-beaver: "let's
-## place one properly and guide to that -- just make sure it's closeby"; inbox #1185)*: on several
+## place one properly and guide to that -- just make sure it's closeby"; inbox #1185 in gentle-owl)*: on several
 ## cities, reading the mark takes a roadblock the day placed, or swaps one in for one of the day's
 ## events wholly out of her view, within the widest ring it is looked for in
 ## (`ResistanceDirector.ROADBLOCK_WIDER_REACH`), and with it standing she can still walk home and to
@@ -248,7 +248,7 @@ func _guard_in_view(feet: Vector2) -> bool:
 	return _view.has_area() and _view.intersects(Rect2(feet + Vector2(-14.0, -48.0),
 			Vector2(28.0, 52.0)))
 
-## **The guard stands on the far side of the roadblock from her** (inbox #1185): wherever she
+## **The guard stands on the far side of the roadblock from her** (inbox #1185 in gentle-owl): wherever she
 ## approaches a live roadblock of the day from, open ground 8 to 14 tiles out from it in each of four
 ## directions, the spot the task's guard is moved to when the arrow turns to it (`tick()`, as
 ## `_move_the_task_guard_to_her_target()` moves him, read off the street) is on the far side of it
@@ -305,7 +305,7 @@ func _test_the_guard_stands_on_the_far_side_from_her(t, seed_value: int) -> void
 	_tear_down(player, director, city)
 
 ## **The guard's side is decided once, the first frame the roadblock is on screen, from her
-## approach** (inbox #1185): with the day's other roadblocks finished, so the arrow keeps to the
+## approach** (inbox #1185 in gentle-owl): with the day's other roadblocks finished, so the arrow keeps to the
 ## task's own, she stands on one side of it, out along a street, and the guard is moved to its far
 ## side. With `seen`, the roadblock then comes into her view as she stands there, which decides its
 ## side, and she walks round to the opposite side, the roadblock out of view again: through the
@@ -826,7 +826,7 @@ static func _beside(map: CityMap, body: Vector2, reach: float) -> Vector2:
 			best_distance = distance
 	return best
 
-## **Day 13's own roadblock is one the day placed, close by** (inbox #1185), or one of the day's
+## **Day 13's own roadblock is one the day placed, close by** (inbox #1185 in gentle-owl), or one of the day's
 ## events swapped for one out of her sight. She reads the mark where it stands, with the 640x360
 ## view round her answering what is on screen.
 func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) -> void:
@@ -892,7 +892,7 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 	_tear_down(player, director, city)
 
 ## **With no roadblock close by, the nearest off-screen route-adjacent section takes one, its whole
-## content replaced** (inbox #1185: "if we don't find one closeby we swap one off screen route
+## content replaced** (inbox #1185 in gentle-owl: "if we don't find one closeby we swap one off screen route
 ## adjacent event with a roadblock", "it replaces the content of the section with the roadblock"):
 ## every roadblock the day placed is spent before she reads the mark, so the task can only swap. The
 ## roadblock stands across a route-adjacent section of the day's locations, out of her view, and the
@@ -936,7 +936,7 @@ func _test_with_none_close_by_a_section_is_taken(t) -> void:
 			"(swap) no part of it is in her view when it is put there")
 	_tear_down(player, director, city)
 
-## **A swap replaces what the section holds, and leaves no mark of it on the map** (inbox #1185: "it
+## **A swap replaces what the section holds, and leaves no mark of it on the map** (inbox #1185 in gentle-owl: "it
 ## replaces the content of the section with the roadblock"): every roadblock the day placed is spent,
 ## and she reads the mark where it stands, her screen round her. A route-adjacent section out of
 ## that view holds one of the day's solid bodies and none of the city's fixed parts, and every other

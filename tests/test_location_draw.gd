@@ -1,5 +1,5 @@
 extends RefCounted
-## `LocationDraw`, the day's open locations each drawn from its view's bag at dawn (inbox #1185):
+## `LocationDraw`, the day's open locations each drawn from its view's bag at dawn (inbox #1185 in gentle-owl):
 ## each open location drawn once and what it drew recorded, an event drawn stood in the day, a
 ## location taken, unavailable or already drawn left alone, a row the day's ground refuses at a
 ## location never drawn there, a row not drawn once it has stood as many times as the caps handed in say, and

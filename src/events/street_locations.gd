@@ -1,6 +1,6 @@
 class_name StreetLocations
 extends RefCounted
-## **One street's locations** (inbox #1185): the street split along its length into three
+## **One street's locations** (inbox #1185 in gentle-owl): the street split along its length into three
 ## sections, each a section location over the street's whole width and two sidewalk locations, one
 ## per sidewalk, so up to six of those. An event that spans the street takes a whole section, and its
 ## two sidewalk locations with it (`take_section()`). See `Location` and `docs/EVENTS.md`, "The three

@@ -1,7 +1,7 @@
 # minty-quail — Placement by construction, first step: the streets' locations and the roadblock phase · 2026-11-08
 
 minty-quail's `placement-by-construction.md`, its first pull request, #1248. The design is
-`docs/EVENTS.md`'s "The three views and the placement order" (inbox #1185).
+`docs/EVENTS.md`'s "The three views and the placement order" (inbox #1185 in gentle-owl).
 
 **Built.**
 - **A street's view is decided in one place,** `Corridor.view_of(segment)` (`PlacementView` in the

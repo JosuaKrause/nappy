@@ -1,7 +1,7 @@
 class_name DayLocations
 extends RefCounted
 ## **Every street's locations for one day, laid out once at dawn and handed to whatever asks**
-## (inbox #1185; `docs/EVENTS.md`, "The three views and the placement order"): each street's three
+## (inbox #1185 in gentle-owl; `docs/EVENTS.md`, "The three views and the placement order"): each street's three
 ## sections and their sidewalk locations (`StreetLocations`), each told its view once
 ## (`Corridor.view_of()`), with the ground the city's fixed parts hold marked unavailable and what a
 ## phase has assigned taken for the day. The one object holding those answers, so nothing works
@@ -203,7 +203,7 @@ func assign(section: Location, plan: EventScheduler.Planned) -> void:
 	(_streets[section.segment().key()] as StreetLocations).take_section(section, plan)
 
 ## **The open section in `view` nearest along her paths**, for day 13's task when no roadblock is
-## close by (inbox #1185: "if we don't find one closeby we swap one off screen route adjacent event
+## close by (inbox #1185 in gentle-owl: "if we don't find one closeby we swap one off screen route adjacent event
 ## with a roadblock"). `paths` is her paths from where she stands (`tile -> its distance along them`);
 ## a section is as near as the nearest of its own tiles they reach that `may_touch` (a tile) answers
 ## true for, and is passed over where `may_take` (the section) answers false: the caller's answer for

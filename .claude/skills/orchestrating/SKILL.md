@@ -97,7 +97,7 @@ queue entry is not finished yet. That is the same test the **playtest-feedback**
 an agent can take it is not overhead on top of the work — it **is** the orchestrating half of it.
 
 **A milestone with an open design question that blocks is not ready for one**: one where changing
-course after the answer would be very costly (**board**, "Blocking, and no dialogs"; inbox #1194).
+course after the answer would be very costly (**board**, "Blocking, and no dialogs"; inbox #1194 in gentle-owl).
 That question goes to the player first. An open question that does not block goes on the board and
 the work goes to an agent at once, built on My pick, with the brief naming the pick as open to the
 player's answer; a pick that would overturn something the player asked for is never built ahead of
@@ -195,7 +195,7 @@ role named has nothing to check `status` against:
   to go to the background, which notifies this session and the player (inbox #870 in minty-dolphin). A brief copied from an earlier one is checked for this
   line, not inherited. A red PR goes back to the agent with the failing output.
 - **Headless first.** Verification lives in the test rigs, not in watching the game. No agent
-  opens the Godot editor (inbox #1203, inbox #1242); the game's windows follow this bullet. Windowed runs
+  opens the Godot editor (inbox #1203 in gentle-owl, inbox #1242 in gentle-owl); the game's windows follow this bullet. Windowed runs
   (`tools/run.sh`, repeated `tools/shot.sh`) open on the player's own screen; at most one or two
   `shot.sh` calls at the end for evidence. A windowed run is also the least reliable thing an agent
   can lean on — the **verify** skill carries the rig traps that make one look like it worked when
@@ -346,16 +346,16 @@ worktrees — merging is what collides — so parallelism is planned at the file
 
 ## What the orchestrator keeps
 
-- **The work moving, until there is none left** (inbox #1196). The orchestrating session ends only
+- **The work moving, until there is none left** (inbox #1196 in gentle-owl). The orchestrating session ends only
   when no task is left to start or advance. While agents run, it briefs and spawns every queue item
   it can start whose files the running agents do not own; holding startable work back, to limit
   the reviews to come or for any other reason, is stopping early. **While the player has put one
-  entry first, startable means that entry's items only** (inbox #1210), until that entry closes:
+  entry first, startable means that entry's items only** (inbox #1210 in gentle-owl), until that entry closes:
   its `README.md` says so, and work on another entry before it is done is work done twice, on code
   about to change. The up-next marker (`docs/TODO.md`) orders the queue and fences nothing, and the
   end-of-session pass drops it from an entry open pull requests are building, so the fence is the
   README's sentence. **Once everything startable is
-  running, it ends its turn to wait for the agents** (inbox #1196): their reports wake it, and
+  running, it ends its turn to wait for the agents** (inbox #1196 in gentle-owl): their reports wake it, and
   waiting that way is not ending the session. A report to the player goes out along the way, never
   as a stopping point. A running agent or a
   pull request still to review or land is a task to advance, so the session stays open while one

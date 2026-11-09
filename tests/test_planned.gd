@@ -77,7 +77,7 @@ func _test_what_stands_clear_of_it(t) -> void:
 
 
 ## **Which plans are the city's fixed parts rather than the day's events** (`is_a_fixed_part()`,
-## inbox #1185): the region wall's body, a door's, a seal, a loudspeaker mast and an ambient row,
+## inbox #1185 in gentle-owl): the region wall's body, a door's, a seal, a loudspeaker mast and an ambient row,
 ## whose sections day 13's swap never takes; the day's cafe tables, a barricade it rolled rather than
 ## sealed with, and the burnt shell a fire left, which the player called a regular event, are not.
 func _test_which_plans_are_fixed_parts(t) -> void:

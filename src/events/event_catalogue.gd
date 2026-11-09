@@ -2398,7 +2398,7 @@ static func _night_raid() -> EventDef:
 # ------------------------------------------------------------ Act IV: open (12+) ---
 
 ## An army truck down its street and off again, leaving nothing behind: nothing a convoy does
-## during the walk closes a street (inbox #1183).
+## during the walk closes a street (inbox #1183 in gentle-owl).
 ##
 ## **From day 13, the morning the army arrives** (PLAYTEST-122), with the column on the main road
 ## that day (`ResistanceHappenings`); day 12 is the parks.

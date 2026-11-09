@@ -1186,27 +1186,27 @@ close one, so nothing checks during the walk whether she can still get through. 
 reachability check is ruled out (gray-dolphin #1173).
 
 **There are three views on events in the city: on the route, route-adjacent, and off the route**
-(inbox #1185).
+(inbox #1185 in gentle-owl).
 - **On the route** is the ground the safe routes run along. *Read as* (the orchestrator's, open to
   correction): a street a route runs along, both its sidewalks. The player's example of a restaurant
-  on one side, with the side across drawn from a subset (inbox #1185), is about the street, so the
+  on one side, with the side across drawn from a subset (inbox #1185 in gentle-owl), is about the street, so the
   route's whole street is on the route, and the rules keep the route's own sidewalk open.
 - **Route-adjacent**: the player said "the off route events need to be route adjacent. anything deep
   wouldn't be reachable at all" (gray-dolphin #1173). *Read as* (the orchestrator's, open to
   correction): off the routes, on a street touching one (gray-dolphin #1173), which is a street one
   of whose two junctions a route crosses, a junction only a park or alley cut crosses included.
-- **Off the route** is the third view (inbox #1185).
+- **Off the route** is the third view (inbox #1185 in gentle-owl).
 - `Corridor.view_of()` is the one place the view of a street is decided, and each location is told
   its view once, at dawn (`DayLocations`).
 
 **Placement is by construction, not by rules checked after placing.** Nothing tries an event in a
-spot and then checks what kind it is (inbox #1185).
+spot and then checks what kind it is (inbox #1185 in gentle-owl).
 - **Each view has its own bag.** A location is filled by drawing from its view's bag.
 - **A view's bag holds every event possible in that view**, each as many times as its weight.
-  Empty is one of them (inbox #1185).
-- **The event drawn is the event that appears there**, with no rejection (inbox #1185).
+  Empty is one of them (inbox #1185 in gentle-owl).
+- **The event drawn is the event that appears there**, with no rejection (inbox #1185 in gentle-owl).
 
-**A location is part of a street** (inbox #1185):
+**A location is part of a street** (inbox #1185 in gentle-owl):
 - A street is split along its length into **three sections**.
 - An event that spans the street, such as a roadblock across its middle, takes a **whole section**.
 - Otherwise a section holds **two locations, one per sidewalk**, so a street has up to **six
@@ -1216,25 +1216,25 @@ spot and then checks what kind it is (inbox #1185).
 of the same street draw from their bag with the events that drawn event makes invalid left out. The
 bag itself is unchanged; the invalid events are only not considered in the draw. Which events make
 which others invalid on the same street is what today's placement rules decide; they keep applying,
-used when a street's other locations draw (inbox #1185). The player's example: across the street
+used when a street's other locations draw (inbox #1185 in gentle-owl). The player's example: across the street
 from a drawn restaurant, the draw is most likely "empty", and could be a yeller with a low chance on
-later days (inbox #1185).
+later days (inbox #1185 in gentle-owl).
 
 **The roadblock phase at dawn** comes after the routes are established. It goes through the
 route-adjacent locations and places roadblocks there, evenly spaced out: each roadblock placed is
 biased toward the route-adjacent location farthest from the roadblocks already placed, a bias and
 not a strict rule. Those locations are then assigned, so no draw happens for them during the walk
-(inbox #1185).
+(inbox #1185 in gentle-owl).
 - *Read as* (the orchestrator's, open to correction): the roadblock phase is day 13's. It stops once
   every route tile has a roadblock within 1,024px along her paths, the measure day 13's task searches
   with, or once no section still offered would bring one within 1,024px of a route tile that has
   none, or once 25 stand. Shown the count full coverage gave, 15 to 25, the player called it good
-  and said only a playtest can tell (inbox #1185), so where full coverage cannot be reached the count
+  and said only a playtest can tell (inbox #1185 in gentle-owl), so where full coverage cannot be reached the count
   stops rather than running on, and 25, the top of that count, is the cap. On days 7 to 12 a
   roadblock is an ordinary event of the route-adjacent bag.
 - *Read as* (the orchestrator's, open to correction): the spacing between two of a row
   (`EVENT_SPACING_SAME`, 256px) is one of the rules that make events invalid ("what your current
-  rules accomplish. the same applies still", inbox #1185). So once a roadblock is placed, no section
+  rules accomplish. the same applies still", inbox #1185 in gentle-owl). So once a roadblock is placed, no section
   whose roadblock would stand within 256px of it is offered one, and the bias ranks the rest.
 - `RoadblockPhase` places them, in the sections of the day's locations (`DayLocations`). Every
   route-adjacent section whose roadblock today's rules leave valid
@@ -1243,27 +1243,27 @@ not a strict rule. Those locations are then assigned, so no draw happens for the
   while another could still cover a route tile.
 
 **The city's fixed parts have phases of their own**, at dawn or at the start of the run: the
-region wall, its doors, the closures, the seals, the masts and the ambient rows (inbox #1185).
+region wall, its doors, the closures, the seals, the masts and the ambient rows (inbox #1185 in gentle-owl).
 - A mast's location is known from the start of the run. On a day without masts, nothing has been
   chosen for it yet, so it draws from its view's bag like any other location; it does not take the
   "empty" event. On a day with one, the mast stands on the tiles inside its location where it fits.
 - A wall makes its location unavailable throughout.
 - Scars are cosmetic, not events. What the code calls a scar, the burnt shell a fire leaves, is a
-  regular event under the design (inbox #1185).
+  regular event under the design (inbox #1185 in gentle-owl).
 
 **Then the pass for regular events** places the events that can be placed in route-adjacent
-locations. It never overwrites a roadblock already placed (inbox #1185).
+locations. It never overwrites a roadblock already placed (inbox #1185 in gentle-owl).
 
 *Read as* (the orchestrator's, open to correction): the draws happen during the walk. The player
 said the roadblocks' "locations are already assigned during gameplay so no drawing will happen for
-them in the first place" (inbox #1185), and that the placeholders "get filled in with non-blocking
+them in the first place" (inbox #1185 in gentle-owl), and that the placeholders "get filled in with non-blocking
 events from the bag" "when the player walks" (gray-dolphin #1173).
 
 **Day 13's task** looks for a roadblock close by along her paths. Close by is 576px, then 896px,
-then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
+then 1,024px of her paths from where she reads the chalk mark (inbox #1185 in gentle-owl).
 - **Only if none is close by**, it swaps one off-screen route-adjacent event for a roadblock, in
-  that event's place (gray-dolphin #1177, inbox #1185). The roadblock replaces the content of that
-  event's whole section (inbox #1185).
+  that event's place (gray-dolphin #1177, inbox #1185 in gentle-owl). The roadblock replaces the content of that
+  event's whole section (inbox #1185 in gentle-owl).
 - The event it takes is route-adjacent, since "anything deep wouldn't be reachable at all"
   (gray-dolphin #1173).
 - It never takes the guard houses or the district barriers (gray-dolphin #1173).
@@ -1275,10 +1275,10 @@ then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
 - *Read as* (the orchestrator's, open to correction): a section holding one of the city's fixed
   parts is not taken: the region wall, its doors, the seals (the soft ones included, which stand on
   streets no hold closes), the masts and the ambient rows, which the player gave phases of their own
-  (inbox #1185; `Planned.is_a_fixed_part()`). The burnt shell is a regular event ("your scars are
-  just regular events", inbox #1185), so its section may be taken.
+  (inbox #1185 in gentle-owl; `Planned.is_a_fixed_part()`). The burnt shell is a regular event ("your scars are
+  just regular events", inbox #1185 in gentle-owl), so its section may be taken.
 
-**The order, as the player gave it** (inbox #1185):
+**The order, as the player gave it** (inbox #1185 in gentle-owl):
 1. The routes are established.
 2. Roadblocks are placed first, in route-adjacent locations, spread out across the city.
 3. The pass for regular events, which never overwrites a roadblock already placed.
@@ -1375,8 +1375,8 @@ are denser as well as nastier. A row's weight in a view is its own `weight` time
 to its role (`EventScheduler.view_weight()`), and each location scales it by its own weight
 (`RuledLocationGround.scale()`): a precinct's four times over, the street between two strands of
 the routes six times over for a costly wall, an alley beside a sack pile five times over for the
-mouse, which stands on the alley's tiles beside the pile where it can. *(The player: "yes" to a weight per location that scales its view bag's weights, issue
-#1185.)*
+mouse, which stands on the alley's tiles beside the pile where it can. *(The player: "yes" to a weight per location that scales its view bag's weights,
+inbox #1185 in gentle-owl.)*
 
 **And each row is weighed by the kind of ground the location is** (`EventScheduler.GROUND_WEIGHTS`,
 a weight per row per `Location.Kind`), so the mix inside each view is today's as well as its count.
@@ -1392,7 +1392,7 @@ fitted the same way, since a weight per kind of ground scales a row the same in 
 them the draw moves walls off her route onto the ground off it, and what her route holds is what the
 route decision faces. *(The
 player: "yes" to a group of locations per kind of ground, and to a weight per location scaling its
-view's bag; issue #1185.)*
+view's bag; inbox #1185 in gentle-owl.)*
 
 The share is **not** the count: the day's rules leave out whatever would close a route or reach
 calm ground nothing may reach (`StreetInvalidation`), so a location can draw empty where its view's
@@ -2135,7 +2135,7 @@ barrier he was standing at stays where it is and stays shut.
 feasibly work at all. that is why the density is so high that it's impossible to get anywhere. yes,
 a marble bag is absolutely needed with empty events (nothing happening) as well. we need a fair
 mix"; "frequency order is trucks > explosions > vans > barriers > empty". Of how many a street
-holds, inbox #1185's board answer: "one per street. fill empty in if any segment or location in the
+holds, inbox #1185 in gentle-owl's board answer: "one per street. fill empty in if any segment or location in the
 street has an event".)* Every open street of the walk draws one marble from a bag for the whole
 escape (`EventScheduler._street_bag()`): `DaySpec.FINALE_BAG_TRUCKS` army trucks (10),
 `FINALE_BAG_EXPLOSIONS` explosions (8), `FINALE_BAG_VANS` vans (3), `FINALE_BAG_ROADBLOCKS`

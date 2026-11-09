@@ -114,7 +114,7 @@ enum Draw {
 	## Every street of the walk draws one marble from one bag holding `bag`, and a marble stands one
 	## of its row (`bag_rows`) at the first of the street's locations it is valid at, the rest of the
 	## street empty, or nothing where it has no row — the escape's city, which knows every street she
-	## can take before she sets off. *(Inbox #1185's board answer: "one per street. fill empty in if
+	## can take before she sets off. *(Inbox #1185 in gentle-owl's board answer: "one per street. fill empty in if
 	## any segment or location in the street has an event".)* One a street also keeps the section
 	## the climax and every walk out of it walkable (`tests/probes/escape_winnable.gd`), and stands one
 	## roadblock a street at most, so a crossing is one band and one guard on her side of it to lure

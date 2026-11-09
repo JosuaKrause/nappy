@@ -11,7 +11,7 @@ marbles drawn without putting back and refilled once empty, a marble a location 
 the next one, each location's weight scaling a marble's share. `LocationDraw` draws every open
 location once within the caps, asking `LocationGround`, whose one implementation for now,
 `JudgedLocationGround`, is today's `_judge()` behind that interface and holds the per-location
-weights (inbox #1185's board answer 5(c)): precinct ×4, the street between two route strands ×6
+weights (inbox #1185 in gentle-owl's board answer 5(c)): precinct ×4, the street between two route strands ×6
 for a costly wall, the alley mouse beside a sack pile ×5, the mouse trying the tiles beside the pile
 first. A row's weight per kind of ground (`EventScheduler.GROUND_WEIGHTS`) is fitted so its daily count
 holds today's, since ground with few locations would otherwise get few draws; a row's weight per
