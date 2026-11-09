@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_the_sweep_stands_only_what_it_keeps(t)
 	_test_a_walk_draw_takes_only_what_it_keeps(t)
 	_test_a_walks_caps_are_spread_over_its_locations(t)
+	_test_a_walks_caps_follow_each_locations_chance(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 
@@ -32,6 +33,14 @@ class _Locations extends DayLocations:
 	## Overrides DayLocations.drawing_order.
 	func drawing_order(_rng: RandomNumberGenerator) -> Array[Location]:
 		return order
+
+	## Overrides DayLocations.open_locations.
+	func open_locations() -> Array[Location]:
+		var open: Array[Location] = []
+		for location in order:
+			if location.is_available() and not location.is_taken() and not location.is_drawn():
+				open.append(location)
+		return open
 
 	## Overrides DayLocations.record.
 	func record(location: Location, plan: EventScheduler.Planned) -> void:
@@ -265,8 +274,8 @@ func _test_a_walk_draw_takes_only_what_it_keeps(t) -> void:
 		never = never and plan != null and plan.row_id() == "cafe_tables"
 	t.check(never, "a walk that keeps only the cafe draws the cafe, never the roadblock, on every seed")
 
-## Ten locations, a bag of cafes, a cap of two spread over ten locations: a cafe may stand only once
-## the walk has drawn enough locations for its share, so the first two draw empty, and ten draws
+## Ten locations of one weight, a bag of cafes, a cap of two spread over them: a cafe may stand only
+## once the walk has drawn enough locations for its share, so the first two draw empty, and ten draws
 ## stand two cafes; the same cap not spread stands the first two locations' cafes.
 func _test_a_walks_caps_are_spread_over_its_locations(t) -> void:
 	var spread := _Locations.new()
@@ -276,7 +285,7 @@ func _test_a_walks_caps_are_spread_over_its_locations(t) -> void:
 		flat.order.append(_location(x + 20))
 	var rows := {"cafe_tables": _row("cafe_tables")}
 	var walk := LocationDraw.new(spread, {ON: ViewBag.new({"cafe_tables": 10, ViewBag.EMPTY: 1}, 2)},
-			rows, _Ground.new(), {"cafe_tables": 2}, Callable(), 10)
+			rows, _Ground.new(), {"cafe_tables": 2}, Callable(), true)
 	var at_once := LocationDraw.new(flat, {ON: ViewBag.new({"cafe_tables": 10, ViewBag.EMPTY: 1}, 2)},
 			rows, _Ground.new(), {"cafe_tables": 2})
 	var spread_cafes: Array[int] = []
@@ -290,3 +299,22 @@ func _test_a_walks_caps_are_spread_over_its_locations(t) -> void:
 			"spread over ten locations, two cafes stand and not before the third location (%s)" % [spread_cafes])
 	t.check(flat_cafes.size() == 2 and flat_cafes[1] <= 2,
 			"not spread, the two stand among the first locations (%s)" % [flat_cafes])
+
+## Ten locations, the first five weighing the cafe a thousandth of the last five, a bag of nothing but
+## cafes, a cap of two spread over them: the five light locations hold almost none of the cafe's
+## chance, so no cafe stands there, and both stand among the heavy five.
+func _test_a_walks_caps_follow_each_locations_chance(t) -> void:
+	var locations := _Locations.new()
+	var ground := _Ground.new()
+	for x in 10:
+		var location := _location(x)
+		locations.order.append(location)
+		ground.weights[location] = 0.001 if x < 5 else 1.0
+	var walk := LocationDraw.new(locations, {ON: ViewBag.new({"cafe_tables": 10}, 4)},
+			{"cafe_tables": _row("cafe_tables")}, ground, {"cafe_tables": 2}, Callable(), true)
+	var cafes: Array[int] = []
+	for i in 10:
+		if walk.draw(locations.order[i]) != null:
+			cafes.append(i)
+	t.check(cafes.size() == 2 and cafes[0] >= 5,
+			"the cap follows the cafe's chance: both stand among the heavy five (%s)" % [cafes])

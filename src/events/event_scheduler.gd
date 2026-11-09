@@ -2377,14 +2377,13 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEv
 		if beside_the_routes != null and def.id == beside_the_routes.id:
 			continue
 		rows[def.id] = def.for_day(day)
-	var bags := _view_bags(rows, day, spec, base)
 	# Every row's own ground worked out at dawn, while the day is planned, so a draw during the
 	# walk reads it rather than scanning the map on the tick it draws (`LocationFit.prepare()`).
 	var fit := LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets)
 	for def: EventDef in rows.values():
 		fit.prepare(def)
 	var caps := _caps_of(rows, day, spec, _stream(base, CAPS_SALT)) if spec.caps_per_day else {}
-	# **The bodies at dawn**: every location swept in the day's order from bags of its own, as the
+	# **The bodies at dawn**: every location swept in the day's order from the view bags, as the
 	# whole draw would sweep it, standing only the rows that block the way, each asked every dawn
 	# rule, the reach among them (gray-dolphin #1173 30: "a blocking event is never placed" when she
 	# walks; 33: "there should be no live reachability check"), and the rows her walk sites, handed
@@ -2395,14 +2394,15 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEv
 					StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
 							spec.one_notice_at_a_time, null, reach)),
 			caps, blocks).draw_all(_stream(base, LOCATIONS_SALT))
-	# **The rest as she walks**: only the rows that block nothing, judged by every rule but the
-	# reach, which no body the walk draws can need, the caps spread over the locations left open.
+	# **The rest as she walks**: only the rows that block nothing, from bags of their own
+	# (`WALK_SHARE_SCALES`), judged by every rule but the reach, which no row the walk draws can
+	# need, the caps spread over the locations left open.
 	var opens := func(def: EventDef) -> bool: return not _drawn_at_dawn(def)
-	return LocationDraw.new(locations, bags, rows,
+	return LocationDraw.new(locations, _view_bags(rows, day, spec, base, true), rows,
 			RuledLocationGround.new(day, base, map, events, corridor, fit,
 					StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
 							spec.one_notice_at_a_time, null, null)),
-			caps, opens, locations.open_locations().size(), _stream(base, WALK_CAPS_SALT))
+			caps, opens, true, _stream(base, WALK_CAPS_SALT))
 
 ## Whether `def`'s row is drawn at dawn rather than as she walks: a row that blocks the way, or one
 ## her walk sites (`EventDef.is_handed_to_her_walk()`), which the dawn hands over with no position.
@@ -2511,7 +2511,8 @@ const FRICTION_VIEW_SCALES := [
 ## weighed in full, so a spec weighing its walls by a share (`DaySpec.wall_row_share`) draws that
 ## share of them and the rest of the day as it was; the scales are fitted on the days as they are
 ## played, the gatehouse day's share included. Each on its own stream off `base`.
-static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> Dictionary:
+static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int,
+		walk := false) -> Dictionary:
 	var bags := {}
 	for view: int in [PlacementView.View.ON_THE_ROUTE, PlacementView.View.ROUTE_ADJACENT,
 			PlacementView.View.OFF_THE_ROUTE]:
@@ -2525,8 +2526,10 @@ static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> 
 				continue
 			fill[id] = maxi(1, roundi(w * BAG_MARBLES_PER_WEIGHT))
 			weight += w
-		var share := clampf(float(VIEW_SHARES[view][clampi(day, 1, 14) - 1])
-				* float(VIEW_SHARE_SCALES[view][clampi(day, 1, 14) - 1]), 0.001, 0.95)
+		var scale := float(VIEW_SHARE_SCALES[view][clampi(day, 1, 14) - 1])
+		if walk:
+			scale *= float(WALK_SHARE_SCALES[view][clampi(day, 1, 14) - 1])
+		var share := clampf(float(VIEW_SHARES[view][clampi(day, 1, 14) - 1]) * scale, 0.001, 0.95)
 		fill[ViewBag.EMPTY] = maxi(1, roundi((whole / share - weight) * BAG_MARBLES_PER_WEIGHT))
 		bags[view] = ViewBag.new(fill, hash("%d:%d:view-bag:%d" % [base, LOCATIONS_SALT, view]))
 	return bags
@@ -2562,6 +2565,16 @@ const VIEW_SHARE_SCALES := [
 	ON_SHARE_SCALES,
 	ADJACENT_SHARE_SCALES,
 	OFF_SHARE_SCALES,
+]
+## **What the walk's bags' empty marbles are set for on top** (`[view][day - 1]`, `_view_bags()`'s
+## `walk`): the walk draws only the rows that block nothing, among every body the dawn stood, which
+## refuse more of its draws than the whole day's sweep refused of them, so its shares are scaled up
+## until what she meets of those rows is what she met when the dawn drew every location. Fitted, not
+## derived, with `tests/probes/walk_rows.gd` against main.
+const WALK_SHARE_SCALES := [
+	[1.21, 1.34, 1.27, 1.32, 1.33, 1.26, 1.42, 1.34, 1.24, 1.18, 1.31, 1.26, 1.25, 1.21],
+	[1.4, 1.42, 1.53, 1.44, 1.26, 1.25, 1.37, 1.0, 1.2, 1.32, 1.45, 1.46, 1.0, 1.43],
+	[1.25, 1.11, 1.1, 1.0, 1.15, 1.21, 1.0, 1.1, 1.12, 1.0, 1.0, 1.0, 1.15, 1.0],
 ]
 
 ## **How often a row is drawn on each kind of ground** (`row id -> {Location.Kind -> weight}`),

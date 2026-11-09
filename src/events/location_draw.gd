@@ -19,14 +19,17 @@ extends RefCounted
 ## stands besides (`judge_against()`).
 ##
 ## **A walk's caps are a rate** (`spread`): a row's cap is spread over the locations the walk may
-## draw, so after it has drawn `n` of them a row may have stood its cap times `n / spread`, rounded up
-## or down at random once per row on `rng`; the dawn spent a cap over the whole city, and so does
-## this, a location at a time (the orchestrator's reading, open to the player's overturn).
+## draw by how likely each is to draw the row (its share of the location's bag times the location's
+## weight for it, `LocationGround.scale()`), so once the walk has drawn locations holding a share of
+## that chance a row may have stood that share of its cap, rounded up or down at random once per row
+## on `rng`. The dawn spent a cap over the whole city as each location's chance came up, and so does
+## this (the orchestrator's reading, open to the player's overturn).
 ##
 ## Handed the day's locations, the three bags (`view -> ViewBag`), the rows the bags' marbles name
 ## (`id -> EventDef`), the day's ground, the day's caps (`id -> how many may stand`, a row not named
-## having none), which rows it stands (every row where `kept` is not given), and for a walk the
-## locations its caps are spread over and the stream their rounding is drawn on. Model: no node.
+## having none), which rows it stands (every row where `kept` is not given), and for a walk whether
+## its caps are spread over the locations open when it is made, and the stream their rounding is
+## drawn on. Model: no node.
 
 var _locations: DayLocations
 var _bags: Dictionary
@@ -35,14 +38,15 @@ var _ground: LocationGround
 var _caps := {}
 var _stood := {}
 var _kept := Callable()
-var _spread := 0
+var _spread := false
 ## Per capped row, the fraction its running cap is rounded on (`_at_its_cap()`).
 var _offsets := {}
-## How many locations this draw has drawn.
-var _drawn := 0
+## Per capped row, its chance over every location open when the draw was made, and over those drawn.
+var _chance := {}
+var _chance_drawn := {}
 
 func _init(locations: DayLocations, bags: Dictionary, rows: Dictionary, ground: LocationGround,
-		caps: Dictionary, kept := Callable(), spread := 0,
+		caps: Dictionary, kept := Callable(), spread := false,
 		rng: RandomNumberGenerator = null) -> void:
 	_locations = locations
 	_bags = bags
@@ -51,11 +55,17 @@ func _init(locations: DayLocations, bags: Dictionary, rows: Dictionary, ground: 
 	_caps = caps
 	_kept = kept
 	_spread = spread
-	if _spread > 0:
+	if _spread:
 		var ids := _caps.keys()
 		ids.sort()
 		for id: String in ids:
 			_offsets[id] = rng.randf() if rng else 0.5
+			_chance[id] = 0.0
+			_chance_drawn[id] = 0.0
+		for location in _locations.open_locations():
+			var chances := _chances_at(location)
+			for id: String in chances:
+				_chance[id] = float(_chance[id]) + float(chances[id])
 
 ## **Sweeps every open location in the day's order** (`DayLocations.drawing_order()`, on `rng`),
 ## each drawn whole from its bag as any draw is, and stands what it drew only where this draw keeps
@@ -137,7 +147,10 @@ func finish(asking: Asking) -> EventScheduler.Planned:
 	if plan:
 		plan = _as_drawn(plan)
 	_locations.record(asking.location, plan)
-	_drawn += 1
+	if _spread:
+		var chances := _chances_at(asking.location)
+		for id: String in chances:
+			_chance_drawn[id] = float(_chance_drawn[id]) + float(chances[id])
 	if plan:
 		_ground.stand(plan)
 		_stood[plan.row_id()] = int(_stood.get(plan.row_id(), 0)) + 1
@@ -155,15 +168,30 @@ func _keeps(def: EventDef) -> bool:
 	return not _kept.is_valid() or bool(_kept.call(def))
 
 ## Whether row `id` has stood as many times as its cap lets it yet: the day's cap, or for a walk the
-## cap's share of the locations drawn so far (`spread`).
+## cap's share of the row's chance the locations drawn so far held (`spread`).
 func _at_its_cap(id: String) -> bool:
 	if not _caps.has(id):
 		return false
 	var most := int(_caps[id])
-	if _spread > 0:
-		most = mini(most, floori(float(_caps[id]) * float(_drawn) / float(_spread)
+	if _spread and float(_chance[id]) > 0.0:
+		most = mini(most, floori(float(_caps[id]) * float(_chance_drawn[id]) / float(_chance[id])
 				+ float(_offsets[id])))
 	return int(_stood.get(id, 0)) >= most
+
+## Each capped row this draw keeps -> its chance at `location`: its share of the location's bag
+## times the location's weight for it.
+func _chances_at(location: Location) -> Dictionary:
+	var chances := {}
+	var bag: ViewBag = _bags.get(location.view())
+	if bag == null:
+		return chances
+	for id: String in _chance:
+		if not _keeps(_rows[id]):
+			continue
+		var share := bag.share_of(id)
+		if share > 0.0:
+			chances[id] = share * _ground.scale(_rows[id], location)
+	return chances
 
 ## One location's draw under way: its location, its bag's draw and what each marble asked was
 ## offered once its offer was made.
