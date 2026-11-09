@@ -31,7 +31,9 @@ player's `~/.claude/settings.json`) and what is done on a refusal (the filer's p
 
 **The orchestrating session is the top-level session the player started to run the queue**; a
 sub-agent never is, and a second top-level session is one only when the player says so. Any other
-session merges nothing and writes neither the board nor `.claude/restart-prompt.md` (inbox #1267).
+session merges nothing on its own authority, only a pull request the orchestrating session hands it
+or the player authorizes in that session (**committing**, "Merging"), and writes neither the board
+nor `.claude/restart-prompt.md` (inbox #1267).
 
 **Everything here and in `.claude/skills/` is current.** Where you need to know why a rule exists,
 what was tried and rejected, or what a number used to be, that is the records under
