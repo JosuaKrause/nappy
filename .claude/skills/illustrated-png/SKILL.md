@@ -5,6 +5,35 @@ description: Generate, register and install illustrated PNGs under art/illustrat
 
 # Illustrated PNG workflow
 
+**The rules not to miss:**
+
+- **Claude Code stops at generation: it has no image generator.** A new PNG is the work of a host
+  that has one; a Claude Code session asked for one says so and stops rather than improvise.
+- **Nothing is converted to PNG for now**; a conversion waits until the player finds a use for one
+  (inbox #927 in tiny-lark).
+- **The pelican cyclist is never converted** (minty-hedgehog #437).
+- **The SVG comes first**: a PNG's SVG is authored and reviewed before it, never made afterwards.
+- **PNG-first is a bounded exception the player authorizes for one family at a time.**
+- **The presentation is chosen by the bake, not by the running game.**
+- **A runtime PNG is committed on its own, with no `.import` sidecar** (the **godot** skill,
+  "Structure").
+- **A new picture needs its line in `assets/atlases/membership.json`**, or no bake draws it.
+- **A transfer PNG whose size disagrees with its SVG fails the bake by name.**
+
+What a Claude Code session does here is what needs no generator: registering, installing and
+checking PNGs that exist, their atlas membership, and their review. The generation procedure
+(which references have authority, how a family's directions, frames and variants are kept one
+family, raw outputs, extraction and alpha) is `references/generation.md`, read by a host that can
+generate before it does. Revising a walking frame of a family that exists is
+`references/leg-contact-corrections.md`.
+
+**An agent's sparse worktree leaves out `docs/evidence/` and `docs/style-references/`**, the two
+folders this work reads and writes: a new file there is committed with `git add --sparse <path>`,
+and a task that reads what is already there asks for a worktree made with
+`tools/agent-setup.sh ... --include <path>`.
+
+## What a PNG is here
+
 **Every PNG asset normally has a corresponding SVG asset, and the SVG comes first.** Author
 and review the SVG before generating its PNG; do not create an SVG after the fact to legitimize
 a PNG-only asset. Keep the SVG as the editable source of subject and functional placement. Record
@@ -14,12 +43,12 @@ Raw generator outputs belong with generation evidence, not in the runtime asset 
 
 **The pelican cyclist is never converted.** `art/events/pelican_cyclist*.svg` stays SVG by the
 player's word (minty-hedgehog #437): the bake rasterizes it like any SVG, and no illustrated PNG of
-it is generated or placed under `art/illustrated/`. `tests/test_pelican.gd` fails if one appears
-there.
+it is generated or placed under `art/illustrated/`. **The rule is unenforced**: no suite or check
+fails if one appears there.
 
 The player may authorize a bounded PNG-first family when photographs or a reviewed generated
-concept define the subject more faithfully than an existing SVG. The M109 rooftop equipment,
-fallen-tree and burst-water-main replacement families are such exceptions. Preserve their exact
+concept define the subject more faithfully than an existing SVG. The M109 rooftop equipment
+(`art/illustrated/roof-equipment/`) is the one such family. Preserve its exact
 raw generated source, prompt, hashes, deterministic registration, native anchors and human review
 verdict in family evidence; list each direct PNG in atlas membership. This authorization does not
 make PNG-first the default for another family.
@@ -33,78 +62,8 @@ pairs and is a custom local build, never the release. Approved direct-PNG member
 modes because they have no SVG counterpart. There is no runtime flag for either — a build is
 whichever bake wrote its pages. Both use the same drawing and animation code.
 
-## Reference authority
-
-Transfer the SVG's idea into the references' comic drawing language: redraw its forms,
-linework, material details and shadow shapes. Adding grain or surface shading to a traced
-SVG does not satisfy style transfer. The SVG defines subject, recognizable color identity,
-canvas, pose, direction and functional placement; its primitive interior shapes are not an
-exact tracing template. Preserve gameplay boundaries and anchors while giving the artwork
-the references' authored contours and shading.
-Inspect it and both `docs/style-references/graphics-reference-urban-01.jpeg` and
-`docs/style-references/graphics-reference-cardinal.jpeg` before generation. The latter two supply style
-only: omit their interface and debug annotations. Do not substitute a different character identity,
-projection or composition. Archived experiments and unapproved outputs are not style references.
-
-Player generation targets and the runtime SVG in `art/rig/` have separate roles. Preserve the
-creation-reference family in `docs/graphics-creation/player/`; its manifest links each
-creation SVG, runtime SVG and illustrated PNG. Both families provide contact and together poses.
-Use the preserved creation target when
-reproducing its high-fidelity PNG, and keep the original source hashes and authoring order.
-
-## Directions, frames and variants form one family
-
-Review the complete facing × animation × state matrix together. Each parent carrying the baby
-must be recognizably the same person pushing the stroller: preserve hair, face, proportions,
-clothing colors and construction, shoes, line weight and material shading wherever the SVGs
-share them. Apply the same consistency requirement to other families with multiple variants.
-
-A shared grid is a useful generation input when every cell remains large enough to retain detail.
-Keep views in a fixed order, adjacent gait/state variants easy to compare, and record cell bounds
-and anchors for extraction. When extending a converted family, supply its reviewed PNGs as an
-explicit identity/rendering reference alongside the new SVG targets. They do not override the
-targets' pose or functional placement. Split a dense family into batches when needed, carrying the same
-reference through every batch; choose by inspected results rather than mandating a single atlas.
-Do not use a rejected family to perpetuate the rendering the player asked to replace; derive
-the revised family's identity from its source concept and the approved style references.
-
-Compare native-size and enlarged results across the whole family, including the runtime's west
-mirrors. Check that details common to adjacent animation frames hold still and that a state swap
-does not change who the character appears to be. Canvas registration does not prove consistent
-faces, clothing or interior placement. Update this workflow with observed results;
-record experiments and rejected options in a decision record under `docs/decisions/`.
-
-For the illustrated stroller, direction means travel direction: N/NE/NW show the baby and canopy
-opening; S/SE/SW show the outside of the hood; E/W use the original side picture. Preserve this
-visual contract when generating or assigning views. Upstream front/back filenames do not override
-it. The final assignment recipe is `docs/evidence/stroller-view-assignment-2026-09-12/GENERATION.md`;
-it reads frozen originals. Never apply another N/S or opposite-diagonal swap to installed textures.
-
-For walking figures, preserve identity and continuous articulation through the pelvis, coat hem,
-thighs and knees. See the
-[walking-frame correction toolbox](references/leg-contact-corrections.md) for donor selection,
-anatomical leg ownership, uncrossed pose guides, material matching and constrained body/hem reuse.
-
-Measure stature across all facings and frames after registration. Fitting an over-wide pose
-into its canvas must not shrink the person when she turns. Redraw a compact pose with consistent
-proportions instead of stretching it or changing the runtime canvas. Inspect the native result,
-not only the enlarged atlas. An approximate assembly sheet does not prove live hand-to-handle
-contact or motion; label its coverage accurately.
-
-Equal full-figure height alone does not establish equal proportions. Compare the head, coat hem
-and hands across contacts and the together frame: short legs in one generated cell make its
-upper body grow when every cell is fitted to the same height. Redraw the affected whole figures
-in a separate batch when a dense atlas constrains their stature. Register horizontal placement
-from stable body landmarks so changing leg spread does not move the hands sideways.
-
 ## Asset contract
 
-- Raster generation uses the host's image generator (Codex: the imagegen skill; Claude Code has
-  none, so say so and stop rather than improvise). Inspect inputs visually first (Codex
-  `view_image`, Claude Read). State each input's role in the exact saved prompt.
-- Preserve SVGs and raw generated outputs for retained derivatives, following rejected-graphics
-  for what a draft's disposition keeps or discards. Record extraction commands, tool versions,
-  source dimensions and registration measurements for retained derivatives.
 - SVG transfers use `art/illustrated/svg-transfer/<family>/<name>.png`, corresponding to
   `art/<family>/<name>.svg`; an expressly authorized PNG-first family uses its own named folder
   below `art/illustrated/` and direct atlas membership. Match native canvas dimensions, ground anchors and functional
@@ -112,20 +71,8 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
   reapply the SVG's primitive alpha mask to a redrawn figure or prop. Opaque ground stays fully
   opaque and functional markings retain their joins. Verify outlines, transparent gaps and
   internal placement visually as well as checking canvas registration.
-- Check real alpha, including wheel and handle gaps. A checkerboard painted into an RGBA image
-  is not transparency. The player authorizes the existing checkerboard removal script for this
-  workflow; preserve its input and inspect retained detail after extraction.
-  Inspect the extracted cell bounds before fitting them: leftover checker or ghost outlines can
-  expand those bounds and shrink the character during registration. If the
-  removal script leaves residue, correct the background with imagegen and rerun extraction;
-  preserve that edit's input and prompt. A plain white background can use the same neutral-region
-  extraction when a generated transparency request produces an unusable painted checker.
-  Save the alpha before extending colors beneath transparent pixels; the color-extension
-  buffer is not an alpha mask. Do not erase every neutral pixel to remove background residue:
-  gray materials and enclosed light details are artwork too. Correct persistent background
-  artifacts with the generator and preserve that correction's input and prompt.
-- **Commit a runtime PNG on its own: `art/` has a `.gdignore`, so no `.import` sidecar exists and
-  the bake reads the files itself** (VISUALS.md, "Where the pictures live").
+- **Commit a runtime PNG on its own, with no `.import` sidecar.** `art/` is behind a `.gdignore`,
+  and the **godot** skill, "Structure", owns that rule and says what the bake does instead.
 - **A new or changed picture is not in the game until the pages are rebaked**, and every tool
   that starts the engine does that for you: `tools/bake-atlases.sh` compares a hash per source
   and bakes when one moved or when a PNG has newly appeared beside an SVG it baked from, which
@@ -141,7 +88,8 @@ from stable body landmarks so changing leg spread does not move the hands sidewa
 ## Runtime and review
 
 Keep every script used to create retained graphics, comparison sheets, walking rollouts and GIFs
-beside its output under `docs/evidence/<family>-<YYYY-MM-DD>/`. Include source paths and hashes, extraction
+beside its output in the family's evidence folder, named as the **session-captures** skill says a
+new evidence folder is named. Include source paths and hashes, extraction
 bounds, frame order, mirroring, scale, GIF timing, tool/font requirements and exact regeneration
 commands. Preserve immutable inputs or fail loudly when their hashes change. The folder's own
 `GENERATION.md` or `README.md` is the recipe, and no index lists them: link it from the family's

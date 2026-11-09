@@ -24,8 +24,8 @@ corresponding `art/<family>/<name>.svg`. Keep the native canvas dimensions and p
 Authorized direct PNGs use a named `art/illustrated/<family>/` folder and direct atlas membership;
 their reviewed dimensions and anchors define registration without a placeholder SVG.
 Do not change draw offsets, camera scale or animation to compensate for a misregistered transfer.
-`art/` has a `.gdignore`: no `.import` sidecars, the bake reads the files (VISUALS.md, "Where the
-pictures live"). Do not copy a worktree's `.godot/` cache.
+A PNG under `art/` has no `.import` sidecar (the **godot** skill, "Structure", owns that rule). Do
+not copy a worktree's `.godot/` cache.
 
 ## Verify the player's checkout
 

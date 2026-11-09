@@ -87,4 +87,4 @@ first load or parse error before changing the constructor. For illustrated asset
 The release Web engine omits 3D, navigation, Godot networking peers and the mbedTLS backend,
 streamed-media codecs, alternate texture loaders, procedural noise and ZIP support; before using
 one of those feature families, follow
-[Turning a module back on](../../../tools/web-template/README.md#turning-a-module-back-on).
+[Turning a module back on](../../../../tools/web-template/README.md#turning-a-module-back-on).
