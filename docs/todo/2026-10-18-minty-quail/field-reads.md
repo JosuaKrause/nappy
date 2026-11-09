@@ -36,16 +36,15 @@ the event instance, then the city map and the city, so the events go first, as t
 Left outside the events, the city and the routes, and each its own design question:
 
 - **A strategy and its mover.** `LaneMover`'s underscore fields and callables are read by
-  `CarStrategy` and `WalkerStrategy`, and `LaneStrategy`'s by `LaneMover`: whether a strategy is
-  handed a narrow interface of the lane state it may read.
+  `CarStrategy` and `WalkerStrategy`, and `LaneStrategy`'s by `LaneMover`: the reading is a narrow
+  interface the mover builds for each strategy, with methods named for what it asks; about 330
+  uses, in the per-agent per-frame code, so measured against the crowd's cost.
 - **A run's parts.** `RunState` hands out `header`, `calendar`, `resistance`, `attempt_spend`,
   `posters` and `facts`, and a read through one is two field reads (`RunHeader`, `RunCalendar`,
-  `ResistanceRunState`, `RunFacts`, `SettledState`): whether the parts become methods, and the
-  names of the parts' own questions.
-- **`InteriorMapPlan`**, converted with its builder; **`BlockedLayer`**, with the map's property
-  wrappers; **the atlas injection** (`node.atlas = atlas` on the crowd agent, the help text, the mode
-  button, the cordon's tape and officer and the contact point), one design for all; **the writes that
-  configure a node** (`CordonTape`, `ContactPoint`), with it.
+  `ResistanceRunState`, `RunFacts`, `SettledState`): the parts reached through methods and each
+  part's fields behind methods; the vars are renamed, and the files the third hand-ins pull
+  request touches and the tests read them, so it waits for that pull request.
+- **`BlockedLayer`**, converted with the map's property wrappers in `src/city/`.
 - **What the fence kept for the third hand-ins pull request and the placement rewrite**: every line
   whose owner or reader is under `src/events/`, `src/routes/` or `src/dev/`, a `scene_recipe*` file,
   or a file the third hand-ins pull request touches, and the fields those still read (`DaySpec`,
