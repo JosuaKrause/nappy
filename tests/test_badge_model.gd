@@ -484,3 +484,31 @@ func _test_what_is_worth_an_arrow(t) -> void:
 	t.check(cyclist.worth_an_arrow(walk), "faster than a walk")
 	cyclist.speed = walk - 10.0
 	t.check(not cyclist.worth_an_arrow(walk), "slower than a walk, not lethal: she can turn round")
+
+const TICK := 1.0 / 30.0
+
+## One masked-man run on a frame of `frame` seconds in which he moved `ticks` physics ticks charged
+## (the engine runs 30 ticks a second whatever the frame takes, so a frame holds `frame * 30` of
+## them, and the charge may begin on any one of them), from `start` px past the view's edge. Returns the
+## frames, counted from the first he moves on, until his badge is up (0 is the same frame); -1 if it
+## never was before he came into view.
+static func _frames_until_the_badge_on_a_slow_frame(frame: float, ticks: int, start: float) -> int:
+	var model := BadgeModel.new()
+	var man := _vehicle(1, Vector2(VIEW.end.x + start, 0.0), 112.0)
+	man.logged_name = "masked_pursuer"
+	model.step(frame, Vector2.ZERO, [man], _sees, Tuning.WALK_SPEED)
+	for i in 30:
+		model.step(frame, Vector2.ZERO, [man], _sees, Tuning.WALK_SPEED)
+	man.charging = true
+	var first := true
+	for n in 600:
+		var moved := ticks if first else maxi(1, roundi(frame / TICK))
+		first = false
+		man.position.x -= 112.0 * TICK * moved
+		man.shown = VIEW.has_point(man.position)
+		model.step(frame, Vector2.ZERO, [man], _sees, Tuning.WALK_SPEED)
+		if _up(model, "masked_pursuer"):
+			return n
+		if man.shown:
+			return -1
+	return -1
