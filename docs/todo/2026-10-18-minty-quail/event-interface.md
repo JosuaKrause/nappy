@@ -7,12 +7,26 @@ callers ask it, what replaces each read, and the pull requests in order. It is w
 code as it stood on 2026-11-09 and is deleted piece by piece as its steps are built, the built
 interface then being what `docs/EVENTS.md` and `docs/ARCHITECTURE.md` describe.
 
-**Whose it is.** The design is a design agent's, written on the player's standing word that a
-design is that model's work (inbox #1264), from the player's rules below; the player has not read
-it. Section 7 separates the points the player's recorded words answer from four the design puts
-as questions, each with its options and a pick. *Read as* (the orchestrator's): none of the four
-is costly to change after the first two steps, so the steps that can start are built on the picks
-and the questions stand open to the player's answer.
+**Whose it is.** The design is a design agent's, from the player's rules below. The player, on
+which model does what: "consider using fable for tasks that need planning / complex reasoning",
+and "for code I'm fine with your choice as long as fable did the design" (inbox #1264); *read as*
+a design being that model's work. **The player has not read this design.**
+
+**Proposed, not asked for:** every mechanism in it that the player's words below do not name, among
+them the settings objects (`...Spec`), the draft a row is written through (`EventDraft`), the row
+no longer being a `Resource`, the narrow interface a behaviour asks its event through (`Figure`),
+and the one object for where she is (`WhereSheIs`). The plainer alternative each replaces is a
+method per field on the three classes as they stand.
+
+**Its open points.** Section 7 separates what the player's recorded words answer from six points
+it puts as questions, each with its options and a pick. *Read as* (the orchestrator's): two of
+them (where the settings files live; whether the tests are touched twice) touch nothing the first
+two steps build. Two (whether a car's strike becomes the row's lethal part; how a caller gets a
+plan's live event) are written into the first step's callers under the picks, so a different
+answer afterwards means rewriting those call sites in the badge, the run log and the telemetry
+map: a bounded cost, which is why the first step goes ahead on the picks while the questions are
+with the player. The last two (the cost per frame; the three answers kept as they are) decide
+what a step reports and fixes, not what it builds.
 
 The rule it applies is the player's: "provide a consistent interface for events that can be used without
 knowing details of the event. that applies to all aspects of events ... don't forget about
@@ -70,7 +84,7 @@ Three objects are meant by "an event" below, and each is named this way througho
    and the danger prediction. Section 6 names the probes.
 10. **Nothing the player sees or the logs say changes.** Every step is at test parity, the run
     log and GoatCounter names included. Three answers that are slightly wrong today are kept as
-    they are and listed for the end remeasure (section 7).
+    they are and listed for the end remeasure, if the player takes that pick (section 7).
 
 ## 1. The parts
 
@@ -549,8 +563,7 @@ and `--summary`, and with `rg` for what the check cannot see.
 - **The check's list**: 1,220 lines in 77 classes. 688 have their reader in `src/events/`; 677 are
   reads of a class declared in `src/events/`, 589 from inside the folder and 88 crossing in from
   outside (`src/dev/` 31, `src/resistance/` 19, `src/ui/` 17, `src/routes/` 9, `src/city/` 6,
-  `src/telemetry/` 4, `src/finale/` 2). The item's 881 and 208 are from before the conversions
-  that have landed since.
+  `src/telemetry/` 4, `src/finale/` 2).
 - **A line is one reader file and one field**, so the uses are more: 1,504 of the row's fields
   (974 of them the catalogue writing its rows), 583 of the live event's, 57 of `PursuitSpec`'s.
 - **The plan record is not in the list at all**: the check does not see an inner class. `rg` by
@@ -802,7 +815,7 @@ configuration alone moves between rounds, as that record found):
 - `tools/test.sh probes/m159_crowd_tick_cost.gd`: the control; its chain over every agent's
   position is identical.
 
-*Proposed bar, the orchestrator's to set:* the fingerprint and the chain identical, always; a rise
+*Proposed bar, put to the player as a question in section 7:* the fingerprint and the chain identical, always; a rise
 of the events' step and the sweep is reported in the pull request and listed for the end
 remeasure, and above about a twentieth of that step the builder finds the loop and hands in what
 it asks each tick, before review.
@@ -814,8 +827,9 @@ it asks each tick, before review.
 1. **Does a caller ask the event or one of its parts?** Outside the events folder, the event:
    "provide a consistent interface for events that can be used without knowing details of the
    event" (inbox #1173 in gray-dolphin, statement 16). Which parts a row has is such a detail.
-   Inside the folder, the code that runs one ability is handed its part and asks it, the parts
-   "each answering its own questions" (the same note, statement 22's context, answered "yes").
+   *Read as* (the design's): inside the folder, the code that runs one ability is handed its part
+   and asks it. The words it rests on are the assistant's, in the context the player answered
+   "yes" to: the parts "each answering its own questions" (the same note, statement 22's context).
 2. **A method or a property?** A method across objects, a property only inside its own class:
    "yes" to that pick (inbox #1173 in gray-dolphin, statement 28).
 3. **Are the live event's own behaviours and looks bound by the rule?** Yes: "interaction between
@@ -829,27 +843,12 @@ it asks each tick, before review.
    Hence readers first and parts last (section 5).
 5. **Do the tests read through the methods too?** "yes" (inbox #1182 in gray-dolphin).
 6. **Is `display_name` deleted, with `Texts.EVENT_NAMES`, the table of the rows' names it is
-   read from?** Nothing in `src/`, `tests/` or `tools/` reads the field; the table's comment says it is
+   read from?** *Read as* (the design's) under the player's standing rule on dead code, which
+   `dead-code-sweep.md` carries for the rest of the tree. Nothing in `src/`, `tests/` or `tools/` reads the field; the table's comment says it is
    what "a day summary or a codex would call the thing", and neither shows a name. "remove dead
    code or code needed for features that don't exist anymore ... if we want a feature back we can
    just implement it fresh" (inbox #1180 in gray-dolphin). It is deleted in 4b, and that pull
    request's record keeps the names, since they are written text.
-7. **Is a small cost per frame acceptable?** Of the 4.5% the shared mover base cost the crowd's
-   tick: "let's eat the cost for now and think about optimizing later" (minty-dolphin #852).
-   *Read as* covering a cost of that size here; the measured figure is reported either way.
-8. **Does a step fix an answer that is slightly wrong today?** No: "for the refactor test parity
-   is enough", "let's do remeasuring at the very end" (inbox #813 in curly-moose). Three are kept
-   as they are and listed for the end remeasure:
-   - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
-     its five callers do, though the field of a row with a long body is a capsule about that body.
-     Answering with the real field changes when the run log says "out of range" and when the
-     unmarked van stops its take.
-   - `blocking_radius()` shuts a lethal row's field core, not its lethal reach (section 3).
-   - The ground a row that ends the day shuts is stated four ways (`clearance()`,
-     `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
-     lethal disc less her radius). Each stays one named question; whether they are one fact is
-     the remeasure's to say.
-
 ### Put as questions
 
 1. **Where do the settings files live?** `src/events/` holds data, model and simulation files
@@ -878,3 +877,29 @@ it asks each tick, before review.
    opened once: the parts then wait behind the whole of entry 7, and the suites are converted
    before rows can be built with a draft, which is the redoing the design review warned of.
    **Pick: (a).**
+
+5. **Is the cost per frame acceptable?** The player accepted one measured cost in this refactor:
+   of the 4.5% the shared mover base cost the crowd's tick, "let's eat the cost for now and think
+   about optimizing later" (minty-dolphin #852). The same conversion of the crowd's lane code
+   measured about 7 to 9% of the crowd's tick in a debug build (the record brisk-lark), which is
+   the orchestrator's open choice there and nothing the player has accepted. (a) A rise of the
+   events' step and the baby's sweep is measured, reported in the pull request and listed for the
+   end remeasure, and above about a twentieth of that step the builder finds the loop and hands
+   in what it asks each tick before review (section 6). (b) No rise is accepted: each step holds
+   the probes' times within their spread. **Pick: (a).**
+6. **Does a step fix an answer that is slightly wrong today?** The bar a step is verified to is
+   the player's: "for the refactor test parity is enough", "let's do remeasuring at the very end"
+   (inbox #813 in curly-moose). Those words set the bar; they do not say a known-wrong answer is
+   kept. (a) The three below are kept as they are and listed for the end remeasure, since fixing
+   one changes what the run log says or when an event acts. (b) Each is fixed in the step that
+   gives it a name, as a change made on purpose with its pictures. **Pick: (a).**
+   - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
+     its five callers do, though the field of a row with a long body is a capsule about that body.
+     Answering with the real field changes when the run log says "out of range" and when the
+     unmarked van stops its take.
+   - `blocking_radius()` shuts a lethal row's field core, not its lethal reach (section 3).
+   - The ground a row that ends the day shuts is stated four ways (`clearance()`,
+     `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
+     lethal disc less her radius). Each stays one named question; whether they are one fact is
+     the remeasure's to say.
+
