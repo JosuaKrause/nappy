@@ -122,7 +122,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
 
 ## Whether the day just planned on the test city refuses a mast at `foot`: its tile closed, held or
 ## on the home block, or a district door's checkpoint within the gap and a mast's field of it
-## (`EventScheduler.clear_of_the_doors()`, the check the planning makes of every mast).
+## (`DoorClearanceRule.clear_of_the_doors()`, the check the planning makes of every mast).
 func _the_day_leaves_no_room_for(foot: Vector2) -> bool:
 	var tile := _city.map.world_to_tile(foot)
 	if _city.map.is_closed(tile) or _city.map.is_held_at(tile) or _city.map.is_on_home_block(tile):
@@ -132,7 +132,7 @@ func _the_day_leaves_no_room_for(foot: Vector2) -> bool:
 	if region_plan:
 		for body in region_plan.door_bodies:
 			doors.append(body.position)
-	return not EventScheduler.clear_of_the_doors(foot, PackedVector2Array(), doors,
+	return not DoorClearanceRule.clear_of_the_doors(foot, PackedVector2Array(), doors,
 			EventCatalogue.mast().field_reach())
 
 ## Plans `day` on the test city in the real day order (closures, then events), from the run's own

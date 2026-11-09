@@ -13,9 +13,9 @@ extends RefCounted
 ## first, then each placement as it is accepted (`catch_up()`).
 ##
 ## **The two halves are the two things a day keeps a route by.** The sidewalk is the day's width
-## rule (`EventScheduler._leaves_the_routes_sidewalk_open()`), asked of both of a street's sidewalks
+## rule (`RouteSidewalkRule._leaves_the_routes_sidewalk_open()`), asked of both of a street's sidewalks
 ## rather than the one a day's route is walked along — `leaves_a_sidewalk_open()`. The rest of the
-## walk is the day's junction rule (`EventScheduler._leaves_the_route_junctions_open()`), asked of the
+## walk is the day's junction rule (`RouteJunctionsRule._leaves_the_route_junctions_open()`), asked of the
 ## ground around the candidate rather than of a junction box — `keeps_the_walk_joined()`. The day's
 ## rules themselves are stated over a day's `Corridor`, which a walk that is not a tree has none of;
 ## and the junction rule alone would not be enough if it could: a chain also joins a street in the
@@ -266,7 +266,7 @@ func leaves_a_sidewalk_open(own: Array[Solid]) -> bool:
 				for disc in solid.discs():
 					if reach.grow(disc.z).has_point(Vector2(disc.x, disc.y)):
 						bodies.append(disc)
-			if not EventScheduler.closes_a_walked_sidewalk_band(_map, band, segment.horizontal,
+			if not RouteSidewalkRule.closes_a_walked_sidewalk_band(_map, band, segment.horizontal,
 					bodies, _map.closed_tiles):
 				open = true
 				break

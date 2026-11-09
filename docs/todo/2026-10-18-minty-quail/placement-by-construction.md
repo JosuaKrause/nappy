@@ -40,7 +40,9 @@ which roll tiles and take the roomiest while asking the day's rules of each (the
 choice in step 3b, so their behaviour moves once, with their callers): the scene recipes
 `recipe_placement()`; the dawn phases the scripted rows and the one-shots; the walk's draws
 `WalkSiting`. **Whichever moves the last caller deletes the roll**: `_place_one()`'s roll,
-`_best_of()`, `Verdicts`, `EVENT_PLACEMENT_TRIES`, `_copies_of()`, and whatever only they used. The
+`_best_of()`, `Verdicts`, `EVENT_PLACEMENT_TRIES`, `_copies_of()`'s weights, and whatever only they
+used; `_copies_of()`'s zero for a wall on a route tile stays with `ground_for()`, since it is the
+filter that keeps a wall's location ground off the routes and `LocationFit` asks it. The
 fitted tables that encode how often the rules refuse (`EventScheduler.VIEW_SHARE_SCALES`,
 `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES` and `GROUND_WEIGHTS`) are fitted again against main with
 `tests/probes/placement_rows.gd` in any step that changes what the draw accepts.

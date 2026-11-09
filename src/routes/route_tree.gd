@@ -1057,7 +1057,7 @@ func branches_on(tile: Vector2i) -> Array[int]:
 ##
 ## *"We can have multiple candidate places and make sure all routes touch at least one of them."*
 ## Stated over streets rather than cells because a set piece needs somewhere she is walked *past*
-## rather than a single two-tile step — `EventScheduler._ground_for` bounds a set piece's candidate
+## rather than a single two-tile step — `EventScheduler.ground_for` bounds a set piece's candidate
 ## ground to the whole named street. A route's cells that resolve to no street (a park cut, an
 ## alley) simply do not offer a site; the guarantee is unaffected, because it never promised a
 ## site on every cell, only that every route meets one somewhere.

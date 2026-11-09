@@ -356,12 +356,12 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t) -> void:
 			"a roadblock, whose guard pursues, holds its band alone")
 
 ## **Where the reach is what decides it, the walk still gets through.** A bag of vans alone, a van on
-## every street that takes one (`_escape_rows_from()` with a bag of `{"abduction": 1}`), packs the walk with
-## parked vans; on these seeds a placement that keeps a sidewalk open past each van's 22px body but
-## not past its 54px reach would cut the walk to one exit — the walk rule counting bodies alone
-## leaves the tunnel unreachable on seeds 8 and 39 and the bridge on seed 1. So with the rule
+## every street that takes one (`_escape_rows_from()` with a bag of `{"abduction": 1}`, one marble a
+## street), packs the walk with parked vans; a placement that kept a sidewalk open past each van's
+## 22px body but not past its 54px reach could cut the walk to one exit. So with the rule
 ## (`WalkGround.held_by()`), both exits are reached from the door past every body and every reach,
-## and this is what fails if the judge stops asking the reach.
+## and this is what fails if the walk is not kept open (`WalkOpenRule` answering yes leaves seed
+## 39's tunnel unreached).
 const VAN_STREET_SEEDS := [1, 8, 39]
 
 func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t) -> void:
@@ -896,7 +896,7 @@ func _test_luring_its_guard_off_is_the_way_past_a_roadblock(t) -> void:
 
 ## **One guard at a time, wherever the two bands stand.** No two of the escape's roadblocks stand
 ## where one's guard notices her while she deals with the other: their notices, each
-## `EventDef.notice` round its band, never overlap (`EventScheduler._keeps_its_notice_to_itself()`).
+## `EventDef.notice` round its band, never overlap (`OneNoticeRule._keeps_its_notice_to_itself()`).
 ## *(Inbox #771 in minty-lemur, 2026-10-18: "two roadblocks are right next to each other and the second guard is
 ## invisible (hidden) until it already charges".)* One a street keeps two off one street; this keeps
 ## two apart across a junction or a corner as well.
@@ -1489,7 +1489,7 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t) -> void:
 ## check, since a row's outer radius is never under its inner one.
 ##
 ## **This is the confirmation, not the mechanism**, exactly as for the bodies above:
-## `EventScheduler._clearance_around_her()` is never offered ground within a lethal row's own outer
+## `EventScheduler.clearance_around_her()` is never offered ground within a lethal row's own outer
 ## radius of her, so nothing is placed there to be cleared up afterwards.
 ##
 ## Seeds rather than one city, and the guard counts the lethal rows it actually found: an escape

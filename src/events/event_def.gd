@@ -155,7 +155,7 @@ enum PathMode {
 	ALONG_STREET,  ## Down the corridor it starts on.
 	## **Across the alley it landed in**, built by the instance itself from the alley it stands in
 	## (`EventInstance._alley_crossing_path()`), cut to the ground it fits on: `alley_mouse`, placed
-	## on the map with no route of its own (`EventScheduler._build_placement`'s default case).
+	## on the map with no route of its own (`EventScheduler.build_placement`'s default case).
 	ACROSS_ITS_ALLEY,
 }
 
@@ -605,6 +605,11 @@ func investigates() -> bool:
 func lets_out() -> int:
 	return hunting.lets_out if hunting else 0
 
+## How far round its position its body stops her (`obstructs_radius`), or 0 for a row that stops
+## nothing: what the walked-sidewalk rule reads of a body (`RouteSidewalkRule`).
+func obstructs_within() -> float:
+	return obstructs_radius
+
 ## Its notice radius, or 0 for a row with no wait: the number every "how close before it notices"
 ## rule reads.
 func notice_within() -> float:
@@ -635,7 +640,7 @@ func starts_by(start: PursuitSpec.Start) -> bool:
 ## `intensity`, `pursuit` and the rest off whichever copy the day handed it.
 ##
 ## **It is a field rather than a switch set per placement**, as the blocking role is:
-## `EventScheduler._role_for` derives a role from the def, so no two placements of one row can
+## `EventScheduler.role_for` derives a role from the def, so no two placements of one row can
 ## disagree about what it is, and heat is no difficulty dial hidden inside the placement code.
 ##
 ## **The set of shapes is finite on purpose.** Progress has a known ceiling, so every heated shape
@@ -951,7 +956,7 @@ func lunge_is_inside_the_catch() -> bool:
 ## than by its id: a renamed or derived row keeps its role.
 enum Role {
 	NONE,
-	## Exempt from the cost rule's wall and friction placement: `EventScheduler._role_for` answers
+	## Exempt from the cost rule's wall and friction placement: `EventScheduler.role_for` answers
 	## `NONE` for it before the cost check runs, so `_copies_of` neither pulls it off the corridor
 	## nor weights it onto one, and it lands on whatever tile the roll picks, as an ambient event or
 	## a scar does. `pigeon_flock` is the row it exists for: a 42-over-168px field crosses
@@ -1670,7 +1675,7 @@ func silent_beyond() -> float:
 	return body + (level + 1.0) / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
 
 ## The same exemptions asked of the **def** alone, for the one caller that has no placement to ask
-## about: `EventScheduler._role_for()` decides a role before any tile is chosen. Everything a
+## about: `EventScheduler.role_for()` decides a role before any tile is chosen. Everything a
 ## placement adds is the caller's own question, asked by
 ## `EventScheduler.Planned.counts_against_the_line()`: *is it actually standing anywhere*, and *is
 ## it a region door* (`Planned.is_door()`), since what makes a door a door is `RegionPlanner`

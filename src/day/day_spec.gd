@@ -137,7 +137,7 @@ var keeps_unused_calm_clear := true
 ## (`EventScheduler.open_ground_for()`) or round the home block (`CityMap.held`). The
 ## escape keeps its own rule instead, by the player's word (minty-lemur #785): she sets off from the
 ## service exit, which opens onto one of those streets, and only the ground she stands on is
-## refused (`EventScheduler._clearance_around_her()`).
+## refused (`EventScheduler.clearance_around_her()`).
 var holds_the_home_streets := true
 ## Whether a row stands at most its `EventDef.max_per_day` copies: a day's caps, which the escape
 ## does without (minty-lemur #785) — what stands there is one draw a street from its bag.
@@ -153,7 +153,7 @@ var wall_row_share := 1.0
 ## The share `wall_row_share` is on a day the region wall stands, set by `for_day()`.
 const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5
 ## Whether no two waiting guards may notice her from the same ground
-## (`EventScheduler._keeps_its_notice_to_itself()`), so she deals with one at a time: the escape's.
+## (`OneNoticeRule._keeps_its_notice_to_itself()`), so she deals with one at a time: the escape's.
 var one_notice_at_a_time := false
 ## Whether everything standing on the walk leaves each street of it a sidewalk open and the walk
 ## joined, past every body and every standing lethal reach (`WalkGround`): the escape's, whose

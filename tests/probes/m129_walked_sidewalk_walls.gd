@@ -12,7 +12,7 @@ extends RefCounted
 ##
 ## # What this measures
 ##
-## `EventScheduler._leaves_no_line_along_a_sidewalk` asks two questions of a row's own numbers now:
+## `EventScheduler.leaves_no_line_along_a_sidewalk` asks two questions of a row's own numbers now:
 ## a **cost** one (`EventDef.reaches_the_far_lane()`, "what does this row bill a passer-by")
 ## and a **physical** one (`_closes_the_band_by_its_own_placement`, "does a passer-by have anywhere
 ## left to stand"), and either is enough to make the row a wall — refused a route cell entirely by
@@ -30,7 +30,7 @@ extends RefCounted
 ##   runs along, or the whole street where neither does. Asked here exactly as the rule asks it,
 ##   because a probe reading a different band could not tell whether the rule (or a gap in it) had
 ##   fired on the ground the player actually meant.
-## - **The closing test.** `EventScheduler.closes_a_walked_sidewalk_band()` is the one place the
+## - **The closing test.** `RouteSidewalkRule.closes_a_walked_sidewalk_band()` is the one place the
 ##   tile-grained physical reading lives — the suite (`tests/test_events.gd`) asks the same
 ##   function of the same kind of sample, so the probe's printed number and the suite's asserted
 ##   one can never quietly disagree about what "closed" means. See its own doc for why the walk
@@ -76,7 +76,7 @@ extends RefCounted
 ##
 ## # What "closes" means
 ##
-## Per walked-sidewalk band, `EventScheduler.closes_a_walked_sidewalk_band()` — a tile-grained
+## Per walked-sidewalk band, `RouteSidewalkRule.closes_a_walked_sidewalk_band()` — a tile-grained
 ## 4-connected walk between the band's own genuinely open ends. **Cumulative with everything else
 ## down that day**, the same reading the production rule and `docs/DECISIONS.md` both state it in:
 ## a body on each of the two lanes closes a band neither could close alone. Where a band is closed,
@@ -196,10 +196,10 @@ func _measure() -> void:
 				var per_act: Array = tally[act]
 				per_act[1] += 1
 
-				var ground_alone := EventScheduler.closes_a_walked_sidewalk_band(
+				var ground_alone := RouteSidewalkRule.closes_a_walked_sidewalk_band(
 						map, band, segment.horizontal, [], closed_tiles)
 				var candidates := _bodies_touching(world, bodies)
-				var full := EventScheduler.closes_a_walked_sidewalk_band(
+				var full := RouteSidewalkRule.closes_a_walked_sidewalk_band(
 						map, band, segment.horizontal, _as_vectors(candidates), closed_tiles)
 				if not full:
 					continue
@@ -238,7 +238,7 @@ func _measure() -> void:
 					var solo: Body = culprits[0]
 					if solo.source == Source.CANDIDATE_LOOP:
 						var def := EventCatalogue.by_id(solo.id)
-						if def and EventScheduler._leaves_no_line_along_a_sidewalk(def):
+						if def and EventScheduler.leaves_no_line_along_a_sidewalk(def):
 							rule_scope_singles += 1
 				for culprit: Body in culprits:
 					if not by_row.has(culprit.id):
@@ -416,7 +416,7 @@ func _bodies_touching(world: Rect2, bodies: Array) -> Array:
 	return found
 
 ## `Body` instances as `[position.x, position.y, radius]`, the shape
-## `EventScheduler.closes_a_walked_sidewalk_band()` asks for.
+## `RouteSidewalkRule.closes_a_walked_sidewalk_band()` asks for.
 func _as_vectors(bodies: Array) -> Array:
 	var found: Array = []
 	for body: Body in bodies:
@@ -430,16 +430,16 @@ func _as_vectors(bodies: Array) -> Array:
 func _culprits_of(map: CityMap, band: Rect2i, horizontal: bool, candidates: Array,
 		closed_tiles: Dictionary) -> Array:
 	for body: Body in candidates:
-		if EventScheduler.closes_a_walked_sidewalk_band(
+		if RouteSidewalkRule.closes_a_walked_sidewalk_band(
 				map, band, horizontal, _as_vectors([body]), closed_tiles):
 			return [body]
 	for i in candidates.size():
 		for j in range(i + 1, candidates.size()):
 			var pair: Array = [candidates[i], candidates[j]]
-			if EventScheduler.closes_a_walked_sidewalk_band(
+			if RouteSidewalkRule.closes_a_walked_sidewalk_band(
 					map, band, horizontal, _as_vectors(pair), closed_tiles):
 				return pair
-	if candidates.size() > 2 and EventScheduler.closes_a_walked_sidewalk_band(
+	if candidates.size() > 2 and RouteSidewalkRule.closes_a_walked_sidewalk_band(
 			map, band, horizontal, _as_vectors(candidates), closed_tiles):
 		return candidates
 	return []

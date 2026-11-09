@@ -224,7 +224,7 @@ bodies never seal it off:
 - **`ClosurePlanner` asks for it before accepting each closure**, beside the calm: a closure that
   would cut off every tile of it is refused. The second opinion, as it is for the calm.
 - **The catalogue's own bodies keep the tree open as they are placed**, since friction stands on the
-  corridor: every body dawn draws or rolls is judged by the rules that keep a route's junctions and
+  corridor: every body a day's dawn draws or rolls is judged by the rules that keep a route's junctions and
   its walked sidewalk open (`RouteJunctionsRule`, `RouteSidewalkRule`, `PacingOpeningRule`) and the
   one that keeps every route tile home reaches reached (`RouteReachRule`: an obstructing body whose
   disc would cut home off from a route tile it reaches without it), asked against everything

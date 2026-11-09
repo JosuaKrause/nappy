@@ -94,7 +94,7 @@ extends RefCounted
 ##   body is not a door and still counts.
 ## - **`pigeon_flock` is scenery, not a block.** A row whose role is `EventDef.Role.SCENERY` is left out of
 ##   every reading the same way a door is (PLAYTEST-71, *"flocks are basically free already --
-##   don't count it as block"*), matching `EventScheduler._role_for`, where `Role.SCENERY` answers
+##   don't count it as block"*), matching `EventScheduler.role_for`, where `Role.SCENERY` answers
 ##   `NONE` before the wall/friction cost test ever runs.
 ##
 ## # What a broken route is reported as
@@ -450,7 +450,7 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 ## A row is skipped rather than read where PLAYTEST-71 says it is never a block: a mast
 ## (`plan.mast_id != ""`) is planted once, off the corridor-aware placement this guarantee is
 ## stated over — see `EventDef.has_a_line_to_avoid()`'s own doc; `Role.SCENERY` rows
-## (`pigeon_flock`) are exempt the way `EventScheduler._role_for` exempts them from the
+## (`pigeon_flock`) are exempt the way `EventScheduler.role_for` exempts them from the
 ## wall/friction cost test; a region door (`checkpoint_hut`, `checkpoint_gate`) costs by design;
 ## a pursuer (`alley_robbery`, `charging_dog`, `door_guard`) follows her rather than sitting on a
 ## tile; and a mobile row that does not pace is passed by crossing, waiting and crossing back,

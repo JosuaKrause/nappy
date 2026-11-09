@@ -116,7 +116,7 @@ static func of(tree: RouteTree) -> Corridor:
 ##
 ## It is a list of **junction coordinates** rather than a question about a tile, which is the one
 ## place this class answers in the tree's own units: the rule stated over it
-## (`EventScheduler._leaves_the_route_junctions_open`) is about a whole junction **box** staying
+## (`RouteJunctionsRule._leaves_the_route_junctions_open`) is about a whole junction **box** staying
 ## crossable, and a box is six tiles square. A per-tile answer would say *this tile is in a route
 ## junction* and could not say *that crossing is still open*, which is the whole question.
 func route_junctions() -> Array[Vector2i]:
@@ -172,7 +172,7 @@ func carries_a_route(tile: Vector2i) -> bool:
 
 ## The sidewalks the day's routes are actually walked along, with the geometry the width rule asks
 ## about: `[segment, the band's tile rect, the same rect in world space]`
-## (`EventScheduler._leaves_the_routes_sidewalk_open()` asks it of every counted row). Worked out
+## (`RouteSidewalkRule._leaves_the_routes_sidewalk_open()` asks it of every counted row). Worked out
 ## once per map and kept, since the corridor is the day's.
 func walked_sidewalks(map: CityMap) -> Array:
 	if _walked_for != map:

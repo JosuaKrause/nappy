@@ -329,7 +329,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 ## **No solid body, alone or together, closes a walked sidewalk.** *(PLAYTEST-94, 2026-09-19: "I
 ## still get hard walls on the side of the sidewalk that is on the path -- how can this be so hard
 ## to do correctly?")* `tests/probes/m129_walked_sidewalk_walls.gd` measures the same question at
-## zero over a wider sample; this asks it of `EventScheduler.closes_a_walked_sidewalk_band`
+## zero over a wider sample; this asks it of `RouteSidewalkRule.closes_a_walked_sidewalk_band`
 ## directly, the one function both the probe and this test call, so neither can drift from what
 ## the other means by *closed*. Every solid body that day stands — the candidate loop's own rows,
 ## the seals, and the region wall's and doors' bodies, gathered the way
@@ -400,7 +400,7 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 				var segment: StreetNetwork.Segment = entry[0]
 				var band: Rect2i = entry[1]
 				bands_checked += 1
-				t.check(not EventScheduler.closes_a_walked_sidewalk_band(
+				t.check(not RouteSidewalkRule.closes_a_walked_sidewalk_band(
 						map, band, segment.horizontal, bodies, map.closed_tiles),
 						"seed %d day %d: street %s's walked sidewalk keeps a lane she fits through"
 						% [map.seed_used, day, segment.key()])

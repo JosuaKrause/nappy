@@ -8,7 +8,7 @@ extends RefCounted
 ## and read the numbers off stdout. Two questions, matching the two candidate causes playtest 21
 ## could not tell apart:
 ##
-## 1. Does `EventScheduler._role_for` call the pavement-changing rows (`cafe_tables`,
+## 1. Does `EventScheduler.role_for` call the pavement-changing rows (`cafe_tables`,
 ##    `market_stall`, `construction`, `delivery_van`) a WALL, which `_copies_of` then refuses on
 ##    every corridor tile?
 ## 2. How much of `ClosurePlanner`'s calm-area access-street refusal falls on the rim — the ground
@@ -37,7 +37,7 @@ func _role_for_the_named_rows() -> void:
 		if not def:
 			print("  %-16s not in the catalogue" % id)
 			continue
-		var role := EventScheduler._role_for(def)
+		var role := EventScheduler.role_for(def)
 		var role_name: String = ["NONE", "WALL", "FRICTION", "SET_PIECE"][role]
 		print("  %-16s cost=%6.2f hard_fail=%s role=%s"
 				% [id, def.walk_through_cost(), def.hard_fail, role_name])

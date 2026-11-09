@@ -1,5 +1,5 @@
 extends RefCounted
-## The two halves of `EventScheduler._role_for`: a lethal event is a wall and a wall never stands
+## The two halves of `EventScheduler.role_for`: a lethal event is a wall and a wall never stands
 ## on ground a route runs along, and friction is aimed at the route as a weight rather than a rule.
 ## Plus the placement rules a pinned or pacing row keeps on top of that: a pinned row is only
 ## offered ground it can be pinned on, a square's own poster crew never leaves the square, a pacing
@@ -30,7 +30,7 @@ func run(t) -> void:
 	_test_a_lethal_rows_line_reach_is_its_whole_field(t)
 
 
-## The two halves of `EventScheduler._role_for`, checked in one pass over the days because each of
+## The two halves of `EventScheduler.role_for`, checked in one pass over the days because each of
 ## them costs a whole `build_day` and the suite is already the slowest thing in this project.
 ##
 ## **A lethal event is a wall, and a wall never stands on ground a route runs along.**
@@ -223,7 +223,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 ## friction is what the guidance walks her into — and a sidewalk is two lanes of tile, so a row
 ## reaching across both of them from either has taken the last line along it.
 ##
-## **This asserts the consequence rather than the clause.** `EventScheduler._role_for` answers
+## **This asserts the consequence rather than the clause.** `EventScheduler.role_for` answers
 ## `WALL` for a row that leaves no line; what has to be true afterwards is that every row still
 ## aimed at the route leaves one, which is the sentence the player wrote and the thing that would
 ## go red if the clause were weakened or if a new catalogue row were given a wider field than its
@@ -607,7 +607,7 @@ func _beat_tiles(map: CityMap, plan: EventScheduler.Planned) -> Array[Vector2i]:
 ## every other shape put together.
 ##
 ## **The assertion is about the finished day rather than about the refusal**, which is what keeps it
-## from being the rule read back to itself. `EventScheduler._leaves_the_route_junctions_open` refuses
+## from being the rule read back to itself. `RouteJunctionsRule._leaves_the_route_junctions_open` refuses
 ## one candidate at a time, against what is already down; what has to be true afterwards is that
 ## nothing *else* the morning does — a scar prepended, an ambient placed, a park spoiled, the
 ## walkability strip — has left a crossing closed. Measured over the five sampled days of seed 4242:
@@ -836,7 +836,7 @@ func _a_route_is_walked_along(corridor: Corridor, band: Rect2i) -> bool:
 ##
 ## So the claim is about a **street carrying a pacing row**, asked of every row reaching that street
 ## at once: a walk from one of its junctions to the other has to survive all of them together. That
-## is what `EventScheduler._leaves_a_pacing_beats_opening` refuses a placement for, and asserting it
+## is what `PacingOpeningRule._leaves_a_pacing_beats_opening` refuses a placement for, and asserting it
 ## over the finished day is what catches anything a later pass adds without asking.
 ##
 ## **It cannot pass vacuously**: a sample where no pacing row ever stood on a route street would

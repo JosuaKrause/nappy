@@ -1417,7 +1417,7 @@ standing for something else, or is a tree, so nothing about the role table below
 
 **And one refusal is about what a candidate would *do* rather than about the ground it stands on**,
 so it is asked of the placement instead of the pool: a row may not take a crossing the day's routes
-depend on. `EventScheduler._leaves_the_route_junctions_open` asks, before the row is accepted,
+depend on. `RouteJunctionsRule._leaves_the_route_junctions_open` asks, before the row is accepted,
 whether the junction box still carries a walk joining the route streets that meet there — with this
 row standing and everything already down standing too — and re-rolls where it does not. A junction
 is the only place a line may change pavement, so this is the one refusal a street's far side cannot
@@ -1425,7 +1425,7 @@ answer; see `docs/CITY.md`, "A route's junctions stay clear", for the rule and f
 row that are outside it.
 
 **The stretch between two junctions is asked the same way, of the sidewalk the route is walked
-along.** `EventScheduler._leaves_the_routes_sidewalk_open` refuses a counted **standing** row whose
+along.** `RouteSidewalkRule._leaves_the_routes_sidewalk_open` refuses a counted **standing** row whose
 reach, together with everything already down, would leave no walk from one of that street's
 junctions to the other along that band. The far side of a street is the answer to a van; nothing
 answers a van on the side the route is drawn down. See `docs/CITY.md`, "Nothing takes the sidewalk a
@@ -1438,12 +1438,12 @@ kinds: a **junction box**, the ground every crosswalk in the city is painted on,
 the zebra while he is at the far end of his loop; or a **side route** — ground off the street
 opening off the sidewalk's own side, an alley mouth, a park or square edge, a courtyard — which she
 leaves by without crossing anything. A beat with neither leaves her nothing but walking through him.
-`EventScheduler._a_pacing_beat_walls_a_sidewalk` is that question, asked of the candidate in the
+`StreetInvalidation._a_pacing_beat_walls_a_sidewalk` is that question, asked of the candidate in the
 placement loop, and a beat that fails it is a wall and may not stand on the sidewalk a route walks.
 
 **And a pacing row's opening is ground.** `EventDef.paces` means a beat rather than a journey, so
 what it denies is the ground the loop never leaves free and the rest is passed by waiting — which
-makes the one end it is away from worth protecting. `EventScheduler._leaves_a_pacing_beats_opening`
+makes the one end it is away from worth protecting. `PacingOpeningRule._leaves_a_pacing_beats_opening`
 asks the rows reaching a route street that carries a pacing row whether a walk along that street
 survives all of them together, and refuses the placement that would close it, in both directions:
 the pacing row that would land in a closed street and the standing row that would close an opening.
@@ -1463,7 +1463,7 @@ by whether the tile is in a precinct and by what the day is placing the thing **
 **role**, in the vocabulary `docs/CITY.md` fixes — against the day's **corridor**, which is the ways
 from the doorstep to the calm areas still worth reaching.
 
-`EventScheduler._role_for` answers it off the def and nothing else has to be written per row:
+`EventScheduler.role_for` answers it off the def and nothing else has to be written per row:
 
 | kind of row | role | where it may go |
 | --- | --- | --- |
@@ -1525,7 +1525,7 @@ the line past a man walking one is the same at every phase of his loop — but t
 never a wider sidewalk. It is somewhere his beat passes that she can **leave** by: a junction box,
 where she takes the zebra while he is at the far end of his loop, or a side route off the sidewalk's
 own side. So the same numbers are friction where the beat passes one and a wall where it passes
-neither, and `EventScheduler._a_pacing_beat_walls_a_sidewalk` asks it of the candidate inside the
+neither, and `StreetInvalidation._a_pacing_beat_walls_a_sidewalk` asks it of the candidate inside the
 placement loop, where the beat exists. A junction box is where every crosswalk in the city is
 painted, so *crosses a crosswalk* and *reaches a junction* are one question — and it is the crossing
 this whole design counts on, since a mid-block crossing exists in play and is never planned around.
@@ -1739,7 +1739,7 @@ Two exceptions, both load-bearing. **Siblings space against each other**, becaus
 of one another would be a real overlap on whichever one fires. And **nothing lethal may be planned
 into an offer**: if it does resolve there, she meets a lethal field and a set piece at once, which
 is exactly the sum the telegraph contract refuses. A siting made from her walk is held to the same
-rule from the other side — `EventScheduler._room_around` measures the candidate against everything
+rule from the other side — `StreetInvalidation.room_around` measures the candidate against everything
 the day has already placed, so a tile inside a lethal field is not one it may take.
 
 The three counts this splits apart are worth keeping straight, because two tests depend on it.
@@ -1832,7 +1832,7 @@ exactly as it always has.
 Three things about that shape are the design rather than the implementation:
 
 - **It is a field, not a switch set per placement.** The same rule the blocking role follows —
-  `EventScheduler._role_for` derives a role from the def, so no two placements of one row can
+  `EventScheduler.role_for` derives a role from the def, so no two placements of one row can
   disagree about what it is. Heat that could be set by hand would be a difficulty dial hidden inside
   the placement code, where nothing could see it.
 - **Every shape is validated on load, not just the cold one.** Progress is a bounded integer, so the
@@ -2012,7 +2012,7 @@ neighbourhood's own rather than a patrol's.
 | `loose_dog` | RECURRING (`TOWARD_PLAYER`) | 1 | A dog whose owner has dropped the leash, sited on her own pavement when she gets close and running straight down it toward her. The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, faster than she can walk, but it does not telegraph its coming (see "What telegraphs"): no badge and no in-world telegraph to validate. Not lethal, which is what separates it from `charging_dog`: this one is answered by getting out of the way, not by running. Intensity 39, so that a real meeting lands as a startle against the fixed baseline. **The measure is a pass**, she and the dog going different ways at `Tuning.WALK_SPEED`; what it nets at each sideways offset is its line in [COSTS.md](COSTS.md). `TOWARD_PLAYER` never earns a `WALL` role, so nothing here trades against `EventScheduler.WALL_WORTH_OF_COST`. 39 is the running rule's ceiling: past it, running past the dog costs less than walking past it, which nothing but `car_accident` is allowed to do — so **it is loud while it passes her because its telegraph is spent before it is met, not because it is louder**. It does not telegraph its coming (see "What telegraphs"): no badge and no warning; it is created at once just off screen down her sidewalk at its own intensity, on the point of its beat that has it reach her at its loudest. |
 | `market_stall` | RECURRING | 1 | The second thing on day 1 she has to walk round, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. A **wall** by passability, like `cafe_tables`: 28px of stall denying 58px of a 64px sidewalk is the row the reading was written from. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. A real source too, derived from the body the same way `cafe_tables` is — 38px/64px, the same pair, since both bodies share the same 24px rounding. |
 | `leaf_blower` | RECURRING | 1 | A man tidying a park, and a field with two parts: away from him it is the busker's exactly, so a park with a few of them spaced across it stays awake; inside `core_radius` — a pavement's own width — it is a wall. One of them closes one side of a street and never the street. `core_intensity` 35: this is the row that anchors the wall side of `EventScheduler.WALL_WORTH_OF_COST`, as `dog_walker` anchors the friction side, so its walk-through cost sits over that line with a margin ([COSTS.md](COSTS.md) has both). |
-| `pigeon_flock` | RECURRING | 1 | **A patch of pavement that goes up when she walks into it.** `MAP`-placed, so the birds are pecking about from the moment the day streams them in at `EVENT_STREAM_RADIUS` — a flock she can see from down the street is one she can price and route around, which is the whole difference between a place and a moment. `EventDef.notice` 150px, inside its own 168px field and more than twice the 62px wheel, is the wait: unclocked and `NoticeSpec.quiet` (a fraction of its rate while they peck), then a flock on the ground about to go, then up, then *away*. **What ends the wait is her arrival, not the clock**: `EventNoticeRun._flush_the_flock_if_she_is_among_them()` puts them up the moment she is inside `flock_spread` plus her own body, because the birds are grounded for the whole telegraph and a clock cannot know when she reached them — under one alone they went up behind her. `telegraph_time` stays the backstop for a flock she came near and never reached, which is why it is not shortened. **Its `intensity` is set by walking a real instance rather than read off the page**: flushing at the birds charges the burst while she is among them instead of behind her, which multiplied the line through the middle several times over, and going up on time was the request rather than costing more — so the rate came down to put that line back in proportion, above a loose dog's pass and well under half the meter. The rig has to put the instance in the tree, or `EventFlock.build()` never runs and `contribution_at()` answers off the def's modelled ring instead of eleven birds that fly away from her. The rim pays for the cut: a flock skirted 80px off the middle never fires the flush and so felt the rate and nothing else. It is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one — the only row in the game that is more than one source, and the one row exempt from a body for it. `EventDef.Role.SCENERY` is its role, so `EventScheduler._role_for` answers `NONE` for it rather than the `WALL` its cost would otherwise earn — a flock is scenery, not a block, and it lands on a route corridor exactly as it lands anywhere else. It does not telegraph its coming (see "What telegraphs"): no badge; its in-world telegraph still meets the fairness contract. |
+| `pigeon_flock` | RECURRING | 1 | **A patch of pavement that goes up when she walks into it.** `MAP`-placed, so the birds are pecking about from the moment the day streams them in at `EVENT_STREAM_RADIUS` — a flock she can see from down the street is one she can price and route around, which is the whole difference between a place and a moment. `EventDef.notice` 150px, inside its own 168px field and more than twice the 62px wheel, is the wait: unclocked and `NoticeSpec.quiet` (a fraction of its rate while they peck), then a flock on the ground about to go, then up, then *away*. **What ends the wait is her arrival, not the clock**: `EventNoticeRun._flush_the_flock_if_she_is_among_them()` puts them up the moment she is inside `flock_spread` plus her own body, because the birds are grounded for the whole telegraph and a clock cannot know when she reached them — under one alone they went up behind her. `telegraph_time` stays the backstop for a flock she came near and never reached, which is why it is not shortened. **Its `intensity` is set by walking a real instance rather than read off the page**: flushing at the birds charges the burst while she is among them instead of behind her, which multiplied the line through the middle several times over, and going up on time was the request rather than costing more — so the rate came down to put that line back in proportion, above a loose dog's pass and well under half the meter. The rig has to put the instance in the tree, or `EventFlock.build()` never runs and `contribution_at()` answers off the def's modelled ring instead of eleven birds that fly away from her. The rim pays for the cut: a flock skirted 80px off the middle never fires the flush and so felt the rate and nothing else. It is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one — the only row in the game that is more than one source, and the one row exempt from a body for it. `EventDef.Role.SCENERY` is its role, so `EventScheduler.role_for` answers `NONE` for it rather than the `WALL` its cost would otherwise earn — a flock is scenery, not a block, and it lands on a route corridor exactly as it lands anywhere else. It does not telegraph its coming (see "What telegraphs"): no badge; its in-world telegraph still meets the fairness contract. |
 | `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her, down her own side of the road — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. His warning is the screen-edge badge, up alone for a second with nothing in the world before he is created just off screen and lethal from his first frame, then the 0.57s he takes to reach her walking into him from the closest he is created ("Telegraph contract"). Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn `chatting_mother`'s `detain_radius` went through first. |
 | `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. A **wall** by passability — 189px of charging disc leaves no lane of a sidewalk free — so the street it is on is one she walks the far side of. |
 | `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. It stands `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |
@@ -2192,7 +2192,7 @@ obstacle survivable")* Four things make that true:
 - **One guard at a time, wherever the bands stand.** No two of the escape's roadblocks stand where
   both guards can notice her: their notices, `EventDef.notice` round each band, never overlap, so
   two bands are at least twice the guard's 180px radius, 360px, apart on one street or on two
-  (`EventScheduler._keeps_its_notice_to_itself()`, a refusal at placement, which the city section's
+  (`OneNoticeRule._keeps_its_notice_to_itself()`, a refusal at placement, which the city section's
   spec turns on: `DaySpec.one_notice_at_a_time`). *(Inbox #771 in minty-lemur: "two
   roadblocks are right next to each other and the second guard is invisible (hidden) until it
   already charges")* Dealing with a band happens inside its guard's notice, so she meets one band
@@ -2248,7 +2248,7 @@ streets and the caps)*, each a setting the city section's spec turns off
   stands what its slots draw from its bag (above).
 
 **And the ground she is put down on is refused to everything that could already be reaching her**
-(`EventScheduler._clearance_around_her`), because *"the spawning shouldn't be a check. the pathing
+(`EventScheduler.clearance_around_her`), because *"the spawning shouldn't be a check. the pathing
 should start from the position. then obstacles can never happen."* Two reaches, and the wider one
 wins: a row with a body keeps her body plus its body clear, and a `hard_fail` row keeps its whole
 **`outer_radius`** clear — the radius `EventManager` raises the doubled exclamation mark over,
@@ -2298,7 +2298,7 @@ the route you memorised on day 2 stops existing.
 From Act II several events physically close streets, and from Act IV the seals close every
 street off the day's routes. Any combination that seals the home off from every park makes the day
 unwinnable in a way the player cannot see coming, so **no body is placed that would cut home off
-from the day's routes**, and the routes run to the calm. Every obstructing body dawn places,
+from the day's routes**, and the routes run to the calm. Every obstructing body a day's dawn places,
 the run's scars and the park spoilers included, is asked `RouteReachRule` against everything
 already down, the seals and the region wall's bodies included: one whose disc would leave a route
 tile home reached without it unreached is refused where it would stand. Hard-fail events count as
@@ -2306,7 +2306,8 @@ walls for this rule: an abduction in progress is not something you walk through 
 behind it. Nothing is dropped after planning, so the day is never illegal on the way. A walk's
 sitings (the dusk fire, day 7's route van, day 11's added mast and the rest) are not asked it: the
 rule is the dawn's, as the repair it replaces was, and whether the walk's draws ask it is decided
-with them.
+with them. The escape's draw is not asked it either: its plan has no route tree, and its walk is
+kept open by its own rule (`WalkOpenRule`).
 
 **On the three days the resistance sends her to one narrow place** — day 9's region door, day
 12's swing, the power station's front door on the last night — the day's routes run to that place
@@ -2526,7 +2527,7 @@ not placed. `tests/test_events.gd` asserts it across a whole run.
 Two cases are exempt, and both are about the field having no fixed place to keep clear of
 anything. **Off the day's corridor**, where the whole point of the ground is that she should not
 be on it, so an overlapping lethal field there is the city saying so rather than a fairness
-failure — `EventScheduler._role_for` gives such a placement the `WALL` role, and
+failure — `EventScheduler.role_for` gives such a placement the `WALL` role, and
 `Planned.keeps_its_field_clear()` reads that role directly. **A pursuer**, because it follows her rather
 than sitting on a tile the day chose, so there is no ground for the rule to be stated about —
 `charging_dog`, `alley_robbery`, a hunting `roadblock` and the men a hunting van lets out all carry a

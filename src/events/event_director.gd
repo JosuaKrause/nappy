@@ -948,7 +948,7 @@ func due(delta: float, at: Vector2, velocity: Vector2) -> Array:
 	# clear the gap while its run does not would slip past a check on the spawn point alone.
 	# Refused rather than nudged — the same "try again shortly" the branch above takes, so the
 	# allowance is not burnt and the row arrives once she is past the door.
-	if not EventScheduler.clear_of_the_doors(path[0], path, _doors, next.field_reach()):
+	if not DoorClearanceRule.clear_of_the_doors(path[0], path, _doors, next.field_reach()):
 		_next_in = 1.0
 		return []
 	_next_in = _roll_interval()
@@ -1138,7 +1138,7 @@ func _toward_her(at: Vector2, heading: Vector2, def: EventDef) -> PackedVector2A
 ## `due()` makes of every siting, asked again by `EventManager` of a warned row's route when the
 ## row is created, since its place has moved with her since it was sited.
 func clear_of_the_doors(path: PackedVector2Array, def: EventDef) -> bool:
-	return EventScheduler.clear_of_the_doors(path[0], path, _doors, def.field_reach())
+	return DoorClearanceRule.clear_of_the_doors(path[0], path, _doors, def.field_reach())
 
 ## The road-aware sibling of `_toward_her()`, for a `TOWARD_PLAYER` row whose `placement` names
 ## `ROAD` — `owe_the_return()`'s own `police_patrol` copies, a car rather than a bike.

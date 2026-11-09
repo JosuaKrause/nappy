@@ -9,7 +9,16 @@ junctions, the sidewalk a route is walked along, a pacing beat's opening, no bod
 tile off from home, and in the escape one waiting guard's notice at a time and the walk kept open.
 `StreetInvalidation` composes them from the walk's spec and answers a candidate's room, or none
 where a rule refuses; `LocationFit` answers a location's own ground for a row and builds the
-candidate on a tile of it. They replace `_judge()` as the dawn draw's invalidation
+candidate on a tile of it. Each rule's logic is in its class, with the helpers only it uses:
+the scheduler's rule functions moved into them (the reviewer counted 18 calls from the rule files
+into the scheduler's private functions where main had one; the orchestrator sent them to move in
+this step), and what the scheduler still shares is public there (`EventScheduler.ground_for()`,
+`build_placement()`, `role_for()`, `clearance_around_her()`, `body_stands_at()`,
+`leaves_no_line_along_a_sidewalk()`), or public on the rule that owns it
+(`StreetInvalidation.room_around()`, `DoorClearanceRule.clear_of_the_doors()`,
+`RouteSidewalkRule.closes_the_run()` and `closes_a_walked_sidewalk_band()`); `CityMap` and
+`EventDef` gained three small questions the moved code asks in place of their fields. The move
+places every cell of the probe as before it. They replace `_judge()` as the dawn draw's invalidation
 (`RuledLocationGround`) and the roadblock phase's (`RuledRoadblockGround`), and `_best_of()` asks
 the same rules for its callers outside the draw, keeping its tries and its roomiest fallback (the
 orchestrator's answer B): the walk's sitings, the scripted rows, the one-shots and the scene
@@ -22,7 +31,8 @@ order, the first that fits takes it, and the rest of the street stays empty.
 from home:** `RouteReachRule` refuses an obstructing body that would leave a route tile home
 reached without it unreached, and asks bodies off the routes too, since the last of a ring that
 seals home in can stand beside a route the ring's first body crossed; one is built per dawn and
-handed to every dawn judge, holding the reach tile by tile and keeping it in step (a body the
+handed to every judge of a day's dawn (not the escape's, whose plan has no route tree and whose
+walk `WalkOpenRule` keeps open), holding the reach tile by tile and keeping it in step (a body the
 ground round goes round takes only its disc off it). The run's scars and the park spoilers are
 asked `RouteReachRule` alone before they stand, the one question the repair asked of them: not the
 line rules, not the spacing, and no role is written onto them. The first version asked them the
@@ -103,7 +113,7 @@ verbatim:
     (a) Changed on purpose:
     - The day's placement rules are StreetRule classes composed by StreetInvalidation, with LocationFit for a location's own ground, asking what _judge() asked; _best_of() keeps its tries and its roomiest fallback, judged by the same rules.
     - DayRepairs is gone: a body that would cut a route tile off from home is refused where it would stand (RouteReachRule), where the repair dropped the widest body after the plan, and on a day she has used every calm area the one kept clean is chosen before the spoilers, where the repair stripped one after.
-    - The run's scars and the park spoilers are asked the route rules before they stand.
+    - The run's scars and the park spoilers are asked RouteReachRule alone before they stand, as the repair asked them only whether home stays reached.
     - The escape draws one marble a street, offered at the street's locations in their drawing order; a row no location takes is spent unmet.
 
     What the probe cannot see:
