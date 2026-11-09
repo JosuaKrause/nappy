@@ -290,8 +290,8 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 				checked_trees += 1
 
 			var consumed: Array[String] = []
-			for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree)).placements():
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 				if not plan.is_placed():
 					continue
 				checked += 1
@@ -385,8 +385,8 @@ func _test_no_body_closes_a_walked_sidewalk(t) -> void:
 
 			var consumed: Array[String] = []
 			var bodies: Array = []
-			for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree)).placements():
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 				_add_a_physical_body(bodies, plan)
 			for plan in seals:
 				_add_a_physical_body(bodies, plan)

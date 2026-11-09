@@ -2,8 +2,6 @@ extends RefCounted
 ## The escalation: act gating, the mechanics the later acts introduced, and the invariants
 ## that stop a late day from being quietly unwinnable.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const SEED := 4242
 const STEP := 1.0 / 60.0
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -88,15 +86,15 @@ func _test_scars_outlive_the_day_that_made_them(t) -> void:
 	t.check(run.attempt_spend.scars.size() == 1, "the same scar is not recorded twice")
 
 	var consumed: Array[String] = []
-	var same_day := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(3), _rng(3), _map,
-			CalmAreas.of(_map), MastSites.compute(_map), consumed, run.attempt_spend.scars)).placements()
+	var same_day := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), _map,
+			CalmAreas.of(_map), MastSites.compute(_map), consumed, run.attempt_spend.scars).placements()
 	t.check(not _contains(same_day, "burnt_shell"),
 			"a scar does not double up on the day it was made")
 
 	for day in [4, 9, 14]:
 		var later: Array[String] = []
-		var planned := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
-				CalmAreas.of(_map), MastSites.compute(_map), later, run.attempt_spend.scars)).placements()
+		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
+				CalmAreas.of(_map), MastSites.compute(_map), later, run.attempt_spend.scars).placements()
 		t.check(_contains(planned, "burnt_shell"),
 				"the burnt-out shell is still there on day %d" % day)
 		for plan in planned:
@@ -301,8 +299,8 @@ func _test_a_park_stays_reachable_every_day(t) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var consumed: Array[String] = []
 		var blockers: Array[EventScheduler.Planned] = []
-		for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
-				CalmAreas.of(_map), MastSites.compute(_map), consumed, run.attempt_spend.scars)).placements():
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
+				CalmAreas.of(_map), MastSites.compute(_map), consumed, run.attempt_spend.scars).placements():
 			if plan.obstructs():
 				blockers.append(plan)
 		t.check(_a_park_is_reachable(grid, blockers),

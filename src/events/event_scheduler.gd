@@ -445,7 +445,7 @@ class Planned extends RefCounted:
 	## not something she walks through to reach the park behind it; a door is a crossing she walks
 	## through. What the day's reach (`DayReach`) stands as discs (`blocking_radius()`).
 	func obstructs() -> bool:
-		return is_placed() and not _is_door and def.blocks_the_way()
+		return is_placed() and not _is_door and (def.obstructs_radius > 0.0 or def.hard_fail)
 
 	## The disc this event blocks the way with: its body's radius, or a hard fail's inner radius
 	## when that is wider.
@@ -652,7 +652,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## `trace` is where the planning writes its own account for the run log — a one-shot owed to her
 ## walk, a lesson added, a park spoiled — and no trace writes nowhere. It changes nothing the plan holds.
 ##
-## `beside_the_routes` is the row the roadblock phase places beside the day's routes before the walk's draws,
+## `beside_the_routes` is the row the roadblock phase places beside the day's routes before the dawn draw,
 ## so that one is close by wherever she reads the task's mark: day 13's roadblock
 ## (`_place_the_roadblocks()`). Null on every other day, which is then planned exactly as it would be
 ## without it.
@@ -687,13 +687,14 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	_count_what_is_left_uncovered(beside_the_routes, map, events, route, trace)
 	return events
 
-## `build_day`'s dawn, up to handing the walk its draws, added to `events`: the day's locations laid out
-## (`DayLocations`, handed on with the plan, `DayEvents.use_locations()`), the ambient rows, the
-## scars, the masts, the roadblock phase (`beside_the_routes`, day 13's roadblock), the scripted
-## rows, the one-shots, the spoilers in a park she used, the moments she is owed, and the draw the
-## walk makes of every other location from its view's bag (`_draw_the_locations()`, handed on as
-## `DayEvents.walk_draw()`), each phase on its own stream off `base` (`_stream`). `spec` is the day's
-## placement settings, a day's own (`DaySpec.for_day()`) where none is handed in.
+## `build_day` up to and including the draw of every open location, added to `events`: the day's
+## locations laid out (`DayLocations`, handed on with the plan, `DayEvents.use_locations()`), the
+## ambient rows, the scars, the masts, the roadblock phase (`beside_the_routes`, day 13's roadblock),
+## the scripted rows, the one-shots, the spoilers in a park she used, the moments she is owed, and
+## every other location drawn from its view's bag by the walk's draw (`_draw_the_locations()`,
+## `WalkDraw.draw_everywhere()`, handed on as `DayEvents.walk_draw()`), each phase on its own stream
+## off `base` (`_stream`). `spec` is the day's placement settings, a day's own (`DaySpec.for_day()`)
+## where none is handed in.
 static func _plan_the_dawn(day: int, base: int, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary], calm: CalmAreas,
 		route: RouteSource, heat: int, doors: PackedVector2Array, events: DayEvents,
@@ -754,7 +755,7 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	_place_the_roadblocks(beside_the_routes, day, base, map, events, ground, leave_alone,
 			corridor, doors, spec, locations, trace, reach)
 	# **The scripted rows' dawn phase**: each draws one of the day's open locations its ground
-	# takes and is assigned it (`ScriptedPhase`), offered through a location draw's own path and
+	# takes and is assigned it (`ScriptedPhase`), offered through the dawn draw's own path and
 	# judged by the day's rules, so the draw after passes over it. The one-shots are owed to her
 	# walk (`_place_one_shots()`).
 	var phase_ground := RuledLocationGround.new(day, base, map, events, corridor,
@@ -768,11 +769,14 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, events, calm, kept_clean,
 			reach, heat, trace)
 	_owe_the_moments(day, _stream(base, MOMENTS_SALT), events, heat, spec.caps_per_day)
-	# **The rest is drawn as she walks** (`WalkDraw`): every location the dawn did not fix is left
-	# undrawn, and the walk draws each from its view's bag as she comes near it.
-	events.use_walk_draw(WalkDraw.new(locations, _draw_the_locations(day, base, map, events, ground,
-			leave_alone, corridor, doors, spec, locations, heat, beside_the_routes, reach),
-			map.doorstep_world_position()))
+	# **Every other location, through the walk's draw** (`WalkDraw`): each drawn once from its
+	# view's bag, in the day's order (`DayLocations.drawing_order()`), before she can move, so a
+	# retry draws the same day; the draw is handed on with the plan, and the walk finds nothing
+	# left open for it.
+	var walk_draw := WalkDraw.new(locations, _draw_the_locations(day, base, map, events, ground,
+			leave_alone, corridor, doors, spec, locations, heat, beside_the_routes, reach))
+	walk_draw.draw_everywhere(locations.drawing_order(_stream(base, LOCATIONS_SALT)))
+	events.use_walk_draw(walk_draw)
 
 ## **The roadblock phase at dawn** (inbox #1185 in gentle-owl: the day's routes first, then roadblocks next to
 ## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
@@ -783,7 +787,7 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 ## row, null on every other day, which this leaves exactly as it was.
 ##
 ## **The phase places into the day's locations** (`locations`, laid out by `_plan_the_dawn()`
-## off `corridor` every day), before the walk draws the rest (`_draw_the_locations()`).
+## off `corridor` every day), before the dawn draw fills the rest (`_draw_the_locations()`).
 ##
 ## **What a section is offered, and what close by is, are the day's**: `RuledRoadblockGround`
 ## stands the roadblock where it fits in the section and asks today's placement rules of it
@@ -792,12 +796,12 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 ## (`DayReach.paths_over()`), the widest the task searches (`ResistanceDirector.ROADBLOCK_WIDER_REACH`).
 ##
 ## **What it does not promise.** Close by is measured over the ground as it stands when this runs:
-## the scripted rows, the one-shots, the spoilers and the walk's draws after it shut more.
+## the scripted rows, the one-shots, the spoilers and the dawn draw after it shut more.
 ## `_count_what_is_left_uncovered()` writes to the run log how many route tiles have
 ## none as the day finally stands.
 ##
-## **Outside the bags and on a stream of its own** (`RoadblockPhase.SALT`): the walk's draws after it
-## draw the day's other rows, the roadblock holding no marble in it, spaced against these as against
+## **Outside the bags and on a stream of its own** (`RoadblockPhase.SALT`): the dawn draw after it
+## draws the day's other rows, the roadblock holding no marble in it, spaced against these as against
 ## anything already down, and never over one.
 static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityMap,
 		events: DayEvents, ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
@@ -2360,13 +2364,13 @@ class WalkSiting extends RefCounted:
 # ------------------------------------------------- the day's locations, from the bags ---
 
 ## **The draw of the day's open locations, each from its view's bag** (`LocationDraw`,
-## inbox #1185 in gentle-owl), set up at dawn: the bodies swept in then, the rest drawn as she walks
-## (`WalkDraw`): the bags (`_view_bags()`) hold every recurring row the catalogue places on the map
-## today, each as many times as its weight in the view (`view_weight()`), and the empty event; the
-## day's ground answers which row is valid where and how much each location weighs it
-## (`RuledLocationGround`). The rows other phases place have no marble: the moments she is owed
-## (`_owe_the_moments()`), and on the day of the roadblock phase its row (`beside_the_routes`), the
-## phase's alone.
+## inbox #1185 in gentle-owl), set up at dawn and made by the walk's draw (`WalkDraw`) before she can
+## move: the bags (`_view_bags()`) hold every recurring row the catalogue places on the map today,
+## each as many times as its weight in the view (`view_weight()`), and the empty event; the day's
+## ground answers which row is valid where, every rule of the day asked, the reach among them, and
+## how much each location weighs it (`RuledLocationGround`). The rows other phases place have no
+## marble: the moments she is owed (`_owe_the_moments()`), and on the day of the roadblock phase its
+## row (`beside_the_routes`), the phase's alone.
 static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEvents,
 		ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
 		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations,
@@ -2378,37 +2382,17 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEv
 		if beside_the_routes != null and def.id == beside_the_routes.id:
 			continue
 		rows[def.id] = def.for_day(day)
-	# Every row's own ground worked out at dawn, while the day is planned, so a draw during the
-	# walk reads it rather than scanning the map on the tick it draws (`LocationFit.prepare()`).
+	# Every row's own ground worked out at dawn, while the day is planned, so a draw reads it rather
+	# than scanning the map when it is made (`LocationFit.prepare()`).
 	var fit := LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets)
 	for def: EventDef in rows.values():
 		fit.prepare(def)
 	var caps := _caps_of(rows, day, spec, _stream(base, CAPS_SALT)) if spec.caps_per_day else {}
-	# **The bodies at dawn**: every location swept in the day's order from the view bags, as the
-	# whole draw would sweep it, standing only the rows that block the way, each asked every dawn
-	# rule, the reach among them (gray-dolphin #1173 30: "a blocking event is never placed" when she
-	# walks; 33: "there should be no live reachability check"), and the rows her walk sites, handed
-	# to it with no position.
-	var blocks := func(def: EventDef) -> bool: return _drawn_at_dawn(def)
-	LocationDraw.new(locations, _view_bags(rows, day, spec, base), rows,
+	return LocationDraw.new(locations, _view_bags(rows, day, spec, base), rows,
 			RuledLocationGround.new(day, base, map, events, corridor, fit,
 					StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
 							spec.one_notice_at_a_time, null, reach)),
-			caps, blocks).draw_all(_stream(base, LOCATIONS_SALT))
-	# **The rest as she walks**: only the rows that block nothing, from bags of their own
-	# (`WALK_SHARE_SCALES`), judged by every rule but the reach, which no row the walk draws can
-	# need, the caps spread over the locations left open.
-	var opens := func(def: EventDef) -> bool: return not _drawn_at_dawn(def)
-	return LocationDraw.new(locations, _view_bags(rows, day, spec, base, true), rows,
-			RuledLocationGround.new(day, base, map, events, corridor, fit,
-					StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-							spec.one_notice_at_a_time, null, null)),
-			caps, opens, true, _stream(base, WALK_CAPS_SALT))
-
-## Whether `def`'s row is drawn at dawn rather than as she walks: a row that blocks the way, or one
-## her walk sites (`EventDef.is_handed_to_her_walk()`), which the dawn hands over with no position.
-static func _drawn_at_dawn(def: EventDef) -> bool:
-	return def.blocks_the_way() or def.is_handed_to_her_walk()
+			caps)
 
 ## **How many of each row the day's draw may stand** (`id -> count`): its `EventDef.max_per_day`,
 ## and a wall-role row's times `DaySpec.wall_row_share`, so the gatehouse day holds that share of a
@@ -2428,14 +2412,13 @@ static func _caps_of(rows: Dictionary, day: int, spec: DaySpec,
 		caps[id] = floori(most) + (1 if rng.randf() < most - floorf(most) else 0)
 	return caps
 
-## The phase salt the view bags' streams start from: apart from every other phase's.
+## The phase salt the day's order of drawing its locations is shuffled on, and the view bags'
+## streams start from: apart from every other phase's.
 const LOCATIONS_SALT := 6
 ## The phase salt the moments she is owed are drawn on.
 const MOMENTS_SALT := 7
 ## The phase salt a share of a wall's cap is rounded on (`_caps_of()`).
 const CAPS_SALT := 8
-## The phase salt the walk's running caps are rounded on (`LocationDraw`).
-const WALK_CAPS_SALT := 9
 
 ## **A row's weight in a view's bag**: its own `EventDef.weight` times what the view is to its role,
 ## the offers today's placement made per tile of the view's ground (`_copies_of()`'s gradient),
@@ -2492,11 +2475,9 @@ static func view_weight(def: EventDef, view: int, day: int, wall_share: float) -
 ## One location draws one marble, and today's rules refuse a wall on her route more often than they
 ## refused today's per-tile offers, so without it the walls leave her route for the ground off it:
 ## what her route holds is what the route decision faces. Measured, not derived, and fitted again with
-## the view scales and `GROUND_WEIGHTS` whenever the draw's rules change; the walls on her route are
-## stepped down with `tests/probes/walk_rows.gd` too, since the dawn now sweeps the bodies with no
-## row that blocks nothing standing to refuse them, as the walk meets them.
+## the view scales and `GROUND_WEIGHTS` whenever the draw's rules change.
 const WALL_VIEW_SCALES := [
-	[0.89, 0.90, 1.02, 1.02],
+	[1.07, 1.08, 1.15, 1.14],
 	[1.04, 1.01, 1.01, 1.01],
 	[0.96, 0.95, 0.88, 0.89],
 ]
@@ -2514,8 +2495,7 @@ const FRICTION_VIEW_SCALES := [
 ## weighed in full, so a spec weighing its walls by a share (`DaySpec.wall_row_share`) draws that
 ## share of them and the rest of the day as it was; the scales are fitted on the days as they are
 ## played, the gatehouse day's share included. Each on its own stream off `base`.
-static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int,
-		walk := false) -> Dictionary:
+static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> Dictionary:
 	var bags := {}
 	for view: int in [PlacementView.View.ON_THE_ROUTE, PlacementView.View.ROUTE_ADJACENT,
 			PlacementView.View.OFF_THE_ROUTE]:
@@ -2529,10 +2509,8 @@ static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int,
 				continue
 			fill[id] = maxi(1, roundi(w * BAG_MARBLES_PER_WEIGHT))
 			weight += w
-		var scale := float(VIEW_SHARE_SCALES[view][clampi(day, 1, 14) - 1])
-		if walk:
-			scale *= float(WALK_SHARE_SCALES[view][clampi(day, 1, 14) - 1])
-		var share := clampf(float(VIEW_SHARES[view][clampi(day, 1, 14) - 1]) * scale, 0.001, 0.95)
+		var share := clampf(float(VIEW_SHARES[view][clampi(day, 1, 14) - 1])
+				* float(VIEW_SHARE_SCALES[view][clampi(day, 1, 14) - 1]), 0.001, 0.95)
 		fill[ViewBag.EMPTY] = maxi(1, roundi((whole / share - weight) * BAG_MARBLES_PER_WEIGHT))
 		bags[view] = ViewBag.new(fill, hash("%d:%d:view-bag:%d" % [base, LOCATIONS_SALT, view]))
 	return bags
@@ -2569,16 +2547,6 @@ const VIEW_SHARE_SCALES := [
 	ADJACENT_SHARE_SCALES,
 	OFF_SHARE_SCALES,
 ]
-## **What the walk's bags' empty marbles are set for on top** (`[view][day - 1]`, `_view_bags()`'s
-## `walk`): the walk draws only the rows that block nothing, among every body the dawn stood, which
-## refuse more of its draws than the whole day's sweep refused of them, so its shares are scaled up
-## until what she meets of those rows is what she met when the dawn drew every location. Fitted, not
-## derived, with `tests/probes/walk_rows.gd` against main.
-const WALK_SHARE_SCALES := [
-	[1.41, 1.29, 1.37, 1.27, 1.18, 1.21, 1.27, 1.29, 1.19, 1.05, 1.08, 1.12, 1.20, 1.16],
-	[1.40, 1.26, 1.45, 1.44, 1.38, 1.25, 1.37, 1.00, 1.20, 1.75, 1.45, 1.46, 1.00, 1.29],
-	[1.31, 1.17, 1.24, 1.05, 1.21, 1.27, 1.17, 1.16, 1.18, 1.12, 1.12, 1.05, 1.17, 1.24],
-]
 
 ## **How often a row is drawn on each kind of ground** (`row id -> {Location.Kind -> weight}`),
 ## a weight a location of that kind scales the row's share of its view's bag by
@@ -2589,28 +2557,26 @@ const WALK_SHARE_SCALES := [
 ## the few locations that take it, where today's placement picked the row by weight against the
 ## whole day and then found it any tile of its ground. So each row's weight on each kind of ground
 ## is fitted until its daily count there is today's (`tests/probes/placement_rows.gd` against main,
-## eighteen seeds), the way the view scales are, and a row the walk draws (one that blocks nothing)
-## until what she meets of it on each kind of ground is what she met when the dawn drew every
-## location (`tests/probes/walk_rows.gd`); a row or a kind not listed weighs one. Measured, not
+## eighteen seeds), the way the view scales are; a row or a kind not listed weighs one. Measured, not
 ## derived, and fitted again with the view scales whenever the draw's rules change.
 const GROUND_WEIGHTS := {
 	"abduction": {Location.Kind.SIDEWALK: 0.14, Location.Kind.JUNCTION: 91.19},
-	"alley_mouse": {Location.Kind.ALLEY: 25.8},
+	"alley_mouse": {Location.Kind.ALLEY: 14.67},
 	"alley_robbery": {Location.Kind.ALLEY: 4.46},
 	"busker": {Location.Kind.OPEN: 150},
 	"cafe_tables": {Location.Kind.SIDEWALK: 0.43},
 	"charging_dog": {Location.Kind.SIDEWALK: 0.21, Location.Kind.OPEN: 0.78, Location.Kind.JUNCTION: 319},
-	"chatting_mother": {Location.Kind.SIDEWALK: 6.2, Location.Kind.JUNCTION: 11},
+	"chatting_mother": {Location.Kind.SIDEWALK: 0.25, Location.Kind.JUNCTION: 400},
 	"construction": {Location.Kind.SIDEWALK: 0.49},
 	"delivery_van": {Location.Kind.SIDEWALK: 1.48},
-	"dog_walker": {Location.Kind.SIDEWALK: 0.82, Location.Kind.JUNCTION: 1.95},
-	"homeless_yeller": {Location.Kind.SIDEWALK: 0.76, Location.Kind.OPEN: 0.57, Location.Kind.JUNCTION: 2.27},
+	"dog_walker": {Location.Kind.SIDEWALK: 0.82, Location.Kind.JUNCTION: 2.27},
+	"homeless_yeller": {Location.Kind.SIDEWALK: 0.87, Location.Kind.OPEN: 0.57, Location.Kind.JUNCTION: 2.27},
 	"ice_cream_van": {Location.Kind.SIDEWALK: 0.83},
 	"leaf_blower": {Location.Kind.SIDEWALK: 0.59, Location.Kind.OPEN: 0.38, Location.Kind.JUNCTION: 1.21},
 	"market_stall": {Location.Kind.SIDEWALK: 0.44, Location.Kind.OPEN: 0.34},
 	"military_convoy": {Location.Kind.SECTION: 0.77, Location.Kind.JUNCTION: 1.43},
-	"pigeon_flock": {Location.Kind.SIDEWALK: 1.03, Location.Kind.OPEN: 1.56, Location.Kind.JUNCTION: 6.95},
-	"police_patrol": {Location.Kind.SECTION: 1.65, Location.Kind.JUNCTION: 5.54},
+	"pigeon_flock": {Location.Kind.SIDEWALK: 0.7, Location.Kind.OPEN: 1.56, Location.Kind.JUNCTION: 6.95},
+	"police_patrol": {Location.Kind.SECTION: 1.33, Location.Kind.JUNCTION: 5.54},
 	"poster_crew_square": {Location.Kind.OPEN: 27.86},
 	"protest": {Location.Kind.OPEN: 8.88, Location.Kind.JUNCTION: 16.89},
 	"reversing_lorry": {Location.Kind.SIDEWALK: 1.46},

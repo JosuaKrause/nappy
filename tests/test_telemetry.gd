@@ -28,8 +28,6 @@ extends RefCounted
 ## other test here builds no city: the map pictures are drawn from a hand-built map, a footprint of
 ## a corridor and plans made by hand (`_picture_map()`), and the files from a hand-built map too.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 ## What a planned day is, as a string to compare.
 const PlanSignature := preload("res://tests/plan_signature.gd")
 ## The burst suite, whose bench (`Bench`) the burst test here hands the run log.
@@ -654,8 +652,8 @@ func _test_every_routed_event_is_a_straight_line(t) -> void:
 	var map := CityMapCache.of(4242)
 	var consumed: Array[String] = []
 	for day in [1, 3, 7, 14]:
-		for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), consumed)).placements():
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), MastSites.compute(map), consumed).placements():
 			if plan.path.size() < 2:
 				continue
 			t.check(plan.path.size() == 2, "%s's route is two points, not %d"

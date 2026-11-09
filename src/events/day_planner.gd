@@ -60,8 +60,8 @@ class Plan extends RefCounted:
 	func use_locations(locations: DayLocations) -> void:
 		_locations = locations
 
-	## The draw the walk makes of the day's open locations (`WalkDraw`), or null on a walk that draws
-	## none.
+	## The draw of the day's open locations (`WalkDraw`), made at dawn and handed on to the walk, or
+	## null on a walk that draws none.
 	var _walk_draw: WalkDraw = null
 
 	## The walk's draw. See `_walk_draw`.

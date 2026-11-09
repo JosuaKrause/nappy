@@ -10,26 +10,17 @@ extends RefCounted
 ## let it is not either (the orchestrator's reading of fork 5(b), open to correction). Each row's
 ## share is the location's own weight times the bag's (`LocationGround.scale()`).
 ##
-## **Which rows a draw stands is its configuration** (`kept`, a row -> whether this draw stands
-## it): the dawn sweeps every location in the day's order and stands only the rows that block the
-## way (`draw_all()`), so every body stands before the walk and is judged by every dawn rule; the
-## walk then draws each location left open as she comes near it (`WalkDraw`, `draw()`, `begin()`),
-## accepting only the rows that block nothing (gray-dolphin #1173 30: "a blocking event is never
-## placed"), so a street's later locations draw with its earlier draws standing, and what the walk
-## stands besides (`judge_against()`).
-##
-## **A walk's caps are a rate** (`spread`): a row's cap is spread over the locations the walk may
-## draw by how likely each is to draw the row (its share of the location's bag times the location's
-## weight for it, `LocationGround.scale()`), so once the walk has drawn locations holding a share of
-## that chance a row may have stood that share of its cap, rounded up or down at random once per row
-## on `rng`. The dawn spent a cap over the whole city as each location's chance came up, and so does
-## this (the orchestrator's reading, open to the player's overturn).
+## **One draw, every location once** (inbox #1268: "get rid of the redundant historic double
+## draw"): the walk's draw (`WalkDraw`) asks this of every location the dawn's phases left open, in
+## the day's order, before she can move (`EventManager._take()`), so a street's later locations draw
+## with its earlier draws standing, and a retry draws the same day. A draw may be made whole
+## (`draw()`) or a step at a time (`begin()`, `Asking.step()`, `finish()`), holding nothing until it
+## ends; the day's ground judges it against what stands, the walk's plan once the walk has started
+## (`judge_against()`).
 ##
 ## Handed the day's locations, the three bags (`view -> ViewBag`), the rows the bags' marbles name
-## (`id -> EventDef`), the day's ground, the day's caps (`id -> how many may stand`, a row not named
-## having none), which rows it stands (every row where `kept` is not given), and for a walk whether
-## its caps are spread over the locations open when it is made, and the stream their rounding is
-## drawn on. Model: no node.
+## (`id -> EventDef`), the day's ground, and the day's caps (`id -> how many may stand`, a row not
+## named having none). Model: no node.
 
 var _locations: DayLocations
 var _bags: Dictionary
@@ -37,77 +28,29 @@ var _rows: Dictionary
 var _ground: LocationGround
 var _caps := {}
 var _stood := {}
-var _kept := Callable()
-var _spread := false
-## Per capped row, the fraction its running cap is rounded on (`_at_its_cap()`).
-var _offsets := {}
-## Per capped row, its chance over every location open when the draw was made, and over those drawn.
-var _chance := {}
-var _chance_drawn := {}
 
 func _init(locations: DayLocations, bags: Dictionary, rows: Dictionary, ground: LocationGround,
-		caps: Dictionary, kept := Callable(), spread := false,
-		rng: RandomNumberGenerator = null) -> void:
+		caps: Dictionary) -> void:
 	_locations = locations
 	_bags = bags
 	_rows = rows
 	_ground = ground
 	_caps = caps
-	_kept = kept
-	_spread = spread
-	if _spread:
-		var ids := _caps.keys()
-		ids.sort()
-		for id: String in ids:
-			_offsets[id] = rng.randf() if rng else 0.5
-			_chance[id] = 0.0
-			_chance_drawn[id] = 0.0
-		for location in _locations.open_locations():
-			var chances := _chances_at(location)
-			for id: String in chances:
-				_chance[id] = float(_chance[id]) + float(chances[id])
-
-## **Sweeps every open location in the day's order** (`DayLocations.drawing_order()`, on `rng`),
-## each drawn whole from its bag as any draw is, and stands what it drew only where this draw keeps
-## the row; a location that drew another row, or nothing, is left open for the walk. What the dawn
-## does with the rows that block the way.
-func draw_all(rng: RandomNumberGenerator) -> void:
-	for location in _locations.drawing_order(rng):
-		var asking := _begin(location, false)
-		if asking == null:
-			continue
-		while not asking.step():
-			pass
-		var drawn := asking.drawing.drawn
-		var plan: EventScheduler.Planned = null if drawn == ViewBag.EMPTY else asking.offered[drawn]
-		if plan == null:
-			continue
-		_stood[plan.row_id()] = int(_stood.get(plan.row_id(), 0)) + 1
-		if _keeps(plan.def):
-			plan = _as_drawn(plan)
-			_locations.record(location, plan)
-			_ground.stand(plan)
 
 ## **Draws `location`**, if it is still open, and answers the event placed there, or null for the
-## empty event or a location already drawn or taken.
+## empty event, a row handed to her walk (`_as_drawn()`), or a location already drawn or taken.
 func draw(location: Location) -> EventScheduler.Planned:
 	var asking := begin(location)
 	if asking == null:
 		return null
-	while not asking.step():
-		pass
 	return finish(asking)
 
 ## **The same draw, a step at a time** (`Asking.step()`), or null for a location that is not open or
-## whose view has no bag: what a walk spreads over ticks. A step is a marble taken from the bag or one
-## candidate of the offer it asks for (`LocationGround.begin_offer()`), since one offer may ask a row
-## at every tile of the location. Nothing is recorded or stood until
-## `finish()`, so a location part-way drawn holds nothing that could stream in.
+## whose view has no bag. A step is a marble taken from the bag or one candidate of the offer it
+## asks for (`LocationGround.begin_offer()`), since one offer may ask a row at every tile of the
+## location. Nothing is recorded or stood until `finish()`, so a location part-way drawn holds
+## nothing that could stream in.
 func begin(location: Location) -> Asking:
-	return _begin(location, true)
-
-## `begin()`, refusing a row this draw does not keep where `only_kept`.
-func _begin(location: Location, only_kept: bool) -> Asking:
 	if not location.is_available() or location.is_taken() or location.is_drawn():
 		return null
 	var bag: ViewBag = _bags.get(location.view())
@@ -119,7 +62,7 @@ func _begin(location: Location, only_kept: bool) -> Asking:
 	var offered := asking.offered
 	var offers := {}
 	var accepts := func(id: String) -> Variant:
-		if (only_kept and not _keeps(_rows[id])) or _at_its_cap(id):
+		if _caps.has(id) and int(_stood.get(id, 0)) >= int(_caps[id]):
 			offers.erase(id)
 			return false
 		var made: LocationGround.Offer = offers.get(id)
@@ -137,8 +80,8 @@ func _begin(location: Location, only_kept: bool) -> Asking:
 	return asking
 
 ## **Ends `asking`'s draw**, asking what is left of it at once, records what it drew at its location,
-## stands it, and answers it: null for the empty event, a row handed to her walk unplaced
-## (`_as_drawn()`).
+## stands it, counts it against its row's cap, and answers it: null for the empty event, a row handed
+## to her walk unplaced (`_as_drawn()`).
 func finish(asking: Asking) -> EventScheduler.Planned:
 	while not asking.step():
 		pass
@@ -147,10 +90,6 @@ func finish(asking: Asking) -> EventScheduler.Planned:
 	if plan:
 		plan = _as_drawn(plan)
 	_locations.record(asking.location, plan)
-	if _spread:
-		var chances := _chances_at(asking.location)
-		for id: String in chances:
-			_chance_drawn[id] = float(_chance_drawn[id]) + float(chances[id])
 	if plan:
 		_ground.stand(plan)
 		_stood[plan.row_id()] = int(_stood.get(plan.row_id(), 0)) + 1
@@ -162,36 +101,6 @@ func _as_drawn(plan: EventScheduler.Planned) -> EventScheduler.Planned:
 	if plan.def.is_handed_to_her_walk():
 		return EventScheduler.owed_to_her_walk(plan)
 	return plan
-
-## Whether this draw stands `def`'s row.
-func _keeps(def: EventDef) -> bool:
-	return not _kept.is_valid() or bool(_kept.call(def))
-
-## Whether row `id` has stood as many times as its cap lets it yet: the day's cap, or for a walk the
-## cap's share of the row's chance the locations drawn so far held (`spread`).
-func _at_its_cap(id: String) -> bool:
-	if not _caps.has(id):
-		return false
-	var most := int(_caps[id])
-	if _spread and float(_chance[id]) > 0.0:
-		most = mini(most, floori(float(_caps[id]) * float(_chance_drawn[id]) / float(_chance[id])
-				+ float(_offsets[id])))
-	return int(_stood.get(id, 0)) >= most
-
-## Each capped row this draw keeps -> its chance at `location`: its share of the location's bag
-## times the location's weight for it.
-func _chances_at(location: Location) -> Dictionary:
-	var chances := {}
-	var bag: ViewBag = _bags.get(location.view())
-	if bag == null:
-		return chances
-	for id: String in _chance:
-		if not _keeps(_rows[id]):
-			continue
-		var share := bag.share_of(id)
-		if share > 0.0:
-			chances[id] = share * _ground.scale(_rows[id], location)
-	return chances
 
 ## One location's draw under way: its location, its bag's draw and what each marble asked was
 ## offered once its offer was made.

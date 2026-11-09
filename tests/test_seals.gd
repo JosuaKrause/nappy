@@ -17,8 +17,6 @@ extends RefCounted
 ## way to tell the two apart. `_test_a_day_is_reachable_without_the_main_road` is the restatement;
 ## see its own doc for exactly what it proves and what it does not.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const Reach := preload("res://tests/seal_reach_rig.gd")
 const SEEDS := 6
 const BASE_SEED := 71717
@@ -837,9 +835,9 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 			var no_calm: Array[Vector2i] = []
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("events:%d:%d" % [map.seed_used, day])
-			var rows := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), events_rng, map,
+			var rows := EventScheduler.build_day(DaySpec.for_day(day), events_rng, map,
 					CalmAreas.of(map, no_calm), MastSites.compute(map), no_one_shots, no_scars, tree, 0,
-					PackedVector2Array(), standing)).placements()
+					PackedVector2Array(), standing).placements()
 
 			var corridor := Corridor.of(tree)
 			# The background every row is checked against: the day's own final set beside the

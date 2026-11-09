@@ -10,8 +10,6 @@ extends RefCounted
 ## plan cache the first time one of their tests asks for it. Sharing the *code* still matters: the
 ## reasoning below is written once rather than five times, and there is one place to fix it.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 ## The suite's shared city, generated once.
 ##
 ## Seed 4242 is deliberately the same city for every check that does not name its own seed, so
@@ -66,6 +64,6 @@ func _planned(day: int) -> Array[EventScheduler.Planned]:
 func _day_events(day: int) -> DayEvents:
 	if not _plans.has(day):
 		var consumed: Array[String] = []
-		_plans[day] = DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map(),
-				CalmAreas.of(_map()), _sites(), consumed))
+		_plans[day] = EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map(),
+				CalmAreas.of(_map()), _sites(), consumed)
 	return _plans[day]

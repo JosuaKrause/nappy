@@ -105,9 +105,9 @@ func _fire_route(day: int, outward := true) -> PackedVector2Array:
 ## suite on the understanding that nothing writes to it.
 func _fire_day_plans() -> Array[EventScheduler.Planned]:
 	var consumed: Array[String] = []
-	return DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY),
+	return EventScheduler.build_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY),
 			_rng(Tuning.RUN_TAUGHT_DAY), _map(), CalmAreas.of(_map()), MastSites.compute(_map()),
-			consumed)).placements()
+			consumed).placements()
 
 ## The placement context the director above is started on, built the way `EventManager.start_day`
 ## builds one. Kept as its own function so a check can ask it the same questions the director does —
@@ -395,20 +395,19 @@ func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 
 ## **A crew a location draws is handed to her walk unplaced.** With the crews on her walk, every crew
 ## the day draws has no position, for the director to site; with the flag off, the same day stands
-## its crews placed. The rows drawn after a crew are spaced without it, as they are in play, where
-## the walk hands a crew on the tick its location draws it, so the two days need not match beyond
-## the crews.
+## its crews placed. A location's draw hands a crew on as it draws it (`LocationDraw.finish()`), so
+## the rows drawn after it are spaced without it and the two days need not match beyond the crews.
 func _test_a_crew_drawn_is_handed_to_her_walk(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var crew := EventCatalogue.by_id("poster_crew")
 	var crew_way := crew.on_her_way
 	for day in [4, 8, 12]:
 		var tree := RouteTree.for_day(map, day)
-		var handed := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), [], [], tree)).placements()
+		var handed := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), MastSites.compute(map), [], [], tree).placements()
 		crew.on_her_way = null
-		var kept := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), [], [], tree)).placements()
+		var kept := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), MastSites.compute(map), [], [], tree).placements()
 		crew.on_her_way = crew_way
 		var handed_crews := 0
 		var handed_placed := 0

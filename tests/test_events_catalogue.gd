@@ -13,8 +13,6 @@ extends RefCounted
 ## failing it since M5: five category looks -- `PERSON`, `VEHICLE`, `OBJECT`, `ANIMAL`, `FIRE` --
 ## were drawing sixteen of the twenty-eight visible rows between them.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const STEP := 1.0 / 60.0
 const DrawnEvent := preload("res://tests/drawn_event.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
@@ -526,8 +524,8 @@ func _test_a_spread_never_lands_on_a_corner(t) -> void:
 		for day in range(1, 15):
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), rng, map,
-					CalmAreas.of(map), MastSites.compute(map), consumed)).placements():
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,
+					CalmAreas.of(map), MastSites.compute(map), consumed).placements():
 				if not plan.is_placed() or not plan.def.has_a_spread:
 					continue
 				checked += 1

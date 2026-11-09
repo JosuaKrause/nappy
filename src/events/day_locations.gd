@@ -39,7 +39,7 @@ static func lay_out(map: CityMap, corridor: Corridor) -> DayLocations:
 	day._grounds.append_array(_junction_boxes(map, corridor))
 	return day
 
-## **Every location in the order the dawn's sweep fills them** (`LocationDraw.draw_all()`): street
+## **Every location in the order the dawn draw fills them** (`WalkDraw.draw_everywhere()`): street
 ## by street in the lattice's order, each street's own order (`StreetLocations.drawing_order()`,
 ## shuffled on `rng`), then the ground beyond the streets.
 func drawing_order(rng: RandomNumberGenerator) -> Array[Location]:

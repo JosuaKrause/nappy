@@ -3,8 +3,6 @@ extends RefCounted
 ## clock every mast reads rather than a clock of its own, and an id that survives silencing. See
 ## `docs/TODO.md`, M180, "Posters she notices, and loudspeakers that are somewhere".
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed of the run the city is handed (`RunCity.with_own_run()`).
 const RUN_SEED := 2
@@ -39,8 +37,8 @@ func _rng(day: int) -> RandomNumberGenerator:
 
 func _mast_plans(day: int) -> Array[EventScheduler.Planned]:
 	var consumed: Array[String] = []
-	var planned := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
-			CalmAreas.of(_map), MastSites.compute(_map), consumed)).placements()
+	var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
+			CalmAreas.of(_map), MastSites.compute(_map), consumed).placements()
 	var found: Array[EventScheduler.Planned] = []
 	for plan in planned:
 		if plan.mast_id != "":

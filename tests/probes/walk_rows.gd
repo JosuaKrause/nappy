@@ -10,7 +10,7 @@ extends RefCounted
 ## Each day is planned as `placement_rows.gd` plans it, and then walked: the day's longest route out
 ## from the doorstep and home again, at walking speed, a tick a thirtieth of a second, with the
 ## director siting what it sites on her way (`EventDirector.due()`, `site_what_is_on_her_way()`) and,
-## where the tree draws its locations during the walk (`WalkDraw`), the walk's draw ahead of her. A
+## where the tree has a draw it runs each tick of the walk (`WalkDraw.draw_ahead()`), that draw. A
 ## placed row counts once it comes within the stream radius of her (`Tuning.EVENT_STREAM_RADIUS`),
 ## the moment it would stream in, under its row, its view and its kind of ground: a row the director
 ## sites on her way among them, once sited (a poster crew), but not a place her route's bag hands it. It asks only what every tree has, and the walk's draw by name where the
@@ -133,7 +133,6 @@ func run(t) -> void:
 			if walk_draw:
 				open_before = events.call("locations").open_locations().size()
 				walk_draw.judge_against(walk)
-				_stand(walk_draw.draw_within(at, walk_draw.MUST_DRAW), walk, director)
 			var tick := 0
 			for k in range(1, path.size()):
 				var toward: Vector2 = path[k] - at

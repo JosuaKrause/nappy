@@ -25,8 +25,6 @@ extends RefCounted
 ## test process and every case is handed a copy of its own). It belongs in the scheduler's suite, which
 ## is in the events conversion's list; it stays here until then.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
 
@@ -105,8 +103,8 @@ func _test_day_4_is_a_map_placement(t) -> void:
 			var tree := RouteTree.for_day(map, day)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), rng, map,
-					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree)).placements():
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,
+					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 				if plan.def.id != "charging_dog":
 					continue
 				checked += 1

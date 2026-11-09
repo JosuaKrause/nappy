@@ -123,8 +123,9 @@ var _walk: RouteSource = null
 ## Authored scenes install a complete event plan; ambient directors cannot replace its actors.
 var _recipe_plan := false
 
-## The walk's draw of the day's open locations as she comes near them (`WalkDraw`), or null on a
-## walk that draws none: the escape, the building, a recipe.
+## The draw of the day's open locations (`WalkDraw`), or null on a walk that draws none: the escape,
+## the building, a recipe. The dawn draws every location before she can move, so the draw it runs
+## every tick (`WalkDraw.draw_ahead()`) finds none left open and draws nothing.
 var _walk_draw: WalkDraw = null
 
 ## Builds the parts, each handed the one world, and connects the doors' intents and crossings.
@@ -294,7 +295,7 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	# the map's closures and soft seals as they stand now (`DayReach`).
 	var reach := DayReach.of(world.city_map, plan.placements) if world.city_map else null
 	_walk_events.take(plan.placements, plan.calm(), plan.doors, reach, plan.locations())
-	# The walk's draw of the day's open locations, judged against what the walk stands from now on.
+	# The draw of the day's open locations, judged against what the walk stands from now on.
 	_walk_draw = plan.walk_draw()
 	if _walk_draw:
 		_walk_draw.judge_against(_walk_events)
@@ -314,10 +315,6 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	else:
 		streaming.find_what_repeats()
 		ahead.start_a_given_walk(world.day)
-	# What the walk owes before her first step, drawn while the day is set up: every location near
-	# where she starts (`WalkDraw.draw_within()`).
-	if _walk_draw:
-		_stand_what_was_drawn(_walk_draw.draw_within(focus, WalkDraw.MUST_DRAW))
 	streaming.stream_around(focus)
 
 ## The walk the plan `start_day()` started is stated against (`RouteSource`): the day's route tree,
@@ -448,19 +445,6 @@ func sees(world_position: Vector2, margin := 0.0) -> bool:
 func on_screen(world_position: Vector2) -> bool:
 	return world.visible.view.has_point(world_position)
 
-## **Draws every location the walk has not drawn, at once** (`WalkDraw.draw_everywhere()`), and
-## stands what they place: what a dev spawn beside a row asks (`DevRig.first_event_position()`),
-## since a row the view bags draw stands nowhere until her walk comes near its location. Nothing in
-## play calls it.
-func draw_everywhere() -> void:
-	if _walk_draw:
-		_stand_what_was_drawn(_walk_draw.draw_everywhere())
-
-## **Stands what the walk's draws placed**: each joins the walk and streams in like a planned row.
-func _stand_what_was_drawn(drawn: Array[EventScheduler.Planned]) -> void:
-	for plan in drawn:
-		streaming.add(plan)
-
 ## Tells `world.visible` this frame's view and scheme (`VisibleView.look_through()`): the camera's
 ## view, `Tuning.VIEW_HALF_EXTENT` about the centre of the screen, which her look-ahead moves off
 ## her a little, and whether the on-screen controls are the joystick scheme, whose rings and buttons
@@ -529,13 +513,16 @@ func _tick_the_events(delta: float) -> void:
 		# director.
 		if not _recipe_plan and ahead.has_director():
 			ahead.site_what_is_on_her_way(delta)
-		# The locations she comes near are drawn before the streaming, so a draw is in the world on
-		# the tick it would have streamed in (`WalkDraw.draw_ahead()`).
+		# A location still open as she comes near it is drawn before the streaming, so a draw is in
+		# the world on the tick it would have streamed in (`WalkDraw.draw_ahead()`); the dawn leaves
+		# none open, so this draws nothing.
 		if _walk_draw:
 			var her := world.player as CharacterBody2D
 			var heading := her.velocity.normalized() if her else Vector2.ZERO
-			_stand_what_was_drawn(_walk_draw.draw_ahead(world.player.global_position, heading,
-					visible_view().sees_any))
+			# Each joins the walk and streams in like a planned row.
+			for plan in _walk_draw.draw_ahead(world.player.global_position, heading,
+					visible_view().sees_any):
+				streaming.add(plan)
 		streaming.stream_around(world.player.global_position)
 		if not _recipe_plan and ahead.has_director():
 			ahead.place_what_is_owed_ahead(delta)

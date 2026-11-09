@@ -16,8 +16,6 @@ extends RefCounted
 ## stand a real city's door and call the controller's public frame methods
 ## (`watch_the_door_lines()`, `check_detentions()`) on a city they never let tick.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const HaloRig := preload("res://tests/halo_rig.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -357,8 +355,8 @@ func _test_the_three_rows_validate_and_are_never_rolled(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("checkpoints:%d:%d" % [map.seed_used, day])
 		var consumed: Array[String] = []
-		for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), MastSites.compute(map),
-				consumed)).placements():
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), MastSites.compute(map),
+				consumed).placements():
 			scheduled += 1
 			if plan.def.id.begins_with("checkpoint_"):
 				rolled += 1
@@ -494,8 +492,8 @@ func _planned_day(map: CityMap, day: int, tree: RouteTree,
 	var consumed: Array[String] = []
 	var scars: Array[Dictionary] = []
 	var used_calm: Array[Vector2i] = []
-	return DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map,
-			used_calm), MastSites.compute(map), consumed, scars, tree, 0, doors)).placements()
+	return EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map,
+			used_calm), MastSites.compute(map), consumed, scars, tree, 0, doors).placements()
 
 func _placed_count(plans: Array[EventScheduler.Planned]) -> int:
 	var total := 0

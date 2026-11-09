@@ -2,7 +2,8 @@ extends RefCounted
 ## `WalkDraw`, the day's open locations drawn as she walks: every location out of her view within
 ## `WalkDraw.MUST_DRAW` of her is drawn whole at once, however many, so none reaches the stream
 ## radius undrawn; the nearest ahead of her within `WalkDraw.BAND_FAR` is drawn a marble ask a tick;
-## a location in her view is never drawn; and `draw_within()` draws every location within a radius.
+## a location in her view is never drawn; and `draw_everywhere()`, the dawn's draw, draws every
+## location in the order it is handed, after which a tick finds nothing left to draw.
 ## Run on a bare city's lattice (`CityMap.new()`, every street present, laid out with a corridor
 ## stand-in), with a stand-in for the draw (`_Draw`) whose every draw takes `_Draw.ASKS` asks,
 ## records which locations it was asked to draw and marks each drawn, empty: what a location draws
@@ -18,9 +19,11 @@ extends RefCounted
 ##   to nobody until its last ask, and the next is begun only then.
 ## - **A band draw that comes within `MUST_DRAW` is finished whole**: the draw under way is ended
 ##   that tick, not begun again.
-## - **A sidewalk is drawn after its section**: of every sidewalk a tick or `draw_within()` draws,
-##   its section was drawn before it; and a sidewalk whose section she can see waits for it.
-## - **`draw_within()` draws all**: every location within the radius, and none beyond it.
+## - **A sidewalk is drawn after its section**: of every sidewalk a tick or `draw_everywhere()`
+##   draws, its section was drawn before it, whatever the order handed in; and a sidewalk whose
+##   section she can see waits for it.
+## - **`draw_everywhere()` draws all, in the order handed in**: every location once, in the day's
+##   order, and a tick after it, wherever she stands and whichever way she heads, begins nothing.
 
 ## The draw: every draw takes `ASKS` asks; records each location it begins, and each it ends, and
 ## marks it drawn with nothing in it.
@@ -73,7 +76,7 @@ func run(t) -> void:
 	_test_her_view_is_never_drawn(t)
 	_test_the_band_ahead_asks_once_a_tick(t)
 	_test_a_band_draw_that_comes_near_is_finished_whole(t)
-	_test_draw_within_draws_all_within_the_radius(t)
+	_test_draw_everywhere_draws_all_in_the_order_handed_in(t)
 	_test_a_sidewalk_is_drawn_after_its_section(t)
 
 ## Where she stands: the middle of a junction box in the middle of the bare city.
@@ -95,7 +98,7 @@ static func _distance(at: Vector2, rect: Rect2) -> float:
 func _test_a_sharp_turn_draws_everything_that_comes_near_at_once(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
-	var walk := WalkDraw.new(locations, draw, Vector2.ZERO)
+	var walk := WalkDraw.new(locations, draw)
 	var at := _junction()
 	var nobody_sees := func(_rect: Rect2) -> bool: return false
 	walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
@@ -114,7 +117,7 @@ func _test_a_sharp_turn_draws_everything_that_comes_near_at_once(t) -> void:
 func _test_her_view_is_never_drawn(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
-	var walk := WalkDraw.new(locations, draw, Vector2.ZERO)
+	var walk := WalkDraw.new(locations, draw)
 	var at := _junction()
 	var view := Rect2(at - Vector2(400, 300), Vector2(800, 600))
 	var sees := func(rect: Rect2) -> bool: return view.intersects(rect)
@@ -131,7 +134,7 @@ func _test_her_view_is_never_drawn(t) -> void:
 func _test_the_band_ahead_asks_once_a_tick(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
-	var walk := WalkDraw.new(locations, draw, Vector2.ZERO)
+	var walk := WalkDraw.new(locations, draw)
 	var at := _junction()
 	var nobody_sees := func(_rect: Rect2) -> bool: return false
 	var handed := walk.draw_ahead(at, Vector2.RIGHT, nobody_sees).size()
@@ -156,7 +159,7 @@ func _test_the_band_ahead_asks_once_a_tick(t) -> void:
 	# A band draw under way asks nothing while she can see its location.
 	var paused := _laid()
 	var paused_draw := _Draw.new(paused)
-	var paused_walk := WalkDraw.new(paused, paused_draw, Vector2.ZERO)
+	var paused_walk := WalkDraw.new(paused, paused_draw)
 	paused_walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
 	var under_way := _beyond_must_draw(at, paused_draw.begun)
 	if under_way.size() != 1:
@@ -172,7 +175,7 @@ func _test_the_band_ahead_asks_once_a_tick(t) -> void:
 func _test_a_band_draw_that_comes_near_is_finished_whole(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
-	var walk := WalkDraw.new(locations, draw, Vector2.ZERO)
+	var walk := WalkDraw.new(locations, draw)
 	var at := _junction()
 	var nobody_sees := func(_rect: Rect2) -> bool: return false
 	walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
@@ -196,23 +199,26 @@ static func _beyond_must_draw(at: Vector2, drawn: Array[Location]) -> Array[Loca
 			beyond.append(location)
 	return beyond
 
-func _test_draw_within_draws_all_within_the_radius(t) -> void:
+func _test_draw_everywhere_draws_all_in_the_order_handed_in(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
-	var walk := WalkDraw.new(locations, draw, Vector2.ZERO)
-	var at := _junction()
-	walk.draw_within(at, 1500.0)
-	var inside_left := 0
-	var outside_drawn := 0
-	for location in locations.open_locations() + _drawn_of(draw):
-		var distance := _distance(at, _rect_of(location))
-		if distance <= 1500.0 and not location.is_drawn():
-			inside_left += 1
-		if distance > 1500.0 and location.is_drawn():
-			outside_drawn += 1
-	t.check(inside_left == 0 and outside_drawn == 0,
-			"draw_within draws every location within its radius and none beyond (%d left, %d beyond)"
-			% [inside_left, outside_drawn])
+	var walk := WalkDraw.new(locations, draw)
+	var order := locations.drawing_order(RandomNumberGenerator.new())
+	walk.draw_everywhere(order)
+	t.check(locations.open_locations().is_empty() and draw.asked == order,
+			"every location is drawn once, in the day's order (%d of %d asked, %d left open)"
+			% [draw.asked.size(), order.size(), locations.open_locations().size()])
+	var nobody_sees := func(_rect: Rect2) -> bool: return false
+	var begun := draw.begun.size()
+	var handed := 0
+	for heading: Vector2 in [Vector2.RIGHT, Vector2.LEFT, Vector2.DOWN]:
+		var at := _junction()
+		for _tick in 20:
+			at += heading * Tuning.WALK_SPEED * 0.1
+			handed += walk.draw_ahead(at, heading, nobody_sees).size()
+	t.check(draw.begun.size() == begun and handed == 0 and walk.forced() == 0,
+			"after it, a tick begins nothing, whichever way she walks (%d begun, %d handed)"
+			% [draw.begun.size() - begun, handed])
 
 ## The locations `draw` has drawn, which `DayLocations.open_locations()` no longer lists.
 func _drawn_of(draw: _Draw) -> Array[Location]:
@@ -221,12 +227,15 @@ func _drawn_of(draw: _Draw) -> Array[Location]:
 func _test_a_sidewalk_is_drawn_after_its_section(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
-	var walk := WalkDraw.new(locations, draw, Vector2.ZERO)
+	var walk := WalkDraw.new(locations, draw)
 	var at := _junction()
 	var nobody_sees := func(_rect: Rect2) -> bool: return false
 	for _tick in 40:
 		walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
-	walk.draw_within(at + Vector2(1600, 0), 600.0)
+	# The rest drawn at once, in an order listing every sidewalk before its section.
+	var order := locations.drawing_order(RandomNumberGenerator.new())
+	order.reverse()
+	walk.draw_everywhere(order)
 	var sidewalks := 0
 	var before_its_section := 0
 	for i in draw.asked.size():
@@ -243,7 +252,7 @@ func _test_a_sidewalk_is_drawn_after_its_section(t) -> void:
 	# A sidewalk whose section she can see waits for her to look away.
 	var seen := _laid()
 	var seen_draw := _Draw.new(seen)
-	var seen_walk := WalkDraw.new(seen, seen_draw, Vector2.ZERO)
+	var seen_walk := WalkDraw.new(seen, seen_draw)
 	var sections := {}
 	for location in seen.open_locations():
 		if location.kind() == Location.Kind.SECTION:

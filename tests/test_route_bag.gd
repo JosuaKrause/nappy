@@ -11,8 +11,6 @@ extends RefCounted
 ## mast ahead of her on the route band, day 6's man shouting on the street she walks (whose siting
 ## `tests/test_day6_yeller_met.gd` holds).
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 ## The run's seed under the mark tests: which ground a route marble finds depends on it, and these
@@ -233,8 +231,8 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
 		var tree := RouteTree.for_day(map, day)
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = hash("route-bag:%d" % seed_value)
-		var plans := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
-				CalmAreas.of(map), MastSites.compute(map), [], [], tree, 0)).placements()
+		var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
+				CalmAreas.of(map), MastSites.compute(map), [], [], tree, 0).placements()
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:ahead:%d" % seed_value)
@@ -286,8 +284,8 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t) -> void:
 		var tree := RouteTree.for_day(map, day)
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = hash("route-bag:lesson:%d" % seed_value)
-		var plans := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
-				CalmAreas.of(map), MastSites.compute(map), [], [], tree, 0)).placements()
+		var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
+				CalmAreas.of(map), MastSites.compute(map), [], [], tree, 0).placements()
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("route-bag:lesson:ahead:%d" % seed_value)
@@ -360,8 +358,8 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
 	var tree := RouteTree.for_day(map, day)
 	var plan_rng := RandomNumberGenerator.new()
 	plan_rng.seed = hash("route-bag:refused:%d" % SEED)
-	var plans := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
-			CalmAreas.of(map), MastSites.compute(map), [], [], tree, 0)).placements()
+	var plans := EventScheduler.build_day(DaySpec.for_day(day), plan_rng, map,
+			CalmAreas.of(map), MastSites.compute(map), [], [], tree, 0).placements()
 	var siting := RefusingSiting.new(day, map, tree,
 			FakeWalkEvents.new().set_plans(plans).set_calm(CalmAreas.of(map)),
 			EventScheduler.Verdicts.new())

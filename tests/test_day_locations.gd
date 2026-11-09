@@ -168,10 +168,11 @@ func _test_the_nearest_section_along_her_paths(t) -> void:
 	t.check(locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths, always, always)
 			== sections[2], "a section already taken is passed over")
 
-## The open locations of `kind` the day laid out beyond the streets.
+## The locations of `kind` the day laid out beyond the streets, in the draw's order.
 static func _grounds_of(locations: DayLocations, kind: int) -> Array[Location]:
 	var found: Array[Location] = []
-	for location in locations.open_locations():
+	var rng := RandomNumberGenerator.new()
+	for location in locations.drawing_order(rng):
 		if location.kind() == kind:
 			found.append(location)
 	return found
@@ -230,12 +231,12 @@ func _test_a_carriageway_event_drawn_takes_its_section(t) -> void:
 	var locations := DayLocations.lay_out(CityMap.new(), _views())
 	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
 	var middle := sections[1]
-	var sidewalks: Array[Location] = []
-	for location in locations.open_locations():
-		if location.kind() == Location.Kind.SIDEWALK and location.segment().key() == BESIDE:
-			sidewalks.append(location)
 	locations.record(middle, EventScheduler.Planned.new(EventCatalogue.by_id("police_patrol"),
 			middle.centre()))
+	var sidewalks: Array[Location] = []
+	for location in locations.drawing_order(RandomNumberGenerator.new()):
+		if location.kind() == Location.Kind.SIDEWALK and location.segment().key() == BESIDE:
+			sidewalks.append(location)
 	var taken := 0
 	for sidewalk in sidewalks:
 		if sidewalk.is_taken():

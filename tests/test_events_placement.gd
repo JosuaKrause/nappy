@@ -4,8 +4,7 @@ extends RefCounted
 ## Plus the placement rules a pinned or pacing row keeps on top of that: a pinned row is only
 ## offered ground it can be pinned on, a square's own poster crew never leaves the square, a pacing
 ## row on the route's sidewalk can still be left room to pass, a route's own junctions and sidewalk
-## stay clear of what it schedules, a flock is scenery rather than a placed obstruction, and a
-## batch of locations the walk draws at once keeps the spacing between its own draws.
+## stay clear of what it schedules, and a flock is scenery rather than a placed obstruction.
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again". Builds its own
 ## `_rng()` rather than extending `events_shared_city.gd`: nothing here reads the shared city, only
@@ -14,8 +13,6 @@ extends RefCounted
 ## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
 ## seed's city is generated once in the test process and every case is handed a copy of its own,
 ## the same city `CityGenerator.generate()` builds for the seed.
-
-const DrawnDay := preload("res://tests/drawn_day.gd")
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
@@ -31,7 +28,6 @@ func run(t) -> void:
 	_test_a_pacing_rows_opening_stays_open(t)
 	_test_a_flock_is_scenery(t)
 	_test_a_lethal_rows_line_reach_is_its_whole_field(t)
-	_test_a_walks_batch_keeps_its_spacing(t)
 
 
 ## The two halves of `EventScheduler.role_for`, checked in one pass over the days because each of
@@ -124,8 +120,8 @@ func _test_the_day_is_placed_by_role(t) -> void:
 			gaps["%d:%s" % [day, key]] = true
 		var consumed: Array[String] = []
 		var ground := {}
-		for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree)).placements():
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 			if not plan.is_placed():
 				continue
 			var tile := map.world_to_tile(plan.position)
@@ -520,8 +516,9 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 ## street runs into the junction box at one end of it unless `_along_street_path` truncates it —
 ## at a closure, at a calm zone's absorbed corridor, or against the map's own margin. The walled
 ## case is that truncation, which is why the floor under it is *one* rather than a share: what it
-## guards is that the sweep can still produce the case at all. City 1001 is in the sweep for it: its
-## day 1, before any mast holds a location, paces a walled beat.
+## guards is that the sweep can still produce the case at all. City 88 is in the sweep for it: its
+## day 1, before any mast holds a location, paces a walled beat, so the floor rests on a day no
+## change to the later days' draws moves.
 func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 	var on_the_route := 0
 	var walled := 0
@@ -529,7 +526,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 	var passes_a_side_route := 0
 	var unavoidable_on_the_route := 0
 	var first := ""
-	for map_seed: int in [4242, 90210, 1234567, 1001]:
+	for map_seed: int in [4242, 90210, 1234567, 88]:
 		var map := MapCache.of(map_seed)
 		for day in [1, 3, 5, 8, 11, 14]:
 			var state := CityState.new()
@@ -538,8 +535,8 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
 			var consumed: Array[String] = []
-			for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree)).placements():
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 				if not plan.def.paces or not plan.counts_against_the_line():
 					continue
 				if not plan.def.reaches_the_far_lane():
@@ -651,8 +648,8 @@ func _test_a_routes_junctions_stay_clear(t) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
-		for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree)).placements():
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 			if plan.counts_against_the_line():
 				counted.append(plan)
 		for junction in tree.junctions():
@@ -790,8 +787,8 @@ func _test_nothing_takes_the_routes_own_sidewalk(t) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
-		for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree)).placements():
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 			# A pacing row is left out for the reason the rule leaves it out: a beat is passed by
 			# waiting rather than by a lane, and its own two rules are what govern it.
 			if plan.counts_against_the_line() and not plan.def.paces:
@@ -875,8 +872,8 @@ func _test_a_pacing_rows_opening_stays_open(t) -> void:
 		var corridor := Corridor.of(tree)
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
-		for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree)).placements():
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 			if plan.counts_against_the_line():
 				counted.append(plan)
 		var streets := {}
@@ -984,8 +981,8 @@ func _test_a_flock_is_scenery(t) -> void:
 		var corridor := Corridor.of(tree)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d" % [4242, day])
-		for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), MastSites.compute(map),
-				consumed, [], tree)).placements():
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), MastSites.compute(map),
+				consumed, [], tree).placements():
 			if plan.def.id != "pigeon_flock" or not plan.is_placed():
 				continue
 			t.check(plan.role == GameEnums.BlockerRole.NONE,
@@ -1015,41 +1012,3 @@ func _test_a_lethal_rows_line_reach_is_its_whole_field(t) -> void:
 	for def in EventCatalogue.all():
 		t.check(def.line_reach() >= def.obstructs_radius,
 				"%s: no row reaches less than its own body" % def.id)
-
-## **A batch the walk draws at once is judged a location at a time**: before her first step the
-## walk draws every location within `WalkDraw.MUST_DRAW` of her door in one go, and a dev spawn draws
-## all the rest (`WalkDraw.draw_everywhere()`); each draw is stood before the next is judged, so no
-## two rows of a batch stand closer than `EventScheduler.EVENT_SPACING_ANY` (64px), the spacing that
-## never bends. Drawn here with a walk, as the game draws it, over three days of one city.
-func _test_a_walks_batch_keeps_its_spacing(t) -> void:
-	var map := MapCache.of(4242)
-	var pairs := 0
-	var close := 0
-	var first := ""
-	for day in [4, 8, 12]:
-		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
-		map.repaint(state)
-		var tree := RouteTree.for_day(map, day)
-		var consumed: Array[String] = []
-		var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, CalmAreas.of(map),
-				MastSites.compute(map), consumed, [], tree)
-		var walk := WalkEvents.new()
-		walk.take(events.placements(), CalmAreas.of(map))
-		events.walk_draw().judge_against(walk)
-		var drawn: Array[EventScheduler.Planned] = []
-		var batches := events.walk_draw().draw_within(map.doorstep_world_position(), WalkDraw.MUST_DRAW)
-		batches.append_array(events.walk_draw().draw_everywhere())
-		for plan in batches:
-			if plan.is_placed():
-				drawn.append(plan)
-		for i in drawn.size():
-			for j in range(i + 1, drawn.size()):
-				pairs += 1
-				if drawn[i].gap_to(drawn[j]) < EventScheduler.EVENT_SPACING_ANY:
-					close += 1
-					if first == "":
-						first = "day %d, '%s' and '%s'" % [day, drawn[i].row_id(), drawn[j].row_id()]
-	t.check(pairs > 100, "the walk's batches stand rows to space (%d pairs)" % pairs)
-	t.check(close == 0, "and no two of a batch stand within 64px of each other (%d pairs%s)"
-			% [close, "" if first == "" else ", first " + first])

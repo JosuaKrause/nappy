@@ -12,8 +12,6 @@ extends "res://tests/resistance_rig.gd"
 ## relocations and the dawn draws are a few. Where a mark's alley ends and where its guard should
 ## stand are worked out from the map alone (`AlleyMarks`).
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 func run(t) -> void:
 	_test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t)
@@ -597,8 +595,8 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t) -> void:
 			var tree := RouteTree.for_day(map, day)
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("%d:events:%d" % [seed_value, day])
-			for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), events_rng, map,
-					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree)).placements():
+			for plan in EventScheduler.build_day(DaySpec.for_day(day), events_rng, map,
+					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 				if plan.def.id != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1

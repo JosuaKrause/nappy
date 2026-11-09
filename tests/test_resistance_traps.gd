@@ -1,8 +1,6 @@
 extends "res://tests/resistance_rig.gd"
 ## The task riding on a look-alike, the guarded targets and the handover traps: a robber or guard set on her from off screen, announced before he can catch her.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 ## Every test builds its city in a run of its own (`_build_city_in_a_new_run()`): a run with no
 ## step done, no alley used and no scar, the "no history, just this day" state `--day N` boots
 ## into, with what the day it asks about needs set on it.
@@ -828,9 +826,9 @@ func _assert_a_trap_row_is_never_the_schedulers(t, id: String) -> void:
 						"day %d at heat %d does not offer '%s'" % [day, heat, id])
 	var map := CityGenerator.generate(SEED)
 	var consumed: Array[String] = []
-	var plans := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(ResistanceDirector.TRAP_FIRST_DAY),
+	var plans := EventScheduler.build_day(DaySpec.for_day(ResistanceDirector.TRAP_FIRST_DAY),
 			_rng(ResistanceDirector.TRAP_FIRST_DAY, "events"), map, CalmAreas.of(map), MastSites.compute(map),
-			consumed)).placements()
+			consumed).placements()
 	t.check(not plans.is_empty(), "the day planned something to look through (%d)" % plans.size())
 	for plan in plans:
 		t.check(plan.def.id != id,

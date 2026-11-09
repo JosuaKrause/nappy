@@ -605,11 +605,6 @@ func investigates() -> bool:
 func lets_out() -> int:
 	return hunting.lets_out if hunting else 0
 
-## **Whether a placed copy of this row blocks the way**: a body she cannot pass, or a hard fail.
-## Every such row is drawn at dawn, never during the walk (`EventScheduler._draw_the_locations()`).
-func blocks_the_way() -> bool:
-	return obstructs_radius > 0.0 or hard_fail
-
 ## How far round its position its body stops her (`obstructs_radius`), or 0 for a row that stops
 ## nothing: what the walked-sidewalk rule reads of a body (`RouteSidewalkRule`).
 func obstructs_within() -> float:

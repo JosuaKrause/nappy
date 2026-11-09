@@ -270,11 +270,6 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ## so a rig can photograph the silence before it notices her rather than always finding it already
 ## noticing.
 static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
-	# A row the view bags draw stands nowhere until her walk comes near its location, so a spawn at
-	# one that finds none placed has the walk draw every location first, as a walk that went
-	# everywhere would leave them (`EventManager.draw_everywhere()`).
-	if not _a_placed_event(city, wanted_id):
-		city.events.draw_everywhere()
 	var waits_for_her_walk := false
 	for plan in city.events.plans():
 		if not plan.is_placed():
@@ -301,18 +296,6 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 	else:
 		push_warning("no non-ambient events planned today")
 	return city.map.home_world_position()
-
-## Whether the day holds a placed event `first_event_position()` would stand her beside.
-static func _a_placed_event(city: City, wanted_id: String) -> bool:
-	for plan in city.events.plans():
-		if not plan.is_placed():
-			continue
-		if wanted_id != "" and wanted_id != "event":
-			if plan.def.id == wanted_id:
-				return true
-		elif plan.def.kind != GameEnums.EventKind.AMBIENT:
-			return true
-	return false
 
 ## The step from a found event's position to somewhere just off it, **across the street it stands
 ## on** rather than along local Y unconditionally. A fixed `Vector2(0.0, radius * scale)` is a step

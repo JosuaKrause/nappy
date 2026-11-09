@@ -14,8 +14,6 @@ extends RefCounted
 ## seed's city is generated once in the test process and every case is handed a copy of its own,
 ## the same city `CityGenerator.generate()` builds for the seed.
 
-const DrawnDay := preload("res://tests/drawn_day.gd")
-
 const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
@@ -93,9 +91,9 @@ func _patrol_routes(seed_value: int) -> Array[PackedVector2Array]:
 	var map := _the_map_of_day_8(seed_value)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
-	var plans := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(8), rng, map, CalmAreas.of(map), MastSites.compute(map), [],
+	var plans := EventScheduler.build_day(DaySpec.for_day(8), rng, map, CalmAreas.of(map), MastSites.compute(map), [],
 			[],
-			RouteTree.for_day(map, 8), Tuning.RESISTANCE_GOAL)).placements()
+			RouteTree.for_day(map, 8), Tuning.RESISTANCE_GOAL).placements()
 	var routes: Array[PackedVector2Array] = []
 	for plan in plans:
 		if plan.def.id == "police_patrol" and plan.path.size() >= 2 \

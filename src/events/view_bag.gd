@@ -44,13 +44,6 @@ func draw(accepts: Callable, scale: Callable) -> String:
 		pass
 	return drawing.drawn
 
-## What share of one fill `marble` is: its count over the fill's.
-func share_of(marble: String) -> float:
-	var total := 0
-	for each: String in _fill:
-		total += int(_fill[each])
-	return float(_fill.get(marble, 0)) / float(total) if total > 0 else 0.0
-
 ## **The same draw, a step at a time** (`Drawing.step()`): what a walk spreads over ticks. `accepts`
 ## may also answer null, still weighing the marble, and is asked of the same marble again on the next
 ## step, so one marble's ask can be spread over steps too. Asked to the end, it draws exactly what

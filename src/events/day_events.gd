@@ -30,7 +30,7 @@ var _spoilers := {}
 var _pursuits := 0
 ## The day's locations, where a phase laid them out (`use_locations()`), or null.
 var _locations: DayLocations = null
-## The draw the walk makes of the day's open locations (`use_walk_draw()`), or null.
+## The draw of the day's open locations (`use_walk_draw()`), or null.
 var _walk_draw: WalkDraw = null
 
 ## **An empty plan over `calm`**, with `standing` the bodies planned before the catalogue: the day's
@@ -125,11 +125,12 @@ func has_a_pursuit() -> bool:
 func use_locations(locations: DayLocations) -> void:
 	_locations = locations
 
-## Hands the plan the draw the walk makes of the day's open locations (`WalkDraw`).
+## Hands the plan the draw of the day's open locations (`WalkDraw`), which the dawn has made.
 func use_walk_draw(draw: WalkDraw) -> void:
 	_walk_draw = draw
 
-## The draw the walk makes of the day's open locations, or null on a walk that draws none.
+## The draw of the day's open locations, or null on a walk that draws none: handed on to the walk,
+## whose per-tick draw finds none of them left open (`WalkDraw.draw_ahead()`).
 func walk_draw() -> WalkDraw:
 	return _walk_draw
 
