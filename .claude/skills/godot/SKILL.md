@@ -9,6 +9,7 @@ These are not obvious and the engine does not warn about most of them. **The one
 
 - **`set(key, value)` silently drops a type mismatch.** Never build typed objects from dictionaries.
 - **`var x := <a Variant>` is a parse error**, and `load(path).instantiate()` is a Variant: annotate.
+- **An untyped declaration and an unsafe property or method access are parse errors here**: a new file is typed from its first line, and no new ignore of them is written.
 - **An untyped `Array` passed as `Array[T]` leaks at shutdown**, and `.slice()` drops the element type.
 - **No warning the engine prints is left standing** (woolly-finch 19).
 - **A feature is tied to a flag the environment informs, never to the environment** (PLAYTEST-25 1).
@@ -53,6 +54,48 @@ and runs none of its checks. Write:
 var scene: PackedScene = load(path)
 var node: Node = scene.instantiate()
 ```
+
+**Three more warnings are errors because `project.godot` makes them so** (its `[debug]` section
+sets each `gdscript/warnings/` entry to the error level), so that every receiver has a class the
+engine and `tools/check_field_reads.py` can tell and a read of another class's field cannot hide
+behind an untyped name (inbox #1268; the **designing-classes** skill, "Fields are not API"):
+
+- `untyped_declaration`: a variable, a parameter, a function's return or a `for` variable with no
+  static type. An inferred type is a type: `var t := Thing.new()` and a `for` over an
+  `Array[Thing]` pass.
+- `unsafe_property_access`: a property read off a type too wide to declare it, such as a `Node`
+  holding a project class.
+- `unsafe_method_access`: a method called off such a type, or off a value the engine types as
+  Variant.
+
+Each fails the parse with "Warning treated as error", and the script fails to load, a suite as a
+`LOAD FAIL`.
+
+**A new file is typed from its first line; only a file not yet typed opts out, with one line.**
+That line is the file's very first, `@warning_ignore_start("untyped_declaration",
+"unsafe_method_access")`, naming exactly those of the three warnings the file still trips and
+nothing else, and it silences them to the end of the file. The files carrying it are a list that
+only shrinks: the change that types a file deletes its line, or the names the file no longer
+trips (a name deleted while the file still trips it fails the file's parse, in `check.sh`'s boot
+or its suite's load, which is how to find out). No other ignore of the three is written anywhere:
+`tools/check_field_reads.py` fails an `@warning_ignore`, `@warning_ignore_start` or
+`@warning_ignore_restore` naming one of them below a file's first line and a malformed opt-out
+line, and in CI a file that gains the line or a warning on it.
+
+**The engine warns of nothing on a property read off a Variant.** An element of an untyped
+`Array` or `Dictionary`, what `back()` or `get()` returns, a name declared `: Variant`:
+`things[0].count` parses at every warning level, where `things[0].make()` is an unsafe method
+access. So such a value is read through a typed name (`var thing: Thing = things[0]`, `for thing:
+Thing in things`, `things[0] as Thing`), and in a file under `src/` without the opt-out line
+`tools/check_field_reads.py` fails the read the engine lets through, wherever the name read is one
+a class under `src/` declares as a `var`.
+
+**The setting reaches every script a debug build parses in this project, and no release export.**
+That is `src/`, `tests/` with its rigs, fixtures and probes, the `tools/*.gd` scripts run with
+`--script`, and a script a test writes at run time and boots in a child process: its source string
+is typed like a file, or opens with the opt-out line where it is not yet. The engine generates the
+warnings only in a debug build, so the release Web export is not held to the setting and proves
+nothing about it; `check.sh` and the suites do.
 
 ## Capabilities
 
@@ -212,3 +255,8 @@ is the only part that governs the code in front of them.
 - **What the `## Overrides` line names and where it is asked for** — the nearest declaring
   ancestor, no line for an engine virtual no project class declares, and `src/` and `tests/` as the
   scope — is the filer's proposal, open to the player's correction (inbox #1154 in gray-dolphin).
+- **A new file carries no opt-out line, and a line gains no warning** are the builder's choices
+  (minty-quail-busy-heron), open to the player's correction. The player's words ask that the
+  field-read check be made to work and approve the design review's way to do it (inbox #1268): the
+  three warnings as errors, the one line at the top of a file not yet converted, and the files
+  carrying it as a list that only shrinks.

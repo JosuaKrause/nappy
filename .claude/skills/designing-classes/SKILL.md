@@ -10,6 +10,7 @@ description: How a class and its collaborators are shaped — the player's princ
 - **A component is handed what it depends on**, never fetching it from an autoload, a group or a static, so a test hands it a fake.
 - **A mode is a configuration of the shared code, never a copy of it.**
 - **Fields are not API**: one object reaches another only through its methods.
+- **A receiver has a class the engine and the field-read check can tell**: a new file is typed from its first line.
 - **An event is asked through one interface**, and an ability is a part it is composed of, never a subclass.
 - **A fact derived from stored data lives in one object that derives it once** and is handed around.
 - **Code nothing reaches is deleted.**
@@ -85,10 +86,27 @@ no private fields, only the underscore convention; only a method call shows a re
 API, and it is the form a script could tell apart. A property is used only inside its own class (inbox #1173 in gray-dolphin). The
 rule covers the vars that classes under `src/`
 declare; it does not cover an engine object's properties (`position`, `visible`, the tree's
-`paused`, as **godot** uses them) or constants and enums (`Tuning.X`). Much of `src/` still reads
-fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that adds a reader file's first read of a field whose receiver's class it can tell by static reading, today's being listed in `tools/field_reads.txt`, a list that only shrinks. It cannot see a read through an untyped receiver, or a further read of a field its reader file is already listed for, so review still reads the diff for those; and a change that converts a file's last read of a field deletes its line. New code does not read a field across objects,
-a change that touches such a read moves it behind a method, and state another class needs is kept in
-an underscore field behind a method.
+`paused`, as **godot** uses them) or constants and enums (`Tuning.X`). New code does not read a
+field across objects, a change that touches such a read moves it behind a method, and state another
+class needs is kept in an underscore field behind a method.
+
+**Two lists hold the rule while `src/` is converted, and each only shrinks.** Much of `src/` still
+reads fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that
+adds a reader file's first read of another class's field, today's being listed in
+`tools/field_reads.txt`, and a change that converts a file's last read of a field deletes its line.
+The second list is what makes the check see every read (inbox #1268), since a read through a
+receiver whose class nothing can tell is a read no list holds. `project.godot` makes the engine
+fail an access it cannot type: the warnings `untyped_declaration`, `unsafe_property_access` and
+`unsafe_method_access` are errors. A file not yet typed carries one `@warning_ignore_start(...)`
+line at its top naming the warnings it still trips, and the files carrying it are that second list:
+a module's pass types its receivers and deletes the line, a new file never carries it, and CI's
+run of the check fails a file that gains it (**godot**, "Types", says what the errors are and how a
+value is typed). In a file under `src/` without the line, the check fails any receiver whose class
+it cannot tell, since the engine warns of nothing on a property read off a Variant; in a file with
+the line it skips such a receiver, and its `--summary` counts the files and the skipped uses. In no
+file does it see a further read of a field its reader file is already listed for, so review still
+reads the diff for those; the rarer blind spots are in the comment that opens the tool, under
+"Blind spots, stated".
 
 **Every pull request that changes code answers the architecture questions** in
 **pr-review**'s `references/architecture-questions.md`, so the layering does not drift once the
@@ -163,5 +181,10 @@ that proposes it, and says so where the player's words name nothing on the point
 - **Which members "Fields are not API" covers**, a reading of inbox #1173 in gray-dolphin.
 - **New code reads no field across objects, and a touched read moves behind a method**
   (inbox #1173 in gray-dolphin).
+- **The check fails an unknown receiver file by file, from the day a file loses its opt-out line,
+  and a new file never carries the line**, the builder's choices (minty-quail-busy-heron). The
+  player's words ask that the check be made to work and approve the design review's way to do it
+  (inbox #1268), and that design has the check fail an unknown receiver only once no file carries
+  the line.
 - **A design where a fake has nothing to be handed to is wrong** (inbox #1156 in gray-dolphin).
 - **What no caller would miss goes** (inbox #1156 in gray-dolphin).
