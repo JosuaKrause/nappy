@@ -30,7 +30,7 @@ the whole queue and the player's words. It is the same on either host: fresh con
 scope and an isolated checkout for implementation. Read-only review can share a checkout. If
 delegation is unavailable, do the bounded work locally and retain the same verification gate.
 
-## Which model
+## The model table: which model does what
 
 **The model for each kind of task is the table below.** The rows that cite the player's words hold
 where another row differs; by judgement, a stronger model than a row's takes a milestone whose
@@ -319,10 +319,10 @@ to the player's correction:
 - **Every row of the model table that carries no citation**, to be revised once the agent counter
   holds enough entries (inbox #900 in freckled-moose). The player asked for a granular table revised
   after experiments or statistics, and for Haiku to be tried on captures and measuring.
-- **That "a rule file" takes in a hook's text** ("Which model"); the player's words name rule, skill
+- **That "a rule file" takes in a hook's text** ("The model table"); the player's words name rule, skill
   and `CLAUDE.md` changes (inbox #1264).
 - **That a review of a change to what a rule says goes to Opus** and a skill's wording alone to
-  Sonnet ("Which model").
+  Sonnet ("The model table").
 - **That a brief names the layer its work belongs to** ("Code is designed by layer"), made in
   **designing-classes** (plush-kestrel).
 - **That a task waiting only on the player does not keep the session open** ("What the
