@@ -18,6 +18,10 @@ internal revision loop. For artwork, sound or any visual or audible result:
   options alone, with the question written above it in the PR description, and a choice is never
   asked by row number. The picture holds only the options and the stages either side of them, each
   labelled with a letter the question uses, each option said in words.
+- **A pull request that went through several visual passes opens with the current proposal**, its
+  pictures embedded, and lists the superseded passes last as plain links (woolly-finch 29). A
+  description that grows a section per pass reads as a history, and the reviewer has to work out
+  which picture is the one being asked about.
 - **A delivered review file stays byte-for-byte unchanged.** Render into job-owned scratch, wait
   for the writer to finish, then copy the completed artifact to a new versioned delivery filename
   and record its hash. Once the player has a link, no render or copy overwrites that file: further

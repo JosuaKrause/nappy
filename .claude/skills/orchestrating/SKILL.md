@@ -9,8 +9,11 @@ The rules the orchestrating session must not miss, one line each; the sections b
 
 - **Delegating is the default.** Code under `src/` or `tests/` is an agent's unless the design is
   still moving or the change is one sentence in one file with no test.
-- **The work keeps moving until none is left**: every startable item is briefed and spawned, and a
-  running agent is looked at at least every 45 minutes.
+- **A design question that blocks goes to the player first**, before any agent.
+- **The work keeps moving until none is left**: every startable item is briefed and spawned, which
+  while the player has put one entry first means that entry's items only (inbox #1210 in
+  gentle-owl), and a running agent is looked at at least every 45 minutes.
+- **The queue is read from `origin/main`, after a fetch, before a brief is written.**
 - **The model is the table's**; a design and a change to a rule file are Fable's.
 - **One task per agent, in its own sparse worktree** from `tools/agent-setup.sh`, with its brief
   written to `.claude/briefs/` before it is spawned and its GitHub role named in it.
@@ -32,26 +35,27 @@ delegation is unavailable, do the bounded work locally and retain the same verif
 
 ## The model table: which model does what
 
-**The model for each kind of task is the table below.** The rows that cite the player's words hold
-where another row differs; by judgement, a stronger model than a row's takes a milestone whose
-geometry or contracts warrant it (woolly-finch 15).
+**The model for each kind of task is the table below**, and which model a task gets is chosen by
+judgement (woolly-finch 15). The rows that cite the player's words hold where another row differs.
+A stronger model than a row's takes a milestone whose geometry or contracts warrant it.
 
 | Task kind | Model |
 |---|---|
 | A task that needs planning or complex reasoning | Fable is considered (inbox #1264) |
-| A design | Fable (inbox #1264) |
-| Code built from a Fable design | the orchestrator's choice (inbox #1264) |
+| The design that code is built from, a seam's design included | Fable (inbox #1264) |
+| Code built from a Fable design | the orchestrator's choice (inbox #1264), by the build rows below |
 | A change to a rule file: a skill, `CLAUDE.md`, a hook's text | Fable, directly (inbox #1264) |
 | Drawing: making or revising artwork, SVG, PNG or a review sheet | Opus (PLAYTEST-123 8) |
-| Waiting, merging, polling | no agent: a script in a background shell (inbox #1070 in gentle-walrus) |
+| Waiting on a merge or a check, polling | no agent: a timer or a script in a background shell, which costs no tokens (inbox #1070 in gentle-walrus, inbox #1072 in gentle-walrus) |
+| Merging | the orchestrating session, with no agent spawned for it; an agent or a monitor may run a merge the session hands it (**committing**, "Merging") |
 | Build at test parity | Sonnet |
-| Build that changes play or designs a seam | Opus |
+| Build that changes play, or builds a seam from its design | Opus |
 | Investigate an unexplained result | Opus |
 | Measure: run a named probe batch into a fixed table, no conclusion | Haiku |
 | Measure with interpretation: what is noise, what is real, what a picture shows | Sonnet |
 | Capture named moments for a PR | Haiku, the pictures judged by the measurer or the reviewer |
 | Review fixes | the builder, while warm and not near the limit |
-| Review of a play-changing or design PR, or of a change to what a rule says | Opus |
+| Review of a play-changing or design PR, of one that carries a drawing, or of a change to what a rule says | Opus |
 | Review of queue, docs, a skill's wording alone or a small delta | Sonnet |
 
 **In Claude Code, drawing is Opus's** (PLAYTEST-123 8), since the result is judged by eye and a
@@ -184,7 +188,9 @@ A review agent's scratch checkout is `tools/agent-setup.sh --detach <ref> <name>
 (quiet-yak #496): the orchestrator starts no new agent or worktree until the space is sorted out by
 **session-cleanup**'s storage steps. `references/worktrees-and-disk.md` holds how the worktree is
 made, the disk check and what an agent does on a warning: read it before making a worktree by any
-other route, and on any disk warning.
+other route, before a batch of several checkouts, imports, builds or captures (each tool checks
+only its own call, so the batch as a whole is checked by whoever starts it), and on any disk
+warning.
 
 **One repo takes several agents at once when each works in its own worktree.** What makes it safe
 is not the worktrees — merging is what collides — so parallelism is planned at the file level,
@@ -208,6 +214,9 @@ before spawning:
   request reaches `main` as one squashed commit, so a branch made from the docs branch meets
   `main`'s copy of every docs file when `main` is merged back, and an item file it deleted comes
   back without a conflict (`references/worktrees-and-disk.md`, "Branching from a docs branch").
+- **Spawn from the main checkout, never from a worktree that has just been removed**: `cd` back
+  to the repository's own folder after removing one, since a shell still standing in a deleted
+  worktree fails every spawn (`references/worktrees-and-disk.md`, "The worktree").
 - **A push that starts no CI run is diagnosed, not waited on**: `references/recovery.md` says how.
 - **Tell each agent who else is alive** and which files those agents own, so a scope fence is a
   sentence in the prompt and not a discovery in the diff.
@@ -316,13 +325,23 @@ coming. **Run `tools/agent-status.sh` before touching anything**, then follow
 The rules in this file that are the filer's proposal or reading, not the player's words, each open
 to the player's correction:
 
-- **Every row of the model table that carries no citation**, to be revised once the agent counter
-  holds enough entries (inbox #900 in freckled-moose). The player asked for a granular table revised
-  after experiments or statistics, and for Haiku to be tried on captures and measuring.
+- **Every row of the model table that carries no citation**, the merging row and the two build
+  rows among them, to be revised once the agent counter holds enough entries (inbox #900 in
+  freckled-moose). The player asked for a granular table revised after experiments or statistics,
+  and for Haiku to be tried on captures and measuring.
+- **That a stronger model than a row's takes a milestone whose geometry or contracts warrant it**
+  ("The model table"); the player's words are that the model is chosen by judgement
+  (woolly-finch 15).
+- **That "the orchestrator's choice" for code built from a Fable design is made by the build
+  rows** ("The model table"); the player's words leave the choice to the orchestrator
+  (inbox #1264).
 - **That "a rule file" takes in a hook's text** ("The model table"); the player's words name rule, skill
   and `CLAUDE.md` changes (inbox #1264).
 - **That a review of a change to what a rule says goes to Opus** and a skill's wording alone to
   Sonnet ("The model table").
+- **That a pull request that carries a drawing is reviewed by Opus** ("The model table"); the
+  player's words are about the model that makes the drawing (PLAYTEST-123 8), not the one that
+  reviews it.
 - **That a brief names the layer its work belongs to** ("Code is designed by layer"), made in
   **designing-classes** (plush-kestrel).
 - **That a task waiting only on the player does not keep the session open** ("What the

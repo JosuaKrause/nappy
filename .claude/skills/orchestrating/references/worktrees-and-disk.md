@@ -1,9 +1,11 @@
 # Worktrees and disk
 
-How an agent's worktree is made and why it is sparse, the one case for the harness's own isolation,
-why its branch never starts from a docs branch, and the disk check before a batch. **orchestrating** keeps the rule (a sparse worktree from
-`tools/agent-setup.sh`, and a low-disk warning stops new work); read this before making a worktree
-by any other route, before a checkout, import, build or capture batch, and on any disk warning.
+How an agent's worktree is made and why it is sparse, where a spawn is made from, the one case for
+the harness's own isolation, why a branch never starts from a docs branch, and the disk check
+before a batch. **orchestrating** keeps the rules (a sparse worktree from `tools/agent-setup.sh`, a
+spawn from the main checkout, and a low-disk warning stops new work); read this before making a
+worktree by any other route, before a checkout, import, build or capture batch, and on any disk
+warning.
 
 ## The worktree
 
@@ -27,13 +29,17 @@ A review agent's scratch checkout is made sparse with `tools/agent-setup.sh --de
 the same patterns, detached at `<ref>`, with no branch and no brief, so `agent-status.sh` never
 counts it as an agent. **committing** ("Branches") says how it is removed.
 
+**Spawn from the main checkout, never from a worktree that has just been removed.** The harness
+resolves `HEAD` in the shell's current directory before it creates an agent's worktree, so a shell
+still standing in a deleted worktree fails every spawn; `cd` back to the repository's own folder
+after removing one. The rule holds for every spawn, whichever way the agent's worktree is made:
+git itself answers nothing from a deleted directory, so a command run there by a relative path,
+`tools/agent-setup.sh` included, fails too.
+
 **The Agent tool's own worktree isolation is not used unless a task needs the folders the sparse
 checkout leaves out.** It makes a full checkout, since `.claude/settings.json` sets neither its
-`worktree.sparsePaths` (which can only include whole folders) nor a `WorktreeCreate` hook. Where it
-is used, two things follow. The spawn is made from the main checkout, never from a worktree that
-has just been removed: the harness resolves `HEAD` in the shell's current directory before it
-creates the agent's worktree, so a shell still standing in a deleted worktree fails every spawn.
-And each such spawn leaves a `worktree-agent-*` branch pointing at the worktree's base, which
+`worktree.sparsePaths` (which can only include whole folders) nor a `WorktreeCreate` hook. Each
+such spawn leaves a `worktree-agent-*` branch pointing at the worktree's base, which
 `tools/prune-merged.sh` deletes once its worktree is gone, keeping a live agent's.
 
 ## Branching from a docs branch
@@ -54,7 +60,9 @@ Before checkout, import, build or capture batches, check free space on the desti
 against the estimated peak working set plus explicit headroom (`tools/lib_disk_headroom.sh` holds
 the measured estimates, worktrees' included, and the tools that write a batch source it and refuse
 or warn by themselves); an unknown peak or inadequate room means measure or reduce the batch before
-starting.
+starting. **A tool checks its own call only**: a batch made of several calls (twenty captures in a
+loop, a build and then an export) is checked as a whole, before its first call, by the orchestrator
+or the agent that starts it.
 
 **A low-disk warning from a tool, or a check that leaves less than the reserve, stops new work**
 (quiet-yak #496). It is guidance, not a hard hook. The orchestrator starts no new agent or worktree

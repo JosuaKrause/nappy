@@ -61,7 +61,8 @@ push a tag.
 **What else committing asks of a builder.** The pull request reaches `main` as one squashed commit
 whose message is its title and description, so nothing may live only in a commit message. A defect
 a review or CI finds in your pull request is fixed on its branch, never in a second pull request
-(woolly-finch 20). Never commit `.godot/`. A read (`git status`, `gh pr view`) runs unwrapped. The
+(woolly-finch 20), and after the fix the description is updated to say what the pull request now
+carries. Never commit `.godot/`. A read (`git status`, `gh pr view`) runs unwrapped. The
 attribution trailer your own instructions ask for is added as always.
 
 ## Identity
@@ -80,8 +81,9 @@ the write, stop and report — never fall back to a direct call. Open a ready PR
 
 **Text you post or commit goes through a file in a fresh directory, in three calls** (a PR body, a
 commit message, a review, a comment): `mktemp -d`; then `cat > <that literal path>/<name> <<'EOF'`
-with the text, as the whole command; then the write, passing the file. Never a fixed name such as
-`/tmp/pr_body.md`, which can already hold another run's text. **committing**, "Text handed to a
+with the text, as the whole command; then the write, passing the file. Read the file back before
+passing it on. Never a fixed name such as `/tmp/pr_body.md`, which can already hold another run's
+text. **committing**, "Text handed to a
 write goes through a file", says why each call stands alone.
 
 ## Scope
@@ -138,10 +140,12 @@ review.
 
 ## Machine
 
-Keep engine runs short and sequential: several agents share the machine. **Disk**: the tools that
-write a batch (a build, an export, a capture) check free space themselves and refuse or warn
-(`tools/lib_disk_headroom.sh`, which `worktrees-and-disk.md` beside this file explains); a low-disk
-warning means stop, start no new batch, and report it (quiet-yak #496). Never search with an
+Keep engine runs short and sequential: several agents share the machine. **Disk**: a tool that
+writes a build, an export or a capture checks free space for its own call and refuses or warns
+(`tools/lib_disk_headroom.sh`). **Before a build, export or capture batch of several calls, check
+headroom for the whole batch yourself**, as "Disk" in `worktrees-and-disk.md` beside this file
+says; an unknown peak or too little room means measure or reduce the batch before starting. A
+low-disk warning means stop, start no new batch, and report it (quiet-yak #496). Never search with an
 unrestricted `git grep` (always `-I` or a text pathspec); prefer `rg`.
 
 ## Visual attempts come back early
@@ -150,7 +154,8 @@ unrestricted `git grep` (always `-I` or a text pathspec); prefer `rg`.
 before the first attempt.** Its rules in one line each: an attempt comes back early, as a preview,
 and is not held for polish; a question the player answers by eye gets a picture of its own, the
 options alone (woolly-penguin #758); a delivered review file is never overwritten, and a further
-attempt gets a new filename; showing an attempt does not authorize installing it.
+attempt gets a new filename; a description after several visual passes opens with the current
+proposal (woolly-finch 29); showing an attempt does not authorize installing it.
 
 ## Forks come back, never guessed
 
@@ -168,8 +173,10 @@ the clash quoting both.
 
 Also the PR description, and the merge review's input: per item, what was built and how it was
 verified; every choice made where the design was silent, each with the words read for it; every
-fork left open; the answers to the architecture questions, where the paths ask for them; the PR
-URL. An outcome it does not mention is an outcome that did not happen.
+fork left open; any part of the work only a person can judge, named as such with what to look at,
+so that the orchestrator files its review item (woolly-finch 18); the answers to the architecture
+questions, where the paths ask for them; the PR URL. An outcome it does not mention is an outcome
+that did not happen.
 
 ## Proposed, not asked for
 
