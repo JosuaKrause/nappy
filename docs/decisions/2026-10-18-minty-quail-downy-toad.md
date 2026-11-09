@@ -21,8 +21,9 @@ fixed part holds is recorded on its location (the design's fixed parts' phases, 
   parts). The seals' phase stands their bodies at dawn and nothing more: the day's rules keep rows
   off them as standing bodies, but a seal holds no location, since "a soft seal is not held, since
   its carriageway is still walkable and a café standing on it is the price of that route"
-  (`docs/EVENTS.md`, the held streets), and a hard seal's street is held already. The doors'
-  bodies are not standing, and their streets are held already. A mast's location on a day before
+  (`docs/EVENTS.md`, the held streets), and a hard seal's street is held already. The region
+  doors' bodies are not standing: a street door's street is held, and an alley door is kept clear
+  by the doors' rule (`CHECKPOINT_EVENT_GAP`). A mast's location on a day before
   the masts holds nothing and is drawn like any other. A playground's ground is in no location, so
   it holds none. The orchestrator first ruled that a soft seal holds its sidewalk locations; the
   probe planning the day's seals as the game does measured route-adjacent walls −24% and

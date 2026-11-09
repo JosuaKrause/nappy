@@ -116,7 +116,7 @@ const _DOOR_ID_PREFIX := "checkpoint"
 
 ## Which pass of the morning put a solid body down.
 enum Source {
-	CANDIDATE_LOOP,   ## the dawn phases and the draw, reached by scripted, one-shot and recurring rows alike.
+	CANDIDATE_LOOP,   ## the dawn phases and the draw, reached by scripted and recurring rows.
 	SEAL,             ## `SealPlanner.plan_day`, before the scheduler ever runs.
 	CALM_GROUND,      ## `_spoil_the_parks_she_used` — appended to `planned` directly, no rule asked.
 	CLOSURE,          ## `ClosurePlanner.plan_day` / `map.closed_tiles` — a tile barrier, not a row.

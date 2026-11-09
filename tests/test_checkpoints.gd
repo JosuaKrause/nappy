@@ -427,7 +427,7 @@ func _test_the_manager_actually_places_the_door_structure(t) -> void:
 ## "there should be a gap for events immediately surrounding the gates".)* Asked of the rule
 ## itself, `DoorClearanceRule.clear_of_the_doors()`, over a whole planned day rather than over one
 ## contrived placement: the ways a row gets onto the map are several (the dawn draw, a scripted
-## row's dawn phase, a one-shot's) and a check on one of them would say nothing about the rest.
+## row's dawn phase, the roadblock phase) and a check on one of them would say nothing about the rest.
 ##
 ## **And the same day planned with no doors is what says the sweep is not vacuous**, and what
 ## measures the price of the rule at the same time. The second call is the identical call with the

@@ -610,15 +610,12 @@ func lets_out() -> int:
 func obstructs_within() -> float:
 	return obstructs_radius
 
-## **Why this row breaks the rule that a one-shot is sited on her way**, or "" where it keeps it:
-## a one-shot is a set piece, which has to be met wherever she goes, so one without `on_her_way`
-## would stand in one place and be met only if she walked there. `validate()` refuses a row this
-## answers for.
-func _met_wherever_she_goes_refusal() -> String:
-	if kind == GameEnums.EventKind.ONE_SHOT and on_her_way == null:
-		return ("event '%s' is a one-shot not sited from her walk: a set piece has to be met " % id
-				+ "wherever she goes, and one placed at dawn is met only if she walks there")
-	return ""
+## **Whether this row is a one-shot not sited from her walk**, which `validate()` refuses: a one-shot
+## is a set piece, which has to be met wherever she goes, so one without `on_her_way` would stand in
+## one place and be met only if she walked there. Public so a test can ask it of a bad row, since
+## `validate()`'s refusal is a `push_error`, which fails the whole run.
+func is_a_one_shot_off_her_way() -> bool:
+	return kind == GameEnums.EventKind.ONE_SHOT and on_her_way == null
 
 ## **Whether a recurring row the day rolls is handed to her walk to site** (`on_her_way`, the
 ## sidewalk poster crew): the day's plan rolls it like any other and, at the end, takes it off the
@@ -1198,8 +1195,9 @@ func validate() -> bool:
 	# would stand in one location and be met only if she walked there, so it is refused until the
 	# walk's draw can carry it, a rigged marble on the next location she comes to (placement by
 	# construction's walk draws).
-	if _met_wherever_she_goes_refusal() != "":
-		push_error(_met_wherever_she_goes_refusal())
+	if is_a_one_shot_off_her_way():
+		push_error("event '%s' is a one-shot not sited from her walk: a set piece has to be met " % id
+				+ "wherever she goes, and one placed at dawn is met only if she walks there")
 		return false
 	# **A row sited from her walk is a `MAP` row that stands still, or it is nothing.** Only
 	# `EventScheduler._place_one_shots` and `_hand_to_her_walk` read the flag, and only

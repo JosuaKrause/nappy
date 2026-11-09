@@ -726,7 +726,8 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	# seal's bodies stand at dawn as standing and the day's rules keep rows off them, but hold no
 	# location: a soft seal is not held, its carriageway still walkable and a row standing on it the
 	# price of that route (`docs/EVENTS.md`, the held streets), and a hard seal's street is held
-	# already. The region doors' bodies are not standing and their streets are held. A mast's
+	# already. The region doors' bodies are not standing: a street door's street is held, and an
+	# alley door is kept clear by the doors' rule (`CHECKPOINT_EVENT_GAP`). A mast's
 	# location on a day before the masts holds nothing and is drawn like any other.
 	var fixed := _place_ambient(day, map, heat)
 	events.add_all(fixed)
@@ -2807,8 +2808,8 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 ##
 ## **Each candidate is asked of the day's rules** (`StreetInvalidation`), the same ones the dawn draw
 ## asks, so they are stated once; the tries and the roomiest fallback are this function's own, kept
-## for its callers outside the dawn draw (the walk's sitings, the scripted rows, the one-shots and the
-## scene recipes) until each moves to the locations (the orchestrator's choice in placement step 3b).
+## for its one caller, the walk's sitings (`WalkSiting`), until the walk's draws move it to the
+## locations (the orchestrator's choice in placement step 3b).
 static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
 		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
