@@ -17,6 +17,8 @@ description: How a real-world photo or video gets into the repo as drawing refer
 - **Never commit a file there is no right to redistribute, or a recognisable person who did not
   agree to it.**
 - **A partial run is a failure**: read the script's output.
+- **An agent's sparse worktree leaves both folders out**: a new file there is committed with
+  `git add --sparse <path>`.
 
 **Reference material goes in `docs/reference/`, an approved style reference goes in
 `docs/style-references/`, and both get there through `tools/reference.sh`.**
@@ -51,8 +53,11 @@ The folders that hold pictures are not interchangeable:
   (`graphics-reference-*.jpeg`) that illustrated-png draws from: flat, no subfolders, added
   through `tools/reference.sh --style`. See `docs/style-references/README.md` for what each file
   is a reference for.
-- **Everywhere else is something else.** `docs/evidence/` is the game, captured, and is proof (the
-  **session-captures** skill); `art/` holds the authoring pictures the atlas bake reads, of which
+- **Everywhere else is something else.** `docs/evidence/` is the game, captured, plus the
+  generation records, review sheets and provenance that point at the style references above. It is
+  proof: a doc sentence points at it, and the **playtest-feedback** skill's rule requires the
+  picture to land in the same commit as the sentence; how its folders are named is the
+  **session-captures** skill's. `art/` holds the authoring pictures the atlas bake reads, of which
   only `art/social-card.png` ships, copied by `.github/workflows/deploy.yml`; `assets/` is what the
   engine reads at runtime, and only that.
 

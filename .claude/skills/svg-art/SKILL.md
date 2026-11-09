@@ -30,8 +30,9 @@ work those checks cannot judge.
 
 `references/drawing-and-rendering.md` is read before drawing or revising an SVG and before
 rendering one for review: silhouette first, the projections of a vehicle, fixed points across
-modular states, one character across every facing, contact shadows, partial motion, and the scratch
-script that renders with the game's own SVG parser.
+modular states, one character across every facing, contact shadows, partial motion, the scratch
+script that renders with the game's own SVG parser, and validating the XML apart from rendering:
+an XML comment cannot contain a double hyphen, and a forgiving Godot import is not XML validation.
 
 ## Establish the picture's contract
 
