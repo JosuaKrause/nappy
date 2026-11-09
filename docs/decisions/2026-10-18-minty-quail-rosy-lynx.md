@@ -64,6 +64,6 @@ the branch, so order and load are not separated from the change:
   the change.
 - The probe fails six of its own checks on one seed and day, on the base as on the branch.
 
-The player's word on cost (inbox #1278): the clean design is built whatever it costs, and the
+The player's word on cost (inbox #1278 in olive-ferret): the clean design is built whatever it costs, and the
 numbers are there to know where to look. A clean pair of runs, alternated and on a quiet machine,
 is taken with the baseline measurements (`baseline-measurements.md`).
