@@ -364,6 +364,8 @@ func _test_a_walker_turns_into_a_street_sealed_further_along(t) -> void:
 		_city.map.obstruct_tiles(owner, EventSpawner.obstructed_footprint(_city.map, def, at_body,
 				Vector2.RIGHT))
 		owner += 1
+	var traffic := TrafficIndex.new()
+	_city.crowd.use_traffic(traffic)
 	_city.crowd.start_day(1, _rng(4), at)
 
 	var arm_rect := arm.tile_rect()
@@ -561,7 +563,7 @@ func _test_no_car_in_sight_ever_moves_further_than_it_drove(t) -> void:
 		# frame's landing sees. See `TrafficIndex.claim()`.
 		for agent: CrowdAgent in _city.crowd.agents():
 			if agent.is_turning():
-				agent.lane().traffic().claim(agent.turn_lane_key(),
+				traffic.claim(agent.turn_lane_key(),
 						agent.turn_landing() - Tuning.CAR_GAP_MIN * 0.5)
 		for agent: CrowdAgent in _city.crowd.agents():
 			var was: Array = before.get(agent.get_instance_id(), [])

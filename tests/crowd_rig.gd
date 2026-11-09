@@ -83,6 +83,7 @@ const PARTS := {
 		"_test_a_precinct_stops_the_street_that_crosses_it",
 		"_test_cars_do_not_enter_a_junction_they_cannot_leave",
 		"_test_nothing_walks_into_a_hard_blocker",
+		"_test_a_walker_turned_into_a_corridor_lands_on_the_pavement_nearest_it_once_turned",
 	],
 }
 
@@ -1487,13 +1488,15 @@ func _test_the_morning_is_unpacked_before_the_first_frame(t) -> void:
 func _test_the_morning_is_indexed_before_the_first_frame(t) -> void:
 	var cars := 0
 	var unseen := 0
+	var traffic := TrafficIndex.new()
+	_city.crowd.use_traffic(traffic)
 	for day in [1, 13]:
 		_city.crowd.start_day(day, _rng(day))
 		for agent in _city.crowd.agents():
 			if agent.kind != CrowdAgent.Kind.CAR:
 				continue
 			cars += 1
-			if agent.lane().traffic().room_at(agent.lane_key(), agent.queue_position(), 1.0):
+			if traffic.room_at(agent.lane_key(), agent.queue_position(), 1.0):
 				unseen += 1
 	t.check(cars > 0, "the rig days put cars on the road to look for (%d)" % cars)
 	t.check(unseen == 0,
@@ -1762,6 +1765,8 @@ func _test_a_car_looks_before_it_turns(t) -> void:
 ## answer: the rebuild buckets every car once and claims are gone by then, so a lane's rearmost place
 ## is its rearmost car's, and a stale entry is one behind it.
 func _test_the_traffic_index_is_emptied_every_frame(t) -> void:
+	var index := TrafficIndex.new()
+	_city.crowd.use_traffic(index)
 	_city.crowd.start_day(1, _rng(1))
 	# Long enough that plenty of cars have left the field and come back, which is what claims a
 	# place in a lane. The growth is visible within a frame or two of the first recycle, so this
@@ -1784,7 +1789,6 @@ func _test_the_traffic_index_is_emptied_every_frame(t) -> void:
 		if agent.is_turning():
 			rearmost[agent.turn_lane_key()] = minf(rearmost.get(agent.turn_lane_key(), INF),
 					agent.turn_landing())
-	var index: TrafficIndex = _city.crowd.agents()[0].lane().traffic()
 	var stale := 0
 	for key: int in rearmost:
 		if absf(index.rearmost(key) - float(rearmost[key])) > 0.01:
@@ -2164,3 +2168,27 @@ func _test_nothing_walks_into_a_hard_blocker(t) -> void:
 		worst = maxi(worst, inside)
 	t.check(worst == 0, "nobody ever stands inside a hard blocker (worst %d at once)" % worst)
 
+## **A walker turned into a corridor by a shut way** (`WalkerStrategy.divert()`) has no pavement chosen
+## for it beforehand, so it lands on the one nearest where it stands *once it has turned*: measured
+## across the new corridor, which is the coordinate the old axis did not use. The body stands level
+## with the far pavement of the new corridor along the old axis and with the near one along the new:
+## landing by the old axis puts it on the far one. A turn is one event (`Lane.turn_into()`) so that
+## the order of its parts is the mover's, not the caller's.
+func _test_a_walker_turned_into_a_corridor_lands_on_the_pavement_nearest_it_once_turned(t) -> void:
+	var agent := CrowdAgent.new()
+	agent.setup(CrowdAgent.Kind.WALKER, _city.map, CrowdField.new(_city.map, Vector2.ZERO), 7, 0.0)
+	var from_corridor := 1
+	var into := 2
+	var near: int = CrowdLanes.SIDEWALK_OFFSETS[0]
+	var far: int = CrowdLanes.SIDEWALK_OFFSETS[1]
+	agent.position = Vector2(CrowdLanes.lane_centre(into, far), CrowdLanes.lane_centre(into, near))
+	agent.lane().start_in_a_lane(true, from_corridor, far, 1.0, 40.0)
+	agent.lane().turn_into(false, into, -1.0, -1, from_corridor)
+	t.check(not agent.lane().is_vertical() and agent.lane().corridor_index() == into
+			and agent.lane().direction() == -1.0, "the turn swaps its axis and takes the new corridor and way")
+	t.check(agent.lane().lane_index() == near,
+			"with no pavement chosen it lands on the one nearest where it stands once turned (%d, not %d)"
+			% [agent.lane().lane_index(), far])
+	t.check(agent.lane().junction_index() == from_corridor,
+			"and it is in the junction it came down, so it rolls no second turn")
+	agent.free()

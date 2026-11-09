@@ -187,9 +187,6 @@ class Lane:
 	func direction() -> float:
 		return _of._direction
 
-	func speed() -> float:
-		return _of._speed
-
 	func lane_centre() -> float:
 		return _of._lane_centre
 
@@ -201,6 +198,10 @@ class Lane:
 
 	func turn() -> CarTurn:
 		return _of._turn
+
+	## Whether it is on a turn's arc, past the run-up that comes first.
+	func is_in_the_arc() -> bool:
+		return _of._is_in_the_arc()
 
 	func turn_run_up() -> float:
 		return _of._turn_run_up
@@ -246,46 +247,82 @@ class Lane:
 	func door_ahead_along() -> float:
 		return _of.door_ahead_along
 
-	func traffic() -> TrafficIndex:
-		return _of._traffic
-
 	# --------------------------------------------------------------------- events ---
 
-	## It joins the lane `lane` of corridor `corridor`, travelling `direction` along an axis that is
-	## vertical or not: a morning's choice, a turn landing or a walker's about-face.
-	func join_a_lane(vertical: bool, corridor: int, lane: int, direction_along: float) -> void:
+	## It starts in a lane: travelling `direction_along` an axis that is vertical or not, in the lane
+	## `lane` of corridor `corridor`, at `pace`. A morning's choice.
+	func start_in_a_lane(vertical: bool, corridor: int, lane: int, direction_along: float,
+			pace: float) -> void:
 		_of._vertical = vertical
 		_of._corridor = corridor
 		_of._lane = lane
 		_of._direction = direction_along
-
-	## It moves to lane `lane` of the corridor it is in.
-	func change_lane(lane: int) -> void:
-		_of._lane = lane
-
-	## It keeps to `centre`, its lane's centre line.
-	func keep_to_lane_centre(centre: float) -> void:
-		_of._lane_centre = centre
-
-	## It goes at `speed` from now.
-	func drive_at(pace: float) -> void:
 		_of._speed = pace
 
-	## It is inside the junction of corridor `corridor`, so it rolls no second turn there (-1 for none).
+	## It enters lane `lane` of the corridor it is in, at `pace`: a recycled body at a stretch's end.
+	func enter_a_lane(lane: int, pace: float) -> void:
+		_of._lane = lane
+		_of._speed = pace
+
+	## It has turned round and now keeps to `lane`, with that lane's centre line.
+	func turn_round_into(lane: int) -> void:
+		_of._lane = lane
+		_of._lane_centre = _of._lane_centre_here()
+
+	## **It turns into a corridor**: a walker's corner or a car's landing. It now travels along an axis
+	## that is vertical or not, `direction_along` corridor `corridor`, in lane `lane` (a negative one
+	## is the pavement nearest where it stands once turned), on that lane's centre line, and is inside
+	## the junction of corridor `from_corridor`, so it rolls no second turn before clearing the first.
+	## One call, so the order of the parts cannot drift.
+	func turn_into(vertical: bool, corridor: int, direction_along: float, lane: int,
+			from_corridor: int) -> void:
+		_of._vertical = vertical
+		_of._corridor = corridor
+		_of._direction = direction_along
+		_of._lane = lane if lane >= 0 else CrowdLanes.nearest_sidewalk(corridor, _of._cross())
+		_of._lane_centre = _of._lane_centre_here()
+		_of._junction = from_corridor
+
+	## It is inside the junction of corridor `corridor`.
 	func be_in_junction(corridor: int) -> void:
 		_of._junction = corridor
 
-	## It walks `offset` across its lane to keep clear of something.
-	func detour_by(offset: float) -> void:
-		_of._detour = offset
+	## It has left the junction it was in.
+	func leave_the_junction() -> void:
+		_of._junction = -1
+
+	## It eases its speed toward `wanted` by at most `step`.
+	func ease_speed_toward(wanted: float, step: float) -> void:
+		_of._speed = move_toward(_of._speed, wanted, step)
+
+	## It goes no faster than `limit`.
+	func limit_speed_to(limit: float) -> void:
+		_of._speed = minf(_of._speed, limit)
+
+	## It drives `travel` of its straight run-up before a turn's arc begins and answers how much of
+	## `travel` is left: along its lane, steering across toward the lane's centre line.
+	func drive_the_run_up(travel: float, delta: float) -> float:
+		var straight := minf(travel, _of._turn_run_up)
+		_of._set_along(_of._along() + straight * _of._direction)
+		_of._set_cross(move_toward(_of._cross(), _of._lane_centre, STEER_SPEED * delta))
+		_of._turn_run_up -= straight
+		return travel - straight
+
+	## It keeps to its lane's centre line.
+	func keep_to_its_lane_centre() -> void:
+		_of._lane_centre = _of._lane_centre_here()
+
+	## It walks across its lane to `target`, kept within `band`.
+	func detour_to_within(target: float, band: Vector2) -> void:
+		_of._detour = clampf(target, band.x, band.y) - _of._lane_centre
+
+	## It walks straight again.
+	func end_the_detour() -> void:
+		_of._detour = 0.0
 
 	## What it looked at ahead is stale, so the next look-ahead scans afresh.
 	func look_ahead_afresh() -> void:
 		_of._scan_at = Vector2i(-9999, -9999)
-
-	## `left` of the straight lane before a committed turn's arc begins.
-	func use_up_the_run_up(left: float) -> void:
-		_of._turn_run_up = left
 
 	## A hut stands `along` its line ahead of it.
 	func see_a_door_ahead(hut: WalkerDoorHold, along: float) -> void:
@@ -724,7 +761,7 @@ func velocity() -> Vector2:
 ## diagonal is across the traffic it was queueing with. It ties to the axis it came in on,
 ## which is the half of the turn it has not yet finished.
 func travelling_vertically() -> bool:
-	if _turn and _turn_run_up <= 0.0:
+	if _is_in_the_arc():
 		var forward := heading()
 		return absf(forward.y) >= absf(forward.x)
 	return _vertical
@@ -774,7 +811,7 @@ func distance_to_junction() -> float:
 ## that changed the axis without changing this would point every one of them at a car that is not
 ## there.
 func heading() -> Vector2:
-	if _turn and _turn_run_up <= 0.0:
+	if _is_in_the_arc():
 		return _turn.heading_at(_turn.distance_travelled())
 	return Vector2(0.0, _direction) if _vertical else Vector2(_direction, 0.0)
 
@@ -1028,6 +1065,10 @@ func _stride_seconds() -> float:
 func is_turning() -> bool:
 	return _turn != null
 
+## Whether it is on a turn's arc, past the run-up that comes first.
+func _is_in_the_arc() -> bool:
+	return _turn != null and _turn_run_up <= 0.0
+
 ## The junction box a turning car is claiming, or `(-1, -1)`.
 ##
 ## **Only once the arc has actually begun**, never during the run-up: a car that has committed to a
@@ -1035,7 +1076,7 @@ func is_turning() -> bool:
 ## holding it shut for the length of its approach would empty the crossing street for a second and a
 ## half. What it claims is the box it is *in*.
 func turning_in() -> Vector2i:
-	return _turn.junction_box() if _turn and _turn_run_up <= 0.0 else Vector2i(-1, -1)
+	return _turn.junction_box() if _is_in_the_arc() else Vector2i(-1, -1)
 
 ## The lane a turning car has reserved a place in, and where in it — `Crowd` puts the pair into the
 ## index it rebuilds, so the reservation is visible to every car for the whole frame rather than

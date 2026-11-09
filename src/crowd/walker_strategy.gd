@@ -215,7 +215,7 @@ func begin_frame(delta: float) -> bool:
 	if _detour_left > 0.0:
 		_detour_left = maxf(0.0, _detour_left - delta)
 		if _detour_left <= 0.0 and not _body_detour_held:
-			_lane.detour_by(0.0)
+			_lane.end_the_detour()
 	_yield_left = maxf(0.0, _yield_left - delta)
 	if not _is_inside_a_hut():
 		return false
@@ -278,8 +278,8 @@ func choose_lane(roll: float) -> void:
 			floori(along / float(Tuning.TILE_SIZE)))
 	var lane := offsets[_rng.randi_range(0, offsets.size() - 1)]
 	var direction := 1.0 if _rng.randf() < 0.5 else -1.0
-	_lane.join_a_lane(vertical, corridor, lane, direction)
-	_lane.drive_at(_rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y))
+	_lane.start_in_a_lane(vertical, corridor, lane, direction,
+			_rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y))
 
 ## A walker is pushed toward the outer edge of its own footway, which is what leaves a gap between
 ## the two lanes of a pavement worth aiming at. See `CrowdLanes.SIDEWALK_LANE_SPREAD`.
@@ -320,8 +320,8 @@ func enter_at_an_end(along_tile: int) -> bool:
 			along_tile)
 	if offsets.is_empty():
 		return false
-	_lane.change_lane(offsets[_rng.randi_range(0, offsets.size() - 1)])
-	_lane.drive_at(_rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y))
+	_lane.enter_a_lane(offsets[_rng.randi_range(0, offsets.size() - 1)],
+			_rng.randf_range(Tuning.PEDESTRIAN_SPEED.x, Tuning.PEDESTRIAN_SPEED.y))
 	return true
 
 # ------------------------------------------------------- checkpoint doors ---
@@ -538,8 +538,7 @@ func step_aside(away: Vector2, distance: float, seconds: float) -> void:
 	var along := away.y if _lane.is_vertical() else away.x
 	if absf(across) >= absf(along):
 		var band := _pavement_band()
-		_lane.detour_by(clampf(_lane.lane_centre() + _lane.detour() + signf(across) * distance,
-				band.x, band.y) - _lane.lane_centre())
+		_lane.detour_to_within(_lane.lane_centre() + _lane.detour() + signf(across) * distance, band)
 		_detour_left = maxf(_detour_left, seconds)
 		return
 
@@ -747,7 +746,7 @@ const YIELD_HURRY := 1.7
 func _consider_turning() -> void:
 	var crossing := CrowdLanes.corridor_at(_mover._along())
 	if crossing < 0:
-		_lane.be_in_junction(-1)
+		_lane.leave_the_junction()
 		return
 	if crossing == _lane.junction_index():
 		return
@@ -785,12 +784,10 @@ func _consider_turning() -> void:
 		return
 
 	var kept := _lane.corridor_index()
-	_lane.join_a_lane(not _lane.is_vertical(), crossing, lane, turning)
-	_lane.keep_to_lane_centre(_mover._lane_centre_here())
-	_mover._forget_the_detour()
 	# It is now travelling through the corridor it just came down, so that is the junction
 	# it is in — otherwise it would roll a second turn before clearing the first.
-	_lane.be_in_junction(kept)
+	_lane.turn_into(not _lane.is_vertical(), crossing, turning, lane, kept)
+	_mover._forget_the_detour()
 
 ## Whether the street `distance` ahead along an axis is one this agent could never travel **at all**
 ## — off the map, not a street, a precinct to a car — with nothing today has placed in it counted.
@@ -1010,7 +1007,7 @@ func _step_around_a_body(here: Vector2i) -> void:
 		return
 	var band := _pavement_band()
 	var target := CrowdLanes.walker_lane_centre(_lane.corridor_index(), best, offsets)
-	_lane.detour_by(clampf(target, band.x, band.y) - _lane.lane_centre())
+	_lane.detour_to_within(target, band)
 	_body_detour_held = true
 
 ## How much of its own lane a walker needs in front of it to turn into an arm at all, in tiles: the
@@ -1080,7 +1077,7 @@ func _stop_going_round_a_body() -> void:
 	if not _body_detour_held:
 		return
 	_body_detour_held = false
-	_lane.detour_by(0.0)
+	_lane.end_the_detour()
 	_detour_left = 0.0
 
 ## Whether the agent is far enough into a junction to turn without landing on the wrong surface.
@@ -1188,12 +1185,8 @@ func divert(_delta: float) -> void:
 	# it would have landed anyway.
 	var sidewalk := _sidewalk_after_a_turn(not _lane.is_vertical(), crossing, turning)
 	var kept := _lane.corridor_index()
-	_lane.join_a_lane(not _lane.is_vertical(), crossing,
-			sidewalk if sidewalk >= 0 else CrowdLanes.nearest_sidewalk(kept, _mover._cross()),
-			turning)
-	_lane.keep_to_lane_centre(lane_centre_here())
+	_lane.turn_into(not _lane.is_vertical(), crossing, turning, sidewalk, kept)
 	_mover._forget_the_detour()
-	_lane.be_in_junction(kept)
 
 ## Which way to turn out of `crossing`, trying `first` before the other one, or `0.0` for neither.
 ## A walker asks only whether the arm is street at all, because it can walk in, meet whatever is

@@ -181,6 +181,11 @@ var _field: CrowdField
 ## Where the cars are, by lane. Filled by `space_out_the_traffic()` out of the buckets it already
 ## sorts, and read by a car deciding which arm of a junction to turn into. See `TrafficIndex`.
 var _traffic := TrafficIndex.new()
+
+## Hands the crowd the index of where its cars are, which it fills every tick
+## (`space_out_the_traffic()`), before a day starts: the agents a day makes are handed this one.
+func use_traffic(index: TrafficIndex) -> void:
+	_traffic = index
 ## What the screen shows, handed to every agent so none of them reaches for the viewport. See
 ## `CrowdView`. None is a crowd with no screen: every agent drawn, and the day's own radius for
 ## "out of sight". Handed in by `City` before the day's agents are made.
