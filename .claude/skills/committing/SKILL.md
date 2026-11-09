@@ -19,7 +19,7 @@ sections below hold the detail and the reasons.
   merges.
 - **A pull request merges only after a review posted *ready* against its head**, with one approval
   and a green `test`. Merging is the orchestrating session's: squashed, by auto-merge, confirmed
-  by `tools/await-merge.sh` in the background.
+  at no cost in tokens, by a timer or by `tools/await-merge.sh` in the background.
 - **A merged branch is retired at once** with the wrapped `tools/prune-merged.sh` line.
 - **A picture in a description is linked by commit hash and embedded as an image.**
 - **A release needs the player's own go-ahead in the current session.**
@@ -117,7 +117,7 @@ command of its own:
    the path pasted as printed, no variable, no quotes around it, no second command.
 3. The write, passing the file: `git commit -F <file>`, `gh pr create --body-file <file>`, `gh api
    -F body=@<file>` (capital `-F`; lowercase `-f` sends the literal text `@<file>`),
-   `tools/inbox.py capture --body-file <file>`. Read the file back first when the text is long.
+   `tools/inbox.py capture --body-file <file>`. Read the file back before passing it on.
 
 The second call stands alone because of the guard: **a write's words in text deny like a call** —
 in an echo, a commit message, a body, a heredoc — **except in three shapes, each the whole command
@@ -136,8 +136,9 @@ every command, and a body that names a write then denies.
 
 **Always push branch work and create or update its pull request before ending the session**
 (woolly-finch 12). Work is not left only on a local branch, nor a remote work branch without a pull
-request, unless there is a specific good reason, documented in the final report with the pull
-request's link. This is standing authorization; no separate request to push or open it is needed.
+request, unless there is a specific good reason, documented in the final report. The pull request's
+link goes in the final report, always. This is standing authorization; no separate request to push
+or open it is needed.
 
 **Finished work opens a ready pull request, never a draft**: it carries the completed work and its
 verification (see "Before committing"). **A draft is for unfinished work only**, pushed so that it
@@ -161,7 +162,7 @@ player's own Claude Code settings** (`~/.claude/settings.json`: `permissions.all
 command, `autoMode.environment` or `autoMode.allow` lines for anything else; a reviewer spawn only
 by an `autoMode` line, since auto mode drops `Agent` allow rules). The classifier reads `CLAUDE.md`
 and still refuses writes its standing permission covers when the player's settings do not carry it,
-so `CLAUDE.md` and the skills are not relied on as the player's consent (curly-rabbit #1094). The
+so `CLAUDE.md` and the skills are not relied on as the player's consent. The
 player's own approval of one action (their next message, or the `/permissions` recently-blocked
 list) is a different thing and is fine. When the classifier refuses a write the standing permission
 covers, report the refusal to the player naming their settings; never work around it: no other
@@ -202,13 +203,14 @@ time; the player asks for tests that are isolated and not flaky instead.
    --`. Then move on: **no polling monitor and no background wait just to trigger the merge**
    (inbox #1068 in gentle-walrus), since GitHub merges the PR when its checks are green and its
    approval is in.
-3. **Confirm that it went through, at no cost in tokens** (inbox #1072 in gentle-walrus): the wait
+3. **Confirm that it went through, by a timer or a script, the orchestrator's choice, as long as
+   neither the wait nor reading its result costs tokens** (inbox #1072 in gentle-walrus). The wait
    is sized to what is left of the PR's CI, undershot a little, and the tail is polled by a script,
    not an agent (inbox #1070 in gentle-walrus). `tools/await-merge.sh <the PRs>`, run right after
    step 2 with the Bash tool's `run_in_background`, does both and re-invokes the session when it
    exits; its output is short because reading it costs tokens. One call confirms a whole batch. No
    agent holds the wait.
-4. **Act on what it prints.** A PR that shows MERGED is retired ("Branches"; the main checkout
+4. **Act on what the check shows.** A PR that shows MERGED is retired ("Branches"; the main checkout
    pulls `main` first). A red check or a conflict it names is fixed on the branch (a conflict
    under **merging-main**) and the fix reviewed under **pr-review**: the push dismisses the approval, so auto-merge left on waits for the new one and
    cannot land the fix unseen, and `tools/land-prs.sh` turns auto-merge off on a stop so that the
