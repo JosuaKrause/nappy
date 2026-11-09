@@ -161,28 +161,12 @@ static func room_around(candidate: EventScheduler.Planned, already: Array[EventS
 		if not plan.is_placed():
 			continue
 		var gap := candidate.gap_to(plan)
-		# **An offer is not in the world yet, so it takes up no room.** A set piece is planned at
-		# every site of a covering set and exactly one of them ever happens, so spacing the whole day
-		# around all of them reserves ground for events that will not exist — and it breaks *a
-		# retried day is the same day* outright, because the day *after* it fires then has two to six
-		# long routes' worth of ground freed rather than one. Measured on seed 4242 with offers
-		# spaced against: `leaf_blower` seven to five and eight kinds moving between two attempts at
-		# the same day.
-		#
-		# The exception is the lethal clause below, and it is the one thing that cannot be deferred:
-		# if the offer does resolve there, she meets a lethal field and a fire engine at once, which
-		# is exactly the sum the clearance rule refuses. Siblings still space against each other —
-		# the group is compared normally against its own — because two offers on top of one another
-		# would be a real overlap on whichever of them fires.
-		var elsewhere := plan.set_piece() != "" \
-				and plan.set_piece() != candidate.set_piece()
-		if not elsewhere:
-			if gap < EventScheduler.EVENT_SPACING_ANY:
-				return -INF
-			if plan.keeps_its_field_clear() and gap < plan.row().field_reach():
-				return -INF
-			if plan.row().id == candidate.row().id:
-				room_same = minf(room_same, gap)
+		if gap < EventScheduler.EVENT_SPACING_ANY:
+			return -INF
+		if plan.keeps_its_field_clear() and gap < plan.row().field_reach():
+			return -INF
+		if plan.row().id == candidate.row().id:
+			room_same = minf(room_same, gap)
 		if candidate.keeps_its_field_clear() and gap < candidate.row().field_reach():
 			return -INF
 	return INF if room_same >= EventScheduler.EVENT_SPACING_SAME else room_same

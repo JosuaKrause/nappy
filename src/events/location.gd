@@ -71,7 +71,8 @@ func is_available() -> bool:
 func is_taken() -> bool:
 	return _plan != null
 
-## Puts `plan` here for the day. Called by `StreetLocations` alone, as a phase assigns it.
+## Puts `plan` here for the day, as a phase assigns it: by `StreetLocations` on a street, by
+## `DayLocations` on the ground beyond the streets.
 func take(plan: EventScheduler.Planned) -> void:
 	_plan = plan
 

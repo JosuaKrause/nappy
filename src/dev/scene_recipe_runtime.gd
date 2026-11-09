@@ -929,6 +929,9 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 	for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 	var counts := {}
+	# The day's locations, laid out once: an authored row's tile names the one it stands in.
+	# A scene with no route tree lays its locations out under a corridor that answers none.
+	var locations := DayLocations.lay_out(map, corridor if corridor else Corridor.of(null))
 	for entry: Dictionary in setup.get("events", []):
 		var at := position_of(entry.at, errors)
 		if not errors.is_empty():
@@ -942,6 +945,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		if entry.has("heat"):
 			def = EventCatalogue.heated(def, int(entry.heat))
 		var plan: EventScheduler.Planned
+		var why: Array[String] = []
 		if def.role == EventDef.Role.MAST:
 			plan = _mast_placement(def, at, plans)
 		elif finale:
@@ -959,9 +963,11 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 			plan = EventScheduler.Planned.new(def, at, route)
 		else:
 			plan = EventScheduler.recipe_placement(def, _run.header.day, map, at,
-					int(entry.get("route_seed", 1)), plans, corridor, doors, calm, standing)
+					int(entry.get("route_seed", 1)), plans, corridor, doors, calm, standing,
+					locations, why)
 		if not plan:
-			errors.append("event %s fails ordinary day/ground/route/spacing placement" % entry.name)
+			errors.append("event %s fails ordinary day/ground/route/spacing placement%s"
+					% [entry.name, (": " + "; ".join(why)) if not why.is_empty() else ""])
 			continue
 		counts[def.id] = int(counts.get(def.id, 0)) + 1
 		if def.max_per_day > 0 and int(counts[def.id]) > def.max_per_day:

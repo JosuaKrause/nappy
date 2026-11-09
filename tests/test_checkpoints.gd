@@ -355,7 +355,7 @@ func _test_the_three_rows_validate_and_are_never_rolled(t) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("checkpoints:%d:%d" % [map.seed_used, day])
 		var consumed: Array[String] = []
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map),
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), MastSites.compute(map),
 				consumed).placements():
 			scheduled += 1
 			if plan.def.id.begins_with("checkpoint_"):
@@ -426,8 +426,8 @@ func _test_the_manager_actually_places_the_door_structure(t) -> void:
 ## **Nothing the day places reaches into a door's own clear ground** — *(2026-09-20, the player:
 ## "there should be a gap for events immediately surrounding the gates".)* Asked of the rule
 ## itself, `DoorClearanceRule.clear_of_the_doors()`, over a whole planned day rather than over one
-## contrived placement: the ways a row gets onto the map are several (the dawn draw, a scripted row,
-## a set piece and its fallback) and a check on one of them would say nothing about the rest.
+## contrived placement: the ways a row gets onto the map are several (the dawn draw, a scripted
+## row's dawn phase, the roadblock phase) and a check on one of them would say nothing about the rest.
 ##
 ## **And the same day planned with no doors is what says the sweep is not vacuous**, and what
 ## measures the price of the rule at the same time. The second call is the identical call with the
@@ -493,7 +493,7 @@ func _planned_day(map: CityMap, day: int, tree: RouteTree,
 	var scars: Array[Dictionary] = []
 	var used_calm: Array[Vector2i] = []
 	return EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map,
-			used_calm), consumed, scars, tree, 0, doors).placements()
+			used_calm), MastSites.compute(map), consumed, scars, tree, 0, doors).placements()
 
 func _placed_count(plans: Array[EventScheduler.Planned]) -> int:
 	var total := 0

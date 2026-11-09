@@ -119,7 +119,7 @@ func _reproduce_zero_density_visits() -> void:
 				var rng2 := RandomNumberGenerator.new()
 				rng2.seed = hash("m97:full:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
 				var full_planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
-						DaySpec.for_day(day), rng2, map, CalmAreas.of(map, [block] as Array[Vector2i]),
+						DaySpec.for_day(day), rng2, map, CalmAreas.of(map, [block] as Array[Vector2i]), MastSites.compute(map),
 						[], [], tree, 0).placements()
 				var full_in_lot: Array[EventScheduler.Planned] = []
 				for plan: EventScheduler.Planned in full_planned:

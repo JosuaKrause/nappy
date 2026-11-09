@@ -3,7 +3,7 @@ extends RouteTree
 ## A stand-in for the day's route tree whose answers a check sets: the streets her routes run
 ## along and the junctions they cross, on the city's whole lattice (`StreetNetwork`), so a
 ## `Corridor` is made of it (`Corridor.of()`) without growing a tree on a city. Every street not set
-## is one turning off the routes; nothing is a gap or a set piece's site. The real tree's own logic is
+## is one turning off the routes; nothing is a gap. The real tree's own logic is
 ## checked in `tests/test_route_tree.gd`. A helper, not a suite: the runner loads only `test_*.gd`.
 
 var _fake_network := StreetNetwork.new()
@@ -43,6 +43,3 @@ func segment_depths() -> Dictionary:
 func gaps() -> Array[Vector3i]:
 	return []
 
-## Overrides RouteTree.covering_sites.
-func covering_sites() -> Array[Vector3i]:
-	return []

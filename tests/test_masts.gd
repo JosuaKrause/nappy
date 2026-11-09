@@ -38,7 +38,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 func _mast_plans(day: int) -> Array[EventScheduler.Planned]:
 	var consumed: Array[String] = []
 	var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
-			CalmAreas.of(_map), consumed).placements()
+			CalmAreas.of(_map), MastSites.compute(_map), consumed).placements()
 	var found: Array[EventScheduler.Planned] = []
 	for plan in planned:
 		if plan.mast_id != "":

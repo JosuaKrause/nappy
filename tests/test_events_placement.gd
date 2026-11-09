@@ -121,7 +121,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 		var consumed: Array[String] = []
 		var ground := {}
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), consumed, [], tree).placements():
+				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 			if not plan.is_placed():
 				continue
 			var tile := map.world_to_tile(plan.position)
@@ -334,9 +334,11 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 	var no_doors := PackedVector2Array()
 	var nothing_down: Array[EventScheduler.Planned] = []
 	var calm := CalmAreas.of(map)
+	var locations := DayLocations.lay_out(map, corridor)
+	var standing: Array[EventScheduler.Planned] = []
 	for tile in EventScheduler.open_ground_for(def.for_day(day), map, {}):
 		var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile), 1,
-				nothing_down, corridor, no_doors, calm)
+				nothing_down, corridor, no_doors, calm, standing, locations)
 		if plan:
 			return plan.role
 	return -1
@@ -423,8 +425,9 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t) -> void:
 ## the day's own placement does (the scene recipes call it), so the sweep asks it directly, over seeds and over
 ## days spanning the acts: the ground the scheduler offers the row (`open_ground_for()`) has to be
 ## squares alone, the row is placed on tiles drawn from it, and every sidewalk tile of a sample
-## strewn over the map is refused it. The count at the end is what stops it passing having placed
-## nothing.
+## strewn over the map is refused it, loudly: the refusal says the location the tile names does not
+## take the row there (or that none holds it), rather than the row being placed somewhere else. The count at the end is what
+## stops it passing having placed nothing.
 func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 	var def := EventCatalogue.by_id("poster_crew_square")
 	t.check(def != null and def.first_day <= 14, "the square poster crew is in the catalogue")
@@ -451,13 +454,15 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 			var already: Array[EventScheduler.Planned] = []
 			var no_doors := PackedVector2Array()
 			var calm := CalmAreas.of(map)
+			var locations := DayLocations.lay_out(map, corridor)
+			var standing: Array[EventScheduler.Planned] = []
 			var rng := _rng(day)
 			for copy in 3:
 				if offered.is_empty():
 					break
 				var tile: Vector2i = offered[rng.randi_range(0, offered.size() - 1)]
 				var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile),
-						day + copy * 31, already, corridor, no_doors, calm)
+						day + copy * 31, already, corridor, no_doors, calm, standing, locations)
 				if not plan:
 					continue
 				already.append(plan)
@@ -469,10 +474,15 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 			var sidewalk := map.tiles_of_type(GameEnums.TileType.SIDEWALK)
 			for k in 24:
 				var tile: Vector2i = sidewalk[(k * 7919) % sidewalk.size()]
+				var why: Array[String] = []
 				var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile),
-						day, already, corridor, no_doors, calm)
+						day, already, corridor, no_doors, calm, standing, locations, why)
 				t.check(plan == null, "day %d: a sidewalk tile %s is refused the square crew"
 						% [day, RunTrace.tile(tile)])
+				t.check(why.size() == 1 and (why[0].contains("does not take")
+						or why[0].contains("no location holds")),
+						"day %d: and the refusal says why: its location does not take the row there (%s)"
+						% [day, why])
 				refused += 1
 	t.check(placed >= 1, "and the sweep actually placed one (%d)" % placed)
 	t.check(refused > 100, "and refused it sidewalk ground (%d tiles asked)" % refused)
@@ -506,7 +516,9 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 ## street runs into the junction box at one end of it unless `_along_street_path` truncates it —
 ## at a closure, at a calm zone's absorbed corridor, or against the map's own margin. The walled
 ## case is that truncation, which is why the floor under it is *one* rather than a share: what it
-## guards is that the sweep can still produce the case at all.
+## guards is that the sweep can still produce the case at all. City 88 is in the sweep for it: its
+## day 1, before any mast holds a location, paces a walled beat, so the floor rests on a day no
+## change to the later days' draws moves.
 func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 	var on_the_route := 0
 	var walled := 0
@@ -514,7 +526,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 	var passes_a_side_route := 0
 	var unavoidable_on_the_route := 0
 	var first := ""
-	for map_seed: int in [4242, 90210, 1234567]:
+	for map_seed: int in [4242, 90210, 1234567, 88]:
 		var map := MapCache.of(map_seed)
 		for day in [1, 3, 5, 8, 11, 14]:
 			var state := CityState.new()
@@ -524,7 +536,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 			var corridor := Corridor.of(tree)
 			var consumed: Array[String] = []
 			for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-					CalmAreas.of(map), consumed, [], tree).placements():
+					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 				if not plan.def.paces or not plan.counts_against_the_line():
 					continue
 				if not plan.def.reaches_the_far_lane():
@@ -637,7 +649,7 @@ func _test_a_routes_junctions_stay_clear(t) -> void:
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), consumed, [], tree).placements():
+				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 			if plan.counts_against_the_line():
 				counted.append(plan)
 		for junction in tree.junctions():
@@ -752,8 +764,8 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 ##
 ## Asserted over the finished day and over **every row reaching the band at once**, which is the
 ## rule's own wording — a band closed by a pair is the shape the measurement found. What that
-## catches beyond the refusal itself is anything the morning does outside `_place_one`'s candidate
-## loop: a scar prepended, an ambient placed, a park spoiled.
+## catches beyond the refusal itself is anything the morning does outside the day's rules: a scar
+## prepended, an ambient placed, a park spoiled.
 ##
 ## **Its non-vacuity has two halves**, because a sweep that found no walked sidewalks, or found them
 ## and had no row standing anywhere near one, would pass having checked nothing. Both are counted.
@@ -776,7 +788,7 @@ func _test_nothing_takes_the_routes_own_sidewalk(t) -> void:
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), consumed, [], tree).placements():
+				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 			# A pacing row is left out for the reason the rule leaves it out: a beat is passed by
 			# waiting rather than by a lane, and its own two rules are what govern it.
 			if plan.counts_against_the_line() and not plan.def.paces:
@@ -861,7 +873,7 @@ func _test_a_pacing_rows_opening_stays_open(t) -> void:
 		var consumed: Array[String] = []
 		var counted: Array[EventScheduler.Planned] = []
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), consumed, [], tree).placements():
+				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 			if plan.counts_against_the_line():
 				counted.append(plan)
 		var streets := {}
@@ -969,7 +981,7 @@ func _test_a_flock_is_scenery(t) -> void:
 		var corridor := Corridor.of(tree)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d" % [4242, day])
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map),
+		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), MastSites.compute(map),
 				consumed, [], tree).placements():
 			if plan.def.id != "pigeon_flock" or not plan.is_placed():
 				continue

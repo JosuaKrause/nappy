@@ -22,7 +22,7 @@ func run(t) -> void:
 		_test_an_event_waits_until_she_is_near_it,
 		_test_an_event_that_has_run_does_not_run_again,
 		_test_a_running_event_comes_back_where_it_got_to,
-		_test_a_set_piece_happens_at_exactly_one_of_its_sites,
+		_test_a_set_piece_is_one_plan_owed_to_her_walk,
 		_test_a_day_started_through_the_manager_alone_still_carries_seals,
 		_test_a_streamed_pursuer_resumes_the_chase,
 		_test_a_row_warned_down_her_line_arrives_at_its_own_intensity,
@@ -311,57 +311,30 @@ func _test_a_running_event_comes_back_where_it_got_to(t) -> void:
 				"and it is as old as it was, so revisiting cannot restart its clock")
 	_city.events.stream_radius = INF
 
-## **A set piece happens in exactly one place, and there are two ways of guaranteeing that.** A
-## one-shot planned at every site of a covering set happens at the one she reaches — the first to
-## enter the world spends the rest. A one-shot carrying `EventDef.on_her_way` is one plan with
-## no position at all, which cannot be in two places because there is only ever one of it, and which
-## nothing in this rig can put anywhere: there is no player here, so no walk for it to be sited from.
-##
-## `tests/test_events.gd` can only see the plan, so *which* site is taken has to be checked here,
-## where an instance exists. `stream_radius` is `INF` and there is nobody walking, so every sited
-## offer is reachable at once: the first one the manager streams in must spend the rest, which is
-## the strongest form of the property.
-##
-## It is the same shape as `_test_an_event_that_has_run_does_not_run_again` one level up. There a
-## plan may not run twice; here a *group* may not.
-func _test_a_set_piece_happens_at_exactly_one_of_its_sites(t) -> void:
-	var offered := 0
+## **A set piece is one plan, owed to her walk.** Every one-shot is sited from her walk
+## (`EventDef.validate()` refuses one that is not), so the day plans it as one plan with no position
+## at all, which cannot be in two places because there is only ever one of it, and which nothing in
+## this rig can put anywhere: there is no player here, so no walk for it to be sited from. Over a
+## whole run, each day's one-shots are each a single unsited plan, never live and never spent here.
+func _test_a_set_piece_is_one_plan_owed_to_her_walk(t) -> void:
 	var owed_to_her_walk := 0
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		_start(day)
-		var groups := {}
+		var by_row := {}
 		for plan in _city.events.plans():
-			if plan.set_piece_group == "":
+			if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
 				continue
-			var seen: Array = groups.get(plan.set_piece_group, [] as Array)
-			seen.append(plan)
-			groups[plan.set_piece_group] = seen
-		for group: String in groups:
-			var plans: Array = groups[group]
-			var placed := 0
-			var live := 0
-			var spent := 0
-			for plan: EventScheduler.Planned in plans:
-				placed += 1 if plan.is_placed() else 0
-				live += 1 if plan.was_live else 0
-				spent += 1 if plan.spent else 0
-			if placed == 0:
-				# Nothing has been sited, so this is a set piece the day owes her walk. With no
-				# player in the rig it must still be waiting — and waiting is one plan, not several.
-				owed_to_her_walk += 1
-				t.check(plans.size() == 1 and live == 0 and spent == 0,
-						"day %d: '%s' is one unsited plan waiting for a walk that never happens here"
-						% [day, group])
-				continue
-			offered += 1
-			t.check(live == 1, "day %d: '%s' happened in exactly one place (%d)"
-					% [day, group, live])
-			t.check(spent == plans.size() - 1,
-					"day %d: and the other %d offers are spent (%d were)"
-					% [day, plans.size() - 1, spent])
-	t.check(offered + owed_to_her_walk > 0,
-			"a run has a set piece to check at all (%d sited, %d owed to her walk, over fourteen days)"
-			% [offered, owed_to_her_walk])
+			by_row[plan.def.id] = int(by_row.get(plan.def.id, 0)) + 1
+			owed_to_her_walk += 1
+			t.check(not plan.is_placed() and not plan.was_live and not plan.spent,
+					"day %d: '%s' is an unsited plan waiting for a walk that never happens here"
+					% [day, plan.def.id])
+		for id: String in by_row:
+			t.check(int(by_row[id]) == 1, "day %d: '%s' is one plan, not several (%d)"
+					% [day, id, by_row[id]])
+	t.check(owed_to_her_walk > 0,
+			"a run has a set piece to check at all (%d owed to her walk, over fourteen days)"
+			% owed_to_her_walk)
 
 ## M100: "a rig driving `EventManager` before `City.start_day` seals nothing." Every rig in this
 ## suite, this one included, drives `EventManager.start_day` before `_city.start_day()` has grown a

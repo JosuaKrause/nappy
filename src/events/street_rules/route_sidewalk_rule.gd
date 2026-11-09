@@ -52,7 +52,7 @@ func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 ## leaves taken. A beat takes its ground in **time** — *"yeller is something you can time. it stays
 ## on the route"* — so what governs it is whether the loop leaves an opening
 ## (`PacingOpeningRule._leaves_a_pacing_beats_opening`) and whether it reaches a crossing she can leave by
-## (`StreetInvalidation._a_pacing_beat_walls_a_sidewalk`, in `EventScheduler._place_one`'s loop). Counting his lens here as a width
+## (`StreetInvalidation._a_pacing_beat_walls_a_sidewalk`, as each placement judges the candidate). Counting his lens here as a width
 ## would refuse a man on the route's own sidewalk for the one reason the player has ruled out, and
 ## counting it against *another* row's placement would refuse a café a band a walk can already pass
 ## by waiting.

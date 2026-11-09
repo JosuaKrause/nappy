@@ -1304,12 +1304,17 @@ Each item quotes the code on this branch.
    (`RuledLocationGround.offer()`).
    - A row comes up and is refused before the next is drawn: `ViewBag.draw()` asks a marble's row
      only once it comes up. It draws exactly as weighing only the valid rows from the start would.
-2. **The rest of the day's placement still rolls a spot.** The scripted rows, the one-shots, the
-   walk's sitings and the scene recipes go through `_place_one()` and `_best_of()`, which roll
-   tiles and take the roomiest; each candidate is asked of the same rules (`StreetInvalidation`).
-   The spoilers in a park she used go through their own grid and the run's scars stand where they
-   happened, each left out where it would close a route; the masts and the ambient rows stand where
-   their planners put them. None of these is assigned to a location.
+2. **The walk's sitings still roll a spot.** `WalkSiting` goes through `_best_of()`, which rolls
+   tiles and takes the roomiest, each candidate asked of the same rules (`StreetInvalidation`). The
+   rest of the day is placed by location: the scripted rows each draw one location at dawn, weighted
+   by role, and are assigned it (`ScriptedPhase`); a one-shot is owed to her walk and sited on her
+   way, never placed at dawn (`EventDef.validate()` refuses one that is not); an authored scene's row stands
+   in the location its tile names, asked once (`EventScheduler.recipe_placement()`); the masts stand
+   at the run's sites (`EventWorld.mast_sites()`, worked out once when the run's city is handed
+   over) and each holds the location under it, so no draw happens there. The ambient rows stand where
+   their planners put them; a playground's ground is in no location, so it holds none. The spoilers
+   in a park she used go through their own grid and the run's scars stand where they happened, each
+   left out where it would cut a route off from home.
 3. **Not every bag is a view's.**
    - **The walk's route bag** (`EventDirector._route`, a `MarbleBag`) hands out the places the day
      owes her walk, each sited ahead of her on the branch she walks (`WalkSiting.ahead_of()`).
@@ -1343,15 +1348,21 @@ Each item quotes the code on this branch.
 EventScheduler.build_day(day_index, run_seed):
     rng = RNG(hash(run_seed, day_index))
     1. lay out the day's locations (DayLocations), each told its view
-    2. add all AMBIENT events for the current act, the scars, the masts
+    2. add all AMBIENT events for the current act, the scars, the masts at the run's sites;
+       the region wall's bodies (standing), the masts and the ambient rows each hold the
+       location under it; the seals stand, and hold none
     3. day 13: the roadblock phase (RoadblockPhase)
-    4. add SCRIPTED events whose day == day_index
-    5. roll ONE_SHOT events not yet consumed this run, gated by first_day/last_day —
-       except one the day owes her walk, which is owed here and sited later
+    4. the SCRIPTED events whose day == day_index, each drawing a location (ScriptedPhase)
+    5. owe her walk the ONE_SHOT events not yet consumed this run, gated by
+       first_day/last_day, each sited later on her way
     6. spoil the parks she used  (docs/CITY.md)
     7. owe her the day's moments (the rows the director sites in front of her)
     8. draw every open location from its view's bag (LocationDraw)
-    9. validate: a path from home to at least one usable calm zone must exist
+   The scars, the spoilers, the roadblock phase, the scripted rows and the draw are asked, as
+   each body is placed, whether it cuts the day's routes off from home (RouteReachRule), and
+   the draw's bodies all the day's rules (StreetInvalidation); the region wall, the seals, the
+   masts and the ambient rows stand by their own planners' guarantees. Nothing is checked or
+   repaired after.
 ```
 
 **The day's density is the bags' empty marbles**, set per view and per day so each view's share of
@@ -1473,7 +1484,7 @@ from the doorstep to the calm areas still worth reaching.
 | a **pacing** row that leaves no line past it and whose beat passes no way off its sidewalk (`homeless_yeller`, where its beat is truncated short of one) | **wall** | the same, decided per placement rather than per row |
 | a **pacing** row whose beat passes a junction's crosswalk or a side route (`homeless_yeller`, almost everywhere) | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor, the route's own sidewalk included |
 | everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
-| a `ONE_SHOT` | **set piece** | one placement at *each* site of a covering set; one of them happens — or, with `EventDef.on_her_way`, one placement with no position, put on a tile of its own ground ahead of her (a building face for day 3's fire) once her heading for the day is clear |
+| a `ONE_SHOT` | **set piece** | one placement with no position (`EventDef.on_her_way`, which `EventDef.validate()` requires of a one-shot), put on a tile of its own ground ahead of her (a building face for day 3's fire) once her heading for the day is clear |
 | `AMBIENT`, `AHEAD_OF_PLAYER`, a scar, a park spoiler, `EventDef.Role.SCENERY` (`pigeon_flock`) | **none** | wherever its own rule says |
 
 **The second row is a question about the ground, not about the price, and it is asked two ways.**
@@ -1707,46 +1718,24 @@ the view's half diagonal up the street rather than directly under the fire. The 
 carriageway, so what it costs her street is the engine's field, and the site is whatever the day's
 own placement rules accept on her way.
 
-**A one-shot without the flag is offered on every route and happens on one.** The day plans it **at
-every site of a covering set** — `RouteTree.covering_sites`, the smallest set of streets such that
-every route touches one — and the placements share a `set_piece_group`. The first one to enter the
-world spends the rest, in `EventStreaming.stream_in`, which is also where a scar is recorded: a run
-gets exactly one of it however many streets were offered. Two things this gets right that choosing
-a site on her route would not:
+**A one-shot without the flag is refused** (`EventDef.validate()`): a set piece has to be met
+wherever she goes (M50-the-city-points-somewhere), and one placed at dawn would be met only if she
+walked there. The walk's draw is to carry such a row next, a rigged marble on the next location she
+comes to.
 
-- **Nothing has to predict her.** The guarantee is structural and holds whichever way she goes.
-- **A bundle is not a guarantee.** Two distinct routes to one area share no *cell* by construction
-  — a route is a chain of `ReachabilityGrid` cells, and the same-colour rule never lets one probe
-  merge into ground the other already coloured. Almost always that also means they share no
-  street, so the covering set is usually two to six streets and code that expects one is looking
-  for a *tile she must cross*, which the city is built not to have. Rarely, the two routes use
-  different cells of the very same street, and one site there covers both after all — the fallback
-  a covering set of one is legal ground for, not a bug in either.
-
-**The moment of choosing is the moment of walking there**, either way round. `EventStreaming.stream_in()` is where
+**The moment it becomes real is the moment of walking there.** `EventStreaming.stream_in()` is where
 an event becomes real — where its scar is recorded and its block moves along its arc — so the
-alternatives stop being possible on the same frame rather than when it finishes, and so does the
-fire's own freedom to move.
+fire's own freedom to move stops on the same frame rather than when it finishes.
 
-**An offer takes up no room, and that is not a convenience.** Spacing the rest of the day around
-all two-to-six offers would reserve ground for events that will not exist — and it breaks *"a
-retried day is the same day"* outright, because the day after the set piece fires then has several
-long routes' worth of ground freed rather than one. Measured on seed 4242 with offers spaced
-against: `leaf_blower` seven to five and eight kinds moving between two attempts at the same day.
-Because an offer takes no room, the dawn draw is **identical** between attempts.
+**Nothing lethal may be planned where a set piece stands**: she would meet a lethal field and a set
+piece at once, which is exactly the sum the telegraph contract refuses. A siting made from her walk
+is held to that from the other side — `StreetInvalidation.room_around` measures the candidate against
+everything the day has already placed, so a tile inside a lethal field is not one it may take.
 
-Two exceptions, both load-bearing. **Siblings space against each other**, because two offers on top
-of one another would be a real overlap on whichever one fires. And **nothing lethal may be planned
-into an offer**: if it does resolve there, she meets a lethal field and a set piece at once, which
-is exactly the sum the telegraph contract refuses. A siting made from her walk is held to the same
-rule from the other side — `StreetInvalidation.room_around` measures the candidate against everything
-the day has already placed, so a tile inside a lethal field is not one it may take.
-
-The three counts this splits apart are worth keeping straight, because two tests depend on it.
-`max_per_day` is a cap on **instances**, and the number of offers is not one — so a one-shot is
-exempt from it in `tests/test_events.gd` and the real count is asserted in
-`tests/test_event_manager.gd`, where an instance exists. And a **retried day plans none** of a
-spent one-shot rather than one fewer, because the whole group goes with it.
+`max_per_day` is a cap on **instances**, so a one-shot is exempt from it in
+`tests/test_events_scheduler.gd` and the real count is asserted in `tests/test_event_manager.gd`,
+where an instance exists. And a **retried day plans none** of a spent one-shot, because the whole
+group goes with it.
 
 
 ### The crews paste the walls she passes

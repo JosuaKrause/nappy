@@ -216,6 +216,8 @@ src/
 	location.gd           one location: its street, section, tiles, view, and what stands on it
 	roadblock_phase.gd    day 13's roadblock phase at dawn: route-adjacent sections drawn with a bias
 	                      toward the farthest from those placed, until every route tile has one close by
+	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
+	                      the row's role, offered the row and assigned what it took
 	view_bag.gd           one view's bag: every row possible in the view as often as its weight, and
 	                      the empty event, drawn without putting back, only what a location accepts
 	location_draw.gd      the day's open locations drawn at dawn, each from its view's bag

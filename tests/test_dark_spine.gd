@@ -12,7 +12,9 @@ extends RefCounted
 ## reaches them; `tests/crowd_rig.gd`, which they run from, is not this change's.
 ##
 ## Stated against the lit spine on the same day rather than as a speed, since what is being asked is
-## that the dark one is no car park by comparison.
+## that the dark one is no car park by comparison. The day starts no events: a protest the day's
+## draw stands on the spine's crossings stops its cars lit or dark, which is the density's question,
+## not the lights'.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -34,12 +36,13 @@ func _test_the_dark_spine_keeps_moving(t) -> void:
 	_city = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(_city)
 	_city.build(MapCache.of(SEED))
-	# Day 14 as the game starts it: the city's day, then its events, then the crowd on its streets.
+	# Day 14's city as the game starts it, then the crowd on its streets: a quiet day, with no
+	# events started, so no row the day's draw puts on the spine's crossings can jam it. What is
+	# measured is the lights, not the day's density.
 	var day := Tuning.RUN_LENGTH_DAYS
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, day)
 	_city.start_day(state, day, _rng("closures"))
-	_city.events.start_day(DaySpec.for_day(day), _rng("events"), [], _city.map.power_station_door_position())
 	var lit: Vector2 = await _spine_traffic(t)
 	var lit_samples := _sampled_cars
 	_city.signals.powered = false

@@ -193,8 +193,8 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var guarded := ResistanceSteps.guarded_row_on(day)
 	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded),
 			world.run.resistance.progress) if guarded != "" else null
-	var day_events := EventScheduler.build_day(spec, rng, city_map, calm, consumed,
-			world.run.attempt_spend.scars, tree, world.run.resistance.progress, doors,
+	var day_events := EventScheduler.build_day(spec, rng, city_map, calm, world.mast_sites(),
+			consumed, world.run.attempt_spend.scars, tree, world.run.resistance.progress, doors,
 			standing, world.trace, beside)
 	var placements := day_events.placements()
 	placements.append_array(seals)
@@ -265,8 +265,10 @@ static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 		seal.stand_as_a_seal()
 	placements.append_array(seals)
 	if populate_events:
-		placements.append_array(EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), [], [],
-				walk, 0, PackedVector2Array(), seals, trace).placements())
+		# The escape's walk draws its streets from its bag and stands no mast, so it is handed none.
+		placements.append_array(EventScheduler.build_day(spec, rng, map, CalmAreas.of(map),
+				[] as Array[MastSites.Site], [], [], walk, 0, PackedVector2Array(), seals,
+				trace).placements())
 	return placements
 
 # --------------------------------------------------------------- the building ---

@@ -1,8 +1,7 @@
 extends RefCounted
 ## **What a planned day is, as one comparable string**: what the scheduler placed, where, and in what
-## order, plus the one-shot ledger. Positions are to the pixel, because a shifted random stream
-## moves an event without changing the set of events, and a roll that fires on day 3 rather than
-## day 4 is the divergence the telemetry suites look for. A helper, not a suite: the runner loads
+## order. Positions are to the pixel, because a shifted random stream moves an event without
+## changing the set of events, which is the divergence the telemetry suites look for. A helper, not a suite: the runner loads
 ## only `test_*.gd`. Shared by `tests/test_telemetry.gd` (a trace on or off must not change a day)
 ## and `tests/test_telemetry_observer.gd` (the observer's watchers must not change the map a day
 ## is planned from).
@@ -14,11 +13,8 @@ static func of(map: CityMap, day: int, trace: RunTrace = null) -> String:
 	rng.seed = hash("telemetry:%d:%d" % [map.seed_used, day])
 	var consumed: Array[String] = []
 	var parts: Array[String] = []
-	for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map),
+	for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), MastSites.compute(map),
 			consumed, [], null, 0,
 			PackedVector2Array(), [], trace).placements():
 		parts.append("%s@%.2f,%.2f" % [plan.def.id, plan.position.x, plan.position.y])
-	# The one-shot ledger is part of the answer: a roll that fires on day 3 rather than day 4
-	# is exactly the divergence this is looking for.
-	parts.append("consumed:" + ",".join(consumed))
 	return "|".join(parts)

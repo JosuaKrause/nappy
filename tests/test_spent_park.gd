@@ -464,7 +464,7 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
 			var no_one_shots: Array[String] = []
 			var no_scars: Array[Dictionary] = []
 			var calm := CalmAreas.of(map, used)
-			var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm,
+			var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm, MastSites.compute(map),
 					no_one_shots, no_scars, tree)
 			var planned := events.placements()
 			if map.fenced_park.x >= 0:
@@ -532,7 +532,7 @@ func _test_a_used_courtyard_keeps_what_was_put_in_it(t) -> void:
 			"the courtyard is a counted, unfenced calm area that day")
 	var no_one_shots: Array[String] = []
 	var no_scars: Array[Dictionary] = []
-	var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm, no_one_shots,
+	var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm, MastSites.compute(map), no_one_shots,
 			no_scars, tree)
 	t.check(_a_body_stands_inside(map, events, calm, block),
 			"something stands inside the used courtyard at the end of the plan")
@@ -560,7 +560,7 @@ func _test_with_every_area_used_one_stays_clean(t) -> void:
 			if not calm.unused().is_empty():
 				continue
 			asked += 1
-			var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm,
+			var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm, MastSites.compute(map),
 					no_one_shots, no_scars, tree)
 			var clean := 0
 			for block in calm.blocks():

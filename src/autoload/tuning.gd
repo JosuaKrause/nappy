@@ -388,8 +388,8 @@ const REGION_WALL_FIRST_DAY := 9
 
 ## How much clear ground a region door keeps around each of its own bodies — a hut, a boom or an
 ## alley post. No event may be sited so that its own field (`EventDef.field_reach()`) reaches inside
-## this radius of one, and no mover's beat or path may run through it: `EventScheduler._place_one()`
-## refuses the candidate and rolls again, and `EventDirector.due()` waits rather than siting one in
+## this radius of one, and no mover's beat or path may run through it: the day's rules refuse the
+## candidate (`DoorClearanceRule`), and `EventDirector.due()` waits rather than siting one in
 ## front of her there. *(2026-09-20, the player: "there should be a gap for events immediately
 ## surrounding the gates".)*
 ##
