@@ -258,9 +258,21 @@ deny() {
 }
 
 if [ -n "$fresh" ]; then
+	# A refusal is only given where it can be remembered. Where the marker cannot be written (no
+	# writable state directory), refusing would refuse every edit for good, so the index goes
+	# beside the edit as context and the edit is let through.
+	stamped=1
 	for skill in $fresh; do
-		printf '%s\n' "$now" > "$state/$skill"
+		printf '%s\n' "$now" 2>/dev/null > "$state/$skill" || stamped=0
 	done
+	if [ "$stamped" -eq 0 ]; then
+		printf '%s is governed by the project skills below, and their text is not put into context for you. %s, before the next edit there.\n\n%s' \
+			"$rel" "$how" "$index" | jq -Rs '{
+		  hookSpecificOutput: { hookEventName: "PreToolUse", additionalContext: . },
+		  suppressOutput: true
+		}'
+		exit 0
+	fi
 	printf 'Refused once, so that the rules are read before the edit. %s is governed by the project skills below, and their text is not put into context for you. %s. Then make this edit again: it passes.\n\n%s' \
 		"$rel" "$how" "$index" | deny
 	exit 0

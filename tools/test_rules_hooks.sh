@@ -11,6 +11,7 @@
 #     an edit that follows within moments in one line, and lets the same edit through once it is
 #     made again; a second area in the same session is refused in its turn, naming only the skills
 #     not named before
+#   - where the hook cannot write its markers it refuses nothing and gives the index as context
 #   - the main session and each sub-agent (same session_id, different agent_id) are refused on
 #     their own first .gd edit, and a sub-agent's edit under src/ or tests/ never names orchestrating
 #   - session-rules.sh names orchestrating as context at the start of a session and refuses nothing;
@@ -592,6 +593,19 @@ assert_rules "a second area in the same session -> refused, naming only the new 
 rules_age main-session ""
 rules_call main-session "" Edit "src/city/zz_probe.gd"
 assert_rules "the second area's edit made again -> let through" none ""
+
+# Where the hook cannot write its markers it cannot remember a refusal, so it refuses nothing:
+# the index goes beside the edit as context, every time, and the edit is let through.
+printf 'a file where the state directory would be\n' > "$work_dir/not-a-directory"
+unwritable_call() {
+    rules_read "project-rules.sh, no writable state directory" \
+        "$(printf '{"session_id":"unwritable","tool_name":"Edit","tool_input":{"file_path":"%s"}}' "$root/$gd_file" \
+            | TMPDIR="$work_dir/not-a-directory" "$root/.claude/hooks/project-rules.sh" 2>/dev/null)"
+}
+unwritable_call
+assert_rules "no writable state directory, first .gd edit -> context naming godot, not a refusal" context "godot,"
+unwritable_call
+assert_rules "no writable state directory, the next edit -> context again, still not a refusal" context "godot,"
 
 # ---------------------------------------------------------------- per-agent marker keying -----
 rules_call main-session sub-agent-a Edit "$gd_file"
