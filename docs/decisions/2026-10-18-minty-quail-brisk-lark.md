@@ -39,7 +39,7 @@ at the same time, on a debug build:
   calls.
 - **What brought it down**: handing each strategy what never changes under it (the map, the
   crowd's field, the day's traffic and pockets, the mover's random stream and its held move) through
-  `LaneStrategy.take_parts()`, which removed about two thirds of the calls, and caching the turn in
+  `LaneStrategy.take_parts()`, which removed more than half of the calls, and caching the turn in
   the two functions that follow it.
 - **The result**, two paired rounds: the branch's tick is 3.6% and 6.0% above main's in total (round
   one 51.1 ms against 52.9 ms summed over the twelve configurations, round two 29.6 ms against
