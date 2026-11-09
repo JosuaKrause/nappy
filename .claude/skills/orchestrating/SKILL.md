@@ -58,7 +58,7 @@ geometry or contracts warrant it (woolly-finch 15).
 weaker first pass costs the player a review round; Codex has its own model hierarchy and keeps its
 own tiering for art (woolly-finch 27). In Codex, pick the subagent tier by the task's remaining
 difficulty: see `references/codex-models.md`. **Generating a raster is Codex's alone**: Claude Code
-has no image generator (**illustrated-png**, "Asset contract"), so a brief whose work includes
+has no image generator (**illustrated-png**, its opening rules), so a brief whose work includes
 generating an illustrated PNG, a comic transfer included, goes to a Codex agent (which writes as
 `codex-coder`); the drawing rule above covers SVG and the review sheets. While Codex support is
 frozen (inbox #901 in freckled-moose), such a brief waits for Codex to come back, and the player is
