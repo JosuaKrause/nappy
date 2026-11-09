@@ -28,6 +28,14 @@ var completed_resistance_alley_tiles: Array[Vector2i] = []
 var fenced_park := Vector2i(-1, -1)
 ## The act that chose `fenced_park`.
 var fenced_park_act := 0
+## Whether the run was ever resumed from a save written while a day was being walked: the stretch
+## walked before the save was lost and the day restarted, so the run's total play time
+## (`RunHeader.play_ticks`) is short by it, and a screen that shows that total says so
+## (`SummaryModel.ending()`). **Only ever grows during a run**, like the play time it qualifies: a
+## lost day and a return to a checkpoint keep it, and only a new game from the title clears it. A
+## resume from a save written at a day brief loses nothing and sets nothing; a save from a build
+## that never wrote the key loads as not flagged.
+var reloaded_mid_day := false
 
 ## Overrides RunSubState.slot.
 func slot() -> Slot:
@@ -39,6 +47,7 @@ func reset() -> void:
 	completed_resistance_alley_tiles.clear()
 	fenced_park = Vector2i(-1, -1)
 	fenced_park_act = 0
+	reloaded_mid_day = false
 
 ## Records a tile a pickup's mark stood at when its step completed, ignoring one already recorded.
 ## `ResistanceDirector._on_contact_completed()` is the one caller.
@@ -61,6 +70,7 @@ func to_data() -> Dictionary:
 		"completed_resistance_alley_tiles": alley_tiles,
 		"fenced_park": {"x": fenced_park.x, "y": fenced_park.y},
 		"fenced_park_act": fenced_park_act,
+		"reloaded_mid_day": reloaded_mid_day,
 	}
 
 ## Overrides RunSubState.restore.
@@ -75,3 +85,4 @@ func restore(data: Dictionary) -> void:
 	else:
 		fenced_park = Vector2i(-1, -1)
 	fenced_park_act = int(data.get("fenced_park_act", 0))
+	reloaded_mid_day = bool(data.get("reloaded_mid_day", false))
