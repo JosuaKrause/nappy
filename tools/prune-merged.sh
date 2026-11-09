@@ -3,8 +3,8 @@
 # released brief and, if GitHub has not already deleted it, its remote branch. Then sweep the harness's own
 # `worktree-agent-*` branches, which have no pull request and go only where `git branch -d` agrees.
 #
-#   tools/prune-merged.sh feature/fire-on-her-way
-#   tools/prune-merged.sh feature/a feature/b
+#   tools/prune-merged.sh feature-fire-on-her-way
+#   tools/prune-merged.sh feature-a feature-b
 #
 # Git cannot see a squash as a merge, so `git branch -d` refuses every such branch and `-D` would
 # delete one with unpushed work just as readily. This script is the committing skill's check made
@@ -58,7 +58,7 @@ Applying also clears the registration of every unlocked worktree whose directory
 (git worktree prune), then sweeps worktree-agent-* branches that git branch -d accepts once
 their worktree is gone. Run from the main checkout through the PR's own agent identity.
 
-  tools/prune-merged.sh feature/fire-on-her-way
+  tools/prune-merged.sh feature-fire-on-her-way
   tools/prune-merged.sh --all
   tools/prune-merged.sh --all --apply
 EOF

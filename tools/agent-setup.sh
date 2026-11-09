@@ -60,11 +60,11 @@ origin/main (one list, so the checks that read docs/evidence/ keep what they rea
                           name, never a path, so nothing outside .claude/worktrees/ is reached.
   --help, -h              print this and do nothing else.
 
-  tools/agent-setup.sh jolly-bunny feature/jolly-bunny-agent-setup
-  tools/agent-setup.sh quiet-yak feature/quiet-yak --include docs/reference/
-  tools/agent-setup.sh --agent feature/quiet-yak a1b2c3d4e5f60789
-  tools/agent-setup.sh --release feature/quiet-yak
-  tools/agent-setup.sh --detach origin/feature/quiet-yak review-quiet-yak
+  tools/agent-setup.sh jolly-bunny feature-jolly-bunny-agent-setup
+  tools/agent-setup.sh quiet-yak feature-quiet-yak --include docs/reference/
+  tools/agent-setup.sh --agent feature-quiet-yak a1b2c3d4e5f60789
+  tools/agent-setup.sh --release feature-quiet-yak
+  tools/agent-setup.sh --detach origin/feature-quiet-yak review-quiet-yak
   tools/agent-setup.sh --remove review-quiet-yak
 EOF_USAGE
 }

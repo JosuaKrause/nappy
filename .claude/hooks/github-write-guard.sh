@@ -889,7 +889,7 @@ def segment_scan($w; $start; $n; $flags):
 #   reaches the site: `.github/workflows/deploy.yml` builds and publishes the game on every pushed
 #   `v*` tag, whatever follows the `v`, and a bare name does not say whether it is a tag or a
 #   branch. The cost is a branch whose name starts with `v`, pushed by that bare name, being denied
-#   rather than asked about; this repository's branches are named `claude/...`, `feature/...` and
+#   rather than asked about; this repository's branches are named `claude/...`, `feature-...` and
 #   `work/...`, and an explicit `refs/heads/` side (`HEAD:refs/heads/v1`) is a branch and stays an
 #   ordinary push. `git tag` itself stays unguarded, like `git branch`: it changes only the local
 #   repository, and every way a tag then reaches GitHub is a push this reads;
