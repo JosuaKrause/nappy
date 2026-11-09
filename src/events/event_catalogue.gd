@@ -1746,10 +1746,9 @@ static func _police_patrol() -> EventDef:
 ## a square has instead of a wall.
 ##
 ## **It works on walls along the way she walks** (`EventDef.on_her_way`, `OnHerWay.at_a_front`;
-## PLAYTEST-116). A crew placed anywhere in the city is a crew she never meets. So the day rolls
-## and places its crews at dawn, by `pavement_side`, which keeps every other row the roll places
-## where it was; `EventScheduler._hand_to_her_walk` then drops those positions, and her walk sites
-## each crew, one at a time, on her branch of the day's routes, in front of a blank ground-floor
+## PLAYTEST-116). A crew placed anywhere in the city is a crew she never meets. So a location the
+## walk draws a crew at hands it to her walk with no position (`LocationDraw.finish()`), and her walk
+## sites each crew, one at a time, on her branch of the day's routes, in front of a blank ground-floor
 ## cell and facing it, as day 3's fire is sited. Once in the world it stays, and `PosterWalls` has
 ## it paste its wall while it is in her view. Its field and cost are those of the dawn roll:
 ## making a crew charge the meter would change what the row is for.

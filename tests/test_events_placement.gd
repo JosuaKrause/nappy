@@ -92,9 +92,9 @@ func _rng(day: int) -> RandomNumberGenerator:
 
 func _test_the_day_is_placed_by_role(t) -> void:
 	var map := MapCache.of(4242)
-	# The day's poster crews are rolled and placed at dawn by exactly these rules and only then
-	# handed to her walk (`EventScheduler._hand_to_her_walk`). What this asks is how the roll
-	# places, so the crews are read where the roll put them.
+	# The day's poster crews are drawn by exactly these rules and handed to her walk with no
+	# position (`LocationDraw.finish()`). What this asks is how the draw places, so the crews are
+	# read where the draw put them.
 	var crew := EventCatalogue.by_id("poster_crew")
 	var crew_way := crew.on_her_way
 	crew.on_her_way = null

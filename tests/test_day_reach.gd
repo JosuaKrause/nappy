@@ -2,7 +2,9 @@ extends RefCounted
 ## `DayReach`, where she can get to from home as the walk was planned: what shuts the way and what
 ## does not, checked here once on a street laid out by hand — a sidewalk two tiles wide and forty
 ## long, home at its west end — with rows built by hand. Everything that asks whether a place can be
-## reached (the resistance's placements, the park cordon's last gap) is handed the object.
+## reached (the resistance's placements, the park cordon's last gap) is handed the object. A body a
+## location the walk drew shuts the way once the reach is told of it; a row that does not block, told
+## of, shuts nothing.
 
 ## The sidewalk's tile column a body stands across, and one beyond it.
 const ACROSS := 20
@@ -14,6 +16,7 @@ func run(t) -> void:
 	_test_a_plan_not_placed_shuts_nothing(t)
 	_test_a_soft_seal_band_and_a_closure_are_shut(t)
 	_test_her_paths_stop_at_the_circle_and_at_what_is_shut(t)
+	_test_a_drawn_body_shuts_the_way(t)
 
 func _street() -> CityMap:
 	var map := CityMap.new(Vector2i(40, 12))
@@ -89,3 +92,13 @@ func _test_her_paths_stop_at_the_circle_and_at_what_is_shut(t) -> void:
 	t.check(inside.has(Vector2i(7, 5)) and inside.has(Vector2i(9, 5))
 			and not inside.has(Vector2i(8, 6)),
 			"a seed on shut ground walks out of it onto the open ground either side, never onto more of it")
+
+func _test_a_drawn_body_shuts_the_way(t) -> void:
+	var map := _street()
+	var reach := DayReach.of(map, [] as Array[EventScheduler.Planned])
+	t.check(reach.reaches(BEYOND), "before the walk draws anything, the far end is reached")
+	reach.shut_what_was_drawn(_across(map, ACROSS, "pigeon_flock"))
+	t.check(reach.reaches(BEYOND), "a drawn row that blocks nothing shuts nothing")
+	reach.shut_what_was_drawn(_across(map, ACROSS))
+	t.check(not reach.reaches(BEYOND) and reach.is_shut(Vector2i(ACROSS, 5)),
+			"a drawn body across the sidewalk shuts the way past it")

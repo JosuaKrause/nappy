@@ -1019,11 +1019,10 @@ static func _touched_from(map: CityMap, shut: Dictionary, plan: Planned) -> Arra
 				found.append(tile)
 	return found
 
-## **A recurring row sited from her walk is rolled and placed at dawn like any other, then handed to
-## her walk** — `poster_crew`, which pastes the walls she passes (`EventDef.on_her_way`). The
-## dawn placement is what spends the day's own stream exactly as it was spent before the crew was
-## sited from her walk, so every row the roll places after it stands where it always stood; this
-## then drops the position, and `EventDirector.site_what_is_on_her_way()` sites it ahead of her.
+## **A recurring row sited from her walk that a dawn phase placed is handed to her walk** —
+## `poster_crew`, which pastes the walls she passes (`EventDef.on_her_way`): this drops the position,
+## and `EventDirector.site_what_is_on_her_way()` sites it ahead of her. A location the walk draws
+## hands one over as it draws it (`LocationDraw.finish()`).
 ##
 ## **Last, and only ever a removal.** Every guarantee the passes above make is about reaching
 ## somewhere, and taking a placed body off the ground can only add reachable ground (the **city**

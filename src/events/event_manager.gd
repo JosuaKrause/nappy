@@ -457,12 +457,15 @@ func draw_everywhere() -> void:
 		_stand_what_was_drawn(_walk_draw.draw_everywhere())
 
 ## **Stands what the walk's draws placed**: each joins the walk and streams in like a planned row,
-## but one drawn unplaced, a row handed to her walk (`LocationDraw.finish()`, the poster crew), which
+## and shuts the day's reach where it blocks the way (`DayReach.shut_what_was_drawn()`), but one drawn
+## unplaced, a row handed to her walk (`LocationDraw.finish()`, the poster crew), which
 ## joins it for the director to site on her way.
 func _stand_what_was_drawn(drawn: Array[EventScheduler.Planned]) -> void:
 	for plan in drawn:
 		if plan.is_placed():
 			streaming.add(plan)
+			if _walk_events.reach():
+				_walk_events.reach().shut_what_was_drawn(plan)
 		else:
 			_walk_events.add(plan)
 			ahead.hand_to_her_walk(plan)

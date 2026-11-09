@@ -617,9 +617,9 @@ func obstructs_within() -> float:
 func is_a_one_shot_off_her_way() -> bool:
 	return kind == GameEnums.EventKind.ONE_SHOT and on_her_way == null
 
-## **Whether a recurring row the day rolls is handed to her walk to site** (`on_her_way`, the
-## sidewalk poster crew): the day's plan rolls it like any other and, at the end, takes it off the
-## map for the walk to put on her way (`EventScheduler._hand_to_her_walk()`). Asked too by the park
+## **Whether a recurring row the day draws is handed to her walk to site** (`on_her_way`, the
+## sidewalk poster crew): a location draws it like any other and hands it on with no position for
+## the walk to put on her way (`LocationDraw.finish()`). Asked too by the park
 ## spoilers, which offer none such, since a park it spoiled would be left empty.
 func is_handed_to_her_walk() -> bool:
 	return on_her_way != null and kind == GameEnums.EventKind.RECURRING
@@ -1200,15 +1200,15 @@ func validate() -> bool:
 				+ "wherever she goes, and one placed at dawn is met only if she walks there")
 		return false
 	# **A row sited from her walk is a `MAP` row that stands still, or it is nothing.** Only
-	# `EventScheduler._place_one_shots` and `_hand_to_her_walk` read the flag, and only
-	# `EventDirector` sites what they leave unplaced. The siting is a tile with the corridor's own
+	# `EventScheduler._place_one_shots`, `_hand_to_her_walk` and `LocationDraw.finish()` read the
+	# flag, and only `EventDirector` sites what they leave unplaced. The siting is a tile with the corridor's own
 	# questions asked of it, which a director-sited row never has, and a thing that moves has no one
 	# place for its scar to be recorded at.
 	if on_her_way:
 		if kind != GameEnums.EventKind.ONE_SHOT and kind != GameEnums.EventKind.RECURRING:
 			push_error("event '%s' is sited from her walk and is neither a one-shot nor " % id
-					+ "recurring: nothing but EventScheduler._place_one_shots and "
-					+ "_hand_to_her_walk leaves a plan for her walk to site")
+					+ "recurring: nothing but EventScheduler._place_one_shots, "
+					+ "_hand_to_her_walk and LocationDraw.finish leaves a plan for her walk to site")
 			return false
 		if spawn_mode != SpawnMode.MAP:
 			push_error("event '%s' is sited from her walk and is director-sited besides: it is " % id
@@ -1714,9 +1714,9 @@ func silent_beyond() -> float:
 ## way through is the engine's field, a cost and not a closure. A one-shot carrying this flag is
 ## never placed at dawn (`EventScheduler._place_one_shots()` plans it with no position), so nothing
 ## else in the day is judged differently because of it.
-## **A recurring row carrying it is not exempt**: a poster crew closes nothing, and it is placed at
-## dawn and judged as any other before its position is handed to her walk
-## (`EventScheduler._hand_to_her_walk()`).
+## **A recurring row carrying it is not exempt**: a poster crew closes nothing, and it is drawn at a
+## location and judged as any other before it is handed to her walk with no position
+## (`LocationDraw.finish()`).
 func has_a_line_to_avoid() -> bool:
 	if role == EventDef.Role.SCENERY or pursuit != null:
 		return false

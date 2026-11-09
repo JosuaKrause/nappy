@@ -1964,7 +1964,12 @@ more events, and the density holds.
 
 **A row's cap still binds on an early day**: a row at its `max_per_day` is not drawn again
 (`LocationDraw`; the orchestrator's reading of fork 5(b), open to correction), so the day can only
-place what its caps add up to whatever its shares. Repeats are fine — the same event several times
+place what its caps add up to whatever its shares. The walk draws only what she comes near, so a cap
+counts what her walk drew: a row the dawn spent its cap on over the whole city would be met at its
+cap on her walk. **The capped rows take the walk's own caps** (`EventScheduler.WALK_CAPS`, the
+orchestrator's reading, open to the player's overturn), fitted with `tests/probes/walk_rows.gd` so
+she meets a capped row as often as when the dawn drew every location, and rounded and thinned as
+every cap is. Repeats are fine — the same event several times
 over is what a street is — so density needs no new catalogue rows: the common act I rows are capped
 in the teens and twenties.
 
