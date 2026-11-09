@@ -134,16 +134,26 @@ class ExperimentPreflightTests(unittest.TestCase):
         self.assertFalse(output.exists())
         self.assert_nothing_launched()
 
-    def test_audit_refuses_dirty_or_its_own_repository(self) -> None:
+    def test_audit_refuses_a_dirty_checkout(self) -> None:
         checkout = self._checkout("audit")
         (checkout / SOURCES[0]).write_text("dirty\n")
         dirty = self._run(AUDIT, str(checkout))
         self.assertEqual(dirty.returncode, 2, dirty.stderr)
         self.assertIn("dirty tracked files", dirty.stderr)
 
-        own = self._run(AUDIT, str(ROOT))
+    def test_audit_refuses_the_repository_that_contains_it(self) -> None:
+        # A throwaway repository that holds a copy of the audit script: if the refusal regressed, the
+        # audit would rewrite this repository's sources, never the real checkout's.
+        checkout = self._checkout("own")
+        copy = checkout / "tests/probes/m159_prediction_audit.py"
+        copy.write_text(AUDIT.read_text())
+        self._git(checkout, "add", ".")
+        self._git(checkout, "commit", "-qm", "the audit script lives here")
+        before = {relative: (checkout / relative).read_bytes() for relative in SOURCES}
+        own = self._run(copy, str(checkout))
         self.assertEqual(own.returncode, 2, own.stderr)
         self.assertIn("repository that contains this audit script", own.stderr)
+        self.assertEqual({relative: (checkout / relative).read_bytes() for relative in SOURCES}, before)
 
     def test_clean_source_hashes_reach_provenance_with_relative_paths(self) -> None:
         baseline = self._checkout("before", "-before")

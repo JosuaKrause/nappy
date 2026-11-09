@@ -62,10 +62,13 @@ is queued explicitly, so these four cases do not claim that every partial animat
 
 ### City ground and buildings
 
-South water uses the existing `tiles/water` atlas region on a separate `SceneryWater` canvas.
-It is absent from the static ground TileSet and composed sheet. A shader shifts the sample within
-each tile by less than a pixel, while the bulkhead, bridge and other ground stay still; its local
-clock pauses with gameplay. Roof rotors and the pipe/smoke parts likewise have separate retained
+South water uses the existing `tiles/water` atlas region on `SceneryWater` canvases: one per
+ground chunk, standing as a child of that chunk's layer (in the stepped preparation mode, one per
+quadrant step that holds water). It is absent from the static ground TileSet and composed sheet.
+A shader shifts the sample within each tile by less than a pixel, while the bulkhead, bridge and
+other ground stay still. The surfaces run no clock of their own: `SceneryGround`'s one clock, which
+pauses with gameplay, phases them all, a chunk entering view at the clock's present time, so
+neighbouring chunks ripple in step. Roof rotors and the pipe/smoke parts likewise have separate retained
 canvases, with their pixels absent from the static layers. [Runtime bursts](evidence/m159-scenery-animation-2026-09-26/README.md)
 show all four cases and the approved water motion.
 
@@ -366,7 +369,7 @@ advancing together. Each of its steps flushes TileMap internals; the in-tree lay
 at its off-screen position because hiding it discards renderer commands. Its pending regions
 have a separate owner until all quadrants are complete, pause outside the loading boundary and
 retain their allocation until the wider unloading boundary; live ground edits and repaints
-discard that unfinished state, and its water uses separate quadrant surfaces. In every mode the
+discard that unfinished state, and its water stands as one surface per quadrant step that holds water. In every mode the
 safety guard, camera relocation and day destination preparation finish a region synchronously
 before it enters view, so no half-built region is drawn, and all water shares one pausable city
 clock. Returning buildings reconstruct
