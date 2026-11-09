@@ -5,7 +5,8 @@ extends RefCounted
 ## **Boots the actual `main` in a child process: its subject is what `main` installs from a recipe**
 ## (authored subjects only, production crowd), which is the game's composition and so cannot be split.
 
-const PROBE := """extends Node
+const PROBE := """@warning_ignore_start("unsafe_method_access")
+extends Node
 const BootedMain := preload("res://tests/booted_main.gd")
 const RoofReads := preload("res://tests/roof_reads.gd")
 func _ready() -> void:
