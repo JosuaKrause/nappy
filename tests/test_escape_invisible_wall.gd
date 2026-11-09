@@ -10,7 +10,7 @@ extends RefCounted
 ## blocked along the city's whole width: the strip from y 832 to 864. The city is built beside the
 ## building in the same viewport and the same physics space, and none of the blockers has a
 ## picture, so left in place they are a wall across the city that nobody can see — the player met
-## it at tile 74,27. `main._build_the_world_for()` takes them out
+## it at tile 74,27. `main._stand_the_world()` takes them out
 ## (`InteriorScene.take_the_walls_out()`) before it builds the city.
 ##
 ## **Driven through the real `main.tscn`** (`tests/booted_main.gd`), booted on the building the way

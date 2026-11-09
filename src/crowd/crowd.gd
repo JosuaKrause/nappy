@@ -212,7 +212,7 @@ var _struck := false
 var skip_motion := false
 ## `--skip crowd`, handed in the same way: every agent this makes skips its own drawing.
 var skip_agent_drawing := false
-## Today's checkpoint gates — `RegionPlanner.GateState`, set once a day by `main._start_day()` from
+## Today's checkpoint gates — `RegionPlanner.GateState`, set once a day by `DayDirector.start()` from
 ## `DayStreets.region_plan().gates`. Empty on any day before the wall stands, or in a rig with no
 ## city behind it. See `_stop_for_gates()`.
 var _gates: Array[RegionPlanner.GateState] = []
@@ -324,7 +324,7 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	# Before either `_populate` call: `setup()` refuses a spot in a pocket the way it refuses one
 	# behind a barrier, and a record built afterwards would refuse nothing on the morning it is most
 	# needed. Today's seals are already planned by here — `EventManager.start_day` runs before this
-	# in `main._start_day()` — and `refresh()` is what catches one that arrives later anyway.
+	# in `DayDirector.start()` — and `refresh()` is what catches one that arrives later anyway.
 	_pockets.refresh(_map)
 	var act := Tuning.act_for_day(day)
 	if populate:

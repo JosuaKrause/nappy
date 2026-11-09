@@ -296,7 +296,7 @@ var _fenced_park_state_act := 0
 var _act_for_the_next_repaint := 0
 
 ## The calm areas she has used this act (`RunCalendar.settled_this_act()`), for the **next**
-## `repaint()` to shut where it can. `Main._start_day()` hands them over just before
+## `repaint()` to shut where it can. `DayDirector.start()` hands them over just before
 ## `City.start_day()` repaints the city, and the repaint reads them once and forgets them: the
 ## escape's own repaint (`City.start_day()` under the city section's spec) comes with no handover and shuts nothing, and a
 ## rig that never calls this plans the day exactly as a city with no used parks. See `shut_calm`.
@@ -305,7 +305,7 @@ func set_spent_calm(blocks: Array[Vector2i]) -> void:
 
 ## What the run remembers about the one park barriers ever stand around this run — the block
 ## (`Vector2i(-1, -1)` for none yet) and the act it was fenced in — plus today's own act, all for
-## the next `repaint()` to read. `Main._start_day()` hands this over the same way it hands over
+## the next `repaint()` to read. `DayDirector.start()` hands this over the same way it hands over
 ## `set_spent_calm()`, and remembers the first `fenced_park`/`fenced_park_act` choice after repaint.
 ## A choice from an earlier act prevents a new fence but does not stand physically today.
 func set_fenced_park_state(existing_block: Vector2i, existing_act: int, today_act: int) -> void:

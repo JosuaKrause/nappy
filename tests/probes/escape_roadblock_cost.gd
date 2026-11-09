@@ -9,7 +9,7 @@ extends RefCounted
 ##
 ## The rig is `tests/escape_roadblock_rig.gd`; `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) pins what this prints.
 ## Every crossing is walked in both directions, twice: from 0 asleep, which is what every attempt
-## at the city section starts on (`main._start_section()`: `Baby.reset()` then `force_sleep()`),
+## at the city section starts on (`DayDirector.start()`: `Baby.reset()` then `force_sleep()`, as the section's spec starts her asleep),
 ## and from `Tuning.EXCITEMENT_WAKE_THRESHOLD` awake, the baby a bang earlier on
 ## the walk has just woken. Three walks each:
 ##

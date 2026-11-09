@@ -11,7 +11,7 @@ extends RefCounted
 ##     tools/test.sh probes/minty_quail_day13_roadblock.gd > out.txt
 ##     grep '^RB' out.txt
 ##
-## Each place gets the day started again from the same inputs, the way `DayDirector.start_day()`
+## Each place gets the day started again from the same inputs, the way `DayDirector.start()`
 ## starts it, so no place's placement is read on a plan another place changed. She stands on the
 ## place with the camera's view round her, and the mark is read there.
 

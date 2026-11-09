@@ -7,7 +7,7 @@ extends RefCounted
 ##     tools/test.sh probes/minty_quail_swap_candidates.gd > out.txt
 ##     grep '^SC' out.txt
 ##
-## Per seed, day 13, started the way `DayDirector.start_day()` starts one. A body blocks when
+## Per seed, day 13, started the way `DayDirector.start()` starts one. A body blocks when
 ## `Planned.obstructs()` says so; the region wall's and the doors' bodies are never candidates.
 ## **Off the routes** is a body whose tile no route runs along (`Corridor.carries_a_route()`);
 ## **route-adjacent** is one standing on a street segment no route runs along, one of whose two

@@ -120,7 +120,7 @@ func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t) ->
 			"freeing the crowd node is what finally gives the page back, with nothing left over")
 	pages.stop()
 
-## `main._build_the_finale_city()`'s own shape — "never `Crowd.start_day()`: a cleared crowd is the
+## The escape city's own shape (`DayDirector.start()` under a spec with nobody on its streets) — "never `Crowd.start_day()`: a cleared crowd is the
 ## whole of 'nobody in it', and clearing is the one call this file makes into `src/crowd/`" — calls
 ## `clear()` with no day ever started. `clear()` never touches `ATLAS_GROUP` at all, so this holds
 ## independently of whether a day ever ran; pinned anyway as the shape the finale actually

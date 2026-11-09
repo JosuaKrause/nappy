@@ -644,7 +644,9 @@ func _install(city: City, player: Stroller, baby: Baby, spec: DaySpec,
 	var initial: Dictionary = setup.get("player", {})
 	baby.excitement = float(initial.get("excitement", 0))
 	baby.sleepiness = float(initial.get("sleep", 0))
-	if data.get("kind", "city") == "escape" or baby.sleepiness >= Tuning.METER_MAX:
+	# Asleep where the walk starts her asleep (`DaySpec.starts_with_the_baby_asleep()`, the escape's
+	# city), or where the scene fills her sleep.
+	if spec.starts_with_the_baby_asleep() or baby.sleepiness >= Tuning.METER_MAX:
 		baby.force_sleep()
 	if setup.has("column"):
 		_install_column(setup.column, errors)

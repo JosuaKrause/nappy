@@ -69,7 +69,8 @@ var world := World.CITY
 var goal := Goal.HOME
 ## Where `Goal.CITY_EDGE`'s two ways out stand, in world space — `CityEdge.Kind` -> position, the
 ## last walkable tile of the spine at each end rather than where the portal's picture is anchored.
-## Handed in once the city exists; empty for any other goal.
+## Handed in by the start once the world it stands in is stood (`DayWorld.exits()`); empty for any
+## other goal.
 var exits := {}
 ## Seconds on the clock.
 var length := Tuning.DAY_LENGTH_SECONDS
@@ -83,6 +84,46 @@ var daylight_runs_down := true
 ## once the sabotage is done and she is far from the station: the escape is the same night as the
 ## blackout.
 var dark_from_the_start := false
+
+# ------------------------------------------------------------------ how it starts ---
+
+## Where she is put down as the walk starts, each a place in the world the walk stands in
+## (`DayWorldSource.stand()` answers the point).
+enum Start {
+	## Her own front door, on the street: every one of the fourteen days.
+	DOORSTEP,
+	## Her own flat's door, inside the building: the escape's first section.
+	FLAT,
+	## The building's service exit, on the street beside the home block: the escape's city.
+	SERVICE_EXIT,
+}
+var _start := Start.DOORSTEP
+## Whether the run photographs what it holds at the walk's dawn (`RunCalendar.begin_day()`), which is
+## what a lost attempt gives back and where a checkpoint is kept: every day's. A section of the
+## escape gives nothing back (`a_loss_gives_back_the_attempt`) and keeps no checkpoint of its own.
+var _photographs_the_dawn := true
+## Whether the resistance's day runs (`ResistanceDirector.start_day()`): its mark, its contact and
+## its task on every day; the escape has no subquest to advance.
+var _runs_the_resistance := true
+## Whether the baby is asleep in her arms as the walk starts, sleepiness full: the escape's *"the
+## player holding the sleeping baby (sleep bar is full)"*, which is also what makes a retry playable
+## at all, since the meter that just reached a hundred is what lost the section. A day starts with
+## her awake.
+var _starts_asleep := false
+## Whether the walk's plan draws on the run's one-shots and spends them
+## (`AttemptSpendState.consumed_one_shots`, appended to as the day's plan spends one): every day's.
+## The escape plans from a list of its own, empty, and spends none of the run's.
+var _spends_the_one_shots := true
+## The run's random stream the walk's events are planned on (`RunCalendar.day_rng()`): `"events"` for
+## a day, `"finale"` for the escape's city, so a restarted section is the same city rather than a
+## thinner one. The building is planned on a seed of its own, which its night shares
+## (`DayWorld.plan_rng()`).
+var _events_stream := "events"
+## Whether the act's calm areas she has already used are handed to the dawn's repaint to shut where
+## they can, and the one park fenced this run is fenced again (`CityMap.set_spent_calm()`,
+## `set_fenced_park_state()`): every day's. The escape's repaint comes with no handover and shuts
+## nothing.
+var _shuts_the_spent_calm := true
 
 # --------------------------------------------------------------- what is on it ---
 
@@ -248,15 +289,23 @@ static func for_section(which: int, section_length: float, section_title := "") 
 	spec.crowd_density = 0.0
 	spec.pastes_posters = false
 	spec.closes_streets = false
+	spec._photographs_the_dawn = false
+	spec._runs_the_resistance = false
+	spec._starts_asleep = true
+	spec._spends_the_one_shots = false
+	spec._shuts_the_spent_calm = false
 	if which == Section.BUILDING:
 		spec.number = BUILDING_DAY
 		spec.world = World.BUILDING
 		spec.goal = Goal.SERVICE_EXIT
+		spec._start = Start.FLAT
 		spec.a_win_leads_into = Section.CITY
 	else:
 		spec.number = CITY_DAY
 		spec.world = World.CITY
 		spec.goal = Goal.CITY_EDGE
+		spec._start = Start.SERVICE_EXIT
+		spec._events_stream = "finale"
 		_place_the_escape_city(spec)
 	return spec
 
@@ -303,6 +352,15 @@ func goal_kind() -> Goal:
 func section_kind() -> Section:
 	return section
 
+## The seconds the walk's clock starts with (`length`).
+func seconds_on_the_clock() -> float:
+	return length
+
+## How many of the act's walkers and cars are on the walk's streets, as a share of the act's own
+## (`crowd_density`): nobody at `0.0`.
+func crowd_share() -> float:
+	return crowd_density
+
 ## The finale's exits by `CityEdge.Kind`, each the point the walk ends at.
 func exit_points() -> Dictionary:
 	return exits
@@ -314,6 +372,48 @@ func counts_in_hundredths() -> bool:
 ## Whether the day grows its closures at dawn.
 func closes_the_streets() -> bool:
 	return closes_streets
+
+## Where she is put down as the walk starts (`Start`).
+func start_point() -> Start:
+	return _start
+
+## Whether the run photographs what it holds at the walk's dawn (`_photographs_the_dawn`).
+func photographs_the_dawn() -> bool:
+	return _photographs_the_dawn
+
+## Whether the resistance's day runs on this walk (`_runs_the_resistance`).
+func runs_the_resistance() -> bool:
+	return _runs_the_resistance
+
+## Whether the baby is asleep in her arms as the walk starts (`_starts_asleep`).
+func starts_with_the_baby_asleep() -> bool:
+	return _starts_asleep
+
+## Whether the walk's plan draws on and spends the run's one-shots (`_spends_the_one_shots`).
+func spends_the_one_shots() -> bool:
+	return _spends_the_one_shots
+
+## The run's random stream the walk's events are planned on (`_events_stream`).
+func events_stream() -> String:
+	return _events_stream
+
+## Whether the act's used calm areas are shut at dawn (`_shuts_the_spent_calm`).
+func shuts_the_spent_calm() -> bool:
+	return _shuts_the_spent_calm
+
+## Whether the light runs from dawn to dusk with the clock (`daylight_runs_down`).
+func runs_the_daylight_down() -> bool:
+	return daylight_runs_down
+
+## Whether the city is dark from its first frame (`dark_from_the_start`).
+func is_dark_from_the_start() -> bool:
+	return dark_from_the_start
+
+## Hands the walk its ways out, as the world it is walked in answers them (`DayWorld.exits()`): a
+## `Goal.CITY_EDGE` walk's two, and none for any other (`exits`).
+func use_exits(the_exits: Dictionary) -> void:
+	exits = the_exits
+
 
 ## Whether the crews paste posters at dawn.
 func pastes_the_posters() -> bool:

@@ -49,7 +49,7 @@ func _rng(stream: String) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d:%s" % [SEED, DAY, stream])
 	return rng
 
-## One day, built the way `main._start_day()` builds it — closures before events, so `closure:0`
+## One day, built the way `main._start()` builds it — closures before events, so `closure:0`
 ## has one to find — with streaming off so a plan is placed without a player ever coming near it
 ## (the same reasoning `tests/test_event_manager.gd`'s own `_build_city()` gives), and the
 ## resistance run over the city's own fresh run, so day 6 selects step 1 on a run that has done

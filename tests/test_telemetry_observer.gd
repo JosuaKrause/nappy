@@ -61,7 +61,7 @@ class Rig extends RefCounted:
 	var tree: SceneTree
 	var elapsed := 0.0
 
-	func _init(parent: Node, run_log: Telemetry, map: WorldMap = null, day: DayWorld = null,
+	func _init(parent: Node, run_log: Telemetry, map: WorldMap = null, day: WatchedDayParts = null,
 			spikes := false) -> void:
 		observer = TelemetryObserver.new(run_log)
 		tree = parent.get_tree()
@@ -87,7 +87,7 @@ class Rig extends RefCounted:
 
 ## What a day's observer is handed besides her, the baby and the clock: the run, the city's map, the
 ## day's events, today's streets and the crowd's sources, each a plain value or a stand-in.
-class DayWorld extends RefCounted:
+class WatchedDayParts extends RefCounted:
 	var run := RunState.new()
 	var map: CityMap
 	var events := StandInEvents.new()
@@ -238,7 +238,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	var clock := DayController.new()
 	_fresh_log()
 	# The run the escape's city stands in, handed to the observer as the session hands it the boot's.
-	var day := DayWorld.new(StreetMap.full())
+	var day := WatchedDayParts.new(StreetMap.full())
 	var observer := TelemetryObserver.new(_log)
 	observer.setup_escape(day.run, player, baby, clock, false)
 	t.add_child(observer)
@@ -479,7 +479,7 @@ func _test_the_trail_carries_whether_she_was_running(t) -> void:
 ## day was not walked, so the picture of it must start from nothing rather than carrying the
 ## abandoned attempt's trail into the retry.
 func _test_a_lost_day_restarts_the_trail(t) -> void:
-	var day := DayWorld.new(StreetMap.full())
+	var day := WatchedDayParts.new(StreetMap.full())
 	_fresh_log()
 	var rig := Rig.new(t, _log, null, day)
 	# Not added to the tree: a bare `Stroller.new()` has no `Camera2D` child, which only the scene
@@ -508,7 +508,7 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 ## anything yet. "Met" has to be the narrower, honest question — did the field that actually costs
 ## her something ever reach her — or a day that met eight of forty events would read as forty.
 func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -> void:
-	var day := DayWorld.new(StreetMap.full())
+	var day := WatchedDayParts.new(StreetMap.full())
 	var at := _on_a_sidewalk(day.map)
 	# A plan live where it was placed, as streaming leaves one that has not telegraphed: in the
 	# world, with her still outside its reach.
@@ -548,7 +548,7 @@ func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -
 ## a fresh random stream, so what the check pins is the map).
 func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
 	var map := CityMapCache.of(CITY_SEED)
-	var day := DayWorld.new(map)
+	var day := WatchedDayParts.new(map)
 	var at := map.doorstep_world_position()
 	var plan := day.events.place("loudspeaker", at)
 

@@ -49,7 +49,7 @@ func run(t) -> void:
 	print("XF_TOTAL %d lines" % lines)
 	t.check(lines > 0, "there were sources to print (%d)" % lines)
 
-## A day, as `DayDirector.start_day()` starts it: the city's own morning, the events and the crowd.
+## A day, as `DayDirector.start()` starts it: the city's own morning, the events and the crowd.
 func _a_day(t, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_day(day)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
@@ -73,7 +73,7 @@ func _a_day(t, seed_value: int, day: int) -> int:
 	city.free()
 	return printed
 
-## The escape's city, built and planned as `main._plan_the_finale_city()` does, with nobody on it.
+## The escape's city, built and planned as `DayDirector.start()` does, with nobody on it.
 func _the_escape_city(t, seed_value: int) -> int:
 	var day := Tuning.RUN_LENGTH_DAYS
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)

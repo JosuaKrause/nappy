@@ -1,7 +1,7 @@
 @warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for what the escape's plan costs on a restart of the city section, which
-## replans on the same city (`main._plan_the_finale_city()`): per seed, the escape plan's
+## replans on the same city (`DayDirector.start()`): per seed, the escape plan's
 ## wall time on the city's first plan and on three restarts after it, each with the same rng the
 ## game hands it. Not a suite: it prints rather than asserts. Run by name:
 ##

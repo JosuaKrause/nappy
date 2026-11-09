@@ -97,7 +97,8 @@ func _build(t) -> void:
 	_day.set_process(false)
 	_run = RunState.new()
 	_run.start_run(SEED)
-	_day.setup(_map, _player, _run)
+	_day.setup(_run)
+	_day.use_the_walk(_map, _player)
 	_day.day_finished.connect(func(result: GameEnums.DayResult) -> void: _results.append(result))
 
 func _teardown() -> void:

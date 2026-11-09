@@ -960,7 +960,8 @@ func _check_play_seconds_only_advance_while_the_world_moves(t, main: Node2D, run
 	# the tick, never moved by it.
 	var escape_day := DayController.new()
 	main.add_child(escape_day)
-	escape_day.setup((_one(main, "City") as City).map, _one(main, "Stroller"), run)
+	escape_day.setup(run)
+	escape_day.use_the_walk((_one(main, "City") as City).map, _one(main, "Stroller"))
 	escape_day.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
 	escape_day.start(30.0)
 	await tree.process_frame

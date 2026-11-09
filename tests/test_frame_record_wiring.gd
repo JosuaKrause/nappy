@@ -32,7 +32,7 @@ func run(t) -> void:
 ## The sitting is the test's own, parked in a home of its own (`Boot.home_playing()`) with a run of
 ## its own, which `main` plays and the day counter reads. Its record was started and then stopped
 ## before the boot, the switch a held restart leaves off with its ledger kept, so `main._ready()`
-## sets the recorder up from it before `_start_day()` makes the day's agents, as in the game. The
+## sets the recorder up from it before `_start()` makes the day's agents, as in the game. The
 ## file a desktop save writes is a scratch path the sitting already keeps, so nothing reaches the
 ## player's own records.
 func _test_the_recorder_in_a_real_main(t) -> void:

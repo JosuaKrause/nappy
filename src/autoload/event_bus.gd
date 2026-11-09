@@ -20,14 +20,14 @@ signal baby_state_changed(state: GameEnums.BabyState)
 ## visits".
 signal run_begun(day: int, resumed: bool)
 ## A day begins — its first attempt or a retry — before anything is placed in it, so a listener
-## clears yesterday's state first. `DayDirector.start_day()` and `main`'s recipe day are the emitters, and
-## `main._start_section()` for each of the escape's two sections, a day of its own under its own
-## number after the last (`DaySpec.number`).
+## clears yesterday's state first. `DayDirector.start()`, the one start every walk goes through, is
+## the emitter: for a day, an authored scene's day and each of the escape's two sections, a day of
+## its own under its own number after the last (`DaySpec.number`).
 signal day_started(day: int)
 ## Everything the day holds is placed: its closures, its calm, its plan, the resistance's contact and
-## her on the doorstep — or an escape section's world and her at its start. `DayDirector.start_day()` and
-## `main._start_section()` are the emitters; the run log writes the day's plan lines, its dawn map
-## and her `start` line here (`RunSession`).
+## her on the doorstep — or an escape section's world and her at its start. `DayDirector.start()` is
+## the emitter, for every walk but an authored scene's, which is installed rather than planned; the
+## run log writes the day's plan lines, its dawn map and her `start` line here (`RunSession`).
 signal day_planned(day: int)
 signal day_time_changed(remaining: float, total: float)
 signal return_phase_started() ## Baby is asleep; walk home.

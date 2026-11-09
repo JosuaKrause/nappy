@@ -602,11 +602,11 @@ func _spawn_street_trees() -> void:
 ## tree lying across a closed street is the one missing from the row beside it.
 ##
 ## **Called twice a day, and both times are load-bearing.** `start_day` below runs it once the
-## closures are planned, which is where a `FALLEN_TREE` closure's own pit is decided; `Main`
-## runs it again once `EventManager.start_day` has planned the seals, because a `fallen_tree_seal`
-## is chosen later and takes a pit of its own. Reading `CityMap.is_tree_pit_emptied` rather than
-## keeping a list here is what lets the second call be a plain refresh rather than a second
-## bookkeeping path.
+## closures are planned, which is where a `FALLEN_TREE` closure's own pit is decided; the day's
+## start (`DayDirector.start()`) runs it again once `EventManager.start_day` has planned the seals,
+## because a `fallen_tree_seal` is chosen later and takes a pit of its own. Reading
+## `CityMap.is_tree_pit_emptied` rather than keeping a list here is what lets the second call be a
+## plain refresh rather than a second bookkeeping path.
 func refresh_street_trees() -> void:
 	for tile: Vector2i in _street_tree_pits:
 		var tree: Prop = _street_tree_pits[tile]
@@ -1030,7 +1030,7 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## (`PosterWalls.show_only()`). The repaint, the door, the ground, the litter, the block
 ## dressing and the street trees happen either way, because the parks she walks through have to
 ## be the parks the run's seed built. The run flow hands `spec` in on every day and every
-## section (`main`, the same object the day's event manager is handed); left out, as a rig that
+## section (`DayDirector.start()`, the same object the day's event manager is handed); left out, as a rig that
 ## builds a city with no run flow leaves it, it is a day's (`DaySpec.for_day()`). `day` is the
 ## calendar's — the escape is walked on the last day's — and `rng` the closures' stream.
 func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
@@ -1042,8 +1042,8 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 		# Last, and after the repaint: which blocks are calm is what the closure invariant is
 		# stated over, and a requisitioned park is not one of them.
 		_close_streets(spec, rng)
-	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. `Main` runs it
-	# once more after the day's seals are planned — see `refresh_street_trees()`.
+	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. The day's start
+	# runs it once more after the day's seals are planned — see `refresh_street_trees()`.
 	refresh_street_trees()
 	if spec.pastes_the_posters():
 		# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
@@ -1126,7 +1126,7 @@ func _close_streets(spec: DaySpec, rng: RandomNumberGenerator) -> void:
 ## The route's own curbstones, tinted — a trial of whether a faint hint on the ground can stay under
 ## the threshold of being noticed as one; see `docs/CITY.md`, "Guiding her to the calm". **One tint
 ## for every walk**: the day's tree, handed in by `_close_streets()` as soon as it is grown, and the
-## escape's two chains, handed in by `Main` after every plan of the section, a restart's included.
+## escape's two chains, handed in by `DayDirector.start()` after every plan of the section, a restart's included.
 ## *(Inbox #747: "yes, of course the yellow tint. we spent the whole game establishing that why would
 ## it be different in the last section?")*
 ##

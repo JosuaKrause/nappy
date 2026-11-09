@@ -35,7 +35,8 @@ func _rig(t) -> DayController:
 	# phase, so a real `CityMap` would only cost time nothing here asks about.
 	# A run of its own for each rig.
 	var run := RunState.new()
-	day.setup(null, player, run)
+	day.setup(run)
+	day.use_the_walk(null, player)
 	return day
 
 func _test_the_clock_emits_once_per_second_crossed(t) -> void:

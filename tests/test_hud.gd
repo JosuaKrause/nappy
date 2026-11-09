@@ -189,7 +189,7 @@ func _test_the_walk_hint_names_a_tap_on_a_touch_device(t) -> void:
 
 ## **A lost nerve rewinds the day, not the run.** *(Player, of the deployed build: "the run lesson
 ## doesn't show at all anymore — it should always show for the day 3 lesson", diagnosed as "you
-## need to reset the flag when the player dies on day 3.")* `main._start_day()` announces the day
+## need to reset the flag when the player dies on day 3.")* `main._start()` announces the day
 ## again on the same HUD instance when a nerve is spent, so the first retry of `RUN_TAUGHT_DAY` is
 ## already marked taught by an attempt the player never got to finish — and every attempt after
 ## that stays silent. The flag has to belong to the attempt on this one day.

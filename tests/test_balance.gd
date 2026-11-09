@@ -12,9 +12,9 @@ extends RefCounted
 ## fixed place on the map. Walking on the spot is the right abstraction here: what is being
 ## measured is what the ground and the noise do, not the locomotion.
 ##
-## Each day is started the way the game starts one (`DayDirector.start_day()`, handed the city, its
-## events, the resistance, her, the baby and the day's clock), so the day's closures stand, its city
-## is painted, and a calm area she settled in earlier in the act reads spent.
+## Each day is started the way the game starts one (`DayDirector.start()`, handed the city standing
+## with her and the baby in it, `StandingCity`, the resistance and the day's clock), so the day's
+## closures stand, its city is painted, and a calm area she settled in earlier in the act reads spent.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed of the run the city is handed (`RunCity.with_own_run()`), whose calendar draws each
@@ -61,10 +61,10 @@ func run(t) -> void:
 func _new_run() -> void:
 	_city.run.start_run(RUN_SEED)
 
-## Starts the run's current day, which is `day`, the way the game does (`DayDirector.start_day()`).
+## Starts the run's current day, which is `day`, the way the game does (`DayDirector.start()`).
 func _start_day(t, day: int) -> void:
 	t.check(_city.run.header.day == day, "the run is on day %d (%d)" % [day, _city.run.header.day])
-	_days.start_day(DaySpec.for_day(day, _config.day_length_for(day)))
+	_days.start(DaySpec.for_day(day, _config.day_length_for(day)))
 
 ## Puts the world around a point the way it would be for a player standing there.
 ##
@@ -74,11 +74,13 @@ func _start_day(t, day: int) -> void:
 ## these tests ask, which was never "what is the excitement at this coordinate" but "what does
 ## a player standing on this ground have to survive".
 ##
-## The crowd is today's (`DayDirector.start_the_crowd()`, as dense as the day's spec says), rebuilt
-## round `at` rather than round the doorstep the day began at.
+## The crowd is today's whole crowd, as a day's spec has it (`DaySpec.crowd_density` 1, the way
+## `DayDirector.start()` starts it), rebuilt round `at` rather than round the doorstep the day began
+## at.
 func _stand_at(at: Vector2) -> void:
 	_city.events.stream_around(at)
-	_days.start_the_crowd(at)
+	var day := _city.run.header.day
+	_city.crowd.start_day(day, _city.run.calendar.day_rng(day, "crowd"), at)
 
 ## The rig, built once: her, walking on the spot, with the baby riding; the day's clock, set up the
 ## way `main` sets it up, so the calm she falls asleep on is remembered where the game remembers it
@@ -102,7 +104,7 @@ func _build_rig(t) -> void:
 	_baby.set_world(_city)
 	_clock = DayController.new()
 	t.add_child(_clock)
-	_clock.setup(_city.map, _stroller, _city.run)
+	_clock.setup(_city.run)
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
 	_resistance.set_process(false)
@@ -110,6 +112,7 @@ func _build_rig(t) -> void:
 			_city.spawn_siting)
 	_days = DayDirector.new(_city.run.calendar, _city.run.facts, _city.run.attempt_spend, _config)
 	_days.use_the_world(_city, _city.events, _resistance, _stroller, _baby, _clock)
+	_days.use_worlds(StandingCity.new(_city, _stroller, _baby))
 
 ## Puts her at `at`, walking on the spot: the day's start stood her still on the doorstep.
 func _place_rig(at: Vector2) -> void:

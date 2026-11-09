@@ -245,7 +245,7 @@ var _screen_changes := 0
 
 ## Acknowledges a touch before the day it starts costs anything to look at. *(Playtest 27 finding
 ## 3: a press was not acknowledged, and the wait after it was long.)* `main._on_summary_continued()`
-## runs `_start_day()` synchronously in response to `continued` — measured at 610-900ms — and
+## runs `_start()` synchronously in response to `continued` — measured at 610-900ms — and
 ## nothing was ever rendered between the touch landing and that freeze, because both happened
 ## inside the same frame's input processing.
 ##

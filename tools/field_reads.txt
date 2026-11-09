@@ -31,7 +31,6 @@ src/main.gd trace_note
 # [AttemptSpendState] src/run/attempt_spend_state.gd
 src/events/day_planner.gd scars
 src/events/event_spawner.gd city_state
-src/main.gd city_state
 src/run/day_director.gd city_state
 src/run/day_director.gd consumed_one_shots
 
@@ -275,7 +274,6 @@ src/events/mast_sites.gd boundary_wall_at_a
 src/events/mast_sites.gd calm_blocks
 src/events/mast_sites.gd main_road
 src/events/mast_sites.gd square_rects
-src/main.gd block_plans
 src/main.gd seed_used
 src/routes/closure_planner.gd absent_segments
 src/routes/closure_planner.gd block_layouts
@@ -386,7 +384,6 @@ src/dev/scene_recipe_runtime.gd holds_the_home_streets
 src/events/day_planner.gd closes_streets
 src/events/day_planner.gd holds_the_home_streets
 src/events/day_planner.gd number
-src/events/day_planner.gd section
 src/events/day_planner.gd world
 src/events/event_manager.gd holds_the_home_streets
 src/events/event_manager.gd number
@@ -403,24 +400,13 @@ src/events/event_scheduler.gd number
 src/events/event_scheduler.gd one_notice_at_a_time
 src/events/event_scheduler.gd wall_row_share
 src/main.gd a_win_leads_into
-src/main.gd dark_from_the_start
 src/main.gd daylight_runs_down
-src/main.gd exits
-src/main.gd goal
-src/main.gd length
-src/main.gd number
 src/main.gd saved_as_under_way
-src/main.gd section
 src/main.gd title
 src/main.gd world
 src/routes/seal_planner.gd seal_pictures
 src/routes/seal_planner.gd seals_every_street_off_the_walk
 src/routes/seal_planner.gd seals_the_main_road
-src/run/day_director.gd crowd_density
-src/run/day_director.gd goal
-src/run/day_director.gd length
-src/run/day_director.gd number
-src/run/day_director.gd section
 src/run/run_calendar.gd a_loss_gives_back_the_attempt
 src/run/run_calendar.gd a_win_gives_a_nerve_back
 src/run/run_calendar.gd a_win_leads_into

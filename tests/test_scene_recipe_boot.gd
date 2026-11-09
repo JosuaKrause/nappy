@@ -1,9 +1,9 @@
 @warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **A booted scene recipe runs under the walk its clock runs on**: `main` hands the authored scene
-## (`SceneRecipeRuntime.install()`) the spec the run flow started — a day's
-## (`DayDirector.start_authored_day()`), or the escape city's section (`main._begin_the_scene()`) —
-## and the day's clock is started on that same spec. Read off the booted game: the clock's spec
+## (`SceneRecipeRuntime.install()`) the spec the run flow started — a day's, or the escape city's
+## section's, both through the one start (`DayDirector.start()`, which installs the scene in place of
+## the plan) — and the day's clock is started on that same spec. Read off the booted game: the clock's spec
 ## (`DayController.spec`) and its length, and the settings the scene's events took from the spec
 ## they were installed under (`EventManager.use_the_spec()`: whether a torn poster sends a pursuer,
 ## whether what is sited after dawn keeps off the home's streets). A suite that boots `main`: every
