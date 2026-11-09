@@ -2795,7 +2795,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 		why.append("%s is not at the middle of a tile" % def.id)
 		return null
 	if locations == null:
-		locations = DayLocations.lay_out(map, corridor)
+		locations = DayLocations.lay_out(map, corridor if corridor else Corridor.of(null))
 	var location := locations.holding(tile, map.tile_at(tile))
 	if location == null:
 		why.append("no location holds tile %s" % tile)

@@ -29,6 +29,8 @@ func run(t) -> void:
 	_test_the_mouse_crosses_the_alleys_own_short_axis(t)
 	_test_the_mouse_waits_until_she_is_near(t)
 	_test_one_park_stays_usable(t)
+	_test_the_fixed_parts_hold_their_locations(t)
+	_test_a_scripted_row_takes_a_location_of_its_own(t)
 	_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t)
 	_test_calm_she_has_not_used_is_left_alone(t)
 	_test_successors_resolve(t)
@@ -877,3 +879,61 @@ func _keep_streets_to(map: CityMap, to: Vector2i, keep: Dictionary) -> bool:
 			keep[segment.key()] = segment
 		tile = came[tile]
 	return true
+
+
+## **The fixed parts hold their locations** (the design's fixed parts' phases: a mast's location
+## holds its mast on a day with one, and nothing is drawn where a fixed part stands): on every day
+## of the shared city, each mast and each playground the day stands takes the location holding it,
+## and no other placed row stands inside that location. Before the masts' first day, a mast's
+## location holds nothing and is drawn like any other, so the days asked span it.
+func _test_the_fixed_parts_hold_their_locations(t) -> void:
+	var asked := 0
+	for day in [3, 5, 8, 11, 14]:
+		var events := _day_events(day)
+		var locations := events.locations()
+		var map := _map()
+		for part in events.placements():
+			if part.row().role != EventDef.Role.MAST and part.row().kind != GameEnums.EventKind.AMBIENT:
+				continue
+			var tile := map.world_to_tile(part.placed_at())
+			var location := locations.holding(tile, map.tile_at(tile))
+			if location == null:
+				continue
+			asked += 1
+			t.check(location.is_taken(), "day %d: the location under %s at %s is taken"
+					% [day, part.row_id(), RunTrace.tile(tile)])
+			for other in events.placements():
+				if other == part or not other.is_placed() or other.is_a_fixed_part():
+					continue
+				t.check(not location.tiles().has_point(map.world_to_tile(other.placed_at())),
+						"day %d: nothing drawn stands in the location of %s at %s (found %s)"
+						% [day, part.row_id(), RunTrace.tile(tile), other.row_id()])
+	t.check(asked > 0, "the days asked stood fixed parts on locations (%d)" % asked)
+
+## **A scripted row takes a location of its own at dawn** (`ScriptedPhase`): on the days a scripted
+## row is placed (day 10's night raid, day 13's firefight), it stands inside a location that is
+## taken for the day, on ground the location takes, and no row the draw placed stands in that
+## location beside it.
+func _test_a_scripted_row_takes_a_location_of_its_own(t) -> void:
+	var asked := 0
+	for day in [10, 13]:
+		var events := _day_events(day)
+		var map := _map()
+		for plan in events.placements():
+			if plan.row().kind != GameEnums.EventKind.SCRIPTED or plan.row().role == EventDef.Role.MAST \
+					or not plan.is_placed() or plan.is_a_fixed_part():
+				continue
+			asked += 1
+			var tile := map.world_to_tile(plan.placed_at())
+			var location := events.locations().holding(tile, map.tile_at(tile))
+			t.check(location != null and location.is_taken(),
+					"day %d: %s stands in a location taken for the day" % [day, plan.row_id()])
+			if location == null:
+				continue
+			for other in events.placements():
+				if other == plan or not other.is_placed() or other.is_a_fixed_part():
+					continue
+				t.check(not location.tiles().has_point(map.world_to_tile(other.placed_at())),
+						"day %d: nothing else stands in %s's location (found %s)"
+						% [day, plan.row_id(), other.row_id()])
+	t.check(asked > 0, "the scripted days placed their rows (%d)" % asked)

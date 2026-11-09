@@ -334,9 +334,11 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 	var no_doors := PackedVector2Array()
 	var nothing_down: Array[EventScheduler.Planned] = []
 	var calm := CalmAreas.of(map)
+	var locations := DayLocations.lay_out(map, corridor)
+	var standing: Array[EventScheduler.Planned] = []
 	for tile in EventScheduler.open_ground_for(def.for_day(day), map, {}):
 		var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile), 1,
-				nothing_down, corridor, no_doors, calm)
+				nothing_down, corridor, no_doors, calm, standing, locations)
 		if plan:
 			return plan.role
 	return -1
@@ -423,8 +425,9 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t) -> void:
 ## the day's own placement does (the scene recipes call it), so the sweep asks it directly, over seeds and over
 ## days spanning the acts: the ground the scheduler offers the row (`open_ground_for()`) has to be
 ## squares alone, the row is placed on tiles drawn from it, and every sidewalk tile of a sample
-## strewn over the map is refused it. The count at the end is what stops it passing having placed
-## nothing.
+## strewn over the map is refused it, loudly: the refusal says the location the tile names does not
+## take the row there (or that none holds it), rather than the row being placed somewhere else. The count at the end is what
+## stops it passing having placed nothing.
 func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 	var def := EventCatalogue.by_id("poster_crew_square")
 	t.check(def != null and def.first_day <= 14, "the square poster crew is in the catalogue")
@@ -451,13 +454,15 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 			var already: Array[EventScheduler.Planned] = []
 			var no_doors := PackedVector2Array()
 			var calm := CalmAreas.of(map)
+			var locations := DayLocations.lay_out(map, corridor)
+			var standing: Array[EventScheduler.Planned] = []
 			var rng := _rng(day)
 			for copy in 3:
 				if offered.is_empty():
 					break
 				var tile: Vector2i = offered[rng.randi_range(0, offered.size() - 1)]
 				var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile),
-						day + copy * 31, already, corridor, no_doors, calm)
+						day + copy * 31, already, corridor, no_doors, calm, standing, locations)
 				if not plan:
 					continue
 				already.append(plan)
@@ -469,10 +474,15 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 			var sidewalk := map.tiles_of_type(GameEnums.TileType.SIDEWALK)
 			for k in 24:
 				var tile: Vector2i = sidewalk[(k * 7919) % sidewalk.size()]
+				var why: Array[String] = []
 				var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile),
-						day, already, corridor, no_doors, calm)
+						day, already, corridor, no_doors, calm, standing, locations, why)
 				t.check(plan == null, "day %d: a sidewalk tile %s is refused the square crew"
 						% [day, RunTrace.tile(tile)])
+				t.check(why.size() == 1 and (why[0].contains("does not take")
+						or why[0].contains("no location holds")),
+						"day %d: and the refusal says why: its location does not take the row there (%s)"
+						% [day, why])
 				refused += 1
 	t.check(placed >= 1, "and the sweep actually placed one (%d)" % placed)
 	t.check(refused > 100, "and refused it sidewalk ground (%d tiles asked)" % refused)
@@ -516,7 +526,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 	var first := ""
 	for map_seed: int in [4242, 90210, 1234567]:
 		var map := MapCache.of(map_seed)
-		for day in [1, 3, 5, 8, 11, 14]:
+		for day in range(1, 15):
 			var state := CityState.new()
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)

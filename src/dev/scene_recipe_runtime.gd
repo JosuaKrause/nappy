@@ -930,7 +930,8 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		map.hold_segment(segment.key(), HeldStreets.Why.HOME)
 	var counts := {}
 	# The day's locations, laid out once: an authored row's tile names the one it stands in.
-	var locations := DayLocations.lay_out(map, corridor)
+	# A scene with no route tree lays its locations out under a corridor that answers none.
+	var locations := DayLocations.lay_out(map, corridor if corridor else Corridor.of(null))
 	for entry: Dictionary in setup.get("events", []):
 		var at := position_of(entry.at, errors)
 		if not errors.is_empty():
