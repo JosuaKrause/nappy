@@ -15,6 +15,7 @@ const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const CordonInTheWorld := preload("res://tests/cordon_in_the_world.gd")
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
+const RecordingAtlas := preload("res://tests/recording_atlas.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 ## How long a check waits for the cordon to close before calling it stuck.
@@ -43,6 +44,7 @@ func run(t) -> void:
 	_test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t)
 	_test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t)
 	_test_the_officers_are_placed_by_the_siting_they_are_handed(t)
+	_test_the_cordons_figures_ask_the_library_it_is_handed(t)
 	_test_the_open_edge_shrinks_to_one_gap_nearest_her(t)
 	_test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstruction(t)
 	_test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t)
@@ -234,6 +236,43 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t) -> void:
 		cordon.clear()
 	t.check(distances[1] > distances[0] + Tuning.TILE_SIZE,
 			"and a wider camera puts them further out (%.0f, %.0f)" % [distances[0], distances[1]])
+	_end(fixture)
+
+## **The cordon's officers, tape and posts ask the library the cordon is handed** for their pages, not
+## a library of their own: a cordon handed a recording library (`tests/recording_atlas.gd`) and ticked
+## until it has put out its officers, tape and posts has had each kind ask it, as many times as there
+## are of them standing.
+func _test_the_cordons_figures_ask_the_library_it_is_handed(t) -> void:
+	var fixture := _at_the_swing(t)
+	var happenings: ResistanceHappenings = fixture.happenings
+	var swing: Vector2 = fixture.swing
+	happenings.cordon.clear()
+	var recording := RecordingAtlas.new()
+	var cordon := ParkCordon.new(_city.map, _city.navigator, _city.events, _city, recording,
+			fixture.park, _city.spawn_siting, ResistanceReads.day_reachability(_city)[1])
+	var posts := func() -> int:
+		var found := 0
+		for piece in _city.get_node("Entities").get_children():
+			found += 1 if piece is CordonTape and piece.piece == CordonTape.Piece.POST \
+					and not piece.is_queued_for_deletion() else 0
+		return found
+	var waited := 0.0
+	while waited < PATIENCE and (CordonInTheWorld.tapes(_city).is_empty() or posts.call() == 0):
+		_look(_city, swing)
+		cordon.tick(STEP, swing)
+		waited += STEP
+	var officers := CordonInTheWorld.officers(_city).size()
+	var tapes := CordonInTheWorld.tapes(_city).size()
+	var planted: int = posts.call()
+	t.check(officers > 0 and tapes > 0 and planted > 0,
+			"the cordon put out officers, tape and posts (%d, %d, %d)" % [officers, tapes, planted])
+	t.check(recording.acquired_from("res://src/resistance/cordon_officer.gd") >= officers,
+			"every officer asked the cordon's library for his page (%d of %d)"
+			% [recording.acquired_from("res://src/resistance/cordon_officer.gd"), officers])
+	t.check(recording.acquired_from("res://src/resistance/cordon_tape.gd") >= tapes + planted,
+			"every piece of tape and every post asked it for theirs (%d of %d)"
+			% [recording.acquired_from("res://src/resistance/cordon_tape.gd"), tapes + planted])
+	cordon.clear()
 	_end(fixture)
 
 ## Reaching the swing takes the park, as before — requisitioned and no longer calm — and starts the

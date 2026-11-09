@@ -63,7 +63,7 @@ func run(t) -> void:
 			var places: Array[Vector2] = []
 			for tile in stand_tiles:
 				places.append(city.map.tile_to_world(tile))
-			var touched := await ContactTouches.touches_from(t, director, places)
+			var touched := ContactTouches.touches_from(director, places)
 			for k in stand_tiles.size():
 				t.check(touched[k],
 						"front %s: a touch from the frontage tile %s counts" % [fronts[i], stand_tiles[k]])

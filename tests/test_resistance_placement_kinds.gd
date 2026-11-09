@@ -180,7 +180,7 @@ func _check_a_touch_from_the_near_half_of_the_sidewalk(t, director: ResistanceDi
 	var corners: Array[Vector2] = []
 	for side in [-1.0, 1.0]:
 		corners.append(foot + Vector2(side * (Tuning.TILE_SIZE * 0.5 - 1.0), sidewalk * 0.5 - 1.0))
-	var touched := await ContactTouches.touches_from(t, director, corners)
+	var touched := ContactTouches.touches_from(director, corners)
 	for k in corners.size():
 		t.check(touched[k],
 				("a touch from a bottom corner of the tile below the door, %.1fpx from it, " +

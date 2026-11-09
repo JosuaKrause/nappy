@@ -10,8 +10,8 @@ extends RefCounted
 
 ## For each of `points`, whether standing there for a physics frame would complete `director`'s contact
 ## (the one `director.contact()` answers): `[true, false, ...]` in the order of `points`. The
-## director's own contact, and the day, are left as they were. `_t` is kept so callers need not change.
-static func touches_from(_t, director: ResistanceDirector, points: Array[Vector2]) -> Array[bool]:
+## director's own contact, and the day, are left as they were.
+static func touches_from(director: ResistanceDirector, points: Array[Vector2]) -> Array[bool]:
 	var live := director.contact()
 	var touched: Array[bool] = []
 	for point in points:
@@ -19,6 +19,6 @@ static func touches_from(_t, director: ResistanceDirector, points: Array[Vector2
 	return touched
 
 ## The same for one place.
-static func touches_from_one(t, director: ResistanceDirector, point: Vector2) -> bool:
-	var answers: Array[bool] = await touches_from(t, director, [point] as Array[Vector2])
+static func touches_from_one(director: ResistanceDirector, point: Vector2) -> bool:
+	var answers: Array[bool] = touches_from(director, [point] as Array[Vector2])
 	return answers[0]

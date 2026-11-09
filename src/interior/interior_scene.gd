@@ -280,7 +280,7 @@ func _rebuild_walls() -> void:
 		barricade.position = Vector2((at.x + 0.5) * TILE, at.y * TILE + TILE * 0.5)
 		add_entity(barricade, DrawLayer.Layer.BUILDINGS)
 
-## The fallen ceiling on the top floor, drawn over exactly the cells `InteriorMapPlan.rubble`
+## The fallen ceiling on the top floor, drawn over exactly the cells `InteriorMapPlan.rubble_area()`
 ## closes. One picture registered at the patch's own top-left corner rather than one sprite per
 ## cell: a heap is a single mass, and four copies of the same tile would read as four crates.
 ##

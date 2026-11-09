@@ -35,7 +35,7 @@ class Door:
 ## positions absent here.
 var _tiles: Dictionary = {}
 ## A wall-anchor position -> `InteriorTile.Kind`, elevation drawn at that cell's own north edge.
-## Not part of `tiles`: nothing ever stands *on* a wall cell, so a wall needs a position to be
+## Not part of `_tiles`: nothing ever stands *on* a wall cell, so a wall needs a position to be
 ## drawn at rather than a floor-grid position.
 var _walls: Dictionary = {}
 ## Where a fresh run starts — the third floor's own door, mid-hallway on its south edge.
@@ -43,19 +43,19 @@ var _start_tile := Vector2i.ZERO
 ## `id -> Door`, every door in the building.
 var _doors: Dictionary = {}
 ## Apartment recesses that look locked but do not change the hallway's floor or routing. They are
-## kept apart from `doors`: an apartment is scenery, while a `Door` is a playable transition.
+## kept apart from `_doors`: an apartment is scenery, while a `Door` is a playable transition.
 var _locked_thresholds: Array[Vector2i] = []
 ## `Vector2i(-1, -1)` unless the basement's own exit has been placed.
 var _exit_tile := Vector2i(-1, -1)
 ## Every barricaded entrance position — read by the renderer to place the barricade and by tests
 ## that assert what stands in the wall there. Only the lobby has one, but keyed by position rather
-## than held as a single field, the same reasoning `walls` already follows now that everything
+## than held as a single field, the same reasoning `_walls` already follows now that everything
 ## shares one coordinate space.
 var _entrance_tiles: Array[Vector2i] = []
 ## Ground decals — `PUDDLE`, `DEBRIS` or `RAT` — that change nothing about what is walkable
 ## beneath them. `tile -> InteriorTile.Kind`.
 var _decals: Dictionary = {}
-## Cells that are not floor (absent from `tiles`) but must not get a collision blocker either.
+## Cells that are not floor (absent from `_tiles`) but must not get a collision blocker either.
 ## Only a diagonal step with no walkable orthogonal neighbor needs the two flanks cleared: the
 ## basement's one-cell entry can otherwise pinch a circular body between two blockers. The main
 ## stair grammar has two walkable rows, so its `.` background remains blocked and its `c`, `C`
@@ -502,7 +502,7 @@ func stairwell_walk(part_id: String) -> Array[Vector2i]:
 	return _shortest_walk(bottom, top)
 
 ## Where the basement corridor is one tile wide on the way out, in the order she meets them —
-## `corridor_narrows`, what the layout laid rather than whatever the geometry happens to offer.
+## `_corridor_narrows`, what the layout laid rather than whatever the geometry happens to offer.
 func basement_narrows() -> Array[Vector2i]:
 	return _corridor_narrows
 
