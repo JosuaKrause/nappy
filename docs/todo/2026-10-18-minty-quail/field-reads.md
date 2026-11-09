@@ -17,8 +17,8 @@ read from outside: composition over inheritance, the half of events-one-interfac
 player's "yes" accepted with the rest (inbox #1173 in gray-dolphin). It comes after the hand-ins (`city-hand-ins.md`), which move
 many of the same reads.
 
-*Proposed, not asked for:* a design on the board first, listing the reads by class and the methods
-that replace them, then one pull request per area.
+**The events' design is `event-interface.md`**: the parts, the questions callers ask, what replaces
+each read, and its pull requests in order, the first of which run beside the placement track.
 
 **Decided on the board** (inbox #1182 in gray-dolphin):
 
