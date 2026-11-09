@@ -42,7 +42,7 @@ the playtest it belongs to (polite-sparrow). `<words>` are the two words of the 
 the player accepted (PLAYTEST-144 8). Evidence that belongs to a playtest takes the playtest's name
 the same way (`playtest-144-phone-v0.18.0-2026-09-26/`). The slug says what it shows, so two
 folders for one entry differ by their slugs. When selected artifacts come from a telemetry run,
-keep them as the run folder under its original name (polite-sparrow).
+keep them under that run folder's original name (polite-sparrow).
 `docs/evidence/archive/session-captures/<date>/` holds earlier captures only, so nothing new goes
 there (polite-sparrow). Update every in-repo link when moving one. If capture aborts or the display
 is headless, report it instead of fabricating a frame.
