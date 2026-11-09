@@ -49,9 +49,9 @@ of breaks standing there only shrinks:
 **The map lookup stays with the city maps in the model** (inbox #904 in freckled-moose), and a
 record the map holds is placed on the map's layer as it appears. Each thing's own drawing is on the
 layer of the thing it draws. The refactor entry (minty-quail, one engine: the codebase refactored
-by layer) files a list of layers in its README; where the two differ (its list puts the UI inside
-the observers, and gives its third layer, the world, one map interface), the list above holds
-(inbox #904 in freckled-moose). A fix
+by layer) files the same seven layers in its README, under "The layering the code is moved to";
+where that list and `tools/layer_map.py` differ, the file is what CI enforces and the list is
+corrected. A fix
 lands in the shared mechanism rather than a branch keyed on one row's id or picture; new code
 follows the target shape and adds nothing to the divergence the refactor entry lists; a brief names
 the layer its work belongs to.
