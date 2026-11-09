@@ -1,9 +1,11 @@
 extends RefCounted
 ## `BadgeModel` stepped on its own: fakes for the dangers, a rectangle for the view, a number for the
-## clock — no scene, no camera, no frame timing. Which dangers get a screen-edge badge, when it goes
-## up and when it comes down is decided there, so it is checked there. The one exception is the
-## drawing test, which adds a real `DangerEdge` to the tree and waits for its draw, to check that it
-## draws exactly what the model lists.
+## clock — no scene, no camera, no frame timing. When a danger's screen-edge badge goes up, when it
+## comes down and the order the badges are listed in are decided there, so they are checked there;
+## which rows earn a badge at all is the row's own question (`EventDef.announces_its_coming()`,
+## checked in `tests/test_events_catalogue.gd`), handed to the model as an answer. The one
+## exception is the drawing test, which adds a real `DangerEdge` to the tree and waits for its
+## draw, to check that it draws exactly what the model lists.
 
 const STEP := 1.0 / 60.0
 ## The camera's view about her at (0, 0): the world the badge asks "in sight?" of.
@@ -12,7 +14,7 @@ const VIEW := Rect2(-320.0, -180.0, 640.0, 360.0)
 func run(t) -> void:
 	_test_a_danger_closing_from_off_screen_gets_its_badge_at_the_announce_line(t)
 	_test_a_danger_walking_away_or_too_slow_gets_none(t)
-	_test_a_raised_badge_stays_up_while_she_walks_away_and_while_it_turns_away(t)
+	_test_a_raised_badge_stays_up_while_it_stands_and_while_it_turns_away(t)
 	_test_a_raised_badge_ends_when_its_danger_leaves_the_world(t)
 	_test_kept_badges_stay_drawn_after_their_dangers_stop_or_turn_away(t)
 	_test_six_badges_at_once_are_all_drawn_and_none_drops_early(t)
@@ -100,32 +102,29 @@ func _test_a_danger_walking_away_or_too_slow_gets_none(t) -> void:
 		_step(model, [away, slow])
 	t.check(not model.has_badges(), "a thing going away, and one closing slower than 20px/s, get no badge")
 
-## A badge, once up, stays up until its danger is in sight or gone: standing still, turning away,
-## she walking away from it. For a lethal vehicle and for a cyclist (mobile, faster than a walk, not
-## lethal) alike; no timer ends it.
-func _test_a_raised_badge_stays_up_while_she_walks_away_and_while_it_turns_away(t) -> void:
-	for kind: String in ["lethal vehicle", "cyclist"]:
-		var model := BadgeModel.new()
-		var thing := _vehicle(1, Vector2(1000.0 if kind == "lethal vehicle" else 560.0, 0.0),
-				190.0 if kind == "lethal vehicle" else 120.0)
-		thing.logged_name = "thing"
-		for i in 30:
-			thing.position.x -= thing.speed * STEP
-			_step(model, [thing])
-		t.check(_up(model, "thing"), "%s: up while closing" % kind)
-		var down := 0
-		for i in 120:
-			_step(model, [thing])  # standing still: far longer than any timer would keep it
-			down += 0 if _up(model, "thing") else 1
-		t.check(down == 0, "%s: still up after two seconds standing still (down on %d)" % [kind, down])
-		for i in 120:
-			thing.position.x += thing.speed * STEP  # turned away, running off
-			_step(model, [thing])
-			down += 0 if _up(model, "thing") else 1
-		t.check(down == 0, "%s: and while it runs away (down on %d)" % [kind, down])
-		thing.position = Vector2(100.0, 0.0)
+## A badge, once up, stays up until its danger is in sight or gone: while it stands still and while
+## it turns away and runs off; no timer ends it.
+func _test_a_raised_badge_stays_up_while_it_stands_and_while_it_turns_away(t) -> void:
+	var model := BadgeModel.new()
+	var thing := _vehicle(1, Vector2(1000.0, 0.0))
+	thing.logged_name = "thing"
+	for i in 30:
+		thing.position.x -= thing.speed * STEP
 		_step(model, [thing])
-		t.check(not _up(model, "thing"), "%s: dropped the frame it is in sight" % kind)
+	t.check(_up(model, "thing"), "up while closing")
+	var down := 0
+	for i in 120:
+		_step(model, [thing])  # standing still: far longer than any timer would keep it
+		down += 0 if _up(model, "thing") else 1
+	t.check(down == 0, "still up after two seconds standing still (down on %d)" % down)
+	for i in 120:
+		thing.position.x += thing.speed * STEP  # turned away, running off
+		_step(model, [thing])
+		down += 0 if _up(model, "thing") else 1
+	t.check(down == 0, "and while it runs away (down on %d)" % down)
+	thing.position = Vector2(100.0, 0.0)
+	_step(model, [thing])
+	t.check(not _up(model, "thing"), "dropped the frame it is in sight")
 
 func _test_a_raised_badge_ends_when_its_danger_leaves_the_world(t) -> void:
 	for finished in [true, false]:

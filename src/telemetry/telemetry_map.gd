@@ -80,8 +80,8 @@ const NO_ROLE_MARK := Color("8c93a1")
 const CORRIDOR_ALPHA := 0.55
 
 ## The single tile put through the middle of an event she **met** — came within the field she can
-## actually feel (`EventScheduler.Planned.field_reaches()`) — which is what tells a placement that cost her something
-## from one that merely stood there.
+## actually feel (`EventScheduler.Planned.field_reaches()`) — which is what tells a placement that
+## cost her something from one that merely stood there.
 ##
 ## **It is a mark added rather than strength taken away, and the first version was the other way
 ## round.** Fading what she never reached is the obvious design and it answers the wrong question:

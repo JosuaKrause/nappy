@@ -5,7 +5,9 @@ extends RefCounted
 ## a question for a screenshot and a person. What *is* testable is the set of rules underneath
 ## it, and those are the part that would rot silently: which things get a mark and which do
 ## not, that the mark still breathes, which two levels the cue over the player has and that one
-## system cannot clear another's warning, and which things earn an arrow at the screen edge.
+## system cannot clear another's warning, and what the screen edge hands its badges on real frames.
+## Which rows earn an arrow is the row's own question (`EventDef.announces_its_coming()`), checked
+## in `tests/test_events_catalogue.gd`.
 ##
 ## The standing decision this suite exists to keep, from `CLAUDE.md`:
 ##
@@ -28,9 +30,6 @@ func run(t) -> void:
 	await _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t)
 	await _test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
 	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
-	_test_only_what_she_cannot_outwalk_earns_an_arrow(t)
-	_test_a_director_sited_pursuer_earns_an_arrow(t)
-	_test_a_row_with_no_silhouette_earns_no_arrow(t)
 	_test_the_screen_edge_is_the_same_size_for_everyone(t)
 	await _test_the_badge_measures_the_things_own_speed(t)
 	await _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t)
@@ -615,74 +614,6 @@ func _test_a_car_sounding_its_horn_carries_its_own_mark(t) -> void:
 			"and it is the same caret the events draw, from one place")
 
 # ------------------------------------------------------------- the screen edge ---
-
-## The gap the ring never covered and could not: `fire_truck` does 190px/s with a 340px radius,
-## and a ring is only useful once it is on screen, which at that speed is most of the warning
-## gone. The rule is the same line the telegraph contract draws — what she cannot outwalk.
-func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
-	var edge := DangerEdge.new()
-	var wanted := ["fire_truck", "military_convoy", "abduction", "alley_robbery"]
-	var not_wanted := ["dog_walker", "cafe_tables", "poster_crew", "poster_crew_square", "busker",
-			"construction"]
-
-	for id in wanted:
-		var def := EventCatalogue.by_id(id)
-		if not def:
-			continue
-		var instance := _instance(def)
-		t.check(DangerEdge.subject_for_def(instance.row()).announces,
-				"'%s' is announced from off-screen: it is lethal or faster than a walk" % id)
-		instance.free()
-
-	for id in not_wanted:
-		var def := EventCatalogue.by_id(id)
-		if not def:
-			continue
-		var instance := _instance(def)
-		t.check(not DangerEdge.subject_for_def(instance.row()).announces,
-				"'%s' is not, because turning round and leaving is enough" % id)
-		instance.free()
-
-	edge.free()
-
-## **A pursuer sited off screen has to have something announcing it while it is off screen.**
-## `charging_dog` carries `spawn_mode == AHEAD_OF_PLAYER`, the same as the cat's three-second
-## crossing that the badge deliberately never announces — but `EventDirector` now sites the dog
-## outside the view and lets it close in, so unlike the cat it has an offscreen phase worth
-## something to warn about. A row moved further out without the badge following it would have
-## *less* warning than the old close siting gave, not more.
-func _test_a_director_sited_pursuer_earns_an_arrow(t) -> void:
-	var edge := DangerEdge.new()
-	var dog := EventCatalogue.by_id("charging_dog")
-	t.check(dog != null and dog.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and dog.pursuit != null,
-			"charging_dog is still a director-sited pursuer")
-	if dog:
-		var instance := _instance(dog)
-		t.check(DangerEdge.subject_for_def(instance.row()).announces,
-				"the day-3 dog is announced off screen once it is sited there")
-		instance.free()
-
-	# And the cat it shares a spawn mode with still is not — the exemption is for a pursuer only,
-	# not for the whole spawn mode.
-	var cat := EventCatalogue.by_id("cat_dash")
-	if cat:
-		var instance := _instance(cat)
-		t.check(not DangerEdge.subject_for_def(instance.row()).announces,
-				"a three-second crossing still has nothing to announce before it arrives")
-		instance.free()
-	edge.free()
-
-## **A badge says what is coming, so a row with no silhouette has nothing to say**: its coming may
-## be one its row announces (`EventDef.announces_its_coming()`), and still the edge raises no arrow
-## for it.
-func _test_a_row_with_no_silhouette_earns_no_arrow(t) -> void:
-	var truck := EventCatalogue.by_id("fire_truck")
-	t.check(DangerEdge.subject_for_def(truck).announces, "the fire engine earns an arrow")
-	var blank := truck.duplicate() as EventDef
-	blank.look = EventDef.Look.NONE
-	t.check(blank.announces_its_coming(Tuning.WALK_SPEED)
-			and not DangerEdge.subject_for_def(blank).announces,
-			"drawn as nothing, its coming is still announced by its row, and the edge has no arrow for it")
 
 ## `MARGIN` and `SCREEN_MARGIN` are screen px, which is only a fair unit if every player's screen
 ## shows the same slice of world. `"expand"` would let a wide monitor see more city than a laptop

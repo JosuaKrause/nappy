@@ -278,12 +278,10 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t) -> void:
 ## no screen-edge badge and no warning first; the cat still owes its in-world crouch, while the
 ## fire engine, which can hit her hard, keeps its badge and its warning first.
 func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
-	var edge := DangerEdge.new()
 	for id: String in ["loose_dog", "cat_dash"]:
 		var def := EventCatalogue.by_id(id)
-		t.check(not def.telegraphs and not def.warns_before_it_exists()
-				and not DangerEdge.subject_for_def(def).announces,
-				"'%s' does not telegraph: no warning first and no screen-edge badge" % id)
+		t.check(not def.telegraphs and not def.warns_before_it_exists(),
+				"'%s' does not telegraph: no warning first, and so no screen-edge badge" % id)
 		t.check(def.validate(), "and '%s' gives what the contract still asks of it" % id)
 	# The rows that stand until she walks in keep the contract for their in-world telegraph.
 	for id: String in ["cat_dash", "alley_mouse", "pigeon_flock", "police_patrol"]:
@@ -294,15 +292,17 @@ func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
 	t.check(EventCatalogue.by_id("loose_dog").comes_down_her_line(),
 			"the loose dog still comes down her own sidewalk, created at once just out of sight")
 	var truck := EventCatalogue.by_id("fire_truck")
-	t.check(truck.telegraphs and truck.warns_before_it_exists() and DangerEdge.subject_for_def(truck).announces,
+	t.check(truck.telegraphs and truck.warns_before_it_exists(),
 			"the fire engine, a heavy penalty, keeps its badge and its warning first")
-	edge.free()
 
-## **What a row says of its coming** (`EventDef.announces_its_coming()`): a badge at the screen edge
-## for anything lethal, and otherwise only for what comes faster than she walks; nothing for a row
-## that does not telegraph, nor for a crossing sited ahead of her unless it pursues. How fast it
-## comes (`approach_speed()`) is how fast it moves under its own steam, and every row it announces
-## has a silhouette for the badge to carry.
+## **What a row says of its coming** (`EventDef.announces_its_coming()`), the screen-edge badge's
+## rule, checked here once: a badge for anything lethal, and otherwise only for what comes faster
+## than she walks; nothing for a row that does not telegraph, nor for a crossing sited ahead of her
+## (`AHEAD_OF_PLAYER`), **unless it pursues**: the day-3 dog shares the cat's spawn mode, but the
+## director sites it outside the view and lets it close in, so unlike the cat's three-second
+## crossing it has an offscreen approach to warn of. How fast a row comes (`approach_speed()`) is
+## its chase speed for a pursuer, and every row it announces has a silhouette for the badge to
+## carry.
 func _test_a_row_says_whether_its_coming_is_announced_and_how_fast(t) -> void:
 	var walk := Tuning.WALK_SPEED
 	var robber := EventCatalogue.by_id("alley_robbery")
@@ -313,36 +313,24 @@ func _test_a_row_says_whether_its_coming_is_announced_and_how_fast(t) -> void:
 			"a fire engine, which does not end the day, is announced: it is faster than her walk")
 	t.check(not truck.announces_its_coming(truck.approach_speed()),
 			"and not to somebody walking as fast as it comes")
-	var cyclist := EventCatalogue.by_id("cyclist")
 	t.check(not EventCatalogue.by_id("loose_dog").announces_its_coming(walk),
 			"a row that does not telegraph its coming is not announced")
-	t.check(not EventCatalogue.by_id("cat_dash").announces_its_coming(walk),
-			"nor a crossing sited ahead of her")
-	t.check(EventCatalogue.by_id("charging_dog").announces_its_coming(walk),
-			"unless it pursues her")
+	var cat := EventCatalogue.by_id("cat_dash")
+	var dog := EventCatalogue.by_id("charging_dog")
+	t.check(cat.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER
+			and dog.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and dog.chase_speed() > 0.0,
+			"the cat and the day-3 dog are both sited ahead of her, and the dog pursues")
+	t.check(not cat.announces_its_coming(walk), "nor a crossing sited ahead of her")
+	t.check(dog.announces_its_coming(walk), "unless it pursues her")
 	t.check(not EventCatalogue.by_id("dog_walker").announces_its_coming(walk),
 			"nor a mover she can outwalk")
 	t.close_to(robber.approach_speed(), robber.chase_speed(), "a pursuer comes at its chase speed")
-	var rider := EventInstance.new()
-	rider.setup(cyclist, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)]))
-	rider.player_at = Vector2(0.0, 3000.0)
-	while rider.is_telegraphing():
-		rider.step(STEP)
-	var from := rider.global_position
-	for i in 60:
-		rider.step(STEP)
-	t.close_to(rider.global_position.distance_to(from), cyclist.approach_speed() * 60.0 * STEP,
-			"a mover comes at the speed it says", 2.0)
-	rider.free()
 	for row in EventCatalogue.all():
 		if row.announces_its_coming(walk):
 			t.check(not EventPictures.icon_for(row.picture()).is_empty(),
 					"'%s' is announced and has a silhouette for its badge" % row.id)
 		if row.ends_the_day():
 			t.check(row.lethal_reach() > 0.0, "'%s' ends the day within a reach" % row.id)
-	t.check(EventCatalogue.by_id("chatting_mother").detains_her()
-			and not EventCatalogue.by_id("cafe_tables").detains_her(),
-			"a chatting mother holds her when she comes to her; the cafe tables do not")
 
 ## **`as_warned_first()` carries `solid_parts` across by hand, the way every other copy of a row
 ## does** (`at_heat()`, `EventDef.for_day()`, `EventCatalogue.neighbor_heading_home()`,

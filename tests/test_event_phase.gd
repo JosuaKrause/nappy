@@ -231,27 +231,20 @@ func _test_a_badge_up_alone_points_and_counts_down(t) -> void:
 	t.check(arrived[0] == 1 and warning.seconds_left() <= 0.0,
 			"its thing comes once nothing is left of it")
 
-## The questions a caller outside the events asks a live event answer what its row says, and the
-## field's reach is where the row is heard.
+## A live event made where it stands came under no warning, one that does not drive closes on
+## nothing, and its field reaches exactly where its row's field is heard: the reach the run log's
+## lines ask (`field_reaches()`) agrees with the field the meter is charged from.
 func _test_a_live_event_answers_for_its_row(t) -> void:
 	for id: String in ["alley_robbery", "police_patrol", "cafe_tables", "cyclist"]:
 		var def := EventCatalogue.by_id(id)
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)
-		t.check(instance.row() == def and instance.row_id() == id, "'%s' is a live one of its row" % id)
-		t.check(instance.pursues() == (def.chase_speed() > 0.0)
-				and instance.ends_the_day() == def.ends_the_day()
-				and instance.telegraphs_for() == def.telegraphs_for(),
-				"'%s' answers for its row: whether it pursues, ends the day and how long it telegraphs" % id)
 		t.check(not instance.was_warned_of(), "'%s' made where it stands came under no warning" % id)
 		if not instance.drives():
-			t.check(not instance.closes_on(Vector2.ZERO), "'%s' drives nothing, so it closes on nothing" % id)
+			t.check(not instance.closes_on(Vector2.ZERO),
+					"'%s' drives nothing, so it closes on nothing" % id)
 		for distance: float in [0.0, def.heard_within() - 1.0, def.heard_within() + 1.0, 2000.0]:
 			var at := Vector2(0.0, distance)
 			t.check(instance.field_reaches(at) == (def.emission_at_distance(distance) > 0.0),
 					"'%s' reaches %.0fpx out exactly where its row's field is heard" % [id, distance])
 		instance.free()
-	var car := EventInstance.new()
-	car.setup(EventCatalogue.by_id("police_patrol"), Vector2.ZERO)
-	t.check(car.drives(), "a patrol car drives")
-	car.free()

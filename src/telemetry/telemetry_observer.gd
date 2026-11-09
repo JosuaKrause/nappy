@@ -1104,9 +1104,9 @@ func _watch_the_trail(here: Vector2) -> void:
 	_trail_last = here
 
 ## Which planned events she actually met — came within the field she can actually feel
-## (`Planned.field_reaches()`), rather than merely close enough for `EventManager.stream_around` to have loaded
-## them into the world at `Tuning.EVENT_STREAM_RADIUS` (900px, more than twice the field of a
-## typical row). `plan.was_live` answers the looser, streaming question; the dusk map wants the one
+## (`Planned.field_reaches()`), rather than merely close enough for
+## `EventManager.stream_around` to have loaded them into the world at
+## `Tuning.EVENT_STREAM_RADIUS` (900px, more than twice the field of a typical row). `plan.was_live` answers the looser, streaming question; the dusk map wants the one
 ## that says whether a placement did anything to her, which is what decides whether it was a wall
 ## or decoration. See `docs/TODO.md`, M66, "Which events she actually met".
 ##
