@@ -126,8 +126,9 @@ A job removes only what it recorded as its own, keeps its logs and the evidence 
 never force-removes or unlocks another job's checkout. **Merged branches and their worktrees are
 inventoried with `tools/prune-merged.sh --all`** and retired with `--all --apply`, through the
 wrapped line **committing** ("Branches") gives; a finished agent's brief is released first
-(`cleanup: ready`), and **a released brief goes with its branch**, so `.claude/briefs/` holds the
-briefs of open work only. **Free space is read from `df`, before and after**, since `du` counts
+(`cleanup: ready`), and **the script deletes a released brief as it retires the brief's branch**,
+the brief in the main checkout's `.claude/briefs/`, and keeps one that is not released.
+**Free space is read from `df`, before and after**, since `du` counts
 shared blocks more than once. `references/storage.md` has the rest; read it before removing
 anything a job did not record as its own, after a browser run, and before multiplying worktrees or
 starting a large build or capture batch.
@@ -208,10 +209,14 @@ session asks the player.
 ## Proposed, not asked for
 
 These rules above are the filer's proposals, not the player's words, and hold until the player
-corrects them. The citation is the player's word each one extends:
+corrects them. An entry cites the player's word it extends where there is one, and says so where
+there is none:
 
 - **Thirty days without a commit to its file is what makes an item long open** (step 4). The
   player has named no interval.
 - **The restart prompt's seven-part layout** (step 8; frosty-owl #1065).
 - **The restart prompt stays under 10 KB** (step 8). The player has named no bound.
-- **The next session may resume an agent a restart stopped, while it is reported warm** (step 8).
+- **The next session may resume an agent a restart stopped, while it is reported warm** (step 8),
+  which is **orchestrating**'s proposal. The player's words are that a cold agent is not resumed
+  (woolly-finch 5) and that a warm one is reused while rebriefing would cost more
+  (inbox #896 in plaid-raven); neither is about an agent a restart stopped.

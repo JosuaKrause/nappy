@@ -17,8 +17,9 @@ step; do not silently leave a complete checkout or compiler tree behind as "temp
 `--all --apply` applies its safety checks again. Run the inventory through the same wrapped line as
 the apply, which **committing** ("Branches") gives with its role, since the write guard denies the
 script bare in every shape, its read-only ones included. Finished agents explicitly release their brief
-with `cleanup: ready` after stopping and preserving useful ignored artifacts, and a released brief
-goes with its branch when the script retires it. Locked, dirty,
+with `cleanup: ready` after stopping and preserving useful ignored artifacts, and the script
+deletes a released brief, the one in the main checkout's `.claude/briefs/`, as it retires the
+brief's branch; a brief that is not released is kept, and so is its branch. Locked, dirty,
 unpushed or actively owned work stays. An unmerged but finished job may remove its own clean
 scratch checkout only after confirming pushed recovery and retained evidence; retain the branch.
 Never force-remove or unlock another job's checkout to make cleanup succeed.
