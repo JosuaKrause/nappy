@@ -273,8 +273,8 @@ The events:
   charge still running when the section ends); both sections' encounters and runs, the
   building's events being the day's own `EventManager` as the city's are; the city's holds;
   and `nappy-day-16-blackout` as the escape's city is built dark. `run.header.day`, the calendar,
-  stays on day 14 for the whole escape, so `VisitCounter` names what it counts by the day the last
-  `day_started` announced rather than by the calendar.
+  stays on day 14 for the whole escape, so `VisitCounter` names what it counts by the day of the
+  walk last begun (`RunFlow.day_started`, off its spec) rather than by the calendar.
 - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — which button began
   the run on the title screen, or `keys` when a key did (`space` or a walking key, which begins the
   run in tap mode; the name comes from the input that began it, not the mode it falls back to),
@@ -289,11 +289,15 @@ Every signal named above that exists purely for this page — `event_sighted`,
 `encounter_influenced`, `run_bout_began` — is listen-only: it rolls no RNG and
 changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so. The day's and
 the escape's own events are the run flow's facts, each emitted where it happens, and no listener is
-called inline. The page hears `run_begun`, `day_started`, `day_ended`, `escape_begun`,
+called inline. A walk begins on the run flow (`RunFlow`), the same way for a day, an authored
+scene's day and each section of the escape, each signal carrying the walk's spec: `day_started`
+once the dawn is photographed and before its world stands, `world_stood` with the world as it
+stands, and `day_planned` with the world once it is placed. Its end is `day_ended` on `EventBus`.
+The page hears the flow's `day_started` and, on the bus, `run_begun`, `day_ended`, `escape_begun`,
 `escape_city_entered`, `escape_lost` and `escape_out`, and is the only listener of `run_begun`,
 `escape_begun`, `escape_city_entered`, `escape_lost` and `escape_out`. The run log (`RunSession`)
-hears `day_started`, `day_planned`, `day_ended` and `escape_section_started`. The HUD hears
-`day_started` alone.
+hears the flow's `world_stood` and `day_planned` and the bus's `day_ended`. The HUD hears the
+flow's `day_started` alone.
 
 **The gate is stricter than the page load's own.** An event is sent only when every one of four
 things holds: the build is running on the web (`OS.get_name() == "Web"`), it is not a debug build
@@ -499,10 +503,11 @@ day 15 Escape the building  run seed 1674637177  length 180.0s
    0.0  start    restarted the building at (7,1), facing 0°
 ```
 
-`TelemetryObserver.setup_escape()` hands it the day's own `DayController`, and `RunSession` says
-which world she is in as each section starts — `watch_building()` or `watch_city()`, off
-`EventBus.escape_section_started`, which carries the section's world — before `start_section()`,
-the escape's `start_day()`; a section ends on `day_ended`, as a day does. The events are read from
+A section is watched exactly as a day is: `TelemetryObserver.setup()` hands it the day's own
+`DayController` once a boot, `RunSession` hands it each walk's world as it stands
+(`TelemetryObserver.watch()`, off `RunFlow.world_stood`, which carries the world), its `start` line
+is written once the walk is placed (`TelemetryObserver.start()`, off `RunFlow.day_planned`), and a
+section ends on `day_ended`, as a day does. The events are read from
 an `EventManager` either way, the building's in the
 building and the city's outside it, so these read a section exactly as they read a
 day: `start`, `near`, `chase`, `cue` (the mark over her head and the screen-edge badges), `freeze` /
@@ -1047,13 +1052,13 @@ through something it was handed:
 
 - **`RunSession`** (`src/telemetry/run_session.gd`) owns the log for a boot: `main` builds it and
   calls only its `open()` (once per boot, keeping a log a reload carried over) and `close()` (the
-  held restart and a quit; it hears the window's close request itself). It listens on `EventBus`
-  for the run flow's own facts — `day_started` opens a day's section, the escape's sections
-  included, `day_planned` writes the plan lines, the dawn map and her `start` line,
-  `day_ended(day, result, cause, elapsed)` writes the outcome and the dusk map and closes the
-  section, and `escape_section_started` points the observer at the world an escape section is
-  walked in and writes its `start` line — and holds the `TelemetryObserver` it builds when a log is
-  open.
+  held restart and a quit; it hears the window's close request itself), and `watch()` once a boot
+  with what no world holds (the day's clock, the resistance, the badges). It listens for the run
+  flow's own facts, the same way for every spec — `RunFlow.world_stood` opens the walk's section
+  (a day's, an authored scene's or an escape section's) and points the observer at the world it is
+  walked in, `RunFlow.day_planned` writes the plan lines, the dawn map and her `start` line, and
+  `EventBus.day_ended(day, result, cause, elapsed)` writes the outcome and the dusk map and closes
+  the section — and holds the `TelemetryObserver` it builds when a log is open.
 - **`TelemetryObserver`** watches the walk frame by frame and writes everything that has no single
   point of decision, into the log `RunSession` hands it as it makes it.
 - **Game logic writes its own account through a `RunTrace`** (`src/run_trace.gd`): the one sink

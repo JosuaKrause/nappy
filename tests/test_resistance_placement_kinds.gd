@@ -300,10 +300,11 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 
 ## Starts day `day` through the real `DayDirector` — the order a played day is built in (the
 ## city, the events, the resistance's mark, the crowd, the player and the baby) — on the test city's
-## own run, restarted on `SEED`, whose streams are the ones `_rng()` draws. Returns the scratch nodes
+## own run, restarted on `SEED`, whose streams are the ones `_rng()` draws. `started` is handed the
+## director as the run flow hands its own, called once the walk is begun. Returns the scratch nodes
 ## `_end_the_day()` frees.
 func _start_the_day(t, day: int, resistance: ResistanceDirector,
-		prepare := Callable()) -> Array[Node]:
+		prepare := Callable(), started := Callable()) -> Array[Node]:
 	# The whole run, not only the snapshot's state parts: `start_run()` also resets the riders
 	# (`facts`: the escape section, used alleys, fenced park), the checkpoint and the mode.
 	var run: RunState = _city.run
@@ -329,7 +330,7 @@ func _start_the_day(t, day: int, resistance: ResistanceDirector,
 	days.use_the_world(_city, _city.events, resistance, player, baby, clock)
 	days.use_worlds(StandingCity.new(_city, player, baby))
 	_clock = clock
-	days.start(DaySpec.for_day(day, config.day_length_for(day)))
+	days.start(DaySpec.for_day(day, config.day_length_for(day)), started)
 	return [player, clock]
 
 func _end_the_day(nodes: Array[Node]) -> void:
@@ -349,10 +350,12 @@ class OrderRecordingResistance extends ResistanceDirector:
 		super.start_day(day, rng, day_length)
 
 ## **The order `DayDirector.start()` builds a day in**, on the light real world this suite builds,
-## through what each step can observe: `day_started` is announced after the dawn photograph and before
+## through what each step can observe: the walk is announced begun (the director's `started`
+## callback, where the run flow announces `day_started`) after the dawn photograph and before
 ## anything is placed, so a listener finds the photograph taken and no mark offered; the events are
-## planned before the resistance places its mark; and `day_planned` comes last, with the clock
-## running, the crowd placed and the mark on offer. A reordering of those calls fails here.
+## planned before the resistance places its mark; and once the start returns, where the run flow
+## announces `day_planned`, the clock runs, the crowd is placed and the mark is on offer. A
+## reordering of those calls fails here.
 func _test_a_day_is_built_in_its_order(t) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var director := OrderRecordingResistance.new()
@@ -362,24 +365,19 @@ func _test_a_day_is_built_in_its_order(t) -> void:
 			_city.spawn_siting)
 	director.watched = _city
 	var seen := {}
-	var on_started := func(_day: int) -> void:
+	var on_started := func() -> void:
 		# A photograph taken after the progress was set: nothing differs from the dawn.
 		seen["dawn_photographed"] = not run.resistance.differs_from_dawn()
 		seen["no_mark_yet"] = director.contact_position() == Vector2.INF
 		seen["no_events_yet"] = _city.events.planned_count() == 0
-	var on_planned := func(_day: int) -> void:
-		seen["clock_running"] = _clock.is_running()
-		seen["crowd_placed"] = _city.crowd.agent_count() > 0
-		seen["mark_on_offer"] = director.contact_position() != Vector2.INF
-	EventBus.day_started.connect(on_started)
-	EventBus.day_planned.connect(on_planned)
 	var the_day := _start_the_day(t, 9, director,
-			func() -> void: run.resistance.progress = 2)
-	EventBus.day_started.disconnect(on_started)
-	EventBus.day_planned.disconnect(on_planned)
+			func() -> void: run.resistance.progress = 2, on_started)
+	seen["clock_running"] = _clock.is_running()
+	seen["crowd_placed"] = _city.crowd.agent_count() > 0
+	seen["mark_on_offer"] = director.contact_position() != Vector2.INF
 
 	t.check(seen.get("dawn_photographed", false),
-			"day_started is announced after the dawn photograph")
+			"the walk is announced begun after the dawn photograph")
 	t.check(seen.get("no_mark_yet", false) and seen.get("no_events_yet", false),
 			"and before the events are planned or the mark is placed")
 	t.check(director.planned_when_started > 0,
@@ -387,7 +385,7 @@ func _test_a_day_is_built_in_its_order(t) -> void:
 			% director.planned_when_started)
 	t.check(seen.get("clock_running", false) and seen.get("crowd_placed", false)
 			and seen.get("mark_on_offer", false),
-			"day_planned comes last: the clock running, the crowd placed, the mark on offer")
+			"and once the start returns the clock runs, the crowd is placed and the mark is on offer")
 	director.free()
 	_end_the_day(the_day)
 
