@@ -102,8 +102,9 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      and the scenery; the crowd; the city map. The city scene and the run's parts follow the third
      hand-ins pull request.
    - **Tools:** `baseline-measurements.md`, the field-read check made to see every read
-     (`field-reads.md`), and then the tests' runner typed in every suite by one script
-     (`typed-everywhere.md`).
+     (`field-reads.md`), and then `typed-everywhere.md`: code is typed wherever the language can
+     type it, the tests included (its scripted rewrite of the suites' runner is the orchestrator's
+     proposal, marked so there).
    - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a
      pursuit and the rest as parts an event has, and every caller asking through methods). Its
      first steps, the callers outside the events folder and the live event's own behaviours and
