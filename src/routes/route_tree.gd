@@ -11,8 +11,8 @@ extends RouteSource
 ## suggests one** — except the faint curbstone tint M145 is trialing, on trial precisely because the
 ## question is whether it stays under that threshold. This is the structure that lets it suggest
 ## one: a *wall* is a street just outside a branch, *friction* is a street on one, and a *set
-## piece* is sited so that every branch touches one of its candidates. None of those three words
-## means anything until there is a tree to be inside or outside of.
+## piece* is sited on the branch she is walking. None of those three words means anything until
+## there is a tree to be inside or outside of.
 ##
 ## **It is a tree on purpose, and not a bundle of shortest paths.** *"Don't take the strictly
 ## shortest path. Aim for paths that share prefixes. The paths to some calm zones might not be

@@ -870,8 +870,8 @@ func _keep_streets_to(map: CityMap, to: Vector2i, keep: Dictionary) -> bool:
 
 ## **The fixed parts hold their locations** (the design's fixed parts' phases: a mast's location
 ## holds its mast on a day with one, and nothing is drawn where a fixed part stands): on every day
-## of the shared city, each mast and each playground the day stands takes the location holding it,
-## and no other placed row stands inside that location. Before the masts' first day, a mast's
+## of the shared city, each mast the day stands takes the location holding it, and no other placed
+## row stands inside that location (a playground's ground is in no location, so it holds none). Before the masts' first day, a mast's
 ## location holds nothing and is drawn like any other, so the days asked span it.
 func _test_the_fixed_parts_hold_their_locations(t) -> void:
 	var asked := 0

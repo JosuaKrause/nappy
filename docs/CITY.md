@@ -963,9 +963,8 @@ corridors run together, that shared stretch is a **chokepoint**.
 **A chokepoint is a bundle, not a guarantee.** Even in the ideal case — a day with exactly two
 distinct paths — she can take either, so nothing placed at dawn on one of them is met whichever way
 she goes. **Anything written as "the tile she must cross" is wrong**, and it is the easiest sentence
-in this section to write by accident. No row today has to be met on every route: the one she has to
-meet, day 3's fire, is sited from the walk she is taking (`docs/EVENTS.md`, "A set piece happens
-where she is going").
+in this section to write by accident. What she has to meet is sited from the walk she is taking
+(day 3's fire; "A set piece has to be met" below).
 
 **A calm area is reached two distinct ways where the map allows it**, and one will often be longer
 than the other. That asymmetry is **incidental**: nothing should be tuned to produce it and no rule
@@ -1232,8 +1231,13 @@ puts it on a building face **on the branch of the tree she is actually walking**
 distance along that route, once her heading is clear. That is what day 3's fire does, and it is
 steered onto her on purpose: *"the fire needs to spawn on the current path the player is on"*
 (PLAYTEST-119). `docs/EVENTS.md`, "A set piece happens where she is going", is the built mechanism.
-A one-shot the day places at dawn instead takes one location of its own, as a scripted row does
-(`ScriptedPhase`), and is met only if she walks there; no row in the catalogue is placed that way.
+
+**Something she must meet exists wherever she goes**, since she can take either way: things are to
+be accounted for as potentially in one of two places at the very least
+(M50-the-city-points-somewhere). So a row she must meet is sited on her way, and
+`EventDef.validate()` refuses a one-shot that is not (`on_her_way`): placed at dawn it would stand in
+one place and be met only if she walked there. The walk's draw is to carry it next, a rigged marble
+landing on the next location she comes to (placement by construction's walk draws).
 
 It stays a **place** rather than a moment: a tile, a body, a field, and every question the corridor
 asks of a placement asked of it. `AHEAD_OF_PLAYER` is for moments, and a burning building is not

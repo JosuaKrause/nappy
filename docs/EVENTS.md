@@ -1477,7 +1477,7 @@ from the doorstep to the calm areas still worth reaching.
 | a **pacing** row that leaves no line past it and whose beat passes no way off its sidewalk (`homeless_yeller`, where its beat is truncated short of one) | **wall** | the same, decided per placement rather than per row |
 | a **pacing** row whose beat passes a junction's crosswalk or a side route (`homeless_yeller`, almost everywhere) | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor, the route's own sidewalk included |
 | everything else placed on a tile | **friction** | `EVENT_CORRIDOR_WEIGHT` toward the corridor |
-| a `ONE_SHOT` | **set piece** | with `EventDef.on_her_way`, one placement with no position, put on a tile of its own ground ahead of her (a building face for day 3's fire) once her heading for the day is clear; without it, one location of its own drawn at dawn (`ScriptedPhase`), a group of one |
+| a `ONE_SHOT` | **set piece** | one placement with no position (`EventDef.on_her_way`, which `EventDef.validate()` requires of a one-shot), put on a tile of its own ground ahead of her (a building face for day 3's fire) once her heading for the day is clear |
 | `AMBIENT`, `AHEAD_OF_PLAYER`, a scar, a park spoiler, `EventDef.Role.SCENERY` (`pigeon_flock`) | **none** | wherever its own rule says |
 
 **The second row is a question about the ground, not about the price, and it is asked two ways.**
@@ -1711,15 +1711,14 @@ the view's half diagonal up the street rather than directly under the fire. The 
 carriageway, so what it costs her street is the engine's field, and the site is whatever the day's
 own placement rules accept on her way.
 
-**A one-shot without the flag takes one location of its own at dawn**, drawn as a scripted row's is
-(`ScriptedPhase`, weighted by its role over the location's tiles), a group of one; no row in the
-catalogue is placed that way today. The first of a group to enter the world spends the rest, in
-`EventStreaming.stream_in`, which is also where a scar is recorded.
+**A one-shot without the flag is refused** (`EventDef.validate()`): a set piece has to be met
+wherever she goes (M50-the-city-points-somewhere), and one placed at dawn would be met only if she
+walked there. The walk's draw is to carry such a row next, a rigged marble on the next location she
+comes to.
 
-**The moment of choosing is the moment of walking there**, either way round. `EventStreaming.stream_in()` is where
+**The moment it becomes real is the moment of walking there.** `EventStreaming.stream_in()` is where
 an event becomes real — where its scar is recorded and its block moves along its arc — so the
-alternatives stop being possible on the same frame rather than when it finishes, and so does the
-fire's own freedom to move.
+fire's own freedom to move stops on the same frame rather than when it finishes.
 
 **Nothing lethal may be planned where a set piece stands**: she would meet a lethal field and a set
 piece at once, which is exactly the sum the telegraph contract refuses. A siting made from her walk
