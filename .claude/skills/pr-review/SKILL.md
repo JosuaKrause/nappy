@@ -62,7 +62,8 @@ Each "no" is a finding:
   described is covered and shown, not only the first. Nothing is built beyond their words unless
   it is marked: a mechanism under "Proposed, not asked for" (**playtest-feedback**), which the
   player agreed to if it changes what they see across the game, or a small choice the PR
-  description names as open to overturn (**orchestrating**, "Forks come back"). An unmarked
+  description names as open to overturn (the agent contract, "Forks come back, never guessed",
+  `../orchestrating/references/agent-contract.md`). An unmarked
   addition is a finding; so is a game-wide one the player never agreed to.
 - **Does it keep what is already decided?** No record under `docs/decisions/` and no doc rule is
   overturned, narrowed or rewritten in passing. A doc sentence the PR changed says what the player decided, not
@@ -124,7 +125,7 @@ touches (the path table in `CLAUDE.md`). Look for:
 
 The reviewer does not edit the branch, check it out in a worktree an agent is using, or merge. It
 may run a suite from a checkout of its own, sparse unless the PR's evidence or references are what
-it is checking (**orchestrating**, "Create sparse worktrees"; `tools/agent-setup.sh --detach <ref>
+it is checking (**orchestrating** says what a sparse worktree leaves out; `tools/agent-setup.sh --detach <ref>
 <name>` makes it, detached at the PR head, with no branch and no brief), and never runs `git grep`
 over a folder that holds images (see **using-tools**). **A review checkout is removed once the
 review is posted, with `tools/agent-setup.sh --remove <name>`**, which takes a clean detached
@@ -211,9 +212,9 @@ How the rethink runs:
 The brief names the PR, its branch, the playtests and queue entry it answers, and anything the
 orchestrator already knows is contested. It asks for this skill's order (semantic first, then code),
 one review posted on the PR, and a report back: the verdict, each finding with its severity, and the
-review's URL. **Which model reviews is a row of orchestrating's table of task kinds and models**,
-which has one row for a review of a play-changing or design pull request and one for a review of
-queue, docs, skill wording or a small delta; this skill names no model of its own beside it.
+review's URL. **Which model reviews is orchestrating's to say**: its table of task kinds and
+models has the rows for a review, by what the pull request carries, and this skill names no model
+of its own beside it.
 
 ## A queue update is reviewed for faithfulness and merged first
 
