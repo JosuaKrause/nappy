@@ -1,4 +1,5 @@
 @warning_ignore_start("untyped_declaration", "unsafe_method_access")
+class_name TestRunner
 extends Node
 ## Headless test runner.
 ##
