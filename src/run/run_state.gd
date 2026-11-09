@@ -77,7 +77,7 @@ static func format_clock_seconds(seconds: float) -> String:
 ## run session's at every boot; a run nobody hands one, as a test's own run is, writes nowhere.
 func use_trace(sink: RunTrace) -> void:
 	calendar.use_trace(sink)
-	attempt_spend.city_state.use_trace(sink)
+	attempt_spend.block_arcs().use_trace(sink)
 
 # ------------------------------------------------------------------ lifecycle ---
 
@@ -94,10 +94,7 @@ func start_run(seed_value: int = 0) -> void:
 
 ## Records a permanent mark, ignoring duplicates from the same spot.
 func add_scar(id: String, position: Vector2) -> void:
-	for scar in attempt_spend.scars:
-		if scar["id"] == id and scar["position"].distance_to(position) < 1.0:
-			return
-	attempt_spend.scars.append({"id": id, "position": position, "since_day": header.day})
+	attempt_spend.record_scar(id, position, header.day)
 
 # ------------------------------------------------------------------ queries ---
 

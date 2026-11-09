@@ -131,12 +131,12 @@ func _drive_at_a_vehicle(crowd: Crowd, map: CityMap, corridor: int, car_along: f
 			map.moves.leave(figure)
 		crowd.set_focus(at)
 		crowd.step(STEP)
-		if figure.on_the_list and _overlaps(car, figure):
+		if figure.is_on_the_list() and _overlaps(car, figure):
 			overlapping += 1
 		in_the_box = in_the_box or car.junction_occupied().x >= 0
 		if _rig.still_driving_down(car, corridor):
 			deepest = maxf(deepest, car.position.y)
-	if figure.on_the_list:
+	if figure.is_on_the_list():
 		map.moves.leave(figure)
 	var turned: bool = not _rig.still_driving_down(car, corridor)
 	return {"overlapping": overlapping, "in_the_box": in_the_box, "speed": speed_when_it_left,

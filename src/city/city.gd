@@ -548,9 +548,8 @@ func _spawn_home() -> void:
 
 ## `SEALED_DOOR_TEXTURE` once the scar it leaves is on record, `DOOR_TEXTURE` before then.
 func _door_texture_for_today() -> StringName:
-	for scar in run.attempt_spend.scars:
-		if String(scar["id"]) == SEALED_DOOR_SCAR:
-			return SEALED_DOOR_TEXTURE
+	if run.attempt_spend.has_scar(SEALED_DOOR_SCAR):
+		return SEALED_DOOR_TEXTURE
 	return DOOR_TEXTURE
 
 ## Puts the street door where the run's scars say it belongs, for the dawn `start_day()`
@@ -1038,14 +1037,14 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 	if spec == null:
 		spec = DaySpec.for_day(day)
 	_dress(state, day)
-	if spec.closes_streets:
+	if spec.closes_the_streets():
 		# Last, and after the repaint: which blocks are calm is what the closure invariant is
 		# stated over, and a requisitioned park is not one of them.
 		_close_streets(spec, rng)
 	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. `Main` runs it
 	# once more after the day's seals are planned — see `refresh_street_trees()`.
 	refresh_street_trees()
-	if spec.pastes_posters:
+	if spec.pastes_the_posters():
 		# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"
 		# off, and after `_dress_blocks()`, which is what says a front has burnt.
 		_posters.start_day(day, _streets.route_tree())
@@ -1214,7 +1213,7 @@ func calm_summary() -> String:
 	var counts := {}
 	for block in map.calm_blocks_now():
 		var name: String = GameEnums.BlockPurpose.keys()[
-			run.attempt_spend.city_state.purpose_of(map.plans_by_block(), block)].to_lower()
+			run.attempt_spend.block_arcs().purpose_of(map.plans_by_block(), block)].to_lower()
 		counts[name] = counts.get(name, 0) + 1
 	var parts: Array[String] = []
 	for name: String in counts:
@@ -1555,7 +1554,7 @@ func scenery_ground_source(tile: Vector2i) -> int:
 		return -1
 	if map.has_recipe_exterior() and not map.recipe_window().has_point(tile):
 		return GroundTiles.ALLEY
-	if tile.x < 0 or tile.y < 0 or tile.x >= map.size.x or tile.y >= map.size.y:
+	if tile.x < 0 or tile.y < 0 or tile.x >= map.size_in_tiles().x or tile.y >= map.size_in_tiles().y:
 		return _paint_outside_the_map(tile)
 	var source := GroundTiles.source_for(map, tile, _day)
 	if source in GroundTiles.ROUTE_KERB_SOURCES and _is_on_the_tinted_route(tile):
@@ -1595,8 +1594,8 @@ func _spawn_the_void_edge() -> void:
 		for tile in map.rect_tiles(lot):
 			walled[tile] = true
 	var edge := {}
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if not map.in_stretch(tile):
 				continue
@@ -1708,15 +1707,15 @@ func _paint_outside_the_map(tile: Vector2i) -> int:
 ## The order below is the whole rule. North first, then south, then whatever is left.
 func _border_source(x: int, y: int) -> int:
 	var north := -y
-	var south := y - (map.size.y - 1)
+	var south := y - (map.size_in_tiles().y - 1)
 	var west := -x
-	var east := x - (map.size.x - 1)
+	var east := x - (map.size_in_tiles().x - 1)
 
 	if _leaves_by_the_spine(x):
 		var on_to_the_bridge := south > 0
 		var into_the_tunnel := north > 0 and north <= CityEdge.TUNNEL_DEPTH_TILES
 		if on_to_the_bridge or into_the_tunnel:
-			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)), _day)
+			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size_in_tiles().y - 1)), _day)
 	if north > 0:
 		return GroundTiles.SCREE if north == 1 else GroundTiles.MOUNTAIN
 	if south > 0:

@@ -453,7 +453,7 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t) -> void
 			"a yard layer built into a listening tree is counted as scenery")
 	station.free()
 	recorder.free()
-	var written := sitting.frame_record_path
+	var written := sitting.frame_record_file()
 	sitting.free()
 	if written != "":
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(written))

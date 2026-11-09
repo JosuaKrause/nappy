@@ -91,6 +91,10 @@ func tile_rect_to_world(rect: Rect2i) -> Rect2:
 	return Rect2(Vector2(rect.position) * Tuning.TILE_SIZE,
 			Vector2(rect.size) * Tuning.TILE_SIZE)
 
+## The map's size in tiles; zero for open ground, which has no edge.
+func size_in_tiles() -> Vector2i:
+	return size
+
 func in_bounds(tile: Vector2i) -> bool:
 	return tile.x >= 0 and tile.y >= 0 and tile.x < size.x and tile.y < size.y
 
@@ -134,7 +138,7 @@ func walkable_lut() -> PackedByteArray:
 ## street ground are the map as built (`_ground_lets()`); today's closures, soft seals and bodies are
 ## the day's record (`blocked`).
 func passable(tile: Vector2i, mover: Mover) -> bool:
-	var layers := mover.blocked_by
+	var layers := mover.layers_blocked()
 	return _ground_lets(tile, layers) and not blocked.blocks(tile, layers & Mover.TODAY)
 
 ## Tiles a stationary solid body stands on today, as tile -> how many bodies stand there
@@ -204,7 +208,7 @@ func _line_is_clear(from: Vector2, to: Vector2, mover: Mover, to_somebody: bool,
 		own_tiles := {}) -> bool:
 	if not has_ground():
 		return true
-	var layers := mover.blocked_by
+	var layers := mover.layers_blocked()
 	var today := layers & Mover.TODAY
 	var tile := world_to_tile(from)
 	if not _ground_lets(tile, layers) and _ground_stops(tile, layers, from, to):
@@ -263,7 +267,7 @@ func ground_for(mover: Mover) -> PackedInt32Array:
 	var ground := PackedInt32Array()
 	ground.resize(size.x * size.y)
 	ground.fill(UNREACHED)
-	blocked.lay_out(ground, size.x, size.y, mover.blocked_by, BLOCKED)
+	blocked.lay_out(ground, size.x, size.y, mover.layers_blocked(), BLOCKED)
 	return ground
 
 # ---------------------------------------------------------------------- walls ---

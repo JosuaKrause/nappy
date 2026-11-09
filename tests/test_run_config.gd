@@ -82,17 +82,17 @@ func _test_a_debug_build_reads_them(t) -> void:
 func _test_a_release_page_opens_the_bundle_only_with_debug(t) -> void:
 	var none := PackedStringArray()
 	var unasked := RunConfig.parse(none, "?day=9&invincible=1", false)
-	t.check(unasked.day_override == 1 and not unasked.invincible and not unasked.live_debug
-			and not unasked.web_debug_flag_used,
+	t.check(unasked.day_override == 1 and not unasked.invincible and not unasked.is_live_debug()
+			and not unasked.used_a_web_debug_flag(),
 			"a release page that did not ask ?debug=1 reads nothing of the bundle")
 	var asked := RunConfig.parse(none, "?debug=1&day=9&invincible=1", false)
-	t.check(asked.day_override == 9 and asked.invincible and asked.live_debug
-			and asked.web_debug_flag_used and asked.readout_requested,
+	t.check(asked.day_override == 9 and asked.invincible and asked.is_live_debug()
+			and asked.used_a_web_debug_flag() and asked.readout_requested,
 			"one that did reads the bundle and counts as having used it")
-	t.check(asked.page_query == "?debug=1&day=9&invincible=1",
+	t.check(asked.page_query_string() == "?debug=1&day=9&invincible=1",
 			"and keeps the query it read for the readers that parse their own parameter")
 	var readout_only := RunConfig.parse(none, "?debug=1", false)
-	t.check(readout_only.live_debug and not readout_only.web_debug_flag_used,
+	t.check(readout_only.is_live_debug() and not readout_only.used_a_web_debug_flag(),
 			"?debug=1 alone opens the bundle without using any of it")
 
 ## A write to a resolved config is refused with a warning and leaves the value as it was, whichever
@@ -368,8 +368,8 @@ func _test_touch_and_web_are_the_runs_answers(t) -> void:
 	var words := _words(["--touch", "--web"])
 	var debug := RunConfig.parse(words, "", true)
 	var release := RunConfig.parse(words, "", false)
-	t.check(debug.touch_forced and debug.web_preview, "a debug build reads --touch and --web")
-	t.check(not release.touch_forced and not release.web_preview, "a release build reads neither")
+	t.check(debug.forces_touch() and debug.previews_the_web(), "a debug build reads --touch and --web")
+	t.check(not release.forces_touch() and not release.previews_the_web(), "a release build reads neither")
 	t.check(TouchInput.available(debug), "--touch answers the touch question yes")
 	t.check(not QuitOption.available(debug), "--web answers the quit question as the web does")
 	t.check(TouchInput.available(release) == DisplayServer.is_touchscreen_available()

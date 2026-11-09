@@ -78,7 +78,7 @@ func gather() -> void:
 	_for_cars.clear()
 	var still_here := {}
 	for move in _moves.keeping_their_course():
-		if move.radius <= 0.0:
+		if move.body_radius() <= 0.0:
 			continue
 		var keeper: Keeper = _seen.get(move)
 		if keeper == null:
@@ -116,14 +116,14 @@ func walker_keepers() -> Array[Keeper]:
 
 ## **Where a walker's proposed step (`move.to`) stands clear of every keeper's body it gives way
 ## to**: moved straight out from each keeper it would overlap to where the two bodies touch
-## (`move.radius` plus the keeper's), the keepers taken in turn; `move.to` itself when it overlaps
+## (`move.body_radius()` plus the keeper's), the keepers taken in turn; `move.to` itself when it overlaps
 ## none. A body exactly on a keeper's centre goes out along `side`. Positional, never a force, as every separation
 ## between bodies here is (the **crowd-traffic** skill): a body a figure walks into is pushed out of
 ## it on the tick it would be inside it.
 func clear_of_the_keepers(move: MoveProposal, side: Vector2) -> Vector2:
-	var at := move.to
+	var at := move.steps_to()
 	for keeper in _for_walkers:
-		var reach := move.radius + keeper.radius
+		var reach := move.body_radius() + keeper.radius
 		var offset := at - keeper.at
 		var distance_squared := offset.length_squared()
 		if distance_squared >= reach * reach:
@@ -138,9 +138,9 @@ func clear_of_the_keepers(move: MoveProposal, side: Vector2) -> Vector2:
 ## `axis` kept.
 ## For a body that cannot move across: one a figure squeezes against a wall.
 func clear_along(move: MoveProposal, axis: Vector2) -> Vector2:
-	var at := move.to
+	var at := move.steps_to()
 	for keeper in _for_walkers:
-		var reach := move.radius + keeper.radius
+		var reach := move.body_radius() + keeper.radius
 		var offset := at - keeper.at
 		if offset.length_squared() >= reach * reach:
 			continue
@@ -157,8 +157,8 @@ func overlaps_one_standing(move: MoveProposal) -> bool:
 	for keeper in _for_walkers:
 		if keeper.ticks_still <= UNDER_WAY_TICKS:
 			continue
-		var reach := move.radius + keeper.radius
-		if move.to.distance_squared_to(keeper.at) < reach * reach:
+		var reach := move.body_radius() + keeper.radius
+		if move.steps_to().distance_squared_to(keeper.at) < reach * reach:
 			return true
 	return false
 
@@ -252,10 +252,10 @@ class Keeper extends RefCounted:
 
 	## Reads its pose off its move: how far it went since the last look, and whether it stood.
 	func look() -> void:
-		radius = move.radius
-		stood_round = move.stood_round
-		step = move.from - at
-		at = move.from
+		radius = move.body_radius()
+		stood_round = move.stood_round_a_body()
+		step = move.stands_at() - at
+		at = move.stands_at()
 		if step.length() > PLACEMENT_STEP:
 			step = Vector2.ZERO
 		if step != Vector2.ZERO:

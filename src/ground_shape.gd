@@ -37,6 +37,26 @@ var radius := 0.0
 ## for a point or a segment.
 var half_extents := Vector2.ZERO
 
+## Whether this is a rectangle (a building's lot), which lies its own frame rather than a spine.
+func is_rect() -> bool:
+	return kind == Kind.RECT
+
+## Whether this is a segment: a spine with a rounding around it (a band, a fence, a car).
+func is_segment() -> bool:
+	return kind == Kind.SEGMENT
+
+## The spine's half-length (zero for a point or a rectangle).
+func spine_half_length() -> float:
+	return half_length
+
+## The rounding around the spine, the half-thickness across it (zero for a rectangle).
+func rounding_radius() -> float:
+	return radius
+
+## A rectangle's half-width and half-depth in its own frame (zero for a point or a segment).
+func rect_half_extents() -> Vector2:
+	return half_extents
+
 func _init(half_length_in: float, radius_in: float) -> void:
 	half_length = half_length_in
 	radius = radius_in

@@ -114,7 +114,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 		chain = _chain(chain, crowd)
 		for agent in crowd.agents():
 			if agent.kind == CrowdAgent.Kind.WALKER:
-				if agent.touching:
+				if agent.is_touched():
 					contact_ticks += 1
 				if agent.strategy._door_state != WalkerStrategy.DoorState.WALKING:
 					held_ticks += 1

@@ -226,4 +226,4 @@ static func pick_corridor_in_range(rng: RandomNumberGenerator, map: CityMap, ver
 ## place the crowd's noise floor is highest, which makes it the place worth measuring.
 static func arterial_pavement(map: CityMap) -> Vector2:
 	var x := map.main_road_corridor() * CityMap.period() + Tuning.SIDEWALK_WIDTH - 1
-	return map.tile_to_world(Vector2i(x, map.size.y / 2))
+	return map.tile_to_world(Vector2i(x, map.size_in_tiles().y / 2))

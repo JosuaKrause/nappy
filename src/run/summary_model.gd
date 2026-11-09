@@ -44,6 +44,34 @@ var shows_continue := true
 var _body_shape := "%s%s"
 var _body_fill: Array = [""]
 
+## The line above the title, `""` for none.
+func heading_text() -> String:
+	return heading
+
+## The title line.
+func title_text() -> String:
+	return title
+
+## Whether the title is a sentence the screen breaks to fit its label, rather than a short line.
+func title_is_a_sentence() -> bool:
+	return title_is_prose
+
+## The note under the title, `""` for none.
+func note_text() -> String:
+	return note
+
+## The prose the body is made of, before the screen breaks it to fit (`body()` puts it back).
+func body_sentence() -> String:
+	return body_prose
+
+## The brief of the day to come, `""` for none.
+func brief_text() -> String:
+	return brief
+
+## Whether the screen offers its continue prompt.
+func offers_continue() -> bool:
+	return shows_continue
+
 ## The body as drawn, with `prose` — `body_prose` as the screen broke it — in its place.
 func body(prose: String) -> String:
 	var fill: Array = [prose]
@@ -82,7 +110,7 @@ static func brief_for(run: RunState, note_line := "", section_title := "") -> Su
 ## the run as it stands now — a win has already moved `run.header.day` on, and a loss leaves it on
 ## the day being retried, so the screen names the day she is about to walk.
 ##
-## **`end.goes_back` is a normal run's last nerve**: the run is back at its checkpoint's dawn with
+## **`end.sends_the_run_back()` is a normal run's last nerve**: the run is back at its checkpoint's dawn with
 ## every nerve, so the line that says she tries the day again names the day she goes back to
 ## instead (gentle-osprey, the player's own example: "Back to day 8"). A lost section reports its
 ## reason like any lost day (minty-lemur #785), and its words say which is tried again; a section has
@@ -90,18 +118,18 @@ static func brief_for(run: RunState, note_line := "", section_title := "") -> Su
 static func day_over(run: RunState, end: DayEnd, section_title := "") -> SummaryModel:
 	var model := SummaryModel.new()
 	model.kind = Kind.DAY
-	model.title = _clock_line(end.result, end.reason, RunState.format_clock_seconds(end.elapsed_seconds))
+	model.title = _clock_line(end.outcome(), end.loss_reason(), RunState.format_clock_seconds(end.lasted_seconds()))
 	model.title_is_prose = true
 	var day := run.header.day
 	var nerves := run.header.nerves
-	var retrying := end.result != GameEnums.DayResult.WON and nerves > 0 and section_title == ""
+	var retrying := end.outcome() != GameEnums.DayResult.WON and nerves > 0 and section_title == ""
 	var lines: Array[String] = [day_line(day) if section_title == "" else section_title]
 	lines.append("")
 	# The state she carries into the coming day, on a win as much as a loss, drawn as stars.
 	lines.append(nerves_line(nerves))
 	# The calendar does not move on a loss, so the screen says so — or, when the last nerve sent a
 	# normal run back, which day it went back to, and why every star is there again.
-	if end.goes_back:
+	if end.sends_the_run_back():
 		lines.append(Texts.SUMMARY_BACK_TO_CHECKPOINT % day)
 	elif retrying:
 		lines.append(Texts.SUMMARY_TRY_AGAIN % day)
@@ -131,7 +159,7 @@ static func ending(run: RunState, which: GameEnums.Ending) -> SummaryModel:
 	model.shows_continue = false
 	return model
 
-## The escape's own last screen: the tunnel or the bridge behind her (`end.exit_reached`, a
+## The escape's own last screen: the tunnel or the bridge behind her (`end.exit_taken()`, a
 ## `CityEdge.Kind`), and the clock she took it on to the millisecond — and nothing triumphant
 ## (`docs/NARRATIVE.md`, "No triumphalism"). Not a fourth ending: an ending is a run's outcome, and
 ## this is the last screen of the sequence the run hands over to.
@@ -140,9 +168,9 @@ static func epilogue(end: DayEnd) -> SummaryModel:
 	model.kind = Kind.EPILOGUE
 	model.heading = Texts.FINALE_HEADING
 	model.title = Texts.FINALE_TITLE
-	model.body_prose = Texts.FINALE_BODY.get(end.exit_reached, Texts.FINALE_BODY_DEFAULT)
+	model.body_prose = Texts.FINALE_BODY.get(end.exit_taken(), Texts.FINALE_BODY_DEFAULT)
 	model._body_shape = Texts.FINALE_OUT_IN
-	model._body_fill = [RunState.format_clock(end.elapsed_seconds)]
+	model._body_fill = [RunState.format_clock(end.lasted_seconds())]
 	return model
 
 # ---------------------------------------------------------- the lines, once ---

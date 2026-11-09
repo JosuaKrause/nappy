@@ -23,8 +23,9 @@ class Piece:
 	## How far the piece reaches from its middle along its length: a disc's or a capsule's reach
 	## along its axis, a rectangle's longer half side.
 	func half_length() -> float:
-		if shape.kind == GroundShape.Kind.RECT:
-			return maxf(shape.half_extents.x, shape.half_extents.y)
+		if shape.is_rect():
+			var sides := shape.rect_half_extents()
+			return maxf(sides.x, sides.y)
 		return shape.reach()
 
 	## The two ends of the piece along its length on the ground with the solid's origin at `at`,
@@ -33,7 +34,7 @@ class Piece:
 	## (`Footprint.body()`), so its length is along `axis` or across it, whichever side is longer.
 	func span(at: Vector2) -> PackedVector2Array:
 		var along := axis.normalized()
-		if shape.kind == GroundShape.Kind.RECT and shape.half_extents.y > shape.half_extents.x:
+		if shape.is_rect() and shape.rect_half_extents().y > shape.rect_half_extents().x:
 			along = along.orthogonal()
 		if along.y < 0.0 or (is_zero_approx(along.y) and along.x < 0.0):
 			along = -along
@@ -41,7 +42,16 @@ class Piece:
 		var half := half_length()
 		return PackedVector2Array([middle - along * half, middle + along * half])
 
-var pieces: Array[Piece] = []
+var _pieces: Array[Piece] = []
+
+## The piece that reaches furthest along its length, the first of equals, or null for a footprint
+## with no piece.
+func longest_piece() -> Piece:
+	var longest: Piece = null
+	for piece in _pieces:
+		if longest == null or piece.half_length() > longest.half_length():
+			longest = piece
+	return longest
 
 ## A footprint of one piece at the origin.
 static func of(shape: GroundShape, axis := Vector2.RIGHT) -> Footprint:
@@ -53,14 +63,14 @@ func add(shape: GroundShape, offset: Vector2, axis := Vector2.RIGHT) -> Footprin
 	piece.shape = shape
 	piece.offset = offset
 	piece.axis = axis
-	pieces.append(piece)
+	_pieces.append(piece)
 	return self
 
 ## Every tile this footprint stands on with its origin at `at`, each once: a tile is in when a
 ## piece covers its middle (`GroundShape.tiles_under()`, which says why the middle is the rule).
 func tiles(at: Vector2) -> Array[Vector2i]:
 	var covered: Array[Vector2i] = []
-	for piece in pieces:
+	for piece in _pieces:
 		for tile in piece.shape.tiles_under(at + piece.offset, piece.axis):
 			# Two pieces may overhang one tile, and the record counts bodies, not pieces: a body that
 			# recorded one tile twice would need two releases to give it back.
@@ -75,15 +85,13 @@ func tiles(at: Vector2) -> Array[Vector2i]:
 ## rectangle is laid out in its own frame, so it turns by its axis.
 func body() -> StaticBody2D:
 	var solid := StaticBody2D.new()
-	for piece in pieces:
+	for piece in _pieces:
 		var collision := CollisionShape2D.new()
 		collision.shape = piece.shape.collision_shape()
 		collision.position = piece.offset
-		match piece.shape.kind:
-			GroundShape.Kind.SEGMENT:
-				collision.rotation = piece.axis.angle() - PI * 0.5
-			GroundShape.Kind.RECT:
-				if piece.axis != Vector2.RIGHT:
-					collision.rotation = piece.axis.angle()
+		if piece.shape.is_segment():
+			collision.rotation = piece.axis.angle() - PI * 0.5
+		elif piece.shape.is_rect() and piece.axis != Vector2.RIGHT:
+			collision.rotation = piece.axis.angle()
 		solid.add_child(collision)
 	return solid

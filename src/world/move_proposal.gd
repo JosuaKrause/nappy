@@ -86,6 +86,42 @@ func commit() -> Vector2:
 	from = to
 	return to
 
+## The pose the mover stands at now: where the step began.
+func stands_at() -> Vector2:
+	return from
+
+## Where the step proposed would put the mover.
+func steps_to() -> Vector2:
+	return to
+
+## Proposes the step to `at`, in place of the one proposed so far.
+func step_to(at: Vector2) -> void:
+	to = at
+
+## The mover's body radius, which keeps it clear of the other bodies; zero for a mover with none.
+func body_radius() -> float:
+	return radius
+
+## Gives the mover its body radius.
+func use_body_radius(reach: float) -> void:
+	radius = reach
+
+## Whether the mover gives way to every other body instead of being kept clear of.
+func gives_way() -> bool:
+	return yields
+
+## Whether the move stands on a world's list of moves.
+func is_on_the_list() -> bool:
+	return on_the_list
+
+## Puts the move on a world's list or takes it off, as that list does.
+func stand_on_the_list(now: bool) -> void:
+	on_the_list = now
+
+## Whether the mover was last left standing round a body it was kept clear of.
+func stood_round_a_body() -> bool:
+	return stood_round
+
 ## **The mover stands at `at`, moved outside its own step**: joining a world, recycled, pushed, or
 ## carried along a turn. Both ends of the move are there, and an open move stays open.
 func place(at: Vector2) -> void:

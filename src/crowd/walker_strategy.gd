@@ -270,7 +270,7 @@ func choose_lane(roll: float) -> void:
 	_mover._vertical = roll < 0.5
 	_mover._corridor = CrowdLanes.pick_corridor_in_range(_mover._rng, _mover._map,
 			_mover._vertical, _mover.field.corridor_range(_mover._vertical), false)
-	if _mover.field.uniform_walkers:
+	if _mover.field.weighs_walkers_uniformly():
 		var corridors := _mover.field.corridor_range(_mover._vertical)
 		_mover._corridor = _mover._rng.randi_range(corridors.x, corridors.y)
 	var offsets := CrowdLanes.walkable_offsets(_mover._map, _mover._vertical, _mover._corridor,
@@ -375,7 +375,7 @@ func advance_the_door_hold(delta: float) -> void:
 			# rule out is this walker being turned round by the crowd's own steering a few pixels
 			# past the door and inspected all over again, and how long that takes is not something
 			# a number of seconds can know.
-			if not _door_hold or _mover.global_position.distance_to(_door_hold.position) \
+			if not _door_hold or _mover.global_position.distance_to(_door_hold.stands_at()) \
 					> WALKER_DOOR_COOLDOWN_RADIUS:
 				_door_hold = null
 				_door_state = DoorState.WALKING
@@ -430,7 +430,7 @@ func _consider_the_hut_ahead() -> void:
 func _refuse_the_door(hold: WalkerDoorHold) -> void:
 	_refused_hut = hold
 	_refused_door_key = NO_DOOR
-	var segment := _mover._map.street_network().segment_containing(_mover._map.world_to_tile(hold.position))
+	var segment := _mover._map.street_network().segment_containing(_mover._map.world_to_tile(hold.stands_at()))
 	if segment:
 		_refused_door_key = segment.key()
 	# The lookahead is cached per tile and was worked out before this walker decided anything.
@@ -459,8 +459,8 @@ func _enter_the_hut() -> void:
 	_door_state = DoorState.INSPECTION
 	_inspection_left = WALKER_DOOR_HOLD_SECONDS
 	_mover.visible = false
-	_mover._set_along(_door_hold.position.y if _mover._vertical else _door_hold.position.x)
-	_mover._set_cross(_door_hold.position.x if _mover._vertical else _door_hold.position.y)
+	_mover._set_along(_door_hold.stands_at().y if _mover._vertical else _door_hold.stands_at().x)
+	_mover._set_cross(_door_hold.stands_at().x if _mover._vertical else _door_hold.stands_at().y)
 
 ## Out again on the far side of the door, back on its own lane, just past the hut's body — the same
 ## `WALKER_DOOR_STOP_DISTANCE` it waited at on the way in, so the two sides of a door are
@@ -473,7 +473,7 @@ func _emerge_from_the_hut() -> void:
 		_door_state = DoorState.WALKING
 		return
 	_door_hold.release(_mover)
-	var door_along: float = _door_hold.position.y if _mover._vertical else _door_hold.position.x
+	var door_along: float = _door_hold.stands_at().y if _mover._vertical else _door_hold.stands_at().x
 	_mover._set_along(door_along + WALKER_DOOR_STOP_DISTANCE * _mover._direction)
 	_mover._set_cross(_mover._lane_centre)
 	# Out from the hut's middle is a jump, so it is drawn from where it comes out rather than
@@ -638,12 +638,12 @@ func make_way_for(here: Vector2, velocity: Vector2) -> void:
 ## Overrides LaneStrategy.give_way_on_the_step.
 func give_way_on_the_step(delta: float) -> void:
 	var separation := _mover._map.separation
-	if not separation.walker_is_near(_mover._move.from, Tuning.CROWD_YIELD_DISTANCE):
+	if not separation.walker_is_near(_mover._move.stands_at(), Tuning.CROWD_YIELD_DISTANCE):
 		return
 	var move := _mover._move
 	var near := false
 	for keeper in separation.walker_keepers():
-		if keeper.at.distance_squared_to(move.from) > _FIGURE_NOTICE_SQUARED:
+		if keeper.at.distance_squared_to(move.stands_at()) > _FIGURE_NOTICE_SQUARED:
 			continue
 		near = true
 		make_way_for(keeper.at, keeper.step / delta)
@@ -651,9 +651,9 @@ func give_way_on_the_step(delta: float) -> void:
 		return
 	var forward := _mover.heading()
 	var cleared := separation.clear_of_the_keepers(move, _side_to_step_to(forward, Vector2.ZERO))
-	if cleared == move.to:
+	if cleared == move.steps_to():
 		return
-	var away := (cleared - move.to).normalized()
+	var away := (cleared - move.steps_to()).normalized()
 	if may_stand_on(_mover._map.world_to_tile(cleared)):
 		if absf(away.dot(forward)) > 0.5:
 			away = _side_to_step_to(forward, away)
@@ -666,10 +666,10 @@ func give_way_on_the_step(delta: float) -> void:
 		# standing object or vehicle nothing sweeps it along, so it is held behind it and waits
 		# (`step_aside()` read back along its line).
 		cleared = separation.clear_along(move, forward)
-		away = (cleared - move.to).normalized()
+		away = (cleared - move.steps_to()).normalized()
 		if away.dot(forward) <= 0.0 and not separation.overlaps_one_standing(move):
 			return
-	move.to = cleared
+	move.step_to(cleared)
 	if away != Vector2.ZERO:
 		step_aside(away, Tuning.BUMP_STEP_ASIDE, Tuning.BUMP_STEP_ASIDE_TIME)
 

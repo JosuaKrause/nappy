@@ -220,6 +220,14 @@ func _measure(subject: Subject, delta: float, here: Vector2, sees: Callable,
 		coming.append([gap / maxf(approach, 1.0), distance, subject.payload, at, approach,
 				subject.logged_name])
 
+## Whether any badge is up now.
+func has_badges() -> bool:
+	return not coming.is_empty()
+
+## Takes every badge down, ahead of the frame's new measurement.
+func clear_badges() -> void:
+	coming.clear()
+
 ## What is on the edge right now, nearest arrival first, one entry per badge: `{id, distance,
 ## approach}` for the log, and `{def, position}` (the row and where it points) for the drawing. There
 ## is nothing between `coming` and this list: every badge is in it, and `DangerEdge` draws exactly it.

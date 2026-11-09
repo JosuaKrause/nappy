@@ -240,7 +240,7 @@ var _officer_walks := Mover.on_foot()
 ## How far an officer's body reaches round his feet, for his move (`MoveProposal.radius`): the
 ## policeman's own figure, as he walks when he is an event (`EventInstance.mover_for()` of
 ## `OFFICER_ROW`), though his own walks go at no reach.
-var _officer_reach := EventInstance.mover_for(EventCatalogue.by_id(OFFICER_ROW)).radius
+var _officer_reach := EventInstance.mover_for(EventCatalogue.by_id(OFFICER_ROW)).body_reach()
 ## The day's obstruction as the director's reachability answer has it (`EventScheduler.
 ## blocked_by()`: today's closures plus every body's disc), which the last gap is checked under.
 var _blocked: Dictionary
@@ -279,7 +279,11 @@ var _leaving: Array[EventInstance] = []
 var _started := false
 ## Where the cordon writes its own account for the run log; the happenings' trace, handed on as it is
 ## built.
-var trace := RunTrace.new()
+var _trace := RunTrace.new()
+
+## Hands the cordon the trace its account is written to (the happenings' own, handed on).
+func use_trace(sink: RunTrace) -> void:
+	_trace = sink
 
 ## Starts closing `block`'s park: the line, its stretches and which of them need tape. Nothing is
 ## placed until the first `tick()`, which knows where she is and what the camera sees. `blocked` is
@@ -476,11 +480,11 @@ func _choose_the_gap(her: Vector2) -> int:
 			other_calm_reached = true
 			break
 	if best_rank > 0:
-		trace.note("contact", "no stretch of the park's edge opens onto ground that reaches "
+		_trace.note("contact", "no stretch of the park's edge opens onto ground that reaches "
 				+ "home clear of the day's events: the last gap is the best of them (reaches home: "
 				+ "%s, clear of bodies and fields: %s)" % [best_rank < 2, best_rank % 2 == 0])
 	if not other_calm_reached:
-		trace.note("contact", "with the park cordoned off, no other calm ground is reached "
+		_trace.note("contact", "with the park cordoned off, no other calm ground is reached "
 				+ "from home")
 	return best
 
@@ -573,7 +577,7 @@ func _set_out(her: Vector2) -> void:
 	_exit_crossing = _tiles_along(_exit[0], _exit.slice(1, 2))
 	_send_escorts()
 	_time_the_close(her)
-	trace.note("contact", "the police set out to cordon the park at block %s: %d stretches, "
+	_trace.note("contact", "the police set out to cordon the park at block %s: %d stretches, "
 			% [park, _needed_count()] + "the last gap at %s, closing %.1fs after the swing"
 			% [last_gap, _deadline])
 
@@ -664,7 +668,7 @@ func _time_the_close(her: Vector2) -> void:
 	_deadline = paced
 	if soonest == INF:
 		if her != Vector2.INF:
-			trace.note("contact", "no officer of the park's cordon comes into her view from "
+			_trace.note("contact", "no officer of the park's cordon comes into her view from "
 					+ "where she stood: it closes on the plain clock")
 		return
 	_deadline = maxf(_deadline, soonest)
@@ -950,7 +954,7 @@ func _send_escorts() -> void:
 		_take_on(escort)
 		sent += 1
 	if sent > 0 or not _leaving.is_empty():
-		trace.note("contact", "%d officers come to walk the park's people out, %d more sent off "
+		_trace.note("contact", "%d officers come to walk the park's people out, %d more sent off "
 				% [sent, _leaving.size()] + "on their own, through the last gap")
 
 ## Whether a live event is one of the park's people, to be walked out.
@@ -1041,7 +1045,7 @@ func _walk_path_for(officer: Officer, step: float) -> float:
 	officer.stuck += 1
 	if officer.stuck >= STUCK_FRAMES:
 		officer.straight = true
-		trace.note("contact", "an officer of the park's cordon at %s finds no way on round what "
+		_trace.note("contact", "an officer of the park's cordon at %s finds no way on round what "
 				% officer.at + "stands in his way and walks the rest of his walk straight")
 		return _walk_straight(officer, step - walked.travelled)
 	officer.path = _lay(officer.at, officer.path, officer.avoid, false)
@@ -1366,11 +1370,11 @@ func _close(her: Vector2) -> void:
 			_set_path(officer, _route_away(from, her) if not _rect.has_point(from)
 					else PackedVector2Array())
 	if trapped:
-		trace.note("contact", "the last gap of the park's cordon is taped %.1fs after the "
+		_trace.note("contact", "the last gap of the park's cordon is taped %.1fs after the "
 				% _elapsed + "swing, with her inside: she is shut in")
 		EventBus.hard_fail_triggered.emit(TRAPPED)
 	else:
-		trace.note("contact", "the park at block %s is cordoned off %.1fs after the swing, "
+		_trace.note("contact", "the park at block %s is cordoned off %.1fs after the swing, "
 				% [park, _elapsed] + "with her outside")
 
 ## Sends an escort whose person has gone before he reached them back down the way out, past

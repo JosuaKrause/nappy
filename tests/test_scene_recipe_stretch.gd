@@ -411,7 +411,7 @@ func _test_the_schema(t, data: Dictionary) -> void:
 func _test_the_crowd_enters_at_the_ends(t, map: CityMap) -> void:
 	var field := CrowdField.new(map, Vector2.ZERO)
 	field.use_stretch()
-	var ends := field.stretch_ends
+	var ends := field.ends_of_the_stretch()
 	t.check(not ends.is_empty(), "the stretch has ends where its streets run into the void")
 	var sound := true
 	for end in ends:

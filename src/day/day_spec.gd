@@ -295,6 +295,30 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 func day_number() -> int:
 	return number
 
+## What ends the day for a win (`Goal`).
+func goal_kind() -> Goal:
+	return goal
+
+## Which section the day is, `Section.NONE` for a day of the calendar.
+func section_kind() -> Section:
+	return section
+
+## The finale's exits by `CityEdge.Kind`, each the point the walk ends at.
+func exit_points() -> Dictionary:
+	return exits
+
+## Whether the countdown is shown and ticked to the hundredth (the escape's).
+func counts_in_hundredths() -> bool:
+	return clock_hundredths
+
+## Whether the day grows its closures at dawn.
+func closes_the_streets() -> bool:
+	return closes_streets
+
+## Whether the crews paste posters at dawn.
+func pastes_the_posters() -> bool:
+	return pastes_posters
+
 ## **Whether the region wall divides the city today**, with its doors and the gatehouses at them:
 ## every day from the gatehouse day (`Tuning.REGION_WALL_FIRST_DAY`) to the last, and neither section
 ## of the escape, since the building has no streets and the escape's city grows no day's tree to

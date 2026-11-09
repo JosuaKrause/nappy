@@ -130,17 +130,18 @@ func _refresh_buttons() -> void:
 ## the continue/restart pair already says what a tap does — see `PauseScreen._hint`'s own doc.
 func show_summary(model: SummaryModel, raised_in: int) -> void:
 	_raised_in = raised_in
-	_heading.text = model.heading
-	_heading.visible = model.heading != ""
-	_title.text = SentenceLines.break_for_label(model.title, _title) if model.title_is_prose \
-			else model.title
-	_note.text = SentenceLines.break_for_label(model.note, _note)
-	_note.visible = model.note != ""
-	_body.text = model.body(SentenceLines.break_for_label(model.body_prose, _body))
-	_brief.text = SentenceLines.break_for_label(model.brief, _brief)
-	_brief.visible = model.brief != ""
+	_heading.text = model.heading_text()
+	_heading.visible = model.heading_text() != ""
+	_title.text = model.title_text()
+	if model.title_is_a_sentence():
+		_title.text = SentenceLines.break_for_label(model.title_text(), _title)
+	_note.text = SentenceLines.break_for_label(model.note_text(), _note)
+	_note.visible = model.note_text() != ""
+	_body.text = model.body(SentenceLines.break_for_label(model.body_sentence(), _body))
+	_brief.text = SentenceLines.break_for_label(model.brief_text(), _brief)
+	_brief.visible = model.brief_text() != ""
 	_hint.text = ""
-	_continue_shown = model.shows_continue
+	_continue_shown = model.offers_continue()
 	_present()
 
 func _present() -> void:

@@ -191,8 +191,10 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_add_letter()
 
-## The mark is a child `Label` pinned to the disc's lower-right; it ignores the mouse like its
-## parent, so the screen's raw-touch reading is unchanged.
+## Marks the disc with `mark`, the one-letter mark in its lower-right corner (`letter`).
+func use_letter(mark: String) -> void:
+	letter = mark
+
 func _refresh_letter() -> void:
 	var old := get_node_or_null("Letter")
 	if old:
@@ -200,6 +202,8 @@ func _refresh_letter() -> void:
 		old.queue_free()
 	_add_letter()
 
+## The mark is a child `Label` pinned to the disc's lower-right; it ignores the mouse like its
+## parent, so the screen's raw-touch reading is unchanged.
 func _add_letter() -> void:
 	if letter.is_empty():
 		return

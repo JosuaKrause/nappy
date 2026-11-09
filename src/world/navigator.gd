@@ -98,11 +98,11 @@ func _sweep_is_clear(from: Vector2, delta: Vector2, mover: Mover) -> bool:
 	var start := _map.world_to_tile(from)
 	var asked := mover
 	if not _map.passable(start, mover):
-		var built := Mover.new(mover.blocked_by & ~Mover.TODAY)
+		var built := Mover.new(mover.layers_blocked() & ~Mover.TODAY)
 		if not _map.passable(start, built):
 			return true
 		asked = built
-	var reach := minf(mover.radius, REACH_LIMIT)
+	var reach := minf(mover.body_reach(), REACH_LIMIT)
 	var to := from + delta
 	if reach > 0.0:
 		to += delta.normalized() * reach

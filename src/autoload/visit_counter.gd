@@ -180,7 +180,7 @@ func send_through(outbox: GoatCounterOutbox) -> void:
 
 func _send_event(name: String) -> void:
 	if _config == null or _outbox == null or not GoatCounterOutbox.may_ever_send(
-			OS.get_name() == "Web", _config.debug_build, _config.readout_requested):
+			OS.get_name() == "Web", _config.is_debug_build(), _config.asks_for_the_readout()):
 		return
 	_outbox.send(name, _goatcounter_present())
 

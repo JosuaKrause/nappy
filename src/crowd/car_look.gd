@@ -202,7 +202,7 @@ func draw_body(canvas: CanvasItem) -> void:
 	var body := _agent.atlas.region(region_of(BODY_BY_VIEW[view_name]))
 	var trim := _agent.atlas.region(region_of(TRIM_BY_VIEW[view_name]))
 	var wheels := _agent.atlas.region(region_of(WHEELS_BY_VIEW[view_name]))
-	Sprites.draw_standing(canvas, body, anchor, Vector2.ZERO, flip, _agent.colour)
+	Sprites.draw_standing(canvas, body, anchor, Vector2.ZERO, flip, _agent.clothing_colour())
 	Sprites.draw_standing(canvas, trim, anchor, Vector2.ZERO, flip)
 	# Last: each tyre is drawn over the paint.
 	Sprites.draw_standing(canvas, wheels, anchor + grounded, Vector2.ZERO, flip)

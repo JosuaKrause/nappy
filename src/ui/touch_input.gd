@@ -27,7 +27,7 @@ extends RefCounted
 ## configuration is handed in, so nothing here reads the command line; with none handed in (a
 ## screen built outside a boot) the answer is the hardware's alone.
 static func available(config: RunConfig = null) -> bool:
-	if config != null and config.touch_forced:
+	if config != null and config.forces_touch():
 		return true
 	return DisplayServer.is_touchscreen_available()
 

@@ -103,10 +103,7 @@ static func slice_feet(from: Vector2, to: Vector2, count: int) -> PackedVector2A
 ## longest piece along its length, far end first (`Footprint.Piece.span()`). Empty for a footprint
 ## with no piece.
 static func run_of(footprint: Footprint, at: Vector2) -> PackedVector2Array:
-	var longest: Footprint.Piece = null
-	for piece in footprint.pieces:
-		if longest == null or piece.half_length() > longest.half_length():
-			longest = piece
+	var longest := footprint.longest_piece()
 	if longest == null:
 		return PackedVector2Array()
 	return longest.span(at)

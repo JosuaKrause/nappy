@@ -24,6 +24,8 @@ func run(t) -> void:
 	_test_a_thing_that_arrives_under_its_warning_keeps_its_badge(t)
 	_test_a_pending_warning_is_announced_for_its_whole_warning(t)
 	_test_every_badge_is_listed_soonest_arrival_first(t)
+	_test_the_warning_with_less_time_left_is_listed_first(t)
+	_test_a_pending_warning_is_ranked_by_its_arrival_among_live_dangers(t)
 	_test_a_subject_no_longer_handed_over_is_forgotten(t)
 	_test_the_lead_window_is_a_time_and_not_a_distance(t)
 	_test_what_is_worth_an_arrow(t)
@@ -99,7 +101,7 @@ func _test_a_danger_walking_away_or_too_slow_gets_none(t) -> void:
 		away.position.x += away.speed * STEP
 		slow.position.y -= slow.speed * STEP
 		_step(model, [away, slow])
-	t.check(model.coming.is_empty(), "a thing going away, and one closing slower than 20px/s, get no badge")
+	t.check(not model.has_badges(), "a thing going away, and one closing slower than 20px/s, get no badge")
 
 ## A badge, once up, stays up until its danger is in sight or gone: standing still, turning away,
 ## she walking away from it. For a lethal vehicle and for a cyclist (mobile, faster than a walk, not
@@ -383,7 +385,51 @@ func _test_a_pending_warning_is_announced_for_its_whole_warning(t) -> void:
 	w.logged_name = "cyclist"
 	model.step(STEP, Vector2.ZERO, [w], _sees, Tuning.WALK_SPEED)
 	t.check(_up(model, "cyclist"), "a warning with nothing in the world yet is up, on screen or off")
-	t.check(is_equal_approx(float(model.coming[0][0]), 0.7), "sorted by the seconds its warning has left")
+
+## A pending warning with 0.7s left is ranked against a live thing by when each arrives: the live
+## one, still 0.6s off, is listed ahead of it, and once it is 0.75s off the warning is. A warning's
+## arrival time that was read wrong by a tenth of a second would swap the second order.
+func _test_a_pending_warning_is_ranked_by_its_arrival_among_live_dangers(t) -> void:
+	var model := BadgeModel.new()
+	var live := _vehicle(1, Vector2(900.0, 0.0), 600.0)
+	live.logged_name = "live"
+	var warning := _vehicle(2, Vector2(100.0, 0.0), 190.0)
+	warning.pending = true
+	warning.left = 0.7
+	warning.logged_name = "warning"
+	var before_it := []
+	var after_it := []
+	for i in 120:
+		live.position.x -= live.speed * STEP
+		_step(model, [live, warning])
+		var arrives := live.position.x / live.speed
+		var names := []
+		for b in model.announcing():
+			names.append(b["id"])
+		if arrives >= 0.72 and arrives <= 0.78 and after_it.is_empty():
+			after_it = names
+		if arrives >= 0.6 and arrives <= 0.68 and before_it.is_empty():
+			before_it = names
+	t.check(before_it == ["live", "warning"], "0.6s off, the live danger comes before a warning with 0.7s left (%s)" % str(before_it))
+	t.check(after_it == ["warning", "live"], "0.75s off, the warning with 0.7s left comes first (%s)" % str(after_it))
+
+func _test_the_warning_with_less_time_left_is_listed_first(t) -> void:
+	for sooner_first in [true, false]:
+		var model := BadgeModel.new()
+		var late := _vehicle(1, Vector2(100.0, 0.0))
+		late.pending = true
+		late.left = 2.0
+		late.logged_name = "late"
+		var soon := _vehicle(2, Vector2(100.0, 0.0))
+		soon.pending = true
+		soon.left = 0.7
+		soon.logged_name = "soon"
+		var handed: Array = [soon, late] if sooner_first else [late, soon]
+		model.step(STEP, Vector2.ZERO, handed, _sees, Tuning.WALK_SPEED)
+		var names := []
+		for b in model.announcing():
+			names.append(b["id"])
+		t.check(names == ["soon", "late"], "the warning with less time left is first, handed in either order (%s)" % str(names))
 
 func _test_every_badge_is_listed_soonest_arrival_first(t) -> void:
 	var model := BadgeModel.new()

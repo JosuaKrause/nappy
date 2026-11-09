@@ -257,7 +257,7 @@ func setup(world: WorldContext, map: CityMap, signals: TrafficSignals, streets: 
 	_signals = signals
 	_streets = streets
 	_field = CrowdField.new(map, map.tile_rect_to_world(
-			Rect2i(Vector2i.ZERO, map.size)).get_center())
+			Rect2i(Vector2i.ZERO, map.size_in_tiles())).get_center())
 
 ## Hands the crowd the player it makes way for. Called whenever she is put into the city's world
 ## (`main._put_her_in()`); null takes her away.
@@ -296,10 +296,10 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	# A day is reproducible or it is not, and this is not the place to spend that.
 	if _signals:
 		_signals.restart_cycle()
-	_field.city_view = city_view
-	_field.uniform_walkers = uniform_walkers
-	_field.centre = focus if focus != Vector2.INF else _map.tile_rect_to_world(
-			Rect2i(Vector2i.ZERO, _map.size)).get_center()
+	_field.use_city_view(city_view)
+	_field.use_uniform_walkers(uniform_walkers)
+	_field.centre_on(focus if focus != Vector2.INF else _map.tile_rect_to_world(
+			Rect2i(Vector2i.ZERO, _map.size_in_tiles())).get_center())
 	_door_holds = []
 	if _streets:
 		var plan := _streets.region_plan()
@@ -313,7 +313,7 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 				if body.def.detain_seconds <= 0.0:
 					continue
 				var hold := WalkerDoorHold.new()
-				hold.position = body.position
+				hold.stand_at(body.position)
 				_door_holds.append(hold)
 	# Before either `_populate` call: `setup()` refuses a spot in a pocket the way it refuses one
 	# behind a barrier, and a record built afterwards would refuse nothing on the morning it is most
@@ -373,20 +373,20 @@ func _resolve_and_settle() -> void:
 ## that where the patch stands is fused with who she is; a focus source handed to the crowd would
 ## let this go.
 func set_focus(at: Vector2) -> void:
-	_field.centre = at
+	_field.centre_on(at)
 
 ## A new agent with everything the crowd hands every one it makes: the flags it runs under, the
 ## day's traffic, doors, home segments and pockets, what the screen shows and what it charges its
 ## time to.
 func _make_an_agent() -> CrowdAgent:
 	var agent := CrowdAgent.new()
-	agent.skip_draw = skip_agent_drawing
+	agent.skip_drawing(skip_agent_drawing)
 	agent.traffic = _traffic
 	agent.pockets = _pockets
 	agent.view = view
 	agent.frame_timing = timing
 	agent.atlas = atlas
-	agent.excitement.heard_in = sources
+	agent.mood().hear_in(sources)
 	return agent
 
 ## Exact authoring shares the live crowd's lane, pocket and junction machinery. A rejected
@@ -400,7 +400,7 @@ func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vecto
 		return {"error": problem}
 	for other in _agents:
 		if agent.kind == CrowdAgent.Kind.WALKER and other.kind == CrowdAgent.Kind.WALKER \
-				and at.distance_to(other.position) < agent.shape.radius + other.shape.radius:
+				and at.distance_to(other.position) < agent.shape.rounding_radius() + other.shape.rounding_radius():
 			agent.free()
 			return {"error": "walker placement overlaps an existing walker"}
 		if agent.kind == CrowdAgent.Kind.CAR and other.kind == CrowdAgent.Kind.CAR \
@@ -428,7 +428,7 @@ func use_stretch() -> void:
 func recipe_coverage() -> Dictionary:
 	var counts := {"total": 0, "walkers": 0, "cars": 0, "moving": 0, "moving_cars": 0}
 	var result: Dictionary = counts.duplicate()
-	result["scope"] = "city" if _field.city_view else "local"
+	result["scope"] = "city" if _field.is_city_view() else "local"
 	result["quadrants"] = {}
 	for quadrant in ["nw", "ne", "sw", "se"]:
 		result.quadrants[quadrant] = counts.duplicate()
@@ -995,7 +995,7 @@ func _hold_walkers_at_doors(delta: float) -> void:
 		return
 	# Bucketed by the line each hut stands on, so a walker looks at the huts on its own line and not
 	# at all of them.
-	var lines := _bucket_by_line(_door_holds.map(func(hold): return hold.position))
+	var lines := _bucket_by_line(_door_holds.map(func(hold): return hold.stands_at()))
 	for agent in _walkers:
 		agent.door_ahead = null
 		agent.door_ahead_along = INF
@@ -1026,7 +1026,7 @@ func _find_the_hut_in_front_of(agent: CrowdAgent, lines: Array[Dictionary]) -> v
 ## first, which across two of them is not that order).
 func _consider_the_hut(agent: CrowdAgent, forward: Vector2, vertical: bool, index: int) -> void:
 	var hold := _door_holds[index]
-	var offset: Vector2 = hold.position - agent.global_position
+	var offset: Vector2 = hold.stands_at() - agent.global_position
 	var along := offset.dot(forward)
 	if along < 0.0 or along > CrowdAgent.LOOKAHEAD or along > agent.door_ahead_along:
 		return
@@ -1034,7 +1034,7 @@ func _consider_the_hut(agent: CrowdAgent, forward: Vector2, vertical: bool, inde
 		return
 	if (offset - forward * along).length() > WALKER_DOOR_LANE_TOLERANCE:
 		return
-	var across_coordinate: float = hold.position.x if vertical else hold.position.y
+	var across_coordinate: float = hold.stands_at().x if vertical else hold.stands_at().y
 	if CityMap.corridor_offset(floori(across_coordinate / float(Tuning.TILE_SIZE))) < 0:
 		return
 	agent.door_ahead = hold
@@ -1162,7 +1162,7 @@ func _meet_the_player() -> void:
 	if not _player:
 		return
 	var here := _player.global_position
-	_field.centre = here
+	_field.centre_on(here)
 	var on_the_road := Tile.is_road(_map.tile_type_at_world(here))
 	var shove := Vector2.ZERO
 	var closing := false
@@ -1180,7 +1180,7 @@ func _meet_the_player() -> void:
 			# is the one thing either of them does for a walker this far off. See
 			# `_BEYOND_CONTACT_SQUARED` for why the test cannot disagree with theirs.
 			if (agent.global_position - here).length_squared() > _BEYOND_CONTACT_SQUARED:
-				agent.touching = false
+				agent.be_touched(false)
 				continue
 			agent.strategy.make_way_for(here, going)
 			shove += _bump(agent, here)
@@ -1254,9 +1254,9 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 	# Released at the wider radius, so a pair that has just been pushed apart is unambiguously
 	# apart rather than sitting on the boundary.
 	if distance >= Tuning.BUMP_CLEAR_RADIUS:
-		agent.touching = false
+		agent.be_touched(false)
 		return Vector2.ZERO
-	if distance >= BUMP_RADIUS and not agent.touching:
+	if distance >= BUMP_RADIUS and not agent.is_touched():
 		# Inside the release band but never actually touched: this is somebody she is walking
 		# alongside, not somebody she walked into.
 		return Vector2.ZERO
@@ -1276,9 +1276,9 @@ func _bump(agent: CrowdAgent, here: Vector2) -> Vector2:
 	var push := direction * overlap * (1.0 - BUMP_PLAYER_SHARE)
 	agent.global_position += _navigator.step(agent.global_position, push, _pushed)
 	agent.place_its_move()
-	if not agent.touching:
-		agent.touching = true
-		agent.excitement.startle(BUMP_INTENSITY, BUMP_DURATION,
+	if not agent.is_touched():
+		agent.be_touched(true)
+		agent.mood().startle(BUMP_INTENSITY, BUMP_DURATION,
 				BUMP_INNER_RADIUS, BUMP_OUTER_RADIUS)
 		EventBus.crowd_bumped.emit(here)
 	# Whichever way they were pushed, keep going that way: the walker's own steering is what
@@ -1313,9 +1313,9 @@ func _horn(agent: CrowdAgent, here: Vector2) -> bool:
 		return false
 	if absf(offset.dot(Vector2(-forward.y, forward.x))) > Tuning.CAR_STRIKE_HALF_WIDTH * 2.0:
 		return false
-	if not agent.excitement.is_startled():
+	if not agent.mood().is_startled():
 		EventBus.car_near_miss.emit(here)
-	agent.excitement.startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
+	agent.mood().startle(Tuning.CAR_HORN_INTENSITY, Tuning.CAR_HORN_DURATION,
 			Tuning.CAR_HORN_INNER_RADIUS, Tuning.CAR_HORN_OUTER_RADIUS)
 	return true
 

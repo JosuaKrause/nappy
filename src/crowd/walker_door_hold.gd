@@ -35,6 +35,14 @@ var inside: Node2D = null
 ## queue nobody could have decided against in time.
 var queue: Array[Node2D] = []
 
+## Where the hut stands, in world space.
+func stands_at() -> Vector2:
+	return position
+
+## Stands the hut at `at`.
+func stand_at(at: Vector2) -> void:
+	position = at
+
 ## Puts a walker at the back of the line, if it is not already in it or inside.
 func join(walker: Node2D) -> void:
 	if walker == inside or queue.has(walker):
