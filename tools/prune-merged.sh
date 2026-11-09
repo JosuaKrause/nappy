@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# Retire a branch whose pull request has been squash-merged: its worktree, its local branch and,
-# if GitHub has not already deleted it, its remote branch. Then sweep the harness's own
+# Retire a branch whose pull request has been squash-merged: its worktree, its local branch, its
+# released brief and, if GitHub has not already deleted it, its remote branch. Then sweep the harness's own
 # `worktree-agent-*` branches, which have no pull request and go only where `git branch -d` agrees.
 #
-#   tools/prune-merged.sh feature/fire-on-her-way
-#   tools/prune-merged.sh feature/a feature/b
+#   tools/prune-merged.sh feature-fire-on-her-way
+#   tools/prune-merged.sh feature-a feature-b
 #
 # Git cannot see a squash as a merge, so `git branch -d` refuses every such branch and `-D` would
 # delete one with unpushed work just as readily. This script is the committing skill's check made
@@ -26,19 +26,12 @@
 # Bash 3.2-safe, like the rest of tools/ — see tools/lint.sh's own header.
 set -uo pipefail
 
-# The ignored paths a worktree may still hold and be removed, because the repository or the OS
-# regenerates them: Godot's import cache, the Python environment and its caches, Finder metadata,
-# the baked atlas pages (tools/bake-atlases.sh), the Web-template compiler scratch, and the
-# `.gdignore` that export-web.sh and build-web-template.sh drop into `build/`. A non-forced `git
-# worktree remove` deletes ignored files without a word and `git status` never lists them, so
-# anything else ignored (a recording or a capture under `build/`, a `.env` holding a token) keeps
-# the worktree. An entry with a `/` inside it is anchored at the worktree's root; one without
-# matches at any depth.
-REGENERABLE_IGNORED=".godot/ .venv/ __pycache__/ .mypy_cache/ .ruff_cache/ .DS_Store
-  assets/atlases/baked/ build/web-template-work/ build/.gdignore"
-
 # shellcheck source=tools/lib_agent_role.sh
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib_agent_role.sh"
+# REGENERABLE_IGNORED and classify_ignored: the ignored files a worktree may hold and still be
+# removed, and the sorting of a worktree's ignored files into those and everything else.
+# shellcheck source=tools/lib_regenerable_ignored.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib_regenerable_ignored.sh"
 
 usage() {
     cat <<EOF
@@ -51,7 +44,8 @@ MERGED and the local tip equals or is an ancestor of its merged head. Refuses mi
 objects, open PRs, advanced remote tips, dirty/untracked work, locks, unreleased agent briefs,
 and ignored files other than these regenerable caches (an entry with an inner / is anchored):
   $REGENERABLE_IGNORED
-Brief headers in the main or target checkout must say "cleanup: ready" to release ownership.
+Brief headers in the main or target checkout must say "cleanup: ready" to release ownership;
+a released brief in the main checkout is deleted with its branch.
 Never unlocks or force-removes worktrees. Protects the main checkout and caller's worktree.
 
   --all       Discover local branches and allocated worktree sizes; read-only by default.
@@ -64,7 +58,7 @@ Applying also clears the registration of every unlocked worktree whose directory
 (git worktree prune), then sweeps worktree-agent-* branches that git branch -d accepts once
 their worktree is gone. Run from the main checkout through the PR's own agent identity.
 
-  tools/prune-merged.sh feature/fire-on-her-way
+  tools/prune-merged.sh feature-fire-on-her-way
   tools/prune-merged.sh --all
   tools/prune-merged.sh --all --apply
 EOF
@@ -108,31 +102,6 @@ worktree_of() {
 }
 
 refuse() { reason="$*"; return 1; }
-# Sort the ignored files in worktree $1 into regenerable cache roots ("cache<TAB>root") and
-# anything else ("keep<TAB>path"); $2 is the branch's own brief, already gated by its release.
-classify_ignored() {
-    git --no-optional-locks -C "$1" -c core.quotePath=false ls-files --others --ignored \
-        --exclude-standard \
-        | PRUNE_ALLOWED="$REGENERABLE_IGNORED $2" awk '
-            BEGIN { n = split(ENVIRON["PRUNE_ALLOWED"], allow) }
-            {
-                p = $0; root = ""
-                for (i = 1; i <= n && root == ""; i++) {
-                    e = allow[i]; dir = substr(e, length(e)) == "/"
-                    bare = dir ? substr(e, 1, length(e) - 1) : e
-                    if (index(bare, "/")) {
-                        if (dir ? index(p, e) == 1 : p == e) root = e
-                    } else if (dir) {
-                        if (index(p, e) == 1) root = e
-                        else if ((k = index(p, "/" e)) > 0) root = substr(p, 1, k + length(e))
-                    } else if (p == e || substr(p, length(p) - length(e)) == "/" e) {
-                        root = p
-                    }
-                }
-                if (root == "") print "keep\t" p
-                else if (!(root in seen)) { seen[root] = 1; print "cache\t" root }
-            }'
-}
 # Allocated KiB of the worktree-relative paths on stdin, inside worktree $1.
 kib_of() {
     (cd "$1" && tr '\n' '\0' | xargs -0 du -sk 2>/dev/null) | awk '{s += $1} END {print s + 0}'
@@ -239,7 +208,24 @@ for branch in "${branches[@]+"${branches[@]}"}"; do
     if git update-ref -d "refs/heads/$branch" "$expected_tip"; then
         echo "deleted $branch (PR #$number merged)"
     else
-        failed=1
+        failed=1; continue
+    fi
+    # The branch's brief goes with it once its owner has released it: the agent it briefed is
+    # done, its worktree and its branch are gone, and what the task was is in the pull request.
+    # Read again here, so a brief that lost its release since the check above is kept.
+    brief="$main_checkout/.claude/briefs/${branch//\//-}.md"
+    if [[ -f "$brief" ]]; then
+        if [[ "$(sed '/^$/q' "$brief" | sed -n 's/^cleanup: //p' | tail -1)" == ready ]]; then
+            if rm -f "$brief"; then
+                echo "deleted brief $brief"
+            else
+                echo "keep brief $brief: could not delete it" >&2
+                failed=1
+            fi
+        else
+            echo "keep brief $brief: agent ownership is not released" >&2
+            failed=1
+        fi
     fi
 done
 

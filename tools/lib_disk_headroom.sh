@@ -32,8 +32,10 @@
 # **The reserve is the free space a batch should leave behind, and only ever warns.** The player's
 # disk warnings were reported with about 2.5 GiB free (docs/decisions/2026-10-03-teal-ibis.md), so
 # the default, HEADROOM_DEFAULT_RESERVE_MIB below, warns before a batch ends below that. The
-# warning is taken seriously but enforced by nobody: the using-tools and orchestrating skills say
-# what to do on seeing it, which is to start no new task and sort out the space first.
+# warning is taken seriously but enforced by nobody: the orchestrating skill says what to do on
+# seeing it, in its part on worktrees and disk (in the skill itself or in the reference file it
+# keeps that part in), and the using-tools skill says so too: start no new task and sort out the
+# space first.
 #
 # Configuration, all from the environment:
 #   NAPPY_HEADROOM_PEAK_MIB_<JOB>  replaces one job's measured MiB per unit, the job's name

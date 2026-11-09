@@ -201,3 +201,5 @@ if [[ ! -f "$OUT" ]]; then
     exit 1
 fi
 echo "wrote $OUT"
+# No edit hook sees a picture being written, so the tool that writes one names its rules.
+echo "The rules for a frame kept as evidence: .claude/skills/session-captures/SKILL.md" >&2
