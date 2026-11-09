@@ -117,7 +117,6 @@ class Branch extends RefCounted:
 				found[cell] = true
 		return found
 
-
 ## The branches, in the order they were grown. A branch's index is its **colour**, which is what
 ## the sharing is recorded in.
 var branches: Array[Branch] = []
@@ -182,11 +181,6 @@ var _street_keys_built := false
 ## measure — it is insurance against the one failure mode this project cannot see: a runtime
 ## hang inside a suite prints nothing at all and looks exactly like a slow test.
 const _WALK_STEP_LIMIT := 20000
-
-## Above this many routes the covering set is found greedily rather than exactly. A day plans
-## about fifteen; the bound is here so that a city three times the size degrades into a worse
-## answer rather than into a search nobody is waiting for.
-const _EXACT_COVER_ROUTES := 32
 
 const _NEIGHBOUR_OFFSETS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]
 
@@ -345,8 +339,7 @@ func _grow_a_branch(map: CityMap, area: ClosurePlanner.CalmArea, rng: RandomNumb
 ##
 ## The second is the case worth naming: a calm area next door to the home is arrived at without
 ## walking any ground, so its route is empty. That is not a corridor — there is nothing to place a
-## wall outside of or a set piece on — and an empty route in the covering set would be a route
-## nothing can ever hit, which quietly makes the whole day's fan-out unanswerable. Not a branch.
+## wall outside of — and a route nothing can ever hit is not a route. Not a branch.
 func _is_no_route(path: Array[int]) -> bool:
 	return path.is_empty() or (path.size() == 1 and _home.has(path[0]))
 
@@ -1052,120 +1045,3 @@ func branches_on(tile: Vector2i) -> Array[int]:
 	found.sort()
 	return found
 
-## The streets a set piece is placed on: the smallest set of **real streets** such that every
-## route touches at least one of them.
-##
-## *"We can have multiple candidate places and make sure all routes touch at least one of them."*
-## Stated over streets rather than cells because a set piece needs somewhere she is walked *past*
-## rather than a single two-tile step — `EventScheduler.ground_for` bounds a set piece's candidate
-## ground to the whole named street. A route's cells that resolve to no street (a park cut, an
-## alley) simply do not offer a site; the guarantee is unaffected, because it never promised a
-## site on every cell, only that every route meets one somewhere.
-##
-## **It covers routes and not branches, and the difference is the whole of the design's warning.**
-## A first version of this counted a branch as covered when *either* of its routes was — see
-## `docs/DECISIONS.md` for the measurement that ruled it out — which is "the street she must
-## cross" arriving through the back door. Covering routes gets the right guarantee for nothing: the
-## two routes of one area share no ground by construction, so no single site can ever cover both.
-##
-## It is a minimum hitting set, which is only expensive in general: there are a handful of routes
-## and a distinct street is only interesting for *which* of them it carries, so the search is over
-## the distinct route sets and its depth is bounded by the number of routes. An empty answer means
-## no such set exists — which happens when a route has no real street on it at all, because its
-## calm area opens straight onto the doorstep or reaches home entirely through park and alley.
-func covering_sites() -> Array[Vector3i]:
-	var routes := _route_count()
-	if routes == 0:
-		return []
-	if routes > _EXACT_COVER_ROUTES:
-		return _greedy_cover()
-	var sites := _sites_by_route_set()
-	var masks: Array[int] = []
-	for mask: int in sites:
-		masks.append(mask)
-	var everything := (1 << routes) - 1
-	# Deepening rather than a single search, so the first answer found is a smallest one.
-	for budget in range(1, routes + 1):
-		var found := _cover(everything, masks, sites, budget)
-		if not found.is_empty():
-			return found
-	return []
-
-func _route_count() -> int:
-	var total := 0
-	for branch in branches:
-		total += branch.routes.size()
-	return total
-
-## One street per distinct set of routes, as `route mask -> segment key`. Two streets carrying the
-## same routes are interchangeable here, so only one of them is worth searching over. A route's
-## cells that resolve to no real street contribute nothing to any mask.
-func _sites_by_route_set() -> Dictionary:
-	var masks := {}
-	var index := 0
-	for branch in branches:
-		for route: Array in branch.routes:
-			for cell: Vector2i in route:
-				var segment := _map.network.segment_containing(cell * ReachabilityGrid.CELL)
-				if segment:
-					var key := segment.key()
-					masks[key] = int(masks.get(key, 0)) | (1 << index)
-			index += 1
-	var sites := {}
-	for key: Vector3i in masks:
-		var mask: int = masks[key]
-		if mask != 0 and not sites.has(mask):
-			sites[mask] = key
-	return sites
-
-## A cover of `uncovered` using at most `budget` streets, or empty if there is none.
-##
-## Every cover has to hit the lowest uncovered route, so the only candidates worth trying are the
-## streets that carry it — which is what keeps the search small.
-func _cover(uncovered: int, masks: Array[int], sites: Dictionary, budget: int) -> Array[Vector3i]:
-	if budget <= 0:
-		return []
-	var route := 0
-	while (uncovered & (1 << route)) == 0:
-		route += 1
-	for mask in masks:
-		if (mask & (1 << route)) == 0:
-			continue
-		var rest := uncovered & ~mask
-		if rest == 0:
-			var one: Array[Vector3i] = []
-			one.append(sites[mask] as Vector3i)
-			return one
-		var deeper := _cover(rest, masks, sites, budget - 1)
-		if not deeper.is_empty():
-			deeper.push_front(sites[mask] as Vector3i)
-			return deeper
-	return []
-
-## The fallback for a city with more routes than the exact search is meant for: take the street
-## covering the most routes still uncovered, and repeat.
-func _greedy_cover() -> Array[Vector3i]:
-	var sites := _sites_by_route_set()
-	var uncovered := (1 << _route_count()) - 1
-	var chosen: Array[Vector3i] = []
-	while uncovered != 0:
-		var best := 0
-		var best_mask := 0
-		for mask: int in sites:
-			var hits := _bits(mask & uncovered)
-			if hits > best:
-				best = hits
-				best_mask = mask
-		if best == 0:
-			return []
-		chosen.append(sites[best_mask] as Vector3i)
-		uncovered &= ~best_mask
-	return chosen
-
-static func _bits(mask: int) -> int:
-	var count := 0
-	var rest := mask
-	while rest != 0:
-		count += rest & 1
-		rest >>= 1
-	return count

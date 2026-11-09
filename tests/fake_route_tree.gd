@@ -43,6 +43,3 @@ func segment_depths() -> Dictionary:
 func gaps() -> Array[Vector3i]:
 	return []
 
-## Overrides RouteTree.covering_sites.
-func covering_sites() -> Array[Vector3i]:
-	return []

@@ -669,7 +669,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 		consumed_one_shots: Array[String] = [], scars: Array[Dictionary] = [],
 		route: RouteSource = null, heat: int = 0, doors := PackedVector2Array(),
 		standing: Array[Planned] = [], trace: RunTrace = null,
-		beside_the_routes: EventDef = null) -> DayEvents:
+		beside_the_routes: EventDef = null, mast_sites: Array[MastSites.Site] = []) -> DayEvents:
 	var events := DayEvents.over(calm, standing)
 	if spec.draw == DaySpec.Draw.BAG_PER_STREET:
 		_draw_the_walk(spec, rng, map, route, _street_bag(spec.bag, street_bag_seed(rng)), events,
@@ -679,8 +679,11 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
+	# The run's mast sites, worked out once when the run's city was handed over
+	# (`EventWorld.mast_sites()`); worked out here for a caller that hands none, which finds the same.
+	var sites := mast_sites if not mast_sites.is_empty() else MastSites.compute(map)
 	_plan_the_dawn(day, base, map, consumed_one_shots, scars, calm, route, heat, doors,
-			events, trace, spec, beside_the_routes)
+			events, trace, spec, beside_the_routes, sites)
 	_ensure_the_run_is_taught(day, events, heat, trace)
 
 	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in
@@ -703,7 +706,8 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary], calm: CalmAreas,
 		route: RouteSource, heat: int, doors: PackedVector2Array, events: DayEvents,
 		trace: RunTrace = null, spec: DaySpec = null,
-		beside_the_routes: EventDef = null) -> Array[Planned]:
+		beside_the_routes: EventDef = null,
+		mast_sites: Array[MastSites.Site] = []) -> Array[Planned]:
 	if spec == null:
 		spec = DaySpec.for_day(day)
 	# Which tiles each kind of event may stand on, worked out at most once per day. See
@@ -727,9 +731,19 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	# but a body that cuts the routes off from home is not stood.
 	var reach := RouteReachRule.new(map, corridor)
 
-	events.add_all(_place_ambient(day, map, heat))
+	# **The fixed parts' phases** (the design's "the city's fixed parts have phases of their own"):
+	# the ambient rows and the masts stand where their planners put them, and each is recorded on
+	# the location holding it, so the draw passes over it. A mast's location on a day before the
+	# masts holds nothing and is drawn like any other.
+	var fixed := _place_ambient(day, map, heat)
+	events.add_all(fixed)
 	_place_scars(day, scars, map, events, reach, heat)
-	events.add_all(_place_masts(day, map, heat, doors, scars))
+	var masts := _place_masts(day, map, heat, doors, scars, mast_sites)
+	events.add_all(masts)
+	fixed.append_array(masts)
+	for part in fixed:
+		var tile := map.world_to_tile(part.placed_at())
+		locations.hold_fixed_part(part, tile, map.tile_at(tile))
 	# **One calm area stays clean by construction**: where she has settled in every area this act,
 	# the one the spoilers leave alone joins the calm ground nothing may reach. See
 	# `_calm_kept_clean()`.
@@ -739,10 +753,17 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 		leave_alone.append(calm.ground_of(kept_clean))
 	_place_the_roadblocks(beside_the_routes, day, base, map, events, ground, leave_alone,
 			corridor, doors, spec, locations, trace, reach)
-	_place_scripted(day, _stream(base, 1), map, events, ground, leave_alone, corridor, heat,
-			doors, spec.holds_the_home_streets, reach)
-	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, events, ground,
-			leave_alone, corridor, heat, doors, trace, spec.holds_the_home_streets, reach)
+	# **The scripted rows' and the one-shots' dawn phases**: each draws one of the day's open
+	# locations its ground takes and is assigned it (`ScriptedPhase`), offered through the dawn
+	# draw's own path and judged by the day's rules, so the draw after passes over it.
+	var phase_ground := RuledLocationGround.new(day, base, map, events, corridor,
+			LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets),
+			StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false, null, reach))
+	var weigh := func(def: EventDef, location: Location) -> float:
+		return _weight_in(def, location, day, map, ground, corridor, spec.holds_the_home_streets)
+	var phase := ScriptedPhase.new(locations, phase_ground, weigh)
+	_place_scripted(day, _stream(base, 1), events, phase, heat)
+	_place_one_shots(day, _stream(base, 2), map, consumed_one_shots, events, phase, heat, trace)
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, events, calm, kept_clean,
 			reach, heat, trace)
 	_owe_the_moments(day, _stream(base, MOMENTS_SALT), events, heat, spec.caps_per_day)
@@ -863,7 +884,7 @@ class RuledRoadblockGround extends RoadblockGround:
 		_corridor = corridor
 		_rules = rules
 		for tile in EventScheduler.ground_for(def, map, ground, corridor, _role,
-				EventScheduler.NO_SITE, holds_the_home_streets):
+				holds_the_home_streets):
 			_own[tile] = true
 		var down := events.placements().duplicate()
 		down.append_array(events.standing())
@@ -1590,14 +1611,15 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 ## — the same refusals a site is planned under. One that was never silenced left no scar and is not
 ## planned again (*"Only if silenced"*).
 static func _place_masts(day: int, map: CityMap, heat: int = 0,
-		doors := PackedVector2Array(), scars: Array[Dictionary] = []) -> Array[Planned]:
+		doors := PackedVector2Array(), scars: Array[Dictionary] = [],
+		mast_sites: Array[MastSites.Site] = []) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	if day < Tuning.MAST_FIRST_DAY:
 		return planned
 	var loudspeaker := EventCatalogue.heated(EventCatalogue.mast(), heat)
 	var curfew := EventCatalogue.heated(EventCatalogue.by_id("curfew_announce"), heat) \
 			if day == CURFEW_ANNOUNCE_DAY else null
-	var sites := MastSites.compute(map)
+	var sites := mast_sites if not mast_sites.is_empty() else MastSites.compute(map)
 	for scar in scars:
 		if String(scar["id"]) != SILENCED_MAST or int(scar["since_day"]) >= day:
 			continue
@@ -1700,22 +1722,41 @@ static func _place_ambient(day: int, map: CityMap, heat: int = 0) -> Array[Plann
 				pass
 	return planned
 
-static func _place_scripted(day: int, rng: RandomNumberGenerator, map: CityMap,
-		events: DayEvents, ground := {}, leave_alone: Array[Rect2] = [],
-		corridor: Corridor = null, heat: int = 0, doors := PackedVector2Array(),
-		holds_the_home_streets := true, reach: RouteReachRule = null) -> void:
+static func _place_scripted(day: int, rng: RandomNumberGenerator, events: DayEvents,
+		phase: ScriptedPhase, heat: int = 0) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day, heat):
-		var placement := _place_one(def, day, rng, map, events.placements(), ground,
-				leave_alone, corridor, NO_SITE, doors, events.standing(), holds_the_home_streets,
-				reach)
-		if placement:
-			events.add(placement)
+		# A row sited while she walks is owed here with no position, as every such row is.
+		if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
+			events.add(Planned.new(def, Vector2.INF))
+			continue
+		phase.place(def.for_day(day), rng)
+
+## How strongly `def`'s dawn phase draws `location`: the copies its role gives each tile of the
+## location it may stand on (`ground_for()`'s pool, whose role weights keep a wall off the route and
+## draw friction onto it), summed; 0 where it may stand on none. The pool is the day's, worked out
+## once a row (`ground`).
+static func _weight_in(def: EventDef, location: Location, day: int, map: CityMap,
+		ground: Dictionary, corridor: Corridor, holds_the_home_streets: bool) -> float:
+	var key := "phase copies:%d" % def.get_instance_id()
+	if not ground.has(key):
+		var copies := {}
+		for tile in ground_for(def, map, ground, corridor, role_for(def, day),
+				holds_the_home_streets):
+			copies[tile] = int(copies.get(tile, 0)) + 1
+		ground[key] = copies
+	var by_tile: Dictionary = ground[key]
+	var weight := 0
+	var rect := location.tiles()
+	for y in range(rect.position.y, rect.end.y):
+		for x in range(rect.position.x, rect.end.x):
+			var tile := Vector2i(x, y)
+			if by_tile.has(tile) and location.takes(map.tile_at(tile)):
+				weight += int(by_tile[tile])
+	return float(weight)
 
 static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
-		consumed: Array[String], events: DayEvents, ground := {},
-		leave_alone: Array[Rect2] = [], corridor: Corridor = null, heat: int = 0,
-		doors := PackedVector2Array(), trace: RunTrace = null,
-		holds_the_home_streets := true, reach: RouteReachRule = null) -> void:
+		consumed: Array[String], events: DayEvents, phase: ScriptedPhase, heat: int = 0,
+		trace: RunTrace = null) -> void:
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, heat):
 		if def.id in consumed:
 			continue
@@ -1755,76 +1796,21 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 			_note(trace, "roll", "one-shot %s: %.2f > %.2f — not today"
 					% [def.id, roll, threshold])
 			continue
-		var sited := _place_a_set_piece(day, def, rng, map, events.placements(), ground,
-				leave_alone, corridor, doors, events.standing(), holds_the_home_streets, reach)
-		if sited.is_empty():
+		var sited := phase.place(def.for_day(day), rng)
+		if sited == null:
 			# The roll passed and the city had nowhere to put it, so the one-shot is *not*
 			# consumed and will be rolled for again tomorrow. Worth a line of its own: from
 			# the outside this looks identical to a roll that failed.
 			_note(trace, "roll", "one-shot %s: %.2f <= %.2f but nowhere to place it"
 					% [def.id, roll, threshold])
 			continue
-		events.add_all(sited)
+		# A group of one, as every one-shot is: `EventStreaming.stream_in` spends the rest of a
+		# group the moment one of it fires, and a plan outside the group system is one it never
+		# spends, silently exempt from the machinery the row is written against.
+		sited.set_piece_group = "%s@%d" % [def.id, day]
 		consumed.append(def.id)
-		var where: Array[String] = []
-		for placement in sited:
-			where.append(RunTrace.tile(map.world_to_tile(placement.position)))
 		_note(trace, "roll", "one-shot %s: %.2f <= %.2f — waiting at %s"
-				% [def.id, roll, threshold, ", ".join(where)])
-
-## A set piece, planned at **every** site of a covering set.
-##
-## An authored one-shot has to be *met*, and the important half of how is what this does **not** do:
-## it does not choose a site on the route she took, because that would need to know which route she
-## took. It chooses a set that **every** route touches, and the one she reaches is the one that
-## fires. The guarantee is structural, so nothing has to predict her.
-##
-## **A bundle is not a guarantee, and this is the caller where that bites.** Two distinct routes to
-## one area share no street by construction, so no single site can ever cover both — the covering
-## set is two to six streets, and code here that expects one is looking for a *tile she must cross*,
-## which the city is built not to have. `RouteTree.covering_sites` carries the arithmetic and the
-## warning.
-##
-## The placements are mutually exclusive rather than several fire engines: they share a
-## `set_piece_group`, and `EventStreaming.stream_in` spends the rest of the group the moment one of
-## them enters the world. That is also where a scar is recorded, so a run gets exactly one fire
-## however many streets were offered.
-##
-## **The fallback is a placement anywhere**, and it is the honest failure direction: a day with no
-## corridor to speak of — no reachable calm, or a covering set whose streets carry none of this
-## row's ground — should still fire the one authored thing it has. A one-shot that never fires is a
-## fairness contract and a silhouette spent on nothing, which is the complaint this whole item
-## exists to answer.
-static func _place_a_set_piece(day: int, def: EventDef, rng: RandomNumberGenerator, map: CityMap,
-		already: Array[Planned], ground: Dictionary, leave_alone: Array[Rect2],
-		corridor: Corridor, doors := PackedVector2Array(),
-		standing: Array[Planned] = [], holds_the_home_streets := true,
-		reach: RouteReachRule = null) -> Array[Planned]:
-	var made: Array[Planned] = []
-	var sites := corridor.sites() if corridor else ([] as Array[Vector3i])
-	for site in sites:
-		# The ones already made count for spacing like anything else: two of the same row a few
-		# pixels apart is what `EVENT_SPACING_SAME` is for, and two candidate sites can be adjacent.
-		var beside: Array[Planned] = already.duplicate()
-		beside.append_array(made)
-		var placement := _place_one(def, day, rng, map, beside, ground, leave_alone, corridor, site,
-				doors, standing, holds_the_home_streets, reach)
-		if placement:
-			placement.set_piece_group = "%s@%d" % [def.id, day]
-			made.append(placement)
-	if made.is_empty():
-		var anywhere := _place_one(def, day, rng, map, already, ground, leave_alone, corridor,
-				NO_SITE, doors, standing, holds_the_home_streets, reach)
-		if anywhere:
-			# **The fallback carries the group too, and it is a group of one.** Every other
-			# one-shot placement is tagged, and `EventStreaming.stream_in` spends the rest of a
-			# group the moment one of it fires — so an untagged placement is a one-shot that can
-			# never be spent that way, silently exempt from the machinery the row is written
-			# against. A group of one spends nothing and costs nothing; being outside the group
-			# system is what costs.
-			anywhere.set_piece_group = "%s@%d" % [def.id, day]
-			made.append(anywhere)
-	return made
+				% [def.id, roll, threshold, RunTrace.tile(map.world_to_tile(sited.placed_at()))])
 
 # ------------------------------------------------- a placement made after dawn ---
 
@@ -2786,59 +2772,52 @@ class RuledLocationGround extends LocationGround:
 					return true
 		return false
 
-## Picks a tile of an allowed type and builds the path, if the event moves.
-##
-## `already` is what the day has planned so far, and it is what keeps the density legible.
-## Placement is a uniform random tile, so without a spacing rule the only thing keeping two dog
-## walkers off one stretch of pavement is a low cap — which is a coincidence rather than a rule.
-## Several candidates are offered and the first that clears `EVENT_SPACING_SAME` from its own kind
-## and `EVENT_SPACING_ANY` from everything else wins.
-##
-## The fallback is the roomiest candidate offered rather than nothing, because a scripted event
-## has to happen: on a map with fifty events on it the honest answer is the best spot left.
-static func _place_one(def: EventDef, day: int, rng: RandomNumberGenerator, map: CityMap,
-		already: Array[Planned] = [], ground := {}, leave_alone: Array[Rect2] = [],
-		corridor: Corridor = null, site := NO_SITE,
-		doors := PackedVector2Array(), standing: Array[Planned] = [],
-		holds_the_home_streets := true, reach: RouteReachRule = null) -> Planned:
-	var role := role_for(def, day)
-	# An `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` event is owed here with no position and sited by
-	# `EventDirector` while the player walks. Asked over `spawn_mode_on(day)` rather than
-	# `spawn_mode` alone, so a row like `charging_dog` — director-sited on the day it teaches the
-	# run, map-placed every day after — is sited the way that day actually asks for.
-	if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
-		return Planned.new(def, Vector2.INF)
-	def = def.for_day(day)
-
-	var open_candidates := ground_for(def, map, ground, corridor, role, site,
-			holds_the_home_streets)
-	if open_candidates.is_empty():
-		return null
-	return _best_of(def, rng, map, open_candidates, role, already, ground, leave_alone, corridor,
-			doors, standing, null, reach)
-
-## Pins the same candidate the normal planner could accept on this tile. A private RNG owns
-## its route roll, so unrelated background actors cannot move a required path. `calm` is the calm
-## areas the caller worked out once for its whole recipe (`CalmAreas.of()`), whose unused ground
-## nothing is placed near.
+## **An authored scene's row at the location its tile names**, or null with the reason appended to
+## `why`. A recipe keeps its data: `at` names the tile, and so the location holding it
+## (`DayLocations.holding()`, of the ground under it), which is asked once, as a dawn phase asks a
+## location: the tile is one the location takes for the row (`LocationFit`), the candidate built
+## there on a private stream (`route_seed`, so unrelated actors cannot move a required path), and the
+## day's rules allow it (`StreetInvalidation`, the calm `calm` says she has not used left alone). No
+## tries and no fallback: a location that does not take the row fails the recipe loudly, with the
+## reason, rather than placing it somewhere else (the orchestrator's reading, open to the player's
+## overturn). `locations` is the day's, laid out once for the whole recipe; laid out here for a
+## caller that hands none.
 static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 		route_seed: int, already: Array[Planned], corridor: Corridor,
-		doors: PackedVector2Array, calm: CalmAreas, standing: Array[Planned] = []) -> Planned:
+		doors: PackedVector2Array, calm: CalmAreas, standing: Array[Planned] = [],
+		locations: DayLocations = null, why: Array[String] = []) -> Planned:
 	if not def.available_on(day) or def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
+		why.append("%s is not placed on the map on day %d" % [def.id, day])
 		return null
 	def = def.for_day(day)
-	var ground := {}
 	var tile := map.world_to_tile(at)
 	if not map.tile_to_world(tile).is_equal_approx(at):
+		why.append("%s is not at the middle of a tile" % def.id)
 		return null
-	var role := role_for(def, day)
-	if not tile in ground_for(def, map, ground, corridor, role):
+	if locations == null:
+		locations = DayLocations.lay_out(map, corridor)
+	var location := locations.holding(tile, map.tile_at(tile))
+	if location == null:
+		why.append("no location holds tile %s" % tile)
+		return null
+	var ground := {}
+	var fit := LocationFit.new(day, map, ground, corridor, true)
+	if not tile in fit.tiles(def, location):
+		why.append("the location holding tile %s does not take %s there" % [tile, def.id])
 		return null
 	var rng := RandomNumberGenerator.new()
 	rng.seed = route_seed
-	var candidates: Array[Vector2i] = [tile]
-	return _best_of(def, rng, map, candidates, role, already, ground, calm.unused_ground(),
-			corridor, doors, standing)
+	var candidate := fit.build(def, tile, rng)
+	if not candidate:
+		why.append("%s cannot be built on tile %s" % [def.id, tile])
+		return null
+	var around := already.duplicate()
+	around.append_array(standing)
+	var rules := StreetInvalidation.new(map, corridor, ground, calm.unused_ground(), doors, false)
+	if rules.room(candidate, role_for(def, day), tile, already, around) == -INF:
+		why.append("the day's rules refuse %s on tile %s" % [def.id, tile])
+		return null
+	return candidate
 
 ## The acceptance half of a placement: roll `EVENT_PLACEMENT_TRIES` candidates out of
 ## `open_candidates`, refuse the ones that break a rule that cannot bend, and answer with the first
@@ -2973,7 +2952,7 @@ class Verdicts extends RefCounted:
 ## accepted, so it is a second pass over a list that is already in memory.
 static func ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 		corridor: Corridor = null, role := GameEnums.BlockerRole.NONE,
-		site := NO_SITE, from_the_door := true) -> Array[Vector2i]:
+		from_the_door := true) -> Array[Vector2i]:
 	var base := open_ground_for(def, map, ground, -1, from_the_door)
 	if not corridor or role == GameEnums.BlockerRole.NONE:
 		return base
@@ -2988,23 +2967,13 @@ static func ground_for(def: EventDef, map: CityMap, ground: Dictionary,
 	# cached list keyed without it would hand a fit-only wall's ground to a cost wall sharing its
 	# placement, pavement side and spread shape, or the reverse.
 	var by_cost := _is_a_wall_by_cost(def)
-	var key := "%s|%d|%d|%s|%s|%s|%s%s" % [def.placement, def.pavement_side, role, site,
+	var key := "%s|%d|%d|%s|%s|%s%s" % [def.placement, def.pavement_side, role,
 			def.hard_fail, def.has_a_spread, by_cost, "" if from_the_door else "|no door"]
 	if ground.has(key):
 		return ground[key]
 	var aimed: Array[Vector2i] = []
-	# **A set piece is placed on one named street**, so this half is containment rather than a
-	# weight. The rect is the street itself and not a radius round it: a street is the unit every
-	# other placement decision in this milestone is stated in, and a set piece has to be something
-	# she walks past on the way through rather than something near where she walked.
-	var named := map.network.by_key(site) if site != NO_SITE else null
-	var only := named.tile_rect() if named else Rect2i()
 	var refuses_required_alleys := _refuses_required_alleys(def)
 	for tile in base:
-		if site != NO_SITE:
-			if only.has_point(tile):
-				aimed.append(tile)
-			continue
 		# **No robber stands in an alley she has to walk down.** An alley the day's corridor runs
 		# through — `corridor.depth(tile) == 0`, the `INSIDE` band — is ground she has no way
 		# around, and `alley_robbery`'s own design note is that "a robbery has no telegraph you
@@ -3047,10 +3016,6 @@ static func _street_tree_tiles(map: CityMap, ground: Dictionary) -> Dictionary:
 	if not ground.has(TREE_TILES_KEY):
 		ground[TREE_TILES_KEY] = StreetTrees.footprint_tiles(map)
 	return ground[TREE_TILES_KEY]
-
-## A placement with no particular street asked for. Not `Vector3i.ZERO`, which is the key of a real
-## street — the one running east out of the north-west corner.
-const NO_SITE := Vector3i(-1, -1, -1)
 
 ## A tile whose two coordinates are **both** inside a corridor band — a junction, belonging to two
 ## streets at once. `EventInstance._spread_is_vertical` and `_centred_on_the_pavement_band` both

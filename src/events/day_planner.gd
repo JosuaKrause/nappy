@@ -195,7 +195,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 			world.run.resistance.progress) if guarded != "" else null
 	var day_events := EventScheduler.build_day(spec, rng, city_map, calm, consumed,
 			world.run.attempt_spend.scars, tree, world.run.resistance.progress, doors,
-			standing, world.trace, beside)
+			standing, world.trace, beside, world.mast_sites())
 	var placements := day_events.placements()
 	placements.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept

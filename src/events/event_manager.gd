@@ -175,6 +175,7 @@ func setup(city: City, map: CityMap, navigator: Navigator = null,
 	world.city = city
 	world.map = map
 	world.city_map = map
+	world.work_out_mast_sites(map)
 	# A map a rig hands in on its own is drawn in the city it hands with it.
 	if city and not map.has_world():
 		map.world = city
