@@ -9,11 +9,11 @@ Preserve artwork rejected by a human, and artwork suggested for human review. Ke
 rejected only internally by an assistant outside the repository. This retention rule applies
 to both SVG authoring and PNG transfer; it does not call for deleting human rejection records.
 
-**Where rejected artwork goes**, by the candidate's stage: a candidate rejected during its family's
-review stays beside that family's evidence with its verdict; artwork removed from `art/` after it
-shipped or was wired in moves to `docs/evidence/archive/rejected-graphics/`. The split is the
-player's choice: an in-review rejection stays with the family that produced it, and an
-out-of-service removal moves to this archive.
+**Where rejected artwork goes** is the player's split, by the candidate's stage (polite-sparrow): a
+candidate rejected during its family's review stays beside that family's evidence with its verdict;
+artwork removed from `art/` after it shipped or was wired in moves to
+`docs/evidence/archive/rejected-graphics/`. An in-review rejection stays with the family that
+produced it, and an out-of-service removal moves to this archive.
 
 Everything under `docs/evidence/archive/rejected-graphics/` is preserved for posterity only. These
 are rejected experiments, not visual guidance, style references, prompt inputs, or implementation

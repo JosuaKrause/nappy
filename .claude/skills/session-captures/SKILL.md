@@ -8,7 +8,9 @@ description: Where gameplay stills, bursts and run folders are kept as evidence,
 **The rules not to miss:**
 
 - **New evidence goes in a folder of its own directly under `docs/evidence/`**, named
-  `<words>-<slug>-<date>`. This skill owns that name, and every other skill follows it.
+  `<words>-<slug>-<date>` (polite-sparrow). This skill owns that name, and every other skill
+  follows it.
+- **`docs/evidence/archive/session-captures/` holds earlier captures only** (polite-sparrow).
 - **A capture is dated runtime evidence, never an approved visual reference**: it records one
   build, seed, route and presentation state.
 - **Retain what the run was meant to show**, with contradictory results and failed trials, and
@@ -33,15 +35,16 @@ For a new capture, use a display-capable session and a bounded command such as:
 tools/shot.sh /private/tmp/nappy-shot.png 4 --seed 4242 --spawn arterial --walk 2s3e
 ```
 
-New evidence goes in `docs/evidence/<words>-<slug>-<date>/`, where `<words>` are the two words of
-the queue entry it belongs to (`busy-otter-roof-cases-2026-09-27/`), and an entry from before names
-gives its number instead (`m203-roof-cases-2026-09-26/`): the evidence folder takes its entry's
-name, in the naming table the player accepted (PLAYTEST-144 8). Evidence that belongs to a playtest
-takes the playtest's name the same way (`playtest-144-phone-v0.18.0-2026-09-26/`). The slug says
-what it shows, so two folders for one entry differ by their slugs, and the date is the day the
-evidence is made. When selected artifacts come from a telemetry run, keep them under that run
-folder's original name. `docs/evidence/archive/session-captures/<date>/` holds earlier captures, and
-nothing new goes there. Update every in-repo link when moving one. If capture aborts or the display
+New evidence goes in `docs/evidence/<words>-<slug>-<date>/`, a folder named for the queue entry or
+the playtest it belongs to (polite-sparrow). `<words>` are the two words of the queue entry
+(`busy-otter-roof-cases-2026-09-27/`), and an entry from before names gives its number instead
+(`m203-roof-cases-2026-09-26/`): the evidence folder takes its entry's name, in the naming table
+the player accepted (PLAYTEST-144 8). Evidence that belongs to a playtest takes the playtest's name
+the same way (`playtest-144-phone-v0.18.0-2026-09-26/`). The slug says what it shows, so two
+folders for one entry differ by their slugs. When selected artifacts come from a telemetry run,
+keep them as the run folder under its original name (polite-sparrow).
+`docs/evidence/archive/session-captures/<date>/` holds earlier captures only, so nothing new goes
+there (polite-sparrow). Update every in-repo link when moving one. If capture aborts or the display
 is headless, report it instead of fabricating a frame.
 
 **Retain what the run or rig was meant to show, not everything it happened to write.** Keep the
@@ -74,9 +77,5 @@ rig run and the trailer are made and watched locally and stay out of the reposit
 
 ## Proposed, not asked for
 
-- **Evidence that belongs to a playtest is named by the playtest's name** is the filer's
-  extension: the naming table the player accepted names only a queue entry's evidence folder
-  (PLAYTEST-144 8).
-- **"Nothing new goes into `docs/evidence/archive/session-captures/`"** is the filer's reading of
-  the same table, which puts every new evidence folder directly under `docs/evidence/`
-  (PLAYTEST-144 8).
+- **The date in a folder's name is the day the evidence is made** is the filer's reading: the
+  player's wording gives the name a date and does not say which day (polite-sparrow).

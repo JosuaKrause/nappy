@@ -48,15 +48,15 @@ reference-photos, sound-effects, session-captures and rejected-graphics.
 
 Found while matching each rule to its suite; each skill now says the rule is unenforced:
 
-1. **Nothing else is placed inside a lethal event's field** (events), across a planned day. The
-   placement rules do it (`StreetInvalidation.room_around()`); one case is held, a queued mast never
-   generated inside a lethal field (`tests/test_resistance_reach_contacts.gd`), and
-   `tests/test_events_costs.gd` holds who is exempt. No suite walks a planned day to check the rule
-   for every row.
-2. **Anything new that closes a street goes through `ClosurePlanner`** (city). The closure rigs see
-   only what the planner plans.
-3. **No illustrated PNG of the pelican cyclist under `art/illustrated/`** (illustrated-png).
-   `tests/test_pelican.gd` has no such check.
+- **Nothing else is placed inside a lethal event's field** (events), across a planned day. The
+  placement rules do it (`StreetInvalidation.room_around()`); one case is held, a queued mast never
+  generated inside a lethal field (`tests/test_resistance_reach_contacts.gd`), and
+  `tests/test_events_costs.gd` holds who is exempt. No suite walks a planned day to check the rule
+  for every row.
+- **Anything new that closes a street goes through `ClosurePlanner`** (city). The closure rigs see
+  only what the planner plans.
+- **No illustrated PNG of the pelican cyclist under `art/illustrated/`** (illustrated-png).
+  `tests/test_pelican.gd` has no such check.
 
 ## Two decisions of the player's that no playtest holds
 
