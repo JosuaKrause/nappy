@@ -22,7 +22,7 @@ func run(t) -> void:
 		_test_an_event_waits_until_she_is_near_it,
 		_test_an_event_that_has_run_does_not_run_again,
 		_test_a_running_event_comes_back_where_it_got_to,
-		_test_a_set_piece_happens_at_exactly_one_of_its_sites,
+		_test_a_set_piece_is_one_plan_owed_to_her_walk,
 		_test_a_day_started_through_the_manager_alone_still_carries_seals,
 		_test_a_streamed_pursuer_resumes_the_chase,
 		_test_a_row_warned_down_her_line_arrives_at_its_own_intensity,

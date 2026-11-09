@@ -1568,8 +1568,9 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 		suitable.append(def)
 	return suitable
 
-## The masts: `MastSites.compute()`'s own sites, planted from `Tuning.MAST_FIRST_DAY` and standing
-## at the same places every day. Bypasses the scripted rows' dawn phase (`_place_scripted`) entirely — a mast is not a
+## The masts: the run's sites (`mast_sites`, worked out once on the city as built,
+## `EventWorld.mast_sites()`), planted from `Tuning.MAST_FIRST_DAY` and standing at the same places
+## every day of the run. Bypasses the scripted rows' dawn phase (`_place_scripted`) entirely — a mast is not a
 ## tile the day's own roll chose, it is a fixture the city already carries, the same way
 ## `_place_ambient()` beside this hands out one plan per playground rather than rolling for one.
 ##
