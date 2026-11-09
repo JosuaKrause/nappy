@@ -205,15 +205,15 @@ func build() -> void:
 	map.world = self
 	_tile_set = InteriorTileSet.build(atlas)
 	_ground.tile_set = _tile_set
-	for tile: Vector2i in map.tiles:
-		var source := InteriorTileSet.source_id_for(map.tiles[tile])
+	for tile: Vector2i in map.floor_tiles():
+		var source := InteriorTileSet.source_id_for(map.floor_kind_at(tile))
 		if source >= 0:
 			_ground.set_cell(tile, source, Vector2i.ZERO)
 	_rebuild_walls()
 	_rebuild_stairwell_backdrops()
 	_rebuild_overlays()
 	_rebuild_collision()
-	modulate = _lighting_at(map.start_tile)
+	modulate = _lighting_at(map.start_position())
 
 ## One blocker per non-walkable cell in a margin around the whole building's footprint, including
 ## every gap between parts — so a gap blocks her exactly the way a wall does, and the only way from
@@ -233,7 +233,7 @@ func _rebuild_collision() -> void:
 				continue
 			# A clearance is only for an absent pinch corner. Painted `c`, `C` and `b` cells stay
 			# solid even if another diagonal elsewhere happens to name the same position.
-			if not map.tiles.has(tile) and map.collision_clearance.has(tile):
+			if not map.has_floor_at(tile) and map.has_collision_clearance_at(tile):
 				continue
 			var body := StaticBody2D.new()
 			var shape := CollisionShape2D.new()
@@ -257,21 +257,21 @@ func _rebuild_walls() -> void:
 	# Wide doors are drawn after the repeating 32px wall strips. Their own centre registration keeps
 	# both leaves visible instead of letting a neighbouring wall crop one side.
 	_window_sprites.clear()
-	for at: Vector2i in map.walls:
-		var kind: InteriorTile.Kind = map.walls[at]
+	for at: Vector2i in map.wall_tiles():
+		var kind: InteriorTile.Kind = map.wall_kind_at(at)
 		if kind == InteriorTile.Kind.LIFT_DOOR or kind == InteriorTile.Kind.ENTRANCE_DOOR:
 			continue
 		var texture := _wall_texture(kind)
 		var sprite := _add_wall_sprite(at, texture)
 		if sprite and kind == InteriorTile.Kind.WINDOW:
 			_window_sprites.append(sprite)
-	for at: Vector2i in map.walls:
-		var kind: InteriorTile.Kind = map.walls[at]
+	for at: Vector2i in map.wall_tiles():
+		var kind: InteriorTile.Kind = map.wall_kind_at(at)
 		if kind != InteriorTile.Kind.LIFT_DOOR and kind != InteriorTile.Kind.ENTRANCE_DOOR:
 			continue
 		_add_wall_sprite(at, _wall_texture(kind))
 	_add_rubble()
-	for at: Vector2i in map.entrance_tiles:
+	for at: Vector2i in map.entrance_positions():
 		var barricade := Sprite2D.new()
 		var texture := atlas.region(ENTRANCE_BARRICADE_TEXTURE)
 		barricade.texture = texture
@@ -280,7 +280,7 @@ func _rebuild_walls() -> void:
 		barricade.position = Vector2((at.x + 0.5) * TILE, at.y * TILE + TILE * 0.5)
 		add_entity(barricade, DrawLayer.Layer.BUILDINGS)
 
-## The fallen ceiling on the top floor, drawn over exactly the cells `InteriorMapPlan.rubble`
+## The fallen ceiling on the top floor, drawn over exactly the cells `InteriorMapPlan.rubble_area()`
 ## closes. One picture registered at the patch's own top-left corner rather than one sprite per
 ## cell: a heap is a single mass, and four copies of the same tile would read as four crates.
 ##
@@ -288,12 +288,12 @@ func _rebuild_walls() -> void:
 ## gives for putting elevation there — nothing can legitimately stand behind a thing that closes a
 ## corridor, so there is nothing for it to sort against.
 func _add_rubble() -> void:
-	if map.rubble.size == Vector2i.ZERO:
+	if map.rubble_area().size == Vector2i.ZERO:
 		return
 	var heap := Sprite2D.new()
 	heap.texture = atlas.region(HALLWAY_RUBBLE_TEXTURE)
 	heap.centered = false
-	heap.position = Vector2(map.rubble.position) * TILE
+	heap.position = Vector2(map.rubble_area().position) * TILE
 	add_entity(heap, DrawLayer.Layer.BUILDINGS)
 
 func _add_wall_sprite(at: Vector2i, name: StringName) -> Sprite2D:
@@ -457,18 +457,18 @@ func _wall_texture(kind: InteriorTile.Kind) -> StringName:
 ## `_add_standing()` and `_add_threshold()`; only the chandeliers and the decals are in the
 ## y-sorted layer the player joins through `add_entity()`.
 func _rebuild_overlays() -> void:
-	for id: String in map.doors:
-		var door: InteriorMapPlan.Door = map.doors[id]
+	for id: String in map.door_ids():
+		var door: InteriorMapPlan.Door = map.door(id)
 		if _is_edge_threshold(door.id):
 			_add_threshold(door.tile, OPEN_THRESHOLD_TEXTURE)
 		else:
 			_add_standing(door.tile, DOOR_TEXTURE)
-	for tile: Vector2i in map.locked_thresholds:
+	for tile: Vector2i in map.locked_threshold_positions():
 		_add_threshold(tile, APARTMENT_THRESHOLD_TEXTURE)
-	if map.exit_tile.x >= 0:
-		_add_standing(map.exit_tile, EMERGENCY_EXIT_TEXTURE)
-	for tile: Vector2i in map.decals:
-		var kind: InteriorTile.Kind = map.decals[tile]
+	if map.exit_position().x >= 0:
+		_add_standing(map.exit_position(), EMERGENCY_EXIT_TEXTURE)
+	for tile: Vector2i in map.decal_tiles():
+		var kind: InteriorTile.Kind = map.decal_kind_at(tile)
 		var name := _decal_texture(kind)
 		var sprite := Sprite2D.new()
 		sprite.texture = atlas.region(name)
@@ -484,14 +484,14 @@ func _is_edge_threshold(door_id: String) -> bool:
 ## chandelier would overlap the barricade that needs to read as the closed main way out.
 func _add_chandeliers() -> void:
 	for id in ["hallway_third", "hallway_second", "hallway_first"]:
-		if not map.waypoints.has(id):
+		if not map.has_waypoint(id):
 			continue
 		var chandelier := Sprite2D.new()
 		var texture := atlas.region(CHANDELIER_TEXTURE)
 		chandelier.texture = texture
 		chandelier.centered = false
 		chandelier.offset = Vector2(-texture.get_width() * 0.5, -texture.get_height())
-		chandelier.position = map.tile_to_world(map.waypoints[id] + Vector2i(0, -1))
+		chandelier.position = map.tile_to_world(map.waypoint(id) + Vector2i(0, -1))
 		add_entity(chandelier)
 
 func _decal_texture(kind: InteriorTile.Kind) -> StringName:
@@ -533,7 +533,7 @@ func _rebuild_stairwell_backdrops() -> void:
 	var segment_texture := atlas.region(STAIRWELL_SEGMENT_BACKDROP)
 	var cap_texture := atlas.region(STAIRWELL_SHAFT_CAP_TOP)
 	for side in ["left", "right"]:
-		var top_landing: Vector2i = map.waypoints["stairwell_%s" % side]
+		var top_landing: Vector2i = map.waypoint("stairwell_%s" % side)
 		var origin := top_landing - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for panel in 4:
 			var backdrop := Sprite2D.new()

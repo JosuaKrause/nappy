@@ -62,7 +62,7 @@ static func build() -> InteriorMapPlan:
 	_build_stairwell(f, "right", _STAIRWELL_RIGHT_ORIGIN)
 	_build_lobby(f, _LOBBY_ORIGIN)
 	_build_basement(f, _BASEMENT_ORIGIN)
-	f.start_tile = f.waypoints["hallway_third"]
+	f.start_on(f.waypoint("hallway_third"))
 	_mark_diagonal_clearances(f)
 	f.finish()
 	return f
@@ -77,7 +77,7 @@ static func build() -> InteriorMapPlan:
 ## blocked exactly as the grammar says.
 static func _mark_diagonal_clearances(f: InteriorMapPlan) -> void:
 	var diagonals: Array[Vector2i] = [Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
-	for t: Vector2i in f.tiles.keys():
+	for t: Vector2i in f.floor_tiles():
 		if not f.is_walkable(t):
 			continue
 		for d in diagonals:
@@ -87,10 +87,10 @@ static func _mark_diagonal_clearances(f: InteriorMapPlan) -> void:
 			var corner_b := Vector2i(t.x, t.y + d.y)
 			if f.is_walkable(corner_a) or f.is_walkable(corner_b):
 				continue
-			if not f.tiles.has(corner_a):
-				f.collision_clearance[corner_a] = true
-			if not f.tiles.has(corner_b):
-				f.collision_clearance[corner_b] = true
+			if not f.has_floor_at(corner_a):
+				f.add_collision_clearance(corner_a)
+			if not f.has_floor_at(corner_b):
+				f.add_collision_clearance(corner_b)
 
 # -------------------------------------------------------------------------------- hallway ---
 
@@ -129,29 +129,29 @@ const TOP_FLOOR_RUBBLE := Rect2i(8, 0, 2, 2)
 ## up the counterpart on each landing door.
 static func _build_hallway(f: InteriorMapPlan, id: String, origin: Vector2i, is_start: bool) -> void:
 	for x in HALLWAY_LENGTH:
-		f.tiles[origin + Vector2i(x, 0)] = InteriorTile.Kind.HALLWAY_FLOOR_EDGE_N
-		f.tiles[origin + Vector2i(x, 1)] = InteriorTile.Kind.HALLWAY_FLOOR_EDGE_S
-		f.walls[origin + Vector2i(x, 0)] = InteriorTile.Kind.WALL
-	f.walls[origin + Vector2i(LIFT_COLUMN, 0)] = InteriorTile.Kind.LIFT_DOOR
+		f.paint_floor(origin + Vector2i(x, 0), InteriorTile.Kind.HALLWAY_FLOOR_EDGE_N)
+		f.paint_floor(origin + Vector2i(x, 1), InteriorTile.Kind.HALLWAY_FLOOR_EDGE_S)
+		f.paint_wall(origin + Vector2i(x, 0), InteriorTile.Kind.WALL)
+	f.paint_wall(origin + Vector2i(LIFT_COLUMN, 0), InteriorTile.Kind.LIFT_DOOR)
 	for c in WINDOW_COLUMNS:
-		f.walls[origin + Vector2i(c, 0)] = InteriorTile.Kind.WINDOW
+		f.paint_wall(origin + Vector2i(c, 0), InteriorTile.Kind.WINDOW)
 	for c in LAMP_COLUMNS:
-		f.walls[origin + Vector2i(c, 0)] = InteriorTile.Kind.WALL_LAMP
+		f.paint_wall(origin + Vector2i(c, 0), InteriorTile.Kind.WALL_LAMP)
 
 	# The two open notches — one at each end, opposite the sketch's both-at-the-right (playtest 55).
 	_add_door(f, "%s:left" % id, origin + Vector2i(LEFT_DOOR_COLUMN, 1), "stairwell_left:landing_%s" % id.trim_prefix("hallway_"))
 	_add_door(f, "%s:right" % id, origin + Vector2i(RIGHT_DOOR_COLUMN, 1), "stairwell_right:landing_%s" % id.trim_prefix("hallway_"))
 	for column in LOCKED_APARTMENT_COLUMNS:
-		f.locked_thresholds.append(origin + Vector2i(column, 1))
+		f.lock_threshold(origin + Vector2i(column, 1))
 
 	var start := origin + Vector2i(HALLWAY_START_COLUMN, 1)
-	f.waypoints[id] = start
+	f.add_waypoint(id, start)
 	if is_start:
-		f.start_tile = start
+		f.start_on(start)
 		# The collapse is laid down here, with the floor, rather than checked for afterwards: the
 		# top floor is built with the right half already shut, so nothing ever places anything on
 		# ground the rubble then has to be reconciled with.
-		f.rubble = Rect2i(origin + TOP_FLOOR_RUBBLE.position, TOP_FLOOR_RUBBLE.size)
+		f.put_rubble_on(Rect2i(origin + TOP_FLOOR_RUBBLE.position, TOP_FLOOR_RUBBLE.size))
 
 # ------------------------------------------------------------------------------ stairwell ---
 
@@ -211,12 +211,12 @@ static func _build_stairwell(f: InteriorMapPlan, side: String, origin: Vector2i)
 						if door_index < _STAIRWELL_HALLWAYS.size() else "lobby:%s" % side
 				_add_door(f, "%s:%s" % [part_id, landing_id], at, counterpart)
 				var landing := at + Vector2i.DOWN
-				f.waypoints["%s:%s" % [part_id, landing_id]] = landing
+				f.add_waypoint("%s:%s" % [part_id, landing_id], landing)
 				if door_index == 0:
-					f.waypoints[part_id] = landing
+					f.add_waypoint(part_id, landing)
 				door_index += 1
 				continue
-			f.tiles[at] = _stair_kind_for_symbol(symbol)
+			f.paint_floor(at, _stair_kind_for_symbol(symbol))
 	if door_index != _STAIRWELL_LANDINGS.size():
 		push_error("Stairwell grammar placed %d doors, expected %d" \
 				% [door_index, _STAIRWELL_LANDINGS.size()])
@@ -255,14 +255,14 @@ const LOBBY_BASEMENT_COLUMN := LOBBY_ENTRANCE_COLUMN
 
 static func _build_lobby(f: InteriorMapPlan, origin: Vector2i) -> void:
 	for x in HALLWAY_LENGTH:
-		f.tiles[origin + Vector2i(x, 0)] = InteriorTile.Kind.HALLWAY_FLOOR_EDGE_N
-		f.tiles[origin + Vector2i(x, 1)] = InteriorTile.Kind.HALLWAY_FLOOR_EDGE_S
-		f.walls[origin + Vector2i(x, 0)] = InteriorTile.Kind.WALL
-	f.walls[origin + Vector2i(LOBBY_ENTRANCE_COLUMN, 0)] = InteriorTile.Kind.ENTRANCE_DOOR
-	f.entrance_tiles.append(origin + Vector2i(LOBBY_ENTRANCE_COLUMN, 0))
-	f.walls[origin + Vector2i(LOBBY_LIFT_COLUMN, 0)] = InteriorTile.Kind.LIFT_DOOR
+		f.paint_floor(origin + Vector2i(x, 0), InteriorTile.Kind.HALLWAY_FLOOR_EDGE_N)
+		f.paint_floor(origin + Vector2i(x, 1), InteriorTile.Kind.HALLWAY_FLOOR_EDGE_S)
+		f.paint_wall(origin + Vector2i(x, 0), InteriorTile.Kind.WALL)
+	f.paint_wall(origin + Vector2i(LOBBY_ENTRANCE_COLUMN, 0), InteriorTile.Kind.ENTRANCE_DOOR)
+	f.add_entrance(origin + Vector2i(LOBBY_ENTRANCE_COLUMN, 0))
+	f.paint_wall(origin + Vector2i(LOBBY_LIFT_COLUMN, 0), InteriorTile.Kind.LIFT_DOOR)
 	for c in LOBBY_LAMP_COLUMNS:
-		f.walls[origin + Vector2i(c, 0)] = InteriorTile.Kind.WALL_LAMP
+		f.paint_wall(origin + Vector2i(c, 0), InteriorTile.Kind.WALL_LAMP)
 
 	_add_door(f, "lobby:left", origin + Vector2i(LOBBY_LEFT_DOOR_COLUMN, 1), "stairwell_left:landing_lobby")
 	_add_door(f, "lobby:right", origin + Vector2i(LOBBY_RIGHT_DOOR_COLUMN, 1), "stairwell_right:landing_lobby")
@@ -273,7 +273,7 @@ static func _build_lobby(f: InteriorMapPlan, origin: Vector2i) -> void:
 	# the frame she is standing on a door — so a waypoint that *is* the basement notch sends her
 	# straight down to the basement instead of showing her the lobby. One column east of the
 	# entrance, which is still in front of the barricade and is nobody's threshold.
-	f.waypoints["lobby"] = origin + Vector2i(LOBBY_ENTRANCE_COLUMN + 1, 1)
+	f.add_waypoint("lobby", origin + Vector2i(LOBBY_ENTRANCE_COLUMN + 1, 1))
 
 # -------------------------------------------------------------------------------- basement ---
 
@@ -312,9 +312,9 @@ static func _build_basement(f: InteriorMapPlan, origin: Vector2i) -> void:
 	_lay_basement_band(f, origin, 0, 10, 4)
 	# The jog right, into band B.
 	for y in [8, 9]:
-		f.tiles[origin + Vector2i(4, y)] = InteriorTile.Kind.BASEMENT_FLOOR
+		f.paint_floor(origin + Vector2i(4, y), InteriorTile.Kind.BASEMENT_FLOOR)
 	# This is an open mouth between the two bands, not a brick wall across a walkable passage.
-	f.walls.erase(origin + Vector2i(4, 10))
+	f.open_wall(origin + Vector2i(4, 10))
 	# Band B, shifted two east of band A — the sketch's rightward jog — pinched to its wall row at
 	# one column. **Laid with the gap rather than laid and then cut**: a band that was built whole
 	# and had a cell taken out of it afterwards is the shape this repository refuses everywhere
@@ -322,13 +322,13 @@ static func _build_basement(f: InteriorMapPlan, origin: Vector2i) -> void:
 	_lay_basement_band(f, origin, 2, 6, 6, BASEMENT_PINCH)
 	# The jog left, into band C.
 	for y in [2, 3, 4, 5]:
-		f.tiles[origin + Vector2i(2, y)] = InteriorTile.Kind.BASEMENT_FLOOR
+		f.paint_floor(origin + Vector2i(2, y), InteriorTile.Kind.BASEMENT_FLOOR)
 	# The second jog enters band B through another open mouth.
-	f.walls.erase(origin + Vector2i(2, 6))
+	f.open_wall(origin + Vector2i(2, 6))
 	# Band C, back under band A's own columns — the sketch's leftward jog, and the exit's band.
 	_lay_basement_band(f, origin, 0, 0, 4)
 	for narrow in BASEMENT_NARROWS:
-		f.corridor_narrows.append(origin + narrow)
+		f.add_corridor_narrow(origin + narrow)
 
 	# The entry: the lobby's own door, the stair she came down, and band A's floor — one straight
 	# column, north from the door, seen from the front. *(Playtest 55, sketching the basement:
@@ -337,20 +337,20 @@ static func _build_basement(f: InteriorMapPlan, origin: Vector2i) -> void:
 	# its own tile — widest tread at the near edge, narrowest at the far one — so two of them
 	# stacked read as two stairs rather than as one longer flight.
 	_add_door(f, "basement:entry", origin + Vector2i(2, 13), "lobby:basement")
-	f.tiles[origin + Vector2i(2, 12)] = InteriorTile.Kind.STAIR_DOWN
+	f.paint_floor(origin + Vector2i(2, 12), InteriorTile.Kind.STAIR_DOWN)
 
-	f.exit_tile = origin + Vector2i(1, 0)
-	f.tiles[f.exit_tile] = InteriorTile.Kind.EMERGENCY_EXIT
+	f.exit_on(origin + Vector2i(1, 0))
+	f.paint_floor(f.exit_position(), InteriorTile.Kind.EMERGENCY_EXIT)
 
-	f.decals[origin + Vector2i(3, 11)] = InteriorTile.Kind.PUDDLE
-	f.decals[origin + Vector2i(5, 7)] = InteriorTile.Kind.DEBRIS
+	f.paint_decal(origin + Vector2i(3, 11), InteriorTile.Kind.PUDDLE)
+	f.paint_decal(origin + Vector2i(5, 7), InteriorTile.Kind.DEBRIS)
 	# One cell further up its jog than the other two decals sit in theirs, so the rat is not drawn
 	# under the steam vent that stands on this jog's own gate (`BASEMENT_NARROWS`).
-	f.decals[origin + Vector2i(2, 2)] = InteriorTile.Kind.RAT
+	f.paint_decal(origin + Vector2i(2, 2), InteriorTile.Kind.RAT)
 
 	# The corridor cell the entry stair arrives at, for the same reason the lobby's is not its own
 	# notch: the entry door's tile would teleport her back up to the lobby on the first frame.
-	f.waypoints["basement"] = origin + Vector2i(2, 11)
+	f.add_waypoint("basement", origin + Vector2i(2, 11))
 
 ## One two-row band of basement floor, brick-walled along its own north edge (`wall_row`), from
 ## `x_min` to `x_max` inclusive, all local to `origin`. `pinch_column` is a column whose south row
@@ -359,10 +359,10 @@ static func _build_basement(f: InteriorMapPlan, origin: Vector2i) -> void:
 static func _lay_basement_band(f: InteriorMapPlan, origin: Vector2i, x_min: int, wall_row: int,
 		x_max: int, pinch_column := -1) -> void:
 	for x in range(x_min, x_max + 1):
-		f.tiles[origin + Vector2i(x, wall_row)] = InteriorTile.Kind.BASEMENT_FLOOR_EDGE_N
+		f.paint_floor(origin + Vector2i(x, wall_row), InteriorTile.Kind.BASEMENT_FLOOR_EDGE_N)
 		if x != pinch_column:
-			f.tiles[origin + Vector2i(x, wall_row + 1)] = InteriorTile.Kind.BASEMENT_FLOOR_EDGE_S
-		f.walls[origin + Vector2i(x, wall_row)] = InteriorTile.Kind.BRICK_WALL
+			f.paint_floor(origin + Vector2i(x, wall_row + 1), InteriorTile.Kind.BASEMENT_FLOOR_EDGE_S)
+		f.paint_wall(origin + Vector2i(x, wall_row), InteriorTile.Kind.BRICK_WALL)
 
 # ---------------------------------------------------------------------------------- doors ---
 
@@ -371,5 +371,5 @@ static func _add_door(f: InteriorMapPlan, id: String, tile: Vector2i, target_doo
 	d.id = id
 	d.tile = tile
 	d.target_door = target_door
-	f.tiles[tile] = InteriorTile.Kind.DOOR
-	f.doors[id] = d
+	f.paint_floor(tile, InteriorTile.Kind.DOOR)
+	f.add_door(d)

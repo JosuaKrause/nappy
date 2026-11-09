@@ -183,7 +183,7 @@ func _test_a_mark_is_touched_only_from_inside_its_alley(t) -> void:
 	var outward := Vector2(MOUTH - MARK)
 	var street_edge := mark + outward * Tuning.TILE_SIZE * 1.5
 	var body := Tuning.PLAYER_BODY_RADIUS
-	var touched := await ContactTouches.touches_from(t, director, [street_edge - outward * body,
+	var touched := ContactTouches.touches_from(director, [street_edge - outward * body,
 			street_edge + outward * body, street_edge] as Array[Vector2])
 	t.check(touched[0],
 			"standing in the alley, her body wholly past the street's edge, touches the mark")

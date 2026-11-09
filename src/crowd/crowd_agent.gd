@@ -197,7 +197,15 @@ func crashed_into() -> void:
 var _look: AgentLook
 ## The baked atlas pages the crowd holds its group on (`AtlasLibrary`), handed by the crowd that
 ## makes this agent; the look draws its regions from it.
-var atlas: AtlasLibrary
+var _atlas: AtlasLibrary
+
+## Hands this agent the atlas library its look draws from, once, as the crowd makes it.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
+
+## The picture region `name` of the atlas this agent's look draws from.
+func picture_region(name: StringName) -> AtlasTexture:
+	return _atlas.region(name)
 
 ## Whether this agent's look is marked by a caret, kept here by `_kind_installed()` as a plain
 ## member because the redraw gate reads it every frame of every agent.

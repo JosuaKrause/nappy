@@ -10,6 +10,7 @@ extends "res://tests/resistance_rig.gd"
 ## tick (`_settle_the_arrow()` below); and her touch is a real physics frame (`_step_a_frame()`).
 
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
+const RecordingAtlas := preload("res://tests/recording_atlas.gd")
 
 func run(t) -> void:
 	await _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t)
@@ -21,6 +22,7 @@ func run(t) -> void:
 	await _test_day_eleven_answers_at_any_live_mast(t)
 	await _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t)
 	await _test_the_swings_touch_is_the_ellipse_at_its_base(t)
+	_test_the_contact_draws_from_the_library_its_director_is_handed(t)
 	_free_city()
 
 ## Runs the arrow to rest the way the game does: the
@@ -554,6 +556,24 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 			return Vector2(door.x, door.y - Tuning.TILE_SIZE)
 	return Vector2.INF
 
+## **The contact asks the library its director is handed** for its picture's page, not a library of
+## its own: the director is handed a recording one (`ResistanceDirector.use_atlas()`) before the day
+## starts, and the contact it offers has asked it, which a contact handed none would not have.
+func _test_the_contact_draws_from_the_library_its_director_is_handed(t) -> void:
+	_build_city_in_a_new_run(t)
+	var recording := RecordingAtlas.new()
+	_handed_atlas = recording
+	var read := _read_the_mark_on(t, 7, SEED)
+	_handed_atlas = null
+	var director: ResistanceDirector = read[0]
+	t.check(director.contact() != null and director.contact().is_inside_tree(),
+			"the day offers a contact standing in the world")
+	t.check(recording.acquired_from("res://src/resistance/contact_point.gd") >= 1,
+			"the contact asked the director's library for its page (%d)"
+			% recording.acquired_from("res://src/resistance/contact_point.gd"))
+	(read[2] as Stroller).free()
+	director.free()
+
 ## feathery-marmot, day 12 — *"Not the drawn swing. Place an ellipse at its base. That's the area to
 ## touch"*. The swing's contact is touched by her body overlapping an ellipse round the swing's base,
 ## the extent of the shadow the frame casts there (the ground shape a swing frame `Prop` takes as it
@@ -573,14 +593,14 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
 		player.free()
 		director.free()
 		return
-	var semi := contact.touch_ellipse
 	var frame := Prop.new()
 	frame.kind = Prop.Kind.PLAYGROUND_FRAME
 	t.add_child(frame)
 	var shadow := frame.shape
 	frame.free()
-	t.check(is_equal_approx(semi.x, shadow.reach()) and is_equal_approx(semi.y, shadow.across()),
-			"the ellipse spans the shadow the frame casts at its base (%s)" % semi)
+	# The places are derived from the shadow the frame casts at its base; the contact is asked about
+	# them below, which only answers right if it carries that ellipse.
+	var semi := Vector2(shadow.reach(), shadow.across())
 	var places: Array[Vector2] = []
 	for i in 8:
 		var angle := TAU * float(i) / 8.0
@@ -588,7 +608,7 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
 		var outward := Vector2(cos(angle) / semi.x, sin(angle) / semi.y).normalized()
 		places.append(contact.global_position + edge + outward * (Tuning.PLAYER_BODY_RADIUS - 1.0))
 		places.append(contact.global_position + edge + outward * (Tuning.PLAYER_BODY_RADIUS + 2.0))
-	var touched := await ContactTouches.touches_from(t, director, places)
+	var touched := ContactTouches.touches_from(director, places)
 	var touching := 0
 	var clear := 0
 	for i in 8:

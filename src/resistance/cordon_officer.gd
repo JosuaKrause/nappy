@@ -37,15 +37,19 @@ func _ready() -> void:
 
 ## The baked atlas pages he is drawn from (`AtlasLibrary`): the city's, handed by the cordon that
 ## stands him up; an officer nobody handed one makes his own when he first enters the tree.
-var atlas: AtlasLibrary = null
+var _atlas: AtlasLibrary = null
+
+## Hands this the atlas library its pictures are read from, once, before it enters the tree.
+func use_atlas(library: AtlasLibrary) -> void:
+	_atlas = library
 
 func _enter_tree() -> void:
-	if atlas == null:
-		atlas = AtlasLibrary.new()
-	atlas.acquire(&"events")
+	if _atlas == null:
+		_atlas = AtlasLibrary.new()
+	_atlas.acquire(&"events")
 
 func _exit_tree() -> void:
-	atlas.release(&"events")
+	_atlas.release(&"events")
 
 ## This frame's walk: the way he faces and how far he moved.
 func walk(heading: Vector2, moved: float) -> void:
@@ -66,5 +70,5 @@ func picture() -> String:
 func _draw() -> void:
 	Sprites.draw_shadow(self, Vector2.ZERO, SHADOW)
 	var lift := absf(sin(_travelled * BOB_PER_PX)) * BOB_HEIGHT if _moving else 0.0
-	Sprites.draw_standing(self, atlas.region(StringName(picture())),
+	Sprites.draw_standing(self, _atlas.region(StringName(picture())),
 			Vector2(0.0, -lift), Vector2.ZERO, EightDirection.is_mirrored(_sector))

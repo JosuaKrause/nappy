@@ -159,8 +159,8 @@ func draw_body(canvas: CanvasItem) -> void:
 	var stepping := gait_frame() == 1
 	var body_paths: Dictionary = BODY_BY_VIEW_B if stepping else BODY_BY_VIEW
 	var trim_paths: Dictionary = TRIM_BY_VIEW_B if stepping else TRIM_BY_VIEW
-	var body := _agent.atlas.region(region_of(body_paths[view_name]))
-	var trim := _agent.atlas.region(region_of(trim_paths[view_name]))
+	var body := _agent.picture_region(region_of(body_paths[view_name]))
+	var trim := _agent.picture_region(region_of(trim_paths[view_name]))
 	# The body is tinted per agent; the trim above it draws at `Sprites.draw_standing()`'s default
 	# `Color.WHITE`. Two separate baked regions, so tinting one never touches the other's pixels.
 	Sprites.draw_standing(canvas, body, Vector2.ZERO, Vector2.ZERO, flip, _agent.clothing_colour())

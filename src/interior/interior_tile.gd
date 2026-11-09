@@ -7,7 +7,7 @@ extends RefCounted
 ## through it.
 
 enum Kind {
-	NONE,                  ## No floor and no wall: absent from a map's own `tiles`/`walls`.
+	NONE,                  ## No floor and no wall: absent from a map's own floor and wall tiles.
 	HALLWAY_FLOOR,          ## Plain hallway ground. Unused while the hallway is only two tiles
 	                        ## deep — every row is one of the four edges below — kept for a wider
 	                        ## hallway later.
@@ -39,17 +39,17 @@ enum Kind {
 	BASEMENT_FLOOR_EDGE_E,
 	BASEMENT_FLOOR_EDGE_S,
 	BASEMENT_FLOOR_EDGE_W,
-	PUDDLE,                 ## A decal over basement floor. Never placed as a `tiles` entry of its
-	                         ## own — see `InteriorMapPlan.decals` — since it changes nothing about
+	PUDDLE,                 ## A decal over basement floor. Never placed as a floor tile of its
+	                         ## own — see `InteriorMapPlan.decal_tiles()` — since it changes nothing about
 	                         ## what is beneath it.
 	DEBRIS,                 ## The same, for `basement_debris.svg`.
 	RAT,                    ## The same, for `rat.svg`.
-	WALL,                   ## Elevation, along a stretch's north edge. Never in `tiles`.
-	WINDOW,                 ## Elevation, a wall column with a window. Never in `tiles`.
-	WALL_LAMP,               ## Elevation, a wall sconce. Never in `tiles`.
-	LIFT_DOOR,               ## Elevation, the dead lift. Never in `tiles`.
+	WALL,                   ## Elevation, along a stretch's north edge. Never a floor tile.
+	WINDOW,                 ## Elevation, a wall column with a window. Never a floor tile.
+	WALL_LAMP,               ## Elevation, a wall sconce. Never a floor tile.
+	LIFT_DOOR,               ## Elevation, the dead lift. Never a floor tile.
 	ENTRANCE_DOOR,           ## Elevation, the lobby's own barricaded main entrance.
-	ENTRANCE_BARRICADE,      ## Drawn in front of ENTRANCE_DOOR; not a `walls` column of its own —
+	ENTRANCE_BARRICADE,      ## Drawn in front of ENTRANCE_DOOR; not a wall column of its own —
 	                         ## see `InteriorScene._rebuild_walls()`.
 	BRICK_WALL,              ## Elevation, the basement's own wall material.
 	DOOR,                    ## Walkable. The threshold between two maps — a hallway's end and its
@@ -61,10 +61,10 @@ enum Kind {
 	                         ## leading to another map.
 }
 
-## Every kind that ever appears in a map's `tiles` dictionary is one she can stand on; a kind that
-## only ever appears in `walls` (or is drawn as a decal, like PUDDLE, DEBRIS and RAT) is elevation
+## Every kind that ever appears in a map's floor tiles is one she can stand on; a kind that
+## only ever appears as a wall (or is drawn as a decal, like PUDDLE, DEBRIS and RAT) is elevation
 ## or decoration and never walkable. Written as a lookup rather than a `match` over two dozen arms,
-## so a kind newly added to `tiles` cannot be silently left off an arm nobody remembered to extend.
+## so a kind newly added as a floor tile cannot be silently left off an arm nobody remembered to extend.
 const _WALKABLE := {
 	Kind.HALLWAY_FLOOR: true,
 	Kind.HALLWAY_FLOOR_EDGE_N: true,

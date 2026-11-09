@@ -33,49 +33,49 @@ class Door:
 ## and `b` as non-walkable stair sides. A position absent from this dictionary has no floor at all
 ## and is therefore not walkable — see `is_walkable()`. The gaps between parts are exactly the
 ## positions absent here.
-var tiles: Dictionary = {}
+var _tiles: Dictionary = {}
 ## A wall-anchor position -> `InteriorTile.Kind`, elevation drawn at that cell's own north edge.
-## Not part of `tiles`: nothing ever stands *on* a wall cell, so a wall needs a position to be
+## Not part of `_tiles`: nothing ever stands *on* a wall cell, so a wall needs a position to be
 ## drawn at rather than a floor-grid position.
-var walls: Dictionary = {}
+var _walls: Dictionary = {}
 ## Where a fresh run starts — the third floor's own door, mid-hallway on its south edge.
-var start_tile := Vector2i.ZERO
+var _start_tile := Vector2i.ZERO
 ## `id -> Door`, every door in the building.
-var doors: Dictionary = {}
+var _doors: Dictionary = {}
 ## Apartment recesses that look locked but do not change the hallway's floor or routing. They are
-## kept apart from `doors`: an apartment is scenery, while a `Door` is a playable transition.
-var locked_thresholds: Array[Vector2i] = []
+## kept apart from `_doors`: an apartment is scenery, while a `Door` is a playable transition.
+var _locked_thresholds: Array[Vector2i] = []
 ## `Vector2i(-1, -1)` unless the basement's own exit has been placed.
-var exit_tile := Vector2i(-1, -1)
+var _exit_tile := Vector2i(-1, -1)
 ## Every barricaded entrance position — read by the renderer to place the barricade and by tests
 ## that assert what stands in the wall there. Only the lobby has one, but keyed by position rather
-## than held as a single field, the same reasoning `walls` already follows now that everything
+## than held as a single field, the same reasoning `_walls` already follows now that everything
 ## shares one coordinate space.
-var entrance_tiles: Array[Vector2i] = []
+var _entrance_tiles: Array[Vector2i] = []
 ## Ground decals — `PUDDLE`, `DEBRIS` or `RAT` — that change nothing about what is walkable
 ## beneath them. `tile -> InteriorTile.Kind`.
-var decals: Dictionary = {}
-## Cells that are not floor (absent from `tiles`) but must not get a collision blocker either.
+var _decals: Dictionary = {}
+## Cells that are not floor (absent from `_tiles`) but must not get a collision blocker either.
 ## Only a diagonal step with no walkable orthogonal neighbor needs the two flanks cleared: the
 ## basement's one-cell entry can otherwise pinch a circular body between two blockers. The main
 ## stair grammar has two walkable rows, so its `.` background remains blocked and its `c`, `C`
 ## and `b` cells remain explicit blockers.
-var collision_clearance: Dictionary = {}
+var _collision_clearance: Dictionary = {}
 ## A named position that is not a door — a stairwell's own landing platform, a hallway's mid-point,
 ## the lobby's own floor — used both as `--start-escape <part>`'s teleport target and, in
 ## `tests/test_interior.gd`, as the seed a per-part flood fill starts from. `id -> Vector2i`.
-var waypoints: Dictionary = {}
+var _waypoints: Dictionary = {}
 ## Where the basement corridor is one tile wide on the way to the exit, in the order she meets them
 ## walking up from the entry — see `InteriorMap.BASEMENT_NARROWS` for which they are and why the
 ## entry stair is not among them. A gate stands on each; the layout says where a gate *can* stand
 ## and the building's placements decide what stands there (`BuildingPlan`).
-var corridor_narrows: Array[Vector2i] = []
+var _corridor_narrows: Array[Vector2i] = []
 ## The cells the fallen ceiling fills, as one tile rect — floor that is painted and drawn over but
 ## cannot be stood on. Its own field rather than a tile kind, because what is underneath a heap is
 ## still this hallway's floor and is still drawn as one; a `RUBBLE` kind would have to repaint the
 ## ground as well as close it, and the ground is not what changed. `Rect2i()` — zero size, so
 ## `has_point()` is false everywhere — for a building with no collapse in it.
-var rubble := Rect2i()
+var _rubble := Rect2i()
 
 ## Each tile's walkability as one byte (`walk_tiles()`), row by row over `size`; built by `finish()`.
 var _grid := PackedByteArray()
@@ -89,12 +89,128 @@ var _cut_cells := {}
 ##
 ## Overrides WorldMap.is_walkable.
 func is_walkable(tile: Vector2i) -> bool:
-	if rubble.has_point(tile):
+	if _rubble.has_point(tile):
 		return false
-	return InteriorTile.is_walkable(tiles.get(tile, InteriorTile.Kind.NONE))
+	return InteriorTile.is_walkable(_tiles.get(tile, InteriorTile.Kind.NONE))
+
+# ------------------------------------------------------------- what a part paints ---
+
+## Paints floor `kind` at `tile`.
+func paint_floor(tile: Vector2i, kind: InteriorTile.Kind) -> void:
+	_tiles[tile] = kind
+
+## Stands wall piece `kind` on `tile`.
+func paint_wall(tile: Vector2i, kind: InteriorTile.Kind) -> void:
+	_walls[tile] = kind
+
+## Takes the wall off `tile`, leaving a gap.
+func open_wall(tile: Vector2i) -> void:
+	_walls.erase(tile)
+
+## Lays decal `kind` on `tile`.
+func paint_decal(tile: Vector2i, kind: InteriorTile.Kind) -> void:
+	_decals[tile] = kind
+
+## Names `tile` as waypoint `id`.
+func add_waypoint(id: String, tile: Vector2i) -> void:
+	_waypoints[id] = tile
+
+## Adds door `placed`, found afterwards by its id.
+func add_door(placed: Door) -> void:
+	_doors[placed.id] = placed
+
+## Marks `tile` as a locked threshold.
+func lock_threshold(tile: Vector2i) -> void:
+	_locked_thresholds.append(tile)
+
+## Marks `tile` as an entrance from the street.
+func add_entrance(tile: Vector2i) -> void:
+	_entrance_tiles.append(tile)
+
+## Marks `tile` as a place the basement corridor narrows.
+func add_corridor_narrow(tile: Vector2i) -> void:
+	_corridor_narrows.append(tile)
+
+## Lets collision reach past the floor's edge at `tile`.
+func add_collision_clearance(tile: Vector2i) -> void:
+	_collision_clearance[tile] = true
+
+## Puts the heap of rubble on `area`.
+func put_rubble_on(area: Rect2i) -> void:
+	_rubble = area
+
+## Sets the tile she starts on.
+func start_on(tile: Vector2i) -> void:
+	_start_tile = tile
+
+## Sets the emergency exit's tile.
+func exit_on(tile: Vector2i) -> void:
+	_exit_tile = tile
+
+# ------------------------------------------------------------ what a scene asks ---
+
+## Every tile a part painted floor on.
+func floor_tiles() -> Array:
+	return _tiles.keys()
+
+## Whether a part painted floor on `tile`.
+func has_floor_at(tile: Vector2i) -> bool:
+	return _tiles.has(tile)
+
+## The floor kind painted at `tile`, `NONE` for none.
+func floor_kind_at(tile: Vector2i) -> InteriorTile.Kind:
+	return _tiles.get(tile, InteriorTile.Kind.NONE)
+
+## Every tile a wall piece stands on.
+func wall_tiles() -> Array:
+	return _walls.keys()
+
+## The wall piece standing on `tile`, `NONE` for none.
+func wall_kind_at(tile: Vector2i) -> InteriorTile.Kind:
+	return _walls.get(tile, InteriorTile.Kind.NONE)
+
+## Whether collision reaches past the floor's edge at `tile`.
+func has_collision_clearance_at(tile: Vector2i) -> bool:
+	return _collision_clearance.has(tile)
+
+## Every tile a decal lies on.
+func decal_tiles() -> Array:
+	return _decals.keys()
+
+## The decal kind on `tile`, `NONE` for none.
+func decal_kind_at(tile: Vector2i) -> InteriorTile.Kind:
+	return _decals.get(tile, InteriorTile.Kind.NONE)
+
+## The tile she starts on.
+func start_position() -> Vector2i:
+	return _start_tile
+
+## The emergency exit's tile, `x < 0` while there is none.
+func exit_position() -> Vector2i:
+	return _exit_tile
+
+## The tiles that let her in from the street.
+func entrance_positions() -> Array[Vector2i]:
+	return _entrance_tiles
+
+## The locked thresholds' tiles.
+func locked_threshold_positions() -> Array[Vector2i]:
+	return _locked_thresholds
+
+## The tiles the heap of rubble lies on; no size for none.
+func rubble_area() -> Rect2i:
+	return _rubble
+
+## Every door's id.
+func door_ids() -> Array:
+	return _doors.keys()
+
+## Whether a waypoint `id` was named.
+func has_waypoint(id: String) -> bool:
+	return _waypoints.has(id)
 
 func door(id: String) -> Door:
-	return doors.get(id)
+	return _doors.get(id)
 
 ## Sizes the map to the building's footprint and lays its walkability out as a grid, once every part
 ## is laid (`InteriorMap.build()`). The building starts at tile (0, 0) — the slots run east from it
@@ -106,7 +222,7 @@ func finish() -> void:
 	size = box.end
 	_grid = PackedByteArray()
 	_grid.resize(size.x * size.y)
-	for tile: Vector2i in tiles:
+	for tile: Vector2i in _tiles:
 		if in_bounds(tile) and is_walkable(tile):
 			_grid[tile.y * size.x + tile.x] = 1
 	_cut_cells.clear()
@@ -208,7 +324,7 @@ func _one_wide(tile: Vector2i, across: Vector2i) -> bool:
 ##
 ## Overrides WorldMap.slope_dir_at.
 func slope_dir_at(world_position: Vector2) -> int:
-	return InteriorTile.flight_direction(tiles.get(world_to_tile(world_position),
+	return InteriorTile.flight_direction(_tiles.get(world_to_tile(world_position),
 			InteriorTile.Kind.NONE))
 
 # ------------------------------------------------------------------ the footprint ---
@@ -219,7 +335,7 @@ func slope_dir_at(world_position: Vector2) -> int:
 func footprint() -> Rect2i:
 	var min_t := Vector2i(999999, 999999)
 	var max_t := Vector2i(-999999, -999999)
-	for tile: Vector2i in tiles:
+	for tile: Vector2i in _tiles:
 		min_t = min_t.min(tile)
 		max_t = max_t.max(tile)
 	return Rect2i(min_t, max_t - min_t + Vector2i.ONE)
@@ -263,8 +379,8 @@ const FLIGHT_HALF_WIDTH := 1.125
 func flight_bands() -> Array[Dictionary]:
 	var bands: Array[Dictionary] = []
 	var seen := {}
-	for start: Vector2i in tiles:
-		var slope := InteriorTile.flight_direction(tiles[start])
+	for start: Vector2i in _tiles:
+		var slope := InteriorTile.flight_direction(_tiles[start])
 		if slope == 0 or seen.has(start):
 			continue
 		var normal := Vector2(slope, -1)
@@ -282,7 +398,7 @@ func flight_bands() -> Array[Dictionary]:
 					var next := cell + Vector2i(dx, dy)
 					if next == cell:
 						continue
-					if InteriorTile.flight_direction(tiles.get(next, InteriorTile.Kind.NONE)) == slope:
+					if InteriorTile.flight_direction(_tiles.get(next, InteriorTile.Kind.NONE)) == slope:
 						if not seen.has(next):
 							seen[next] = true
 							queue.append(next)
@@ -341,18 +457,18 @@ const NOWHERE := Vector2i(-999999, -999999)
 ## `NOWHERE`. The escape's events are sited against these rather than against tile arithmetic of
 ## their own, so a change to the building's layout moves them with it.
 func waypoint(id: String) -> Vector2i:
-	return waypoints.get(id, NOWHERE)
+	return _waypoints.get(id, NOWHERE)
 
 ## Where a fresh run starts — the third floor's own door, mid-hallway on its south edge.
 func start_world_position() -> Vector2:
-	return tile_to_world(start_tile)
+	return tile_to_world(_start_tile)
 
 ## A building part's own waypoint, in world space — what `--start-escape <part>` teleports to.
 ## Her own start for a name this does not recognise, the same "unknown means the default" shape
 ## `DevFlags.start_escape_at()` already leaves to its caller.
 func part_world_position(part: String) -> Vector2:
-	if waypoints.has(part):
-		return tile_to_world(waypoints[part])
+	if _waypoints.has(part):
+		return tile_to_world(_waypoints[part])
 	return start_world_position()
 
 ## Every painted cell inside one grammar rectangle, including the non-walkable stair-side roles.
@@ -365,7 +481,7 @@ func stairwell_tiles(part_id: String) -> Array[Vector2i]:
 		return found
 	var origin := top - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 	var bounds := Rect2i(origin, InteriorMap.STAIRWELL_SIZE)
-	for tile: Vector2i in tiles:
+	for tile: Vector2i in _tiles:
 		if bounds.has_point(tile):
 			found.append(tile)
 	return found
@@ -386,9 +502,9 @@ func stairwell_walk(part_id: String) -> Array[Vector2i]:
 	return _shortest_walk(bottom, top)
 
 ## Where the basement corridor is one tile wide on the way out, in the order she meets them —
-## `corridor_narrows`, what the layout laid rather than whatever the geometry happens to offer.
+## `_corridor_narrows`, what the layout laid rather than whatever the geometry happens to offer.
 func basement_narrows() -> Array[Vector2i]:
-	return corridor_narrows
+	return _corridor_narrows
 
 ## **Where the basement's vents stand**: each of the corridor's one-tile-wide cells
 ## (`basement_narrows()`), at its centre, in the order she meets them. A vent closes the corridor
@@ -416,9 +532,9 @@ func vent_sites() -> Array[Vector2]:
 ## somewhere she has to pass rather than somewhere she might.
 func basement_walk() -> Array[Vector2i]:
 	var entry := door("basement:entry")
-	if not entry or exit_tile.x < 0:
+	if not entry or _exit_tile.x < 0:
 		return []
-	return _shortest_walk(entry.tile, exit_tile)
+	return _shortest_walk(entry.tile, _exit_tile)
 
 ## Breadth-first over walkable tiles, unwound into the path itself — `from` first, `to` last, or
 ## empty when there is no walk between them.
@@ -471,14 +587,14 @@ func _walk_avoiding(from: Vector2i, to: Vector2i, blocked: Dictionary) -> Array[
 ## is. Empty where there is no way out.
 func way_out(from: Vector2i, blocked: Dictionary = {}) -> Array[Array]:
 	var door_tiles := {}
-	for id: String in doors:
-		door_tiles[(doors[id] as Door).tile] = true
+	for id: String in _doors:
+		door_tiles[(_doors[id] as Door).tile] = true
 	var keep_off := blocked.duplicate()
 	keep_off.merge(door_tiles)
-	if exit_tile.x >= 0:
-		keep_off[exit_tile] = true
+	if _exit_tile.x >= 0:
+		keep_off[_exit_tile] = true
 	# Dijkstra over the places a leg can start or end: where she stands, every door, the exit.
-	var nodes: Array[Vector2i] = [from, exit_tile]
+	var nodes: Array[Vector2i] = [from, _exit_tile]
 	for tile: Vector2i in door_tiles:
 		nodes.append(tile)
 	var cost := {from: 0}
@@ -492,15 +608,15 @@ func way_out(from: Vector2i, blocked: Dictionary = {}) -> Array[Array]:
 				here = node
 		if here == NOWHERE:
 			return []
-		if here == exit_tile:
+		if here == _exit_tile:
 			break
 		settled[here] = true
 		var arrives_at := here
 		if here != from:
 			var via := _door_at(here)
-			if via == null or not doors.has(via.target_door):
+			if via == null or not _doors.has(via.target_door):
 				continue
-			arrives_at = (doors[via.target_door] as Door).tile
+			arrives_at = (_doors[via.target_door] as Door).tile
 		# Her teleport costs nothing; every other step is a tile of the walk inside the part.
 		for node in nodes:
 			if node == arrives_at or settled.has(node) or InteriorMap.part_at(node) != InteriorMap.part_at(arrives_at):
@@ -513,7 +629,7 @@ func way_out(from: Vector2i, blocked: Dictionary = {}) -> Array[Array]:
 				cost[node] = total
 				came[node] = {"from": here, "leg": leg}
 	var legs: Array[Array] = []
-	var at := exit_tile
+	var at := _exit_tile
 	while at != from:
 		legs.append(came[at]["leg"])
 		at = came[at]["from"]
@@ -521,19 +637,19 @@ func way_out(from: Vector2i, blocked: Dictionary = {}) -> Array[Array]:
 	return legs
 
 func _door_at(tile: Vector2i) -> Door:
-	for id: String in doors:
-		if (doors[id] as Door).tile == tile:
-			return doors[id]
+	for id: String in _doors:
+		if (_doors[id] as Door).tile == tile:
+			return _doors[id]
 	return null
 
 ## Whether `tile` is a transition trigger, and what it leads to: `{"kind": "door", "door": Door}`,
 ## `{"kind": "exit"}`, or empty. The exact question the scene asks every frame she walks
 ## (`InteriorScene.process_player()`), answerable without waiting on the fade it owns.
 func transition_at(tile: Vector2i) -> Dictionary:
-	for id: String in doors:
-		var found: Door = doors[id]
+	for id: String in _doors:
+		var found: Door = _doors[id]
 		if found.tile == tile:
 			return {"kind": "door", "door": found}
-	if exit_tile.x >= 0 and tile == exit_tile:
+	if _exit_tile.x >= 0 and tile == _exit_tile:
 		return {"kind": "exit"}
 	return {}
