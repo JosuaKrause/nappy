@@ -142,7 +142,7 @@ func start(the_spec: DaySpec, restarted := false) -> Array[String]:
 	else:
 		_plan_the_walk(world, today)
 		_put_her_down(world, today)
-		print(_started_line(Time.get_ticks_msec() - elapsed))
+		_print_the_start(Time.get_ticks_msec() - elapsed)
 	# The escape's own announcement of the world a section is walked in, which the run log's escape
 	# path watches; it is announced here, where every section starts.
 	if spec.section_kind() != DaySpec.Section.NONE:
@@ -258,16 +258,16 @@ func _put_her_down(world: DayWorld, today: int) -> void:
 
 ## The console's line for a walk just started, `ms` after the start began: what was planned and, in a
 ## city, who is on its streets and what is calm and closed.
-func _started_line(ms: int) -> String:
-	var line := "[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead)" % [
-			spec.day_number(), ms, calendar.current_act(), events.planned_count(),
-			events.active_count(), events.owed_ahead()]
+func _print_the_start(ms: int) -> void:
 	if city:
-		line += ", %d crowd" % city.crowd.agent_count()
-	line += ", %.0fs" % day.time_total
-	if city:
-		line += " | calm: %s | closed: %s" % [city.calm_summary(), city.closure_summary()]
-	return line
+		print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
+				% [spec.day_number(), ms, calendar.current_act(), events.planned_count(),
+				events.active_count(), events.owed_ahead(), city.crowd.agent_count(), day.time_total]
+				+ "| calm: %s | closed: %s" % [city.calm_summary(), city.closure_summary()])
+	else:
+		print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %.0fs"
+				% [spec.day_number(), ms, calendar.current_act(), events.planned_count(),
+				events.active_count(), events.owed_ahead(), day.time_total])
 
 ## Today's crowd, as dense as the spec says (`DaySpec.crowd_density`), built round `at`: a day's
 ## whole crowd, or nobody at all — a cleared crowd that is never started, the escape's *"no regular
