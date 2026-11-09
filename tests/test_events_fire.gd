@@ -368,7 +368,7 @@ func _test_the_engine_parks_at_the_fire(t) -> void:
 ## **One set piece, the day's crews, and the day is otherwise exactly the day it was.** A set piece
 ## the day owes her walk is budgeted like any other one-shot — one plan, tagged as its own group.
 ## The only other rows left for the walk to site are the poster crews, drawn at a location like any
-## recurring row and handed over with no position (`LocationDraw.finish()`).
+## recurring row and handed over with no position (`LocationDraw.draw_all()`).
 func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 	var owed := 0
 	var crews := 0
@@ -395,7 +395,7 @@ func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 
 ## **A crew a location draws is handed to her walk unplaced.** With the crews on her walk, every crew
 ## the day draws has no position, for the director to site; with the flag off, the same day stands
-## its crews placed. A location's draw hands a crew on as it draws it (`LocationDraw.finish()`), so
+## its crews placed. A location's draw hands a crew on as it draws it (`LocationDraw.draw_all()`), so
 ## the rows drawn after it are spaced without it and the two days need not match beyond the crews.
 func _test_a_crew_drawn_is_handed_to_her_walk(t) -> void:
 	var map := CityGenerator.generate(4242)

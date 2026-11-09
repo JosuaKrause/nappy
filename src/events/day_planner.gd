@@ -60,18 +60,6 @@ class Plan extends RefCounted:
 	func use_locations(locations: DayLocations) -> void:
 		_locations = locations
 
-	## The draw of the day's open locations (`WalkDraw`), made at dawn and handed on to the walk, or
-	## null on a walk that draws none.
-	var _walk_draw: WalkDraw = null
-
-	## The walk's draw. See `_walk_draw`.
-	func walk_draw() -> WalkDraw:
-		return _walk_draw
-
-	## Hands the plan the walk's draw. See `_walk_draw`.
-	func use_walk_draw(draw: WalkDraw) -> void:
-		_walk_draw = draw
-
 ## The world the walk is planned over.
 var world: EventWorld
 
@@ -225,7 +213,6 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	result.doors = doors
 	result.use_calm(calm)
 	result.use_locations(day_events.locations())
-	result.use_walk_draw(day_events.walk_draw())
 	return result
 
 ## **The day's calm areas as the map stands now**, with the areas she settled in this act

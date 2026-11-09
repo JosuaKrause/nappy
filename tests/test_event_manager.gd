@@ -102,9 +102,9 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 
 ## **A retry is the same day, whichever way she walks** (PLAYTEST-119 27; `docs/MECHANICS.md`, "A
 ## retry is the same day"): the dawn draws every location before she can move
-## (`WalkDraw.draw_everywhere()`), so day 4 started twice stands the same rows on the same tiles, no
-## location is left open for the draw the manager runs every tick, and her walk, east the first time
-## and west the second, moves nothing the dawn placed.
+## (`LocationDraw.draw_all()`), so day 4 started twice, with a walk east between the two starts,
+## stands the same rows on the same tiles, and her walk, east the first time and west the second,
+## moves nothing the dawn placed.
 func _test_a_retry_is_the_same_day_whichever_way_she_walks(t) -> void:
 	var events := _city.events
 	events.stream_radius = Tuning.EVENT_STREAM_RADIUS
@@ -119,16 +119,13 @@ func _test_a_retry_is_the_same_day_whichever_way_she_walks(t) -> void:
 			if plan.is_placed():
 				placed.append(plan)
 		started.append(_where_they_stand(placed))
-		t.check(events.walk_events().locations().open_locations().is_empty(),
-				"day 4 leaves no location open once it has started")
 		rig.global_position = home
 		var each := func(_n: int) -> void:
 			rig.velocity = heading * Tuning.WALK_SPEED
 			rig.global_position += rig.velocity * Rig.WALK_STEP
 		await PhysicsTicks.pass_ticks(t, 60, each, Rig.WALK_SCALE)
-		t.check(events.walk_events().locations().open_locations().is_empty()
-				and _where_they_stand(placed) == started.back(),
-				"walking %s, she draws nothing and moves nothing the dawn placed" % heading)
+		t.check(_where_they_stand(placed) == started.back(),
+				"walking %s, she moves nothing the dawn placed" % heading)
 	t.check(started.size() == 2 and started[0] == started[1] and started[0] != "",
 			"started twice, day 4 stands the same rows on the same tiles")
 	events.use_player(null)

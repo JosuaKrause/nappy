@@ -9,18 +9,17 @@ extends RefCounted
 ##
 ## Each day is planned as `placement_rows.gd` plans it, and then walked: the day's longest route out
 ## from the doorstep and home again, at walking speed, a tick a thirtieth of a second, with the
-## director siting what it sites on her way (`EventDirector.due()`, `site_what_is_on_her_way()`) and,
-## where the tree has a draw it runs each tick of the walk (`WalkDraw.draw_ahead()`), that draw. A
+## director siting what it sites on her way (`EventDirector.due()`, `site_what_is_on_her_way()`). A
 ## placed row counts once it comes within the stream radius of her (`Tuning.EVENT_STREAM_RADIUS`),
 ## the moment it would stream in, under its row, its view and its kind of ground: a row the director
-## sites on her way among them, once sited (a poster crew), but not a place her route's bag hands it. It asks only what every tree has, and the walk's draw by name where the
-## tree has one, so the same file measures main and a branch alike. Prints `WD day seeds streamed`,
-## `WV day row view count`, `WK day row kind count` and `WM day met at-the-door late-out`, where the
-## capped rows are met (`CAPPED`: within the stream radius of her door, and in the second half of
-## the walk out), summed over the seeds, and per seed and day `WT` lines of the tick costs, in
-## microseconds: the walk's draw (`draw`) and the director's siting
-## (`siting`), each `ticks median p99 worst total`, and `WP day seed microseconds`, the dawn's
-## planning of each (`EventScheduler.build_day()`). Each day is planned as the game plans it: its closures, holds, region wall and
+## sites on her way among them, once sited (a poster crew), but not a place her route's bag hands it.
+## It asks only what every tree has, so the same file measures main and a branch alike. Prints
+## `WD day seeds streamed`, `WV day row view count`, `WK day row kind count` and
+## `WM day met at-the-door late-out`, where the capped rows are met (`CAPPED`: within the stream
+## radius of her door, and in the second half of the walk out), summed over the seeds, and per seed
+## and day `WT day seed siting ticks median p99 worst total`, the director's siting's tick costs in
+## microseconds, and `WP day seed microseconds`, the dawn's planning of each
+## (`EventScheduler.build_day()`). Each day is planned as the game plans it: its closures, holds, region wall and
 ## seals first, the seals and the wall's bodies handed in as standing.
 
 const SEEDS := 18
@@ -29,7 +28,7 @@ const STEP := 31
 const KINDS := ["sidewalk", "carriageway", "alley", "open", "junction", "other"]
 ## A tick of her walk, in seconds.
 const TICK := 1.0 / 30.0
-## The rows whose caps bound what she met when the dawn drew the whole city, for the `WM` lines.
+## The rows whose caps bound what she meets, the dawn drawing the whole city, for the `WM` lines.
 const CAPPED := ["abduction", "alley_mouse", "charging_dog", "chatting_mother", "pigeon_flock",
 		"roadblock"]
 
@@ -106,11 +105,9 @@ func run(t) -> void:
 			var plans: Array[EventScheduler.Planned] = events.placements()
 			plans.append_array(seals)
 			plans.append_array(region_plan.wall_bodies)
-			var walk_draw = events.call("walk_draw") if events.has_method("walk_draw") else null
 			var walk := WalkEvents.new()
 			walk.take(plans, CalmAreas.of(map), doors)
-			# The walk's sitings are judged against the walk itself, as the game's are, so a siting
-			# sees what the walk drew and a draw what the walk sited.
+			# The walk's sitings are judged against the walk itself, as the game's are.
 			var siting := EventScheduler.WalkSiting.new(day, map, tree, walk, EventScheduler.Verdicts.new())
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
@@ -130,12 +127,7 @@ func run(t) -> void:
 				out_length += (route[k] as Vector2).distance_to(route[k - 1])
 			var walked := 0.0
 			var counted := {}
-			var draw_ticks: Array[int] = []
 			var siting_ticks: Array[int] = []
-			var open_before := 0
-			if walk_draw:
-				open_before = events.call("locations").open_locations().size()
-				walk_draw.judge_against(walk)
 			var tick := 0
 			for k in range(1, path.size()):
 				var toward: Vector2 = path[k] - at
@@ -145,13 +137,6 @@ func run(t) -> void:
 					at += velocity * TICK
 					walked += Tuning.WALK_SPEED * TICK
 					tick += 1
-					var her := at
-					var sees := func(rect: Rect2) -> bool: return _view_of(her).intersects(rect)
-					if walk_draw:
-						var t0 := Time.get_ticks_usec()
-						var drawn_now: Array = walk_draw.draw_ahead(at, heading, sees)
-						draw_ticks.append(Time.get_ticks_usec() - t0)
-						_stand(drawn_now, walk, director)
 					var t1 := Time.get_ticks_usec()
 					director.due(TICK, at, velocity)
 					director.site_what_is_on_her_way(TICK, at, velocity)
@@ -187,12 +172,7 @@ func run(t) -> void:
 				by_view[kv] = int(by_view.get(kv, 0)) + 1
 				var kk := "%s %s" % [plan.row_id(), _kind_of(map, tile)]
 				by_kind[kk] = int(by_kind.get(kk, 0)) + 1
-			print("WT %d %d draw %s" % [day, i, _costs(draw_ticks)])
 			print("WT %d %d siting %s" % [day, i, _costs(siting_ticks)])
-			if walk_draw:
-				var drawn_on_the_walk: int = open_before - events.call("locations").open_locations().size()
-				print("WF %d %d forced %d drawn %d ticks %d" % [day, i, walk_draw.forced(),
-						drawn_on_the_walk, tick])
 		print("WD %d %d %d %d" % [day, SEEDS, placed, moments])
 		print("WM %d %d %d %d" % [day, capped_met, capped_at_the_door, capped_late_out])
 		for key: String in by_view:
@@ -214,19 +194,7 @@ static func _longest_route(tree: RouteTree, siting: EventScheduler.WalkSiting) -
 		points.append(siting.cell_centre(best[best.size() - 1 - k]))
 	return points
 
-## What she sees from `her`: the view and the camera's lead, as a siting's own check reads it
-## (`EventScheduler.WalkSiting.could_be_in_her_view()`).
-static func _view_of(her: Vector2) -> Rect2:
-	var lead := Vector2(Stroller.CAMERA_LOOK_AHEAD,
-			Stroller.CAMERA_LOOK_AHEAD * Stroller.OBLIQUE_Y) + Vector2.ONE * Tuning.TILE_SIZE
-	return Rect2(her - Tuning.VIEW_HALF_EXTENT - lead, (Tuning.VIEW_HALF_EXTENT + lead) * 2.0)
-
 ## `ticks median p99 worst total` of `ticks`, in microseconds; zeros for none.
-## Stands what the walk drew as `EventManager` does: each joins the walk.
-static func _stand(drawn: Array, walk: WalkEvents, _director: EventDirector) -> void:
-	for plan: EventScheduler.Planned in drawn:
-		walk.add(plan)
-
 static func _costs(ticks: Array[int]) -> String:
 	if ticks.is_empty():
 		return "0 0 0 0 0"

@@ -4,7 +4,7 @@ extends RefCounted
 ## sections along its length, each with two sidewalk locations; each street's sections filed under
 ## the view it is told; a street a fixed part holds left with no section open; a section an event
 ## that spans the street is assigned taken for the day, its two sidewalk locations with it; a section
-## one of whose sidewalks holds an event closed to a draw, so nothing takes the section over it; a tile
+## one of whose sidewalks is assigned an event closed to a draw, so nothing takes it over that; a tile
 ## naming the location holding it, of the ground under it; and a fixed part (a mast)
 ## holding its location, so it leaves the locations still open to a phase or a draw. Laid out
 ## on a bare city's lattice (`CityMap.new()`, every street present), with a stand-in for the corridor
@@ -258,39 +258,33 @@ func _test_a_carriageway_event_drawn_takes_its_section(t) -> void:
 	t.check(first.is_taken() and others_taken == 0,
 			"while a cafe drawn on a sidewalk takes that location alone")
 
-## **A sidewalk that holds an event closes its section to a draw**: a cafe drawn on a sidewalk of the
-## first section, and a cafe a dawn phase assigns to a sidewalk of the last, each leave their section
-## drawn as the empty event, not taken, so no carriageway row is drawn there over the cafe; the
-## other sidewalk of each stays open, and the middle section, whose sidewalks hold nothing, too.
+## **A sidewalk that holds an event closes its section to a draw**: a cafe a dawn phase assigns to a
+## sidewalk of the first section (`assign_to()`, as a scripted row or a fixed part's hold is) leaves
+## that section drawn as the empty event, not taken, so no carriageway row is drawn there over the
+## cafe; the section's other sidewalk stays open, and so do the two sections whose sidewalks hold
+## nothing. A draw never gets here first: a street draws its sections before its sidewalks
+## (`StreetLocations.drawing_order()`).
 func _test_a_sidewalk_holding_an_event_closes_its_section(t) -> void:
 	var locations := DayLocations.lay_out(CityMap.new(), _views())
 	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
-	var first: Location = null
-	var last: Location = null
-	var open_beside: Array[Location] = []
+	var held: Location = null
+	var other: Location = null
 	for location in locations.drawing_order(RandomNumberGenerator.new()):
-		if location.kind() != Location.Kind.SIDEWALK or location.segment().key() != BESIDE:
+		if location.kind() != Location.Kind.SIDEWALK or location.segment().key() != BESIDE \
+				or location.section() != 0:
 			continue
-		if location.section() == 0 and first == null:
-			first = location
-		elif location.section() == 2 and last == null:
-			last = location
-		elif location.section() != 1:
-			open_beside.append(location)
+		if held == null:
+			held = location
+		else:
+			other = location
 	var cafe := EventCatalogue.by_id("cafe_tables")
-	locations.record(first, EventScheduler.Planned.new(cafe, first.centre()))
-	locations.assign_to(last, EventScheduler.Planned.new(cafe, last.centre()))
-	t.check(sections[0].is_drawn() and not sections[0].is_taken()
-			and sections[2].is_drawn() and not sections[2].is_taken(),
-			"a section whose sidewalk holds a cafe, drawn or assigned, is closed to a draw and holds nothing")
-	t.check(not sections[1].is_drawn(), "and a section whose sidewalks hold nothing stays open")
-	var still_open := 0
-	for sidewalk in open_beside:
-		if not sidewalk.is_drawn() and not sidewalk.is_taken():
-			still_open += 1
-	t.check(still_open == open_beside.size() and open_beside.size() == 2,
-			"while the other sidewalk of each stays open to a draw (%d of %d)"
-			% [still_open, open_beside.size()])
+	locations.assign_to(held, EventScheduler.Planned.new(cafe, held.centre()))
+	t.check(sections[0].is_drawn() and not sections[0].is_taken(),
+			"a section whose sidewalk is assigned a cafe is closed to a draw and holds nothing")
+	t.check(not sections[1].is_drawn() and not sections[2].is_drawn(),
+			"and the sections whose sidewalks hold nothing stay open")
+	t.check(other != null and not other.is_drawn() and not other.is_taken(),
+			"while the section's other sidewalk stays open to a draw")
 
 ## Which ground each kind of location offers a row (`Location.takes()`).
 func _test_each_kind_of_location_takes_its_own_ground(t) -> void:

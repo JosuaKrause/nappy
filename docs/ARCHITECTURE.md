@@ -220,16 +220,10 @@ src/
 	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
 	                      the row's role, offered the row and assigned what it took
 	view_bag.gd           one view's bag: every row possible in the view as often as its weight, and
-	                      the empty event, drawn without putting back, only what a location accepts;
-	                      whole, or a step at a time
-	location_draw.gd      one open location drawn from its view's bag, whole or a step at a time,
-	                      holding nothing until its draw ends
-	walk_draw.gd          the day's open locations drawn: every one at dawn in the day's order, and
-	                      a tick's draw of any left open (none in the game), the nearest ahead out of
-	                      her view a step a tick, any near the stream radius whole, none in her view
-	location_ground.gd    what a location's draw asks of the day: a row's event at a location if valid,
-	                      whole or a candidate at a time, the location's own weight, standing one; the
-	                      day's own is the scheduler's ruled ground
+	                      the empty event, drawn without putting back, only what a location accepts
+	location_draw.gd      the day's open locations drawn at dawn, each from its view's bag
+	location_ground.gd    what the dawn draw asks of the day: a row's event at a location if valid, the
+	                      location's own weight, standing one; the day's own is the scheduler's ruled ground
 	location_fit.gd       a location's own ground for a row: the tiles it takes that are the row's
 	                      ground on the day, and the candidate built on one
 	street_rule.gd        one of the day's placement rules, as the invalidation: whether a candidate

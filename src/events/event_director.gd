@@ -124,7 +124,7 @@ var _route: MarbleBag = null
 ## ordinary bag holds, and any a rig put in front of it (`rig_her_route()`).
 var _route_rows := {}
 ## Row id -> how many of it the director has handed out today, so a row's `max_per_day` holds for
-## what she meets as it holds for what the locations draw. Asked only of the ordinary bag's rows
+## what she meets as it holds for what the dawn draws. Asked only of the ordinary bag's rows
 ## (`_ordinary_rows`): a rigged marble is there because something asked for it.
 var _met_today := {}
 ## The ids the ordinary bag is filled with today.
@@ -427,7 +427,7 @@ static func _route_rows_on(day: int, heat: int) -> Array[EventDef]:
 
 ## The marbles of `day`'s ordinary route bag: each of `_route_rows_on()` in proportion to its weight
 ## (`ROUTE_BAG_MARBLES_PER_WEIGHT`). A row `ROUTE_BAG_MARBLES_OF` names comes as often
-## as it says rather than as its weight says: the weight is the view bags' too, on every day.
+## as it says rather than as its weight says: the weight is the dawn roll's too, on every day.
 static func ordinary_route_marbles(day: int, heat: int) -> Array:
 	var weights := {}
 	for def in _route_rows_on(day, heat):

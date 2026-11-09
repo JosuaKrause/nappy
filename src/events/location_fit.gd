@@ -45,11 +45,6 @@ func tiles(def: EventDef, location: Location) -> Array[Vector2i]:
 			fits.append(tile)
 	return fits
 
-## **Works out `def`'s own ground now**, so a later `tiles()` reads it: the dawn does it for every row
-## the walk will draw, so no tick of the walk pays for a whole map's scan.
-func prepare(def: EventDef) -> void:
-	_own_ground(def)
-
 ## `def`'s candidate built at `tile`, its facing and path drawn on `rng`, or null where none fits.
 func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator) -> EventScheduler.Planned:
 	return EventScheduler.build_placement(def, _map, tile, rng)

@@ -1292,8 +1292,8 @@ The city's fixed parts have their own phases, above.
 Each item quotes the code on this branch.
 
 1. **Whether a row is valid at a location is asked of the whole day standing, not of the street's
-   own draws.** Every day lays its locations out and draws each from its view's bag (`WalkDraw`,
-   `LocationDraw`, `EventScheduler._draw_the_locations()`). Today's placement rules are the invalidation, one class
+   own draws.** Every day lays its locations out and draws each from its view's bag (`LocationDraw`,
+   `EventScheduler._draw_the_locations()`). Today's placement rules are the invalidation, one class
    each (`StreetRule`: the calm she has not used, a door's clear ground, a route's junctions, its
    walked sidewalk and a pacing beat's opening, with the escape's one notice at a time and its walk
    kept open), composed per walk (`StreetInvalidation`) with a location's own ground
@@ -1326,13 +1326,8 @@ Each item quotes the code on this branch.
    round), asked of the whole day rather than of a street's other draws.
 5. **Nothing narrows a street's other draws once one of its events is drawn** but the rules asked of
    the whole day (item 1); in the design, the rules are applied as a street's other locations draw.
-6. **Every location is drawn at dawn, not during the walk.**
-   - The dawn draws every location the day's phases left open in one sweep through the walk's draw
-     (`WalkDraw.draw_everywhere()`), in the day's order (`DayLocations.drawing_order()`), before she
-     can move, so a retry is the same day whatever way she walked it.
-   - The draw the walk runs every tick (`WalkDraw.draw_ahead()`: the nearest location out of her
-     view a step a tick, any near the stream radius whole) finds no location left open, and draws
-     nothing.
+6. **Most events are placed at dawn, not drawn during the walk.**
+   - The dawn draw fills every location in the morning.
    - During the walk, only these are sited ahead of her:
      - the route bag's marbles;
      - the `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows;
@@ -1362,8 +1357,7 @@ EventScheduler.build_day(day_index, run_seed):
        first_day/last_day, each sited later on her way
     6. spoil the parks she used  (docs/CITY.md)
     7. owe her the day's moments (the rows the director sites in front of her)
-    8. draw every open location from its view's bag, in the day's order, through the walk's
-       draw (WalkDraw.draw_everywhere(), LocationDraw)
+    8. draw every open location from its view's bag (LocationDraw)
    The scars, the spoilers, the roadblock phase, the scripted rows and the draw are asked, as
    each body is placed, whether it cuts the day's routes off from home (RouteReachRule), and
    the draw's bodies all the day's rules (StreetInvalidation); the region wall, the seals, the
@@ -1748,7 +1742,8 @@ group goes with it.
 
 A poster crew placed anywhere in the city is a crew she never meets, and a wall she never sees
 changing. So `poster_crew` carries an `EventDef.on_her_way` with `OnHerWay.at_a_front`. **A
-location that draws a crew hands it on with no position** (`LocationDraw.finish()`), and
+location that draws a crew at dawn keeps it with no position** (`LocationDraw.draw_all()`), so no
+row drawn after it is spaced from a place it never stands at, and
 `EventDirector.site_what_is_on_her_way()` sites it the way it sites the fire — on the branch
 of the day's route tree she is walking, beyond the streaming band and within
 `EventDirector.ON_HER_WAY_SIGHT` seconds of walking along the route, moved while unreal, fixed once
@@ -2299,8 +2294,8 @@ tile home reached without it unreached is refused where it would stand. Hard-fai
 walls for this rule: an abduction in progress is not something you walk through to reach the park
 behind it. Nothing is dropped after planning, so the day is never illegal on the way. A walk's
 sitings (the dusk fire, day 7's route van, day 11's added mast and the rest) are not asked it: the
-rule is the dawn's, which draws every location (`WalkDraw.draw_everywhere()`), and the draw the walk
-runs each tick finds none left open, so nothing asks it once she walks. The escape's draw is not asked it either: its plan has no route tree, and its walk is
+rule is the dawn's, and whether the walk's draws ask it is decided
+with them. The escape's draw is not asked it either: its plan has no route tree, and its walk is
 kept open by its own rule (`WalkOpenRule`).
 
 **On the three days the resistance sends her to one narrow place** — day 9's region door, day

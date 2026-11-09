@@ -363,10 +363,6 @@ class Planned extends RefCounted:
 		return _is_door or _in_the_wall or _is_a_seal or mast_id != "" \
 				or def.kind == GameEnums.EventKind.AMBIENT
 
-	## Whether this body is one of the day's seals (`stand_as_a_seal()`).
-	func is_a_seal() -> bool:
-		return _is_a_seal
-
 	## Makes this body one of the day's seals. Called by `DayPlanner` for each seal it plans, and by
 	## nothing else.
 	func stand_as_a_seal() -> void:
@@ -687,19 +683,18 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	_count_what_is_left_uncovered(beside_the_routes, map, events, route, trace)
 	return events
 
-## `build_day` up to and including the draw of every open location, added to `events`: the day's
-## locations laid out (`DayLocations`, handed on with the plan, `DayEvents.use_locations()`), the
-## ambient rows, the scars, the masts, the roadblock phase (`beside_the_routes`, day 13's roadblock),
-## the scripted rows, the one-shots, the spoilers in a park she used, the moments she is owed, and
-## every other location drawn from its view's bag by the walk's draw (`_draw_the_locations()`,
-## `WalkDraw.draw_everywhere()`, handed on as `DayEvents.walk_draw()`), each phase on its own stream
-## off `base` (`_stream`). `spec` is the day's placement settings, a day's own (`DaySpec.for_day()`)
-## where none is handed in.
+## `build_day` up to and including the dawn draw, added to `events`: the day's locations laid out
+## (`DayLocations`, handed on with the plan, `DayEvents.use_locations()`), the ambient rows, the
+## scars, the masts, the roadblock phase (`beside_the_routes`, day 13's roadblock), the scripted
+## rows, the one-shots, the spoilers in a park she used, the moments she is owed and the draw of
+## every location from its view's bag (`_draw_the_locations()`), each phase on its own stream off
+## `base` (`_stream`). Answers the draw's own placements, in the order drawn. `spec` is the day's
+## placement settings, a day's own (`DaySpec.for_day()`) where none is handed in.
 static func _plan_the_dawn(day: int, base: int, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary], calm: CalmAreas,
 		route: RouteSource, heat: int, doors: PackedVector2Array, events: DayEvents,
 		mast_sites: Array[MastSites.Site], trace: RunTrace = null, spec: DaySpec = null,
-		beside_the_routes: EventDef = null) -> void:
+		beside_the_routes: EventDef = null) -> Array[Planned]:
 	if spec == null:
 		spec = DaySpec.for_day(day)
 	# Which tiles each kind of event may stand on, worked out at most once per day. See
@@ -769,14 +764,8 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, events, calm, kept_clean,
 			reach, heat, trace)
 	_owe_the_moments(day, _stream(base, MOMENTS_SALT), events, heat, spec.caps_per_day)
-	# **Every other location, through the walk's draw** (`WalkDraw`): each drawn once from its
-	# view's bag, in the day's order (`DayLocations.drawing_order()`), before she can move, so a
-	# retry draws the same day; the draw is handed on with the plan, and the walk finds nothing
-	# left open for it.
-	var walk_draw := WalkDraw.new(locations, _draw_the_locations(day, base, map, events, ground,
-			leave_alone, corridor, doors, spec, locations, heat, beside_the_routes, reach))
-	walk_draw.draw_everywhere(locations.drawing_order(_stream(base, LOCATIONS_SALT)))
-	events.use_walk_draw(walk_draw)
+	return _draw_the_locations(day, base, map, events, ground, leave_alone, corridor, doors, spec,
+			locations, heat, beside_the_routes, reach)
 
 ## **The roadblock phase at dawn** (inbox #1185 in gentle-owl: the day's routes first, then roadblocks next to
 ## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
@@ -1017,8 +1006,10 @@ static func _touched_from(map: CityMap, shut: Dictionary, plan: Planned) -> Arra
 				found.append(tile)
 	return found
 
-## **`plan`'s row, unplaced, for her walk to site** (`EventDirector.site_what_is_on_her_way()`): what
-## a row handed to her walk becomes when a location draws one (`LocationDraw.finish()`).
+## **`plan`'s row, unplaced, for her walk to site** (`EventDirector.site_what_is_on_her_way()`):
+## what a recurring row handed to her walk (`EventDef.is_handed_to_her_walk()`, the poster crew)
+## becomes as a location draws it (`LocationDraw`), so no row drawn after it is spaced from a place
+## it never stands at. A one-shot owed to her walk is planned unplaced by `_place_one_shots`.
 static func owed_to_her_walk(plan: Planned) -> Planned:
 	var owed := Planned.new(plan.def, Vector2.INF)
 	owed.role = plan.role
@@ -1279,8 +1270,8 @@ static func _is_a_wall_by_cost(def: EventDef) -> bool:
 ## - `_place_scars` prepends what the run has burnt down, and every scar is one more plan for
 ##   `StreetInvalidation.room_around` to reject a placement against — and a rejection is a re-roll.
 ##
-## Separate streams close the first completely and most of the second (each phase's salt, the view
-## bags' `LOCATIONS_SALT` among them).
+## Separate streams close the first completely and most of the second (each phase's salt, the dawn
+## draw's `LOCATIONS_SALT` among them).
 ## What is deliberately *not* closed: a scar that genuinely occupies the ground an event wanted still
 ## moves that event. That is the right answer — a fire that burnt a block down did happen, and the
 ## day should acknowledge it — and it is a handful of placements rather than the whole day.
@@ -2363,18 +2354,17 @@ class WalkSiting extends RefCounted:
 
 # ------------------------------------------------- the day's locations, from the bags ---
 
-## **The draw of the day's open locations, each from its view's bag** (`LocationDraw`,
-## inbox #1185 in gentle-owl), set up at dawn and made by the walk's draw (`WalkDraw`) before she can
-## move: the bags (`_view_bags()`) hold every recurring row the catalogue places on the map today,
-## each as many times as its weight in the view (`view_weight()`), and the empty event; the day's
-## ground answers which row is valid where, every rule of the day asked, the reach among them, and
-## how much each location weighs it (`RuledLocationGround`). The rows other phases place have no
-## marble: the moments she is owed (`_owe_the_moments()`), and on the day of the roadblock phase its
-## row (`beside_the_routes`), the phase's alone.
+## **Every open location of the day drawn from its view's bag** (`LocationDraw`, inbox #1185 in gentle-owl): the
+## bags (`_view_bags()`) hold every recurring row the catalogue places on the map today, each as many
+## times as its weight in the view (`view_weight()`), and the empty event; the day's ground answers
+## which row is valid where and how much each location weighs it (`RuledLocationGround`). The rows
+## other phases place have no marble: the moments she is owed (`_owe_the_moments()`), and on the day
+## of the roadblock phase its row (`beside_the_routes`), the phase's alone. Answers what the draw
+## placed, in the order drawn.
 static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEvents,
 		ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
 		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations,
-		heat: int, beside_the_routes: EventDef, reach: RouteReachRule = null) -> LocationDraw:
+		heat: int, beside_the_routes: EventDef, reach: RouteReachRule = null) -> Array[Planned]:
 	var rows := {}
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
 		if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
@@ -2382,17 +2372,14 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEv
 		if beside_the_routes != null and def.id == beside_the_routes.id:
 			continue
 		rows[def.id] = def.for_day(day)
-	# Every row's own ground worked out at dawn, while the day is planned, so a draw reads it rather
-	# than scanning the map when it is made (`LocationFit.prepare()`).
-	var fit := LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets)
-	for def: EventDef in rows.values():
-		fit.prepare(def)
+	var bags := _view_bags(rows, day, spec, base)
+	var judged := RuledLocationGround.new(day, base, map, events, corridor,
+			LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets),
+			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
+					spec.one_notice_at_a_time, null, reach))
 	var caps := _caps_of(rows, day, spec, _stream(base, CAPS_SALT)) if spec.caps_per_day else {}
-	return LocationDraw.new(locations, _view_bags(rows, day, spec, base), rows,
-			RuledLocationGround.new(day, base, map, events, corridor, fit,
-					StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-							spec.one_notice_at_a_time, null, reach)),
-			caps)
+	return LocationDraw.new(locations, bags, rows, judged, caps).draw_all(
+			_stream(base, LOCATIONS_SALT))
 
 ## **How many of each row the day's draw may stand** (`id -> count`): its `EventDef.max_per_day`,
 ## and a wall-role row's times `DaySpec.wall_row_share`, so the gatehouse day holds that share of a
@@ -2412,8 +2399,8 @@ static func _caps_of(rows: Dictionary, day: int, spec: DaySpec,
 		caps[id] = floori(most) + (1 if rng.randf() < most - floorf(most) else 0)
 	return caps
 
-## The phase salt the day's order of drawing its locations is shuffled on, and the view bags'
-## streams start from: apart from every other phase's.
+## The phase salt the dawn draw shuffles each street's locations on, and the bags' streams start
+## from: apart from every other phase's.
 const LOCATIONS_SALT := 6
 ## The phase salt the moments she is owed are drawn on.
 const MOMENTS_SALT := 7
@@ -2626,7 +2613,7 @@ static func _owe_the_moments(day: int, rng: RandomNumberGenerator, events: DayEv
 ## fixed count each day, where the fill's rolls made it vary from one city to the next.
 const MOMENTS_PER_DAY: Array[int] = [23, 26, 29, 25, 26, 28, 29, 28, 28, 30, 31, 32, 32, 32]
 
-## **The day's ground as a location's draw asks it** (`LocationGround`): a row's event at a location,
+## **The day's ground as the dawn draw asks it** (`LocationGround`): a row's event at a location,
 ## left out where the day's rules invalidate it, and the location's own weight.
 ##
 ## - **The event** stands on a tile of the location the row fits (`LocationFit`), tried in an order
@@ -2643,35 +2630,18 @@ class RuledLocationGround extends LocationGround:
 	var _day := 0
 	var _base := 0
 	var _map: CityMap
-	## The dawn's plan, held weakly: the plan holds the walk's draw, which holds this ground, so a
-	## strong hold back would be a cycle nothing frees. The plan outlives the dawn's draws.
-	var _events: WeakRef
+	var _events: DayEvents
 	var _corridor: Corridor
 	var _fit: LocationFit
 	var _rules: StreetInvalidation
 	var _piles := {}
-	## The walk an offer is judged against once it has started, or null while the dawn plans.
-	var _walk: WalkEvents = null
-	## How many plans the walk had when `_walk_placed` and `_walk_around` were worked out.
-	var _walk_counted := -1
-	var _walk_placed: Array[Planned] = []
-	var _walk_around: Array[Planned] = []
-	## The walk's plans that stood nowhere when the lists were worked out, unspent: what her walk
-	## may yet site on a plan it already holds (a poster crew, day 3's fire, a moment she is owed),
-	## which the lists must learn of though the walk gains no plan.
-	var _walk_unplaced: Array[Planned] = []
-	## What this ground has stood during the walk that the walk may not hold yet: a batch of draws
-	## stands each before the next is judged, though the walk takes them after the batch.
-	var _stood_on_the_walk: Array[Planned] = []
-	## Counts every change to what the rules read during the walk (`judged_at()`).
-	var _version := 0
 
 	func _init(day: int, base: int, map: CityMap, events: DayEvents, corridor: Corridor,
 			fit: LocationFit, rules: StreetInvalidation) -> void:
 		_day = day
 		_base = base
 		_map = map
-		_events = weakref(events)
+		_events = events
 		_corridor = corridor
 		_fit = fit
 		_rules = rules
@@ -2680,14 +2650,9 @@ class RuledLocationGround extends LocationGround:
 
 	## Overrides LocationGround.offer.
 	func offer(def: EventDef, location: Location) -> Planned:
-		var made := begin_offer(def, location)
-		while not made.step():
-			pass
-		return made.plan
-
-	## Overrides LocationGround.begin_offer.
-	func begin_offer(def: EventDef, location: Location) -> LocationGround.Offer:
 		var fits := _fit.tiles(def, location)
+		if fits.is_empty():
+			return null
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%s:%s" % [_base, location.tiles(), def.id])
 		for i in range(fits.size() - 1, 0, -1):
@@ -2697,47 +2662,23 @@ class RuledLocationGround extends LocationGround:
 			fits[j] = kept
 		if def.id == EventScheduler._MOUSE_ID:
 			fits = _beside_a_pile_first(fits)
-		return RuledOffer.new(self, def, fits, rng, EventScheduler.role_for(def, _day))
-
-	## **Builds `def` at `tile` and asks the day's rules of it**: the candidate and its room
-	## (`StreetInvalidation.room()`, INF for one that stands clear, -INF for one refused), or null
-	## where the row does not build there, judged against what stands now: the dawn's plan, or the
-	## walk's once it has started.
-	func ask(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator, role: GameEnums.BlockerRole) -> Array:
-		var candidate := _fit.build(def, tile, rng)
-		if not candidate:
-			return []
-		var already: Array[Planned] = []
-		var reach_context: Array[Planned] = []
-		if _walk == null:
-			var events: DayEvents = _events.get_ref()
-			already = events.placements()
-			reach_context = already.duplicate()
-			reach_context.append_array(events.standing())
-		else:
-			_catch_up_with_the_walk()
-			already = _walk_placed
-			reach_context = _walk_around
-		return [candidate, _rules.room(candidate, role, tile, already, reach_context)]
-
-	## Asks the day's rules again of a candidate asked before, against what stands now.
-	func ask_again(candidate: Planned, tile: Vector2i, role: GameEnums.BlockerRole) -> float:
-		if _walk == null:
-			var events: DayEvents = _events.get_ref()
-			var around := events.placements()
-			around.append_array(events.standing())
-			return _rules.room(candidate, role, tile, events.placements(), around)
-		_catch_up_with_the_walk()
-		return _rules.room(candidate, role, tile, _walk_placed, _walk_around)
-
-	## Which version of what the rules read the walk is at, changed whenever a plan joins it or this
-	## ground stands one: a candidate asked at one version and kept to another is asked again
-	## (`RuledOffer`). -1 while the dawn plans.
-	func judged_at() -> int:
-		if _walk:
-			_catch_up_with_the_walk()
-			return _version
-		return -1
+		var role := EventScheduler.role_for(def, _day)
+		var already := _events.placements()
+		var reach_context := already.duplicate()
+		reach_context.append_array(_events.standing())
+		var best: Planned = null
+		var best_room := -INF
+		for tile in fits:
+			var candidate := _fit.build(def, tile, rng)
+			if not candidate:
+				continue
+			var room := _rules.room(candidate, role, tile, already, reach_context)
+			if room == INF:
+				return candidate
+			if room > best_room:
+				best_room = room
+				best = candidate
+		return best
 
 	## Overrides LocationGround.scale.
 	func scale(def: EventDef, location: Location) -> float:
@@ -2757,69 +2698,7 @@ class RuledLocationGround extends LocationGround:
 
 	## Overrides LocationGround.stand.
 	func stand(plan: Planned) -> void:
-		if _walk == null:
-			(_events.get_ref() as DayEvents).add(plan)
-			return
-		# During the walk it stands here at once, so the next location judged sees it, even when
-		# the walk takes it only after the batch it was drawn in.
-		_catch_up_with_the_walk()
-		_stood_on_the_walk.append(plan)
-		_read(plan)
-		_version += 1
-
-	## Overrides LocationGround.judge_against.
-	func judge_against(walk: WalkEvents) -> void:
-		_walk = walk
-		_walk_counted = -1
-
-	## **The walk's plans as the day's rules read them**, worked out again only when the walk has
-	## gained a plan or one it held unplaced has been given a place (a poster crew or day 3's fire
-	## her walk sited, `EventDirector.site_what_is_on_her_way()`): what is placed and unspent is
-	## placed, the seals and the wall's bodies standing beside it, as they stood at dawn. A marble
-	## asked after another at the same location, or a location drawn on a tick nothing joined or was
-	## sited, reads the same lists rather than walking the walk's plans again. A plan spent since is
-	## kept until the lists are next worked out, which can only space a draw further from something
-	## that has left; a placed plan moved is read where it stands now, since the lists hold the plan.
-	func _catch_up_with_the_walk() -> void:
-		var plans := _walk.plans()
-		if plans.size() == _walk_counted and not _one_was_sited():
-			return
-		_walk_counted = plans.size()
-		_version += 1
-		_walk_placed = []
-		_walk_around = []
-		_walk_unplaced = []
-		var held := {}
-		for plan in plans:
-			held[plan] = true
-			_read(plan)
-		var pending: Array[Planned] = []
-		for plan in _stood_on_the_walk:
-			if not held.has(plan):
-				pending.append(plan)
-				_read(plan)
-		_stood_on_the_walk = pending
-
-	## Whether a plan the lists hold as standing nowhere has been given a place since.
-	func _one_was_sited() -> bool:
-		for plan in _walk_unplaced:
-			if plan.is_placed():
-				return true
-		return false
-
-	## Adds `plan` to what the rules read, if it stands: placed and unspent; the seals and the wall's
-	## bodies beside what is placed. A region door's body is left out, as at dawn, where the doors'
-	## own rule keeps their ground (`DoorClearanceRule`). An unspent plan with no place is kept apart,
-	## for `_one_was_sited()`.
-	func _read(plan: Planned) -> void:
-		if plan.is_spent() or plan.is_door():
-			return
-		if not plan.is_placed():
-			_walk_unplaced.append(plan)
-			return
-		_walk_around.append(plan)
-		if not plan.is_a_seal() and not plan.is_in_the_wall():
-			_walk_placed.append(plan)
+		_events.add(plan)
 
 	## `tiles` with those within `_MOUSE_PILE_ADJACENCY` of a sack pile first, each half in the order
 	## it was handed.
@@ -2842,60 +2721,6 @@ class RuledLocationGround extends LocationGround:
 				if _piles.has(Vector2i(x, y)):
 					return true
 		return false
-
-## **A ruled ground's offer, a candidate at a time** (`RuledLocationGround.begin_offer()`): the
-## row's tiles at the location in the offer's shuffled order, each built and asked the day's rules
-## on its own step; the first that stands clear is the offer at once, and otherwise the one with the
-## most room once every tile is asked. **The one kept is asked again on the last step** if the walk
-## gained a plan since it was asked, and the offer is nothing if that plan now refuses it: a draw
-## spread over ticks never stands a row against what it was not judged with. Asked to the end in
-## one go, it offers what the whole offer always did. Model: no node.
-class RuledOffer extends LocationGround.Offer:
-	var _ground: RuledLocationGround
-	var _def: EventDef
-	var _fits: Array[Vector2i]
-	var _rng: RandomNumberGenerator
-	var _role: GameEnums.BlockerRole
-	var _next := 0
-	var _best_room := -INF
-	var _best_tile := Vector2i.ZERO
-	var _best_at := -1
-	var _made := false
-
-	func _init(ground: RuledLocationGround, def: EventDef, fits: Array[Vector2i],
-			rng: RandomNumberGenerator, role: GameEnums.BlockerRole) -> void:
-		_ground = ground
-		_def = def
-		_fits = fits
-		_rng = rng
-		_role = role
-
-	## Overrides LocationGround.Offer.step.
-	func step() -> bool:
-		if _made:
-			return true
-		if _next < _fits.size():
-			var tile := _fits[_next]
-			_next += 1
-			var asked := _ground.ask(_def, tile, _rng, _role)
-			if not asked.is_empty():
-				var room: float = asked[1]
-				if room == INF:
-					plan = asked[0]
-					_made = true
-					return true
-				if room > _best_room:
-					_best_room = room
-					plan = asked[0]
-					_best_tile = tile
-					_best_at = _ground.judged_at()
-		if _next < _fits.size():
-			return false
-		if plan and _best_at != _ground.judged_at() \
-				and _ground.ask_again(plan, _best_tile, _role) == -INF:
-			plan = null
-		_made = true
-		return true
 
 ## **An authored scene's row at the location its tile names**, or null with the reason appended to
 ## `why`. A recipe keeps its data: `at` names the tile, and so the location holding it
@@ -2971,8 +2796,8 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 ## (`WalkEvents.everything_but()`), seals and the wall included, as its own `already`, so it
 ## already asks every question `standing` exists to add here.
 ##
-## **Each candidate is asked of the day's rules** (`StreetInvalidation`), the same ones a location's
-## draw asks, so they are stated once; the tries and the roomiest fallback are this function's own, kept
+## **Each candidate is asked of the day's rules** (`StreetInvalidation`), the same ones the dawn draw
+## asks, so they are stated once; the tries and the roomiest fallback are this function's own, kept
 ## for its one caller, the walk's sitings (`WalkSiting`), until the walk's draws move it to the
 ## locations (the orchestrator's choice in placement step 3b).
 static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
@@ -3000,7 +2825,7 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# call: `WalkSiting`'s keeps them for one look, shared by every copy the look asks about. It is
 	# that caller's to drop whenever what a verdict reads changes — see `WalkSiting.begin_look()`.
 	var verdicts: Verdicts = kept if kept else Verdicts.new()
-	# The day's rules, the same ones a location's draw asks (`StreetInvalidation`), so they are stated once.
+	# The day's rules, the same ones the dawn draw asks (`StreetInvalidation`), so they are stated once.
 	var judge := StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false, null,
 			reach)
 	for _attempt in EVENT_PLACEMENT_TRIES:
@@ -3053,12 +2878,12 @@ class Verdicts extends RefCounted:
 		_kept.clear()
 
 ## The tiles an event of this kind may stand on today, worked out once and kept for the rest of
-## the day.
+## the day's planning.
 ##
 ## The answer is two passes over every tile of the right type, and a sidewalk is five thousand of
-## them — while the walk's sitings ask the question again and again through the day. Nothing it
-## depends on moves within a day: the grid was repainted at dawn and the day's closures are already
-## on the map.
+## them — while the dawn draw asks the question for every row a location weighs, hundreds of times on
+## a day. Nothing it depends on can move inside one `build_day`: the grid was
+## repainted at dawn and the day's closures are already on the map.
 ##
 ## The key is the *question* rather than the event, because almost every row in the catalogue asks
 ## the same one — a pavement, either side, for this role — so one list serves most of the day. The

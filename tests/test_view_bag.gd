@@ -3,12 +3,6 @@ extends RefCounted
 ## marble drawn without putting back and the bag filled again once empty, a marble the location does
 ## not accept never drawn and left in the bag for the next, and each marble's share scaled by the
 ## location's weight. Bags of a handful of marbles built by hand.
-##
-## - **A draw a step at a time draws what a whole one does**: a bag drawn by `begin()` and `step()`,
-##   with an `accepts` that weighs each marble over a step before answering, draws the marbles the
-##   same bag on the same seed draws whole, a step at a time.
-## - **A marble taken while it is weighed is refused**: a draw still weighing the bag's last cafe
-##   when another draw takes it does not take it too, and draws on without it.
 
 func run(t) -> void:
 	_test_a_fill_is_drawn_whole_before_it_is_filled_again(t)
@@ -17,8 +11,6 @@ func run(t) -> void:
 	_test_a_second_fill_keeps_what_was_refused(t)
 	_test_a_locations_weight_scales_a_marbles_share(t)
 	_test_the_same_seed_draws_the_same(t)
-	_test_a_draw_a_step_at_a_time_draws_what_a_whole_draw_does(t)
-	_test_a_marble_taken_while_weighed_is_refused(t)
 
 
 static func _yes(_id: String) -> bool:
@@ -97,45 +89,3 @@ func _test_the_same_seed_draws_the_same(t) -> void:
 		first.append(a.draw(_yes, _one))
 		second.append(b.draw(_yes, _one))
 	t.check(first == second, "the same fill on the same seed draws the same marbles")
-
-func _test_a_draw_a_step_at_a_time_draws_what_a_whole_draw_does(t) -> void:
-	var fill := {"cafe": 2, "yeller": 3, "dog": 1, ViewBag.EMPTY: 4}
-	var whole := ViewBag.new(fill, 41)
-	var stepped := ViewBag.new(fill, 41)
-	var no_yeller := func(id: String) -> bool: return id != "yeller"
-	# Answers null the first time it is asked of a marble, and then what `no_yeller` answers.
-	var weighed := {}
-	var slowly := func(id: String) -> Variant:
-		if not weighed.has(id):
-			weighed[id] = true
-			return null
-		weighed.erase(id)
-		return id != "yeller"
-	var first: Array[String] = []
-	var second: Array[String] = []
-	var steps := 0
-	for _i in 12:
-		first.append(whole.draw(no_yeller, _one))
-		var drawing := stepped.begin(slowly, _one)
-		steps += 1
-		while not drawing.step():
-			steps += 1
-		second.append(drawing.drawn)
-	t.check(first == second, "drawn a step at a time, weighing each marble over a step, the bag draws what it draws whole (%s, %s)"
-			% [first, second])
-	t.check(steps > 12, "and the draws took more steps than draws (%d)" % steps)
-
-func _test_a_marble_taken_while_weighed_is_refused(t) -> void:
-	var bag := ViewBag.new({"cafe": 1}, 13)
-	# A lambda keeps a copy of a local, so the switch is a dictionary it shares.
-	var still := {"weighing": true}
-	var later := func(_id: String) -> Variant: return null if still["weighing"] else true
-	var weighing := bag.begin(later, _one)
-	t.check(not weighing.step(), "a draw weighing the bag's one cafe is not over")
-	t.check(bag.draw(_yes, _one) == "cafe", "another draw takes the cafe meanwhile")
-	still["weighing"] = false
-	for _i in 10:
-		if weighing.step():
-			break
-	t.check(weighing.drawn != "cafe", "the draw that was weighing it does not take it too (%s)"
-			% weighing.drawn)
