@@ -41,6 +41,7 @@ func run(t) -> void:
 	_test_the_pavement_offset_crosses_the_streets_own_axis(t)
 	_test_no_door_before_the_region_wall_starts(t)
 	_test_door_target_lands_on_the_approach_side_of_a_hut(t)
+	_test_event_spawn_off_a_checkpoint_stands_clear_of_its_hold(t)
 	_teardown(t)
 
 func _rng(stream: String) -> RandomNumberGenerator:
@@ -239,4 +240,38 @@ func _test_door_target_lands_on_the_approach_side_of_a_hut(t) -> void:
 	var closer := at + hut.facing * Tuning.TILE_SIZE
 	t.check(closer.distance_to(hut.position) < at.distance_to(hut.position),
 			"walking one tile in the hut's own facing direction closes the distance to it")
+	city.free()
+
+## `--spawn event:checkpoint_hut` (and the post and the gate) once stood her on the structure's own
+## tile, so the hut took her in on the first frame. The stand-off has to clear the row's whole hold
+## (`EventDef.detain_distance()`: its solid body plus the detain reach), not only its field.
+func _test_event_spawn_off_a_checkpoint_stands_clear_of_its_hold(t) -> void:
+	var map := CityGenerator.generate(_CHECKPOINT_SEED)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	t.add_child(city)
+	city.build(map)
+	city.events.stream_radius = INF
+	var state := CityState.new()
+	state.begin_day(map.block_plans, Tuning.REGION_WALL_FIRST_DAY)
+	city.start_day(state, Tuning.REGION_WALL_FIRST_DAY, _rng("checkpoint-closures"))
+	var consumed: Array[String] = []
+	city.events.start_day(DaySpec.for_day(Tuning.REGION_WALL_FIRST_DAY), _rng("checkpoint-events"), consumed)
+	var seen := 0
+	for id in ["checkpoint_hut", "checkpoint_post", "checkpoint_gate"]:
+		var plan: EventScheduler.Planned = null
+		for candidate in city.events.plans():
+			if candidate.def.id == id and candidate.is_placed():
+				plan = candidate
+				break
+		if plan == null:
+			continue
+		seen += 1
+		var at := DevRig.first_event_position(city, id)
+		var reach := maxf(plan.def.detain_distance(), plan.def.solid_reach())
+		t.check(at.distance_to(plan.position) > reach,
+				"--spawn event:%s stands outside its hold (%.0fpx from it, hold %.0fpx)"
+						% [id, at.distance_to(plan.position), reach])
+		t.check(city.map.world_to_tile(at) != city.map.world_to_tile(plan.position),
+				"--spawn event:%s is not on its own tile" % id)
+	t.check(seen > 0, "the day plans at least one checkpoint structure to spawn beside")
 	city.free()
