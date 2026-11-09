@@ -1349,8 +1349,8 @@ EventScheduler.build_day(day_index, run_seed):
     rng = RNG(hash(run_seed, day_index))
     1. lay out the day's locations (DayLocations), each told its view
     2. add all AMBIENT events for the current act, the scars, the masts at the run's sites;
-       each fixed part (the seals and the wall's bodies standing, the masts, the ambient
-       rows) holds the location under it
+       the region wall's bodies (standing), the masts and the ambient rows each hold the
+       location under it; the seals stand, and hold none
     3. day 13: the roadblock phase (RoadblockPhase)
     4. the SCRIPTED events whose day == day_index, each drawing a location (ScriptedPhase)
     5. owe her walk the ONE_SHOT events not yet consumed this run, gated by
