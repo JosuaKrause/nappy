@@ -77,6 +77,9 @@ extends Node
 ##   escape's two sections is counted as a day of its own under its own number, after the last day
 ##   (`DaySpec.BUILDING_DAY` for the building, `DaySpec.CITY_DAY` for the city): its `began`, its
 ##   `won` or `lost-*` with what did it, and everything counted while it is walked.
+## - `nappy-day-1-first-crossing` / `nappy-day-1-park-reached` / `nappy-day-1-asleep` — day one's
+##   milestones, each at most once per attempt at day 1 and sent on no other day; `nappy-day-1-won`
+##   is the last of them, home.
 ## - `nappy-controls-joystick` / `nappy-controls-tap` / `nappy-controls-keys` — the "etc.": which
 ##   button began the run on the title screen, or that a key did, cheap to answer and part of "how
 ##   far people get" in its own way.
@@ -130,6 +133,9 @@ func _handlers(bus: Node) -> Array:
 		[bus.escape_lost, _on_escape_lost],
 		[bus.escape_out, _on_escape_out],
 		[bus.controls_chosen, _on_controls_chosen],
+		[bus.road_entered, _on_road_entered],
+		[bus.calm_ground_entered, _on_calm_ground_entered],
+		[bus.return_phase_started, _on_baby_asleep],
 		[bus.run_mode_chosen, _on_run_mode_chosen],
 		[bus.went_back_to_a_checkpoint, _on_went_back_to_a_checkpoint],
 	]
@@ -308,8 +314,32 @@ func _counted_day() -> int:
 
 func _on_day_started(day: int) -> void:
 	_day = day
+	_milestones_reached.clear()
 	for name in _day_began_names(day, _run != null and _run.calendar.hard_mode):
 		_send_event(name)
+
+## The day-one milestones this attempt has already sent, by name: an attempt is one `day_started`
+## to the next (a fresh day 1, a retry after a lost day, a return to checkpoint day 1), so each
+## milestone is sent once per attempt and a retry counts them again.
+var _milestones_reached := {}
+
+## Sends `milestone` — `nappy-day-1-<suffix>` — if it is day 1 and this attempt has not sent it yet.
+## `baby asleep` can come more than once an attempt (she wakes on the way home and is put down again),
+## and she can step onto a road or into a park again and again.
+func _reach_a_milestone(suffix: String) -> void:
+	if _counted_day() != 1 or _milestones_reached.has(suffix):
+		return
+	_milestones_reached[suffix] = true
+	_send_event(_day_event_name(1, suffix))
+
+func _on_road_entered() -> void:
+	_reach_a_milestone("first-crossing")
+
+func _on_calm_ground_entered() -> void:
+	_reach_a_milestone("park-reached")
+
+func _on_baby_asleep() -> void:
+	_reach_a_milestone("asleep")
 
 ## A fresh run's mode, from its title. **The day behind that title has already begun** — the first
 ## morning is built and its `day_started` sent before the title is dismissed, while the run still

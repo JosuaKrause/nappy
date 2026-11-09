@@ -222,6 +222,14 @@ signal city_went_quiet()
 ## silence — unlike `city_went_quiet` above, this fires on every go-dark. Listen-only, for
 ## `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal city_gone_dark()
+## `DayController.tick()`'s own moment she steps from anywhere else onto the road or a crossing (a
+## carriageway tile), once per step onto it: the run log's `cross` line is the same moment. Listen-only,
+## for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
+signal road_entered()
+## `DayController.tick()`'s own moment she steps from anywhere else onto calm ground (a park, forest,
+## square, courtyard or alley tile, `Tile.is_calm()`), once per arrival: the run log's `calm` line is
+## the same moment. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
+signal calm_ground_entered()
 
 # ------------------------------------------------------------------- escape ---
 # The escape's own moments, emitted by `main` as its sections begin and end, beside the day's own

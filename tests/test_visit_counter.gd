@@ -71,6 +71,7 @@ func run(t) -> void:
 	_test_encounters_and_runs_are_named_by_their_day_and_row(t)
 	_test_an_escape_section_is_counted_as_a_day_of_its_own(t)
 	_test_every_event_opts_out_of_sessions(t)
+	_test_day_one_milestones_are_sent_once_an_attempt_and_only_on_day_one(t)
 
 ## The gate's truth table: `may_ever_send()` is the three inputs that never change (on the web, a
 ## release build, `?debug=1` unasked); the fourth, `window.goatcounter.count` being present, is
@@ -432,6 +433,37 @@ func _test_every_tear_and_every_hold_is_sent(t) -> void:
 	counter.bus.poster_pursuit_sent.emit()
 	t.check(counter.sent.back() == "nappy-day-%d-poster-pursuit" % day,
 		"a tear that sends a pursuer on foot sends its own poster-pursuit")
+	_done(counter)
+
+## Day one's milestones, each answered from its own `EventBus` signal: the first step onto a road,
+## the first onto calm ground, the baby asleep. Once per attempt (a `day_started` begins one, so a
+## retry counts them again), however often the signal comes, and nothing on another day.
+func _test_day_one_milestones_are_sent_once_an_attempt_and_only_on_day_one(t) -> void:
+	var counter := RecordingCounter.new()
+	var crossing := "nappy-day-1-first-crossing"
+	var park := "nappy-day-1-park-reached"
+	var asleep := "nappy-day-1-asleep"
+	counter.bus.day_started.emit(1)
+	counter.sent.clear()
+	for _i in 3:
+		counter.bus.road_entered.emit()
+		counter.bus.calm_ground_entered.emit()
+		counter.bus.return_phase_started.emit()
+	t.check(counter.sent == [crossing, park, asleep],
+		"each milestone is sent once however often its signal comes (%s)" % [counter.sent])
+	counter.sent.clear()
+	counter.bus.day_started.emit(1)
+	counter.sent.clear()
+	counter.bus.road_entered.emit()
+	counter.bus.return_phase_started.emit()
+	t.check(counter.sent == [crossing, asleep],
+		"a retry of day 1 is a new attempt and counts the milestones again (%s)" % [counter.sent])
+	counter.bus.day_started.emit(2)
+	counter.sent.clear()
+	counter.bus.road_entered.emit()
+	counter.bus.calm_ground_entered.emit()
+	counter.bus.return_phase_started.emit()
+	t.check(counter.sent.is_empty(), "no milestone is sent on day 2 (%s)" % [counter.sent])
 	_done(counter)
 
 ## The fold this counter makes: the day's end's own cause becomes part of the one event a lost day
