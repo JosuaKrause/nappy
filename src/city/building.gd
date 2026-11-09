@@ -512,12 +512,71 @@ var neighbor_taken := false:
 		neighbor_taken = value
 		queue_redraw()
 
+## Equips the building before the city adds it: its atlas and the roof and front drawers it draws
+## through. The city registers it with the scenery itself, so it is not resident on its own
+## (`scenery_resident`). See `atlas`, `roof_drawer` and `front_drawer`.
+func equip(library: AtlasLibrary, roofs: RoofDrawer, fronts: FrontDrawer) -> void:
+	atlas = library
+	roof_drawer = roofs
+	front_drawer = fronts
+	scenery_resident = false
+
+## Sizes the building to its lot before the city adds it: `size` px wide and deep, `with_variant`
+## picking the roof colour and windows, in a block that starts as `purpose`, `wall_height` px tall,
+## standing on `lot_rect_in_tiles`. See `footprint`, `variant`, `district`, `height` and `lot`.
+func stand_on(lot_rect_in_tiles: Rect2i, size: Vector2, with_variant: int,
+		purpose: GameEnums.BlockPurpose, wall_height: float) -> void:
+	footprint = size
+	variant = with_variant
+	district = purpose
+	height = wall_height
+	lot = lot_rect_in_tiles
+
+## Re-dresses the building as a recipe says, before any derived geometry or tint is computed: its
+## block's starting `purpose`, `with_variant` and `wall_height` px. See `district`, `variant` and
+## `height`.
+func draw_as(purpose: GameEnums.BlockPurpose, with_variant: int, wall_height: float) -> void:
+	district = purpose
+	variant = with_variant
+	height = wall_height
+
+## The lot the building stands on, in tiles (`lot`).
+func lot_rect() -> Rect2i:
+	return lot
+
+## What picks the roof colour and the window pattern (`variant`).
+func look_variant() -> int:
+	return variant
+
+## Whether this building is on the home block, which is hers (`is_home_building`).
+func is_on_home_block() -> bool:
+	return is_home_building
+
+## Sets whether the building is on the home block (see `is_home_building`).
+func stand_on_home_block(on_it: bool) -> void:
+	is_home_building = on_it
+
+## Has the building put its roof objects in `parent`, the y-sorted layer at their feet (see
+## `roof_object_parent`).
+func put_roof_objects_in(parent: Node2D) -> void:
+	roof_object_parent = parent
+
+## Hands this front the cells it draws and whether the neighbor was taken (see `posters` and
+## `neighbor_taken`): `PosterWalls.refresh()`'s one hand-over.
+func hand_over_posters(cells: Dictionary, taken: bool) -> void:
+	neighbor_taken = taken
+	posters = cells
+
 @export var condition := Condition.LIVED_IN:
 	set(value):
 		if condition == value:
 			return
 		condition = value
 		queue_redraw()
+
+## Whether the building is burnt out (`Condition.BURNT`).
+func is_burnt() -> bool:
+	return condition == Condition.BURNT
 
 ## Today's day number, for the ambient-shutter roll in `_ground_floor_texture()` — read against
 ## `Tuning.degradation_for(day)`, not stored anywhere the roll itself depends on, so changing it
@@ -651,7 +710,7 @@ func _process(delta: float) -> void:
 	_vent_timer = fmod(_vent_timer, VENT_FRAME_INTERVAL)
 	_vent_frame_b = not _vent_frame_b
 	for rotor in _rotor_layers:
-		rotor.frame_b = _vent_frame_b
+		rotor.show_frame_b(_vent_frame_b)
 
 func _rebuild() -> void:
 	if not is_inside_tree():
@@ -1752,8 +1811,8 @@ class RoofObject extends Node2D:
 	## its own.
 	func add_rotor(frame_b: bool, drawer: SceneryDrawer = null) -> SceneryLayer:
 		var layer := SceneryLayer.new()
-		layer.drawer = drawer if drawer != null else SceneryDrawer.new()
-		layer.frame_b = frame_b
+		layer.draw_through(drawer if drawer != null else SceneryDrawer.new())
+		layer.show_frame_b(frame_b)
 		var size := AtlasTable.baked().native_size(texture_key)
 		var top_left := -Vector2(size.x * 0.5, size.y)
 		layer.append(atlas.region(VENT_ROTOR),

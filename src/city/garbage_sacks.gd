@@ -73,7 +73,7 @@ static func _candidate(map: CityMap, tile: Vector2i, day: int, density: float) -
 	if not alley and not front:
 		return null
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("sack:%d:%d:%d" % [map.seed_used, tile.x, tile.y])
+	rng.seed = hash("sack:%d:%d:%d" % [map.city_seed(), tile.x, tile.y])
 	var severity := rng.randf()
 	if severity >= density * DENSITY_SHARE:
 		return null

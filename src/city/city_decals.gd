@@ -36,6 +36,18 @@ var atlas: AtlasLibrary
 ## node's own canvas when it is not streamed, and handed on to each chunk's layer when it is.
 var drawer: SceneryDrawer
 
+## Hands the decals the library they draw from (see `atlas`).
+func use_atlas(library: AtlasLibrary) -> void:
+	atlas = library
+
+## Hands the decals what they are laid through (see `drawer`).
+func draw_through(through: SceneryDrawer) -> void:
+	drawer = through
+
+## Has the decals stream in chunks as they come into view (see `streamed`).
+func stream_in_chunks() -> void:
+	streamed = true
+
 func set_placed(placed: Array[Litter.Placed]) -> void:
 	_placed = placed
 	_refresh_chunks()
@@ -94,7 +106,7 @@ func update_view(load_view: Rect2, retained: Rect2, enqueue := Callable()) -> vo
 
 func _prepare_chunk(key: Vector2i) -> void:
 	var layer := SceneryLayer.new()
-	layer.drawer = drawer
+	layer.draw_through(drawer)
 	add_child(layer)
 	_resident[key] = layer
 	for entry: Litter.Placed in _litter_chunks.get(key, []):

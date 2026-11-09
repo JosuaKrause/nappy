@@ -51,6 +51,23 @@ func reset() -> void:
 	tears = 0
 	_dawn = {}
 
+## Whether any sheet is on `tile`, torn or not.
+func has_sheet(tile: Vector2i) -> bool:
+	return cells.has(tile)
+
+## The cell on `tile` (`kind`, `tear`, `under`, `under_tear`, `side`), or an empty one where no
+## sheet is. It is the cell itself, so a front handed it draws what is pasted now.
+func sheet_at(tile: Vector2i) -> Dictionary:
+	return cells.get(tile, {})
+
+## How many tears she has made this run (see `tears`).
+func tears_made() -> int:
+	return tears
+
+## Counts one more tear made.
+func count_a_tear() -> void:
+	tears += 1
+
 ## Whether the top sheet on `tile` is there and not torn.
 func has_intact_sheet(tile: Vector2i) -> bool:
 	var cell: Dictionary = cells.get(tile, {})

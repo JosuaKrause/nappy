@@ -810,10 +810,10 @@ static func _plan_the_swing_park(map: CityMap) -> void:
 			if not plan or plan.starting_purpose() != GameEnums.BlockPurpose.PARK:
 				continue
 			var layout: BlockLayout = map.block_layouts.get(block)
-			if not layout or not BlockLayout.has(layout.playground):
+			if not layout or not layout.has_playground():
 				continue
 			parks.append(block)
-			for step in plan.steps:
+			for step in plan.steps_in_order():
 				if step.purpose == GameEnums.BlockPurpose.REQUISITIONED:
 					taken.append(block)
 					break
@@ -822,14 +822,14 @@ static func _plan_the_swing_park(map: CityMap) -> void:
 		return
 	var chosen: Vector2i = pool[posmod(hash("swing park:%d" % map.seed_used), pool.size())]
 	var plan: BlockPlan = map.block_plans[chosen]
-	plan.forced_open_on = day
+	plan.force_open_on(day)
 	if taken.is_empty():
 		plan.then(GameEnums.BlockPurpose.REQUISITIONED, day, GameEnums.BlockCause.TAKEN)
 
 ## The park `_plan_the_swing_park()` chose, or `(-1, -1)` on a city with none.
 static func swing_park(map: CityMap) -> Vector2i:
 	for block: Vector2i in map.block_plans:
-		if (map.block_plans[block] as BlockPlan).forced_open_on > 0:
+		if (map.block_plans[block] as BlockPlan).is_swing_park():
 			return block
 	return Vector2i(-1, -1)
 
@@ -888,13 +888,13 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 	map.block_layouts[block] = layout
 
 	if _OPEN_CALM.has(purpose):
-		layout.open_rect = lot
+		layout.carve_open_ground(lot)
 		map.fill_rect(lot, CityMap.open_tile_for(purpose))
 		# Only a park has a playground: a forest with a swing frame in it is a park, and a
 		# quiet square with one is not quiet.
 		if purpose == GameEnums.BlockPurpose.PARK:
-			layout.playground = _inset_rect(lot, 3, rng)
-			map.fill_rect(layout.playground, GameEnums.TileType.PLAYGROUND)
+			layout.carve_playground(_inset_rect(lot, 3, rng))
+			map.fill_rect(layout.playground_rect(), GameEnums.TileType.PLAYGROUND)
 		return []
 
 	map.fill_rect(lot, GameEnums.TileType.BUILDING)
@@ -906,19 +906,19 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 		# rather than somewhere to stand. See `APARTMENT_COURT_TILES`.
 		var court := COURTYARD_SIZE_TILES if lot.size.x <= Tuning.BLOCK_SIZE \
 				else APARTMENT_COURT_TILES
-		layout.open_rect = _inset_rect(lot, court, rng)
-		layout.passage = _passage_rect(lot, layout.open_rect, rng)
-		map.fill_rect(layout.open_rect, GameEnums.TileType.COURTYARD)
-		map.fill_rect(layout.passage, GameEnums.TileType.ALLEY)
-		map.courtyard_rects.append(layout.open_rect)
-		rects = _subtract_all(rects, layout.open_rect)
-		rects = _subtract_all(rects, layout.passage)
+		layout.carve_open_ground(_inset_rect(lot, court, rng))
+		layout.carve_passage(_passage_rect(lot, layout.open_ground(), rng))
+		map.fill_rect(layout.open_ground(), GameEnums.TileType.COURTYARD)
+		map.fill_rect(layout.passage_rect(), GameEnums.TileType.ALLEY)
+		map.courtyard_rects.append(layout.open_ground())
+		rects = _subtract_all(rects, layout.open_ground())
+		rects = _subtract_all(rects, layout.passage_rect())
 
 	if purpose == GameEnums.BlockPurpose.COMMERCIAL:
-		layout.square = _corner_rect(lot, SQUARE_SIZE_TILES, rng)
-		map.fill_rect(layout.square, GameEnums.TileType.SQUARE)
-		map.square_rects.append(layout.square)
-		rects = _subtract_all(rects, layout.square)
+		layout.carve_square(_corner_rect(lot, SQUARE_SIZE_TILES, rng))
+		map.fill_rect(layout.square_rect(), GameEnums.TileType.SQUARE)
+		map.square_rects.append(layout.square_rect())
+		rects = _subtract_all(rects, layout.square_rect())
 
 	# The home block is exempt from the through-alley roll, the same way a commercial block's own
 	# `ALLEY_CHANCE` entry is 0 — except the home shares `RESIDENTIAL`'s purpose and its 0.25 with
@@ -936,10 +936,10 @@ static func _build_block(map: CityMap, block: Vector2i, purpose: GameEnums.Block
 	# home block and leaves everyone else's layout exactly what it already was for this seed.
 	var wants_an_alley := rng.randf() < float(ALLEY_CHANCE[purpose])
 	if block != home_block() and wants_an_alley:
-		layout.alley = _alley_rect(lot, rng)
-		map.fill_rect(layout.alley, GameEnums.TileType.ALLEY)
-		map.alley_rects.append(layout.alley)
-		rects = _subtract_all(rects, layout.alley)
+		layout.carve_alley(_alley_rect(lot, rng))
+		map.fill_rect(layout.alley_rect(), GameEnums.TileType.ALLEY)
+		map.alley_rects.append(layout.alley_rect())
+		rects = _subtract_all(rects, layout.alley_rect())
 
 	return _keep_nonempty(rects)
 

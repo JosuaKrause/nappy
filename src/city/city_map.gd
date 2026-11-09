@@ -492,6 +492,283 @@ static func corridor_offset(coordinate: int) -> int:
 
 # ------------------------------------------------------------ street kinds ---
 
+# --------------------------------------------------- what the generated city answers ---
+# One method for each fact the generator fixed, so a caller asks the map and never reads the field
+# it is kept in: a fact worked out from other data later changes nowhere but here.
+
+## The street lattice as a graph (`network`).
+func street_network() -> StreetNetwork:
+	return network
+
+## The corridor index of the main road, `-1` before generation (`main_road`).
+func main_road_corridor() -> int:
+	return main_road
+
+## The seed this city was generated from (`seed_used`), which every placement keyed on the city
+## rather than on the day hashes in.
+func city_seed() -> int:
+	return seed_used
+
+## The tile rect of her own front-door notch (`home_rect`).
+func home_tile_rect() -> Rect2i:
+	return home_rect
+
+## The coordinate of the block she lives on (`home_block`).
+func home_block_coordinate() -> Vector2i:
+	return home_block
+
+## The lot of every building the city stands, in the order the buildings are built (`building_rects`).
+func building_lots() -> Array[Rect2i]:
+	return building_rects
+
+## The blocks that are calm ground right now, anchor blocks only (`calm_blocks`).
+func calm_blocks_now() -> Array[Vector2i]:
+	return calm_blocks
+
+## The one calm area barriers stand around today, or `Vector2i(-1, -1)` (`fenced_park`).
+func fenced_park_block() -> Vector2i:
+	return fenced_park
+
+## The precincts as `(axis, corridor, first block, last block)` stretches (`precinct_spans`).
+func precinct_stretches() -> Array[Vector4i]:
+	return precinct_spans
+
+## The tile rect of every through-alley (`alley_rects`).
+func alley_lots() -> Array[Rect2i]:
+	return alley_rects
+
+## The tile rect of every courtyard's open ground (`courtyard_rects`).
+func courtyard_lots() -> Array[Rect2i]:
+	return courtyard_rects
+
+## The tile rect of each playground currently in the city (`playgrounds`).
+func playground_rects() -> Array[Rect2i]:
+	return playgrounds
+
+## The tile rects the city's streets were built over, by segment key (`built_over`).
+func streets_built_over() -> Dictionary:
+	return built_over
+
+## The tiles of the streets closed today, as a set (`closed_tiles`).
+func closed_tile_set() -> Dictionary:
+	return closed_tiles
+
+## The pair of blocks the power station stands over, `Rect2i()` on a map that has none
+## (`power_station`).
+func power_station_blocks() -> Rect2i:
+	return power_station
+
+## The pavement tiles in front of the power station's door (`power_station_door`).
+func power_station_door_tiles() -> Rect2i:
+	return power_station_door
+
+## Every block's arc by block, anchors only (`block_plans`): what `CityState` is asked through.
+func plans_by_block() -> Dictionary:
+	return block_plans
+
+## Whether `block` anchors a lot and so has an arc (`block_plans`).
+func has_plan_for(block: Vector2i) -> bool:
+	return block_plans.has(block)
+
+## The blocks that anchor a lot, each with an arc (`block_plans`).
+func blocks_with_plans() -> Array:
+	return block_plans.keys()
+
+## The carves of `block`, or null for a block that is not an anchor (`block_layouts`).
+func layout_of(block: Vector2i) -> BlockLayout:
+	return block_layouts.get(block)
+
+## The blocks that have a layout (`block_layouts`).
+func blocks_with_layouts() -> Array:
+	return block_layouts.keys()
+
+## Whether a scripted recipe shows its declared rectangle and nothing round it (`recipe_exterior`).
+func has_recipe_exterior() -> bool:
+	return recipe_exterior
+
+## The rectangle a recipe declares, the only part of the map shown when `has_recipe_exterior()`
+## (`recipe_bounds`).
+func recipe_window() -> Rect2i:
+	return recipe_bounds
+
+## The road closures a recipe lists (`recipe_closures`).
+func recipe_road_closures() -> Array[RoadClosure]:
+	return recipe_closures
+
+## A stretch's building on `lot`, `{"district", "variant", "height", "condition"}`, or an empty
+## dictionary where the recipe lists none (`stretch_buildings`).
+func stretch_building_on(lot: Rect2i) -> Dictionary:
+	return stretch_buildings.get(lot, {})
+
+## Whether a stretch lists a building on `lot` (`stretch_buildings`).
+func has_stretch_building_on(lot: Rect2i) -> bool:
+	return stretch_buildings.has(lot)
+
+## The lot of every building a stretch lists (`stretch_buildings`).
+func stretch_building_lots() -> Array:
+	return stretch_buildings.keys()
+
+## Whether an authored scene saved its dawn ground (`recipe_dawn_tiles`), as opposed to ordinary
+## generated play.
+func has_recipe_dawn_ground() -> bool:
+	return not recipe_dawn_tiles.is_empty()
+
+## The tiles of the street trees an authored scene lists (`recipe_trees`).
+func recipe_tree_tiles() -> Array[Vector2i]:
+	return recipe_trees
+
+## Whether an authored scene moves the street tree on `tile` to the other curb (`recipe_tree_moves`).
+func has_tree_move_from(tile: Vector2i) -> bool:
+	return recipe_tree_moves.has(tile)
+
+## The tile the street tree on `tile` is moved to, where `has_tree_move_from(tile)`.
+func tree_move_from(tile: Vector2i) -> Vector2i:
+	return recipe_tree_moves[tile]
+
+## The crack a stretch lists for `tile`, `Vector2i(level, pattern)`, or null where it lists none
+## (`stretch_cracks`).
+func stretch_crack_at(tile: Vector2i) -> Variant:
+	return stretch_cracks.get(tile)
+
+## A stretch's props, `[{"kind", "at", "variant", "scale"}]` (`stretch_props`).
+func stretch_prop_list() -> Array[Dictionary]:
+	return stretch_props
+
+## A stretch's litter, `[{"at", "texture"}]` (`stretch_litter`).
+func stretch_litter_list() -> Array[Dictionary]:
+	return stretch_litter
+
+# ------------------------------------------------------ what the generator fixes in it ---
+# The generator and the recipe builders fill a map in as they decide each fact; each fact has a
+# method of its own here, so none of them writes the field it is kept in.
+
+## Records the seed the city is generated from (`seed_used`).
+func generated_from(seed_value: int) -> void:
+	seed_used = seed_value
+
+## Records which corridor is the main road (`main_road`).
+func lay_main_road(corridor: int) -> void:
+	main_road = corridor
+
+## Forgets every precinct (`precinct_spans`).
+func clear_precincts() -> void:
+	precinct_spans.clear()
+
+## Records a precinct, `(axis, corridor, first block, last block)` (`precinct_spans`).
+func add_precinct(span: Vector4i) -> void:
+	precinct_spans.append(span)
+
+## Records the lots of buildings the city stands (`building_rects`).
+func add_building_lots(rects: Array[Rect2i]) -> void:
+	building_rects.append_array(rects)
+
+## Records the lot of one more building (`building_rects`).
+func add_building_lot(rect: Rect2i) -> void:
+	building_rects.append(rect)
+
+## Notes a pinned choice the generator could not honor, for the recipe to report
+## (`recipe_diagnostics`).
+func note_diagnostic(text: String) -> void:
+	recipe_diagnostics.append(text)
+
+## Records a multi-block lot: the rect of blocks it spans, by its anchor block (`zone_rects`).
+func record_zone(anchor: Vector2i, footprint: Rect2i) -> void:
+	zone_rects[anchor] = footprint
+
+## Records that `block` belongs to the lot anchored at `anchor` (`zone_anchor`).
+func record_zone_member(block: Vector2i, anchor: Vector2i) -> void:
+	zone_anchor[block] = anchor
+
+## The anchor block of every multi-block lot (`zone_rects`).
+func zone_anchors() -> Array:
+	return zone_rects.keys()
+
+## The rect of blocks the multi-block lot anchored at `anchor` spans (`zone_rects`).
+func zone_footprint(anchor: Vector2i) -> Rect2i:
+	return zone_rects[anchor]
+
+## Takes a street out of the lattice for good, as a four-block calm zone or a dead end does
+## (`absent_segments`).
+func mark_street_absent(key: Vector3i) -> void:
+	absent_segments[key] = true
+
+## Puts a street back in the lattice (`absent_segments`).
+func restore_street(key: Vector3i) -> void:
+	absent_segments.erase(key)
+
+## Records that a hard blocker built over the street `key`, now solid on `rect`
+## (`built_over`).
+func record_built_over(key: Vector3i, rect: Rect2i) -> void:
+	built_over[key] = rect
+
+## Forgets that the street `key` was built over (`built_over`).
+func forget_built_over(key: Vector3i) -> void:
+	built_over.erase(key)
+
+## Records that the street `key` is a dead end (`dead_ends`).
+func mark_dead_end(key: Vector3i) -> void:
+	dead_ends[key] = true
+
+## Plans `block`'s arc (`block_plans`).
+func plan_block(block: Vector2i, plan: BlockPlan) -> void:
+	block_plans[block] = plan
+
+## The arc planned for `block` (`block_plans`).
+func plan_of(block: Vector2i) -> BlockPlan:
+	return block_plans[block]
+
+## Gives `block` its carves (`block_layouts`).
+func carve_block(block: Vector2i, layout: BlockLayout) -> void:
+	block_layouts[block] = layout
+
+## Records a courtyard's open ground (`courtyard_rects`).
+func add_courtyard(rect: Rect2i) -> void:
+	courtyard_rects.append(rect)
+
+## Records a plaza (`square_rects`).
+func add_square(rect: Rect2i) -> void:
+	square_rects.append(rect)
+
+## Records a through-alley (`alley_rects`).
+func add_alley(rect: Rect2i) -> void:
+	alley_rects.append(rect)
+
+## Records her front-door notch and the block it is on (`home_rect`, `home_block`).
+func place_home(rect: Rect2i, block: Vector2i) -> void:
+	home_rect = rect
+	home_block = block
+
+## The landmarks, each as the pair of blocks it joins (`big_buildings`).
+func big_building_pairs() -> Array[Rect2i]:
+	return big_buildings
+
+## Records a landmark over the pair of blocks `pair` (`big_buildings`).
+func add_big_building(pair: Rect2i) -> void:
+	big_buildings.append(pair)
+
+## Forgets the landmark recorded last (`big_buildings`).
+func drop_last_big_building() -> void:
+	big_buildings.pop_back()
+
+## Records the power station: the pair of blocks it stands over, the street its door opens onto, the
+## pavement tiles in front of the door, and how many of its blocks were industrial
+## (`power_station`, `power_station_door_key`, `power_station_door`,
+## `power_station_industrial_blocks`).
+func record_power_station(pair: Rect2i, door_key: Vector3i, door_rect: Rect2i,
+		industrial_blocks: int) -> void:
+	power_station = pair
+	power_station_door_key = door_key
+	power_station_door = door_rect
+	power_station_industrial_blocks = industrial_blocks
+
+## A copy of the tile bytes, to put back with `restore_tiles()` (`tiles`).
+func tiles_snapshot() -> PackedByteArray:
+	return tiles.duplicate()
+
+## Puts back the tile bytes `tiles_snapshot()` copied (`tiles`).
+func restore_tiles(snapshot: PackedByteArray) -> void:
+	tiles = snapshot
+
 ## Whether `corridor` on the given axis is the spine — a fact about this city, read off the map
 ## rather than re-derived. There is one main road and it runs north to south, so `vertical` has to
 ## be true as well as the index matching; a phantom arterial on the other axis, weighted like the
@@ -1156,16 +1433,16 @@ func _repaint_block(block: Vector2i, purpose: GameEnums.BlockPurpose) -> void:
 	var layout: BlockLayout = block_layouts.get(block)
 	if not layout:
 		return
-	if BlockLayout.has(layout.open_rect):
-		fill_rect(layout.open_rect, open_tile_for(purpose))
-	if purpose == GameEnums.BlockPurpose.PARK and BlockLayout.has(layout.playground):
-		fill_rect(layout.playground, GameEnums.TileType.PLAYGROUND)
-	if BlockLayout.has(layout.square):
-		fill_rect(layout.square, GameEnums.TileType.SQUARE)
-	if BlockLayout.has(layout.alley):
-		fill_rect(layout.alley, GameEnums.TileType.ALLEY)
-	if BlockLayout.has(layout.passage):
-		fill_rect(layout.passage, GameEnums.TileType.ALLEY)
+	if layout.has_open_ground():
+		fill_rect(layout.open_ground(), open_tile_for(purpose))
+	if purpose == GameEnums.BlockPurpose.PARK and layout.has_playground():
+		fill_rect(layout.playground_rect(), GameEnums.TileType.PLAYGROUND)
+	if layout.has_square():
+		fill_rect(layout.square_rect(), GameEnums.TileType.SQUARE)
+	if layout.has_alley():
+		fill_rect(layout.alley_rect(), GameEnums.TileType.ALLEY)
+	if layout.has_passage():
+		fill_rect(layout.passage_rect(), GameEnums.TileType.ALLEY)
 
 ## The ground a purpose puts in its open rect. Everything degraded lands on `SPOILED`,
 ## which is the whole idea: the same ground, no longer worth walking to.
@@ -1199,8 +1476,8 @@ func _recompute_calm(state: CityState) -> void:
 		if state.purpose_of(block_plans, block) != GameEnums.BlockPurpose.PARK:
 			continue
 		var layout: BlockLayout = block_layouts.get(block)
-		if layout and BlockLayout.has(layout.playground):
-			playgrounds.append(layout.playground)
+		if layout and layout.has_playground():
+			playgrounds.append(layout.playground_rect())
 
 # --------------------------------------------------------------- traversal ---
 

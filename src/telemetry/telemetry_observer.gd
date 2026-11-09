@@ -610,7 +610,7 @@ func _watch_the_ground(here: Vector2, delta: float) -> void:
 	if calm != _was_calm:
 		var block := _map.block_at(here)
 		var what := RunTrace.purpose(
-				_run.attempt_spend.city_state.purpose_of(_map.block_plans, block))
+				_run.attempt_spend.city_state.purpose_of(_map.plans_by_block(), block))
 		_log.note("calm" if calm else "left", "%s %s %s, sleep %.0f" % [
 			"entered" if calm else "left", what, RunTrace.tile(block),
 			_baby.sleepiness])

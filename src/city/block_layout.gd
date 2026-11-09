@@ -38,5 +38,65 @@ func copy() -> BlockLayout:
 	twin.passage = passage
 	return twin
 
+## The block's open ground (`open_rect`), empty for a plain built block.
+func open_ground() -> Rect2i:
+	return open_rect
+
+## Whether the block has open ground.
+func has_open_ground() -> bool:
+	return has(open_rect)
+
+## Carves the block's open ground out of it at generation.
+func carve_open_ground(rect: Rect2i) -> void:
+	open_rect = rect
+
+## The playground inside a park (`playground`), empty on any other block.
+func playground_rect() -> Rect2i:
+	return playground
+
+## Whether the block has a playground.
+func has_playground() -> bool:
+	return has(playground)
+
+## Carves the playground out of the park at generation.
+func carve_playground(rect: Rect2i) -> void:
+	playground = rect
+
+## The market plaza of a commercial block (`square`), empty on any other block.
+func square_rect() -> Rect2i:
+	return square
+
+## Whether the block has a plaza.
+func has_square() -> bool:
+	return has(square)
+
+## Carves the plaza out of the block at generation.
+func carve_square(rect: Rect2i) -> void:
+	square = rect
+
+## The through-alley (`alley`), empty on a block with none.
+func alley_rect() -> Rect2i:
+	return alley
+
+## Whether the block has a through-alley.
+func has_alley() -> bool:
+	return has(alley)
+
+## Carves the through-alley out of the block at generation.
+func carve_alley(rect: Rect2i) -> void:
+	alley = rect
+
+## The archway from a courtyard to the street (`passage`), empty on a block with none.
+func passage_rect() -> Rect2i:
+	return passage
+
+## Whether the block has an archway.
+func has_passage() -> bool:
+	return has(passage)
+
+## Carves the archway out of the block at generation.
+func carve_passage(rect: Rect2i) -> void:
+	passage = rect
+
 static func has(rect: Rect2i) -> bool:
 	return rect.size.x > 0 and rect.size.y > 0

@@ -145,7 +145,7 @@ class Planted extends RefCounted:
 ## block — the only distance this stage can know ahead of the random planting itself.
 static func runs(map: CityMap) -> Array[Run]:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("street_tree_runs:%d" % map.seed_used)
+	rng.seed = hash("street_tree_runs:%d" % map.city_seed())
 	var found: Array[Run] = []
 	var taken := {}
 	for _try in _RUN_TRIES:
@@ -177,9 +177,9 @@ static func runs(map: CityMap) -> Array[Run]:
 ## street: the spacing accumulator crosses the junction between two blocks of the same run.
 static func planted(map: CityMap) -> Array[Planted]:
 	var found: Array[Planted] = []
-	if not map.recipe_dawn_tiles.is_empty():
-		for tile in map.recipe_trees:
-			var segment := map.network.segment_containing(tile)
+	if map.has_recipe_dawn_ground():
+		for tile in map.recipe_tree_tiles():
+			var segment := map.street_network().segment_containing(tile)
 			if not segment:
 				continue
 			var tree := Planted.new()
@@ -192,12 +192,12 @@ static func planted(map: CityMap) -> Array[Planted]:
 	for run in runs(map):
 		for offset in _CURB_OFFSETS:
 			var rng := RandomNumberGenerator.new()
-			rng.seed = hash("street_tree:%d:%d:%d:%d:%d" % [map.seed_used,
+			rng.seed = hash("street_tree:%d:%d:%d:%d:%d" % [map.city_seed(),
 					0 if run.horizontal else 1, run.index, run.first, offset])
 			found.append_array(_plant_side(run, offset, rng, door_tile))
 	for tree in found:
-		if map.recipe_tree_moves.has(tree.tile):
-			tree.tile = map.recipe_tree_moves[tree.tile]
+		if map.has_tree_move_from(tree.tile):
+			tree.tile = map.tree_move_from(tree.tile)
 			tree.position = map.tile_to_world(tree.tile)
 	return found
 
@@ -270,7 +270,7 @@ static func _run_is_plantable(map: CityMap, run: Run, taken: Dictionary) -> bool
 	for key in run.segment_keys():
 		if taken.has(key) or not map.has_street(key):
 			return false
-		var segment := map.network.by_key(key)
+		var segment := map.street_network().by_key(key)
 		if not segment:
 			return false
 		if _street_kind_of(map, segment) != GameEnums.StreetKind.ORDINARY:
@@ -322,7 +322,7 @@ static func _bordering_blocks(segment: StreetNetwork.Segment) -> Array[Vector2i]
 
 static func _fronts_a_qualifying_block(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 	for block in _bordering_blocks(segment):
-		if not map.block_plans.has(block):
+		if not map.has_plan_for(block):
 			continue   # off the lattice — the boundary street outside the map's edge block
 		if _DISTRICTS.has(map.starting_purpose(block)):
 			return true
@@ -333,7 +333,7 @@ static func _fronts_a_qualifying_block(map: CityMap, segment: StreetNetwork.Segm
 ## The home's own front door tile, kept clear the same one-tile margin as a crossing or a
 ## checkpoint — the single literal "door" in the game, `door.svg`, standing at the home's notch.
 static func _door_tile(map: CityMap) -> Vector2i:
-	return Vector2i(map.home_rect.position.x, map.home_rect.end.y)
+	return Vector2i(map.home_tile_rect().position.x, map.home_tile_rect().end.y)
 
 ## One kerb of one run, planted end to end. The `along` coordinate walks each block's own street
 ## tiles inside the mouth margin and simply skips the junctions between them, so the spacing is
