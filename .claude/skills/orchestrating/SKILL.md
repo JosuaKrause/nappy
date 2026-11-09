@@ -204,19 +204,11 @@ before spawning:
   `main`'s CI between merges; `main`'s CI run on the last merge commit of the batch is the
   orchestrator's to watch.
 - **An agent branches from `main`, never from an open docs branch.** When a milestone's entry
-  is still in an unmerged docs pull request, wait for it to merge before spawning. That pull
-  request reaches `main` as one squashed commit, so a branch made from the docs branch keeps the
-  docs commits as ancestors `main` never had. When `main` is merged back, every file those commits
-  added meets `main`'s squashed copy: an identical one merges silently, one amended since conflicts
-  on a file the agent never edited, and an item file the branch has since deleted comes back from
-  `main`'s side without any conflict, reopening finished work. Each is still a three-way review,
-  and the last is found only by looking.
-- **A push that starts no CI run is diagnosed, not waited on.** When `gh pr checks` answers
-  "no checks reported" minutes after a push, inspect the workflow runs and the PR's mergeability.
-  GitHub cannot run a pull-request merge check while the branch conflicts with main: fetch
-  current main, reconcile it under **merging-main**, and review the result before proceeding.
-  If the PR is mergeable but no run exists, an empty commit on the branch re-triggers CI.
-  Waiting or repeatedly pushing empty commits does not resolve a merge conflict.
+  is still in an unmerged docs pull request, wait for it to merge before spawning: that pull
+  request reaches `main` as one squashed commit, so a branch made from the docs branch meets
+  `main`'s copy of every docs file when `main` is merged back, and an item file it deleted comes
+  back without a conflict (`references/worktrees-and-disk.md`, "Branching from a docs branch").
+- **A push that starts no CI run is diagnosed, not waited on**: `references/recovery.md` says how.
 - **Tell each agent who else is alive** and which files those agents own, so a scope fence is a
   sentence in the prompt and not a discovery in the diff.
 

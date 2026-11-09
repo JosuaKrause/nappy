@@ -1,7 +1,7 @@
 # Worktrees and disk
 
 How an agent's worktree is made and why it is sparse, the one case for the harness's own isolation,
-and the disk check before a batch. **orchestrating** keeps the rule (a sparse worktree from
+why its branch never starts from a docs branch, and the disk check before a batch. **orchestrating** keeps the rule (a sparse worktree from
 `tools/agent-setup.sh`, and a low-disk warning stops new work); read this before making a worktree
 by any other route, before a checkout, import, build or capture batch, and on any disk warning.
 
@@ -35,6 +35,18 @@ has just been removed: the harness resolves `HEAD` in the shell's current direct
 creates the agent's worktree, so a shell still standing in a deleted worktree fails every spawn.
 And each such spawn leaves a `worktree-agent-*` branch pointing at the worktree's base, which
 `tools/prune-merged.sh` deletes once its worktree is gone, keeping a live agent's.
+
+## Branching from a docs branch
+
+**An agent branches from `main`, never from an open docs branch.** When a milestone's entry
+is still in an unmerged docs pull request, wait for it to merge before spawning rather than
+telling the agent to branch from the docs branch. That pull request reaches `main` as one
+squashed commit, so the agent's branch keeps the docs commits as ancestors `main` never had.
+When `main` is merged back, every file those commits added meets `main`'s squashed copy: an
+identical one merges silently, one amended since conflicts on a file the agent never edited, and
+an item file the branch has since deleted comes back from `main`'s side without any conflict,
+reopening finished work. Each is still a three-way review, and the last is found only by
+looking.
 
 ## Disk
 

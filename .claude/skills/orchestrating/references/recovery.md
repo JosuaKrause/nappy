@@ -2,8 +2,8 @@
 
 The steps behind two of **orchestrating**'s rules: an agent that died mid-task is replaced in its
 own worktree, and after a limit or an outage the pause's length decides whether each agent is nudged
-or replaced. Read it before replacing an agent, and at the start of a session that finds agents
-stopped.
+or replaced. It also holds what to do when a push starts no CI run. Read it before replacing an
+agent, and at the start of a session that finds agents stopped.
 
 ## An agent that died mid-task is replaced in its own worktree
 
@@ -69,6 +69,15 @@ fresh at the reset, but not every limit is seen coming (woolly-finch 26).
    known. Never resume a cold one.
 5. **Tell the player what was found per agent and which way each went**, before waiting on any
    of them.
+
+## A push that starts no CI run
+
+**A push that starts no CI run is diagnosed, not waited on.** When `gh pr checks` answers
+"no checks reported" minutes after a push, inspect the workflow runs and the PR's mergeability.
+GitHub cannot run a pull-request merge check while the branch conflicts with main: fetch
+current main, reconcile it under **merging-main**, and review the result before proceeding.
+If the PR is mergeable but no run exists, an empty commit on the branch re-triggers CI.
+Waiting or repeatedly pushing empty commits does not resolve a merge conflict.
 
 ## Proposed, not asked for
 
