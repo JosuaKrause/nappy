@@ -38,7 +38,8 @@ writing-tests, designing-classes, python-tooling, cli-tools and review-answers.
 
 - **Each skill opens with its must-see rules**, one line each, inside its first two kilobytes.
 - **The board** is read at session start, when the player says "doc" or "check the doc", and
-  before every write to it; it is not polled on other turns.
+  before the first write to it in a turn, with no read between the session's own consecutive
+  writes; it is not polled on other turns.
 - **One owner per rule:** the identity rule is committing's, and each of the three skills keeps
   only what is its own (the reviewer identity alone approves; the two roles whose captures count).
   The mechanics of the test-only-members list are the tool's; writing-tests keeps what a builder
@@ -61,7 +62,8 @@ writing-tests, designing-classes, python-tooling, cli-tools and review-answers.
   capture, experiment evidence, dev flags and runner internals; the filing of an inbox batch;
   session-cleanup's storage steps; the reviewer's procedure for a changed checker.
 - **The proposals are listed once at the end of each file that has any**, each with the player's
-  word it extends or the record that proposes it.
+  word it extends or the record that proposes it, or saying that the player's words name nothing
+  on the point.
 
 The twelve skills are smaller by less than the review's table projected: the moves are made, and
 the same review adds an opening list to every file, a closing list to six, the layer list and the
