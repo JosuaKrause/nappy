@@ -21,6 +21,11 @@
 #   - docs/todo/**, docs/review/**, docs/TODO.md and every playtest bring playtest-feedback
 #   - lint-docs.sh lints an edited file of the queue, the review items, the records and the
 #     playtests (the last two for the duplicate-name check only)
+#   - lint-docs.sh takes the checkout from the edited file: a governed doc in a worktree under
+#     .claude/worktrees/ is linted by that worktree's tools/lint.sh, the main checkout's by the main
+#     checkout's, and the same file name in another repository by nobody
+#   - lint-docs.sh and tools/lint.sh's default set both govern every Markdown file under
+#     .claude/skills/, a skill's reference files included, at any depth
 #   - git-grep-guard.sh reads the whole command text, quotes and heredoc bodies included, and
 #     denies any git followed by grep as a word of its own with neither -I nor a text-only
 #     pathspec: behind a wrapper (timeout, sudo, env, find | xargs), inside a heredoc or quoted
@@ -641,6 +646,97 @@ if [ -z "$evidence_output" ]; then
     echo "ok   lint-docs.sh prints nothing for a branch-name-shaped hit under docs/evidence/"
 else
     fail "lint-docs.sh flagged a doc under docs/evidence/: $evidence_output"
+fi
+
+# A skill's reference files are rules like its SKILL.md: the hook governs every Markdown file under
+# .claude/skills/, at any depth, and so does tools/lint.sh's own default set.
+for governed_path in .claude/skills/orchestrating/SKILL.md \
+    .claude/skills/orchestrating/references/agent-contract.md \
+    .claude/skills/zz-test-rules-hooks/references/deeper/note.md; do
+    checks=$((checks + 1))
+    if [ "$(governed_trace "$governed_path")" -ge 1 ]; then
+        echo "ok   lint-docs.sh lints $governed_path"
+    else
+        fail "lint-docs.sh does not lint $governed_path"
+    fi
+done
+checks=$((checks + 1))
+if [ "$(governed_trace .claude/skills/zz-test-rules-hooks/references/picture.svg)" -ge 1 ]; then
+    fail "lint-docs.sh lints a file under .claude/skills/ that is not Markdown"
+else
+    echo "ok   lint-docs.sh ignores a file under .claude/skills/ that is not Markdown"
+fi
+
+# A throwaway repository with a worktree where an agent's is, <main>/.claude/worktrees/<name>: the
+# hook that runs is the main checkout's copy, and the doc it is handed decides which checkout's
+# layout it is matched against and whose tools/lint.sh reads it. Each checkout's lint.sh is a stub
+# that names itself and the file it was given and fails, so the hook's output says which one ran.
+lint_repo="$work_dir/lint-repo"
+mkdir -p "$lint_repo/.claude/hooks" "$lint_repo/tools" "$lint_repo/.claude/skills/probe/references"
+cp "$root/.claude/hooks/lint-docs.sh" "$lint_repo/.claude/hooks/lint-docs.sh"
+printf '#!/usr/bin/env bash\necho "MAIN LINT $*"\nexit 1\n' > "$lint_repo/tools/lint.sh"
+chmod +x "$lint_repo/tools/lint.sh"
+printf '# rules\n' > "$lint_repo/CLAUDE.md"
+printf '# a reference file\n' > "$lint_repo/.claude/skills/probe/references/note.md"
+(
+    cd "$lint_repo" || exit 1
+    git init -q . \
+        && git add -A \
+        && git -c user.name=test -c user.email=test@example.invalid commit -q -m "a tree to lint" \
+        && git worktree add -q --detach .claude/worktrees/agent
+) >/dev/null 2>&1
+lint_worktree="$lint_repo/.claude/worktrees/agent"
+printf '#!/usr/bin/env bash\necho "WORKTREE LINT $*"\nexit 1\n' > "$lint_worktree/tools/lint.sh"
+lint_hook_says() {
+    printf '{"tool_input":{"file_path":"%s"}}' "$1" \
+        | "$lint_repo/.claude/hooks/lint-docs.sh" \
+        | jq -r '.hookSpecificOutput.additionalContext // empty'
+}
+# $1 label  $2 the text the hook's output must hold ("" for no output at all)  $3 the edited file
+assert_lint_hook() {
+    local got
+    got="$(lint_hook_says "$3")"
+    checks=$((checks + 1))
+    if [ -z "$2" ] && [ -z "$got" ]; then
+        echo "ok   $1"
+    elif [ -n "$2" ] && [ "${got#*"$2"}" != "$got" ]; then
+        echo "ok   $1"
+    else
+        fail "$1: expected [${2:-nothing}] in the hook's output, got [$got]"
+    fi
+}
+assert_lint_hook "lint-docs.sh lints the main checkout's CLAUDE.md with the main checkout's lint.sh" \
+    "MAIN LINT " "$lint_repo/CLAUDE.md"
+assert_lint_hook "lint-docs.sh lints a worktree's CLAUDE.md with that worktree's lint.sh" \
+    "WORKTREE LINT " "$lint_worktree/CLAUDE.md"
+assert_lint_hook "the worktree's lint.sh is handed the worktree's own file" \
+    "/.claude/worktrees/agent/CLAUDE.md" "$lint_worktree/CLAUDE.md"
+assert_lint_hook "lint-docs.sh lints a reference file in a worktree" \
+    "WORKTREE LINT " "$lint_worktree/.claude/skills/probe/references/note.md"
+printf 'not a doc\n' > "$lint_worktree/tools/notes.md"
+assert_lint_hook "lint-docs.sh ignores a Markdown file in a worktree that is outside the governed set" \
+    "" "$lint_worktree/tools/notes.md"
+# A repository that is not this one: the same file name is nobody's governed doc.
+other_repo="$work_dir/other-repo"
+mkdir -p "$other_repo/tools"
+printf '#!/usr/bin/env bash\necho "OTHER LINT $*"\nexit 1\n' > "$other_repo/tools/lint.sh"
+chmod +x "$other_repo/tools/lint.sh"
+printf '# rules\n' > "$other_repo/CLAUDE.md"
+( cd "$other_repo" && git init -q . ) >/dev/null 2>&1
+assert_lint_hook "lint-docs.sh ignores CLAUDE.md in another repository" "" "$other_repo/CLAUDE.md"
+
+# tools/lint.sh's own default set, in the same throwaway repository: a volatile fact planted in a
+# reference file two folders below its skill is a hit. The copy has none of the scripts the layout
+# checks call, so its other complaints are expected and only the planted line is asserted.
+cp "$root/tools/lint.sh" "$lint_repo/tools/lint.sh"
+mkdir -p "$lint_repo/.claude/skills/probe/references/deeper"
+printf -- '- [x] a ticked box\n' > "$lint_repo/.claude/skills/probe/references/deeper/planted.md"
+planted_hits="$("$lint_repo/tools/lint.sh" 2>&1)"
+checks=$((checks + 1))
+if grep -qxF '.claude/skills/probe/references/deeper/planted.md:1: ticked box' <<<"$planted_hits"; then
+    echo "ok   tools/lint.sh's default set reaches a reference file below a skill"
+else
+    fail "tools/lint.sh's default set misses a reference file below a skill: $planted_hits"
 fi
 
 # ---------------------------------------------------------------- git-grep-guard.sh -------------
