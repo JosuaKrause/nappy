@@ -1,7 +1,7 @@
 class_name ScriptedPhase
 extends RefCounted
 ## **The dawn phase for a row the day places for a reason of its own**: a scripted row on its day
-## (day 10's night raid, day 13's firefight) or a one-shot whose roll came up. It draws one of the
+## (day 10's night raid, day 13's firefight). It draws one of the
 ## day's open locations its ground takes, each weighted by `weigh` (the row's role weights over the
 ## location's tiles: a wall kept off the route, friction drawn onto it, as the roll weighed a tile),
 ## offers it the row through `ground` (the dawn draw's own path: the first tile with room all round,

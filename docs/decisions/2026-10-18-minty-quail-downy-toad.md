@@ -15,8 +15,8 @@ fixed part holds is recorded on its location (the design's fixed parts' phases, 
   candidate win the pick, and the reviewer found main's sites differ from the run's on 23 of 400
   city-days (5 of 40 cities from 55501 in steps of 29, from day 8).
 - **The fixed parts hold their locations.** At dawn each mast, each playground and every standing
-  fixed part (the seals, the region wall's and its doors' bodies) is recorded on the location
-  holding its tile (`DayLocations.holding()`, `hold_fixed_part()`), so the draw passes over it. A
+  fixed part (the seals, the region wall's bodies; the doors' bodies are not standing, and their
+  streets are held already) is recorded on the location holding its tile (`DayLocations.holding()`, `hold_fixed_part()`), so the draw passes over it. A
   soft seal stands on a street no hold closes, so its sidewalk locations are what it holds. A
   mast's location on a day before the masts holds nothing and is drawn like any other. A
   playground's ground is in no location, so it holds none.

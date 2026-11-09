@@ -19,14 +19,13 @@ Read a run back with `./tools/telemetry.sh`. The table of entry kinds is `docs/T
 **No RNG. No `day_rng()` stream. Nothing that changes a placement or a roll.**
 
 Where a system logs a random outcome it **hoists the existing roll into a variable** to print it; it
-never adds one. `EventScheduler`'s one-shot roll is the model:
+never adds one. The shape, for a roll compared against a threshold:
 
 ```gdscript
 # Hoisted out of the comparison purely so it can be written down.
 var roll := rng.randf()
-var threshold := 1.0 / float(remaining)
 if roll > threshold:
-    _note(trace, "roll", "one-shot %s: %.2f > %.2f — not today" % [def.id, roll, threshold])
+    _note(trace, "roll", "%s: %.2f > %.2f — not today" % [what, roll, threshold])
     continue
 ```
 

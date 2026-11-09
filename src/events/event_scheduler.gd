@@ -645,8 +645,8 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## bodies, both planned before this runs, which the day's rules read with what it places
 ## (`StreetInvalidation`).
 ##
-## `trace` is where the planning writes its own account for the run log — a one-shot's roll, a
-## lesson added, a park spoiled — and no trace writes nowhere. It changes nothing the plan holds.
+## `trace` is where the planning writes its own account for the run log — a one-shot owed to her
+## walk, a lesson added, a park spoiled — and no trace writes nowhere. It changes nothing the plan holds.
 ##
 ## `beside_the_routes` is the row the roadblock phase places beside the day's routes before the dawn draw,
 ## so that one is close by wherever she reads the task's mark: day 13's roadblock
@@ -672,7 +672,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
 	_plan_the_dawn(day, base, map, consumed_one_shots, scars, calm, route, heat, doors,
-			events, trace, spec, beside_the_routes, mast_sites)
+			events, mast_sites, trace, spec, beside_the_routes)
 	_ensure_the_run_is_taught(day, events, heat, trace)
 
 	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in
@@ -694,9 +694,8 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 static func _plan_the_dawn(day: int, base: int, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary], calm: CalmAreas,
 		route: RouteSource, heat: int, doors: PackedVector2Array, events: DayEvents,
-		trace: RunTrace = null, spec: DaySpec = null,
-		beside_the_routes: EventDef = null,
-		mast_sites: Array[MastSites.Site] = []) -> Array[Planned]:
+		mast_sites: Array[MastSites.Site], trace: RunTrace = null, spec: DaySpec = null,
+		beside_the_routes: EventDef = null) -> Array[Planned]:
 	if spec == null:
 		spec = DaySpec.for_day(day)
 	# Which tiles each kind of event may stand on, worked out at most once per day. See
@@ -721,16 +720,17 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	var reach := RouteReachRule.new(map, corridor)
 
 	# **The fixed parts' phases** (the design's "the city's fixed parts have phases of their own"):
-	# the seals, the region wall and its doors (standing, planned before the day), the ambient rows
+	# the seals and the region wall's bodies (standing, planned before the day), the ambient rows
 	# and the masts stand where their planners put them, and each is recorded on the location
 	# holding it, so the draw passes over it. A soft seal stands on a street no hold closes, so its
-	# two sidewalk locations are what it holds; a hard seal's, the wall's and a door's streets are
-	# held already. A mast's location on a day before the masts holds nothing and is drawn like any
+	# two sidewalk locations are what it holds; a hard seal's and the wall's streets are held
+	# already. The region doors' bodies are not standing and their streets are held, so the
+	# locations under them are unavailable already. A mast's location on a day before the masts holds nothing and is drawn like any
 	# other.
 	var fixed := _place_ambient(day, map, heat)
 	events.add_all(fixed)
 	_place_scars(day, scars, map, events, reach, heat)
-	var masts := _place_masts(day, map, heat, doors, scars, mast_sites)
+	var masts := _place_masts(day, map, mast_sites, heat, doors, scars)
 	events.add_all(masts)
 	fixed.append_array(masts)
 	for part in events.standing():
@@ -1607,9 +1607,8 @@ static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> 
 ## under `added_mast_id()`, on every later day whose holds, closures and doors leave the tile alone
 ## — the same refusals a site is planned under. One that was never silenced left no scar and is not
 ## planned again (*"Only if silenced"*).
-static func _place_masts(day: int, map: CityMap, heat: int = 0,
-		doors := PackedVector2Array(), scars: Array[Dictionary] = [],
-		mast_sites: Array[MastSites.Site] = []) -> Array[Planned]:
+static func _place_masts(day: int, map: CityMap, mast_sites: Array[MastSites.Site],
+		heat: int = 0, doors := PackedVector2Array(), scars: Array[Dictionary] = []) -> Array[Planned]:
 	var planned: Array[Planned] = []
 	if day < Tuning.MAST_FIRST_DAY:
 		return planned

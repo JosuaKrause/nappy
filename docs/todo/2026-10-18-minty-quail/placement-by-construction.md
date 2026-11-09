@@ -18,8 +18,8 @@ by line; its numbered list says where the code differs. Nothing in that section 
 view and its draw (`ViewBag`, `LocationDraw`, asking `LocationGround`), the day's placement rules as
 the invalidation (`StreetRule`, one class per rule, composed by `StreetInvalidation`, with a
 location's own ground in `LocationFit`), the roadblock phase (`RoadblockPhase`), day 13's section
-swap, the escape's one draw a street, the scene recipes' locations, and the fixed parts', the
-scripted rows' and the one-shots' dawn phases that are built:
+swap, the escape's one draw a street, the scene recipes' locations, the fixed parts' and the
+scripted rows' dawn phases, and the one-shots owed to her walk that are built:
 - every other location drawn during the walk, the walk's sitings among them (`WalkSiting`: day 3's
   fire, the poster crews, day 6's man shouting, day 7's route van, day 11's added mast, the dusk
   fire). **Read as** (the orchestrator's reading): a rigged marble, such as the day-6 man shouting

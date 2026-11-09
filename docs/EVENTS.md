@@ -1306,8 +1306,9 @@ Each item quotes the code on this branch.
      only once it comes up. It draws exactly as weighing only the valid rows from the start would.
 2. **The walk's sitings still roll a spot.** `WalkSiting` goes through `_best_of()`, which rolls
    tiles and takes the roomiest, each candidate asked of the same rules (`StreetInvalidation`). The
-   rest of the day is placed by location: the scripted rows and the one-shots each draw one location
-   at dawn, weighted by role, and are assigned it (`ScriptedPhase`); an authored scene's row stands
+   rest of the day is placed by location: the scripted rows each draw one location at dawn, weighted
+   by role, and are assigned it (`ScriptedPhase`); a one-shot is owed to her walk and sited on her
+   way, never placed at dawn (`EventDef.validate()` refuses one that is not); an authored scene's row stands
    in the location its tile names, asked once (`EventScheduler.recipe_placement()`); the masts stand
    at the run's sites (`EventWorld.mast_sites()`, worked out once when the run's city is handed
    over) and each holds the location under it, so no draw happens there. The ambient rows stand where
@@ -1347,15 +1348,18 @@ Each item quotes the code on this branch.
 EventScheduler.build_day(day_index, run_seed):
     rng = RNG(hash(run_seed, day_index))
     1. lay out the day's locations (DayLocations), each told its view
-    2. add all AMBIENT events for the current act, the scars, the masts
+    2. add all AMBIENT events for the current act, the scars, the masts at the run's sites;
+       each fixed part (the seals and the wall's bodies standing, the masts, the ambient
+       rows) holds the location under it
     3. day 13: the roadblock phase (RoadblockPhase)
-    4. add SCRIPTED events whose day == day_index
-    5. roll ONE_SHOT events not yet consumed this run, gated by first_day/last_day —
-       except one the day owes her walk, which is owed here and sited later
+    4. the SCRIPTED events whose day == day_index, each drawing a location (ScriptedPhase)
+    5. owe her walk the ONE_SHOT events not yet consumed this run, gated by
+       first_day/last_day, each sited later on her way
     6. spoil the parks she used  (docs/CITY.md)
     7. owe her the day's moments (the rows the director sites in front of her)
     8. draw every open location from its view's bag (LocationDraw)
-    9. validate: a path from home to at least one usable calm zone must exist
+   Every body is asked the day's rules as it is placed (StreetInvalidation), so a path from
+   home to the day's routes stands by construction; nothing is checked or repaired after.
 ```
 
 **The day's density is the bags' empty marbles**, set per view and per day so each view's share of

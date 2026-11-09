@@ -1,6 +1,6 @@
 extends RefCounted
 ## `ScriptedPhase`, the dawn phase for a row the day places for a reason of its own (a scripted row
-## on its day, a one-shot whose roll came up): it draws one of the day's open locations, weighted by
+## on its day): it draws one of the day's open locations, weighted by
 ## what it is handed, offers it the row, assigns the location what it took and stands it, and passes
 ## over a location that takes nothing. Run with stand-ins for what it is handed: the day's locations
 ## (`_Locations`, ground locations with no street, the open ones set by hand) and the day's ground

@@ -246,9 +246,9 @@ func _test_the_commit_is_recorded_or_honestly_unknown(t) -> void:
 
 ## The invariant this file exists for.
 ##
-## `_place_one_shots` hoists its roll into a variable so the log can print the number against
-## the threshold. That is a one-line edit with a way to be catastrophically wrong: consume one
-## more value from the day's RNG and every event placed after it moves. So: plan every day of
+## A system that logs a random outcome hoists the roll it already makes into a variable so the log
+## can print it (the **telemetry** skill). That is a one-line edit with a way to be catastrophically
+## wrong: consume one more value from the day's RNG and every event placed after it moves. So: plan every day of
 ## a run handed no trace, plan them again handed one that keeps every line, and require the two to
 ## agree exactly.
 func _test_tracing_a_day_does_not_change_it(t) -> void:

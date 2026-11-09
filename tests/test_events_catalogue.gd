@@ -22,6 +22,7 @@ func run(t) -> void:
 	_test_where_a_body_stands_is_read_from_one_place(t)
 	_test_one_barrier_costs_less_than_the_hold_it_stands_at(t)
 	_test_catalogue_is_fair(t)
+	_test_a_one_shot_is_sited_on_her_way(t)
 	_test_a_warning_first_is_owed_a_flat_minimum(t)
 	_test_the_loose_dog_and_the_cat_do_not_telegraph(t)
 	_test_as_warned_first_carries_solid_parts_too(t)
@@ -846,3 +847,18 @@ func _test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t) -> void:
 		t.check(def.obstructs_radius <= 0.0 and def.solid_reach() <= 0.0,
 				"'%s' has no body on the sidewalk (obstructs %.0f)" % [id, def.obstructs_radius])
 		t.check(not def.draws_body_shadow, "and casts no shadow there")
+
+## **A one-shot is sited on her way, or it is refused** (`EventDef.met_wherever_she_goes_refusal()`,
+## which `EventDef.validate()` refuses a row for): a set piece has to be met wherever she goes, and
+## one placed at dawn would be met only if she walked there. Day 3's fire, sited from her walk, keeps
+## the rule; the same row with its `on_her_way` taken off breaks it; a recurring row with none keeps
+## it, since the rule is about one-shots.
+func _test_a_one_shot_is_sited_on_her_way(t) -> void:
+	var fire := EventCatalogue.by_id("burning_building")
+	t.check(fire.met_wherever_she_goes_refusal() == "", "day 3's fire, sited from her walk, keeps the rule")
+	var unsited: EventDef = fire.duplicate()
+	unsited.on_her_way = null
+	t.check(unsited.met_wherever_she_goes_refusal() != "",
+			"the same one-shot not sited from her walk is refused")
+	t.check(EventCatalogue.by_id("delivery_van").met_wherever_she_goes_refusal() == "",
+			"a recurring row with no on_her_way keeps it")
