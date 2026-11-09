@@ -329,7 +329,6 @@ src/dev/scene_recipe_runtime.gd holds_the_home_streets
 src/events/day_planner.gd closes_streets
 src/events/day_planner.gd holds_the_home_streets
 src/events/day_planner.gd number
-src/events/day_planner.gd section
 src/events/day_planner.gd world
 src/events/event_manager.gd holds_the_home_streets
 src/events/event_manager.gd number
@@ -345,10 +344,7 @@ src/events/event_scheduler.gd keeps_unused_calm_clear
 src/events/event_scheduler.gd number
 src/events/event_scheduler.gd one_notice_at_a_time
 src/events/event_scheduler.gd wall_row_share
-src/main.gd exits
 src/main.gd goal
-src/main.gd length
-src/main.gd number
 src/main.gd section
 src/main.gd world
 src/routes/seal_planner.gd seal_pictures

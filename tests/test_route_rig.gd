@@ -104,7 +104,7 @@ func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d:%s" % [SEED, day, stream])
 	return rng
 
-## One day's city in a run of its own, built the way `main._start_day()` builds it — closures before
+## One day's city in a run of its own, built the way `main._start()` builds it — closures before
 ## events — with streaming off so a plan is placed with nobody near it, a resistance director over it
 ## and a real `Stroller` scene parked on the doorstep: the one real leg this suite walks needs
 ## `move_and_slide()` to actually move her, which only the real scene does (see the verify skill).

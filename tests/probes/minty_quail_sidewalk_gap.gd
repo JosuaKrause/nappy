@@ -6,7 +6,7 @@ extends RefCounted
 ##     tools/test.sh probes/minty_quail_sidewalk_gap.gd > out.txt
 ##     grep '^SG' out.txt
 ##
-## Per seed, day 13, started the way `DayDirector.start_day()` starts one. A body's tiles are what
+## Per seed, day 13, started the way `DayDirector.start()` starts one. A body's tiles are what
 ## the map records for it (`EventSpawner.obstructed_footprint()`). For every line across the street
 ## its footprint covers, each side's sidewalk tiles left open are counted, and the body is read by
 ## its worst line: `near/far` is the side with fewer open, then the other. Asked of:

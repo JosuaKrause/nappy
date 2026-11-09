@@ -198,9 +198,13 @@ var _dev_rig := DevRig.new()
 var _route_rig: RouteRig
 ## `--route` in the escape's building: see `_add_the_building_walker()`.
 var _building_walker: BuildingWalker
-## Dev spawn and meter overrides apply to the opening day only; every later day starts on
-## the doorstep with a fresh baby, like the game intends.
+## Whether the next walk is this boot's first: the developer's start flags apply to it only (`--spawn`
+## and `--meters` on a day, `--start-escape <part>` in the building), and every later walk starts
+## where the game puts her, with a fresh baby, like the game intends.
 var _first_day := true
+## Where the day director gets each walk's world (`DayWorldSource`): this scene, through
+## `_stand_the_world()`.
+var _worlds: DayWorldSource
 ## `GameSave.try_resume()`'s own return: `{}` on a fresh run, or `{"day_under_way": bool}` once
 ## the run already carries a resumed run's fields — set once in `_ready()` and read by
 ## `_on_title_start()`, which is the only place the title's own dismissal is not simply "start
@@ -231,6 +235,21 @@ var _boot_camera: Camera2D
 
 func _init() -> void:
 	configure(RunConfig.at_boot())
+	_worlds = Worlds.new(_stand_the_world)
+
+## **The main scene's worlds, as the day director asks for them** (`DayWorldSource`): every walk's
+## world is stood by `main._stand_the_world()`, which holds both the day's city and the escape's
+## worlds and everything they are built from.
+class Worlds extends DayWorldSource:
+	var _stand: Callable
+
+	func _init(stand: Callable) -> void:
+		_stand = stand
+
+	## Overrides DayWorldSource.stand.
+	func stand(spec: DaySpec) -> DayWorld:
+		var world: DayWorld = _stand.call(spec)
+		return world
 
 ## Hands this boot its run configuration and sets the members read from it. `_init()` hands it the
 ## process's own (`RunConfig.at_boot()`); a test hands it one of its own before the boot runs, and a
@@ -400,8 +419,8 @@ func _ready() -> void:
 		_run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 	# **One boot, and the first day decides its world.** A day is walked in the city, built here
 	# around her doorstep; the escape's sections build their own worlds when each begins
-	# (`_start_section()`), after the section is announced, so whatever the building or the city
-	# does as it is built is already that section's.
+	# (`_stand_the_world()`, asked by the day director after the section is announced), so
+	# whatever the building or the city does as it is built is already that section's.
 	var walks_a_day := first.section == DaySpec.Section.NONE
 	var ground := Vector2.ZERO
 	if walks_a_day:
@@ -479,23 +498,25 @@ func _ready() -> void:
 				_frame_records_dir)
 		_readout.watch_frames(_frame_recorder)
 
-	# Built before `_start_day()`, whose `day_planned` starts it once the day it is meant to walk
+	# Built before `_start()`, whose `day_planned` starts it once the day it is meant to walk
 	# actually exists — see `src/dev/route_rig.gd`.
 	if walks_a_day and not config.route_targets.is_empty():
 		_add_the_route_rig(_resistance)
 
+	# `VisitCounter`'s own "the escape: begun" — the fresh handover from a won day 14 only, never a
+	# resume of one already under way, which is not the sequence beginning.
+	if not walks_a_day and _flow.opening == RunFlow.Opening.ESCAPE_HANDED_OVER:
+		EventBus.escape_begun.emit()
+	# The day's spec is read again rather than `first`'s, since a resumed day under way may have
+	# just been charged back to its checkpoint's day above.
+	if not _start(_day_spec(config, _run.header.day) if walks_a_day else first):
+		_retire_the_boot_camera()
+		return
 	if walks_a_day:
-		if not _start_day():
-			_retire_the_boot_camera()
-			return
 		_write_dawn_for_a_resumed_run()
 	else:
-		# `VisitCounter`'s own "the escape: begun" — the fresh handover from a won day 14 only,
-		# never a resume of one already under way, which is not the sequence beginning.
-		if _flow.opening == RunFlow.Opening.ESCAPE_HANDED_OVER:
-			EventBus.escape_begun.emit()
-		_start_section(first, false)
-		# The world was built inside the call above, after the boot's own orientation pass.
+		# The section's world was built inside the start above, after the boot's own orientation
+		# pass.
 		_apply_orientation()
 	# `_player.reset_at()` above has just put her own camera exactly where the boot camera was
 	# standing in for it, so freeing it now hands the viewport's current camera straight to hers —
@@ -507,8 +528,8 @@ func _ready() -> void:
 	if walks_a_day:
 		_dev_rig.setup_follow_camera(self, config.follow_target, config.zoom_override)
 	_add_trailer_rigs()
-	if _flow.authored and not _begin_the_scene(walks_a_day):
-		return
+	if _flow.authored:
+		_begin_the_scene(walks_a_day)
 
 	_add_the_screenshot_rig()
 
@@ -560,7 +581,7 @@ func _ready() -> void:
 ## — **unless it is a genuinely resumed escape** (`resumed_from_disk`, which `_ready()` reads off
 ## `_escape_section_came_from_the_file()`), which opens on the title first, exactly as a resumed day
 ## does, and the title's start then shows the brief (`_show_the_resume_gate()`). Either screen
-## pauses the tree, so the section's clock, started by `_start_section()`, stands still behind it.
+## pauses the tree, so the section's clock, started by `_start()`, stands still behind it.
 ## A walker (`--route`) has the brief's continue pressed for it by the route rig (`RouteRig.press_the_brief()`),
 ## through the run flow's own `brief_opened`. Its own function so a test booting the real scene can
 ## drive every answer.
@@ -824,10 +845,16 @@ func _city_map() -> CityMap:
 	var generated: CityMap = _city_maps.call(_run.header.run_seed)
 	return generated
 
-## The world a section of the escape is walked in, built the first time that section begins: the
-## building for the first, and the city for the second — out of the building's service exit, or
-## straight onto the street on a boot that opens there. A retried section walks the world it
-## already has.
+## **The world `spec` is walked in, standing** (`DayWorldSource.stand()`, which `Worlds` answers
+## through this): built the first time a section asks for it, and the world already standing on
+## every later ask, so a retried day or section walks the world it already has.
+##
+## - **The building** (`DaySpec.World.BUILDING`): built once (`_build_the_escape_building()`), its
+##   night started again on every entry from the same seed, so a retry is the same building. She
+##   starts at her own flat's door, or on the boot's first walk at the part `--start-escape` names.
+## - **The city**: the day's, built at boot round her doorstep, or the escape's, built here the first
+##   time the city section begins — out of the building's service exit, or straight onto the street
+##   on a boot that opens there (`_build_the_escape_city()`).
 ##
 ## **Walking out of the building, its wall blockers and its pictures go; its fade stays.** The
 ## building and the city share one physics space and one canvas, both laid out from the world
@@ -836,20 +863,50 @@ func _city_map() -> CityMap:
 ## drawn on the city's top streets — `InteriorScene.put_the_pictures_away()`, once the city stands
 ## and she has been moved into it. The fade is not reversed here:
 ## `InteriorScene` holds the black at full opacity from the moment she reaches the door, and
-## `_start_section()` clears it once she has been put down on the street, so nothing of the city is
-## seen being assembled.
-func _build_the_world_for(spec: DaySpec) -> void:
+## `_start()` clears it once she has been put down on the street, so nothing of the city is seen
+## being assembled. The building's own events stop rather than playing on to an empty map — the
+## vents, the window flashes and the masked man who comes up the shaft every few seconds would
+## otherwise run for the rest of the sequence, unseen and in the log.
+##
+## The day's clock is told where she now is and, on a walk home, the map her front door is on.
+func _stand_the_world(spec: DaySpec) -> DayWorld:
 	if spec.world == DaySpec.World.BUILDING:
 		if not _interior:
 			_build_the_escape_building()
-	elif not _city:
+			_watch_the_escape()
+		_interior.start_the_night(_building_seed)
+		_add_the_building_walker()
+		_day.setup(null, _player, _run)
+		var start_at := _interior.part_world_position(_escape_start_part()) if _first_day \
+				else _interior.start_world_position()
+		# The same seed on every entry, so a retry is the same building.
+		var building_rng := RandomNumberGenerator.new()
+		building_rng.seed = _building_seed
+		return DayWorld.in_the_building(_interior, _building_events, _player, _baby, start_at,
+				Vector2.UP, building_rng)
+	if not _city:
 		if _interior:
 			_interior.take_the_walls_out()
-		_build_the_finale_city()
+		_build_the_escape_city(spec)
 		if _interior:
 			_interior.put_the_pictures_away()
-	# The first world this boot stands is where the run log's observer starts watching the escape —
-	# her, the baby, the day's clock and the badges, which exist from here on.
+		_watch_the_escape()
+		_add_the_route_rig_in_the_city()
+	if _building_events:
+		_building_events.stand_down()
+	if _interior:
+		_interior.stop_the_night()
+	if spec.goal == DaySpec.Goal.CITY_EDGE:
+		spec.use_exits(_the_city_exits())
+	_day.setup(_city.map if spec.goal == DaySpec.Goal.HOME else null, _player, _run)
+	var start_at := _city.map.doorstep_world_position()
+	if spec.start_point() == DaySpec.Start.SERVICE_EXIT:
+		start_at = _finale_start_position()
+	return DayWorld.in_the_city(_city, _city.events, _player, _baby, start_at)
+
+## The first world an escape boot builds is where the run log's observer starts watching the
+## escape — her, the baby, the day's clock and the badges, which exist from here on. Once a boot.
+func _watch_the_escape() -> void:
 	if not _escape_watched and _session:
 		_escape_watched = true
 		_session.watch_escape(_player, _baby, _day, _edge)
@@ -945,30 +1002,21 @@ func _build_the_escape_building() -> void:
 	_add_excitement_halo()
 	_add_debug_layers()
 
-## Section two's world: the city she knows with nobody in it, and the finale's own plan on it.
+## Section two's world: the city she knows, built for the escape, and her moved into it.
 ##
 ## The city is generated from the run seed exactly as an ordinary run's is, so the streets, the
 ## parks and the two exits are the ones she has walked for fourteen days. What is different is
-## everything laid *on* it, and every difference is the section's `DaySpec`: `City.start_day()`
-## dresses the blocks and grows no route tree, closures or region wall, since the walk is handed in
-## once it is planned (`DaySpec.closes_streets`), and the posters only show (`pastes_posters`); the
-## crowd is nobody (`crowd_density`, *"no regular cars or regular people on the street"*); and the
-## plan is the escape's own (`_plan_the_finale_city()`). It is dark from its first frame and stays
-## at night.
-func _build_the_finale_city() -> void:
+## everything laid *on* it, and every difference is the section's `DaySpec`, which the day director
+## dresses and plans it by: `City.start_day()` dresses the blocks and grows no route tree, closures
+## or region wall, since the walk is handed in once it is planned (`DaySpec.closes_streets`), and the
+## posters only show (`pastes_posters`); the crowd is nobody (`crowd_density`, *"no regular cars or
+## regular people on the street"*); the plan is the escape's own (`DaySpec.Draw.BAG_PER_STREET`).
+## It is dark from its first frame (`is_dark_from_the_start()`, which the city is built with) and
+## stays at night (`runs_the_daylight_down()`).
+func _build_the_escape_city(spec: DaySpec) -> void:
 	_city = _new_city()
-	_city.dark_from_the_start = _flow.spec.dark_from_the_start
+	_city.dark_from_the_start = spec.is_dark_from_the_start()
 	_city.build(_city_map())
-	_spend.city_state.begin_day(_city.map.block_plans, _run.header.day)
-	_city.start_day(_spend.city_state, _run.header.day,
-			_run.calendar.day_rng(_run.header.day, "closures"), _flow.spec)
-	_city.set_act(_run.calendar.current_act())
-	# Night, and fixed there: the escape happens after the last day and the clock is the tension
-	# rather than the light, so the sky does not run itself down over the sequence.
-	if not _flow.spec.daylight_runs_down:
-		_city.set_daylight(0.0)
-	_new_director().start_the_crowd(Vector2.INF)
-
 	if not _player:
 		_player = _make_player()
 		_player.carrying = true
@@ -992,7 +1040,6 @@ func _build_the_finale_city() -> void:
 	# so the rotation is applied again rather than left for the next time the window changes shape
 	# — see `_apply_orientation()`, which is idempotent and is asked the same question every frame.
 	_apply_orientation()
-	_plan_the_finale_city()
 
 ## The city's two ways out, for a `DaySpec.Goal.CITY_EDGE` day: the **tiles** the chains end on
 ## rather than the points `CityEdge` draws its pictures at. The portal's own face is anchored on
@@ -1007,30 +1054,6 @@ func _the_city_exits() -> Dictionary:
 		CityEdge.Kind.BRIDGE: _city.map.tile_to_world(
 				FinalePlanner.exit_tile(_city.map, CityEdge.Kind.BRIDGE)),
 	}
-
-## Today's finale plan, rebuilt from the run seed every time section two begins — on the first
-## walk out of the service door and on every restart after a loss. Deterministic, so a restarted
-## section is the same city rather than a thinner one: a plan that had been half spent would
-## quietly reward losing. Its encounters are counted under the section's own day number.
-## An authored scene installs its own instead (`RunFlow.plans_the_finale()`).
-func _plan_the_finale_city() -> void:
-	if not _flow.plans_the_finale():
-		return
-	var elapsed := Time.get_ticks_msec()
-	# The escape spends none of the run's one-shots: a list of its own, empty.
-	var none: Array[String] = []
-	_city.events.start_day(_flow.spec, _run.calendar.day_rng(_run.header.day, "finale"), none,
-			_finale_start_position())
-	var walk := _city.events.walk() as FinalePlanner.Plan
-	# The streets the chains run through carry the route's kerb tint, as a day's corridor does.
-	_city.tint_the_route(walk)
-	# Printed as well as logged, for the same reason `_start_day()` prints the day it just built:
-	# the shape of the walk is the one thing worth knowing before anything else in the log means
-	# anything, and a run with telemetry off still has a console.
-	var summary := walk.summary(_city.events.plans().size())
-	print("[Main] finale planned in %d ms (seed %d): %s"
-			% [Time.get_ticks_msec() - elapsed, _city.map.seed_used, summary])
-	_the_trace().note("plan", "finale: %s" % summary)
 
 ## `--start-escape`'s raw word (`config.start_escape_at`), mapped onto a building part's waypoint to
 ## teleport to before the first frame — `"hallway_third"`, her own door, for every word this does
@@ -1064,75 +1087,6 @@ static func _escape_part_for(raw: String) -> String:
 			return "hallway_first"
 		_:
 			return "hallway_third"
-
-## A section of the escape begins — the first time, or again after a loss — the way `_start_day()`
-## begins a day: announced (`day_started`, under the section's own day number), its world built if
-## it is not standing yet, her put at its start, the baby asleep in her arms, its clock started, and
-## its shape announced (`day_planned`). Whatever screen comes next is the caller's: a section's
-## brief (`_show_the_section_brief()`), on its first walk and on every retry after the lost
-## section's outcome screen alike.
-##
-## Where she goes is this file's answer because only this file holds both worlds. **The clock runs
-## from here**, as a day's does from `_start_day()`: every screen that can stand in front of the
-## walk pauses the tree, and the day's clock pauses with it.
-##
-## The baby starts every attempt asleep with sleepiness full — *"the player holding the sleeping
-## baby (sleep bar is full)"* — which is also what makes a retry playable at all: the meter that
-## just reached a hundred is what lost the section.
-func _start_section(spec: DaySpec, restarted: bool) -> void:
-	_use_the_day(spec)
-	# The run's own record of where it is, which is what the save carries and what the next boot
-	# reads: written here, the one place every section of every boot passes through.
-	_facts.escape_section = spec.section
-	_hud.visible = false
-	# Announced before its world is built or anything is placed in it, as a day is, so whatever
-	# the building or the city does as it is built is counted as this section's.
-	EventBus.day_started.emit(spec.number)
-	_build_the_world_for(spec)
-	if spec.goal == DaySpec.Goal.CITY_EDGE:
-		spec.exits = _the_city_exits()
-	_day.setup(null, _player, _run)
-	if spec.world == DaySpec.World.BUILDING:
-		_add_the_building_walker()
-		var start_at := _interior.start_world_position()
-		if not restarted:
-			start_at = _interior.part_world_position(_escape_start_part())
-		_player.reset_at(start_at, Vector2.UP)
-		# The same seed on every entry, so a retry is the same building.
-		var building_rng := RandomNumberGenerator.new()
-		building_rng.seed = _building_seed
-		var none: Array[String] = []
-		_building_events.start_day(spec, building_rng, none, start_at)
-		_interior.start_the_night(_building_seed)
-	else:
-		# The building is behind her and nobody is in it, so its own events stop rather than
-		# playing on to an empty map — the vents, the window flashes and the masked man who comes
-		# up the shaft every few seconds would otherwise run for the rest of the sequence, unseen
-		# and in the log. Starting the building's plan again is what brings them back, and section
-		# one is never entered without it.
-		if _building_events:
-			_building_events.stand_down()
-		if _interior:
-			_interior.stop_the_night()
-		# A restart of section two replans it: see `_plan_the_finale_city()`.
-		if restarted:
-			_plan_the_finale_city()
-		_player.reset_at(_finale_start_position(), Vector2.DOWN)
-		DayDirector.prepare_city_scenery(_city, _player)
-		_city.events.stream_around(_player.global_position)
-	_baby.reset()
-	_baby.force_sleep()
-	_day.start(spec.length)
-	if spec.world == DaySpec.World.BUILDING:
-		EventBus.escape_section_started.emit(spec.section, restarted, _interior, _building_events)
-	else:
-		EventBus.escape_section_started.emit(spec.section, restarted, _city, _city.events)
-	EventBus.day_planned.emit(spec.number)
-	if _interior:
-		_interior.clear_fade()
-	if spec.world == DaySpec.World.CITY:
-		_add_the_route_rig_in_the_city()
-	_flow.planned()
 
 ## `--route`'s walker (`RouteRig`, `src/dev/route_rig.gd`) on the city as it stands, started afresh
 ## by every `day_planned` from here on. `resistance` is null in the escape, which has no subquest.
@@ -1184,6 +1138,7 @@ func _add_the_route_rig_in_the_city() -> void:
 ## never saved as under way (`DaySpec.saved_as_under_way`): a resumed escape is not charged a nerve
 ## for it.
 func _show_the_section_brief() -> void:
+	_hud.visible = false
 	_flow.open_brief()
 	_save_now(false)
 	_summary.show_summary(SummaryModel.brief_for(_run, "", _flow.spec.title), _flow.mode)
@@ -1340,7 +1295,7 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 ## Split out of `_on_title_start()` so a test can drive the outcome directly against a bare
 ## `_summary`, without paying for the whole boot this is normally reached from.
 ##
-## Writes nothing itself: `_ready()`'s own write right after `_start_day()` — `false`, made before
+## Writes nothing itself: `_ready()`'s own write right after `_start()` — `false`, made before
 ## the title was ever shown — already has the load's own charge on disk, for a resumed run, so a
 ## kill at any instant between here and the day brief's own continue finds exactly what this
 ## screen is showing, never a second charge and never a free one.
@@ -1503,7 +1458,7 @@ func _world_now() -> Node2D:
 ## The root window outlives a scene reload, and with it the `content_scale_size` the previous
 ## boot left: after a restart on a portrait phone the new boot already presents in the rotated
 ## 720x1280 box, so an unturned camera here draws the city upright in it, filling the screen the
-## wrong way up — and that frame stays on screen through the rest of `_ready()`, `_start_day()`
+## wrong way up — and that frame stays on screen through the rest of `_ready()`, `_start()`
 ## included, until the title is drawn. On a first boot the window still has the project's
 ## 1280x720 box, which the same call swaps before the first frame.
 ##
@@ -1817,37 +1772,48 @@ func _pauses_with_the_game(node: Node) -> void:
 
 # --------------------------------------------------------------- the day loop ---
 
-## Builds and starts the day, through the flow (`RunFlow.start_day()`), which has the director
-## start the game's own day or an authored scene's; writes nothing itself. Each caller decides what,
-## if anything, the save should say about the day this just built — see `_ready()`'s own call
-## (nothing for a fresh run, `false` for a resumed one) and `_on_summary_continued()`'s (`true`,
-## since nothing gates an ordinary continue into the next day at all). False, with the game quitting,
-## when an authored scene's setup did not stand.
-func _start_day() -> bool:
-	var errors := _flow.start_day(_new_director(), _day_spec(config, _run.header.day))
+## **Starts the walk `spec` describes**, the first time or again after a loss (`restarted`) — one of
+## the fourteen days, an authored scene's day, or a section of the escape — through the flow
+## (`RunFlow.start()`), which has the day director start it (`DayDirector.start()`, the one start
+## every walk goes through), standing its world through `_stand_the_world()`; writes nothing to the
+## save itself. Each caller decides what, if anything, the save should say about the walk this just
+## started — see `_ready()`'s own call (nothing for a fresh run, `false` for a resumed one),
+## `_on_summary_continued()`'s (`true`, since nothing gates an ordinary continue into the next day
+## at all) and a section's brief (`_show_the_section_brief()`), which is the escape's checkpoint.
+## False, with the game quitting, when an authored scene's setup did not stand.
+##
+## The run's own record of which walk it is in (`run.facts.escape_section`), which is what the save
+## carries and what the next boot reads, is written here, the one place every walk of every boot
+## passes through. **The clock runs from here**: every screen that can stand in front of the walk
+## pauses the tree, and the day's clock pauses with it. Whatever screen comes next is the caller's.
+func _start(spec: DaySpec, restarted := false) -> bool:
+	_facts.escape_section = spec.section
+	var errors := _flow.start(_new_director(), spec, restarted)
+	_first_day = false
 	if not errors.is_empty():
 		_scene_failed(errors)
 		return false
-	_first_day = false
+	# She has been put down on the street behind the black the building's service exit left: lifted
+	# now, so nothing of the city is seen being assembled.
+	if _interior:
+		_interior.clear_fade()
 	return true
 
 ## The director for the world as it stands now: the city (none in the escape's building), whichever
-## world's events, and the parts every day shares. Cheap and stateless, so built when a day starts
-## or ends rather than kept in step with a world that is rebuilt between sections.
+## world's events, and the parts every day shares, with where each walk's world comes from
+## (`_worlds`), the authored scene this boot plays, if any, and the trace. Cheap and stateless, so
+## built when a walk starts or ends rather than kept in step with a world that is rebuilt between
+## sections.
 func _new_director() -> DayDirector:
 	var director := DayDirector.new(_run.calendar, _run.facts, _run.attempt_spend, config)
 	director.use_the_world(_city, _event_source(), _resistance, _player, _baby, _day)
+	director.use_worlds(_worlds)
+	director.use_the_scene(_flow.scene)
+	director.use_trace(_the_trace())
 	director.first_day = _first_day
 	director.escape_follows = _flow.escape_follows()
 	director.spec = _flow.spec
 	return director
-
-## The day or section about to be walked, announced to the observers (`RunFlow.day_started`) and
-## handed to the day's clock, which may be absent from a script-only `main` a test builds by hand.
-func _use_the_day(spec: DaySpec) -> void:
-	_flow.begin(spec)
-	if _day:
-		_new_director().use_the_day(spec)
 
 ## `--recipe`: loads the scene recipe, lays its seed, day, escape part and parent on the run's
 ## configuration (`RunConfig.with_recipe()`), builds its playback (`SceneRecipeRuntime`) and
@@ -1865,25 +1831,18 @@ func _author_the_scene() -> bool:
 	_flow.author(scene)
 	return true
 
-## The authored scene starts playing, once the boot's world stands and her own camera is current.
-## **An escape scene plays from its first frame, with no brief in front of it**: its setup is
-## installed over the section the boot started (`_the_first_day()`, the spec its clock runs), and
-## she walks it at once. False, with the game quitting, when that setup does not stand.
-func _begin_the_scene(walks_a_day: bool) -> bool:
+## The authored scene starts playing, once the boot's world stands, its setup is installed
+## (`DayDirector.start()`) and her own camera is current. **An escape scene plays from its first
+## frame, with no brief in front of it**: she walks the section the boot started
+## (`_the_first_day()`, the spec its clock runs) at once.
+func _begin_the_scene(walks_a_day: bool) -> void:
 	if not walks_a_day:
-		var problems := _flow.scene.install(_city, _player, _baby, _flow.spec)
-		if not problems.is_empty():
-			_scene_failed(problems)
-			return false
-		DayDirector.prepare_city_scenery(_city, _player)
 		get_tree().paused = false
-		_day.start(_flow.spec.length)
 		_hud.visible = true
 	_flow.scene.begin()
 	if not walks_a_day:
 		_flow.engage()
 		_hand_the_crowd_her()
-	return true
 
 ## The authored scene could not be set up: its problems are printed and the game quits non-zero.
 func _scene_failed(errors: Array) -> void:
@@ -1891,9 +1850,9 @@ func _scene_failed(errors: Array) -> void:
 		print("[SceneRecipe] " + str(problem))
 	_end_with(1)
 
-## Whatever `_start_day()`'s own dawn should say about the day it just built, said right after
+## Whatever `_start()`'s own dawn should say about the day it just built, said right after
 ## that call returns — pulled out of `_ready()` on its own so a test can drive the decision
-## directly without paying for the world `_start_day()` builds around it.
+## directly without paying for the world `_start()` builds around it.
 ##
 ## **A resumed run whose save had a day under way writes `false` here**, before the title — and, on
 ## the way to the day brief, that screen too — is ever shown, so the nerve `_ready()` just charged
@@ -1994,8 +1953,7 @@ func _finish_the_section(end: DayEnd) -> void:
 			_reload_the_scene()
 		return
 	if won and spec.a_win_leads_into != DaySpec.Section.NONE:
-		_start_section(_escape_section_spec(spec.a_win_leads_into, config.escape_section_length()),
-				false)
+		_start(_escape_section_spec(spec.a_win_leads_into, config.escape_section_length()))
 		_show_the_section_brief()
 		return
 	if won:
@@ -2044,11 +2002,11 @@ func _on_summary_continued(raised_in: int) -> void:
 			# (minty-lemur #785), and the brief comes up before the retry for the building and the
 			# city alike (PLAYTEST-94 10). The brief's continue is the walk.
 			_summary.dismiss()
-			_start_section(_flow.spec, true)
+			_start(_flow.spec, true)
 			_show_the_section_brief()
 		RunFlow.Step.NEXT_DAY:
 			_summary.dismiss()
-			_start_day()
+			_start(_day_spec(config, _run.header.day))
 			# No gate stands between one day's own end-of-day message and the next day's dawn, so
 			# this is already the moment she is playing the next day, and the write says so at once.
 			_save_now(true)

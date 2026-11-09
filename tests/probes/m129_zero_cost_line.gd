@@ -119,7 +119,7 @@ extends RefCounted
 ##     M129_USED_PARKS=spoiled tools/test.sh probes/m129_zero_cost_line.gd
 ##     M129_USED_PARKS=shut tools/test.sh probes/m129_zero_cost_line.gd
 ##
-## `shut` hands it to the repaint the way `Main._start_day()` does, so it is shut where it can be
+## `shut` hands it to the repaint the way `main._start()` does, so it is shut where it can be
 ## (`ClosurePlanner.calm_to_shut()`) and fenced; `spoiled` only tells `EventScheduler.build_day`, so
 ## it is filled by the calm-ground pass (`_spoil_the_parks_she_used`) instead — the day a used park
 ## gets when its shutting is refused.
@@ -325,7 +325,7 @@ func _measure() -> void:
 
 ## The corridor, the regions and the closures, in `City._close_streets`'s own order — the tree
 ## first, because everything else is placed off it. With `M129_USED_PARKS=shut` the used park is
-## handed to the repaint first, as `Main._start_day()` does.
+## handed to the repaint first, as `main._start()` does.
 func _plan_the_day(map: CityMap, day: int) -> RouteTree:
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
