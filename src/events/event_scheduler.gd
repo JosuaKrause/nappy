@@ -720,13 +720,14 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	var reach := RouteReachRule.new(map, corridor)
 
 	# **The fixed parts' phases** (the design's "the city's fixed parts have phases of their own"):
-	# the seals and the region wall's bodies (standing, planned before the day), the ambient rows
-	# and the masts stand where their planners put them, and each is recorded on the location
-	# holding it, so the draw passes over it. A soft seal stands on a street no hold closes, so its
-	# two sidewalk locations are what it holds; a hard seal's and the wall's streets are held
-	# already. The region doors' bodies are not standing and their streets are held, so the
-	# locations under them are unavailable already. A mast's location on a day before the masts holds nothing and is drawn like any
-	# other.
+	# the ambient rows and the masts stand where their planners put them, and each is recorded on
+	# the location holding it, so the draw passes over it; so is each of the region wall's bodies
+	# (standing, planned before the day: "a wall makes its location unavailable throughout"). A
+	# seal's bodies stand at dawn as standing and the day's rules keep rows off them, but hold no
+	# location: a soft seal is not held, its carriageway still walkable and a row standing on it the
+	# price of that route (`docs/EVENTS.md`, the held streets), and a hard seal's street is held
+	# already. The region doors' bodies are not standing and their streets are held. A mast's
+	# location on a day before the masts holds nothing and is drawn like any other.
 	var fixed := _place_ambient(day, map, heat)
 	events.add_all(fixed)
 	_place_scars(day, scars, map, events, reach, heat)
@@ -734,7 +735,7 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	events.add_all(masts)
 	fixed.append_array(masts)
 	for part in events.standing():
-		if part.is_a_fixed_part() and part.is_placed():
+		if part.is_in_the_wall() and part.is_placed():
 			fixed.append(part)
 	for part in fixed:
 		var tile := map.world_to_tile(part.placed_at())

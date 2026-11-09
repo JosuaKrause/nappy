@@ -30,7 +30,7 @@ func run(t) -> void:
 	_test_the_mouse_waits_until_she_is_near(t)
 	_test_one_park_stays_usable(t)
 	_test_the_fixed_parts_hold_their_locations(t)
-	_test_a_standing_seal_holds_its_sidewalk_location(t)
+	_test_a_wall_body_holds_its_location_and_a_seal_none(t)
 	_test_a_scripted_row_takes_a_location_of_its_own(t)
 	_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t)
 	_test_calm_she_has_not_used_is_left_alone(t)
@@ -925,38 +925,45 @@ func _test_a_scripted_row_takes_a_location_of_its_own(t) -> void:
 						% [day, plan.row_id(), other.row_id()])
 	t.check(asked > 0, "the scripted days placed their rows (%d)" % asked)
 
-## **A soft seal holds its sidewalk location.** A soft seal takes a street's pavements and leaves its
-## carriageway open, so no hold closes its street; what it holds is the sidewalk location under
-## each body, recorded at dawn like every fixed part, so no draw happens there. A seal body stood by
-## hand on the middle of a street's first sidewalk location, handed in as standing the way the day's
-## seals are, takes that location, and nothing the day places stands inside it.
-func _test_a_standing_seal_holds_its_sidewalk_location(t) -> void:
+## **The region wall's bodies hold their locations; a seal's hold none.** A wall makes its location
+## unavailable throughout (the design's fixed parts), so a wall body handed in as standing, the way
+## the day's wall is, takes the location under it and nothing the day places stands inside it. A
+## soft seal is not held: its carriageway is still walkable and a row standing on it is the price of
+## that route (`docs/EVENTS.md`, the held streets), so a seal body handed in as standing leaves its
+## location open to the draw. Each stood by hand on the middle of an open sidewalk location of day 5.
+func _test_a_wall_body_holds_its_location_and_a_seal_none(t) -> void:
 	var map := _map()
 	var day := 5
 	var corridor := Corridor.of(RouteTree.for_day(map, day))
 	var laid := DayLocations.lay_out(map, corridor)
-	var spot: Location = null
+	var spots: Array[Location] = []
 	for location in laid.open_locations():
 		if location.kind() == Location.Kind.SIDEWALK:
-			spot = location
+			spots.append(location)
+		if spots.size() == 2:
 			break
-	t.check(spot != null, "the day has an open sidewalk location to seal")
-	if spot == null:
+	t.check(spots.size() == 2, "the day has two open sidewalk locations to stand bodies on")
+	if spots.size() < 2:
 		return
-	var tile := spot.tiles().get_center()
+	var wall_tile := spots[0].tiles().get_center()
+	var seal_tile := spots[1].tiles().get_center()
+	var wall := EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"), map.tile_to_world(wall_tile))
+	wall.stand_in_the_wall()
 	var seal := EventScheduler.Planned.new(EventCatalogue.by_id("construction"),
-			map.tile_to_world(tile))
+			map.tile_to_world(seal_tile))
 	seal.stand_as_a_seal()
-	var standing: Array[EventScheduler.Planned] = [seal]
+	var standing: Array[EventScheduler.Planned] = [wall, seal]
 	var consumed: Array[String] = []
 	var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, CalmAreas.of(map),
 			_sites(), consumed, [], null, 0, PackedVector2Array(), standing)
-	var held := events.locations().holding(tile, map.tile_at(tile))
-	t.check(held != null and held.is_taken(), "the sidewalk location under the seal is taken")
-	if held == null:
-		return
-	for other in events.placements():
-		if not other.is_placed() or other.is_a_fixed_part():
-			continue
-		t.check(not held.tiles().has_point(map.world_to_tile(other.placed_at())),
-				"nothing the day places stands in the sealed location (found %s)" % other.row_id())
+	var walled := events.locations().holding(wall_tile, map.tile_at(wall_tile))
+	t.check(walled != null and walled.is_taken(), "the location under the wall's body is taken")
+	if walled != null:
+		for other in events.placements():
+			if not other.is_placed() or other.is_a_fixed_part():
+				continue
+			t.check(not walled.tiles().has_point(map.world_to_tile(other.placed_at())),
+					"nothing the day places stands in the wall's location (found %s)" % other.row_id())
+	var sealed := events.locations().holding(seal_tile, map.tile_at(seal_tile))
+	t.check(sealed != null and sealed.is_drawn(),
+			"the location under the seal's body is not held: the draw visits it like any other")
