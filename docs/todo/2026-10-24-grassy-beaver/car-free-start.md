@@ -12,9 +12,9 @@ the crossing" (minty-dolphin #867).
 
 **Build:** the title screen keeps today's traffic density. On day 1, while the opening shot
 (`opening-shot.md`) shows the park, no new cars spawn, so the cars there drive off and none are near
-her door when the camera comes back. For her first few blocks no cars spawn in. The zebra-crossing
-thought bubble (`thought-bubbles.md`) shows when she steps onto the road away from a zebra crossing.
-After the first few blocks cars spawn as normal.
+her door when the camera comes back. No cars spawn in until the stretch ends (below). The
+zebra-crossing thought bubble (`thought-bubbles.md`) shows when she steps onto the road away from a
+zebra crossing. Once the stretch ends, cars spawn as normal.
 
 **Collides with `day-two.md`**, whose traffic paragraph said traffic stays on every day and read
 day 1's car losses as players running across the street, "not a change to traffic", from the
@@ -24,6 +24,18 @@ commonest day-1 mistake, "(I think)", as "figuring out the controls and getting 
 `day-two.md` now says so. **Read as:** the car-free start lets a new player learn the controls before
 any car can reach her, and the crossing bubble teaches the crossings meanwhile.
 
-**Open:** what ends the car-free stretch (a distance, a number of blocks, her first crossing, or a
-time), and whether it holds on a retry of day 1. *Proposed, not asked for:* a retry of day 1 keeps
-it, since the player's reason, learning the controls, can still apply on a second attempt.
+**What ends it.** Sketching day 1's tutorial route (`hand-crafted-day-one.md`), the player first
+said "no cars on the first block", then "cars only spawn on the second crossing tutorial or if she
+leaves the tutorial route"; read back that cars start at once if she steps off the route before the
+crossing-with-cars lesson, "one full block away", "so she can turn around"; and read back that if
+she wanders off before that lesson and comes back, cars keep spawning, "yes that's fine"
+(gentle-owl #1253). **Read as:** no new cars spawn until she reaches the tutorial's second crossing
+lesson, the crossing with cars, or until she is one full block away from the tutorial route,
+whichever comes first, so a player who steps off and turns back at the bubble meets no cars. Once
+the cars have started they keep spawning, also when she comes back to the route. The player's
+earlier "the first few blocks shouldn't have cars spawning in" (minty-dolphin #867) is answered
+by this as to what ends the stretch.
+
+**Open:** whether the car-free start holds on a retry of day 1. *Proposed, not asked for:* a retry
+of day 1 keeps it, since the player's reason, learning the controls, can still apply on a second
+attempt.

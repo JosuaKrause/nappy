@@ -76,7 +76,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    what its count cannot see. `tests-own-class-members.md` holds the
    members whose names collide with another class's.
 3. The redesign of derived state and hand-ins (inbox #1156, #1159 in gray-dolphin). The player's
-   order (test-isolation-plan) is the hand-ins, then the conversion, then the cache; the rest of this
+   order (test-isolation-plan) is the hand-ins, then the conversion, then the cache, which the
+   player let go ahead of the conversion ("yes, cache will speed up tests, too", inbox #1193); the rest of this
    order is the filer's proposal: `city-hand-ins.md`'s third pull request, then `tests-one-module.md`,
    `re-derived-cases.md` and `field-reads.md`; `dead-code-sweep.md` module by module beside them;
    `system-map.md` once the redesign is complete. `placement-by-construction.md` comes before any
