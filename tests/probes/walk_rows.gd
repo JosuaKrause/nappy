@@ -19,7 +19,8 @@ extends RefCounted
 ## capped rows are met (`CAPPED`: within the stream radius of her door, and in the second half of
 ## the walk out), summed over the seeds, and per seed and day `WT` lines of the tick costs, in
 ## microseconds: the walk's draw (`draw`) and the director's siting
-## (`siting`), each `ticks median p99 worst total`. Each day is planned as the game plans it: its closures, holds, region wall and
+## (`siting`), each `ticks median p99 worst total`, and `WP day seed microseconds`, the dawn's
+## planning of each (`EventScheduler.build_day()`). Each day is planned as the game plans it: its closures, holds, region wall and
 ## seals first, the seals and the wall's bodies handed in as standing.
 
 const SEEDS := 18
@@ -97,9 +98,11 @@ func run(t) -> void:
 			rng.seed = hash("placement_view_mix:%d:%d" % [i, day])
 			var guarded := ResistanceSteps.guarded_row_on(day)
 			var consumed: Array[String] = []
+			var planned_from := Time.get_ticks_usec()
 			var events = EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), sites,
 					consumed, [], tree, 0, doors, standing, null,
 					EventCatalogue.by_id(guarded) if guarded != "" else null)
+			print("WP %d %d %d" % [day, i, Time.get_ticks_usec() - planned_from])
 			var plans: Array[EventScheduler.Planned] = events.placements()
 			plans.append_array(seals)
 			plans.append_array(region_plan.wall_bodies)
