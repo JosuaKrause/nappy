@@ -18,6 +18,37 @@ var _dawn_consumed_one_shots: Array[String] = []
 var _dawn_scars: Array[Dictionary] = []
 var _dawn_city_state := {}
 
+## The city's block arcs as far as the run has got: what the dawn, the day's events and the resistance
+## advance, and what a block's purpose is read from.
+func block_arcs() -> CityState:
+	return city_state
+
+## Whether the run holds a scar `id` (a mark a one-off event left, kept for the rest of the run).
+func has_scar(id: String) -> bool:
+	return scar_position(id) != Vector2.INF
+
+## Where the run recorded its scar `id`, or `Vector2.INF` when it never recorded one.
+func scar_position(id: String) -> Vector2:
+	for scar in scars:
+		if String(scar["id"]) == id:
+			return scar["position"]
+	return Vector2.INF
+
+## Every position the run recorded a scar `id` at, in the order they were recorded.
+func scar_positions(id: String) -> Array[Vector2]:
+	var found: Array[Vector2] = []
+	for scar in scars:
+		if String(scar["id"]) == id:
+			found.append(scar["position"] as Vector2)
+	return found
+
+## Records a scar of `id` at `position` on day `since_day`, ignoring one already there (within a pixel).
+func record_scar(id: String, position: Vector2, since_day: int) -> void:
+	for scar in scars:
+		if scar["id"] == id and scar["position"].distance_to(position) < 1.0:
+			return
+	scars.append({"id": id, "position": position, "since_day": since_day})
+
 ## Overrides RunSubState.reset.
 func reset() -> void:
 	consumed_one_shots.clear()

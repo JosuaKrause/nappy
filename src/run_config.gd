@@ -305,6 +305,50 @@ func with_recipe(recipe_data: Dictionary) -> RunConfig:
 
 # --------------------------------------------------------------- what follows ---
 
+## Whether this is a headless run: the null display server, so no player and no save.
+func is_headless() -> bool:
+	return headless
+
+## Whether this is a debug build, the gate on every command-line flag.
+func is_debug_build() -> bool:
+	return debug_build
+
+## Whether `?debug=1` or `--debug` asked for the readout.
+func asks_for_the_readout() -> bool:
+	return readout_requested
+
+## Whether the release-safe bundle of query flags is open.
+func is_live_debug() -> bool:
+	return live_debug
+
+## Whether the page's query named one of the open bundle's parameters.
+func used_a_web_debug_flag() -> bool:
+	return web_debug_flag_used
+
+## The page's query string as the browser gave it at boot, `""` off the web.
+func page_query_string() -> String:
+	return page_query
+
+## Every dev flag given on a debug build, as words (a copy), or nothing.
+func dev_flag_words() -> PackedStringArray:
+	return active_args
+
+## Whether `--invincible` was given.
+func is_invincible() -> bool:
+	return invincible
+
+## Whether `--no-save` was given.
+func refuses_saving() -> bool:
+	return no_save
+
+## Whether `--touch` forces the touch controls.
+func forces_touch() -> bool:
+	return touch_forced
+
+## Whether `--web` previews the web shape from a desktop debug build.
+func previews_the_web() -> bool:
+	return web_preview
+
 ## How long day `day` runs: `--day-length` when given, else the day's own (`Tuning.day_length()`).
 ## The one place a day's length is decided, handed to the day as a plain number.
 func day_length_for(day: int) -> float:

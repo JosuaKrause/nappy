@@ -21,6 +21,6 @@ extends RefCounted
 ## platform's alone.
 
 static func available(config: RunConfig = null) -> bool:
-	if config != null and config.web_preview:
+	if config != null and config.previews_the_web():
 		return false
 	return not OS.has_feature("web")

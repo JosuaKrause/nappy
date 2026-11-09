@@ -144,7 +144,7 @@ func in_the_title() -> bool:
 ## Whether the escape's brief or its last screen is up — the two screens Esc does not open over,
 ## since each stands in front of something that has not begun.
 func escape_screen_waits() -> bool:
-	return spec.section != DaySpec.Section.NONE \
+	return spec.section_kind() != DaySpec.Section.NONE \
 			and (mode == Mode.BRIEF or mode == Mode.EPILOGUE)
 
 # ------------------------------------------------------------------ the day ---
@@ -186,11 +186,11 @@ func show_ending() -> void:
 
 ## An ordinary day has ended, as `DayDirector.finish_day()` settled it.
 func day_ended(end: DayEnd) -> void:
-	if end.hands_over_to_the_escape:
+	if end.continues_into_the_escape():
 		mode = Mode.INTO_ESCAPE
-	elif end.goes_back:
+	elif end.sends_the_run_back():
 		mode = Mode.BACK_TO_CHECKPOINT
-	elif end.run_over:
+	elif end.ends_the_run():
 		mode = Mode.RUN_OVER
 	else:
 		mode = Mode.DAY_OVER

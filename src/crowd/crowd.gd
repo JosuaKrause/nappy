@@ -400,7 +400,7 @@ func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vecto
 		return {"error": problem}
 	for other in _agents:
 		if agent.kind == CrowdAgent.Kind.WALKER and other.kind == CrowdAgent.Kind.WALKER \
-				and at.distance_to(other.position) < agent.shape.radius + other.shape.radius:
+				and at.distance_to(other.position) < agent.shape.rounding_radius() + other.shape.rounding_radius():
 			agent.free()
 			return {"error": "walker placement overlaps an existing walker"}
 		if agent.kind == CrowdAgent.Kind.CAR and other.kind == CrowdAgent.Kind.CAR \

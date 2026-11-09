@@ -241,12 +241,12 @@ var trace := RunTrace.new():
 ## gets, and for `?debug=1` alone with none of the bundle's own parameters named, since neither one
 ## is a run built any differently from the one every other visitor gets.
 func _uses_save() -> bool:
-	if _config == null or _config.headless:
+	if _config == null or _config.is_headless():
 		return false
-	if not _config.debug_build:
-		return not _config.web_debug_flag_used
-	return _debug_run_uses_save(_config.active_args, _config.no_save) \
-			and not _config.web_debug_flag_used
+	if not _config.is_debug_build():
+		return not _config.used_a_web_debug_flag()
+	return _debug_run_uses_save(_config.dev_flag_words(), _config.refuses_saving()) \
+			and not _config.used_a_web_debug_flag()
 
 ## The one piece of `_uses_save()`'s policy that does not depend on the live environment — pulled
 ## out so the debug build's policy reads in one place, whichever shape `OS.is_debug_build()` answers

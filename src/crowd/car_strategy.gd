@@ -479,8 +479,8 @@ func give_way_on_the_step(delta: float) -> void:
 	var step := (move.to - move.from).dot(forward)
 	if step <= 0.0:
 		return
-	var room := separation.room_ahead(move.from, forward, _mover.shape.half_length,
-			_mover.shape.radius, FIGURE_WIDEST)
+	var room := separation.room_ahead(move.from, forward, _mover.shape.spine_half_length(),
+			_mover.shape.rounding_radius(), FIGURE_WIDEST)
 	if room >= step:
 		return
 	move.to -= forward * (step - room)

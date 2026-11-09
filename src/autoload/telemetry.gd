@@ -82,7 +82,7 @@ func configure(config: RunConfig) -> void:
 	_config = config
 
 func _invincible() -> bool:
-	return _config != null and _config.invincible
+	return _config != null and _config.is_invincible()
 
 ## Whether anything is being recorded. Everything else here is a no-op when this is false.
 func is_active() -> bool:
@@ -131,9 +131,9 @@ func is_active() -> bool:
 ## can check.
 func _web_override_requested() -> bool:
 	if _config == null \
-			or not TelemetryPage.reads_the_url(_config.debug_build, OS.get_name() == "Web"):
+			or not TelemetryPage.reads_the_url(_config.is_debug_build(), OS.get_name() == "Web"):
 		return false
-	return TelemetryPage.asks_for_telemetry(_config.page_query)
+	return TelemetryPage.asks_for_telemetry(_config.page_query_string())
 
 ## **Silently does nothing on a web export, unless the page's own `?telemetry=1` says otherwise.**
 ## `user://` is browser storage there — a stranger's browser rather than a developer's disk — so by

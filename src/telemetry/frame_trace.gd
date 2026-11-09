@@ -50,15 +50,15 @@ func _sample() -> void:
 	var now := Time.get_ticks_usec()
 	if get_tree().paused or _in_the_title.call() or not _day.is_running():
 		buffer.break_interval()
-		if buffer.count == 0:
+		if buffer.is_empty():
 			_started_usec = -1
 		return
 	if _started_usec < 0:
 		_started_usec = now
 	if now - _started_usec < WARMUP_USEC:
 		return
-	if buffer.count == FrameTraceBuffer.CAPACITY:
-		buffer.dropped += 1
+	if buffer.is_full():
+		buffer.drop_one()
 		return
 	var live := _city.events.instances()
 	var identities := 0

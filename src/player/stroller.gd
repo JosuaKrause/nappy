@@ -241,11 +241,19 @@ enum Alert {
 
 var facing := Vector2.DOWN
 
+## The way she faces, the last way she moved or was turned.
+func facing_direction() -> Vector2:
+	return facing
+
 ## The direction she is being steered this physics frame — the movement input after a capture's
 ## lock and a flight's redirection, zero when nothing is pressed. Unlike `velocity`, it still says
 ## where she is going when a wall stops her, which is what a push is: `PosterWalls` reads it to tell
 ## a heading pressed into a postered wall from one walking past it.
 var steering := Vector2.ZERO
+
+## `steering`, asked: the direction she is being steered this physics frame.
+func steering_direction() -> Vector2:
+	return steering
 
 ## Bound by Main before the first drawing; reset, pause and carrying never choose it again.
 var is_male := false
@@ -654,7 +662,7 @@ func release_camera_focus() -> void:
 ## state without ever writing to her meters. `true` with no baby at all, which is what a test rig
 ## built without one gets: the ordinary behaviour, rather than a silent asleep-shaped one.
 func baby_is_awake() -> bool:
-	return _baby == null or _baby.state == GameEnums.BabyState.AWAKE
+	return _baby == null or _baby.is_awake()
 
 ## How many times she has been put somewhere outright rather than walked there — `teleport_to()`
 ## and `reset_at()` each count one. `EventManager`'s walk-under check reads it to tell a door's line

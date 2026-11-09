@@ -25,18 +25,10 @@ src/events/event_spawner.gd on_sight
 src/events/event_spawner.gd scar
 
 # [AttemptSpendState] src/run/attempt_spend_state.gd
-src/city/city.gd city_state
-src/city/city.gd scars
-src/city/city_fronts.gd scars
 src/events/day_planner.gd scars
 src/events/event_spawner.gd city_state
-src/resistance/happenings.gd city_state
-src/resistance/resistance_director.gd scars
 src/run/day_director.gd city_state
 src/run/day_director.gd consumed_one_shots
-src/run/run_state.gd city_state
-src/run/run_state.gd scars
-src/telemetry/telemetry_observer.gd city_state
 
 # [AutoScreenshot] src/dev/auto_screenshot.gd
 src/main.gd before_capture
@@ -54,14 +46,6 @@ src/dev/scene_recipe_runtime.gd excitement
 src/dev/scene_recipe_runtime.gd sleepiness
 src/main.gd excitement_frozen
 src/main.gd timing
-src/player/stroller.gd state
-src/telemetry/telemetry_observer.gd excitement
-src/telemetry/telemetry_observer.gd last_incoming
-src/telemetry/telemetry_observer.gd sleepiness
-src/telemetry/telemetry_observer.gd state
-
-# [BadgeModel] src/ui/badge_model.gd
-src/ui/danger_edge.gd coming
 
 # [Blackout] src/city/blackout.gd
 src/city/city.gd dark_from_the_start
@@ -495,10 +479,6 @@ src/run/day_director.gd spec
 src/run/day_director.gd time_remaining
 src/run/day_director.gd time_total
 src/telemetry/run_session.gd spec
-src/telemetry/telemetry_observer.gd exit_reached
-src/telemetry/telemetry_observer.gd failure_reason
-src/telemetry/telemetry_observer.gd time_remaining
-src/telemetry/telemetry_observer.gd time_total
 
 # [DayDirector] src/run/day_director.gd
 src/main.gd escape_follows
@@ -517,21 +497,8 @@ src/run/day_director.gd is_section
 src/run/day_director.gd reason
 src/run/day_director.gd result
 src/run/day_director.gd run_over
-src/run/run_flow.gd goes_back
-src/run/run_flow.gd hands_over_to_the_escape
-src/run/run_flow.gd run_over
-src/run/summary_model.gd elapsed_seconds
-src/run/summary_model.gd exit_reached
-src/run/summary_model.gd goes_back
-src/run/summary_model.gd reason
-src/run/summary_model.gd result
 
 # [DaySpec] src/day/day_spec.gd
-src/city/city.gd closes_streets
-src/city/city.gd pastes_posters
-src/day/day_controller.gd clock_hundredths
-src/day/day_controller.gd exits
-src/day/day_controller.gd goal
 src/dev/brief_presser.gd section
 src/dev/building_walker.gd section
 src/dev/debug_readout.gd closes_streets
@@ -576,11 +543,9 @@ src/run/day_director.gd goal
 src/run/day_director.gd length
 src/run/day_director.gd number
 src/run/day_director.gd section
-src/run/run_flow.gd section
 src/telemetry/run_session.gd length
 src/telemetry/run_session.gd section
 src/telemetry/run_session.gd title
-src/ui/hud.gd clock_hundredths
 
 # [DaySwitch] src/events/day_switch.gd
 src/events/event_catalogue.gd after_day
@@ -1216,9 +1181,6 @@ src/events/encounter_watch.gd landed_ever
 src/events/event_instance.gd rim
 src/events/event_spawner.gd on_first_landing
 
-# [Footprint] src/world/footprint.gd
-src/world/draw_layer.gd pieces
-
 # [FrameGraph] src/ui/frame_graph.gd
 src/dev/debug_readout.gd text_colour
 
@@ -1226,18 +1188,8 @@ src/dev/debug_readout.gd text_colour
 src/city/scenery_residency.gd on
 src/events/event_instance.gd on
 src/events/event_manager.gd on
-src/player/baby.gd on
-src/ui/danger_edge.gd on
-src/ui/excitement_halo.gd on
-
-# [FrameTraceBuffer] src/telemetry/frame_trace_buffer.gd
-src/telemetry/frame_trace.gd count
-src/telemetry/frame_trace.gd dropped
 
 # [GroundShape] src/ground_shape.gd
-src/city/building.gd half_extents
-src/crowd/car_strategy.gd half_length
-src/crowd/car_strategy.gd radius
 src/dev/route_rig_planner.gd radius
 src/events/behaviours/event_car_driving.gd half_length
 src/events/behaviours/event_car_driving.gd radius
@@ -1253,8 +1205,6 @@ src/events/views/event_look.gd radius
 src/events/walk_ground.gd half_length
 src/events/walk_ground.gd kind
 src/events/walk_ground.gd radius
-src/world/footprint.gd half_extents
-src/world/footprint.gd kind
 
 # [HelpText] src/ui/help_text.gd
 src/ui/hud.gd atlas
@@ -1418,9 +1368,6 @@ src/city/city.gd joined_end
 src/city/city.gd joined_start
 src/city/city.gd outward
 
-# [ParkCordon] src/resistance/park_cordon.gd
-src/resistance/happenings.gd trace
-
 # [ParkFenceMarker] src/routes/park_fence_marker.gd
 src/city/city.gd draw_support
 src/city/city.gd rail_offset
@@ -1490,7 +1437,6 @@ src/events/event_instance.gd warns_over_the_street
 # [ResistanceHappenings] src/resistance/happenings.gd
 src/dev/scene_recipe_runtime.gd column
 src/dev/scene_recipe_runtime.gd trace
-src/resistance/resistance_director.gd trace
 
 # [ResistanceRunState] src/run/resistance_run_state.gd
 src/city/blackout.gd sabotage_done
@@ -1539,16 +1485,6 @@ src/run/run_state.gd hard_mode
 src/ui/title_screen.gd hard_mode
 
 # [RunConfig] src/run_config.gd
-src/autoload/game_save.gd active_args
-src/autoload/game_save.gd debug_build
-src/autoload/game_save.gd headless
-src/autoload/game_save.gd no_save
-src/autoload/game_save.gd web_debug_flag_used
-src/autoload/telemetry.gd debug_build
-src/autoload/telemetry.gd invincible
-src/autoload/telemetry.gd page_query
-src/autoload/visit_counter.gd debug_build
-src/autoload/visit_counter.gd readout_requested
 src/dev/auto_screenshot.gd active_args
 src/dev/auto_screenshot.gd recording
 src/dev/auto_screenshot.gd screenshot_path
@@ -1570,10 +1506,6 @@ src/run/day_director.gd meters_override
 src/run/day_director.gd spawn_target
 src/telemetry/run_session.gd no_telemetry
 src/telemetry/run_session.gd spikes_requested
-src/ui/quit_option.gd web_preview
-src/ui/touch_input.gd touch_forced
-src/web_display.gd live_debug
-src/web_display.gd page_query
 
 # [RunFacts] src/run/run_facts.gd
 src/resistance/resistance_director.gd completed_resistance_alley_tiles
@@ -1696,16 +1628,10 @@ src/world/visible_view.gd right
 # [SettledState] src/run/settled_state.gd
 src/run/run_calendar.gd settled_in
 
-# [Sitting] src/autoload/sitting.gd
-src/telemetry/frame_recorder.gd frame_record_path
-src/telemetry/frame_recorder.gd frame_timing
-src/ui/title_screen.gd restarted_at_msec
-
 # [StillWatch] src/dev/still_watch.gd
 src/main.gd trace
 
 # [Stroller] src/player/stroller.gd
-src/city/poster_walls.gd steering
 src/dev/debug_layers.gd carrying
 src/dev/debug_layers.gd pram_shape
 src/dev/debug_layers.gd shape
@@ -1715,17 +1641,6 @@ src/events/event_manager.gd carrying
 src/events/event_manager.gd facing
 src/main.gd atlas
 src/main.gd is_male
-src/resistance/resistance_director.gd facing
-src/telemetry/telemetry_observer.gd facing
-
-# [SummaryModel] src/run/summary_model.gd
-src/ui/day_summary.gd body_prose
-src/ui/day_summary.gd brief
-src/ui/day_summary.gd heading
-src/ui/day_summary.gd note
-src/ui/day_summary.gd shows_continue
-src/ui/day_summary.gd title
-src/ui/day_summary.gd title_is_prose
 
 # [TelemetryLog] src/telemetry/telemetry_log.gd
 src/dev/still_watch.gd path

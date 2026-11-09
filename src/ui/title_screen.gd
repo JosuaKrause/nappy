@@ -526,7 +526,7 @@ func _acknowledge_and_begin(mode: ControlsMode.Mode, side: ControlsMode.Side,
 ## which of them fired. See `_unhandled_input()`'s own doc for what the guard still answers now
 ## that a bare press elsewhere on the screen can no longer reach this function at all.
 func _begin(mode: ControlsMode.Mode, side: ControlsMode.Side, by_key := false) -> void:
-	var restarted_at_msec: float = _sitting.restarted_at_msec if _sitting else -INF
+	var restarted_at_msec: float = _sitting.restart_requested_at_msec() if _sitting else -INF
 	if (_now_msec() - restarted_at_msec) / 1000.0 < _RESTART_GUARD_SECONDS:
 		return
 	start_requested.emit(mode, by_key, side)

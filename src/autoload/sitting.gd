@@ -72,6 +72,18 @@ var frame_record_path := ""
 func frame_record_file() -> String:
 	return frame_record_path
 
+## Keeps `path` as where the desktop frame record is written, for every scene exit after this one.
+func keep_frame_record_file(path: String) -> void:
+	frame_record_path = path
+
+## The instant the held restart's reload was last asked for (`restarted_at_msec`), `-INF` before the first.
+func restart_requested_at_msec() -> float:
+	return restarted_at_msec
+
+## The frame record's timing: the null sink or the `FrameRecord` `use_frame_timing()` handed in.
+func kept_frame_timing() -> FrameTiming:
+	return frame_timing
+
 ## Where the frame record is kept, handed to every system that is timed: the null sink until `main`
 ## replaces it with a `FrameRecord` for a run that asks for one (`--frame-record`, `?framerecord=1`).
 ## The record and its ledger live here so a recording spans a scene reload, as the path above does.

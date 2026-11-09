@@ -98,6 +98,11 @@ var cordon: ParkCordon = null
 ## Where these happenings write their own account for the run log, handed on to the park's cordon;
 ## the director's, set before `setup()`.
 var trace := RunTrace.new()
+
+## Hands the happenings the trace their account is written to (and, on to the park's cordon, theirs).
+func use_trace(sink: RunTrace) -> void:
+	trace = sink
+
 ## Whether today still owes the column, and its trucks once it has come. Kept for the tests.
 var _column_owed := false
 var column: Array[EventInstance] = []
@@ -283,7 +288,7 @@ func _maybe_the_market(delta: float, her: Vector2) -> void:
 	if _look_in > 0.0:
 		return
 	_look_in = EventDirector.ON_HER_WAY_LOOK
-	var candidates := _market_candidates(_map, _run.attempt_spend.city_state)
+	var candidates := _market_candidates(_map, _run.attempt_spend.block_arcs())
 	if candidates.is_empty():
 		_market_owed = false
 		trace.note("contact", "no block is waiting to board up, so there is no market to lose")
@@ -345,7 +350,7 @@ func _market_out_of_her_sight(her: Vector2, candidates: Array[Vector2i]) -> Vect
 ## Boards `block` up now and takes its market away: the arc's own next step, taken today, the
 ## buildings shown shuttered, and the stalls at its frontage gone from the day's plan.
 func board_up(block: Vector2i) -> bool:
-	var state := _run.attempt_spend.city_state
+	var state := _run.attempt_spend.block_arcs()
 	if not state or not state.advance_now(_map.block_plans, block, _day,
 			GameEnums.BlockPurpose.BOARDED_UP, GameEnums.BlockCause.SCHEDULED):
 		return false
@@ -387,7 +392,7 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 	if not _map:
 		return false
 	var park := CityGenerator.swing_park(_map)
-	var state := _run.attempt_spend.city_state
+	var state := _run.attempt_spend.block_arcs()
 	if park.x < 0 or not state or not state.take(_map.block_plans, park, _day):
 		return false
 	_map.recompute_calm(state)
@@ -395,7 +400,7 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 		cordon.clear()
 	var siting := _spawn_siting if _spawn_siting else SpawnSiting.new(_map, _navigator)
 	cordon = ParkCordon.new(_map, _navigator, _events, _world, _atlas, park, siting, blocked)
-	cordon.trace = trace
+	cordon.use_trace(trace)
 	trace.note("contact", "the park at block %s is being taken: the police are sent to cordon it"
 			% park)
 	return true

@@ -666,7 +666,7 @@ func _rebuild() -> void:
 	var depth := maxf(footprint.y - NORTH_EDGE_INSET, TILE)
 	shape = GroundShape.rect(Vector2(footprint.x * 0.5, depth * 0.5))
 	_collision.shape = shape.collision_shape()
-	_collision.position = Vector2(0.0, -shape.half_extents.y)
+	_collision.position = Vector2(0.0, -shape.rect_half_extents().y)
 	_build_front()
 	_build_entrance()
 	if scenery_resident:

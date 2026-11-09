@@ -301,7 +301,7 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 	_mark_drawn = _spawn_siting.ask_of_drawing(MARK_BOX)
 	_guard_drawn = _spawn_siting.ask_of_drawing(GUARD_BOX)
 	_task_drawn = _spawn_siting.ask_of_drawing(TASK_BOX)
-	_happenings.trace = trace
+	_happenings.use_trace(trace)
 	_happenings.setup(map, _run, events, streets, fronts, world, _atlas, moves_by, _spawn_siting)
 
 ## Hands the director the player, and the contact she touches: whose position a mark is read from,
@@ -655,10 +655,7 @@ static func _swing_base() -> Vector2:
 ## recorded one — a run started at a later day (`--day 8`), or a day 3 whose fire found no site
 ## even at dusk.
 func _recorded_scar(scar_id: String) -> Vector2:
-	for scar: Dictionary in _run.attempt_spend.scars:
-		if String(scar["id"]) == scar_id:
-			return scar["position"]
-	return Vector2.INF
+	return _run.attempt_spend.scar_position(scar_id)
 
 ## The instance standing at the run's own recorded scar for `scar_id`, put in the world now and kept
 ## there for the rest of the day wherever she walks, or null when the run never recorded one
@@ -2711,7 +2708,7 @@ func _move_the_task_guard_to_her_target() -> void:
 			_task_guard.global_position):
 		return
 	# A search that found him nowhere better is not repeated until something it read has changed.
-	var facing := _player.facing.snapped(Vector2.ONE * 0.5) if _player else Vector2.ZERO
+	var facing := _player.facing_direction().snapped(Vector2.ONE * 0.5) if _player else Vector2.ZERO
 	var asked := [_arrow_key, _map.world_to_tile(her), facing,
 			_map.world_to_tile(_task_guard.global_position), _map.obstruction_version,
 			_map.day_record_version, _approaches.has(_approach_key(target))]
