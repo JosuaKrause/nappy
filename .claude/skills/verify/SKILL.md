@@ -5,115 +5,43 @@ description: How to verify a change in this project — the verification command
 
 # Verification
 
+- **Before committing: `./tools/check.sh`, `./tools/test.sh <the suites your change touches>`, `./tools/lint.sh` for a governed doc, `./tools/pycheck.sh` for `tools/*.py`.**
+- **The unfiltered suite is CI's**, on the merge result; a local `PARTIAL RUN` is the expected state.
+- **Headless unless the picture is the question**, and an agent's game run always carries a dev flag or `--no-save`.
+- **A green suite says nothing about a run, the page or the picture**: play a minute and read the log back, open the screenshot.
+- **Evidence about anything that moves is a burst, not a still.**
+- **A suite leaves the shared state as it found it and never quits the tree, and an engine error fails the run.**
+- **A check that compares a doc with the code is a `tools/` script in CI's `gates` job**, never an assertion in a suite.
+- **Evidence a doc points at is committed under `docs/evidence/`, and kept compact.**
+
 ## Headless unless a window is the only way
 
 **`check.sh` and `test.sh` already pass `--headless`, and nothing may take that away.**
 `shot.sh` and `run.sh` are the two that open a window, and they are the exception you have to
 earn: run one only when the thing being checked *is what the screen looks like*, and take the
-smallest number of them that answers the question.
-
-**Why, beyond tidiness — a windowed run used to be able to hang forever, and working beside one is
-still not free** (woolly-finch 1). A rig's own window now carries three defences against exactly
-that (docs/DECISIONS.md, M195, "a rig's window takes no focus, hears no stray key, and always
-closes"): it never takes the OS focus in the first place (`DisplayServer.WINDOW_FLAG_NO_FOCUS`), its
-main loop runs at full speed while covered or unfocused rather than throttling to about once a
-second the way an ordinary window's does on macOS (`--disable-vsync`, both scripts' own launch;
-running is not drawing, see "a hidden window is not drawn" below), and it always closes — the game's
-own wall-clock timer, backstopped by `tools/shot.sh`'s (and a rig-flagged `tools/run.sh`'s) outside
-kill. None of that makes a windowed run *free*, only bounded: it is still slower than a headless
-check by however long Godot takes to boot a window and draw a frame, and a run left to its outside
-kill still costs the whole of that wait before it says so.
+smallest number of them that answers the question. A window opens on the player's screen and loses
+focus the moment they do something else (woolly-finch 1), and a windowed run is bounded, never
+free: it is slower than a headless check by however long Godot takes to boot a window and draw a
+frame.
 
 So: **never reach for a windowed run to check something a headless one can answer.** A rig that
 prints numbers, an assertion in a suite, or a `check.sh` boot beats a screenshot for anything that
 is not a picture. When a picture genuinely is the question, take it once with everything you need
 already in the flags rather than iterating live.
 
-**A hidden window is not drawn, so a still or movie draws its own current frame.** On macOS the main loop skips its
-draw step while no window of the process passes the system's occlusion test — covered by another
-app's opaque window, or minimized, and by the same test on another Space or behind a locked screen
-— and the game runs on in real time underneath: the walk goes on, the HUD's fps readout still shows
-a healthy number, and not one frame is drawn. A rig's window takes no focus and `shot.sh` hands
-focus straight back, so it opens *behind* whatever the operator has in front, and whether that
-covers it depends on the window in front: an ordinary opaque window over it does, one the desktop
-shows through may not. A capture that only waited for the render loop's next frame would wait for
-ever there, and the run would end on `[Main] a rig's own wall-clock limit ... passed` however
-often it was retried.
-`DrawnFrame.wait()` (`src/drawn_frame.gd`) is what every still and burst under
-`src/` waits on — `shot.sh`'s still, `--quit-when-still`, and the telemetry's stills and `snapshot_burst`
-bursts, which `tests/test_auto_screenshot.gd` holds by failing on a bare wait for the render loop's
-frame anywhere under `src/` — and when the window cannot be drawn it draws that frame on demand
-with `RenderingServer.force_draw()`. Of the probes, `tests/probes/scenery_animation_runtime.gd`
-waits on it too, and `scenery_shader_warmup_runtime.gd` keeps the render loop's own frame on
-purpose, since the engine's warmup draw is what it measures, so it wants its window in view. A
-forced still shows the same frame an uncovered window gives — the same scene and moment, not a
-pixel-identical file, since two ordinary runs of one seed already differ — and its
-`[AutoScreenshot] wrote` line ends "(window not visible, so this frame was drawn on demand)".
-
-**A timed Godot movie carrying `--after` needs that answer on every covered frame, not only at the
-final capture.** The simulation and a scene-recipe manifest keep advancing while an occluded movie
-window repeats its last viewport texture, so a complete manifest cannot prove that recorded action
-is visible. Its recording `AutoScreenshot` node calls `RenderingServer.force_draw(false)`
-synchronously from `_process()` when `DisplayServer.window_can_draw()` is false. That draw must
-finish before the movie writer captures the viewport texture; a deferred call can miss that
-boundary and leave stale frames in the movie. Visible recordings and non-recording runs use the
-ordinary render path. A trailer shot that promises visible action marks `motion: true`;
-`tools/trailer.sh` rejects a selected cut with more than half a
-second of identical consecutive PNGs before it encodes or deletes them. Check those raw-frame hashes
-as well as the manifest when a movie is evidence of motion.
-
-**So a capture needs a display server from the machine, and not a visible window.** Covered and
-minimized windows are the two cases photographed through the forced frame; another Space and a
-locked screen go through the same test and the same path but have not been photographed that way.
-A display that sleeps with the window visible keeps drawing. **`caffeinate -d -u` is not a remedy
-for a covered window**: it keeps the display from idle-sleeping and marks the user active, which
-neither uncovers a window nor stops a covered one from being skipped. What it does guard is the
-one case not yet photographed — a display sleeping into a locked screen — so a long capture run
-may still keep it on.
-
-**When a capture still fails, the line it ends on says which failure it is.**
-
-- `[AutoScreenshot] nothing to photograph: this run is headless` — no display server; see "a
-  screenshot cannot be taken at all without a display" below. No retry will change it.
-- `[Main] a rig's own wall-clock limit ... passed` with no `[AutoScreenshot] wrote` line — the run
-  never reached its capture in time, which a hidden window does not cause. Read the run back with
-  `./tools/telemetry.sh` to see how far it got, and run it once more. A second identical failure is
-  a bug in the rig or the capture path to report with that log, not bad luck to retry past.
-- `shot.sh: killed Godot after ...` — the game's own limit did not fire either: the process
-  stopped running, which is a hang to report, not a capture problem.
-
-**Several rigs may run at once**, windowed or headless, from different worktrees: each is its own
-Godot process with its own window, and parallel agents capture side by side.
-
-**A rig never pauses on focus, unlike the game itself, and now never hears a real key or pointer
-press at all while it drives a run.** The game opens the pause screen on
-`NOTIFICATION_APPLICATION_FOCUS_OUT`, the same notification a window loses the moment it opens
-behind whatever the operator is doing — so left alone, every windowed run in this section would
-capture a picture of the pause screen rather than the day it was sent to look at. `--screenshot`
-carries `--no-focus-pause` on its own, so `shot.sh` needs nothing extra; a `run.sh` session with no
-screenshot passes `--no-focus-pause` itself. A stray key typed into the operator's own foreground
-window can no longer reach the rig either way, on top of that — see README.md's "Dev flags" section,
-"A rig's window and its wall-clock limit".
-
-**And a screenshot cannot be taken at all without a display**, which is worth knowing before
-planning a verification around one. `shot.sh` runs Godot *without* `--headless` on purpose, so a
-process with no window server to open a window against falls back to the null display server, where
-no frame is ever drawn and there is no viewport texture to save. `AutoScreenshot._capture()` says so
-and quits non-zero rather than waiting — `_capture()`'s check of `DisplayServer.get_name()` is the guard,
-and `"headless"` is the name Godot gives that null server.
-
-**Whether a sub-agent can take one is a property of its environment, not of being a sub-agent** —
-some background worktrees reach a display and photograph the game perfectly well. So do not assume
-either way: **the guard is what answers it**, because a run with no display says so and exits
-instead of sitting there. If an agent reports that capture "stalls" or hangs, that is the message it
-should have got, and the branch is worth pulling and photographing from a session that does have a
-display. A missing screenshot from an agent is a missing check, never evidence that the change is
-wrong.
-
 **An agent's run always carries a dev flag or `--no-save`.** Every checkout and worktree of this
 repository shares one `user://`, so the player's save is in reach of any game an agent starts.
 `GameSave._uses_save()` already refuses a headless run and any run carrying a dev flag; `--no-save`
 is what a flagless `tools/run.sh` session needs to say the same thing.
+
+**A screenshot needs a display server, though not a visible window, and a run without one says so
+and exits** (`[AutoScreenshot] nothing to photograph: this run is headless`). A missing screenshot
+from an agent is a missing check, never evidence that the change is wrong. **Several rigs may run
+at once**, windowed or headless, from different worktrees.
+
+`references/windowed-capture.md` has the rest; read it before planning a capture and when one
+fails. It says why a rig's window cannot hang, how a covered window is still photographed, what a
+movie needs on top, and which failure each closing line of a failed capture names.
 
 ---
 
@@ -247,201 +175,44 @@ calls, or the suite reports leaked instances under a green check count.
 drives a subsystem by hand, ask what the engine was doing around it — and if the answer is "keeping
 something bounded", the rig is not slow, it is wrong.
 
-## What an experiment checks in
+## What evidence is checked in
 
-**Keep experimental evidence compact by default.** Check in the question, conclusion and limits;
-the runnable probe or reused collector/analyzer and exact rerun commands; source revisions,
-collector identity, environment, settings, seed, warmup/window lengths, actual run order and
-acceptance criteria; and compact results for every trial relevant to the claim, including failed,
-rejected and contradictory trials and their reasons. Preserve the per-run distributions, counts
-and workload checks that support the claims, rather than only a pooled average or the best pair.
-Relevance follows the question the run or rig was meant to answer: unrelated automatic captures,
-generic boot output, irrelevant logs and redundant copies stay in scratch space. Put the conclusion
-in the decision record and its evidence under `docs/evidence/`.
+**Every log, telemetry map or screenshot a doc points at gets copied into `docs/evidence/` in the
+same commit as the sentence that points at it, and experimental evidence is compact by default.**
+`references/evidence.md` says which artifacts of a playtest or a rig run are kept, what the
+folder's README records and what an experiment checks in beside its conclusion; read it before
+committing anything under `docs/evidence/`. In an agent's sparse worktree a new evidence file is
+committed with `git add --sparse <path>`.
 
-Rerun instructions create the required revision checkouts and use caller-relative paths, fresh
-scratch directories and a configurable engine executable instead of the author's local paths.
-Every named capture revision must also be fetchable from a fresh clone. When it exists only on a
-pull request branch that will be squash-merged and deleted, fetch the durable ref first
-(`git fetch origin refs/pull/<PR>/head`), then check out the full commit ID it makes reachable;
-never assume the reproducer already has the branch's objects locally.
+## Dev flags
 
-Timed comparisons use clean tracked checkouts: a commit ID alone does not identify dirty
-runtime sources. Record hashes of source files an audit can rewrite, and revalidate source and
-collector identity after setup and before captures. Run source-rewriting demand audits in
-separate disposable checkouts. Historical source-state gaps are disclosed, not filled with
-hashes computed after the capture.
-
-**Full profiler streams, expanded analyzer output, build/test stdout and duplicate generated
-reports stay in scratch space unless the conclusion needs their original detail.** Retain a
-focused original trace or input when it proves a defect, supports attribution that aggregate
-results cannot substantiate, or records something the rerun cannot recreate. Keep the smallest
-useful data, compress it where appropriate, and explain why it belongs in the repository. A
-compact result can record historical medians and tails without promising arbitrary reanalysis
-of the original capture. Fresh reruns reproduce the experiment; timing varies between launches.
-
-Before committing, count the evidence files and bytes and report that footprint in the PR.
-Verify compact results against the original output before discarding it, remove redundant
-copies, and ensure every retained claim is supported by the checked-in evidence. Rerun commands
-write into a new scratch directory instead of overwriting the recorded results. Routine test
-verification needs its command and outcome, not a checked-in copy of the entire test run.
-
-Player playtests and gameplay captures remain primary evidence under **playtest-feedback** and
-**session-captures**; their retention rules apply to those records.
-
-## Dev flags, and why a plain screenshot is useless
-
-**A screenshot of a standing player is a screenshot of almost nothing.** The crowd and the events
-are built around her, and the director only puts something in front of her while she is going
-somewhere.
-
-- **`--walk north|south|east|west`** holds a direction down for the whole run. `tools/shot.sh`
-  forwards every dev flag. **From the doorstep, only south moves at all**: the home is a notch with
-  one exit, cut into the south edge of its lot, so a rig walking any other way stands against the
-  notch wall for the whole run — and its log looks exactly like a run. If a `--walk` rig is meant
-  to meet something, check it actually travelled before reading anything else off the run.
-- **`--walk 1s5e` and `--walk 3@45@2e`** walk a script of timed steps instead, left to right: one
-  second south then five east, or three seconds at a bearing of 45° then two east. **A bearing is
-  what a player's route actually looks like** — a press sets an arbitrary unit vector, so most
-  headings are diagonal and a four-letter script can only reproduce the axes. Degrees run clockwise
-  from north, and the pair of `@`s is a delimiter rather than decoration: a bearing's digits would
-  otherwise run into the next step's. Every step presses both `move_*` axes at fractional strength
-  through the same call the touch scheme uses, so the vector stays unit length and the rig walks at
-  `Tuning.WALK_SPEED` (92px/s) — **a step must never press a vector shorter than one**, which is
-  the rule `tests/test_touch.gd` holds for every input path. A malformed step fails the whole
-  script rather than being skipped, because a script that silently drops one walks a different
-  route than the one asked for. Three more shapes, for a trailer shot's path of several legs
-  (`tools/trailer.sh`): a duration may carry a decimal point (`1.5s`); `p` stands still for its
-  duration (`0.5p`), pressing nothing, the same as a player letting go; and an uppercase letter is
-  that direction at a run (`2S`) rather than a walk.
-- **`--smooth-walk`** turns a script's corners gradually, and is the one scripted press shorter than
-  one: through a turn the press blends from one step's vector to the next, so her heading sweeps
-  and her speed dips, and once the turn is over she is exactly where the abrupt script puts her
-  on open ground (`WalkPlan`, `src/dev/walk_plan.gd`; `tests/test_walk_plan.gd` holds the end
-  positions against a real `Stroller`). A wall, a stair flight or a shove from the crowd moves her
-  differently on the two paths, and under `--walk` the abrupt script switches steps on process
-  frames while the smooth one is pressed on physics ticks, so there the two agree to within a
-  tick's walk; a recipe's `playback.smooth` presses both on ticks and is exact. It is pressed from the rig's physics tick, so it needs a script; a scene
-  recipe asks for it with `playback.smooth`. No player's input path reads it.
-- **`--flee [delay]`** turns round and runs when something starts chasing her. A rig that can only
-  hold a direction can only ever demonstrate the *wrong* answer to a pursuit; the delay is the axis
-  worth measuring — what the right answer costs when it is given late.
-- **`--press <action> <seconds>`** pushes a real input event. Nothing in the suite or in a
-  screenshot presses a key on its own, so a pause screen that never opens passes both.
-  `Input.action_press()` sets the **polled** state and nothing else, which is right for `--walk`
-  and useless for anything answered in `_unhandled_input`, so the flag pushes a real event with
-  `Input.parse_input_event`.
-- **`--press key:r 3.5`** — a bare key is not an action. `InputEventAction` reaches actions in the
-  input map and nothing else, while a screen's own shortcuts are usually read as **keycodes**. The
-  flag may be repeated, because one tap can only ever photograph one screen and what usually needs
-  checking is a sequence. The one thing it cannot do: `R` reloads the scene and the reloaded scene
-  re-presses, so a rig restarting the game loops for ever — read the boot lines rather than waiting
-  for the PNG.
-- **`--spawn corner:nw|ne|sw|se`** points the camera where two border bands meet. It stands a couple
-  of tiles inside the corner, on the pavement — the dev rig's nearest-walkable search (`src/dev/dev_rig.gd`,
-  the closest walkable point to a target) will otherwise happily leave her on the boundary
-  carriageway.
-- **`--after` is in seconds, not frames.** The windowed build draws ~110fps, so a frame count is
-  quietly useless.
-- **`--press snapshot_burst <seconds>` records a burst instead of a still** (PLAYTEST-56;
-  woolly-finch 16). A still lands on a two-second turn, a stride or a wing beat by luck, and cannot
-  establish that motion was smooth; the burst is the same rig with thirty-six frames over three
-  seconds and a timing record, so **evidence about anything that moves is a burst, not a
-  screenshot**. `tools/shot.sh out.png 10 --seed 4242 --spawn signal --layers 2,3 --press
-  snapshot_burst 5` records from second five to eight and quits at ten; `tools/clip.sh` makes the
-  video, and the **session-captures** skill says what is kept and what a frame may be said to prove.
-- **`--invincible` keeps the day running so the capture can wait for its moment** (woolly-finch 17).
-  A rig standing still at a busy junction pushes the meter to a hundred inside ten seconds, and a
-  `--after 13` shot lands on the summary screen. Under the flag nothing ends the day, the clock
-  never moves and the excitement meter never rises, so the light stays where the day started and no
-  alarm flashes over the capture; a car or a hard fail does not end it either. So **any capture
-  whose timing is hard to hit adds `--invincible`** and waits as long as it needs to. The HUD shows
-  `INVINCIBLE` and the run log says so in its day header, which is what stops the picture being
-  mistaken for a real run; a capture meant to show *cost* or a *loss* leaves the flag off, since a
-  meter that cannot end the day answers nothing about either.
-
-**Where a cue cannot be triggered on demand, relax its condition, look, and put it back.** The
-screen-edge badge needs something lethal off-screen and closing, which is not something a six-second
-screenshot can be asked for. Forcing it on for one shot is the only thing that finds a badge
-colliding with the excitement meter or an icon squashed by a square box.
+**A screenshot of a standing player is a screenshot of almost nothing**, since the crowd and the
+events are built around her while she is going somewhere: a capture walks (`--walk`), and from the
+doorstep only south moves at all. **Evidence about anything that moves is a burst, not a
+screenshot** (`--press snapshot_burst <seconds>`; PLAYTEST-56; woolly-finch 16), and **any capture
+whose timing is hard to hit adds `--invincible`** (woolly-finch 17), unless it is meant to show a
+cost or a loss. `references/dev-flags.md` has every flag with its trap; read it before planning a
+capture, a walk script or a rig run.
 
 ## Writing a test
 
 How a test is written — what it builds, what it mocks, what it holds — is **writing-tests**'s.
 
-## A suite leaves nothing changed
+## What a suite owes the runner
 
-**After every suite the runner compares the shared state with what it was before, and fails the
-suite that changed it** (`tests/shared_state.gd`): the tree's `paused`, `Engine.time_scale`,
-`Engine.max_physics_steps_per_frame`, `Engine.physics_ticks_per_second`, `Input.mouse_mode`, the
-nodes under the root and the runner, each `InputMap` action's events and deadzone, which actions
-`Input` holds pressed, every autoload's variables, those of each `RefCounted` an autoload holds (one level deep, named
-`<autoload>.<field>.<its field>`), the connections on its signals, and every `static var` under
-`src/`, found by reading the sources. The failure line names
-the field and its value before and after (`LEAK` is printed the moment it is found). A suite fixes a
-leak by giving back what it took (a released action, a disconnected signal, a freed node, a fake
-injected instead of a static patched); it is never retried and the runner does not clear it.
-Exceptions are fields, never owners: `EXEMPT` in that file names each with its reason (memoised
-statics); no owner is skipped, and no autoload is the run or an observer of it: each test is
-handed a fresh run, and the run log and the visit counter are nodes `main` keeps under the boot's
-sitting, freed with it, so a suite that reads what a boot logs hands it a recording fake
-(`tests/recording_log.gd`, through `main.use_run_log()`). A new exemption needs a reason of that kind, not a convenience.
+- **A suite leaves nothing changed**: after every suite the runner compares the shared state with
+  what it was before and fails the suite that changed it (`tests/shared_state.gd`; a `LEAK` line
+  names the field). A suite gives back what it took; an exemption is a field with a reason, never
+  a convenience.
+- **A suite never quits the tree**, which ends the process and drops every later suite of the
+  shard; code that quits is driven through a stand-in (`tests/route_rig_no_quit.gd`).
+- **An engine error is a failed run, whatever the checks say**: `tools/test.sh` exits non-zero on
+  `ERROR:`, `SCRIPT ERROR` or `Parse Error` in Godot's output, so bad input fed on purpose goes
+  through a path that reports by return value (`JSON.new().parse()`, not `JSON.parse_string()`).
+- **A run is read through `tools/test.sh`'s verdict and from a file, never through `tail`**: an
+  error in a suite's own `run()` counts no failure, and `tail` prints nothing until the end.
+- **`check.sh` puts back `docs/ARCHITECTURE.md` and `project.godot`** when its import pass rewrites
+  them, unless you had already edited the file, which it names.
 
-## When a suite errors
-
-**An error inside a suite's own `run()` ends that suite and nothing else.** A runtime bug in the
-suite's own test logic (a null call, say) prints `SCRIPT ERROR`, in a plain `run()` or in a
-coroutine one after an `await`. The suite stops at the error and its remaining checks are skipped;
-the runner goes on to the next suite and reports no failure for it. Only
-`tools/test.sh`'s scan for `SCRIPT ERROR`, `Parse Error` and `ERROR:` makes the exit non-zero, so
-a run read without that script's verdict can look green. Nothing hangs. The loader guard below
-covers a suite that fails to load, not this path.
-
-**A suite that quits the tree ends the whole process at the runner's next frame.** The exit is 0
-and the runner's closing "N checks, M failures" line never prints, so every later suite of the
-shard is dropped. The runner prints a `QUIT` line naming the suite that was running, and
-`tools/test.sh` fails any run without the closing line (or with a look-alike before the last
-timing line). `tests/runner_fixtures/quits_the_tree.gd` proves it, and a suite that drives code
-which quits (as `RouteRig` does) uses a stand-in that does not (`tests/route_rig_no_quit.gd`).
-
-**A suite that fails to parse is a named `FAIL` line and a normal exit, not a hang.** `_discover`
-loads every suite before running any, but `load()` on a broken suite returns a `GDScript`
-that `can_instantiate()` refuses, and `_ready()` checks that before calling `.new()`. A suite that
-cannot load is recorded as a failure by name, the suites that did load still run, and the runner
-reaches `quit()` non-zero either way. `tests/runner_fixtures/unparseable_suite.gd.src` is the
-fixture that proves it — kept off its real `.gd` name because an unparseable `.gd` anywhere in
-the tree can break the atlas bake's own engine boot when `.godot/`'s class-name cache is cold; see
-that file's own header and M172, a suite that fails to parse fails the test run, in
-`docs/DECISIONS.md`.
-
-**The way to see a genuine hang is to stop piping the run into `tail`** — `tail` prints nothing
-until EOF, so a hung run and a silent one look identical. Redirect to a file and read it; the
-message is usually on line four.
-
-**`tools/test.sh runner_fixtures/unparseable_suite.gd` stages that fixture as a real `.gd` for the
-one process and removes it on exit**, and CI requires that run to fail within seconds, so a
-runner that hangs on a broken suite again is a red check rather than a stuck job.
-
-## An engine error is a failed run, whatever the checks say
-
-**`tools/test.sh` exits non-zero when Godot's output carries `ERROR:`, `SCRIPT ERROR` or `Parse
-Error`** — the words `check.sh` already fails a boot on — in a filtered, serial, single-shard or
-locally sharded run alike, and shows the offending lines. Godot prints those and still exits 0,
-and the runner counts only failed `check()` calls, so the exit code alone would pass them. So a
-test that feeds the game bad input on purpose has to reach a code path that reports it by return
-value: `JSON.new().parse()` rather than the static `JSON.parse_string()`, which prints.
-`tests/runner_fixtures/engine_error.gd` raises one on purpose, runs only when named, and CI
-requires it to go red.
-
-## `check.sh` puts back what its import pass rewrites
-
-**The import pass rewrites two files that have nothing to do with the check.** It turns runs of
-spaces into tabs in `docs/ARCHITECTURE.md`'s file tree, and it makes the editor rewrite
-`project.godot`, which loses more than whitespace: every `;` comment is stripped and a setting can
-go outright, `window/stretch/aspect="keep"` among them, which is load-bearing for the presentation.
-`check.sh` records whether each was clean before it ran and reverts it afterwards if it was,
-printing which file it reverted; the revert runs from an `EXIT` trap, so it also happens when the
-check fails. **A file you had already edited is left alone and named**, since reverting it would
-delete real work to fix a whitespace bug; read it with `git diff`. `tools/export-web.sh` stamps
-`project.godot` with the build's version and commit for the export's duration and puts it back
-from a copy on every exit, so the editor's rewrite never survives an export either.
+`references/runner.md` has the detail; read it when a run fails in a way these lines do not
+explain, and before changing the runner or its fixtures.
