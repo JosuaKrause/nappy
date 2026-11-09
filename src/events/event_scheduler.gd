@@ -2656,6 +2656,10 @@ class RuledLocationGround extends LocationGround:
 	var _walk_counted := -1
 	var _walk_placed: Array[Planned] = []
 	var _walk_around: Array[Planned] = []
+	## The walk's plans that stood nowhere when the lists were worked out, unspent: what her walk
+	## may yet site on a plan it already holds (a poster crew, day 3's fire, a moment she is owed),
+	## which the lists must learn of though the walk gains no plan.
+	var _walk_unplaced: Array[Planned] = []
 	## What this ground has stood during the walk that the walk may not hold yet: a batch of draws
 	## stands each before the next is judged, though the walk takes them after the batch.
 	var _stood_on_the_walk: Array[Planned] = []
@@ -2769,19 +2773,22 @@ class RuledLocationGround extends LocationGround:
 		_walk_counted = -1
 
 	## **The walk's plans as the day's rules read them**, worked out again only when the walk has
-	## gained a plan: what is placed and unspent is placed, the seals and the wall's bodies standing
-	## beside it, as they stood at dawn. A marble asked after another at the same location, or a
-	## location drawn on a tick nothing joined the walk, reads the same lists rather than walking the
-	## walk's plans again. A plan spent since is kept until the next plan joins, which can only space
-	## a draw further from something that has left.
+	## gained a plan or one it held unplaced has been given a place (a poster crew or day 3's fire
+	## her walk sited, `EventDirector.site_what_is_on_her_way()`): what is placed and unspent is
+	## placed, the seals and the wall's bodies standing beside it, as they stood at dawn. A marble
+	## asked after another at the same location, or a location drawn on a tick nothing joined or was
+	## sited, reads the same lists rather than walking the walk's plans again. A plan spent since is
+	## kept until the lists are next worked out, which can only space a draw further from something
+	## that has left; a placed plan moved is read where it stands now, since the lists hold the plan.
 	func _catch_up_with_the_walk() -> void:
 		var plans := _walk.plans()
-		if plans.size() == _walk_counted:
+		if plans.size() == _walk_counted and not _one_was_sited():
 			return
 		_walk_counted = plans.size()
 		_version += 1
 		_walk_placed = []
 		_walk_around = []
+		_walk_unplaced = []
 		var held := {}
 		for plan in plans:
 			held[plan] = true
@@ -2793,10 +2800,22 @@ class RuledLocationGround extends LocationGround:
 				_read(plan)
 		_stood_on_the_walk = pending
 
+	## Whether a plan the lists hold as standing nowhere has been given a place since.
+	func _one_was_sited() -> bool:
+		for plan in _walk_unplaced:
+			if plan.is_placed():
+				return true
+		return false
+
 	## Adds `plan` to what the rules read, if it stands: placed and unspent; the seals and the wall's
-	## bodies beside what is placed.
+	## bodies beside what is placed. A region door's body is left out, as at dawn, where the doors'
+	## own rule keeps their ground (`DoorClearanceRule`). An unspent plan with no place is kept apart,
+	## for `_one_was_sited()`.
 	func _read(plan: Planned) -> void:
-		if not plan.is_placed() or plan.is_spent():
+		if plan.is_spent() or plan.is_door():
+			return
+		if not plan.is_placed():
+			_walk_unplaced.append(plan)
 			return
 		_walk_around.append(plan)
 		if not plan.is_a_seal() and not plan.is_in_the_wall():
