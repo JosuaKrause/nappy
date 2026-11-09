@@ -123,6 +123,10 @@ var _walk: RouteSource = null
 ## Authored scenes install a complete event plan; ambient directors cannot replace its actors.
 var _recipe_plan := false
 
+## The walk's draw of the day's open locations as she comes near them (`WalkDraw`), or null on a
+## walk that draws none: the escape, the building, a recipe.
+var _walk_draw: WalkDraw = null
+
 ## Builds the parts, each handed the one world, and connects the doors' intents and crossings.
 func _init() -> void:
 	warnings = WarningBoard.new(world)
@@ -290,6 +294,10 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	# the map's closures and soft seals as they stand now (`DayReach`).
 	var reach := DayReach.of(world.city_map, plan.placements) if world.city_map else null
 	_walk_events.take(plan.placements, plan.calm(), plan.doors, reach, plan.locations())
+	# The walk's draw of the day's open locations, judged against what the walk stands from now on.
+	_walk_draw = plan.walk_draw()
+	if _walk_draw:
+		_walk_draw.judge_against(_walk_events)
 	if plan.is_a_day:
 		# Every stationary solid body the day has sited, recorded per tile so the crowd goes round
 		# it — see `CityMap.obstructed_tiles`. Taken from the **plan** rather than from the live
@@ -306,6 +314,11 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	else:
 		streaming.find_what_repeats()
 		ahead.start_a_given_walk(world.day)
+	# What the walk owes before her first step, drawn while the day is set up: every location near
+	# where she starts (`WalkDraw.draw_within()`).
+	if _walk_draw:
+		for drawn in _walk_draw.draw_within(focus, WalkDraw.MUST_DRAW):
+			streaming.add(drawn)
 	streaming.stream_around(focus)
 
 ## The walk the plan `start_day()` started is stated against (`RouteSource`): the day's route tree,
@@ -504,6 +517,14 @@ func _tick_the_events(delta: float) -> void:
 		# director.
 		if not _recipe_plan and ahead.has_director():
 			ahead.site_what_is_on_her_way(delta)
+		# The locations she comes near are drawn before the streaming, so a draw is in the world on
+		# the tick it would have streamed in (`WalkDraw.draw_ahead()`).
+		if _walk_draw:
+			var her := world.player as CharacterBody2D
+			var heading := her.velocity.normalized() if her else Vector2.ZERO
+			for drawn in _walk_draw.draw_ahead(world.player.global_position, heading,
+					visible_view().sees_any):
+				streaming.add(drawn)
 		streaming.stream_around(world.player.global_position)
 		if not _recipe_plan and ahead.has_director():
 			ahead.place_what_is_owed_ahead(delta)

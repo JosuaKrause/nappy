@@ -1,7 +1,7 @@
 class_name LocationDraw
 extends RefCounted
-## **The day's locations drawn at dawn, each from its view's bag** (inbox #1185; `docs/EVENTS.md`,
-## "The three views and the placement order"): every location still open is filled by one draw from
+## **The day's locations drawn, each from its view's bag** (inbox #1185; `docs/EVENTS.md`,
+## "The three views and the placement order"): a location still open is filled by one draw from
 ## the bag of its view (`ViewBag`), the empty event among the marbles, and what is drawn is what
 ## stands there, with no rejection: **a row the day's ground leaves invalid at the location is not
 ## considered** (`LocationGround.offer()`, today's placement rules deciding, as the player said:
@@ -10,9 +10,8 @@ extends RefCounted
 ## let it is not either (the orchestrator's reading of fork 5(b), open to correction). Each row's
 ## share is the location's own weight times the bag's (`LocationGround.scale()`).
 ##
-## The locations are drawn in the day's order (`DayLocations.drawing_order()`), so a street's later
-## locations draw with its earlier draws standing. *In this step of the placement they are drawn at
-## dawn, not during the walk:* the walk's draws are the next step's.
+## A location is drawn as she walks near it (`WalkDraw`), so a street's later locations draw with
+## its earlier draws standing, and what the walk stands besides (`judge_against()`).
 ##
 ## Handed the day's locations, the three bags (`view -> ViewBag`), the rows the bags' marbles name
 ## (`id -> EventDef`), the day's ground, and the day's caps (`id -> how many may stand`, a row not
@@ -33,22 +32,22 @@ func _init(locations: DayLocations, bags: Dictionary, rows: Dictionary, ground: 
 	_ground = ground
 	_caps = caps
 
-## **Draws every open location**, its order shuffled within each street on `rng`, and answers the
-## events placed, in the order drawn.
-func draw_all(rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
-	var placed: Array[EventScheduler.Planned] = []
-	for location in _locations.drawing_order(rng):
-		if not location.is_available() or location.is_taken() or location.is_drawn():
-			continue
-		var plan := _draw(location)
-		_locations.record(location, plan)
-		if plan:
-			_ground.stand(plan)
-			_stood[plan.row_id()] = int(_stood.get(plan.row_id(), 0)) + 1
-			placed.append(plan)
-	return placed
+## **Draws `location`**, if it is still open, and answers the event placed there, or null for the
+## empty event or a location already drawn or taken.
+func draw(location: Location) -> EventScheduler.Planned:
+	if not location.is_available() or location.is_taken() or location.is_drawn():
+		return null
+	var plan := _draw(location)
+	_locations.record(location, plan)
+	if plan:
+		_ground.stand(plan)
+		_stood[plan.row_id()] = int(_stood.get(plan.row_id(), 0)) + 1
+	return plan
 
-## One location's draw: the event placed, or null for the empty event.
+## Hands the day's ground the walk it now judges against (`LocationGround.judge_against()`).
+func judge_against(walk: WalkEvents) -> void:
+	_ground.judge_against(walk)
+
 func _draw(location: Location) -> EventScheduler.Planned:
 	var bag: ViewBag = _bags.get(location.view())
 	if bag == null:

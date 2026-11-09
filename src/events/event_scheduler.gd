@@ -363,6 +363,10 @@ class Planned extends RefCounted:
 		return _is_door or _in_the_wall or _is_a_seal or mast_id != "" \
 				or def.kind == GameEnums.EventKind.AMBIENT
 
+	## Whether this body is one of the day's seals (`stand_as_a_seal()`).
+	func is_a_seal() -> bool:
+		return _is_a_seal
+
 	## Makes this body one of the day's seals. Called by `DayPlanner` for each seal it plans, and by
 	## nothing else.
 	func stand_as_a_seal() -> void:
@@ -687,15 +691,15 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 ## `build_day` up to and including the dawn draw, added to `events`: the day's locations laid out
 ## (`DayLocations`, handed on with the plan, `DayEvents.use_locations()`), the ambient rows, the
 ## scars, the masts, the roadblock phase (`beside_the_routes`, day 13's roadblock), the scripted
-## rows, the one-shots, the spoilers in a park she used, the moments she is owed and the draw of
-## every location from its view's bag (`_draw_the_locations()`), each phase on its own stream off
-## `base` (`_stream`). Answers the draw's own placements, in the order drawn. `spec` is the day's
+## rows, the one-shots, the spoilers in a park she used, the moments she is owed, and the draw the
+## walk makes of every other location from its view's bag (`_draw_the_locations()`, handed on as
+## `DayEvents.walk_draw()`), each phase on its own stream off `base` (`_stream`). `spec` is the day's
 ## placement settings, a day's own (`DaySpec.for_day()`) where none is handed in.
 static func _plan_the_dawn(day: int, base: int, map: CityMap,
 		consumed_one_shots: Array[String], scars: Array[Dictionary], calm: CalmAreas,
 		route: RouteSource, heat: int, doors: PackedVector2Array, events: DayEvents,
 		mast_sites: Array[MastSites.Site], trace: RunTrace = null, spec: DaySpec = null,
-		beside_the_routes: EventDef = null) -> Array[Planned]:
+		beside_the_routes: EventDef = null) -> void:
 	if spec == null:
 		spec = DaySpec.for_day(day)
 	# Which tiles each kind of event may stand on, worked out at most once per day. See
@@ -765,8 +769,10 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, events, calm, kept_clean,
 			reach, heat, trace)
 	_owe_the_moments(day, _stream(base, MOMENTS_SALT), events, heat, spec.caps_per_day)
-	return _draw_the_locations(day, base, map, events, ground, leave_alone, corridor, doors, spec,
-			locations, heat, beside_the_routes, reach)
+	# **The rest is drawn as she walks** (`WalkDraw`): every location the dawn did not fix is left
+	# undrawn, and the walk draws each from its view's bag as she comes near it.
+	events.use_walk_draw(WalkDraw.new(locations, _draw_the_locations(day, base, map, events, ground,
+			leave_alone, corridor, doors, spec, locations, heat, beside_the_routes, reach)))
 
 ## **The roadblock phase at dawn** (inbox #1185: the day's routes first, then roadblocks next to
 ## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
@@ -2364,17 +2370,17 @@ class WalkSiting extends RefCounted:
 
 # ------------------------------------------------- the day's locations, from the bags ---
 
-## **Every open location of the day drawn from its view's bag** (`LocationDraw`, inbox #1185): the
-## bags (`_view_bags()`) hold every recurring row the catalogue places on the map today, each as many
-## times as its weight in the view (`view_weight()`), and the empty event; the day's ground answers
-## which row is valid where and how much each location weighs it (`RuledLocationGround`). The rows
-## other phases place have no marble: the moments she is owed (`_owe_the_moments()`), and on the day
-## of the roadblock phase its row (`beside_the_routes`), the phase's alone. Answers what the draw
-## placed, in the order drawn.
+## **The draw of the day's open locations, each from its view's bag** (`LocationDraw`, inbox #1185),
+## set up at dawn and drawn as she walks (`WalkDraw`): the bags (`_view_bags()`) hold every recurring
+## row the catalogue places on the map today, each as many times as its weight in the view
+## (`view_weight()`), and the empty event; the day's ground answers which row is valid where and how
+## much each location weighs it (`RuledLocationGround`). The rows other phases place have no marble:
+## the moments she is owed (`_owe_the_moments()`), and on the day of the roadblock phase its row
+## (`beside_the_routes`), the phase's alone.
 static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEvents,
 		ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
 		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations,
-		heat: int, beside_the_routes: EventDef, reach: RouteReachRule = null) -> Array[Planned]:
+		heat: int, beside_the_routes: EventDef, reach: RouteReachRule = null) -> LocationDraw:
 	var rows := {}
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
 		if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
@@ -2388,8 +2394,7 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEv
 			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
 					spec.one_notice_at_a_time, null, reach))
 	var caps := _caps_of(rows, day, spec, _stream(base, CAPS_SALT)) if spec.caps_per_day else {}
-	return LocationDraw.new(locations, bags, rows, judged, caps).draw_all(
-			_stream(base, LOCATIONS_SALT))
+	return LocationDraw.new(locations, bags, rows, judged, caps)
 
 ## **How many of each row the day's draw may stand** (`id -> count`): its `EventDef.max_per_day`,
 ## and a wall-role row's times `DaySpec.wall_row_share`, so the gatehouse day holds that share of a
@@ -2640,18 +2645,22 @@ class RuledLocationGround extends LocationGround:
 	var _day := 0
 	var _base := 0
 	var _map: CityMap
-	var _events: DayEvents
+	## The dawn's plan, held weakly: the plan holds the walk's draw, which holds this ground, so a
+	## strong hold back would be a cycle nothing frees. The plan outlives the dawn's draws.
+	var _events: WeakRef
 	var _corridor: Corridor
 	var _fit: LocationFit
 	var _rules: StreetInvalidation
 	var _piles := {}
+	## The walk an offer is judged against once it has started, or null while dawn draws.
+	var _walk: WalkEvents = null
 
 	func _init(day: int, base: int, map: CityMap, events: DayEvents, corridor: Corridor,
 			fit: LocationFit, rules: StreetInvalidation) -> void:
 		_day = day
 		_base = base
 		_map = map
-		_events = events
+		_events = weakref(events)
 		_corridor = corridor
 		_fit = fit
 		_rules = rules
@@ -2673,9 +2682,26 @@ class RuledLocationGround extends LocationGround:
 		if def.id == EventScheduler._MOUSE_ID:
 			fits = _beside_a_pile_first(fits)
 		var role := EventScheduler.role_for(def, _day)
-		var already := _events.placements()
-		var reach_context := already.duplicate()
-		reach_context.append_array(_events.standing())
+		var already: Array[Planned] = []
+		var reach_context: Array[Planned] = []
+		if _walk == null:
+			var events: DayEvents = _events.get_ref()
+			already = events.placements()
+			reach_context = already.duplicate()
+			reach_context.append_array(events.standing())
+		else:
+			# The walk's plans stand for the day's: what is placed and unspent is placed, the seals
+			# and the wall's bodies standing beside it, as they stood at dawn.
+			var placed_now: Array[Planned] = []
+			var around_now: Array[Planned] = []
+			already = placed_now
+			reach_context = around_now
+			for plan in _walk.plans():
+				if not plan.is_placed() or plan.is_spent():
+					continue
+				reach_context.append(plan)
+				if not plan.is_a_seal() and not plan.is_in_the_wall():
+					already.append(plan)
 		var best: Planned = null
 		var best_room := -INF
 		for tile in fits:
@@ -2708,7 +2734,12 @@ class RuledLocationGround extends LocationGround:
 
 	## Overrides LocationGround.stand.
 	func stand(plan: Planned) -> void:
-		_events.add(plan)
+		if _walk == null:
+			(_events.get_ref() as DayEvents).add(plan)
+
+	## Overrides LocationGround.judge_against.
+	func judge_against(walk: WalkEvents) -> void:
+		_walk = walk
 
 	## `tiles` with those within `_MOUSE_PILE_ADJACENCY` of a sack pile first, each half in the order
 	## it was handed.

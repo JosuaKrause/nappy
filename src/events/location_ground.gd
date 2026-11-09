@@ -21,3 +21,8 @@ func scale(_def: EventDef, _location: Location) -> float:
 ## Stands `plan` in the day, so what is offered after it is asked with it standing.
 func stand(_plan: EventScheduler.Planned) -> void:
 	assert(false, "LocationGround.stand() is overridden by every implementation")
+
+## From now on, judges an offer against what `walk` stands rather than the dawn's plan, and stands
+## nothing itself: the walk stands what is drawn (`WalkDraw`). Nothing here for a ground with no walk.
+func judge_against(_walk: WalkEvents) -> void:
+	pass
