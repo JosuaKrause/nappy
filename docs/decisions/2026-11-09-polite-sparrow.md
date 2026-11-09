@@ -85,14 +85,18 @@ number; PLAYTEST-144 8).
 ## Choices made in the rewrite, open to the player's overturn
 
 - Which passages became reference files, and their names.
-- The caret drawn by `Sprites.draw_caret()` is stated as the one exemption from "a symbol is never
-  assembled at runtime", worded as "because its width and colour are live state", and listed as a
-  proposal: PLAYTEST-29 3 names no exemption.
-- Two extensions of the evidence folder's naming are listed as proposals in session-captures: a
-  playtest's evidence takes the playtest's name, and nothing new goes into the archive folder.
-- The rejected-graphics skill's split between an in-review rejection and an out-of-service removal
-  says "the player's choice" with no citation, since no playtest statement holding those words was
-  found.
+- **Three symbols are drawn in code today, and the danger-cue skill says so without calling any an
+  exemption**: the caret above an entity (`Sprites.draw_caret()`), the arrow that points home and
+  to the day's task (`HomeArrow._draw_chevron()`), and the pointer of the screen-edge badge
+  (`DangerEdge._draw_chevron()`), each a filled polygon with an outline; the badge's backing disc
+  is drawn in code too. The player's rule that a picture is an image file names none of them
+  (PLAYTEST-29 3). The skill's closing list says it is not decided whether they stay drawn in code
+  or become pictures, and that a new symbol is a picture.
+- **One naming detail is listed as the filer's in session-captures**: the date in an evidence
+  folder's name is the day the evidence is made.
+- The illustrated-png skill cites the playtest tawny-yak for the player's permission of three
+  PNG-first families (the rooftop equipment, the fallen tree, the burst water main), and says only
+  the rooftop equipment exists as PNGs today.
 - A constant's value in brackets was dropped wherever its sentence was rewritten, leaving the
   constant's name.
 
@@ -127,6 +131,12 @@ observer"):
 - "`Tuning.PURSUIT_TIME`, a long cap (30s)"
 - "`EventScheduler.OBSTRUCTION_A_PARK_CAN_HOLD` (16.0px)"
 - "the 6-second backstop"
+
+**events, the event car created in her lane** (it must not drive off at her), figures quoted in
+the reason:
+
+- "the fire engine's 1.7s of 190px/s past a touch that counts its body and hers, against the view's
+  180px half height up a north-south street and 320px half width across an east-west one"
 
 **crowd-traffic, figures quoted beside a constant's name:**
 
