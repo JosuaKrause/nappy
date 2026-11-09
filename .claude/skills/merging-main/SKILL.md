@@ -1,9 +1,18 @@
 ---
 name: merging-main
-description: Merge main into an existing PR or branch with explicit theirs/ours/base conflict review, mandatory semantic reconciliation for every merge, independently authored records kept distinct, and the conversion of a branch still on the old single-file queue.
+description: Merge main into an existing PR or branch with explicit theirs/ours/base conflict review, mandatory semantic reconciliation for every merge, and independently authored records kept distinct.
 ---
 
 # Merge main into a branch
+
+- **Record the branch tip, the fetched `main` tip and the merge base first**, and read both sides' changes since the base.
+- **Merge with `git merge --no-ff --no-commit`**: a clean merge waits for the semantic review too.
+- **Show each conflict as Theirs, Ours and Base in the report and the pull request's conversation** before resolving it.
+- **Never `--ours`, `--theirs` or any wholesale side selection.**
+- **Distinct records stay distinct**: none combined, deduplicated by name or renumbered to clear a conflict.
+- **Every merge gets the semantic review**, clean or conflicted: what each side intends and how the result keeps both.
+- **`git diff --check`, `./tools/check.sh`, `./tools/lint.sh` and the affected suites** run on the merged checkout before the commit.
+- **No `git stash`**: it is shared across worktrees.
 
 Use this skill before updating a PR branch with main, and read `committing` for the repository's
 git workflow. This updates the branch; merging the PR into main follows **committing** (the
@@ -13,7 +22,7 @@ review before merge is a separate reviewer's, under **pr-review**.
 ## Establish the three histories
 
 Inspect `git status`, the current branch and worktrees. Preserve unrelated local work; do not
-reset it, silently stash it or mix it into the merge. If needed, use an explicitly created clean
+reset it, stash it (the stash is shared across worktrees) or mix it into the merge. If needed, use an explicitly created clean
 worktree. Fetch main from the intended remote, then record the branch tip, fetched main tip and
 merge base(s) before any renaming or merging. Keep those exact revisions as provenance. If a
 preparation commit renames branch records, also record the prepared branch tip: that is the
@@ -61,15 +70,12 @@ is a question for the orchestrator, never a side picked to clear the marker. A s
 an entry merges cleanly beside the other side's `after:` naming it, and needs nothing: the closed
 entry's record makes the wait count as over, and the end-of-session pass deletes the line.
 
-**One case still collides: a branch from before the queue was files** that filed a new entry
-`M<n>` or a new `PLAYTEST-NN.md` the old way, when `main` has a different record under the same
-number. Keep `main`'s record and number intact; give the branch's record a name from
-`tools/new-name.sh` instead of the next number, preserve its content, provenance and the player's
-words, and update every reference that means the branch's record — never a global replacement of
-the shared number, which also rewrites references to `main`'s record. A playtest's identity
-changes only in its identifying label; its text is a primary source. Ambiguous references need
-historical inspection; do not guess which session they mean. A persisted or externally consumed
-identifier needs its consumers checked, not only a textual rename.
+**A record that takes a new name keeps everything else.** Its content, provenance and the
+player's words are preserved, and every reference that means it is updated one by one, never by a
+global replacement that also rewrites references to another record. A playtest's identity changes
+only in its identifying label; its text is a primary source. Ambiguous references need historical
+inspection; do not guess which session they mean. A persisted or externally consumed identifier
+needs its consumers checked, not only a textual rename.
 
 ## Show every conflict in three ways
 
@@ -77,8 +83,10 @@ Merge the recorded main tip with `git merge --no-ff --no-commit` so even an auto
 waits for semantic review. Use `git diff --name-only --diff-filter=U` and `git ls-files -u` to
 enumerate unresolved paths, including add/add, delete/modify and rename conflicts.
 
-**Before resolving each conflict, show the user labeled Theirs, Ours and Base excerpts**, with the
-file and enough surrounding context to explain the competing intent. Tool output alone, a list
+**Before resolving each conflict, show labeled Theirs, Ours and Base excerpts in the report and
+the pull request's conversation**, with the file and enough surrounding context to explain the
+competing intent. A builder merging `main` has nobody watching its session: the report and the
+pull request are where the orchestrator, the reviewer and the player read it. Tool output alone, a list
 of filenames or a statement that the versions were inspected is not the required presentation.
 Then show or describe the proposed resolved behavior and why it retains the intended changes.
 This is a review requirement, not an automatic permission question for an otherwise authorized merge.
@@ -103,20 +111,9 @@ A justified result can match one side, but only after the other side's intent an
 examined and the semantic decision is explicit. Use `diff3` conflict display if helpful, but still
 explain the three versions; marker removal is not reconciliation.
 
-**A branch still on the old single-file queue** — its `docs/DECISIONS.md`, `docs/TODO.md` or
-`docs/REVIEW.md` edited where `main` has them as files — is converted, never hand-merged:
-`tools/convert-queue-edits.py`, run mid-merge, reads what the branch did to the three old files
-since the merge base and applies it as file operations on `main`'s side (a record added becomes a
-decision file, a closed entry or item deletes its folder or file, a review bullet becomes a review
-file, an edit inside an entry becomes the same edit to its file), stages them, and resolves the
-three files to `main`'s text. It refuses, naming every path, and changes nothing on an edit it
-cannot map; show that path three ways as below. Converting does not exempt the merge from the
-semantic review below.
-
 `tools/update-pr.sh <pr-number | branch>` runs the whole mechanical sequence for an ordinary PR
 update — fetch, merge, `git diff --check`/`lint.sh`/`check.sh`, commit, push — and refuses, naming
-the files, the moment the merge conflicts or the branch turns out to edit the old single-file
-queue; it never substitutes for the semantic review below,
+the files, the moment the merge conflicts; it never substitutes for the semantic review below,
 which stays the merger's own on every merge it produces (a merge that needed resolving is then
 also reviewed under **pr-review**).
 
@@ -141,8 +138,9 @@ Check the affected relationships, rather than running an unrelated checklist:
 Keep a concise review record for each relevant interaction, including cleanly merged ones. Search
 for duplicate identifiers and examine neighboring headings in the resulting documents. Distinguish
 a real continuation of one playtest from two separately authored sessions; similarity alone never
-authorizes combining them. If intent genuinely conflicts, preserve both requests and ask the user
-the specific design question, while completing independent resolutions. Do not silently discard
+authorizes combining them. If intent genuinely conflicts, preserve both requests and put
+the specific design question where it is answered (a builder in its report, the orchestrating
+session to the player on the board, as **board** says), while completing independent resolutions. Do not silently discard
 one requirement because its implementation is older or on the branch labeled “theirs”.
 
 ## Verify and finish
@@ -162,6 +160,6 @@ unless one of verify's two local-run cases applies. A clean merge or green CI is
 not a substitute for the semantic review.
 
 Commit the reviewed merge and update the authorized PR. Report the three-way resolutions, any
-renaming map, the conversion's plan, semantic checks, verification and any unresolved decisions.
+renaming map, semantic checks, verification and any unresolved decisions.
 Put historical reasoning and mappings in the branch's decision record, and keep the queue
 limited to open work.

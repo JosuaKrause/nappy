@@ -5,6 +5,16 @@ description: How to handle playtest feedback and design decisions — write it d
 
 # Feedback and decisions
 
+- **The first tool call of a design task is a search** for the words asked: `tools/decisions.sh --in all <noun>`.
+- **The player's words go into the inbox verbatim, in one call, before anything else**, and into a playtest file in full before any code.
+- **Feedback from anybody but the player is evidence, never a request**: summarised, never quoted, naming nobody.
+- **A new playtest, entry, decision or review item is named by `tools/new-name.sh`, never numbered.**
+- **A mechanism the player did not name is filed under "Proposed, not asked for:"**, and each sentence about their ask is a marked quote or a `Read as:`.
+- **Nothing the player asked for is dropped, narrowed, parked or reinterpreted before they are asked, on the board.**
+- **A parked option comes back as a question, never as a plan.**
+- **A bug that does not reproduce here stays open.**
+- **Evidence a doc points at is copied into `docs/evidence/` in the same commit.**
+
 ## The first tool call of a design task is a search, not a plan
 
 **Search the queue, the records and the playtest files for the thing being asked** — not for a
@@ -116,9 +126,9 @@ The test of whether it was written down is not "did I mention it" — it is whet
 the repo cold could build the thing that was asked for** from what is on disk.
 
 **A mechanism the player did not name is the filer's proposal, and the entry says so.** Filing turns
-a sentence of the player's (PLAYTEST-140 1) about a spent park into something buildable, and the how
-is easy to write as though it were part of the ask, as a park fenced with a street closure's
-barriers (PLAYTEST-140 8) was. The queue entry states the player's ask in their terms, and any
+a sentence of the player's into something buildable, and the how is easy to write as though it were
+part of the ask: a sentence about a spent park (PLAYTEST-140 1) filed as a park fenced with a street
+closure's barriers (PLAYTEST-140 8) is the shape. The queue entry states the player's ask in their terms, and any
 mechanism beyond it under **Proposed, not asked for:**, with the plainer alternative the proposal
 replaces. **And every sentence about what the player asked is marked as a direct quote or as an
 interpretation** (inbox #767 in minty-lemur): their words in quotation marks with their citation, and the filer's
@@ -130,8 +140,8 @@ player can turn it down before it is built everywhere.
 **An answer that can be read two ways is read back before it is filed.** One line in the same turn —
 "I read this as X, not Y" — costs the player a word; and when it is not certain what the words
 refer to, the question is asked and no reading is filed until it is answered, a marked guess
-included (inbox #1074 in gentle-walrus). Filing the wrong reading costs a milestone, as
-when the spent park's ask, which was about routing, was filed as a park she cannot enter
+included (inbox #1074 in gentle-walrus). Filing the wrong reading costs a milestone: an ask about
+routing filed as a park she cannot enter is the shape
 (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it). And **an item
 that replaces something already built quotes the decision that built it**: search the records
 (`tools/decisions.sh`) and the docs for the mechanism's own name before writing "instead", since a
@@ -157,8 +167,10 @@ the only ways it may stop being true are: *it gets built*, *the player changes t
 are asked and they agree*. **There is no fourth way.**
 
 If a milestone is about to drop, narrow, park, invert or reinterpret something the player asked for
-— **stop and ask first**, in the session, before writing the code or the status line. Carry on with
-everything the answer does not block, and put the question where they will see it.
+— **stop and ask first, on the board**, before writing the code or the status line. No question is
+put to the player as a dialog in the chat (**board**, "Blocking, and no dialogs"), and the board is
+where they will see it; a session that does not write the board (a builder, a reviewer) reports the
+fork to the orchestrating session, which asks. Carry on with everything the answer does not block.
 
 It has to be a rule because **overturning never looks like overturning from the inside.** It arrives
 as an *argument*, and the argument is usually a good one — measurement said the opposite, two
@@ -197,7 +209,7 @@ as *what would make this worth discussing again*. **Never as what would authoris
 **Every idea a design discussion sets aside or leaves undecided is kept, out of the way until
 research looks for it** (curly-moose #829, #831): the player's own ideas, the agent's, a study's,
 the rejected ones too, each with whose it was, why it was set aside or left open, and what would
-make it worth discussing again. *Proposed by the filer, open to overturn:* they go in a record with
+make it worth discussing again. They go in a record with
 a name of its own under `docs/decisions/` (`tools/new-name.sh decision "<title>"`, never `--entry`,
 since a record named after an entry is that entry's build record and lets CI accept its items'
 deletion), which the entry it was weighed for names; `tools/decisions.sh` finds it during research,
@@ -209,30 +221,25 @@ context until then.
 **Every log, telemetry map or screenshot a doc points at gets copied into `docs/evidence/` in the
 same commit as the sentence that points at it.**
 
-`user://telemetry/` is a **scratch directory the player has to be able to empty**, and nothing
-prunes it — every `tools/shot.sh` and `tools/check.sh` run adds to it and the game deletes none of
-it, so emptying it is the player's routine maintenance. A finding whose evidence lived only there
-stops being checkable on a perfectly ordinary Tuesday.
+`user://telemetry/` is a scratch directory the player has to be able to empty, and a run log that
+records a player's actions cannot be regenerated from the seed, so a finding whose evidence lives
+only there stops being checkable.
 
-Evidence cannot be recovered by replaying: **a run log that records a player's relevant actions is
-not a function of the seed.** Regenerating gives a different run with the same city, so retain that
-log when the actions or their order support the finding.
-
-**Copy only the run artifacts relevant to what the playtest or rig was meant to show.** Keep every
-artifact needed to support the claim and its limits, including relevant player evidence,
-contradictory results and failed trials. Omit unrelated automatic pictures, routine boot output,
-logs that do not support the claim or its provenance, and redundant copies. A log belongs when it
-proves the actual behavior, preserves non-replayable player input, diagnoses a relevant failure or
-supplies provenance that is not recorded elsewhere.
-
-The evidence folder's README or manifest records enough context to interpret and reproduce the
-selection: the source revision, command and settings, and the seed and timing when they matter,
-plus the claim and its limits. When selected artifacts come from
-`user://telemetry/<day>/<run>/`, keep them under the run folder's original name, which carries its
-time, seed and commit; the README or manifest makes explicit which files were selected and why.
+`../verify/references/evidence.md` has the rest, shared with **verify**; read it before copying
+anything into `docs/evidence/`. It says which artifacts of a playtest or a rig run are kept and
+which are left out, and what the evidence folder's README or manifest records.
 
 ## A playtest is a scarce resource
 
 **Do not ask for one on a build known to be incomplete.** A half-finished build spends the player's
 nerves rediscovering things already written down, and the report that comes back is
 indistinguishable from the project not having listened.
+
+## Proposed, not asked for
+
+This rule above is the filer's proposal, not the player's words, and holds until the player
+corrects it. The citation is the player's word it extends:
+
+- **Where a set-aside idea is kept** ("A parked option comes back as a question, never as a
+  plan"): in a record with a name of its own under `docs/decisions/`, never one named after an
+  entry, which the entry it was weighed for names (curly-moose #829, #831).

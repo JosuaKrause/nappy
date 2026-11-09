@@ -5,6 +5,15 @@ description: The end-of-session hygiene pass — make every document true again,
 
 # End-of-session cleanup
 
+- **Every document the session touched, or made false, states what is true now**; `./tools/lint.sh` finds the volatile facts.
+- **What stopped being current goes to a decision record**, findable with `tools/decisions.sh`; a playtest file is never rewritten.
+- **The queue holds open work only**: finished items and their entries are gone, each band is still true, no heading carries a status.
+- **Everything is committed, pushed and on a pull request** before the session ends.
+- **Every item under `docs/review/` a playtest covered is closed.**
+- **A job removes its own scratch and nothing else**; merged branches are retired with `tools/prune-merged.sh`.
+- **Nothing checked in says where the session stopped.**
+- **The restart prompt goes into `.claude/restart-prompt.md`, never into the chat**, rewritten whole in its fixed layout, and records no merge or release permission.
+
 **Run this at the end of every session.** A session adds decisions, closes items and moves numbers,
 and every one of those makes some sentence somewhere false. Left alone for a few milestones the
 project reaches the state this pass exists to prevent: **three files carrying three different
@@ -85,7 +94,8 @@ In `docs/TODO.md` and the entries under `docs/todo/`:
   line, and an `after:` whose wait the entry's own text no longer states goes. An `upnext:` line on
   an entry an open pull request is already building goes too.
 - **No status words in headings.** A heading names the work, never its state.
-- **Reassess anything long open.** An item nobody has touched in ten milestones is either still
+- **Reassess anything long open.** An item whose file no commit has touched in thirty days
+  (`git log -1 --format=%cs -- <the item's file>` prints the date of the last one) is either still
   wanted, superseded, or already done by something else. Say which, in the entry. An open item with
   no reassessment date is an item that will be read as current forever.
 - **An open item keeps a pointer** to its decision records, so picking it up does not mean
@@ -112,52 +122,23 @@ for this session's work.
 ### 6b. Finish the job's storage cleanup
 
 **A completed job cleans up its own scratch immediately, and the session verifies that it did.**
-Temporary placement is not proof that a directory is disposable. Record exact scratch paths,
-their owner and retained outputs when starting a worktree, build, capture or browser run. Scripts
-use a scoped `EXIT` trap or `finally`, stop and wait for their child processes, retain diagnostic
-logs/results and requested evidence, then remove only their own intermediate files. On failure,
-preserve the evidence needed to diagnose it and name any retained directory and its next cleanup
-step; do not silently leave a complete checkout or compiler tree behind as "temporary".
-
-**Review worktrees with `tools/prune-merged.sh --all`.** It is a read-only candidate inventory;
-`--all --apply` applies its safety checks again. Run the inventory through the same `uv run python
-tools/agent-identity.py run <role> --` wrapper as the apply (**committing** names the role and the
-exact line `.claude/settings.json` allows), since `github-write-guard.sh` denies the script bare
-in every shape, its read-only ones included. Finished agents explicitly release their brief
-with `cleanup: ready` after stopping and preserving useful ignored artifacts. Locked, dirty,
-unpushed or actively owned work stays. An unmerged but finished job may remove its own clean
-scratch checkout only after confirming pushed recovery and retained evidence; retain the branch.
-Never force-remove or unlock another job's checkout to make cleanup succeed.
-
-**Browser runs own more than a profile.** Track downloaded/extracted browser copies, build trees,
-profiles and signing-clone leftovers attributable to the run, including operating-system temp
-locations outside `/tmp`. Stop the owning processes and check exact paths before removing them.
-A browser's installed application, the player's regular profile and arbitrary OS/application
-caches are not job-owned scratch. A one-time request to remove identified directories does not
-authorize future blanket deletion of the application's temporary area.
-`tools/web-template/browser-check.mjs` follows this for macOS Chrome's code-sign clone, a copy of
-the browser's own bundle that Chrome removes after a graceful close and leaves behind when it is
-killed: it launches Chrome with the clone disabled, closes it through the debugging protocol and
-waits for it, removes only a clone `lsof` showed its own browser holding once nothing holds it,
-and writes what it removed, kept or could not attribute to `scratch.json` in its output.
-
-**Check actual free space before and after.** `du` gives allocated sizes that may overlap shared
-copy-on-write blocks; it does not promise exclusive reclaimable bytes. `df` on each destination
-volume measures the available headroom. Before multiplying worktrees or producing large imports,
-builds or capture batches, compare estimated peak use with free space and a stated reserve.
-When the peak is unknown, start with a bounded measurement or reuse an existing checkout rather
-than claiming an arbitrary fixed threshold makes the job safe. The tools that allocate a batch
-make that comparison themselves through `tools/lib_disk_headroom.sh` (**using-tools** lists them),
-whose per-job estimates are peaks measured with `tools/measure-disk-peak.sh`, and refuse an
-unmeasured job; a worktree made by hand compares the same file's worktree estimate with `df`.
-Keep unrelated tracked archives out of new worktrees through sparse checkout (**orchestrating**).
+A job removes only what it recorded as its own, keeps its logs and the evidence asked for, and
+never force-removes or unlocks another job's checkout. **Merged branches and their worktrees are
+inventoried with `tools/prune-merged.sh --all`** and retired with `--all --apply`, through the
+wrapped line **committing** ("Branches") gives; a finished agent's brief is released first
+(`cleanup: ready`), and **the script deletes a released brief as it retires the brief's branch**,
+the brief in the main checkout's `.claude/briefs/`, and keeps one that is not released.
+**Free space is read from `df`, before and after**, since `du` counts
+shared blocks more than once. `references/storage.md` has the rest; read it before removing
+anything a job did not record as its own, after a browser run, and before multiplying worktrees or
+starting a large build or capture batch.
 
 ### 7. There is no checked-in handoff
 
 **Nothing in the repository says where a session stopped**, since every agent has its own thread to
 work on and no session hands over to another (polite-marten). The pick-up state is live — `gh pr
 list`, `tools/agent-status.sh`, `tools/queue.sh`, the inbox (`uv run python tools/inbox.py list`,
-**inbox**) and the items under `docs/review/` answer it at the moment they are asked — and what a
+**inbox**), the Nappy board (**board**) and the items under `docs/review/` answer it at the moment they are asked — and what a
 document would have said about it is stale the moment another thread merges. So the session's end
 writes nothing checked in about itself: the durable part of what it learned is already in a skill, a
 doc, an entry, a review item or a record by the steps above, and the rest is the restart prompt
@@ -171,9 +152,8 @@ ignores, and never into the chat**: copying long text out of the CLI corrupts it
 Each handover overwrites the file, and the report in the chat names its path. The file is
 rewritten whole in a fixed layout, so the next orchestrating session reads it top to bottom the same
 way every time and checks each row against `gh pr list` and `tools/agent-status.sh` (**CLAUDE.md**).
-The player asked for a better layout, old entries removed routinely and a systematic way of reading
-it (frosty-owl #1065); the layout below is the filer's proposal, not asked for and open to the
-player's correction:
+A layout made for reading, old entries removed routinely and a systematic way of reading the file
+are what the player asks of it (frosty-owl #1065); this is the layout:
 
 1. a header saying the file is rewritten in place and how to read it: whole, then the live-state
    commands, which win where they differ;
@@ -194,7 +174,10 @@ to the player as questions. An open point is listed only when it truly is open.
 A handover writes one row per open thread, and a thread whose pull request merged or was dropped
 has no row, since the pull request and its record hold it. Nothing is carried over as a log, so the
 file stays short enough to read whole, and a top that still describes finished work would read as
-work in flight. The file is also kept current during the session, whenever that is cheap, so a session
+work in flight. **The file stays under 10 KB** (`wc -c .claude/restart-prompt.md`), since it is
+read whole at every session start: a file over the bound is cut before the handover ends, a row to
+its pull request, checkpoint and next action, and whatever explains the work to where it belongs
+(the pull request's description, the queue item, a record). The file is also kept current during the session, whenever that is cheap, so a session
 cut off without a handover leaves a file a fresh one can reorient from; this step rewrites it whole
 (inbox #986 in brisk-pelican). Do not require the next session to have read this
 conversation or to resume an old agent transcript. The prompt tells it to fetch and inspect live PR
@@ -211,7 +194,7 @@ Nappy board's last read `rev` and last comment `seq` for each of its two tabs, M
 the next session reads only what changed since (**board**). Restate the scope fences that matter. If
 delegation should continue, say to start fresh agents with self-contained briefs rather than
 resuming the session's agents, and the next session is not required to resume
-one. *Proposed, not asked for, open to the player's correction:* it may resume an agent a restart
+one. It may resume an agent a restart
 stopped, by a message to the id on its brief, while `tools/agent-status.sh` reports it warm
 (**orchestrating**, "Recovering from an interruption"). Keep the prompt self-contained and current at the moment of handover;
 the final report may summarize it, but the file must stand on its own.
@@ -222,3 +205,18 @@ nothing to record; any other permission (a release, or a merge granted to anothe
 in a session and ends with it (**committing**, "Merging" and "Releasing"), so a sentence carrying
 it forward is either a grant nobody gave the next session or an invitation to act on one; the next
 session asks the player.
+
+## Proposed, not asked for
+
+These rules above are the filer's proposals, not the player's words, and hold until the player
+corrects them. An entry cites the player's word it extends where there is one, and says so where
+there is none:
+
+- **Thirty days without a commit to its file is what makes an item long open** (step 4). The
+  player has named no interval.
+- **The restart prompt's seven-part layout** (step 8; frosty-owl #1065).
+- **The restart prompt stays under 10 KB** (step 8). The player has named no bound.
+- **The next session may resume an agent a restart stopped, while it is reported warm** (step 8),
+  which is **orchestrating**'s proposal. The player's words are that a cold agent is not resumed
+  (woolly-finch 5) and that a warm one is reused while rebriefing would cost more
+  (inbox #896 in plaid-raven); neither is about an agent a restart stopped.
