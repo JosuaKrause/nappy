@@ -1358,9 +1358,11 @@ EventScheduler.build_day(day_index, run_seed):
     6. spoil the parks she used  (docs/CITY.md)
     7. owe her the day's moments (the rows the director sites in front of her)
     8. draw every open location from its view's bag (LocationDraw)
-   Every body the day places is asked, as it is placed, whether it cuts the day's routes off
-   from home (RouteReachRule), and the draw's bodies all the day's rules (StreetInvalidation);
-   nothing is checked or repaired after.
+   The scars, the spoilers, the roadblock phase, the scripted rows and the draw are asked, as
+   each body is placed, whether it cuts the day's routes off from home (RouteReachRule), and
+   the draw's bodies all the day's rules (StreetInvalidation); the region wall, the seals, the
+   masts and the ambient rows stand by their own planners' guarantees. Nothing is checked or
+   repaired after.
 ```
 
 **The day's density is the bags' empty marbles**, set per view and per day so each view's share of
