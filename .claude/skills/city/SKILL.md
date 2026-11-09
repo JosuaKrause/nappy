@@ -5,6 +5,25 @@ description: Rules for the city — the lattice and what may change about it, ti
 
 # The city
 
+**The rules not to miss:**
+
+- **The lattice is fixed for the run.** Only a block's purpose changes, along the arc planned for
+  it, and no purpose change moves a walkable tile.
+- **Every day stays winnable**: at least two distinct calm areas stay reachable from home.
+- **Closures and events are checked before they are accepted, never repaired afterwards.**
+- **Anything new that closes a street goes through `ClosurePlanner`.** Nothing enforces it.
+- **Every route search takes `CityMap.blocked_segments()`**, the absent streets with the closures.
+- **Anything that travels the lattice asks `CityMap.is_street()`**, not `is_walkable()`.
+- **The street outside the home is never closed**: a doorway is not a route.
+- **A closure is silent**: it shapes the route and adds nothing to the meter.
+- **One main road, two precincts**, and every reader of the street hierarchy agrees.
+- **Never the bare word "blocker"**: it answers three questions with one word.
+
+Three reference files beside this one are read on demand: `references/adding-things.md` before
+adding a tile type, a block purpose or a closure kind; `references/sweeps.md` before writing a
+flood fill or any per-tile sweep; `references/street-kinds-and-ground.md` before changing the
+street hierarchy or a ground's decay multiplier.
+
 ## The lattice is fixed; what a block *is* is not
 
 The street lattice, the block boundaries, the carves and the building footprints are all fixed for
@@ -45,22 +64,25 @@ travels the lattice asks `CityMap.is_street()`, not `is_walkable()`.**
 The scheduler guarantees one unspoiled park and a walkable route from home to a park. On top of
 that, `ClosurePlanner` keeps **at least two distinct calm areas reachable**
 (`ClosurePlanner.MIN_CALM_AREAS_REACHABLE`), checked **before accepting each closure**. Anything new that
-closes a street must go through it — `tests/test_routes.gd` fails the build if it does not.
+closes a street must go through it. `tests/routes_closures_rig.gd`, which
+`tests/test_routes_closures_a.gd`, `_b` and `_c` run, holds every day the planner plans to the
+count; **a closure made outside the planner is unenforced**, since no suite sees one.
 
 **Two areas is the count; reachability is the strength.** Two *areas* is what stops a day arriving
 where the only calm left is the one this morning spoiled; dropping to one reachable area is an
 unwinnable day. **No one street cuts off all the calm** is the guarantee's own statement — by
-Menger, two routes to different areas means no single street is a cut — and `tests/test_routes.gd`
-asserts that sentence directly, about the city rather than about each area.
+Menger, two routes to different areas means no single street is a cut — and
+`tests/test_routes_lattice.gd` asserts that sentence directly, about the city rather than about
+each area.
 
 **A day's narrow target is kept reachable the same way.** On day 9 (a named door), day 12 (a
-park's swing) and day 14 (the finale's district), the route tree, `ClosurePlanner` and the
-dawn's reach rule (`RouteReachRule`, no body cutting a route tile off from home) each keep at least
-one tile of the day's target pool
-(`ResistanceSteps.target_candidates()`) reachable from home, checked before a closure or a body is
-accepted, as the power station's door already is. Anything new that closes a street or stands a
-body on those days goes through the same checks; `docs/CITY.md`, "Guarantees", states what the
-guarantee does not cover.
+park's swing) and the last night (the power station's front door), the route tree, `ClosurePlanner`
+and the dawn's reach rule (`RouteReachRule`, no body cutting a route tile off from home) each keep
+at least one tile of the day's target pool (`ResistanceSteps.target_candidates()`, for the step
+`ResistanceSteps.narrow_target_on()` names) reachable from home, checked before a closure or a body
+is accepted. Anything new that closes a street or stands a body on those days goes through the same
+checks; `docs/CITY.md`, "Guarantees", states what the guarantee does not cover, and
+`tests/test_resistance_reach_narrow.gd` plans the three days.
 
 Two exemptions, and they are the same exemption at both ends of the journey: **a doorway is not a
 route.** The street outside the home is never closed (the home is a notch with one exit, so sealing
@@ -109,8 +131,9 @@ The **corridor** is the ground a day's routes run through. **Do not reintroduce 
 
 Closures change the shape of the route and contribute nothing to the meter — the noise of a street
 is the crowd, the danger is the events, the shape is the closures. A noisy roadworks already exists
-as the `construction` event. **Do not let a closure emit**; it would be a third thing for
-`WorldContext.excitement_sources_at` (which `City` extends) to sum, and that list is exactly two long on purpose.
+as the `construction` event. **Do not let a closure emit**; it would be a third set in
+`WorldContext.excitement_sources` (`City` extends `WorldContext` and fills it with the events' and
+the crowd's, which `Baby` sums), and that list is exactly two long on purpose.
 
 **One seal is loud, and it is the shape of the exception that matters.** `car_accident` is solid
 only where its two cars are (PLAYTEST-63), so its picture's own gaps are walkable and
@@ -125,9 +148,10 @@ point somewhere** — a scheduler decision, not a change to what a closure is.
 
 ## The street hierarchy
 
-`CityGenerator._assign_street_kinds` decides *where* (`CityMap.main_road`,
-`CityMap.precinct_spans`); `Tuning.PRECINCT_BLOCKS`, `PRECINCT_BUSYNESS`, `EVENT_PRECINCT_WEIGHT`
-and the `EXCITEMENT_DECAY_*_MULTIPLIER` family decides *what it means*.
+`CityGenerator._assign_street_kinds()` decides *where* (`CityMap.main_road`,
+`CityMap.precinct_spans`); `Tuning.PRECINCT_BLOCKS`, `CrowdLanes.PRECINCT_BUSYNESS`,
+`EventScheduler.EVENT_PRECINCT_WEIGHT` and `City`'s `EXCITEMENT_DECAY_*_MULTIPLIER` family decide
+*what it means*.
 
 **Every place that reads it has to agree, and the failure mode of each is silent:**
 
@@ -135,63 +159,13 @@ and the `EXCITEMENT_DECAY_*_MULTIPLIER` family decides *what it means*.
 - `GroundTiles` — what it looks like
 - `CrowdLanes.busyness_for` + `walkable_offsets` — who walks and drives there
 - `City.decay_multiplier` — what the ground does to the meter
-- `TrafficSignals.is_signalled` — whether its junctions have lights
+- `TrafficSignals.has_lights()` — whether its junctions have lights standing on them, a fact about
+  the street. Whether a light decides a junction now is `is_signalled()`, the traffic's question,
+  false with the power off (the **crowd-traffic** skill, "The traffic fairness contract")
 
-**The trap is scale. There is one main road and there are two precincts, and that is the design
-rather than a parameter.** One of each per *axis* is three kinds of street and no hierarchy among
-them: a spine that crosses itself is two spines, and a precinct you meet on every third street is
-what a street is. **If a kind starts appearing in every third corridor, it has stopped being a
-place.**
-
-**Which corridor is the main road is a fact about a city, so read it off the map.** Computing it as
-`index == arterial_index(blocks)` per axis makes a phantom arterial on the other axis, weighted like
-the real one but with no lights, no dark asphalt and no clearway.
-
-## The ground is a rate, not a category
-
-Calm 2.0, precinct 1.5, ordinary street 1.0, alley 0.58, main road 0.02, multiplying the excitement
-decay — so choosing a route is choosing a **recovery rate** and not only a set of things to walk
-past. It is what makes a precinct worth walking to although it is loud, what keeps an alley a
-shortcut rather than a rest, and most of what *"a main road is crossed, not walked"* means
-arithmetically.
-
-**The multipliers are ratios and the absolute rates are the design.** Move the walking decay and
-every one of them is re-derived to hold its own ground's rate (the list of rates is the
-`EXCITEMENT_DECAY_*_MULTIPLIER` docstring in `tuning.gd`). `tests/probes/m117_decay.gd` walks each
-ground and prints what it actually does, which is how the rates are set rather than guessed.
-
-## Adding things
-
-**Add a tile type** — `GameEnums.TileType`, then `src/city/tile.gd` (walkable / calm / alley / road
-/ colour), then an SVG in `art/tiles/`, then `assets/ground_tileset.tres` **and**
-`src/city/ground_tiles.gd` in the same order (the source ids are positional and mirrored by hand),
-then wherever the generator should emit it.
-
-**Add a block purpose** — `GameEnums.BlockPurpose`, the ground it puts down in
-`CityMap.open_tile_for`, `BlockPlan.is_calm` (and `Tile.is_calm` for its tile type) if it is calm
-ground, and the arcs that may reach it in `CityGenerator._plan_arcs`. If it is calm, check
-`MIN_CALM_BLOCKS_AT_END` still holds — `validate()` will tell you, on every seed, if it does not.
-**Write it against `map.lot_rect(block)` rather than `CityMap.block_rect(block)`**, or it will cover
-one block of a multi-block calm zone and nobody will notice on the lots that are one block.
-
-**Add a closure kind** — `RoadClosure.Kind`, a row in `RoadClosure.KINDS` (name, first day, weight),
-two SVGs in `art/closures/` — `<cause>.svg` lying across a north-south street and
-`<cause>_vertical.svg` lying across an east-west one, drawn in the game's projection rather than
-rotated — with a line for each in `ClosureMarker.CAUSES` and `ClosureMarker.CAUSES_VERTICAL` and
-both in `assets/atlases/membership.json` — unless it has nothing to leave
-in the road, like `CORDON`, in which case the barriers are the whole of it. Nothing else: the kinds
-differ in look and timing only, because a street you cannot walk down is a street you cannot walk
-down.
-
-## A per-tile predicate in a sweep is a lookup table
-
-A `Tile.is_walkable()` call per tile becomes a `PackedByteArray` indexed by tile type
-(`CityMap._lut`), built *from* `Tile.is_walkable`, which decides every tile type. It is not the whole answer: the
-precinct bollards are posts standing on otherwise walkable tiles (`CityMap.post_tiles()`), so a sweep
-over `_WALKABLE` that a body or a flood must obey also blocks those tiles, as `walk_field_from()`
-does, or it walks straight through every row; a sweep that a figure walks lays the day's record
-over it too (`CityMap.ground_for()`, the closures, the soft seals and the bodies its `Mover` names).
-Only `wall_between()`'s sight walk (`_open()`) leaves the posts open, on purpose; `clear_line()`, the
-pursuers' notice and lunge line, asks `passable()` for the mover it is handed and is blocked by a
-post. The rest of flood-fill performance
-(a `Vector2i`-keyed `Dictionary` against a flat array) is the **godot** skill, "Performance".
+**There is one main road and there are two precincts, and that is the design rather than a
+parameter**; which corridor is the main road is read off the map, never computed per axis. **The
+ground is a rate, not a category**: calm, precinct, ordinary street, alley and main road each
+multiply the excitement decay (`City.decay_multiplier()`), so choosing a route is choosing a
+recovery rate. The traps of both, and how the multipliers are re-derived when the walking decay
+moves, are `references/street-kinds-and-ground.md`.

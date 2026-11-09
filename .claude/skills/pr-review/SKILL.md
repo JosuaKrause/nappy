@@ -5,6 +5,16 @@ description: How every pull request is reviewed before it may merge — adversar
 
 # Reviewing a pull request
 
+- **Every pull request is reviewed adversarially before it merges**, by a reviewer that did not write it; no exception for size or kind.
+- **Ready means a *ready* verdict posted on the PR against its current head**; a later push gets a review of its delta.
+- **Semantic correctness first**: the player's own words and the recorded decisions, then the code.
+- **The findings go on the PR as one review**, anchored to their lines, ending with the verdict and the head commit.
+- **The review posts as the reviewer identity, which alone approves, and never as the player.**
+- **The reviewer never edits the branch and never merges.**
+- **A review thread is resolved only by whoever opened it.**
+- **Three *not ready* verdicts on one pull request mean the approach is rethought.**
+- **A queue update is reviewed for faithfulness to the player's words, and merged first.**
+
 **Every pull request goes through an adversarial review before it is ready to merge**
 (how-the-spent-park-was-rebuilt-against-the-players-words-and-the-review-rules-it). No exception for
 size or kind: a one-line fix, a docs PR filing a playtest, a hook, the orchestrator's own queue
@@ -52,7 +62,8 @@ Each "no" is a finding:
   described is covered and shown, not only the first. Nothing is built beyond their words unless
   it is marked: a mechanism under "Proposed, not asked for" (**playtest-feedback**), which the
   player agreed to if it changes what they see across the game, or a small choice the PR
-  description names as open to overturn (**orchestrating**, "Forks come back"). An unmarked
+  description names as open to overturn (the agent contract, "Forks come back, never guessed",
+  `../orchestrating/references/agent-contract.md`). An unmarked
   addition is a finding; so is a game-wide one the player never agreed to.
 - **Does it keep what is already decided?** No record under `docs/decisions/` and no doc rule is
   overturned, narrowed or rewritten in passing. A doc sentence the PR changed says what the player decided, not
@@ -72,8 +83,9 @@ Each "no" is a finding:
   did not do is how an ask disappears.
 - **Is every defect already found in this change fixed inside it?** Nothing merges carrying a
   defect that was already found: a finding from a playtest, a review or the player about work
-  whose PR is still open is built into that PR, never queued against it (`docs/decisions/`, M90,
-  the controls do what the hand does, where PLAYTEST-35's findings on the open branch went in).
+  whose PR is still open is built into that PR, never queued against it (`tools/decisions.sh M90`,
+  the controls do what the hand does, the record of PLAYTEST-35's findings built into the open
+  branch).
 
 ## Then the code
 
@@ -84,22 +96,14 @@ touches (the path table in `CLAUDE.md`). Look for:
 - a test that does not test what its name says, builds a real object it does not test
   (inbox #1159 in gray-dolphin), or holds nothing in one of the four ways
   **writing-tests** names (an unreachable setup, a design decision read back, a check that
-  cannot fail, a duplicate; inbox #1097 in curly-rabbit). `tools/check_test_only_members.py` covers part of the
-  first, a test reading a public member nothing else under `src/` reads, and the own-file rule of
-  inbox #1098 in curly-rabbit. It fails CI on a new one and on a line added to the list's no reader
-  or own file only group (against the PR's base) unless the same diff changes the checker itself, and on a
-  kept line with no reason. For each line such a diff adds, run the base's checker on the head tree: copy the base's
-  `tools/check_test_only_members.py`, `tools/check_layers.py` and `tools/layer_map.py` into a scratch folder and run
-  `uv run python <scratch>/check_test_only_members.py --root <head checkout>`. An added line it prints nothing for is a
-  member it still sees as test-only, which a checker change may not list; a `REMOVE` line, whatever its reason, is
-  fine, since the base's checker does not see the member as test-only. Each `FAILED` line is a member the base's checker
-  sees as test-only and the head's checker no longer does. Check that the new checker is right to drop it (for
-  `Main.use_sitting` in the PR that added the per-class reading, the test's call is on a `TitleScreen`), and not that
-  the change hid it. Whether a kept
-  line's reason holds is the reviewer's to read, and so is the rest, including any change to the
-  check's own exemptions in the tool: `ENGINE_MEMBERS` (a name never counted as a read, which exempts
-  it everywhere) and `SKIPPED_TESTS` (a test file not scanned), since each switches the check off
-  with no list line and no reason. Where the PR claims a
+  cannot fail, a duplicate; inbox #1097 in curly-rabbit). `tools/check_test_only_members.py`, CI's
+  check that fails a test reading a public member nothing else under `src/` reads (its `--help`
+  says what it counts), covers part of the first and the own-file rule of
+  inbox #1098 in curly-rabbit. Whether a kept line's reason holds is the reviewer's to read, and so
+  is the rest. **A diff that touches the list `tools/test_only_members.txt`, the checker or the
+  checker's own exemptions is reviewed as `references/test-only-members.md` says**: it holds what
+  CI leaves to the reviewer there, and the procedure for a diff that changes the checker, which CI
+  exempts from its rule that the list only shrinks. Where the PR claims a
   test fails before the fix, check that claim, by reading or by running that one suite on the
   pre-fix code;
 - a contract from the skills broken (fairness, telegraph, "checked before accepted", present-tense
@@ -122,9 +126,15 @@ touches (the path table in `CLAUDE.md`). Look for:
 
 The reviewer does not edit the branch, check it out in a worktree an agent is using, or merge. It
 may run a suite from a checkout of its own, sparse unless the PR's evidence or references are what
-it is checking (**orchestrating**, "Create sparse worktrees"; `tools/agent-setup.sh --detach <ref>
-<name>` makes it, detached at the PR head, with no branch and no brief), and never runs `git grep`
-over a folder that holds images (see **using-tools**).
+it is checking (`../orchestrating/references/worktrees-and-disk.md`, "The worktree", says what a
+sparse worktree leaves out; `tools/agent-setup.sh --detach <ref> <name>` makes it, detached at the
+PR head, with no branch and no brief), and never runs `git grep` over a folder that holds images
+(see **using-tools**). **A review checkout is removed once the review is posted, with
+`tools/agent-setup.sh --remove <name>`**: a plain `git worktree remove`, never forced, of the
+detached checkout of that name under `.claude/worktrees/`, which refuses one that has a branch, is
+locked, or holds a changed, untracked or non-regenerable ignored file (its `--help` has the whole
+list). The checkout has no branch, so `tools/prune-merged.sh`, the script that retires a merged
+branch and its worktree, never takes it.
 
 ## The findings go on the PR
 
@@ -148,7 +158,7 @@ GitHub shows beside it, not a replacement for writing it out. **The reviewer sti
 merging is **committing**'s, under its permission rule, whatever the review's event says.
 The repository states a standing permission to merge only; starting reviewers and posting their verdict reviews
 is covered by a line in the player's `~/.claude/settings.json`. A refused spawn or post is reported to the player as **committing**
-("Merging") says, never worked around. *Proposed by the filer, open to the player's correction (curly-rabbit #1094).*
+("Merging") says, never worked around.
 
 **A reviewer bot's APPROVE counts toward `main`'s required approval** (**committing** says what
 that requires), the same as the player's own.
@@ -159,25 +169,17 @@ on the thread and never resolves it (woolly-finch 32). **It is a convention, not
 unresolved thread blocks neither an approval nor a merge, and no ruleset requires thread resolution
 (woolly-finch 33).
 
-**The review posts under its author's own reviewer identity, mandatorily**: a Claude Code review as
-`claude-reviewer`, a Codex review as `codex-reviewer`, on a docs-only pull request as much as on one
-that changes code (the pull request's own writes are `claude-orchestrator`'s or `claude-coder`'s by
-what it contains, **committing** says which) — never the player's own account. `uv run python
-tools/agent-identity.py status claude-reviewer` or `... status codex-reviewer` (**using-tools**)
-says whether the role is usable; the `gh` command that posts the review then runs through `uv run
-python tools/agent-identity.py run claude-reviewer -- <command>` (or `codex-reviewer`) instead of
-running it directly, so the comments and the review event show as `claude-reviewer[bot]` or
-`codex-reviewer[bot]`. **A review's text is written to a file first and passed to the API with
-capital `-F`** (`-F body=@file`, as **using-tools** says): lowercase `-f` (`--raw-field`) sends the
-literal text `@file` as the body, and the review then has to be edited. **When the role is not usable (not created yet, not installed, or a cloud
-session), the review stops there and is reported to the player instead — it is never posted as the
-player** (tall-egret). That holds where the write guard can ask (**committing**, "Who a commit and a
-pull request are from"): a review's findings are never sent as a `gh pr comment` or any other write
-the guard's prompt would let through as the player. The same `PreToolUse` hook that makes
-committing's rule mechanical (`.claude/hooks/github-write-guard.sh`) covers `gh pr review` too,
-denying it unless it is wrapped in `run <role> --`. **An admin action no bot identity can perform**
-(a repository ruleset, a GitHub App's own permissions) **is the player's to do directly, never
-something to wrap and retry.**
+**Which GitHub identity writes what is committing's** ("Who a commit and a pull request are
+from"), with how a write is wrapped and what the write guard denies. What is this skill's own: **a
+review posts as its author's reviewer identity, mandatorily, and that identity alone approves**
+(busy-ibis 9): `claude-reviewer` in Claude Code and `codex-reviewer` in Codex, on a docs-only pull
+request as much as on one that changes code. **When the role is not usable, the review stops there
+and is reported to the player instead — it is never posted as the player** (tall-egret): its
+findings are never sent as a `gh pr comment` or any other write the guard's prompt would let
+through as the player. **A review's text is written to a file first and passed to the API with
+capital `-F`** (`-F body=@file`; **committing**, "Text handed to a write goes through a file",
+spells the calls that make the file): lowercase `-f` (`--raw-field`) sends the literal text `@file`
+as the body, and the review then has to be edited.
 
 The conversation still gets the recap, since the player reads that first; the PR is where the
 findings live.
@@ -193,7 +195,7 @@ builder for the rethink when it judges the builder has the context and the capab
 otherwise writes it itself or starts a fresh planning agent for it; a builder on a small model
 (Haiku) is the player's example of one that may not.
 
-*Proposed, not asked for, open to the player's correction:*
+How the rethink runs:
 
 - **What counts:** every *not ready* verdict, full reviews and reviews of a delta alike, a queue
   update included. The count starts again after a rethink is written down.
@@ -215,9 +217,12 @@ otherwise writes it itself or starts a fresh planning agent for it; a builder on
 The brief names the PR, its branch, the playtests and queue entry it answers, and anything the
 orchestrator already knows is contested. It asks for this skill's order (semantic first, then code),
 one review posted on the PR, and a report back: the verdict, each finding with its severity, and the
-review's URL. Sonnet is enough for a small or mechanical PR; a PR that carries a design decision, a
-drawing, or a change to the rules is reviewed by a stronger model.
-
+review's URL. **Which model reviews is decided by the orchestrating skill's model table**, whose
+rows for a review go by what the pull request carries, apart from the one case this skill fixes
+itself: a queue update's review is Sonnet's (bouncy-heron 8; "A queue update is reviewed for
+faithfulness and merged first"). The one other model this skill names, Haiku under "Three verdicts
+of *not ready* mean the approach is rethought", is the player's example of a builder and not of a
+reviewer.
 
 ## A queue update is reviewed for faithfulness and merged first
 
@@ -247,9 +252,7 @@ statements it cites, in the playtest file itself, and asks:
   `Read as:` (**playtest-feedback**); a reading written as though the player had said it is a
   finding (inbox #767 in minty-lemur).
 
-The first five are the reviewer's reading of faithfulness (bouncy-heron 4), proposed at filing
-(leafy-finch), and the sixth came from the player's note (inbox #767 in minty-lemur); all are open to the player's
-correction. A "yes" to the first, second, third or fifth, and a "no" to the fourth or sixth, is a
+A "yes" to the first, second, third or fifth, and a "no" to the fourth or sixth, is a
 finding. **A reviewer flags; it does not resolve**: it says what does not match and where, and the
 filer takes it back to the player or to the words.
 
@@ -272,3 +275,19 @@ and then what it could not:
 is the only one the orchestrator can get without the player. A push after the approval gets the
 same review of its delta. Going first changes the order, not the permission: merging
 still follows **committing**'s permission rule.
+
+## Proposed, not asked for
+
+These rules above are the filer's proposals and readings, not the player's words, and hold until
+the player corrects them. The citation is the player's word each one extends, or the record that
+proposes it:
+
+- **A refused reviewer spawn or review post is reported to the player and never worked around**
+  ("The findings go on the PR"; curly-rabbit #1094).
+- **How the rethink after three *not ready* verdicts runs**: what counts, what else it asks, who
+  writes it with no orchestrator, that a builder's rethink is checked, and where it goes ("Three
+  verdicts of *not ready* mean the approach is rethought"; woolly-penguin #759).
+- **The first five questions of a queue update's review**, the reviewer's reading of faithfulness
+  (bouncy-heron 4), the filer's proposal (leafy-finch).
+- **A fix keyed on one row's id or picture is raised as a proposal-backed finding** ("Then the
+  code"), since the rule it breaks is **designing-classes**' proposal (plush-kestrel).

@@ -91,7 +91,7 @@ UPDATE_PR_CLAUDE=1 appends "Co-Authored-By: Claude Opus 5.5 (1M context) <norepl
 to the commit message; unset by default, since a human running this should not sign as Claude.
 
   tools/update-pr.sh 315
-  tools/update-pr.sh feature/some-thing
+  tools/update-pr.sh feature-some-thing
   tools/update-pr.sh --dry-run 315
 EOF
 }
