@@ -1979,7 +1979,10 @@ flat cap would be met whole near her door. **A walk's cap is a rate** (`Location
 the orchestrator's reading, open to the player's overturn): a row's cap is spread over the locations
 the walk may draw, so after it has drawn a share of them a row may have stood that share of its cap,
 rounded up or down at random once per row, and the cap is spent over the whole walk as the dawn
-spent it over the whole city. Repeats are fine — the same event several times
+spent it over the whole city. The spread is by chance, not by count: a location's share of a row's
+cap is its share of the row's bag times its own weight for the row. The walk's bags are its own, their
+shares scaled again (`EventScheduler.WALK_SHARE_SCALES`), since every body the dawn stood refuses
+some of the walk's draws. Repeats are fine — the same event several times
 over is what a street is — so density needs no new catalogue rows: the common act I rows are capped
 in the teens and twenties.
 
