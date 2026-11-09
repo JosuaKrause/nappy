@@ -60,7 +60,7 @@ var shape: GroundShape
 
 ## The box this agent lives in, held by reference and moved by `Crowd`. Leaving the box is what
 ## recycles an agent — not leaving the map. See `CrowdField`.
-var field: CrowdField
+var _field: CrowdField
 
 ## What the screen shows, held by reference and handed in by `Crowd` — the camera the stretch's
 ## recycling keeps out of sight of, and the box `CrowdAgent` draws within. Null for an agent built by
@@ -70,13 +70,13 @@ var view: CrowdView = null
 ## Where the other cars are, by lane, so a turn can look before it commits. Held by reference and
 ## refilled once a frame by `Crowd`; null for an agent built by hand in a test, which then turns
 ## the way it always did. See `TrafficIndex`.
-var traffic: TrafficIndex
+var _traffic: TrafficIndex
 
 ## Where today's seals have left ground this agent could get into and not out of, or `null` for an
 ## agent built by hand in a test, which then treats every street as somewhere it can leave. Held by
 ## reference and shared with the rest of the crowd, since it is a fact about the day's map rather
 ## than about anybody standing on it — see `CrowdPockets`.
-var pockets: CrowdPockets = null
+var _pockets: CrowdPockets = null
 
 ## Somebody standing in front of this car, or `Vector2.INF` for nobody. Written once per
 ## physics frame by `Crowd` for the cars near the player and read here: an agent has no
@@ -160,6 +160,188 @@ var _detour := 0.0
 ## Seconds this agent has left of the stride it owes its last about-face. See `_turn_round()`.
 var _turn_back_hold := 0.0
 
+## **What a lane strategy and the crowd may ask of a lane mover, and tell it.** The mover's lane state
+## (its axis, corridor, lane, direction, speed, turn and the rest) is its own; this is the narrow view
+## it builds over it (`LaneMover.lane()`) and hands each strategy. The strategies, which are the
+## mover's two halves by kind, ask it questions and report what happened to it as events (joining a
+## lane, a turn landing, a detour taken) and never write its fields one at a time. An inner class,
+## because it is the mover's own view of itself.
+class Lane:
+	extends RefCounted
+	var _of: LaneMover
+
+	func _init(mover: LaneMover) -> void:
+		_of = mover
+
+	# ------------------------------------------------------------------ questions ---
+
+	func is_vertical() -> bool:
+		return _of._vertical
+
+	func corridor_index() -> int:
+		return _of._corridor
+
+	func lane_index() -> int:
+		return _of._lane
+
+	func direction() -> float:
+		return _of._direction
+
+	func lane_centre() -> float:
+		return _of._lane_centre
+
+	func junction_index() -> int:
+		return _of._junction
+
+	func detour() -> float:
+		return _of._detour
+
+	func turn() -> CarTurn:
+		return _of._turn
+
+	## Whether it is on a turn's arc, past the run-up that comes first.
+	func is_in_the_arc() -> bool:
+		return _of._is_in_the_arc()
+
+	func turn_run_up() -> float:
+		return _of._turn_run_up
+
+	func cruise_speed() -> float:
+		return _of._cruise
+
+	func blocked_in() -> int:
+		return _of._blocked_in
+
+	func shape() -> GroundShape:
+		return _of.shape
+
+	func map() -> CityMap:
+		return _of._map
+
+	func kind() -> Kind:
+		return _of.kind
+
+	func strategy() -> LaneStrategy:
+		return _of.strategy
+
+	## The distance to the thing ahead that holds it, or `INF`; and how fast that leader goes.
+	func gap_ahead() -> float:
+		return _of.gap_ahead
+
+	func leader_speed() -> float:
+		return _of.leader_speed
+
+	func pedestrian_ahead() -> Vector2:
+		return _of.pedestrian_ahead
+
+	func junction_hold() -> float:
+		return _of.junction_hold
+
+	func gate_hold() -> float:
+		return _of.gate_hold
+
+	## The checkpoint hut in front of this walker and how far along its line it stands.
+	func door_ahead() -> WalkerDoorHold:
+		return _of.door_ahead
+
+	func door_ahead_along() -> float:
+		return _of.door_ahead_along
+
+	# --------------------------------------------------------------------- events ---
+
+	## It starts in a lane: travelling `direction_along` an axis that is vertical or not, in the lane
+	## `lane` of corridor `corridor`, at `pace`. A morning's choice.
+	func start_in_a_lane(vertical: bool, corridor: int, lane: int, direction_along: float,
+			pace: float) -> void:
+		_of._vertical = vertical
+		_of._corridor = corridor
+		_of._lane = lane
+		_of._direction = direction_along
+		_of._speed = pace
+
+	## It enters lane `lane` of the corridor it is in, at `pace`: a recycled body at a stretch's end.
+	func enter_a_lane(lane: int, pace: float) -> void:
+		_of._lane = lane
+		_of._speed = pace
+
+	## It has turned round and now keeps to `lane`, with that lane's centre line.
+	func turn_round_into(lane: int) -> void:
+		_of._lane = lane
+		_of._lane_centre = _of._lane_centre_here()
+
+	## **It turns into a corridor**: a walker's corner or a car's landing. It now travels along an axis
+	## that is vertical or not, `direction_along` corridor `corridor`, in lane `lane` (a negative one
+	## is the pavement nearest where it stands once turned), on that lane's centre line, and is inside
+	## the junction of corridor `from_corridor`, so it rolls no second turn before clearing the first;
+	## any sidestep it was making is dropped, since a detour means nothing in another corridor. One
+	## call, so the order of the parts cannot drift.
+	func turn_into(vertical: bool, corridor: int, direction_along: float, lane: int,
+			from_corridor: int) -> void:
+		_of._vertical = vertical
+		_of._corridor = corridor
+		_of._direction = direction_along
+		_of._lane = lane if lane >= 0 else CrowdLanes.nearest_sidewalk(corridor, _of._cross())
+		_of._lane_centre = _of._lane_centre_here()
+		_of._forget_the_detour()
+		_of._junction = from_corridor
+
+	## It is inside the junction of corridor `corridor`.
+	func be_in_junction(corridor: int) -> void:
+		_of._junction = corridor
+
+	## It has left the junction it was in.
+	func leave_the_junction() -> void:
+		_of._junction = -1
+
+	## It eases its speed toward `wanted` by at most `step`.
+	func ease_speed_toward(wanted: float, step: float) -> void:
+		_of._speed = move_toward(_of._speed, wanted, step)
+
+	## It goes no faster than `limit`.
+	func limit_speed_to(limit: float) -> void:
+		_of._speed = minf(_of._speed, limit)
+
+	## It drives `travel` of its straight run-up before a turn's arc begins and answers how much of
+	## `travel` is left: along its lane, steering across toward the lane's centre line.
+	func drive_the_run_up(travel: float, delta: float) -> float:
+		var straight := minf(travel, _of._turn_run_up)
+		_of._set_along(_of._along() + straight * _of._direction)
+		_of._set_cross(move_toward(_of._cross(), _of._lane_centre, STEER_SPEED * delta))
+		_of._turn_run_up -= straight
+		return travel - straight
+
+	## It walks across its lane to `target`, kept within `band`.
+	func detour_to_within(target: float, band: Vector2) -> void:
+		_of._detour = clampf(target, band.x, band.y) - _of._lane_centre
+
+	## It walks straight again.
+	func end_the_detour() -> void:
+		_of._detour = 0.0
+
+	## What it looked at ahead is stale, so the next look-ahead scans afresh.
+	func look_ahead_afresh() -> void:
+		_of._scan_at = Vector2i(-9999, -9999)
+
+	## A hut stands `along` its line ahead of it.
+	func see_a_door_ahead(hut: WalkerDoorHold, along: float) -> void:
+		_of.door_ahead = hut
+		_of.door_ahead_along = along
+
+	## No hut stands ahead of it.
+	func clear_the_door_ahead() -> void:
+		_of.door_ahead = null
+		_of.door_ahead_along = INF
+
+	## It is held `gap` behind a leader going `leader_pace`.
+	func follow_at_a_gap(gap: float, leader_pace: float) -> void:
+		_of.gap_ahead = gap
+		_of.leader_speed = leader_pace
+
+	## Nothing is ahead of it: no gap, no leader's speed.
+	func clear_what_is_ahead() -> void:
+		_of.gap_ahead = INF
+		_of.leader_speed = 0.0
+
 ## Stepped on the physics tick, inside the crowd's own (`step()`), so it is drawn interpolated
 ## between two ticks as she and the events are, and moves as smoothly as they do on a screen drawing
 ## faster than thirty frames a second. It inherits the setting from `City`'s shared, y-sorted
@@ -182,15 +364,44 @@ func _exit_tree() -> void:
 func _init() -> void:
 	_install(WalkerStrategy.new(self))
 
+## Half the length of the body along its line of travel, which enters a junction box first and
+## leaves it last.
+func nose() -> float:
+	return _nose
+
+## Hands the mover what the crowd gives every agent it makes: the day's traffic, its pockets, what
+## the screen shows and what it charges its time to, and the strategy what it works with.
+func use_crowd_parts(day_traffic: TrafficIndex, day_pockets: CrowdPockets, screen: CrowdView,
+		charge_to: CrowdTiming) -> void:
+	_traffic = day_traffic
+	_pockets = day_pockets
+	view = screen
+	frame_timing = charge_to
+	_hand_the_strategy_its_parts()
+
+## Hands the strategy the collaborators its lane work uses every frame and that never change under it
+## (the map, the crowd's field, the day's traffic and pockets, its own random stream and held move),
+## so it holds them rather than asking for each one again every time it needs it.
+func _hand_the_strategy_its_parts() -> void:
+	strategy.take_parts(_map, _field, _traffic, _pockets, _rng, _move)
+
+## The narrow interface over this mover's lane state, which its strategies, the crowd and its look ask
+## through (`Lane`).
+func lane() -> Lane:
+	return _lane_view
+
+var _lane_view := Lane.new(self)
+
 ## Takes up a kind's strategy, and the three fixed facts of it the crowd reads every frame of every
 ## agent — the nose, the distance a barrier is acted on at and where the look-ahead is asked from —
 ## as plain members of this node, since a member read is several times cheaper than asking another
 ## object.
 func _install(rules: LaneStrategy) -> void:
 	strategy = rules
-	_nose = rules.nose
-	_acts_within = rules.acts_within
-	_scans_from_its_lane = rules.scans_from_its_lane
+	_hand_the_strategy_its_parts()
+	_nose = rules.body_nose()
+	_acts_within = rules.acts_within_tiles()
+	_scans_from_its_lane = rules.scans_from_its_lane_centre()
 
 ## `strategy.nose`, `strategy.acts_within` and `strategy.scans_from_its_lane`, kept here by
 ## `_install()`.
@@ -212,7 +423,8 @@ func setup_at(agent_kind: int, map: CityMap, crowd_field: CrowdField, seed_value
 	kind = agent_kind as Kind
 	_take_the_shape()
 	_map = map
-	field = crowd_field
+	_field = crowd_field
+	_hand_the_strategy_its_parts()
 	_rng.seed = seed_value
 	strategy.draw_the_door_answer()
 	_vertical = direction.x == 0.0
@@ -249,7 +461,8 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	kind = agent_kind
 	_take_the_shape()
 	_map = map
-	field = crowd_field
+	_field = crowd_field
+	_hand_the_strategy_its_parts()
 	_rng.seed = seed_value
 	# A placement starts the picture's own state afresh (a walker's stride at rest), which keeps a
 	# placement deterministic for a given seed, the same reason `Stroller.reset_at()` zeroes
@@ -278,7 +491,7 @@ func setup(agent_kind: Kind, map: CityMap, crowd_field: CrowdField, seed_value: 
 	var placed := false
 	for _street in 4:
 		_choose_lane(axis_roll)
-		var bounds := field.along_bounds(_vertical)
+		var bounds := _field.along_bounds(_vertical)
 		# **A held segment can swallow most of a corridor's visible stretch** — a region wall or a
 		# hard seal is kept off `held` by the tile, not by a fraction of it, so a field
 		# centred close to one narrows the open ground a random draw can land on far more than a
@@ -337,7 +550,7 @@ func _stands_on_a_street() -> bool:
 	# footway it happens to be on: an agent placed inside one is a body standing in a café, and the
 	# sidestep that carries a walker round a body it is *approaching* has nothing to open a gap it
 	# is already in — separation between bodies is positional and never a force.
-	if not _map.passable(tile, strategy.today):
+	if not _map.passable(tile, strategy.ground_stopped_today()):
 		return false
 	if not _map.in_bounds(tile):
 		return strategy.may_stand_off_the_map(tile)
@@ -359,11 +572,11 @@ func _stands_on_a_street() -> bool:
 ## somewhere the player may well be standing — a pocket — and it is the whole of what makes that
 ## legal.
 func _out_of_view() -> bool:
-	if not field:
+	if not _field:
 		return true
-	if field.has_stretch():
+	if _field.has_stretch():
 		return _beyond_every_view(position)
-	return position.distance_to(field.looking_at()) > Tuning.OUT_OF_SIGHT
+	return position.distance_to(_field.looking_at()) > Tuning.OUT_OF_SIGHT
 
 ## **On a stretch, the camera's own view, in both presentations, with a body's room round it.** A
 ## stretch's ends are often in the picture — the street runs into the void a few tiles from her — so
@@ -374,8 +587,8 @@ func _out_of_view() -> bool:
 ## the agent out of the tree — a rig that steps agents by hand — the played day's radius answers.
 func _beyond_every_view(at: Vector2, room := ENTRY_PICTURE_ROOM) -> bool:
 	if view == null or not is_inside_tree():
-		return at.distance_to(field.looking_at()) > Tuning.OUT_OF_SIGHT
-	return view.beyond_every_view(at, room, field.looking_at())
+		return at.distance_to(_field.looking_at()) > Tuning.OUT_OF_SIGHT
+	return view.beyond_every_view(at, room, _field.looking_at())
 
 ## How far past a body's centre its picture may reach, for `_beyond_every_view()`: two tiles, more than
 ## a car's half length and its shadow.
@@ -399,13 +612,13 @@ func _segment_is_shut(tile: Vector2i) -> bool:
 		return false
 	var segment := _map.street_network().segment_containing(tile)
 	if segment == null:
-		return strategy.shut_by_a_hold
+		return strategy.is_shut_by_a_hold()
 	var key := segment.key()
 	if _map.held_streets().is_for(key, HeldStreets.Why.HOME):
 		return false
 	if _map.held_streets().is_for(key, HeldStreets.Why.DOOR):
 		return strategy.door_is_shut(key)
-	return strategy.shut_by_a_hold
+	return strategy.is_shut_by_a_hold()
 
 ## What this agent counts its draws to (`CrowdAgent._draw()`), handed in by the `Crowd` that makes
 ## it; none for an agent built by hand. Its step times nothing of its own: it runs inside the
@@ -443,7 +656,7 @@ func step(delta: float) -> void:
 	position = _move.commit()
 	strategy.after_the_step(delta)
 	_look_ahead()
-	if field.has_stretch() and _walks_off_the_stretch() and _out_of_view():
+	if _field.has_stretch() and _walks_off_the_stretch() and _out_of_view():
 		_recycle()
 		end_the_frame(delta)
 		return
@@ -454,7 +667,7 @@ func step(delta: float) -> void:
 	# A car with no road either way goes when nobody is looking, which is the rule a body a pocket
 	# has caught already follows. It is the same situation read off the lane instead of off the
 	# junction — see `LaneStrategy.nowhere_to_turn`.
-	if _has_left_the_field() or (strategy.nowhere_to_turn and _out_of_view()):
+	if _has_left_the_field() or (strategy.has_nowhere_to_turn() and _out_of_view()):
 		_recycle()
 	end_the_frame(delta)
 
@@ -546,7 +759,7 @@ func velocity() -> Vector2:
 ## diagonal is across the traffic it was queueing with. It ties to the axis it came in on,
 ## which is the half of the turn it has not yet finished.
 func travelling_vertically() -> bool:
-	if _turn and _turn_run_up <= 0.0:
+	if _is_in_the_arc():
 		var forward := heading()
 		return absf(forward.y) >= absf(forward.x)
 	return _vertical
@@ -596,7 +809,7 @@ func distance_to_junction() -> float:
 ## that changed the axis without changing this would point every one of them at a car that is not
 ## there.
 func heading() -> Vector2:
-	if _turn and _turn_run_up <= 0.0:
+	if _is_in_the_arc():
 		return _turn.heading_at(_turn.distance_travelled())
 	return Vector2(0.0, _direction) if _vertical else Vector2(_direction, 0.0)
 
@@ -850,6 +1063,10 @@ func _stride_seconds() -> float:
 func is_turning() -> bool:
 	return _turn != null
 
+## Whether it is on a turn's arc, past the run-up that comes first.
+func _is_in_the_arc() -> bool:
+	return _turn != null and _turn_run_up <= 0.0
+
 ## The junction box a turning car is claiming, or `(-1, -1)`.
 ##
 ## **Only once the arc has actually begun**, never during the run-up: a car that has committed to a
@@ -857,7 +1074,7 @@ func is_turning() -> bool:
 ## holding it shut for the length of its approach would empty the crossing street for a second and a
 ## half. What it claims is the box it is *in*.
 func turning_in() -> Vector2i:
-	return _turn.junction_box() if _turn and _turn_run_up <= 0.0 else Vector2i(-1, -1)
+	return _turn.junction_box() if _is_in_the_arc() else Vector2i(-1, -1)
 
 ## The lane a turning car has reserved a place in, and where in it — `Crowd` puts the pair into the
 ## index it rebuilds, so the reservation is visible to every car for the whole frame rather than
@@ -892,10 +1109,10 @@ func _has_left_the_field() -> bool:
 	# street she has passed, and they are travelling *along* those streets perfectly happily.
 	# Checking it after the along-axis test means never checking it, because an agent always has
 	# a direction and the along-axis test always answers.
-	var lateral: float = field.centre_point().x if _vertical else field.centre_point().y
+	var lateral: float = _field.centre_point().x if _vertical else _field.centre_point().y
 	# A street's width of tolerance, so a corridor half in view keeps the people on it rather
 	# than emptying the pavement the player is about to turn onto.
-	if absf(_cross() - lateral) > field.half_extent() + Tuning.STREET_WIDTH * Tuning.TILE_SIZE:
+	if absf(_cross() - lateral) > _field.half_extent() + Tuning.STREET_WIDTH * Tuning.TILE_SIZE:
 		return true
 
 	# Then along it: past the edge it is heading for, or further behind the edge it came in at
@@ -910,8 +1127,8 @@ func _has_left_the_field() -> bool:
 
 	# `field.along_bounds(_vertical)` built inline from the world size already held: `field.map` is
 	# the map every agent is set up with (`Crowd` makes the one field and hands it to all of them).
-	var here: float = field.centre_point().y if _vertical else field.centre_point().x
-	var bounds := Vector2(maxf(0.0, here - field.half_extent()), minf(limit, here + field.half_extent()))
+	var here: float = _field.centre_point().y if _vertical else _field.centre_point().x
+	var bounds := Vector2(maxf(0.0, here - _field.half_extent()), minf(limit, here + _field.half_extent()))
 	if _direction > 0.0:
 		return at > bounds.y or at < bounds.x - ENTRY_SPREAD
 	return at < bounds.x or at > bounds.y + ENTRY_SPREAD
@@ -976,7 +1193,7 @@ func _recycle() -> void:
 	# somewhere else; then the kind's own fresh start (a walker's stride, door and answer).
 	_scan_at = Vector2i(-9999, -9999)
 	strategy.on_recycled()
-	if field.has_stretch():
+	if _field.has_stretch():
 		# Whatever asked for the recycle — the end of a street, the edge of the field, a pocket —
 		# nothing vanishes in her view: in it the agent turns round where it is instead.
 		if not _out_of_view():
@@ -988,7 +1205,7 @@ func _recycle() -> void:
 	var legal: Array = []
 	for _attempt in 6:
 		_choose_lane(_rng.randf())
-		var bounds := field.along_bounds(_vertical)
+		var bounds := _field.along_bounds(_vertical)
 		# The roll itself is kept inside this kind's own room rather than rolled the full
 		# `ENTRY_SPREAD` and rejected afterwards — see `entry_room()`. Beside a plain edge
 		# `bounds.x`/`bounds.y` is already the field's own clamped edge, so a `reach` capped at
@@ -1063,7 +1280,7 @@ func _walks_off_the_stretch() -> bool:
 func _enter_at_a_stretch_end() -> void:
 	var before := _placement_taken()
 	var ends: Array[Dictionary] = []
-	for end in field.ends_of_the_stretch():
+	for end in _field.ends_of_the_stretch():
 		var along := (float(end.along) + 0.5) * Tuning.TILE_SIZE
 		var across := (float(end.corridor) * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
 				* Tuning.TILE_SIZE

@@ -1030,71 +1030,8 @@ src/events/event_def.gd pursuit
 src/telemetry/run_session.gd map
 
 # [LaneMover] src/crowd/lane_mover.gd
-src/crowd/car_strategy.gd _blocked_in
-src/crowd/car_strategy.gd _corridor
-src/crowd/car_strategy.gd _cruise
-src/crowd/car_strategy.gd _direction
-src/crowd/car_strategy.gd _junction
-src/crowd/car_strategy.gd _lane
-src/crowd/car_strategy.gd _lane_centre
-src/crowd/car_strategy.gd _map
-src/crowd/car_strategy.gd _move
-src/crowd/car_strategy.gd _rng
-src/crowd/car_strategy.gd _scan_at
-src/crowd/car_strategy.gd _speed
-src/crowd/car_strategy.gd _turn
-src/crowd/car_strategy.gd _turn_run_up
-src/crowd/car_strategy.gd _vertical
-src/crowd/car_strategy.gd field
-src/crowd/car_strategy.gd gap_ahead
-src/crowd/car_strategy.gd gate_hold
-src/crowd/car_strategy.gd junction_hold
-src/crowd/car_strategy.gd pedestrian_ahead
-src/crowd/car_strategy.gd pockets
-src/crowd/car_strategy.gd shape
-src/crowd/car_strategy.gd traffic
-src/crowd/crowd.gd door_ahead
-src/crowd/crowd.gd door_ahead_along
-src/crowd/crowd.gd frame_timing
-src/crowd/crowd.gd gap_ahead
-src/crowd/crowd.gd leader_speed
-src/crowd/crowd.gd pockets
-src/crowd/crowd.gd strategy
-src/crowd/crowd.gd traffic
-src/crowd/crowd.gd view
-src/crowd/crowd_excitement.gd _map
-src/crowd/crowd_excitement.gd _speed
-src/crowd/crowd_excitement.gd kind
-src/crowd/walker_look.gd _detour
-src/crowd/walker_look.gd _lane_centre
-src/crowd/walker_look.gd _vertical
-src/crowd/walker_strategy.gd _blocked_in
-src/crowd/walker_strategy.gd _corridor
-src/crowd/walker_strategy.gd _detour
-src/crowd/walker_strategy.gd _direction
-src/crowd/walker_strategy.gd _junction
-src/crowd/walker_strategy.gd _lane
-src/crowd/walker_strategy.gd _lane_centre
-src/crowd/walker_strategy.gd _map
-src/crowd/walker_strategy.gd _move
-src/crowd/walker_strategy.gd _rng
-src/crowd/walker_strategy.gd _scan_at
-src/crowd/walker_strategy.gd _speed
-src/crowd/walker_strategy.gd _vertical
-src/crowd/walker_strategy.gd door_ahead
-src/crowd/walker_strategy.gd door_ahead_along
-src/crowd/walker_strategy.gd field
 src/dev/still_watch.gd kind
 src/run/day_director.gd kind
-
-# [LaneStrategy] src/crowd/lane_strategy.gd
-src/crowd/crowd.gd nose
-src/crowd/lane_mover.gd acts_within
-src/crowd/lane_mover.gd nose
-src/crowd/lane_mover.gd nowhere_to_turn
-src/crowd/lane_mover.gd scans_from_its_lane
-src/crowd/lane_mover.gd shut_by_a_hold
-src/crowd/lane_mover.gd today
 
 # [MarbleBag] src/city/marble_bag.gd
 src/events/event_scheduler.gd drawn

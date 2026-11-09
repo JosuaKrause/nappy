@@ -531,6 +531,8 @@ func _test_no_car_in_sight_ever_moves_further_than_it_drove(t) -> void:
 	var at: Vector2 = sealed["at"]
 	var arms: Array = sealed["arms"]
 	_city.map.clear_day_holds()
+	var traffic := TrafficIndex.new()
+	_city.crowd.use_traffic(traffic)
 	_city.crowd.start_day(1, _rng(4), at)
 	_advance_watching(3.0, at)
 	# **One arm, and the count matters in both directions.** Holding every arm is what the pocket
@@ -561,7 +563,7 @@ func _test_no_car_in_sight_ever_moves_further_than_it_drove(t) -> void:
 		# frame's landing sees. See `TrafficIndex.claim()`.
 		for agent: CrowdAgent in _city.crowd.agents():
 			if agent.is_turning():
-				agent.traffic.claim(agent.turn_lane_key(),
+				traffic.claim(agent.turn_lane_key(),
 						agent.turn_landing() - Tuning.CAR_GAP_MIN * 0.5)
 		for agent: CrowdAgent in _city.crowd.agents():
 			var was: Array = before.get(agent.get_instance_id(), [])

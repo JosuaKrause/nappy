@@ -91,6 +91,54 @@ var today: Mover
 
 func _init(mover: LaneMover) -> void:
 	_mover = mover
+	_lane = mover.lane()
+
+## What this kind's own code may ask of its mover's lane state (`LaneMover.lane()`).
+var _lane: LaneMover.Lane
+
+## The collaborators the mover hands it (`take_parts()`), held as members since they are read many
+## times a frame: the map, the crowd's field, the day's traffic and pockets, the mover's own random
+## stream and its held move.
+var _map: CityMap
+var _field: CrowdField
+var _traffic: TrafficIndex
+var _pockets: CrowdPockets
+var _rng: RandomNumberGenerator
+var _move: MoveProposal
+
+## Takes up the collaborators its mover works with; asked again whenever the mover is given one.
+func take_parts(map: CityMap, field: CrowdField, traffic: TrafficIndex, pockets: CrowdPockets,
+		rng: RandomNumberGenerator, move: MoveProposal) -> void:
+	_map = map
+	_field = field
+	_traffic = traffic
+	_pockets = pockets
+	_rng = rng
+	_move = move
+
+## Half the length of the body along its line of travel (`nose`).
+func body_nose() -> float:
+	return nose
+
+## How close, in tiles, a thing it cannot pass has to be before it acts on it (`acts_within`).
+func acts_within_tiles() -> int:
+	return acts_within
+
+## Whether the look-ahead is asked from its lane's centre line rather than from where it stands.
+func scans_from_its_lane_centre() -> bool:
+	return scans_from_its_lane
+
+## Whether a segment held for today is shut to this kind (`shut_by_a_hold`).
+func is_shut_by_a_hold() -> bool:
+	return shut_by_a_hold
+
+## Whether it has run out of road in both directions (`nowhere_to_turn`).
+func has_nowhere_to_turn() -> bool:
+	return nowhere_to_turn
+
+## What today puts down that stops this kind.
+func ground_stopped_today() -> Mover:
+	return today
 
 ## This agent's own ground shape: a point for a walker, a capsule along the travel axis for a car.
 func ground_shape() -> GroundShape:

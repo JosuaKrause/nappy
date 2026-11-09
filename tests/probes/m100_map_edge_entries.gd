@@ -61,9 +61,7 @@ func _diagnose_recycle(map: CityMap) -> void:
 			for at: Vector2 in points:
 				var field := CrowdField.new(map, at)
 				var agent := CrowdAgent.new()
-				agent.kind = kind
-				agent._map = map
-				agent.field = field
+				agent.setup(kind, map, field, 0, 0.0)
 				for seed in SAMPLES:
 					agent._rng.seed = seed
 					agent._recycle()

@@ -45,6 +45,7 @@ src/telemetry/telemetry_log.gd recorded_lines  # the lines the run log wrote, ke
 # [kept] Kept public as hand-ins, the orchestrator's ruling, not asked for, open to the player's correction
 # (dependency injection, minty-lemur #794, and the mocking in inbox #1095 in curly-rabbit): each hands the object
 # what it depends on, the game using its default and a test handing in a fake.
+src/crowd/crowd.gd use_traffic  # a hand-in: the game uses the crowd's own index, a rig hands in the one it reads and claims into (tests/crowd_rig.gd, tests/crowd_closures_rig.gd), and the world layer may not name the index to hand one in (dependency injection, minty-lemur #794)
 src/events/event_manager.gd use_the_spec  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_city_maps  # a hand-in: the game uses its default, the generator, and a booted suite hands in the cache of generated cities (tests/city_map_cache.gd) so a boot does not generate a city its seed already generated in the process (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
 src/main.gd use_frame_records_dir  # a hand-in: the game uses its default, a test hands in a fake (dependency injection, minty-lemur #794; tests-public-seams.md's Build paragraph accepts a dependency the game's own code hands in)
