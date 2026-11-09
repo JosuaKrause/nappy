@@ -29,8 +29,8 @@ different objects need to go through APIs"; open to the player's overturn). 42 m
 `ContactPoint.would_complete_at(her)` is the contact's own pure touch question, which its physics frame
 asks; the suites that ask it of many places (`tests/contact_touches.gd`) ask the day's own contact
 directly, so the contact as the day shaped it is what is measured. Its only other reader is its own
-class, so it has a line in the kept group of `tools/test_only_members.txt`, whose reason names the
-fenced callers it rests on. The swing's test derives its places from the frame's shadow and asks the
+class, so it has a line in the kept group of `tools/test_only_members.txt`, whose reason says no other
+game code asks a contact that question. The swing's test derives its places from the frame's shadow and asks the
 contact about them. `ContactTouches` is a plain function now, with no node argument to wait on.
 
 **What checks the hand-ins.** A node handed its library through `use_atlas()` keeps it private, so
