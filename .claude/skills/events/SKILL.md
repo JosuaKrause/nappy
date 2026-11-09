@@ -84,6 +84,14 @@ because nothing checks a route around a thing with no tile.
 against a flat minimum, never a figure worked out from its field or speed
 (`references/warned-first.md` has the whole of it).
 
+**Every pursuer is held to the pursuit contract as well** (`Tuning.validate_pursuit()`, which
+`EventDef.validate()` calls), warned first or not, and three things bind a change to any of them.
+The day-3 dog's approach keeps its separate notice floor (`Tuning.PURSUIT_MIN_NOTICE`). A pursuer
+that waited for her, a robber included, warns inside its one radius on its own clock
+(`PursuitSpec.warns_for`), so that floor bounds nothing it does (inbox #788 in minty-lemur). And
+**verify escape with the actual Baby meter**: reaching the pursuit cap after the baby cries is a
+lost day.
+
 ## What telegraphs, and what is warned first
 
 **A thing telegraphs its coming only if it goes fast, comes toward her, and carries a heavy penalty
@@ -107,8 +115,12 @@ held to, what is created with its telegraph spent, and the two things that are n
 **Nothing else happens inside a lethal event's field.** A `hard_fail` event keeps its whole
 `outer_radius` clear of every other event at placement (`StreetInvalidation.room_around()`), and it
 is the one spacing rule with no fallback — one that cannot find room is not placed. A new lethal row
-inherits this, not just the telegraph. **The placement half is unenforced**: no suite walks a
-day's plan to check that a lethal field was kept clear.
+inherits this, not just the telegraph. **One case of it is held and the whole is not.**
+`tests/test_resistance_reach_contacts.gd` holds a queued mast: offered only sidewalk inside a
+planned lethal field it is not generated, and offered sidewalk clear of it, it is.
+`tests/test_events_costs.gd` holds who is exempt (below). **No suite walks a planned day** from
+`EventScheduler.build_day()` to check that every lethal field was kept clear, so for every other
+row the rule is unenforced.
 
 Two exemptions, both about a field with no fixed place to keep clear: a **wall** placement, which
 is off the day's routes by construction, and a **pursuer**, which follows her.
@@ -163,8 +175,12 @@ the moment it starts leaving.** What never leaves, the one thing that leaves and
 guard who set off from a barrier), and how streaming treats a departure are `docs/EVENTS.md`, "Going
 away". Three things a coder must not miss:
 
-- **A departure she can see is held to the sight rule** (`EventDeparture._must_clear_sight`), not
-  to the backstop clock, which is for a departure with no player to be out of sight of.
+- **A departure that starts beside her, or that she can stand against, is held to the sight rule**
+  (`EventDeparture._must_clear_sight`): a completed task's departure, a car that drives, the guard
+  walking away from his barrier, the man a vehicle let out walking back to it, and a walk down a
+  way it was given. The backstop clock (`EventDeparture.LEAVING_GIVES_UP`) does not end one of
+  these while she could be watching; it ends every other departure, a cat's or a flock's included,
+  watched or not.
 - **A plan streamed out while its guard is spent or leaving must carry that**
   (`EventBarrierPost.save()`), or the barrier comes back armed.
 - **Streaming is a way out too.** `EventManager.stream_around()` keeps any live instance within

@@ -35,10 +35,10 @@ stands there.
   which is the one it keeps instead of a telegraph (**crowd-traffic**, "The traffic fairness
   contract").
 - **A car created in her lane must not drive off at her.** Just out of sight on any street is
-  nearer her than a fast car's warning reaches her — the fire engine's 1.7s of 190px/s past a
-  touch that counts its body and hers, against the view's 180px half height up a north-south
-  street and 320px half width across an east-west one — so one driving from its first frame
-  strikes her inside the time it takes to walk off the road. A car that drives is made standing
+  nearer her than a fast car's warning reaches her — the fire engine's warning, in seconds of
+  its travel past a touch that counts its body and hers, reaches further than the view's half
+  height up a north-south street and its half width across an east-west one — so one driving from
+  its first frame strikes her inside the time it takes to walk off the road. A car that drives is made standing
   (`EventCarDriving`), so it waits until she is out of its way, as a car that has stood does.
 - **A car that parks where it arrives must not reach past where it parks.** Its warning, strike,
   doubled caret and standing for her are stated in seconds of its travel, and the fire engine's

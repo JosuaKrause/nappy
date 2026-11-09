@@ -8,6 +8,10 @@ The mechanics — the stand-off, the break-off as a rate, the waiting state — 
 a moving encounter is stated over distance and checked by walking**, never by asserting the numbers
 it was written from.
 
+**Three things bind a change to any pursuer, and `SKILL.md`, "The telegraph fairness contract",
+states them**: the day-3 dog's separate notice floor, the clock a pursuer that waited for her warns
+on, and verifying escape with the actual Baby meter.
+
 ## The traps
 
 - **Clamping the approach at zero is not a stand-off.** The pursuer stands still while *she* closes

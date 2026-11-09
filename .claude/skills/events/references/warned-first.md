@@ -17,10 +17,9 @@ pursuer: its telegraph is the approach she watches once it exists. A sent robber
 arrives chasing, with no approach: its notice is its badge alone. Running while it is offscreen
 counts toward `PURSUIT_SHAKEN_OFF`, so it can be shaken off before it becomes visible (tall-owl).
 `EventDef.validate()` requires that badge and validates its chase without inventing an approach.
-The day-3 dog's approach keeps its separate notice floor (`Tuning.PURSUIT_MIN_NOTICE`); a pursuer
-that waited for her, a robber included, warns inside its one radius on its own clock
-(`PursuitSpec.warns_for`), so that floor bounds nothing it does (inbox #788 in minty-lemur). Verify
-escape with the actual Baby meter: reaching the pursuit cap after the baby cries is a lost day.
+What binds every pursuer, warned first or not (the day-3 dog's separate notice floor, the clock of
+a pursuer that waited for her, verifying escape with the actual Baby meter), is `SKILL.md`, "The
+telegraph fairness contract".
 
 ## From the badge to the thing
 
@@ -45,16 +44,17 @@ pursuer sent from out of her sight (the resistance's trap, the torn poster's man
 - **A pursuer is created with its telegraph still to run**, since its telegraph is its approach —
   except one that arrives chasing (`PursuitSpec.Start.ARRIVES_CHASING`): the resistance's sent
   robber and guard, and a torn poster's pursuer on foot (olive-hedgehog #598).
-- **Where its ground has no place when the warning is up, the warning is withdrawn**; a withdrawn
-  day-3 dog is owed again.
+- **Where its ground has no place when the warning's time has run, the warning is withdrawn**; a
+  withdrawn day-3 dog is owed again.
 
 **The warning time is the row's own number** (PLAYTEST-145 1). Nothing about where a thing is
 created may be derived from its telegraph, and a row's telegraph is not shortened by shrinking its
 field.
 
 **The day-3 dog keeps its gold timing, in the player's terms**: the warning is badge to visible,
-the chase is lunge to catch, each as the lesson has it. `tests/test_events_pursuit.gd` fails if
-either moves, and holds the figures. **No pursuer gives up on a walker** (olive-hedgehog #598):
+the chase is lunge to catch, and the chase has three answers, one each for her walking into the
+dog, standing, and walking away from it. `tests/test_events_pursuit.gd` fails if the warning or any
+of the three moves, and holds the figures. **No pursuer gives up on a walker** (olive-hedgehog #598):
 every chase lasts `Tuning.PURSUIT_TIME`, a long cap, so walking away loses by construction; running
 ends it at `PURSUIT_SHAKEN_OFF`'s rate.
 
