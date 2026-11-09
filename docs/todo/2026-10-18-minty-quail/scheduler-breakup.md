@@ -15,8 +15,9 @@ independent" (inbox #845 in minty-dolphin).
 **Read as:** the scheduler ends as a short ordered list of the dawn's phases, and each thing it
 holds today has a file of its own that can be read, tested and changed alone.
 
-**Build** (*the shape is the design review's, proposed and not asked for, open to the player's
-correction; line counts are its estimates*). All under `src/events/`:
+**Build**, the design review's shape, which the player approved ("I saw the review and approved
+it", inbox #1268); the file-by-file detail was worked out by the same review after the approval, and
+the line counts are its estimates. All under `src/events/`:
 
 - **`EventPlan`** (`event_plan.gd`): today's inner class `EventScheduler.Planned`, one placed
   event's row, position, role and path, which 46 source files and most of the tests name.

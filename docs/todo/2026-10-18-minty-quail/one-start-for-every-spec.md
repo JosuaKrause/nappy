@@ -18,8 +18,8 @@ design review points. let's do it" (inbox #1268).
 **Read as:** no code outside the spec's own settings asks whether the escape is being walked in
 order to start it, and an escape start is testable without booting the whole game.
 
-**Build** (*the shape is the design review's, proposed and not asked for, open to the player's
-correction*):
+**Build**, the design review's shape, which the player approved ("I saw the review and approved
+it", inbox #1268); the detail was worked out by the same review after the approval:
 
 - **`DayDirector.start(spec, restarted)` is the only start.** Its steps: hand the spec to the
   clock; ask for the spec's world; dress the world for the day; plan the events (already one call

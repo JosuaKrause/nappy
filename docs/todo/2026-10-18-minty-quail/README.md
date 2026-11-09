@@ -91,8 +91,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    module, the player: "yeah module by module makes sense and can be parallelized". Within a
    module: its dead code (`dead-code-sweep.md`), its standing layer breaks
    (`standing-layer-breaks.md`), its interface and field reads with the receivers typed
-   (`field-reads.md`), then its suites (`tests-one-module.md`). *The tracks are the design review's,
-   proposed and open to the player's correction:*
+   (`field-reads.md`), then its suites (`tests-one-module.md`). The tracks are the design review's, which
+   the player approved:
    - **Placement:** the walk's draw landing with every location drawn at dawn; then
      `placement-by-construction.md`'s steps with `scheduler-breakup.md` interleaved. Nothing else
      changes where events go until it is done (inbox #1185 in gentle-owl).

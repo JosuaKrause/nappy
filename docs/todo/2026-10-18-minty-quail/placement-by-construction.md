@@ -60,9 +60,10 @@ for the walk's draw, which lands it with the game drawing every open location on
 
 ## What is left, in order
 
-*The mechanisms below are the design review's, proposed and not asked for, each open to the player's
-correction; the player agreed to the review's points as shown to them (inbox #1268). The review's
-full text names the files each step owns.*
+The steps are the design review's, which the player approved: "agree on all design review points.
+let's do it", and, of an earlier draft of this item that marked them as proposed and not asked for,
+"I saw the review and approved it" (inbox #1268). The detail under each step was worked out by the
+same review after the approval; its full text names the files each step owns.
 
 1. **The route's ground rule replaces the flood.** Three of the route rules are already local to a
    street and count bodies as well as fields: a junction box on a route keeps a free crossing
