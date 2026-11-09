@@ -18,44 +18,32 @@ design review points. let's do it" (inbox #1268).
 **Read as:** no code outside the spec's own settings asks whether the escape is being walked in
 order to start it, and an escape start is testable without booting the whole game.
 
-**Build**, the design review's shape, which the player approved ("I saw the review and approved
-it", inbox #1268); the detail was worked out by the same review after the approval:
+**Built: the start** (record minty-quail-misty-sparrow). `DayDirector.start(spec, restarted)` is the
+only start, for a day, an authored scene's day and both escape sections; the world comes from a
+source the director is handed (`DayWorldSource`, answering a `DayWorld`); settings on the spec
+replace the branches on "is this a section"; the main scene's own start of a section, its own
+planning of the escape city and the director's separate start of an authored day are gone.
 
-- **`DayDirector.start(spec, restarted)` is the only start.** Its steps: hand the spec to the
-  clock; ask for the spec's world; dress the world for the day; plan the events (already one call
-  for all three kinds of walk, `EventManager.start_day()`); start the resistance where the spec has
-  tasks, or let an authored scene install itself; put her down and start the crowd at the spec's
-  density; start the clock.
-- **The root builds the world, behind a small interface the director is handed**: asked to stand a
-  spec's world, it answers the scene, its map, its events, and its streets and crowd where it has
-  them. The main scene implements it from what builds the world today.
-- **New settings on the spec replace the branches on "is this a section"**: whether the baby starts
-  asleep, whether the day runs the resistance, whether the dawn is photographed, and where she
-  starts. The day planner's assert that streets close exactly when the spec is not an escape
-  section goes with them.
-- **What goes:** the main scene's `_start_section()` and `_plan_the_finale_city()` (the plan is the
-  director's step, and the kerb tint follows the plan's walk for every spec);
-  `DayDirector.start_authored_day()` (an authored scene is a spec plus the install step); the two
-  world builders shrink to the two branches of the root's builder.
+**What is left**, the design review's shape, which the player approved ("I saw the review and
+approved it", inbox #1268); the detail was worked out by the same review after the approval:
+
 - **One signal each for "a day started" and "a day planned"**, on the run flow, carrying the spec
   and its world; `EventBus.day_started(day)`, `EventBus.day_planned(day)` and
   `escape_section_started` are deleted, and the HUD, the page counter and the run log read the day
-  number off the spec.
+  number off the spec. The start still sends `escape_section_started` for sections only, the one
+  branch on "is this a section" left in it, because the run log's escape path listens for it; it
+  goes here.
 - **The run log watches any spec the same way**, from that signal: the run log's session
   (`RunSession`) loses its escape-only entry points and its casts of the world to the city or the
   building. The recorded baseline `tests/fixtures/observed_run_log.txt` staying line for line
   identical is the proof.
-
-**The pull requests:**
-
-- **The start**: the day director, the run flow, the authored scene, the spec with its field reads,
-  the main scene, the scene-recipe runtime's install path, and the day director's suite, which
-  gains a building start on fakes.
-- **The signals and the run log**: the signal bus, the page counter, `src/telemetry/`, the HUD and
-  the run flow.
 - **Who builds the event manager and the crowd**, with the third hand-ins pull request
   (`city-hand-ins.md`): the city scene stops building its own, and the building and the city get
   theirs from one factory (`standing-layer-breaks.md`, the city scene as builder).
 
-The first two touch nothing under `src/events/` and run beside placement; the third touches the
-event manager's setup and lands between two placement pull requests.
+**The pull requests:**
+
+- **The signals and the run log**: the signal bus, the page counter, `src/telemetry/`, the HUD and
+  the run flow. It touches nothing under `src/events/` and runs beside placement.
+- **Who builds the event manager and the crowd**: it touches the event manager's setup and lands
+  between two placement pull requests.
