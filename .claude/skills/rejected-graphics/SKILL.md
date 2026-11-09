@@ -11,12 +11,12 @@ to both SVG authoring and PNG transfer; it does not call for deleting human reje
 
 **Where rejected artwork goes**, by the candidate's stage: a candidate rejected during its family's
 review stays beside that family's evidence with its verdict; artwork removed from `art/` after it
-shipped or was wired in moves to `docs/evidence/archive/rejected-graphics/`. *(2026-09-23: the
-player chose this split between an in-review rejection, which stays with the family that produced
-it, and an out-of-service removal, which moves to this archive.)*
+shipped or was wired in moves to `docs/evidence/archive/rejected-graphics/`. The split is the
+player's choice: an in-review rejection stays with the family that produced it, and an
+out-of-service removal moves to this archive.
 
 Everything under `docs/evidence/archive/rejected-graphics/` is preserved for posterity only. These
 are rejected experiments, not visual guidance, style references, prompt inputs, or implementation
-targets. Use the approved references in `docs/evidence/` and the roles documented in
+targets. Use the approved references in `docs/style-references/` and the roles documented in
 `docs/VISUALS.md` for active work. Do not copy archived assets into a new family or cite them as
 approval evidence.

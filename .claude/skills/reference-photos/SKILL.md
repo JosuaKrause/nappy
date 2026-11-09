@@ -5,6 +5,19 @@ description: How a real-world photo or video gets into the repo as drawing refer
 
 # Real-world reference and style references
 
+**The rules not to miss:**
+
+- **A file enters `docs/reference/` or `docs/style-references/` only through `tools/reference.sh`**,
+  never copied by hand.
+- **Every file is shrunk and stripped of all metadata, and a video loses its audio**: the
+  repository is public.
+- **Rename it to `<subject>-<detail>-NN.<ext>` before the commit**: a camera stem is a timestamp.
+- **Name the field, never the value**: nothing republishes what the pass stripped.
+- **Import first, then write about it**, by the name it is committed under (woolly-walrus #516).
+- **Never commit a file there is no right to redistribute, or a recognisable person who did not
+  agree to it.**
+- **A partial run is a failure**: read the script's output.
+
 **Reference material goes in `docs/reference/`, an approved style reference goes in
 `docs/style-references/`, and both get there through `tools/reference.sh`.**
 
@@ -19,21 +32,18 @@ tools/reference.sh --force one-that-is-already-there.jpg
 hand-copied photo has none of it — which is not a tidiness problem, because the second guarantee
 is a privacy one.
 
-## The script needs a file on disk, not a picture in the conversation
+**The script takes a path, so a picture pasted into the conversation cannot be imported**: it has
+no file behind it. What to do when a picture arrives with no path (ask where it is saved, never
+describe it instead) is a rule about the conversation, and `CLAUDE.md` holds it.
 
-`tools/reference.sh` takes a path and cannot act on a picture that has none. An image pasted into
-the prompt from a clipboard — a screenshot, something copied out of a browser tab or out of an
-image generator — arrives in the session as image data with no file behind it: the session can see
-it, shown as `[Image #n]`, but has nothing to hand the script or an agent. An image *attached* from
-a saved file carries a real path and works exactly like any other input. The CLI shows both the
-same way, so when a picture shows up with no path attached to it, ask where it is saved, or ask for
-it to be dragged in from Finder or the Downloads folder, rather than describing what it shows —
-a description is not a file the script can shrink and strip.
+**An agent's sparse worktree leaves both folders out.** A new file under `docs/reference/` or
+`docs/style-references/` is committed with `git add --sparse <path>`, and a task that reads the
+photographs asks for a worktree made with `tools/agent-setup.sh ... --include docs/reference/`.
 
 ## What the folder is, and what it is not
 
 **Reference is an *input to drawing*: a photograph of the real thing, held up next to the art.**
-Five folders in this repo hold pictures and they are not interchangeable:
+The folders that hold pictures are not interchangeable:
 
 - **`docs/reference/`** — the real world. Never shipped, never shown, never cited as proof of
   anything. It exists so a sprite can be drawn from something rather than from memory.
@@ -41,46 +51,25 @@ Five folders in this repo hold pictures and they are not interchangeable:
   (`graphics-reference-*.jpeg`) that illustrated-png draws from: flat, no subfolders, added
   through `tools/reference.sh --style`. See `docs/style-references/README.md` for what each file
   is a reference for.
-- **`docs/evidence/`** — the game, captured, plus the generation records, review sheets and
-  provenance that point at the style references above. It is proof: a doc sentence points at it,
-  and the **playtest-feedback** rule requires the picture to land in the same commit as the
-  sentence.
-- **`art/`** — the authoring pictures. Behind a `.gdignore`, so the engine never imports one
-  and nothing under it ships except `art/social-card.png`, which `.github/workflows/deploy.yml`
-  copies to the exported build; the atlas bake reads the rest and the pages it writes are what
-  ships.
-- **`assets/`** — what the engine reads at runtime, and only that.
+- **Everywhere else is something else.** `docs/evidence/` is the game, captured, and is proof (the
+  **session-captures** skill); `art/` holds the authoring pictures the atlas bake reads, of which
+  only `art/social-card.png` ships, copied by `.github/workflows/deploy.yml`; `assets/` is what the
+  engine reads at runtime, and only that.
 
-**`docs/.gdignore` keeps the engine out of both folders.** Godot walks every directory under
-the project and would import each picture as a texture, writing a `.import` sidecar per file and
-carrying the lot into the exported build; an empty `.gdignore` is the engine's own *this
-directory is not mine*, and it covers every folder under the one it sits in. So neither folder
-carries one of its own, and `docs/.gdignore` is the one not to delete.
+**`docs/.gdignore` keeps the engine out of both folders, and it is the one not to delete.** Neither
+folder carries a `.gdignore` of its own, since the one in `docs/` covers every folder under it; what
+a `.gdignore` does and why no `.import` sidecar is written there is the **godot** skill's,
+"Structure".
 
-## The three things that happen to every file
+## What the pass does
 
-Each of them is a rule rather than a default, and none has an opt-out flag.
-
-**1. It is shrunk to fit inside 1280x720, aspect ratio kept, never enlarged.** That is the game's
-own design box — every screen is authored against it — so a reference can be held up beside a
-screenshot at the same scale. A portrait phone photo comes out 540x720 rather than being cropped
-or squashed, and a source already smaller than the box is left at its own size rather than blown
-up to look like more detail than it has.
-
-**2. Every scrap of metadata is dropped.** *This is the one that matters.* A phone photo carries
-GPS coordinates, a device serial number, a capture timestamp and frequently an owner's name; a
-PNG carries text chunks that survive every ordinary copy. **This repository is public** — it has a
-released build on GitHub Pages — so committing an untouched phone photo publishes where its
-photographer was standing and when. The script re-encodes through fresh pixel data, which is what
-makes the strip total rather than a list of tags somebody remembered to clear.
-
-**3. A video loses its audio track and drops to 15fps.** What a video is for here is *motion* — how
-a pram turns, how a crowd parts — and the audio is the half most likely to have recorded somebody
-who never agreed to be recorded. 15fps is enough to read a movement and roughly halves what the
-repository has to carry.
-
-A photo comes out as JPEG, or as PNG if the source had an alpha channel, because a cut-out with a
-transparent background is a different kind of thing from a photograph.
+Every file is **shrunk to fit inside 1280x720**, the game's own design box, never enlarged; **every
+scrap of metadata is dropped**, by re-encoding through fresh pixel data, because a phone photo
+carries GPS coordinates, a device serial number and a capture time and this repository is public;
+and **a video loses its audio track and drops to 15fps**. Each is a rule rather than a default, and
+none has an opt-out flag. The script exits non-zero and names every file it could not handle, and
+**a partial run is a failure**. The reasons in full, the output formats and what the script needs
+installed are `references/the-pass.md`.
 
 ## Then rename it, and that is not optional either
 
@@ -158,16 +147,3 @@ Something scraped off the web is not, whatever the pass above does to it.
 **A recognisable person who did not agree to it.** The stripping pass removes the metadata, not
 the face. If the useful part of the picture is a posture, a fold of cloth or a piece of street
 furniture, that is what to keep in frame.
-
-## Failure is loud, and that is the contract
-
-The script exits non-zero and names every file it could not handle — a missing input, an
-unreadable source, an ffmpeg that is not installed, an output that did not appear or came out
-empty, a name already taken without `--force`. **A pass that silently converted nothing looks
-exactly like a pass that worked**. Read the output; a partial run is
-a failure.
-
-**Videos need `ffmpeg` on `PATH`.** Stills need only the locked Python environment, which
-`uv run` builds from `pyproject.toml` on first use — see the **python-tooling** rule. The reading
-of HEIC comes from `pillow-heif`, which is in that lockfile because an iPhone photo is HEIC and
-Pillow cannot open one without it.
