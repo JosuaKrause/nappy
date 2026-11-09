@@ -364,8 +364,6 @@ func _test_a_walker_turns_into_a_street_sealed_further_along(t) -> void:
 		_city.map.obstruct_tiles(owner, EventSpawner.obstructed_footprint(_city.map, def, at_body,
 				Vector2.RIGHT))
 		owner += 1
-	var traffic := TrafficIndex.new()
-	_city.crowd.use_traffic(traffic)
 	_city.crowd.start_day(1, _rng(4), at)
 
 	var arm_rect := arm.tile_rect()
@@ -533,6 +531,8 @@ func _test_no_car_in_sight_ever_moves_further_than_it_drove(t) -> void:
 	var at: Vector2 = sealed["at"]
 	var arms: Array = sealed["arms"]
 	_city.map.clear_day_holds()
+	var traffic := TrafficIndex.new()
+	_city.crowd.use_traffic(traffic)
 	_city.crowd.start_day(1, _rng(4), at)
 	_advance_watching(3.0, at)
 	# **One arm, and the count matters in both directions.** Holding every arm is what the pocket
