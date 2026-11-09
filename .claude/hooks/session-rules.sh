@@ -14,7 +14,11 @@
 #
 # Keyed on the agent as well as the session, the same way project-rules.sh is and for the same
 # reason: `$session` for the main session, `$session-<agent_id>` for a sub-agent, so a sub-agent
-# never shares -- or clears -- another agent's markers.
+# never shares -- or clears -- another agent's markers. The hooks documentation describes
+# SessionStart as a session's and gives a sub-agent SubagentStart, when it is spawned, and this
+# hook is wired to the first alone. So in Claude Code the sub-agent half is a guard and nothing
+# more: a sub-agent's markers are never cleared, and a sub-agent whose context is compacted is
+# not refused its areas again.
 #
 # Reads the hook JSON on stdin; prints hookSpecificOutput.additionalContext or nothing.
 
@@ -45,8 +49,8 @@ mkdir -p "$state" 2>/dev/null
 # but "startup", clear this invocation's own marker directory before naming -- this mirrors
 # tools/codex-hooks.py's SessionStart/SubagentStart handling, which unlinks every skill marker
 # under its own state dir before calling this same script. Keyed on $state (above), this only
-# ever clears the session -- or, for a sub-agent, the one sub-agent -- that is actually restarting;
-# a main session's compaction never touches a sub-agent's own directory and vice versa.
+# ever clears the session that is actually restarting (or the one sub-agent, were the event sent
+# for one); a main session's compaction never touches a sub-agent's own directory and vice versa.
 if [ -n "$source" ] && [ "$source" != "startup" ]; then
 	rm -f "$state"/* 2>/dev/null
 fi

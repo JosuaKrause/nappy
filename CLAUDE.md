@@ -3,8 +3,8 @@
 Working guidelines for this repo. The *game* is documented in `docs/`.
 
 **These guidelines and `.claude/skills/` are written for Claude Code; Codex support is frozen (below).** Hooks name
-the skills that govern the work (below): read a named skill whole before that work, and again once
-it is no longer in context.
+the skills that govern the work (below): read each whole before that work, and again once it is no
+longer in context.
 Every matching skill applies, to edits through any tool, patches and scripts included, and so
 does any skill whose description matches the task; one asked for by name is read from its file
 even if the skill picker does not list it. A skill's relative resource paths resolve from its own
@@ -62,11 +62,11 @@ does to the route decision. If the answer is "nothing", it is decoration.
 
 ## The rules load themselves
 
-The rules live in `.claude/skills/`, one per kind of work. **A `PreToolUse` hook names the skills
-that govern a path before the first edit there, and the edit waits until they are read**
-(inbox #1267): `.claude/hooks/project-rules.sh` refuses the first `Edit`/`Write` of an area, naming
-each skill with its path and size, and passes the same edit made again once they are read whole.
-No hook prints a skill's text, since the harness cuts a long hook output down to its opening.
+The rules live in `.claude/skills/`, one per kind of work. **A `PreToolUse` hook,
+`.claude/hooks/project-rules.sh`, refuses the first `Edit`/`Write` of an area until the skills that
+govern it are read whole** (inbox #1267): the refusal names each skill with its path and size, and
+the same edit made again passes. No hook prints a skill's text to a Claude Code session, since the
+harness cuts a long hook output to its opening.
 
 **A rule you have to remember to load is not a rule**: every skill exists to stop a mistake already
 made here at least once that nothing in the code or the engine warns about, and the moment it
@@ -91,7 +91,7 @@ matters is the moment somebody is about to touch the file.
 | `docs/evidence/archive/rejected-graphics/**` | **rejected-graphics** |
 | `docs/evidence/**` | **verify**, **session-captures** |
 | `.github/workflows/**` | **verify** |
-| `.claude/hooks/**`, `.claude/settings.json`, `docs/decisions/**` | **committing** |
+| `.claude/settings.json`, `docs/decisions/**` | **committing** |
 | any `*.gd`, `*.tscn` or `*.gdshader`, `project.godot` | **godot** |
 | `src/**/*.gd` | **designing-classes** |
 | any `*.svg` | **svg-art** |
@@ -99,11 +99,11 @@ matters is the moment somebody is about to touch the file.
 | spawning a sub-agent (the `Agent`/`Task` tool, not a path) | **orchestrating** |
 
 **And one is named before anything at all.** `.claude/hooks/session-rules.sh` (`SessionStart`) names
-**orchestrating** at the start of every session, to be read whole before the first tool call,
-because *delegating is the default* is decided by then. It is the orchestrating session's skill,
-so a sub-agent's edit never brings it. **Keep that list to one skill unless there is a real
-second**: what is named at the start is read in every session whether or not it turns out to be
-relevant, the exact cost the path-triggered hook exists to avoid.
+**orchestrating**, the orchestrating session's skill and never a sub-agent's, at the start of every
+session, to be read whole before the first tool call, because *delegating is the default* is
+decided by then. **Keep that list to one skill unless there is a real second**: what is named at
+the start is read in every session, relevant or not, the cost the path-triggered hook exists to
+avoid.
 
 **These skills have no file to trigger on and are yours to invoke**, because they are about a *moment*
 rather than a place:
@@ -128,12 +128,11 @@ what the script owes.
 
 If a skill turns out not to cover something it should, add it there rather than here — **anything
 too long for one file becomes a file of its own, and this one does not grow.** If a new area of the
-tree needs rules, add its row to the hook script and to the table above (`tools/test_rules_hooks.sh`
-compares the two), or the rule is only a suggestion. **Only a file an edit tool writes
-can have a row**: the tools that write a picture, a recording or a sound name their skill
-themselves. And **the hook cannot reach a rule about a conversation**: anything that governs what
-you *say* rather than what you *edit* has to live in this file, because there is no tool call to
-hang it on.
+tree needs rules, add its row to the hook script and the table above (`tools/test_rules_hooks.sh`
+compares the two), or the rule is only a suggestion. **Only a file an edit tool writes can have a
+row**: a tool that writes a picture, a recording or a sound names its skill itself. And **the hook
+cannot reach a rule about a conversation**: anything that governs what you *say* rather than what
+you *edit* has to live in this file, because there is no tool call to hang it on.
 
 **A skill found wrong is fixed, and the fix is flagged to the player** (woolly-finch 24). Wrong
 includes a step that fails in practice, a sentence that is no longer true, a broken or duplicated
@@ -290,6 +289,6 @@ Each was a decision. Do not "fix" one without a reason; the reasoning is in the 
   guarantee (**city**); no spatial hash, no `impulse` field, and events defined in code rather
   than `.tres` (**events**).
 - **No quest log for the resistance.** Nothing lists the tasks and the day brief carries none
-  (PLAYTEST-02 14). Every task is hinted at, the first included (PLAYTEST-16 7, PLAYTEST-122 12):
+  (PLAYTEST-02 14). Every task is hinted at, the first included (PLAYTEST-16 7; PLAYTEST-122 12):
   day 6's brief names the rumor of chalk, and every task has a red arrow (M181, the resistance has
   a reason, and a task is one day).

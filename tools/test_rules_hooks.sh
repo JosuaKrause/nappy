@@ -7,10 +7,18 @@
 #
 # Asserts:
 #   - project-rules.sh refuses the first edit of an area with the index of the skills that govern
-#     it (each one's name, path, size and the opening of its description, never its text), refuses
-#     an edit that follows within moments in one line, and lets the same edit through once it is
-#     made again; a second area in the same session is refused in its turn, naming only the skills
-#     not named before
+#     it (each one's name, path, size and the opening of its description, never its text), and
+#     lets the same edit through once it is made again; a second area in the same session is
+#     refused in its turn, naming only the skills not named before
+#   - the window after a refusal, with the hook's clock set to the second: an edit in the same
+#     second or one second after is refused in one line that is true of a call of the same message
+#     and of an edit made again too soon, and is not counted from; from two seconds after, the same
+#     edit passes, and so does an edit elsewhere in the area that nothing was read for (the
+#     mechanism's limit: nothing watches the reads); a marker stamped in the future (the clock
+#     stepped back) lets the edit pass and is emptied, so it refuses nothing when the clock
+#     reaches it
+#   - the refusal, the context beside a spawn and the context where no marker can be written all
+#     say whose reading counts: the reader's own, in this context
 #   - where the hook cannot write its markers it refuses nothing and gives the index as context
 #   - the main session and each sub-agent (same session_id, different agent_id) are refused on
 #     their own first .gd edit, and a sub-agent's edit under src/ or tests/ never names orchestrating
@@ -19,15 +27,19 @@
 #     never refused
 #   - after a SessionStart with source compact, resume, clear or fork, the session is named
 #     orchestrating again and each area is refused once more, while a sub-agent's own markers from
-#     before are untouched
+#     before are untouched; a SessionStart carrying an agent_id, which the harness is not
+#     documented to send (a sub-agent gets SubagentStart), clears that agent's markers alone
 #   - for the Codex adapter (a session named codex-...), both hooks still print the skills' text as
 #     context and refuse nothing
 #   - each path of the mapping brings its skills, in the table's order: the files that draw the cues,
 #     the files that hold the balance numbers, the reference and sound tools, the atlas membership
-#     file, docs/evidence/**, a workflow, a hook, the settings file, a decision record, a scene, a
-#     shader and the project file among them; src/visuals/** gets no illustrated-png; a row's path
-#     starts at the checkout's root, an agent's worktree is a checkout like the main one, and a
-#     path outside the repository gets nothing
+#     file, docs/evidence/**, a workflow, the settings file, a decision record, a scene, a shader
+#     and the project file among them; a hook script has no row and gets nothing; src/visuals/**
+#     gets no illustrated-png; a row's path starts at the checkout's root, an agent's worktree is a
+#     checkout like the main one, and a path outside the repository gets nothing
+#   - a path is matched with its "." and ".." parts and doubled slashes taken out, so a detour
+#     through another folder is named what the file it reaches is, and one that climbs out of the
+#     repository gets nothing
 #   - CLAUDE.md's path table and project-rules.sh's rows agree, row for row, and every path of
 #     every row is refused with the row's skills among those named
 #   - no answer of the rule hooks or the lint hook exceeds 9,000 bytes, no rule hook's index
@@ -505,9 +517,37 @@ session_call() {
         "$(printf '%s' "$payload" | "$root/.claude/hooks/session-rules.sh")"
 }
 
-# A refusal stamps its markers with the time, and an edit that follows within moments is refused
+# The hook's clock, for the cases that are about the window after a refusal: a `date` first on
+# PATH that answers `+%s` with $TEST_RULES_CLOCK and is the real one for anything else. With it a
+# case says to the second how long after a refusal an edit arrives, whatever the machine's load.
+real_date="$(command -v date)"
+clock_bin="$work_dir/clock-bin"
+mkdir -p "$clock_bin"
+cat > "$clock_bin/date" <<CLOCK
+#!/bin/sh
+if [ "\$#" -eq 1 ] && [ "\$1" = "+%s" ] && [ -n "\${TEST_RULES_CLOCK:-}" ]; then
+    echo "\$TEST_RULES_CLOCK"
+else
+    exec "$real_date" "\$@"
+fi
+CLOCK
+chmod +x "$clock_bin/date"
+
+# rules_call with the hook's clock at $1 (seconds since the epoch); the rest as rules_call takes.
+rules_call_at() {
+    local at="$1" saved_path="$PATH"
+    shift
+    PATH="$clock_bin:$PATH"
+    export TEST_RULES_CLOCK="$at"
+    rules_call "$@"
+    PATH="$saved_path"
+    unset TEST_RULES_CLOCK
+}
+
+# A refusal stamps its markers with the time, and an edit that follows within the window is refused
 # with it. This makes every marker of session $1 (agent $2) a minute old, which is what a session
-# that went and read the skills looks like to the hook.
+# that went and read the skills looks like to the hook. The cases about the window itself do not
+# use it: they set the clock (rules_call_at).
 rules_age() {
     local dir="$state_root/$1${2:+-$2}" marker
     for marker in "$dir"/*; do
@@ -560,9 +600,17 @@ assert_first_edit() {
 # match is the `*.gd` one, godot's. Isolates the sequence from every other row.
 gd_file="zz_test_rules_hooks_probe.gd"
 
-rules_call main-session "" Edit "$gd_file"
+# The hook's clock stands at $clock for the refusal and is moved by the second from there.
+clock=1000000000
+window_text="was sent in the same message as the one refused then, or it was made again within 2 seconds of the refusal. If you have not read the skills that refusal names, read each one whole first; if you have read the skills named, make it again."
+whose_reading="unless you have read it whole in this context"
+
+rules_call_at "$clock" main-session "" Edit "$gd_file"
 assert_rules "main session, first .gd edit -> refused, naming godot" deny "godot,"
 assert_rules_say "the refusal says the edit passes when made again" "Then make this edit again: it passes."
+assert_rules_say "the refusal says an edit made within the window does not" \
+    "(One made within 2 seconds of this refusal is refused as a call of the same message.)"
+assert_rules_say "the refusal says whose reading counts" "$whose_reading"
 assert_rules_say "the refusal names the skill's file" "(.claude/skills/godot/SKILL.md, "
 assert_rules_say "the refusal says where the skills are" "under $root)"
 assert_rules_say "the refusal names the file it refused" "$gd_file is governed by"
@@ -575,15 +623,46 @@ else
     fail "the refusal carries more than the index: $(byte_size "$rules_text") bytes"
 fi
 
-rules_call main-session "" Edit "$gd_file"
-assert_rules "an edit moments after the refusal (the same message's next call) -> refused too, in one line" deny ""
-assert_rules_say "the second refusal points back at the first" "Refused with the edit just before it"
-
-rules_age main-session ""
-rules_call main-session "" Edit "$gd_file"
-assert_rules "the same edit made again, after the read -> let through" none ""
-rules_call main-session "" Write "$gd_file"
+rules_call_at "$clock" main-session "" Edit "$gd_file"
+assert_rules "an edit in the same second as the refusal (the same message's next call) -> refused too, in one line" deny ""
+assert_rules_say "the refusal inside the window is true of a call of the same message and of an edit made again too soon" \
+    "$window_text"
+assert_rules_say "the refusal inside the window names the file" "the skills that govern $gd_file was given less than 2 seconds ago"
+rules_call_at "$((clock + 1))" main-session "" Write "zz_test_rules_hooks_other.gd"
+assert_rules "one second after the refusal, an edit elsewhere in the area -> refused the same way" deny ""
+assert_rules_say "and told the same" "$window_text"
+assert_eq "a refusal inside the window does not move the marker's time, so the window is not extended" \
+    "$clock" "$(cat "$state_root/main-session/godot")"
+rules_call_at "$((clock + 2))" main-session "" Edit "$gd_file"
+assert_rules "two seconds after the refusal, the same edit made again -> let through" none ""
+rules_call_at "$((clock + 2))" main-session "" Write "$gd_file"
 assert_rules "every later edit of the area -> let through" none ""
+
+# The mechanism's limit: nothing watches whether the skills were read, so once the window is over
+# any edit of the area passes, the refused one never having been made again.
+rules_call_at "$clock" unread-session "" Edit "$gd_file"
+assert_rules "another session's first .gd edit -> refused" deny "godot,"
+rules_call_at "$((clock + 2))" unread-session "" Edit "zz_test_rules_hooks_other.gd"
+assert_rules "an edit elsewhere in the area after the window -> let through, read or not" none ""
+
+# A marker stamped in the future, which is what a refusal's marker is once the clock has stepped
+# back: it counts as old, so the edit passes, and it is emptied, so it refuses nothing when the
+# clock reaches its time again.
+rules_call_at "$clock" clock-back-session "" Edit "$gd_file"
+assert_rules "a session refused before its clock steps back" deny "godot,"
+rules_call_at "$((clock - 3600))" clock-back-session "" Edit "$gd_file"
+assert_rules "the clock an hour behind the marker -> the edit is let through" none ""
+checks=$((checks + 1))
+if [ -f "$state_root/clock-back-session/godot" ] && [ ! -s "$state_root/clock-back-session/godot" ]; then
+    echo "ok   the marker from the future is emptied, not removed"
+else
+    fail "the marker from the future still holds [$(cat "$state_root/clock-back-session/godot" 2>&1)]"
+fi
+rules_call_at "$clock" clock-back-session "" Edit "$gd_file"
+assert_rules "when the clock reaches the marker's old time -> still let through" none ""
+rules_call_at "$clock" one-second-session "" Edit "$gd_file"
+rules_call_at "$((clock - 1))" one-second-session "" Edit "$gd_file"
+assert_rules "a marker one second ahead of the clock is from the future too" none ""
 
 # A second area in the same session is refused in its turn, and its refusal names only what the
 # session has not been named: godot is not repeated.
@@ -604,6 +683,7 @@ unwritable_call() {
 }
 unwritable_call
 assert_rules "no writable state directory, first .gd edit -> context naming godot, not a refusal" context "godot,"
+assert_rules_say "that context says whose reading counts" "$whose_reading"
 unwritable_call
 assert_rules "no writable state directory, the next edit -> context again, still not a refusal" context "godot,"
 
@@ -652,6 +732,7 @@ fi
 rules_call spawn-session "" Agent ""
 assert_rules "a spawn with no session start before it -> let on, with context naming orchestrating" \
     context "orchestrating,"
+assert_rules_say "the spawn's context says whose reading counts" "$whose_reading"
 rules_call spawn-session "" Task ""
 assert_rules "the next spawn -> nothing" none ""
 rules_call started-session "" Agent ""
@@ -687,12 +768,22 @@ fi
 rules_call "$compact_session" sub-agent-c Edit "src/city/traffic_signals.gd"
 assert_rules "the sub-agent's area stays let through across the main session's compact" none ""
 
-# A sub-agent's own compact must likewise only ever clear its own directory.
+# A SessionStart that carries an agent_id is not an event the harness is documented to send: a
+# sub-agent gets SubagentStart, when it is spawned, and no hook here is wired to that. So in Claude
+# Code a sub-agent's markers are never cleared, and a sub-agent whose context is compacted is not
+# refused again, which is a known limit and has no case here, there being no event to feed. What
+# this holds is the hook's own guard: were such an event sent, it would clear that one agent's
+# markers and nobody else's. It says nothing of what a sub-agent is named at a start.
 session_call "$compact_session" sub-agent-c compact
-assert_rules "a sub-agent's own source:compact names orchestrating for that sub-agent" context "orchestrating,"
 rules_call "$compact_session" sub-agent-c Edit "src/city/traffic_signals.gd"
-assert_rules "after its own compact, the sub-agent's area is refused again" \
+assert_rules "(not an event the harness is documented to send) a SessionStart carrying an agent_id clears that agent's markers" \
     deny "city,crowd-traffic,godot,designing-classes,"
+checks=$((checks + 1))
+if [ -s "$state_root/$compact_session/godot" ]; then
+    echo "ok   (the same event) the main session's markers are untouched by it"
+else
+    fail "a SessionStart carrying an agent_id cleared the main session's markers"
+fi
 for other_source in resume clear fork; do
     session_call "$compact_session" "" "$other_source"
     assert_rules "main session is named orchestrating again after source:$other_source" context "orchestrating,"
@@ -790,8 +881,10 @@ assert_first_edit "docs/TODO.md -> playtest-feedback" \
     "playtest-feedback," "docs/TODO.md"
 assert_first_edit "docs/decisions/<name>.md -> committing" \
     "committing," "docs/decisions/2026-09-27-busy-otter.md"
-assert_first_edit "a hook -> committing" \
-    "committing," ".claude/hooks/project-rules.sh"
+assert_first_edit "a hook script -> nothing (no skill says what a change to one owes)" \
+    "" ".claude/hooks/project-rules.sh"
+assert_first_edit "the write guard among the hooks -> nothing either" \
+    "" ".claude/hooks/github-write-guard.sh"
 assert_first_edit ".claude/settings.json -> committing" \
     "committing," ".claude/settings.json"
 assert_first_edit "a workflow -> verify" \
@@ -826,8 +919,24 @@ assert_first_edit "docs/notes/src/events/x.gd -> godot alone (src/events/ is the
     "godot," "docs/notes/src/events/x.gd"
 assert_first_edit "a worktree's src/events/x.gd -> as in the main checkout" \
     "events,godot,designing-classes,orchestrating," ".claude/worktrees/zz-probe/src/events/x.gd"
-assert_first_edit "a worktree's own hook -> committing, not the worktrees folder's path" \
-    "committing," ".claude/worktrees/zz-probe/.claude/hooks/project-rules.sh"
+assert_first_edit "a worktree's own settings file -> committing, not the worktrees folder's path" \
+    "committing," ".claude/worktrees/zz-probe/.claude/settings.json"
+
+# A path is matched as the file it reaches: its "." and ".." parts and doubled slashes are taken
+# out first, as text, so a detour through another folder loses no row and gains none.
+assert_first_edit "docs/../src/events/a.gd -> as src/events/a.gd" \
+    "events,godot,designing-classes,orchestrating," "docs/../src/events/a.gd"
+assert_rules_say "the refusal names the file without the detour" "the edit. src/events/a.gd is governed by"
+assert_first_edit "src/./events//a.gd -> as src/events/a.gd" \
+    "events,godot,designing-classes,orchestrating," "src/./events//a.gd"
+assert_first_edit "src/events/../city/a.gd -> city, not events" \
+    "city,godot,designing-classes,orchestrating," "src/events/../city/a.gd"
+assert_first_edit "a path that climbs out of a worktree into the main checkout -> the main checkout's file" \
+    "events,godot,designing-classes,orchestrating," ".claude/worktrees/zz-probe/../../../src/events/a.gd"
+assert_first_edit "a path with a space in a folder's name keeps it" \
+    "events,godot,designing-classes,orchestrating," "src/events/zz probe/../a b.gd"
+assert_first_edit "a path that climbs out of the repository -> nothing" \
+    "" "../zz-elsewhere/src/events/x.gd"
 rules_read "project-rules.sh, a path outside the repository" \
     "$(printf '{"session_id":"outside-session","tool_name":"Edit","tool_input":{"file_path":"/tmp/elsewhere/src/events/x.gd"}}' \
         | "$root/.claude/hooks/project-rules.sh")"

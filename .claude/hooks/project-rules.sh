@@ -13,8 +13,14 @@
 # Named once per skill per session: the marker files under $STATE record what has been named. A
 # marker written by a refusal holds the time of it, and an edit that arrives within
 # $BATCH_SECONDS of that time is refused as well, in one line: the calls of one message run back
-# to back, so without it the first of them would be refused and the rest would land unread. No
-# session reads a skill and writes the edit again that fast, so the retry is not caught by it.
+# to back, so without it the first of them would be refused and the rest would land unread. The
+# window is a clock standing in for "the same message", and it is wrong both ways, which is why
+# it is short. A session that had read the skills before and makes the edit again at once can
+# land inside it, so that refusal says both things it can be, and that the edit is made again.
+# And an edit of the area after the window passes whether or not anything was read: that is the
+# mechanism's limit, since nothing watches the reads. A marker whose time is in the future (the
+# clock stepped back) counts as old: the edit passes and the marker is emptied, so that it
+# cannot refuse an edit later, when the clock reaches it.
 #
 # A sub-agent's PreToolUse payload carries its own `agent_id`, but `session_id` is the
 # *parent's* -- an orchestrator and every sub-agent it spawns share one session_id. Keyed on
@@ -24,8 +30,11 @@
 # `$session` for the main session (no agent_id in its payload), `$session-<agent_id>` for a
 # sub-agent -- giving every sub-agent its own markers and so its own refusal at its own first
 # edit of each area. A second area in the same session is refused the same way, naming only the
-# skills not named before. After a compaction session-rules.sh clears the markers, so each area
-# is refused once more.
+# skills not named before. After a compaction session-rules.sh clears the main session's
+# markers, so each of its areas is refused once more. A sub-agent's are not cleared: the hooks
+# documentation gives a sub-agent SubagentStart, when it is spawned, and describes SessionStart
+# as a session's, and no hook here is wired to SubagentStart or to a compaction event. So a
+# sub-agent whose context is compacted is not refused a second time, which is a known limit.
 #
 # Spawning a sub-agent (the Agent/Task tool) gets the index as context beside the call and is
 # never refused: a spawn carries a whole brief, and a refusal would have it written twice.
@@ -56,8 +65,11 @@ else
 fi
 mkdir -p "$state" 2>/dev/null
 
-# How long after a refusal another edit of the same area counts as part of the same message.
-BATCH_SECONDS=5
+# How long after a refusal another edit of the same area counts as part of the same message. The
+# hook answers in well under a second and the next call's hook starts when the refusal returns,
+# so two seconds cover a message's calls and catch few edits made again by a session that had
+# already read.
+BATCH_SECONDS=2
 
 # What governs what, one row per line of CLAUDE.md's path table ("The rules load themselves"),
 # in the same order and the same words: tools/test_rules_hooks.sh compares the two row for row.
@@ -88,7 +100,7 @@ rows=(
 	"docs/evidence/archive/rejected-graphics/** => rejected-graphics"
 	"docs/evidence/** => verify session-captures"
 	".github/workflows/** => verify"
-	".claude/hooks/** .claude/settings.json docs/decisions/** => committing"
+	".claude/settings.json docs/decisions/** => committing"
 	"*.gd *.tscn *.gdshader project.godot => godot"
 	"src/**/*.gd => designing-classes"
 	"*.svg => svg-art"
@@ -111,9 +123,12 @@ rows=(
 # - docs/evidence/ holds experiment evidence (verify: its method, provenance and retention) and
 #   captures (session-captures: where a frame is kept and what it may be said to prove).
 # - A workflow under .github/workflows/ decides what the `test` check means, which verify owns.
-# - committing owns the three things in its row: the write guard among the hooks and the rule it
-#   enforces, the allow lines in the settings file and why no other is added, and how a decision
-#   record is named and filed.
+# - committing owns the two things in its row: the allow lines in the settings file and why no
+#   other is added, and how a decision record is named and filed.
+# - The hook scripts under .claude/hooks/ have no row. No skill says what a change to one owes
+#   (CLAUDE.md does: its cases in tools/test_rules_hooks.sh, and this table kept in step with
+#   CLAUDE.md's), and a row that names a skill which does not cover its path costs a read and
+#   delivers no rule.
 # - The orchestrating row for src/ and tests/ is a backstop for a session that started without
 #   session-rules.sh, which names that skill at the start and writes the same marker. It is the
 #   orchestrating session's skill, so that row never applies to a sub-agent (an `agent_id` in the
@@ -124,12 +139,31 @@ rows=(
 # elsewhere on disk -- /tmp/elsewhere/src/events/x.gd -- gets none of this project's rules; an
 # agent's worktree sits under the root, at .claude/worktrees/<name>/, and its files are governed
 # like the main checkout's.
+#
+# The path is first read as text, with its "." and ".." parts and doubled slashes taken out, so
+# that <root>/docs/../src/events/a.gd is named what <root>/src/events/a.gd is. Nothing is looked
+# up on disk: the file need not exist yet, and a path that is not absolute is nobody's.
+normalized() {
+	local part out="" IFS=/
+	for part in $1; do
+		case "$part" in
+			''|.) ;;
+			..) out="${out%/*}" ;;
+			*) out="$out/$part" ;;
+		esac
+	done
+	printf '%s' "${out:-/}"
+}
+
 rel=""
 spawn=0
 if [ "$tool" = "Agent" ] || [ "$tool" = "Task" ]; then
 	spawn=1
 else
 	[ -z "$path" ] && exit 0
+	case "$path" in
+		/*) path=$(normalized "$path") ;;
+	esac
 	case "$path" in
 		"$root"/*) rel="${path#"$root"/}" ;;
 		*) exit 0 ;;
@@ -190,7 +224,8 @@ for row in "${rows[@]}"; do
 done
 
 # Of those, the ones this session has not been named yet, and whether any was named by a refusal
-# moments ago.
+# less than $BATCH_SECONDS ago. Only a time from zero up to the window counts: a marker stamped
+# in the future is old, and is emptied.
 now=$(date +%s)
 fresh=""
 recent=0
@@ -200,7 +235,14 @@ for skill in $wanted; do
 		refused_at=$(cat "$state/$skill" 2>/dev/null)
 		case "$refused_at" in
 			''|*[!0-9]*) ;;
-			*) [ $((now - refused_at)) -lt "$BATCH_SECONDS" ] && recent=1 ;;
+			*)
+				since=$((now - 10#$refused_at))
+				if [ "$since" -lt 0 ]; then
+					: 2>/dev/null > "$state/$skill"
+				elif [ "$since" -lt "$BATCH_SECONDS" ]; then
+					recent=1
+				fi
+				;;
 		esac
 		continue
 	fi
@@ -226,7 +268,7 @@ if rules_caller_wants_text "$session"; then
 	exit 0
 fi
 
-how="Read each one whole (the Skill tool by its name, or Read on its path under $root), unless this session has read it whole since it started or was last compacted"
+how="Read each one whole (the Skill tool by its name, or Read on its path under $root), unless you have read it whole in this context"
 
 index=""
 for skill in $fresh; do
@@ -273,14 +315,16 @@ if [ -n "$fresh" ]; then
 		}'
 		exit 0
 	fi
-	printf 'Refused once, so that the rules are read before the edit. %s is governed by the project skills below, and their text is not put into context for you. %s. Then make this edit again: it passes.\n\n%s' \
-		"$rel" "$how" "$index" | deny
+	printf 'Refused once, so that the rules are read before the edit. %s is governed by the project skills below, and their text is not put into context for you. %s. Then make this edit again: it passes. (One made within %s seconds of this refusal is refused as a call of the same message.)\n\n%s' \
+		"$rel" "$how" "$BATCH_SECONDS" "$index" | deny
 	exit 0
 fi
 
 if [ "$recent" -eq 1 ]; then
-	printf 'Refused with the edit just before it, whose refusal names the skills that govern %s. Read them first, then make this edit again.\n' \
-		"$rel" | deny
+	# True of both edits that can land here: one of the same message as the refused edit, which
+	# nothing was read for, and one made again at once by a session that had read already.
+	printf 'Refused, because a refusal naming the skills that govern %s was given less than %s seconds ago: this edit was sent in the same message as the one refused then, or it was made again within %s seconds of the refusal. If you have not read the skills that refusal names, read each one whole first; if you have read the skills named, make it again.\n' \
+		"$rel" "$BATCH_SECONDS" "$BATCH_SECONDS" | deny
 	exit 0
 fi
 
