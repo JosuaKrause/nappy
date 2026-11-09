@@ -107,12 +107,14 @@ held to, what is created with its telegraph spent, and the two things that are n
 **Nothing else happens inside a lethal event's field.** A `hard_fail` event keeps its whole
 `outer_radius` clear of every other event at placement (`StreetInvalidation.room_around()`), and it
 is the one spacing rule with no fallback — one that cannot find room is not placed. A new lethal row
-inherits this, not just the telegraph. `tests/test_events_costs.gd` holds it across a run.
+inherits this, not just the telegraph. **The placement half is unenforced**: no suite walks a
+day's plan to check that a lethal field was kept clear.
 
 Two exemptions, both about a field with no fixed place to keep clear: a **wall** placement, which
 is off the day's routes by construction, and a **pursuer**, which follows her.
-`EventScheduler.Planned.keeps_its_field_clear()` names both. The reasoning is `docs/EVENTS.md`, "The
-contract is per event, and the player experiences the sum".
+`EventScheduler.Planned.keeps_its_field_clear()` names both, and `tests/test_events_costs.gd` holds
+who is exempt. The reasoning is `docs/EVENTS.md`, "The contract is per event, and the player
+experiences the sum".
 
 ## A lethal radius and a solid body are the same mechanism
 

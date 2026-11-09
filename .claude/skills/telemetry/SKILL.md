@@ -53,9 +53,11 @@ Anything needing a per-frame check goes in `TelemetryObserver`, **not** in the g
 telemetry stays out of the files that decide things, which is what makes the rule easy to keep.
 
 **The one exception is the frame record's timing wrap** (docs/TELEMETRY.md, "Per-system frame
-records"). It records what makes a frame spill over its 2ms budget (quiet-yak #510), and the
-player accepted the exception itself (azure-tapir #526): a phone has no profiler, so what a system
-cost in a frame can only be timed where it runs, which an observer cannot do from outside.
+records"). It records what makes a frame spill over its 2ms budget (quiet-yak #510), since the
+stutter comes with many objects on screen and influence, pathing or drawing may each be the
+culprit, and the player accepted the exception itself (azure-tapir #526): a phone has no profiler,
+so what a system cost in a frame can only be timed where it runs, which an observer cannot do from
+outside.
 
 **A timed system is handed its timing sink and wraps its body.** The sink is a `FrameTiming`
 (`src/frame_timing.gd`, the null sink whose `on` is false; `FrameRecord` in `src/telemetry/` is the
@@ -86,8 +88,9 @@ forwards to it.
   asked for (jolly-trout #541) are taken by `FrameRecorder` from each counted node's `draw`
   signal. A new node that draws is added by class to `FrameRecorder._draw_kind()`, or, where the
   recorder may not name it (a node of the view, a canvas that is no class of its own), sets the
-  meta `FrameTiming.DRAW_KIND_META` to its `FrameTiming.Draw` kind. A crowd agent alone counts
-  itself, through `drew()` on its `CrowdTiming`.
+  meta `FrameTiming.DRAW_KIND_META` to its `FrameTiming.Draw` kind, `OTHER` where no kind fits. A
+  node that does neither is not counted, which is right for a dev-only layer. A crowd agent alone
+  counts itself, through `drew()` on its `CrowdTiming`.
 - **A new drawn kind** is a member of `FrameTiming.Draw`, its name in `FrameLedger.COUNTER_NAMES`
   in the same order, and its column in docs/TELEMETRY.md.
 - **The scenery queue's wrap is its own and is not a pattern to copy.**
