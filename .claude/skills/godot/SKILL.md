@@ -1,6 +1,6 @@
 ---
 name: godot
-description: Godot 4.7 and GDScript traps that have cost real time in this project — silent type drops, warnings that are errors, pause and process_mode inheritance, camera smoothing, node naming, leaks. Load this BEFORE writing or debugging any GDScript, and whenever something behaves in a way the engine gives no error for.
+description: Godot 4.7 and GDScript traps that have cost real time in this project — silent type drops, the typing every file owes and the warnings that are errors, pause and process_mode inheritance, camera smoothing, node naming, leaks. Load this BEFORE writing or debugging any GDScript, and whenever something behaves in a way the engine gives no error for.
 ---
 
 # Godot 4.7 / GDScript gotchas
@@ -9,7 +9,7 @@ These are not obvious and the engine does not warn about most of them. **The one
 
 - **`set(key, value)` silently drops a type mismatch.** Never build typed objects from dictionaries.
 - **`var x := <a Variant>` is a parse error**, and `load(path).instantiate()` is a Variant: annotate.
-- **An untyped declaration and an unsafe property or method access are parse errors here**: a new file is typed from its first line, and no new ignore of them is written.
+- **Code is typed wherever the language can type it, tests included** (inbox #1280): an untyped declaration and an unsafe property or method access are parse errors here, and a new file carries no ignore of them.
 - **An untyped `Array` passed as `Array[T]` leaks at shutdown**, and `.slice()` drops the element type.
 - **No warning the engine prints is left standing** (woolly-finch 19).
 - **A feature is tied to a flag the environment informs, never to the environment** (PLAYTEST-25 1).
@@ -71,7 +71,14 @@ behind an untyped name (inbox #1268; the **designing-classes** skill, "Fields ar
 Each fails the parse with "Warning treated as error", and the script fails to load, a suite as a
 `LOAD FAIL`.
 
-**A new file is typed from its first line; only a file not yet typed opts out, with one line.**
+**Code is typed wherever the language can type it, and an untyped name is never a habit**
+(inbox #1280): `src/`, the suites and their rigs, fakes and probes, and the scripts under `tools/`
+alike. A value stays a Variant only where the language cannot type it, such as the inner level of
+a nested collection (`Array[Array[Thing]]` is itself a parse error, so the inner arrays are plain
+`Array`s) or what `back()` or `get()` returns, and it is then read through a typed name, as
+below. **writing-tests** says what that asks of a suite and its fakes.
+
+**So a new file is typed from its first line; only a file not yet typed opts out, with one line.**
 That line is the file's very first, `@warning_ignore_start("untyped_declaration",
 "unsafe_method_access")`, naming exactly those of the three warnings the file still trips and
 nothing else, and it silences them to the end of the file. The files carrying it are a list that
@@ -83,19 +90,21 @@ or its suite's load, which is how to find out). No other ignore of the three is 
 line, and in CI a file that gains the line or a warning on it.
 
 **The engine warns of nothing on a property read off a Variant.** An element of an untyped
-`Array` or `Dictionary`, what `back()` or `get()` returns, a name declared `: Variant`:
-`things[0].count` parses at every warning level, where `things[0].make()` is an unsafe method
-access. So such a value is read through a typed name (`var thing: Thing = things[0]`, `for thing:
+`Array` or `Dictionary`, the inner level of a nested one, what `back()` or `get()` returns, a name
+declared `: Variant`: `things[0].count` parses at every warning level, where `things[0].make()` is
+an unsafe method access. So such a value is read through a typed name (`var thing: Thing = things[0]`, `for thing:
 Thing in things`, `things[0] as Thing`), and in a file under `src/` without the opt-out line
 `tools/check_field_reads.py` fails the read the engine lets through, wherever the name read is one
 a class under `src/` declares as a `var`.
 
 **The setting reaches every script a debug build parses in this project, and no release export.**
-That is `src/`, `tests/` with its rigs, fixtures and probes, the `tools/*.gd` scripts run with
-`--script`, and a script a test writes at run time and boots in a child process: its source string
-is typed like a file, or opens with the opt-out line where it is not yet. The engine generates the
-warnings only in a debug build, so the release Web export is not held to the setting and proves
-nothing about it; `check.sh` and the suites do.
+That is `src/`, `tests/` with its rigs, fixtures and probes, the `.gd` scripts under `tools/`
+whether run with `--script` or as a scene, and a script a test writes at run time and boots in a
+child process: its source string is typed like a file, or opens with the opt-out line where it is
+not yet. A debug export is a debug build, so the debug Web export (`tools/export-web.sh debug`,
+which `tools/serve-web.sh` serves) is held to the setting too. The engine generates the warnings
+only in a debug build, so the release Web export is not held to it and proves nothing about it;
+`check.sh` and the suites do.
 
 ## Capabilities
 
@@ -255,8 +264,12 @@ is the only part that governs the code in front of them.
 - **What the `## Overrides` line names and where it is asked for** — the nearest declaring
   ancestor, no line for an engine virtual no project class declares, and `src/` and `tests/` as the
   scope — is the filer's proposal, open to the player's correction (inbox #1154 in gray-dolphin).
-- **A new file carries no opt-out line, and a line gains no warning** are the builder's choices
-  (minty-quail-busy-heron), open to the player's correction. The player's words ask that the
-  field-read check be made to work and approve the design review's way to do it (inbox #1268): the
-  three warnings as errors, the one line at the top of a file not yet converted, and the files
-  carrying it as a list that only shrinks.
+- **An opt-out line gains no warning** is the builder's choice (minty-quail-busy-heron), open to
+  the player's correction. The player's words ask that the field-read check be made to work and
+  approve the design review's way to do it (inbox #1268): the three warnings as errors, the one
+  line at the top of a file not yet converted, and the files carrying it as a list that only
+  shrinks; and they say code is typed wherever it can be (inbox #1280), which a new file carrying
+  the line would not be.
+- **Which values the language cannot type** ("Types": the inner level of a nested collection, what
+  a Variant-returning call gives) is the filer's reading of where the player's rule ends
+  (inbox #1280), taken from what the engine accepts.

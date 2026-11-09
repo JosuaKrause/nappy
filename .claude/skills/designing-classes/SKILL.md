@@ -99,11 +99,13 @@ receiver whose class nothing can tell is a read no list holds. `project.godot` m
 fail an access it cannot type: the warnings `untyped_declaration`, `unsafe_property_access` and
 `unsafe_method_access` are errors. A file not yet typed carries one `@warning_ignore_start(...)`
 line at its top naming the warnings it still trips, and the files carrying it are that second list:
-a module's pass types its receivers and deletes the line, a new file never carries it, and CI's
-run of the check fails a file that gains it (**godot**, "Types", says what the errors are and how a
-value is typed). In a file under `src/` without the line, the check fails any receiver whose class
-it cannot tell, since the engine warns of nothing on a property read off a Variant; in a file with
-the line it skips such a receiver, and its `--summary` counts the files and the skipped uses. In no
+a module's pass types its receivers and deletes the line, a new file never carries it, since code
+is typed wherever the language can type it (inbox #1280), and CI's run of the check fails a file
+that gains it (**godot**, "Types", owns that rule and says what the errors are and how a value is
+typed). In a file under `src/` without the line, the check fails a field read through any receiver
+whose class it cannot tell, since the engine warns of nothing on a property read off a Variant; in
+a file with the line it skips such a read, and its `--summary` counts the files and the skipped
+uses. In no
 file does it see a further read of a field its reader file is already listed for, so review still
 reads the diff for those; the rarer blind spots are in the comment that opens the tool, under
 "Blind spots, stated".
@@ -181,10 +183,9 @@ that proposes it, and says so where the player's words name nothing on the point
 - **Which members "Fields are not API" covers**, a reading of inbox #1173 in gray-dolphin.
 - **New code reads no field across objects, and a touched read moves behind a method**
   (inbox #1173 in gray-dolphin).
-- **The check fails an unknown receiver file by file, from the day a file loses its opt-out line,
-  and a new file never carries the line**, the builder's choices (minty-quail-busy-heron). The
-  player's words ask that the check be made to work and approve the design review's way to do it
-  (inbox #1268), and that design has the check fail an unknown receiver only once no file carries
-  the line.
+- **The check fails an unknown receiver file by file, from the day a file loses its opt-out line**,
+  the builder's choice (minty-quail-busy-heron). The player's words ask that the check be made to
+  work and approve the design review's way to do it (inbox #1268), and that design has the check
+  fail an unknown receiver only once no file carries the line.
 - **A design where a fake has nothing to be handed to is wrong** (inbox #1156 in gray-dolphin).
 - **What no caller would miss goes** (inbox #1156 in gray-dolphin).
