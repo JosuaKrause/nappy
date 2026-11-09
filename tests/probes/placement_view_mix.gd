@@ -9,7 +9,7 @@ extends RefCounted
 ## Each day is planned as the scheduler plans it (`EventScheduler.build_day()` on a repainted city
 ## and its route tree), and every placed plan is counted under the view of the ground it stands on
 ## (`Corridor.view_of()` for a street, `Corridor.view_of_ground()` for an alley, a lot or a junction
-## box), by row, against the number of locations each view has (`DayLocations.drawing_order()`).
+## box), by row, against the number of locations each view has (`DayLocations.open_locations()`, as laid out).
 ## The rows the director sites in front of her, which the day owes her but places nowhere, are
 ## counted apart (`MOMENTS`). `PV_VIEW` lines give each view's events per location, which each
 ## view's empty weight is set from (fork 5(a) of the placement proposal, the orchestrator's reading:
@@ -39,7 +39,7 @@ func _mix_on(day: int) -> void:
 		map.repaint(state)
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
-		for location in DayLocations.lay_out(map, corridor).drawing_order(_rng(i, day)):
+		for location in DayLocations.lay_out(map, corridor).open_locations():
 			if location.is_available():
 				locations_in[location.view()] += 1
 		var rng := _rng(i, day)

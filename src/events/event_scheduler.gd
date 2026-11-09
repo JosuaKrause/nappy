@@ -652,7 +652,7 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## `trace` is where the planning writes its own account for the run log — a one-shot owed to her
 ## walk, a lesson added, a park spoiled — and no trace writes nowhere. It changes nothing the plan holds.
 ##
-## `beside_the_routes` is the row the roadblock phase places beside the day's routes before the dawn draw,
+## `beside_the_routes` is the row the roadblock phase places beside the day's routes before the walk's draws,
 ## so that one is close by wherever she reads the task's mark: day 13's roadblock
 ## (`_place_the_roadblocks()`). Null on every other day, which is then planned exactly as it would be
 ## without it.
@@ -688,7 +688,7 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	_count_what_is_left_uncovered(beside_the_routes, map, events, route, trace)
 	return events
 
-## `build_day` up to and including the dawn draw, added to `events`: the day's locations laid out
+## `build_day`'s dawn, up to handing the walk its draws, added to `events`: the day's locations laid out
 ## (`DayLocations`, handed on with the plan, `DayEvents.use_locations()`), the ambient rows, the
 ## scars, the masts, the roadblock phase (`beside_the_routes`, day 13's roadblock), the scripted
 ## rows, the one-shots, the spoilers in a park she used, the moments she is owed, and the draw the
@@ -755,7 +755,7 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	_place_the_roadblocks(beside_the_routes, day, base, map, events, ground, leave_alone,
 			corridor, doors, spec, locations, trace, reach)
 	# **The scripted rows' dawn phase**: each draws one of the day's open locations its ground
-	# takes and is assigned it (`ScriptedPhase`), offered through the dawn draw's own path and
+	# takes and is assigned it (`ScriptedPhase`), offered through a location draw's own path and
 	# judged by the day's rules, so the draw after passes over it. The one-shots are owed to her
 	# walk (`_place_one_shots()`).
 	var phase_ground := RuledLocationGround.new(day, base, map, events, corridor,
@@ -788,7 +788,7 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 ## row, null on every other day, which this leaves exactly as it was.
 ##
 ## **The phase places into the day's locations** (`locations`, laid out by `_plan_the_dawn()`
-## off `corridor` every day), before the dawn draw fills the rest (`_draw_the_locations()`).
+## off `corridor` every day), before the walk draws the rest (`_draw_the_locations()`).
 ##
 ## **What a section is offered, and what close by is, are the day's**: `RuledRoadblockGround`
 ## stands the roadblock where it fits in the section and asks today's placement rules of it
@@ -797,12 +797,12 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 ## (`DayReach.paths_over()`), the widest the task searches (`ResistanceDirector.ROADBLOCK_WIDER_REACH`).
 ##
 ## **What it does not promise.** Close by is measured over the ground as it stands when this runs:
-## the scripted rows, the one-shots, the spoilers and the dawn draw after it shut more.
+## the scripted rows, the one-shots, the spoilers and the walk's draws after it shut more.
 ## `_count_what_is_left_uncovered()` writes to the run log how many route tiles have
 ## none as the day finally stands.
 ##
-## **Outside the bags and on a stream of its own** (`RoadblockPhase.SALT`): the dawn draw after it
-## draws the day's other rows, the roadblock holding no marble in it, spaced against these as against
+## **Outside the bags and on a stream of its own** (`RoadblockPhase.SALT`): the walk's draws after it
+## draw the day's other rows, the roadblock holding no marble in it, spaced against these as against
 ## anything already down, and never over one.
 static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityMap,
 		events: DayEvents, ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
@@ -1291,8 +1291,8 @@ static func _is_a_wall_by_cost(def: EventDef) -> bool:
 ## - `_place_scars` prepends what the run has burnt down, and every scar is one more plan for
 ##   `StreetInvalidation.room_around` to reject a placement against — and a rejection is a re-roll.
 ##
-## Separate streams close the first completely and most of the second (each phase's salt, the dawn
-## draw's `LOCATIONS_SALT` among them).
+## Separate streams close the first completely and most of the second (each phase's salt, the view
+## bags' `LOCATIONS_SALT` among them).
 ## What is deliberately *not* closed: a scar that genuinely occupies the ground an event wanted still
 ## moves that event. That is the right answer — a fire that burnt a block down did happen, and the
 ## day should acknowledge it — and it is a handful of placements rather than the whole day.
@@ -2423,8 +2423,7 @@ static func _caps_of(rows: Dictionary, day: int, spec: DaySpec,
 		caps[id] = floori(most) + (1 if rng.randf() < most - floorf(most) else 0)
 	return caps
 
-## The phase salt the dawn draw shuffles each street's locations on, and the bags' streams start
-## from: apart from every other phase's.
+## The phase salt the view bags' streams start from: apart from every other phase's.
 const LOCATIONS_SALT := 6
 ## The phase salt the moments she is owed are drawn on.
 const MOMENTS_SALT := 7
@@ -2637,7 +2636,7 @@ static func _owe_the_moments(day: int, rng: RandomNumberGenerator, events: DayEv
 ## fixed count each day, where the fill's rolls made it vary from one city to the next.
 const MOMENTS_PER_DAY: Array[int] = [23, 26, 29, 25, 26, 28, 29, 28, 28, 30, 31, 32, 32, 32]
 
-## **The day's ground as the dawn draw asks it** (`LocationGround`): a row's event at a location,
+## **The day's ground as a location's draw asks it** (`LocationGround`): a row's event at a location,
 ## left out where the day's rules invalidate it, and the location's own weight.
 ##
 ## - **The event** stands on a tile of the location the row fits (`LocationFit`), tried in an order
@@ -2661,7 +2660,7 @@ class RuledLocationGround extends LocationGround:
 	var _fit: LocationFit
 	var _rules: StreetInvalidation
 	var _piles := {}
-	## The walk an offer is judged against once it has started, or null while dawn draws.
+	## The walk an offer is judged against once it has started, or null while the dawn plans.
 	var _walk: WalkEvents = null
 	## How many plans the walk had when `_walk_placed` and `_walk_around` were worked out.
 	var _walk_counted := -1
@@ -2733,7 +2732,7 @@ class RuledLocationGround extends LocationGround:
 		return _rules.room(candidate, role, tile, _walk_placed, _walk_around)
 
 	## How many plans the walk has, as what the rules read is worked out from: a candidate asked at
-	## one count and kept to another is asked again (`RuledOffer`). -1 while dawn draws.
+	## one count and kept to another is asked again (`RuledOffer`). -1 while the dawn plans.
 	func judged_at() -> int:
 		if _walk:
 			_catch_up_with_the_walk()
@@ -2935,8 +2934,8 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 ## (`WalkEvents.everything_but()`), seals and the wall included, as its own `already`, so it
 ## already asks every question `standing` exists to add here.
 ##
-## **Each candidate is asked of the day's rules** (`StreetInvalidation`), the same ones the dawn draw
-## asks, so they are stated once; the tries and the roomiest fallback are this function's own, kept
+## **Each candidate is asked of the day's rules** (`StreetInvalidation`), the same ones a location's
+## draw asks, so they are stated once; the tries and the roomiest fallback are this function's own, kept
 ## for its one caller, the walk's sitings (`WalkSiting`), until the walk's draws move it to the
 ## locations (the orchestrator's choice in placement step 3b).
 static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
@@ -2964,7 +2963,7 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# call: `WalkSiting`'s keeps them for one look, shared by every copy the look asks about. It is
 	# that caller's to drop whenever what a verdict reads changes — see `WalkSiting.begin_look()`.
 	var verdicts: Verdicts = kept if kept else Verdicts.new()
-	# The day's rules, the same ones the dawn draw asks (`StreetInvalidation`), so they are stated once.
+	# The day's rules, the same ones a location's draw asks (`StreetInvalidation`), so they are stated once.
 	var judge := StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false, null,
 			reach)
 	for _attempt in EVENT_PLACEMENT_TRIES:
@@ -3017,12 +3016,12 @@ class Verdicts extends RefCounted:
 		_kept.clear()
 
 ## The tiles an event of this kind may stand on today, worked out once and kept for the rest of
-## the day's planning.
+## the day.
 ##
 ## The answer is two passes over every tile of the right type, and a sidewalk is five thousand of
-## them — while the dawn draw asks the question for every row a location weighs, hundreds of times on
-## a day. Nothing it depends on can move inside one `build_day`: the grid was
-## repainted at dawn and the day's closures are already on the map.
+## them — while the walk's sitings ask the question again and again through the day. Nothing it
+## depends on moves within a day: the grid was repainted at dawn and the day's closures are already
+## on the map.
 ##
 ## The key is the *question* rather than the event, because almost every row in the catalogue asks
 ## the same one — a pavement, either side, for this role — so one list serves most of the day. The

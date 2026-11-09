@@ -15,28 +15,32 @@ by line; its numbered list says where the code differs. Nothing in that section 
 
 **Build:** what is left of the design, on the locations of every day (`DayLocations`,
 `StreetLocations`, `Location`, each location's view from `Corridor.view_of_ground()`), the bag per
-view and its draw (`ViewBag`, `LocationDraw`, asking `LocationGround`), the day's placement rules as
-the invalidation (`StreetRule`, one class per rule, composed by `StreetInvalidation`, with a
-location's own ground in `LocationFit`), the roadblock phase (`RoadblockPhase`), day 13's section
-swap, the escape's one draw a street, the scene recipes' locations, the fixed parts' and the
-scripted rows' dawn phases, and the one-shots owed to her walk that are built:
-- every other location drawn during the walk, the walk's sitings among them (`WalkSiting`: day 3's
-  fire, the poster crews, day 6's man shouting, day 7's route van, day 11's added mast, the dusk
-  fire). **Read as** (the orchestrator's reading): a rigged marble, such as the day-6 man shouting
-  due within the next two events after the mark (olive-koala 2), lands on the next location she
-  comes to on her way, so a player who turns at a junction still meets him; today a body sited ahead
-  of her is never moved, and she can turn away from it. A row she must meet whatever route she takes
-  is a rigged marble on the walk's draw, so it exists wherever she goes: the guarantee the covering
-  sites gave at dawn, things potentially in one of two places at the very least
-  (M50-the-city-points-somewhere), now on the walk. This step also decides whether a placement made
-  during the walk is asked the reach rule (`RouteReachRule`, no body cutting a route tile off from
-  home), which today is a dawn rule and a walk's siting is not asked.
+view and its draw (`ViewBag`, `LocationDraw`, asking `LocationGround`), the walk's draws of every
+location the dawn leaves open (`WalkDraw`), the day's placement rules as the invalidation
+(`StreetRule`, one class per rule, composed by `StreetInvalidation`, with a location's own ground in
+`LocationFit`), the roadblock phase (`RoadblockPhase`), day 13's section swap, the escape's one draw
+a street, the scene recipes' locations, the fixed parts' and the scripted rows' dawn phases, and the
+one-shots owed to her walk that are built:
+- the walk's sitings drawn on the walk's draw as rigged marbles (`WalkSiting`: day 3's fire, the
+  poster crews, day 6's man shouting, day 7's route van, day 11's added mast, the dusk fire). **Read
+  as** (the orchestrator's reading): a rigged marble, such as the day-6 man shouting due within the
+  next two events after the mark (olive-koala 2), lands on the next location she comes to on her
+  way, so a player who turns at a junction still meets him; today a body sited ahead of her is never
+  moved, and she can turn away from it. A row she must meet whatever route she takes is a rigged
+  marble on the walk's draw, so it exists wherever she goes: the guarantee the covering sites gave
+  at dawn, things potentially in one of two places at the very least
+  (M50-the-city-points-somewhere), now on the walk. A location the walk draws is asked the reach rule
+  (`RouteReachRule`, no body cutting a route tile off from home), so a rigged marble landing on one is
+  asked it too. **Read as** (the orchestrator's reading, open to the player's overturn): the dusk
+  fire lands on the nearest location beyond `DUSK_CLEAR_OF_HER` off her path, if that is measured to
+  match where today's `WalkSiting.off_her_path()` puts it.
 
   **It holds the roll's last caller.** `WalkSiting` is what is left calling
   `EventScheduler._best_of()`, which rolls tiles and takes the roomiest while asking the day's rules
   of each (the orchestrator's choice in step 3b, so its behaviour moves once, with its caller); this
-  step deletes the roll with it: `_best_of()`, `Verdicts`, `EVENT_PLACEMENT_TRIES` and whatever only
-  they used. `_copies_of()` stays with `ground_for()`: its zero for a wall on a route tile is the
+  step deletes the roll with it: `_best_of()`, `Verdicts`, `EVENT_PLACEMENT_TRIES`, the ground cache
+  as far as only the roll reads it (`ground_for()`'s `ground` dictionary), and whatever only they
+  used. `_copies_of()` stays with `ground_for()`: its zero for a wall on a route tile is the
   filter that keeps a wall's location ground off the routes, which `LocationFit` asks, and its
   weights are what the scripted rows' dawn phase weighs a location by (`ScriptedPhase`).
 

@@ -1,6 +1,6 @@
 class_name LocationGround
 extends RefCounted
-## **What the dawn draw asks of the day it places into** (`LocationDraw`): the event a row would be at
+## **What a location's draw asks of the day it places into** (`LocationDraw`): the event a row would be at
 ## a location, if the row fits there and the day's rules leave it valid, and how much the location
 ## weighs the row. The draw decides what each location holds; this answers for the day's ground, so
 ## the draw is handed it (dependency injection) and a test hands a stand-in holding the answers it

@@ -1,11 +1,13 @@
 extends RefCounted
-## `LocationDraw`, the day's open locations each drawn from its view's bag at dawn (inbox #1185):
+## `LocationDraw`, the day's open locations each drawn from its view's bag (inbox #1185):
 ## each open location drawn once and what it drew recorded, an event drawn stood in the day, a
 ## location taken, unavailable or already drawn left alone, a row the day's ground refuses at a
 ## location never drawn there, a row not drawn once it has stood as many times as the caps handed in say, and
-## each location's weight handed to its bag. Run with stand-ins for what it is handed: the day's
-## locations (`_Locations`, a handful built by hand), the ground (`_Ground`, whose refusals and
-## weights a check sets); the bags are real (`ViewBag`), of a few marbles each.
+## each location's weight handed to its bag, and a draw taken a step at a time holding nothing until
+## it ends, a row's offer taking steps of its own. Run with stand-ins for what it is handed: the day's
+## locations (`_Locations`, a handful built by hand), the ground (`_Ground`, whose refusals, weights
+## and offer steps a check sets); the bags are real (`ViewBag`), of a few marbles each. The walk
+## draws its locations nearest first (`WalkDraw`); here they are drawn in the order a check lists.
 
 func run(t) -> void:
 	_test_each_open_location_is_drawn_once(t)
@@ -13,16 +15,13 @@ func run(t) -> void:
 	_test_a_row_the_ground_refuses_is_never_drawn_there(t)
 	_test_a_row_at_its_cap_is_not_drawn(t)
 	_test_a_locations_weight_reaches_its_bag(t)
+	_test_a_draw_a_step_at_a_time_holds_nothing_until_it_ends(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 
 class _Locations extends DayLocations:
 	var order: Array[Location] = []
 	var recorded := {}
-
-	## Overrides DayLocations.drawing_order.
-	func drawing_order(_rng: RandomNumberGenerator) -> Array[Location]:
-		return order
 
 	## Overrides DayLocations.record.
 	func record(location: Location, plan: EventScheduler.Planned) -> void:
@@ -35,6 +34,12 @@ class _Ground extends LocationGround:
 	## Location -> its weight for every row.
 	var weights := {}
 	var stood: Array[EventScheduler.Planned] = []
+	## How many steps each offer takes, one when unset.
+	var offer_steps := 1
+
+	## Overrides LocationGround.begin_offer.
+	func begin_offer(def: EventDef, location: Location) -> LocationGround.Offer:
+		return _Offer.new(offer(def, location), offer_steps)
 
 	## Overrides LocationGround.offer.
 	func offer(def: EventDef, location: Location) -> EventScheduler.Planned:
@@ -50,6 +55,19 @@ class _Ground extends LocationGround:
 	func stand(plan: EventScheduler.Planned) -> void:
 		stood.append(plan)
 
+## An offer made on its `steps`th step.
+class _Offer extends LocationGround.Offer:
+	var _left := 0
+
+	func _init(made: EventScheduler.Planned, steps: int) -> void:
+		super(made)
+		_left = steps
+
+	## Overrides LocationGround.Offer.step.
+	func step() -> bool:
+		_left -= 1
+		return _left <= 0
+
 static func _location(x: int, available := true) -> Location:
 	var tiles := Rect2i(Vector2i(x * 4, 0), Vector2i(3, 2))
 	return Location.new(StreetNetwork.Segment.new(Vector2i(x, 0), true), 0, tiles,
@@ -61,18 +79,13 @@ static func _row(id: String, most := -1) -> EventDef:
 		def.max_per_day = most
 	return def
 
-static func _rng() -> RandomNumberGenerator:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 5
-	return rng
-
 ## The draw over `locations`, a bag of `fill` for the route view, `rows` the marbles' rows.
 static func _drawn(locations: _Locations, fill: Dictionary, rows: Dictionary, ground: _Ground,
 		caps := {}, seed_value := 1) -> Array[EventScheduler.Planned]:
 	var bags := {ON: ViewBag.new(fill, seed_value)}
 	var draw := LocationDraw.new(locations, bags, rows, ground, caps)
 	var placed: Array[EventScheduler.Planned] = []
-	for location in locations.drawing_order(_rng()):
+	for location in locations.order:
 		var plan := draw.draw(location)
 		if plan:
 			placed.append(plan)
@@ -164,3 +177,26 @@ func _test_a_locations_weight_reaches_its_bag(t) -> void:
 	t.check(heavy > 190, "a location weighing the cafe a thousand times over draws it (%d of 200)" % heavy)
 	t.check(plain > 60 and plain < 140, "one weighing it as the bag does, about half the time (%d of 200)"
 			% plain)
+
+## A bag of one cafe and a ground whose offers take three steps: the draw takes three steps, holding
+## nothing and standing nothing until `finish()`, which records and stands the cafe.
+func _test_a_draw_a_step_at_a_time_holds_nothing_until_it_ends(t) -> void:
+	var location := _location(0)
+	var locations := _Locations.new()
+	locations.order = [location] as Array[Location]
+	var ground := _Ground.new()
+	ground.offer_steps = 3
+	var draw := LocationDraw.new(locations, {ON: ViewBag.new({"cafe_tables": 1}, 1)},
+			{"cafe_tables": _row("cafe_tables")}, ground, {})
+	var asking := draw.begin(location)
+	var over: Array[bool] = []
+	for _i in 3:
+		over.append(asking.step())
+	t.check(over == ([false, false, true] as Array[bool]),
+			"an offer of three steps takes the draw three steps (%s)" % [over])
+	t.check(not location.is_drawn() and locations.recorded.is_empty() and ground.stood.is_empty(),
+			"and until it is finished the location holds nothing and nothing is stood")
+	var plan := draw.finish(asking)
+	t.check(plan != null and location.is_drawn() and locations.recorded[location] == plan
+			and ground.stood == ([plan] as Array[EventScheduler.Planned]),
+			"finished, the cafe is recorded at the location and stood")

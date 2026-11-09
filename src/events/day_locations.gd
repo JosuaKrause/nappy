@@ -39,16 +39,6 @@ static func lay_out(map: CityMap, corridor: Corridor) -> DayLocations:
 	day._grounds.append_array(_junction_boxes(map, corridor))
 	return day
 
-## **Every location in the order the dawn draw fills them**: street by street in the lattice's
-## order, each street's own order (`StreetLocations.drawing_order()`, shuffled on `rng`), then the
-## ground beyond the streets.
-func drawing_order(rng: RandomNumberGenerator) -> Array[Location]:
-	var order: Array[Location] = []
-	for key: Vector3i in _streets:
-		order.append_array((_streets[key] as StreetLocations).drawing_order(rng))
-	order.append_array(_grounds)
-	return order
-
 ## **Records the draw's `plan` at `location`**, or nothing there for the empty event. An event drawn
 ## into a section (it spans the street or drives its carriageway) takes the section's sidewalk
 ## locations with it, as a roadblock assigned there does.
@@ -56,6 +46,20 @@ func record(location: Location, plan: EventScheduler.Planned) -> void:
 	if plan and location.kind() == Location.Kind.SECTION and location.segment():
 		(_streets[location.segment().key()] as StreetLocations).take_section(location, plan)
 	location.record(plan)
+
+## **The location drawn before `location`, while it is still open**: a sidewalk's section, since an
+## event that takes its section (one that spans the street or drives its carriageway) takes the
+## sidewalks in it too, and is drawn before them. Null for any other location, or once the section
+## is drawn or taken.
+func drawn_before(location: Location) -> Location:
+	if location.kind() != Location.Kind.SIDEWALK or not location.segment():
+		return null
+	for section in (_streets[location.segment().key()] as StreetLocations).sections():
+		if location.shares_a_section_with(section):
+			if section.is_available() and not section.is_taken() and not section.is_drawn():
+				return section
+			return null
+	return null
 
 ## **Every location still open to a phase**: available and neither taken nor drawn, street by
 ## street in the lattice's order (each street's sidewalk locations, then its sections), then the

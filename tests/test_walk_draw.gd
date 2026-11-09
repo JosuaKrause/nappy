@@ -18,6 +18,8 @@ extends RefCounted
 ##   to nobody until its last ask, and the next is begun only then.
 ## - **A band draw that comes within `MUST_DRAW` is finished whole**: the draw under way is ended
 ##   that tick, not begun again.
+## - **A sidewalk is drawn after its section**: of every sidewalk a tick or `draw_within()` draws,
+##   its section was drawn before it; and a sidewalk whose section she can see waits for it.
 ## - **`draw_within()` draws all**: every location within the radius, and none beyond it.
 
 ## The draw: every draw takes `ASKS` asks; records each location it begins, and each it ends, and
@@ -72,6 +74,7 @@ func run(t) -> void:
 	_test_the_band_ahead_asks_once_a_tick(t)
 	_test_a_band_draw_that_comes_near_is_finished_whole(t)
 	_test_draw_within_draws_all_within_the_radius(t)
+	_test_a_sidewalk_is_drawn_after_its_section(t)
 
 ## Where she stands: the middle of a junction box in the middle of the bare city.
 func _junction() -> Vector2:
@@ -214,3 +217,48 @@ func _test_draw_within_draws_all_within_the_radius(t) -> void:
 ## The locations `draw` has drawn, which `DayLocations.open_locations()` no longer lists.
 func _drawn_of(draw: _Draw) -> Array[Location]:
 	return draw.asked
+
+func _test_a_sidewalk_is_drawn_after_its_section(t) -> void:
+	var locations := _laid()
+	var draw := _Draw.new(locations)
+	var walk := WalkDraw.new(locations, draw)
+	var at := _junction()
+	var nobody_sees := func(_rect: Rect2) -> bool: return false
+	for _tick in 40:
+		walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
+	walk.draw_within(at + Vector2(1600, 0), 600.0)
+	var sidewalks := 0
+	var before_its_section := 0
+	for i in draw.asked.size():
+		var sidewalk := draw.asked[i]
+		if sidewalk.kind() != Location.Kind.SIDEWALK:
+			continue
+		sidewalks += 1
+		var section := _section_of(sidewalk, draw.asked)
+		if section == null or draw.asked.find(section) > i:
+			before_its_section += 1
+	t.check(sidewalks > 20 and before_its_section == 0,
+			"every sidewalk drawn comes after its section (%d of %d before it)" % [before_its_section, sidewalks])
+
+	# A sidewalk whose section she can see waits for her to look away.
+	var seen := _laid()
+	var seen_draw := _Draw.new(seen)
+	var seen_walk := WalkDraw.new(seen, seen_draw)
+	var sections := {}
+	for location in seen.open_locations():
+		if location.kind() == Location.Kind.SECTION:
+			sections[_rect_of(location)] = true
+	var sees_the_sections := func(rect: Rect2) -> bool: return sections.has(rect)
+	seen_walk.draw_ahead(at, Vector2.RIGHT, sees_the_sections)
+	var sidewalks_drawn := 0
+	for location in seen_draw.asked:
+		if location.kind() == Location.Kind.SIDEWALK:
+			sidewalks_drawn += 1
+	t.check(sidewalks_drawn == 0, "with every section in her view, no sidewalk is drawn (%d)" % sidewalks_drawn)
+
+## The section `sidewalk` lies in, of `drawn`, or null.
+static func _section_of(sidewalk: Location, drawn: Array[Location]) -> Location:
+	for location in drawn:
+		if location.kind() == Location.Kind.SECTION and sidewalk.shares_a_section_with(location):
+			return location
+	return null

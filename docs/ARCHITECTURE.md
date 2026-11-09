@@ -219,10 +219,16 @@ src/
 	scripted_phase.gd     the dawn phase of a scripted row: one open location drawn, weighted by
 	                      the row's role, offered the row and assigned what it took
 	view_bag.gd           one view's bag: every row possible in the view as often as its weight, and
-	                      the empty event, drawn without putting back, only what a location accepts
-	location_draw.gd      the day's open locations drawn at dawn, each from its view's bag
-	location_ground.gd    what the dawn draw asks of the day: a row's event at a location if valid, the
-	                      location's own weight, standing one; the day's own is the scheduler's ruled ground
+	                      the empty event, drawn without putting back, only what a location accepts;
+	                      whole, or a step at a time
+	location_draw.gd      one open location drawn from its view's bag, whole or a step at a time,
+	                      holding nothing until its draw ends
+	walk_draw.gd          the day's open locations drawn as she walks: the nearest ahead out of her
+	                      view a step a tick, any near the stream radius whole, a sidewalk after its
+	                      section, none in her view
+	location_ground.gd    what a location's draw asks of the day: a row's event at a location if valid,
+	                      whole or a candidate at a time, the location's own weight, standing one; the
+	                      day's own is the scheduler's ruled ground
 	location_fit.gd       a location's own ground for a row: the tiles it takes that are the row's
 	                      ground on the day, and the candidate built on one
 	street_rule.gd        one of the day's placement rules, as the invalidation: whether a candidate
@@ -1149,6 +1155,10 @@ field with its value before and after (`tests/shared_state.gd`).
   process and kept, every caller handed its own `CityMap.copy()` of it, so the rigs that build the
   same seed's city again and again generate it once and nothing one suite does to its map reaches
   another. Its `source()` is what a booted suite hands `booted_main.gd`'s `boot()`.
+- `drawn_day.gd` — a helper the runner does not load: a planned day with every open location drawn
+  at once (`WalkDraw.draw_within()`), as a walk that went everywhere would leave it, for a suite that
+  asks the day's rules of the day's rows rather than of one walk. A suite about what she meets on a
+  walk, or about the run log, drives the walk instead.
 - `test_resistance_*.gd` — the resistance subquest, one suite per subject over the shared rig in
   `resistance_rig.gd` (a helper the runner does not load), which can build a test's city in a run of
   its own and read what the director put in the street from the street (`steps`, `traps`,
