@@ -397,7 +397,7 @@ const ENTRY_PICTURE_ROOM := 2.0 * Tuning.TILE_SIZE
 func _segment_is_shut(tile: Vector2i) -> bool:
 	if not _map.is_held_at(tile):
 		return false
-	var segment := _map.network.segment_containing(tile)
+	var segment := _map.street_network().segment_containing(tile)
 	if segment == null:
 		return strategy.shut_by_a_hold
 	var key := segment.key()

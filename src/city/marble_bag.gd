@@ -129,6 +129,10 @@ func draw() -> Variant:
 	drawn += 1
 	return answer
 
+## How many marbles have been drawn from this bag so far (see `drawn`).
+func draws_made() -> int:
+	return drawn
+
 ## Whether the draws so far have emptied every bag in the queue — the last draw took the last
 ## marble there was, and only a fresh fill of the ordinary set could give another. A bag marble whose
 ## inner bag has run empty is spent and leaves the outer bag for good (`draw()`), whatever the inner

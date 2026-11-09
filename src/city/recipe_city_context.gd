@@ -34,9 +34,9 @@ static func capture(map: CityMap) -> Dictionary:
 			data[field].append(box(rect))
 	for block: Vector2i in map.block_plans:
 		var plan: BlockPlan = map.block_plans[block]
-		var entry := {"at": pair(block), "steps": [], "forced_open_on": plan.forced_open_on,
+		var entry := {"at": pair(block), "steps": [], "forced_open_on": plan.forced_open_day(),
 				"layout": {}}
-		for step in plan.steps:
+		for step in plan.steps_in_order():
 			entry.steps.append([str(GameEnums.BlockPurpose.keys()[step.purpose]).to_lower(),
 					step.from_day, str(GameEnums.BlockCause.keys()[step.cause]).to_lower()])
 		var layout: BlockLayout = map.block_layouts.get(block)
@@ -232,9 +232,9 @@ static func restore(data: Dictionary) -> CityMap:
 	for block: Dictionary in data.blocks:
 		var at := point(block.at)
 		var plan := BlockPlan.new()
-		plan.forced_open_on = int(block.forced_open_on)
+		plan.force_open_on(int(block.forced_open_on))
 		for step: Array in block.steps:
-			plan.steps.append(BlockPlan.Step.new(GameEnums.BlockPurpose[str(step[0]).to_upper()],
+			plan.append_step(BlockPlan.Step.new(GameEnums.BlockPurpose[str(step[0]).to_upper()],
 					int(step[1]), GameEnums.BlockCause[str(step[2]).to_upper()]))
 		map.block_plans[at] = plan
 		var layout := BlockLayout.new()

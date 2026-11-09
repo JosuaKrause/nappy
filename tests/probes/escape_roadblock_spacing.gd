@@ -6,7 +6,7 @@ extends RefCounted
 ##     tools/test.sh probes/escape_roadblock_spacing.gd      (prints ESCAPE_SPACING lines)
 ##
 ## The plan is the escape's (`DayPlanner.plan_the_escape_city()`) on seeds 1 to 40, built the way `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) builds
-## it, and each band stands where `EventScheduler._stands_at()` puts it, which is where its guard
+## it, and each band stands where `EventScheduler.body_stands_at()` puts it, which is where its guard
 ## notices her from. "Under" counts the pairs nearer than the two guards' notices together
 ## (`EventDef.notice` each), the ground on which both can come for her at once.
 
@@ -38,8 +38,8 @@ func run(t) -> void:
 		var nearest_pair := ""
 		for i in bands.size():
 			for j in range(i + 1, bands.size()):
-				var gap := EventScheduler._stands_at(map, bands[i]).distance_to(
-						EventScheduler._stands_at(map, bands[j]))
+				var gap := EventScheduler.body_stands_at(map, bands[i]).distance_to(
+						EventScheduler.body_stands_at(map, bands[j]))
 				pairs += 1
 				if gap < bands[i].def.notice_within() + bands[j].def.notice_within():
 					under += 1

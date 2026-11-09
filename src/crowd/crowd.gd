@@ -295,7 +295,7 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 	# same seed would then find the same cars at different lights and diverge on the first frame.
 	# A day is reproducible or it is not, and this is not the place to spend that.
 	if _signals:
-		_signals.elapsed = 0.0
+		_signals.restart_cycle()
 	_field.use_city_view(city_view)
 	_field.use_uniform_walkers(uniform_walkers)
 	_field.centre_on(focus if focus != Vector2.INF else _map.tile_rect_to_world(

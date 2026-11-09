@@ -47,6 +47,14 @@ var elapsed := 0.0
 ## `has_lights()` is that question, and the answer is the same with the power off.
 var powered := true
 
+## Whether the lights have power (see `powered`).
+func is_powered() -> bool:
+	return powered
+
+## Takes the lights back to the top of their cycle, as `Crowd.start_day()` does with the traffic.
+func restart_cycle() -> void:
+	elapsed = 0.0
+
 var _map: CityMap
 
 func _init(map: CityMap) -> void:

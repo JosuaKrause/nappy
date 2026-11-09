@@ -21,7 +21,7 @@ const FINALE_BAG_EXPLOSIONS := 8
 const FINALE_BAG_ROADBLOCKS := 2
 ## The escape's marble bag, in the player's order of how many *(inbox #785 in minty-lemur:
 ## "frequency order is trucks > explosions > vans > barriers > empty")*: army trucks, off-screen
-## explosions, unmarked vans, roadblocks (the barriers) and empty marbles, where the slot that draws
+## explosions, unmarked vans, roadblocks (the barriers) and empty marbles, where the street that draws
 ## one stands nothing. **The two rows that take her have the fewest marbles the order allows**, vans
 ## 3 and roadblocks 2 over the one empty marble, and the trucks and explosions, which only wake the
 ## baby, make up the rest: a van's catch and a guard's end the section, and a van's field is most of
@@ -33,23 +33,6 @@ const FINALE_BAG_ROADBLOCKS := 2
 ## rules refuse is spent unmet.
 const FINALE_BAG_TRUCKS := 10
 const FINALE_BAG_VANS := 3
-## How many slots each open street of the escape's walk has, each filled by one draw from the
-## escape's marble bag below (`DaySpec.slots_per_street`, which the city section's spec takes from
-## here; `EventScheduler._fill_the_walk_from_the_bag()` draws them). **One keeps the section the
-## climax and every walk out of it walkable**, measured by walking the shortest walk
-## from the service exit to each exit through the plan's own events, on two sets of 24 seeds
-## (measured by `tests/probes/escape_winnable.gd` at f8172b7ccb7f, whose own stand-in walker and
-## meter produced `docs/evidence/winnable-escape-2026-10-19/`; the probe walks with the game's own
-## walker, `RouteRig`, and its numbers are not comparable with those):
-## at one slot a walk to an exit meets about eight dangers, one every eight seconds of walking, and
-## a plain walk gets out on 95 of 96 with the baby woken on 4; at two slots it meets about twelve,
-## the baby wakes on about one walk in five, and one walk in sixteen to one in nine ends in crying.
-## One slot also stands one roadblock a street at most, so a crossing is one band and one guard on
-## her side of it to lure *(inbox #771 in minty-lemur: "Luring away one guard (the challenge) is not
-## enough to make the obstacle survivable")*, which the notice spacing
-## (`EventScheduler._keeps_its_notice_to_itself()`) would hold at any slot count, since no street is
-## long enough for two bands' notices.
-const FINALE_SLOTS_PER_STREET := 1
 
 ## Where the walk is: the city, or the building the escape starts in.
 enum World { CITY, BUILDING }
@@ -128,9 +111,15 @@ enum Draw {
 	## its view's bag of the recurring rows (`EventScheduler._draw_the_locations()`) — every one of
 	## the fourteen days.
 	CATALOGUE,
-	## Every street of the walk draws `slots_per_street` marbles from one bag holding `bag`, and a
-	## marble stands one of its row (`bag_rows`), or nothing where it has no row — the escape's city,
-	## which knows every street she can take before she sets off.
+	## Every street of the walk draws one marble from one bag holding `bag`, and a marble stands one
+	## of its row (`bag_rows`) at the first of the street's locations it is valid at, the rest of the
+	## street empty, or nothing where it has no row — the escape's city, which knows every street she
+	## can take before she sets off. *(Inbox #1185's board answer: "one per street. fill empty in if
+	## any segment or location in the street has an event".)* One a street also keeps the section
+	## the climax and every walk out of it walkable (`tests/probes/escape_winnable.gd`), and stands one
+	## roadblock a street at most, so a crossing is one band and one guard on her side of it to lure
+	## *(inbox #771 in minty-lemur: "Luring away one guard (the challenge) is not enough to make the
+	## obstacle survivable")*.
 	BAG_PER_STREET,
 }
 var draw := Draw.CATALOGUE
@@ -139,10 +128,8 @@ var draw := Draw.CATALOGUE
 var bag := {}
 ## What each of `bag`'s marbles stands, a marble -> `EventDef`; `EMPTY_MARBLE` has none.
 var bag_rows := {}
-## How many marbles each street of the walk draws.
-var slots_per_street := 0
 ## Whether nothing dangerous may reach a calm area she has not used yet, and one stays usable
-## (`CalmAreas.unused_ground()`, `DayRepairs.ensure_one_usable_park()`): every day's rule. The
+## (`CalmAreas.unused_ground()`, `EventScheduler._calm_kept_clean()`): every day's rule. The
 ## escape is the climax and its chains pass a calm area at every stop, so the player kept it off
 ## there (minty-lemur #785).
 var keeps_unused_calm_clear := true
@@ -150,10 +137,10 @@ var keeps_unused_calm_clear := true
 ## (`EventScheduler.open_ground_for()`) or round the home block (`CityMap.held`). The
 ## escape keeps its own rule instead, by the player's word (minty-lemur #785): she sets off from the
 ## service exit, which opens onto one of those streets, and only the ground she stands on is
-## refused (`EventScheduler._clearance_around_her()`).
+## refused (`EventScheduler.clearance_around_her()`).
 var holds_the_home_streets := true
 ## Whether a row stands at most its `EventDef.max_per_day` copies: a day's caps, which the escape
-## does without (minty-lemur #785) — what stands there is the slots and the bag's draws.
+## does without (minty-lemur #785) — what stands there is one draw a street from its bag.
 var caps_per_day := true
 ## The share of its **wall**-role rows the day draws: every wall-role row's weight in the view bags
 ## is scaled by it (`EventScheduler.view_weight()`), while the empty marbles are set for every wall
@@ -166,12 +153,12 @@ var wall_row_share := 1.0
 ## The share `wall_row_share` is on a day the region wall stands, set by `for_day()`.
 const GATEHOUSE_DAY_WALL_ROW_SHARE := 0.5
 ## Whether no two waiting guards may notice her from the same ground
-## (`EventScheduler._keeps_its_notice_to_itself()`), so she deals with one at a time: the escape's.
+## (`OneNoticeRule._keeps_its_notice_to_itself()`), so she deals with one at a time: the escape's.
 var one_notice_at_a_time := false
 ## Whether everything standing on the walk leaves each street of it a sidewalk open and the walk
 ## joined, past every body and every standing lethal reach (`WalkGround`): the escape's, whose
 ## bodies stand on the one walk rather than off it. A day keeps its routes through its corridor's own
-## rules instead (`EventScheduler._judge()`).
+## rules instead (`StreetInvalidation`: a route's junctions, its walked sidewalk, a beat's opening).
 var keeps_the_walk_open := false
 
 # --------------------------------------------------------- how its streets are sealed ---
@@ -295,7 +282,6 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 		"abduction": EventCatalogue.by_id("abduction"),
 		"roadblock": EventCatalogue.escape_roadblock(),
 	}
-	spec.slots_per_street = FINALE_SLOTS_PER_STREET
 	spec.keeps_unused_calm_clear = false
 	spec.holds_the_home_streets = false
 	spec.caps_per_day = false

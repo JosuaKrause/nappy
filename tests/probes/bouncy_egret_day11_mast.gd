@@ -74,22 +74,22 @@ static func _where_a_mast_may_stand(city: City) -> Array:
 		if siting._tree.branches_on(tile).is_empty():
 			continue
 		var why := "PASS"
-		var candidate := EventScheduler._build_placement(def, map, tile, rng)
+		var candidate := EventScheduler.build_placement(def, map, tile, rng)
 		if not siting._a_mast_may_stand(tile):
 			why = "not a mast site"
 		elif not candidate:
 			why = "no placement"
-		elif not EventScheduler._leaves_the_route_junctions_open(candidate, map, siting._corridor,
+		elif not RouteJunctionsRule._leaves_the_route_junctions_open(candidate, map, siting._corridor,
 				siting.scenery_ground, none):
 			why = "junction, the mast alone"
-		elif not EventScheduler._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor, none):
+		elif not RouteSidewalkRule._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor, none):
 			why = "sidewalk, the mast alone"
-		elif not EventScheduler._leaves_the_route_junctions_open(candidate, map, siting._corridor,
+		elif not RouteJunctionsRule._leaves_the_route_junctions_open(candidate, map, siting._corridor,
 				siting.scenery_ground, plans):
 			why = "junction, with the day"
-		elif not EventScheduler._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor, plans):
+		elif not RouteSidewalkRule._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor, plans):
 			why = "sidewalk, with the day"
-		elif EventScheduler._reaches_any(candidate, siting._leave_alone):
+		elif UnusedCalmRule._reaches_any(candidate, siting._leave_alone):
 			why = "calm she has not used"
 		else:
 			passing.append(tile)

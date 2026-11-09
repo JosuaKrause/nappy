@@ -171,9 +171,8 @@ Three rules on it, in the order they matter:
    at `WALK_SPEED`, and the run starts a street's width off to one side — so she is outside its
    outer radius for the whole time it is telegraphing. That is the telegraph fairness contract
    holding for an event that arrives without warning, which is the only way one is allowed to.
-3. **It may not obstruct.** An `AHEAD_OF_PLAYER` event has no tile, so
-   `DayRepairs.ensure_the_city_is_still_walkable` never sees it and nothing checks that what it
-   blocks leaves a route to a park. `EventDef.validate()` refuses one that does. Emitting is fine,
+3. **It may not obstruct.** An `AHEAD_OF_PLAYER` event has no tile, so the day's route rules never
+   see it and nothing checks that what it blocks leaves a route to a park. `EventDef.validate()` refuses one that does. Emitting is fine,
    and so is being lethal — it is in front of her and gone in three seconds, so it can never seal a
    street.
 
@@ -1239,7 +1238,7 @@ not a strict rule. Those locations are then assigned, so no draw happens for the
   whose roadblock would stand within 256px of it is offered one, and the bias ranks the rest.
 - `RoadblockPhase` places them, in the sections of the day's locations (`DayLocations`). Every
   route-adjacent section whose roadblock today's rules leave valid
-  (`EventScheduler.JudgedRoadblockGround`) is in each draw, weighted by the bias; the stop is asked
+  (`EventScheduler.RuledRoadblockGround`) is in each draw, weighted by the bias; the stop is asked
   before each draw and never narrows it, so a section close by nothing new is drawn like any other
   while another could still cover a route tile.
 
@@ -1292,40 +1291,36 @@ The city's fixed parts have their own phases, above.
 
 Each item quotes the code on this branch.
 
-1. **The day's locations are drawn at dawn by today's placement rules, not by street rules.**
-   Every day lays its locations out and draws each from its view's bag (`LocationDraw`,
-   `EventScheduler._draw_the_locations()`), but whether a row is valid at a location is
-   `_judge()`'s answer for the whole day standing (`JudgedLocationGround.offer()`), the tile tried
-   in the location's own order, not a rule asked of the street's other draws.
+1. **Whether a row is valid at a location is asked of the whole day standing, not of the street's
+   own draws.** Every day lays its locations out and draws each from its view's bag (`LocationDraw`,
+   `EventScheduler._draw_the_locations()`). Today's placement rules are the invalidation, one class
+   each (`StreetRule`: the calm she has not used, a door's clear ground, a route's junctions, its
+   walked sidewalk and a pacing beat's opening, with the escape's one notice at a time and its walk
+   kept open), composed per walk (`StreetInvalidation`) with a location's own ground
+   (`LocationFit`), but each is asked against everything the day has placed within its reach, on
+   any street (fork 3 of the placement proposal, the orchestrator's reading: today's rules reach
+   across a junction), and the spacing still ranks a cramped tile rather than refusing it: a
+   location takes the first tile with room all round, else the roomiest a rule leaves valid
+   (`RuledLocationGround.offer()`).
    - A row comes up and is refused before the next is drawn: `ViewBag.draw()` asks a marble's row
      only once it comes up. It draws exactly as weighing only the valid rows from the start would.
-2. **The rest of the day's placement still rolls and judges a spot.** The scripted rows and the
-   one-shots go through `_place_one()` and `_best_of()`, the spoilers in a park she used through
-   their own grid, and the fixed parts' phases (masts, scars, ambient rows) stand where their
-   planners put them, none of them assigned to a location.
+2. **The rest of the day's placement still rolls a spot.** The scripted rows, the one-shots, the
+   walk's sitings and the scene recipes go through `_place_one()` and `_best_of()`, which roll
+   tiles and take the roomiest; each candidate is asked of the same rules (`StreetInvalidation`).
+   The spoilers in a park she used go through their own grid and the run's scars stand where they
+   happened, each left out where it would close a route; the masts and the ambient rows stand where
+   their planners put them. None of these is assigned to a location.
 3. **Not every bag is a view's.**
    - **The walk's route bag** (`EventDirector._route`, a `MarbleBag`) hands out the places the day
      owes her walk, each sited ahead of her on the branch she walks (`WalkSiting.ahead_of()`).
-   - **The escape's bag per street** (`_fill_the_walk_from_the_bag()`): each street of the walk
-     draws `DaySpec.slots_per_street` marbles from one bag, empty marbles among them, and a drawn
-     row still goes through `_best_of()` and can be refused.
-4. **The route is kept open by rules checked after a spot is drawn, not by construction.**
-   - `_judge()` refuses a spot that would close the route:
-     `_leaves_the_route_junctions_open()`, `_leaves_the_routes_sidewalk_open()` and
-     `_leaves_a_pacing_beats_opening()`.
-   - After the day is placed, `DayRepairs.ensure_the_city_is_still_walkable()` removes rows until
-     a route exists again.
-   - They are asked of the whole day standing, not of the street's own draws (item 1).
-   - In the design, these same rules decide which events make which others invalid on a street:
-     `_judge()`'s route-opening checks above, and the rest of what it asks (the unused calm,
-     `_reaches_any()`; a door's clearance, `_clear_of_the_doors()`; the spacing and the fields kept
-     clear, `_room_around()`). They become the invalidation applied when a street's other
-     locations draw, rather than a refusal after a spot is rolled.
-   - Nothing narrows a street's other draws once one of its events is drawn.
-5. **The roadblock phase judges a section's roadblock with today's placement rules**
-   (`JudgedRoadblockGround.offer()` asks `_judge()`, and takes only a tile with room all round), which
-   is the invalidation item 4 describes, asked of the whole day rather than of a street's other
-   draws.
+   - **The escape's bag** (`_draw_the_walk()`): each street of the walk draws one marble from one
+     bag, empty marbles among them, and a drawn row is offered at the street's locations under the
+     walk's rules; a row no location takes is spent unmet rather than kept in the bag.
+4. **The roadblock phase judges a section's roadblock with today's placement rules**
+   (`RuledRoadblockGround.offer()` asks `StreetInvalidation`, and takes only a tile with room all
+   round), asked of the whole day rather than of a street's other draws.
+5. **Nothing narrows a street's other draws once one of its events is drawn** but the rules asked of
+   the whole day (item 1); in the design, the rules are applied as a street's other locations draw.
 6. **Most events are placed at dawn, not drawn during the walk.**
    - The dawn draw fills every location in the morning.
    - During the walk, only these are sited ahead of her:
@@ -1338,7 +1333,7 @@ Each item quotes the code on this branch.
    design has the view's bag alone decide; the weights are what holds the refactor at today's mix
    while the rules are still today's (item 1), and are fitted again when the rules change.
 8. **A row's own ground is still asked tile by tile inside the view.** A wall's own ground refuses
-   only the cells a route runs along (`Corridor.carries_a_route()`, in `_ground_for()`), so on a
+   only the cells a route runs along (`Corridor.carries_a_route()`, in `EventScheduler.ground_for()`), so on a
    route street a wall stands only on the sidewalk across from the route, and the ground beyond the
    streets is told its view by the grid's own depth (`Corridor.view_of_ground()`).
 
@@ -1367,7 +1362,7 @@ places on each day comes out as the share measured, the route's above all, since
 route is what the route decision is about). A later day's shares are higher, so late days
 are denser as well as nastier. A row's weight in a view is its own `weight` times what the view is
 to its role (`EventScheduler.view_weight()`), and each location scales it by its own weight
-(`JudgedLocationGround.scale()`): a precinct's four times over, the street between two strands of
+(`RuledLocationGround.scale()`): a precinct's four times over, the street between two strands of
 the routes six times over for a costly wall, an alley beside a sack pile five times over for the
 mouse, which stands on the alley's tiles beside the pile where it can. *(The player: "yes" to a weight per location that scales its view bag's weights, issue
 #1185.)*
@@ -1388,9 +1383,9 @@ route decision faces. *(The
 player: "yes" to a group of locations per kind of ground, and to a weight per location scaling its
 view's bag; issue #1185.)*
 
-The share is **not** the count: `DayRepairs.ensure_one_usable_park` strips whatever reaches the
-calmest block and `DayRepairs.ensure_the_city_is_still_walkable` drops obstructions that would seal
-the city. Measure what a day *places*, over several seeds. The moments she is owed take no location:
+The share is **not** the count: the day's rules leave out whatever would close a route or reach
+calm ground nothing may reach (`StreetInvalidation`), so a location can draw empty where its view's
+share says a row. Measure what a day *places*, over several seeds. The moments she is owed take no location:
 the day owes her `EventScheduler.MOMENTS_PER_DAY` of them, as many as the day bought before the bags,
 so a day's `plan` line reads as *n sited, m ahead*.
 
@@ -1422,7 +1417,7 @@ standing for something else, or is a tree, so nothing about the role table below
 
 **And one refusal is about what a candidate would *do* rather than about the ground it stands on**,
 so it is asked of the placement instead of the pool: a row may not take a crossing the day's routes
-depend on. `EventScheduler._leaves_the_route_junctions_open` asks, before the row is accepted,
+depend on. `RouteJunctionsRule._leaves_the_route_junctions_open` asks, before the row is accepted,
 whether the junction box still carries a walk joining the route streets that meet there — with this
 row standing and everything already down standing too — and re-rolls where it does not. A junction
 is the only place a line may change pavement, so this is the one refusal a street's far side cannot
@@ -1430,7 +1425,7 @@ answer; see `docs/CITY.md`, "A route's junctions stay clear", for the rule and f
 row that are outside it.
 
 **The stretch between two junctions is asked the same way, of the sidewalk the route is walked
-along.** `EventScheduler._leaves_the_routes_sidewalk_open` refuses a counted **standing** row whose
+along.** `RouteSidewalkRule._leaves_the_routes_sidewalk_open` refuses a counted **standing** row whose
 reach, together with everything already down, would leave no walk from one of that street's
 junctions to the other along that band. The far side of a street is the answer to a van; nothing
 answers a van on the side the route is drawn down. See `docs/CITY.md`, "Nothing takes the sidewalk a
@@ -1443,12 +1438,12 @@ kinds: a **junction box**, the ground every crosswalk in the city is painted on,
 the zebra while he is at the far end of his loop; or a **side route** — ground off the street
 opening off the sidewalk's own side, an alley mouth, a park or square edge, a courtyard — which she
 leaves by without crossing anything. A beat with neither leaves her nothing but walking through him.
-`EventScheduler._a_pacing_beat_walls_a_sidewalk` is that question, asked of the candidate in the
+`StreetInvalidation._a_pacing_beat_walls_a_sidewalk` is that question, asked of the candidate in the
 placement loop, and a beat that fails it is a wall and may not stand on the sidewalk a route walks.
 
 **And a pacing row's opening is ground.** `EventDef.paces` means a beat rather than a journey, so
 what it denies is the ground the loop never leaves free and the rest is passed by waiting — which
-makes the one end it is away from worth protecting. `EventScheduler._leaves_a_pacing_beats_opening`
+makes the one end it is away from worth protecting. `PacingOpeningRule._leaves_a_pacing_beats_opening`
 asks the rows reaching a route street that carries a pacing row whether a walk along that street
 survives all of them together, and refuses the placement that would close it, in both directions:
 the pacing row that would land in a closed street and the standing row that would close an opening.
@@ -1468,7 +1463,7 @@ by whether the tile is in a precinct and by what the day is placing the thing **
 **role**, in the vocabulary `docs/CITY.md` fixes — against the day's **corridor**, which is the ways
 from the doorstep to the calm areas still worth reaching.
 
-`EventScheduler._role_for` answers it off the def and nothing else has to be written per row:
+`EventScheduler.role_for` answers it off the def and nothing else has to be written per row:
 
 | kind of row | role | where it may go |
 | --- | --- | --- |
@@ -1530,7 +1525,7 @@ the line past a man walking one is the same at every phase of his loop — but t
 never a wider sidewalk. It is somewhere his beat passes that she can **leave** by: a junction box,
 where she takes the zebra while he is at the far end of his loop, or a side route off the sidewalk's
 own side. So the same numbers are friction where the beat passes one and a wall where it passes
-neither, and `EventScheduler._a_pacing_beat_walls_a_sidewalk` asks it of the candidate inside the
+neither, and `StreetInvalidation._a_pacing_beat_walls_a_sidewalk` asks it of the candidate inside the
 placement loop, where the beat exists. A junction box is where every crosswalk in the city is
 painted, so *crosses a crosswalk* and *reaches a junction* are one question — and it is the crossing
 this whole design counts on, since a mid-block crossing exists in play and is never planned around.
@@ -1539,7 +1534,7 @@ a closure, a calm zone's absorbed corridor or the map's own margin cuts it short
 everywhere, a wall where the street gave it no way out.
 
 **A pacing wall is offered its ground at friction's weights and takes only the wall's refusal**, and
-that is the one place the two halves of a role come apart: `_ground_for` builds a pool per role
+that is the one place the two halves of a role come apart: `EventScheduler.ground_for()` builds a pool per role
 before any tile is rolled, and a beat does not exist until one is — so the tile it lands on was
 offered as friction's and the corridor's own sidewalk is then refused it. What it lands on in
 practice is the far side of a route street, which is where the rim weight would have sent it
@@ -1744,7 +1739,7 @@ Two exceptions, both load-bearing. **Siblings space against each other**, becaus
 of one another would be a real overlap on whichever one fires. And **nothing lethal may be planned
 into an offer**: if it does resolve there, she meets a lethal field and a set piece at once, which
 is exactly the sum the telegraph contract refuses. A siting made from her walk is held to the same
-rule from the other side — `EventScheduler._room_around` measures the candidate against everything
+rule from the other side — `StreetInvalidation.room_around` measures the candidate against everything
 the day has already placed, so a tile inside a lethal field is not one it may take.
 
 The three counts this splits apart are worth keeping straight, because two tests depend on it.
@@ -1837,7 +1832,7 @@ exactly as it always has.
 Three things about that shape are the design rather than the implementation:
 
 - **It is a field, not a switch set per placement.** The same rule the blocking role follows —
-  `EventScheduler._role_for` derives a role from the def, so no two placements of one row can
+  `EventScheduler.role_for` derives a role from the def, so no two placements of one row can
   disagree about what it is. Heat that could be set by hand would be a difficulty dial hidden inside
   the placement code, where nothing could see it.
 - **Every shape is validated on load, not just the cold one.** Progress is a bounded integer, so the
@@ -1981,7 +1976,7 @@ Two things a low cap does quietly, both of which have to belong to somebody once
 
 - **Separation.** `EVENT_SPACING_SAME` (256px, a block) between two of a kind and
   `EVENT_SPACING_ANY` (64px) between any two at all are rules of the day's ground
-  (`JudgedLocationGround.offer()`): the first bends to the roomiest tile of a location, the second
+  (`RuledLocationGround.offer()`): the first bends to the roomiest tile of a location, the second
   never does.
 - **Keeping a lethal field uncluttered.** See the telegraph contract below.
 
@@ -2017,7 +2012,7 @@ neighbourhood's own rather than a patrol's.
 | `loose_dog` | RECURRING (`TOWARD_PLAYER`) | 1 | A dog whose owner has dropped the leash, sited on her own pavement when she gets close and running straight down it toward her. The counterpart to `dog_walker` and the reason both exist — that one is a **span** you decide whether to cross the street to avoid, this one is a **thing coming at you** that you cannot out-walk. 132px/s, faster than she can walk, but it does not telegraph its coming (see "What telegraphs"): no badge and no in-world telegraph to validate. Not lethal, which is what separates it from `charging_dog`: this one is answered by getting out of the way, not by running. Intensity 39, so that a real meeting lands as a startle against the fixed baseline. **The measure is a pass**, she and the dog going different ways at `Tuning.WALK_SPEED`; what it nets at each sideways offset is its line in [COSTS.md](COSTS.md). `TOWARD_PLAYER` never earns a `WALL` role, so nothing here trades against `EventScheduler.WALL_WORTH_OF_COST`. 39 is the running rule's ceiling: past it, running past the dog costs less than walking past it, which nothing but `car_accident` is allowed to do — so **it is loud while it passes her because its telegraph is spent before it is met, not because it is louder**. It does not telegraph its coming (see "What telegraphs"): no badge and no warning; it is created at once just off screen down her sidewalk at its own intensity, on the point of its beat that has it reach her at its loudest. |
 | `market_stall` | RECURRING | 1 | The second thing on day 1 she has to walk round, and it exists because one obstacle repeated eighteen times is a rule rather than a decision. A **wall** by passability, like `cafe_tables`: 28px of stall denying 58px of a 64px sidewalk is the row the reading was written from. Wider, louder, and on the other side of pleasant than `cafe_tables`: a café you squeeze past is a nuisance, a market is a crowd. A real source too, derived from the body the same way `cafe_tables` is — 38px/64px, the same pair, since both bodies share the same 24px rounding. |
 | `leaf_blower` | RECURRING | 1 | A man tidying a park, and a field with two parts: away from him it is the busker's exactly, so a park with a few of them spaced across it stays awake; inside `core_radius` — a pavement's own width — it is a wall. One of them closes one side of a street and never the street. `core_intensity` 35: this is the row that anchors the wall side of `EventScheduler.WALL_WORTH_OF_COST`, as `dog_walker` anchors the friction side, so its walk-through cost sits over that line with a margin ([COSTS.md](COSTS.md) has both). |
-| `pigeon_flock` | RECURRING | 1 | **A patch of pavement that goes up when she walks into it.** `MAP`-placed, so the birds are pecking about from the moment the day streams them in at `EVENT_STREAM_RADIUS` — a flock she can see from down the street is one she can price and route around, which is the whole difference between a place and a moment. `EventDef.notice` 150px, inside its own 168px field and more than twice the 62px wheel, is the wait: unclocked and `NoticeSpec.quiet` (a fraction of its rate while they peck), then a flock on the ground about to go, then up, then *away*. **What ends the wait is her arrival, not the clock**: `EventNoticeRun._flush_the_flock_if_she_is_among_them()` puts them up the moment she is inside `flock_spread` plus her own body, because the birds are grounded for the whole telegraph and a clock cannot know when she reached them — under one alone they went up behind her. `telegraph_time` stays the backstop for a flock she came near and never reached, which is why it is not shortened. **Its `intensity` is set by walking a real instance rather than read off the page**: flushing at the birds charges the burst while she is among them instead of behind her, which multiplied the line through the middle several times over, and going up on time was the request rather than costing more — so the rate came down to put that line back in proportion, above a loose dog's pass and well under half the meter. The rig has to put the instance in the tree, or `EventFlock.build()` never runs and `contribution_at()` answers off the def's modelled ring instead of eleven birds that fly away from her. The rim pays for the cut: a flock skirted 80px off the middle never fires the flush and so felt the rate and nothing else. It is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one — the only row in the game that is more than one source, and the one row exempt from a body for it. `EventDef.Role.SCENERY` is its role, so `EventScheduler._role_for` answers `NONE` for it rather than the `WALL` its cost would otherwise earn — a flock is scenery, not a block, and it lands on a route corridor exactly as it lands anywhere else. It does not telegraph its coming (see "What telegraphs"): no badge; its in-world telegraph still meets the fairness contract. |
+| `pigeon_flock` | RECURRING | 1 | **A patch of pavement that goes up when she walks into it.** `MAP`-placed, so the birds are pecking about from the moment the day streams them in at `EVENT_STREAM_RADIUS` — a flock she can see from down the street is one she can price and route around, which is the whole difference between a place and a moment. `EventDef.notice` 150px, inside its own 168px field and more than twice the 62px wheel, is the wait: unclocked and `NoticeSpec.quiet` (a fraction of its rate while they peck), then a flock on the ground about to go, then up, then *away*. **What ends the wait is her arrival, not the clock**: `EventNoticeRun._flush_the_flock_if_she_is_among_them()` puts them up the moment she is inside `flock_spread` plus her own body, because the birds are grounded for the whole telegraph and a clock cannot know when she reached them — under one alone they went up behind her. `telegraph_time` stays the backstop for a flock she came near and never reached, which is why it is not shortened. **Its `intensity` is set by walking a real instance rather than read off the page**: flushing at the birds charges the burst while she is among them instead of behind her, which multiplied the line through the middle several times over, and going up on time was the request rather than costing more — so the rate came down to put that line back in proportion, above a loose dog's pass and well under half the meter. The rig has to put the instance in the tree, or `EventFlock.build()` never runs and `contribution_at()` answers off the def's modelled ring instead of eleven birds that fly away from her. The rim pays for the cut: a flock skirted 80px off the middle never fires the flush and so felt the rate and nothing else. It is **eleven birds**, each with its own heading, height and wingbeat, and each an emitter, so the middle of a flock stacks four or five fields and the rim stacks one — the only row in the game that is more than one source, and the one row exempt from a body for it. `EventDef.Role.SCENERY` is its role, so `EventScheduler.role_for` answers `NONE` for it rather than the `WALL` its cost would otherwise earn — a flock is scenery, not a block, and it lands on a route corridor exactly as it lands anywhere else. It does not telegraph its coming (see "What telegraphs"): no badge; its in-world telegraph still meets the fairness contract. |
 | `cyclist` **`hard_fail`** | RECURRING (`TOWARD_PLAYER`) | 2 | **The first thing in the game that can end your day.** A kid on a bike on the pavement she is walking, bell going, coming toward her, down her own side of the road — sited when she gets close rather than on a street the day chose at dawn, so she answers it with a route decision (cross, or turn) instead of finding out too late it was never on her way. Everything about it is ordinary, which is the point: act I does not become sinister, it becomes a real street. His warning is the screen-edge badge, up alone for a second with nothing in the world before he is created just off screen and lethal from his first frame, then the 0.57s he takes to reach her walking into him from the closest he is created ("Telegraph contract"). Its lethal `inner_radius` is 33px, widened from 26 so the far lane of her own pavement no longer clears it by construction — the same overturn `chatting_mother`'s `detain_radius` went through first. |
 | `ice_cream_van` | RECURRING | 2 | The `busker` argument one size up: nothing about it is threatening, it is simply interesting. The widest ordinary radius in act I. At the kerb, and solid at 24px: a thing children cross a road to reach rather than a thing standing in one. A **wall** by passability — 189px of charging disc leaves no lane of a sidewalk free — so the street it is on is one she walks the far side of. |
 | `reversing_lorry` **`hard_fail`** | RECURRING | 3 | Act I's second lethal thing, teaching the opposite lesson to the cyclist. That one comes *at* you and the answer is to get off the pavement; this one is **stationary and the danger is behind it**, so the answer is not to walk into the gap it is backing into — which you have to look at the world to know. The beeper is the telegraph. It stands `AGAINST_THE_BUILDING`, turned to face out of the frontage, solid at 28px inside the 46 that ends the day. |
@@ -2031,7 +2026,7 @@ neighbourhood's own rather than a patrol's.
 | `police_patrol` | RECURRING | 4 | Mobile, unhurried, along a corridor. Its field is light — the danger is that you start planning around it. It is a car: a solid body she walks round whether it drives or stands, and lethal only in front of it while it drives its route, with her on the carriageway, after a car's warning (see "Solid things are solid"). **Past `EventDef.HEAT_INVESTIGATES_LEVEL` it investigates** (`EventDef.investigates()`, from its `HuntSpec`; [merry-stork](playtests/2026-10-10-merry-stork.md): "an investigating police car should not leave the street. it should stop if close to her and a policeman should emerge and pursue her"): it drives its route until she is within `EventDef.HEAT_INVESTIGATE_WITHIN` (150px) of it along a clear line, then stops where it is on its route — never inside a junction box: seen from inside one, it drives on until its body is clear and stops there — and the day's pursuer on foot gets out at its door on her side (`EventsAhead.let_the_officers_out()`, "The pursuer on foot" below); it stands, quiet and striking nobody, while he is out. His catch is a stop that costs her 40 points and never ends the day by itself ("The heat" above); once he has stopped her, given up or run out his chase he walks back and gets in, and the car drives on along its route the way it was going, standing first while she is in its way. The car itself never pursues: it goes where its route goes, which is the carriageway wherever the route is drawn on it. In acts III and IV, extra copies of this row are also what the return leg owes — see "The return owes her patrols" above. It does not telegraph its coming (see "What telegraphs"): no badge; its in-world telegraph still meets the fairness contract. |
 | `poster_crew` | RECURRING | 4 | Static, weak, and solid at 11px. Cosmetic dread; it is here so the walls change. **Sited from her walk** (`EventDef.on_her_way`, `OnHerWay.at_a_front`): rolled and placed at dawn like any recurring row, then handed to her walk and sited one crew at a time on the branch she is walking, in front of a blank ground-floor cell and facing it, where it pastes its wall while she can see it — see "The crews paste the walls she passes". At dawn it stands `AGAINST_THE_BUILDING`, the way `reversing_lorry` stands, on a north-south street with a real building on the far side, and that placement is what spends the day's stream exactly as before. Centred (`ANY`, the default) it would leave under 28px on each side of the band and be a wall by physical fit; pinned at the frontage, it spans 5-27px of the band and leaves 37px to the kerb, so it stays friction. A sidewalk row only: a square has no frontage lane for a pinned body to stand in, and `poster_crew_square` below is the square's own crew. |
 | `poster_crew_square` | RECURRING | 4 | The same crew on a square, pasting onto a free-standing advertising column — every number is `poster_crew`'s, because it is the same event on the ground a row pinned against a building cannot stand on. It takes no pavement side, so `EventInstance` centres its 11px body on the tile it is given, and its picture carries the column beside the worker. The density is the sidewalk row's own, split rather than added: about one poster crew in a hundred used to land on a square, which is the square share of the ground the roll draws from, so this row carries a hundredth of that row's weight and is a rare sight by measurement. |
-| `loudspeaker` | SCRIPTED | 5 | **A mast on a street, with a field.** Six of them (`Tuning.MAST_COUNT`), sited once by `MastSites.compute()` — junction corners, commercial squares, the main road, each snapped to her own sidewalk or a square's paving — and placed fresh every day from `Tuning.MAST_FIRST_DAY` by `EventScheduler._place_masts()`, bypassing the ordinary roll: `scripted_day` stays 0, the seal pictures' own sentinel. `MastSites` also refuses a site near where a region door could ever stand (`Tuning.CHECKPOINT_EVENT_GAP` of any boundary segment's own door position — the boundary is fixed at generation, so the refusal costs no day-to-day variety); a site is skipped for the day rather than planted over them for the narrower case a day's own closures, region wall or checkpoints still catch — an alley door among them, or held ground — rare, since a closure is one street's own width against the whole city. Same field shape as `homeless_yeller` (inner 45px, outer 210px), so walking past a speaking mast on its own sidewalk costs what walking past him does — [COSTS.md](COSTS.md): both 40.0 to walk straight through. `pulse_period` 22s, `telegraph_time` 3s, repeating: `EventLook.mast_is_telegraphing_now()` reads the mast's own `age`, which is `EventStreaming.broadcast_clock` rather than a clock of its own, so every mast telegraphs and speaks in the same phase. Solid at `EventCatalogue.MAST_BODY` (6px), a pole rather than a body to edge past. **A mast she silenced stays silenced**: day 11's task sends her to the foot of one live mast, and reaching it silences it through `EventManager.silence_mast()` and leaves an `EventScheduler.SILENCED_MAST` scar at its foot, which `_place_masts()` reads on every later day to plan that mast already silenced — pole and horns standing, lamp out, no field. **Day 11 can put up one more**: when no live mast stands where her paths reach inside a `ResistanceDirector.NEAR_THE_MARK` (576px) circle round where she read the mark, `EventManager.queue_a_mast()` generates a seventh, as the next event the day's scheduler places (the player: "if there is a mast queued up that will be the next event to be generated"), with every rule a planned row is placed under except the three that keep a line along her routes (`_room_around()`'s spacing included, so never inside a lethal row's field; the route junctions, the route sidewalks and a pacing beat's opening are not asked of any mast, the fixed ones and the two day 11 adds alike, because a mast's field reaches the junction box at the end of its street — inbox #684 in [coral-lark](playtests/2026-10-11-coral-lark.md), "Exempt like fixed masts"), among ground where one of those paths first reaches its edge, out of her view, that a site would be offered on; the task sends her there (the player: "Now just add a new mast close by"). It is silenced, counted by day 14's sabotage and scarred like the others, and `_place_masts()` stands it again, silenced, from its scar on every later day; one never silenced is not planned again. |
+| `loudspeaker` | SCRIPTED | 5 | **A mast on a street, with a field.** Six of them (`Tuning.MAST_COUNT`), sited once by `MastSites.compute()` — junction corners, commercial squares, the main road, each snapped to her own sidewalk or a square's paving — and placed fresh every day from `Tuning.MAST_FIRST_DAY` by `EventScheduler._place_masts()`, bypassing the ordinary roll: `scripted_day` stays 0, the seal pictures' own sentinel. `MastSites` also refuses a site near where a region door could ever stand (`Tuning.CHECKPOINT_EVENT_GAP` of any boundary segment's own door position — the boundary is fixed at generation, so the refusal costs no day-to-day variety); a site is skipped for the day rather than planted over them for the narrower case a day's own closures, region wall or checkpoints still catch — an alley door among them, or held ground — rare, since a closure is one street's own width against the whole city. Same field shape as `homeless_yeller` (inner 45px, outer 210px), so walking past a speaking mast on its own sidewalk costs what walking past him does — [COSTS.md](COSTS.md): both 40.0 to walk straight through. `pulse_period` 22s, `telegraph_time` 3s, repeating: `EventLook.mast_is_telegraphing_now()` reads the mast's own `age`, which is `EventStreaming.broadcast_clock` rather than a clock of its own, so every mast telegraphs and speaks in the same phase. Solid at `EventCatalogue.MAST_BODY` (6px), a pole rather than a body to edge past. **A mast she silenced stays silenced**: day 11's task sends her to the foot of one live mast, and reaching it silences it through `EventManager.silence_mast()` and leaves an `EventScheduler.SILENCED_MAST` scar at its foot, which `_place_masts()` reads on every later day to plan that mast already silenced — pole and horns standing, lamp out, no field. **Day 11 can put up one more**: when no live mast stands where her paths reach inside a `ResistanceDirector.NEAR_THE_MARK` (576px) circle round where she read the mark, `EventManager.queue_a_mast()` generates a seventh, as the next event the day's scheduler places (the player: "if there is a mast queued up that will be the next event to be generated"), with every rule a planned row is placed under except the three that keep a line along her routes (`StreetInvalidation.room_around()`'s spacing included, so never inside a lethal row's field; the route junctions, the route sidewalks and a pacing beat's opening are not asked of any mast, the fixed ones and the two day 11 adds alike, because a mast's field reaches the junction box at the end of its street — inbox #684 in [coral-lark](playtests/2026-10-11-coral-lark.md), "Exempt like fixed masts"), among ground where one of those paths first reaches its edge, out of her view, that a site would be offered on; the task sends her there (the player: "Now just add a new mast close by"). It is silenced, counted by day 14's sabotage and scarred like the others, and `_place_masts()` stands it again, silenced, from its scar on every later day; one never silenced is not planned again. |
 | `curfew_announce` | SCRIPTED | 6 | What the masts carry on `EventScheduler.CURFEW_ANNOUNCE_DAY` instead of their ordinary broadcast — placed by `_place_masts()` at every mast site alongside that day's `loudspeaker` plan, `Look.NONE` so the mast's own picture (the pole, the lamp, the arcs) is what is seen. Same field shape as the ordinary broadcast, stronger (intensity 30 against 20), brief and fading (`intensity_ramp` 0.2, `duration` 26s). The mechanical bite is in `Tuning.day_length`, which shortens every day from 6 onward; this is the moment you are told. |
 | `roadblock` **`heat_response HUNTS`** | RECURRING | 7 | **Silent, and physically closes a street**: the band has no field strength (`intensity` 0), manned or not, since the guard is the danger and not the concrete *(inbox #788 in minty-lemur)*; its 60px body (`obstructs_radius` 60) is drawn as one continuous barrier (`roadblock_segment.svg` broadside on, `roadblock_segment_vertical.svg` end-on down a north-south column, `roadblock_end.svg` at the ends) rather than a row of blocks. The first event that takes a route away rather than making it expensive. Named `roadblock` rather than `checkpoint` because the region wall's own door structure — a gatehouse, a gate and guards you can pass at a price — took that word; the two rows mean opposite things about whether a street can be crossed. **Two guards stand at it from the moment it is placed** (the eight-view `guard_standing_*` family), cold or hot, one on each side of the band and never over it: each clear of the barrier's picture and facing out from it (`EventFootprints.guard_post_offset()`); cold they are drawings with no field, body or cost of their own. Below `EventDef.HEAT_HUNTS_LEVEL` that is all it ever does; at or above it **the guard on her side** is what sets off, from his own post, while the other stays at his, blocked by the band — noticing her within 180px of the band's centre, once his raised hand would stand in her view, standing at his post square-on with one hand raised (`guard_alert_*`, `PursuitSpec.stands`) for 2.0s (`PursuitSpec.warns_for`) while she stays within that radius — back at the band and posted once she is outside it, and lunging if she is still within it once that has run — and then coming at 130px/s in `guard_lunging_*`, turned to face where he is heading. The barrier he leaves stays drawn and stays solid where it was built (`PursuitSpec.leaves_its_body`), so the street stays shut behind him; the catch is `PursuitSpec.catch_reach` 28px measured from **him**, a man's reach rather than a barricade's, and the band itself takes nobody. |
 | `checkpoint_hut` | SCRIPTED | 7 | `RegionPlanner`'s own structure, not a catalogue roll: two stand at every open region-boundary street crossing, one on each pavement, doorway facing the carriageway. Detains for `EventCatalogue.CHECKPOINT_DETAIN_SECONDS` (2s) as she comes within `EventCatalogue.CHECKPOINT_DETAIN_REACH` (48px) of its own solid edge — 80px from its centre, inside `inner_radius` 84px — and `redetains`, so the same gatehouse tolls her again on a later approach from either side. A small `intensity` (4.0) over a tight 84/98px band is "a bit of excitement" on top of the flat `Tuning.CHAT_EXCITEMENT` the detention charges, and it is deliberately not what makes the row expensive: it is one of the three **detainers** exempt from "nothing is cheaper to walk through than around", priced by its capture instead. Low because a door is several bodies and a hold earns no decay — see "Checkpoints" and the `barrier_structure` note above. |
@@ -2053,7 +2048,7 @@ neighbourhood's own rather than a patrol's.
 | --- | --- | --- | --- |
 | `military_convoy` | RECURRING | 13 | Drives its street and on out of it, leaving nothing: nothing a convoy does during the walk closes a street. From day 13, the morning the army arrives, rather than with act IV: day 12 is the parks. **Day 13's column is this row too**: `ResistanceHappenings` sends `Tuning.COLUMN_TRUCKS` (3) of them, `Tuning.COLUMN_SPACING` (128px) apart in one lane of the main road, toward the point level with her once she is within `ResistanceHappenings.COLUMN_WITHIN` (480px) of it across, or at `ResistanceHappenings.COLUMN_BY` (100s) into the day wherever she is — warned of first, its badge up alone for a second, the row's 4.43s telegraph cut to `Tuning.WARNING_ALONE_MAX` on the copy, pointing up the lane level with her, and the trucks then created just off screen up the road (or at the map's edge where the road runs out first) with their telegraph spent. Every truck drives on to the map's edge and leaves nothing. |
 | `barricade` | — | — | Never scheduled directly by the ordinary catalogue roll — `scripted_day` 0 never equals a real day. It is placed fresh, without a scar, every morning from act IV onward as a **hard seal** on a street off the day's route tree (`SealPlanner`, `obstructs_radius` 62 repeated across the street's whole width so nothing gets past it, the outer two flush with the street's edges so no cart stands over the buildings either side) — see docs/CITY.md, "Sealing the tree". |
-| `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. **Solid at 55px**, and `_draw_protest` draws two ranks across exactly that width — the clearest case in the catalogue of the picture deciding a gameplay number, because a body may not claim ground the drawing does not. Under its own `inner_radius` on purpose — the loudest part of a protest is something you stand in rather than bump into. **A wide field at a moderate rate loses more of its price to the walking decay than any other row**, netted off as that is over the whole of a long crossing, which is why its intensity is set high against `EventScheduler.WALL_WORTH_OF_COST` rather than comfortably under it: a little more and `walk_through_cost()` crosses that line, `_role_for` calls it a `WALL` and it is pulled off every route the day carries — and a protest is where a resistance task sends her. [COSTS.md](COSTS.md) has where it actually sits. **A rank points at the resistance's own objective**, one of eight `protester_point_*` poses picked by whichever 45° bearing from the protest to the objective is nearest, whenever today's resistance step has a position and is not a chalk mark. *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for that. but the other tasks are not as easy and need pointing.")* A mark step, or no step at all, draws the plain rank. `max_per_day` is 12: a protest obstructs nothing off its own tile and pursues nothing, so raising it never competes with anything else's own cap. |
+| `protest` | RECURRING | 12 | `intensity_ramp` 1.9 over 150s: a protest you could have walked past when you saw it is not one you can walk past two minutes later. **Solid at 55px**, and `_draw_protest` draws two ranks across exactly that width — the clearest case in the catalogue of the picture deciding a gameplay number, because a body may not claim ground the drawing does not. Under its own `inner_radius` on purpose — the loudest part of a protest is something you stand in rather than bump into. **A wide field at a moderate rate loses more of its price to the walking decay than any other row**, netted off as that is over the whole of a long crossing, which is why its intensity is set high against `EventScheduler.WALL_WORTH_OF_COST` rather than comfortably under it: a little more and `walk_through_cost()` crosses that line, `EventScheduler.role_for()` calls it a `WALL` and it is pulled off every route the day carries — and a protest is where a resistance task sends her. [COSTS.md](COSTS.md) has where it actually sits. **A rank points at the resistance's own objective**, one of eight `protester_point_*` poses picked by whichever 45° bearing from the protest to the objective is nearest, whenever today's resistance step has a position and is not a chalk mark. *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for that. but the other tasks are not as easy and need pointing.")* A mark step, or no step at all, draws the plain rank. `max_per_day` is 12: a protest obstructs nothing off its own tile and pursues nothing, so raising it never competes with anything else's own cap. |
 | `firefight` | SCRIPTED | 13 | The worst thing in the catalogue. Extreme, `hard_fail`, 6.5s telegraph, and it shuts a junction. Solid at the width of its cover. Its picture is **people** doing this, not a street on fire — that is a burning building's picture, and the two rows are not the same event. |
 
 The day-14 sabotage is not a catalogue row: it is run logic (`run.resistance.sabotage_done`,
@@ -2150,24 +2145,27 @@ barrier he was standing at stays where it is and stays shut.
 "nobody ever asked for all four events on *every* street. that doesn't make any sense and cannot
 feasibly work at all. that is why the density is so high that it's impossible to get anywhere. yes,
 a marble bag is absolutely needed with empty events (nothing happening) as well. we need a fair
-mix"; "frequency order is trucks > explosions > vans > barriers > empty".)* Every open street of
-the walk has `DaySpec.FINALE_SLOTS_PER_STREET` slots (1), and each slot draws one marble from a bag
-for the whole escape (`EventScheduler._street_bag()`): `DaySpec.FINALE_BAG_TRUCKS` army trucks (10),
+mix"; "frequency order is trucks > explosions > vans > barriers > empty". Of how many a street
+holds, inbox #1185's board answer: "one per street. fill empty in if any segment or location in the
+street has an event".)* Every open street of the walk draws one marble from a bag for the whole
+escape (`EventScheduler._street_bag()`): `DaySpec.FINALE_BAG_TRUCKS` army trucks (10),
 `FINALE_BAG_EXPLOSIONS` explosions (8), `FINALE_BAG_VANS` vans (3), `FINALE_BAG_ROADBLOCKS`
-roadblocks (2) and `FINALE_BAG_EMPTY` empty marbles (1). A row's marble puts one of that row on the
-street through every placement rule below; an empty marble leaves the slot with nothing; a row's
-marble that finds no ground the rules accept is spent unmet, so a refused danger never moves on to
-the next street. The bag has its own stream off the plan's seed, so a lost section replans the same
+roadblocks (2) and `FINALE_BAG_EMPTY` empty marbles (1). A row's marble is offered at the street's
+locations in the street's own order, under every placement rule below, and the first location it
+stands at takes it, the rest of the street empty; an empty marble leaves the street with nothing; a
+row's marble no location takes is spent unmet, so a refused danger never moves on to the next street
+(the builder's reading, open to correction: kept rather than leaving the marble in the bag, which
+would raise the escape's density by about the third of its streets that stand nothing). The bag has its own stream off the plan's seed, so a lost section replans the same
 streets. The two rows that take her, the van and the roadblock's guard, have the fewest marbles the
 player's order allows, and the counts were chosen by walking the shortest walk from the service
 exit to each exit through the plan's own events on two sets of 24 seeds: a walk meets about three
 trucks, three explosions, one van and one roadblock, and a plain walk gets out on 95 of 96.
 `tests/probes/escape_winnable.gd` walks the game's own plan with the game's own walker (`RouteRig`,
 `--start-escape city --route tunnel`) to measure it again. **The bag is a draw of the day's own
-scheduler**: the city section's `DaySpec` holds the bag, the slots and the rows
-(`DaySpec.Draw.BAG_PER_STREET`, `bag`, `slots_per_street`, `bag_rows`), `EventScheduler.build_day()`
-draws them (`_fill_the_walk_from_the_bag()`) along the streets of the walk `FinalePlanner` hands it
-(`RouteSource`), and every candidate goes through the same judge a day's does (`_best_of()`).
+scheduler**: the city section's `DaySpec` holds the bag and the rows (`DaySpec.Draw.BAG_PER_STREET`,
+`bag`, `bag_rows`), `EventScheduler.build_day()` draws them (`_draw_the_walk()`) along the streets of
+the walk `FinalePlanner` hands it (`RouteSource`), onto each street's locations (`StreetLocations`),
+and every candidate is asked of the same rules a day's is (`StreetInvalidation`).
 
 **The escape's roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way
 that luring away the guard is enough. Right now there are for guards and the player adds
@@ -2175,9 +2173,8 @@ excitement by just being close. Luring away one guard (the challenge) is not eno
 obstacle survivable")* Four things make that true:
 
 - **One roadblock a street**, so a crossing is one band and the one guard on her side of it: a
-  street has one slot (`DaySpec.FINALE_SLOTS_PER_STREET`), and the notice spacing below keeps two
-  bands off one street at any slot count, since a street is one block, 256px, and two notices need
-  360px. Two bands on a street would stand a couple of tiles apart on the same sidewalk, and luring
+  street draws one marble and holds one of the escape's rows at most, and the notice spacing below
+  keeps two bands off neighbouring streets' ends as well, since two notices need 360px. Two bands on a street would stand a couple of tiles apart on the same sidewalk, and luring
   the first one's guard off would leave the second one's posted in her way.
 - **The band costs nothing, ever** *(inbox #788 in minty-lemur, asked whether the band should cost nothing in
   the escape manned or not: "No cost at all, ever"; then "band costing nothing should also apply
@@ -2195,7 +2192,7 @@ obstacle survivable")* Four things make that true:
 - **One guard at a time, wherever the bands stand.** No two of the escape's roadblocks stand where
   both guards can notice her: their notices, `EventDef.notice` round each band, never overlap, so
   two bands are at least twice the guard's 180px radius, 360px, apart on one street or on two
-  (`EventScheduler._keeps_its_notice_to_itself()`, a refusal at placement, which the city section's
+  (`OneNoticeRule._keeps_its_notice_to_itself()`, a refusal at placement, which the city section's
   spec turns on: `DaySpec.one_notice_at_a_time`). *(Inbox #771 in minty-lemur: "two
   roadblocks are right next to each other and the second guard is invisible (hidden) until it
   already charges")* Dealing with a band happens inside its guard's notice, so she meets one band
@@ -2220,22 +2217,19 @@ street; `tests/probes/escape_roadblock_cost.gd` prints what each walk costs over
 `tests/probes/escape_roadblock_spacing.gd` how many bands a plan stands and how near the nearest
 two are.
 
-**The escape rolls its ground per street rather than per city, on the day's own ground** —
-`EventScheduler.street_ground` takes the day's answer for the row (`open_ground_for()`) on one
-segment's own rect, since the chains already say which streets exist for it and there is no
-corridor to weight against. *(Inbox #785 in minty-lemur: "does the escape use the same placement rules as the
+**The escape offers its rows per street rather than per city, on the day's own ground** — a row
+fits a location of the street on the day's answer for the row (`LocationFit`, over
+`open_ground_for()`), since the chains already say which streets exist for it. *(Inbox #785 in minty-lemur: "does the escape use the same placement rules as the
 regular game? it doesn't seem like it does. it should, though.")* So every refusal a day makes of a
 tile holds here — a closed tile, a held street, the home block, **a standing street tree's ground**
 (`docs/CITY.md`, "Street trees"), the side of the sidewalk a row wants, a corner for a row with a
-spread, the power station's front — and the precinct weight with them; all but the street the
+spread, the power station's front; all but the street the
 home's front door opens onto, a door the escape never sets off from (`DaySpec.holds_the_home_streets`
 off; `docs/CITY.md`, "The escape"). What is sited after dawn reads the same setting off the walk's
 spec (`EventScheduler.WalkSiting.holds_the_home_streets`, handed over by `EventsAhead`), so a row
 placed while she walks keeps the rule the walk was planned under.
-Each candidate then meets the day's own spacing (`_room_around()`) and the escape's own refusals
-below. The answers are a function of the city alone, so a restart of the city section reads the
-ones the first plan worked out (`EventScheduler.KeptGround`, held by `DayPlanner`) unless the city's tiles,
-closures, held streets or trees have changed since.
+Each candidate then meets the day's own spacing (`StreetInvalidation.room_around()`) and the escape's own refusals
+below, and is never offered the ground she starts on.
 
 **Three of a day's rules are not the escape's, each by the player's word** *(inbox #785 in minty-lemur, asked
 which of them the escape keeps: "Don't apply" for the calm, "Keep the escape's rules" for the home's
@@ -2254,7 +2248,7 @@ streets and the caps)*, each a setting the city section's spec turns off
   stands what its slots draw from its bag (above).
 
 **And the ground she is put down on is refused to everything that could already be reaching her**
-(`EventScheduler._clearance_around_her`), because *"the spawning shouldn't be a check. the pathing
+(`EventScheduler.clearance_around_her`), because *"the spawning shouldn't be a check. the pathing
 should start from the position. then obstacles can never happen."* Two reaches, and the wider one
 wins: a row with a body keeps her body plus its body clear, and a `hard_fail` row keeps its whole
 **`outer_radius`** clear — the radius `EventManager` raises the doubled exclamation mark over,
@@ -2303,16 +2297,22 @@ the route you memorised on day 2 stops existing.
 
 From Act II several events physically close streets, and from Act IV the seals close every
 street off the day's routes. Any combination that seals the home off from every park makes the day
-unwinnable in a way the player cannot see coming, so after planning, obstructions are
-dropped — widest first — until a route exists again. Hard-fail events count as walls for
-this check: an abduction in progress is not something you walk through to reach the park
-behind it.
+unwinnable in a way the player cannot see coming, so **no body is placed that would cut home off
+from the day's routes**, and the routes run to the calm. Every obstructing body a day's dawn places,
+the run's scars and the park spoilers included, is asked `RouteReachRule` against everything
+already down, the seals and the region wall's bodies included: one whose disc would leave a route
+tile home reached without it unreached is refused where it would stand. Hard-fail events count as
+walls for this rule: an abduction in progress is not something you walk through to reach the park
+behind it. Nothing is dropped after planning, so the day is never illegal on the way. A walk's
+sitings (the dusk fire, day 7's route van, day 11's added mast and the rest) are not asked it: the
+rule is the dawn's, and whether the walk's draws ask it is decided
+with them. The escape's draw is not asked it either: its plan has no route tree, and its walk is
+kept open by its own rule (`WalkOpenRule`).
 
 **On the three days the resistance sends her to one narrow place** — day 9's region door, day
-12's swing, the power station's front door on the last night — the same pass also keeps a route to one tile of that place,
-counting the day's seals and region wall as standing (it never drops those). The day is planned
-so that route exists before this pass ever runs; the pass is the last line for the catalogue's
-own bodies. `docs/CITY.md`, "Guarantees", has the whole of it.
+12's swing, the power station's front door on the last night — the day's routes run to that place
+too, so the same rule keeps one tile of it reached. `docs/CITY.md`, "Guarantees", has the whole of
+it.
 
 ## The emission model
 
@@ -2527,7 +2527,7 @@ not placed. `tests/test_events.gd` asserts it across a whole run.
 Two cases are exempt, and both are about the field having no fixed place to keep clear of
 anything. **Off the day's corridor**, where the whole point of the ground is that she should not
 be on it, so an overlapping lethal field there is the city saying so rather than a fairness
-failure — `EventScheduler._role_for` gives such a placement the `WALL` role, and
+failure — `EventScheduler.role_for` gives such a placement the `WALL` role, and
 `Planned.keeps_its_field_clear()` reads that role directly. **A pursuer**, because it follows her rather
 than sitting on a tile the day chose, so there is no ground for the rule to be stated about —
 `charging_dog`, `alley_robbery`, a hunting `roadblock` and the men a hunting van lets out all carry a
@@ -3041,11 +3041,11 @@ way:
 
 ## Keeping a day winnable
 
-One rule runs while a day is planned and two run after it:
+Three rules run while a day is planned, and none after it:
 
 - **Nothing is placed near calm she has not used this act.** The calm ground of every area she has
-  not settled in is refused to every row at every location (`_judge()`, through the dawn draw's
-  ground), so the events that would have landed there go somewhere else. Ambient events and scars are exempt — a playground is a permanent, free feature of the map
+  not settled in is refused to every row at every location (`UnusedCalmRule`, through the dawn
+  draw's ground), so the events that would have landed there go somewhere else. Ambient events and scars are exempt — a playground is a permanent, free feature of the map
   rather than something today placed there, and a scar is something that already burnt.
 
   **It is a refusal rather than a repair**, which is the rule about checking before accepting: a day
@@ -3053,10 +3053,12 @@ One rule runs while a day is planned and two run after it:
   leaves the guarantee running only on the days a weaker one has already failed. Refusing the ground
   keeps every unvisited area clean on 64 planned days of 64 *and* raises the density, because
   nothing is placed to be thrown away.
-- **At least one park is left unspoiled.** The last line rather than the rule, and it has work to do
-  in exactly one case: she has settled in every calm area there is, so the placement rule protects
-  nothing. Whichever park has the fewest events reaching it has them removed — and where there is a
-  choice, the park it protects is **not** the one she used yesterday.
+- **At least one park is left unspoiled.** This has work to do in exactly one case: she has settled
+  in every calm area there is, so the placement rule protects nothing. Before the spoilers are
+  placed, the area she used longest ago that nothing spoils yet, or else the one the fewest rows
+  spoil, joins the ground nothing may reach (`EventScheduler._calm_kept_clean()`), so the spoilers
+  pass over it — and where there is a choice, the park it keeps is **not** the one she used
+  yesterday.
 - **A park stays reachable on foot.** See "Keeping a late day walkable".
 
 ### The city remembers where she went

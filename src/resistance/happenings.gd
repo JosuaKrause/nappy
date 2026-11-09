@@ -308,10 +308,10 @@ static func _market_candidates(map: CityMap, state: CityState) -> Array[Vector2i
 	for y in Tuning.CITY_BLOCKS.y:
 		for x in Tuning.CITY_BLOCKS.x:
 			var block := Vector2i(x, y)
-			if not map.block_plans.has(block):
+			if not map.has_plan_for(block):
 				continue
-			if state.purpose_of(map.block_plans, block) == GameEnums.BlockPurpose.COMMERCIAL \
-					and state.next_purpose(map.block_plans, block) \
+			if state.purpose_of(map.plans_by_block(), block) == GameEnums.BlockPurpose.COMMERCIAL \
+					and state.next_purpose(map.plans_by_block(), block) \
 							== GameEnums.BlockPurpose.BOARDED_UP:
 				found.append(block)
 	return found
@@ -351,7 +351,7 @@ func _market_out_of_her_sight(her: Vector2, candidates: Array[Vector2i]) -> Vect
 ## buildings shown shuttered, and the stalls at its frontage gone from the day's plan.
 func board_up(block: Vector2i) -> bool:
 	var state := _run.attempt_spend.block_arcs()
-	if not state or not state.advance_now(_map.block_plans, block, _day,
+	if not state or not state.advance_now(_map.plans_by_block(), block, _day,
 			GameEnums.BlockPurpose.BOARDED_UP, GameEnums.BlockCause.SCHEDULED):
 		return false
 	_market_owed = false
@@ -393,7 +393,7 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 		return false
 	var park := CityGenerator.swing_park(_map)
 	var state := _run.attempt_spend.block_arcs()
-	if park.x < 0 or not state or not state.take(_map.block_plans, park, _day):
+	if park.x < 0 or not state or not state.take(_map.plans_by_block(), park, _day):
 		return false
 	_map.recompute_calm(state)
 	if cordon:
@@ -421,7 +421,7 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 ## **It leaves nothing**: every truck drives on down the road and off the map, so nothing the column
 ## does closes a street (inbox #1183).
 func _maybe_the_column(her: Vector2) -> void:
-	if her == Vector2.INF or not _events or not _streets or _map.main_road < 0:
+	if her == Vector2.INF or not _events or not _streets or _map.main_road_corridor() < 0:
 		return
 	var near := absf(her.x - spine_x()) <= COLUMN_WITHIN
 	if not (near and _walked >= EventDirector.ON_HER_WAY_AFTER) and _elapsed < COLUMN_BY:
@@ -432,7 +432,7 @@ func _maybe_the_column(her: Vector2) -> void:
 
 ## The main road's middle, across it.
 func spine_x() -> float:
-	return (float(_map.main_road * CityMap.period()) + Tuning.STREET_WIDTH * 0.5) \
+	return (float(_map.main_road_corridor() * CityMap.period()) + Tuning.STREET_WIDTH * 0.5) \
 			* Tuning.TILE_SIZE
 
 ## Puts up the column's warning, coming down the main road toward the point level with `her` from
@@ -440,7 +440,7 @@ func spine_x() -> float:
 ## row. `column` holds the trucks, front first, once they have arrived.
 func _send_the_column(her: Vector2) -> PendingWarning:
 	var def := EventCatalogue.by_id("military_convoy")
-	if not def or _map.main_road < 0:
+	if not def or _map.main_road_corridor() < 0:
 		return null
 	var going := 1.0 if _rng.randf() < 0.5 else -1.0
 	var top := Tuning.TILE_SIZE * 0.5
@@ -460,7 +460,7 @@ func _send_the_column(her: Vector2) -> PendingWarning:
 			var behind_here := her.y - top if going > 0.0 else bottom - her.y
 			if behind_here < (bottom - top) - behind_here:
 				going = -going
-	var lane_x := CrowdLanes.lane_centre(_map.main_road, CrowdLanes.road_lane(true, going))
+	var lane_x := CrowdLanes.lane_centre(_map.main_road_corridor(), CrowdLanes.road_lane(true, going))
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.in_its_lane(def, at, lane_x, going, top, bottom,
 				_events.visible_view())

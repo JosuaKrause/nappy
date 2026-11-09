@@ -750,24 +750,23 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 
 ## **A catalogue row's placement sees a seal or the region wall already reaching a route
 ## junction.** Before this, `EventScheduler.build_day`'s own three candidate-loop rules
-## (`_leaves_the_route_junctions_open` among them) only ever asked a new candidate about *other
+## (`RouteJunctionsRule` among them) only ever asked a new candidate about *other
 ## catalogue rows*: `SealPlanner.plan_day` and `RegionPlanner.plan_day` both run before
 ## `build_day`, so their bodies were never in the `already` array the rules check against, and a
 ## seal or the wall reaching a crossing from one street out (`docs/DECISIONS.md`, M129, "the four
 ## rules": *"the seals `SealPlanner` places before the scheduler runs reach crossings the rules
 ## never see, the same question one step out"*) was invisible to the very rule written to keep a
 ## route junction open. `build_day`'s `standing` argument threads the day's seals and the region
-## wall's own bodies into the three rules — not into `_room_around`'s spacing, which stays asked
+## wall's own bodies into the three rules — not into `StreetInvalidation.room_around()`'s spacing, which stays asked
 ## of the catalogue's own rows alone — see `EventScheduler._best_of`'s own doc.
 ##
 ## **What this proves.** Once `build_day` is handed `standing` the way `EventManager.start_day`
 ## already does, every row **it places** leaves every route junction it reaches still open
 ## beside the day's seals and the region wall, asked the exact question
-## `_leaves_the_route_junctions_open` asks at placement time, over the day's whole final set
+## `RouteJunctionsRule` asks at placement time, over the day's whole final set
 ## rather than only each row's own insertion moment: sound because nothing after insertion ever
-## *adds* obstruction at a junction (`DayRepairs.ensure_the_city_is_still_walkable`/
-## `DayRepairs.ensure_one_usable_park` only ever remove, the **city** skill's one monotonic
-## exception), so a junction the rule kept open at every insertion is open in the finished set
+## *adds* obstruction at a junction (no pass removes or moves a placed row, and every body any
+## phase places is asked the same route rules), so a junction the rule kept open at every insertion is open in the finished set
 ## too, however the finished set is re-asked.
 ##
 ## **Checked against `main`'s own scheduler, not only asserted here.** With `standing` accepted by
@@ -834,12 +833,11 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 			var no_one_shots: Array[String] = []
 			var no_scars: Array[Dictionary] = []
 			var no_calm: Array[Vector2i] = []
-			var no_target: Array[Vector2i] = []
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("events:%d:%d" % [map.seed_used, day])
 			var rows := EventScheduler.build_day(DaySpec.for_day(day), events_rng, map,
 					CalmAreas.of(map, no_calm), no_one_shots, no_scars, tree, 0,
-					PackedVector2Array(), no_target, standing).placements()
+					PackedVector2Array(), standing).placements()
 
 			var corridor := Corridor.of(tree)
 			# The background every row is checked against: the day's own final set beside the

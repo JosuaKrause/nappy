@@ -79,7 +79,7 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t) -> void:
 			var layout: BlockLayout = map.block_layouts[block]
 			var lot := CityMap.block_rect(block)
 			var holes: Array[Rect2i] = []
-			for hole in [layout.square, layout.alley, layout.passage]:
+			for hole in [layout.square, layout.alley, layout.passage_rect()]:
 				if BlockLayout.has(hole):
 					holes.append(hole)
 			if BlockLayout.has(layout.open_rect):
@@ -298,8 +298,8 @@ func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t) -> void:
 ##
 ## The failure this is really guarding against is a zone that is four calm blocks that happen to
 ## be adjacent. That would count as four calm areas, so the closure planner would think a day
-## with two ways into one park had four; `DayRepairs.ensure_one_usable_park` would protect a
-## quarter of it; and M24 would spoil the corner she settled in and call the job done.
+## with two ways into one park had four; the calm area dawn keeps clean (`EventScheduler._calm_kept_clean`)
+## would be a quarter of it; and M24 would spoil the corner she settled in and call the job done.
 ##
 ## **The shape is a rolled one since M52 and the count is not.** Every zone's footprint has to be a
 ## shape the catalogue offers, and at least one of them has to be the square — that is M21's own
@@ -400,7 +400,7 @@ func _check_apartment_complex(t, map: CityMap, anchor: Vector2i, seed_value: int
 	t.check(layout.open_rect.size.x == CityGenerator.APARTMENT_COURT_TILES,
 			"seed %d: complex %s has a court %d tiles across, not %d"
 			% [seed_value, anchor, layout.open_rect.size.x, CityGenerator.APARTMENT_COURT_TILES])
-	t.check(BlockLayout.has(layout.passage),
+	t.check(layout.has_passage(),
 			"seed %d: complex %s has an archway into it" % [seed_value, anchor])
 
 	var lot := map.lot_rect(anchor)
@@ -410,7 +410,7 @@ func _check_apartment_complex(t, map: CityMap, anchor: Vector2i, seed_value: int
 	for tile in map.rect_tiles(lot):
 		if map.is_walkable(tile):
 			walkable += 1
-	var inside := layout.open_rect.get_area() + layout.passage.get_area()
+	var inside := layout.open_rect.get_area() + layout.passage_rect().get_area()
 	t.check(walkable == inside,
 			"seed %d: complex %s is solid apart from its court and archway (%d walkable of %d)"
 			% [seed_value, anchor, walkable, inside])
@@ -428,7 +428,7 @@ func _check_apartment_complex(t, map: CityMap, anchor: Vector2i, seed_value: int
 				% [seed_value, key, anchor])
 		for tile in map.rect_tiles(map.network.by_key(key).tile_rect()):
 			t.check(not map.is_walkable(tile) or layout.open_rect.has_point(tile)
-					or layout.passage.has_point(tile),
+					or layout.passage_rect().has_point(tile),
 					"seed %d: %s inside complex %s is solid" % [seed_value, tile, anchor])
 	t.check(built == absorbed,
 			"seed %d complex %s took its %d inside streets (found %d)"

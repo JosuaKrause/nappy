@@ -136,6 +136,14 @@ var art := PosterArt.new()
 ## The baked atlas pages the city draws from (`AtlasLibrary`), handed in by the city before
 ## `setup()`: the torn sheets are composed from its `buildings` page.
 var atlas: AtlasLibrary = null
+
+## Hands the walls what they write to, what they take art from and what they draw from, before
+## `setup()`. See `trace`, `art` and `atlas`.
+func equip(sink: RunTrace, poster_art: PosterArt, library: AtlasLibrary) -> void:
+	trace = sink
+	art = poster_art
+	atlas = library
+
 ## The bag the run's tears draw from, rebuilt from `PosterState.tears` whenever it disagrees with
 ## the run — a save loaded, a lost day given back, a new run. See `_the_bag()`.
 var _bag: MarbleBag = null
@@ -223,11 +231,10 @@ func _refresh_wall(index: int) -> void:
 	var cells := {}
 	for i in (wall["tiles"] as Array).size():
 		var tile: Vector2i = wall["tiles"][i]
-		if state.cells.has(tile):
-			cells[wall["cols"][i]] = state.cells[tile]
+		if state.has_sheet(tile):
+			cells[wall["cols"][i]] = state.sheet_at(tile)
 	var building := wall["building"] as Building
-	building.neighbor_taken = taken
-	building.posters = cells
+	building.hand_over_posters(cells, taken)
 
 # ------------------------------------------------------------------- dawn ---
 
@@ -248,7 +255,7 @@ func _paste_the_dawn(day: int, corridor: Corridor) -> void:
 		# Rolled for every wall, burnt or not, so a block burning never moves another wall's roll.
 		var roll := rng.randf()
 		var kind := _kind_for(day, rng)
-		if roll >= share or building.condition == Building.Condition.BURNT:
+		if roll >= share or building.is_burnt():
 			continue
 		var tiles: Array = wall["tiles"]
 		var count := _sheets_for(kind, act, tiles.size(), rng)
@@ -301,7 +308,7 @@ func _paste_one(tile: Vector2i, kind: int, rng: RandomNumberGenerator) -> void:
 	var offset_roll := rng.randf()
 	var side := 1 if rng.randf() < 0.5 else -1
 	var state := posters
-	var old: Dictionary = state.cells.get(tile, {})
+	var old := state.sheet_at(tile)
 	var offset := offset_roll < OVERPASTE_SHARE and not old.is_empty() \
 			and int(old["kind"]) != kind
 	state.paste(tile, kind, offset, side)
@@ -445,23 +452,23 @@ func _presses_into_the_front(tile: Vector2i, at: Vector2, steering: Vector2) -> 
 ## draws from any stream; the marble comes from the bag's own.
 func _tear(tile: Vector2i) -> void:
 	var state := posters
-	var kind := int(state.cells[tile]["kind"])
+	var kind := int(state.sheet_at(tile)["kind"])
 	var which := posmod(hash("%d:%d:%d:%d:tear" % [_run.header.run_seed, tile.x, tile.y,
-			state.tears]), PosterArt.TEARS)
+			state.tears_made()]), PosterArt.TEARS)
 	var bag := _the_bag()
 	if not state.tear(tile, which):
 		return
 	var pursuit: bool = bag.draw()
-	state.tears += 1
+	state.count_a_tear()
 	_refresh_wall(_by_tile[tile].x)
 	# `VisitCounter`'s own "poster-torn" — see docs/TELEMETRY.md, "The page counts visits".
 	EventBus.poster_torn.emit()
 	var what: String = PosterArt.Kind.keys()[kind].to_lower()
 	# Where and which, because nothing else records it: a tear depends on where she pushed.
 	trace.note("scar", "she tears down the %s sheet at %s, tear %d of the run"
-			% [what, RunTrace.tile(tile), state.tears])
+			% [what, RunTrace.tile(tile), state.tears_made()])
 	trace.note("roll", "poster tear %d draws a %s marble, %d left in the bag"
-			% [state.tears, "pursuit" if pursuit else "no-pursuit", bag.left()])
+			% [state.tears_made(), "pursuit" if pursuit else "no-pursuit", bag.left()])
 	if pursuit and _city and _city.events:
 		_city.events.send_a_pursuer()
 
@@ -469,9 +476,9 @@ func _tear(tile: Vector2i) -> void:
 ## from the bag's own stream off the run's seed, so a save, a lost day's give-back and a retry all
 ## draw the same marbles the run would have drawn.
 func _the_bag() -> MarbleBag:
-	var tears := posters.tears
+	var tears := posters.tears_made()
 	var seed_value := hash("%d:poster-tears" % _run.header.run_seed)
-	if _bag == null or _bag_seed != seed_value or _bag.drawn != tears:
+	if _bag == null or _bag_seed != seed_value or _bag.draws_made() != tears:
 		_bag = MarbleBag.new(TEAR_PRE_BAG, TEAR_BAG, seed_value)
 		_bag_seed = seed_value
 		_bag.skip(tears)

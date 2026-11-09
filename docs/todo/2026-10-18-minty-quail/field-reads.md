@@ -33,7 +33,7 @@ from `tools/field_reads.txt` (its `# [Class] path` groups say which class's fiel
 from where; `--summary` prints the counts). The reads are heaviest on the event definition and
 the event instance, then the city map and the city, so the events go first, as the ask says.
 
-Left outside the events, the city and the routes, and each its own design question:
+Left, each its own design question:
 
 - **A strategy and its mover.** `LaneMover`'s underscore fields and callables are read by
   `CarStrategy` and `WalkerStrategy`, and `LaneStrategy`'s by `LaneMover`: whether a strategy is
@@ -46,7 +46,21 @@ Left outside the events, the city and the routes, and each its own design questi
   wrappers; **the atlas injection** (`node.atlas = atlas` on the crowd agent, the help text, the mode
   button, the cordon's tape and officer and the contact point), one design for all; **the writes that
   configure a node** (`CordonTape`, `ContactPoint`), with it.
-- **What the fence kept for the third hand-ins pull request and the placement rewrite**: every line
-  whose owner or reader is under `src/events/`, `src/routes/` or `src/dev/`, a `scene_recipe*` file,
-  or a file the third hand-ins pull request touches, and the fields those still read (`DaySpec`,
-  `RunConfig`, `MoveProposal` and `WorldMap`, in part).
+- **The city's own classes** have their readers converted except three groups, each with a home:
+  - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
+    (`RecipeCityContext`) are the scene recipes' city. They go with or after `placement-by-construction.md`'s bullet on the
+    scene recipes assigning locations, which rewrites the scene recipes, so no work is done twice (inbox #1185); a design for the map
+    capturing and restoring itself waits for it.
+  - `City.events` and `City.crowd`, read by the poster walls and the frame recorder and trace, go with
+    the third hand-ins pull request (`city-hand-ins.md`), which hands those readers their parts. An
+    accessor on `City` would add uses of `EventManager` and `Crowd` to breaks `tools/layer_map.py` lists.
+  - A field only a test still reads (`CityMap.home_rect`, `home_block`, `courtyard_rects`,
+    `Building.scenery_clock`, `door_world_x_range`, `power_station`, `station_door_col`,
+    `station_yard_cols`, `BuildingShadows.streamed`, `falls_on`, `PosterState.pasted_through`) keeps its
+    direct write in the city and goes with the tests-one-module item (`tests-one-module.md`), when its
+    tests read through a method the game also calls.
+- **The lines the placement rewrite and the third hand-ins pull request touch** (`src/events/`,
+  `src/routes/`, `src/dev/`, `scene_recipe*`, `day_director.gd`, `main.gd`, `day_planner.gd`,
+  `run_session.gd`, the event manager and `EventWorld`, scenery residency and ground, the blackout,
+  the still watch and the debug readout) are converted after those land, and the fields they read
+  become underscore-private with the method taking the field's name.

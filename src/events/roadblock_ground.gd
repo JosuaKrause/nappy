@@ -6,7 +6,7 @@ extends RefCounted
 ## for the day's ground, so the phase is handed it (dependency injection) and a test hands a
 ## stand-in holding the answers it sets.
 ##
-## The day's own is `EventScheduler.JudgedRoadblockGround`: today's placement rules and the walk
+## The day's own is `EventScheduler.RuledRoadblockGround`: today's placement rules and the walk
 ## along her paths the task measures close by with. Every method here is to be overridden.
 
 ## The route tiles the phase aims to leave none of without a roadblock close by.

@@ -68,6 +68,39 @@ func then(purpose: GameEnums.BlockPurpose, from_day: int,
 func starting_purpose() -> GameEnums.BlockPurpose:
 	return steps[0].purpose
 
+## How many steps the arc has, the starting purpose's included.
+func step_count() -> int:
+	return steps.size()
+
+## The step at `index` of the arc, 0 being what the block starts as.
+func step_at(index: int) -> Step:
+	return steps[index]
+
+## The arc's steps in order, as a list of its own: adding to it adds nothing to the arc.
+func steps_in_order() -> Array[Step]:
+	return steps.duplicate()
+
+## Appends a step as it is, with no pushing of its day forward (`then()` does that): what a stored
+## arc is read back with, whose days were already put in order when it was planned.
+func append_step(step: Step) -> void:
+	steps.append(step)
+
+## The day this park is the swing park's, or 0 on a block that is not (see `forced_open_on`).
+func forced_open_day() -> int:
+	return forced_open_on
+
+## Makes this park the one the day's task sends her to, on `day`.
+func force_open_on(day: int) -> void:
+	forced_open_on = day
+
+## Whether this park is the swing park, whatever day it is forced open on.
+func is_swing_park() -> bool:
+	return forced_open_on > 0
+
+## Whether this park is forced open on `day`.
+func is_forced_open_on(day: int) -> bool:
+	return forced_open_on == day
+
 ## True if this block is calm ground at every step of its arc — a piece of the city that can
 ## be relied on for the whole run.
 func stays_calm() -> bool:

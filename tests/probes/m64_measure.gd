@@ -8,7 +8,7 @@ extends RefCounted
 ## and read the numbers off stdout. Two questions, matching the two candidate causes playtest 21
 ## could not tell apart:
 ##
-## 1. Does `EventScheduler._role_for` call the pavement-changing rows (`cafe_tables`,
+## 1. Does `EventScheduler.role_for` call the pavement-changing rows (`cafe_tables`,
 ##    `market_stall`, `construction`, `delivery_van`) a WALL, which `_copies_of` then refuses on
 ##    every corridor tile?
 ## 2. How much of `ClosurePlanner`'s calm-area access-street refusal falls on the rim — the ground
@@ -19,7 +19,7 @@ const BASE_SEED := 90210
 const SAMPLE_DAYS := [1, 5, 8, 11, 14]
 
 func run(t) -> void:
-	_role_for_the_named_rows()
+	_roles_of_the_named_rows()
 	_role_and_depth_sweep()
 	_closure_access_vs_rim_sweep()
 	# Satisfy the runner, which wants at least one check to not report a suite that found nothing.
@@ -27,8 +27,8 @@ func run(t) -> void:
 
 # ---------------------------------------------------------- hypothesis: role by row ---
 
-func _role_for_the_named_rows() -> void:
-	print("\n== _role_for and walk_through_cost() for the named rows (static, no city needed) ==")
+func _roles_of_the_named_rows() -> void:
+	print("\n== role_for() and walk_through_cost() for the named rows (static, no city needed) ==")
 	print("WALL_WORTH_OF_COST = %.2f" % EventScheduler.WALL_WORTH_OF_COST)
 	var ids := ["cafe_tables", "market_stall", "construction", "delivery_van",
 			"dog_walker", "homeless_yeller", "loose_dog"]
@@ -37,7 +37,7 @@ func _role_for_the_named_rows() -> void:
 		if not def:
 			print("  %-16s not in the catalogue" % id)
 			continue
-		var role := EventScheduler._role_for(def)
+		var role := EventScheduler.role_for(def)
 		var role_name: String = ["NONE", "WALL", "FRICTION", "SET_PIECE"][role]
 		print("  %-16s cost=%6.2f hard_fail=%s role=%s"
 				% [id, def.walk_through_cost(), def.hard_fail, role_name])
@@ -65,10 +65,8 @@ func _role_and_depth_sweep() -> void:
 	var sum_streets_with_a_crossing := 0
 	var sum_solid_friction_on_corridor := 0
 	var day_count := 0
-	# The winnability guarantee, re-checked independently of `build_day`'s own
-	# `DayRepairs.ensure_the_city_is_still_walkable` (which already ran before `planned` came
-	# back) — a fresh flood from the home tile against every obstruction the day actually
-	# placed.
+	# The winnability guarantee, re-checked independently of `build_day`'s own route rules — a
+	# fresh flood from the home tile against every obstruction the day actually placed.
 	var days_unwinnable := 0
 
 	for i in SEEDS:
@@ -144,16 +142,19 @@ func _role_and_depth_sweep() -> void:
 		print("  %-16s total=%4d depth0=%4d depth1=%4d depth2+=%4d  roles: %s"
 				% [id, total, counts[0], counts[1], counts[2], ", ".join(role_bits)])
 
-## The same reachability guarantee `DayRepairs.ensure_the_city_is_still_walkable` states,
-## re-checked from the outside against the day `build_day` actually returned — calling the real
-## `DayRepairs._park_is_reachable` so this is not a second implementation to drift from the one
-## under test.
+## Whether home still reaches some calm tile with every body the day returned standing
+## (`EventScheduler.blocked_by()`), re-checked from the outside against the day `build_day` returned.
 func _some_calm_is_reachable(map: CityMap, grid: ReachabilityGrid, planned: Array) -> bool:
 	var blockers: Array[EventScheduler.Planned] = []
 	for plan: EventScheduler.Planned in planned:
 		if plan.obstructs():
 			blockers.append(plan)
-	return DayRepairs._park_is_reachable(map, grid, blockers)
+	var blocked := EventScheduler.blocked_by(map, blockers)
+	var reached := grid.flood([map.home_tile()], blocked)
+	for tile in map.calm_tiles():
+		if grid.reaches(tile, blocked, reached):
+			return true
+	return false
 
 # ---------------------------------------------------------- closures vs the access refusal ---
 

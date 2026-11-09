@@ -268,12 +268,12 @@ static func target_candidates(step: Step, map: CityMap,
 	if not step or not map:
 		return found
 	if step.target_kind == TargetKind.STATION_DOOR:
-		return map.rect_tiles(map.power_station_door) if map.has_power_station() else found
+		return map.rect_tiles(map.power_station_door_tiles()) if map.has_power_station() else found
 	if step.target_kind == TargetKind.DOOR:
 		if not region_plan:
 			return found
 		var home_border := {}
-		for segment in map.network.around_blocks(Rect2i(map.home_block, Vector2i.ONE)):
+		for segment in map.street_network().around_blocks(Rect2i(map.home_block_coordinate(), Vector2i.ONE)):
 			home_border[segment.key()] = true
 		for segment in region_plan.doors:
 			if home_border.has(segment.key()):
@@ -283,9 +283,9 @@ static func target_candidates(step: Step, map: CityMap,
 		return found
 	if step.target_kind == TargetKind.PARK_SWING:
 		var park := CityGenerator.swing_park(map)
-		var layout: BlockLayout = map.block_layouts.get(park)
-		if layout and layout.playground in map.playgrounds:
-			found.append(map.world_to_tile(map.swing_position(layout.playground)))
+		var layout: BlockLayout = map.layout_of(park)
+		if layout and layout.playground_rect() in map.playground_rects():
+			found.append(map.world_to_tile(map.swing_position(layout.playground_rect())))
 	return found
 
 ## Explicit rather than a dictionary of field names. The first version built these with

@@ -108,7 +108,7 @@ static func _street_tile(x_offset: int, x_kind: GameEnums.StreetKind,
 ## touch the guarantee `tests/test_blocks.gd` holds across a block's whole arc.
 static func _seal_border_stubs(map: CityMap) -> void:
 	var band := Tuning.SIDEWALK_WIDTH
-	var spine_lo := map.main_road * CityMap.period()
+	var spine_lo := map.main_road_corridor() * CityMap.period()
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH
 	var strips := [
 		Rect2i(0, 0, map.size_in_tiles().x, band),

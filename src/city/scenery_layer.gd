@@ -11,6 +11,11 @@ extends Node2D
 ## drawer it was handed.
 var drawer: SceneryDrawer
 
+## Lays every picture of this batch through `through` (see `drawer`), handed before the layer enters
+## the tree.
+func draw_through(through: SceneryDrawer) -> void:
+	drawer = through
+
 var _textures: Array[Texture2D] = []
 var _alternates: Array[Texture2D] = []
 var _rects: Array[Rect2] = []
@@ -23,6 +28,10 @@ var frame_b := false:
 			return
 		frame_b = value
 		queue_redraw()
+
+## Shows each picture's alternate frame when `shown` (see `frame_b`).
+func show_frame_b(shown: bool) -> void:
+	frame_b = shown
 
 ## `source`, when it has an area, is the part of the texture (and of its alternate) drawn into
 ## `rect`: a picture cut into slices draws each slice's part of it (`EventScenery`).

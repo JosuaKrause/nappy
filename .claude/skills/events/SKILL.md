@@ -41,14 +41,14 @@ dawn; `EventDef.validate()` refuses any other combination.
 
 **`hard_fail` is a decision, and it decides where the thing goes as well as what it does.**
 
-**The role is not a decision.** `EventScheduler._role_for` reads it off the def: scenery, ambient
+**The role is not a decision.** `EventScheduler.role_for` reads it off the def: scenery, ambient
 and director-sited rows get none; a one-shot is a **set piece** (sited where every route touches
 it); `hard_fail`, a `walk_through_cost()` at or over `EventScheduler.WALL_WORTH_OF_COST` (48 points), or a
 reach that leaves no line past it along a sidewalk makes a **wall** (zero copies on any cell a
 route runs along); anything else is **friction** (weighted onto the corridor). A `paces` row's role
-depends on where its beat runs, so `_a_pacing_beat_walls_a_sidewalk` decides it in the candidate
+depends on where its beat runs, so `StreetInvalidation._a_pacing_beat_walls_a_sidewalk()` decides it in the candidate
 loop, where the beat exists. A row that wants a role its data does not imply needs a change to
-`_role_for`, not a new field.
+`EventScheduler.role_for()`, not a new field.
 
 **`obstructs_radius` is not a decision.** If it stands still and it is drawn, it is solid at half
 its silhouette.
@@ -155,7 +155,7 @@ reason something else is not warned first.** What stands in the way of it is `do
 ## The contract is per event and the player experiences the sum
 
 **Nothing else happens inside a lethal event's field.** A `hard_fail` event keeps its whole
-`outer_radius` clear of every other event at placement (`EventScheduler._room_around()`), and it is
+`outer_radius` clear of every other event at placement (`StreetInvalidation.room_around()`), and it is
 the one spacing rule with no fallback — one that cannot find room is not placed. A new lethal row
 inherits this, not just the telegraph.
 

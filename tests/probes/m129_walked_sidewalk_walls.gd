@@ -12,7 +12,7 @@ extends RefCounted
 ##
 ## # What this measures
 ##
-## `EventScheduler._leaves_no_line_along_a_sidewalk` asks two questions of a row's own numbers now:
+## `EventScheduler.leaves_no_line_along_a_sidewalk` asks two questions of a row's own numbers now:
 ## a **cost** one (`EventDef.reaches_the_far_lane()`, "what does this row bill a passer-by")
 ## and a **physical** one (`_closes_the_band_by_its_own_placement`, "does a passer-by have anywhere
 ## left to stand"), and either is enough to make the row a wall — refused a route cell entirely by
@@ -30,7 +30,7 @@ extends RefCounted
 ##   runs along, or the whole street where neither does. Asked here exactly as the rule asks it,
 ##   because a probe reading a different band could not tell whether the rule (or a gap in it) had
 ##   fired on the ground the player actually meant.
-## - **The closing test.** `EventScheduler.closes_a_walked_sidewalk_band()` is the one place the
+## - **The closing test.** `RouteSidewalkRule.closes_a_walked_sidewalk_band()` is the one place the
 ##   tile-grained physical reading lives — the suite (`tests/test_events.gd`) asks the same
 ##   function of the same kind of sample, so the probe's printed number and the suite's asserted
 ##   one can never quietly disagree about what "closed" means. See its own doc for why the walk
@@ -76,7 +76,7 @@ extends RefCounted
 ##
 ## # What "closes" means
 ##
-## Per walked-sidewalk band, `EventScheduler.closes_a_walked_sidewalk_band()` — a tile-grained
+## Per walked-sidewalk band, `RouteSidewalkRule.closes_a_walked_sidewalk_band()` — a tile-grained
 ## 4-connected walk between the band's own genuinely open ends. **Cumulative with everything else
 ## down that day**, the same reading the production rule and `docs/DECISIONS.md` both state it in:
 ## a body on each of the two lanes closes a band neither could close alone. Where a band is closed,
@@ -185,7 +185,6 @@ func _measure() -> void:
 			var tree := _plan_the_day(map, day)
 			var gathered := _gather_bodies(map, day, tree)
 			var bodies: Array = gathered["bodies"]
-			var closed_tiles: Dictionary = gathered["closed_tiles"]
 			var corridor: Corridor = gathered["corridor"]
 			days_measured += 1
 
@@ -196,11 +195,11 @@ func _measure() -> void:
 				var per_act: Array = tally[act]
 				per_act[1] += 1
 
-				var ground_alone := EventScheduler.closes_a_walked_sidewalk_band(
-						map, band, segment.horizontal, [], closed_tiles)
+				var ground_alone := RouteSidewalkRule.closes_a_walked_sidewalk_band(
+						map, band, segment.horizontal, [])
 				var candidates := _bodies_touching(world, bodies)
-				var full := EventScheduler.closes_a_walked_sidewalk_band(
-						map, band, segment.horizontal, _as_vectors(candidates), closed_tiles)
+				var full := RouteSidewalkRule.closes_a_walked_sidewalk_band(
+						map, band, segment.horizontal, _as_vectors(candidates))
 				if not full:
 					continue
 				per_act[0] += 1
@@ -220,7 +219,7 @@ func _measure() -> void:
 						closed_examples.append(record)
 					continue
 
-				var culprits := _culprits_of(map, band, segment.horizontal, candidates, closed_tiles)
+				var culprits := _culprits_of(map, band, segment.horizontal, candidates)
 				if culprits.is_empty():
 					# Closed with a touching candidate list that could not reproduce it alone,
 					# together or as the ground: the proximity filter under-reached. Recorded as
@@ -238,7 +237,7 @@ func _measure() -> void:
 					var solo: Body = culprits[0]
 					if solo.source == Source.CANDIDATE_LOOP:
 						var def := EventCatalogue.by_id(solo.id)
-						if def and EventScheduler._leaves_no_line_along_a_sidewalk(def):
+						if def and EventScheduler.leaves_no_line_along_a_sidewalk(def):
 							rule_scope_singles += 1
 				for culprit: Body in culprits:
 					if not by_row.has(culprit.id):
@@ -274,7 +273,7 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 ## Every solid body the day stands, tagged with the pass that placed it. Reimplements
 ## `EventScheduler.build_day`'s own phase order by calling its private phase functions directly —
 ## the same access `tests/probes/m129_zero_cost_line.gd` already relies on for `EventDef.line_reach()`,
-## `_role_for` and the rest — so each phase's own output can be told apart, which `build_day`'s
+## `EventScheduler.role_for()` and the rest — so each phase's own output can be told apart, which `build_day`'s
 ## single merged return cannot.
 func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
@@ -321,12 +320,6 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	for plan: EventScheduler.Planned in ambient:
 		provenance[plan.get_instance_id()] = Source.OTHER
 
-	var no_scars: Array[Dictionary] = []
-	var scars := EventScheduler._place_scars(day, no_scars, 0)
-	events.add_all(scars)
-	for plan: EventScheduler.Planned in scars:
-		provenance[plan.get_instance_id()] = Source.OTHER
-
 	var before := events.size()
 	EventScheduler._place_scripted(day, EventScheduler._stream(base, 1), map, events, ground,
 			leave_alone, corridor, 0)
@@ -340,12 +333,12 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 
 	before = events.size()
 	EventScheduler._spoil_the_parks_she_used(day, EventScheduler._stream(base, 3), map, events,
-			calm, 0)
+			calm, CalmAreas.NONE, RouteReachRule.new(map, corridor), 0)
 	_tag_new(events.placements(), provenance, before, Source.CALM_GROUND)
 
 	before = events.size()
 	EventScheduler._draw_the_locations(day, base, map, events, ground, leave_alone, corridor,
-			PackedVector2Array(), DaySpec.for_day(day), null, DayLocations.lay_out(map, corridor), 0,
+			PackedVector2Array(), DaySpec.for_day(day), DayLocations.lay_out(map, corridor), 0,
 			null)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
@@ -353,9 +346,6 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	EventScheduler._ensure_the_run_is_taught(day, events, 0)
 	_tag_new(events.placements(), provenance, before, Source.OTHER)
 
-	# Removal-only passes: monotonic, never add a body, so tagging is complete before they run.
-	DayRepairs.ensure_one_usable_park(events, calm)
-	DayRepairs.ensure_the_city_is_still_walkable(map, events, calm)
 	var planned := events.placements()
 
 	for plan: EventScheduler.Planned in seals:
@@ -385,7 +375,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		body.paces = def.paces
 		bodies.append(body)
 
-	return {"bodies": bodies, "corridor": corridor, "closed_tiles": map.closed_tiles.duplicate()}
+	return {"bodies": bodies, "corridor": corridor}
 
 ## Tags every `Planned` appended to `planned` since index `before` with `source`.
 func _tag_new(planned: Array[EventScheduler.Planned], provenance: Dictionary, before: int,
@@ -425,7 +415,7 @@ func _bodies_touching(world: Rect2, bodies: Array) -> Array:
 	return found
 
 ## `Body` instances as `[position.x, position.y, radius]`, the shape
-## `EventScheduler.closes_a_walked_sidewalk_band()` asks for.
+## `RouteSidewalkRule.closes_a_walked_sidewalk_band()` asks for.
 func _as_vectors(bodies: Array) -> Array:
 	var found: Array = []
 	for body: Body in bodies:
@@ -436,20 +426,19 @@ func _as_vectors(bodies: Array) -> Array:
 ## the whole touching set. The same order `tests/probes/m129_zero_cost_line.gd`'s `_barrier_of`
 ## tries in, and for the same reason: a body on each of two lanes closes the band between them
 ## while neither closes it alone, and the smallest-removal answer would blame only one of the pair.
-func _culprits_of(map: CityMap, band: Rect2i, horizontal: bool, candidates: Array,
-		closed_tiles: Dictionary) -> Array:
+func _culprits_of(map: CityMap, band: Rect2i, horizontal: bool, candidates: Array) -> Array:
 	for body: Body in candidates:
-		if EventScheduler.closes_a_walked_sidewalk_band(
-				map, band, horizontal, _as_vectors([body]), closed_tiles):
+		if RouteSidewalkRule.closes_a_walked_sidewalk_band(
+				map, band, horizontal, _as_vectors([body])):
 			return [body]
 	for i in candidates.size():
 		for j in range(i + 1, candidates.size()):
 			var pair: Array = [candidates[i], candidates[j]]
-			if EventScheduler.closes_a_walked_sidewalk_band(
-					map, band, horizontal, _as_vectors(pair), closed_tiles):
+			if RouteSidewalkRule.closes_a_walked_sidewalk_band(
+					map, band, horizontal, _as_vectors(pair)):
 				return pair
-	if candidates.size() > 2 and EventScheduler.closes_a_walked_sidewalk_band(
-			map, band, horizontal, _as_vectors(candidates), closed_tiles):
+	if candidates.size() > 2 and RouteSidewalkRule.closes_a_walked_sidewalk_band(
+			map, band, horizontal, _as_vectors(candidates)):
 		return candidates
 	return []
 
