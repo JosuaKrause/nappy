@@ -6,21 +6,53 @@
 #   tools/test_rules_hooks.sh
 #
 # Asserts:
-#   - the main session and a sub-agent (same session_id, different agent_id) each get godot on
-#     their own first .gd edit
-#   - a second edit by the same agent gets nothing (the marker already stops it)
-#   - after a SessionStart with source:compact, the main session gets orchestrating again and a
-#     sub-agent's own markers from before the compact are untouched
-#   - each path added to the mapping (src/routes/**, src/city/traffic_signals.gd,
-#     src/city/traffic_light.gd, src/ground_shape.gd, src/autoload/telemetry.gd, sound recipes and
-#     generated audio) injects its skill
-#   - src/visuals/** gets no illustrated-png, which art/illustrated/** alone receives
-#   - tests/** brings writing-tests beside verify, every src/**/*.gd brings designing-classes, and a
-#     file under src/ that is not GDScript does not
+#   - project-rules.sh refuses the first edit of an area with the index of the skills that govern
+#     it (each one's name, path, size and the opening of its description, never its text), and
+#     lets the same edit through once it is made again; a second area in the same session is
+#     refused in its turn, naming only the skills not named before
+#   - the window after a refusal, with the hook's clock set to the second: an edit in the same
+#     second or one second after is refused in one line that is true of a call of the same message
+#     and of an edit made again too soon, and is not counted from; from two seconds after, the same
+#     edit passes, and so does an edit elsewhere in the area that nothing was read for (the
+#     mechanism's limit: nothing watches the reads); a marker stamped in the future (the clock
+#     stepped back) lets the edit pass and is emptied, so it refuses nothing when the clock
+#     reaches it
+#   - the refusal, the context beside a spawn and the context where no marker can be written all
+#     say whose reading counts: the reader's own, in this context
+#   - where the hook cannot write its markers it refuses nothing and gives the index as context
+#   - the main session and each sub-agent (same session_id, different agent_id) are refused on
+#     their own first .gd edit, and a sub-agent's edit under src/ or tests/ never names orchestrating
+#   - session-rules.sh names orchestrating as context at the start of a session and refuses nothing;
+#     a spawn (the Agent or Task tool) is named it as context where the session was not, and is
+#     never refused
+#   - after a SessionStart with source compact, resume, clear or fork, the session is named
+#     orchestrating again and each area is refused once more, while a sub-agent's own markers from
+#     before are untouched; a SessionStart carrying an agent_id, which the harness is not
+#     documented to send (a sub-agent gets SubagentStart), clears that agent's markers alone
+#   - for the Codex adapter (a session named codex-...), both hooks still print the skills' text as
+#     context and refuse nothing
+#   - each path of the mapping brings its skills, in the table's order: the files that draw the cues,
+#     the files that hold the balance numbers, the reference and sound tools, the atlas membership
+#     file, docs/evidence/**, a workflow, the settings file, a decision record, a scene, a shader
+#     and the project file among them; a hook script has no row and gets nothing; src/visuals/**
+#     gets no illustrated-png; a row's path starts at the checkout's root, an agent's worktree is a
+#     checkout like the main one, and a path outside the repository gets nothing
+#   - a path is matched with its "." and ".." parts and doubled slashes taken out, so a detour
+#     through another folder is named what the file it reaches is, and one that climbs out of the
+#     repository gets nothing
+#   - CLAUDE.md's path table and project-rules.sh's rows agree, row for row, and every path of
+#     every row is refused with the row's skills among those named
+#   - no answer of the rule hooks or the lint hook exceeds 9,000 bytes, no rule hook's index
+#     reaches 2,000, and a guard's answer over 9,000 bytes fails its case
 #   - lint-docs.sh ignores a doc under docs/evidence/ and still lints a top-level docs/*.md
-#   - docs/todo/**, docs/review/**, docs/TODO.md and every playtest bring playtest-feedback
 #   - lint-docs.sh lints an edited file of the queue, the review items, the records and the
 #     playtests (the last two for the duplicate-name check only)
+#   - lint-docs.sh takes the checkout from the edited file: a governed doc in a worktree under
+#     .claude/worktrees/ is linted by that worktree's tools/lint.sh, the main checkout's by the main
+#     checkout's, and the same file name in another repository by nobody
+#   - lint-docs.sh and tools/lint.sh's default set both govern every Markdown file under
+#     .claude/skills/, a skill's reference files included, at any depth
+#   - lint-docs.sh cuts a list of hits too long for a hook's answer and says where the rest are
 #   - git-grep-guard.sh reads the whole command text, quotes and heredoc bodies included, and
 #     denies any git followed by grep as a word of its own with neither -I nor a text-only
 #     pathspec: behind a wrapper (timeout, sudo, env, find | xargs), inside a heredoc or quoted
@@ -216,8 +248,10 @@ usage: tools/test_rules_hooks.sh [--jobs N|-j N] [--help|-h]
 
 Exercises .claude/hooks/project-rules.sh, session-rules.sh, lint-docs.sh, git-grep-guard.sh and
 github-write-guard.sh with synthetic hook JSON on stdin, under a private TMPDIR, and asserts the
-per-agent marker keying, the compaction/resume reset, every path added to the skill mapping, the
-lint-docs.sh governed set, and every git-grep-guard.sh and github-write-guard.sh deny/allow shape.
+refusal of an area's first edit and its retry, the per-agent marker keying, the compaction/resume
+reset, every row of the skill mapping against CLAUDE.md's path table, the size of every hook
+answer, the lint-docs.sh governed set in the main checkout and in a worktree, and every
+git-grep-guard.sh and github-write-guard.sh deny/allow shape.
 
   --jobs N, -j N  run up to N guard cases at once (a positive whole number; default the
                   TEST_RULES_HOOKS_JOBS environment variable, else the CPU count); 1 runs every
@@ -418,45 +452,110 @@ assert_write_guard_timed() {
     assert_decided_in_time "$1" write_guard_decision "$2" "$3" "${4:-8}"
 }
 
-# Prints the sorted, comma-joined, deduplicated list of skill names project-rules.sh injected for
-# one Edit of $3 (a path relative to $root), for session $1 and agent $2 ("" for the main session).
-project_rules_skills() {
-    local sess="$1" agent="$2" relpath="$3" payload
-    if [ -n "$agent" ]; then
-        payload=$(printf '{"session_id":"%s","agent_id":"%s","tool_name":"Edit","tool_input":{"file_path":"%s"}}' \
-            "$sess" "$agent" "$root/$relpath")
-    else
-        payload=$(printf '{"session_id":"%s","tool_name":"Edit","tool_input":{"file_path":"%s"}}' \
-            "$sess" "$root/$relpath")
-    fi
-    printf '%s' "$payload" \
-        | "$root/.claude/hooks/project-rules.sh" \
-        | jq -r '.hookSpecificOutput.additionalContext // empty' \
-        | grep -o 'project rule: [a-z-]*' \
-        | sed 's/project rule: //' \
-        | sort -u \
-        | tr '\n' ','
+# ------------------------------------------------------------------- the two rule hooks -----
+# No hook's answer may reach the size at which the harness stops placing it in context: past
+# 10,000 characters it is saved to a file and replaced by its first 2,000 and a path. The bound
+# here leaves a margin under that, and the rule hooks' own index is held to the 2,000 that would
+# survive even so.
+hook_output_max=9000
+index_max=2000
+hook_sizes="$work_dir/hook-sizes"
+: > "$hook_sizes"
+
+# Prints the size of $1 in bytes.
+byte_size() {
+    local LC_ALL=C
+    printf '%s' "${#1}"
 }
 
-# Prints the sorted, comma-joined, deduplicated list of skill names session-rules.sh injected for
-# one SessionStart of session $1, agent $2 ("" for the main session), source $3.
-session_rules_skills() {
-    local sess="$1" agent="$2" src="$3" payload
-    if [ -n "$agent" ]; then
-        payload=$(printf '{"session_id":"%s","agent_id":"%s","source":"%s"}' "$sess" "$agent" "$src")
-    else
-        payload=$(printf '{"session_id":"%s","source":"%s"}' "$sess" "$src")
-    fi
-    printf '%s' "$payload" \
-        | "$root/.claude/hooks/session-rules.sh" \
-        | jq -r '.hookSpecificOutput.additionalContext // empty' \
-        | grep -o 'project rule: [a-z-]*' \
-        | sed 's/project rule: //' \
-        | sort -u \
-        | tr '\n' ','
+# Notes one hook answer for the size checks below: $1 what was asked, $2 the raw answer, $3 the
+# text it carries (its reason or its context; "" where there is none to hold to the index bound).
+note_hook_size() {
+    printf '%s\t%s\t%s\n' "$(byte_size "$2")" "$(byte_size "${3:-}")" "$1" >> "$hook_sizes"
 }
 
-# $1 label  $2 expected (comma-joined, may be empty)  $3 actual
+# Reads one rule-hook answer ($1 what was asked, $2 the raw answer) into:
+#   rules_verdict  "deny" (the call was refused), "context" (it was let on, with context beside
+#                  it) or "none" (the hook printed nothing)
+#   rules_text     the reason or the context
+#   rules_names    the skills its index names, in the index's order, each followed by a comma
+rules_read() {
+    rules_raw="$2"
+    rules_verdict="none"
+    rules_text=""
+    rules_names=""
+    if [ -n "$rules_raw" ]; then
+        rules_verdict=$(printf '%s' "$rules_raw" \
+            | jq -r '.hookSpecificOutput | .permissionDecision // (if .additionalContext then "context" else "none" end)')
+        rules_text=$(printf '%s' "$rules_raw" \
+            | jq -r '.hookSpecificOutput | .permissionDecisionReason // .additionalContext // empty')
+        rules_names=$(printf '%s\n' "$rules_text" | sed -n 's/^- \([a-z-]*\) (.*/\1/p' | tr '\n' ',')
+    fi
+    [ -n "$rules_unbounded" ] || note_hook_size "$1" "$rules_raw" "$rules_text"
+}
+# Set while the caller asked is the Codex adapter, whose answers are the skills' text and are not
+# what the size bounds are about.
+rules_unbounded=""
+
+# One call of project-rules.sh: $1 session, $2 agent ("" for the main session), $3 tool, $4 the
+# file's path under $root ("" for a call that names no file).
+rules_call() {
+    local payload
+    payload=$(jq -n --arg s "$1" --arg a "$2" --arg t "$3" --arg p "${4:+$root/$4}" \
+        '{session_id: $s, tool_name: $t, tool_input: (if $p == "" then {} else {file_path: $p} end)}
+         + (if $a == "" then {} else {agent_id: $a} end)')
+    rules_read "project-rules.sh, $3 ${4:-(no file)}" \
+        "$(printf '%s' "$payload" | "$root/.claude/hooks/project-rules.sh")"
+}
+
+# One call of session-rules.sh: $1 session, $2 agent ("" for the main session), $3 source.
+session_call() {
+    local payload
+    payload=$(jq -n --arg s "$1" --arg a "$2" --arg src "$3" \
+        '{session_id: $s, source: $src} + (if $a == "" then {} else {agent_id: $a} end)')
+    rules_read "session-rules.sh, $3" \
+        "$(printf '%s' "$payload" | "$root/.claude/hooks/session-rules.sh")"
+}
+
+# The hook's clock, for the cases that are about the window after a refusal: a `date` first on
+# PATH that answers `+%s` with $TEST_RULES_CLOCK and is the real one for anything else. With it a
+# case says to the second how long after a refusal an edit arrives, whatever the machine's load.
+real_date="$(command -v date)"
+clock_bin="$work_dir/clock-bin"
+mkdir -p "$clock_bin"
+cat > "$clock_bin/date" <<CLOCK
+#!/bin/sh
+if [ "\$#" -eq 1 ] && [ "\$1" = "+%s" ] && [ -n "\${TEST_RULES_CLOCK:-}" ]; then
+    echo "\$TEST_RULES_CLOCK"
+else
+    exec "$real_date" "\$@"
+fi
+CLOCK
+chmod +x "$clock_bin/date"
+
+# rules_call with the hook's clock at $1 (seconds since the epoch); the rest as rules_call takes.
+rules_call_at() {
+    local at="$1" saved_path="$PATH"
+    shift
+    PATH="$clock_bin:$PATH"
+    export TEST_RULES_CLOCK="$at"
+    rules_call "$@"
+    PATH="$saved_path"
+    unset TEST_RULES_CLOCK
+}
+
+# A refusal stamps its markers with the time, and an edit that follows within the window is refused
+# with it. This makes every marker of session $1 (agent $2) a minute old, which is what a session
+# that went and read the skills looks like to the hook. The cases about the window itself do not
+# use it: they set the clock (rules_call_at).
+rules_age() {
+    local dir="$state_root/$1${2:+-$2}" marker
+    for marker in "$dir"/*; do
+        [ -s "$marker" ] && printf '%s\n' "$(($(date +%s) - 60))" > "$marker"
+    done
+}
+
+# $1 label  $2 expected  $3 actual
 assert_eq() {
     checks=$((checks + 1))
     if [ "$2" = "$3" ]; then
@@ -466,117 +565,455 @@ assert_eq() {
     fi
 }
 
-# ---------------------------------------------------------------- per-agent marker keying -----
-# A synthetic top-level .gd file: not under src/, tests/ or tools/, so the only case arm that can
-# fire is the bare `*.gd` -> godot one. Isolates the per-agent and second-touch behaviour from
-# every other mapping under test below.
+# $1 label  $2 expected verdict  $3 expected names -- of the answer rules_call or session_call
+# just read.
+assert_rules() {
+    assert_eq "$1" "$2 $3" "$rules_verdict $rules_names"
+}
+
+# $1 label  $2 the words the answer's text must hold
+assert_rules_say() {
+    checks=$((checks + 1))
+    if [ "${rules_text#*"$2"}" != "$rules_text" ]; then
+        echo "ok   $1"
+    else
+        fail "$1: no [$2] in [$rules_text]"
+    fi
+}
+
+# The first edit of a file by a session that has been named nothing: $1 label, $2 the skills the
+# refusal must name, $3 the file's path, $4 the agent ("" for the main session). Each call is a
+# session of its own.
+fresh_session=0
+assert_first_edit() {
+    fresh_session=$((fresh_session + 1))
+    rules_call "fresh-$fresh_session" "${4:-}" Edit "$3"
+    if [ -z "$2" ]; then
+        assert_rules "$1" none ""
+    else
+        assert_rules "$1" deny "$2"
+    fi
+}
+
+# ------------------------------------------------------------- refused once, then let through ---
+# A synthetic top-level .gd file: not under src/, tests/ or tools/, so the only row that can
+# match is the `*.gd` one, godot's. Isolates the sequence from every other row.
 gd_file="zz_test_rules_hooks_probe.gd"
 
-assert_eq "main session, first .gd edit -> godot" \
-    "godot," "$(project_rules_skills main-session "" "$gd_file")"
-assert_eq "main session, second .gd edit -> nothing" \
-    "" "$(project_rules_skills main-session "" "$gd_file")"
+# The hook's clock stands at $clock for the refusal and is moved by the second from there.
+clock=1000000000
+window_text="was sent in the same message as the one refused then, or it was made again within 2 seconds of the refusal. If you have not read the skills that refusal names, read each one whole first; if you have read the skills named, make it again."
+whose_reading="unless you have read it whole in this context"
 
-assert_eq "sub-agent, same session, first .gd edit -> godot (own marker)" \
-    "godot," "$(project_rules_skills main-session sub-agent-a "$gd_file")"
-assert_eq "sub-agent, second .gd edit -> nothing" \
-    "" "$(project_rules_skills main-session sub-agent-a "$gd_file")"
+rules_call_at "$clock" main-session "" Edit "$gd_file"
+assert_rules "main session, first .gd edit -> refused, naming godot" deny "godot,"
+assert_rules_say "the refusal says the edit passes when made again" "Then make this edit again: it passes."
+assert_rules_say "the refusal says an edit made within the window does not" \
+    "(One made within 2 seconds of this refusal is refused as a call of the same message.)"
+assert_rules_say "the refusal says whose reading counts" "$whose_reading"
+assert_rules_say "the refusal names the skill's file" "(.claude/skills/godot/SKILL.md, "
+assert_rules_say "the refusal says where the skills are" "under $root)"
+assert_rules_say "the refusal names the file it refused" "$gd_file is governed by"
+godot_description="$(sed -n 's/^description: *//p' "$root/.claude/skills/godot/SKILL.md" | head -n 1)"
+assert_rules_say "the refusal carries the opening of the skill's own description" "KB): ${godot_description:0:20}"
+checks=$((checks + 1))
+if [ "$(byte_size "$rules_text")" -lt 1000 ]; then
+    echo "ok   the refusal carries the index, not the skill's text"
+else
+    fail "the refusal carries more than the index: $(byte_size "$rules_text") bytes"
+fi
+
+rules_call_at "$clock" main-session "" Edit "$gd_file"
+assert_rules "an edit in the same second as the refusal (the same message's next call) -> refused too, in one line" deny ""
+assert_rules_say "the refusal inside the window is true of a call of the same message and of an edit made again too soon" \
+    "$window_text"
+assert_rules_say "the refusal inside the window names the file" "the skills that govern $gd_file was given less than 2 seconds ago"
+rules_call_at "$((clock + 1))" main-session "" Write "zz_test_rules_hooks_other.gd"
+assert_rules "one second after the refusal, an edit elsewhere in the area -> refused the same way" deny ""
+assert_rules_say "and told the same" "$window_text"
+assert_eq "a refusal inside the window does not move the marker's time, so the window is not extended" \
+    "$clock" "$(cat "$state_root/main-session/godot")"
+rules_call_at "$((clock + 2))" main-session "" Edit "$gd_file"
+assert_rules "two seconds after the refusal, the same edit made again -> let through" none ""
+rules_call_at "$((clock + 2))" main-session "" Write "$gd_file"
+assert_rules "every later edit of the area -> let through" none ""
+
+# The mechanism's limit: nothing watches whether the skills were read, so once the window is over
+# any edit of the area passes, the refused one never having been made again.
+rules_call_at "$clock" unread-session "" Edit "$gd_file"
+assert_rules "another session's first .gd edit -> refused" deny "godot,"
+rules_call_at "$((clock + 2))" unread-session "" Edit "zz_test_rules_hooks_other.gd"
+assert_rules "an edit elsewhere in the area after the window -> let through, read or not" none ""
+
+# A marker stamped in the future, which is what a refusal's marker is once the clock has stepped
+# back: it counts as old, so the edit passes, and it is emptied, so it refuses nothing when the
+# clock reaches its time again.
+rules_call_at "$clock" clock-back-session "" Edit "$gd_file"
+assert_rules "a session refused before its clock steps back" deny "godot,"
+rules_call_at "$((clock - 3600))" clock-back-session "" Edit "$gd_file"
+assert_rules "the clock an hour behind the marker -> the edit is let through" none ""
+checks=$((checks + 1))
+if [ -f "$state_root/clock-back-session/godot" ] && [ ! -s "$state_root/clock-back-session/godot" ]; then
+    echo "ok   the marker from the future is emptied, not removed"
+else
+    fail "the marker from the future still holds [$(cat "$state_root/clock-back-session/godot" 2>&1)]"
+fi
+rules_call_at "$clock" clock-back-session "" Edit "$gd_file"
+assert_rules "when the clock reaches the marker's old time -> still let through" none ""
+rules_call_at "$clock" one-second-session "" Edit "$gd_file"
+rules_call_at "$((clock - 1))" one-second-session "" Edit "$gd_file"
+assert_rules "a marker one second ahead of the clock is from the future too" none ""
+
+# A second area in the same session is refused in its turn, and its refusal names only what the
+# session has not been named: godot is not repeated.
+rules_call main-session "" Edit "src/city/zz_probe.gd"
+assert_rules "a second area in the same session -> refused, naming only the new skills" \
+    deny "city,designing-classes,orchestrating,"
+rules_age main-session ""
+rules_call main-session "" Edit "src/city/zz_probe.gd"
+assert_rules "the second area's edit made again -> let through" none ""
+
+# Where the hook cannot write its markers it cannot remember a refusal, so it refuses nothing:
+# the index goes beside the edit as context, every time, and the edit is let through.
+printf 'a file where the state directory would be\n' > "$work_dir/not-a-directory"
+unwritable_call() {
+    rules_read "project-rules.sh, no writable state directory" \
+        "$(printf '{"session_id":"unwritable","tool_name":"Edit","tool_input":{"file_path":"%s"}}' "$root/$gd_file" \
+            | TMPDIR="$work_dir/not-a-directory" "$root/.claude/hooks/project-rules.sh" 2>/dev/null)"
+}
+unwritable_call
+assert_rules "no writable state directory, first .gd edit -> context naming godot, not a refusal" context "godot,"
+assert_rules_say "that context says whose reading counts" "$whose_reading"
+unwritable_call
+assert_rules "no writable state directory, the next edit -> context again, still not a refusal" context "godot,"
+
+# ---------------------------------------------------------------- per-agent marker keying -----
+rules_call main-session sub-agent-a Edit "$gd_file"
+assert_rules "sub-agent, same session, first .gd edit -> refused (its own markers)" deny "godot,"
+rules_age main-session sub-agent-a
+rules_call main-session sub-agent-a Edit "$gd_file"
+assert_rules "sub-agent, the edit made again -> let through" none ""
 
 # A second, distinct sub-agent in the same session must also get its own first touch -- proof
 # the keying is per-agent, not just "main vs. one other".
-assert_eq "second sub-agent, same session, first .gd edit -> godot (own marker)" \
-    "godot," "$(project_rules_skills main-session sub-agent-b "$gd_file")"
+rules_call main-session sub-agent-b Edit "$gd_file"
+assert_rules "second sub-agent, same session, first .gd edit -> refused (its own markers)" deny "godot,"
+
+# The orchestrating skill is the orchestrating session's: a sub-agent's edit under src/ or tests/
+# never names it, and the main session's does where session-rules.sh has not already.
+assert_first_edit "a sub-agent's edit under src/ names no orchestrating" \
+    "events,godot,designing-classes," "src/events/zz_probe.gd" sub-agent-d
+assert_first_edit "a sub-agent's edit under tests/ names no orchestrating" \
+    "verify,writing-tests,godot," "tests/test_zz_probe.gd" sub-agent-d
+assert_first_edit "the main session's edit under src/, with no session start before it, names orchestrating" \
+    "events,godot,designing-classes,orchestrating," "src/events/zz_probe.gd"
+
+# -------------------------------------------------------------------- the start of a session ---
+session_call started-session "" startup
+assert_rules "session start -> context naming orchestrating, nothing refused" context "orchestrating,"
+assert_rules_say "the session start says to read it before anything else" "read each one whole now, before anything else"
+checks=$((checks + 1))
+if [ "$(byte_size "$rules_text")" -lt 1000 ]; then
+    echo "ok   the session start carries the index, not the skill's text"
+else
+    fail "the session start carries more than the index: $(byte_size "$rules_text") bytes"
+fi
+rules_call started-session "" Edit "src/events/zz_probe.gd"
+assert_rules "after a session start, an edit under src/ does not name orchestrating again" \
+    deny "events,godot,designing-classes,"
+checks=$((checks + 1))
+if [ ! -s "$state_root/started-session/orchestrating" ] && [ -s "$state_root/started-session/events" ]; then
+    echo "ok   a refusal stamps its markers with a time, and a session start leaves its own empty"
+else
+    fail "markers under $state_root/started-session are not as expected: $(ls -l "$state_root/started-session")"
+fi
+
+# ------------------------------------------------------------------- spawning a sub-agent ------
+rules_call spawn-session "" Agent ""
+assert_rules "a spawn with no session start before it -> let on, with context naming orchestrating" \
+    context "orchestrating,"
+assert_rules_say "the spawn's context says whose reading counts" "$whose_reading"
+rules_call spawn-session "" Task ""
+assert_rules "the next spawn -> nothing" none ""
+rules_call started-session "" Agent ""
+assert_rules "a spawn after a session start -> nothing" none ""
+rules_call spawn-session sub-agent-e Agent ""
+assert_rules "a sub-agent's own spawn -> context naming orchestrating" context "orchestrating,"
 
 # ------------------------------------------------------------- compaction brings rules back ----
 compact_session="compact-session"
-# Establish the main session's orchestrating marker (a fresh startup), and a sub-agent's own
-# markers via a real edit, before compacting.
-session_rules_skills "$compact_session" "" startup >/dev/null
-sub_before="$(project_rules_skills "$compact_session" sub-agent-c "src/city/traffic_signals.gd")"
-assert_eq "sub-agent under $compact_session picks up city + crowd-traffic + designing-classes + godot + orchestrating before compact" \
-    "city,crowd-traffic,designing-classes,godot,orchestrating," "$sub_before"
+# The main session is named orchestrating at its start and refused at an area; a sub-agent of it
+# is refused at an area of its own. Then the main session compacts.
+session_call "$compact_session" "" startup
+rules_call "$compact_session" "" Edit "$gd_file"
+rules_call "$compact_session" sub-agent-c Edit "src/city/traffic_signals.gd"
+assert_rules "sub-agent under $compact_session is refused, naming city + crowd-traffic + godot + designing-classes" \
+    deny "city,crowd-traffic,godot,designing-classes,"
+rules_age "$compact_session" ""
+rules_age "$compact_session" sub-agent-c
 
-after_compact="$(session_rules_skills "$compact_session" "" compact)"
-assert_eq "main session gets orchestrating again after source:compact" \
-    "orchestrating," "$after_compact"
+session_call "$compact_session" "" compact
+assert_rules "main session is named orchestrating again after source:compact" context "orchestrating,"
+rules_call "$compact_session" "" Edit "$gd_file"
+assert_rules "after the compact, the area's first edit is refused again" deny "godot,"
 
 sub_state_dir="$state_root/$compact_session-sub-agent-c"
 checks=$((checks + 1))
 sub_markers="$(ls "$sub_state_dir" 2>/dev/null | sort | tr '\n' ',')"
-if [ "$sub_markers" = "city,crowd-traffic,designing-classes,godot,orchestrating," ]; then
+if [ "$sub_markers" = "city,crowd-traffic,designing-classes,godot," ]; then
     echo "ok   sub-agent's own markers survive the main session's compact untouched"
 else
     fail "sub-agent's own markers changed across the main session's compact: got [$sub_markers]"
 fi
+rules_call "$compact_session" sub-agent-c Edit "src/city/traffic_signals.gd"
+assert_rules "the sub-agent's area stays let through across the main session's compact" none ""
 
-# A sub-agent's own compact must likewise only ever clear its own directory.
-sub_after_own_compact="$(session_rules_skills "$compact_session" sub-agent-c compact)"
-assert_eq "a sub-agent's own source:compact re-injects orchestrating for that sub-agent" \
-    "orchestrating," "$sub_after_own_compact"
+# A SessionStart that carries an agent_id is not an event the harness is documented to send: a
+# sub-agent gets SubagentStart, when it is spawned, and no hook here is wired to that. So in Claude
+# Code a sub-agent's markers are never cleared, and a sub-agent whose context is compacted is not
+# refused again, which is a known limit and has no case here, there being no event to feed. What
+# this holds is the hook's own guard: were such an event sent, it would clear that one agent's
+# markers and nobody else's. It says nothing of what a sub-agent is named at a start.
+session_call "$compact_session" sub-agent-c compact
+rules_call "$compact_session" sub-agent-c Edit "src/city/traffic_signals.gd"
+assert_rules "(not an event the harness is documented to send) a SessionStart carrying an agent_id clears that agent's markers" \
+    deny "city,crowd-traffic,godot,designing-classes,"
+checks=$((checks + 1))
+if [ -s "$state_root/$compact_session/godot" ]; then
+    echo "ok   (the same event) the main session's markers are untouched by it"
+else
+    fail "a SessionStart carrying an agent_id cleared the main session's markers"
+fi
+for other_source in resume clear fork; do
+    session_call "$compact_session" "" "$other_source"
+    assert_rules "main session is named orchestrating again after source:$other_source" context "orchestrating,"
+done
 
-# ------------------------------------------------------------------------- new path mappings ---
-assert_eq "src/routes/street_network.gd -> city (M... routes gap)" \
-    "city,designing-classes,godot,orchestrating," "$(project_rules_skills routes-session "" "src/routes/street_network.gd")"
-assert_eq "src/city/traffic_signals.gd -> city + crowd-traffic" \
-    "city,crowd-traffic,designing-classes,godot,orchestrating," "$(project_rules_skills traffic-signals-session "" "src/city/traffic_signals.gd")"
-assert_eq "src/city/traffic_light.gd -> city + crowd-traffic" \
-    "city,crowd-traffic,designing-classes,godot,orchestrating," "$(project_rules_skills traffic-light-session "" "src/city/traffic_light.gd")"
-assert_eq "src/ground_shape.gd -> crowd-traffic (not city -- it is not under src/city/)" \
-    "crowd-traffic,designing-classes,godot,orchestrating," "$(project_rules_skills ground-shape-session "" "src/ground_shape.gd")"
-assert_eq "src/autoload/telemetry.gd -> telemetry" \
-    "designing-classes,godot,orchestrating,telemetry," "$(project_rules_skills telemetry-session "" "src/autoload/telemetry.gd")"
-assert_eq "tools/synthesize-sfx.py -> cli + Python + sound-effects" \
-    "cli-tools,python-tooling,sound-effects," \
-    "$(project_rules_skills sound-recipe-session "" "tools/synthesize-sfx.py")"
-assert_eq "a generated WAV under docs/evidence -> sound-effects + verify" \
-    "sound-effects,verify," \
-    "$(project_rules_skills sound-asset-session "" "docs/evidence/sound-lab/example.wav")"
-assert_eq "docs/evidence/** -> verify" \
-    "verify," \
-    "$(project_rules_skills evidence-session "" "docs/evidence/experiment/README.md")"
-assert_eq "primary captures keep their specific rule alongside verify" \
-    "session-captures,verify," \
-    "$(project_rules_skills capture-session "" "docs/evidence/archive/session-captures/frame.png")"
+# ----------------------------------------------------------------------- the frozen Codex side --
+# tools/codex-hooks.py renames every session codex-<hash> and passes on nothing but a hook's
+# additionalContext, so for that caller both hooks still print the skills' text and refuse nothing.
+rules_unbounded=1
+session_call codex-0123abcd "" startup
+assert_rules "the Codex adapter's session start -> context" context ""
+assert_rules_say "the Codex adapter's session start carries the skill's text" "===== project rule: orchestrating ====="
+rules_call codex-0123abcd "" Edit "$gd_file"
+assert_rules "the Codex adapter's first .gd edit -> context, not a refusal" context ""
+assert_rules_say "the Codex adapter's edit carries the skill's text" "===== project rule: godot ====="
+rules_call codex-0123abcd "" Edit "$gd_file"
+assert_rules "the Codex adapter's second .gd edit -> nothing" none ""
+rules_unbounded=""
+
+# --------------------------------------------------------------------------- which path, which skills ---
+assert_first_edit "src/routes/street_network.gd -> city" \
+    "city,godot,designing-classes,orchestrating," "src/routes/street_network.gd"
+assert_first_edit "src/city/traffic_signals.gd -> city + crowd-traffic" \
+    "city,crowd-traffic,godot,designing-classes,orchestrating," "src/city/traffic_signals.gd"
+assert_first_edit "src/city/traffic_light.gd -> city + crowd-traffic" \
+    "city,crowd-traffic,godot,designing-classes,orchestrating," "src/city/traffic_light.gd"
+assert_first_edit "src/ground_shape.gd -> crowd-traffic (not city -- it is not under src/city/)" \
+    "crowd-traffic,godot,designing-classes,orchestrating," "src/ground_shape.gd"
+assert_first_edit "src/autoload/telemetry.gd -> telemetry" \
+    "telemetry,godot,designing-classes,orchestrating," "src/autoload/telemetry.gd"
+assert_first_edit "tools/synthesize-sfx.py -> Python + sound-effects + cli" \
+    "python-tooling,sound-effects,cli-tools," "tools/synthesize-sfx.py"
+assert_first_edit "tools/reference.sh -> reference-photos + cli" \
+    "reference-photos,cli-tools," "tools/reference.sh"
+assert_first_edit "tools/reference.py -> Python + reference-photos + cli" \
+    "python-tooling,reference-photos,cli-tools," "tools/reference.py"
+assert_first_edit "docs/reference/<folder>/README.md -> reference-photos" \
+    "reference-photos," "docs/reference/zz-probe/README.md"
+assert_first_edit "docs/evidence/** -> verify + session-captures" \
+    "verify,session-captures," "docs/evidence/experiment/README.md"
+assert_first_edit "a capture folder's note under the archive -> verify + session-captures" \
+    "verify,session-captures," "docs/evidence/archive/session-captures/zz-probe/README.md"
+assert_first_edit "the rejected graphics archive keeps its own rule beside them" \
+    "rejected-graphics,verify,session-captures," "docs/evidence/archive/rejected-graphics/README.md"
 
 # src/visuals/ holds loader code, not pictures: it gets the GDScript rules and never the
-# PNG-drawing ones, which govern art/illustrated/ alone.
-assert_eq "src/visuals/atlas_library.gd -> designing-classes + godot + orchestrating, not illustrated-png" \
-    "designing-classes,godot,orchestrating," "$(project_rules_skills visuals-session "" "src/visuals/atlas_library.gd")"
-assert_eq "art/illustrated/**.png -> illustrated-png" \
-    "illustrated-png," "$(project_rules_skills illustrated-session "" "art/illustrated/svg-transfer/x/y.png")"
+# PNG-drawing ones, which govern art/illustrated/ and the membership file alone.
+assert_first_edit "src/visuals/atlas_library.gd -> godot + designing-classes + orchestrating, not illustrated-png" \
+    "godot,designing-classes,orchestrating," "src/visuals/atlas_library.gd"
+assert_first_edit "a text file under art/illustrated/ -> illustrated-png" \
+    "illustrated-png," "art/illustrated/svg-transfer/README.md"
+assert_first_edit "assets/atlases/membership.json -> svg-art + illustrated-png" \
+    "svg-art,illustrated-png," "assets/atlases/membership.json"
+
+# The files that draw the cues, and the files that hold the numbers balance's description names.
+assert_first_edit "src/events/views/event_look.gd -> events + cues" \
+    "events,cues,godot,designing-classes,orchestrating," "src/events/views/event_look.gd"
+assert_first_edit "src/crowd/crowd_agent.gd -> crowd-traffic + cues" \
+    "crowd-traffic,cues,godot,designing-classes,orchestrating," "src/crowd/crowd_agent.gd"
+assert_first_edit "src/player/stroller.gd -> cues" \
+    "cues,godot,designing-classes,orchestrating," "src/player/stroller.gd"
+assert_first_edit "src/events/warning_board.gd -> events + cues" \
+    "events,cues,godot,designing-classes,orchestrating," "src/events/warning_board.gd"
+assert_first_edit "src/sprites.gd -> cues" \
+    "cues,godot,designing-classes,orchestrating," "src/sprites.gd"
+assert_first_edit "src/autoload/tuning.gd -> balance" \
+    "balance,godot,designing-classes,orchestrating," "src/autoload/tuning.gd"
+assert_first_edit "src/events/event_catalogue.gd -> events + balance" \
+    "events,balance,godot,designing-classes,orchestrating," "src/events/event_catalogue.gd"
+assert_first_edit "src/events/event_scheduler.gd -> events + balance" \
+    "events,balance,godot,designing-classes,orchestrating," "src/events/event_scheduler.gd"
+assert_first_edit "src/crowd/crowd_lanes.gd -> crowd-traffic + balance" \
+    "crowd-traffic,balance,godot,designing-classes,orchestrating," "src/crowd/crowd_lanes.gd"
+assert_first_edit "src/player/baby.gd -> balance" \
+    "balance,godot,designing-classes,orchestrating," "src/player/baby.gd"
+assert_first_edit "src/city/city.gd -> city + balance" \
+    "city,balance,godot,designing-classes,orchestrating," "src/city/city.gd"
+assert_first_edit "src/field.gd -> balance" \
+    "balance,godot,designing-classes,orchestrating," "src/field.gd"
 
 # The queue, the review items and the playtests all bring playtest-feedback: an entry's context
 # file and an item file, a review item, a new playtest named by date and two words, and an old
-# numbered one.
-assert_eq "docs/todo/<entry>/README.md -> playtest-feedback" \
-    "playtest-feedback," "$(project_rules_skills todo-readme-session "" "docs/todo/2026-09-26-M210/README.md")"
-assert_eq "docs/todo/<entry>/<item>.md -> playtest-feedback" \
-    "playtest-feedback," "$(project_rules_skills todo-item-session "" "docs/todo/2026-09-27-busy-otter/stack-in-front.md")"
-assert_eq "docs/review/<name>.md -> playtest-feedback" \
-    "playtest-feedback," "$(project_rules_skills review-session "" "docs/review/2026-09-27-busy-otter.md")"
-assert_eq "docs/playtests/<date>-<words>.md -> playtest-feedback" \
-    "playtest-feedback," "$(project_rules_skills new-playtest-session "" "docs/playtests/2026-09-27-quiet-heron.md")"
-assert_eq "docs/playtests/PLAYTEST-NN.md -> playtest-feedback" \
-    "playtest-feedback," "$(project_rules_skills old-playtest-session "" "docs/playtests/PLAYTEST-144.md")"
-assert_eq "docs/TODO.md -> playtest-feedback" \
-    "playtest-feedback," "$(project_rules_skills todo-session "" "docs/TODO.md")"
-assert_eq "docs/decisions/<name>.md -> nothing (a record is written under committing, not a playtest)" \
-    "" "$(project_rules_skills decisions-session "" "docs/decisions/2026-09-27-busy-otter.md")"
+# numbered one. A decision record brings committing, which says how one is named and filed.
+assert_first_edit "docs/todo/<entry>/README.md -> playtest-feedback" \
+    "playtest-feedback," "docs/todo/2026-09-26-M210/README.md"
+assert_first_edit "docs/todo/<entry>/<item>.md -> playtest-feedback" \
+    "playtest-feedback," "docs/todo/2026-09-27-busy-otter/stack-in-front.md"
+assert_first_edit "docs/review/<name>.md -> playtest-feedback" \
+    "playtest-feedback," "docs/review/2026-09-27-busy-otter.md"
+assert_first_edit "docs/playtests/<date>-<words>.md -> playtest-feedback" \
+    "playtest-feedback," "docs/playtests/2026-09-27-quiet-heron.md"
+assert_first_edit "docs/playtests/PLAYTEST-NN.md -> playtest-feedback" \
+    "playtest-feedback," "docs/playtests/PLAYTEST-144.md"
+assert_first_edit "docs/TODO.md -> playtest-feedback" \
+    "playtest-feedback," "docs/TODO.md"
+assert_first_edit "docs/decisions/<name>.md -> committing" \
+    "committing," "docs/decisions/2026-09-27-busy-otter.md"
+assert_first_edit "a hook script -> nothing (no skill says what a change to one owes)" \
+    "" ".claude/hooks/project-rules.sh"
+assert_first_edit "the write guard among the hooks -> nothing either" \
+    "" ".claude/hooks/github-write-guard.sh"
+assert_first_edit ".claude/settings.json -> committing" \
+    "committing," ".claude/settings.json"
+assert_first_edit "a workflow -> verify" \
+    "verify," ".github/workflows/ci.yml"
+assert_first_edit "a top-level doc outside every row -> nothing" \
+    "" "docs/CITY.md"
 
 # A suite brings how a test is written beside how a change is verified, and a class under src/
 # brings how a class is shaped; a file under src/ that is not GDScript does not, and neither does a
-# .gd file outside src/ (the probe file above already shows godot alone there).
-assert_eq "tests/<suite>.gd -> verify + writing-tests (+ godot + orchestrating)" \
-    "godot,orchestrating,verify,writing-tests," "$(project_rules_skills suite-session "" "tests/test_meter.gd")"
-assert_eq "src/events/<file>.gd -> events + designing-classes (+ godot + orchestrating)" \
-    "designing-classes,events,godot,orchestrating," "$(project_rules_skills events-gd-session "" "src/events/event_catalogue.gd")"
-assert_eq "src/<scene>.tscn -> orchestrating only, not designing-classes" \
-    "orchestrating," "$(project_rules_skills scene-session "" "src/main.tscn")"
+# .gd file outside src/ (the probe file above already shows godot alone there). A scene, a shader
+# and the project file bring godot, whose rules name all three.
+assert_first_edit "tests/<suite>.gd -> verify + writing-tests (+ godot + orchestrating)" \
+    "verify,writing-tests,godot,orchestrating," "tests/test_meter.gd"
+assert_first_edit "src/<scene>.tscn -> godot + orchestrating, not designing-classes" \
+    "godot,orchestrating," "src/main.tscn"
+assert_first_edit "a shader -> godot" \
+    "godot," "assets/shaders/zz_probe.gdshader"
+assert_first_edit "project.godot -> godot" \
+    "godot," "project.godot"
+assert_first_edit "an SVG -> svg-art" \
+    "svg-art," "art/zz_probe.svg"
 
-# Control: an unrelated src/city/*.gd file gets city but not crowd-traffic, proving the new
-# crowd-traffic mapping is scoped to the three named files and not all of src/city/.
-assert_eq "src/city/some_other_file.gd -> city only, not crowd-traffic" \
-    "city,designing-classes,godot,orchestrating," "$(project_rules_skills control-session "" "src/city/some_other_file.gd")"
+# Control: an unrelated src/city/*.gd file gets city but not crowd-traffic, proving the
+# crowd-traffic row is scoped to the three named files and not all of src/city/.
+assert_first_edit "src/city/some_other_file.gd -> city only, not crowd-traffic" \
+    "city,godot,designing-classes,orchestrating," "src/city/some_other_file.gd"
+
+# A row's path starts at the checkout's root: a folder of the same name deeper in the tree is not
+# the governed one, an agent's worktree under .claude/worktrees/ is a checkout like the main one,
+# and a path outside the repository is nobody's.
+assert_first_edit "docs/notes/src/events/x.gd -> godot alone (src/events/ is the one at the root)" \
+    "godot," "docs/notes/src/events/x.gd"
+assert_first_edit "a worktree's src/events/x.gd -> as in the main checkout" \
+    "events,godot,designing-classes,orchestrating," ".claude/worktrees/zz-probe/src/events/x.gd"
+assert_first_edit "a worktree's own settings file -> committing, not the worktrees folder's path" \
+    "committing," ".claude/worktrees/zz-probe/.claude/settings.json"
+
+# A path is matched as the file it reaches: its "." and ".." parts and doubled slashes are taken
+# out first, as text, so a detour through another folder loses no row and gains none.
+assert_first_edit "docs/../src/events/a.gd -> as src/events/a.gd" \
+    "events,godot,designing-classes,orchestrating," "docs/../src/events/a.gd"
+assert_rules_say "the refusal names the file without the detour" "the edit. src/events/a.gd is governed by"
+assert_first_edit "src/./events//a.gd -> as src/events/a.gd" \
+    "events,godot,designing-classes,orchestrating," "src/./events//a.gd"
+assert_first_edit "src/events/../city/a.gd -> city, not events" \
+    "city,godot,designing-classes,orchestrating," "src/events/../city/a.gd"
+assert_first_edit "a path that climbs out of a worktree into the main checkout -> the main checkout's file" \
+    "events,godot,designing-classes,orchestrating," ".claude/worktrees/zz-probe/../../../src/events/a.gd"
+assert_first_edit "a path with a space in a folder's name keeps it" \
+    "events,godot,designing-classes,orchestrating," "src/events/zz probe/../a b.gd"
+assert_first_edit "a path that climbs out of the repository -> nothing" \
+    "" "../zz-elsewhere/src/events/x.gd"
+rules_read "project-rules.sh, a path outside the repository" \
+    "$(printf '{"session_id":"outside-session","tool_name":"Edit","tool_input":{"file_path":"/tmp/elsewhere/src/events/x.gd"}}' \
+        | "$root/.claude/hooks/project-rules.sh")"
+assert_rules "a same-named folder outside the repository -> nothing" none ""
+
+# ------------------------------------------------- CLAUDE.md's path table and the hook's rows ---
+# The two are one table written twice, so they are compared row for row, in order: the paths (or
+# the tool names) in a row's first cell and the skills in its second, against the hook's row.
+hook_rows="$(sed -n '/^# rules-table-begin$/,/^# rules-table-end$/p' "$root/.claude/hooks/project-rules.sh" \
+    | sed -n 's/^[[:space:]]*"\(.*\)"$/\1/p' | sed 's/tool://g')"
+doc_rows="$(awk '
+    /^\| Path \| Rules that arrive \|$/ { table = 1; next }
+    table && /^\|---/ { next }
+    table && !/^\|/ { exit }
+    table {
+        n = split($0, cell, "|")
+        paths = ""; rest = cell[2]
+        while (match(rest, /\140[^\140]*\140/)) {
+            paths = paths (paths == "" ? "" : " ") substr(rest, RSTART + 1, RLENGTH - 2)
+            rest = substr(rest, RSTART + RLENGTH)
+        }
+        names = ""; rest = cell[3]
+        while (match(rest, /\*\*[a-z-]*\*\*/)) {
+            names = names (names == "" ? "" : " ") substr(rest, RSTART + 2, RLENGTH - 4)
+            rest = substr(rest, RSTART + RLENGTH)
+        }
+        print paths " => " names
+    }
+' "$root/CLAUDE.md")"
+checks=$((checks + 1))
+if [ -n "$hook_rows" ] && [ "$hook_rows" = "$doc_rows" ]; then
+    echo "ok   CLAUDE.md's path table and project-rules.sh's rows agree, row for row"
+else
+    fail "CLAUDE.md's path table and project-rules.sh's rows differ (< the hook, > CLAUDE.md):
+$(diff <(printf '%s\n' "$hook_rows") <(printf '%s\n' "$doc_rows"))"
+fi
+
+# Every row fires: for each path of each row, a file an edit tool can write there is refused with
+# the row's skills among those named (a tool row gives them as context). The answers also feed
+# the size checks below, so every row's index is measured.
+row_number=0
+set -f   # a row's paths are words to read here, never file name patterns to expand
+while IFS= read -r hook_row; do
+    [ -z "$hook_row" ] && continue
+    row_number=$((row_number + 1))
+    row_globs="${hook_row% => *}"
+    row_skills="${hook_row#* => }"
+    glob_number=0
+    for row_glob in $row_globs; do
+        glob_number=$((glob_number + 1))
+        case "$row_glob" in
+            Agent|Task)
+                rules_call "row-$row_number-$glob_number" "" "$row_glob" ""
+                ;;
+            *)
+                row_sample="${row_glob//\*\*\//zz/}"
+                row_sample="${row_sample//\*\*/zz-probe}"
+                row_sample="${row_sample//\*/zz-probe}"
+                rules_call "row-$row_number-$glob_number" "" Edit "$row_sample"
+                ;;
+        esac
+        checks=$((checks + 1))
+        row_missing=""
+        for row_skill in $row_skills; do
+            case ",$rules_names" in
+                *",$row_skill,"*) ;;
+                *) row_missing="$row_missing $row_skill" ;;
+            esac
+        done
+        if [ -z "$row_missing" ] && [ "$rules_verdict" != none ]; then
+            echo "ok   row $row_number, $row_glob -> $row_skills"
+        else
+            fail "row $row_number, $row_glob: expected $row_skills among the named skills, got [$rules_verdict $rules_names]"
+        fi
+    done
+done <<< "$hook_rows"
+set +f
 
 # ---------------------------------------------------------- lint-docs.sh's governed set ---------
 # lint-docs.sh reads the file through tools/lint.sh, so this needs paths that actually exist.
@@ -643,6 +1080,120 @@ else
     fail "lint-docs.sh flagged a doc under docs/evidence/: $evidence_output"
 fi
 
+# A skill's reference files are rules like its SKILL.md: the hook governs every Markdown file under
+# .claude/skills/, at any depth, and so does tools/lint.sh's own default set.
+for governed_path in .claude/skills/orchestrating/SKILL.md \
+    .claude/skills/orchestrating/references/agent-contract.md \
+    .claude/skills/zz-test-rules-hooks/references/deeper/note.md; do
+    checks=$((checks + 1))
+    if [ "$(governed_trace "$governed_path")" -ge 1 ]; then
+        echo "ok   lint-docs.sh lints $governed_path"
+    else
+        fail "lint-docs.sh does not lint $governed_path"
+    fi
+done
+checks=$((checks + 1))
+if [ "$(governed_trace .claude/skills/zz-test-rules-hooks/references/picture.svg)" -ge 1 ]; then
+    fail "lint-docs.sh lints a file under .claude/skills/ that is not Markdown"
+else
+    echo "ok   lint-docs.sh ignores a file under .claude/skills/ that is not Markdown"
+fi
+
+# A throwaway repository with a worktree where an agent's is, <main>/.claude/worktrees/<name>: the
+# hook that runs is the main checkout's copy, and the doc it is handed decides which checkout's
+# layout it is matched against and whose tools/lint.sh reads it. Each checkout's lint.sh is a stub
+# that names itself and the file it was given and fails, so the hook's output says which one ran.
+lint_repo="$work_dir/lint-repo"
+mkdir -p "$lint_repo/.claude/hooks" "$lint_repo/tools" "$lint_repo/.claude/skills/probe/references"
+cp "$root/.claude/hooks/lint-docs.sh" "$lint_repo/.claude/hooks/lint-docs.sh"
+printf '#!/usr/bin/env bash\necho "MAIN LINT $*"\nexit 1\n' > "$lint_repo/tools/lint.sh"
+chmod +x "$lint_repo/tools/lint.sh"
+printf '# rules\n' > "$lint_repo/CLAUDE.md"
+printf '# a reference file\n' > "$lint_repo/.claude/skills/probe/references/note.md"
+(
+    cd "$lint_repo" || exit 1
+    git init -q . \
+        && git add -A \
+        && git -c user.name=test -c user.email=test@example.invalid commit -q -m "a tree to lint" \
+        && git worktree add -q --detach .claude/worktrees/agent
+) >/dev/null 2>&1
+lint_worktree="$lint_repo/.claude/worktrees/agent"
+printf '#!/usr/bin/env bash\necho "WORKTREE LINT $*"\nexit 1\n' > "$lint_worktree/tools/lint.sh"
+# $1 label  $2 the text the hook's output must hold ("" for no output at all)  $3 the edited file
+assert_lint_hook() {
+    local raw got
+    raw="$(printf '{"tool_input":{"file_path":"%s"}}' "$3" | "$lint_repo/.claude/hooks/lint-docs.sh")"
+    note_hook_size "lint-docs.sh, ${3#"$lint_repo"/}" "$raw"
+    got="$(printf '%s' "$raw" | jq -r '.hookSpecificOutput.additionalContext // empty')"
+    checks=$((checks + 1))
+    if [ -z "$2" ] && [ -z "$got" ]; then
+        echo "ok   $1"
+    elif [ -n "$2" ] && [ "${got#*"$2"}" != "$got" ]; then
+        echo "ok   $1"
+    else
+        fail "$1: expected [${2:-nothing}] in the hook's output, got [$got]"
+    fi
+}
+assert_lint_hook "lint-docs.sh lints the main checkout's CLAUDE.md with the main checkout's lint.sh" \
+    "MAIN LINT " "$lint_repo/CLAUDE.md"
+assert_lint_hook "lint-docs.sh lints a worktree's CLAUDE.md with that worktree's lint.sh" \
+    "WORKTREE LINT " "$lint_worktree/CLAUDE.md"
+assert_lint_hook "the worktree's lint.sh is handed the worktree's own file" \
+    "/.claude/worktrees/agent/CLAUDE.md" "$lint_worktree/CLAUDE.md"
+assert_lint_hook "lint-docs.sh lints a reference file in a worktree" \
+    "WORKTREE LINT " "$lint_worktree/.claude/skills/probe/references/note.md"
+# A doc with more hits than fit in a hook's answer is answered with the first of them and where
+# the rest are; the size check below measures the answer.
+printf '#!/usr/bin/env bash\nfor n in $(seq 1 400); do echo "WORKTREE LINT hit number $n, with words enough to fill a line of output"; done\nexit 1\n' \
+    > "$lint_worktree/tools/lint.sh"
+assert_lint_hook "lint-docs.sh cuts a long list of hits and says where the rest are" \
+    "more hits than fit here: run tools/lint.sh CLAUDE.md" "$lint_worktree/CLAUDE.md"
+assert_lint_hook "the cut list still opens with the first hit" \
+    "WORKTREE LINT hit number 1," "$lint_worktree/CLAUDE.md"
+printf '#!/usr/bin/env bash\necho "WORKTREE LINT $*"\nexit 1\n' > "$lint_worktree/tools/lint.sh"
+printf 'not a doc\n' > "$lint_worktree/tools/notes.md"
+assert_lint_hook "lint-docs.sh ignores a Markdown file in a worktree that is outside the governed set" \
+    "" "$lint_worktree/tools/notes.md"
+# A repository that is not this one: the same file name is nobody's governed doc.
+other_repo="$work_dir/other-repo"
+mkdir -p "$other_repo/tools"
+printf '#!/usr/bin/env bash\necho "OTHER LINT $*"\nexit 1\n' > "$other_repo/tools/lint.sh"
+chmod +x "$other_repo/tools/lint.sh"
+printf '# rules\n' > "$other_repo/CLAUDE.md"
+( cd "$other_repo" && git init -q . ) >/dev/null 2>&1
+assert_lint_hook "lint-docs.sh ignores CLAUDE.md in another repository" "" "$other_repo/CLAUDE.md"
+
+# tools/lint.sh's own default set, in the same throwaway repository: a volatile fact planted in a
+# reference file two folders below its skill is a hit. The copy has none of the scripts the layout
+# checks call, so its other complaints are expected and only the planted line is asserted.
+cp "$root/tools/lint.sh" "$lint_repo/tools/lint.sh"
+mkdir -p "$lint_repo/.claude/skills/probe/references/deeper"
+printf -- '- [x] a ticked box\n' > "$lint_repo/.claude/skills/probe/references/deeper/planted.md"
+planted_hits="$("$lint_repo/tools/lint.sh" 2>&1)"
+checks=$((checks + 1))
+if grep -qxF '.claude/skills/probe/references/deeper/planted.md:1: ticked box' <<<"$planted_hits"; then
+    echo "ok   tools/lint.sh's default set reaches a reference file below a skill"
+else
+    fail "tools/lint.sh's default set misses a reference file below a skill: $planted_hits"
+fi
+
+# ------------------------------------------------------------------- how much a hook says ------
+# Every answer the rule hooks and the lint hook gave above, measured: none reaches the size the
+# harness would cut, and no index reaches the 2,000 bytes that would survive a cut.
+checks=$((checks + 2))
+largest_answer="$(sort -n -r -k1,1 "$hook_sizes" | head -n 1)"
+largest_text="$(grep 'rules\.sh' "$hook_sizes" | sort -t "$(printf '\t')" -n -r -k2,2 | head -n 1)"
+if [ "$(wc -l < "$hook_sizes")" -gt 50 ] && [ "$(printf '%s' "$largest_answer" | cut -f1)" -le "$hook_output_max" ]; then
+    echo "ok   no hook answer exceeds $hook_output_max bytes (the largest: $(printf '%s' "$largest_answer" | cut -f1,3 | tr '\t' ' '))"
+else
+    fail "a hook answer exceeds $hook_output_max bytes, or too few were measured: $largest_answer"
+fi
+if [ -n "$largest_text" ] && [ "$(printf '%s' "$largest_text" | cut -f2)" -lt "$index_max" ]; then
+    echo "ok   no rule hook's index reaches $index_max bytes (the largest: $(printf '%s' "$largest_text" | cut -f2,3 | tr '\t' ' '))"
+else
+    fail "a rule hook's index reaches $index_max bytes: $largest_text"
+fi
+
 # ---------------------------------------------------------------- git-grep-guard.sh -------------
 # Prints "deny" or "allow" for one synthetic command through git-grep-guard.sh, as the tool named
 # by $2 (Bash when omitted). `grep_guard_path` puts the write guard's jq and git shims (below)
@@ -659,6 +1210,8 @@ guard_decision() {
             ${grep_guard_fail_jq:+WRITE_GUARD_FAIL_JQ=$grep_guard_fail_jq} "$root/.claude/hooks/git-grep-guard.sh")
     if [ -z "$raw" ]; then
         printf 'allow'
+    elif [ "$(byte_size "$raw")" -gt "$hook_output_max" ]; then
+        printf 'oversize'   # past the size the harness places in context: no decision passes as this
     else
         printf '%s' "$raw" | jq -r '.hookSpecificOutput.permissionDecision'
     fi
@@ -1289,6 +1842,8 @@ write_guard_decision() {
             NAPPY_AGENTS_DIR="$write_guard_agents" "$root/.claude/hooks/github-write-guard.sh")
     if [ -z "$raw" ]; then
         printf 'allow'
+    elif [ "$(byte_size "$raw")" -gt "$hook_output_max" ]; then
+        printf 'oversize'   # past the size the harness places in context: no decision passes as this
     else
         printf '%s' "$raw" | jq -r '.hookSpecificOutput.permissionDecision'
     fi

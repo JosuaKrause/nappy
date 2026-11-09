@@ -5,8 +5,8 @@
 # Why a guard and not only the conflict: git merges an old-format edit into the new short
 # docs/TODO.md, docs/DECISIONS.md or docs/REVIEW.md without a conflict when it touches lines the
 # migration kept -- an insertion under `# Review` splices an old-format section into the new file,
-# and the lint passes it. Such a branch is converted with tools/convert-queue-edits.py (the
-# merging-main skill), never merged as it is.
+# and the lint passes it. Such a branch is converted with tools/convert-queue-edits.py (its own
+# --help says how), never merged as it is.
 
 OLD_QUEUE_FILES="docs/DECISIONS.md docs/TODO.md docs/REVIEW.md"
 
@@ -34,6 +34,7 @@ old_queue_edits() {
 old_queue_message() {
     printf '%s edits the old single-file queue, which main has as files:\n' "$1"
     printf '%s\n' "$2" | sed 's/^/  /'
-    printf '%s\n' "Convert it instead of merging it as it is: in its worktree, git merge --no-ff --no-commit origin/main," \
-        "then uv run python tools/convert-queue-edits.py, then the merging-main review, lint, commit and push."
+    printf '%s\n' "Convert it instead of merging it as it is: tools/convert-queue-edits.py --help says how. In its worktree," \
+        "git merge --no-ff --no-commit origin/main, then uv run python tools/convert-queue-edits.py, then review the" \
+        "merge, lint, commit and push."
 }

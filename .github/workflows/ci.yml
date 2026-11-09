@@ -320,7 +320,7 @@ jobs:
   # The rule-loading hooks' check (.claude/hooks/*.sh fed synthetic hook JSON), a long step of
   # the repository's consistency. It stubs everything it calls, so it needs nothing but bash,
   # jq, perl and a real throwaway repository, all on the runner image: no uv, no Godot, no ffmpeg.
-  # It reads the hooks, the skills they inject and the docs the lint hook reads, so it takes the
+  # It reads the hooks, the skills they name and the docs the lint hook reads, so it takes the
   # same sparse checkout as `gates`, without the history `gates` fetches for the pull request's
   # own checks. Runs on every run, docs-only included, beside `gates`.
   hooks:

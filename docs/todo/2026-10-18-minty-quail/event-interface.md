@@ -18,15 +18,10 @@ no longer being a `Resource`, the narrow interface a behaviour asks its event th
 and the one object for where she is (`WhereSheIs`). The plainer alternative each replaces is a
 method per field on the three classes as they stand.
 
-**Its open points.** Section 7 separates what the player's recorded words answer from six points
-it puts as questions, each with its options and a pick. *Read as* (the orchestrator's): two of
-them (where the settings files live; whether the tests are touched twice) touch nothing the first
-two steps build. Two (whether a car's strike becomes the row's lethal part; how a caller gets a
-plan's live event) are written into the first step's callers under the picks, so a different
-answer afterwards means rewriting those call sites in the badge, the run log and the telemetry
-map: a bounded cost, which is why the first step goes ahead on the picks while the questions are
-with the player. The last two (the cost per frame; the three answers kept as they are) decide
-what a step reports and fixes, not what it builds.
+**Its open points are answered, but for one.** Section 7 holds what the player's recorded words answer and
+the six points the design put as questions, each with the player's answer from the board
+(inbox #1278); the last answer has two readings, put back to the player, and until they
+answer every step keeps things as they are.
 
 The rule it applies is the player's: "provide a consistent interface for events that can be used without
 knowing details of the event. that applies to all aspects of events ... don't forget about
@@ -83,8 +78,9 @@ Three objects are meant by "an event" below, and each is named this way througho
    hundreds of agents, and rows that cannot change take per-frame reads out of the baby's sweep
    and the danger prediction. Section 6 names the probes.
 10. **Nothing the player sees or the logs say changes.** Every step is at test parity, the run
-    log and GoatCounter names included. Three answers that are slightly wrong today are kept as
-    they are and listed for the end remeasure, if the player takes that pick (section 7).
+    log and GoatCounter names included. What happens to three answers that are slightly wrong
+    today is open until the player confirms a reading of their answer (section 7, point 6); until
+    then every step keeps them as they are.
 
 ## 1. The parts
 
@@ -815,10 +811,10 @@ configuration alone moves between rounds, as that record found):
 - `tools/test.sh probes/m159_crowd_tick_cost.gd`: the control; its chain over every agent's
   position is identical.
 
-*Proposed bar, put to the player as a question in section 7:* the fingerprint and the chain identical, always; a rise
-of the events' step and the sweep is reported in the pull request and listed for the end
-remeasure, and above about a twentieth of that step the builder finds the loop and hands in what
-it asks each tick, before review.
+**The bar.** The design's: in a step that changes no behaviour, the fingerprint and the chain are
+identical, always. On the times, the player's answer (section 7, point 5) is read as: they are
+measured and reported in the pull request and listed for the end remeasure, and no step is held or
+tuned for them.
 
 ## 7. Open points
 
@@ -849,50 +845,46 @@ it asks each tick, before review.
    code or code needed for features that don't exist anymore ... if we want a feature back we can
    just implement it fresh" (inbox #1180 in gray-dolphin). It is deleted in 4b, and that pull
    request's record keeps the names, since they are written text.
-### Put as questions
+### Answered by the player on the board
 
-1. **Where do the settings files live?** `src/events/` holds data, model and simulation files
-   side by side, and `standing-layer-breaks.md` leaves open whether the folder is split by layer.
-   (a) The eight new spec files and the draft go in `src/events/parts/`, mapped as data in
-   `tools/layer_map.py`, and the eight existing spec files move there in 4b: seventeen small
-   files that no other track edits. (b) The whole folder is split by layer now: about sixty files move
-   under the placement track while it works. **Pick: (a)**, with the full split in that item's own
-   pull request once placement closes.
-2. **Does a car's strike become the row's lethal part?** (a) No: `ends_the_day()` keeps meaning a
-   place that ends the day, and the car's strike stays its driving's. (b) Yes: one part says
-   everything that can end her day, in three kinds. (b) reads better and costs every rule keyed on
-   `hard_fail` (a wall off the routes, a field kept clear, the doubled telegraph margin) a second
-   question, "a place that ends the day" beside "can end the day", at a risk to parity for no
-   change in play. **Pick: (a)**, as designed.
-3. **How does a caller get a plan's live event?** The plan is the model's and the live event the
-   simulation's, and a lower layer may not name a higher one. (a) The plan answers what callers
-   want of it (`is_in_the_world()`, `where_it_stands_now()`, `faces_now()`), and the event manager
-   hands out the live event itself (`event_of(plan)`) to the few that command it. (b) The plan
-   hands out its live event typed, which adds a listed layer break in the new `event_plan.gd`.
-   **Pick: (a)**, as designed.
-4. **Are the tests touched twice?** 4a rewrites their reads by script, and 5 then makes the
-   suites test one module each. (a) As designed: the script is mechanical and one line per
-   replacement, and it frees 4b from waiting on about 140 test files being redesigned. (b) 4b waits
-   until 5 has converted every suite against methods over public fields, so each test file is
-   opened once: the parts then wait behind the whole of entry 7, and the suites are converted
-   before rows can be built with a draft, which is the redoing the design review warned of.
-   **Pick: (a).**
+Six points the design put as questions, each with the player's answer (inbox #1278, which holds
+each question as it was shown).
 
-5. **Is the cost per frame acceptable?** The player accepted one measured cost in this refactor:
-   of the 4.5% the shared mover base cost the crowd's tick, "let's eat the cost for now and think
-   about optimizing later" (minty-dolphin #852). The same conversion of the crowd's lane code
-   measured about 7 to 9% of the crowd's tick in a debug build (the record brisk-lark), which is
-   the orchestrator's open choice there and nothing the player has accepted. (a) A rise of the
-   events' step and the baby's sweep is measured, reported in the pull request and listed for the
-   end remeasure, and above about a twentieth of that step the builder finds the loop and hands
-   in what it asks each tick before review (section 6). (b) No rise is accepted: each step holds
-   the probes' times within their spread. **Pick: (a).**
-6. **Does a step fix an answer that is slightly wrong today?** The bar a step is verified to is
-   the player's: "for the refactor test parity is enough", "let's do remeasuring at the very end"
-   (inbox #813 in curly-moose). Those words set the bar; they do not say a known-wrong answer is
-   kept. (a) The three below are kept as they are and listed for the end remeasure, since fixing
-   one changes what the run log says or when an event acts. (b) Each is fixed in the step that
-   gives it a name, as a change made on purpose with its pictures. **Pick: (a).**
+1. **Where do the settings files live?** Offered a new folder `src/events/parts/` for the
+   seventeen small files, with the full split of the events folder by layer after placement closes
+   (a), or the whole folder split by layer now (b): "a".
+2. **Does a car's strike become the row's lethal part?** Offered `ends_the_day()` keeping its
+   meaning, a place that ends the day, with the strike staying its driving's (a), or one part for
+   everything that can end her day (b): "a".
+3. **How does a caller get a plan's live event?** Offered the plan answering what callers want of
+   it (`is_in_the_world()`, `where_it_stands_now()`, `faces_now()`) with the event manager handing
+   out the live event (`event_of(plan)`) to the few that command it (a), or the plan handing out
+   its live event, at the price of a listed layer break (b): "a".
+4. **Are the tests touched twice?** Offered a script that rewrites their reads first, with the
+   suites converted to one module each later (a), or each test file opened once, the row's parts
+   waiting behind every suite (b): "a".
+5. **Is the cost per frame acceptable?** Offered a rise measured, reported and listed, with a
+   builder sent back to the loop above about a twentieth of the events' step (a), or no rise
+   accepted (b): "get the clean design first no matter the cost. We can optimize back down later.
+   We have the numbers to know where to look". **Read as:** neither bar. Every step measures the
+   events' step and the baby's sweep with the probes of section 6 and reports the numbers in its
+   pull request, so that there are numbers to look at later; no step is held, tuned or sent back for
+   its cost.
+6. **Does a step fix an answer that is slightly wrong today?** Offered keeping the three below and
+   listing them for the end remeasure (a), or fixing each as a change made on purpose (b): "the
+   shape change is desired. as I said earlier the main real measure will be playtests. This will
+   tell us what needs fixing. Let's not obsess over theoretical numbers. We currently have no
+   established base anymore since we changed a lot. Playtest will decide which deviations need to be
+   fixed". **Two readings, neither confirmed** (put back to the player on the board; until
+   they answer, every step keeps all three as they are):
+   - *All three are made right.* "The shape change is desired" speaks of the first, and "let's not
+     obsess over theoretical numbers" and "no established base anymore" say nothing is kept wrong
+     to hold old numbers: each of the three is a pull request of its own after the step that gives
+     it a name, saying what it changes in play and in the run log, and playtests decide what then
+     needs fixing.
+   - *Only the field's shape is made right.* "Desired" is said of the shape alone, and "playtest
+     will decide which deviations need to be fixed" leaves the other two as they are until a
+     playtest shows them to matter.
    - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
      its five callers do, though the field of a row with a long body is a capsule about that body.
      Answering with the real field changes when the run log says "out of range" and when the
@@ -902,4 +894,3 @@ it asks each tick, before review.
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
      lethal disc less her radius). Each stays one named question; whether they are one fact is
      the remeasure's to say.
-

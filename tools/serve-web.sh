@@ -46,8 +46,8 @@ OS.is_debug_build() is true in the served build, so a browser-side dev flag reac
 the page's own query string -- ?debug=1, ?day=9, ?invincible=1, ?layers=1,3, ?controls=,
 ?escape=1, ?meters=, ?daylength=, ?ending=, ?blackout=1, ?groundmode=, ?framerecord=1 --
 answers, with or without ?debug=1 in the same query; a release export (tools/export-web.sh, no
-argument) answers the same set only with ?debug=1 present (docs/DECISIONS.md, M193, "the live page's ?debug=1
-reaches the debug flags").
+argument) answers the same set only with ?debug=1 present (tools/decisions.sh M193, "the live
+page's ?debug=1 reaches the debug flags").
 See README.md's "Dev flags" section for what each one does.
 
   tools/serve-web.sh

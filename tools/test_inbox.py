@@ -1067,14 +1067,20 @@ class CiteTests(unittest.TestCase):
 
 
 class CiteExamplesTests(unittest.TestCase):
-    """The examples in the tool's own test and in the inbox skill must never be a note a filing cites."""
+    """The examples in the tool's own test and in the inbox skill must never be a note a filing cites.
+
+    The skill's examples are read from every Markdown file under its folder, since they may stand in
+    `SKILL.md` or in a reference file beside it.
+    """
 
     def test_a_cite_run_on_this_repository_proposes_no_edit_to_them(self) -> None:
         root = TOOLS.parent
         targets = {n: held[0] for n, held in inbox.playtests_by_number(root).items()}
         if not targets:
             self.skipTest("no playtest with a `## #N` heading in this checkout")
-        for name in ("tools/test_inbox.py", ".claude/skills/inbox/SKILL.md"):
+        skill = root / ".claude/skills/inbox"
+        skill_files = sorted(path.relative_to(root).as_posix() for path in skill.rglob("*.md"))
+        for name in ("tools/test_inbox.py", *skill_files):
             path = root / name
             if not path.exists():
                 continue

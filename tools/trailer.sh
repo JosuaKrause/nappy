@@ -68,7 +68,7 @@ soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer
   --auditions-reuse  build the three mixes only when a compatible retained base exists; refuse
                      a mismatch without opening a recording window
   --selected        capture every tracked scene and build the chosen Glass Alarm composition,
-                    including additive bass (and an ending layer only when `ending_events` in
+                    including additive bass (and an ending layer only when \`ending_events\` in
                     final-score.json is non-empty); requires no retained historical movies
   --selected-reuse  render the changed hook, dog and title, replace those intervals in the
                     exact retained audition base, and build the selected Glass Alarm cut; refuses a
