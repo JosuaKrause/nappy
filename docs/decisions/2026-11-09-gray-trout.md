@@ -33,8 +33,8 @@ agent's own waits. *Read as, the orchestrating session's, open to the player's c
 not. Both sentences were said to the orchestrator about its own waiting; the second names the wait
 ("when waiting for subagents to complete"); and in the case the player was answering, the wait that
 ran past 45 minutes was the orchestrator's, while the builder's own sleeps were 10 minutes at most.
-A bound in the contract would also cut runs that are legitimately long (a whole-suite run, a
-many-seed probe), which the orchestrator's check already covers from outside: a long run that is
-still producing output is not stuck, and one that has stopped is found within 45 minutes. If the
+Nor is a bound in the contract needed to find a stuck agent, since the orchestrator's check covers
+a long run (a whole-suite run, a many-seed probe) from outside: one that is still producing output
+is not stuck, and one that has stopped is found within 45 minutes. If the
 player wants agents bounded too, it is a line under the contract's "A long wait gives one
 notification" and a new entry.
