@@ -91,7 +91,9 @@ func where_protests_point() -> Vector2:
 
 ## **Works out the run's mast sites on `map`**, once, when the manager is handed its city: a mast's
 ## location is known from the start of the run (inbox #1185; `docs/EVENTS.md`, "The three views and
-## the placement order"), and the sites depend on the city alone, not on the day.
+## the placement order"). The sites are the city's as built and are kept for the run: worked out on
+## a later day's paint, a calm area grown or a tile changed can let a newly eligible candidate win
+## the pick, so they are worked out once, here, and never again.
 func work_out_mast_sites(map: CityMap) -> void:
 	_mast_sites = MastSites.compute(map)
 

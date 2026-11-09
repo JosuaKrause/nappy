@@ -836,7 +836,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("events:%d:%d" % [map.seed_used, day])
 			var rows := EventScheduler.build_day(DaySpec.for_day(day), events_rng, map,
-					CalmAreas.of(map, no_calm), no_one_shots, no_scars, tree, 0,
+					CalmAreas.of(map, no_calm), MastSites.compute(map), no_one_shots, no_scars, tree, 0,
 					PackedVector2Array(), standing).placements()
 
 			var corridor := Corridor.of(tree)

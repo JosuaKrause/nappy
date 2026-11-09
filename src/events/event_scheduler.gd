@@ -661,10 +661,11 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## handed it, and the caller reads the rows (`DayEvents.placements()`) and the facts derived
 ## from them through it.
 static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, calm: CalmAreas,
+		mast_sites: Array[MastSites.Site],
 		consumed_one_shots: Array[String] = [], scars: Array[Dictionary] = [],
 		route: RouteSource = null, heat: int = 0, doors := PackedVector2Array(),
 		standing: Array[Planned] = [], trace: RunTrace = null,
-		beside_the_routes: EventDef = null, mast_sites: Array[MastSites.Site] = []) -> DayEvents:
+		beside_the_routes: EventDef = null) -> DayEvents:
 	var events := DayEvents.over(calm, standing)
 	if spec.draw == DaySpec.Draw.BAG_PER_STREET:
 		_draw_the_walk(spec, rng, map, route, _street_bag(spec.bag, street_bag_seed(rng)), events,
@@ -674,11 +675,8 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
-	# The run's mast sites, worked out once when the run's city was handed over
-	# (`EventWorld.mast_sites()`); worked out here for a caller that hands none, which finds the same.
-	var sites := mast_sites if not mast_sites.is_empty() else MastSites.compute(map)
 	_plan_the_dawn(day, base, map, consumed_one_shots, scars, calm, route, heat, doors,
-			events, trace, spec, beside_the_routes, sites)
+			events, trace, spec, beside_the_routes, mast_sites)
 	_ensure_the_run_is_taught(day, events, heat, trace)
 
 	# **A day whose target stands in a calm area owes her a second one** — day 12's swing, in
@@ -727,15 +725,21 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	var reach := RouteReachRule.new(map, corridor)
 
 	# **The fixed parts' phases** (the design's "the city's fixed parts have phases of their own"):
-	# the ambient rows and the masts stand where their planners put them, and each is recorded on
-	# the location holding it, so the draw passes over it. A mast's location on a day before the
-	# masts holds nothing and is drawn like any other.
+	# the seals, the region wall and its doors (standing, planned before the day), the ambient rows
+	# and the masts stand where their planners put them, and each is recorded on the location
+	# holding it, so the draw passes over it. A soft seal stands on a street no hold closes, so its
+	# two sidewalk locations are what it holds; a hard seal's, the wall's and a door's streets are
+	# held already. A mast's location on a day before the masts holds nothing and is drawn like any
+	# other.
 	var fixed := _place_ambient(day, map, heat)
 	events.add_all(fixed)
 	_place_scars(day, scars, map, events, reach, heat)
 	var masts := _place_masts(day, map, heat, doors, scars, mast_sites)
 	events.add_all(masts)
 	fixed.append_array(masts)
+	for part in events.standing():
+		if part.is_a_fixed_part() and part.is_placed():
+			fixed.append(part)
 	for part in fixed:
 		var tile := map.world_to_tile(part.placed_at())
 		locations.hold_fixed_part(part, tile, map.tile_at(tile))
@@ -1614,7 +1618,7 @@ static func _place_masts(day: int, map: CityMap, heat: int = 0,
 	var loudspeaker := EventCatalogue.heated(EventCatalogue.mast(), heat)
 	var curfew := EventCatalogue.heated(EventCatalogue.by_id("curfew_announce"), heat) \
 			if day == CURFEW_ANNOUNCE_DAY else null
-	var sites := mast_sites if not mast_sites.is_empty() else MastSites.compute(map)
+	var sites := mast_sites
 	for scar in scars:
 		if String(scar["id"]) != SILENCED_MAST or int(scar["since_day"]) >= day:
 			continue

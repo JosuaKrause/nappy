@@ -5,10 +5,11 @@ extends RefCounted
 ## loudspeakers that are somewhere"). Chosen by farthest-point sampling so the six of them
 ## (`Tuning.MAST_COUNT`) spread across the city rather than clumping in one district.
 ##
-## **Pure geometry over `CityMap`'s own layout, and nothing else.** No RNG stream and no caching:
-## the same map always answers the same sites, which is what makes "at the same places every day"
-## true without a day having to remember yesterday's roll. `EventScheduler.build_day()` calls
-## `compute()` fresh every day it needs it.
+## **Pure geometry over `CityMap`'s own layout and paint, and nothing else.** No RNG stream: the
+## same map, painted the same, always answers the same sites. A later day's paint can answer
+## others (a calm area grown, a tile changed), so a run works its sites out once, on the city as
+## built, and keeps them (`EventWorld.work_out_mast_sites()`); every dawn is handed them
+## (`EventScheduler.build_day()`).
 
 ## A candidate site is refused if a mast's own field would reach inside a calm block's interior —
 ## measured from the block's lot rect shrunk in by one tile on every side, so a field may still

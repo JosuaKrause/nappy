@@ -106,7 +106,7 @@ func _fire_route(day: int, outward := true) -> PackedVector2Array:
 func _fire_day_plans() -> Array[EventScheduler.Planned]:
 	var consumed: Array[String] = []
 	return EventScheduler.build_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY),
-			_rng(Tuning.RUN_TAUGHT_DAY), _map(), CalmAreas.of(_map()),
+			_rng(Tuning.RUN_TAUGHT_DAY), _map(), CalmAreas.of(_map()), MastSites.compute(_map()),
 			consumed).placements()
 
 ## The placement context the director above is started on, built the way `EventManager.start_day`
@@ -406,10 +406,10 @@ func _test_the_crews_on_her_way_move_no_other_row(t) -> void:
 	for day in [4, 8, 12]:
 		var tree := RouteTree.for_day(map, day)
 		var handed := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), [], [], tree).placements()
+				CalmAreas.of(map), MastSites.compute(map), [], [], tree).placements()
 		crew.on_her_way = null
 		var kept := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), [], [], tree).placements()
+				CalmAreas.of(map), MastSites.compute(map), [], [], tree).placements()
 		crew.on_her_way = crew_way
 		var same := handed.size() == kept.size()
 		var crews := 0
