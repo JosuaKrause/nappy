@@ -24,7 +24,7 @@ the questions they ask, and hands it to each strategy; no per-field method is ad
   `is_shut_by_a_hold()`, `has_nowhere_to_turn()` and `ground_stopped_today()` to the mover and the
   crowd.
 
-## What it costs
+## What it costs, and the choice made
 
 The strategies read the mover's lane state about 330 times in code that runs for every agent every
 physics tick, and the mover's own comment says a member read is several times cheaper than asking
@@ -34,13 +34,26 @@ agent's position and speed after every tick), main and this branch run side by s
 at the same time, on a debug build:
 
 - **The chain is identical on every configuration**: no agent is anywhere else on any tick.
-- The first form, every read a call on the interface, cost about three and a half times main's tick.
-  The map was 42% of the calls, so handing the strategy its collaborators (above) cut it to about
-  1.05 times main's; caching the turn in the two functions that follow it did the rest of what a
-  local could.
-- Over two paired rounds the branch's tick is 3.6% and 6.0% above main's in total, 5 to 10% on most
-  configurations and inside noise on a few (the same configuration moves by 10% between rounds). It is
-  a measurable cost, so it is put to the player.
+- **The first form**, every read a call on the interface, cost about 3.5 times main's tick (day 1 on
+  seed 4242: 3.6 ms on main, 13.5 ms on the branch). The map alone was 42% of the interface's
+  calls.
+- **What brought it down**: handing each strategy what never changes under it (the map, the
+  crowd's field, the day's traffic and pockets, the mover's random stream and its held move) through
+  `LaneStrategy.take_parts()`, which removed about two thirds of the calls, and caching the turn in
+  the two functions that follow it.
+- **The result**, two paired rounds: the branch's tick is 3.6% and 6.0% above main's in total (round
+  one 51.1 ms against 52.9 ms summed over the twelve configurations, round two 29.6 ms against
+  31.4 ms). Most configurations are 5 to 10% above and a few are inside noise; one configuration moves
+  10% between rounds. About ten interface calls per agent per tick are left.
+- **A release build was not measured**: the pair needs the export templates and a separate export of
+  each revision, which was not set up for this change. The debug build runs GDScript calls slower than
+  a release one, so the figures above are likely an upper bound.
+
+**The orchestrator's choice, open to the player's overturn:** keep the interface and its few percent
+of the crowd's tick in a debug build, with positions identical tick for tick. **Rejected: folding the
+car and walker strategies into `lane_mover.gd` as inner classes**, which the checker would allow and
+which costs nothing per frame. It would escape the rule instead of keeping it (inbox #1173: fields are
+not API) and break designing-classes' one class per concern, for a file of about 3,700 lines.
 
 ## Not done
 
