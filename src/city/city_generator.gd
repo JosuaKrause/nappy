@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name CityGenerator
 extends RefCounted
 ## Builds a CityMap deterministically from a run seed. See docs/CITY.md.

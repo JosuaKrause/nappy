@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## The four placement kinds a perform step may use, each task's own site, and the days built in order.
 

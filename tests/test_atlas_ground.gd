@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## M171, "the ground": `assets/ground_tileset.tres` carries no picture of its own any more, and
 ## `GroundLayers` builds every ground tile out of the baked `ground` page.

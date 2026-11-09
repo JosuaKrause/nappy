@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Fourteen days end to end, the run of seed 4242. One of the parts the suite is split into by seed so
 ## none runs two minutes serial; the run is in `tests/full_run_rig.gd`.

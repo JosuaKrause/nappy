@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `SentenceLines`, the helper that breaks a screen's prose onto more than one line only where it
 ## has to, and only between sentences — see `src/ui/sentence_lines.gd`'s own doc for the rule.

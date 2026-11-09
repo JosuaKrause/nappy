@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Day 12's cordon officers, placed and walked, printed one line per sample**, so a change to the
 ## rules the cordon asks can be shown to put them exactly where they stood before. Not a suite: it

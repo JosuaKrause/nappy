@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The gate that stops an event rebuilding a draw list it does not need —
 ## `EventLook.redraw_if_the_picture_changed()`, the picture key behind it and

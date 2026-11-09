@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Raw intervals retain their own counters; bounded capture and pause gaps cannot hide a hitch.
 

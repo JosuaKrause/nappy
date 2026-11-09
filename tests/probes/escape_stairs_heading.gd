@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the escape's stairs (inbox #783 in minty-lemur): every walkable tile of both stairwells,
 ## each of eight directions and an analog diagonal pressed through the real `Stroller` physics step,

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The map's top-left corner must never show for a moment when a run starts — PLAYTEST-76: "when
 ## starting the game I can briefly see the top left of the map." The world's origin is the map's

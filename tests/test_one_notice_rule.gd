@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `OneNoticeRule`: no two waiting rows notice her from the same ground. A pigeon flock (it notices
 ## her within 150px) beside one already placed, their notices overlapping, is refused; one twice

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M96, "the day ends crying only after a push at the top"
 ## (docs/playtests/PLAYTEST-126.md, statement 1). Not a suite: it prints numbers rather than

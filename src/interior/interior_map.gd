@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name InteriorMap
 extends RefCounted
 ## Builds the escape scene's one building-wide map, from the player's four sketches

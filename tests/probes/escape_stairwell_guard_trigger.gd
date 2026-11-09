@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the stairwell guard's charge distance (inbox #782 in minty-lemur, inbox #764 in minty-lemur): where in
 ## the right shaft the masked man starts his run, by the way she comes down to the first floor, and

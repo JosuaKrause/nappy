@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Does a **zero-cost line** exist along every route the day plans? Printed rather than asserted.
 ## Not a suite: it lives under `tests/probes/`, where the runner never discovers it, and runs only

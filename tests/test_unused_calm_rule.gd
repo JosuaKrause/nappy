@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `UnusedCalmRule`: no field reaches the calm ground she has not used. A candidate whose field
 ## reaches a calm area's rect is refused, one standing clear of it is allowed, and a rule handed no

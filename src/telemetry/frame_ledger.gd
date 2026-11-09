@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name FrameLedger
 extends RefCounted
 ## Every frame's time by system, for the last few minutes of play, in preallocated storage — the

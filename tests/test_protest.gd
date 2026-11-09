@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Protester pointing (M65): which of the eight `protester_point_*` poses a protest rank draws,
 ## and when it stays the plain `protester.svg` instead. See `docs/EVENTS.md`, the `protest` row,

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `DaySpec`: whether the region wall stands on a day is worked out once, by the spec, on the days
 ## around the wall's first, and the escape's sections never have it. What each planner does with

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Every stretch scene, played through: nothing in its crowd appears or vanishes where she can see
 ## it, and she sees the event its rigged bag sends** *(the player's rule, PR #597; polite-dolphin,

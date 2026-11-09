@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Where a torn poster's pursuer on foot starts, one line a tear**, so a change to how his start
 ## is sited can be counted: the tears whose start moves and the tears that now send nobody. Not a

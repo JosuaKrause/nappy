@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **One source of each kind against a world that is only what this suite hands it**: the shared
 ## part every source keeps once (`ExcitementSource` — the ledger, the first landing, the netting),

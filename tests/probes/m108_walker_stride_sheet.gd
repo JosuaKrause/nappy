@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Evidence rig for M108's "walkers first" stride item: renders each of the walker's five
 ## authored views with gait frame a beside gait frame b, body tinted and trim above — the same

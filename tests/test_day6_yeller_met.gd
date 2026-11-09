@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Day 6's second man shouting is one she meets *(olive-koala, statement 2: "the yeller is
 ## guaranteed to encounter a yeller in the next three events")*. Reading the mark rigs her route's

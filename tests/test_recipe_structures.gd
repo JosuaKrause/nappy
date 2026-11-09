@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Real runtime installation rejects incomplete structures and refreshes a felled tree's source, and
 ## runs the scene's events under the one spec the run flow hands it.

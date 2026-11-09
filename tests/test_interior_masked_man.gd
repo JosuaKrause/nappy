@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The escape's masked man and her body on the stairwell flights, on real physics ticks: the 45-degree
 ## walk of every flight, the lines onto the second flight that are caught and the ones that get

@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name AttemptSpendState
 extends RunSubState
 ## What an attempt can spend and a lost day gives back: the one-shot events already used, the scars

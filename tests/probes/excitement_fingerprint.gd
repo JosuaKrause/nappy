@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What every source charges her, tick by tick, printed one line per source**, so a change to how
 ## excitement is computed can be shown to compute exactly what it computed before. Not a suite: it

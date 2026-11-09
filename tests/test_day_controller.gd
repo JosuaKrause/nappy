@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `DayController`'s clock: the countdown itself, and how often it tells anyone about it.
 ##

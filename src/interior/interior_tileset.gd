@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name InteriorTileSet
 extends RefCounted
 ## Builds the interior's own `TileSet` from regions of the baked `interior` atlas page, the way

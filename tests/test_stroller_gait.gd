@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The pushing and carrying rigs share a distance-driven contact/passing gait.
 

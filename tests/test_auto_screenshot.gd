@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `AutoScreenshot`'s `--walk` parsing: the scripted walk `1s5e` beside the bare direction it
 ## already understood, and the angled step `3@45@2e` beside `1s5e` — a duration and a bearing

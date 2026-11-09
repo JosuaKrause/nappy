@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `DebugLayers` (M104, "the debug view") and the two pieces of it that sit outside that one class:
 ## `GroundShape.shadow_outline()`, which `draw_shadow()` now draws from directly, and

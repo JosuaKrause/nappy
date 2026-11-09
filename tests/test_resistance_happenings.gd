@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `ResistanceHappenings`, what the resistance's story puts in the street besides the task, checked
 ## with no city: the happenings are handed a stand-in for the day's events (`FakeEventManager`) and

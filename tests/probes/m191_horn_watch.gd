@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## First-horn distance and time per car speed, before and after M191: the crowd used to watch a
 ## car for its horn and its strike over the same reach, `Tuning.CAR_ZEBRA_SIGHT` (200px), so a

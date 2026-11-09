@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The escalation: act gating, the mechanics the later acts introduced, and the invariants
 ## that stop a late day from being quietly unwinnable.

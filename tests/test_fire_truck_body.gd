@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The fire truck is a solid body, lethal only in front of it while it drives and harmless once it
 ## has parked at the fire.

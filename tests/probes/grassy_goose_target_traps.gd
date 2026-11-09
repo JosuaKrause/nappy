@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for grassy-goose (inbox #556), "a touched target sends the robber from off
 ## screen": where the trap's start falls on each target's own ground — the burnt building's door on

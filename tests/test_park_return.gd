@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Day 12's walk home after the park is taken, played through the real transitions: the swing
 ## touched on a booted `Main`, the cordon closing round the park, the baby asleep, the day won or

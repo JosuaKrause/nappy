@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `RoadblockPhase`, the roadblock phase at dawn (inbox #1185 in gentle-owl): it draws among every route-adjacent
 ## section the day's ground offers a valid roadblock, with a bias toward the farthest from the

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What the halo suites share for reading rims on real frames: a clock of the frame time the rims
 ## were handed, and the rim a body hands its source, wrapped so a test reads what `ExcitementHalo`

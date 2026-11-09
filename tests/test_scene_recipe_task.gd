@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A scene recipe's `setup.task`: what the schema accepts, and what the director does with a pinned
 ## mark and a pinned neighbor — stands the mark unread, places the task with its own placement when

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The cases behind `test_routes_closures_a.gd`, `_b.gd` and `_c.gd`; not a suite itself.** Each
 ## part `prepare()`s the maps it owns and runs the cases it owns, so no suite runs two minutes

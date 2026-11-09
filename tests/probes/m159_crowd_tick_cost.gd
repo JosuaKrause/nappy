@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## What the crowd's physics tick (`Crowd._physics_process()`) costs, split by the call that pays it,
 ## on fixed seeds — a headless workload on this machine, not a phone frame.

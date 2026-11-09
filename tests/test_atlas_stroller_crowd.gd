@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The stroller, the head indicators and the crowd draw from `AtlasLibrary` regions rather than
 ## from individually preloaded textures or a runtime packer. `tests/test_stroller.gd`,

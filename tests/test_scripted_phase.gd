@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `ScriptedPhase`, the dawn phase for a row the day places for a reason of its own (a scripted row
 ## on its day): it draws one of the day's open locations, weighted by

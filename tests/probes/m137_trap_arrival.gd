@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name M137TrapArrival
 extends RefCounted
 ## Measurement probe for how often the trap's start falls back to the along-her-street

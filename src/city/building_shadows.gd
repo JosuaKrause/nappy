@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name BuildingShadows
 extends Node2D
 ## The one-tile shadow every building casts to its south and west, from a light standing to the

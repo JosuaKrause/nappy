@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 extends SceneTree
 ## Receives the native debugger's every-frame profiler without modifying game scripts.
 ## Launch headless with --script; configuration is documented in the evidence README.

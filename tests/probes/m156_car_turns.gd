@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Printing rig for "a car is turned only by what blocks its roadway": which of a car's shut
 ## conditions each row of a real day actually reaches, and whether the body behind it stands on the

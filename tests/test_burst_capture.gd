@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The capture keys, and the animation burst's lifecycle and manifest.
 ##

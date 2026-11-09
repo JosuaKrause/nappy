@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `Corridor`, the ground today's routes run through, here only for the view a whole street is in
 ## (`view_of()`, inbox #1185 in gentle-owl): on the route, route-adjacent (beside the routes, where day 13's dawn

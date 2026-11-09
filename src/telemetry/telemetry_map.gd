@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name TelemetryMap
 extends RefCounted
 ## A picture of the whole tile grid, written beside the run log.

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What `main` does with the save: the focus loss that writes nothing, the dawn a resumed boot writes,
 ## the title and the resume gate that lead to the day brief or the ending, the day engaged writing the

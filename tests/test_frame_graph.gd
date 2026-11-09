@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `FrameGraph`'s own arithmetic — the ring, the mean and the classification — driven with literal
 ## deltas rather than a live `Performance` reading, the same reason `tests/test_performance.gd`

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the escape's density (inbox #785 in minty-lemur): how many of each of its own rows the
 ## finale's plan stands, and which row its alley-mouth walls are, per seed. Not a suite: it prints

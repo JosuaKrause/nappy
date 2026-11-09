@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends Node
 ## Bounded quadrant/row/atomic comparison and real-process-frame residency coverage.
 ## Run its scene with --no-save --no-telemetry; GROUND_FRAMES_OUTPUT is a fresh JSON path.

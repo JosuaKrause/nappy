@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/events_shared_city.gd"
 ## Playtest 07, findings 16 and 13: *"none of the non-moving obstacles do anything -- I can freely
 ## walk over them"*, and *"I can walk over the robber and he doesn't do anything"*. The answer is a

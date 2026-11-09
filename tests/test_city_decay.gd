@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The city degrades: `Tuning.degradation_for()`, the cracked ground `GroundTiles` picks from it,
 ## the litter and garbage sacks it places, and the storefronts and windows a building shutters.

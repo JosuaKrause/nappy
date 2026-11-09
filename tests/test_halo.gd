@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `ExcitementHalo`: which live sources earn a place in the halo.
 ##

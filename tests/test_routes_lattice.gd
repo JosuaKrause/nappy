@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The lattice itself, checked by construction before anything closes it: 7x7 blocks is 8x8
 ## junctions, 56 streets each way; a calm zone takes its own streets out of the lattice; every tile

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## M188: a mark is never placed in an alley she cannot reach.
 

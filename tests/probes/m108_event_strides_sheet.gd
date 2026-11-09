@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Evidence rig for M108's "every living thing that moves has a stride" item, event-family half:
 ## renders every family's five authored views with frame a beside frame b, straight from the SVG

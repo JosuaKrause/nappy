@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name ResistanceDirector
 extends Node
 ## Places the day's resistance contact, and enforces the two things that make the subquest

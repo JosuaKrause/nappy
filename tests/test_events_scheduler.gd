@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/events_shared_city.gd"
 ## The scheduler's own determinism and safety rules -- the same seed replans identically, placement
 ## and per-day caps are respected, a one-shot fires once per run, an alley robbery and the alley

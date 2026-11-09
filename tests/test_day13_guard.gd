@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Day 13's waiting guard follows her to the roadblock she approaches *(inbox #650 in mossy-beaver:
 ## "move the task's waiting guard to the roadblock the player approaches"; inbox #651 in

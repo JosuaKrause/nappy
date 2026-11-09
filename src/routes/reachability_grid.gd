@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name ReachabilityGrid
 extends RefCounted
 ## The tile graph, contracted into two-tile-square cells: the reachability answer everything in

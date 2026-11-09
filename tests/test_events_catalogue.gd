@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The catalogue's own fairness contract: the physical and visual shape every row keeps regardless
 ## of where the scheduler places it -- the geometry a `spread` body draws at, that it fits the

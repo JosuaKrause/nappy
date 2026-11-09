@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The city as the world the baby stands in (`WorldContext`): what its bodies charge her at a spot,
 ## and how much faster the calm ground fills her sleepiness than the street does.

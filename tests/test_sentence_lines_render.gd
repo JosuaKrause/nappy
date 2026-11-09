@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What `SentenceLines` returns is what the label shows: every caller's text, rendered at the
 ## label's real width, takes exactly as many lines as `SentenceLines` broke it into. See

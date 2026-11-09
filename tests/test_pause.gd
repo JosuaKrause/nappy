@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## The pause and the title screen, which share this file because both are the game's ends: the
 ## title is where a run begins and where a finished one goes back to, and the pause is where a

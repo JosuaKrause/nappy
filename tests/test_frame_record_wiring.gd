@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The frame recorder wired into a real boot of `main`**, which is the combination this suite is
 ## for: the sitting's record handed to every timed system, the recorder's markers first and last in

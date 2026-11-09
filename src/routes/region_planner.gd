@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name RegionPlanner
 extends RefCounted
 ## Partitions the lattice's junctions into `Tuning.REGION_COUNT` regions, once per run, and turns

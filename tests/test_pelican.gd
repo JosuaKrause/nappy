@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The pelican, drawn from one shared bag of 399 cyclists and 1 pelican per run *(minty-hedgehog,
 ## statement 8: "One in ~400 bikers should be a pelican riding a bicycle instead. Needs to be svg

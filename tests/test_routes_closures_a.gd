@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Road closures over the first six maps of the sweep: the day-level invariant, counts, ground, determinism.
 ## One of the parts the suite is split into so none runs two minutes serial; the cases are in `tests/routes_closures_rig.gd`.

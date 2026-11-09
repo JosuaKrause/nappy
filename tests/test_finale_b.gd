@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The escape, part b: roadblock guards, the plan on the day's ground, the bag and the service exit.
 ## One of the parts the suite is split into so none runs two minutes serial; the cases are in `tests/finale_rig.gd`.

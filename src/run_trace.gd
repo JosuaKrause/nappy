@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name RunTrace
 extends RefCounted
 ## The one sink game logic writes its own account of a decision into, for the run log to keep:

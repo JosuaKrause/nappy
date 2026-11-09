@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name ClosurePlanner
 extends RefCounted
 ## Chooses which streets are closed today, and refuses to close so many that the day stops

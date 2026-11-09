@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the one-radius charger (inbox #788 in minty-lemur): every charger that waits for her, warns
 ## while she is inside its one radius and charges once its warning has run with her still inside.

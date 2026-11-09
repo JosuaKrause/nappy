@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `SealPlanner`: every street off the day's tree carries a seal (a share of them from the gatehouse
 ## day), the tree, the doorstep and the main road never do, and sealing never breaks the day's own

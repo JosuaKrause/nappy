@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for tall-osprey, "the robber's capture zone is too big": a rig that gives the
 ## alley robber's chase different answers, over several seeds, at several catch sizes. Not a suite:

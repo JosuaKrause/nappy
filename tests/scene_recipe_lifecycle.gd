@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The lifecycle behind `test_scene_recipe_lifecycle_trailers.gd`, `_tasks.gd` and `_scenes.gd`;
 ## not a suite itself.** Boots the actual Main scene, in this process, on real frames

@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name CityDecals
 extends Node2D
 ## Loose litter and street-tree beds, drawn flat: no body, no field, no y-sort. Placed between

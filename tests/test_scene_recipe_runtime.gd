@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Exercise the actual runtime and argv readers. A tiny child scene isolates exit-status
 ## assertions without booting Main, constructing another city or quitting the suite's tree.

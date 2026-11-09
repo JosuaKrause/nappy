@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M97, calm areas that hold — "Spoiling a returned-to calm area is not
 ## consistently effective" (playtest 20: "the spoilage of a calm area is not always effective I

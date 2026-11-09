@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## The red arrow: what it points at, how it chooses and switches, and where every arrow ends.
 ##

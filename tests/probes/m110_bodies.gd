@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Printing rig for "every solid body diverts the crowd, as far as avoiding it": how much of a real
 ## day's ground the solid bodies take, how much of the crowd is stepping round one, how often anybody

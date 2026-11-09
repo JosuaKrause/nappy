@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The crowd gives way to the movers that keep their course** (inbox #884 in plaid-raven): a
 ## walker steps aside or is pushed, and a crowd car stands, while the event figure keeps its course.

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What one `SpawnSiting.ask_of_ground()` costs at each day the region wall stands on, the call
 ## `ResistanceDirector._nearest_alley_within()` makes for every candidate tile of a relocation, and

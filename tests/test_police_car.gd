@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The police car is a solid body she walks round in every patrol state, and it ends the day only
 ## in front of it while it drives.

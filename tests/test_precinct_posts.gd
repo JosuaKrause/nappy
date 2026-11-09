@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A generated map's precinct posts: where `CityMap.post_positions()` puts them, and that everything
 ## that steps or floods over the map sees their tiles as blocked.

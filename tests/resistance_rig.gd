@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What the resistance suites share** (`tests/test_resistance_*.gd`): the city each builds, the
 ## director over it, and the walks, views and sweeps more than one of them drives. A helper, not a

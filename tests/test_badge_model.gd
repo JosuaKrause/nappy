@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `BadgeModel` stepped on its own: fakes for the dangers, a rectangle for the view, a number for the
 ## clock — no scene, no camera, no frame timing. Which dangers get a screen-edge badge, when it goes

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The "decoration" `AtlasLibrary` group — props, litter and city decals. `tests/test_atlas_library.gd`
 ## already covers the atlas contract every group shares (every member baked, no two regions

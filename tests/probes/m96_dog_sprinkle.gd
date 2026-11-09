@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M96, "the teaching day, and the dog after it" — the sprinkle's own rate.
 ## Not a suite: it prints rather than asserting, so it lives here under `tests/probes/`, where the

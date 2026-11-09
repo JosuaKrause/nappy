@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Diagnoses PLAYTEST-69's re-report of "people still come out from outside the map" — a re-report
 ## of the finding M120 (`DECISIONS.md`) already answered once, by giving an ordinary walker or an

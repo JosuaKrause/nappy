@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `DayReach`, where she can get to from home as the walk was planned: what shuts the way and what
 ## does not, checked here once on a street laid out by hand — a sidewalk two tiles wide and forty

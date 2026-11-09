@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What one test plays**: a `RunState` made fresh for it and the sitting that holds it, parked in a
 ## node of the test's own standing for the tree's root (`Boot.home_playing()`). A boot taken with

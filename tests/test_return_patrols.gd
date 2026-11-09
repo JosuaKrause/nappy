@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## M98, pressure in the empty acts — "Patrols for acts III and IV, built around encounter cost."
 ## `EventDirector.owe_the_return()`'s own shape: what it owes per act, the pacing it switches to,

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name InteriorMapPlan
 extends WorldMap
 ## The escape scene's whole building as **one** map: a sparse grid of `InteriorTile.Kind` cells

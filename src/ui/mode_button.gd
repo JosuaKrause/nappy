@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name ModeButton
 extends Button
 ## A circular, icon-only button: a round disc with a tinted glyph for what it does and no text

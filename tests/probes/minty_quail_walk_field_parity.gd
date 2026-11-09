@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/test_day13_guard.gd"
 ## Parity probe for minty-quail's shared-components D2 (the walk field on the world layer, the chase
 ## way from the `Navigator`): prints, deterministically and with no timing in it, what the move of

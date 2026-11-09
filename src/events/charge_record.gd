@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 class_name ChargeRecord
 extends RefCounted
 ## One charger's charge as it is counted: its warning, its start, and the one way it ended.

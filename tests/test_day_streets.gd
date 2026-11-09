@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Today's streets as dawn left them** (`DayStreets`), with no city: what each of its two writes
 ## replaces and what it leaves, and the one fact it derives, the region a siting reads off the

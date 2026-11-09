@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The parts a day's events are handed to, each driven on its own, as the `EventManager` that owns
 ## it holds it (`streaming`, `spawner`, `warnings`) over the one `EventWorld` the manager hands every

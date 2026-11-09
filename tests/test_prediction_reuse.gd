@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Exact projection parity under same-frame writes, with counters on actual sampled work.
 

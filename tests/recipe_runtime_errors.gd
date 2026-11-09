@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What the suites that check a recipe's runtime rules share; not a suite.** A recipe is judged
 ## the way the game judges one: written to a file and loaded by `SceneRecipeRuntime.load_recipe()`,

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `DayDirector.finish_day()` on a bare world: a day clock and an event manager, no city, no player.
 ## What a day's end settles — the cause `day_ended` carries, the calendar, the hand-over to the escape

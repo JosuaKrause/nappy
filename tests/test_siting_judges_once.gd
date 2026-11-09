@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/events_shared_city.gd"
 ## A placement asks each candidate its rules once, and every try still rolls.
 ##

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for olive-badger: how many charging dogs she meets on day 3, now that the
 ## lesson is a rigged bag of one in front of the route's bag and the ordinary bag holds

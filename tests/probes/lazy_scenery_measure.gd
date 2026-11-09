@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Synchronous headless preparation and geometric coverage experiment. No rendered-frame claims.
 ## Run with tools/test.sh probes/lazy_scenery_measure.gd; external timeout belongs to the caller.

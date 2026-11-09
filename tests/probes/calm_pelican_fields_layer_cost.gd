@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for calm-pelican, "walls inside the building stop excitement too": what the debug
 ## view's fields layer costs now that it cuts each outline where a wall stops the field

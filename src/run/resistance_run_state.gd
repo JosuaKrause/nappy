@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name ResistanceRunState
 extends RunSubState
 ## What the resistance has done this run: the steps completed and failed, the progress they earned,

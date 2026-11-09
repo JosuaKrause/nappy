@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A suite that quits the tree, held outside suite discovery like `engine_error.gd` and run only
 ## by name:

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What a frame cost, as the readout shows it and as the run log writes it down.
 ##

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The masts: fixed sites from `Tuning.MAST_FIRST_DAY`, a field like any other row's, a broadcast
 ## clock every mast reads rather than a clock of its own, and an id that survives silencing. See

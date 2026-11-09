@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name InteriorScene
 extends WorldContext
 ## The escape scene's building, as one persistent map — `art/interior`'s floor plan and stair

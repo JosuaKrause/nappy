@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 class_name CheckpointController
 extends RefCounted
 ## **The district doors as she meets them**: a hut's or a post's hold, the release on the far side

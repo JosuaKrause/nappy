@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Whether two revisions of the code drive an event car identically where it gives way: every
 ## tick's pose, heading, distance travelled, speed and whether it stands, over seeds, heat levels

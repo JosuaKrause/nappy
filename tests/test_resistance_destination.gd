@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Where a resistance task's destination is, once its pickup is read: on every task day, through the
 ## real day order, the task is on offer after the mark is touched and the red arrow still ends on its

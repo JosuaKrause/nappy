@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name RoadClosure
 extends RefCounted
 ## One street closed for one day, and what closed it.

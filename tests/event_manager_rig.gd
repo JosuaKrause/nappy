@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The rig the two event manager suites share (`tests/test_event_manager.gd` and
 ## `tests/test_event_manager_fire.gd`): a real generated city in a run of its own, the day's

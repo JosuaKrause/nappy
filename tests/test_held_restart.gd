@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## M211 + M212 — the pause screen's held restart restarts a run rather than resuming it, a hold
 ## survives what the real engine and a second finger can throw at it, the disc it fills lights up

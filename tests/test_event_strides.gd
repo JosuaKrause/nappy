@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## M108, "every living thing that moves has a stride" — the event half. `tests/test_event_views.gd`
 ## already pins each family's own five-view table and heading source; this suite pins the second

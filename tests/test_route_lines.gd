@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `RouteLines` (M135, "the day's routes drawn as a debug layer") and the `--layers`/`?layers=`
 ## parsing that reaches its own key, `5`.

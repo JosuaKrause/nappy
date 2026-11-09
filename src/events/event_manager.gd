@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name EventManager
 extends Node
 ## **A day's events, in whatever world she walks**: the one thing the run flow, the resistance, the

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The world's one answer to "can this mover stand here": the map's blocked record read through a
 ## `Mover` (`CityMap.passable()`, `CityMap.clear_line()`), a `Navigator` every mover moves by, and a

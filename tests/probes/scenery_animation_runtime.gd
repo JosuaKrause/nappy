@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends Node2D
 ## Bounded runtime fixture: production drawing nodes, enlarged for review, with real draw counters.
 

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name BadgeModel
 extends RefCounted
 ## **Which dangers get a screen-edge badge, when it goes up and when it comes down.** The decision

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Whether days 6 to 14 fit their clock, walked mark → task → calm → home by `RouteRig`
 ## (`src/dev/route_rig.gd`, `--route`) rather than guessed at with `--walk`'s own timed headings.

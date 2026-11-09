@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `DayEvents`, the day's planned rows read through one object: which calm areas each row spoils
 ## and whether one is a pursuit, kept in step with every row added or replaced. The one place that

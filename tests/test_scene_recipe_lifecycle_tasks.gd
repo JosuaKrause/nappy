@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The real-Main lifecycle for the task recipes (`task-*.json`).
 ## What it checks is `tests/scene_recipe_lifecycle.gd`'s header; split by theme so that no suite

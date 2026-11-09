@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The run's flow through its screens (`RunFlow`): what each screen's continue leads to, and that a
 ## continue with no screen up leads nowhere.

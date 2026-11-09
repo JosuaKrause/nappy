@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## M185's rule: a multi-story building's ground floor is shops or blank wall, never windows,
 ## except her own. The building decides in one place whether row 0 draws a window at all;

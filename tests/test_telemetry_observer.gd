@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What the `TelemetryObserver` notes of a walk, read off a recording run log
 ## (`tests/recording_log.gd`) and not off a file: the escape's sections, a stuck walk, the trail

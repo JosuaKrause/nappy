@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Which lane a packed lane key names, for a suite that stands a car or reads a walker in that lane.
 ## The game packs a key (`LaneMover.make_lane_key()`) and never unpacks one, so the suite finds the

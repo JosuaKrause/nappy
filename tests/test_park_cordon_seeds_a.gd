@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Day 12's police cordon across part 1 of 3 of the seed sweep: seeds 1, 4, 7 and so on every third seed to 40.
 ## What it checks is `tests/park_cordon_sweep.gd`'s header; the sweep is split three ways so that

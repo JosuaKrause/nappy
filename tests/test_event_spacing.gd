@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Focused checks for the scheduler's route-to-route spacing arithmetic.
 

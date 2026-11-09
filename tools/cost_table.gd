@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends Node
 ## Generates and checks `docs/COSTS.md` — the checked-in survey of what every catalogue row
 ## costs, computed from the same `EventDef`/`EventInstance`/`Tuning` code the game charges with.

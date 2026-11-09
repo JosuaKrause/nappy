@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The charging dog past the teaching day — M96, "the teaching day, and the dog after it".
 ##

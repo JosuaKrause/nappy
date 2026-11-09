@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The pursuer on foot: the one a torn poster's pursuit marble sends at her at once from off screen,
 ## a policeman through day 8 and a guardsman from day 9.

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `AtlasLibrary.plan()`'s own contract, on synthetic sizes rather than the tree's own pictures:
 ## `test_atlas_library.gd` holds the fill floor and aspect ceiling the real pages must clear, and

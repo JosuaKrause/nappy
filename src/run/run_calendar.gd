@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name RunCalendar
 extends RefCounted
 ## The run's calendar: which day and act it is, what a day's attempt begins with and ends in, the

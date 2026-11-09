@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## M226's missing non-pursuer measurement. Run through tools/test.sh by this file's path.
 ## The identical collector runs on f494956e and the PR. It uses that revision's encounter

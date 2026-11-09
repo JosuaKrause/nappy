@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 extends Node
 ## Observe a normal main scene driven only by existing dev flags. No gameplay state is changed.
 ## The same scene may be run headlessly for preflight or with --screenshot for the evidence burst.

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `Texts` (`src/ui/texts.gd`) is the one place the game's on-screen words live, and this is what
 ## keeps them there: a quoted sentence anywhere else under `src/` fails the suite unless it is in

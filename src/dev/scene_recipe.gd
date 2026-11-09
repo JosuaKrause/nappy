@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name SceneRecipe
 extends RefCounted
 ## Construction schema only. Runtime validates setup and playback before exposing a scene.

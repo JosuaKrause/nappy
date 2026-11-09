@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name Crowd
 extends Node
 ## The city's own traffic: everyone who is not the player and not an event.

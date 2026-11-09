@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The emission model: the meter arithmetic a live `EventInstance` charges as she moves past it --
 ## telegraph damping, the pulse envelope, a two-part field's core against its outer radius, that

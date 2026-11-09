@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/crowd_street_rig.gd"
 ## The crowd against the things standing in the street: a café's tables, a construction band, a
 ## kerbed van, a stall. *("yes every solid body should do that -- not necessarily force a turn

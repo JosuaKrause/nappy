@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **How much sidewalk a body leaves open across the street from it**, for the rule that a body
 ## blocks her way unless it leaves a gap a whole sidewalk wide (`Tuning.SIDEWALK_WIDTH` tiles).

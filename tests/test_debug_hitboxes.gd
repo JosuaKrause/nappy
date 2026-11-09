@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## **Every hitbox a real day builds is drawn** (PLAYTEST-57: *"and make sure *all* hitboxes are
 ## actually drawn"*): `DebugLayers.collision_nodes_under()`, which the bounding-box layer draws every

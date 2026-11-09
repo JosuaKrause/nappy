@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A spine whose lights are out still carries its traffic: right before left and "nothing enters a box
 ## it cannot leave" hold a five-times-busier street together without a light.

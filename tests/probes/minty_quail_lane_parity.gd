@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Whether two revisions of the crowd step identically, and what each one's step costs: the walk,
 ## seeds, days and chain of `m159_crowd_tick_cost.gd` (every agent's position and speed after every

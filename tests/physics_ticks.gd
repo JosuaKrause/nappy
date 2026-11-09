@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name PhysicsTicks
 extends RefCounted
 ## Lets real physics ticks pass for a suite, one tick a rendered frame. After a slow frame the

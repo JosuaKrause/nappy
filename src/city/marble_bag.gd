@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name MarbleBag
 extends RefCounted
 ## A random outcome drawn from a bag of marbles rather than rolled. *(PLAYTEST-125: "you randomly

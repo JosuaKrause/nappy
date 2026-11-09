@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_property_access")
 extends RefCounted
 ## **What day 12's police cordon shows in the world**, read the way the rest of the game meets it,
 ## for a suite that plays the day through the director (`ResistanceDirector.tick()`) and so holds

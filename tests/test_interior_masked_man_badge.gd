@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The screen-edge badge for the masked man with the camera interpolated, as the game runs it, from
 ## many places in the physics tick. Its own suite for its wall time (see `test_interior_masked_man.gd`).

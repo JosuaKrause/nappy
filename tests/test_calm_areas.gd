@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `CalmAreas`, the day's calm areas as dawn sees them: the one place what a calm area's ground
 ## is, which of them she has used this act, and which one the swing day sets

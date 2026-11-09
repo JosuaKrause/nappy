@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The barrier a roadblock's guard walks out of stays where it was built (spotted-wombat, "keep the
 ## barrier in place"). *"the guard pursuer makes his barrier jump up and down and then dissappear"*

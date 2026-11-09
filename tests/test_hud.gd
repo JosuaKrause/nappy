@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## The HUD's teaching lines, plus the debug/release gate that decides what else it draws.
 ##

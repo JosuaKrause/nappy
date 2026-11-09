@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The atlas groups a `City` holds while it stands, each read off the run log's lines for the page
 ## (`tests/atlas_page_log.gd`): the "decoration" page arrives with `City.build()` and is read from

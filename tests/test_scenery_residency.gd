@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Residency is presentation only: coverage, hysteresis, reconstruction, stable identity and RNG.
 ## The three ground modes schedule the same lazy, nearby preparation; the rest of the suite runs

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## M108, eight-direction entity graphics: binding live event people, animals, riders and vehicles
 ## to `EightDirection`. `tests/test_walker_views.gd` already pins the selector itself and the crowd

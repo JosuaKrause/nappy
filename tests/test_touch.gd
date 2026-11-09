@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `TouchControls`' own geometry: that the pause button shows only where and when it should, that
 ## a finger on it presses the same real `pause` action a keyboard does, and that a press anywhere

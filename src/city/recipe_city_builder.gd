@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name RecipeCityBuilder
 extends RefCounted
 ## Loads authored stretches directly; constructs other scopes with exact choices and a global witness.

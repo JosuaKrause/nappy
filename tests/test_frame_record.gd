@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## The per-system frame record: every microsecond of a frame lands in exactly one bucket, so the
 ## buckets add up to the frame; a frame that ran into the next refresh is marked; the readout names

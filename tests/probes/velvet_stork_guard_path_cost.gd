@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends "res://tests/test_day13_guard.gd"
 ## Measurement probe for velvet-stork, "day 13's guard reaches her from across the city": what the
 ## guard's walk round buildings (`EventInstance._chase_way`) costs a frame of his chase, and

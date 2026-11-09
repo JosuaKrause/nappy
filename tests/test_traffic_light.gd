@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A signal head: lit, it shows its face with one lamp on it; with the power out it is drawn again with
 ## no lamp at all (what the last night's blackout does to it, `tests/test_blackout.gd`).

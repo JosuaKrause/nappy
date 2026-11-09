@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Day 8's burnt-building task stands on the building's door, and the red arrow, the contact and the
 ## acceptance point agree on it (teal-moose, playtest azure-koala finding 1: "burnt building task is

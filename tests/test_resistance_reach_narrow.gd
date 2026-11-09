@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## M188: the narrow targets are reachable on their day, and a task is placed near its mark.
 

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/events_shared_city.gd"
 ## What a street actually costs her: running is the answer to exactly the one kind of thing that
 ## follows her and nothing else, nothing is cheaper to walk through than around it, the pavement

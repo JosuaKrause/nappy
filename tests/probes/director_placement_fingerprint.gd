@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Every placement entry point of the resistance and the events' director half, printed one line
 ## each**, so a change to the rules they ask can be shown to pick exactly what they picked before:

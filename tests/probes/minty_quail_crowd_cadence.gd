@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What the crowd's own numbers come to when its motion is stepped at a frame rate other than the
 ## 30Hz physics tick: the car headways, the junction boxes' throughput, the horns, the box

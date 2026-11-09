@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What stopping excitement at walls does to the price of the day's own routes, walked rather than
 ## derived. Not a suite: it prints numbers rather than asserting relationships, so it lives under

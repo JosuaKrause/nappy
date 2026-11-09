@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name EventDirector
 extends RefCounted
 ## Places the events whose content is *the moment they happen to you* rather than *where they

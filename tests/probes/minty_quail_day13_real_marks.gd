@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Day 13's task roadblock, read from real chalk marks**: what the task's placement
 ## (`ResistanceDirector._place_the_roadblock_near()`) does when she reads the mark where a mark

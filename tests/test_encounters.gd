@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The page's counter's encounters and bouts of running (`EncounterWatch`) *(misty-newt, the
 ## player: "how frequent do certain events actually appear and are players avoiding them or

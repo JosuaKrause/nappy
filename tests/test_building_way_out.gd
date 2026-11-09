@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The planning calls the dev walker (`BuildingWalker`) makes on the building, through their public
 ## surface: `InteriorMapPlan.way_out()`, with and without tiles to keep off, and the two accessors on `BuildingPlan`

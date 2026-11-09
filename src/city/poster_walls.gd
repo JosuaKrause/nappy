@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name PosterWalls
 extends Node
 ## The posters on the city's walls: where they can go, what goes up each dawn, what a crew pastes

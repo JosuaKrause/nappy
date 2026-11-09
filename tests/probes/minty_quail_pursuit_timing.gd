@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **When every pursuer catches her or gives up, and when every departure ends, tick by tick**, so a
 ## change to how a mover's step is proposed, checked and committed (minty-quail shared-components

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/events_shared_city.gd"
 ## Events that move on their own rather than waiting for her: a flock of birds (as birds, not one
 ## sprite drawn often), a mobile row that follows its own path, and a crouching row that holds

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for M178, "a gate lets her out alive": how many of a day's events sit inside a
 ## region door's own clear ground, and what refusing them costs the day's density. Not a suite — it

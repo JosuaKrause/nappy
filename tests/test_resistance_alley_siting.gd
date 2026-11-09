@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## Where a mark and its guard stand in an alley: avoided alleys, the guard's place, walled alleys and the doorstep.
 ##

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name EventScheduler
 extends RefCounted
 ## Builds one day's event set from the run seed and the day index. See docs/EVENTS.md.

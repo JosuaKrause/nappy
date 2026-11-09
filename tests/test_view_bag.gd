@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `ViewBag`, one view's bag (inbox #1185 in gentle-owl: "each of the views has their own bag to draw from"): every
 ## marble drawn without putting back and the bag filled again once empty, a marble the location does

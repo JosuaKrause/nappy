@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Excitement does not go through a wall — `CityMap.wall_between()`, the line every source's
 ## `contribution_at()` asks — *(plaid-wombat, inbox #554: "Excitement should not go through any

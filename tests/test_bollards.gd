@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A precinct's posts shut the carriageway band to her; the pavements beside the row stay open.
 ##

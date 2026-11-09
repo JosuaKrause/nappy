@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Whether day 11's rigged mast is put down on her route, and where on the day's route tree a mast
 ## could be put down at all. Printed rather than asserted. Not a suite: it lives under

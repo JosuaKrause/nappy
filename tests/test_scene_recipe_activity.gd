@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Real Main installs only authored subjects while keeping production crowd simulation.
 ##

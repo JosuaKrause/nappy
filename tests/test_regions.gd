@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `RegionPlanner`: the lattice's junctions partition into `Tuning.REGION_COUNT` regions at
 ## generation, and from `Tuning.REGION_WALL_FIRST_DAY` a day's `RouteTree` turns the permanent

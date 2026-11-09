@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What the baby's influence sweep (`Baby._physics_process()`) and the events' physics step
 ## (`EventManager._physics_process()`) cost per 30/s tick, on fixed seeds and days — a headless

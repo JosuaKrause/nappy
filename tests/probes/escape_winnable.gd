@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for whether the escape's city section can be got through, and what its
 ## marble bag (`DaySpec.bag`) stands on its streets *(inbox #794 in minty-lemur: "make escape

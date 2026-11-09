@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What `RecipeCityBuilder` and `SceneRecipe` accept and refuse, read off the map they answer with. The
 ## real `City` drawing a built map is `tests/test_recipe_city_drawing.gd`.

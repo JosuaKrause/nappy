@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name SceneryResidency
 extends Node
 ## Prepares camera-adjacent artwork while retaining the complete gameplay city. The inner

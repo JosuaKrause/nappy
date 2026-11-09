@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 extends Node2D
 ## Boot scene: generate the city, drop the player on the doorstep, then the HUD.
 ##

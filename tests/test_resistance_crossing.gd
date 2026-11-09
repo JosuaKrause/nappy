@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## Day 9's door: the task is done by crossing it, not by standing at it, and what the guard and the hut do about a crossing.
 ##

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The run's state kept in one registered list (`RunStateRegistry` of `RunSubState` parts) — see
 ## docs/ARCHITECTURE.md, "The run's state".

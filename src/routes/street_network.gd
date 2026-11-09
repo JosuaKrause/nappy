@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name StreetNetwork
 extends RefCounted
 ## The street lattice as a graph: junctions, and the segments of street between them.

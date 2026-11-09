@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Day 12's park closed by a police cordon (`ParkCordon`) once she has reached its swing.
 ##

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Reproducible crowd-query workload, not a whole-game frame or a phone benchmark.
 ## Run explicitly with tools/test.sh probes/m159_contribution_cost.gd; raw timings print at end.

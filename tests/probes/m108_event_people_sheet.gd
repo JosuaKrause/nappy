@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Evidence rig for M108's "bind live event people, animals and riders" item: renders every bound
 ## family at all eight `EightDirection` sectors from the actual runtime selection —

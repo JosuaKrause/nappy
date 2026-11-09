@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The real `City` draws the maps a recipe builds**: the power station recipes' bounded context and
 ## their two examples are built by `RecipeCityBuilder` (`tests/test_scene_recipe.gd`'s) and handed to

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for calm-pelican's day-13 roadblock (the-arrow-and-the-day-13-guard): with the
 ## task's own roadblock placed the way the day places one, near where she read the mark

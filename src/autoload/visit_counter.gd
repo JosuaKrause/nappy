@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 class_name VisitCounter
 extends Node
 ## Sends anonymous GoatCounter events for how far a run gets — see docs/TELEMETRY.md, "The page

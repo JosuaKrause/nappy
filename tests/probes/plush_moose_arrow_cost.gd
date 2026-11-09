@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for plush-moose, "every task has a red arrow to the closest by walking
 ## distance": what choosing the arrow's target costs per tick on the three days several places
