@@ -764,8 +764,8 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 ##
 ## Asserted over the finished day and over **every row reaching the band at once**, which is the
 ## rule's own wording — a band closed by a pair is the shape the measurement found. What that
-## catches beyond the refusal itself is anything the morning does outside `_place_one`'s candidate
-## loop: a scar prepended, an ambient placed, a park spoiled.
+## catches beyond the refusal itself is anything the morning does outside the day's rules: a scar
+## prepended, an ambient placed, a park spoiled.
 ##
 ## **Its non-vacuity has two halves**, because a sweep that found no walked sidewalks, or found them
 ## and had no row standing anywhere near one, would pass having checked nothing. Both are counted.

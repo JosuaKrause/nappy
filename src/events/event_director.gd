@@ -188,7 +188,7 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ## Asked over `plan.def.spawn_mode_on(day)` rather than `spawn_mode` alone, so a row whose siting
 ## changes after its own `first_day` — `charging_dog` past `Tuning.RUN_TAUGHT_DAY` — is owed to the
 ## director only on the days it actually answers `AHEAD_OF_PLAYER` or `TOWARD_PLAYER`. Without this
-## the scheduler's own `EventScheduler._place_one()` would place the row on a tile *and* the
+## the scheduler's dawn would place the row on a tile *and* the
 ## director would separately site a second one in front of her, from the one `EventDef` both read.
 ##
 ## `heat` is the shape the route bag's rows are put in (`EventCatalogue.heated()`), the same

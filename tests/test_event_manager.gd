@@ -312,8 +312,8 @@ func _test_a_running_event_comes_back_where_it_got_to(t) -> void:
 	_city.events.stream_radius = INF
 
 ## **A set piece happens in exactly one place, and there are two ways of guaranteeing that.** A
-## one-shot planned at every site of a covering set happens at the one she reaches — the first to
-## enter the world spends the rest. A one-shot carrying `EventDef.on_her_way` is one plan with
+## one-shot the day places is one plan, a group of one, in the location its dawn phase drew — the
+## first of a group to enter the world spends the rest. A one-shot carrying `EventDef.on_her_way` is one plan with
 ## no position at all, which cannot be in two places because there is only ever one of it, and which
 ## nothing in this rig can put anywhere: there is no player here, so no walk for it to be sited from.
 ##

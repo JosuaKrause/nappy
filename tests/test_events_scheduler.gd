@@ -104,31 +104,23 @@ func _test_scheduler_respects_placement_and_caps(t) -> void:
 					"day %d: '%s' was placed on an allowed tile type" % [day, plan.def.id])
 		for id in counts:
 			var def: EventDef = EventCatalogue.by_id(id)
-			# A one-shot is exempt because since M50 step 2 it is planned at **every** site of a
-			# covering set and only one of them ever happens — so the count here is how many places
-			# the day offered it in, not how many of it there are. `max_per_day` is a cap on
-			# instances and the group is one instance by construction; the count that would break
-			# it is asserted in `tests/test_event_manager.gd`, where an instance actually exists.
+			# A one-shot is exempt: it is a group of one, `max_per_day` is a cap on instances and
+			# the group is one instance by construction; the count that would break it is asserted
+			# in `tests/test_event_manager.gd`, where an instance actually exists.
 			if def.kind == GameEnums.EventKind.AMBIENT \
 					or def.kind == GameEnums.EventKind.ONE_SHOT:
 				continue
 			t.check(counts[id] <= def.max_per_day,
 					"day %d: '%s' respects max_per_day" % [day, id])
 
-## **A one-shot is planned on at most one day of a run, at a covering set of sites, and exactly one
-## of those sites happens.** *(M50 step 2 split this sentence in two; it used to be one clause.)*
-##
-## The day half is asserted here, over the plan. The *site* half cannot be — a plan is a set of
-## offers and which one is taken is decided by where she walks — so it is asserted where it is
-## decided: `tests/test_event_manager.gd`, against a real `EventManager` with the plans streamed in.
+## **A one-shot is planned on at most one day of a run, as a group of one.** The day half is asserted
+## here, over the plan; that exactly one of it happens is asserted where an instance exists:
+## `tests/test_event_manager.gd`, against a real `EventManager` with the plans streamed in.
 ##
 ## **Two seeds, both runs whole.** Fourteen days is the unit and cannot shrink — "planned on one
 ## day of a *run*" is a statement about carrying `consumed` across the whole calendar, and a
-## sampled day cannot say it. The seed count can: six were here to answer a *rate* question about
-## how often the covering set narrows to one site, and that question is no longer asked (the rate
-## is in `docs/DECISIONS.md` under M64, measured over forty-six seeds, which is the sample size it
-## actually needs). What is left is true of every run rather than of the average, so a second city
-## is there to keep it from being a fact about one layout and a third would add nothing.
+## sampled day cannot say it. What it asserts is true of every run rather than of the average, so a
+## second city is there to keep it from being a fact about one layout and a third would add nothing.
 func _test_one_shots_fire_once_per_run(t) -> void:
 	var groups_seen := 0
 	for seed_value in [4242, 5150]:

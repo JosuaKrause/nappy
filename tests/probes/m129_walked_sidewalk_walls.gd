@@ -16,8 +16,8 @@ extends RefCounted
 ## a **cost** one (`EventDef.reaches_the_far_lane()`, "what does this row bill a passer-by")
 ## and a **physical** one (`_closes_the_band_by_its_own_placement`, "does a passer-by have anywhere
 ## left to stand"), and either is enough to make the row a wall — refused a route cell entirely by
-## `_copies_of`. Both are asked once, from the def alone, before a tile is ever chosen, and only in
-## `_place_one`'s candidate loop. This probe checks the result of that decision against the day as
+## `_copies_of`. Both are asked once, from the def alone, before a tile is ever chosen, by the
+## placement's own ground (`EventScheduler.ground_for()`). This probe checks the result of that decision against the day as
 ## it is actually planned and placed: does any body, from any placing path, still end up standing
 ## where it leaves no lane on a walked sidewalk — a genuine gap in what the rule covers, or, if one
 ## the rule itself is supposed to refuse turns up anyway, a bug in the rule rather than a gap in it.
@@ -116,7 +116,7 @@ const _DOOR_ID_PREFIX := "checkpoint"
 
 ## Which pass of the morning put a solid body down.
 enum Source {
-	CANDIDATE_LOOP,   ## `_place_one`, reached by scripted, one-shot and recurring rows alike.
+	CANDIDATE_LOOP,   ## the dawn phases and the draw, reached by scripted, one-shot and recurring rows alike.
 	SEAL,             ## `SealPlanner.plan_day`, before the scheduler ever runs.
 	CALM_GROUND,      ## `_spoil_the_parks_she_used` — appended to `planned` directly, no rule asked.
 	CLOSURE,          ## `ClosurePlanner.plan_day` / `map.closed_tiles` — a tile barrier, not a row.
@@ -125,7 +125,7 @@ enum Source {
 }
 
 const _SOURCE_NAMES := {
-	Source.CANDIDATE_LOOP: "scheduler candidate loop (_place_one)",
+	Source.CANDIDATE_LOOP: "scheduler dawn phases and draw",
 	Source.SEAL: "seals (SealPlanner)",
 	Source.CALM_GROUND: "calm-ground pass (_spoil_the_parks_she_used)",
 	Source.CLOSURE: "closures (ClosurePlanner)",

@@ -837,8 +837,8 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 				CalmAreas.of(map), consumed.duplicate()).placements()
 
 		# The one-shot itself is the one thing that must differ: it fired yesterday and is spent, so
-		# the retry plans **none** of it. *(Since M50 step 2 that is "none" rather than "one fewer":
-		# a set piece is offered at every site of a covering set and the whole group goes with it.)*
+		# the retry plans **none** of it: a one-shot is a group of one, and the whole group goes with
+		# it.
 		#
 		# **And nothing else moves at all**, which is stronger than what M39 could promise. It used
 		# to allow one instance of drift, because the ground a spent one-shot freed let a placement

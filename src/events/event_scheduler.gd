@@ -256,9 +256,8 @@ class Planned extends RefCounted:
 	## it — it decides where the plan went, it does not decide anything afterwards.
 	var role := GameEnums.BlockerRole.NONE
 	## Which set of mutually exclusive placements this one belongs to, or "" for anything that is
-	## simply itself. A set piece is planned at **every** site of a covering set and the first one
-	## she reaches is the one that happens; `EventStreaming.stream_in` spends the rest of the group
-	## at that moment. See `EventScheduler._place_a_set_piece`.
+	## simply itself. A one-shot is a group of one (`EventScheduler._place_one_shots()`), and
+	## `EventStreaming.stream_in` spends the rest of a group the moment one of it enters the world.
 	var set_piece_group := ""
 	## True once it has been in the world at least once. What it is *for* is the bookkeeping
 	## that must happen exactly once however many times an event is streamed in and out: a
@@ -391,10 +390,6 @@ class Planned extends RefCounted:
 	func give_role(given: GameEnums.BlockerRole) -> void:
 		role = given
 
-	## The set of mutually exclusive placements it belongs to (`set_piece_group`), "" for one that is
-	## simply itself.
-	func set_piece() -> String:
-		return set_piece_group
 
 	## **How far from this event a point has to be to stand clear of it**, for a figure `her_reach`
 	## across: its body and her whole shape, the field it carries where it carries one (a car
@@ -589,8 +584,8 @@ class Planned extends RefCounted:
 	## `_copies_of` offers a wall zero copies of any tile a route actually runs along, so a placement
 	## carrying this role is off the routes or it does not exist — including the far sidewalk of a
 	## route's own street, which is ground no route walks. What keeps its clearance is everything else: a
-	## set piece, which is sited where every route passes, and anything the day placed for a reason that
-	## is not about the corridor at all.
+	## set piece, which is sited on her way, and anything the day placed for a reason that is not about
+	## the corridor at all.
 	##
 	## The telegraph contract is untouched by this and must not be "fixed" alongside it. That one is
 	## stated over a single event's own geometry, `Tuning.validate_event()` checks it on load, and
@@ -1770,9 +1765,9 @@ static func _place_one_shots(day: int, rng: RandomNumberGenerator, map: CityMap,
 		if def.on_her_way != null:
 			var owed := Planned.new(def, Vector2.INF)
 			owed.role = role_for(def, day)
-			# Tagged like any other set piece even though there is only ever one of it: a plan outside
-			# the group system is one `EventStreaming.stream_in` can never spend, silently exempt from
-			# the machinery the row is written against. See `_place_a_set_piece`'s own note.
+			# Tagged as a group of one, as every one-shot is: a plan outside the group system is one
+			# `EventStreaming.stream_in` can never spend, silently exempt from the machinery the row
+			# is written against.
 			owed.set_piece_group = "%s@%d" % [def.id, day]
 			events.add(owed)
 			# **And it is not consumed here.** Every other one-shot is spent the moment the day plans
@@ -2169,9 +2164,8 @@ class WalkSiting extends RefCounted:
 	## **Off her path** means both halves of what that can mean: not within `DUSK_CLEAR_OF_HER` of
 	## where she finished, so nothing is lit where she could have seen it, and not on ground the
 	## day's routes run along, so the street she actually walked is not the one that burns. The
-	## second bends and the first does not — the fallback is a site merely away from her, which is
-	## the same honest failure direction `_place_a_set_piece` takes when a covering set offers
-	## nothing: a run that owes a fire and has nowhere ideal to put it should still have its fire.
+	## second bends and the first does not — the fallback is a site merely away from her: a run that
+	## owes a fire and has nowhere ideal to put it should still have its fire.
 	func off_her_path(def: EventDef, rng: RandomNumberGenerator, besides: Planned,
 			away_from: Vector2) -> Planned:
 		var role := EventScheduler.role_for(def, _day)
@@ -2823,8 +2817,8 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 ## `open_candidates`, refuse the ones that break a rule that cannot bend, and answer with the first
 ## perfect one or the roomiest of the rest.
 ##
-## Split out of `_place_one` above because a placement made **after** dawn asks the identical
-## questions of a narrower pool — `WalkSiting.ahead_of()` offers only the tiles of the row's own
+## Its one caller is the walk's sitings (`WalkSiting`): a placement made **after** dawn asks the
+## dawn's questions of a narrower pool — `WalkSiting.ahead_of()` offers only the tiles of the row's own
 ## ground on the branch of the day's route tree she is walking — and a second copy of this list of
 ## rules is a second copy that would agree with it right up to the first time one of them gained a
 ## rule.
@@ -3362,7 +3356,7 @@ static func _band_offset_of(pavement_side: int, band: float) -> float:
 ## cases when deciding whether the yeller is a wall".)* Whether a man walking a beat can be got
 ## past is a fact about **where his beat runs**, not about his field: the same numbers are a wall in
 ## the middle of a segment and a thing to time at a junction. `StreetInvalidation._a_pacing_beat_walls_a_sidewalk`
-## asks it of the candidate, inside `_place_one`'s loop, where the beat actually exists.
+## asks it of the candidate, as a placement judges it, where the beat actually exists.
 static func _takes_a_whole_sidewalk(def: EventDef) -> bool:
 	return not def.paces and leaves_no_line_along_a_sidewalk(def)
 

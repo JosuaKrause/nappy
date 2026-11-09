@@ -42,8 +42,8 @@ dawn; `EventDef.validate()` refuses any other combination.
 **`hard_fail` is a decision, and it decides where the thing goes as well as what it does.**
 
 **The role is not a decision.** `EventScheduler.role_for` reads it off the def: scenery, ambient
-and director-sited rows get none; a one-shot is a **set piece** (sited where every route touches
-it); `hard_fail`, a `walk_through_cost()` at or over `EventScheduler.WALL_WORTH_OF_COST` (48 points), or a
+and director-sited rows get none; a one-shot is a **set piece** (sited on her way, or one location of
+its own at dawn); `hard_fail`, a `walk_through_cost()` at or over `EventScheduler.WALL_WORTH_OF_COST` (48 points), or a
 reach that leaves no line past it along a sidewalk makes a **wall** (zero copies on any cell a
 route runs along); anything else is **friction** (weighted onto the corridor). A `paces` row's role
 depends on where its beat runs, so `StreetInvalidation._a_pacing_beat_walls_a_sidewalk()` decides it in the candidate

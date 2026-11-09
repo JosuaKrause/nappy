@@ -171,17 +171,11 @@ func stream_in(plan: EventScheduler.Planned) -> void:
 	world.instances.append(plan.live)
 	_spend_the_rest_of_the_group(plan)
 
-## A set piece is planned at **every** site of a covering set and happens at exactly one of them:
-## the one she reaches.
-##
-## This is where "the one she reaches" is decided, and it has to be here rather than anywhere
-## later. The moment an event enters the world it is real — `EventSpawner.create()` records its scar and moves
-## its block along its arc — so the alternatives have to stop being possible on the same frame,
-## not when it finishes.
-##
-## It reads like a special case and it is the opposite: the day cannot know which route she will
-## take, so it offers the fire engine on every route and lets *walking* choose. Nothing here has to
-## predict her, which is the whole reason the covering set is a set.
+## **The rest of a group stops being possible the moment one of it enters the world.** A group is a
+## set of mutually exclusive placements (`Planned.set_piece_group`); a one-shot is a group of one.
+## It has to be here rather than anywhere later: the moment an event enters the world it is real —
+## `EventSpawner.create()` records its scar and moves its block along its arc — so the alternatives
+## have to stop being possible on the same frame, not when it finishes.
 func _spend_the_rest_of_the_group(chosen: EventScheduler.Planned) -> void:
 	if chosen.set_piece_group == "":
 		return
