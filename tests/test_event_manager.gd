@@ -102,8 +102,14 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 func _teardown() -> void:
 	_city.free()
 
+## Starts `day` and draws every location the walk would draw (`EventManager.draw_everywhere()`):
+## what this suite asks is the manager's wiring, not where the walk meets what, and the rows that
+## walk down a street and run out block nothing, so they are drawn as she walks rather than at dawn;
+## what is near her door then streams in, as on the tick she starts.
 func _start(day: int) -> void:
 	Rig.start(_city, day)
+	_city.events.draw_everywhere()
+	_city.events.stream_around(_city.map.doorstep_world_position())
 
 func _test_day_populates_the_manager(t) -> void:
 	_start(1)
