@@ -448,6 +448,14 @@ func sees(world_position: Vector2, margin := 0.0) -> bool:
 func on_screen(world_position: Vector2) -> bool:
 	return world.visible.view.has_point(world_position)
 
+## **Draws every location the walk has not drawn, at once**, nearest the doorstep first, as a walk
+## that went everywhere would leave them, and stands what they place: what a dev spawn beside a row
+## asks (`DevRig.first_event_position()`), since a row the view bags draw stands nowhere until her
+## walk comes near its location. Nothing in play calls it.
+func draw_everywhere() -> void:
+	if _walk_draw and world.city_map:
+		_stand_what_was_drawn(_walk_draw.draw_within(world.city_map.doorstep_world_position(), INF))
+
 ## **Stands what the walk's draws placed**: each joins the walk and streams in like a planned row,
 ## but one drawn unplaced, a row handed to her walk (`LocationDraw.finish()`, the poster crew), which
 ## joins it for the director to site on her way.

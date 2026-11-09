@@ -518,9 +518,8 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 ## street runs into the junction box at one end of it unless `_along_street_path` truncates it —
 ## at a closure, at a calm zone's absorbed corridor, or against the map's own margin. The walled
 ## case is that truncation, which is why the floor under it is *one* rather than a share: what it
-## guards is that the sweep can still produce the case at all. City 88 is in the sweep for it: its
-## day 1, before any mast holds a location, paces a walled beat, so the floor rests on a day no
-## change to the later days' draws moves.
+## guards is that the sweep can still produce the case at all. City 555 is in the sweep for it: its
+## day 1 and its day 11 each pace a walled beat, so the floor rests on two days rather than one.
 func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 	var on_the_route := 0
 	var walled := 0
@@ -528,7 +527,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
 	var passes_a_side_route := 0
 	var unavoidable_on_the_route := 0
 	var first := ""
-	for map_seed: int in [4242, 90210, 1234567, 88]:
+	for map_seed: int in [4242, 90210, 1234567, 555]:
 		var map := MapCache.of(map_seed)
 		for day in [1, 3, 5, 8, 11, 14]:
 			var state := CityState.new()
