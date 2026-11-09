@@ -18,13 +18,15 @@ request, the start.
   clock starts; the day's plan is announced.
 - **The world comes from a source the director is handed** (`DayWorldSource`, one method,
   `stand(spec)`), which answers a `DayWorld`: the scene and its events, her and the baby, where she
-  starts and which way she faces, the city with its streets and crowd where there is one, and the
-  world's own random stream. The main scene implements it; the director fetches nothing from the
+  starts and which way she faces, the city with its streets and crowd where there is one, the
+  world's own random stream, and what the walk is won at in it: the map her front door is on and
+  the ways out of the city, which the director hands on to the spec and the day's clock, so a
+  source only stands a world and writes into nothing. The main scene implements it; the director fetches nothing from the
   tree, a group or an autoload for its world.
 - **Settings on the spec replace the branches on "is this a section"**, each read through a
   method: where she starts (her doorstep, the flat, the service exit), whether the dawn is
   photographed, whether the day runs the resistance, whether the baby starts asleep, and three the
-  start needed beyond those: whether the day spends the one-shots, whether its events stream, and
+  start needed beyond those: whether the day spends the one-shots, which of the run's streams its events are planned on, and
   whether it shuts the calm she has spent. The day planner's assert pairing closed streets with
   "not a section" is gone.
 - **Gone, with no forwarder kept:** the main scene's own start of a section and its own planning of
@@ -46,6 +48,11 @@ the event manager and the crowd is the third.
 - **`DayWorld` carries her and the baby**, since a section's boot has no player until its world is
   built, and **the building's own random stream**, without which every building's basement would
   change.
+- **The day's clock is set up in two calls**: once with the run (`DayController.setup(run)`), and
+  per walk with what the walk is won at (`use_the_walk(home_map, player)`), since the director is
+  never handed the run.
+- **A world answers no home map off a walk home**, so falling asleep in the escape city spends no
+  park.
 - **The new files are in `src/day/`**, whose folder is in the flow layer, so the layer map gained
   no line.
 - **No authored walk announces that the day is planned.** The authored escape used to announce it
