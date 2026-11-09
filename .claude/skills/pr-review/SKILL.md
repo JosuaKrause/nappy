@@ -101,8 +101,9 @@ touches (the path table in `CLAUDE.md`). Look for:
   says what it counts), covers part of the first and the own-file rule of
   inbox #1098 in curly-rabbit. Whether a kept line's reason holds is the reviewer's to read, and so
   is the rest. **A diff that touches the list `tools/test_only_members.txt`, the checker or the
-  checker's own exemptions is reviewed by the procedure in `references/test-only-members.md`**,
-  since a changed checker is exempt from CI's rule that the list only shrinks. Where the PR claims a
+  checker's own exemptions is reviewed as `references/test-only-members.md` says**: it holds what
+  CI leaves to the reviewer there, and the procedure for a diff that changes the checker, which CI
+  exempts from its rule that the list only shrinks. Where the PR claims a
   test fails before the fix, check that claim, by reading or by running that one suite on the
   pre-fix code;
 - a contract from the skills broken (fairness, telegraph, "checked before accepted", present-tense
