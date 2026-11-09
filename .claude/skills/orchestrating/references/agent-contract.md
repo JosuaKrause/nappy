@@ -9,7 +9,8 @@ the brief and this file differ, the brief's task-specific line wins and says so.
 file); the playtest files it cites under `docs/playtests/` (the player's own words — these win over
 the entry's paraphrase); the records the brief names under `docs/decisions/` (`tools/decisions.sh
 <noun>` finds more); then the source files. `CLAUDE.md` is already in your context. **A hook names
-the skills that govern a file before your first edit there: read each one whole before editing.**
+the skills that govern each file you edit and refuses the first edit there until they are read:
+read each one whole, then make the edit again.**
 This file carries what a builder needs of **verify** and **committing**, so neither is read for an
 ordinary task, and a tool the brief names explains itself: run `tools/<name> --help`.
 
