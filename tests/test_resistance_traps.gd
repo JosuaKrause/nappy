@@ -307,7 +307,7 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 		if not _city.map.is_walkable(_city.map.world_to_tile(her)):
 			her += Vector2(0.0, Tuning.TILE_SIZE)
 		t.check(_city.map.is_walkable(_city.map.world_to_tile(her))
-				and her.distance_to(director.contact_position()) <= director.contact().reach,
+				and her.distance_to(director.contact_position()) <= director.contact().touch_reach(),
 				"day %d: she stands on open ground within the touch's reach" % day)
 		_watch_the_screen_round(director, her)
 		var player := _rig_player(t, her)

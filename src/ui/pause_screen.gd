@@ -76,9 +76,9 @@ func use_run(run: RunState) -> void:
 ## (`AtlasLibrary`). Called by `main` before the screen enters the tree, so they acquire on it; a
 ## screen built anywhere else leaves them to make their own.
 func use_atlas(atlas: AtlasLibrary) -> void:
-	(get_node(^"Root/Center/Lines/Body") as HelpText).atlas = atlas
-	(get_node(^"Root/Center/Lines/Buttons/ContinueColumn/Continue") as ModeButton).atlas = atlas
-	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).atlas = atlas
+	(get_node(^"Root/Center/Lines/Body") as HelpText).use_atlas(atlas)
+	(get_node(^"Root/Center/Lines/Buttons/ContinueColumn/Continue") as ModeButton).use_atlas(atlas)
+	(get_node(^"Root/Center/Lines/Buttons/RestartColumn/Restart") as ModeButton).use_atlas(atlas)
 
 ## The body as the scheme in force words it.
 static func _body_for(joystick: bool) -> String:

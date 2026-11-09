@@ -56,14 +56,14 @@ func run(t) -> void:
 					"front %s: the arrow %s ends on the door %s" % [fronts[i], tip, door])
 			t.check(director.contact_position().is_equal_approx(door),
 					"front %s: and the contact stands on it" % fronts[i])
-			t.check(is_equal_approx(director.contact().reach, ResistanceDirector.DOOR_REACH),
+			t.check(is_equal_approx(director.contact().touch_reach(), ResistanceDirector.DOOR_REACH),
 					"front %s: touched under the door reach" % fronts[i])
 			# Standing on each tile she can stand on within reach completes it, the side tiles
 			# a door's own frontage tile under a café's tables leaves her too.
 			var places: Array[Vector2] = []
 			for tile in stand_tiles:
 				places.append(city.map.tile_to_world(tile))
-			var touched := await ContactTouches.touches_from(t, director, places)
+			var touched := ContactTouches.touches_from(director, places)
 			for k in stand_tiles.size():
 				t.check(touched[k],
 						"front %s: a touch from the frontage tile %s counts" % [fronts[i], stand_tiles[k]])

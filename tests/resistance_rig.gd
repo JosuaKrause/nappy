@@ -119,10 +119,16 @@ func _would_show(box: Rect2, at: Vector2) -> bool:
 	return not _city.spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW,
 			_city.spawn_siting.ask_of_drawing(box), at)
 
+## The library the directors this rig builds are handed (`ResistanceDirector.use_atlas()`), or none
+## for a rig that hands nothing.
+var _handed_atlas: AtlasLibrary = null
+
 func _director(t) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
+	if _handed_atlas != null:
+		director.use_atlas(_handed_atlas)
 	director.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city, null,
 			_city.spawn_siting)
 	return director
@@ -453,7 +459,7 @@ func _touched_from_standable_ground(t, director: ResistanceDirector, item: Vecto
 					or not grid.reaches(tile, blocked, reached):
 				continue
 			places.append(map.tile_to_world(tile))
-	var touched := await ContactTouches.touches_from(t, director, places)
+	var touched := ContactTouches.touches_from(director, places)
 	return touched.has(true)
 
 ## The day's obstruction without the body of the task `director` offers (its contact's place and

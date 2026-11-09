@@ -31,7 +31,7 @@ func run(t) -> void:
 	player.set_physics_process(false)
 	for side in ["left", "right"]:
 		for tile: Vector2i in scene.map.stairwell_tiles("stairwell_%s" % side):
-			var kind: InteriorTile.Kind = f.tiles[tile]
+			var kind: InteriorTile.Kind = f.floor_kind_at(tile)
 			if not InteriorTile.is_walkable(kind) or kind == InteriorTile.Kind.DOOR:
 				continue
 			for name: String in INPUTS:
@@ -61,7 +61,7 @@ const FLIGHTS := [
 func _walk_flights(scene: InteriorScene, player: Stroller) -> void:
 	var f := InteriorMap.build()
 	for side in ["left", "right"]:
-		var origin: Vector2i = f.waypoints["stairwell_%s" % side] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+		var origin: Vector2i = f.waypoint("stairwell_%s" % side) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for flight: Array in FLIGHTS:
 			var down: String = flight[3]
 			var up := "move_left" if down == "move_right" else "move_right"

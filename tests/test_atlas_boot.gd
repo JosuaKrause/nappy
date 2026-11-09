@@ -35,6 +35,7 @@ const Seat := preload("res://tests/seat.gd")
 const BakedRegions := preload("res://tests/baked_regions.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
+const RecordingAtlas := preload("res://tests/recording_atlas.gd")
 const SEED := 4242
 ## A save of the suite's own, handed to every boot, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_atlas_boot_scratch.json"
@@ -140,9 +141,14 @@ func _test_two_days_never_reload_a_page(t) -> void:
 ## second load line for it. So every node under a booted `main` that holds a library — the city and
 ## its furniture, crowd and events, her, the screens' buttons and lines, the badge, the symbol, and
 ## in the escape's building the interior and its events — holds the sitting's, on the day and in
-## the building alike. A node with an `atlas` it was never handed fails this by name. And the pages
-## the boot took for the process are the sitting's library's: they still answer on it once
-## everything the boot built is gone.
+## the building alike. A node still holding a public `atlas` it was never handed fails this by name; a
+## node handed its library through `use_atlas()` keeps it private, so the sitting's library is a
+## recording one (`tests/recording_atlas.gd`) and every help text and mode button standing must have
+## asked it for its page, which a node handed another library, or none, did not. The cordon's figures,
+## the contact and the crowd's agents are handed theirs where they are made, and
+## `test_park_cordon.gd`, `test_resistance_arrow.gd` and `test_atlas_stroller_crowd.gd` read the same
+## off the library each is handed. And the pages the boot took for the process are the sitting's
+## library's: they still answer on it once everything the boot built is gone.
 func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
 	for section: int in [DaySpec.Section.NONE, DaySpec.Section.BUILDING]:
 		var seat := Seat.new(t, func(run: RunState) -> void:
@@ -150,25 +156,40 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
 				if section != DaySpec.Section.NONE:
 					run.header.day = Tuning.RUN_LENGTH_DAYS
 				run.facts.escape_section = section)
+		var recording := RecordingAtlas.new()
+		seat.sitting.atlas = recording
 		var booted := await seat.boot(t, _SCRATCH_SAVE, [])
 		var main := booted.main
 		var where := "the day" if section == DaySpec.Section.NONE else "the building"
-		var atlas := seat.sitting.atlas
+		var atlas: AtlasLibrary = seat.sitting.atlas
 		var holders := 0
+		var help_texts := 0
+		var mode_buttons := 0
 		var strays: Array[String] = []
 		var stack: Array[Node] = [main]
 		while not stack.is_empty():
 			var node: Node = stack.pop_back()
 			stack.append_array(node.get_children())
+			help_texts += 1 if node is HelpText else 0
+			mode_buttons += 1 if node is ModeButton else 0
 			if node is Sitting or not "atlas" in node:
 				continue
 			holders += 1
 			if node.get("atlas") != atlas and strays.size() < 5:
 				strays.append(str(main.get_path_to(node)))
-		t.check(holders > 10, "%s: the boot built nodes that draw from a library (%d)"
+		t.check(holders > 5, "%s: the boot built nodes that draw from a library (%d)"
 				% [where, holders])
 		t.check(strays.is_empty(), "%s: every one draws from the sitting's library (not: %s)"
 				% [where, ", ".join(strays)])
+		# The nodes handed their library through `use_atlas()` keep it private, so what each asked is
+		# read off the sitting's library, which counts its callers: every help text and every mode
+		# button standing took its page on it, and one handed another library took it there instead.
+		t.check(help_texts > 0 and recording.acquired_from("res://src/ui/help_text.gd") >= help_texts,
+				"%s: every help text asked the sitting's library for its page (%d of %d)"
+				% [where, recording.acquired_from("res://src/ui/help_text.gd"), help_texts])
+		t.check(mode_buttons > 0 and recording.acquired_from("res://src/ui/mode_button.gd") >= mode_buttons,
+				"%s: every mode button asked the sitting's library for its page (%d of %d)"
+				% [where, recording.acquired_from("res://src/ui/mode_button.gd"), mode_buttons])
 		booted.free_all()
 		t.check(atlas.region(_a_region_of(Crowd.ATLAS_GROUP)) != null
 				and atlas.region(_a_region_of(EventPictures.ATLAS_GROUP)) != null,

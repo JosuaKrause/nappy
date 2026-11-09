@@ -60,7 +60,7 @@ func use_run(run: RunState) -> void:
 ## Called by `main` before the HUD enters the tree, so the line acquires on it; a HUD built
 ## anywhere else leaves the line to make its own.
 func use_atlas(atlas: AtlasLibrary) -> void:
-	(get_node(^"Root/Teach") as HelpText).atlas = atlas
+	(get_node(^"Root/Teach") as HelpText).use_atlas(atlas)
 
 ## Whether this device has a touchscreen. Read once from `TouchInput`, the same pattern
 ## `DaySummary` and `PauseScreen` use. No longer chosen between two wordings for the walking,

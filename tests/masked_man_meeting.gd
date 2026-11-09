@@ -44,8 +44,8 @@ func meet(t: Node, walk: Array, pace: String, badge := false,
 	for instance in events.instances():
 		if instance.def.id == "masked_pursuer":
 			man = instance
-	var origin: Vector2i = f.waypoints["stairwell_right"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
-	var door: Vector2i = (f.doors["stairwell_right:landing_first"] as InteriorMapPlan.Door).tile
+	var origin: Vector2i = f.waypoint("stairwell_right") - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+	var door: Vector2i = (f.door("stairwell_right:landing_first") as InteriorMapPlan.Door).tile
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	player.carrying = true
@@ -53,7 +53,7 @@ func meet(t: Node, walk: Array, pace: String, badge := false,
 	scene.add_entity(player)
 	events.use_player(player)
 	player.global_position = scene.map.tile_to_world(
-			(f.doors["stairwell_right:landing_second"] as InteriorMapPlan.Door).tile)
+			(f.door("stairwell_right:landing_second") as InteriorMapPlan.Door).tile)
 	if badge:
 		# The badge cases start a row on, past the door: he is already warning, and the walk
 		# from the door to here says nothing about the badge.

@@ -59,9 +59,9 @@ func run(t) -> void:
 
 func _test_the_map_builds(t: Node) -> void:
 	var f := InteriorMap.build()
-	t.check(f != null and not f.tiles.is_empty(), "the map builds a non-empty tile grid")
+	t.check(f != null and not f.floor_tiles().is_empty(), "the map builds a non-empty tile grid")
 	for part in PARTS:
-		t.check(f.waypoints.has(part) and InteriorMap.part_at(f.waypoints[part]) == part,
+		t.check(f.has_waypoint(part) and InteriorMap.part_at(f.waypoint(part)) == part,
 				"the map carries a waypoint for '%s', in that part" % part)
 
 ## The first 22 rows are the player's literal corrected diagram. The last four finish the same
@@ -102,18 +102,18 @@ func _test_the_stairwell_grammar_is_exact_in_both_shafts(t: Node) -> void:
 	var f := InteriorMap.build()
 	for side in ["left", "right"]:
 		var part := "stairwell_%s" % side
-		var origin: Vector2i = f.waypoints[part] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+		var origin: Vector2i = f.waypoint(part) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for y in expected.size():
 			for x in expected[y].length():
 				var symbol := expected[y].substr(x, 1)
 				var at := origin + Vector2i(x, y)
 				if symbol == ".":
-					t.check(not f.tiles.has(at), "%s row %d column %d stays background" % [part, y, x])
+					t.check(not f.has_floor_at(at), "%s row %d column %d stays background" % [part, y, x])
 				elif symbol == "D":
-					t.check(f.tiles.get(at) == InteriorTile.Kind.DOOR,
+					t.check(f.floor_kind_at(at) == InteriorTile.Kind.DOOR,
 							"%s row %d column %d is its corridor door" % [part, y, x])
 				else:
-					t.check(f.tiles.has(at),
+					t.check(f.has_floor_at(at),
 							"%s row %d column %d paints '%s'" % [part, y, x, symbol])
 
 ## Walkability and drawing are properties of the symbol roles, not of a second sparse flight map.
@@ -135,11 +135,11 @@ func _test_stair_symbols_define_walkability_and_art(t: Node) -> void:
 ## read off the built map (`InteriorMap.build()`), the one place the symbol means anything.
 func _kind_painted_for(symbol: String) -> InteriorTile.Kind:
 	var f := InteriorMap.build()
-	var origin: Vector2i = f.waypoints["stairwell_left"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+	var origin: Vector2i = f.waypoint("stairwell_left") - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 	for y in InteriorMap.STAIRWELL_ROWS.size():
 		var x: int = InteriorMap.STAIRWELL_ROWS[y].find(symbol)
 		if x >= 0:
-			return f.tiles.get(origin + Vector2i(x, y), InteriorTile.Kind.NONE)
+			return f.floor_kind_at(origin + Vector2i(x, y))
 	return InteriorTile.Kind.NONE
 
 func _test_every_door_has_the_counterpart_it_claims(t: Node) -> void:
@@ -155,7 +155,7 @@ func _test_every_door_has_the_counterpart_it_claims(t: Node) -> void:
 		["lobby:right", "stairwell_right:landing_lobby"],
 		["lobby:basement", "basement:entry"],
 	]
-	t.check(f.doors.size() == expected_pairs.size() * 2,
+	t.check(f.door_ids().size() == expected_pairs.size() * 2,
 			"the building keeps exactly the nine external door pairs")
 	for pair: Array in expected_pairs:
 		var a: InteriorMapPlan.Door = f.door(pair[0])
@@ -165,8 +165,8 @@ func _test_every_door_has_the_counterpart_it_claims(t: Node) -> void:
 			continue
 		t.check(a.target_door == b.id and b.target_door == a.id,
 				"'%s' and '%s' remain exact counterparts" % pair)
-	for id: String in f.doors:
-		var door: InteriorMapPlan.Door = f.doors[id]
+	for id: String in f.door_ids():
+		var door: InteriorMapPlan.Door = f.door(id)
 		var back: InteriorMapPlan.Door = f.door(door.target_door)
 		t.check(back != null, "door '%s' -> '%s' exists" % [id, door.target_door])
 		if back == null:
@@ -175,16 +175,16 @@ func _test_every_door_has_the_counterpart_it_claims(t: Node) -> void:
 
 func _test_the_exit_and_the_entrance_are_what_they_claim(t: Node) -> void:
 	var f := InteriorMap.build()
-	t.check(f.exit_tile.x >= 0, "the map records an exit tile")
-	t.check(f.tiles.get(f.exit_tile) == InteriorTile.Kind.EMERGENCY_EXIT,
+	t.check(f.exit_position().x >= 0, "the map records an exit tile")
+	t.check(f.floor_kind_at(f.exit_position()) == InteriorTile.Kind.EMERGENCY_EXIT,
 			"the basement's own exit tile is the emergency exit kind")
-	t.check(f.is_walkable(f.exit_tile), "the emergency exit is walkable")
+	t.check(f.is_walkable(f.exit_position()), "the emergency exit is walkable")
 
-	t.check(not f.entrance_tiles.is_empty(), "the map records a barricaded entrance")
-	if f.entrance_tiles.is_empty():
+	t.check(not f.entrance_positions().is_empty(), "the map records a barricaded entrance")
+	if f.entrance_positions().is_empty():
 		return
-	var entrance: Vector2i = f.entrance_tiles[0]
-	t.check(f.walls.get(entrance) == InteriorTile.Kind.ENTRANCE_DOOR,
+	var entrance: Vector2i = f.entrance_positions()[0]
+	t.check(f.wall_kind_at(entrance) == InteriorTile.Kind.ENTRANCE_DOOR,
 			"the lobby's own entrance is the entrance door kind")
 
 ## A few representative points between parts — the gap `InteriorMap._SLOT_STRIDE` leaves, since
@@ -199,8 +199,8 @@ func _test_the_ground_between_parts_is_not_walkable(t: Node) -> void:
 ## walkable cell in the whole building must be reachable from it once a door is allowed to jump.
 func _test_every_walkable_tile_is_reachable_from_her_door_through_the_doors(t: Node) -> void:
 	var f := InteriorMap.build()
-	var seen := {f.start_tile: true}
-	var queue: Array[Vector2i] = [f.start_tile]
+	var seen := {f.start_position(): true}
+	var queue: Array[Vector2i] = [f.start_position()]
 	while not queue.is_empty():
 		var here: Vector2i = queue.pop_back()
 		for dx in range(-1, 2):
@@ -211,8 +211,8 @@ func _test_every_walkable_tile_is_reachable_from_her_door_through_the_doors(t: N
 				if f.is_walkable(next) and not seen.has(next):
 					seen[next] = true
 					queue.append(next)
-		for id: String in f.doors:
-			var door: InteriorMapPlan.Door = f.doors[id]
+		for id: String in f.door_ids():
+			var door: InteriorMapPlan.Door = f.door(id)
 			if door.tile != here:
 				continue
 			var target: Vector2i = f.door(door.target_door).tile
@@ -220,7 +220,7 @@ func _test_every_walkable_tile_is_reachable_from_her_door_through_the_doors(t: N
 				seen[target] = true
 				queue.append(target)
 	var walkable := 0
-	for tile: Vector2i in f.tiles:
+	for tile: Vector2i in f.floor_tiles():
 		if f.is_walkable(tile):
 			walkable += 1
 	t.check(seen.size() == walkable,
@@ -233,12 +233,12 @@ func _test_no_two_parts_are_reachable_by_walking_alone(t: Node) -> void:
 	var f := InteriorMap.build()
 	var components := {}
 	for part in PARTS:
-		components[part] = _flood_fill(f, f.waypoints[part])
+		components[part] = _flood_fill(f, f.waypoint(part))
 	for part in PARTS:
 		for other in PARTS:
 			if other == part:
 				continue
-			t.check(not components[part].has(f.waypoints[other]),
+			t.check(not components[part].has(f.waypoint(other)),
 					"'%s' cannot be reached from '%s' by walking alone, without a door" % [other, part])
 
 ## Every walkable kind that is drawn as ground rather than as a standing sprite or a decal needs an
@@ -261,8 +261,8 @@ func _test_the_scene_paints_the_whole_map(t: Node) -> void:
 	var f := InteriorMap.build()
 	var ground: TileMapLayer = scene.get_node("Ground")
 	var painted := 0
-	for tile: Vector2i in f.tiles:
-		if InteriorTileSet.source_id_for(f.tiles[tile]) >= 0:
+	for tile: Vector2i in f.floor_tiles():
+		if InteriorTileSet.source_id_for(f.floor_kind_at(tile)) >= 0:
 			painted += 1
 			t.check(ground.get_cell_source_id(tile) >= 0, "tile %s is painted" % tile)
 	t.check(painted > 0, "the map actually has ground tiles to check (%d)" % painted)
@@ -282,7 +282,7 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 	var blocked := {}
 	for body in scene.get_node("Collision").get_children():
 		blocked[scene.map.world_to_tile(body.position)] = true
-	for tile: Vector2i in f.tiles:
+	for tile: Vector2i in f.floor_tiles():
 		if f.is_walkable(tile):
 			t.check(not blocked.has(tile), "walkable tile %s is unblocked" % tile)
 		else:
@@ -290,7 +290,7 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 	t.check(blocked.has(Vector2i(30, 0)), "a gap tile between two parts is blocked")
 	for side in ["left", "right"]:
 		var part := "stairwell_%s" % side
-		var origin: Vector2i = f.waypoints[part] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+		var origin: Vector2i = f.waypoint(part) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for y in InteriorMap.STAIRWELL_ROWS.size():
 			var row: String = InteriorMap.STAIRWELL_ROWS[y]
 			for x in row.length():
@@ -307,13 +307,13 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 			< InteriorMapPlan.FLIGHT_HALF_WIDTH * 2.0 * InteriorScene.TILE / sqrt(2.0),
 			"the player fits between a flight's two edges")
 	var paired_steps := 0
-	for tile: Vector2i in f.tiles:
-		var kind: InteriorTile.Kind = f.tiles[tile]
+	for tile: Vector2i in f.floor_tiles():
+		var kind: InteriorTile.Kind = f.floor_kind_at(tile)
 		var direction := InteriorTile.flight_direction(kind)
 		if direction == 0:
 			continue
 		var next := tile + Vector2i(direction, 1)
-		if f.tiles.get(next) != kind:
+		if f.floor_kind_at(next) != kind:
 			continue
 		paired_steps += 1
 		var corner_a := Vector2i(next.x, tile.y)
@@ -449,13 +449,13 @@ func _test_a_sideways_press_on_a_flight_walks_its_slope(t: Node) -> void:
 	var tiles: Array[Vector2i] = []
 	for kind: InteriorTile.Kind in roles:
 		var role_tile := Vector2i(-1, -1)
-		for tile: Vector2i in f.tiles:
-			if f.tiles[tile] == kind:
+		for tile: Vector2i in f.floor_tiles():
+			if f.floor_kind_at(tile) == kind:
 				role_tile = tile
 				break
 		t.check(role_tile.x >= 0, "flight role %d exists in the shaft" % kind)
 		tiles.append(role_tile)
-	tiles.append(f.waypoints["hallway_third"])
+	tiles.append(f.waypoint("hallway_third"))
 	var walkers := _strollers_on(scene, tiles)
 	var steering := {}
 	for press: String in ["right", "left", "up"]:
@@ -559,9 +559,9 @@ func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Node
 	var origins: Array[Vector2i] = []
 	var sides: Array[String] = []
 	for side in ["left", "right"]:
-		var origin: Vector2i = f.waypoints["stairwell_%s" % side] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+		var origin: Vector2i = f.waypoint("stairwell_%s" % side) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for tile: Vector2i in scene.map.stairwell_tiles("stairwell_%s" % side):
-			var kind: InteriorTile.Kind = f.tiles[tile]
+			var kind: InteriorTile.Kind = f.floor_kind_at(tile)
 			if not InteriorTile.is_walkable(kind) or kind == InteriorTile.Kind.DOOR:
 				continue
 			tiles.append(tile)
@@ -570,7 +570,7 @@ func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Node
 	var walkers := _strollers_on(scene, tiles)
 	var landing_tiles := 0
 	for tile in tiles:
-		if InteriorTile.flight_direction(f.tiles[tile]) == 0:
+		if InteriorTile.flight_direction(f.floor_kind_at(tile)) == 0:
 			landing_tiles += 1
 	for name: String in _PRESSES:
 		var steered := await _steer(t, scene, walkers, tiles, name)
@@ -580,7 +580,7 @@ func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Node
 			t.check(press.is_equal_approx((_UNIT_PRESSES[name] as Vector2).normalized()),
 					"the %s press is held as its direction (%s)" % [name, press])
 		for index in tiles.size():
-			var slope := InteriorTile.flight_direction(f.tiles[tiles[index]])
+			var slope := InteriorTile.flight_direction(f.floor_kind_at(tiles[index]))
 			var expected := press
 			if slope != 0:
 				var toward := signf(press.x)
@@ -626,9 +626,9 @@ func _test_every_door_is_drawn_under_her(t: Node) -> void:
 		stack.append_array(node.get_children())
 		if node is Sprite2D and pictures.has((node as Sprite2D).texture):
 			doors.append(node)
-	var expected := f.doors.size() + f.locked_thresholds.size() + (1 if f.exit_tile.x >= 0 else 0)
-	for at: Vector2i in f.walls:
-		if f.walls[at] in [InteriorTile.Kind.LIFT_DOOR, InteriorTile.Kind.ENTRANCE_DOOR]:
+	var expected := f.door_ids().size() + f.locked_threshold_positions().size() + (1 if f.exit_position().x >= 0 else 0)
+	for at: Vector2i in f.wall_tiles():
+		if f.wall_kind_at(at) in [InteriorTile.Kind.LIFT_DOOR, InteriorTile.Kind.ENTRANCE_DOOR]:
 			expected += 1
 	t.check(doors.size() == expected, "every door picture is found (%d of %d)" % [doors.size(), expected])
 	var reach := Tuning.PLAYER_BODY_RADIUS
@@ -694,7 +694,7 @@ func _test_every_diagonal_step_has_both_its_pinch_corners_cleared(t: Node) -> vo
 	var f := InteriorMap.build()
 	var diagonals: Array[Vector2i] = [Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
 	var checked := 0
-	for t1: Vector2i in f.tiles:
+	for t1: Vector2i in f.floor_tiles():
 		if not f.is_walkable(t1):
 			continue
 		for d in diagonals:
@@ -706,11 +706,11 @@ func _test_every_diagonal_step_has_both_its_pinch_corners_cleared(t: Node) -> vo
 			var corner_b := Vector2i(t1.x, t1.y + d.y)
 			if f.is_walkable(corner_a) or f.is_walkable(corner_b):
 				continue
-			t.check(not f.tiles.has(corner_a) and not f.tiles.has(corner_b),
+			t.check(not f.has_floor_at(corner_a) and not f.has_floor_at(corner_b),
 					"a required pinch clearance never overrides a painted stair-side cell")
-			t.check(f.collision_clearance.has(corner_a),
+			t.check(f.has_collision_clearance_at(corner_a),
 					"the absent corner %s pinching %s to %s is cleared" % [corner_a, t1, t2])
-			t.check(f.collision_clearance.has(corner_b),
+			t.check(f.has_collision_clearance_at(corner_b),
 					"the absent corner %s pinching %s to %s is cleared" % [corner_b, t1, t2])
 	# A guard that the sweep found real diagonal adjacencies to check — every flight in both
 	# shafts plus the basement's own entry flight.
@@ -728,7 +728,7 @@ func _test_the_basement_entry_is_a_straight_level_stair(t: Node) -> void:
 	if entry == null:
 		return
 	var stair := entry.tile + Vector2i.UP
-	t.check(f.tiles.get(stair) == InteriorTile.Kind.STAIR_DOWN,
+	t.check(f.floor_kind_at(stair) == InteriorTile.Kind.STAIR_DOWN,
 			"the cell north of the door is the one-tile front-facing stair")
 	t.check(InteriorTile.is_walkable(InteriorTile.Kind.STAIR_DOWN)
 			and InteriorTile.flight_direction(InteriorTile.Kind.STAIR_DOWN) == 0,
@@ -741,9 +741,12 @@ func _test_the_basement_entry_is_a_straight_level_stair(t: Node) -> void:
 	# anywhere is pinched between two absent corners, so the clearance pass has nothing left to
 	# free. `_test_every_diagonal_step_has_both_its_pinch_corners_cleared` is the other half — it
 	# checks that a pinch which did appear would be freed; this checks that none does.
-	t.check(f.collision_clearance.is_empty(),
-			"no cell in the building needs its collision cleared to be crossable (%d do)"
-			% f.collision_clearance.size())
+	var cleared := 0
+	for y in f.size_in_tiles().y:
+		for x in f.size_in_tiles().x:
+			cleared += 1 if f.has_collision_clearance_at(Vector2i(x, y)) else 0
+	t.check(cleared == 0,
+			"no cell in the building needs its collision cleared to be crossable (%d do)" % cleared)
 
 ## **Stands her on each door in turn and lets the building do what it does under her**: `transition_at()`
 ## names what is under her and `process_player()` (the call the run flow makes every frame) starts the
@@ -783,13 +786,13 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> voi
 			"landing_third", "landing_second", "landing_first", "landing_lobby",
 		]
 		for index in landing_ids.size() - 1:
-			var from: Vector2i = f.waypoints["%s:%s" % [part, landing_ids[index]]]
-			var to: Vector2i = f.waypoints["%s:%s" % [part, landing_ids[index + 1]]]
+			var from: Vector2i = f.waypoint("%s:%s" % [part, landing_ids[index]])
+			var to: Vector2i = f.waypoint("%s:%s" % [part, landing_ids[index + 1]])
 			t.check(_shortest_path_length(f, from, to) > 0,
 					"%s has a continuous walk from %s to %s"
 					% [part, landing_ids[index], landing_ids[index + 1]])
 		for id in ["landing_third", "landing_second", "landing_first"]:
-			var landing_tile: Vector2i = f.waypoints["%s:%s" % [part, id]]
+			var landing_tile: Vector2i = f.waypoint("%s:%s" % [part, id])
 			var mid_result := scene.map.transition_at(landing_tile)
 			t.check(mid_result.is_empty(), "%s: passing %s's `F` approach triggers nothing" % [part, id])
 
@@ -811,7 +814,7 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> voi
 		t.check(player.global_position == scene.map.tile_to_world(f.door("basement:entry").tile),
 				"the %s walk reaches the basement's own entry door" % side)
 
-		player.global_position = scene.map.tile_to_world(f.exit_tile)
+		player.global_position = scene.map.tile_to_world(f.exit_position())
 		var exit_result := scene.map.transition_at(scene.map.world_to_tile(player.global_position))
 		t.check(exit_result.get("kind") == "exit",
 				"the basement's own exit tile is a transition to the exit, reached via the %s stairwell" % side)
@@ -950,22 +953,22 @@ func _shortest_path_length(f: InteriorMapPlan, start: Vector2i, goal: Vector2i) 
 ## would close the section.
 func _test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t: Node) -> void:
 	var f := InteriorMap.build()
-	t.check(f.rubble.size.x > 0 and f.rubble.size.y > 0,
-			"the top floor carries a collapse (%s)" % f.rubble)
-	t.check(f.rubble.size.y == 2,
+	t.check(f.rubble_area().size.x > 0 and f.rubble_area().size.y > 0,
+			"the top floor carries a collapse (%s)" % f.rubble_area())
+	t.check(f.rubble_area().size.y == 2,
 			"it fills both rows of a two-row corridor, so nothing walks round it (%d)"
-			% f.rubble.size.y)
+			% f.rubble_area().size.y)
 	var cells := 0
-	for y in range(f.rubble.position.y, f.rubble.end.y):
-		for x in range(f.rubble.position.x, f.rubble.end.x):
+	for y in range(f.rubble_area().position.y, f.rubble_area().end.y):
+		for x in range(f.rubble_area().position.x, f.rubble_area().end.x):
 			var tile := Vector2i(x, y)
 			cells += 1
-			t.check(f.tiles.has(tile), "the heap at %s stands on painted hallway floor" % tile)
+			t.check(f.has_floor_at(tile), "the heap at %s stands on painted hallway floor" % tile)
 			t.check(not f.is_walkable(tile), "and %s cannot be stood on" % tile)
-	t.check(cells == f.rubble.size.x * f.rubble.size.y,
+	t.check(cells == f.rubble_area().size.x * f.rubble_area().size.y,
 			"every cell of the heap was asked about (%d)" % cells)
 
-	var reached := _flood_fill(f, f.start_tile)
+	var reached := _flood_fill(f, f.start_position())
 	var right_door: Vector2i = f.door("hallway_third:right").tile
 	var left_door: Vector2i = f.door("hallway_third:left").tile
 	t.check(not reached.has(right_door),
@@ -973,7 +976,7 @@ func _test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t: Node) -> vo
 	t.check(reached.has(left_door),
 			"and the left one still can, so the way down starts on the fire's own side")
 	for id in ["hallway_second", "hallway_first"]:
-		var seen := _flood_fill(f, f.waypoints[id])
+		var seen := _flood_fill(f, f.waypoint(id))
 		t.check(seen.has(f.door("%s:right" % id).tile) and seen.has(f.door("%s:left" % id).tile),
 				"%s still walks between both of its stair doors, so crossing over is possible" % id)
 
@@ -1010,7 +1013,7 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 		# nothing to walk down from her own door. Asked as the two together rather than as the
 		# word "left": the side she can still walk to is the side that burns.
 		var f := InteriorMap.build()
-		var reached := _flood_fill(f, f.start_tile)
+		var reached := _flood_fill(f, f.start_position())
 		t.check(reached.has(f.door("hallway_third:%s" % burning).tile),
 				"the shaft the fire is in (%s) is the one her own door can still walk to" % burning)
 		t.check(not reached.has(f.door("hallway_third:%s" % other).tile),
@@ -1083,7 +1086,7 @@ func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t
 		var f := InteriorMap.build()
 		var reach := fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
 		var shut := {}
-		for tile in f.tiles:
+		for tile in f.floor_tiles():
 			if scene.map.tile_to_world(tile).distance_to(fire.global_position) < reach:
 				shut[tile] = true
 		# Each flight is walked between the shaft's own doors, which is where a flight begins and ends
@@ -1164,8 +1167,8 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 		var steps := man.path
 		t.check(steps.size() > 8,
 				"his line is the whole shaft rather than two points (%d)" % steps.size())
-		t.check(scene.map.world_to_tile(steps[0]) == f.waypoints["%s:landing_lobby" % part]
-				and scene.map.world_to_tile(steps[steps.size() - 1]) == f.waypoints[part],
+		t.check(scene.map.world_to_tile(steps[0]) == f.waypoint("%s:landing_lobby" % part)
+				and scene.map.world_to_tile(steps[steps.size() - 1]) == f.waypoint(part),
 				"and it runs landing to landing")
 		var off_the_ground := 0
 		var pinched := 0
@@ -1193,11 +1196,11 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 
 		var nearest_door := INF
 		var doors := 0
-		for id: String in f.doors:
+		for id: String in f.door_ids():
 			if not id.begins_with("%s:" % part):
 				continue
 			doors += 1
-			var at := scene.map.tile_to_world(f.doors[id].tile)
+			var at := scene.map.tile_to_world(f.door(id).tile)
 			for point in steps:
 				nearest_door = minf(nearest_door, at.distance_to(point))
 		t.check(doors == 4, "the shaft has its four doors to ask about (%d)" % doors)
@@ -1318,19 +1321,19 @@ func _test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t
 	var reach := 0.0
 	if fire:
 		reach = fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
-		for tile: Vector2i in f.tiles:
+		for tile: Vector2i in f.floor_tiles():
 			if f.is_walkable(tile) and scene.map.tile_to_world(tile).distance_to(fire.global_position) < reach:
 				shut[tile] = true
 	t.check(shut.size() > 0, "the fire actually closes ground (%d cells)" % shut.size())
 	var buried := 0
-	for y in range(f.rubble.position.y, f.rubble.end.y):
-		for x in range(f.rubble.position.x, f.rubble.end.x):
-			if f.tiles.has(Vector2i(x, y)):
+	for y in range(f.rubble_area().position.y, f.rubble_area().end.y):
+		for x in range(f.rubble_area().position.x, f.rubble_area().end.x):
+			if f.has_floor_at(Vector2i(x, y)):
 				buried += 1
 	t.check(buried > 0, "and the rubble actually closes ground (%d cells)" % buried)
 
-	var seen := {f.start_tile: true}
-	var queue: Array[Vector2i] = [f.start_tile]
+	var seen := {f.start_position(): true}
+	var queue: Array[Vector2i] = [f.start_position()]
 	while not queue.is_empty():
 		var here: Vector2i = queue.pop_back()
 		for dx in range(-1, 2):
@@ -1342,15 +1345,15 @@ func _test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t
 					continue
 				seen[next] = true
 				queue.append(next)
-		for id: String in f.doors:
-			var door: InteriorMapPlan.Door = f.doors[id]
+		for id: String in f.door_ids():
+			var door: InteriorMapPlan.Door = f.door(id)
 			if door.tile != here:
 				continue
 			var target: Vector2i = f.door(door.target_door).tile
 			if not seen.has(target) and not shut.has(target):
 				seen[target] = true
 				queue.append(target)
-	t.check(seen.has(f.exit_tile),
+	t.check(seen.has(f.exit_position()),
 			"the service exit is reachable from her own door past a %.0fpx fire and the collapse"
 			% reach)
 	events.free()
@@ -1487,7 +1490,7 @@ func _basement_reaches_the_exit_without(without: Vector2i) -> bool:
 					continue
 				seen[next] = true
 				queue.append(next)
-	return seen.has(f.exit_tile)
+	return seen.has(f.exit_position())
 
 ## The corridor as a timing puzzle: *"have them turn off an on in different intervals"*. Driven
 ## through the building's `EventManager._physics_process()` and each instance's own `_process()`, the two calls
@@ -2239,32 +2242,32 @@ func _test_the_escape_building_is_dark_by_part(t) -> void:
 	scene.build()
 	var plan := InteriorMap.build()
 	var misplaced := 0
-	for id: String in plan.doors:
-		var door: InteriorMapPlan.Door = plan.doors[id]
+	for id: String in plan.door_ids():
+		var door: InteriorMapPlan.Door = plan.door(id)
 		if InteriorMap.part_at(door.tile) != id.split(":")[0]:
 			misplaced += 1
-	t.check(plan.doors.size() > 0 and misplaced == 0,
+	t.check(plan.door_ids().size() > 0 and misplaced == 0,
 			"every door is in the part its id names (%d of %d misplaced)"
-			% [misplaced, plan.doors.size()])
+			% [misplaced, plan.door_ids().size()])
 	var player := Node2D.new()
 	t.add_child(player)
-	var hallway := _lighting_at(scene, player, plan.waypoints["hallway_second"])
-	var lobby := _lighting_at(scene, player, plan.waypoints["lobby"])
-	var basement := _lighting_at(scene, player, plan.waypoints["basement"])
-	var stairs := _lighting_at(scene, player, plan.waypoints["stairwell_left"])
+	var hallway := _lighting_at(scene, player, plan.waypoint("hallway_second"))
+	var lobby := _lighting_at(scene, player, plan.waypoint("lobby"))
+	var basement := _lighting_at(scene, player, plan.waypoint("basement"))
+	var stairs := _lighting_at(scene, player, plan.waypoint("stairwell_left"))
 	t.check(hallway == Palette.ESCAPE_GLOOM and lobby == Palette.ESCAPE_GLOOM,
 			"the hallways and the lobby are in the gloom")
 	t.check(basement.get_luminance() < hallway.get_luminance(),
 			"and the basement is darker than they are")
 	t.check(stairs == Palette.ESCAPE_EMERGENCY_RED,
 			"the stairwells are on the red emergency lighting")
-	t.check(_lighting_at(scene, player, plan.waypoints["stairwell_right"]) == stairs,
+	t.check(_lighting_at(scene, player, plan.waypoint("stairwell_right")) == stairs,
 			"both of them")
 	# An explosion outside, the call the day's events make (`WorldContext.bang_outside()`).
 	scene.bang_outside()
-	t.check(_lighting_at(scene, player, plan.waypoints["hallway_second"]).get_luminance()
+	t.check(_lighting_at(scene, player, plan.waypoint("hallway_second")).get_luminance()
 			> hallway.get_luminance(), "a hallway is lit up while its windows flash")
-	t.check(_lighting_at(scene, player, plan.waypoints["stairwell_left"]) == stairs,
+	t.check(_lighting_at(scene, player, plan.waypoint("stairwell_left")) == stairs,
 			"a stairwell, with no windows, is not")
 	player.free()
 	scene.free()

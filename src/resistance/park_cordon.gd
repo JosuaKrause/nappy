@@ -1281,10 +1281,8 @@ func _tape_up(stretch: Stretch) -> void:
 	if not _world:
 		return
 	var tape := CordonTape.new()
-	tape.atlas = _atlas
-	tape.piece = CordonTape.Piece.TAPE
-	tape.across = stretch.across()
-	tape.length = stretch.length()
+	tape.use_atlas(_atlas)
+	tape.set_out(CordonTape.Piece.TAPE, stretch.across(), stretch.length())
 	stretch.node = tape
 	# A tile-long stretch is one slice of the park's edge, standing at its own feet: the middle of a
 	# broadside stretch, the near end of an end-on one (`DrawLayer.slice_feet()`).
@@ -1303,8 +1301,8 @@ func _plant_a_post(at: Vector2) -> void:
 	if not _world:
 		return
 	var post := CordonTape.new()
-	post.atlas = _atlas
-	post.piece = CordonTape.Piece.POST
+	post.use_atlas(_atlas)
+	post.set_out(CordonTape.Piece.POST, true, Tuning.TILE_SIZE * 1.0)
 	post.position = at
 	_posts.append(post)
 	_world.add_entity(post)
@@ -1409,7 +1407,7 @@ func _make_figure(officer: Officer) -> void:
 	if not _world:
 		return
 	var figure := CordonOfficer.new()
-	figure.atlas = _atlas
+	figure.use_atlas(_atlas)
 	figure.position = officer.at
 	officer.node = figure
 	_world.add_entity(figure)

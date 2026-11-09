@@ -61,9 +61,9 @@ func _once(t, s: int, route: String, pace: String) -> void:
 			man = instance
 	if OS.get_environment("CHARGES_WITHIN") != "":
 		man.def.notice.runs_within = float(OS.get_environment("CHARGES_WITHIN"))
-	var origin: Vector2i = f.waypoints["stairwell_right"] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
-	var door_tile: Vector2i = (f.doors["stairwell_right:landing_first"] as InteriorMapPlan.Door).tile
-	var second_door: Vector2i = (f.doors["stairwell_right:landing_second"] as InteriorMapPlan.Door).tile
+	var origin: Vector2i = f.waypoint("stairwell_right") - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+	var door_tile: Vector2i = (f.door("stairwell_right:landing_first") as InteriorMapPlan.Door).tile
+	var second_door: Vector2i = (f.door("stairwell_right:landing_second") as InteriorMapPlan.Door).tile
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	player.carrying = true

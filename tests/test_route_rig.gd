@@ -868,7 +868,7 @@ func _test_task_target_resolves_for_the_mast_task_on_day_11(t) -> void:
 	var on_a_body := not map.is_walkable(foot) or map.is_obstructed(foot)
 	var touched := false
 	if resolved != Vector2.INF:
-		touched = await ContactTouches.touches_from_one(t, director, resolved)
+		touched = ContactTouches.touches_from_one(director, resolved)
 	t.check(resolved != Vector2.INF and (resolved != contact) == on_a_body and touched,
 			"'task' resolves to ground the mast's foot is touched from (%s)"
 			% ("open ground beside it" if on_a_body else "the open foot itself"))
@@ -927,7 +927,7 @@ func _test_task_target_resolves_for_the_station_door_on_the_last_night(t) -> voi
 	var map := (fixture["city"] as City).map
 	var touched := false
 	if resolved != Vector2.INF:
-		touched = await ContactTouches.touches_from_one(t, director, resolved)
+		touched = ContactTouches.touches_from_one(director, resolved)
 	t.check(resolved != Vector2.INF and touched and map.is_walkable(map.world_to_tile(resolved)),
 			"'task' resolves to the pavement the power station's front door is touched from")
 	var door := director.contact_position()
