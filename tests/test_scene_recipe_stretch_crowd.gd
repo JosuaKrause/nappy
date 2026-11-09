@@ -86,7 +86,7 @@ func _force_recycles(t, path: String, data: Dictionary, label: String) -> void:
 	var crowd := city.crowd
 	crowd.start_day(1, run.calendar.day_rng(1, "crowd"), map.world_size() * 0.5, false)
 	crowd.use_stretch()
-	var ends := crowd.field().stretch_ends
+	var ends := crowd.field().ends_of_the_stretch()
 	var watch := {"stays": true, "ends_seen": true, "safe": true, "entries": 0, "placed": 0,
 			"in_view": 0, "unsafe": [] as Array[String]}
 	for end: Dictionary in ends:

@@ -933,7 +933,7 @@ func _test_the_screen_cover_follows_the_scheme_in_force(t) -> void:
 	for side: ControlsMode.Side in [ControlsMode.Side.LEFT, ControlsMode.Side.RIGHT]:
 		controls.set_mode(ControlsMode.Mode.JOYSTICK, side)
 		var cover := controls.covering
-		t.check(cover.in_force and cover.design_size == design,
+		t.check(cover.in_force and cover.design_box() == design,
 				"the joystick is in force over the design box (side %d)" % side)
 		var left_top := TouchControls.FOCUS_LEFT.y - TouchControls.RUN_RADIUS
 		t.check(cover.left == Rect2(0.0, left_top, TouchControls.FOCUS_LEFT.x + TouchControls.RUN_RADIUS,

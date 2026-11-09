@@ -1573,7 +1573,7 @@ func scenery_ground_source(tile: Vector2i) -> int:
 		return -1
 	if map.recipe_exterior and not map.recipe_bounds.has_point(tile):
 		return GroundTiles.ALLEY
-	if tile.x < 0 or tile.y < 0 or tile.x >= map.size.x or tile.y >= map.size.y:
+	if tile.x < 0 or tile.y < 0 or tile.x >= map.size_in_tiles().x or tile.y >= map.size_in_tiles().y:
 		return _paint_outside_the_map(tile)
 	var source := GroundTiles.source_for(map, tile, _day)
 	if source in GroundTiles.ROUTE_KERB_SOURCES and _is_on_the_tinted_route(tile):
@@ -1614,8 +1614,8 @@ func _spawn_the_void_edge() -> void:
 		for tile in map.rect_tiles(lot):
 			walled[tile] = true
 	var edge := {}
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if not map.in_stretch(tile):
 				continue
@@ -1727,15 +1727,15 @@ func _paint_outside_the_map(tile: Vector2i) -> int:
 ## The order below is the whole rule. North first, then south, then whatever is left.
 func _border_source(x: int, y: int) -> int:
 	var north := -y
-	var south := y - (map.size.y - 1)
+	var south := y - (map.size_in_tiles().y - 1)
 	var west := -x
-	var east := x - (map.size.x - 1)
+	var east := x - (map.size_in_tiles().x - 1)
 
 	if _leaves_by_the_spine(x):
 		var on_to_the_bridge := south > 0
 		var into_the_tunnel := north > 0 and north <= CityEdge.TUNNEL_DEPTH_TILES
 		if on_to_the_bridge or into_the_tunnel:
-			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size.y - 1)), _day)
+			return GroundTiles.source_for(map, Vector2i(x, clampi(y, 0, map.size_in_tiles().y - 1)), _day)
 	if north > 0:
 		return GroundTiles.SCREE if north == 1 else GroundTiles.MOUNTAIN
 	if south > 0:

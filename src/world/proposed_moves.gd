@@ -17,18 +17,18 @@ var _keepers: Array[MoveProposal] = []
 ## same.
 func join(move: MoveProposal, at: Vector2) -> void:
 	move.place(at)
-	if not move.on_the_list:
-		move.on_the_list = true
+	if not move.is_on_the_list():
+		move.stand_on_the_list(true)
 		_moves.append(move)
-		if not move.yields:
+		if not move.gives_way():
 			_keepers.append(move)
 
 ## Takes a mover's move off the list: it no longer stands in this world.
 func leave(move: MoveProposal) -> void:
-	if move.on_the_list:
-		move.on_the_list = false
+	if move.is_on_the_list():
+		move.stand_on_the_list(false)
 		_moves.erase(move)
-		if not move.yields:
+		if not move.gives_way():
 			_keepers.erase(move)
 
 ## How many moves stand on the list.
@@ -37,7 +37,7 @@ func size() -> int:
 
 ## Whether `move` stands on this list.
 func has(move: MoveProposal) -> bool:
-	return move.on_the_list and _moves.has(move)
+	return move.is_on_the_list() and _moves.has(move)
 
 ## **Every mover's move standing in this world, in the order they joined, as a copy of the list**,
 ## so a pass over it is safe against the list changing under its own loop: a mover freed or streamed

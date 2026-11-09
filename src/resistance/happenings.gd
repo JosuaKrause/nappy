@@ -444,7 +444,7 @@ func _send_the_column(her: Vector2) -> PendingWarning:
 		return null
 	var going := 1.0 if _rng.randf() < 0.5 else -1.0
 	var top := Tuning.TILE_SIZE * 0.5
-	var bottom := _map.size.y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
+	var bottom := _map.size_in_tiles().y * Tuning.TILE_SIZE - Tuning.TILE_SIZE * 0.5
 	# About as far up the lane as the front truck is created, just out of sight.
 	var lead := SpawnSiting.lead_up_a_lane(EventFootprints.box_of(def))
 	# From the end with room for its place behind her, when only one end has it; with neither, from

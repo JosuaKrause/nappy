@@ -155,7 +155,7 @@ func _test_a_crowd_body_jolt_widens_its_set(t) -> void:
 	var crowd := Crowd.new()
 	var narrow := crowd.sources.silent_beyond()
 	var car := CrowdAgent.new()
-	car.excitement.heard_in = crowd.sources
+	car.excitement.hear_in(crowd.sources)
 	car.kind = CrowdAgent.Kind.CAR
 	car.excitement.startle(30.0, 1.0, 45.0, 900.0)
 	t.check(crowd.sources.silent_beyond() >= 900.0 / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)

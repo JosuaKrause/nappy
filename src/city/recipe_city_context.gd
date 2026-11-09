@@ -9,19 +9,19 @@ const LAYOUT_RECTS := ["open_rect", "playground", "square", "alley", "passage"]
 const SETS := ["absent_segments", "dead_ends"]
 
 static func capture(map: CityMap) -> Dictionary:
-	var data := {"size": pair(map.size), "seed": map.seed_used, "main_road": map.main_road,
+	var data := {"size": pair(map.size_in_tiles()), "seed": map.seed_used, "main_road": map.main_road,
 			"home_block": pair(map.home_block), "power_station_door_key": triple(map.power_station_door_key),
 			"power_station_industrial_blocks": map.power_station_industrial_blocks,
 			"tiles": [], "blocks": [], "zones": [], "precincts": [], "built_over": [],
 			"region_of_junction": Array(map.region_of_junction),
 			"region_has_calm": Array(map.region_has_calm), "boundary_wall_at_a": [], "trees": []}
-	for y in map.size.y:
+	for y in map.size_in_tiles().y:
 		var row: Array = []
 		var x := 0
-		while x < map.size.x:
-			var type := map.tiles[y * map.size.x + x]
+		while x < map.size_in_tiles().x:
+			var type := map.tiles[y * map.size_in_tiles().x + x]
 			var end := x + 1
-			while end < map.size.x and map.tiles[y * map.size.x + end] == type:
+			while end < map.size_in_tiles().x and map.tiles[y * map.size_in_tiles().x + end] == type:
 				end += 1
 			row.append([str(GameEnums.TileType.keys()[type]).to_lower(), end - x])
 			x = end

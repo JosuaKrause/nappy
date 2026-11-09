@@ -86,7 +86,7 @@ func keep_fresh(her_at: Vector2, from: Vector2) -> void:
 			stale = maxi(stale, floori(float(his) / REFRESH_SHARE))
 		var moved := absi(her.x - _field_from.x) >= stale \
 				or absi(her.y - _field_from.y) >= stale
-		if _field != null and not moved and _field.versions == versions:
+		if _field != null and not moved and _field.started_under() == versions:
 			return
 		var target: Array[Dictionary] = [{"key": 0, "at": her_at, "reach": 0.0,
 				"beat": PackedVector2Array()}]
@@ -96,7 +96,7 @@ func keep_fresh(her_at: Vector2, from: Vector2) -> void:
 		# Laying out the ground is a frame's work of its own, like the sweep's own layout.
 		return
 	_next.advance(_map, _next_ground, SWEEP_TILES_PER_FRAME)
-	if _next.done or _next.length_at(_map.world_to_tile(from)) >= 0:
+	if _next.is_done() or _next.length_at(_map.world_to_tile(from)) >= 0:
 		_field = _next
 		_field_ground = _next_ground
 		_field_from = _next_from
@@ -169,4 +169,4 @@ func _down_the_way(from: Vector2i) -> PackedVector2Array:
 func _is_open(tile: Vector2i) -> bool:
 	if not _map.in_bounds(tile) or not _map.is_walkable(tile):
 		return false
-	return _field_ground[tile.y * _map.size.x + tile.x] != WalkField.BLOCKED
+	return _field_ground[tile.y * _map.size_in_tiles().x + tile.x] != WalkField.BLOCKED

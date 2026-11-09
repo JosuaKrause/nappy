@@ -240,7 +240,7 @@ var _officer_walks := Mover.on_foot()
 ## How far an officer's body reaches round his feet, for his move (`MoveProposal.radius`): the
 ## policeman's own figure, as he walks when he is an event (`EventInstance.mover_for()` of
 ## `OFFICER_ROW`), though his own walks go at no reach.
-var _officer_reach := EventInstance.mover_for(EventCatalogue.by_id(OFFICER_ROW)).radius
+var _officer_reach := EventInstance.mover_for(EventCatalogue.by_id(OFFICER_ROW)).body_reach()
 ## The day's obstruction as the director's reachability answer has it (`EventScheduler.
 ## blocked_by()`: today's closures plus every body's disc), which the last gap is checked under.
 var _blocked: Dictionary

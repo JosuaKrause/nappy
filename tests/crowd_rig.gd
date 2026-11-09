@@ -822,7 +822,7 @@ func _test_walking_into_somebody_displaces_and_startles_them(t) -> void:
 	_city.crowd.use_player(rig)
 	_city.crowd.set_focus(here)
 	var frames := 0
-	while frames < 120 and (bumps.is_empty() or walker.touching):
+	while frames < 120 and (bumps.is_empty() or walker.is_touched()):
 		await _city.get_tree().physics_frame
 		frames += 1
 	EventBus.crowd_bumped.disconnect(on_bump)
@@ -847,7 +847,7 @@ func _test_walking_into_somebody_displaces_and_startles_them(t) -> void:
 	# startle fires exactly **once** across the whole contact. The old code resolved to
 	# `BUMP_RADIUS` itself, which is the release threshold, so the pair sat on it and re-fired
 	# a fresh 26/s jolt every other frame for as long as she stayed there.
-	t.check(not walker.touching and frames < 120,
+	t.check(not walker.is_touched() and frames < 120,
 			"a contact she stands in ends by itself (%.1fpx apart)"
 			% walker.global_position.distance_to(here))
 	t.check(bumps.size() == 1, "and it startles them once, not once per frame (%d)" % bumps.size())
@@ -869,7 +869,7 @@ func _test_walking_into_somebody_displaces_and_startles_them(t) -> void:
 
 	# A contact well outside the radius does nothing at all: the walker a lane over was never
 	# touched, was not pushed across and was announced to nobody.
-	t.check(not other.touching and absf(other.global_position.x - other_from.x) < 1.0,
+	t.check(not other.is_touched() and absf(other.global_position.x - other_from.x) < 1.0,
 			"passing somebody wide is free, which is what makes it a choice")
 
 ## The lethal half. Checked directly rather than by walking a player into traffic, because the

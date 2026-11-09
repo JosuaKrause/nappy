@@ -711,7 +711,7 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 		standing.global_position += Vector2(Tuning.WALK_SPEED * delta, 0.0)
 		walked += delta
 		await t.get_tree().process_frame
-		announced_while_walking = announced_while_walking or not edge.model.coming.is_empty()
+		announced_while_walking = announced_while_walking or edge.model.has_badges()
 	t.check(not announced_while_walking,
 			"walking towards something lethal does not announce it at the edge of the screen")
 
@@ -722,7 +722,7 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 		engine.global_position -= Vector2(def.speed * delta, 0.0)
 		driven += delta
 		await t.get_tree().process_frame
-	t.check(edge.model.coming.size() == 1, "a fire engine actually coming down the street does")
+	t.check(edge.model.announcing().size() == 1, "a fire engine actually coming down the street does")
 
 	edge.free()
 	standing.free()

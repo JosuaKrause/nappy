@@ -163,5 +163,5 @@ func draw_body(canvas: CanvasItem) -> void:
 	var trim := _agent.atlas.region(region_of(trim_paths[view_name]))
 	# The body is tinted per agent; the trim above it draws at `Sprites.draw_standing()`'s default
 	# `Color.WHITE`. Two separate baked regions, so tinting one never touches the other's pixels.
-	Sprites.draw_standing(canvas, body, Vector2.ZERO, Vector2.ZERO, flip, _agent.colour)
+	Sprites.draw_standing(canvas, body, Vector2.ZERO, Vector2.ZERO, flip, _agent.clothing_colour())
 	Sprites.draw_standing(canvas, trim, Vector2.ZERO, Vector2.ZERO, flip)

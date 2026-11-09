@@ -32,3 +32,21 @@ that replace them, then one pull request per area.
 from `tools/field_reads.txt` (its `# [Class] path` groups say which class's fields are read and
 from where; `--summary` prints the counts). The reads are heaviest on the event definition and
 the event instance, then the city map and the city, so the events go first, as the ask says.
+
+Left outside the events, the city and the routes, and each its own design question:
+
+- **A strategy and its mover.** `LaneMover`'s underscore fields and callables are read by
+  `CarStrategy` and `WalkerStrategy`, and `LaneStrategy`'s by `LaneMover`: whether a strategy is
+  handed a narrow interface of the lane state it may read.
+- **A run's parts.** `RunState` hands out `header`, `calendar`, `resistance`, `attempt_spend`,
+  `posters` and `facts`, and a read through one is two field reads (`RunHeader`, `RunCalendar`,
+  `ResistanceRunState`, `RunFacts`, `SettledState`): whether the parts become methods, and the
+  names of the parts' own questions.
+- **`InteriorMapPlan`**, converted with its builder; **`BlockedLayer`**, with the map's property
+  wrappers; **the atlas injection** (`node.atlas = atlas` on the crowd agent, the help text, the mode
+  button, the cordon's tape and officer and the contact point), one design for all; **the writes that
+  configure a node** (`CordonTape`, `ContactPoint`), with it.
+- **What the fence kept for the third hand-ins pull request and the placement rewrite**: every line
+  whose owner or reader is under `src/events/`, `src/routes/` or `src/dev/`, a `scene_recipe*` file,
+  or a file the third hand-ins pull request touches, and the fields those still read (`DaySpec`,
+  `RunConfig`, `MoveProposal` and `WorldMap`, in part).

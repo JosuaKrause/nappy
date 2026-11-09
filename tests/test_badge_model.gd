@@ -99,7 +99,7 @@ func _test_a_danger_walking_away_or_too_slow_gets_none(t) -> void:
 		away.position.x += away.speed * STEP
 		slow.position.y -= slow.speed * STEP
 		_step(model, [away, slow])
-	t.check(model.coming.is_empty(), "a thing going away, and one closing slower than 20px/s, get no badge")
+	t.check(not model.has_badges(), "a thing going away, and one closing slower than 20px/s, get no badge")
 
 ## A badge, once up, stays up until its danger is in sight or gone: standing still, turning away,
 ## she walking away from it. For a lethal vehicle and for a cyclist (mobile, faster than a walk, not
@@ -383,7 +383,8 @@ func _test_a_pending_warning_is_announced_for_its_whole_warning(t) -> void:
 	w.logged_name = "cyclist"
 	model.step(STEP, Vector2.ZERO, [w], _sees, Tuning.WALK_SPEED)
 	t.check(_up(model, "cyclist"), "a warning with nothing in the world yet is up, on screen or off")
-	t.check(is_equal_approx(float(model.coming[0][0]), 0.7), "sorted by the seconds its warning has left")
+	t.check(model.announcing().size() == 1 and model.announcing()[0]["id"] == "cyclist",
+			"the warning with 0.7s left is the one badge on the edge")
 
 func _test_every_badge_is_listed_soonest_arrival_first(t) -> void:
 	var model := BadgeModel.new()

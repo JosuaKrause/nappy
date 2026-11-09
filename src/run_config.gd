@@ -59,8 +59,8 @@ var readout_requested := false:
 var live_debug := false:
 	set(value): live_debug = _write(live_debug, value)
 ## The page's query named one of the bundle's parameters while the bundle was open.
-var web_debug_flag_used := false:
-	set(value): web_debug_flag_used = _write(web_debug_flag_used, value)
+var _web_debug_flag_used := false:
+	set(value): _web_debug_flag_used = _write(_web_debug_flag_used, value)
 ## The page's query string as the browser gave it at boot, or "" off the web — for the few readers
 ## that parse a parameter of their own (`Telemetry`'s `?telemetry=1`, `WebDisplay`'s `?dpr=`).
 var page_query := "":
@@ -231,7 +231,7 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 	config.headless = headless_display
 	config.readout_requested = flags.readout_requested()
 	config.live_debug = flags.live_debug_requested()
-	config.web_debug_flag_used = flags.web_debug_flag_used()
+	config._web_debug_flag_used = flags.web_debug_flag_used()
 	config.page_query = query
 	config.active_args = flags.active_args()
 	config.no_telemetry = flags.no_telemetry()
@@ -323,7 +323,7 @@ func is_live_debug() -> bool:
 
 ## Whether the page's query named one of the open bundle's parameters.
 func used_a_web_debug_flag() -> bool:
-	return web_debug_flag_used
+	return _web_debug_flag_used
 
 ## The page's query string as the browser gave it at boot, `""` off the web.
 func page_query_string() -> String:

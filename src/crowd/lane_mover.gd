@@ -203,7 +203,7 @@ var _scans_from_its_lane := false
 ## morning's or a pinned actor's.
 func _take_the_shape() -> void:
 	shape = strategy.ground_shape()
-	_move.radius = shape.reach()
+	_move.use_body_radius(shape.reach())
 
 ## Constructs a pinned actor through the same initial lane eligibility as a rolled morning.
 ## The cross coordinate must already be the lane center; authoring never snaps a placement.
@@ -476,7 +476,7 @@ func _propose_the_step(delta: float) -> void:
 	_move.propose(position)
 	var along := _along() + strategy.paced(_speed) * _direction * delta
 	var cross := move_toward(_cross(), _lane_centre + _detour, STEER_SPEED * delta)
-	_move.to = Vector2(cross, along) if _vertical else Vector2(along, cross)
+	_move.step_to(Vector2(cross, along) if _vertical else Vector2(along, cross))
 
 ## **The check on its proposed step**: keeps an agent's own centre out of a tile it may not stand on,
 ## when the step proposed (`_move.to`) would carry it in. `stood_on` is the tile it was on before
@@ -496,11 +496,11 @@ func _propose_the_step(delta: float) -> void:
 ## along half is given up only when there is nowhere legal left at all, and an agent already
 ## standing somewhere it may not be is left alone, since there is nothing there to preserve.
 func _keep_out_of_a_body(stood_on: Vector2i) -> void:
-	var now := _map.world_to_tile(_move.to)
+	var now := _map.world_to_tile(_move.steps_to())
 	if now == stood_on or strategy.may_stand_on(now) or not strategy.may_stand_on(stood_on):
 		return
 	_hold_inside_the_tile(stood_on, false)
-	if strategy.may_stand_on(_map.world_to_tile(_move.to)):
+	if strategy.may_stand_on(_map.world_to_tile(_move.steps_to())):
 		return
 	_hold_inside_the_tile(stood_on, true)
 
@@ -511,12 +511,14 @@ func _hold_inside_the_tile(stood_on: Vector2i, along_axis: bool) -> void:
 	var band := stood_on.y if (_vertical == along_axis) else stood_on.x
 	var low := float(band * Tuning.TILE_SIZE)
 	var on_y := _vertical == along_axis
-	var held := clampf(_move.to.y if on_y else _move.to.x, low,
+	var held := clampf(_move.steps_to().y if on_y else _move.steps_to().x, low,
 			low + float(Tuning.TILE_SIZE) - 1.0)
+	var held_to := _move.steps_to()
 	if on_y:
-		_move.to.y = held
+		held_to.y = held
 	else:
-		_move.to.x = held
+		held_to.x = held
+	_move.step_to(held_to)
 
 ## How fast it is actually going, for the strike test. A car that has stopped for a crossing
 ## cannot run anybody over.
@@ -595,7 +597,7 @@ func distance_to_junction() -> float:
 ## there.
 func heading() -> Vector2:
 	if _turn and _turn_run_up <= 0.0:
-		return _turn.heading_at(_turn.travelled)
+		return _turn.heading_at(_turn.distance_travelled())
 	return Vector2(0.0, _direction) if _vertical else Vector2(_direction, 0.0)
 
 ## Commits this car to `turn`: straight on for `run_up` more pixels, then round the arc, with
@@ -855,7 +857,7 @@ func is_turning() -> bool:
 ## holding it shut for the length of its approach would empty the crossing street for a second and a
 ## half. What it claims is the box it is *in*.
 func turning_in() -> Vector2i:
-	return _turn.junction if _turn and _turn_run_up <= 0.0 else Vector2i(-1, -1)
+	return _turn.junction_box() if _turn and _turn_run_up <= 0.0 else Vector2i(-1, -1)
 
 ## The lane a turning car has reserved a place in, and where in it — `Crowd` puts the pair into the
 ## index it rebuilds, so the reservation is visible to every car for the whole frame rather than
@@ -863,8 +865,8 @@ func turning_in() -> Vector2i:
 func turn_lane_key() -> int:
 	if not _turn:
 		return -1
-	return make_lane_key(_turn.exit_vertical, _turn.exit_corridor, _turn.exit_lane,
-			_turn.exit_direction)
+	return make_lane_key(_turn.exits_vertically(), _turn.exit_corridor_index(),
+			_turn.exit_lane_index(), _turn.exit_heading())
 
 func turn_landing() -> float:
 	return _turn.landing() if _turn else 0.0
@@ -890,10 +892,10 @@ func _has_left_the_field() -> bool:
 	# street she has passed, and they are travelling *along* those streets perfectly happily.
 	# Checking it after the along-axis test means never checking it, because an agent always has
 	# a direction and the along-axis test always answers.
-	var lateral: float = field.centre.x if _vertical else field.centre.y
+	var lateral: float = field.centre_point().x if _vertical else field.centre_point().y
 	# A street's width of tolerance, so a corridor half in view keeps the people on it rather
 	# than emptying the pavement the player is about to turn onto.
-	if absf(_cross() - lateral) > field.radius + Tuning.STREET_WIDTH * Tuning.TILE_SIZE:
+	if absf(_cross() - lateral) > field.half_extent() + Tuning.STREET_WIDTH * Tuning.TILE_SIZE:
 		return true
 
 	# Then along it: past the edge it is heading for, or further behind the edge it came in at
@@ -908,8 +910,8 @@ func _has_left_the_field() -> bool:
 
 	# `field.along_bounds(_vertical)` built inline from the world size already held: `field.map` is
 	# the map every agent is set up with (`Crowd` makes the one field and hands it to all of them).
-	var here: float = field.centre.y if _vertical else field.centre.x
-	var bounds := Vector2(maxf(0.0, here - field.radius), minf(limit, here + field.radius))
+	var here: float = field.centre_point().y if _vertical else field.centre_point().x
+	var bounds := Vector2(maxf(0.0, here - field.half_extent()), minf(limit, here + field.half_extent()))
 	if _direction > 0.0:
 		return at > bounds.y or at < bounds.x - ENTRY_SPREAD
 	return at < bounds.x or at > bounds.y + ENTRY_SPREAD
@@ -1061,7 +1063,7 @@ func _walks_off_the_stretch() -> bool:
 func _enter_at_a_stretch_end() -> void:
 	var before := _placement_taken()
 	var ends: Array[Dictionary] = []
-	for end in field.stretch_ends:
+	for end in field.ends_of_the_stretch():
 		var along := (float(end.along) + 0.5) * Tuning.TILE_SIZE
 		var across := (float(end.corridor) * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
 				* Tuning.TILE_SIZE

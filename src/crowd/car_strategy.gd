@@ -151,7 +151,7 @@ func speed_range() -> Vector2:
 ## Overrides LaneStrategy.may_stand_off_the_map.
 func may_stand_off_the_map(tile: Vector2i) -> bool:
 	return _mover._map.is_main_road(_mover._vertical, _mover._corridor) \
-			and (tile.y < 0 or tile.y >= _mover._map.size.y)
+			and (tile.y < 0 or tile.y >= _mover._map.size_in_tiles().y)
 
 ## A precinct is paved end to end, so every tile of it says "street" and a car placed there would
 ## look perfectly settled right up to the moment it drove off down the paving. Asked at placement
@@ -476,14 +476,14 @@ func give_way_on_the_step(delta: float) -> void:
 		return
 	var move := _mover._move
 	var forward := _mover.heading()
-	var step := (move.to - move.from).dot(forward)
+	var step := (move.steps_to() - move.stands_at()).dot(forward)
 	if step <= 0.0:
 		return
-	var room := separation.room_ahead(move.from, forward, _mover.shape.spine_half_length(),
+	var room := separation.room_ahead(move.stands_at(), forward, _mover.shape.spine_half_length(),
 			_mover.shape.rounding_radius(), FIGURE_WIDEST)
 	if room >= step:
 		return
-	move.to -= forward * (step - room)
+	move.step_to(move.steps_to() - forward * (step - room))
 	_mover._speed = minf(_mover._speed, room / delta)
 
 ## The fastest this car may go and still keep `CAR_HEADWAY_TIME` of clear road in front of it.
@@ -754,7 +754,7 @@ func _arm_turn(band: int, turning: float, box: Vector2i) -> CarTurn:
 ## caller's next move depends on it: the lane the arc lands in empties by itself and the ground it
 ## sweeps does not. See `TurnRefusal`.
 func _commit_to_a_turn(turn: CarTurn, over_the_kerb := false) -> TurnRefusal:
-	var run_up := (turn.entry_along - _mover._along()) * _mover._direction
+	var run_up := (turn.entry_point_along() - _mover._along()) * _mover._direction
 	# Further off than the car watches a junction from is further off than it can know the road is
 	# still going to be clear when it gets there.
 	if run_up > Tuning.CAR_JUNCTION_SIGHT:
@@ -805,12 +805,12 @@ func _follow_the_turn(delta: float) -> void:
 		# is off its own lane centre is where the curve begins. A quarter turn still lands on its
 		# exit lane exactly — see `CarTurn.begin_at`.
 		_mover._turn.begin_at(_mover._cross())
-	_mover._turn.travelled += travel
-	if _mover._turn.travelled < _mover._turn.length():
-		_mover.position = _mover._turn.point_at(_mover._turn.travelled)
+	_mover._turn.travel_on(travel)
+	if _mover._turn.distance_travelled() < _mover._turn.length():
+		_mover.position = _mover._turn.point_at(_mover._turn.distance_travelled())
 		_mover.place_its_move()
 		return
-	var overshoot := _mover._turn.travelled - _mover._turn.length()
+	var overshoot := _mover._turn.distance_travelled() - _mover._turn.length()
 	_land_the_turn()
 	_mover._set_along(_mover._along() + overshoot * _mover._direction)
 
@@ -848,11 +848,11 @@ func _land_the_turn() -> void:
 		_mover.traffic.give_back(_mover.turn_lane_key(), _mover._turn.landing())
 	_mover.position = _mover._turn.point_at(_mover._turn.length())
 	_mover.place_its_move()
-	_mover._vertical = _mover._turn.exit_vertical
-	_mover._corridor = _mover._turn.exit_corridor
-	_mover._lane = _mover._turn.exit_lane
-	_mover._direction = _mover._turn.exit_direction
-	_mover._junction = _mover._turn.entry_corridor
+	_mover._vertical = _mover._turn.exits_vertically()
+	_mover._corridor = _mover._turn.exit_corridor_index()
+	_mover._lane = _mover._turn.exit_lane_index()
+	_mover._direction = _mover._turn.exit_heading()
+	_mover._junction = _mover._turn.entry_corridor_index()
 	_mover.drop_the_turn()
 	_mover._lane_centre = _mover._lane_centre_here()
 	_mover._forget_the_detour()
@@ -950,8 +950,8 @@ func _the_exit_has_room_to_leave(turn: CarTurn) -> bool:
 func _has_room_to_land(turn: CarTurn) -> bool:
 	if not _mover.traffic:
 		return true
-	return _mover.traffic.room_at(LaneMover.make_lane_key(turn.exit_vertical, turn.exit_corridor, turn.exit_lane,
-			turn.exit_direction), turn.landing(), Tuning.CAR_GAP_MIN)
+	return _mover.traffic.room_at(LaneMover.make_lane_key(turn.exits_vertically(), turn.exit_corridor_index(),
+			turn.exit_lane_index(), turn.exit_heading()), turn.landing(), Tuning.CAR_GAP_MIN)
 
 ## Holds the piece of road a committed turn is going to land on, once a frame for as long as the
 ## manoeuvre lasts.
@@ -1211,7 +1211,7 @@ func cannot_go_on(vertical: bool, tile: Vector2i) -> bool:
 func _never_a_street_here(vertical: bool, tile: Vector2i) -> bool:
 	if not _mover._map.in_bounds(tile):
 		var leaves_by_the_spine := _mover._map.is_main_road(vertical, _mover._corridor) \
-				and (tile.y < 0 or tile.y >= _mover._map.size.y)
+				and (tile.y < 0 or tile.y >= _mover._map.size_in_tiles().y)
 		return not leaves_by_the_spine
 	if not _mover._map.is_driveable_at(vertical, tile):
 		return true

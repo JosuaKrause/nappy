@@ -79,11 +79,11 @@ static func around(centre: Vector2, covering: ScreenCover) -> VisibleView:
 ## `null` or a cover not in force is the whole view (tap).
 func look(at_view: Rect2, covering: ScreenCover) -> void:
 	view = at_view
-	joystick = covering != null and covering.in_force
+	joystick = covering != null and covering.is_in_force()
 	if joystick:
-		var scale := view.size / covering.design_size
-		_left = _onto(covering.left, view, scale)
-		_right = _onto(covering.right, view, scale)
+		var scale := view.size / covering.design_box()
+		_left = _onto(covering.left_corner(), view, scale)
+		_right = _onto(covering.right_corner(), view, scale)
 
 ## Sets this frame's view from the camera on `player`: `Tuning.VIEW_HALF_EXTENT` about where it is
 ## drawing from — `Stroller.camera_screen_center()`, or the player's own position for a body with no
@@ -168,11 +168,11 @@ static func _box_at(feet: Vector2, box: Rect2) -> Rect2:
 ## scheme, as is a cover not in force). 0 for a rectangle with no area. The two corners never overlap each other, so what they cover of `rect` is a plain
 ## sum. Allocates nothing, so a caller may ask it for every live thing every frame.
 static func visible_share(rect: Rect2, in_view: Rect2, covering: ScreenCover) -> float:
-	if covering == null or not covering.in_force:
+	if covering == null or not covering.is_in_force():
 		return _share(rect, in_view, false, Rect2(), Rect2())
-	var scale := in_view.size / covering.design_size
-	return _share(rect, in_view, true, _onto(covering.left, in_view, scale),
-			_onto(covering.right, in_view, scale))
+	var scale := in_view.size / covering.design_box()
+	return _share(rect, in_view, true, _onto(covering.left_corner(), in_view, scale),
+			_onto(covering.right_corner(), in_view, scale))
 
 static func _share(rect: Rect2, in_view: Rect2, covered: bool, left: Rect2, right: Rect2) -> float:
 	var area := rect.get_area()

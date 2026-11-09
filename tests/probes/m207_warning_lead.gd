@@ -429,7 +429,7 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 		subject.charging = instance.has_charged()
 		subject.warned = instance.came_under_a_warning
 		model.step(STEP, her, [subject], sees, Tuning.WALK_SPEED)
-		var badge := not model.coming.is_empty()
+		var badge := model.has_badges()
 		if result["warned_at"] == INF and not instance.is_waiting() and (in_view or badge):
 			result["warned_at"] = elapsed
 			result["by"] = "sight" if in_view else "badge"

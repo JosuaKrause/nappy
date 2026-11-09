@@ -54,10 +54,10 @@ var _built_from := -1
 func refresh(map: CityMap) -> void:
 	if map == null:
 		return
-	if map.day_record_version == _built_from and map.size == _size:
+	if map.day_record_version == _built_from and map.size_in_tiles() == _size:
 		return
 	_built_from = map.day_record_version
-	_size = map.size
+	_size = map.size_in_tiles()
 	_cars = _flood(map)
 
 ## Whether a tile is in a pocket. False for anything that is not carriageway a car travels at all —
@@ -83,13 +83,13 @@ func tile_count() -> int:
 ## Paint the carriageway, take away what today has shut, and label every connected piece that
 ## reaches at most one junction.
 func _flood(map: CityMap) -> PackedByteArray:
-	var width := map.size.x
-	var cells := width * map.size.y
+	var width := map.size_in_tiles().x
+	var cells := width * map.size_in_tiles().y
 	var ground := PackedByteArray()
 	ground.resize(cells)
-	for y in map.size.y:
+	for y in map.size_in_tiles().y:
 		var row := y * width
-		for x in map.size.x:
+		for x in map.size_in_tiles().x:
 			ground[row + x] = 1 if _is_a_lane(map, Vector2i(x, y)) else 0
 	_shut_the_held_segments(map, ground, width)
 	for tile: Vector2i in map.closed_tiles:

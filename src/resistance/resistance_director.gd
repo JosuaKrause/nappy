@@ -3387,7 +3387,7 @@ func _choose_the_arrow(found: Array[Dictionary]) -> Variant:
 	if not _arrow_own:
 		# The first choice of the task: there is nothing yet for the arrow to flicker away from.
 		return nearest
-	if not _same_key(_arrow_own.keys[0], current):
+	if not _same_key(_arrow_own.key_at(0), current):
 		# How far the one it points at is has not been swept yet: it holds until it has.
 		return current
 	var current_length := _arrow_own.length_at(tile)
@@ -3398,13 +3398,7 @@ func _choose_the_arrow(found: Array[Dictionary]) -> Variant:
 ## Whether `field` (finished or under way) was swept from exactly `found`, each standing where it
 ## stood then (`WalkField.anchor_of()`), under the blocking `versions` name.
 func _swept_for(field: WalkField, found: Array[Dictionary], versions: Vector2i) -> bool:
-	if field == null or field.versions != versions or field.anchors.size() != found.size():
-		return false
-	for target in found:
-		var key: Variant = target["key"]
-		if not field.anchors.has(key) or field.anchors[key] != WalkField.anchor_of(_map, target):
-			return false
-	return true
+	return field != null and field.swept_for(_map, found, versions)
 
 ## Runs `budget` tiles of the sweeps under way, the field of every target first, and chooses again
 ## the moment one finishes. A tick that lays out the ground (`_ground_for_the_arrow()`) or a field
@@ -3420,13 +3414,13 @@ func _sweep_the_arrow_fields(budget: int) -> void:
 	var finished := false
 	if _arrow_nearest_next:
 		budget -= _arrow_nearest_next.advance(_map, _ground_for_the_arrow(), budget)
-		if _arrow_nearest_next.done:
+		if _arrow_nearest_next.is_done():
 			_arrow_nearest = _arrow_nearest_next
 			_arrow_nearest_next = null
 			finished = true
 	if _arrow_own_next and budget > 0:
 		_arrow_own_next.advance(_map, _ground_for_the_arrow(), budget)
-		if _arrow_own_next.done:
+		if _arrow_own_next.is_done():
 			_arrow_own = _arrow_own_next
 			_arrow_own_next = null
 			finished = true

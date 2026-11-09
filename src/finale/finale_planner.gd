@@ -291,7 +291,7 @@ static func service_exit_world_position(map: CityMap) -> Vector2:
 ## picture at the same place; this is the tile the chain has to reach to be standing in it.
 static func exit_tile(map: CityMap, exit_kind: int) -> Vector2i:
 	var column := map.main_road * CityMap.period() + Tuning.SIDEWALK_WIDTH
-	var row := 0 if exit_kind == CityEdge.Kind.TUNNEL else map.size.y - 1
+	var row := 0 if exit_kind == CityEdge.Kind.TUNNEL else map.size_in_tiles().y - 1
 	var step := 1 if exit_kind == CityEdge.Kind.TUNNEL else -1
 	# The outermost rows are painted as the border band rather than as city, so the first walkable
 	# tile inward is the one the walk can actually end on.
@@ -322,8 +322,8 @@ const _SMALLEST_CALM_AREA := 16
 static func calm_areas(map: CityMap, grid: ReachabilityGrid) -> Array[CalmArea]:
 	var seen := {}
 	var found: Array[CalmArea] = []
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if seen.has(tile) or not Tile.is_calm(map.tile_at(tile)):
 				continue

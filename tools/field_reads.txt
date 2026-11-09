@@ -129,21 +129,6 @@ src/city/city.gd falls_on
 src/city/city.gd skip_draw
 src/city/city.gd streamed
 
-# [CarTurn] src/crowd/car_turn.gd
-src/crowd/car_strategy.gd entry_along
-src/crowd/car_strategy.gd entry_corridor
-src/crowd/car_strategy.gd exit_corridor
-src/crowd/car_strategy.gd exit_direction
-src/crowd/car_strategy.gd exit_lane
-src/crowd/car_strategy.gd exit_vertical
-src/crowd/car_strategy.gd travelled
-src/crowd/lane_mover.gd exit_corridor
-src/crowd/lane_mover.gd exit_direction
-src/crowd/lane_mover.gd exit_lane
-src/crowd/lane_mover.gd exit_vertical
-src/crowd/lane_mover.gd junction
-src/crowd/lane_mover.gd travelled
-
 # [ChargeRecord] src/events/charge_record.gd
 src/events/behaviours/event_barrier_post.gd began
 src/events/behaviours/event_barrier_post.gd ended
@@ -445,26 +430,9 @@ src/telemetry/run_session.gd sources
 
 # [CrowdAgent] src/crowd/crowd_agent.gd
 src/crowd/car_look.gd atlas
-src/crowd/car_look.gd colour
 src/crowd/crowd.gd atlas
-src/crowd/crowd.gd excitement
-src/crowd/crowd.gd skip_draw
-src/crowd/crowd.gd touching
 src/crowd/walker_look.gd atlas
-src/crowd/walker_look.gd colour
 src/run/day_director.gd excitement
-
-# [CrowdExcitement] src/crowd/crowd_excitement.gd
-src/crowd/crowd.gd heard_in
-
-# [CrowdField] src/crowd/crowd_field.gd
-src/crowd/crowd.gd centre
-src/crowd/crowd.gd city_view
-src/crowd/crowd.gd uniform_walkers
-src/crowd/lane_mover.gd centre
-src/crowd/lane_mover.gd radius
-src/crowd/lane_mover.gd stretch_ends
-src/crowd/walker_strategy.gd uniform_walkers
 
 # [DayController] src/day/day_controller.gd
 src/dev/debug_readout.gd phase
@@ -1176,7 +1144,6 @@ src/events/event_manager.gd holds_the_home_streets
 src/events/event_manager.gd sends_poster_pursuits
 
 # [ExcitementSource] src/world/excitement_source.gd
-src/crowd/crowd_agent.gd rim
 src/events/encounter_watch.gd landed_ever
 src/events/event_instance.gd rim
 src/events/event_spawner.gd on_first_landing
@@ -1319,15 +1286,8 @@ src/events/event_spawner.gd drawn
 src/ui/day_summary.gd atlas
 src/ui/pause_screen.gd atlas
 src/ui/title_screen.gd atlas
-src/ui/title_screen.gd letter
 
 # [MoveProposal] src/world/move_proposal.gd
-src/crowd/car_strategy.gd from
-src/crowd/car_strategy.gd to
-src/crowd/lane_mover.gd radius
-src/crowd/lane_mover.gd to
-src/crowd/walker_strategy.gd from
-src/crowd/walker_strategy.gd to
 src/events/behaviours/event_car_driving.gd from
 src/events/behaviours/event_car_driving.gd to
 src/events/event_instance.gd open
@@ -1335,20 +1295,11 @@ src/events/event_instance.gd parked
 src/events/event_instance.gd radius
 src/events/event_instance.gd stood_round
 src/events/event_instance.gd to
-src/world/proposed_moves.gd on_the_list
-src/world/proposed_moves.gd yields
 src/world/separation_pass.gd from
-src/world/separation_pass.gd radius
-src/world/separation_pass.gd stood_round
-src/world/separation_pass.gd to
 
 # [Mover] src/world/mover.gd
 src/events/event_instance.gd blocked_by
 src/events/event_instance.gd radius
-src/resistance/park_cordon.gd radius
-src/world/navigator.gd blocked_by
-src/world/navigator.gd radius
-src/world/world_map.gd blocked_by
 
 # [NoticeSpec] src/events/notice_spec.gd
 src/events/behaviours/event_notice_run.gd runs_within
@@ -1618,13 +1569,6 @@ src/city/city.gd view
 src/city/scenery_ground.gd atlas
 src/city/scenery_ground.gd elapsed
 
-# [ScreenCover] src/world/screen_cover.gd
-src/ui/touch_controls.gd in_force
-src/world/visible_view.gd design_size
-src/world/visible_view.gd in_force
-src/world/visible_view.gd left
-src/world/visible_view.gd right
-
 # [SettledState] src/run/settled_state.gd
 src/run/run_calendar.gd settled_in
 
@@ -1670,39 +1614,16 @@ src/events/event_manager.gd controls
 src/events/event_manager.gd view
 src/world/spawn_siting.gd view
 
-# [WalkField] src/world/walk_field.gd
-src/resistance/resistance_director.gd anchors
-src/resistance/resistance_director.gd done
-src/resistance/resistance_director.gd keys
-src/resistance/resistance_director.gd versions
-src/world/chase_way.gd done
-src/world/chase_way.gd versions
-
-# [WalkerDoorHold] src/crowd/walker_door_hold.gd
-src/crowd/crowd.gd position
-src/crowd/walker_strategy.gd position
-
 # [Warning] src/events/warning.gd
 src/events/behaviours/event_notice_run.gd cancel_if
 src/events/behaviours/event_notice_run.gd length
 src/events/behaviours/event_notice_run.gd on_expired
 
 # [WorldMap] src/world/world_map.gd
-src/city/city.gd size
 src/city/city.gd world
-src/city/garbage_sacks.gd size
-src/city/litter.gd size
-src/city/recipe_city_builder.gd size
-src/city/recipe_city_context.gd size
-src/city/street_layout.gd size
 src/crowd/car_strategy.gd separation
-src/crowd/car_strategy.gd size
 src/crowd/crowd.gd separation
-src/crowd/crowd.gd size
-src/crowd/crowd_field.gd size
-src/crowd/crowd_lanes.gd size
 src/crowd/crowd_pockets.gd day_record_version
-src/crowd/crowd_pockets.gd size
 src/crowd/lane_mover.gd moves
 src/crowd/walker_strategy.gd obstructed_tiles
 src/crowd/walker_strategy.gd separation
@@ -1717,20 +1638,15 @@ src/events/event_scheduler.gd size
 src/events/event_spawner.gd world
 src/events/views/spread_look.gd world
 src/events/walk_ground.gd size
-src/finale/finale_planner.gd size
 src/interior/interior_scene.gd world
 src/main.gd world
-src/resistance/happenings.gd size
 src/resistance/park_cordon.gd moves
 src/resistance/resistance_director.gd day_record_version
 src/resistance/resistance_director.gd obstruction_version
 src/routes/closure_planner.gd size
 src/routes/reachability_grid.gd size
-src/telemetry/telemetry_map.gd size
 src/world/chase_way.gd day_record_version
 src/world/chase_way.gd obstruction_version
-src/world/chase_way.gd size
-src/world/walk_field.gd size
 
 # [ZoomOutCamera] src/dev/zoom_out_camera.gd
 src/dev/scene_recipe_runtime.gd simulation_clock

@@ -157,9 +157,9 @@ const BUILDING_GROUND := Color("211f26")
 static func render(map: CityMap, closures: Array[RoadClosure] = [],
 		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
 		trail: Array[Vector3] = [], met: Dictionary = {}) -> Image:
-	var image := Image.create_empty(map.size.x * SCALE, map.size.y * SCALE, false, Image.FORMAT_RGB8)
-	for y in map.size.y:
-		for x in map.size.x:
+	var image := Image.create_empty(map.size_in_tiles().x * SCALE, map.size_in_tiles().y * SCALE, false, Image.FORMAT_RGB8)
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			var type := map.tile_at(tile)
 			var colour := BUILDING_GROUND if type == GameEnums.TileType.BUILDING \
@@ -205,7 +205,7 @@ static func _mark_the_spine(image: Image, map: CityMap) -> void:
 		return
 	var corridor := map.main_road * CityMap.period()
 	for offset in [0, Tuning.STREET_WIDTH - 1]:
-		_fill_tiles(image, Rect2i(Vector2i(corridor + offset, 0), Vector2i(1, map.size.y)),
+		_fill_tiles(image, Rect2i(Vector2i(corridor + offset, 0), Vector2i(1, map.size_in_tiles().y)),
 				SPINE_MARK)
 
 ## The day's corridor, as the ground it actually is: every cell the tree touches, translucent.

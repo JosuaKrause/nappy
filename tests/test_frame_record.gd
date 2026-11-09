@@ -359,7 +359,7 @@ func _test_the_flag_and_its_page_word(t) -> void:
 	t.check(not _page("?debug=1&framerecord=0").frame_record_requested
 			and not _page("?debug=1").frame_record_requested,
 			"only the value 1 asks for it, and ?debug=1 alone does not")
-	t.check(_page("?debug=1&framerecord=1").web_debug_flag_used,
+	t.check(_page("?debug=1&framerecord=1").used_a_web_debug_flag(),
 			"a page that records stays off the save, like the bundle's other words")
 
 ## The configuration a release page whose address bar says `query` runs on.
