@@ -13,7 +13,7 @@ description: Generate, register and install illustrated PNGs under art/illustrat
   (inbox #927 in tiny-lark).
 - **The pelican cyclist is never converted** (minty-hedgehog #437).
 - **The SVG comes first**: a PNG's SVG is authored and reviewed before it, never made afterwards.
-- **PNG-first is a bounded exception the player authorizes for one family at a time.**
+- **PNG-first is a bounded exception the player authorizes family by family**: three hold it.
 - **The presentation is chosen by the bake, not by the running game.**
 - **A runtime PNG is committed on its own, with no `.import` sidecar** (the **godot** skill,
   "Structure").
@@ -47,11 +47,13 @@ it is generated or placed under `art/illustrated/`. **The rule is unenforced**: 
 fails if one appears there.
 
 The player may authorize a bounded PNG-first family when photographs or a reviewed generated
-concept define the subject more faithfully than an existing SVG. The M109 rooftop equipment
-(`art/illustrated/roof-equipment/`) is the one such family. Preserve its exact
-raw generated source, prompt, hashes, deterministic registration, native anchors and human review
-verdict in family evidence; list each direct PNG in atlas membership. This authorization does not
-make PNG-first the default for another family.
+concept define the subject more faithfully than an existing SVG. The player permits three: the M109
+rooftop equipment, the fallen tree and the burst water main (tawny-yak). Only the rooftop equipment
+exists as PNGs today (`art/illustrated/roof-equipment/`); the fallen tree and the burst water main
+hold the same permission and render their SVGs, with no accepted PNG (`docs/GRAPHICS.md`). Preserve
+a direct family's exact raw generated source, prompt, hashes, deterministic registration, native
+anchors and human review verdict in family evidence; list each direct PNG in atlas membership. This
+authorization does not make PNG-first the default for another family.
 
 Read `docs/VISUALS.md` and
 [the integration procedure](references/texture-integration.md) before working on this presentation.
@@ -84,6 +86,13 @@ whichever bake wrote its pages. Both use the same drawing and animation code.
 - **A transfer PNG whose size disagrees with its SVG fails the bake by name.** There is no fallback: the
   game holds no second copy of the picture to fall back to, so a mismatch is a committed mistake
   rather than an unfinished art drop to work around.
+- **Two rules of the generation procedure also bind a session that registers or checks a PNG that
+  exists** (`references/generation.md`, "Asset contract: generation and extraction", holds them
+  for the host that generates). The SVG and the raw generated output of a retained derivative are
+  preserved, the **rejected-graphics** skill saying what a draft's disposition keeps or discards,
+  with its extraction commands, tool versions, source dimensions and registration measurements
+  recorded. And alpha is checked as real alpha, wheel and handle gaps included: a checkerboard
+  painted into an RGBA image is not transparency.
 
 ## Runtime and review
 
