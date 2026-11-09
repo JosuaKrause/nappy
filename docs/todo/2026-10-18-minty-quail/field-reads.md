@@ -28,6 +28,25 @@ that replace them, then one pull request per area.
   field under `src/`, with today's reads listed once in a list that only shrinks. It is
   `tools/check_field_reads.py`, with the list in `tools/field_reads.txt`, run in CI's `gates` job.
 
+**The check is made to see every read** (inbox #1268). `tools/check_field_reads.py` skips a read
+whose receiver's class it cannot tell: `--summary` counted 1,220 listed reads beside 2,320 uses
+skipped for an unknown receiver, so an empty list would not mean the rule holds. Shown "The
+field-read check skips about two thirds of reads because it cannot tell the receiver's class", the
+player: "isn't that the point of a class hierarchy? it should be made working".
+
+**Read as:** every receiver under `src/` has a class the check can tell, so a read of another
+class's field cannot hide behind an untyped name. *Proposed by the design review, not asked for, open to the player's correction:* the engine sees
+what the script cannot. GDScript's own warnings for an access the engine cannot type
+(`unsafe_property_access`, `unsafe_method_access`, `untyped_declaration`) are turned into errors in
+`project.godot`, with a file-level ignore at the top of every file not yet converted (the builder
+checks first that the project's Godot version has a file-level ignore); the files carrying that
+line are the list that only shrinks, a module's pass types its receivers and deletes the line, and
+once none is left `tools/check_field_reads.py` fails on an unknown receiver. It matters beyond
+tidiness: once a field has become a method of the same name, an untyped `thing.hard_fail` without
+its parentheses is a reference to the function, which is always true, and nothing reports it. The
+plainer alternative it replaces is the check listing the uses it skips in a group of its own, which
+finds the reads but not that mistake.
+
 **What is left: the conversion**, one pull request per area, each deleting the lines it converts
 from `tools/field_reads.txt` (its `# [Class] path` groups say which class's fields are read and
 from where; `--summary` prints the counts). The reads are heaviest on the event definition and
