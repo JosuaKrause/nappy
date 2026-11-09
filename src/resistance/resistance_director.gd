@@ -2332,12 +2332,11 @@ func _region_plan() -> RegionPlanner.RegionPlan:
 
 ## The day's narrow resistance target as the day's planning protects it: the tiles of day 9's door,
 ## day 12's swing or the power station's front door (`ResistanceSteps.target_candidates()`) that
-## pass every
-## refusal this director makes of a tile before it draws (`SpawnSiting.is_legal_ground()`), empty
-## on every other
-## day. `EventManager.start_day()` hands it to `EventScheduler.build_day()`, which keeps a route from
-## home to one of these tiles among the day's own bodies — so the tile `_pick_reachable()` then
-## draws, asked for reachability like every other pool, is always found. Asked once the day's holds
+## pass every refusal this director makes of a tile before it draws (`SpawnSiting.is_legal_ground()`),
+## empty on every other day. `CalmAreas.of()` is handed it to set the swing's park aside. A route from
+## home to the place holds because the place is on the day's route tree and the dawn's reach rule
+## (`RouteReachRule`) refuses any body that would cut a route tile off from home — so the tile
+## `_pick_reachable()` then draws, asked for reachability like every other pool, is always found. Asked once the day's holds
 ## are all on the map and before any body is, which is why `is_obstructed()` is not part of it:
 ## the scheduler's own discs stand in for the bodies, the same discs `_reachable_from_home()` asks.
 static func target_ground(map: CityMap, day: int,

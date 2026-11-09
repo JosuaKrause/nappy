@@ -45,12 +45,12 @@ standing in 307 used areas (−10.5%), and 1 → 11 areas with nothing in them, 
 (a used park is shut by the events placed in it). Asked the reach alone it is main's again, 1668
 and 1. The one left empty, on main too, is a four-tile courtyard (seed 61823, day 14) whose one
 spoiler was the sidewalk `poster_crew`, a row handed to her walk, which the end of the plan takes off
-the map; the
-park counted as spoiled only because fields from outside reached in. So the spoil pass offers no
+the map; the park counted as spoiled only because fields from outside reached in. So the spoil pass offers no
 such row (`_things_to_put_in_a_park()`): 1655 events and no used area empty. `test_spent_park`
 asserts that something stands inside every used, open, unfenced area at the end of the plan, and
 holds that courtyard as a case of its own, which fails with the sidewalk `poster_crew` back in the
-pool. Whether a row is handed to her walk is one question both ask (`EventDef.is_handed_to_her_walk()`). **One calm area clean:** on the day she has used every
+pool. Whether a row is handed to her walk is one question that `_things_to_put_in_a_park()` and `_hand_to_her_walk()` both ask
+(`EventDef.is_handed_to_her_walk()`). **One calm area clean:** on the day she has used every
 counted calm area this act, the one she used longest ago that nothing spoils, else the least
 spoiled, is chosen before the spoilers and its ground joins what nothing may reach
 (`EventScheduler._calm_kept_clean()`). Without the reach rule, `test_acts`' rings of barricades

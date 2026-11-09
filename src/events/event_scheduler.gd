@@ -1670,8 +1670,7 @@ static func _place_scars(day: int, scars: Array[Dictionary], map: CityMap, event
 				events.add(plan)
 
 ## Whether `plan`, stood where it is, leaves every route tile home reaches reached (`reach`), asked
-## against what the day holds and what stands. Only the reach, which is what the repair this
-## replaces asked: a scar or a spoiler is not spaced and not given a role, and stands on a route's
+## against what the day holds and what stands. Only the reach: a scar or a spoiler is not spaced and not given a role, and stands on a route's
 ## line as it always did.
 static func _keeps_the_routes(plan: Planned, map: CityMap, events: DayEvents,
 		reach: RouteReachRule) -> bool:

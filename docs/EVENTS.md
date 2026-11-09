@@ -2305,7 +2305,7 @@ tile home reached without it unreached is refused where it would stand. Hard-fai
 walls for this rule: an abduction in progress is not something you walk through to reach the park
 behind it. Nothing is dropped after planning, so the day is never illegal on the way. A walk's
 sitings (the dusk fire, day 7's route van, day 11's added mast and the rest) are not asked it: the
-rule is the dawn's, as the repair it replaces was, and whether the walk's draws ask it is decided
+rule is the dawn's, and whether the walk's draws ask it is decided
 with them. The escape's draw is not asked it either: its plan has no route tree, and its walk is
 kept open by its own rule (`WalkOpenRule`).
 
