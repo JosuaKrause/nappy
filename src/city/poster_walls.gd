@@ -143,6 +143,7 @@ func equip(sink: RunTrace, poster_art: PosterArt, library: AtlasLibrary) -> void
 	trace = sink
 	art = poster_art
 	atlas = library
+
 ## The bag the run's tears draw from, rebuilt from `PosterState.tears` whenever it disagrees with
 ## the run — a save loaded, a lost day given back, a new run. See `_the_bag()`.
 var _bag: MarbleBag = null

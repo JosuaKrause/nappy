@@ -35,8 +35,8 @@ the event instance, then the city map and the city, so the events go first, as t
 
 - **The city's own classes** have their readers converted except three groups, each with a home:
   - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
-    (`RecipeCityContext`) are the scene recipes' city. They go with or after placement's 3c, which
-    rewrites the scene recipes next, so no work is done twice (inbox #1185); a design for the map
+    (`RecipeCityContext`) are the scene recipes' city. They go with or after `placement-by-construction.md`'s bullet on the
+    scene recipes assigning locations, which rewrites the scene recipes, so no work is done twice (inbox #1185); a design for the map
     capturing and restoring itself waits for it.
   - `City.events` and `City.crowd`, read by the poster walls and the frame recorder and trace, go with
     the third hand-ins pull request (`city-hand-ins.md`), which hands those readers their parts. An
