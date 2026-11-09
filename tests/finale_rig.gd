@@ -1290,7 +1290,7 @@ func _test_the_escape_bag_keeps_the_players_order(t) -> void:
 			"the bag holds more trucks than explosions, than vans, than roadblocks, than empty marbles")
 
 ## **Every open street draws one marble, stands at most one of the escape's rows, and a marble no
-## location of the street takes is spent unmet** (inbox #1185's board answer: "one per street. fill
+## location of the street takes is spent unmet** (inbox #1185 in gentle-owl's board answer: "one per street. fill
 ## empty in if any segment or location in the street has an event"). The bag is drawn once a street
 ## whatever the draw finds, so a refused danger never moves on to the next street; a bag of empty
 ## marbles stands nothing; and a bag of roadblocks alone stands fewer than it drew, since no two bands

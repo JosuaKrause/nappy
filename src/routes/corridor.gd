@@ -218,12 +218,12 @@ func is_in_a_gap(tile: Vector2i) -> bool:
 	var segment := _network.segment_containing(tile)
 	return segment != null and _gaps.has(segment.key())
 
-## **Which of the three views `segment` is in** (`PlacementView.View`, inbox #1185), the one
+## **Which of the three views `segment` is in** (`PlacementView.View`, inbox #1185 in gentle-owl), the one
 ## definition every location of the street is told at dawn (`DayLocations.lay_out()`):
 ##
 ## - **on the route** where a route runs along the street, both its sidewalks — the street's grain,
 ##   which the player's example asks for: a restaurant drawn on one side leaves the side across it a
-##   subset to draw from (inbox #1185), so the street as a whole is the route's;
+##   subset to draw from (inbox #1185 in gentle-owl), so the street as a whole is the route's;
 ## - **route-adjacent** where it is beside the routes (`_is_beside_the_routes()`): off them, one of
 ##   its two junctions crossed by a route (`route_junctions()`), a junction a park or alley cut
 ##   crosses included;
@@ -259,7 +259,7 @@ func view_of_ground(tiles: Rect2i) -> int:
 ## **Whether `segment` is beside the routes**: a street no route runs along (its whole street is off
 ## the tree, `depth()` above zero) one of whose two junction boxes a route crosses
 ## (`route_junctions()`). Where dawn stands day 13's roadblocks and the task's swap takes a section,
-## close to her way and off it (inbox #1185).
+## close to her way and off it (inbox #1185 in gentle-owl).
 func _is_beside_the_routes(segment: StreetNetwork.Segment) -> bool:
 	if int(_segment_depth.get(segment.key(), DEEP)) == 0:
 		return false

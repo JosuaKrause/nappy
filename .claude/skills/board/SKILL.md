@@ -109,8 +109,8 @@ the session and the player cannot scroll back while it is open, so they lose the
 to answer. The board is where a question goes, apart from one about an inbox note, which may go on its issue (**inbox**). **A blocking question still blocks** (inbox #830 in minty-dolphin):
 the work it names stops until it is answered, and other work goes on.
 
-**A question blocks only when changing course after the answer would be very costly** (inbox
-#1194): a pick whose undoing means rebuilding a system, migrating a save or rewriting work several
+**A question blocks only when changing course after the answer would be very costly**
+(inbox #1194 in gentle-owl): a pick whose undoing means rebuilding a system, migrating a save or rewriting work several
 pull requests stand on. Everything else is built on My pick at once, and the work changes to the
 player's answer when it comes, before the pull request merges or in a later one, if the answer
 differs. A pick on a placement, a number, a merge order, or a choice between two cheap
@@ -118,28 +118,28 @@ implementations never blocks. The exception is a pick that would drop, narrow or
 something the player asked for: **playtest-feedback**'s "Never silently overturn a decision the
 player took" holds, and that part is not built until they answer, however cheap it would be to undo.
 
-**A question the player's recorded words already answer is not asked** (inbox #1185, inbox
-#1194): putting one up costs them a round trip to repeat themselves. Before a question goes on the
+**A question the player's recorded words already answer is not asked**
+(inbox #1185 and #1194 in gentle-owl): putting one up costs them a round trip to repeat themselves. Before a question goes on the
 board, the note it comes from, its appended words and the settled questions on the same work are
 read for an answer; where they give one, it is built, and the reading is stated in the brief and in
 the pull request's description, open to the player's correction there.
 
-**The same holds for an open point anywhere, not only a board question** (inbox #1232): an `Open:`
+**The same holds for an open point anywhere, not only a board question** (inbox #1232 in gentle-owl): an `Open:`
 line in a queue item or a record, or a "whether…" a filer left. When its task's investigation
 reaches it (below), it is read against the player's recorded words, the
 whole entry it sits in included (items filed from one note belong together). The words answer it
-where their plain meaning does, even if they never name the point (inbox #1234): a hint about a
+where their plain meaning does, even if they never name the point (inbox #1234 in gentle-owl): a hint about a
 thing she sees fires when she first sees it. Where the words answer it, the answer is stated as the
 reading, and the line is rewritten when the item is next touched; it is never handed back for the
 player to restate.
 
-**An open point is investigated only with its task's full context** (inbox #1244): when the task is
+**An open point is investigated only with its task's full context** (inbox #1244 in gentle-owl): when the task is
 created and discussed with the player, or, for a point postponed then, when the task is picked up
 and its full investigation runs. Never in passing: not in an audit of other tasks' open points, not
 in a status answer, which relays no open point, not from a report about other work. A question raised without the task's
 context misreads the task or lacks what would make it unnecessary.
 
-**A conclusion is written down in the turn it is reached** (inbox #1244): a reading of the player's
+**A conclusion is written down in the turn it is reached** (inbox #1244 in gentle-owl): a reading of the player's
 words, a settled answer, or a decision about how work goes on is recorded as a reading on the inbox
 note it rests on and in the queue item or the record of the work it decides, since the next session
 reads those and not this conversation; the local restart prompt alone is not enough.

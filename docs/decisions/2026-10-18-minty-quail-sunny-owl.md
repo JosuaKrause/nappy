@@ -1,7 +1,7 @@
 # minty-quail — Placement by construction, second step: day 13's swap takes a section · 2026-11-08
 
 minty-quail's `placement-by-construction.md`, its second pull request, #1249. The design is
-`docs/EVENTS.md`'s "The three views and the placement order" (inbox #1185).
+`docs/EVENTS.md`'s "The three views and the placement order" (inbox #1185 in gentle-owl).
 
 **Built.**
 - **Day 13's task, with no roadblock close by along her paths** (576, 896, then 1,024px from where
@@ -28,10 +28,10 @@ the task finds a roadblock at 440 (median 410px straight-line from the mark) and
 924px, farthest 2,113px); none misses, where the tile swap missed 33.
 
 **The fixed parts are never taken** (the player: they "each get phases during either dawn or
-beginning of the game", inbox #1185): the region wall's bodies, a door's, a seal (soft seals
+beginning of the game", inbox #1185 in gentle-owl): the region wall's bodies, a door's, a seal (soft seals
 included, which stand on streets no hold closes; `Planned.stand_as_a_seal()`), a mast, an ambient
 row (`Planned.is_a_fixed_part()`). The burnt shell is a regular event ("your scars are just regular
-events", inbox #1185), so its section may be taken. A swap leaves the map's bodies and shut tiles as
+events", inbox #1185 in gentle-owl), so its section may be taken. A swap leaves the map's bodies and shut tiles as
 they were, minus the section's, plus the roadblock's.
 
 **Readings, open to correction:** the nearest section along her paths, an undrawn one taking the

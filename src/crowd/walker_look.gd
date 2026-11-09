@@ -108,11 +108,11 @@ func _heading_now() -> Vector2:
 ## `_heading_now()` for a `velocity()` the caller already holds.
 func heading_at(along: Vector2) -> Vector2:
 	var at: Vector2 = _agent.position
-	var cross_gap: float = _agent._lane_centre + _agent._detour - (at.x if _agent._vertical else at.y)
+	var cross_gap: float = _agent.lane().lane_centre() + _agent.lane().detour() - (at.x if _agent.lane().is_vertical() else at.y)
 	if is_zero_approx(cross_gap):
 		return along
 	var cross_speed := signf(cross_gap) * LaneMover.STEER_SPEED
-	return along + (Vector2(cross_speed, 0.0) if _agent._vertical else Vector2(0.0, cross_speed))
+	return along + (Vector2(cross_speed, 0.0) if _agent.lane().is_vertical() else Vector2(0.0, cross_speed))
 
 ## Advances the sector from the heading, held through the boundary and the idle speed. A placement
 ## leaves no cross-lane steering running, so the heading is exactly along the new lane axis, a

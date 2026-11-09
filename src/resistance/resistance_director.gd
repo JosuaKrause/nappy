@@ -220,7 +220,7 @@ var _task_guard_found_nothing_for: Array = []
 var _task_guard_found_nothing_age := 0.0
 ## How long a failed search stands before it is made again: longer than the camera takes to settle.
 const TASK_GUARD_RETRY_SECONDS := 3.0
-## **The way she came to each roadblock from, decided once** (inbox #1185): the roadblock's place
+## **The way she came to each roadblock from, decided once** (inbox #1185 in gentle-owl): the roadblock's place
 ## (`_approach_key()`, the tile its body stands on) to the line from its body to her, as she stood
 ## the first frame it was drawn on screen while it was the roadblock she approached
 ## (`_note_her_approach()`). Keyed by the place its plan put it rather than by the instance, since a
@@ -880,7 +880,7 @@ func _guard_position(rng: RandomNumberGenerator, at: Vector2, for_mark: bool, he
 ## #648: "yes noticing needs a clear line")* and a guard behind a building from the roadblock guards
 ## nothing.
 ##
-## **On the far side of the roadblock from the way she comes** (inbox #1185): `approach` points from
+## **On the far side of the roadblock from the way she comes** (inbox #1185 in gentle-owl): `approach` points from
 ## the body toward where she approaches it from (`_approach_to()`), and a spot counts as the far side
 ## where it lies on the other side of the body from that, so she reaches ground she can touch the
 ## roadblock from before she comes near him. Which side she comes from decides whether he notices her
@@ -1707,7 +1707,7 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 
 ## **Day 13's roadblock is one the day placed, close by** *(inbox #650 in mossy-beaver, the player:
 ## "let's not rig the roadblock let's place one properly and guide to that -- just make sure it's
-## closeby"; inbox #1185: use a roadblock the day placed, and swap one in when none is close by)*.
+## closeby"; inbox #1185 in gentle-owl: use a roadblock the day placed, and swap one in when none is close by)*.
 ## Dawn stands roadblocks beside her routes so that one usually is
 ## (`EventScheduler._place_the_roadblocks()`). Close by is walked from where she read the mark,
 ## out to `NEAR_THE_MARK` and then each of `ROADBLOCK_WIDER_REACH` in turn, nearest first
@@ -1719,7 +1719,7 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 ##    stood there all along;
 ## 2. otherwise **a swap** (`_section_to_swap()`): the route-adjacent section of the day's
 ##    locations nearest along her paths, out of her sight, whose whole content is replaced by a
-##    roadblock across it (`EventManager.swap_in_a_section()`; inbox #1185: "if we don't find one
+##    roadblock across it (`EventManager.swap_in_a_section()`; inbox #1185 in gentle-owl: "if we don't find one
 ##    closeby we swap one off screen route adjacent event with a roadblock", "it replaces the content
 ##    of the section with the roadblock"). Two things narrow it. Nothing of the section, neither what
 ##    it holds nor the roadblock to come, may be in her view, which is the design's "off screen". And
@@ -1728,7 +1728,7 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 ##    phases of their own, the orchestrator's reading. Nothing else does: not how far it is, not
 ##    whether what it holds stands still or has noticed her, and not a placement rule asked again.
 ##
-## **Nothing is added in the walk** (inbox #1185): with neither, which only a day with no open
+## **Nothing is added in the walk** (inbox #1185 in gentle-owl): with neither, which only a day with no open
 ## route-adjacent section reachable from her leaves, the task has no roadblock, and the run log says
 ## so. Nothing is checked live: neither closes a route, since each stands off them.
 ## Joined to the day's plan, the task's roadblock is one more live roadblock the arrow chooses among.
@@ -1808,7 +1808,7 @@ func _a_roadblock_the_day_placed(id: String, paths: Dictionary,
 ## correction:* nearest along her paths, a section not yet drawn taken like any other (fork 7 of the
 ## placement proposal); and the city's fixed parts, which the player gave phases of their own, are not
 ## the day's events to replace, while the burnt shell, "just regular events" to the player, is
-## (inbox #1185).
+## (inbox #1185 in gentle-owl).
 func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> SectionToSwap:
 	var locations := _walk.locations()
 	if not locations:
@@ -2660,7 +2660,7 @@ static func _touch_reach(instance: EventInstance) -> float:
 ##   Where the far side has no spot, he stays where he is.
 ##
 ## **The side is decided once, the first frame the roadblock is drawn on screen** while it is the one
-## she approaches (inbox #1185, `_note_her_approach()`): from then on the way she came is kept, and a
+## she approaches (inbox #1185 in gentle-owl, `_note_her_approach()`): from then on the way she came is kept, and a
 ## guard standing on her side of it then is moved to the far side as soon as he and the spot are out
 ## of her view. Before it is on screen the side follows where she stands. Nothing is flooded or
 ## checked for a way past him, then or later.
@@ -2734,7 +2734,7 @@ func _move_the_task_guard_to_her_target() -> void:
 			"" if in_band else ", past its band"])
 
 ## **Keeps the way she approaches `roadblock` from, the first frame it is drawn on screen** while
-## it is the one she approaches (inbox #1185): the line from its body to where she stands, kept for
+## it is the one she approaches (inbox #1185 in gentle-owl): the line from its body to where she stands, kept for
 ## the rest of the day in `_approaches`, so the side its guard takes (`_approach_to()`) is decided
 ## then and does not change while she walks. On screen is the rider's box on her view
 ## (`TASK_BOX`, `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`). Answers whether it was kept now: false

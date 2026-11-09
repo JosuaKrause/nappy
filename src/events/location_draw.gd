@@ -1,6 +1,6 @@
 class_name LocationDraw
 extends RefCounted
-## **The day's locations drawn, each from its view's bag** (inbox #1185; `docs/EVENTS.md`,
+## **The day's locations drawn, each from its view's bag** (inbox #1185 in gentle-owl; `docs/EVENTS.md`,
 ## "The three views and the placement order"): a location still open is filled by one draw from
 ## the bag of its view (`ViewBag`), the empty event among the marbles, and what is drawn is what
 ## stands there, with no rejection: **a row the day's ground leaves invalid at the location is not

@@ -419,7 +419,7 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 ## spent, and drive on past her.
 ##
 ## **It leaves nothing**: every truck drives on down the road and off the map, so nothing the column
-## does closes a street (inbox #1183).
+## does closes a street (inbox #1183 in gentle-owl).
 func _maybe_the_column(her: Vector2) -> void:
 	if her == Vector2.INF or not _events or not _streets or _map.main_road_corridor() < 0:
 		return

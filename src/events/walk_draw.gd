@@ -1,6 +1,6 @@
 class_name WalkDraw
 extends RefCounted
-## **The day's open locations drawn as she walks, each from its view's bag** (inbox #1185, the
+## **The day's open locations drawn as she walks, each from its view's bag** (inbox #1185 in gentle-owl, the
 ## placeholders "get filled in with non-blocking events from the bag" "when the player walks",
 ## gray-dolphin #1173; `docs/EVENTS.md`, "The three views and the placement order"). The dawn fixes
 ## the fixed parts, the scripted rows, day 13's roadblocks and every row that blocks the way, and

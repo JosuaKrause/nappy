@@ -907,7 +907,7 @@ func detain_distance() -> float:
 @export var barrier_structure := false
 
 ## Whether a placement of this row takes a whole section of its street rather than one sidewalk
-## location (inbox #1185: "events that span the street get placed in a section (eg roadblock in the
+## location (inbox #1185 in gentle-owl: "events that span the street get placed in a section (eg roadblock in the
 ## middle of the street)"). `roadblock` alone today. Read through `spans_the_street()`.
 @export var _spans_the_street := false
 

@@ -1,10 +1,10 @@
 class_name RoadblockPhase
 extends RefCounted
-## **The roadblock phase at dawn**, day 13's (inbox #1185; `docs/EVENTS.md`, "The three views and
+## **The roadblock phase at dawn**, day 13's (inbox #1185 in gentle-owl; `docs/EVENTS.md`, "The three views and
 ## the placement order"): after the routes are established, it goes through the route-adjacent
 ## sections and places roadblocks there, spread out. Each roadblock is drawn among every
 ## route-adjacent section still open to one, with **a bias toward the section farthest from the
-## roadblocks already placed**, a bias and not a strict rule (inbox #1185: "it's a _bias_ not a strict
+## roadblocks already placed**, a bias and not a strict rule (inbox #1185 in gentle-owl: "it's a _bias_ not a strict
 ## placement"), and its section is then assigned for the day (`DayLocations.assign()`), so nothing is
 ## drawn there later.
 ##
@@ -21,7 +21,7 @@ extends RefCounted
 ## of the draw itself: a section close by nothing new is drawn like any other while some other
 ## section could still cover a route tile. *Read as, the orchestrator's and open to correction:* the phase is day 13's, with
 ## that stop (fork 6 of the placement proposal); the player, shown the count full coverage gave,
-## called it good and said only a playtest can tell (inbox #1185), so where full coverage cannot be
+## called it good and said only a playtest can tell (inbox #1185 in gentle-owl), so where full coverage cannot be
 ## reached the count stops with the last section that could still help rather than running on, and
 ## never passes the top of the count the player called good (`MOST`).
 ##
@@ -43,7 +43,7 @@ const SALT := 5
 ## likely.
 const SPREAD_EXPONENT := 2.0
 ## The most roadblocks the phase stands: the top of the count the player called good (15 to 25,
-## inbox #1185). *Read as, the orchestrator's and open to correction*, and asked of the player: a
+## inbox #1185 in gentle-owl). *Read as, the orchestrator's and open to correction*, and asked of the player: a
 ## cap, so the count never runs away where full coverage cannot be reached.
 const MOST := 25
 

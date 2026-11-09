@@ -1,7 +1,7 @@
 class_name StreetInvalidation
 extends RefCounted
 ## **The day's placement rules a walk asks of a candidate** (`StreetRule`, one class per rule): the
-## invalidation the design's draw leaves a refused row out by (inbox #1185, `docs/EVENTS.md`, "The
+## invalidation the design's draw leaves a refused row out by (inbox #1185 in gentle-owl, `docs/EVENTS.md`, "The
 ## three views and the placement order"), and the judge every other placement asks too, so the rules
 ## are stated once. A walk composes them from its spec: every walk's route rules (its junctions, its
 ## walked sidewalk, a beat's opening, and at dawn no body cutting a route off from home), the calm

@@ -1,5 +1,5 @@
 extends RefCounted
-## `RoadblockPhase`, the roadblock phase at dawn (inbox #1185): it draws among every route-adjacent
+## `RoadblockPhase`, the roadblock phase at dawn (inbox #1185 in gentle-owl): it draws among every route-adjacent
 ## section the day's ground offers a valid roadblock, with a bias toward the farthest from the
 ## roadblocks already placed, assigns each section it takes, asks an offer again once a roadblock
 ## stands within the ground's radius of it, and stops once every route tile has one close by. Run

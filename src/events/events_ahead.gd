@@ -316,7 +316,7 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 
 ## **Day 13's task roadblock `plan` across `section`**, a route-adjacent section of the day's
 ## locations, when no roadblock the day placed is close by where she read the mark
-## (`ResistanceDirector._place_the_roadblock_near()`, inbox #1185: "the roadblock replaces the content
+## (`ResistanceDirector._place_the_roadblock_near()`, inbox #1185 in gentle-owl: "the roadblock replaces the content
 ## of that event's whole section"): `plan` is the roadblock the director stood across it and checked
 ## out of her view (`EventScheduler.across_the_section()`). The section is assigned to it for the day
 ## (`DayLocations.assign()`), and whatever the section held (`WalkEvents.placed_within()`) spent and

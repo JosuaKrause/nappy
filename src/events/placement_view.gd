@@ -1,6 +1,6 @@
 class_name PlacementView
 extends RefCounted
-## **The three views on the city's events** (inbox #1185): on the route, route-adjacent and off the
+## **The three views on the city's events** (inbox #1185 in gentle-owl): on the route, route-adjacent and off the
 ## route. Each view has its own bag, and a location is filled from its view's bag (`docs/EVENTS.md`,
 ## "The three views and the placement order"). Which view a street is in is `Corridor.view_of()`'s
 ## answer, given once at dawn to every location of the street (`DayLocations.lay_out()`).

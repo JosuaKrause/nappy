@@ -591,7 +591,7 @@ static func _walls_of(plans: Array[EventScheduler.Planned]) -> int:
 			count += 1
 	return count
 
-## **Never across the main road** (inbox #1186): a section on the main road takes no roadblock,
+## **Never across the main road** (inbox #1186 in gentle-owl): a section on the main road takes no roadblock,
 ## neither one the roadblock phase places nor one day 13's task puts across it
 ## (`EventScheduler.across_the_section()`, which the phase's offers share), on the suite's own city: the
 ## middle section of a street of the main road, and of the first street that is not, the one with
@@ -629,7 +629,7 @@ static func _has_a_carriageway(map: CityMap, section: Location) -> bool:
 	return false
 
 ## **Day 13's roadblock phase stands its roadblocks beside her routes and says how many route tiles
-## it leaves without one** (inbox #1185, inbox #1186): the day planned with the task's row
+## it leaves without one** (inbox #1185 in gentle-owl, inbox #1186 in gentle-owl): the day planned with the task's row
 ## (`build_day()`'s `beside_the_routes`, `RoadblockPhase`) on the suite's own city, where the run log
 ## names each one it stood. Each is on a route-adjacent street (`Corridor.view_of()`),
 ## off every tile a route runs along and off the main road, nothing else stands within
@@ -694,7 +694,7 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t) -> void:
 
 ## **Once a roadblock stands, the day's ground offers no section a roadblock within
 ## `EVENT_SPACING_SAME` of it** (the spacing between two of a row as an invalidation, the
-## orchestrator's reading of inbox #1185, open to correction): on the suite's own city on day 13,
+## orchestrator's reading of inbox #1185 in gentle-owl, open to correction): on the suite's own city on day 13,
 ## the judged ground the roadblock phase asks (`EventScheduler.RuledRoadblockGround`) is asked of
 ## every route-adjacent section before and after one roadblock stands. Sections it offered one
 ## within that spacing before are offered none, or one standing clear of it, after.

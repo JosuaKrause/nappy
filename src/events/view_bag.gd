@@ -1,6 +1,6 @@
 class_name ViewBag
 extends RefCounted
-## **One view's bag** (inbox #1185: "each of the views has their own bag to draw from", "all possible
+## **One view's bag** (inbox #1185 in gentle-owl: "each of the views has their own bag to draw from", "all possible
 ## events for that view multiplied by their probability/weight. empty is also a possible event"):
 ## every row possible in the view as many times as its weight, and the empty event, drawn without
 ## putting back and filled again once it runs empty, as every marble bag of the game is
@@ -8,10 +8,10 @@ extends RefCounted
 ##
 ## **A draw considers only what the location it fills accepts** (`draw()`): a row the street's
 ## earlier draws or the location's own ground leave invalid is not considered, and stays in the bag
-## for the next location (inbox #1185: "the bag itself doesn't change just that the invalid events
+## for the next location (inbox #1185 in gentle-owl: "the bag itself doesn't change just that the invalid events
 ## don't get considered when drawing"). And **each row's share is scaled by the location's own
 ## weight** (`scale`; the player's "yes" to a weight per location that scales its view bag's weights,
-## issue #1185), so a precinct's location draws its rows more often than an ordinary street's.
+## inbox #1185 in gentle-owl), so a precinct's location draws its rows more often than an ordinary street's.
 ##
 ## Kept as how many of each marble are left rather than a list of marbles, since a draw weighs every
 ## row the location accepts by its count and its scale, and the empty marbles outnumber the rest many
