@@ -15,6 +15,8 @@ extends RefCounted
 ## seed's city is generated once in the test process and every case is handed a copy of its own,
 ## the same city `CityGenerator.generate()` builds for the seed.
 
+const DrawnDay := preload("res://tests/drawn_day.gd")
+
 const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
@@ -1372,8 +1374,8 @@ static func _escape_rows_from(map: CityMap, bare: Dictionary,
 	var seals: Array[EventScheduler.Planned] = bare["seals"]
 	var spec := _city_spec()
 	spec.bag = counts
-	return EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), MastSites.compute(map), [], [], bare["plan"], 0,
-			PackedVector2Array(), seals).placements()
+	return DrawnDay.everywhere(EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), MastSites.compute(map), [], [], bare["plan"], 0,
+			PackedVector2Array(), seals)).placements()
 
 ## Whether two plans stand the same rows in the same places.
 static func _same_rows(a: Array[EventScheduler.Planned], b: Array[EventScheduler.Planned]) -> bool:
@@ -1402,8 +1404,8 @@ static func _escape_rows_traced(map: CityMap, bare: Dictionary, counts: Dictiona
 	var seals: Array[EventScheduler.Planned] = bare["seals"]
 	var spec := _city_spec()
 	spec.bag = counts
-	return EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), MastSites.compute(map), [], [], bare["plan"], 0,
-			PackedVector2Array(), seals, trace).placements()
+	return DrawnDay.everywhere(EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), MastSites.compute(map), [], [], bare["plan"], 0,
+			PackedVector2Array(), seals, trace)).placements()
 
 ## *"Emerging from the service exit on the side of the main building."* Beside the home block, on
 ## walkable ground, and never on the spine's own frontage.
@@ -2039,8 +2041,8 @@ func _test_nothing_the_escape_places_stands_in_a_street_tree(t) -> void:
 		# event's own row.
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
-		for placement in EventScheduler.build_day(_city_spec(), rng, map, CalmAreas.of(map), MastSites.compute(map), [],
-				[], plan).placements():
+		for placement in DrawnDay.everywhere(EventScheduler.build_day(_city_spec(), rng, map, CalmAreas.of(map), MastSites.compute(map), [],
+				[], plan)).placements():
 			var tile := map.world_to_tile(placement.position)
 			t.check(not trees.has(tile),
 					"seed %d: the escape's '%s' stands in a street tree at %s"

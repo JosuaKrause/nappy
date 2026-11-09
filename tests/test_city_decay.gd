@@ -7,6 +7,8 @@ extends RefCounted
 ## the same way: deterministic per tile, non-decreasing with the day, and off entirely before the
 ## city has anything to show.
 
+const DrawnDay := preload("res://tests/drawn_day.gd")
+
 const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
 const UI := preload("res://tests/ui_screens.gd")
 ## What a building's front shows, read off the pictures it was drawn with.
@@ -184,8 +186,8 @@ func _test_the_mouse_prefers_a_pile(t) -> void:
 		for roll in 8:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = 1000 + roll
-			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,
-					CalmAreas.of(map), MastSites.compute(map)).placements():
+			for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), rng, map,
+					CalmAreas.of(map), MastSites.compute(map))).placements():
 				if plan.def.id != mouse.id:
 					continue
 				mice += 1

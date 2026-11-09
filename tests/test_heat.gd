@@ -23,6 +23,8 @@ extends RefCounted
 ## suites, `tests/test_events_scheduler.gd` and its fellows, are `src/events/`'s fence's and do not
 ## take them).
 
+const DrawnDay := preload("res://tests/drawn_day.gd")
+
 const SEED := 8817
 const STEP := 1.0 / 60.0
 const EastWestStreet := preload("res://tests/east_west_street.gd")
@@ -264,12 +266,12 @@ func _test_heat_is_derived_once_and_kept(t) -> void:
 func _test_a_day_is_a_function_of_its_heat(t) -> void:
 	var day := 9
 	var consumed: Array[String] = []
-	var first := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
+	var first := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
 			CalmAreas.of(_map), MastSites.compute(_map), consumed.duplicate(),
-			[], null, Tuning.RESISTANCE_GOAL).placements()
-	var second := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
+			[], null, Tuning.RESISTANCE_GOAL)).placements()
+	var second := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
 			CalmAreas.of(_map), MastSites.compute(_map), consumed.duplicate(),
-			[], null, Tuning.RESISTANCE_GOAL).placements()
+			[], null, Tuning.RESISTANCE_GOAL)).placements()
 	t.check(first.size() == second.size(),
 			"a hot day planned twice is the same day (%d vs %d)" % [first.size(), second.size()])
 	for i in mini(first.size(), second.size()):
@@ -695,11 +697,11 @@ func _test_a_hot_day_places_more_patrols(t) -> void:
 		cold_rng.seed = rng_seed
 		var hot_rng := RandomNumberGenerator.new()
 		hot_rng.seed = rng_seed
-		colds += _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), cold_rng, map,
-				CalmAreas.of(map), MastSites.compute(map), [], [], null, 0).placements())
-		hots += _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), hot_rng, map,
+		colds += _count_patrols(DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), cold_rng, map,
+				CalmAreas.of(map), MastSites.compute(map), [], [], null, 0)).placements())
+		hots += _count_patrols(DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), hot_rng, map,
 				CalmAreas.of(map), MastSites.compute(map), [], [], null,
-				Tuning.RESISTANCE_GOAL).placements())
+				Tuning.RESISTANCE_GOAL)).placements())
 	t.check(hots > colds,
 			"over %d seeds a fully heated day places more patrols than a cold one (%d against %d)"
 			% [seeds.size(), hots, colds])

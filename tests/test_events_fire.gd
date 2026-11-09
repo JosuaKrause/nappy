@@ -11,6 +11,8 @@ extends "res://tests/events_shared_city.gd"
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again". Extends
 ## `events_shared_city.gd` since every helper below sites against the one shared generated city.
 
+const DrawnDay := preload("res://tests/drawn_day.gd")
+
 const STEP := 1.0 / 60.0
 
 func run(t) -> void:
@@ -105,9 +107,9 @@ func _fire_route(day: int, outward := true) -> PackedVector2Array:
 ## suite on the understanding that nothing writes to it.
 func _fire_day_plans() -> Array[EventScheduler.Planned]:
 	var consumed: Array[String] = []
-	return EventScheduler.build_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY),
+	return DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY),
 			_rng(Tuning.RUN_TAUGHT_DAY), _map(), CalmAreas.of(_map()), MastSites.compute(_map()),
-			consumed).placements()
+			consumed)).placements()
 
 ## The placement context the director above is started on, built the way `EventManager.start_day`
 ## builds one. Kept as its own function so a check can ask it the same questions the director does —
@@ -404,11 +406,11 @@ func _test_the_crews_on_her_way_move_no_other_row(t) -> void:
 	var crew_way := crew.on_her_way
 	for day in [4, 8, 12]:
 		var tree := RouteTree.for_day(map, day)
-		var handed := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), [], [], tree).placements()
+		var handed := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), MastSites.compute(map), [], [], tree)).placements()
 		crew.on_her_way = null
-		var kept := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), [], [], tree).placements()
+		var kept := DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
+				CalmAreas.of(map), MastSites.compute(map), [], [], tree)).placements()
 		crew.on_her_way = crew_way
 		var same := handed.size() == kept.size()
 		var crews := 0

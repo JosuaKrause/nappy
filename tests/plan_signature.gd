@@ -6,6 +6,8 @@ extends RefCounted
 ## and `tests/test_telemetry_observer.gd` (the observer's watchers must not change the map a day
 ## is planned from).
 
+const DrawnDay := preload("res://tests/drawn_day.gd")
+
 ## The signature of `day` planned over `map`, with `trace` (none by default) handed to the
 ## scheduler.
 static func of(map: CityMap, day: int, trace: RunTrace = null) -> String:
@@ -13,8 +15,8 @@ static func of(map: CityMap, day: int, trace: RunTrace = null) -> String:
 	rng.seed = hash("telemetry:%d:%d" % [map.seed_used, day])
 	var consumed: Array[String] = []
 	var parts: Array[String] = []
-	for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), MastSites.compute(map),
+	for plan in DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), MastSites.compute(map),
 			consumed, [], null, 0,
-			PackedVector2Array(), [], trace).placements():
+			PackedVector2Array(), [], trace)).placements():
 		parts.append("%s@%.2f,%.2f" % [plan.def.id, plan.position.x, plan.position.y])
 	return "|".join(parts)

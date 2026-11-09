@@ -70,7 +70,13 @@ static func _rng() -> RandomNumberGenerator:
 static func _drawn(locations: _Locations, fill: Dictionary, rows: Dictionary, ground: _Ground,
 		caps := {}, seed_value := 1) -> Array[EventScheduler.Planned]:
 	var bags := {ON: ViewBag.new(fill, seed_value)}
-	return LocationDraw.new(locations, bags, rows, ground, caps).draw_all(_rng())
+	var draw := LocationDraw.new(locations, bags, rows, ground, caps)
+	var placed: Array[EventScheduler.Planned] = []
+	for location in locations.drawing_order(_rng()):
+		var plan := draw.draw(location)
+		if plan:
+			placed.append(plan)
+	return placed
 
 func _test_each_open_location_is_drawn_once(t) -> void:
 	var locations := _Locations.new()

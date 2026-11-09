@@ -2389,8 +2389,12 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEv
 			continue
 		rows[def.id] = def.for_day(day)
 	var bags := _view_bags(rows, day, spec, base)
-	var judged := RuledLocationGround.new(day, base, map, events, corridor,
-			LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets),
+	# Every row's own ground worked out at dawn, while the day is planned, so a draw during the
+	# walk reads it rather than scanning the map on the tick it draws (`LocationFit.prepare()`).
+	var fit := LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets)
+	for def: EventDef in rows.values():
+		fit.prepare(def)
+	var judged := RuledLocationGround.new(day, base, map, events, corridor, fit,
 			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
 					spec.one_notice_at_a_time, null, reach))
 	var caps := _caps_of(rows, day, spec, _stream(base, CAPS_SALT)) if spec.caps_per_day else {}
@@ -2654,6 +2658,10 @@ class RuledLocationGround extends LocationGround:
 	var _piles := {}
 	## The walk an offer is judged against once it has started, or null while dawn draws.
 	var _walk: WalkEvents = null
+	## How many plans the walk had when `_walk_placed` and `_walk_around` were worked out.
+	var _walk_counted := -1
+	var _walk_placed: Array[Planned] = []
+	var _walk_around: Array[Planned] = []
 
 	func _init(day: int, base: int, map: CityMap, events: DayEvents, corridor: Corridor,
 			fit: LocationFit, rules: StreetInvalidation) -> void:
@@ -2690,18 +2698,9 @@ class RuledLocationGround extends LocationGround:
 			reach_context = already.duplicate()
 			reach_context.append_array(events.standing())
 		else:
-			# The walk's plans stand for the day's: what is placed and unspent is placed, the seals
-			# and the wall's bodies standing beside it, as they stood at dawn.
-			var placed_now: Array[Planned] = []
-			var around_now: Array[Planned] = []
-			already = placed_now
-			reach_context = around_now
-			for plan in _walk.plans():
-				if not plan.is_placed() or plan.is_spent():
-					continue
-				reach_context.append(plan)
-				if not plan.is_a_seal() and not plan.is_in_the_wall():
-					already.append(plan)
+			_catch_up_with_the_walk()
+			already = _walk_placed
+			reach_context = _walk_around
 		var best: Planned = null
 		var best_room := -INF
 		for tile in fits:
@@ -2740,6 +2739,27 @@ class RuledLocationGround extends LocationGround:
 	## Overrides LocationGround.judge_against.
 	func judge_against(walk: WalkEvents) -> void:
 		_walk = walk
+		_walk_counted = -1
+
+	## **The walk's plans as the day's rules read them**, worked out again only when the walk has
+	## gained a plan: what is placed and unspent is placed, the seals and the wall's bodies standing
+	## beside it, as they stood at dawn. A marble asked after another at the same location, or a
+	## location drawn on a tick nothing joined the walk, reads the same lists rather than walking the
+	## walk's plans again. A plan spent since is kept until the next plan joins, which can only space
+	## a draw further from something that has left.
+	func _catch_up_with_the_walk() -> void:
+		var plans := _walk.plans()
+		if plans.size() == _walk_counted:
+			return
+		_walk_counted = plans.size()
+		_walk_placed = []
+		_walk_around = []
+		for plan in plans:
+			if not plan.is_placed() or plan.is_spent():
+				continue
+			_walk_around.append(plan)
+			if not plan.is_a_seal() and not plan.is_in_the_wall():
+				_walk_placed.append(plan)
 
 	## `tiles` with those within `_MOUSE_PILE_ADJACENCY` of a sack pile first, each half in the order
 	## it was handed.

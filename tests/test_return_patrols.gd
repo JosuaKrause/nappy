@@ -12,6 +12,8 @@ extends RefCounted
 ## seed's city is generated once in the test process and every case is handed a copy of its own,
 ## the same city `CityGenerator.generate()` builds for the seed.
 
+const DrawnDay := preload("res://tests/drawn_day.gd")
+
 const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
 ## The act IV day the walking checks play.
@@ -59,9 +61,9 @@ func _the_return_days_director(map: CityMap, seed_value: int) -> EventDirector:
 		map.repaint(state)
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = 23
-		_plans = EventScheduler.build_day(DaySpec.for_day(RETURN_DAY), plan_rng, map,
+		_plans = DrawnDay.everywhere(EventScheduler.build_day(DaySpec.for_day(RETURN_DAY), plan_rng, map,
 				CalmAreas.of(map), MastSites.compute(map), [], [],
-				RouteTree.for_day(map, RETURN_DAY), 0).placements()
+				RouteTree.for_day(map, RETURN_DAY), 0)).placements()
 	var plans := _plans
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()

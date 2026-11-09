@@ -15,7 +15,10 @@ extends StreetRule
 ## holds is derived once and kept in step: the ground home reaches among the bodies it has been
 ## shown, tile by tile, over the city's own 4-connected walkable tiles (`CityMap.passable()` for the
 ## lattice walker, the graph `ReachabilityGrid` contracts). A body shown it that the ground round
-## its disc goes round takes only its disc off the reach; any other change floods from home again.
+## its disc goes round takes only its disc off the reach; one it does not floods from home again.
+## A body that leaves (spent, or no longer handed in) is kept blocking until the day is over: taking
+## a body away can only add reach, so keeping it can refuse a candidate that would have been fine but
+## never lets one cut a route off, and it spares the walk a flood each time something leaves.
 ## Model: no node.
 
 ## How far round a disc the ground is walked to find it still one piece.
@@ -67,7 +70,7 @@ func _catch_up(around: Array[EventScheduler.Planned], candidate: EventScheduler.
 			bodies.append(plan)
 			if not _seen.has(plan.get_instance_id()):
 				fresh.append(plan)
-	if not _ready or bodies.size() - fresh.size() != _seen.size():
+	if not _ready:
 		_rebuild(bodies)
 		return
 	for body in fresh:
