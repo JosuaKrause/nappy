@@ -841,7 +841,7 @@ func _test_summary_load_costs_nothing(t) -> void:
 	t.check(resume.get("day_under_way") == false, "it comes back false")
 
 ## The ordering the commit message states: after the load-time penalty is applied, the very next
-## write (`main._start_day()`'s own dawn write, made before the resumed pause screen can even be
+## write (`main._start()`'s own dawn write, made before the resumed pause screen can even be
 ## looked at) already reflects the spent nerve *and* writes the fresh dawn as not yet under way —
 ## since nothing has happened in it yet. A second close-and-reopen before ever touching that screen
 ## therefore finds `day_under_way: false` and costs nothing more.

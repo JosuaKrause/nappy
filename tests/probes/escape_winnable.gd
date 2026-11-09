@@ -14,7 +14,7 @@ extends RefCounted
 ## **What it measures, per seed.** The section's plan as a straight city boot builds it
 ## (`--start-escape city`: `RunState.start_run(seed)`, the city built from the run seed, the plan
 ## drawn from `city.run.calendar.day_rng(day, "finale")` under the city section's spec, as
-## `main._plan_the_finale_city()` draws it): how many of the escape's four rows stand on its open
+## `DayDirector.start()` draws it): how many of the escape's four rows stand on its open
 ## streets and how many streets stand none, for every mix. **And for the game's own bag, the game
 ## walking it**: one headless run of the real game per exit, booted `--start-escape city --seed
 ## <seed> --route tunnel|bridge --no-save --no-title`, in which `RouteRig` (`src/dev/route_rig.gd`)

@@ -8,7 +8,7 @@ extends RefCounted
 ##
 ##     tools/test.sh probes/m181_resistance_targets.gd
 ##
-## **The real day order**, as `main.gd`'s `_start_day()` runs it: `City.start_day()` (the tree, the
+## **The real day order**, as `DayDirector.start()` runs it: `City.start_day()` (the tree, the
 ## region plan and the closures), then `EventManager.start_day()` (the seals, the catalogue, the
 ## wall and door bodies), then the director. Each day is asked fresh, with no history, the way
 ## `--day N` boots.
