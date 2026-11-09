@@ -9,7 +9,7 @@ interface then being what `docs/EVENTS.md` and `docs/ARCHITECTURE.md` describe.
 
 **Whose it is.** The design is a design agent's, from the player's rules below. The player, on
 which model does what: "consider using fable for tasks that need planning / complex reasoning",
-and "for code I'm fine with your choice as long as fable did the design" (inbox #1264); *read as*
+and "for code I'm fine with your choice as long as fable did the design" (inbox #1264 in olive-ferret); *read as*
 a design being that model's work. **The player has not read this design.**
 
 **Proposed, not asked for:** every mechanism in it that the player's words below do not name, among
@@ -20,7 +20,7 @@ method per field on the three classes as they stand.
 
 **Its open points are answered, but for one.** Section 7 holds what the player's recorded words answer and
 the six points the design put as questions, each with the player's answer from the board
-(inbox #1278); the last answer has two readings, put back to the player, and until they
+(inbox #1278 in olive-ferret); the last answer has two readings, put back to the player, and until they
 answer every step keeps things as they are.
 
 The rule it applies is the player's: "provide a consistent interface for events that can be used without
@@ -847,7 +847,7 @@ tuned for them.
    request's record keeps the names, since they are written text.
 ### Answered by the player on the board
 
-Six points the design put as questions, each with the player's answer (inbox #1278, which holds
+Six points the design put as questions, each with the player's answer (inbox #1278 in olive-ferret, which holds
 each question as it was shown).
 
 1. **Where do the settings files live?** Offered a new folder `src/events/parts/` for the

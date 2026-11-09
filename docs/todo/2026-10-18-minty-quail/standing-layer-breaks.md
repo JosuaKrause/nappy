@@ -1,14 +1,14 @@
 # Every listed layer break is fixed, moved in the map, or declared permanent with its reason
 
 **The ask.** A design review of this entry, asked for by the player ("have a fable agent review the
-design of the refactor", inbox #1265), found that the layer check (`tools/check_layers.py --list`)
+design of the refactor", inbox #1265 in olive-ferret), found that the layer check (`tools/check_layers.py --list`)
 prints 133 listed uses in 37 groups of a file naming a higher layer or fetching what it should be
 handed, that `tools/layer_map.py` lists each as a break that still stands, and that no open item of
 this entry owns them: the closing pull request only rewrites designing-classes' layering section.
 Shown that as "133 listed layer breaks have no owner in any open item. Four groups have no home in
 the design: the global signal bus, the city scene building the event manager and crowd, the map
 interface's world half, and dawn planning reading live-event geometry", the player: "let's not
-forget about those" (inbox #1268).
+forget about those" (inbox #1268 in olive-ferret).
 
 **Read as:** the entry does not close while `tools/layer_map.py` lists a break nobody has decided
 about. Each group ends one of three ways: fixed by a named pull request, corrected in the map
@@ -33,7 +33,7 @@ review; a builder runs it again):
   task calendar computing on the map.
 
 **How each group is settled.** The player approved the review's point that these are not forgotten
-(inbox #1268); how each is settled is the review's worked-out detail:
+(inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
 
 - The bus is handed to the emitters, which is mechanical.
 - Who builds the event manager and the crowd is decided in the third hand-ins pull request
