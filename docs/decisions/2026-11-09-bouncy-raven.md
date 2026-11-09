@@ -16,6 +16,11 @@ writing-tests, designing-classes, python-tooling, cli-tools and review-answers.
 - **The same rule in several skills:** which GitHub identity writes what was restated in pr-review,
   inbox and session-cleanup beside its owner, committing; what the test-only-members check does was
   restated in writing-tests and pr-review beside the tool's own help.
+- **Two answers to which model reviews:** pr-review sent a change to the rules to a stronger
+  model, where the orchestrating skill's model table sends a skill's wording to Sonnet.
+- **Nothing sanctioned removed a review checkout or a brief:** a review's detached checkout has no
+  branch, so `tools/prune-merged.sh`, the script that retires a merged branch and its worktree,
+  never takes it, and a released brief was never deleted.
 - **Sentences no longer true:** a "Python 3.9+" line of `CLAUDE.md` that does not exist; pointers
   to `docs/DECISIONS.md` for a record, where records are files fetched with `tools/decisions.sh`;
   rules for merging a branch still on the single-file queue, a case no open pull request can still
@@ -38,6 +43,12 @@ writing-tests, designing-classes, python-tooling, cli-tools and review-answers.
   only what is its own (the reviewer identity alone approves; the two roles whose captures count).
   The mechanics of the test-only-members list are the tool's; writing-tests keeps what a builder
   does about a failure, and three points the tool's help does not say.
+- **Which model reviews** is the orchestrating skill's model table to decide; pr-review fixes one
+  case itself, a queue update's review, which is Sonnet's (bouncy-heron 8).
+- **A review checkout and a released brief each have a way out, said once each:** pr-review says a
+  review checkout is removed with `tools/agent-setup.sh --remove <name>` once the review is posted,
+  and session-cleanup, with its storage reference, that `tools/prune-merged.sh` deletes a released
+  brief as it retires the brief's branch. The flag and the deletion are the hooks pull request's.
 - **The false sentences are corrected or gone**, the old-queue passages among them.
 - **The inbox skill's examples** write through a file in a fresh directory, in three calls.
 - **The unfollowable rules say what to do:** ask on the board, and a session that does not write
@@ -92,6 +103,11 @@ broken suite again".
 
 > *Asked for as guidance rather than a hard rule (inbox #1018 in brisk-ferret) · made a hard rule with exceptions only for good reasons on 2026-11-06, because as guidance it did not work (inbox #1159 in gray-dolphin).*
 
+Only statement 8 of inbox #1018 in brisk-ferret, that the rule is guidance and not a hard rule, is
+overturned. Its statements 5 and 10 are still rules in writing-tests, which cites the note for
+them: components tested apart, correctness confirmed by dependency injection, a private read or an
+escape hatch as a sign of one of three things, and the three as examples.
+
 **writing-tests, "A test never asserts what a setting is":**
 
 > *Asked for as a judgment call, a test that only doubles the work of a change deleted (PLAYTEST-67) · overturned to absolute on 2026-11-06, because a test must never test configuration settings (inbox #1159 in gray-dolphin).*
@@ -119,6 +135,10 @@ and, from the proposal before it:
 Also from that skill: "or the branch turns out to edit the old single-file queue"; "the conversion's
 plan"; and its description's clause "and the conversion of a branch still on the old single-file
 queue".
+
+**pr-review, "Briefing a review agent":**
+
+> Sonnet is enough for a small or mechanical PR; a PR that carries a design decision, a drawing, or a change to the rules is reviewed by a stronger model.
 
 **pr-review, the procedure for a changed checker:**
 
