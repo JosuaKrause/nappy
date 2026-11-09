@@ -20,7 +20,12 @@
 #   - --include brings a left-out folder back
 #   - --detach makes the same sparse checkout at a commit with no branch and no brief, and refuses
 #     an unknown ref and an existing path, and lands on the named branch's head even when another
-#     fetch writes FETCH_HEAD between its fetch and its read
+#     fetch writes FETCH_HEAD between its fetch and its read, and prints the --remove line for it
+#   - --remove removes a clean detached checkout, regenerable ignored caches and all, and refuses,
+#     leaving the worktree as it stands: a path in place of a name, a name nothing is at, a
+#     worktree with a branch, a locked one, the caller's own, one with a changed or an untracked
+#     file, one holding an ignored file that is not a regenerable cache, a folder that is not a
+#     worktree, and a link under .claude/worktrees/ to a worktree elsewhere
 #   - a headroom shortfall refuses before anything is made
 #   - --agent appends one line per agent, newest last, and not the same id twice; --release adds
 #     "cleanup: ready" once, both even when the line already sits early in a header longer than a
@@ -112,7 +117,8 @@ mkdir -p "$seed/tools" "$seed/.github/workflows" "$seed/docs/evidence/run" \
     "$seed/docs/evidence/a" "$seed/docs/evidence/b" "$seed/docs/reference" \
     "$seed/docs/style-references" "$seed/src"
 git init -q -b main "$seed"
-cp "$root/tools/agent-setup.sh" "$root/tools/lib_disk_headroom.sh" "$seed/tools/"
+cp "$root/tools/agent-setup.sh" "$root/tools/lib_disk_headroom.sh" \
+    "$root/tools/lib_regenerable_ignored.sh" "$seed/tools/"
 chmod +x "$seed/tools/agent-setup.sh"
 write_ci "$seed/.github/workflows/ci.yml"
 echo claude > "$seed/CLAUDE.md"
@@ -144,6 +150,13 @@ refuse "bad branch rejected" "$tool" a 'bad..branch'
 refuse "--agent and --release together rejected" "$tool" --agent --release feature/a id
 refuse "--include of an absolute path rejected" "$tool" a feature/a --include /etc
 refuse "--detach without a name rejected" "$tool" --detach HEAD
+refuse "--remove without a name rejected" "$tool" --remove
+refuse "--remove with two names rejected" "$tool" --remove one two
+refuse "--remove with --include rejected" "$tool" --remove one --include docs/reference/
+refuse "--remove and --detach together rejected" "$tool" --remove --detach HEAD one
+refuse "--remove of an absolute path rejected" "$tool" --remove "$work/main"
+refuse "--remove of a path that climbs out rejected" "$tool" --remove ../../main
+refuse "--remove of a path under the worktrees folder rejected" "$tool" --remove a/b
 if [[ "$(count_worktrees)" -eq 1 && ! -e "$briefs" && ! -e "$main/.claude/worktrees" ]]; then
     ok "rejections made no worktree and no brief"
 else
@@ -270,6 +283,74 @@ refuse "--detach of an unknown ref refused" "$tool" --detach no-such-ref review-
 check "--detach refusal made no worktree" test ! -e "$main/.claude/worktrees/review-two"
 refuse "--detach onto an existing path refused" "$tool" --detach origin/main review-one
 
+# ------------------------------------------------------------------------------------- remove ---
+check "--detach prints the --remove line for its checkout" \
+    has "$dout" "remove:   tools/agent-setup.sh --remove review-one"
+registered() { git -C "$main" worktree list --porcelain | grep -qxF "worktree $main/.claude/worktrees/$1"; }
+# $1 label  $2 the worktree's name  $3 the words the refusal must hold
+remove_refused() {
+    local out status
+    out="$("$tool" --remove "$2" 2>&1)"; status=$?
+    if [[ $status -ne 0 ]] && has "$out" "$3" && [[ -d "$main/.claude/worktrees/$2" ]]; then
+        ok "$1"
+    else
+        fail "$1 (exit $status: $out)"
+    fi
+}
+# The ignore rules every worktree of the scratch clone reads: a cache the repository regenerates,
+# and a build folder whose content it does not.
+mkdir -p "$main/.git/info"
+printf '.venv/\nbuild/\n' >> "$main/.git/info/exclude"
+
+refuse "--remove of a name nothing is at exits non-zero" "$tool" --remove no-such-checkout
+remove_refused "--remove of an agent's worktree (it has a branch) refused" alpha "has the branch feature/alpha"
+check "the refused agent's worktree is still registered" registered alpha
+
+echo edited >> "$dwt/src/a.gd"
+remove_refused "--remove with a changed file refused" review-one "changed or untracked files"
+git -C "$dwt" checkout -q -- src/a.gd
+echo notes > "$dwt/review-notes.txt"
+remove_refused "--remove with an untracked file refused" review-one "changed or untracked files"
+rm "$dwt/review-notes.txt"
+mkdir -p "$dwt/build"
+echo capture > "$dwt/build/capture.txt"
+remove_refused "--remove with an ignored file that is no cache refused" review-one \
+    "ignored files that are not regenerable caches"
+rm -r "$dwt/build"
+git -C "$main" worktree lock "$dwt"
+remove_refused "--remove of a locked worktree refused" review-one "is locked"
+git -C "$main" worktree unlock "$dwt"
+if (cd "$dwt/src" && "$tool" --remove review-one) >/dev/null 2>&1; then
+    fail "--remove from inside the worktree refused"
+else
+    ok "--remove from inside the worktree refused"
+fi
+check "the worktree outlived every refusal" registered review-one
+
+mkdir -p "$main/.claude/worktrees/plain-folder"
+remove_refused "--remove of a folder that is no worktree refused" plain-folder "is not a worktree of this repository"
+rmdir "$main/.claude/worktrees/plain-folder"
+git -C "$main" worktree add -q --detach "$work/elsewhere" origin/main
+ln -s "$work/elsewhere" "$main/.claude/worktrees/linked-out"
+remove_refused "--remove of a link to a worktree elsewhere refused" linked-out "resolves outside .claude/worktrees/"
+check "the worktree elsewhere is untouched" test -f "$work/elsewhere/CLAUDE.md"
+rm "$main/.claude/worktrees/linked-out"
+
+# Clean, with a regenerable cache in it: removed, by git's own unforced removal.
+mkdir -p "$dwt/.venv"
+echo cache > "$dwt/.venv/pyvenv.cfg"
+rout="$("$tool" --remove review-one 2>&1)"; status=$?
+if [[ $status -eq 0 ]] && has "$rout" "removed: $dwt"; then
+    ok "--remove of a clean detached checkout exits 0 and says so"
+else
+    fail "--remove of a clean detached checkout exits 0 and says so (exit $status: $rout)"
+fi
+check "--remove took the directory" test ! -e "$dwt"
+refuse "--remove unregistered the worktree" registered review-one
+check "--remove touched no other worktree" registered review-live
+check "--remove deleted no branch" git -C "$main" show-ref --verify --quiet refs/heads/feature/alpha
+refuse "a second --remove of the same name refused" "$tool" --remove review-one
+
 # ------------------------------------------------------------------- --agent and --release ---
 "$tool" --agent feature/alpha id-one >/dev/null 2>&1
 "$tool" --agent feature/alpha id-two >/dev/null 2>&1
@@ -323,7 +404,8 @@ check "a gates header with a trailing comment still gives its list" \
 real="$work/real"
 mkdir -p "$real/tools" "$real/.github/workflows"
 git init -q -b main "$real"
-cp "$root/tools/agent-setup.sh" "$root/tools/lib_disk_headroom.sh" "$real/tools/"
+cp "$root/tools/agent-setup.sh" "$root/tools/lib_disk_headroom.sh" \
+    "$root/tools/lib_regenerable_ignored.sh" "$real/tools/"
 cp "$root/.github/workflows/ci.yml" "$real/.github/workflows/ci.yml"
 echo claude > "$real/CLAUDE.md"
 git -C "$real" add -A && git -C "$real" commit -q -m real

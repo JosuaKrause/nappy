@@ -6,6 +6,7 @@
 #   tools/agent-setup.sh --agent <branch> <id>
 #   tools/agent-setup.sh --release <branch>
 #   tools/agent-setup.sh --detach <ref> <name> [--include <path>...]
+#   tools/agent-setup.sh --remove <name>
 #
 # Bash 3.2-safe, like the rest of tools/. Run it from any checkout of the repository; the
 # worktree and the brief always go to the main checkout (the first entry of `git worktree list`),
@@ -15,6 +16,9 @@ set -uo pipefail
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=tools/lib_disk_headroom.sh
 source "$script_dir/lib_disk_headroom.sh"
+# REGENERABLE_IGNORED and classify_ignored, for --remove.
+# shellcheck source=tools/lib_regenerable_ignored.sh
+source "$script_dir/lib_regenerable_ignored.sh"
 
 usage() {
     cat <<'EOF_USAGE'
@@ -22,6 +26,7 @@ usage: tools/agent-setup.sh <name> <branch> [--include <path>...]
        tools/agent-setup.sh --agent <branch> <id>
        tools/agent-setup.sh --release <branch>
        tools/agent-setup.sh --detach <ref> <name> [--include <path>...]
+       tools/agent-setup.sh --remove <name>
        tools/agent-setup.sh --help|-h
 
 Sets up an implementation agent. With a name and a branch it:
@@ -46,7 +51,13 @@ origin/main (one list, so the checks that read docs/evidence/ keep what they rea
                           .claude/worktrees/<name>, detached at <ref> (origin/<branch> or a
                           branch name, fetched from origin first; or a commit), with no
                           branch and no brief, so agent-status.sh never counts it as an agent.
-                          Remove it with `git worktree remove`.
+                          Remove it with --remove <name>.
+  --remove <name>         removes a --detach checkout, .claude/worktrees/<name>, with a plain
+                          `git worktree remove`, never forced. Refuses one that has a branch
+                          (tools/prune-merged.sh retires those), is locked, is the caller's own,
+                          has a changed or untracked file, or holds an ignored file other than
+                          the regenerable caches tools/prune-merged.sh --help lists. Takes a
+                          name, never a path, so nothing outside .claude/worktrees/ is reached.
   --help, -h              print this and do nothing else.
 
   tools/agent-setup.sh jolly-bunny feature/jolly-bunny-agent-setup
@@ -54,6 +65,7 @@ origin/main (one list, so the checks that read docs/evidence/ keep what they rea
   tools/agent-setup.sh --agent feature/quiet-yak a1b2c3d4e5f60789
   tools/agent-setup.sh --release feature/quiet-yak
   tools/agent-setup.sh --detach origin/feature/quiet-yak review-quiet-yak
+  tools/agent-setup.sh --remove review-quiet-yak
 EOF_USAGE
 }
 
@@ -72,8 +84,8 @@ for arg in "$@"; do
     fi
     case "$arg" in
         -h|--help) usage; exit 0 ;;
-        --agent|--release|--detach)
-            [[ $mode == setup ]] || bad "only one of --agent, --release, --detach"
+        --agent|--release|--detach|--remove)
+            [[ $mode == setup ]] || bad "only one of --agent, --release, --detach, --remove"
             mode="${arg#--}" ;;
         --include) expect_include=1 ;;
         -*)        bad "unknown flag: $arg" ;;
@@ -88,21 +100,25 @@ case "$mode" in
     agent)   [[ ${#positional[@]} -eq 2 ]] || bad "--agent expects <branch> <id>" ;;
     release) [[ ${#positional[@]} -eq 1 ]] || bad "--release expects <branch>" ;;
     detach)  [[ ${#positional[@]} -eq 2 ]] || bad "--detach expects <ref> <name>" ;;
+    remove)  [[ ${#positional[@]} -eq 1 ]] || bad "--remove expects <name>" ;;
 esac
 
-if [[ $mode == setup || $mode == detach ]]; then
+if [[ $mode == setup || $mode == detach || $mode == remove ]]; then
     if [[ $mode == setup ]]; then
         name="${positional[0]}" branch="${positional[1]}"
-    else
+    elif [[ $mode == detach ]]; then
         ref="${positional[0]}" name="${positional[1]}"
         [[ "$ref" != -* ]] || bad "invalid ref: $ref"
+    else
+        name="${positional[0]}"
     fi
+    # A name has no "/" in it, so it is one folder under .claude/worktrees/ and never a path.
     [[ "$name" =~ ^[a-z0-9][a-z0-9._-]*$ ]] \
         || bad "invalid name (lowercase words and dashes): $name"
 else
     branch="${positional[0]}"
 fi
-if [[ $mode != detach ]]; then
+if [[ $mode != detach && $mode != remove ]]; then
     git check-ref-format "refs/heads/$branch" >/dev/null 2>&1 || bad "invalid branch: $branch"
 fi
 if [[ $mode == agent ]]; then
@@ -166,9 +182,55 @@ if [[ $mode == agent || $mode == release ]]; then
     exit 0
 fi
 
-# --- setup and --detach -----------------------------------------------------------------------
 worktree="$main/.claude/worktrees/$name"
 err() { echo "tools/agent-setup.sh: $*" >&2; }
+
+# --- --remove ---------------------------------------------------------------------------------
+# A review checkout has no branch and no pull request, so tools/prune-merged.sh never takes it.
+# This removes one, and only one that nothing can be lost with: every refusal below leaves the
+# worktree as it stands, and the removal itself is git's own unforced one, which refuses a
+# changed or untracked file a second time.
+if [[ $mode == remove ]]; then
+    [[ -d "$worktree" ]] || { err "no worktree at $worktree"; exit 1; }
+    real="$(cd "$worktree" && pwd -P)"
+    [[ "$real" == "$main/.claude/worktrees/$name" ]] \
+        || { err "$worktree resolves outside .claude/worktrees/, to $real"; exit 1; }
+    entry="$(git -C "$main" worktree list --porcelain | awk -v p="$real" '
+        /^worktree / { mine = (substr($0, 10) == p) }
+        mine { print }')"
+    [[ -n "$entry" ]] || { err "$worktree is not a worktree of this repository"; exit 1; }
+    held="$(sed -n 's#^branch refs/heads/##p' <<<"$entry")"
+    [[ -z "$held" ]] || {
+        err "$worktree has the branch $held; tools/prune-merged.sh retires a branch's worktree"
+        exit 1
+    }
+    grep -qx 'detached' <<<"$entry" \
+        || { err "$worktree is not a detached checkout"; exit 1; }
+    ! grep -q '^locked' <<<"$entry" || { err "$worktree is locked"; exit 1; }
+    case "$(pwd -P)/" in
+        "$real"/*) err "the caller is inside $worktree"; exit 1 ;;
+    esac
+    status="$(git --no-optional-locks -C "$real" status --porcelain --untracked-files=all)" \
+        || { err "cannot read the status of $worktree"; exit 1; }
+    [[ -z "$status" ]] || {
+        err "$worktree has changed or untracked files:"
+        printf '%s\n' "$status" | head -5 >&2
+        exit 1
+    }
+    ignored="$(classify_ignored "$real" "")" \
+        || { err "cannot list the ignored files of $worktree"; exit 1; }
+    kept="$(printf '%s\n' "$ignored" | awk -F'\t' '$1 == "keep" {print $2}')"
+    [[ -z "$kept" ]] || {
+        err "$worktree holds ignored files that are not regenerable caches:"
+        printf '%s\n' "$kept" | head -5 >&2
+        exit 1
+    }
+    git -C "$main" worktree remove "$real" || { err "git refused to remove $worktree"; exit 1; }
+    echo "removed: $worktree"
+    exit 0
+fi
+
+# --- setup and --detach -----------------------------------------------------------------------
 git -C "$main" fetch --quiet origin main || { err "cannot fetch origin main"; exit 1; }
 git -C "$main" rev-parse --verify --quiet origin/main >/dev/null \
     || { err "no origin/main"; exit 1; }
@@ -264,7 +326,7 @@ git -C "$worktree" checkout --quiet -f HEAD 2>/dev/null || fail_cleanup "checkou
 if [[ $mode == detach ]]; then
     echo "worktree: $worktree (detached at $commit; no branch, no brief)"
     echo "sparse:   $(printf '%s\n' "$patterns" | tr '\n' ' ')"
-    echo "remove:   git worktree remove $worktree"
+    echo "remove:   tools/agent-setup.sh --remove $name"
     exit 0
 fi
 
