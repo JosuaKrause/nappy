@@ -4,7 +4,9 @@ extends RefCounted
 ## location taken, unavailable or already drawn left alone, a row the day's ground refuses at a
 ## location never drawn there, a row not drawn once it has stood as many times as the caps handed in say, and
 ## each location's weight handed to its bag, and a draw taken a step at a time holding nothing until
-## it ends, a row's offer taking steps of its own, and a row handed to her walk drawn unplaced. Run with stand-ins for what it is handed: the day's
+## it ends, a row's offer taking steps of its own, a row handed to her walk drawn unplaced, the
+## dawn's sweep standing only the rows it keeps and leaving the rest open, a walk's draw never taking
+## a row it does not keep, and a walk's caps spread over the locations it draws. Run with stand-ins for what it is handed: the day's
 ## locations (`_Locations`, a handful built by hand), the ground (`_Ground`, whose refusals, weights
 ## and offer steps a check sets); the bags are real (`ViewBag`), of a few marbles each. The walk
 ## draws its locations nearest first (`WalkDraw`); here they are drawn in the order a check lists.
@@ -17,12 +19,19 @@ func run(t) -> void:
 	_test_a_locations_weight_reaches_its_bag(t)
 	_test_a_draw_a_step_at_a_time_holds_nothing_until_it_ends(t)
 	_test_a_row_handed_to_her_walk_is_drawn_unplaced(t)
+	_test_the_sweep_stands_only_what_it_keeps(t)
+	_test_a_walk_draw_takes_only_what_it_keeps(t)
+	_test_a_walks_caps_are_spread_over_its_locations(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 
 class _Locations extends DayLocations:
 	var order: Array[Location] = []
 	var recorded := {}
+
+	## Overrides DayLocations.drawing_order.
+	func drawing_order(_rng: RandomNumberGenerator) -> Array[Location]:
+		return order
 
 	## Overrides DayLocations.record.
 	func record(location: Location, plan: EventScheduler.Planned) -> void:
@@ -215,3 +224,69 @@ func _test_a_row_handed_to_her_walk_is_drawn_unplaced(t) -> void:
 			"a drawn crew is answered with no position")
 	t.check(recorded == placed[0] and ground.stood == placed,
 			"and it is what the location records and the day stands")
+
+## A bag of cafes and roadblocks swept with only the roadblock kept: every location that drew a
+## roadblock holds it and it is stood; every other location is left open, nothing stood there.
+func _test_the_sweep_stands_only_what_it_keeps(t) -> void:
+	var locations := _Locations.new()
+	for x in 8:
+		locations.order.append(_location(x))
+	var ground := _Ground.new()
+	var keeps := func(def: EventDef) -> bool: return def.id == "roadblock"
+	var draw := LocationDraw.new(locations, {ON: ViewBag.new({"cafe_tables": 4, "roadblock": 4}, 3)},
+			{"cafe_tables": _row("cafe_tables"), "roadblock": _row("roadblock")}, ground, {}, keeps)
+	draw.draw_all(RandomNumberGenerator.new())
+	var kept := 0
+	var open := 0
+	var wrong := 0
+	for location in locations.order:
+		if location.is_drawn():
+			kept += 1
+			var plan: EventScheduler.Planned = locations.recorded[location]
+			if plan == null or plan.row_id() != "roadblock":
+				wrong += 1
+		else:
+			open += 1
+	t.check(kept == 4 and open == 4 and wrong == 0 and ground.stood.size() == 4,
+			"the sweep stands the four roadblocks and leaves the four cafes' locations open (%d kept, %d open, %d stood)"
+			% [kept, open, ground.stood.size()])
+
+## A bag of a cafe and a roadblock, drawn by a walk that keeps only the cafe, location after location:
+## no roadblock is ever drawn, and the roadblock stays in the bag.
+func _test_a_walk_draw_takes_only_what_it_keeps(t) -> void:
+	var never := true
+	for seed_value in 40:
+		var locations := _Locations.new()
+		locations.order = [_location(0)] as Array[Location]
+		var keeps := func(def: EventDef) -> bool: return def.id != "roadblock"
+		var draw := LocationDraw.new(locations, {ON: ViewBag.new({"cafe_tables": 1, "roadblock": 1}, seed_value)},
+				{"cafe_tables": _row("cafe_tables"), "roadblock": _row("roadblock")}, _Ground.new(), {}, keeps)
+		var plan := draw.draw(locations.order[0])
+		never = never and plan != null and plan.row_id() == "cafe_tables"
+	t.check(never, "a walk that keeps only the cafe draws the cafe, never the roadblock, on every seed")
+
+## Ten locations, a bag of cafes, a cap of two spread over ten locations: a cafe may stand only once
+## the walk has drawn enough locations for its share, so the first two draw empty, and ten draws
+## stand two cafes; the same cap not spread stands the first two locations' cafes.
+func _test_a_walks_caps_are_spread_over_its_locations(t) -> void:
+	var spread := _Locations.new()
+	var flat := _Locations.new()
+	for x in 10:
+		spread.order.append(_location(x))
+		flat.order.append(_location(x + 20))
+	var rows := {"cafe_tables": _row("cafe_tables")}
+	var walk := LocationDraw.new(spread, {ON: ViewBag.new({"cafe_tables": 10, ViewBag.EMPTY: 1}, 2)},
+			rows, _Ground.new(), {"cafe_tables": 2}, Callable(), 10)
+	var at_once := LocationDraw.new(flat, {ON: ViewBag.new({"cafe_tables": 10, ViewBag.EMPTY: 1}, 2)},
+			rows, _Ground.new(), {"cafe_tables": 2})
+	var spread_cafes: Array[int] = []
+	var flat_cafes: Array[int] = []
+	for i in 10:
+		if walk.draw(spread.order[i]) != null:
+			spread_cafes.append(i)
+		if at_once.draw(flat.order[i]) != null:
+			flat_cafes.append(i)
+	t.check(spread_cafes.size() == 2 and spread_cafes[0] >= 2,
+			"spread over ten locations, two cafes stand and not before the third location (%s)" % [spread_cafes])
+	t.check(flat_cafes.size() == 2 and flat_cafes[1] <= 2,
+			"not spread, the two stand among the first locations (%s)" % [flat_cafes])

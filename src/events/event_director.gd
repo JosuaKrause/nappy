@@ -427,7 +427,7 @@ static func _route_rows_on(day: int, heat: int) -> Array[EventDef]:
 
 ## The marbles of `day`'s ordinary route bag: each of `_route_rows_on()` in proportion to its weight
 ## (`ROUTE_BAG_MARBLES_PER_WEIGHT`). A row `ROUTE_BAG_MARBLES_OF` names comes as often
-## as it says rather than as its weight says: the weight is the dawn roll's too, on every day.
+## as it says rather than as its weight says: the weight is the view bags' too, on every day.
 static func ordinary_route_marbles(day: int, heat: int) -> Array:
 	var weights := {}
 	for def in _route_rows_on(day, heat):
@@ -566,13 +566,6 @@ func _place_on_her_route(def: EventDef) -> void:
 	var waiting := EventScheduler.Planned.new(def, Vector2.INF)
 	_on_her_way.append(waiting)
 	_placed_from_the_route[waiting] = true
-
-## **A row a location drew during the walk that her walk sites** (`EventDef.is_handed_to_her_walk()`,
-## the poster crew, drawn unplaced by `LocationDraw.finish()`): it waits on her way as one the
-## dawn left unsited does, and is sited by `site_what_is_on_her_way()` in its turn.
-func hand_to_her_walk(plan: EventScheduler.Planned) -> void:
-	if plan.def.on_her_way != null and not plan.is_placed():
-		_on_her_way.append(plan)
 
 ## Whether `plan` is a place a marble from her route's bag put on her way (`_place_on_her_route()`),
 ## which joins the day's plan when it is first sited rather than at dawn.

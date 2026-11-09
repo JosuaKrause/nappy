@@ -22,7 +22,6 @@ func run(t) -> void:
 	_test_a_crew_drawn_is_handed_to_her_walk(t)
 	_test_a_rig_meets_the_three_things_that_arrive(t)
 	_test_hard_fail_only_when_active(t)
-	_test_a_place_handed_to_her_walk_on_the_way_is_sited(t)
 
 
 ## Walks a synthetic player down `route` from `at`, stepping the director every frame, and returns
@@ -368,9 +367,8 @@ func _test_the_engine_parks_at_the_fire(t) -> void:
 
 ## **One set piece, the day's crews, and the day is otherwise exactly the day it was.** A set piece
 ## the day owes her walk is budgeted like any other one-shot — one plan, tagged as its own group.
-## The only other rows left for the walk to site are the poster crews, rolled at dawn like any
-## recurring row and handed over with no position (`EventScheduler._hand_to_her_walk`), so no other
-## row changes shape because of either.
+## The only other rows left for the walk to site are the poster crews, drawn at a location like any
+## recurring row and handed over with no position (`LocationDraw.finish()`).
 func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 	var owed := 0
 	var crews := 0
@@ -525,25 +523,3 @@ func _test_hard_fail_only_when_active(t) -> void:
 	_advance(harmless, safe.telegraph_time + 0.05)
 	t.check(not harmless.is_lethal_at(Vector2.ZERO), "an ordinary event is never lethal")
 	harmless.free()
-
-## **A place handed to her walk after the day started is sited like one the dawn left**
-## (`EventDirector.hand_to_her_walk()`): what a location the walk draws hands over when it draws a
-## row her walk sites (a poster crew, `EventManager`). The day's fire stands in for it: a director
-## started on the day's plans without the fire sites nothing, and handed the fire first, it sites it
-## on the walk out.
-func _test_a_place_handed_to_her_walk_on_the_way_is_sited(t) -> void:
-	var day := Tuning.RUN_TAUGHT_DAY
-	var plans := _fire_day_plans()
-	var fire := _fire_in(plans)
-	if not fire:
-		t.check(false, "day 3 budgets the fire")
-		return
-	plans.erase(fire)
-	var out := _fire_route(day)
-	var unhanded := _fire_director(day, plans)
-	_walk_the_director(unhanded, plans, out[0], out, 120.0)
-	t.check(not fire.is_placed(), "a director never handed the fire does not site it")
-	var handed := _fire_director(day, plans)
-	handed.hand_to_her_walk(fire)
-	_walk_the_director(handed, plans, out[0], out, 120.0, func() -> bool: return fire.is_placed())
-	t.check(fire.is_placed(), "handed to her walk once the day has started, it is sited on her way out")

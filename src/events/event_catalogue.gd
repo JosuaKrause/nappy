@@ -1750,8 +1750,8 @@ static func _police_patrol() -> EventDef:
 ## walk draws a crew at hands it to her walk with no position (`LocationDraw.finish()`), and her walk
 ## sites each crew, one at a time, on her branch of the day's routes, in front of a blank ground-floor
 ## cell and facing it, as day 3's fire is sited. Once in the world it stays, and `PosterWalls` has
-## it paste its wall while it is in her view. Its field and cost are those of the dawn roll:
-## making a crew charge the meter would change what the row is for.
+## it paste its wall while it is in her view. Its field and cost are those of any recurring
+## row: making a crew charge the meter would change what the row is for.
 static func _poster_crew() -> EventDef:
 	var def := EventDef.new()
 	def.id = "poster_crew"

@@ -4,7 +4,8 @@ extends RefCounted
 ## Plus the placement rules a pinned or pacing row keeps on top of that: a pinned row is only
 ## offered ground it can be pinned on, a square's own poster crew never leaves the square, a pacing
 ## row on the route's sidewalk can still be left room to pass, a route's own junctions and sidewalk
-## stay clear of what it schedules, and a flock is scenery rather than a placed obstruction.
+## stay clear of what it schedules, a flock is scenery rather than a placed obstruction, and a
+## batch of locations the walk draws at once keeps the spacing between its own draws.
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again". Builds its own
 ## `_rng()` rather than extending `events_shared_city.gd`: nothing here reads the shared city, only
@@ -30,6 +31,7 @@ func run(t) -> void:
 	_test_a_pacing_rows_opening_stays_open(t)
 	_test_a_flock_is_scenery(t)
 	_test_a_lethal_rows_line_reach_is_its_whole_field(t)
+	_test_a_walks_batch_keeps_its_spacing(t)
 
 
 ## The two halves of `EventScheduler.role_for`, checked in one pass over the days because each of
@@ -1013,3 +1015,41 @@ func _test_a_lethal_rows_line_reach_is_its_whole_field(t) -> void:
 	for def in EventCatalogue.all():
 		t.check(def.line_reach() >= def.obstructs_radius,
 				"%s: no row reaches less than its own body" % def.id)
+
+## **A batch the walk draws at once is judged a location at a time**: before her first step the
+## walk draws every location within `WalkDraw.MUST_DRAW` of her door in one go, and a dev spawn draws
+## all the rest (`WalkDraw.draw_everywhere()`); each draw is stood before the next is judged, so no
+## two rows of a batch stand closer than `EventScheduler.EVENT_SPACING_ANY` (64px), the spacing that
+## never bends. Drawn here with a walk, as the game draws it, over three days of one city.
+func _test_a_walks_batch_keeps_its_spacing(t) -> void:
+	var map := MapCache.of(4242)
+	var pairs := 0
+	var close := 0
+	var first := ""
+	for day in [4, 8, 12]:
+		var state := CityState.new()
+		state.begin_day(map.block_plans, day)
+		map.repaint(state)
+		var tree := RouteTree.for_day(map, day)
+		var consumed: Array[String] = []
+		var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, CalmAreas.of(map),
+				MastSites.compute(map), consumed, [], tree)
+		var walk := WalkEvents.new()
+		walk.take(events.placements(), CalmAreas.of(map))
+		events.walk_draw().judge_against(walk)
+		var drawn: Array[EventScheduler.Planned] = []
+		var batches := events.walk_draw().draw_within(map.doorstep_world_position(), WalkDraw.MUST_DRAW)
+		batches.append_array(events.walk_draw().draw_everywhere())
+		for plan in batches:
+			if plan.is_placed():
+				drawn.append(plan)
+		for i in drawn.size():
+			for j in range(i + 1, drawn.size()):
+				pairs += 1
+				if drawn[i].gap_to(drawn[j]) < EventScheduler.EVENT_SPACING_ANY:
+					close += 1
+					if first == "":
+						first = "day %d, '%s' and '%s'" % [day, drawn[i].row_id(), drawn[j].row_id()]
+	t.check(pairs > 100, "the walk's batches stand rows to space (%d pairs)" % pairs)
+	t.check(close == 0, "and no two of a batch stand within 64px of each other (%d pairs%s)"
+			% [close, "" if first == "" else ", first " + first])

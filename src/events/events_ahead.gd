@@ -62,12 +62,6 @@ func drop_director() -> void:
 func has_director() -> bool:
 	return _director != null
 
-## Hands the director a row a location drew during the walk for her walk to site
-## (`EventDirector.hand_to_her_walk()`); with no director, nothing sites it and she does not meet it.
-func hand_to_her_walk(plan: EventScheduler.Planned) -> void:
-	if _director:
-		_director.hand_to_her_walk(plan)
-
 ## The day's director (`EventDirector`), or null in a world with none.
 func director() -> EventDirector:
 	return _director

@@ -15,10 +15,8 @@ extends StreetRule
 ## holds is derived once and kept in step: the ground home reaches among the bodies it has been
 ## shown, tile by tile, over the city's own 4-connected walkable tiles (`CityMap.passable()` for the
 ## lattice walker, the graph `ReachabilityGrid` contracts). A body shown it that the ground round
-## its disc goes round takes only its disc off the reach; one it does not floods from home again.
-## A body that leaves (spent, or no longer handed in) is kept blocking until the day is over: taking
-## a body away can only add reach, so keeping it can refuse a candidate that would have been fine but
-## never lets one cut a route off, and it spares the walk a flood each time something leaves.
+## its disc goes round takes only its disc off the reach; one it does not takes off what the disc
+## cuts off (`_cut_off()`); any other change floods from home again.
 ## Model: no node.
 
 ## How far round a disc the ground is walked to find it still one piece.
@@ -44,12 +42,6 @@ func _init(map: CityMap, corridor: Corridor) -> void:
 	_map = map
 	_corridor = corridor
 
-## **Works out the reach among `around`'s bodies now**, so the next body asked about pays only for
-## itself: the dawn calls it before the walk's first draw, which comes on a frame.
-func prepare(around: Array[EventScheduler.Planned]) -> void:
-	if _corridor:
-		_catch_up(around, null)
-
 ## Overrides StreetRule.allows.
 func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 		_placed: Array[EventScheduler.Planned], around: Array[EventScheduler.Planned]) -> bool:
@@ -74,7 +66,7 @@ func _catch_up(around: Array[EventScheduler.Planned], candidate: EventScheduler.
 			bodies.append(plan)
 			if not _seen.has(plan.get_instance_id()):
 				fresh.append(plan)
-	if not _ready:
+	if not _ready or bodies.size() - fresh.size() != _seen.size():
 		_rebuild(bodies)
 		return
 	for body in fresh:
@@ -180,6 +172,13 @@ func _goes_round(disc: Dictionary) -> bool:
 ## would be a way to the disc that never came next to it.
 func _cut_off(disc: Dictionary) -> PackedInt32Array:
 	var home := _index(_map.home_tile())
+	if disc.has(home):
+		# Home under the disc: nothing is reached from it.
+		var everything := PackedInt32Array()
+		for i in _reached.size():
+			if _reached[i] == 1 and not disc.has(i):
+				everything.append(i)
+		return everything
 	var width := _size.x
 	var count := _size.x * _size.y
 	# Per tile, the piece that walked it first, or -1; per piece, the piece it joined (itself while it

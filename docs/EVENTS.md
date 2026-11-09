@@ -1748,10 +1748,9 @@ group goes with it.
 ### The crews paste the walls she passes
 
 A poster crew placed anywhere in the city is a crew she never meets, and a wall she never sees
-changing. So `poster_crew` carries an `EventDef.on_her_way` with `OnHerWay.at_a_front`. **The
-day still rolls and places its crews at dawn** exactly as before, which is what keeps every other
-row the roll places where it was; `EventScheduler._hand_to_her_walk` then drops their positions,
-and `EventDirector.site_what_is_on_her_way()` sites them the way it sites the fire — on the branch
+changing. So `poster_crew` carries an `EventDef.on_her_way` with `OnHerWay.at_a_front`. **A
+location the walk draws a crew at hands it on with no position** (`LocationDraw.finish()`), and
+`EventDirector.site_what_is_on_her_way()` sites it the way it sites the fire — on the branch
 of the day's route tree she is walking, beyond the streaming band and within
 `EventDirector.ON_HER_WAY_SIGHT` seconds of walking along the route, moved while unreal, fixed once
 real — with three differences. **One at a time**: the next crew waits while another is sited and

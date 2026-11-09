@@ -605,6 +605,11 @@ func investigates() -> bool:
 func lets_out() -> int:
 	return hunting.lets_out if hunting else 0
 
+## **Whether a placed copy of this row blocks the way**: a body she cannot pass, or a hard fail.
+## Every such row is drawn at dawn, never during the walk (`EventScheduler._draw_the_locations()`).
+func blocks_the_way() -> bool:
+	return obstructs_radius > 0.0 or hard_fail
+
 ## How far round its position its body stops her (`obstructs_radius`), or 0 for a row that stops
 ## nothing: what the walked-sidewalk rule reads of a body (`RouteSidewalkRule`).
 func obstructs_within() -> float:
@@ -1200,15 +1205,15 @@ func validate() -> bool:
 				+ "wherever she goes, and one placed at dawn is met only if she walks there")
 		return false
 	# **A row sited from her walk is a `MAP` row that stands still, or it is nothing.** Only
-	# `EventScheduler._place_one_shots`, `_hand_to_her_walk` and `LocationDraw.finish()` read the
-	# flag, and only `EventDirector` sites what they leave unplaced. The siting is a tile with the corridor's own
+	# `EventScheduler._place_one_shots` and `LocationDraw.finish()` read the flag, and only
+	# `EventDirector` sites what they leave unplaced. The siting is a tile with the corridor's own
 	# questions asked of it, which a director-sited row never has, and a thing that moves has no one
 	# place for its scar to be recorded at.
 	if on_her_way:
 		if kind != GameEnums.EventKind.ONE_SHOT and kind != GameEnums.EventKind.RECURRING:
 			push_error("event '%s' is sited from her walk and is neither a one-shot nor " % id
-					+ "recurring: nothing but EventScheduler._place_one_shots, "
-					+ "_hand_to_her_walk and LocationDraw.finish leaves a plan for her walk to site")
+					+ "recurring: nothing but EventScheduler._place_one_shots and "
+					+ "LocationDraw.finish leaves a plan for her walk to site")
 			return false
 		if spawn_mode != SpawnMode.MAP:
 			push_error("event '%s' is sited from her walk and is director-sited besides: it is " % id

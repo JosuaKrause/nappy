@@ -22,7 +22,6 @@ extends Resource
 
 ## Whether her walk sites the row on the sidewalk in front of a blank ground-floor cell of a
 ## building's front, facing the wall, rather than on the side `EventDef.pavement_side` names —
-## `poster_crew`, which pastes the wall it stands at (`PosterWalls`). The dawn roll still places the
-## row by `pavement_side`, so the day's own stream is spent exactly as it is for any row, and only
-## the walk's siting reads this.
+## `poster_crew`, which pastes the wall it stands at (`PosterWalls`). A location's draw offers the
+## row by `pavement_side`, as it offers any row, and only the walk's siting reads this.
 @export var at_a_front := false

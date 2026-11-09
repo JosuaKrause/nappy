@@ -1235,8 +1235,10 @@ func closure_summary() -> String:
 
 ## Today's events by id. Counted rather than listed one per line: which of the catalogue's kinds
 ## are out is what makes a day, and where each instance stands is only interesting for the ones
-## she actually walked into — which the `near` lines cover, at the moment it matters. The *plan*,
-## not what is live: what is live is a fact about where she is standing this frame.
+## she actually walked into — which the `near` lines cover, at the moment it matters. The walk's
+## *plan* as it stands when asked, not what is live: the dawn's rows, its bodies among them, and the
+## locations her walk has drawn so far, which at the walk's start are those within reach of her door
+## (`WalkDraw.MUST_DRAW`); what is live is a fact about where she is standing this frame.
 func event_summary() -> String:
 	var counts := {}
 	for plan in events.plans():

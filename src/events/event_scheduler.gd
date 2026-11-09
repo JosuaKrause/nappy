@@ -445,7 +445,7 @@ class Planned extends RefCounted:
 	## not something she walks through to reach the park behind it; a door is a crossing she walks
 	## through. What the day's reach (`DayReach`) stands as discs (`blocking_radius()`).
 	func obstructs() -> bool:
-		return is_placed() and not _is_door and (def.obstructs_radius > 0.0 or def.hard_fail)
+		return is_placed() and not _is_door and def.blocks_the_way()
 
 	## The disc this event blocks the way with: its body's radius, or a hard fail's inner radius
 	## when that is wider.
@@ -684,7 +684,6 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	# open park she can reach from the swing"). Dawn keeps it by construction: the calm other than
 	# `calm.besides()` is the ground the calm rule and `_calm_kept_clean()` keep clean, and the
 	# day's routes, which `RouteReachRule` keeps reached, run to it.
-	_hand_to_her_walk(events)
 	_count_what_is_left_uncovered(beside_the_routes, map, events, route, trace)
 	return events
 
@@ -771,11 +770,6 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	_owe_the_moments(day, _stream(base, MOMENTS_SALT), events, heat, spec.caps_per_day)
 	# **The rest is drawn as she walks** (`WalkDraw`): every location the dawn did not fix is left
 	# undrawn, and the walk draws each from its view's bag as she comes near it.
-	# The reach among what the dawn stood is worked out here, on the loading screen, rather than on
-	# the frame the walk first asks it.
-	var stood := events.placements()
-	stood.append_array(events.standing())
-	reach.prepare(stood)
 	events.use_walk_draw(WalkDraw.new(locations, _draw_the_locations(day, base, map, events, ground,
 			leave_alone, corridor, doors, spec, locations, heat, beside_the_routes, reach),
 			map.doorstep_world_position()))
@@ -1019,24 +1013,8 @@ static func _touched_from(map: CityMap, shut: Dictionary, plan: Planned) -> Arra
 				found.append(tile)
 	return found
 
-## **A recurring row sited from her walk that a dawn phase placed is handed to her walk** —
-## `poster_crew`, which pastes the walls she passes (`EventDef.on_her_way`): this drops the position,
-## and `EventDirector.site_what_is_on_her_way()` sites it ahead of her. A location the walk draws
-## hands one over as it draws it (`LocationDraw.finish()`).
-##
-## **Last, and only ever a removal.** Every guarantee the passes above make is about reaching
-## somewhere, and taking a placed body off the ground can only add reachable ground (the **city**
-## skill's one monotonic exception), so nothing they decided can become false here. A one-shot owed
-## to her walk arrives already unplaced from `_place_one_shots` and is left alone.
-static func _hand_to_her_walk(events: DayEvents) -> void:
-	for plan in events.placements():
-		if not plan.def.is_handed_to_her_walk() or not plan.is_placed():
-			continue
-		events.replace(plan, owed_to_her_walk(plan))
-
 ## **`plan`'s row, unplaced, for her walk to site** (`EventDirector.site_what_is_on_her_way()`): what
-## a placed row handed to her walk becomes, at dawn (`_hand_to_her_walk()`) or when a location draws
-## one (`LocationDraw.finish()`).
+## a row handed to her walk becomes when a location draws one (`LocationDraw.finish()`).
 static func owed_to_her_walk(plan: Planned) -> Planned:
 	var owed := Planned.new(plan.def, Vector2.INF)
 	owed.role = plan.role
@@ -1568,9 +1546,9 @@ static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 ## over a whole park and keeps it out of a back yard.
 ##
 ## **And it has to stay where it was put.** A row handed to her walk (`EventDef.is_handed_to_her_walk()`,
-## the sidewalk `poster_crew`) is taken off the map at the end of the day's plan
-## (`_hand_to_her_walk()`), so a park it was meant to spoil would stand empty, against PLAYTEST-140 8
-## (a used park is shut by the events placed in it). None is offered.
+## the sidewalk `poster_crew`) stands where her walk sites it, never where the dawn would put it, so a
+## park it was meant to spoil would stand empty, against PLAYTEST-140 8 (a used park is shut by the
+## events placed in it). None is offered.
 static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> Array[EventDef]:
 	var allowed := maxf(OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(ground.size.x, ground.size.y) / 16.0)
@@ -2405,11 +2383,31 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEv
 	var fit := LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets)
 	for def: EventDef in rows.values():
 		fit.prepare(def)
-	var judged := RuledLocationGround.new(day, base, map, events, corridor, fit,
-			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-					spec.one_notice_at_a_time, null, reach))
 	var caps := _caps_of(rows, day, spec, _stream(base, CAPS_SALT)) if spec.caps_per_day else {}
-	return LocationDraw.new(locations, bags, rows, judged, caps)
+	# **The bodies at dawn**: every location swept in the day's order from bags of its own, as the
+	# whole draw would sweep it, standing only the rows that block the way, each asked every dawn
+	# rule, the reach among them (gray-dolphin #1173 30: "a blocking event is never placed" when she
+	# walks; 33: "there should be no live reachability check"), and the rows her walk sites, handed
+	# to it with no position.
+	var blocks := func(def: EventDef) -> bool: return _drawn_at_dawn(def)
+	LocationDraw.new(locations, _view_bags(rows, day, spec, base), rows,
+			RuledLocationGround.new(day, base, map, events, corridor, fit,
+					StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
+							spec.one_notice_at_a_time, null, reach)),
+			caps, blocks).draw_all(_stream(base, LOCATIONS_SALT))
+	# **The rest as she walks**: only the rows that block nothing, judged by every rule but the
+	# reach, which no body the walk draws can need, the caps spread over the locations left open.
+	var opens := func(def: EventDef) -> bool: return not _drawn_at_dawn(def)
+	return LocationDraw.new(locations, bags, rows,
+			RuledLocationGround.new(day, base, map, events, corridor, fit,
+					StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
+							spec.one_notice_at_a_time, null, null)),
+			caps, opens, locations.open_locations().size(), _stream(base, WALK_CAPS_SALT))
+
+## Whether `def`'s row is drawn at dawn rather than as she walks: a row that blocks the way, or one
+## her walk sites (`EventDef.is_handed_to_her_walk()`), which the dawn hands over with no position.
+static func _drawn_at_dawn(def: EventDef) -> bool:
+	return def.blocks_the_way() or def.is_handed_to_her_walk()
 
 ## **How many of each row the day's draw may stand** (`id -> count`): its `EventDef.max_per_day`,
 ## and a wall-role row's times `DaySpec.wall_row_share`, so the gatehouse day holds that share of a
@@ -2424,31 +2422,10 @@ static func _caps_of(rows: Dictionary, day: int, spec: DaySpec,
 	for id: String in ids:
 		var def: EventDef = rows[id]
 		var most := float(def.most_in_a_day())
-		var walked: Array = WALK_CAPS.get(id, [])
-		if not walked.is_empty() and float(walked[clampi(day, 1, 14) - 1]) > 0.0:
-			most = minf(most, float(walked[clampi(day, 1, 14) - 1]))
 		if role_for(def, day) == GameEnums.BlockerRole.WALL:
 			most *= spec.wall_row_share
 		caps[id] = floori(most) + (1 if rng.randf() < most - floorf(most) else 0)
 	return caps
-
-## **The most of a row the walk's draw stands a day** (`row id -> [day - 1]`), where it is less than
-## the row's own cap (`EventDef.max_per_day`): what she met of it on her walk when the dawn drew every
-## location of the city and the cap was spent across all of them. The walk draws only what she comes
-## near (`WalkDraw`), so a cap the dawn spread over the city would be met whole on her walk; these
-## keep what she meets, a capped row as often as before (the orchestrator's reading, open to the
-## player's overturn). A share is rounded up or down as `_caps_of()` rounds every cap, and the
-## gatehouse day's thinning is on top. Fitted, not derived: stepped toward what she meets on main's
-## walks by `tests/probes/walk_rows.gd`, with `GROUND_WEIGHTS`, at heat 0; 0 on a day she met none,
-## which leaves the row's own cap.
-const WALK_CAPS := {
-	"abduction": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1.08, 1.44, 1.09, 1.25, 0.69, 1.82, 0.74],
-	"alley_mouse": [2.08, 3.23, 3.07, 2.00, 2.12, 2.51, 2.68, 2.45, 2.32, 2.65, 2.39, 1.91, 2.06, 2.59],
-	"charging_dog": [0.00, 0.00, 0.00, 1.03, 1.03, 1.14, 1.17, 1.06, 1.47, 1.06, 0.61, 0.38, 1.27, 0.61],
-	"chatting_mother": [0.89, 1.06, 1.19, 1.22, 1.06, 1.14, 0.86, 1.17, 0.97, 1.11, 0.75, 0.78, 1.06, 0.83],
-	"pigeon_flock": [2.62, 2.69, 3.27, 2.46, 3.02, 3.34, 2.84, 2.81, 3.22, 2.65, 2.44, 2.36, 3.02, 2.66],
-	"roadblock": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 4.15, 4.39, 4.05, 4.15, 3.84, 3.10, 0.00, 3.92],
-}
 
 ## The phase salt the view bags' streams start from: apart from every other phase's.
 const LOCATIONS_SALT := 6
@@ -2456,6 +2433,8 @@ const LOCATIONS_SALT := 6
 const MOMENTS_SALT := 7
 ## The phase salt a share of a wall's cap is rounded on (`_caps_of()`).
 const CAPS_SALT := 8
+## The phase salt the walk's running caps are rounded on (`LocationDraw`).
+const WALK_CAPS_SALT := 9
 
 ## **A row's weight in a view's bag**: its own `EventDef.weight` times what the view is to its role,
 ## the offers today's placement made per tile of the view's ground (`_copies_of()`'s gradient),
@@ -2597,27 +2576,27 @@ const VIEW_SHARE_SCALES := [
 ## eighteen seeds), the way the view scales are; a row or a kind not listed weighs one. Measured, not
 ## derived, and fitted again with the view scales whenever the draw's rules change.
 const GROUND_WEIGHTS := {
-	"abduction": {Location.Kind.SIDEWALK: 13.11, Location.Kind.JUNCTION: 43.28},
-	"alley_mouse": {Location.Kind.ALLEY: 19.58},
+	"abduction": {Location.Kind.SIDEWALK: 0.14, Location.Kind.JUNCTION: 91.19},
+	"alley_mouse": {Location.Kind.ALLEY: 14.67},
 	"alley_robbery": {Location.Kind.ALLEY: 4.46},
 	"busker": {Location.Kind.OPEN: 150},
 	"cafe_tables": {Location.Kind.SIDEWALK: 0.43},
-	"charging_dog": {Location.Kind.SIDEWALK: 24.09, Location.Kind.OPEN: 10.92, Location.Kind.JUNCTION: 70.35},
-	"chatting_mother": {Location.Kind.SIDEWALK: 18.43, Location.Kind.JUNCTION: 8.9},
+	"charging_dog": {Location.Kind.SIDEWALK: 0.21, Location.Kind.OPEN: 0.78, Location.Kind.JUNCTION: 319},
+	"chatting_mother": {Location.Kind.SIDEWALK: 0.25, Location.Kind.JUNCTION: 400},
 	"construction": {Location.Kind.SIDEWALK: 0.49},
-	"delivery_van": {Location.Kind.SIDEWALK: 1.4},
-	"dog_walker": {Location.Kind.SIDEWALK: 0.88, Location.Kind.JUNCTION: 2.1},
-	"homeless_yeller": {Location.Kind.SIDEWALK: 0.87, Location.Kind.OPEN: 0.57, Location.Kind.JUNCTION: 2.25},
+	"delivery_van": {Location.Kind.SIDEWALK: 1.48},
+	"dog_walker": {Location.Kind.SIDEWALK: 0.82, Location.Kind.JUNCTION: 2.27},
+	"homeless_yeller": {Location.Kind.SIDEWALK: 0.87, Location.Kind.OPEN: 0.57, Location.Kind.JUNCTION: 2.27},
 	"ice_cream_van": {Location.Kind.SIDEWALK: 0.83},
 	"leaf_blower": {Location.Kind.SIDEWALK: 0.59, Location.Kind.OPEN: 0.38, Location.Kind.JUNCTION: 1.21},
 	"market_stall": {Location.Kind.SIDEWALK: 0.44, Location.Kind.OPEN: 0.34},
-	"military_convoy": {Location.Kind.SECTION: 0.77, Location.Kind.JUNCTION: 5.72},
-	"pigeon_flock": {Location.Kind.SIDEWALK: 1.31, Location.Kind.OPEN: 1.97, Location.Kind.JUNCTION: 6.95},
-	"police_patrol": {Location.Kind.SECTION: 1.33, Location.Kind.JUNCTION: 4.66},
+	"military_convoy": {Location.Kind.SECTION: 0.77, Location.Kind.JUNCTION: 1.43},
+	"pigeon_flock": {Location.Kind.SIDEWALK: 0.7, Location.Kind.OPEN: 1.56, Location.Kind.JUNCTION: 6.95},
+	"police_patrol": {Location.Kind.SECTION: 1.33, Location.Kind.JUNCTION: 5.54},
 	"poster_crew_square": {Location.Kind.OPEN: 27.86},
-	"protest": {Location.Kind.OPEN: 8.88, Location.Kind.JUNCTION: 18.99},
+	"protest": {Location.Kind.OPEN: 8.88, Location.Kind.JUNCTION: 16.89},
 	"reversing_lorry": {Location.Kind.SIDEWALK: 1.46},
-	"roadblock": {Location.Kind.SECTION: 3.12},
+	"roadblock": {Location.Kind.SECTION: 2.69},
 }
 
 ## A row's weight on a location of `kind` (`Location.Kind`): `GROUND_WEIGHTS`', one where it lists
@@ -2693,6 +2672,11 @@ class RuledLocationGround extends LocationGround:
 	var _walk_counted := -1
 	var _walk_placed: Array[Planned] = []
 	var _walk_around: Array[Planned] = []
+	## What this ground has stood during the walk that the walk may not hold yet: a batch of draws
+	## stands each before the next is judged, though the walk takes them after the batch.
+	var _stood_on_the_walk: Array[Planned] = []
+	## Counts every change to what the rules read during the walk (`judged_at()`).
+	var _version := 0
 
 	func _init(day: int, base: int, map: CityMap, events: DayEvents, corridor: Corridor,
 			fit: LocationFit, rules: StreetInvalidation) -> void:
@@ -2758,12 +2742,14 @@ class RuledLocationGround extends LocationGround:
 		_catch_up_with_the_walk()
 		return _rules.room(candidate, role, tile, _walk_placed, _walk_around)
 
-	## How many plans the walk has, as what the rules read is worked out from: a candidate asked at
-	## one count and kept to another is asked again (`RuledOffer`). -1 while the dawn plans.
+	## Which version of what the rules read the walk is at, changed whenever a plan joins it or this
+	## ground stands one: a candidate asked at one version and kept to another is asked again
+	## (`RuledOffer`). -1 while the dawn plans.
 	func judged_at() -> int:
 		if _walk:
 			_catch_up_with_the_walk()
-		return _walk_counted
+			return _version
+		return -1
 
 	## Overrides LocationGround.scale.
 	func scale(def: EventDef, location: Location) -> float:
@@ -2785,6 +2771,13 @@ class RuledLocationGround extends LocationGround:
 	func stand(plan: Planned) -> void:
 		if _walk == null:
 			(_events.get_ref() as DayEvents).add(plan)
+			return
+		# During the walk it stands here at once, so the next location judged sees it, even when
+		# the walk takes it only after the batch it was drawn in.
+		_catch_up_with_the_walk()
+		_stood_on_the_walk.append(plan)
+		_read(plan)
+		_version += 1
 
 	## Overrides LocationGround.judge_against.
 	func judge_against(walk: WalkEvents) -> void:
@@ -2802,14 +2795,28 @@ class RuledLocationGround extends LocationGround:
 		if plans.size() == _walk_counted:
 			return
 		_walk_counted = plans.size()
+		_version += 1
 		_walk_placed = []
 		_walk_around = []
+		var held := {}
 		for plan in plans:
-			if not plan.is_placed() or plan.is_spent():
-				continue
-			_walk_around.append(plan)
-			if not plan.is_a_seal() and not plan.is_in_the_wall():
-				_walk_placed.append(plan)
+			held[plan] = true
+			_read(plan)
+		var pending: Array[Planned] = []
+		for plan in _stood_on_the_walk:
+			if not held.has(plan):
+				pending.append(plan)
+				_read(plan)
+		_stood_on_the_walk = pending
+
+	## Adds `plan` to what the rules read, if it stands: placed and unspent; the seals and the wall's
+	## bodies beside what is placed.
+	func _read(plan: Planned) -> void:
+		if not plan.is_placed() or plan.is_spent():
+			return
+		_walk_around.append(plan)
+		if not plan.is_a_seal() and not plan.is_in_the_wall():
+			_walk_placed.append(plan)
 
 	## `tiles` with those within `_MOUSE_PILE_ADJACENCY` of a sack pile first, each half in the order
 	## it was handed.

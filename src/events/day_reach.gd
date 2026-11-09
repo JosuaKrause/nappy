@@ -16,24 +16,19 @@ extends RefCounted
 ## only through one is no place to send her. A region door's bodies shut nothing: she walks through
 ## a door.
 ##
-## **Taken when the walk starts and kept**, brought up to date only with what a location the walk
-## draws stands (`shut_what_was_drawn()`), which the dawn would have stood before: a body a task puts
-## up later (day 11's added mast, day 13's roadblock) must not shut the ground its own task stands on,
-## and a body that leaves only gives ground back. **Never saved**: a load starts the walk again from the run's saved
+## **Taken when the walk starts and kept**, never brought up to date: a body put up later (day 11's
+## added mast, day 13's roadblock) must not shut the ground its own task stands on, and a body that
+## leaves only gives ground back. **Never saved**: a load starts the walk again from the run's saved
 ## inputs.
 
 var _grid: ReachabilityGrid
-var _map: CityMap
 var _shut := {}
 var _reached := {}
-## Whether a drawn body has shut more since `_reached` was flooded.
-var _stale := false
 
 ## **The reach of `plans` on `map`**, read as `map` stands now: its closures and its soft seals.
 static func of(map: CityMap, plans: Array[EventScheduler.Planned]) -> DayReach:
 	var reach := DayReach.new()
 	reach._grid = ReachabilityGrid.build(map)
-	reach._map = map
 	reach._shut = shut_by(map, plans)
 	reach._reached = reach._grid.flood([map.home_tile()], reach._shut)
 	return reach
@@ -51,21 +46,8 @@ static func shut_by(map: CityMap, plans: Array[EventScheduler.Planned]) -> Dicti
 	shut.merge(map.tiles_shut_to(Mover.SOFT_SEALS))
 	return shut
 
-## **Shuts what `plan` stands on**, a row a location the walk drew (`WalkDraw`), if it blocks the way:
-## the dawn stood every location's row before the walk, and a place it shuts is no place to send her.
-## The flood from home is worked out again when it is next asked, not on the tick the row is drawn.
-func shut_what_was_drawn(plan: EventScheduler.Planned) -> void:
-	if not plan.obstructs():
-		return
-	var blockers: Array[EventScheduler.Planned] = [plan]
-	_shut.merge(EventScheduler.blocked_by(_map, blockers))
-	_stale = true
-
 ## Whether `tile` is reached from home over the ground left open.
 func reaches(tile: Vector2i) -> bool:
-	if _stale:
-		_reached = _grid.flood([_map.home_tile()], _shut)
-		_stale = false
 	return _grid.reaches(tile, _shut, _reached)
 
 ## Whether `tile` is shut.

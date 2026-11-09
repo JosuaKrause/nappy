@@ -39,6 +39,16 @@ static func lay_out(map: CityMap, corridor: Corridor) -> DayLocations:
 	day._grounds.append_array(_junction_boxes(map, corridor))
 	return day
 
+## **Every location in the order the dawn's sweep fills them** (`LocationDraw.draw_all()`): street
+## by street in the lattice's order, each street's own order (`StreetLocations.drawing_order()`,
+## shuffled on `rng`), then the ground beyond the streets.
+func drawing_order(rng: RandomNumberGenerator) -> Array[Location]:
+	var order: Array[Location] = []
+	for key: Vector3i in _streets:
+		order.append_array((_streets[key] as StreetLocations).drawing_order(rng))
+	order.append_array(_grounds)
+	return order
+
 ## **Records the draw's `plan` at `location`**, or nothing there for the empty event. An event drawn
 ## into a section (it spans the street or drives its carriageway) takes the section's sidewalk
 ## locations with it, as a roadblock assigned there does.

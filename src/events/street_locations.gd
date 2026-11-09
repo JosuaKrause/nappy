@@ -62,9 +62,9 @@ func sections() -> Array[Location]:
 func sidewalks() -> Array[Location]:
 	return _sidewalks
 
-## **The street's locations in the order a walk's row is offered them** (the escape's walk): its
-## three sections first, so an event that takes its section (one that spans the street or drives its
-## carriageway) is offered before the sidewalks it takes, then the six sidewalk locations, in an order `rng` shuffles, so no
+## **The street's locations in the order the dawn draw fills them**: its three sections first, so
+## an event that takes its section (one that spans the street or drives its carriageway) is drawn
+## before the sidewalks it takes, then the six sidewalk locations, in an order `rng` shuffles, so no
 ## side or end of a street always draws first.
 func drawing_order(rng: RandomNumberGenerator) -> Array[Location]:
 	var order: Array[Location] = _sections.duplicate()

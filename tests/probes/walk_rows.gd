@@ -197,14 +197,10 @@ static func _view_of(her: Vector2) -> Rect2:
 	return Rect2(her - Tuning.VIEW_HALF_EXTENT - lead, (Tuning.VIEW_HALF_EXTENT + lead) * 2.0)
 
 ## `ticks median p99 worst total` of `ticks`, in microseconds; zeros for none.
-## Stands what the walk drew as `EventManager` does: a row drawn unplaced, handed to her walk, joins
-## it and goes to the director (asked by name, so the probe still runs on a tree without it), the
-## rest join it placed.
-static func _stand(drawn: Array, walk: WalkEvents, director: EventDirector) -> void:
+## Stands what the walk drew as `EventManager` does: each joins the walk.
+static func _stand(drawn: Array, walk: WalkEvents, _director: EventDirector) -> void:
 	for plan: EventScheduler.Planned in drawn:
 		walk.add(plan)
-		if not plan.is_placed():
-			director.call("hand_to_her_walk", plan)
 
 static func _costs(ticks: Array[int]) -> String:
 	if ticks.is_empty():
