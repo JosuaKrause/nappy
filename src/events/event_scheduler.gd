@@ -777,7 +777,8 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	stood.append_array(events.standing())
 	reach.prepare(stood)
 	events.use_walk_draw(WalkDraw.new(locations, _draw_the_locations(day, base, map, events, ground,
-			leave_alone, corridor, doors, spec, locations, heat, beside_the_routes, reach)))
+			leave_alone, corridor, doors, spec, locations, heat, beside_the_routes, reach),
+			map.doorstep_world_position()))
 
 ## **The roadblock phase at dawn** (inbox #1185: the day's routes first, then roadblocks next to
 ## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
@@ -2442,8 +2443,8 @@ static func _caps_of(rows: Dictionary, day: int, spec: DaySpec,
 ## walks by `tests/probes/walk_rows.gd`, with `GROUND_WEIGHTS`, at heat 0; 0 on a day she met none,
 ## which leaves the row's own cap.
 const WALK_CAPS := {
-	"abduction": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1.08, 1.44, 1.09, 1.25, 0.69, 1.82, 0.96],
-	"alley_mouse": [2.08, 3.23, 3.07, 2.00, 2.12, 2.51, 2.68, 2.45, 2.32, 2.65, 2.39, 1.58, 2.06, 2.59],
+	"abduction": [0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 0.00, 1.08, 1.44, 1.09, 1.25, 0.69, 1.82, 0.74],
+	"alley_mouse": [2.08, 3.23, 3.07, 2.00, 2.12, 2.51, 2.68, 2.45, 2.32, 2.65, 2.39, 1.91, 2.06, 2.59],
 	"charging_dog": [0.00, 0.00, 0.00, 1.03, 1.03, 1.14, 1.17, 1.06, 1.47, 1.06, 0.61, 0.38, 1.27, 0.61],
 	"chatting_mother": [0.89, 1.06, 1.19, 1.22, 1.06, 1.14, 0.86, 1.17, 0.97, 1.11, 0.75, 0.78, 1.06, 0.83],
 	"pigeon_flock": [2.62, 2.69, 3.27, 2.46, 3.02, 3.34, 2.84, 2.81, 3.22, 2.65, 2.44, 2.36, 3.02, 2.66],
@@ -2597,16 +2598,16 @@ const VIEW_SHARE_SCALES := [
 ## eighteen seeds), the way the view scales are; a row or a kind not listed weighs one. Measured, not
 ## derived, and fitted again with the view scales whenever the draw's rules change.
 const GROUND_WEIGHTS := {
-	"abduction": {Location.Kind.SIDEWALK: 8.96, Location.Kind.JUNCTION: 54.59},
+	"abduction": {Location.Kind.SIDEWALK: 13.11, Location.Kind.JUNCTION: 43.28},
 	"alley_mouse": {Location.Kind.ALLEY: 19.58},
 	"alley_robbery": {Location.Kind.ALLEY: 4.46},
 	"busker": {Location.Kind.OPEN: 150},
 	"cafe_tables": {Location.Kind.SIDEWALK: 0.43},
-	"charging_dog": {Location.Kind.SIDEWALK: 13.44, Location.Kind.OPEN: 3.12, Location.Kind.JUNCTION: 99.54},
-	"chatting_mother": {Location.Kind.SIDEWALK: 16, Location.Kind.JUNCTION: 14.35},
+	"charging_dog": {Location.Kind.SIDEWALK: 24.09, Location.Kind.OPEN: 10.92, Location.Kind.JUNCTION: 70.35},
+	"chatting_mother": {Location.Kind.SIDEWALK: 18.43, Location.Kind.JUNCTION: 8.9},
 	"construction": {Location.Kind.SIDEWALK: 0.49},
-	"delivery_van": {Location.Kind.SIDEWALK: 1.48},
-	"dog_walker": {Location.Kind.SIDEWALK: 0.82, Location.Kind.JUNCTION: 2.27},
+	"delivery_van": {Location.Kind.SIDEWALK: 1.4},
+	"dog_walker": {Location.Kind.SIDEWALK: 0.88, Location.Kind.JUNCTION: 2.1},
 	"homeless_yeller": {Location.Kind.SIDEWALK: 0.87, Location.Kind.OPEN: 0.57, Location.Kind.JUNCTION: 2.25},
 	"ice_cream_van": {Location.Kind.SIDEWALK: 0.83},
 	"leaf_blower": {Location.Kind.SIDEWALK: 0.59, Location.Kind.OPEN: 0.38, Location.Kind.JUNCTION: 1.21},

@@ -1156,9 +1156,9 @@ field with its value before and after (`tests/shared_state.gd`).
   same seed's city again and again generate it once and nothing one suite does to its map reaches
   another. Its `source()` is what a booted suite hands `booted_main.gd`'s `boot()`.
 - `drawn_day.gd` — a helper the runner does not load: a planned day with every open location drawn
-  at once (`WalkDraw.draw_within()`), as a walk that went everywhere would leave it, for a suite that
-  asks the day's rules of the day's rows rather than of one walk. A suite about what she meets on a
-  walk, or about the run log, drives the walk instead.
+  at once (`WalkDraw.draw_everywhere()`), as a walk from her door that went everywhere would leave
+  it, for a suite that asks the day's rules of the day's rows rather than of one walk. A suite about
+  what she meets on a walk, or about the run log, drives the walk instead.
 - `test_resistance_*.gd` — the resistance subquest, one suite per subject over the shared rig in
   `resistance_rig.gd` (a helper the runner does not load), which can build a test's city in a run of
   its own and read what the director put in the street from the street (`steps`, `traps`,

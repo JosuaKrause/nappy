@@ -95,7 +95,7 @@ static func _distance(at: Vector2, rect: Rect2) -> float:
 func _test_a_sharp_turn_draws_everything_that_comes_near_at_once(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
-	var walk := WalkDraw.new(locations, draw)
+	var walk := WalkDraw.new(locations, draw, Vector2.ZERO)
 	var at := _junction()
 	var nobody_sees := func(_rect: Rect2) -> bool: return false
 	walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
@@ -114,7 +114,7 @@ func _test_a_sharp_turn_draws_everything_that_comes_near_at_once(t) -> void:
 func _test_her_view_is_never_drawn(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
-	var walk := WalkDraw.new(locations, draw)
+	var walk := WalkDraw.new(locations, draw, Vector2.ZERO)
 	var at := _junction()
 	var view := Rect2(at - Vector2(400, 300), Vector2(800, 600))
 	var sees := func(rect: Rect2) -> bool: return view.intersects(rect)
@@ -131,7 +131,7 @@ func _test_her_view_is_never_drawn(t) -> void:
 func _test_the_band_ahead_asks_once_a_tick(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
-	var walk := WalkDraw.new(locations, draw)
+	var walk := WalkDraw.new(locations, draw, Vector2.ZERO)
 	var at := _junction()
 	var nobody_sees := func(_rect: Rect2) -> bool: return false
 	var handed := walk.draw_ahead(at, Vector2.RIGHT, nobody_sees).size()
@@ -156,7 +156,7 @@ func _test_the_band_ahead_asks_once_a_tick(t) -> void:
 	# A band draw under way asks nothing while she can see its location.
 	var paused := _laid()
 	var paused_draw := _Draw.new(paused)
-	var paused_walk := WalkDraw.new(paused, paused_draw)
+	var paused_walk := WalkDraw.new(paused, paused_draw, Vector2.ZERO)
 	paused_walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
 	var under_way := _beyond_must_draw(at, paused_draw.begun)
 	if under_way.size() != 1:
@@ -172,7 +172,7 @@ func _test_the_band_ahead_asks_once_a_tick(t) -> void:
 func _test_a_band_draw_that_comes_near_is_finished_whole(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
-	var walk := WalkDraw.new(locations, draw)
+	var walk := WalkDraw.new(locations, draw, Vector2.ZERO)
 	var at := _junction()
 	var nobody_sees := func(_rect: Rect2) -> bool: return false
 	walk.draw_ahead(at, Vector2.RIGHT, nobody_sees)
@@ -199,7 +199,7 @@ static func _beyond_must_draw(at: Vector2, drawn: Array[Location]) -> Array[Loca
 func _test_draw_within_draws_all_within_the_radius(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
-	var walk := WalkDraw.new(locations, draw)
+	var walk := WalkDraw.new(locations, draw, Vector2.ZERO)
 	var at := _junction()
 	walk.draw_within(at, 1500.0)
 	var inside_left := 0
@@ -221,7 +221,7 @@ func _drawn_of(draw: _Draw) -> Array[Location]:
 func _test_a_sidewalk_is_drawn_after_its_section(t) -> void:
 	var locations := _laid()
 	var draw := _Draw.new(locations)
-	var walk := WalkDraw.new(locations, draw)
+	var walk := WalkDraw.new(locations, draw, Vector2.ZERO)
 	var at := _junction()
 	var nobody_sees := func(_rect: Rect2) -> bool: return false
 	for _tick in 40:
@@ -243,7 +243,7 @@ func _test_a_sidewalk_is_drawn_after_its_section(t) -> void:
 	# A sidewalk whose section she can see waits for her to look away.
 	var seen := _laid()
 	var seen_draw := _Draw.new(seen)
-	var seen_walk := WalkDraw.new(seen, seen_draw)
+	var seen_walk := WalkDraw.new(seen, seen_draw, Vector2.ZERO)
 	var sections := {}
 	for location in seen.open_locations():
 		if location.kind() == Location.Kind.SECTION:

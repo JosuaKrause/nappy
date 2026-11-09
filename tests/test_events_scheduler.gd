@@ -1,10 +1,10 @@
 extends "res://tests/events_shared_city.gd"
 ## The scheduler's own determinism and safety rules -- the same seed replans identically, placement
-## and per-day caps are respected, a one-shot fires once per run, an alley robbery and the alley
-## mouse stay on the alley's own ground, a calm area a day has not used is left alone -- plus the
-## day's own content guarantees: the successors of a resolved event resolve, the fire truck is
-## never itself scheduled, the fire engine is warned long enough from the worst position on its
-## street, and every along-street path a row can walk stays in bounds.
+## and per-day caps are respected (the walk's own among them), a one-shot fires once per run, an
+## alley robbery and the alley mouse stay on the alley's own ground, a calm area a day has not used
+## is left alone -- plus the day's own content guarantees: the successors of a resolved event
+## resolve, the fire truck is never itself scheduled, the fire engine is warned long enough from the
+## worst position on its street, and every along-street path a row can walk stays in bounds.
 ##
 ## Split from `tests/test_events.gd` under M125, "the test suite is slow again"; further split from
 ## a combined `test_events_scheduler.gd` (which also held "what a street costs", M19) once the
@@ -112,6 +112,12 @@ func _test_scheduler_respects_placement_and_caps(t) -> void:
 				continue
 			t.check(counts[id] <= def.max_per_day,
 					"day %d: '%s' respects max_per_day" % [day, id])
+			# The walk's own cap (`EventScheduler.WALK_CAPS`), a share rounded up at most.
+			var walked: Array = EventScheduler.WALK_CAPS.get(id, [])
+			if not walked.is_empty() and float(walked[day - 1]) > 0.0:
+				t.check(counts[id] <= ceili(float(walked[day - 1])),
+						"day %d: '%s' respects the walk's cap (%d, of %.2f)"
+						% [day, id, counts[id], float(walked[day - 1])])
 
 ## **A one-shot is planned on at most one day of a run.** Asserted here, over the plan; that it is
 ## one plan owed to her walk is asserted where the manager plans it: `tests/test_event_manager.gd`.

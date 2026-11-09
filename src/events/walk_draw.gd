@@ -31,6 +31,8 @@ const BUCKET := 448.0
 ## How far she walks before the locations near her are looked up again, in world pixels.
 const RESCAN := 32.0
 
+## Where her walk starts: the doorstep the day is planned from.
+var _start := Vector2.ZERO
 var _locations: DayLocations
 var _draw: LocationDraw
 ## Bucket -> the locations whose ground touches it.
@@ -47,10 +49,11 @@ var _asking: LocationDraw.Asking = null
 ## How many draws a tick had to make whole (`forced()`).
 var _forced := 0
 
-## The walk's draw over the day's `locations`, drawing through `draw`.
-func _init(locations: DayLocations, draw: LocationDraw) -> void:
+## The walk's draw over the day's `locations`, drawing through `draw`, for a walk from `start`.
+func _init(locations: DayLocations, draw: LocationDraw, start: Vector2) -> void:
 	_locations = locations
 	_draw = draw
+	_start = start
 	for location in locations.open_locations():
 		var rect := Rect2(Vector2(location.tiles().position) * Tuning.TILE_SIZE,
 				Vector2(location.tiles().size) * Tuning.TILE_SIZE)
@@ -133,6 +136,13 @@ func draw_within(at: Vector2, radius: float) -> Array[EventScheduler.Planned]:
 	for entry: Array in _undrawn_within(at, radius, true):
 		_draw_whole(entry[1], placed)
 	return placed
+
+## **Draws every location still undrawn, nearest her start first**, as a walk that went everywhere
+## from where she starts would leave them: what a dev spawn beside a row asks
+## (`EventManager.draw_everywhere()`), and a suite that asks the day's rules of every row the day can
+## stand (`tests/drawn_day.gd`). Nothing in play calls it.
+func draw_everywhere() -> Array[EventScheduler.Planned]:
+	return draw_within(_start, INF)
 
 ## Hands the draw the walk it now judges against (`LocationDraw.judge_against()`): from the walk's
 ## start, what stands is the walk's.
