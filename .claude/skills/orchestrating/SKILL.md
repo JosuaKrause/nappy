@@ -41,10 +41,10 @@ A stronger model than a row's takes a milestone whose geometry or contracts warr
 
 | Task kind | Model |
 |---|---|
-| A task that needs planning or complex reasoning | Fable is considered (inbox #1264) |
-| The design that code is built from, a seam's design included | Fable (inbox #1264) |
-| Code built from a Fable design | the orchestrator's choice (inbox #1264), by the build rows below |
-| A change to a rule file: a skill, `CLAUDE.md`, a hook's text | Fable, directly (inbox #1264) |
+| A task that needs planning or complex reasoning | Fable is considered (inbox #1264 in olive-ferret) |
+| The design that code is built from, a seam's design included | Fable (inbox #1264 in olive-ferret) |
+| Code built from a Fable design | the orchestrator's choice (inbox #1264 in olive-ferret), by the build rows below |
+| A change to a rule file: a skill, `CLAUDE.md`, a hook's text | Fable, directly (inbox #1264 in olive-ferret) |
 | Drawing: making or revising artwork, SVG, PNG or a review sheet | Opus (PLAYTEST-123 8) |
 | Waiting on a merge or a check, polling | no agent: a timer or a script in a background shell, which costs no tokens (inbox #1070 in gentle-walrus, inbox #1072 in gentle-walrus) |
 | Merging | the orchestrating session, with no agent spawned for it; an agent or a monitor may run a merge the session hands it (**committing**, "Merging") |
@@ -334,9 +334,9 @@ to the player's correction:
   (woolly-finch 15).
 - **That "the orchestrator's choice" for code built from a Fable design is made by the build
   rows** ("The model table"); the player's words leave the choice to the orchestrator
-  (inbox #1264).
+  (inbox #1264 in olive-ferret).
 - **That "a rule file" takes in a hook's text** ("The model table"); the player's words name rule, skill
-  and `CLAUDE.md` changes (inbox #1264).
+  and `CLAUDE.md` changes (inbox #1264 in olive-ferret).
 - **That a review of a change to what a rule says goes to Opus** and a skill's wording alone to
   Sonnet ("The model table").
 - **That a pull request that carries a drawing is reviewed by Opus** ("The model table"); the

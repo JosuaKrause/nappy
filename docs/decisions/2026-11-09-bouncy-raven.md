@@ -1,9 +1,9 @@
 # bouncy-raven — The process skills after the rules review: one owner per rule, the board read on a heads-up, detail in reference files · 2026-11-09 · not from an entry
 
 **The ask.** The player had a review made of every rule file ("have another fable agent review all
-skills/claude/rule files", inbox #1267), read its summary, and said "let's do all the suggested
+skills/claude/rule files", inbox #1267 in olive-ferret), read its summary, and said "let's do all the suggested
 changes for the hooks/skills/claudes etc", "four PRs is fine with me -- can we parallelize?" and
-"for the rule/skill/claude changes I want fable to do it directly" (inbox #1267). The work was split
+"for the rule/skill/claude changes I want fable to do it directly" (inbox #1267 in olive-ferret). The work was split
 by files into four pull requests. This record is the one for the twelve skills about how the work is
 done: pr-review, inbox, session-cleanup, board, merging-main, playtest-feedback, verify,
 writing-tests, designing-classes, python-tooling, cli-tools and review-answers.

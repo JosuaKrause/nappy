@@ -3,7 +3,7 @@
 **The ask.** "there really should be no separate code for escape", "the escape is just like a
 normal day with some special settings" (inbox #785 in minty-lemur); shown the design review's finding that a day
 is finished by one controller but started in three places, the player: "can we improve this?", and
-to the plan, "agree on all design review points. let's do it" (inbox #1268). The item is
+to the plan, "agree on all design review points. let's do it" (inbox #1268 in olive-ferret). The item is
 `docs/todo/2026-10-18-minty-quail/one-start-for-every-spec.md`; this record is its first pull
 request, the start.
 

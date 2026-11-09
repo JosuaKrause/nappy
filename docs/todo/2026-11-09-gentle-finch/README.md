@@ -8,7 +8,7 @@ draw calls, from what the player said about the buttons (PLAYTEST-29 3). A revie
 same, and the danger-cue skill calling one of them an exemption. Asked on the board whether the
 three stay drawn in code or become picture files like every other symbol, the player: "yes we
 would want to move to pictures only eventually. That will allow us to experiment with variations.
-So make todos for them but not part of the refactor" (inbox #1278).
+So make todos for them but not part of the refactor" (inbox #1278 in olive-ferret).
 
 **Read as:** each of the three becomes an image file under `art/`, drawn as every other symbol is,
 so a variation is a new picture and not a change to drawing code. It waits for the refactor
