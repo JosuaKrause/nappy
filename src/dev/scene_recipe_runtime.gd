@@ -953,7 +953,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 			var route := director._crossing_ahead_of(player_at, heading, def)
 			if not def.available_on(_run.header.day) or def.pursuit == null or route.is_empty() \
 					or not route[0].is_equal_approx(at) \
-					or not EventScheduler.clear_of_the_doors(at, route, doors, def.field_reach()):
+					or not DoorClearanceRule.clear_of_the_doors(at, route, doors, def.field_reach()):
 				errors.append("event %s fails its ordinary director siting" % entry.name)
 				continue
 			plan = EventScheduler.Planned.new(def, at, route)
@@ -1007,7 +1007,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 ## lists, measured at the reach of `EventCatalogue.mast()`, which is the authored row's own only while
 ## `loudspeaker` is the one mast row and has no heat response: a later one needs the door rule back
 ## here); it is not closed, not on a held street and not on the home block; and no body placed
-## before it is too near (`EventScheduler._room_around()`). It does not ask what
+## before it is too near (`StreetInvalidation.room_around()`). It does not ask what
 ## `EventManager.queue_a_mast()`'s `WalkSiting` asks beyond those: the calm she has not used. The
 ## loudspeaker is a scripted row no catalogue roll places, so the ordinary placement refuses it.
 func _mast_placement(def: EventDef, at: Vector2,

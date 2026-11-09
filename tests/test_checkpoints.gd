@@ -425,7 +425,7 @@ func _test_the_manager_actually_places_the_door_structure(t) -> void:
 
 ## **Nothing the day places reaches into a door's own clear ground** — *(2026-09-20, the player:
 ## "there should be a gap for events immediately surrounding the gates".)* Asked of the rule
-## itself, `EventScheduler.clear_of_the_doors()`, over a whole planned day rather than over one
+## itself, `DoorClearanceRule.clear_of_the_doors()`, over a whole planned day rather than over one
 ## contrived placement: the ways a row gets onto the map are several (the dawn draw, a scripted row,
 ## a set piece and its fallback) and a check on one of them would say nothing about the rest.
 ##
@@ -459,14 +459,14 @@ func _test_nothing_the_day_places_reaches_into_a_doors_gap(t) -> void:
 			for plan in guarded:
 				if not plan.is_placed():
 					continue
-				if not EventScheduler.clear_of_the_doors(plan.position, plan.path, doors,
+				if not DoorClearanceRule.clear_of_the_doors(plan.position, plan.path, doors,
 						plan.def.field_reach()):
 					inside += 1
 			var inside_before := 0
 			for plan in ungraded:
 				if not plan.is_placed():
 					continue
-				if not EventScheduler.clear_of_the_doors(plan.position, plan.path, doors,
+				if not DoorClearanceRule.clear_of_the_doors(plan.position, plan.path, doors,
 						plan.def.field_reach()):
 					inside_before += 1
 			t.check(inside == 0,
@@ -1334,7 +1334,7 @@ func _test_the_run_that_killed_her_five_times(t) -> void:
 	var patrol := EventCatalogue.by_id("police_patrol")
 	var patrol_at := released + Vector2(0.0, -66.0)
 	var doors := PackedVector2Array([hut_at])
-	t.check(not EventScheduler.clear_of_the_doors(patrol_at, PackedVector2Array(), doors,
+	t.check(not DoorClearanceRule.clear_of_the_doors(patrol_at, PackedVector2Array(), doors,
 			patrol.field_reach()),
 			("a police_patrol 66px off the release point is refused at placement: %.0fpx from the " +
 			"hut against a gap of %.0f plus its own %.0fpx of field")

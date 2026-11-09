@@ -72,9 +72,9 @@ extends RefCounted
 ## stands on tree ground or on the home street — the two things `RouteTree`/`ClosurePlanner`
 ## already guarantee a route through — so nothing here can cut the corridor. `tests/test_seals.gd`
 ## measures this over many seeds and days rather than asserting it at runtime, which is
-## `docs/TODO.md`'s own reading of what changes here: `EventScheduler._ensure_the_city_is_still_
-## walkable` stays the *accidental* guarantee for the catalogue's own placements; this placement
-## needs no repair pass because nothing it does can break the thing it is measured against.
+## the reading of what changes here: the catalogue's own placements are asked `RouteReachRule` as
+## they are placed; this placement needs no such rule because nothing it does can break the thing
+## it is measured against.
 ##
 ## **"Tree ground" includes the join, now.** `RouteTree._grow_the_trunk()` guarantees a coloured
 ## path from the home street outward to the rest of the tree even where every branch's own random

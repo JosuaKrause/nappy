@@ -842,7 +842,7 @@ func _test_a_retried_day_is_the_same_day(t) -> void:
 		#
 		# **And nothing else moves at all**, which is stronger than what M39 could promise. It used
 		# to allow one instance of drift, because the ground a spent one-shot freed let a placement
-		# that had failed now fit; an offer costs no room since M50 step 2 — see `_room_around` —
+		# that had failed now fit; an offer costs no room since M50 step 2 — see `StreetInvalidation.room_around()` —
 		# so the dawn's placement is identical between attempts rather than merely close. What is *not* closed
 		# is still not closed: a **scar** genuinely occupies ground and still moves what stood
 		# there, which is the run's own history showing through and is the answer that should.

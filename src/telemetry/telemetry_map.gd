@@ -245,7 +245,7 @@ static func _mark_the_corridor(image: Image, tree: RouteTree) -> void:
 ## **An unplaced plan is skipped and that is the honest answer, not a gap.** An `AHEAD_OF_PLAYER`
 ## row has no position — the day budgets one more cat and the director decides where out of where
 ## she turns out to walk — so drawing it anywhere would be the picture claiming a placement that
-## nothing made. `_role_for` gives it `NONE` for the same reason.
+## nothing made. `EventScheduler.role_for()` gives it `NONE` for the same reason.
 ##
 ## A **spent** offer is drawn like any other: a set piece is planned at every site of a covering set
 ## and exactly one happens, so the sites that did not are what makes the covering set visible at

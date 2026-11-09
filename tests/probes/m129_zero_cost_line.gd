@@ -11,9 +11,8 @@ extends RefCounted
 ## also, the routing should only cross the street at intersections. in block crossings are
 ## possible in game but shouldn't be counted on by the routing algorithm."* Nothing in the game
 ## checks that today: every guarantee that exists is about *reaching* (`ClosurePlanner`'s
-## two-distinct-calm-areas rule, `DayRepairs.ensure_the_city_is_still_walkable`, which drops
-## obstructing bodies until a park is reachable again), and a route that reaches through three
-## friction fields in a row is as legal as an empty one.
+## two-distinct-calm-areas rule, and the route rules every body the day places is judged by), and a
+## route that reaches through three friction fields in a row is as legal as an empty one.
 ##
 ## So this measures the thing before a rule is written against it: for each planned day, for every
 ## route in that day's `RouteTree` from the doorstep to its calm area, is there a line of tiles that
@@ -95,7 +94,7 @@ extends RefCounted
 ##   body is not a door and still counts.
 ## - **`pigeon_flock` is scenery, not a block.** A row whose role is `EventDef.Role.SCENERY` is left out of
 ##   every reading the same way a door is (PLAYTEST-71, *"flocks are basically free already --
-##   don't count it as block"*), matching `EventScheduler._role_for`, where `Role.SCENERY` answers
+##   don't count it as block"*), matching `EventScheduler.role_for`, where `Role.SCENERY` answers
 ##   `NONE` before the wall/friction cost test ever runs.
 ##
 ## # What a broken route is reported as
@@ -402,7 +401,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 	var no_scars: Array[Dictionary] = []
 	var no_calm: Array[Vector2i] = []
 	# `EventManager.start_day`'s own `doors` and `standing`: where today's door structure stands
-	# (kept clear of by `_clear_of_the_doors`, a pre-existing rule this probe simply never
+	# (kept clear of by `DoorClearanceRule.clear_of_the_doors()`, a pre-existing rule this probe simply never
 	# exercised before) and what the seals and the region wall's own bodies already stand as
 	# (`standing`, newly threaded into the three placement rules — `EventScheduler._best_of`'s own
 	# doc). Missing both was itself a probe/rule disagreement — see `DECISIONS.md`, M129, "which
@@ -421,7 +420,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 	standing.append_array(region_plan.wall_bodies)
 	var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(map, day, "events"), map,
 			CalmAreas.of(map, _used if not _used.is_empty() else no_calm), no_one_shots,
-			no_scars, tree, 0, doors, [], standing).placements()
+			no_scars, tree, 0, doors, standing).placements()
 	# Which pass placed a row is not on the plan, so it is recorded as the lists are joined — the
 	# one place that still knows. See `Source`.
 	_sources.clear()
@@ -451,7 +450,7 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 ## A row is skipped rather than read where PLAYTEST-71 says it is never a block: a mast
 ## (`plan.mast_id != ""`) is planted once, off the corridor-aware placement this guarantee is
 ## stated over — see `EventDef.has_a_line_to_avoid()`'s own doc; `Role.SCENERY` rows
-## (`pigeon_flock`) are exempt the way `EventScheduler._role_for` exempts them from the
+## (`pigeon_flock`) are exempt the way `EventScheduler.role_for` exempts them from the
 ## wall/friction cost test; a region door (`checkpoint_hut`, `checkpoint_gate`) costs by design;
 ## a pursuer (`alley_robbery`, `charging_dog`, `door_guard`) follows her rather than sitting on a
 ## tile; and a mobile row that does not pace is passed by crossing, waiting and crossing back,

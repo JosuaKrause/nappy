@@ -468,9 +468,8 @@ static func neighbor_heading_home() -> EventDef:
 ## **Free because a one-block park otherwise has nowhere left to settle her.** `outer_radius`
 ## (150) reaches past half of a 256px park block, so a playground with any real cost denied
 ## nearly the whole lot rather than merely contesting its middle. `EventKind.AMBIENT` is exempt
-## from `DayRepairs.ensure_one_usable_park` and `_spoil_the_parks_she_used`, which both skip
-## every `AMBIENT` plan before asking what it costs, so a park is still contested on the days
-## the scheduler spoils it, just never by its own swings.
+## from spoiling a park (`EventScheduler.Planned.spoils()` passes over every playground), so a park
+## is still contested on the days the scheduler spoils it, just never by its own swings.
 ##
 ## **The row stays rather than being deleted**: `tests/test_events.gd` looks it up by id and reads
 ## its `kind`, `EventInstance._field_distance()` names it as the row with no shape to fall back to,
@@ -673,7 +672,7 @@ static func _alley_mouse() -> EventDef:
 ## **Two ceilings bound him.** `EventScheduler.WALL_WORTH_OF_COST` (35) is the first: an intensity
 ## high enough to restore the whole pass costs past it and turns him into a `WALL`, which would
 ## pull him **off** the corridor his placement rule keeps him on. The second is
-## `EventScheduler._a_pacing_beat_walls_a_sidewalk`: shrinking his reach far enough to buy back the
+## `StreetInvalidation._a_pacing_beat_walls_a_sidewalk`: shrinking his reach far enough to buy back the
 ## pass inside the cost ceiling also shrinks the ground his placement is weighed against, until
 ## every beat the scheduler draws for him lands somewhere its own junction or side route already
 ## reaches, and the geometry that makes a truncated beat a wall stops happening.
@@ -690,7 +689,7 @@ static func _alley_mouse() -> EventDef:
 ## through him, and that placement is a wall. `path_length_tiles` (8) against a block of
 ## `Tuning.BLOCK_SIZE` (8) is why the first is the ordinary case: a beat runs into a junction unless
 ## a closure, a calm zone's absorbed corridor or the map's own margin cuts it short.
-## `EventScheduler._a_pacing_beat_walls_a_sidewalk` decides it, per placement.
+## `StreetInvalidation._a_pacing_beat_walls_a_sidewalk` decides it, per placement.
 static func _homeless_yeller() -> EventDef:
 	var def := EventDef.new()
 	def.id = "homeless_yeller"
@@ -787,7 +786,7 @@ static func _dog_walker() -> EventDef:
 ## **The first event available on day one that cannot be walked through**, and a **wall** for
 ## exactly that reason rather than for what it costs: the body is 24px and the field bills anybody
 ## within 56px of it, so no lane of the 64px sidewalk it stands on is left free and
-## `EventScheduler._role_for` answers `WALL` on 6.1 points of walk-through cost. `construction`
+## `EventScheduler.role_for` answers `WALL` on 6.1 points of walk-through cost. `construction`
 ## does the same job from day 2 and is the loud version; this one is pleasant, which is worse:
 ## nothing about it looks like a hazard and it still costs the street. Stationary, so it can never
 ## pin the player the way a moving obstruction could.
@@ -897,8 +896,8 @@ static func _busker() -> EventDef:
 	def.solid(GroundShape.point(PERSON_BODY))
 	def.weight = 2.0
 	# Kept the lowest of the act I caps on purpose: a busker is placed on PARK or SQUARE, the
-	# only calm ground there is, and `DayRepairs.ensure_one_usable_park` pays for every one
-	# that lands on the block it ends up protecting.
+	# only calm ground there is, and the calm ground the day keeps clear refuses every one that
+	# would reach it.
 	def.max_per_day = 10
 	return def
 
@@ -1099,7 +1098,7 @@ static func _burnt_shell() -> EventDef:
 ## are: what matters is walking past, and it should not be free. `tests/probes/m174_pass.gd` walks a
 ## real instance past her at `Tuning.WALK_SPEED`, moving as it charges; what the pass nets at each
 ## offset is this row's line in `docs/COSTS.md`. **`TOWARD_PLAYER` never earns a `WALL` role**
-## (`EventScheduler._role_for` answers `NONE` for anything the director sites), so nothing here
+## (`EventScheduler.role_for` answers `NONE` for anything the director sites), so nothing here
 ## trades against `EventScheduler.WALL_WORTH_OF_COST`. **But running still has to lose to it**,
 ## `tests/test_events.gd`'s catalogue-wide rule: at 42/s the shorter, faster crossing running buys
 ## costs less than walking it, which nothing but `car_accident` may do. 39/s is the loudest this
@@ -1356,7 +1355,7 @@ static func _pigeon_flock() -> EventDef:
 	def.weight = 1.5
 	def.max_per_day = 5
 	# **A flock is scenery, not a block** (PLAYTEST-71). Left unset, a 42-over-168px field crosses
-	# `EventScheduler.WALL_WORTH_OF_COST` and `_role_for` would call this a `WALL`, pulling it off
+	# `EventScheduler.WALL_WORTH_OF_COST` and `EventScheduler.role_for()` would call this a `WALL`, pulling it off
 	# every route; `Role.SCENERY` answers `NONE` first, so it lands on a route corridor exactly as
 	# it lands anywhere else.
 	def.role = EventDef.Role.SCENERY
@@ -1445,7 +1444,7 @@ static func _cyclist() -> EventDef:
 ## a thing standing in one.
 ##
 ## **A wall by passability, unlike the van**: its field charges over 189px against the van's 22, so
-## there is no lane of a sidewalk left free beside it and `EventScheduler._role_for` keeps it off
+## there is no lane of a sidewalk left free beside it and `EventScheduler.role_for` keeps it off
 ## the route's own side of the street.
 static func _ice_cream_van() -> EventDef:
 	var def := EventDef.new()
@@ -2463,7 +2462,7 @@ static func _barricade() -> EventDef:
 ## it is stated about). 19.5 is as loud as it can be made while staying under the wall line below.
 ##
 ## **19.9 is where it stops, and the margin is thin on purpose.** At that rate
-## `walk_through_cost()` crosses `EventScheduler.WALL_WORTH_OF_COST` and `EventScheduler._role_for`
+## `walk_through_cost()` crosses `EventScheduler.WALL_WORTH_OF_COST` and `EventScheduler.role_for`
 ## reclassifies the row as a `WALL`, which would pull it off every route the day carries; a protest
 ## is where a resistance task sends her ("Stand where they're standing", `ResistanceSteps`), so a
 ## protest off the corridor is a task she cannot reach. `docs/COSTS.md` carries where it actually

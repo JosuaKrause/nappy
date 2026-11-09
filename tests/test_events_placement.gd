@@ -1,5 +1,5 @@
 extends RefCounted
-## The two halves of `EventScheduler._role_for`: a lethal event is a wall and a wall never stands
+## The two halves of `EventScheduler.role_for`: a lethal event is a wall and a wall never stands
 ## on ground a route runs along, and friction is aimed at the route as a weight rather than a rule.
 ## Plus the placement rules a pinned or pacing row keeps on top of that: a pinned row is only
 ## offered ground it can be pinned on, a square's own poster crew never leaves the square, a pacing
@@ -30,7 +30,7 @@ func run(t) -> void:
 	_test_a_lethal_rows_line_reach_is_its_whole_field(t)
 
 
-## The two halves of `EventScheduler._role_for`, checked in one pass over the days because each of
+## The two halves of `EventScheduler.role_for`, checked in one pass over the days because each of
 ## them costs a whole `build_day` and the suite is already the slowest thing in this project.
 ##
 ## **A lethal event is a wall, and a wall never stands on ground a route runs along.**
@@ -51,9 +51,9 @@ func run(t) -> void:
 ## asserted: a corridor carrying nearly all of it would mean every street off the route is empty,
 ## which reads as a set rather than as a city. **The floor is a relation, not a number**: the share
 ## depends on the city (three rules take corridor ground away from a row: one covering a whole
-## crossing is refused it, `_leaves_the_route_junctions_open`; one that would close the route's
-## sidewalk, `_leaves_the_routes_sidewalk_open`; a pacing row with no way off its sidewalk,
-## `_a_pacing_beat_walls_a_sidewalk`), so the costly rows placed on the corridor are compared with
+## crossing is refused it, `RouteJunctionsRule`; one that would close the route's sidewalk,
+## `RouteSidewalkRule`; a pacing row with no way off its sidewalk,
+## `StreetInvalidation._a_pacing_beat_walls_a_sidewalk`), so the costly rows placed on the corridor are compared with
 ## what a draw without the weight would put there: for each, the corridor's share of the ground
 ## `EventScheduler.open_ground_for()` offers that row, summed. With the weight at 1 the placed count
 ## falls under that sum; with it on, it stands well over it on every city tried.
@@ -67,7 +67,7 @@ func run(t) -> void:
 ## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
 ## than a hole: the charging dog is sited by `EventDirector` in front of wherever she turns out to
 ## be walking, so it is by construction on her route and the scheduler never chose a tile for it.
-## That is why `_role_for` calls it `NONE` — see the note there.
+## That is why `EventScheduler.role_for()` calls it `NONE` — see the note there.
 ##
 ## Five days rather than fourteen. What is being checked is a property of the construction, and the
 ## days are sampled across the acts so that the catalogue's lethal rows (none before day 5) and its
@@ -223,7 +223,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 ## friction is what the guidance walks her into — and a sidewalk is two lanes of tile, so a row
 ## reaching across both of them from either has taken the last line along it.
 ##
-## **This asserts the consequence rather than the clause.** `EventScheduler._role_for` answers
+## **This asserts the consequence rather than the clause.** `EventScheduler.role_for` answers
 ## `WALL` for a row that leaves no line; what has to be true afterwards is that every row still
 ## aimed at the route leaves one, which is the sentence the player wrote and the thing that would
 ## go red if the clause were weakened or if a new catalogue row were given a wider field than its
@@ -607,10 +607,10 @@ func _beat_tiles(map: CityMap, plan: EventScheduler.Planned) -> Array[Vector2i]:
 ## every other shape put together.
 ##
 ## **The assertion is about the finished day rather than about the refusal**, which is what keeps it
-## from being the rule read back to itself. `EventScheduler._leaves_the_route_junctions_open` refuses
+## from being the rule read back to itself. `RouteJunctionsRule._leaves_the_route_junctions_open` refuses
 ## one candidate at a time, against what is already down; what has to be true afterwards is that
-## nothing *else* the morning does — a scar prepended, an ambient placed, a park spoiled, the
-## walkability strip — has left a crossing closed. Measured over the five sampled days of seed 4242:
+## nothing *else* the morning does — a scar prepended, an ambient placed, a park spoiled — has
+## left a crossing closed. Measured over the five sampled days of seed 4242:
 ## 50 of 360 route junctions were closed before the rule existed and none are with it.
 ##
 ## **The geometry is stated here rather than borrowed**, for the same reason: the box's own flood
@@ -836,7 +836,7 @@ func _a_route_is_walked_along(corridor: Corridor, band: Rect2i) -> bool:
 ##
 ## So the claim is about a **street carrying a pacing row**, asked of every row reaching that street
 ## at once: a walk from one of its junctions to the other has to survive all of them together. That
-## is what `EventScheduler._leaves_a_pacing_beats_opening` refuses a placement for, and asserting it
+## is what `PacingOpeningRule._leaves_a_pacing_beats_opening` refuses a placement for, and asserting it
 ## over the finished day is what catches anything a later pass adds without asking.
 ##
 ## **It cannot pass vacuously**: a sample where no pacing row ever stood on a route street would
@@ -949,7 +949,7 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 ## **A flock is scenery — overturned on 2026-09-13**, PLAYTEST-71: *"flocks are basically free
 ## already — don't count it as block, just count is scenery."* Under the plain cost rule a
 ## 42-over-168px field crosses `EventScheduler.WALL_WORTH_OF_COST`, so without `EventDef.Role.SCENERY`
-## `_role_for` would call `pigeon_flock` a `WALL` and `_copies_of` would pull it off every route
+## `EventScheduler.role_for()` would call `pigeon_flock` a `WALL` and `_copies_of` would pull it off every route
 ## corridor the way any other expensive row is. `Role.SCENERY` is checked first and answers `NONE`.
 ##
 ## Two claims. The role is a fact about the def, checked directly on every placement the day

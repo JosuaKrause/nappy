@@ -120,7 +120,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	var friction := 0
 	for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(map, day, "events"), map,
 			CalmAreas.of(map), consumed, [],
-			tree, 0, doors, [] as Array[Vector2i], standing).placements():
+			tree, 0, doors, standing).placements():
 		if not plan.is_placed():
 			continue
 		if plan.role == GameEnums.BlockerRole.WALL:
