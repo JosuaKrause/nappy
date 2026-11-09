@@ -16,7 +16,7 @@ reference-photos, sound-effects, session-captures and rejected-graphics.
   the crowd-traffic skill's contract for lethal traffic about eighteen.
 - **Sentences that were false against the code:** the telemetry skill taught a frame-timing API
   that does not exist (statics on `FrameRecord`, where the code hands each timed system a
-  `FrameTiming` sink); six skills named suites that do not exist (`tests/test_events.gd`,
+  `FrameTiming` sink); four skills (events, balance, cues, city) named suites that do not exist (`tests/test_events.gd`,
   `tests/test_routes.gd`) as the thing enforcing a rule; functions and constants were named on the
   wrong class.
 - **The same rule in several skills**, with the copies free to drift: `art/`'s `.gdignore` and the
@@ -48,13 +48,32 @@ reference-photos, sound-effects, session-captures and rejected-graphics.
 
 Found while matching each rule to its suite; each skill now says the rule is unenforced:
 
-1. **Nothing else is placed inside a lethal event's field** (events). The placement rules do it
-   (`StreetInvalidation.room_around()`), `tests/test_events_costs.gd` holds only who is exempt, and
-   no suite walks a planned day to check it.
+1. **Nothing else is placed inside a lethal event's field** (events), across a planned day. The
+   placement rules do it (`StreetInvalidation.room_around()`); one case is held, a queued mast never
+   generated inside a lethal field (`tests/test_resistance_reach_contacts.gd`), and
+   `tests/test_events_costs.gd` holds who is exempt. No suite walks a planned day to check the rule
+   for every row.
 2. **Anything new that closes a street goes through `ClosurePlanner`** (city). The closure rigs see
    only what the planner plans.
 3. **No illustrated PNG of the pelican cyclist under `art/illustrated/`** (illustrated-png).
    `tests/test_pelican.gd` has no such check.
+
+## Two decisions of the player's that no playtest holds
+
+Both were taken on 2026-09-23 and are recorded only in the description of pull request #285, the
+change that first wrote them into the two skills, under "The player's two decisions (2026-09-23)",
+in these words:
+
+- **Where new evidence goes** (session-captures): "new evidence goes in
+  `docs/evidence/<mNNN|playtest-NN>-<slug>-<date>/` as the whole run folder under its original
+  name; `archive/session-captures/<date>/` holds earlier captures only."
+- **Where rejected artwork goes** (rejected-graphics): "a candidate rejected during its family's
+  review stays beside that family's evidence with its verdict; artwork removed from `art/` after it
+  shipped or was wired in moves to `docs/evidence/archive/rejected-graphics/`."
+
+The two skills state them as the player's rules and cite this record for them. A folder's leading
+name follows today's naming (an entry's two words where the 2026-09-23 wording has a milestone
+number; PLAYTEST-144 8).
 
 ## Where the review was wrong
 
