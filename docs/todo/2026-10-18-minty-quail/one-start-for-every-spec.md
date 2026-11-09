@@ -3,11 +3,9 @@
 **The ask.** "there really should be no separate code for escape", "the escape is just like a
 normal day with some special settings", "all should be implemented through the regular game
 engine's means" (inbox #785 in minty-lemur). This entry's README has one controller start and finish a spec.
-The design review found that the day director (`DayDirector`, the class that starts and ends a day)
-finishes every spec, but that a spec is started in three places: `DayDirector.start_day()` for the
-fourteen days, `DayDirector.start_authored_day()` for scene recipes, and the main scene's
-`_start_section()` for the escape, which repeats the day's steps by hand, builds a second event
-manager field by field, and has a run-log path and a start signal of its own. Shown that as "A day
+The design review found that the day director (`DayDirector`, the class that starts and ends a
+day) finished every spec while a spec was started in three places, the escape's start hand-built
+in the main scene with a run-log path and a start signal of its own. Shown that as "A day
 is finished by one controller but started in three places. The escape's start is still hand-built
 in the main scene, with its own run-log path. That is where the fuller escape and the explosions
 would land next", the player: "can we improve this?", and to the plan below, as the orchestrator
@@ -17,12 +15,6 @@ design review points. let's do it" (inbox #1268).
 
 **Read as:** no code outside the spec's own settings asks whether the escape is being walked in
 order to start it, and an escape start is testable without booting the whole game.
-
-**Built: the start** (record minty-quail-misty-sparrow). `DayDirector.start(spec, restarted)` is the
-only start, for a day, an authored scene's day and both escape sections; the world comes from a
-source the director is handed (`DayWorldSource`, answering a `DayWorld`); settings on the spec
-replace the branches on "is this a section"; the main scene's own start of a section, its own
-planning of the escape city and the director's separate start of an authored day are gone.
 
 **What is left**, the design review's shape, which the player approved ("I saw the review and
 approved it", inbox #1268); the detail was worked out by the same review after the approval:

@@ -53,6 +53,14 @@ the event manager and the crowd is the third.
 - **A restart of the city section dresses the city again**, as a day's retry does; before, it only
   planned again. The street trees are refreshed after the escape city's plan too, which changes
   nothing today because no escape seal takes a tree pit.
+- **An authored scene of the escape** (a scene recipe, a developer's tool) changes in two ways:
+  the signal that an escape section started is sent after the scene installs, so the run log's
+  start line records where the install put her and not the service exit; and since no authored
+  walk announces that the day is planned, the developer's route rig does not start for an authored
+  escape.
+- **An authored scene's day goes through the handover of the calm areas already used this act and
+  the fenced park**, which its separate start never did. It changes nothing today: a scene recipe
+  boots a fresh run that has neither.
 - **The developer's start flags** (`--spawn`, `--meters`, `--start-escape <part>`) apply on the
   boot's first walk, and `--spawn` and `--meters` only from her doorstep.
 - **The run's facts record which escape section is walked on every walk**, so a day records none.
