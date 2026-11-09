@@ -28,10 +28,11 @@ static func touches_from(t, director: ResistanceDirector, points: Array[Vector2]
 		player.global_position = point
 		var twin := ContactPoint.new()
 		if director.rider() != null:
-			twin.ride(live.step, director.rider(), live.global_position - director.rider().global_position)
+			twin.ride(live.task_step(), director.rider(), live.global_position - director.rider().global_position)
 		else:
-			twin.setup(live.step, live.global_position)
+			twin.setup(live.task_step(), live.global_position)
 		director._shape_the_touch(twin, live.task_step())
+		twin.complete_within(live.touch_reach())
 		twin.use_player(player)
 		t.add_child(twin)
 		if director.rider() == null:

@@ -160,10 +160,12 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
 		while not stack.is_empty():
 			var node: Node = stack.pop_back()
 			stack.append_array(node.get_children())
-			if node is Sitting or not "atlas" in node:
+			# A node that was handed its library through `use_atlas()` keeps it in `_atlas`.
+			var held := &"atlas" if "atlas" in node else &"_atlas"
+			if node is Sitting or not held in node:
 				continue
 			holders += 1
-			if node.get("atlas") != atlas and strays.size() < 5:
+			if node.get(held) != atlas and strays.size() < 5:
 				strays.append(str(main.get_path_to(node)))
 		t.check(holders > 10, "%s: the boot built nodes that draw from a library (%d)"
 				% [where, holders])
