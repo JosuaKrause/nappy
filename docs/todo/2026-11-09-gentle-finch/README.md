@@ -3,8 +3,8 @@ after: 2026-10-18-minty-quail
 
 # gentle-finch — The caret, the home arrow and the edge badge's pointer become picture files · filed 2026-11-09
 
-**The ask.** The player's rule is that a picture is an image file, never assembled from draw calls
-(PLAYTEST-29 3). A review of the rule files found three symbols that are drawn in code all the
+**The ask.** The danger-cue skill holds that a picture is an image file, never assembled from
+draw calls, from what the player said about the buttons (PLAYTEST-29 3). A review of the rule files found three symbols that are drawn in code all the
 same, and the danger-cue skill calling one of them an exemption. Asked on the board whether the
 three stay drawn in code or become picture files like every other symbol, the player: "yes we
 would want to move to pictures only eventually. That will allow us to experiment with variations.

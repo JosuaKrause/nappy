@@ -13,6 +13,11 @@ rule files that the rework could not fix. They are filed here so they are not lo
 and named, filed by the orchestrator; the band `later` and the wait for the refactor (many of them
 are comments and docs in files the refactor is rewriting) are the filer's proposal.
 
+**It speaks of the skills as the rework leaves them.** Where an item says a skill no longer cites
+a suite, or says a rule is unenforced, or names the record sandy-alpaca, that is the state once the
+rework's four pull requests have merged (the game's domain skills, the process skills, the
+orchestration skills, and the hooks with `CLAUDE.md`).
+
 **Items:** `lethal-field-across-a-day.md`, `closures-through-the-planner.md`,
 `no-pelican-png.md`, `suites-that-do-not-exist.md`, `small-false-sentences.md`,
 `citation-after-a-comma.md`, `tool-help-gaps.md`, `old-briefs.md`.
