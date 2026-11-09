@@ -221,11 +221,12 @@ src/
 	view_bag.gd           one view's bag: every row possible in the view as often as its weight, and
 	                      the empty event, drawn without putting back, only what a location accepts;
 	                      whole, or a step at a time
-	location_draw.gd      one open location drawn from its view's bag, whole or a step at a time,
-	                      holding nothing until its draw ends
-	walk_draw.gd          the day's open locations drawn as she walks: the nearest ahead out of her
-	                      view a step a tick, any near the stream radius whole, a sidewalk after its
-	                      section, none in her view
+	location_draw.gd      the dawn's sweep of every location for the rows that block the way, and
+	                      one open location drawn from its view's bag, whole or a step at a time,
+	                      holding nothing until its draw ends, its caps a rate on the walk
+	walk_draw.gd          the day's open locations drawn as she walks, among the rows that block
+	                      nothing: the nearest ahead out of her view a step a tick, any near the
+	                      stream radius whole, a sidewalk after its section, none in her view
 	location_ground.gd    what a location's draw asks of the day: a row's event at a location if valid,
 	                      whole or a candidate at a time, the location's own weight, standing one; the
 	                      day's own is the scheduler's ruled ground

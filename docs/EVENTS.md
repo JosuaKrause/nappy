@@ -1258,13 +1258,21 @@ locations. It never overwrites a roadblock already placed (inbox #1185).
 said the roadblocks' "locations are already assigned during gameplay so no drawing will happen for
 them in the first place" (inbox #1185), and that the placeholders "get filled in with non-blocking
 events from the bag" "when the player walks" (gray-dolphin #1173).
+- *Read as* (the orchestrator's, open to correction): what the walk draws blocks nothing, and
+  nothing the walk does asks whether a route is still open (gray-dolphin #1173 30, 33). Every row
+  that blocks the way is drawn at dawn: the dawn sweeps every location in the day's order, each from
+  its view's bag, and stands only the rows that block the way, each asked every dawn rule, the reach
+  among them, and the rows her walk sites, handed to it with no position; every other location is
+  left for the walk, which draws among the rows that block nothing and asks no reach rule
+  (`LocationDraw.draw_all()`, `EventScheduler._draw_the_locations()`).
 - *Read as* (the orchestrator's, open to correction): a location is drawn ahead of her, out of her
   view, before it comes within the stream radius. `WalkDraw` draws the nearest location out of her
   view within the band past the stream radius, those ahead of her heading first, a step a tick (a
   marble from the view's bag, or one tile of a row's offer), so no frame pays for a whole location;
   any location that comes within a second's walk of the stream radius undrawn is drawn whole on that
-  tick, however many a sharp turn brings near at once. A location in her view is never drawn, and
-  one part-way drawn holds nothing until its draw ends, so nothing appears where she is looking.
+  tick, however many a sharp turn brings near at once, each stood before the next is judged. A
+  location in her view is never drawn, and one part-way drawn holds nothing until its draw ends, so
+  nothing appears where she is looking.
 
 **Day 13's task** looks for a roadblock close by along her paths. Close by is 576px, then 896px,
 then 1,024px of her paths from where she reads the chalk mark (inbox #1185).
@@ -1299,13 +1307,14 @@ The city's fixed parts have their own phases, above.
 Each item quotes the code on this branch.
 
 1. **Whether a row is valid at a location is asked of the whole day standing, not of the street's
-   own draws.** Every day lays its locations out, and the walk draws each from its view's bag as she
-   comes near it (`WalkDraw`, `LocationDraw`, `EventScheduler._draw_the_locations()`). Today's placement rules are the invalidation, one class
-   each (`StreetRule`: the calm she has not used, a door's clear ground, a route's junctions, its
+   own draws.** Every day lays its locations out, the dawn draws the rows that block the way into
+   them, and the walk draws the rest from its view's bag as she comes near it (`WalkDraw`,
+   `LocationDraw`, `EventScheduler._draw_the_locations()`). Today's placement rules are the
+   invalidation, one class each (`StreetRule`: the calm she has not used, a door's clear ground, a route's junctions, its
    walked sidewalk and a pacing beat's opening, with the escape's one notice at a time and its walk
    kept open), composed per walk (`StreetInvalidation`) with a location's own ground
-   (`LocationFit`), but each is asked against everything the walk has placed and stands within its
-   reach, on any street (fork 3 of the placement proposal, the orchestrator's reading: today's rules reach
+   (`LocationFit`), but each is asked against everything placed and standing within its reach, on
+   any street (fork 3 of the placement proposal, the orchestrator's reading: today's rules reach
    across a junction), and the spacing still ranks a cramped tile rather than refusing it: a
    location takes the first tile with room all round, else the roomiest a rule leaves valid
    (`RuledLocationGround.offer()`).
@@ -1363,11 +1372,13 @@ EventScheduler.build_day(day_index, run_seed):
        first_day/last_day, each sited later on her way
     6. spoil the parks she used  (docs/CITY.md)
     7. owe her the day's moments (the rows the director sites in front of her)
-    8. leave every open location undrawn, for the walk to draw from its view's bag as she
-       comes near it (WalkDraw, LocationDraw)
-   The scars, the spoilers, the roadblock phase, the scripted rows and the walk's draws are
+    8. sweep every open location from its view's bag, standing only the rows that block the
+       way and the rows her walk sites (LocationDraw.draw_all()); leave the rest undrawn, for
+       the walk to draw among the rows that block nothing as she comes near (WalkDraw)
+   The scars, the spoilers, the roadblock phase, the scripted rows and the sweep's bodies are
    asked, as each body is placed, whether it cuts the day's routes off from home
-   (RouteReachRule), and the draws' bodies all the day's rules (StreetInvalidation); the region wall, the seals, the
+   (RouteReachRule), and the draws all the day's rules (StreetInvalidation), the walk's all but
+   the reach; the region wall, the seals, the
    masts and the ambient rows stand by their own planners' guarantees. Nothing is checked or
    repaired after.
 ```
@@ -1963,12 +1974,12 @@ more events, and the density holds.
 
 **A row's cap still binds on an early day**: a row at its `max_per_day` is not drawn again
 (`LocationDraw`; the orchestrator's reading of fork 5(b), open to correction), so the day can only
-place what its caps add up to whatever its shares. The walk draws only what she comes near, so a cap
-counts what her walk drew: a row the dawn spent its cap on over the whole city would be met at its
-cap on her walk. **The capped rows take the walk's own caps** (`EventScheduler.WALK_CAPS`, the
-orchestrator's reading, open to the player's overturn), fitted with `tests/probes/walk_rows.gd` so
-she meets a capped row as often as when the dawn drew every location, and rounded and thinned as
-every cap is. Repeats are fine — the same event several times
+place what its caps add up to whatever its shares. The walk draws only what she comes near, so a
+flat cap would be met whole near her door. **A walk's cap is a rate** (`LocationDraw`'s `spread`,
+the orchestrator's reading, open to the player's overturn): a row's cap is spread over the locations
+the walk may draw, so after it has drawn a share of them a row may have stood that share of its cap,
+rounded up or down at random once per row, and the cap is spent over the whole walk as the dawn
+spent it over the whole city. Repeats are fine — the same event several times
 over is what a street is — so density needs no new catalogue rows: the common act I rows are capped
 in the teens and twenties.
 

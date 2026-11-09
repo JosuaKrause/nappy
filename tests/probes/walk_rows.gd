@@ -15,8 +15,10 @@ extends RefCounted
 ## the moment it would stream in, under its row, its view and its kind of ground: a row the director
 ## sites on her way among them, once sited (a poster crew), but not a place her route's bag hands it. It asks only what every tree has, and the walk's draw by name where the
 ## tree has one, so the same file measures main and a branch alike. Prints `WD day seeds streamed`,
-## `WV day row view count` and `WK day row kind count`, summed over the seeds, and per seed and day
-## `WT` lines of the tick costs, in microseconds: the walk's draw (`draw`) and the director's siting
+## `WV day row view count`, `WK day row kind count` and `WM day met at-the-door late-out`, where the
+## capped rows are met (`CAPPED`: within the stream radius of her door, and in the second half of
+## the walk out), summed over the seeds, and per seed and day `WT` lines of the tick costs, in
+## microseconds: the walk's draw (`draw`) and the director's siting
 ## (`siting`), each `ticks median p99 worst total`. Each day is planned as the game plans it: its closures, holds, region wall and
 ## seals first, the seals and the wall's bodies handed in as standing.
 
@@ -26,6 +28,9 @@ const STEP := 31
 const KINDS := ["sidewalk", "carriageway", "alley", "open", "junction", "other"]
 ## A tick of her walk, in seconds.
 const TICK := 1.0 / 30.0
+## The rows whose caps bound what she met when the dawn drew the whole city, for the `WM` lines.
+const CAPPED := ["abduction", "alley_mouse", "charging_dog", "chatting_mother", "pigeon_flock",
+		"roadblock"]
 
 func run(t) -> void:
 	for day in range(1, 15):
@@ -33,6 +38,11 @@ func run(t) -> void:
 		var by_kind := {}
 		var placed := 0
 		var moments := 0
+		# Where on her walk the capped rows are met: within the stream radius of her door at the
+		# start, and in the second half of the walk out.
+		var capped_met := 0
+		var capped_at_the_door := 0
+		var capped_late_out := 0
 		for i in SEEDS:
 			var map := CityGenerator.generate(BASE + i * STEP)
 			# The run's mast sites, worked out once on the city as built, as the game does.
@@ -111,6 +121,11 @@ func run(t) -> void:
 			back.reverse()
 			path.append_array(back)
 			var at: Vector2 = path[0]
+			var door: Vector2 = path[0]
+			var out_length := 0.0
+			for k in range(1, route.size()):
+				out_length += (route[k] as Vector2).distance_to(route[k - 1])
+			var walked := 0.0
 			var counted := {}
 			var draw_ticks: Array[int] = []
 			var siting_ticks: Array[int] = []
@@ -126,6 +141,7 @@ func run(t) -> void:
 					var heading := toward.normalized()
 					var velocity := heading * Tuning.WALK_SPEED
 					at += velocity * TICK
+					walked += Tuning.WALK_SPEED * TICK
 					tick += 1
 					var her := at
 					var sees := func(rect: Rect2) -> bool: return _view_of(her).intersects(rect)
@@ -144,6 +160,12 @@ func run(t) -> void:
 								continue
 							if plan.placed_at().distance_to(at) <= Tuning.EVENT_STREAM_RADIUS:
 								counted[plan] = true
+								if CAPPED.has(plan.row_id()):
+									capped_met += 1
+									if plan.placed_at().distance_to(door) <= Tuning.EVENT_STREAM_RADIUS:
+										capped_at_the_door += 1
+									if walked > out_length * 0.5 and walked <= out_length:
+										capped_late_out += 1
 					toward = path[k] - at
 			for plan: EventScheduler.Planned in counted:
 				var mode := plan.def.spawn_mode_on(day)
@@ -170,6 +192,7 @@ func run(t) -> void:
 				print("WF %d %d forced %d drawn %d ticks %d" % [day, i, walk_draw.forced(),
 						drawn_on_the_walk, tick])
 		print("WD %d %d %d %d" % [day, SEEDS, placed, moments])
+		print("WM %d %d %d %d" % [day, capped_met, capped_at_the_door, capped_late_out])
 		for key: String in by_view:
 			print("WV %d %s %d" % [day, key, by_view[key]])
 		for key: String in by_kind:

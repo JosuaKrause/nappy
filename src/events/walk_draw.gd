@@ -3,9 +3,10 @@ extends RefCounted
 ## **The day's open locations drawn as she walks, each from its view's bag** (inbox #1185, the
 ## placeholders "get filled in with non-blocking events from the bag" "when the player walks",
 ## gray-dolphin #1173; `docs/EVENTS.md`, "The three views and the placement order"). The dawn fixes
-## the fixed parts, the scripted rows and day 13's roadblocks and leaves every other location
-## undrawn; this draws one the first time it comes near her, through the same draw the dawn used
-## (`LocationDraw`: the view's bag, the day's caps, the location's own ground and the day's rules).
+## the fixed parts, the scripted rows, day 13's roadblocks and every row that blocks the way, and
+## leaves every other location undrawn; this draws one the first time it comes near her, only among
+## the rows that block nothing (`LocationDraw`: the view's bag, the caps spread over the walk, the
+## location's own ground and the day's rules but the reach, which nothing it draws can need).
 ##
 ## **When a location is drawn** (the orchestrator's reading, open to the player's overturn): the
 ## nearest out of her view whose ground has come within `BAND_FAR` of her, those ahead of her heading

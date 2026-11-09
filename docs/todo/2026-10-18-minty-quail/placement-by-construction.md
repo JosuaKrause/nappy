@@ -29,9 +29,12 @@ one-shots owed to her walk that are built:
   moved, and she can turn away from it. A row she must meet whatever route she takes is a rigged
   marble on the walk's draw, so it exists wherever she goes: the guarantee the covering sites gave
   at dawn, things potentially in one of two places at the very least
-  (M50-the-city-points-somewhere), now on the walk. A location the walk draws is asked the reach rule
-  (`RouteReachRule`, no body cutting a route tile off from home), so a rigged marble landing on one is
-  asked it too. **Read as** (the orchestrator's reading, open to the player's overturn): the dusk
+  (M50-the-city-points-somewhere), now on the walk. **Read as** (the orchestrator's reading, open to the
+  player's overturn): what the walk draws blocks nothing, every row that blocks the way being drawn
+  at dawn, and nothing on the walk asks the reach rule (`RouteReachRule`) or floods the day's reach
+  again (gray-dolphin #1173 30, 33), so a beat that blocks, day 3's fire, day 13's barricade and task
+  roadblock, day 11's mast, takes the place of a body already placed off the route, out of her view,
+  rather than asking whether it closes a route. **Read as** (the orchestrator's reading, open to the player's overturn): the dusk
   fire lands on the nearest location beyond `DUSK_CLEAR_OF_HER` off her path, if that is measured to
   match where today's `WalkSiting.off_her_path()` puts it.
 
