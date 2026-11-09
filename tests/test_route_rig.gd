@@ -104,7 +104,7 @@ func _rng(day: int, stream: String) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d:%s" % [SEED, day, stream])
 	return rng
 
-## One day's city in a run of its own, built the way `main._start_day()` builds it — closures before
+## One day's city in a run of its own, built the way `main._start()` builds it — closures before
 ## events — with streaming off so a plan is placed with nobody near it, a resistance director over it
 ## and a real `Stroller` scene parked on the doorstep: the one real leg this suite walks needs
 ## `move_and_slide()` to actually move her, which only the real scene does (see the verify skill).
@@ -211,7 +211,8 @@ func _cuttable(tile: Vector2i) -> bool:
 func _started_day(t, city: City, stroller: Stroller, run: RunState) -> DayController:
 	var day := DayController.new()
 	t.add_child(day)
-	day.setup(city.map, stroller, run)
+	day.setup(run)
+	day.use_the_walk(city.map, stroller)
 	day.set_process(false)
 	day.start(600.0)
 	return day
@@ -764,9 +765,9 @@ func _test_resolve_target_spawn_reaches_devrig(t) -> void:
 			"'spawn:park' resolves exactly as DevRig.for_spawn_target('park', ...) does")
 
 ## `tunnel` and `bridge` are the escape city's two ways out, read off the day's spec
-## (`DaySpec.exits`, which `main` hands a `CITY_EDGE` section once its city stands); a day has none,
-## so on a day they are unavailable, and with no `ResistanceDirector` — the escape has none —
-## `mark` and `task` are unavailable rather than a crash.
+## (`DaySpec.exits`, which the day's start hands a `CITY_EDGE` section from the world it stood); a
+## day has none, so on a day they are unavailable, and with no `ResistanceDirector` — the escape
+## has none — `mark` and `task` are unavailable rather than a crash.
 func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t) -> void:
 	var clock := DayController.new()
 	t.add_child(clock)

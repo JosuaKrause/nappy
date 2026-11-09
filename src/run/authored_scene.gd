@@ -17,8 +17,9 @@ func lessons_learned() -> bool:
 	return false
 
 ## Installs the scene's own setup — its events, actors, crowd and her start — into the world the
-## run flow started for it, under `spec`, the walk its clock and HUD run on. Returns the problems
-## that kept the setup from standing, empty when it stands.
+## day director stood and dressed for it, under `spec`, the walk its clock and HUD run on, over the
+## clock already started (`DayDirector.start()`, in place of the plan, the resistance's day and her
+## being put down). Returns the problems that kept the setup from standing, empty when it stands.
 func install(_city: City, _player: Stroller, _baby: Baby, _spec: DaySpec,
 		_resistance: ResistanceDirector = null) -> Array[String]:
 	return []

@@ -383,7 +383,7 @@ func _test_the_manager_actually_places_the_door_structure(t) -> void:
 	# specifically about `EventManager.start_day()` reading a real `DayStreets.region_plan()` rather
 	# than growing its own fallback one (`_city.streets().route_tree()` reads null before `City.start_day()`
 	# has ever run, which silently empties `RegionPlanner.plan_day()` — a gap real play never
-	# hits, since `main._start_day()` always calls `_city.start_day()` first).
+	# hits, since `main._start()` always calls `_city.start_day()` first).
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
 	var closures_rng := RandomNumberGenerator.new()

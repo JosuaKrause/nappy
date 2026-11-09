@@ -18,7 +18,7 @@ extends RefCounted
 ## the frame she reads the mark, found and swapped apart, and the swap's walk over the whole city,
 ## the fallback a swap takes where the close-by walk reaches no section, timed on its own. Each mark gets the day started again from the same
 ## inputs, the
-## way `DayDirector.start_day()` starts it, with the world streamed in round her
+## way `DayDirector.start()` starts it, with the world streamed in round her
 ## (`EventManager.stream_around()`), so what is in the world, and so in her view, is what it would
 ## be as she stands there.
 

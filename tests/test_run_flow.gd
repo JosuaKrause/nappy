@@ -43,7 +43,7 @@ func _test_raising_a_brief_announces_it(t) -> void:
 	var heard: Array[DaySpec] = []
 	flow.brief_opened.connect(func(spec: DaySpec) -> void: heard.append(spec))
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, 60.0)
-	flow.begin(spec)
+	flow.spec = spec
 	flow.open_brief()
 	t.check(heard.size() == 1 and heard[0] == spec and flow.mode == RunFlow.Mode.BRIEF,
 			"raising a brief announces it with the spec it leads into")
@@ -140,20 +140,18 @@ func _test_an_authored_scene_plays_again_from_every_screen(t) -> void:
 	scene.free()
 
 ## The rest of what an authored scene changes is asked of the flow it configures: the city's map
-## is the scene's own, the escape's city plans no finale of its own, and the control lessons are
-## skipped when the scene has learned them. The game's own run generates its map, plans its finale
-## and teaches.
+## is the scene's own, and the control lessons are skipped when the scene has learned them. The
+## game's own run generates its map and teaches.
 func _test_an_authored_scene_configures_the_rest_of_the_run(t) -> void:
 	var own := RunFlow.new()
-	t.check(not own.authored and own.authored_map() == null and own.plans_the_finale()
-			and not own.lessons_learned(), "the game's own run is configured by no scene")
+	t.check(not own.authored and own.authored_map() == null and not own.lessons_learned(),
+			"the game's own run is configured by no scene")
 	var scene := _LearnedScene.new()
 	scene.map = CityMap.new(Vector2i(2, 2))
 	var flow := RunFlow.new()
 	flow.author(scene)
 	t.check(flow.authored and flow.scene == scene, "authoring the flow configures it with the scene")
 	t.check(flow.authored_map() == scene.map, "the city is built on the scene's own map")
-	t.check(not flow.plans_the_finale(), "the escape's city plans no finale of its own")
 	t.check(flow.lessons_learned(), "and the lessons the scene has learned are not taught")
 	scene.free()
 
@@ -192,17 +190,44 @@ func _test_the_escape_screens_hold_esc_back_only_in_a_section(t) -> void:
 				"a section" if case[0] == section else "a day", M.keys()[case[1]],
 				"holds" if case[2] else "does not hold"])
 
-## The spec begun is the one the observers hear, before and after it is planned.
+## The spec begun is the one the observers hear: announced before the day director starts it and
+## planned once it has, with the same spec. An authored scene's walk is never announced planned, and
+## what its setup could not stand is handed back.
 func _test_the_observers_hear_the_spec_begun_and_planned(t) -> void:
-	var flow := RunFlow.new()
-	var heard: Array = []
-	flow.day_started.connect(func(spec: DaySpec) -> void: heard.append(["started", spec]))
-	flow.day_planned.connect(func(spec: DaySpec) -> void: heard.append(["planned", spec]))
-	var spec := DaySpec.for_day(5, 210.0)
-	flow.begin(spec)
-	t.check(flow.spec == spec and heard == [["started", spec]], "a day begun is announced with its spec")
-	flow.planned()
-	t.check(heard == [["started", spec], ["planned", spec]], "and planned with the same spec")
+	var run := RunState.new()
+	var scene := AuthoredScene.new()
+	for authored: bool in [false, true]:
+		var flow := RunFlow.new(scene if authored else null)
+		var heard: Array = []
+		flow.day_started.connect(func(spec: DaySpec) -> void: heard.append(["started", spec]))
+		flow.day_planned.connect(func(spec: DaySpec) -> void: heard.append(["planned", spec]))
+		var director := _HeardDirector.new(run, heard)
+		var spec := DaySpec.for_section(DaySpec.Section.CITY, 60.0) if authored \
+				else DaySpec.for_day(5, 210.0)
+		var errors := flow.start(director, spec, authored)
+		if authored:
+			t.check(flow.spec == spec and heard == [["started", spec], ["director", spec, true]]
+					and errors == director.problems, "an authored walk is started, never planned, "
+					+ "and hands back what did not stand (%s)" % [heard])
+		else:
+			t.check(flow.spec == spec and heard == [["started", spec], ["director", spec, false],
+					["planned", spec]], "a day is announced, started and planned with its spec (%s)"
+					% [heard])
+	scene.free()
+
+## A day director that notes being asked to start a walk and starts nothing.
+class _HeardDirector extends DayDirector:
+	var _heard: Array
+	var problems: Array[String] = ["a problem"]
+
+	func _init(run: RunState, heard: Array) -> void:
+		super(run.calendar, run.facts, run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
+		_heard = heard
+
+	## Overrides DayDirector.start.
+	func start(the_spec: DaySpec, restarted := false) -> Array[String]:
+		_heard.append(["director", the_spec, restarted])
+		return problems
 
 # ------------------------------------------------------------- the real boot ---
 

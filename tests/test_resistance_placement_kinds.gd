@@ -327,8 +327,9 @@ func _start_the_day(t, day: int, resistance: ResistanceDirector,
 	t.add_child(clock)
 	var days := DayDirector.new(run.calendar, run.facts, run.attempt_spend, config)
 	days.use_the_world(_city, _city.events, resistance, player, baby, clock)
+	days.use_worlds(StandingCity.new(_city, player, baby))
 	_clock = clock
-	days.start_day(DaySpec.for_day(day, config.day_length_for(day)))
+	days.start(DaySpec.for_day(day, config.day_length_for(day)))
 	return [player, clock]
 
 func _end_the_day(nodes: Array[Node]) -> void:
@@ -347,7 +348,7 @@ class OrderRecordingResistance extends ResistanceDirector:
 		planned_when_started = watched.events.planned_count()
 		super.start_day(day, rng, day_length)
 
-## **The order `DayDirector.start_day()` builds a day in**, on the light real world this suite builds,
+## **The order `DayDirector.start()` builds a day in**, on the light real world this suite builds,
 ## through what each step can observe: `day_started` is announced after the dawn photograph and before
 ## anything is placed, so a listener finds the photograph taken and no mark offered; the events are
 ## planned before the resistance places its mark; and `day_planned` comes last, with the clock
@@ -390,7 +391,7 @@ func _test_a_day_is_built_in_its_order(t) -> void:
 	director.free()
 	_end_the_day(the_day)
 
-## Runs the real day order (`DayDirector.start_day()`: city, events, resistance) rather than
+## Runs the real day order (`DayDirector.start()`: city, events, resistance) rather than
 ## skipping the middle step. `EventManager.start_day()` is what holds every door segment for the
 ## day (`CityMap.held`, filled from `region_plan.doors` among other things) — with it
 ## never run, a bare `_pick_reachable()` call would find the door tile reachable whether or not

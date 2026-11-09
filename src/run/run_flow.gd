@@ -8,8 +8,8 @@ extends RefCounted
 ## **A scene recipe is a configuration of it** (`author()`, `scene`): an authored scene is one day,
 ## so every continue plays that scene again, a lost escape section is retried by the scene itself, a
 ## won last day hands over to nothing, its day is installed by the scene rather than planned from the
-## run, its city is built on the scene's own map, the escape's city plans no finale of its own, and the
-## HUD says none of the control lessons the scene has learned.
+## run (the day director is handed the scene, `DayDirector.use_the_scene()`), its city is built on the
+## scene's own map, and the HUD says none of the control lessons the scene has learned.
 ##
 ## It also announces the day being walked to the observers that draw it — the developer readout, the
 ## HUD's clock and the route rig — through `day_started` and `day_planned`, which carry the day's
@@ -18,7 +18,8 @@ extends RefCounted
 ## A day or a section is about to be built: `spec` is what it is. Before anything is placed.
 signal day_started(spec: DaySpec)
 ## The day or section has been built and placed, and its shape announced on `EventBus.day_planned`.
-## An authored scene's day is never planned, so it never sends this.
+## An authored scene's day, a section of the escape included, is installed rather than planned, so
+## it never sends this.
 signal day_planned(spec: DaySpec)
 ## A brief has been raised (`open_brief()`) over `spec`, the day or section it leads into. The screen
 ## itself is shown right after, by `main`; the route rig answers the first brief of an escape section a
@@ -124,10 +125,6 @@ func escape_from_a_run() -> bool:
 func escape_follows() -> bool:
 	return not authored
 
-## Whether the escape's city plans its own finale. An authored scene installs its own.
-func plans_the_finale() -> bool:
-	return not authored
-
 ## The map the city is built on when it is an authored scene's own, or null for the one the run's
 ## seed generates.
 func authored_map() -> CityMap:
@@ -149,25 +146,18 @@ func escape_screen_waits() -> bool:
 
 # ------------------------------------------------------------------ the day ---
 
-## A day or a section begins: `the_spec` is what is walked from here, and the observers hear it.
-func begin(the_spec: DaySpec) -> void:
+## A day or a section begins, the first time or again after a loss (`restarted`), and `director`
+## starts it (`DayDirector.start()`, the one start every walk goes through): announced with its spec,
+## started, and announced planned once placed. An authored scene's walk is installed by the scene
+## rather than planned, and is never announced planned. Returns the problems that kept an authored
+## scene's setup from standing, empty when the walk stands.
+func start(director: DayDirector, the_spec: DaySpec, restarted := false) -> Array[String]:
 	spec = the_spec
 	day_started.emit(the_spec)
-
-## The day or section just begun has been built and placed.
-func planned() -> void:
-	day_planned.emit(spec)
-
-## A day begins and `director` starts it: announced, built, and announced planned once placed. An
-## authored scene's day is the director's `start_authored_day()`, begun and never planned. Returns
-## the problems that kept an authored scene's setup from standing, empty when the day stands.
-func start_day(director: DayDirector, the_spec: DaySpec) -> Array[String]:
-	begin(the_spec)
-	if authored:
-		return director.start_authored_day(the_spec, scene)
-	director.start_day(the_spec)
-	planned()
-	return []
+	var errors := director.start(the_spec, restarted)
+	if not authored:
+		day_planned.emit(spec)
+	return errors
 
 # ----------------------------------------------------------- the screens ---
 

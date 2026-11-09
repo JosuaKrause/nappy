@@ -5,7 +5,7 @@ extends RefCounted
 ## Run explicitly: `tools/test.sh probes/m159_tick_sweep_events_cost.gd`; one `TICK_SWEEP_JSON`
 ## line per run is printed, and the evidence's `analyse.py` reads them.
 ##
-## Every run starts the seed's city on the day the way `main._start_day()` does — the day's
+## Every run starts the seed's city on the day the way `main._start()` does — the day's
 ## closures and region plan (`City.start_day()`), the day's events planned and streamed around the
 ## doorstep (`EventManager.start_day()`), the crowd from a fixed RNG seed with the day's gates — and
 ## walks a player rig with a real `Baby` down from the doorstep and then along one of two walks

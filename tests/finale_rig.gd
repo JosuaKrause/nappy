@@ -64,7 +64,7 @@ const CASES: Array[String] = [
 	"_test_the_service_exit_is_beside_the_home_block",
 	"_test_nothing_the_finale_places_stands_where_she_comes_out",
 	"_test_no_lethal_field_covers_the_ground_she_comes_out_on",
-	"_test_the_finale_city_has_nobody_in_it",
+	"_test_the_finale_city_grows_no_corridor",
 	"_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart",
 	"_test_a_burst_leaves_a_crater_as_wide_as_its_own_picture",
 	"_test_the_clock_reads_hundredths_only_in_the_finale",
@@ -1255,8 +1255,9 @@ func _test_nothing_the_escape_stands_reaches_over_a_building(t) -> void:
 					drawn])
 	t.check(barricades > 0, "there were barricade pieces among them (%d)" % barricades)
 
-## **A restart plans the same escape.** A loss in the city replans it on the same city
-## (`main._plan_the_finale_city()`), and the restart's plan is the first one, placement for placement.
+## **A restart plans the same escape.** A loss in the city replans it on the same city (the day
+## director's start, `DayDirector.start()`, on the section's own stream), and the restart's plan is
+## the first one, placement for placement.
 func _test_a_restart_plans_the_same_escape(t) -> void:
 	var map := MapCache.of(SEEDS[0])
 	_paint_day_one(map)
@@ -1523,25 +1524,18 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
 
 # ------------------------------------------------------------------ the city ---
 
-## *"No regular cars or regular people on the street."* Non-vacuous on purpose: the crowd is
-## populated first, so what is asserted is that dressing the city for the escape and starting its
-## crowd as the section's spec says (`DaySpec.crowd_density`, through `DayDirector.start_the_crowd()`)
-## leaves it empty rather than that it started that way.
-func _test_the_finale_city_has_nobody_in_it(t) -> void:
+## Dressing the city for the escape (`City.start_day()` under the city section's spec) grows no
+## corridor and closes no street: its walk is handed in once it is planned. Nobody on its streets is
+## the day director's start's (`DaySpec.crowd_density`), held where the real city section is booted
+## (`_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart`).
+func _test_the_finale_city_grows_no_corridor(t) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	var run := city.run
 	t.add_child(city)
 	city.build(MapCache.of(SEEDS[0]))
 	run.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
-	city.crowd.start_day(1, run.calendar.day_rng(1, "crowd"), city.map.doorstep_world_position())
-	t.check(city.crowd.agent_count() > 0, "a day's crowd is a crowd")
 	var spec := _section(DaySpec.Section.CITY)
 	city.start_day(run.attempt_spend.city_state, 1, run.calendar.day_rng(1, "closures"), spec)
-	var director := DayDirector.new(run.calendar, run.facts, run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
-	director.city = city
-	director.spec = spec
-	director.start_the_crowd(Vector2.INF)
-	t.check(city.crowd.agent_count() == 0, "and the escape's city has nobody in it")
 	t.check(city.streets().route_tree() == null and city.streets().closures().is_empty(),
 			"the escape grows no corridor and closes no street")
 	# `.free()`, not `queue_free()`, so the city is gone before the next check rather than at a
@@ -1554,16 +1548,20 @@ func _test_the_finale_city_has_nobody_in_it(t) -> void:
 ## asked through `City.scenery_ground_source()`, the one answer every ground chunk is painted from.
 ##
 ## **Driven through the booted `main`, because the wiring is what the player saw missing.** The
-## escape boots on its city section (`_boot_the_escape()`), whose first plan `main` makes as it builds
-## the city, and the tint is read off the booted city as it stands. A day's route tinted before the
-## escape starts must not show, so the city is handed a day's own tree as its tint (`City.tint_the_route()`,
-## which `main` does for a day) after the first plan, then wiped, so a restart is checked painting it
-## rather than inheriting it. The restart is the one a lost section's outcome screen continues into:
+## escape boots on its city section (`_boot_the_escape()`), whose first plan the day director's start
+## makes once `main` has built the city, and the tint is read off the booted city as it stands; the
+## booted city is also where nobody being on the escape's streets is held. A day's route tinted before
+## the escape starts must not show, so the city is handed a day's own tree as its tint
+## (`City.tint_the_route()`, which a day's own closures do) after the first plan, then wiped, so a
+## restart is checked painting it rather than inheriting it. The restart is the one a lost section's outcome screen continues into:
 ## the loss through the signal a real capture fires, the continue pressed through the viewport.
 func _test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart(t) -> void:
 	var escape := await _boot_the_escape(t, DaySpec.Section.CITY)
 	var main := escape.main
 	var city := Boot.city(main)
+	# *"No regular cars or regular people on the street"*: a crowd the start had started would be a
+	# day's, hundreds strong.
+	t.check(city.crowd.agent_count() == 0, "the escape's city, started as its spec says, has nobody in it")
 	var day := escape.run.header.day
 	var corridor := Corridor.of(RouteTree.for_day(city.map, day))
 	var plan := FinalePlanner.route(city.map)
