@@ -5,6 +5,15 @@ description: The player's inbox on GitHub Issues — where it is found at the st
 
 # The inbox
 
+- **At the start of a session, `uv run python tools/inbox.py list`** shows the player's open notes.
+- **The player's words that should outlive the session are captured verbatim, in one call, before anything else.**
+- **The words go through a file in a fresh directory, never a fixed name under `/tmp`.**
+- **Only a quote block is the player's words**; context, a reading and a note are the agent's and are marked so.
+- **A further word on a note the agent already knows is appended to it**; the inbox is never searched for an overlap.
+- **When it is not certain what the words refer to, the agent asks before recording any reading.**
+- **`tools/inbox.py` is the one way an agent writes an issue**, as `claude-orchestrator` (Codex: `codex-coder`).
+- **A batch is filed only when the player asks**, in one pull request that names each note `Filed from #N`, and never waits on a question.
+
 **GitHub Issues are the player's inbox, and nothing else** (bouncy-heron 5). A note is an open
 issue carrying the label `inbox`, and an issue without it is never filed (plaid-tapir 2), whoever
 opened it: `tools/inbox.py` skips it and refuses to close a batch naming it, and CI's
@@ -14,10 +23,13 @@ queue, the review items, the playtest files and the decision records stay in the
 an entry is reviewed when it enters the queue (`tools/decisions.sh leafy-finch` has the reasons, and
 the options weighed against them).
 
-`tools/inbox.py` is the tool, and **the one way an agent writes an issue** (bouncy-heron 14).
-`.claude/hooks/github-write-guard.sh` denies a direct `gh issue` write, wrapped in an identity or
-not, and an issue write through `gh api` the same way, all but a comment POST to
-`issues/N/comments`, which a pull request's own conversation comments share.
+`tools/inbox.py` is the tool, and **the one way an agent writes an issue** (bouncy-heron 14): the
+write guard (`.claude/hooks/github-write-guard.sh`) denies a direct `gh issue` write, wrapped in an
+identity or not. **Which GitHub identity writes what is committing's** ("Who a commit and a pull
+request are from"); what is this skill's own is that the tool runs each write as the role given by
+`--role` or `NAPPY_AGENT_ROLE`, `claude-orchestrator` in Claude Code and `codex-coder` in Codex,
+the two roles whose captures count, and refuses a write with no role or any other, since a note
+written under the player's account would read as the player's own words. Reads need no role.
 
 ## Where it is found
 
@@ -68,20 +80,35 @@ player's worry was words lost (bouncy-heron 2) when a session is cleared before 
 down, and **which messages to capture is the agent's judgment**: no hook reminds it, and the
 conversation is not recorded as a whole (bouncy-heron 13).
 
+**The words go into a file in a fresh directory, in three calls, never into a fixed name under
+`/tmp`** (**committing**, "Text handed to a write goes through a file", spells the sequence for
+every text an agent posts). `/tmp` outlives a session, so a fixed name can already hold another
+run's text, and a write that did not land would post that text as the player's verbatim words. One
+call makes the directory:
+
 ```sh
-cat > /tmp/note.md <<'NOTE'
+mktemp -d
+```
+
+A second is only the heredoc, with the directory it printed pasted in place of `<dir>`:
+
+```sh
+cat > <dir>/note.md <<'NOTE'
 the player's words, exactly as they were said
 NOTE
 ```
 
+A third passes the file:
+
 ```sh
-uv run python tools/inbox.py --role claude-orchestrator capture --band next --body-file /tmp/note.md
+uv run python tools/inbox.py --role claude-orchestrator capture --band next --body-file <dir>/note.md
 ```
 
-The words go into a file first, as a command of its own, because the write guard reads a heredoc
+The heredoc is a command of its own because the write guard reads a heredoc
 fed to the script as commands: words that name a write (`git push`, `gh issue close`) would deny
-the capture, while a `cat > FILE <<'NOTE'` that is the whole command is one of the shapes it reads
-as text (**using-tools**). The title is the agent's (the first quote's first line when `--title` is
+the capture, while a `cat > FILE <<'NOTE'` that is the whole command, with nothing in front of it
+and nothing after, is one of the shapes it reads
+as text. Every file in the examples below is made the same way, in that directory. The title is the agent's (the first quote's first line when `--title` is
 not given). `--band` goes on only when the player named a band.
 
 **A note holds blocks, and every block carries a visible mark saying whose it is** (inbox #767 in minty-lemur), so
@@ -106,7 +133,7 @@ goes on the note's issue with `tools/inbox.py ask`, or on the board, per the **b
 
 ```sh
 uv run python tools/inbox.py --role claude-orchestrator capture --band next \
-  --context-file /tmp/context.md --quote-file /tmp/words.md --reading-file /tmp/reading.md
+  --context-file <dir>/context.md --quote-file <dir>/words.md --reading-file <dir>/reading.md
 ```
 
 **Only a quote block is the player's words**: `show` prints every block under its kind, the draft
@@ -127,7 +154,7 @@ captured or read this session, the player's next words on it go onto that note, 
 options:
 
 ```sh
-uv run python tools/inbox.py --role claude-orchestrator append N --quote-file /tmp/more.md --context-file /tmp/context.md
+uv run python tools/inbox.py --role claude-orchestrator append N --quote-file <dir>/more.md --context-file <dir>/context.md
 ```
 
 **Only when the agent already knows the note** (olive-tapir): the inbox is never searched or read to
@@ -143,7 +170,7 @@ not captured, since a note the player wrote gets the player's own comments, and 
 never by a new note** (inbox #767 in minty-lemur):
 
 ```sh
-uv run python tools/inbox.py --role claude-orchestrator correct N --line-file /tmp/line.md --note-file /tmp/why.md
+uv run python tools/inbox.py --role claude-orchestrator correct N --line-file <dir>/line.md --note-file <dir>/why.md
 ```
 
 The comment is the agent's side, so the append rule above needs no exception. The line must be one
@@ -162,7 +189,7 @@ marked open, for whoever picks the task up.
 before the batch is filed; the answer is filed with the note, and the batch does not wait for it:
 
 ```sh
-uv run python tools/inbox.py --role claude-orchestrator ask N --body-file /tmp/question.md
+uv run python tools/inbox.py --role claude-orchestrator ask N --body-file <dir>/question.md
 ```
 
 The question carries all the context the answer needs, as `CLAUDE.md`'s rule on questions says,
@@ -173,88 +200,17 @@ playtest file states the question before the answer it quotes.
 
 ## Filing a batch
 
-**A batch is filed when the player asks, never on the agent's own initiative.** One filing pull
-request carries the whole batch:
+**A batch is filed when the player asks, never on the agent's own initiative**, and one filing pull
+request carries the whole batch. `references/filing-a-batch.md` has the steps in order, from
+reading the notes to closing them; read it whole before filing. What holds whether or not that
+file is open:
 
-- **List and read every note** with `list` and `show`, and settle what is unclear by asking on the
-  issue first.
-- **Draft each note's playtest section with `tools/inbox.py draft N M ...`** and put it in a
-  playtest file made with `tools/new-name.sh playtest "<title>"`. The draft is the filed layout,
-  every block labelled: the player's quote blocks in `> ` lines, the only lines that are the
-  player's; context, a note and a correction as the assistant's sentences; a reading under
-  `Read as:` (inbox #767 in minty-lemur); a corrected line flagged in a sentence right after its quoted block,
-  never inside it, since a quote must stay one unbroken run of words. The comments the player wrote
-  and the quotes appended to the note follow in the order they were said, each after what it
-  answers. Wrapping and the `> ` markers are free; every word, letter case and punctuation mark of
-  a quote is copied as it stands, and context, readings and notes need not be copied word for word.
-  A corrected line is still copied, since it is in the note. A playtest file is a primary source and
-  is never rewritten afterwards.
-- **File the queue from it** exactly as **playtest-feedback** says, each entry opening with the
-  note's band.
-- **Patch the citations of the notes just copied**, before the pull request is opened. Records,
-  docs, skills and code comments that already quote a note cite it as `inbox #N`, a closed issue
-  once it is filed; the playtest goes beside that number, which stays:
-
-  ```sh
-  uv run python tools/inbox.py cite N M ... --dry-run   # the numbers of the batch, as in its `Filed from` lines
-  uv run python tools/inbox.py cite N M ...
-  ```
-
-  The pull request does not exist yet at this step, so the notes are given by number; once it is
-  open, `cite --pr P` reads the same numbers from its `Filed from #N` lines, for a later pass.
-
-  `cite` finds each note's playtest from its `## #N` heading under `docs/playtests/` and, in every
-  tracked text file outside `docs/playtests/`, turns the plain `inbox #N` (and a run such as
-  `inbox #9001, #9002 and #9003`) into `inbox #N in name`, the playtest's bare name, in every file,
-  Markdown and skills included, and never into a link: `CLAUDE.md`'s citation rule counts that form
-  as a citation, and `tools/check_citations.py` checks that the name holds the note. A number counts
-  only as `#N` followed by no digit or letter, or as `issues/N` in a URL, so an SVG colour such as
-  `#9004a6` never matches. A bare `(#N)`, a range such as `#9001-#9005`, an issue URL, a link text
-  and a run mixing playtests are listed as `file:line: text` and never edited. **Fix a listed
-  citation by hand, the same way, when nothing near it names the playtest**; a bare number inside a
-  sentence, list or heading that already names the playtest can stay. A line that already names the
-  playtest, or a citation already followed by ` in <name or link>`, is left alone (a different
-  playtest there is listed), so a second run changes nothing. **Then read `git diff` by eye**: a
-  `#N` that is not a note (a pull request, an SVG colour written as three digits) shows up there,
-  and an edit the tool should not have made is reverted by hand. Because this edits code comments,
-  the filing pull request may touch `src/` and `tests/`, which makes it a code pull request for CI
-  (`tools/ci_classify.py`), and **that has a cost**: it is no longer queue-only, so it loses the
-  queue update's merge-first lane and its lighter faithfulness review and gets the full review. Its
-  commits, push and writes go out as `claude-coder` from that commit on, and its description carries
-  a `No queue item: <reason>` line (`tools/ci_code_pr_queue.py`). **Anything written after a filing
-  cites the playtest file, not the closed issue.**
-- **Open one pull request whose description names every note on a line of its own,
-  `Filed from #N`** — never `Closes #N`, which would leave the note open and editable until the
-  merge. It is docs-only unless `cite` edited a code comment, so its commits, push and pull request go
-  out as `claude-orchestrator` (Codex: `codex-coder`), under **committing**, or as `claude-coder` once
-  it is a code pull request. CI's transcription check reads those lines and
-  fails a note that is not the player's or whose text, appended words included, is not in a playtest
-  file the pull request adds, word for word.
-- **Right after pushing the pull request, close the batch in one call** (bouncy-heron 22):
-
-  ```sh
-  uv run python tools/inbox.py --role claude-orchestrator close --pr P
-  ```
-
-  It closes every note the description names, and closes none when any note's current text, or
-  any comment the player wrote on it or any words appended to it, is not word for word in one playtest file the pull request
-  adds, so a note the player edited, or answered on, after it was copied stops the close rather
-  than being filed half-read. A note with no body (a title alone) is refused the same way, as CI's
-  transcription check refuses it; it is asked about on its issue instead. `--dry-run` checks the same and writes
-  nothing. From then on the playtest file is the record, and a later thought is a new note.
-- **A filing pull request that is abandoned reopens its notes**:
-  `uv run python tools/inbox.py --role claude-orchestrator reopen --pr P`, once the pull request is
-  closed without merging. It reopens only what `close --pr P` closed: a note still closed whose
-  last close came from an inbox identity after P was opened and whose last `Filed in #N.` note
-  names P. A note the player closed, or one a later filing closed again, is left closed with a line
-  saying why.
-
-## Every write goes out as an agent identity
-
-`tools/inbox.py`'s writes run as the role given by `--role`, or by `NAPPY_AGENT_ROLE`, which
-`tools/agent-identity.py run <role> --` sets: each write goes through that wrapper with a token of
-its own. The role is `claude-orchestrator` in Claude Code and `codex-coder` in Codex, the two
-identities whose captures count, and a write with no role, or with another one, is refused rather
-than sent under the player's account, where it would read as the player's own words. Reads need no
-role. When `uv run python tools/agent-identity.py status <role>` reports the role not usable, the
-session stops and tells the player, as **committing** says.
+- **Every note is copied word for word into a playtest file** (`tools/inbox.py draft N M ...`
+  prints the filed layout), and the queue is filed from it as **playtest-feedback** says, each
+  entry opening with the note's band.
+- **The description names every note on a line of its own, `Filed from #N`**, never `Closes #N`,
+  which would leave the note open and editable until the merge.
+- **Right after pushing the pull request, `close --pr P` closes the batch in one call**
+  (bouncy-heron 22), and a filing that is abandoned reopens its notes with `reopen --pr P`.
+- **Anything written after a filing cites the playtest file, not the closed issue**;
+  `tools/inbox.py cite` puts the playtest beside the citations that already exist.
