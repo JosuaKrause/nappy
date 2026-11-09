@@ -1160,31 +1160,6 @@ src/events/event_def.gd ends_the_day
 src/events/event_def.gd lets_out
 src/events/event_def.gd pursuit
 
-# [InteriorMapPlan] src/interior/interior_map_plan.gd
-src/interior/interior_map.gd collision_clearance
-src/interior/interior_map.gd corridor_narrows
-src/interior/interior_map.gd decals
-src/interior/interior_map.gd doors
-src/interior/interior_map.gd entrance_tiles
-src/interior/interior_map.gd exit_tile
-src/interior/interior_map.gd locked_thresholds
-src/interior/interior_map.gd rubble
-src/interior/interior_map.gd start_tile
-src/interior/interior_map.gd tiles
-src/interior/interior_map.gd walls
-src/interior/interior_map.gd waypoints
-src/interior/interior_scene.gd collision_clearance
-src/interior/interior_scene.gd decals
-src/interior/interior_scene.gd doors
-src/interior/interior_scene.gd entrance_tiles
-src/interior/interior_scene.gd exit_tile
-src/interior/interior_scene.gd locked_thresholds
-src/interior/interior_scene.gd rubble
-src/interior/interior_scene.gd start_tile
-src/interior/interior_scene.gd tiles
-src/interior/interior_scene.gd walls
-src/interior/interior_scene.gd waypoints
-
 # [InteriorScene] src/interior/interior_scene.gd
 src/telemetry/run_session.gd map
 

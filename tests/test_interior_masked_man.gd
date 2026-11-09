@@ -66,14 +66,14 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: Node) -> void:
 	t.check((player.get_node("PramCollisionShape2D") as CollisionShape2D).disabled,
 			"and the pram body is off while she carries the baby")
 	for side in ["left", "right"]:
-		var origin: Vector2i = f.waypoints["stairwell_%s" % side] - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
+		var origin: Vector2i = f.waypoint("stairwell_%s" % side) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for walk: Array in _STAIR_WALKS:
 			var start: Vector2i = origin + (walk[0] as Vector2i)
 			var column: int = origin.x + int(walk[1])
 			var action: String = walk[2]
 			var second_row: bool = walk[3]
 			var label := "%s shaft from %s, %s" % [side, walk[0], action]
-			t.check(f.tiles.get(start) == InteriorTile.Kind.STAIRWELL_FLOOR,
+			t.check(f.floor_kind_at(start) == InteriorTile.Kind.STAIRWELL_FLOOR,
 					"%s: starts on a landing tile" % label)
 			for a in ["move_left", "move_right", "move_up", "move_down"]:
 				Input.action_release(a)
@@ -212,7 +212,7 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
 	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 	var part := "stairwell_%s" % ("right" if BuildingPlan.BURNING_SIDE == "left" else "left")
 	var plan := InteriorMap.build()
-	var her := scene.map.tile_to_world((plan.doors["%s:landing_lobby" % part] as InteriorMapPlan.Door).tile)
+	var her := scene.map.tile_to_world((plan.door("%s:landing_lobby" % part) as InteriorMapPlan.Door).tile)
 	# A stand-in for her: the manager is handed where she stands and tells every instance each tick.
 	var player := Node2D.new()
 	player.add_to_group("player")
