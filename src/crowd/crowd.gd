@@ -658,8 +658,8 @@ func _resolve_the_queues() -> Dictionary:
 			if gap < Tuning.CAR_GAP_MIN:
 				queue[i].nudge_back(Tuning.CAR_GAP_MIN - gap)
 				gap = Tuning.CAR_GAP_MIN
-			queue[i].gap_ahead = gap
-			queue[i].leader_speed = queue[i + 1].speed()
+			queue[i].lane().set_gap_ahead(gap)
+			queue[i].lane().set_leader_speed(queue[i + 1].speed())
 	return lanes
 
 ## Fills `_cars` and `_walkers` from `_agents` — see `_cars` for why once a frame rather than once a
@@ -732,9 +732,9 @@ func _keep_room_for_the_turning(lanes: Dictionary) -> void:
 				continue
 			closest = behind
 			follower = other
-		if follower and closest < follower.gap_ahead:
-			follower.gap_ahead = closest
-			follower.leader_speed = 0.0
+		if follower and closest < follower.lane().gap_ahead():
+			follower.lane().set_gap_ahead(closest)
+			follower.lane().set_leader_speed(0.0)
 
 ## Decides, once per frame and per junction, whose turn it is to be in the box.
 ##

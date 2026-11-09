@@ -1031,8 +1031,6 @@ src/events/event_def.gd pursuit
 src/telemetry/run_session.gd map
 
 # [LaneMover] src/crowd/lane_mover.gd
-src/crowd/crowd.gd gap_ahead
-src/crowd/crowd.gd leader_speed
 src/dev/still_watch.gd kind
 src/run/day_director.gd kind
 
