@@ -132,7 +132,33 @@ class RetirementTests(unittest.TestCase):
         brief.write_text("agent: live\n\nTask\n")
         self.kept(self.prune("feature/probe"), "ownership")
         brief.write_text("agent: finished\ncleanup: ready\n\nTask\n")
-        self.assertEqual(self.prune("feature/probe").returncode, 0)
+        result = self.prune("feature/probe")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn(f"deleted brief {brief}", result.stdout)
+        self.assertFalse(brief.exists(), "a released brief goes with its retired branch")
+
+    def test_a_brief_goes_only_with_a_retired_branch(self) -> None:
+        briefs = self.repo / ".claude/briefs"
+        briefs.mkdir(parents=True)
+        brief = briefs / "feature-probe.md"
+        other = briefs / "feature-other.md"
+        brief.write_text("branch: feature/probe\ncleanup: ready\n\nTask\n")
+        other.write_text("branch: feature/other\ncleanup: ready\n\nTask\n")
+        # A dry run and the inventory delete nothing, a released brief included.
+        for args in [("--dry-run", "feature/probe"), ("--all",)]:
+            result = self.prune(*args)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertTrue(brief.exists(), f"{args} deleted a brief")
+        # A branch that is kept keeps its brief, released or not.
+        (self.tree / "tracked").write_text("unfinished\n")
+        self.kept(self.prune("feature/probe"), "dirty or untracked")
+        self.assertTrue(brief.exists(), "a kept branch lost its brief")
+        self.run_git("restore", "tracked", cwd=self.tree)
+        # Retired, its own brief goes and another branch's stays.
+        result = self.prune("feature/probe")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertFalse(brief.exists())
+        self.assertTrue(other.exists(), "another branch's brief was deleted")
 
     def ignore(self, *patterns: str) -> None:
         """Ignore through the shared exclude file, which every worktree of the fixture reads."""

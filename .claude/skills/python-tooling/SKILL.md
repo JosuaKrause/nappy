@@ -5,6 +5,11 @@ description: Run, check or add repository Python tooling with uv and the project
 
 # Python tooling
 
+- **Run a script as `uv run python tools/<script>.py`**: no activated environment, no bare `pip`.
+- **Run `tools/pycheck.sh` before committing a change to `tools/*.py`, `pyproject.toml` or `uv.lock`**; a hit is a stop.
+- **`tools/codex-hooks.py`, `tools/check_citations.py` and `tools/check_overrides.py` run on the host's own `python3`** and stay 3.9-compatible.
+- **A dependency goes in with `uv add --group dev`**, with `pyproject.toml` and `uv.lock` in one commit; one nothing imports is removed.
+
 Use `uv` and the repository's `pyproject.toml` for Python tooling dependencies. The lockfile is
 the reproducible record; do not add a second dependency list such as `requirements.txt` unless a
 consumer specifically requires that format.
@@ -43,8 +48,8 @@ typing is the problem, say so beside the override rather than loosening the whol
 `tools/codex-hooks.py`, `tools/check_citations.py` and `tools/check_overrides.py` are checked like
 everything else, but none runs through `uv`: Codex runs the hook adapter with the host's own `python3`
 from `.codex/hooks.json`, and `tools/lint.sh` runs the citation and override checks with it, since CI
-lints before it installs uv. So all three stay **3.9-compatible**, nothing newer than what `CLAUDE.md`'s "Python 3.9+"
-line promises. `X | None` is 3.10's, so it is `typing.Optional` instead, everywhere in a file
+lints before it installs uv. So all three stay **3.9-compatible**, the version of the oldest host
+`python3` they run on (macOS's own `/usr/bin/python3`). `X | None` is 3.10's, so it is `typing.Optional` instead, everywhere in a file
 without `from __future__ import annotations` (`tools/codex-hooks.py`); only a file with that import
 (`tools/check_citations.py`, `tools/check_overrides.py`) may write `X | None` in an annotation, which the import leaves
 unevaluated, and never outside one. Builtin generics such as `dict[str, Any]` are 3.9's and fine

@@ -149,7 +149,7 @@ item here. The open test gaps `tests-public-seams.md` lists add tests and refact
 move to such an entry when this one closes.
 
 The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer", whose
-proposal paragraph refers to this entry, and **removes its exception for downy-tapir's minimal
+layering paragraph and closing list of proposals refer to this entry, and **removes its exception for downy-tapir's minimal
 escape fix**: "the exception only holds until the refactor -- I don't want a month from now hear that
 the exception still stands" (minty-lemur #799). The escape city's placement runs on the day's
 scheduler and that fix's `build_finale` is gone (minty-quail-8), so the exception covers no code.

@@ -7,6 +7,10 @@ description: Generate an editable, self-contained answer worksheet from docs/rev
 
 Create a local Markdown worksheet that the player can understand and answer with only that file open.
 
+- **The worksheet is one local file, `build/review-answers.md` in the main checkout**, and generating it changes nothing else.
+- **No answer the player already wrote is overwritten or lost.**
+- **Every current review item appears once**, answerable from the worksheet alone, with exactly one `answer:` line.
+
 ## Build the worksheet
 
 Read `docs/REVIEW.md`, then every current `docs/review/*.md` file in filename order. The review
