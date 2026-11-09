@@ -19,10 +19,12 @@ These are not obvious and the engine does not warn about most of them. **The one
 - **`art/`, `docs/` and `tools/` keep no `.import` sidecars; `.godot/` is never committed.**
 - **Comments are in the present tense, and an override carries `## Overrides Class.method.`**
 
-`references/rare-traps.md` holds the traps met less often, each under the thing that triggers it:
-`.slice()` and cross-script enums, a press read under `Control`s, the title screen's pause split and
-a paused camera, Y-sorting, `instance uniform`s, a flood fill's data structure, the import cache in
-a worktree, and what the Web build leaves out.
+`references/rare-traps.md` holds the traps met less often, each under its trigger: `.slice()` and
+cross-script enums, a press read under `Control`s, the title's pause split, a paused camera,
+Y-sorting, `instance uniform`s, a flood fill's structure, a worktree's import cache, and what the
+Web build leaves out. **That one gives no error on the desktop**: the release Web engine has no
+3D, navigation, networking peers, TLS backend, streamed-media codecs, alternate texture loaders,
+procedural noise or ZIP; read it before using one.
 
 ## Types
 
@@ -143,8 +145,8 @@ as idle and starts making sleep progress. **A second displacement goes through i
 **A picture is an asset, never code.** A glyph, an icon, a silhouette or a symbol is an image file
 under `art/` drawn as a texture, never assembled in `_draw()` out of `draw_circle`, `draw_rect`,
 `draw_line`, `draw_arc` or `draw_colored_polygon`; layout — a bar's fill, a scrim, a debug overlay —
-is not a picture. The rule in full, with its reasons, is the **cues** skill, "A picture is an asset,
-never code".
+is not a picture. The rule in full, with its reasons, is the **cues** skill's
+`references/picture-is-an-asset.md`.
 
 **A negative-width `Rect2` does not flip `draw_texture_rect`.** It is normalised on the way through,
 so the sprite lands a full width to one side — which looks like art sliding off its own shadow, not
@@ -155,7 +157,8 @@ like a failed flip. Mirror by setting a transform that scales x by −1 about th
 already set, and there is no getter to read the old one back.** So a helper that sets an absolute
 matrix silently discards whatever its caller had already set, and the caller cannot defend itself —
 it can only hand the helper what it set. `Sprites` carries a base transform for exactly this reason;
-the contract a caller keeps is the **cues** skill, "Drawing through `Sprites`".
+the contract a caller keeps is the **cues** skill's `references/drawing-and-redraw-gates.md`,
+"Drawing through `Sprites`".
 
 **`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw (the
 city ground) is fine, but anything animated must call `queue_redraw()` itself.
