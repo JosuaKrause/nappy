@@ -9,7 +9,8 @@ extends RefCounted
 ## boot, and the escape's building and city, built as each section first begins); a test hands a
 ## fake answering a world of fakes. This base stands nothing.
 
-## The world `spec` is walked in, standing, with her in it and her start in it worked out. Null from
-## this base.
+## The world `spec` is walked in, standing, with her in it and her start and what the walk is won at
+## in it worked out (`DayWorld.home_map()`, `exits()`). It writes into nothing, the spec and the day's
+## clock included: the director hands on what the world answers. Null from this base.
 func stand(_spec: DaySpec) -> DayWorld:
 	return null

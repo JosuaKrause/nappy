@@ -6,8 +6,9 @@ extends RefCounted
 ## here is handed a fake one standing a world of fakes — a city that records how it is dressed, events
 ## that record how they are planned, a crowd, a resistance, her and the baby — with the day's clock
 ## and the run's calendar real, since they are plain state. No city is generated and no day is
-## planned: what is checked is the director's own order and what each of the spec's settings makes it
-## do, for a day, an authored scene's day and both sections of the escape. That the real worlds start
+## planned: what is checked is the director's own order, what each of the spec's settings makes it
+## do, for a day, an authored scene's day and both sections of the escape, and that what the world
+## says the walk is won at reaches the spec and the clock. That the real worlds start
 ## (the escape's building and city booted, the day's city through its fourteen days) is the finale
 ## and full-run suites' to show.
 ##
@@ -37,6 +38,8 @@ func run(t) -> void:
 	_test_an_authored_scene_installs_in_place_of_the_plan(t)
 	_test_each_start_setting_does_what_it_says(t)
 	_test_the_start_flags_decide_only_a_walk_from_her_doorstep(t)
+	_test_the_start_hands_on_the_ways_out_of_the_world(t)
+	_test_the_start_hands_the_clock_her_and_her_front_door(t)
 
 func _on_day_ended(day: int, result: int, cause: String, elapsed: float) -> void:
 	_ended.append([day, result, cause, elapsed])
@@ -187,6 +190,9 @@ func _test_a_section_is_ended_but_not_settled(t) -> void:
 
 # ------------------------------------------------------------------ the start ---
 
+## The ways out of a fake city world a walk out of the city is won at, far from where she starts.
+const EXITS := {CityEdge.Kind.TUNNEL: Vector2(900.0, 200.0), CityEdge.Kind.BRIDGE: Vector2(-900.0, 200.0)}
+
 ## Everything the fakes below are asked, in the order they are asked, as `"what detail"` lines.
 var _asked: Array[String] = []
 
@@ -200,8 +206,10 @@ func _note_section(section: int, restarted: bool, world: Node, events: Node) -> 
 	_asked.append("section %d %s %s %s" % [section, restarted, world.name, events.name])
 
 ## A director handed a fake world source standing a world of fakes for `spec`: a city world, or with
-## `in_building` the building's, which has no city. `scene` is an authored scene to play, or null.
-## Returns the director and the parts a check reads.
+## `in_building` the building's, which has no city. A city world is won where `spec`'s goal says, as
+## the main scene's answers it: at her front door on the city's map on a walk home, at the two ways
+## out (`EXITS`) on a walk out of the city. `scene` is an authored scene to play, or null. Returns the
+## director and the parts a check reads.
 func _start_rig(t, spec: DaySpec, in_building := false, scene: AuthoredScene = null) -> Dictionary:
 	_run = RunState.new()
 	_run.start_run(SEED)
@@ -224,7 +232,10 @@ func _start_rig(t, spec: DaySpec, in_building := false, scene: AuthoredScene = n
 	else:
 		city = _FakeCity.new(_asked)
 		city.name = "City"
-		world = DayWorld.in_the_city(city, events, player, baby, Vector2(100.0, 200.0))
+		var home_map: CityMap = city.map if spec.goal_kind() == DaySpec.Goal.HOME else null
+		var exits: Dictionary = EXITS if spec.goal_kind() == DaySpec.Goal.CITY_EDGE else {}
+		world = DayWorld.in_the_city(city, events, player, baby, Vector2(100.0, 200.0), home_map,
+				exits)
 	var worlds := _FakeWorlds.new(world, _asked)
 	var config := RunConfig.parse(PackedStringArray(), "", true)
 	var director := DayDirector.new(_run.calendar, _run.facts, _run.attempt_spend, config)
@@ -455,6 +466,52 @@ func _test_the_start_flags_decide_only_a_walk_from_her_doorstep(t) -> void:
 					% [player.put_at])
 		_put_the_start_away(rig)
 
+## **The ways out the world answers are the walk's.** The escape's city is won only at a way out the
+## spec holds (`DaySpec.exit_points()`, read by the day's clock), and the world it stands in is what
+## knows where they are (`DayWorld.exits()`): the start hands them on, so the clock ends the section
+## won by the tunnel once she stands at the tunnel the world named, and not before.
+func _test_the_start_hands_on_the_ways_out_of_the_world(t) -> void:
+	var spec := DaySpec.for_section(DaySpec.Section.CITY, 180.0)
+	var rig := _start_rig(t, spec)
+	var director: DayDirector = rig["director"]
+	director.start(spec)
+	var clock: DayController = rig["clock"]
+	var player: _FakeStroller = rig["player"]
+	player.position = Vector2(100.0, 200.0)
+	clock.tick(0.01)
+	t.check(clock.is_running(), "standing where she starts wins nothing")
+	player.position = EXITS[CityEdge.Kind.TUNNEL]
+	clock.tick(0.01)
+	t.check(not clock.is_running() and clock.exit_taken() == CityEdge.Kind.TUNNEL,
+			"at the tunnel the world names, the section is won by the tunnel (%s, %d)"
+			% [clock.is_running(), clock.exit_taken()])
+	_put_the_start_away(rig)
+
+## **Her and her front door's map are the clock's from the world.** A day is won at her own front door
+## with the baby asleep, checked by the day's clock on the map the door is on (`DayWorld.home_map()`):
+## with the clock set up as the main scene sets it up, handed only the run, the start hands it her and
+## that map, so the baby falling asleep with her on the door wins the day.
+func _test_the_start_hands_the_clock_her_and_her_front_door(t) -> void:
+	var spec := DaySpec.for_day(1, 210.0)
+	var rig := _start_rig(t, spec)
+	var director: DayDirector = rig["director"]
+	var clock: DayController = rig["clock"]
+	clock.setup(_run)
+	var won: Array[int] = []
+	var note_won := func(result: GameEnums.DayResult) -> void:
+		won.append(result)
+	clock.day_finished.connect(note_won)
+	director.start(spec)
+	var city: _FakeCity = rig["city"]
+	var player: _FakeStroller = rig["player"]
+	(city.map as _FakeMap).home = Vector2(40.0, 40.0)
+	player.position = Vector2(40.0, 40.0)
+	EventBus.return_phase_started.emit()
+	t.check(won == [GameEnums.DayResult.WON],
+			"the baby asleep with her at the door on the map the world named wins the day (%s)"
+			% [won])
+	_put_the_start_away(rig)
+
 # ------------------------------------------------------------------- fakes ---
 
 ## Stands the one world it is handed, for every spec, and notes each ask.
@@ -517,9 +574,17 @@ class _FakeCity extends City:
 	func closure_summary() -> String:
 		return ""
 
-## A map that notes whether the act's spent calm was handed to it.
+## A map that notes whether the act's spent calm was handed to it, and whose one home tile is at
+## `home`, every other point a road.
 class _FakeMap extends CityMap:
 	var handed_spent := false
+	var home := Vector2.INF
+
+	## Overrides CityMap.tile_type_at_world.
+	func tile_type_at_world(world_position: Vector2) -> GameEnums.TileType:
+		if world_position.distance_to(home) < 1.0:
+			return GameEnums.TileType.HOME
+		return GameEnums.TileType.ROAD
 
 	## Overrides CityMap.set_spent_calm.
 	func set_spent_calm(_blocks: Array[Vector2i]) -> void:

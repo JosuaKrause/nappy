@@ -929,9 +929,12 @@ differs between walks is the spec's settings (`DaySpec.photographs_the_dawn()`,
 question of which walk it is. The world comes from a `DayWorldSource` it is handed
 (`src/day/day_world_source.gd`, which `main` implements): asked to stand a spec's world, it answers
 a `DayWorld` (`src/day/day_world.gd`) — the scene, its events, her and the baby in it, where she is
-put down and facing which way, the city with its streets and crowd where the world is one, and the
-walk's own random stream where it has one (the building's). `finish_day(result)` ends it: the won
-last night's fire, the cause (`LossCause`), the charges still running closed, `day_ended`, and for an
+put down and facing which way, the city with its streets and crowd where the world is one, the
+walk's own random stream where it has one (the building's), and what the walk is won at in it: the
+map her front door is on for a walk home, the ways out of the city for the escape's. The director
+hands those on, the ways out to the spec and her and the home's map to the day's clock
+(`DayController.use_the_walk()`), so a source only stands a world. `finish_day(result)` ends it:
+the won last night's fire, the cause (`LossCause`), the charges still running closed, `day_ended`, and for an
 ordinary day the calendar's move. It returns a `DayEnd`; the save and the summary screen are
 `main`'s. `finish_day()` requires only the clock and the run, since the escape's building has no
 city, crowd or resistance, and reads the events, city, player and baby where there are some. It

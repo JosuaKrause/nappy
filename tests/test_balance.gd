@@ -103,7 +103,7 @@ func _build_rig(t) -> void:
 	_baby.set_world(_city)
 	_clock = DayController.new()
 	t.add_child(_clock)
-	_clock.setup(_city.map, _stroller, _city.run)
+	_clock.setup(_city.run)
 	_resistance = ResistanceDirector.new()
 	t.add_child(_resistance)
 	_resistance.set_process(false)

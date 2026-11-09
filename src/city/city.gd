@@ -601,11 +601,11 @@ func _spawn_street_trees() -> void:
 ## tree lying across a closed street is the one missing from the row beside it.
 ##
 ## **Called twice a day, and both times are load-bearing.** `start_day` below runs it once the
-## closures are planned, which is where a `FALLEN_TREE` closure's own pit is decided; `Main`
-## runs it again once `EventManager.start_day` has planned the seals, because a `fallen_tree_seal`
-## is chosen later and takes a pit of its own. Reading `CityMap.is_tree_pit_emptied` rather than
-## keeping a list here is what lets the second call be a plain refresh rather than a second
-## bookkeeping path.
+## closures are planned, which is where a `FALLEN_TREE` closure's own pit is decided; the day's
+## start (`DayDirector.start()`) runs it again once `EventManager.start_day` has planned the seals,
+## because a `fallen_tree_seal` is chosen later and takes a pit of its own. Reading
+## `CityMap.is_tree_pit_emptied` rather than keeping a list here is what lets the second call be a
+## plain refresh rather than a second bookkeeping path.
 func refresh_street_trees() -> void:
 	for tile: Vector2i in _street_tree_pits:
 		var tree: Prop = _street_tree_pits[tile]
@@ -1041,8 +1041,8 @@ func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
 		# Last, and after the repaint: which blocks are calm is what the closure invariant is
 		# stated over, and a requisitioned park is not one of them.
 		_close_streets(spec, rng)
-	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. `Main` runs it
-	# once more after the day's seals are planned — see `refresh_street_trees()`.
+	# And after the closures, since a `FALLEN_TREE` closure is what empties a pit. The day's start
+	# runs it once more after the day's seals are planned — see `refresh_street_trees()`.
 	refresh_street_trees()
 	if spec.pastes_the_posters():
 		# After the tree is grown, which is what the dawn's pasting reads "the streets she uses most"

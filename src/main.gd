@@ -384,7 +384,7 @@ func _ready() -> void:
 	# writing the log it already has — see `RunSession.open()`.
 	_session.open(_run.header.run_seed, _somebody_is_playing(),
 			_flow.opening == RunFlow.Opening.CARRIED_FROM_CHECKPOINT
-					or first.section != DaySpec.Section.NONE)
+					or first.section_kind() != DaySpec.Section.NONE)
 	# Before the city, before the player, before the title: every page a day can draw is on disk
 	# already and this is the last moment nobody is watching a frame. After the log is open, so
 	# the run log carries a line per page with the moment it loaded in — see `AtlasLibrary`.
@@ -395,7 +395,7 @@ func _ready() -> void:
 	# has already been put down in: there is no frame between the two for a page to arrive in. The
 	# rule the moment exists for is satisfied here instead, at the one point in the sequence where
 	# nobody is watching a frame, and no ordinary day pays for those pictures.
-	if first.section == DaySpec.Section.NONE:
+	if first.section_kind() == DaySpec.Section.NONE:
 		_hold_every_page_a_day_draws(AtlasLibrary.MOMENT_STARTUP, NO_FURTHER_GROUPS)
 	else:
 		_hold_every_page_a_day_draws(AtlasLibrary.MOMENT_ESCAPE, ESCAPE_ONLY_GROUPS)
@@ -412,7 +412,7 @@ func _ready() -> void:
 	# end deletes the save, a change the symbol shows (`GameSave.clear()` announces it on
 	# `EventBus`, which only an indicator already built hears). The flag's escape touches the save
 	# not at all, so it gets none.
-	if first.section == DaySpec.Section.NONE or _flow.escape_from_a_run():
+	if first.section_kind() == DaySpec.Section.NONE or _flow.escape_from_a_run():
 		_raise_save_indicator()
 	if _resume.get("day_under_way", false):
 		_resume_went_back = _run.calendar.a_loss_goes_back_to_the_checkpoint()
@@ -421,7 +421,7 @@ func _ready() -> void:
 	# around her doorstep; the escape's sections build their own worlds when each begins
 	# (`_stand_the_world()`, asked by the day director after the section is announced), so
 	# whatever the building or the city does as it is built is already that section's.
-	var walks_a_day := first.section == DaySpec.Section.NONE
+	var walks_a_day := first.section_kind() == DaySpec.Section.NONE
 	var ground := Vector2.ZERO
 	if walks_a_day:
 		_city = _new_city()
@@ -475,7 +475,7 @@ func _ready() -> void:
 	_day.invincible = config.invincible
 	add_child(_day)
 	_pauses_with_the_game(_day)
-	_day.setup(_city.map if _city else null, _player, _run)
+	_day.setup(_run)
 	_day.day_finished.connect(_on_day_finished)
 	_session.watch_the_clock(_day)
 	if _readout:
@@ -868,7 +868,9 @@ func _city_map() -> CityMap:
 ## vents, the window flashes and the masked man who comes up the shaft every few seconds would
 ## otherwise run for the rest of the sequence, unseen and in the log.
 ##
-## The day's clock is told where she now is and, on a walk home, the map her front door is on.
+## The world answers what its walk is won at — on a walk home the map her front door is on, on a walk
+## out of the city its two ways out — and the day director hands both on (`DayWorld.home_map()`,
+## `exits()`).
 func _stand_the_world(spec: DaySpec) -> DayWorld:
 	if spec.world == DaySpec.World.BUILDING:
 		if not _interior:
@@ -876,7 +878,6 @@ func _stand_the_world(spec: DaySpec) -> DayWorld:
 			_watch_the_escape()
 		_interior.start_the_night(_building_seed)
 		_add_the_building_walker()
-		_day.setup(null, _player, _run)
 		var start_at := _interior.part_world_position(_escape_start_part()) if _first_day \
 				else _interior.start_world_position()
 		# The same seed on every entry, so a retry is the same building.
@@ -896,13 +897,12 @@ func _stand_the_world(spec: DaySpec) -> DayWorld:
 		_building_events.stand_down()
 	if _interior:
 		_interior.stop_the_night()
-	if spec.goal == DaySpec.Goal.CITY_EDGE:
-		spec.use_exits(_the_city_exits())
-	_day.setup(_city.map if spec.goal == DaySpec.Goal.HOME else null, _player, _run)
+	var home_map: CityMap = _city.map if spec.goal_kind() == DaySpec.Goal.HOME else null
+	var exits: Dictionary = _the_city_exits() if spec.goal_kind() == DaySpec.Goal.CITY_EDGE else {}
 	var start_at := _city.map.doorstep_world_position()
 	if spec.start_point() == DaySpec.Start.SERVICE_EXIT:
 		start_at = _finale_start_position()
-	return DayWorld.in_the_city(_city, _city.events, _player, _baby, start_at)
+	return DayWorld.in_the_city(_city, _city.events, _player, _baby, start_at, home_map, exits)
 
 ## The first world an escape boot builds is where the run log's observer starts watching the
 ## escape — her, the baby, the day's clock and the badges, which exist from here on. Once a boot.
@@ -1236,7 +1236,7 @@ func _open_the_title() -> void:
 	if is_inside_tree():
 		get_tree().paused = true
 	_apply_orientation()
-	if _flow.spec.section == DaySpec.Section.NONE:
+	if _flow.spec.section_kind() == DaySpec.Section.NONE:
 		_city.process_mode = Node.PROCESS_MODE_ALWAYS
 		_player.process_mode = Node.PROCESS_MODE_PAUSABLE
 		_player.stand_aside()
@@ -1787,7 +1787,7 @@ func _pauses_with_the_game(node: Node) -> void:
 ## passes through. **The clock runs from here**: every screen that can stand in front of the walk
 ## pauses the tree, and the day's clock pauses with it. Whatever screen comes next is the caller's.
 func _start(spec: DaySpec, restarted := false) -> bool:
-	_facts.escape_section = spec.section
+	_facts.escape_section = spec.section_kind()
 	var errors := _flow.start(_new_director(), spec, restarted)
 	_first_day = false
 	if not errors.is_empty():
@@ -1933,7 +1933,7 @@ func _finish_the_section(end: DayEnd) -> void:
 	var result := end.result
 	var won := result == GameEnums.DayResult.WON
 	if not won:
-		EventBus.escape_lost.emit(spec.section, result)
+		EventBus.escape_lost.emit(spec.section_kind(), result)
 	elif spec.a_win_leads_into != DaySpec.Section.NONE:
 		EventBus.escape_city_entered.emit()
 	else:
@@ -2242,7 +2242,7 @@ func _process(delta: float) -> void:
 		world_map.process_player(_player, delta)
 	if _city and _flow.spec.daylight_runs_down:
 		_city.set_daylight(_day.fraction_remaining())
-	_hud.set_home_guidance(_flow.spec.goal == DaySpec.Goal.HOME
+	_hud.set_home_guidance(_flow.spec.goal_kind() == DaySpec.Goal.HOME
 			and _day.phase == GameEnums.DayPhase.RETURNING,
 			_city.map.home_world_position() if _city else Vector2.ZERO)
 	# The red arrow: `ResistanceDirector.red_arrow_target()` is the one place that decides

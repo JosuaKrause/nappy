@@ -69,7 +69,8 @@ var world := World.CITY
 var goal := Goal.HOME
 ## Where `Goal.CITY_EDGE`'s two ways out stand, in world space — `CityEdge.Kind` -> position, the
 ## last walkable tile of the spine at each end rather than where the portal's picture is anchored.
-## Handed in once the city exists; empty for any other goal.
+## Handed in by the start once the world it stands in is stood (`DayWorld.exits()`); empty for any
+## other goal.
 var exits := {}
 ## Seconds on the clock.
 var length := Tuning.DAY_LENGTH_SECONDS
@@ -351,6 +352,15 @@ func goal_kind() -> Goal:
 func section_kind() -> Section:
 	return section
 
+## The seconds the walk's clock starts with (`length`).
+func seconds_on_the_clock() -> float:
+	return length
+
+## How many of the act's walkers and cars are on the walk's streets, as a share of the act's own
+## (`crowd_density`): nobody at `0.0`.
+func crowd_share() -> float:
+	return crowd_density
+
 ## The finale's exits by `CityEdge.Kind`, each the point the walk ends at.
 func exit_points() -> Dictionary:
 	return exits
@@ -399,7 +409,8 @@ func runs_the_daylight_down() -> bool:
 func is_dark_from_the_start() -> bool:
 	return dark_from_the_start
 
-## Hands a `Goal.CITY_EDGE` walk its two ways out, once the city they stand in exists (`exits`).
+## Hands the walk its ways out, as the world it is walked in answers them (`DayWorld.exits()`): a
+## `Goal.CITY_EDGE` walk's two, and none for any other (`exits`).
 func use_exits(the_exits: Dictionary) -> void:
 	exits = the_exits
 

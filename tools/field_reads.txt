@@ -344,17 +344,10 @@ src/events/event_scheduler.gd keeps_unused_calm_clear
 src/events/event_scheduler.gd number
 src/events/event_scheduler.gd one_notice_at_a_time
 src/events/event_scheduler.gd wall_row_share
-src/main.gd goal
-src/main.gd section
 src/main.gd world
 src/routes/seal_planner.gd seal_pictures
 src/routes/seal_planner.gd seals_every_street_off_the_walk
 src/routes/seal_planner.gd seals_the_main_road
-src/run/day_director.gd crowd_density
-src/run/day_director.gd goal
-src/run/day_director.gd length
-src/run/day_director.gd number
-src/run/day_director.gd section
 src/telemetry/run_session.gd length
 src/telemetry/run_session.gd section
 src/telemetry/run_session.gd title

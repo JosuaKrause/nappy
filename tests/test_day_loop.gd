@@ -75,7 +75,8 @@ func _build(t) -> void:
 	_day = DayController.new()
 	t.add_child(_day)
 	_day.set_process(false)
-	_day.setup(_map, _player, _run)
+	_day.setup(_run)
+	_day.use_the_walk(_map, _player)
 	_day.day_finished.connect(func(result: GameEnums.DayResult) -> void: _results.append(result))
 
 ## `keep_run` leaves `_run` for the next `_build()` to hand its day again.

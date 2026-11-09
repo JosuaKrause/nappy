@@ -55,9 +55,9 @@ var _last_emitted_second := -1
 ## stands still. See `tick()` and `_ignores_loss()`.
 var invincible := false
 
-func setup(map: CityMap, player: Node2D, run: RunState) -> void:
-	_map = map
-	_player = player
+## Hands the clock the run she settles in and has it hear the baby and the day's hard fails; once,
+## by whoever builds it. What a walk is won at comes with each walk (`use_the_walk()`).
+func setup(run: RunState) -> void:
 	_run = run
 	if _connected:
 		return
@@ -65,6 +65,13 @@ func setup(map: CityMap, player: Node2D, run: RunState) -> void:
 	EventBus.return_phase_started.connect(_on_baby_asleep)
 	EventBus.baby_state_changed.connect(_on_baby_state_changed)
 	EventBus.hard_fail_triggered.connect(_on_hard_fail)
+
+## Hands the clock the walk about to start, before `start()`: her, and the map her front door and
+## the calm she settles on are checked against — null on a walk not won at her door, where neither
+## is asked. The day director hands them on from the world it stood (`DayWorld.home_map()`).
+func use_the_walk(home_map: CityMap, player: Node2D) -> void:
+	_map = home_map
+	_player = player
 
 func start(length: float) -> void:
 	time_total = length

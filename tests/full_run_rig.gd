@@ -50,8 +50,9 @@ func _play_a_run(t, seed_value: int) -> void:
 			city.spawn_siting)
 
 	# Her, in the tree as the scene has her, so the baby takes the stroller she rides in from her
-	# parent; and the day's clock, set up the way `main` sets it up, so falling asleep on calm ground
-	# is remembered where the game remembers it (`DayController._remember_the_calm_she_found()`).
+	# parent; and the day's clock, handed the run the way `main` hands it, so falling asleep on calm
+	# ground is remembered where the game remembers it (`DayController._remember_the_calm_she_found()`)
+	# once each day's start has handed it her and the home's map from the world it stood.
 	# Neither walks nor ticks: nobody steers her, `main` is what ticks the clock, and the baby's
 	# meters are not this suite's question — she settles when the rig says she does (`_settle()`).
 	var player := Stroller.new()
@@ -67,7 +68,7 @@ func _play_a_run(t, seed_value: int) -> void:
 	baby.set_physics_process(false)
 	var clock := DayController.new()
 	t.add_child(clock)
-	clock.setup(city.map, player, run)
+	clock.setup(run)
 
 	var config := RunConfig.parse(PackedStringArray(), "", true)
 	var days := DayDirector.new(run.calendar, run.facts, run.attempt_spend, config)
