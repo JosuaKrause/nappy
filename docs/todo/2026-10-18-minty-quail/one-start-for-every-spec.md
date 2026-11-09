@@ -11,13 +11,13 @@ in the main scene, with its own run-log path. That is where the fuller escape an
 would land next", the player: "can we improve this?", and to the plan below, as the orchestrator
 summarised it ("One `start(spec)` for every kind of day, with the world built per spec by a builder
 handed in, one day-started event, and the run log watching any spec the same way"): "agree on all
-design review points. let's do it" (inbox #1268).
+design review points. let's do it" (inbox #1268 in olive-ferret).
 
 **Read as:** no code outside the spec's own settings asks whether the escape is being walked in
 order to start it, and an escape start is testable without booting the whole game.
 
 **What is left**, the design review's shape, which the player approved ("I saw the review and
-approved it", inbox #1268); the detail was worked out by the same review after the approval:
+approved it", inbox #1268 in olive-ferret); the detail was worked out by the same review after the approval:
 
 - **One signal each for "a day started" and "a day planned"**, on the run flow, carrying the spec
   and its world; `EventBus.day_started(day)`, `EventBus.day_planned(day)` and

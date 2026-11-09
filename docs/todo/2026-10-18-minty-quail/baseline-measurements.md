@@ -4,7 +4,7 @@
 refactor's head", but the refactor merges into main as it goes. Shown the design review's finding
 that "the single remeasure at the end has no stored 'before'. No baseline commit is named and no
 winnability or route-cost numbers from before the refactor are saved. Capturing them now blocks
-nothing", the player: "sure" (inbox #1268).
+nothing", the player: "sure" (inbox #1268 in olive-ferret).
 
 **Read as:** the before-numbers are measured on the tree from before the refactor and kept in the
 repository, so the end remeasure has something to compare with. *The specifics are the

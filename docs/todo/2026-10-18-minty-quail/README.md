@@ -85,7 +85,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    APIs, real frames) and the places a test still reaches past it, with `tests-unseen-reads.md` for
    what its count cannot see. `tests-own-class-members.md` holds the
    members whose names collide with another class's.
-3. **The rest goes module by module, in tracks that run in parallel** (inbox #1268). The design
+3. **The rest goes module by module, in tracks that run in parallel** (inbox #1268 in olive-ferret). The design
    review found that the order converted the tests before the event code they read, so the largest
    group of suites would be mocked against fields and redone; shown its suggestion to go module by
    module, the player: "yeah module by module makes sense and can be parallelized". Within a
@@ -101,8 +101,10 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    - **The modules that do not wait for the events:** telemetry; the player and the baby; the atlas
      and the scenery; the crowd; the city map. The city scene and the run's parts follow the third
      hand-ins pull request.
-   - **Tools:** `baseline-measurements.md`, and the field-read check made to see every read
-     (`field-reads.md`).
+   - **Tools:** `baseline-measurements.md`, the field-read check made to see every read
+     (`field-reads.md`), and then `typed-everywhere.md`: code is typed wherever the language can
+     type it, the tests included (its scripted rewrite of the suites' runner is the orchestrator's
+     proposal, marked so there).
    - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a
      pursuit and the rest as parts an event has, and every caller asking through methods). Its
      first steps, the callers outside the events folder and the live event's own behaviours and
@@ -127,7 +129,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    `tests/probes/placement_view_mix.gd`, which `VIEW_SHARES` is measured with, still plans no
    closures or seals.
 
-   **The "before" is captured while the old tree can still be measured** (inbox #1268). The design
+   **The "before" is captured while the old tree can still be measured** (inbox #1268 in olive-ferret). The design
    review found that no baseline commit is named, that no winnability or route-cost numbers from
    before the refactor are stored, and that a probe asks only what every tree has, so once the
    events' fields are behind methods no probe runs on both the old tree and the new; the player,
@@ -139,7 +141,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    which half moved a number. None of it blocks a step or changes the player's "remeasuring at the
    very end" (inbox #813 in curly-moose): a reading is recorded, not judged.
 
-**The entry's list is frozen** (inbox #1268). The design review found that items had been added
+**The entry's list is frozen** (inbox #1268 in olive-ferret). The design review found that items had been added
 to this entry through three weeks with no stated end; shown "The entry has no stated end", the
 player: "also good points". *Read as, the orchestrator's, open to the player's correction:* the
 entry is done when the items in this folder are gone, the standing breaks are each decided, and the

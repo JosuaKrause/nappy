@@ -9,7 +9,7 @@ interface then being what `docs/EVENTS.md` and `docs/ARCHITECTURE.md` describe.
 
 **Whose it is.** The design is a design agent's, from the player's rules below. The player, on
 which model does what: "consider using fable for tasks that need planning / complex reasoning",
-and "for code I'm fine with your choice as long as fable did the design" (inbox #1264); *read as*
+and "for code I'm fine with your choice as long as fable did the design" (inbox #1264 in olive-ferret); *read as*
 a design being that model's work. **The player has not read this design.**
 
 **Proposed, not asked for:** every mechanism in it that the player's words below do not name, among
@@ -20,7 +20,7 @@ method per field on the three classes as they stand.
 
 **Its open points are answered.** Section 7 holds what the player's recorded words answer and
 the six points the design put as questions, each with the player's answer from the board
-(inbox #1278).
+(inbox #1278 in olive-ferret).
 
 The rule it applies is the player's: "provide a consistent interface for events that can be used without
 knowing details of the event. that applies to all aspects of events ... don't forget about
@@ -841,7 +841,7 @@ tuned for them.
    request's record keeps the names, since they are written text.
 ### Answered by the player on the board
 
-Six points the design put as questions, each with the player's answer (inbox #1278, which holds
+Six points the design put as questions, each with the player's answer (inbox #1278 in olive-ferret, which holds
 each question as it was shown).
 
 1. **Where do the settings files live?** Offered a new folder `src/events/parts/` for the
@@ -874,7 +874,7 @@ each question as it was shown).
    first, and nothing is kept wrong to hold old numbers. Each is its own small pull request after
    the step that names it, saying what it changes, and playtests decide what then needs fixing.
    Tell me if you meant only the field's shape.": "whatever is the *correct* implementation. if
-   that is b then let's do that" (inbox #1278). **Read as:** every answer below is made correct.
+   that is b then let's do that" (inbox #1278 in olive-ferret). **Read as:** every answer below is made correct.
    The timing is the read-back's, which is what the player answered: each is a pull request of
    its own after the step that gives it a name, not a change inside that step, saying what it
    changes in play and in the run log, with its pictures. Playtests decide what then needs fixing.
@@ -887,7 +887,8 @@ each question as it was shown).
    - `blocking_radius()` shuts a lethal row's field core, not its lethal reach (section 3).
    - The ground a row that ends the day shuts is stated four ways (`clearance()`,
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
-     lethal disc less her radius). They become one stated fact, asked under one name.
+     lethal disc less her radius). *Read as* (the filer's, open to the player's correction):
+     made correct means they become one stated fact, asked under one name.
    - A badge for a warning with nothing in the world yet is made with the row's plain `speed`,
      which a pursuer warned of first does not set: the run log says the day-3 charging dog's badge
      is "closing 0px/s" while the dog comes at its chase speed. The badge asks the row's
