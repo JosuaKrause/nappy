@@ -41,8 +41,8 @@ the catalogue of what each entry point under `tools/` is for.
   sentence naming it. The merge is a numbered flow, and the two rulesets are explained once, in a
   reference file.
 - **The model table owns "which model"**, in a section of its own. The player's words on Fable are
-  in it (inbox #1264): Fable is considered for a task that needs planning or complex reasoning; a
-  design is Fable's; code built from a Fable design is built by the model the orchestrator chooses;
+  in it (inbox #1264): Fable is considered for a task that needs planning or complex reasoning; the
+  design that code is built from is Fable's, a seam's design included; code built from a Fable design is built by the model the orchestrator chooses;
   a change to a rule file is done by Fable directly. A wait is no agent's (inbox #1070 in gentle-walrus).
 - **Text handed to a write goes through a file in a fresh directory**, never a fixed name under
   `/tmp`: committing has the three-call sequence and why each call stands alone.
@@ -64,14 +64,21 @@ the catalogue of what each entry point under `tools/` is for.
 
 ## Choices made in the rewrite, open to the player's overturn
 
-- **Who reviews a change to a rule:** a change to what a rule says is reviewed by Opus, a skill's
-  wording alone by Sonnet. Listed in the skill as a proposal; it reconciles pr-review's "a stronger
-  model" with the table's row for skill wording.
+- **Who reviews a change to a rule, or a drawing:** a pull request that changes play or carries a
+  design, one that carries a drawing, and a change to what a rule says are reviewed by Opus; a
+  skill's wording alone by Sonnet. Listed in the skill as a proposal; it reconciles pr-review's "a
+  stronger model" with the table's row for skill wording.
+- **Merging has a row of its own**, uncited: the orchestrating session merges, with no agent
+  spawned for it, and an agent or a monitor may run a merge the session hands it, as committing
+  has it. The player's word that a wait is polled by a script covers waiting and polling only.
+- **Code built from a Fable design is built "by the build rows below"**, the filer's reading of
+  the orchestrator's choice the player left it.
 - **"A rule file" takes in a hook's text**, marked as a reading: the player's words name rule,
   skill and `CLAUDE.md` changes.
 - The catalogue rows for the two old-queue tools are cut to a line and kept, since the tools exist.
 - Three sentences describe what the sibling pull request for the hooks adds (a review checkout's
-  removal, a released brief going with its branch, a hook naming the skills that govern a file),
+  removal, a released brief going with its branch, a hook naming the skills that govern a file and refusing the first
+  edit there until they are read),
   and one what the sibling pull request for the domain skills adds (the illustrated-png skill says
   in its opening rules that Claude Code has no image generator, which is where orchestrating now
   points for it).
