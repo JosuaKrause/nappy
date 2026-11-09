@@ -1,0 +1,10 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[GameState] run started, seed=4242
+[GameState] run started, seed=90210
+[GameState] run started, seed=1234567
+-- test_full_run.gd            266534 ms
+
+16739 checks, 0 failures
+PARTIAL RUN — only suites matching test_full_run. Not a green build.
