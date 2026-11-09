@@ -361,7 +361,7 @@ var _camera_smoothing_when_free := true
 
 ## Takes her three groups each time she enters the tree, the other half of `_exit_tree()`'s
 ## release. **On entering, not in `_ready()`**, because she can leave the tree and come back:
-## the escape moves her from the building to the city (`main._build_the_finale_city()`), and
+## the escape moves her from the building to the city (`main._build_the_escape_city()`), and
 ## `_ready()` runs only once in a node's life while `_exit_tree()` runs on every exit, so a pair
 ## split across the two gave her pages back once more than it took them (the rule
 ## `Building._enter_tree()` states for the same reason). Three references rather than a load:

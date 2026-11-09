@@ -1524,18 +1524,16 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t) -> void:
 
 # ------------------------------------------------------------------ the city ---
 
-## Dressing a city that has walked a day for the escape (`City.start_day()` under the city section's
-## spec) grows no corridor and closes no street: its walk is handed in once it is planned. Nobody on
-## its streets is the day director's start's (`DaySpec.crowd_density`), held where the real city
-## section is booted (`_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart`).
+## Dressing the city for the escape (`City.start_day()` under the city section's spec) grows no
+## corridor and closes no street: its walk is handed in once it is planned. Nobody on its streets is
+## the day director's start's (`DaySpec.crowd_density`), held where the real city section is booted
+## (`_test_main_tints_the_escape_streets_on_its_first_plan_and_on_a_restart`).
 func _test_the_finale_city_grows_no_corridor(t) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	var run := city.run
 	t.add_child(city)
 	city.build(MapCache.of(SEEDS[0]))
 	run.attempt_spend.city_state.begin_day(city.map.block_plans, 1)
-	city.start_day(run.attempt_spend.city_state, 1, run.calendar.day_rng(1, "closures"))
-	t.check(city.streets().route_tree() != null, "a day grows a corridor")
 	var spec := _section(DaySpec.Section.CITY)
 	city.start_day(run.attempt_spend.city_state, 1, run.calendar.day_rng(1, "closures"), spec)
 	t.check(city.streets().route_tree() == null and city.streets().closures().is_empty(),

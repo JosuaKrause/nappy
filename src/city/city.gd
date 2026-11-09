@@ -1029,7 +1029,7 @@ func _home_building_height(rect: Rect2i, lot_depth_tiles: int) -> float:
 ## (`PosterWalls.show_only()`). The repaint, the door, the ground, the litter, the block
 ## dressing and the street trees happen either way, because the parks she walks through have to
 ## be the parks the run's seed built. The run flow hands `spec` in on every day and every
-## section (`main`, the same object the day's event manager is handed); left out, as a rig that
+## section (`DayDirector.start()`, the same object the day's event manager is handed); left out, as a rig that
 ## builds a city with no run flow leaves it, it is a day's (`DaySpec.for_day()`). `day` is the
 ## calendar's — the escape is walked on the last day's — and `rng` the closures' stream.
 func start_day(state: CityState, day: int, rng: RandomNumberGenerator,
@@ -1125,7 +1125,7 @@ func _close_streets(spec: DaySpec, rng: RandomNumberGenerator) -> void:
 ## The route's own curbstones, tinted — a trial of whether a faint hint on the ground can stay under
 ## the threshold of being noticed as one; see `docs/CITY.md`, "Guiding her to the calm". **One tint
 ## for every walk**: the day's tree, handed in by `_close_streets()` as soon as it is grown, and the
-## escape's two chains, handed in by `Main` after every plan of the section, a restart's included.
+## escape's two chains, handed in by `DayDirector.start()` after every plan of the section, a restart's included.
 ## *(Inbox #747: "yes, of course the yellow tint. we spent the whole game establishing that why would
 ## it be different in the last section?")*
 ##
