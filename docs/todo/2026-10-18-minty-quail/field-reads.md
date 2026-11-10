@@ -28,7 +28,7 @@ each read, and its pull requests in order, the first of which run beside the pla
   field under `src/`, with today's reads listed once in a list that only shrinks. It is
   `tools/check_field_reads.py`, with the list in `tools/field_reads.txt`, run in CI's `gates` job.
 
-**The check is made to see every read** (inbox #1268). `tools/check_field_reads.py` skips a read
+**The check is made to see every read** (inbox #1268 in olive-ferret). `tools/check_field_reads.py` skips a read
 whose receiver's class it cannot tell: `--summary` counted 1,220 listed reads beside 2,320 uses
 skipped for an unknown receiver, so an empty list would not mean the rule holds. Shown "The
 field-read check skips about two thirds of reads because it cannot tell the receiver's class", the
@@ -36,7 +36,7 @@ player: "isn't that the point of a class hierarchy? it should be made working".
 
 **Read as:** every receiver under `src/` has a class the check can tell, so a read of another
 class's field cannot hide behind an untyped name. **How** is the design review's worked-out detail, written after the player had approved its points
-(inbox #1268): the engine sees
+(inbox #1268 in olive-ferret): the engine sees
 what the script cannot. GDScript's own warnings for an access the engine cannot type
 (`unsafe_property_access`, `unsafe_method_access`, `untyped_declaration`) are turned into errors in
 `project.godot`, with a file-level ignore at the top of every file not yet converted (the builder

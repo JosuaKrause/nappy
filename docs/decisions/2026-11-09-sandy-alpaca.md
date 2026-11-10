@@ -1,9 +1,9 @@
 # sandy-alpaca — The orchestration skills after the rules review: the contract said once, committing owns identity and merging, a short tool catalogue, Fable in the model table · 2026-11-09 · not from an entry
 
 **The ask.** The player had a review made of every rule file ("have another fable agent review all
-skills/claude/rule files", inbox #1267), read its summary, and said "let's do all the suggested
+skills/claude/rule files", inbox #1267 in olive-ferret), read its summary, and said "let's do all the suggested
 changes for the hooks/skills/claudes etc", "four PRs is fine with me -- can we parallelize?" and
-"for the rule/skill/claude changes I want fable to do it directly" (inbox #1267). The work was split
+"for the rule/skill/claude changes I want fable to do it directly" (inbox #1267 in olive-ferret). The work was split
 by files into four pull requests. This record is the one for the skills the orchestrating session
 and every builder work under: orchestrating with its agent contract, committing, and using-tools,
 the catalogue of what each entry point under `tools/` is for.
@@ -41,7 +41,7 @@ the catalogue of what each entry point under `tools/` is for.
   sentence naming it. The merge is a numbered flow, and the two rulesets are explained once, in a
   reference file.
 - **The model table owns "which model"**, in a section of its own. The player's words on Fable are
-  in it (inbox #1264): Fable is considered for a task that needs planning or complex reasoning; the
+  in it (inbox #1264 in olive-ferret): Fable is considered for a task that needs planning or complex reasoning; the
   design that code is built from is Fable's, a seam's design included; code built from a Fable design is built by the model the orchestrator chooses;
   a change to a rule file is done by Fable directly. A wait is no agent's (inbox #1070 in gentle-walrus).
 - **Text handed to a write goes through a file in a fresh directory**, never a fixed name under

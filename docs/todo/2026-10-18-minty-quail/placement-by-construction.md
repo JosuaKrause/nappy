@@ -13,7 +13,7 @@ refactors come first", "everything else would be meaningless" (inbox #1185 in ge
 **Read as:** the design is `docs/EVENTS.md`'s "The three views and the placement order", cited line
 by line; its numbered list says where the code differs.
 
-**The player's answers to the design review** (inbox #1268; each is quoted with what it answered):
+**The player's answers to the design review** (inbox #1268 in olive-ferret; each is quoted with what it answered):
 
 - Shown that density is "a chain of correction tables that multiply, each tuned until the new draw
   reproduces the old algorithm's counts", that five of the listed differences from the design would
@@ -48,7 +48,7 @@ by line; its numbered list says where the code differs.
   it the first time this run. exact same state at the beginning of the day. nothing else").
   *Read as* (the orchestrator's, put to the player as "draw a whole street at once when she first
   comes near it, seeded by the day and the street, so a street holds the same events whatever her
-  path" and agreed with the review's points, inbox #1268): the events a street's draw gives it do
+  path" and agreed with the review's points, inbox #1268 in olive-ferret): the events a street's draw gives it do
   not depend on the path she takes to it. The beats sited from her walk are the exception the
   player's own ruling makes: a retried day 3 has its fire "sited from the walk she takes then"
   (PLAYTEST-119 26), and step 4's rigged marbles are of that kind.
@@ -68,7 +68,7 @@ it once: the dawn draws every open location through it, so the band finds nothin
 ## What is left, in order
 
 The steps are the design review's points, which the player approved: "agree on all design review
-points. let's do it", and "I saw the review and approved it" (inbox #1268). The mechanism under
+points. let's do it", and "I saw the review and approved it" (inbox #1268 in olive-ferret). The mechanism under
 each step is the same review's worked-out detail, written after the player had read its points; its
 full text names the files each step owns.
 
