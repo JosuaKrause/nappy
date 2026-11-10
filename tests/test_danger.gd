@@ -7,7 +7,7 @@ extends RefCounted
 ## not, that the mark still breathes, which two levels the cue over the player has and that one
 ## system cannot clear another's warning, and what the screen edge hands its badges on real frames.
 ## Which rows earn an arrow is the row's own question (`EventDef.announces_its_coming()`), checked
-## in `tests/test_events_catalogue.gd`.
+## in `tests/test_events_catalogue.gd`; that the edge asks it is checked here.
 ##
 ## The standing decision this suite exists to keep, from `CLAUDE.md`:
 ##
@@ -32,6 +32,7 @@ func run(t) -> void:
 	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
 	_test_the_screen_edge_is_the_same_size_for_everyone(t)
 	await _test_the_badge_measures_the_things_own_speed(t)
+	await _test_the_edge_badges_only_what_the_row_announces(t)
 	await _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t)
 	await _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
 	_test_the_pram_says_how_the_baby_is(t)
@@ -667,6 +668,39 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 		driven += delta
 		await t.get_tree().process_frame
 	t.check(edge.model.announcing().size() == 1, "a fire engine actually coming down the street does")
+
+	edge.free()
+	standing.free()
+	_free_manager(manager)
+
+## **The edge badges what the row announces, and nothing else that comes fast.** Whether a row's
+## coming is worth an arrow is the row's own answer (`EventDef.announces_its_coming()`); this is
+## that the edge asks it. The crossing cat comes at 240px/s, fast enough to be badged on its speed
+## alone, and its row does not announce it (it does not telegraph its coming, PLAYTEST-145 20), so
+## a second of it running at her from off screen puts nothing on the edge.
+func _test_the_edge_badges_only_what_the_row_announces(t) -> void:
+	var manager := _manager(t)
+	manager.set_physics_process(false)
+	var standing := Node2D.new()
+	t.add_child(standing)
+	var edge := DangerEdge.new()
+	edge.atlas = _atlas
+	edge.setup(manager, standing)
+	t.add_child(edge)
+
+	var def := EventCatalogue.by_id("cat_dash")
+	t.check(not def.announces_its_coming(Tuning.WALK_SPEED),
+			"the cat's row does not announce its coming, so the check below is about the edge")
+	var cat := manager.spawn_extra(def, Vector2(700.0, 0.0))
+	var ran := 0.0
+	var announced := false
+	while ran < 1.0:
+		var delta: float = t.get_process_delta_time()
+		cat.global_position -= Vector2(def.approach_speed() * delta, 0.0)
+		ran += delta
+		await t.get_tree().process_frame
+		announced = announced or not edge.announcing().is_empty()
+	t.check(not announced, "a cat running at her from off screen gets no badge at the edge")
 
 	edge.free()
 	standing.free()

@@ -297,12 +297,13 @@ func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
 
 ## **What a row says of its coming** (`EventDef.announces_its_coming()`), the screen-edge badge's
 ## rule, checked here once: a badge for anything lethal, and otherwise only for what comes faster
-## than she walks; nothing for a row that does not telegraph, nor for a crossing sited ahead of her
-## (`AHEAD_OF_PLAYER`), **unless it pursues**: the day-3 dog shares the cat's spawn mode, but the
-## director sites it outside the view and lets it close in, so unlike the cat's three-second
-## crossing it has an offscreen approach to warn of. How fast a row comes (`approach_speed()`) is
-## its chase speed for a pursuer, and every row it announces has a silhouette for the badge to
-## carry.
+## than she walks; nothing for a row that does not telegraph. A crossing sited ahead of her
+## (`AHEAD_OF_PLAYER`) is announced only if it pursues: the day-3 dog is sited that way, but the
+## director sites it outside the view and lets it close in, so it has an offscreen approach to warn
+## of. The clause that turns down such a crossing when it does not pursue is not checked here: no
+## catalogue row reaches it, since the one other row sited that way, the crossing cat, does not
+## telegraph and is turned down before it. How fast a row comes (`approach_speed()`) is its chase
+## speed for a pursuer, and every row it announces has a silhouette for the badge to carry.
 func _test_a_row_says_whether_its_coming_is_announced_and_how_fast(t) -> void:
 	var walk := Tuning.WALK_SPEED
 	var robber := EventCatalogue.by_id("alley_robbery")
@@ -315,13 +316,11 @@ func _test_a_row_says_whether_its_coming_is_announced_and_how_fast(t) -> void:
 			"and not to somebody walking as fast as it comes")
 	t.check(not EventCatalogue.by_id("loose_dog").announces_its_coming(walk),
 			"a row that does not telegraph its coming is not announced")
-	var cat := EventCatalogue.by_id("cat_dash")
 	var dog := EventCatalogue.by_id("charging_dog")
-	t.check(cat.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER
-			and dog.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and dog.chase_speed() > 0.0,
-			"the cat and the day-3 dog are both sited ahead of her, and the dog pursues")
-	t.check(not cat.announces_its_coming(walk), "nor a crossing sited ahead of her")
-	t.check(dog.announces_its_coming(walk), "unless it pursues her")
+	t.check(dog.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and dog.chase_speed() > 0.0,
+			"the day-3 dog is sited ahead of her and pursues")
+	t.check(dog.announces_its_coming(walk),
+			"a crossing sited ahead of her is announced if it pursues her")
 	t.check(not EventCatalogue.by_id("dog_walker").announces_its_coming(walk),
 			"nor a mover she can outwalk")
 	t.close_to(robber.approach_speed(), robber.chase_speed(), "a pursuer comes at its chase speed")
