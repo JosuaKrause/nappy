@@ -21,7 +21,8 @@ happenings, day 12's park cordon, the crowd and the run log's observer are built
   path reaches it. The rigs that drive the event manager without `City.start_day()`
   (`tests/test_event_manager.gd`, `tests/test_balance.gd`) hand it a `DayStreets` instead;
 - *proposed by the hand-ins' builder (where `calm_summary()` goes, by the orchestrator), open to the player's correction:* the city's three summary
-  lines move off `City`, so `RunSession.watch_day()` takes the parts too. `closure_summary()` moves
+  lines move off `City`, so the run log's session (`RunSession`, where it hears
+  `RunFlow.day_planned`) takes the parts too. `closure_summary()` moves
   onto `DayStreets` and `event_summary()` onto the event manager. `calm_summary()` reads the map
   with the run's city state, so it moves onto `CityMap`, asked with the city state handed in.
 

@@ -45,7 +45,9 @@ request, the signals and the run log, after misty-sparrow (the start).
   (in the scripted run only the atlas's `texture` lines, which the fixture filters out) stand above
   it in a real log.
 - **An authored escape section writes no `start` line**, as an authored day never did; it is still
-  watched frame by frame.
+  watched frame by frame. Its observer's per-walk reset (`TelemetryObserver.start()`, which records
+  whether she starts on calm ground or a road) is skipped with it, so an authored walk that starts
+  her on either may write a `calm` or `road` line on its first frame that she never walked into.
 - **`tests/test_observers.gd` changed**, where the brief asked it to pass unchanged: its recording
   page counter is seated in the boot's sitting, so `main` hands it each boot's flow; on the bus alone
   it could no longer hear a walk begin. The fixture, the expected names and the check texts are
