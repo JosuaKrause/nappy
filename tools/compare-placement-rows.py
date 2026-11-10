@@ -10,7 +10,19 @@ sample of cities, and a role table (`ROLE day row role`, role 1 a wall and 2 fri
 Rule: a cell is a count summed over the samples' cities; z = (head - main) / sqrt(head + main).
 (b) lists every cell with |z| > 2 pooled over all samples; (c) every cell with |z| > 2 on at least
 two samples with the same sign. Cells: row x kind of ground, row x view, row x day, view x day,
-walls and friction x view x day, walls and friction x view, and the day's whole count.
+walls and friction x view x day, walls and friction x view, and the day's whole count. Counts are
+per city per day: (count / cities / days), the days being 14 for a whole-run cell and 1 otherwise.
+
+Lines of the logs (a line of another kind is ignored; the runner's other output may be mixed in):
+  RD day cities placed moments   the day's whole count; `cities` is the sample's city count
+  RV day row view count          view is 0 (on her route), 1 (route-adjacent) or 2 (off the route)
+  RK day row kind count          kind of ground
+  ROLE day row role              the role table, role 1 a wall and 2 friction (other roles are ignored)
+
+Refused with exit 2, usage or message on stderr and nothing on stdout: an unreadable or non-UTF-8
+file; a log with no RD line or a malformed or out-of-range line; an RD line whose city count is not
+CITIES (so the two logs of a sample agree); a role table with no ROLE line or a malformed one; a
+CITIES that is not a positive decimal number.
 """
 
 from __future__ import annotations
@@ -42,15 +54,11 @@ class InputError(Exception):
     """A log or an argument the tool cannot read."""
 
 
-def read_roles(path: Path) -> dict[tuple[int, str], str]:
-    roles: dict[tuple[int, str], str] = {}
-    for line in read_lines(path):
-        f = line.split()
-        if f and f[0] == "ROLE":
-            name = ROLE_NAMES.get(int(f[3]))
-            if name:
-                roles[(int(f[1]), f[2])] = name
-    return roles
+def whole_number(text: str) -> int:
+    """A non-negative decimal number written in ASCII digits."""
+    if not (text.isascii() and text.isdecimal()):
+        raise ValueError(text)
+    return int(text)
 
 
 def read_lines(path: Path) -> list[str]:
@@ -58,20 +66,49 @@ def read_lines(path: Path) -> list[str]:
         return path.read_text(encoding="utf-8").splitlines()
     except OSError as exc:
         raise InputError(f"cannot read {path}: {exc.strerror}") from exc
+    except UnicodeDecodeError as exc:
+        raise InputError(f"{path} is not UTF-8 text") from exc
 
 
-def cells(path: Path, roles: dict[tuple[int, str], str]) -> Counts:
+def read_roles(path: Path) -> dict[tuple[int, str], str]:
+    roles: dict[tuple[int, str], str] = {}
+    seen = False
+    for line in read_lines(path):
+        f = line.split()
+        if not f or f[0] != "ROLE":
+            continue
+        try:
+            if len(f) != 4:
+                raise ValueError(line)
+            day, row, role = whole_number(f[1]), f[2], whole_number(f[3])
+        except ValueError as exc:
+            raise InputError(f"{path}: cannot read the line {line!r}") from exc
+        seen = True
+        if role in ROLE_NAMES:
+            roles[(day, row)] = ROLE_NAMES[role]
+    if not seen:
+        raise InputError(f"{path} has no ROLE line")
+    return roles
+
+
+def cells(path: Path, roles: dict[tuple[int, str], str], cities: int) -> Counts:
     c: Counts = collections.Counter()
+    days_seen = 0
     for line in read_lines(path):
         f = line.split()
         if not f:
             continue
         try:
             if f[0] == "RD":
-                d = int(f[1])
-                c[("the day's whole count", "", f"day {d}", 1)] += int(f[3])
+                d = whole_number(f[1])
+                if whole_number(f[2]) != cities:
+                    raise InputError(f"{path}: the line {line!r} counts {f[2]} cities, not {cities}")
+                days_seen += 1
+                c[("the day's whole count", "", f"day {d}", 1)] += whole_number(f[3])
             elif f[0] == "RV":
-                d, row, v, n = int(f[1]), f[2], int(f[3]), int(f[4])
+                d, row, v, n = whole_number(f[1]), f[2], whole_number(f[3]), whole_number(f[4])
+                if v >= len(VIEWS):
+                    raise ValueError(line)
                 c[("row by view", row, VIEWS[v], DAYS)] += n
                 c[("_row by view and day", row, f"{VIEWS[v]} day {d}", 1)] += n
                 c[("row by day", row, f"day {d}", 1)] += n
@@ -81,9 +118,11 @@ def cells(path: Path, roles: dict[tuple[int, str], str]) -> Counts:
                     c[(f"{role} by view and day", VIEWS[v], f"day {d}", 1)] += n
                     c[(f"{role} by view", VIEWS[v], "all days", DAYS)] += n
             elif f[0] == "RK":
-                c[("row by kind of ground", f[2], f[3], DAYS)] += int(f[4])
+                c[("row by kind of ground", f[2], f[3], DAYS)] += whole_number(f[4])
         except (ValueError, IndexError) as exc:
             raise InputError(f"{path}: cannot read the line {line!r}") from exc
+    if not days_seen:
+        raise InputError(f"{path} has no RD line")
     return c
 
 
@@ -102,7 +141,7 @@ def report(
     main_label: str,
     head_label: str,
 ) -> list[str]:
-    data = [(s, cells(s.main, roles), cells(s.head, roles)) for s in samples]
+    data = [(s, cells(s.main, roles, s.cities), cells(s.head, roles, s.cities)) for s in samples]
     n = sum(s.cities for s, _, _ in data)
     keys: set[Cell] = set()
     for _, a, b in data:
@@ -183,11 +222,8 @@ def summarize(
 def parse_args(argv: list[str]) -> argparse.Namespace:
     p = argparse.ArgumentParser(
         prog="compare-placement-rows.py",
-        description=(
-            "List every cell of two trees' placement rows that moved by more than two standard "
-            "deviations. Logs are what `tools/test.sh probes/placement_rows.gd` prints; the role "
-            "table is what `tools/test.sh probes/placement_roles.gd` prints."
-        ),
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=("Example: tools/compare-placement-rows.py --roles roles.log --sample 90210+31i 18 main.log head.log"),
     )
     p.add_argument(
@@ -211,7 +247,7 @@ def main(argv: list[str]) -> int:
     args = parse_args(argv)
     samples: list[Sample] = []
     for name, count, main_log, head_log in args.sample:
-        if not count.isdigit() or int(count) < 1:
+        if not (count.isascii() and count.isdecimal()) or int(count) < 1:
             print(
                 f"compare-placement-rows.py: the city count of {name} is not a positive number: {count}",
                 file=sys.stderr,
