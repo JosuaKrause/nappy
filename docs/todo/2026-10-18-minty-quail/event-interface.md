@@ -865,21 +865,22 @@ each question as it was shown).
    pull request, so that there are numbers to look at later; no step is held, tuned or sent back for
    its cost.
 6. **Does a step fix an answer that is slightly wrong today?** Offered keeping the three answers
-   the board named (the first three below) and listing them for the end remeasure (a), or (b), in the board's words, "fix each in the step
-   that names it, as a change made on purpose with pictures": "the shape change is desired. as I
-   said earlier the main real measure will be playtests. This will tell us what needs fixing.
-   Let's not obsess over theoretical numbers. We currently have no established base anymore since
-   we changed a lot. Playtest will decide which deviations need to be fixed". Read back on the
-   board as "I read this as b, not a: each of the three is made right, the field's real shape
-   first, and nothing is kept wrong to hold old numbers. Each is its own small pull request after
-   the step that names it, saying what it changes, and playtests decide what then needs fixing.
-   Tell me if you meant only the field's shape.": "whatever is the *correct* implementation. if
-   that is b then let's do that" (inbox #1278 in olive-ferret). **Read as:** every answer below is
-   made correct. The timing is the read-back's, which is what the player answered: each is a pull request of
-   its own after the step that gives it a name, not a change inside that step, saying what it
-   changes in play and in the run log, with its pictures. Playtests decide what then needs fixing.
-   The fourth answer below was found in review after the player answered; *read as* (the
-   orchestrator's, open to the player's correction) covered by the same words.
+   the board named (the first three below) and listing them for the end remeasure (a), or (b), in
+   the board's words, "fix each in the step that names it, as a change made on purpose with
+   pictures": "the shape change is desired. as I said earlier the main real measure will be
+   playtests. This will tell us what needs fixing. Let's not obsess over theoretical numbers. We
+   currently have no established base anymore since we changed a lot. Playtest will decide which
+   deviations need to be fixed". Read back on the board as "I read this as b, not a: each of the
+   three is made right, the field's real shape first, and nothing is kept wrong to hold old
+   numbers. Each is its own small pull request after the step that names it, saying what it
+   changes, and playtests decide what then needs fixing. Tell me if you meant only the field's
+   shape.": "whatever is the *correct* implementation. if that is b then let's do that" (inbox
+   #1278 in olive-ferret). **Read as:** every answer below is made correct. The timing is the
+   read-back's, which is what the player answered: each is a pull request of its own after the step
+   that gives it a name, not a change inside that step, saying what it changes in play and in the
+   run log, with its pictures. Playtests decide what then needs fixing. The fourth answer below was
+   found in review after the player answered; *read as* (the orchestrator's, open to the player's
+   correction) covered by the same words.
    - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
      its five callers do, though the field of a row with a long body is a capsule about that body.
      Answering with the real field changes when the run log says "out of range" and when the
