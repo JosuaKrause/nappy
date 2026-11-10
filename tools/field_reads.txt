@@ -121,10 +121,6 @@ src/city/city.gd streamed
 src/main.gd trace
 
 # [ChargeRecord] src/events/charge_record.gd
-src/events/behaviours/event_barrier_post.gd began
-src/events/behaviours/event_barrier_post.gd ended
-src/events/behaviours/event_barrier_post.gd warned
-src/events/behaviours/event_pursuit.gd began
 src/events/event_instance.gd began
 src/events/event_instance.gd ended
 src/events/event_instance.gd warned
@@ -422,7 +418,6 @@ src/events/event_director.gd after_day
 src/events/event_manager.gd day
 
 # [EventBarrierPost] src/events/behaviours/event_barrier_post.gd
-src/events/event_instance.gd far
 src/events/views/roadblock_look.gd far
 
 # [EventBehaviour] src/events/behaviours/event_behaviour.gd
@@ -491,8 +486,6 @@ src/events/behaviours/event_investigation.gd vehicle
 src/events/behaviours/event_notice_run.gd flock_size
 src/events/behaviours/event_notice_run.gd flock_spread
 src/events/behaviours/event_notice_run.gd mobile
-src/events/behaviours/event_officer.gd pursuit
-src/events/behaviours/event_pursuit.gd pursuit
 src/events/behaviours/event_route_walk.gd paces
 src/events/behaviours/event_route_walk.gd speed
 src/events/day_events.gd pursuit
@@ -783,15 +776,6 @@ src/dev/scene_recipe_runtime.gd on_foot
 src/dev/scene_recipe_runtime.gd pursuit
 src/dev/still_watch.gd def
 src/dev/still_watch.gd is_finished
-src/events/behaviours/event_barrier_post.gd _charge
-src/events/behaviours/event_barrier_post.gd _heading
-src/events/behaviours/event_barrier_post.gd _notice
-src/events/behaviours/event_barrier_post.gd _obstruction
-src/events/behaviours/event_barrier_post.gd _spread_vertical
-src/events/behaviours/event_barrier_post.gd def
-src/events/behaviours/event_barrier_post.gd departure
-src/events/behaviours/event_barrier_post.gd is_leaving
-src/events/behaviours/event_barrier_post.gd phase
 src/events/behaviours/event_behaviours.gd abduction
 src/events/behaviours/event_behaviours.gd barrier_post
 src/events/behaviours/event_behaviours.gd car
@@ -826,30 +810,6 @@ src/events/behaviours/event_investigation.gd is_leaving
 src/events/behaviours/event_investigation.gd on_foot
 src/events/behaviours/event_investigation.gd path
 src/events/behaviours/event_investigation.gd route
-src/events/behaviours/event_officer.gd _heading
-src/events/behaviours/event_officer.gd _mover
-src/events/behaviours/event_officer.gd _navigator
-src/events/behaviours/event_officer.gd age
-src/events/behaviours/event_officer.gd def
-src/events/behaviours/event_officer.gd departure
-src/events/behaviours/event_officer.gd investigation
-src/events/behaviours/event_officer.gd is_finished
-src/events/behaviours/event_officer.gd is_leaving
-src/events/behaviours/event_pursuit.gd _charge
-src/events/behaviours/event_pursuit.gd _chase_way
-src/events/behaviours/event_pursuit.gd _guard_spent
-src/events/behaviours/event_pursuit.gd _heading
-src/events/behaviours/event_pursuit.gd _path_travelled
-src/events/behaviours/event_pursuit.gd def
-src/events/behaviours/event_pursuit.gd gave_up
-src/events/behaviours/event_pursuit.gd path
-src/events/behaviours/event_pursuit.gd route
-src/events/behaviours/roadblock_far_guard.gd _map
-src/events/behaviours/roadblock_far_guard.gd _mover
-src/events/behaviours/roadblock_far_guard.gd _navigator
-src/events/behaviours/roadblock_far_guard.gd _spread_vertical
-src/events/behaviours/roadblock_far_guard.gd def
-src/events/behaviours/roadblock_far_guard.gd departure
 src/events/event_excitement.gd age
 src/events/event_excitement.gd car
 src/events/event_excitement.gd def
@@ -963,7 +923,6 @@ src/resistance/resistance_director.gd points_at
 
 # [EventPursuit] src/events/behaviours/event_pursuit.gd
 src/dev/scene_recipe_runtime.gd outrun_for
-src/events/event_instance.gd lunge_held
 
 # [EventScenery] src/events/event_scenery.gd
 src/events/views/event_drawer.gd atlas
@@ -1140,7 +1099,6 @@ src/events/event_catalogue.gd quiet
 src/events/event_catalogue.gd runs_within
 src/events/event_def.gd runs_within
 src/events/event_def.gd within
-src/events/event_instance.gd quiet
 src/events/event_instance.gd runs_within
 
 # [OnHerWay] src/events/on_her_way.gd
@@ -1204,10 +1162,8 @@ src/events/event_def.gd start
 src/events/event_def.gd stop_excitement
 src/events/event_def.gd walk_speed
 src/events/event_def.gd warns_for
-src/events/event_instance.gd stands
 src/events/event_instance.gd stop_excitement
 src/events/event_instance.gd warns_for
-src/events/event_instance.gd warns_over_the_street
 
 # [ResistanceDirector] src/resistance/resistance_director.gd
 src/main.gd trace
@@ -1255,7 +1211,6 @@ src/telemetry/telemetry_observer.gd kind
 src/telemetry/telemetry_observer.gd segment
 
 # [RoadblockFarGuard] src/events/behaviours/roadblock_far_guard.gd
-src/events/behaviours/event_barrier_post.gd gone
 src/events/views/roadblock_look.gd at
 src/events/views/roadblock_look.gd heading
 src/events/views/roadblock_look.gd walked

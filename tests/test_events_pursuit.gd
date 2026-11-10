@@ -1275,9 +1275,9 @@ func _standing_rig(t, def: EventDef, player_speed: float, reaction := INF, insid
 ##
 ## A real building corner, chased round: she walks from its north face to its east face, and a dog
 ## aimed straight at wherever she currently is would cut across the building itself to follow her —
-## exactly the shape of the bug. `EventInstance._step()` is the fix, and this is what it
-## has to hold true of every frame regardless of the geometry, which is why the check runs the
-## whole walk rather than sampling the end of it.
+## exactly the shape of the bug. The pursuit's step through the navigator (`EventPursuit`,
+## `Navigator.step()`) is the fix, and this is what it has to hold true of every frame regardless
+## of the geometry, which is why the check runs the whole walk rather than sampling the end of it.
 func _test_a_pursuer_stops_at_walls(t) -> void:
 	var map := _map()
 	var corner := _a_building_corner(map)
@@ -1628,8 +1628,8 @@ func _test_the_red_caret_is_measured_from_the_catch(t) -> void:
 
 ## **To catch her round a corner he has to come round it.** She stands on the sidewalk just round
 ## the building from him, inside his catch in a straight line, and he chases: he slides along the
-## building's face (`_step()`) and catches her only once the line between them clears the
-## building's corner, never through it. Every frame of the chase is checked against a line sampled
+## building's face (his step through the navigator, `Navigator.step()`) and catches her only once
+## the line between them clears the building's corner, never through it. Every frame of the chase is checked against a line sampled
 ## a quarter pixel at a time, a second answer to the question `clear_line_to()` asks, so a frame
 ## that catches through the corner fails it wherever it falls.
 func _test_the_robber_catches_her_by_coming_round_the_corner(t) -> void:

@@ -8,8 +8,7 @@ extends RefCounted
 ## `EventInstance.Figure`), its settings (the row, or its part's settings class), where she is as
 ## `event` hears it (`where`), the map, the navigator, what the event walks as (`mover`), where the
 ## event writes its account for the run log (`trace`) and the behaviours beside it it works with,
-## where it needs them. The pursuit, the man on foot, the
-## barrier post, the investigation and the car are attached to `event` instead
+## where it needs them. The investigation and the car are attached to `event` instead
 ## (`EventBehaviour.attach()`). `event`'s typed fields (`hold`, `flock`, ...) are set to the same
 ## objects, so the event can answer for each.
 ##
@@ -22,10 +21,10 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 	# The siblings another behaviour is handed are made first; each ticks in its own place below.
 	var on_foot: EventOfficer = null
 	if row.pursuit != null:
-		on_foot = EventOfficer.new()
+		on_foot = EventOfficer.new(figure, where, row, row.pursuit, navigator, mover)
 	var barrier_post: EventBarrierPost = null
 	if row.leaves_its_body():
-		barrier_post = EventBarrierPost.new()
+		barrier_post = EventBarrierPost.new(figure, where, row, map, navigator, mover)
 	var route: EventRouteWalk = null
 	if row.mobile:
 		route = EventRouteWalk.new(figure, row, navigator, mover)
@@ -34,6 +33,12 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 	event.departure = EventDeparture.new(figure, where, row, map, navigator, mover, barrier_post,
 			on_foot)
 	out.append(event.departure)
+	# The man on foot walks back, and the barrier post's guard walks off, by the departure that is
+	# handed them: made after them, it is handed to them once it is made.
+	if on_foot != null:
+		on_foot.take_its_departure(event.departure)
+	if barrier_post != null:
+		barrier_post.take_its_departure(event.departure)
 	if row.vehicle:
 		event.car = EventCarDriving.new()
 		_attach(out, event, where, event.car)
@@ -44,13 +49,14 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 		event.investigation = EventInvestigation.new()
 		_attach(out, event, where, event.investigation)
 	if row.pursuit != null:
-		event.pursuit = EventPursuit.new()
-		_attach(out, event, where, event.pursuit)
+		event.pursuit = EventPursuit.new(figure, where, row, row.pursuit, navigator, mover, route,
+				on_foot, barrier_post)
+		out.append(event.pursuit)
 		event.on_foot = on_foot
-		_attach(out, event, where, on_foot)
+		out.append(on_foot)
 	if barrier_post != null:
 		event.barrier_post = barrier_post
-		_attach(out, event, where, barrier_post)
+		out.append(barrier_post)
 	if row.notice != null and row.pursuit == null and not row.investigates():
 		event.notice_run = EventNoticeRun.new(figure, where, row, row.notice, route)
 		out.append(event.notice_run)

@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 class_name ChargeRecord
 extends RefCounted
 ## One charger's charge as it is counted: its warning, its start, and the one way it ended.
@@ -11,18 +10,21 @@ extends RefCounted
 ## leaving — asks this record, and the first to ask is the only one heard. A warning is said once,
 ## and a charge begins once. Nothing that decides anything reads it.
 
+## The event bus script, so a signal this file emits is checked when the file is parsed.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+
 ## The name the charge is counted under, asked at the moment it is said: a charger's name can be
 ## settled after it is made (the day-3 lesson's dog, day 13's task guard).
 var _name: Callable
-## The bus the charge is said on, handed in by the charger.
-var _bus: Node
+## The bus the charge is said on, handed in by the charger: `EventBus`.
+var _bus: _BUS
 
 ## Whether its warning has been said, its charge has begun, and its charge has ended.
 var warned := false
 var began := false
 var ended := false
 
-func _init(name_of: Callable, bus: Node) -> void:
+func _init(name_of: Callable, bus: _BUS) -> void:
 	_name = name_of
 	_bus = bus
 
@@ -44,6 +46,13 @@ func begin() -> void:
 func catch() -> void:
 	if _may_end():
 		_bus.pursuit_caught.emit(_name.call())
+
+## Its warning, its start and its end were all said before, by its charger before it streamed out:
+## counted as over, and none of them is said again.
+func count_as_over() -> void:
+	warned = true
+	began = true
+	ended = true
 
 ## Its charge was still running when the day or the section ended some other way.
 func cut_short() -> void:

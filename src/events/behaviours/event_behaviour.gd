@@ -15,9 +15,8 @@ extends RefCounted
 ## and the behaviours beside it it works with — it is handed by the composer and holds. What the rest of the game asks of a
 ## behaviour it asks of the event, which answers for it.
 ##
-## **The pursuit, the man on foot, the barrier post, the investigation and the car still hold their
-## event** (`event`, given by `attach()`) and read its fields; every other behaviour is handed its
-## figure and never holds the event.
+## **The investigation and the car still hold their event** (`event`, given by `attach()`) and read
+## its fields; every other behaviour is handed its figure and never holds the event.
 ##
 ## **Each saves and restores its own state** (`save()`, `restore()`), so a plan streamed out and
 ## back in comes back as it was (`EventInstance.save_behaviours()`). What cannot round-trip — another

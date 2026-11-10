@@ -27,6 +27,10 @@ extends Resource
 ## minty-lemur). One that notices her already inside it warns for `Tuning.WARNING_ALONE_MAX` first.
 @export var runs_within := 0.0
 
+## Whether its wait and its notice emit only a telegraph's share of the row's intensity (`quiet`).
+func is_quiet() -> bool:
+	return quiet
+
 ## A notice at `radius`, the shape most rows carry.
 static func at(radius: float) -> NoticeSpec:
 	var spec := NoticeSpec.new()

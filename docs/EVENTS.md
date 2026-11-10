@@ -1921,7 +1921,7 @@ standing at his. Two fields make that work and both are general rather than writ
   ran out — he walks away at his chasing pace over walkable ground, and the instance goes back to
   being only the barrier, waiting and solid, with the post he left empty. **A warning that ends with her walking back out of his
   180px is not a chase**: he is back at the band, both guards posted and the body under him, and
-  he can warn again (`EventInstance._stop_warning()`). **While he warns he is drawn above the
+  he can warn again (`EventPursuit`, `EventBarrierPost.back_at_the_band()`). **While he warns he is drawn above the
   street's other figures**, on the warning layer (`PursuitSpec.warns_over_the_street`,
   `DrawLayer.Layer.WARNING`), under the tunnel's overhead dark: he sorts at his own feet, so a van
   parked in front of his post or another band nearer her would otherwise be drawn over the man

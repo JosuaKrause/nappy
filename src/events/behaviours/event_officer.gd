@@ -18,11 +18,39 @@ var vehicle: EventInstance = null
 var trail := PackedVector2Array()
 ## The event's age at which he reached her and stopped her, or `INF`.
 var _stopped_her_at := INF
+## Its row: how near he has to come to catch her.
+var _row: EventDef
+## How he comes after her (`PursuitSpec`): whether his catch is a stop.
+var _pursuit: PursuitSpec
+## The ground he walks back over, and how he moves over it, as what he walks as.
+var _navigator: Navigator
+var _mover: Mover
+## The departure his walk back is part of (`EventDeparture`), which puts him where each walk ends,
+## held by a weak reference: the departure holds him to walk him back, so a strong one each way
+## would be a reference cycle that is never freed. Handed once the departure is made
+## (`take_its_departure()`).
+var _departure: WeakRef = null
+
+## Handed, as its event is set up, the figure he moves, where she is, his row, how he comes after
+## her, and the ground and how he moves over it.
+func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, pursuit: PursuitSpec,
+		navigator: Navigator, mover: Mover) -> void:
+	_figure = figure
+	_where = where
+	_row = row
+	_pursuit = pursuit
+	_navigator = navigator
+	_mover = mover
+
+## Handed the departure his walk back is part of, as his event is set up: it is made after him,
+## since it is handed him too (`EventBehaviours.compose()`).
+func take_its_departure(departure: EventDeparture) -> void:
+	_departure = weakref(departure)
 
 ## Let out of `by` at the door he stands at, which is where he walks back to.
 func let_out_of(by: EventInstance) -> void:
 	vehicle = by
-	trail = PackedVector2Array([event.global_position])
+	trail = PackedVector2Array([_figure.place()])
 
 ## Whether he has reached her and stopped her.
 func has_stopped_her() -> bool:
@@ -30,13 +58,13 @@ func has_stopped_her() -> bool:
 
 ## How long ago he stopped her, in seconds of the event's age.
 func stopped_for() -> float:
-	return event.age - _stopped_her_at
+	return _figure.age() - _stopped_her_at
 
 ## While he is with her through his stop he stands, and walks back once it has run
 ## (`Tuning.OFFICER_STOP_SECONDS`).
 func stand_with_her() -> void:
 	if stopped_for() >= Tuning.OFFICER_STOP_SECONDS:
-		event._be_done()
+		_figure.be_done()
 
 ## After his chase's step (`EventPursuit`): **his catch, made a stop** — chasing, within his
 ## catch's own reach of her and along a clear line (`clear_line_to()`, the sight, which differs from a catch's strict line only for a body of his own, and his row has none) —
@@ -54,28 +82,24 @@ func step(_delta: float) -> void:
 	_lay_the_trail()
 
 func _stop_her_if_he_has_reached_her() -> void:
-	var def: EventDef = event.def
 	var her: Vector2 = _where.at()
-	if def.pursuit.stop_excitement <= 0.0 or has_stopped_her() or her == Vector2.INF \
+	if _pursuit.stop_excitement <= 0.0 or has_stopped_her() or her == Vector2.INF \
 			or _where.is_held_at_a_door():
 		return
-	if event.is_finished or event.is_leaving or event.is_waiting() or event.is_telegraphing():
+	if _figure.is_gone() or _figure.is_on_its_way_out() or _figure.is_waiting() \
+			or _figure.is_telegraphing():
 		return
-	if event.global_position.distance_to(her) > def.lethal_reach() \
-			or not event.clear_line_to(her):
+	if _figure.place().distance_to(her) > _row.lethal_reach() or not _figure.clear_line_to(her):
 		return
-	_stopped_her_at = event.age
-	event.transition(EventInstance.Phase.STOPPED)
-	event.report_the_catch()
-	event._heading = (her - event.global_position).normalized()
-	if is_instance_valid(vehicle) and vehicle.investigation:
-		vehicle.investigation.call_back_its_officers(event)
+	_stopped_her_at = _figure.age()
+	_figure.stopped_her(vehicle if is_instance_valid(vehicle) else null)
+	_figure.turn_to((her - _figure.place()).normalized())
 
 func _lay_the_trail() -> void:
 	if trail.is_empty():
 		return
-	if event.global_position.distance_to(trail[trail.size() - 1]) >= TRAIL_STEP:
-		trail.append(event.global_position)
+	if _figure.place().distance_to(trail[trail.size() - 1]) >= TRAIL_STEP:
+		trail.append(_figure.place())
 
 ## Whether he has a trail to walk back along.
 func walks_back() -> bool:
@@ -88,18 +112,17 @@ func walks_back() -> bool:
 ## the trail (`Navigator.path()`), and where nothing goes round, he gets in from there. True while he
 ## is still walking back.
 func walk_back(step: float) -> bool:
-	var navigator: Navigator = event._navigator
 	if not trail.is_empty():
 		var back := trail.duplicate()
 		back.reverse()
-		var walked: Navigator.Walked = navigator.walk(event.global_position, back, step,
-				event._mover)
-		event.departure.take_the_walk(walked)
+		var walked: Navigator.Walked = _navigator.walk(_figure.place(), back, step, _mover)
+		var departure: EventDeparture = _departure.get_ref()
+		departure.take_the_walk(walked)
 		trail = walked.points
 		trail.reverse()
 		if walked.stopped:
-			var round: PackedVector2Array = navigator.path(event.global_position,
-					trail[trail.size() - 1], event._mover)
+			var round: PackedVector2Array = _navigator.path(_figure.place(),
+					trail[trail.size() - 1], _mover)
 			if round.is_empty():
 				trail.clear()
 			# The way round ends at the trail point itself; the rest goes on the trail's end,
@@ -108,7 +131,7 @@ func walk_back(step: float) -> bool:
 				trail.append(round[i])
 		if not trail.is_empty():
 			return true
-	event._finish()
+	_figure.begin(EventInstance.Phase.DONE)
 	return false
 
 ## His trail and his stop (its start as seconds before the event's age), not his vehicle.
@@ -116,10 +139,10 @@ func walk_back(step: float) -> bool:
 ## Overrides EventBehaviour.save.
 func save() -> Dictionary:
 	return {"trail": trail,
-			"stopped_ago": event.age - _stopped_her_at if _stopped_her_at != INF else INF}
+			"stopped_ago": _figure.age() - _stopped_her_at if _stopped_her_at != INF else INF}
 
 ## Overrides EventBehaviour.restore.
 func restore(state: Dictionary) -> void:
 	trail = state.get("trail", PackedVector2Array())
 	var ago := float(state.get("stopped_ago", INF))
-	_stopped_her_at = event.age - ago if ago != INF else INF
+	_stopped_her_at = _figure.age() - ago if ago != INF else INF

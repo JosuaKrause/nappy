@@ -23,14 +23,32 @@ var _body_left_at := Vector2.INF
 var _chaser_side := 0
 ## The guard at the far post.
 var far: RoadblockFarGuard
+## Its row: the shape of its band and the sides its guards stand on.
+var _row: EventDef
+## The departure its guard walks off by (`EventDeparture`), which this ends once he is gone and
+## clears for a barrier streamed in spent, held by a weak reference: the departure holds this to
+## walk him off, so a strong one each way would be a reference cycle that is never freed. Handed once
+## the departure is made (`take_its_departure()`).
+var _departure: WeakRef = null
 
-func _init() -> void:
+## Handed, as its event is set up, the figure it moves, where she is, its row, and the ground and how
+## its guards move over it, which it hands on to the guard at the far post.
+func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, map: WorldMap,
+		navigator: Navigator, mover: Mover) -> void:
 	steps_each_tick = false
+	_figure = figure
+	_where = where
+	_row = row
+	far = RoadblockFarGuard.new(figure, where, row, map, navigator, mover)
 
-## Overrides EventBehaviour.attach.
-func attach(owner: EventInstance, where: WhereSheIs) -> void:
-	super.attach(owner, where)
-	far = RoadblockFarGuard.new(owner, where)
+## Handed the departure its guard walks off by, as its event is set up: it is made after this, since
+## it is handed this too (`EventBehaviours.compose()`).
+func take_its_departure(departure: EventDeparture) -> void:
+	_departure = weakref(departure)
+
+## The departure its guard walks off by.
+func _its_departure() -> EventDeparture:
+	return _departure.get_ref()
 
 ## Whether the barrier has been left behind — read by `RoadblockLook._draw_roadblock()` to know
 ## whether to draw the band under its own feet or back at the post.
@@ -40,7 +58,7 @@ func has_left_its_body() -> bool:
 ## Where the body stands, which is where the street is still shut: the event's own position while
 ## nothing has been left behind.
 func body_position() -> Vector2:
-	return event.global_position if _body_left_at == Vector2.INF else _body_left_at
+	return _figure.place() if _body_left_at == Vector2.INF else _body_left_at
 
 ## Which side's guard set off; `0` while both stand.
 func chaser_side() -> int:
@@ -51,7 +69,7 @@ func chaser_side() -> int:
 ## who has forgotten and chases again, and what passes over a band that has nothing to warn of
 ## (`WarningBoard.warn_about_the_ground_she_is_on()`).
 func is_spent() -> bool:
-	return event.phase == EventInstance.Phase.SPENT or (event.is_leaving and has_left_its_body())
+	return _figure.is_only_its_barrier() or (_figure.is_on_its_way_out() and has_left_its_body())
 
 ## **Pins the body at the place the guard is walking away from**, the frame he stops waiting, and
 ## keeps it there every frame he moves. **The body is a child node, so it moves with him unless
@@ -67,49 +85,46 @@ func is_spent() -> bool:
 ## costs her none of his warning: he charges on its clock (`EventInstance.warns_by_radius()`).
 func leave_the_body() -> void:
 	if _body_left_at == Vector2.INF:
-		_body_left_at = event.global_position
+		_body_left_at = _figure.place()
 		_set_off_from_the_near_post()
 	keep_the_body()
 
 func _set_off_from_the_near_post() -> void:
 	var her: Vector2 = _where.at()
-	var vertical: bool = event._spread_vertical
-	var toward: Vector2 = her - event.global_position if her != Vector2.INF else Vector2.ZERO
+	var vertical: bool = _figure.runs_vertically()
+	var toward: Vector2 = her - _figure.place() if her != Vector2.INF else Vector2.ZERO
 	_chaser_side = EventFootprints.guard_side_toward(vertical, toward)
 	# Not a step: he already stands at this post, drawn there while he waits, and the event's own
 	# origin moves from the band he guards to his feet so his chase sets off from them.
-	event.global_position = event.global_position \
-			+ EventFootprints.guard_post_offset(vertical, _chaser_side)
+	_figure.arrive_at(_figure.place() + EventFootprints.guard_post_offset(vertical, _chaser_side))
 	# Drawn from his post at once, not slid there between two ticks.
-	event.reset_physics_interpolation()
-	if her != Vector2.INF and not her.is_equal_approx(event.global_position):
-		event._heading = (her - event.global_position).normalized()
+	_figure.appear_where_it_stands()
+	if her != Vector2.INF and not her.is_equal_approx(_figure.place()):
+		_figure.turn_to((her - _figure.place()).normalized())
 
 ## Holds the body where it was left.
 func keep_the_body() -> void:
-	if not event._obstruction or _body_left_at == Vector2.INF:
+	if _body_left_at == Vector2.INF:
 		return
-	event._obstruction.global_position = _body_left_at
+	_figure.pin_its_body_at(_body_left_at)
 
 ## **He stops warning and is back at the band he stood at**, with the band's body under him again:
-## she went back out of his warning radius (`EventInstance._stop_warning()`).
+## she went back out of his warning radius (`EventPursuit`).
 func back_at_the_band() -> void:
 	if _body_left_at == Vector2.INF:
 		return
-	event.global_position = _body_left_at
+	_figure.arrive_at(_body_left_at)
 	_body_left_at = Vector2.INF
 	_chaser_side = 0
-	if event._obstruction:
-		event._obstruction.position = Vector2.ZERO
-	event.reset_physics_interpolation()
+	_figure.unpin_its_body()
+	_figure.appear_where_it_stands()
 
 ## The tiles under the barrier's solid body where it was left, as the smallest rect holding them:
 ## the ground a guard walking off from it, and the far guard, never walk through.
 func tiles_under_the_band() -> Rect2i:
-	var def: EventDef = event.def
-	if def.shape == null:
+	if _row.shape == null:
 		return Rect2i()
-	var tiles := def.shape.tiles_under(body_position(), event.solid_axis())
+	var tiles := _row.shape.tiles_under(body_position(), _figure.solid_axis())
 	var low := tiles[0]
 	var high := tiles[0]
 	for tile in tiles:
@@ -120,39 +135,40 @@ func tiles_under_the_band() -> Rect2i:
 ## Sends the far guard off from his post, the frame his partner starts to walk away.
 func send_the_far_guard_off() -> void:
 	var far_side := 0
-	for side: int in event.def.guard_sides:
+	for side: int in _row.guard_sides:
 		if side != _chaser_side:
 			far_side = side
 			break
-	far.send_off(far_side)
+	far.send_off(far_side, body_position())
+
+## One frame of the far guard's walk away (`RoadblockFarGuard.walk_off()`), by the way his partner
+## walks off.
+func walk_the_far_guard_off(delta: float) -> void:
+	far.walk_off(delta, _its_departure())
 
 ## **The guard is gone for good** *(Playtest: "the guarded barriers disappear after shaking off the
 ## pursuer. that doesn't make sense.")*: a chase that ended sent him away, and once he is out of
 ## the picture the event goes back to being the barrier, its body and its picture where they were
 ## built and the post he left empty. Nothing appears and nothing disappears.
 func stand_as_the_barrier() -> void:
-	event.transition(EventInstance.Phase.SPENT)
-	event.departure.reset()
-	event._notice.stop()
-	event.global_position = _body_left_at
+	_figure.be_only_its_barrier()
+	_its_departure().reset()
+	_figure.arrive_at(_body_left_at)
 	keep_the_body()
-	event.reset_physics_interpolation()
+	_figure.appear_where_it_stands()
 
 ## **Streamed in after its guard was spent**: only the barrier, at the place the plan stands,
 ## waiting and solid, with the post `side` left empty and the far guard gone with his partner.
 ## Nothing is reported again: its charge, and the warning before it, were counted before it streamed
 ## out and are over, its end at the day's end included.
 func come_back_as_the_barrier(side: int) -> void:
-	event.transition(EventInstance.Phase.SPENT)
+	_figure.be_only_its_barrier()
 	# The walk off he was on when it streamed out is over with him, as `stand_as_the_barrier()`'s.
-	event.departure.reset()
+	_its_departure().reset()
 	_chaser_side = side
-	far.gone = true
-	_body_left_at = event.global_position
-	event._notice.stop()
-	event._charge.began = true
-	event._charge.warned = true
-	event._charge.ended = true
+	far.went_with_his_partner()
+	_body_left_at = _figure.place()
+	_figure.charge_ended()
 	keep_the_body()
 
 ## Its guard spent, or on his way out from the barrier, and the side he left: only then is there
