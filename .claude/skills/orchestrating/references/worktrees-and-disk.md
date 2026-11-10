@@ -46,20 +46,29 @@ such spawn leaves a `worktree-agent-*` branch pointing at the worktree's base, w
 
 ## The session stays in the main checkout
 
-**The session's workspace is one setting shared by the orchestrator and every sub-agent it
-started.** `EnterWorktree` called with the path of an agent's worktree moves all of them at
-once: from then on the harness refuses any command another agent aims at its own worktree, a
-read-only `git` included, naming the worktree the session is isolated in. An agent in
-the middle of a fix can neither commit nor push it, and one waiting on a check cannot read its
-result. So no such call is made while a sub-agent runs.
+**A switch of the orchestrating session's workspace holds for every sub-agent it started.** After
+`EnterWorktree` with the path of one agent's worktree, the harness refuses every command another
+agent runs in its own worktree, a read-only `git` included, with a message naming the worktree
+the session is isolated in. An agent in the middle of a fix can neither commit nor push it, and
+one waiting on a check cannot read its result. So no such call is made while a sub-agent runs.
 
 **The orchestrator writes on a branch that a worktree holds through the shell, from the main
 checkout**, once that branch's agent has reported (**orchestrating**, "What the orchestrator
 keeps": nothing is committed into a worktree an agent works in). The queue move, the record and
 any other file are written with a Bash command or a Python one-off that names absolute paths
-under `.claude/worktrees/<name>`; git runs as `git -C <worktree>`, or after a `cd` into the
-worktree within the same command; the commit and the push go through the identity wrapper as
-always (**committing**). None of it moves the session.
+under `.claude/worktrees/<name>`, and git runs as `git -C <worktree>`, the commit and the push
+through the identity wrapper as always (**committing**). **No command `cd`s into the worktree**:
+the orchestrating session's shell keeps a `cd` for its next call, so it would stand in the
+worktree, and in a deleted directory once that worktree is pruned ("The worktree", on spawning).
+A tool that has to run from the worktree runs in a subshell, `( cd <worktree> && … )`, which
+leaves the shell where it was. Written this way, nothing moves the session or its shell.
+
+**A write through the shell meets no hook**: the one that refuses an area's first edit until its
+skills are read (`.claude/hooks/project-rules.sh`) and the lint after an edit fire on the edit
+tools only. So the skills that govern the files written are read as they would be for an edit
+(**committing** for `docs/decisions/**`, **playtest-feedback** for `docs/todo/**` and
+`docs/review/**`), and `./tools/lint.sh` runs in the worktree, in a subshell, before the commit
+(**committing**, "Before committing").
 
 **After a switch made anyway: `ExitWorktree` with `keep`, at once**, which returns the session to
 the main checkout and leaves the worktree and its branch as they are. Then every running agent is
