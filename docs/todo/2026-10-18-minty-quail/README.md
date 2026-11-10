@@ -19,7 +19,8 @@ building places and *where* is its own, and even that is expressed through the d
 review below applies the five principles to the whole codebase, not only the escape.
 
 **Nothing else is worked on until this entry is done** (inbox #1210 in gentle-owl): work built on the code before
-the refactor is done twice. *Read as, open to the player's correction:* a pull request another entry
+the refactor is done twice. Work on how the project is worked on (a skill, `CLAUDE.md`, a rule, a
+hook, a general project script) is the exception and goes first (inbox #1305). *Read as, open to the player's correction:* a pull request another entry
 already has stays open as a draft and resumes after this entry closes.
 
 ## The review this entry files

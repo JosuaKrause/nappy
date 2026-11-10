@@ -11,11 +11,12 @@ The rules the orchestrating session must not miss, one line each; the sections b
   still moving or the change is one sentence in one file with no test.
 - **A design question that blocks goes to the player first**, before any agent.
 - **The work keeps moving until none is left**: every startable item is briefed and spawned, which
-  while the player has put one entry first means that entry's items and the work that goes first
-  (inbox #1210 in gentle-owl), and a running agent is looked at at least every 45 minutes.
+  while the player has put one entry first means that entry's items (inbox #1210 in gentle-owl)
+  and the work that goes first (inbox #1305), and a running agent is looked at at least every 45 minutes.
 - **Work on how the project is worked on goes first**: a change to a skill, `CLAUDE.md`, a rule, a
-  hook or a general project script is started, reviewed and merged ahead of everything else
-  (inbox #1305).
+  hook, a general project script or anything else of that kind is started, reviewed and merged
+  ahead of everything else but a queue update (inbox #1305); a wait the player set on an entry
+  holds until they move it.
 - **The queue is read from `origin/main`, after a fetch, before a brief is written.**
 - **The model is the table's.**
 - **One task per agent, in its own sparse worktree** from `tools/agent-setup.sh`, with its brief
@@ -247,13 +248,17 @@ before spawning:
   is left. A task that waits only on the player, a blocking board question or a review item, does
   not keep the session open, since nothing this side can advance it.
 - **Work on how the project is worked on goes first, at the highest priority** (inbox #1305): a
-  change to a skill, `CLAUDE.md`, a rule, a hook or a general project script under `tools/`. Those
-  are the tools every other change is written with, so the sooner one lands, the sooner all the
-  work after it is done under it. Such work is startable at once, ahead of the queue's order and
-  of an entry the player has put first, whose fence above does not hold it back; its pull requests
-  are reviewed and merged ahead of the others, and a reviewer or a builder that comes free goes to
-  it first. An entry filed for such work carries `upnext: true`. A running agent is not stopped
-  for it: the order is of what starts and what merges next.
+  change to a skill, `CLAUDE.md`, a rule, a hook, a general project script, or anything else of
+  that kind. Those are the tools every other change is written with, so the sooner one lands, the
+  sooner all the work after it is done under it. Such work is startable at once, ahead of the
+  queue's order and of an entry the player has put first, whose fence above does not hold it back;
+  its pull requests are reviewed and merged ahead of the others, a queue update still going before
+  them (**pr-review**), and the next builder or reviewer the orchestrator starts is started for
+  it. An entry filed for such work carries `upnext: true`. A running agent is not stopped for it:
+  the order is of what starts and what merges next. **A wait the player set on an entry themself
+  holds until they move it**: where an entry of such work carries an `after:` line the player
+  asked for, it stays behind that entry, and the overlap is put to them on the board
+  (**playtest-feedback**, "Never silently overturn a decision the player took").
 - **A wait is checked at least every 45 minutes** (gentle-owl #1255). While a sub-agent runs,
   the orchestrator looks at it at least every 45 minutes (its output, its worktree and its
   pushes) for signs it is stuck: no new commits, a loop that has stopped improving, a wait with
@@ -360,9 +365,13 @@ to the player's correction:
 - **What going first comes to for work on how the project is worked on** ("What the orchestrator
   keeps"; the rule is inbox #1305): that it is startable ahead of an entry the player has put
   first (the fence it passes is inbox #1210 in gentle-owl, whose reason, work done twice on code
-  about to change, does not reach a skill, a hook or a script), that its pull requests are
-  reviewed and merged first, that its entry carries `upnext: true`, and that no running agent is
-  stopped for it.
+  about to change, is about the game's code; such work that does edit a file the entry put first
+  is rewriting, a comment in it or a skill's account of it, is sequenced with that entry's work
+  like any two changes to one file); that its pull requests are reviewed and merged first, behind
+  a queue update only; that the next builder or reviewer started is started for it; that its
+  entry carries `upnext: true`; that no running agent is stopped for it; that "anything else of
+  that kind" takes in the workflows under `.github/` and the harness's settings files; and that a
+  wait the player set on an entry holds against it until they move it.
 - **That the orchestrating session never moves its own workspace while a sub-agent runs**
   ("Running agents in parallel"), with the way it writes on a branch instead and the way back
   from a switch (`references/worktrees-and-disk.md`): the filer's fix of a gap in this skill.
