@@ -95,9 +95,9 @@ full text names the files each step owns.
    (a cap depends on order; "at most one of a row per street" replaces the same-row spacing and the
    roomiest-tile ranking). A body drawn out of her view onto a lane a car stands in has the crowd
    recycle that car. `docs/MECHANICS.md`'s "A retry is the same day" stays true of every drawn row, and the
-   test that holds it for the dawn's draw (`test_event_manager`, a day started twice and walked two
-   ways) holds it for the unit draw: the same city and day drawn along two different walks hold the
-   same drawn rows on the same tiles. The test does not cover what is sited from her walk (the moments and step 4's rigged
+   test that holds it for the dawn's draw (`test_event_manager`, a day started twice) gains the walk
+   for the unit draw: the same city and day drawn along two different walks hold the same drawn
+   rows on the same tiles. The test does not cover what is sited from her walk (the moments and step 4's rigged
    marbles), and the doc's sentence says so.
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
    `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
