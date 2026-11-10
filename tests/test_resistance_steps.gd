@@ -706,7 +706,8 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t) -> v
 	instance.set_process(false)
 	# She stands still for the whole test — the case that used to pop him out of existence
 	# mid-screen at the backstop.
-	instance.excitement.set_player_at(Vector2(20.0, 0.0))
+	var her := Vector2(20.0, 0.0)
+	instance.excitement.set_player_at(her)
 	t.check(instance.current_intensity() > 0.0, "shouting, before the task is done")
 
 	instance.leave_for_a_completed_task()
@@ -715,13 +716,13 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t) -> v
 			"and contributes nothing the same frame", 0.001)
 
 	var before := instance.global_position
-	var before_distance := before.distance_to(instance.player_at)
+	var before_distance := before.distance_to(her)
 	instance.departure.leave(EventDeparture.LEAVING_GIVES_UP)
 	t.check(not instance.is_finished,
 			"still leaving past the backstop's own six seconds, since she is still watching")
 	t.close_to(instance.excitement.contribution_at(instance.global_position), 0.0,
 			"and still contributes nothing")
-	t.check(instance.global_position.distance_to(instance.player_at) > before_distance,
+	t.check(instance.global_position.distance_to(her) > before_distance,
 			"farther away than when he started, not stalled")
 
 	# She still has not moved. At `departs_at` (60px/s) from 20px away, he clears

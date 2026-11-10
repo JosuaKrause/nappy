@@ -532,13 +532,14 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 		var stage := RoadblockRig.Stage.new(t, WorldMap.open_ground())
 		var plan := EventScheduler.Planned.new(def, post)
 		var guard := stage.stand(plan)
+		var told := stage.manager.world.where_she_is()
 		var strongest := guard.excitement.contribution_at(beside)
 		# In inside his radius: he warns.
-		guard.player_at = post + Vector2(0.0, def.notice_within() - 10.0)
+		told.tell(post + Vector2(0.0, def.notice_within() - 10.0))
 		guard.step(step)
 		var warned := guard.is_standing_for_its_notice()
 		strongest = maxf(strongest, maxf(guard.excitement.contribution_at(beside),
-				guard.excitement.contribution_at(guard.player_at)))
+				guard.excitement.contribution_at(told.at())))
 		# She stays inside his radius until his warning has run: he charges. She runs; he gives up
 		# and walks away.
 		var waited := 0
@@ -548,21 +549,20 @@ func _test_a_roadblock_band_costs_nothing(t) -> void:
 		var charged := false
 		var frames := 0
 		while not guard.gave_up and frames < int(10.0 / step):
-			guard.player_at = guard.global_position + Vector2(0.0, 300.0)
-			guard.player_running = true
+			told.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 			guard.step(step)
 			charged = charged or guard.is_chasing()
 			if guard.is_chasing():
 				strongest = maxf(strongest, maxf(guard.excitement.contribution_at(beside),
 						guard.excitement.contribution_at(guard.global_position + Vector2(0.0, 40.0))))
 			frames += 1
-		var her := guard.player_at
-		guard.player_running = false
+		var her := told.at()
+		told.tell(her)
 		var leaving := guard.is_leaving and guard.barrier_post.is_spent()
 		strongest = maxf(strongest, guard.excitement.contribution_at(beside))
 		frames = 0
 		while guard.is_leaving and frames < int(30.0 / step):
-			guard.player_at = her
+			told.tell(her)
 			guard.step(step)
 			strongest = maxf(strongest, guard.excitement.contribution_at(beside))
 			frames += 1
@@ -601,10 +601,11 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 	var stage := RoadblockRig.Stage.new(t, WorldMap.open_ground(), atlas)
 	var plan := EventScheduler.Planned.new(def, post)
 	var guard := stage.stand(plan)
+	var told := stage.manager.world.where_she_is()
 	guard.set_process(true)
 	await RoadblockRig.settle(t)
 	var posted_first := not guard.barrier_post.far.has_left()
-	guard.player_at = post + Vector2(0.0, def.notice_within() - 10.0)
+	told.tell(post + Vector2(0.0, def.notice_within() - 10.0))
 	guard.step(step)
 	var waited := 0
 	while guard.is_telegraphing() and waited < int((def.pursuit.warns_for + 1.0) / step):
@@ -613,15 +614,14 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 	var posted_through_the_chase := true
 	var frames := 0
 	while not guard.is_leaving and frames < int(10.0 / step):
-		guard.player_at = guard.global_position + Vector2(0.0, 300.0)
-		guard.player_running = true
+		told.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 		guard.step(step)
 		if not guard.is_leaving:
 			posted_through_the_chase = posted_through_the_chase \
 					and not guard.barrier_post.far.has_left()
 		frames += 1
-	var her := guard.player_at
-	guard.player_running = false
+	var her := told.at()
+	told.tell(her)
 	t.check(posted_first and posted_through_the_chase,
 			"the far guard stands at his post until his partner leaves")
 	t.check(guard.is_leaving, "the guard on her side was shaken off and walks away")
@@ -642,7 +642,7 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 	var last := set_off
 	var walked := 0
 	while guard.barrier_post.far.at != Vector2.INF and walked < int(30.0 / step):
-		guard.player_at = her
+		told.tell(her)
 		guard.step(step)
 		await t.get_tree().process_frame
 		walked += 1
@@ -705,19 +705,19 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 				frames_in += 1
 				var tile := map.world_to_tile(her)
 				if map.in_bounds(tile) and map.is_walkable(tile):
-					caught = RoadblockRig.tick(made[1], her, false)
+					caught = RoadblockRig.tick(made[0].manager.world.where_she_is(), made[1], her, false)
 				if caught:
 					break
 			var frames := 0
 			while not caught and guard.is_chasing() and frames < int(10.0 / step):
 				her += toward * Tuning.RUN_SPEED * step
-				caught = RoadblockRig.tick(made[1], her, true)
+				caught = RoadblockRig.tick(made[0].manager.world.where_she_is(), made[1], her, true)
 				frames += 1
 			if caught or not guard.is_leaving:
 				made[0].close()
 				continue
 			walks += 1
-			if _watch_them_walk_off(t, map, made[1], her, where):
+			if _watch_them_walk_off(t, map, made[0].manager.world.where_she_is(), made[1], her, where):
 				far_walks += 1
 			made[0].close()
 	t.check(walks > 0 and far_walks > 0,
@@ -740,26 +740,26 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 	var her := map.tile_to_world(Vector2i(70, 50))
 	var frames := 0
 	while guard.is_waiting() and frames < int(20.0 / step):
-		RoadblockRig.tick(made[1], her, false)
+		RoadblockRig.tick(made[0].manager.world.where_she_is(), made[1], her, false)
 		frames += 1
 	t.check(not guard.is_waiting(), "the band at (73,50) notices her standing at (70,50)")
 	guard.give_up_the_chase()
 	t.check(guard.is_leaving, "and its guard gives up and walks away")
-	t.check(_watch_them_walk_off(t, map, made[1], her, "the band at (73,50), with her at (70,50)"),
+	t.check(_watch_them_walk_off(t, map, made[0].manager.world.where_she_is(), made[1], her, "the band at (73,50), with her at (70,50)"),
 			"and the band at (73,50), with her at (70,50), sent its far guard off")
 	made[0].close()
 
 ## Steps `instances` (one band, its guard on her side already walking away) with her standing at
 ## `her` until both guards are gone, and checks every frame either guard walks that he stands on a
 ## walkable tile of `map`; answers whether the far guard walked.
-func _watch_them_walk_off(t, map: CityMap, instances: Array[EventInstance], her: Vector2,
+func _watch_them_walk_off(t, map: CityMap, told: WhereSheIs, instances: Array[EventInstance], her: Vector2,
 		where: String) -> bool:
 	var guard := instances[0]
 	var far_walked := false
 	var frames := 0
 	while (guard.is_leaving or guard.barrier_post.far.at != Vector2.INF) \
 			and frames < int(30.0 / RoadblockRig.STEP):
-		RoadblockRig.tick(instances, her, false)
+		RoadblockRig.tick(told, instances, her, false)
 		frames += 1
 		var at: Array[Vector2] = []
 		if guard.is_leaving:
@@ -805,7 +805,8 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t) -> void:
 	# Its guard noticing her, charging and shaken off, then the plan streamed out and in: the band
 	# comes back as only the barrier (`EventBarrierPost`), no guard to notice her again.
 	var step := RoadblockRig.STEP
-	band.player_at = band.global_position + Vector2(0.0, band.def.notice_within() - 10.0)
+	var told := manager.world.where_she_is()
+	told.tell(band.global_position + Vector2(0.0, band.def.notice_within() - 10.0))
 	band.step(step)
 	var waited := 0
 	while band.is_telegraphing() and waited < int((band.def.pursuit.warns_for + 1.0) / step):
@@ -813,8 +814,7 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t) -> void:
 		waited += 1
 	var frames := 0
 	while not band.gave_up and frames < int(60.0 / step):
-		band.player_at = band.global_position + Vector2(0.0, 300.0)
-		band.player_running = true
+		told.tell(band.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 		band.step(step)
 		frames += 1
 	t.check(band.gave_up, "the band's guard charges and is shaken off")
@@ -1007,7 +1007,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 						if not view.encloses(EventFootprints.warning_guard_rect(
 								guard.runs_vertically(), band, her)):
 							off_by_the_radius += 1
-					RoadblockRig.tick(made[1], her, false, -toward)
+					RoadblockRig.tick(made[0].manager.world.where_she_is(), made[1], her, false, -toward)
 					# The layer is taken on the drawn frame, from what the tick left: a real frame
 					# where the draw layer is read, which is when his hand goes up and when he charges.
 					if (was_waiting and guard.is_standing_for_its_notice()) or guard.is_chasing():

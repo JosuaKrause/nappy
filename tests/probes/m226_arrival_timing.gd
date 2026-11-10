@@ -65,6 +65,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 	var velocity: Vector2 = heading * Tuning.WALK_SPEED * [1.0, 0.0, -1.0][answer]
 	var source := Source.new()
 	t.add_child(source)
+	var where := WhereSheIs.nowhere()
 	var player := Node2D.new()
 	t.add_child(player)
 	var edge := DangerEdge.new()
@@ -78,7 +79,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		var route: PackedVector2Array = encounter["route"].call(place, at)
 		var instance := EventInstance.new()
-		instance.setup(def, place, route)
+		instance.setup(def, place, route, Vector2.RIGHT, null, null, where)
 		instance.came_under_a_warning = true
 		instance.is_pelican = pelican
 		# f494956e spends telegraph_time; the current game preserves a pulsing row's beat.
@@ -103,7 +104,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 	else:
 		var route: PackedVector2Array = encounter["path"]
 		var instance := EventInstance.new()
-		instance.setup(def, route[0], route)
+		instance.setup(def, route[0], route, Vector2.RIGHT, null, null, where)
 		instance.resume(float(encounter.get("age", 0.0)), 0.0)
 		source.add_child(instance)
 		source.live.append(instance)
@@ -113,8 +114,8 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		player.position = her
 		viewport.canvas_transform = Transform2D(Vector2(2.0, 0.0), Vector2(0.0, 2.0),
 				Vector2(640.0, 360.0) - her * 2.0)
+		where.tell(her)
 		for instance in source.live:
-			instance.player_at = her
 			if result.created == INF:
 				result.created = clock
 			if result.entry == INF:
@@ -134,8 +135,8 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		her += velocity * STEP
 		clock += STEP
 		# Existing instances move first; a callback creates the new one for this frame's observation.
+		where.tell(her)
 		for instance in source.live:
-			instance.player_at = her
 			instance.step(STEP)
 		for warning in source.warnings.duplicate():
 			if warning.tick(STEP, her):

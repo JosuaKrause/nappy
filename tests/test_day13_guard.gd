@@ -493,8 +493,10 @@ static func _open(map: CityMap, tile: Vector2i) -> bool:
 ## first tick.
 func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
+	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
-	guard.setup(robbery, Vector2.ZERO, PackedVector2Array())
+	guard.setup(robbery, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			guard_where)
 	t.add_child(guard)
 	guard.set_process(false)
 	var standoff := PursuitSpec.standoff(robbery.chase_speed(), robbery.standoff_reach())
@@ -506,7 +508,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 	var lunged_standing := false
 	var lethal_standing := false
 	for i in 60:
-		guard.player_at = her
+		guard_where.tell(her)
 		guard.step(0.1)
 		lunged_standing = lunged_standing or guard.phase == EventInstance.Phase.ACTIVE
 		lethal_standing = lethal_standing or guard.is_lethal_at(her)
@@ -515,7 +517,7 @@ func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
 	var lunged_at := -1.0
 	for i in 60:
 		her += Vector2(Tuning.WALK_SPEED * 0.1, 0.0)
-		guard.player_at = her
+		guard_where.tell(her)
 		guard.step(0.1)
 		if guard.phase == EventInstance.Phase.ACTIVE:
 			lunged_at = guard.global_position.distance_to(her)
@@ -587,7 +589,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	if not parked:
 		# He notices her the ordinary way: she comes within his reach along a clear line, here a
 		# step from him on his own tile.
-		guard.player_at = guard.global_position + Vector2(4.0, 0.0)
+		city.events.world.where_she_is().tell(guard.global_position + Vector2(4.0, 0.0))
 		guard.step(0.1)
 		t.check(not guard.is_waiting(), "(%s) he noticed her the ordinary way" % what)
 		_view = Rect2(guard.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
@@ -601,7 +603,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 				and is_equal_approx(guard.notice_time(), Tuning.WARNING_ALONE_MAX),
 				"(%s) in her view he stands with his warning up for %.1fs" % [what, guard.notice_time()])
 		var held_at := guard.global_position
-		guard.player_at = at
+		city.events.world.where_she_is().tell(at)
 		guard.step(Tuning.WARNING_ALONE_MAX - 0.1)
 		t.check(guard.is_telegraphing() and guard.global_position == held_at,
 				"(%s) still standing just short of that second" % what)
@@ -620,7 +622,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 	var walked := 0.0
 	var lethal := false
 	while walked < 30.0 and not lethal and not guard.is_finished:
-		guard.player_at = at
+		city.events.world.where_she_is().tell(at)
 		guard.step(0.1)
 		walked += 0.1
 		nearest = minf(nearest, guard.global_position.distance_to(at))
@@ -705,7 +707,7 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 		_tear_down(player, director, city)
 		return
 	_view = Rect2(guard.global_position - Vector2(64.0, 64.0), Vector2(128.0, 128.0))
-	guard.player_at = her
+	city.events.world.where_she_is().tell(her)
 	guard.step(0.1)
 	t.check(guard.is_telegraphing() and guard.warns_by_radius(),
 			"150px from him, outside his %.0fpx stand-off, he warns her" % standoff)
@@ -715,7 +717,7 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 	var walked := 0.0
 	while walked < 10.0 and not charged and not guard.is_finished:
 		her += away * Tuning.WALK_SPEED * 0.05
-		guard.player_at = her
+		city.events.world.where_she_is().tell(her)
 		guard.step(0.05)
 		walked += 0.05
 		charged = not guard.is_waiting() and not guard.is_telegraphing()
@@ -782,7 +784,7 @@ func _test_the_guard_walks_round_a_building_to_her(t) -> void:
 	var walked := 0.0
 	var lethal := false
 	while walked < allowed and not lethal and not guard.is_finished:
-		guard.player_at = at
+		city.events.world.where_she_is().tell(at)
 		guard.step(0.1)
 		walked += 0.1
 		nearest = minf(nearest, guard.global_position.distance_to(at))

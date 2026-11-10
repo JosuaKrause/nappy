@@ -68,8 +68,10 @@ func _report(catch_radius: float, lunge: float) -> void:
 ## (from 60px outside his notice, at `WALK_SPEED`) and at his walk alone when she stands 1px inside
 ## it. Not the `(notice - stand-off) / WALK_SPEED` of her walk alone.
 func _notice_to_lunge(def: EventDef, walking: bool) -> float:
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			instance_where)
 	var her := Vector2(def.notice_within() + (60.0 if walking else -1.0), 0.0)
 	var noticed := -1.0
 	var elapsed := 0.0
@@ -77,7 +79,7 @@ func _notice_to_lunge(def: EventDef, walking: bool) -> float:
 	while elapsed < 6.0 and result < 0.0:
 		if walking:
 			her.x -= Tuning.WALK_SPEED * STEP
-		instance.player_at = her
+		instance_where.tell(her)
 		instance.step(STEP)
 		elapsed += STEP
 		if noticed < 0.0 and not instance.is_waiting():
@@ -90,8 +92,10 @@ func _notice_to_lunge(def: EventDef, walking: bool) -> float:
 ## One chase. She starts 30-90px outside his notice walking in, or 10px inside it still or walking
 ## away.
 func _caught(def: EventDef, mode: String, rng: RandomNumberGenerator) -> bool:
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			instance_where)
 	var her := Vector2(def.notice_within() + rng.randf_range(30.0, 90.0), 0.0)
 	var reaction := rng.randf_range(0.15, 0.75)
 	var speed := -Tuning.WALK_SPEED
@@ -121,8 +125,7 @@ func _caught(def: EventDef, mode: String, rng: RandomNumberGenerator) -> bool:
 			wanted = Tuning.RUN_SPEED
 		speed = move_toward(speed, wanted, Tuning.ACCELERATION * STEP)
 		her.x += speed * STEP
-		instance.player_at = her
-		instance.player_running = speed > Tuning.WALK_SPEED
+		instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
 		instance.step(STEP)
 		elapsed += STEP
 		if since_notice != INF:

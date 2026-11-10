@@ -446,15 +446,16 @@ func _test_separated_details_keep_the_owner_key_stable(t) -> void:
 ## still. Nothing else in the game changes its picture with neither a step nor a clock behind it,
 ## and a key reading `_heading` alone would have frozen him facing his siting for ever.
 func _test_a_waiting_robber_turning_to_face_her_moves_the_key(t) -> void:
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("alley_robbery"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT)
+			Vector2.RIGHT, null, null, instance_where)
 	# Far enough out that he never stops waiting, in two places 180° apart.
-	instance.player_at = Vector2(9000.0, 0.0)
+	instance_where.tell(Vector2(9000.0, 0.0))
 	instance.step(STEP)
 	t.check(instance.is_waiting(), "he is only waiting, from the east")
 	_asks(instance)
-	instance.player_at = Vector2(-9000.0, 0.0)
+	instance_where.tell(Vector2(-9000.0, 0.0))
 	instance.step(STEP)
 	t.check(instance.is_waiting(), "he is still only waiting, from the west")
 	t.check(_asks(instance),
@@ -497,10 +498,11 @@ func _test_a_raised_boom_moves_the_gates_key(t) -> void:
 ## (`current_bob()`'s own `is_leaving` branch) — so the departure is drawn rather than held on the
 ## last frame the event was still an event.
 func _test_a_leaving_event_moves_its_key(t) -> void:
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("loose_dog"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT)
-	instance.player_at = Vector2(-400.0, 0.0)
+			Vector2.RIGHT, null, null, instance_where)
+	instance_where.tell(Vector2(-400.0, 0.0))
 	instance.step(STEP)
 	_asks(instance)
 	instance.leave_for_a_completed_task()
@@ -541,16 +543,17 @@ func _test_the_flock_and_the_drawn_flames_are_never_gated(t) -> void:
 ## the take runs — and the *end* of the take is a change the key itself has to carry, or the last
 ## frame of the walk would stay on the screen with nobody in it.
 func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t) -> void:
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("abduction"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT)
+			Vector2.RIGHT, null, null, instance_where)
 	t.check(not _never_settles(instance), "an idle van is gated like any other vehicle")
-	instance.player_at = instance.global_position
+	instance_where.tell(instance.global_position)
 	instance.step(STEP)
 	t.check(instance.is_taking_a_victim(), "the take is running")
 	t.check(_never_settles(instance), "a van mid-take is never gated")
 	instance.abduction.stop()
-	instance.player_at = Vector2.INF
+	instance_where.tell(Vector2.INF)
 	instance.step(STEP)
 	t.check(not instance.is_taking_a_victim(), "the take is over")
 	t.check(_asks(instance),

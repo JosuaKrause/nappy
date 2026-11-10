@@ -56,15 +56,15 @@ static func _views(her: Vector2) -> Array[VisibleView]:
 ## caller.
 static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 		path := PackedVector2Array()) -> EventInstance:
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	if path.is_empty() and row.mobile and row.pursuit == null:
 		path = PackedVector2Array([at, her + (her - at)])
-	instance.setup(row, at, path)
+	instance.setup(row, at, path, Vector2.RIGHT, null, null, instance_where)
 	instance.came_under_a_warning = true
 	if row.pursuit == null or row.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		instance.resume(EventSpawner.age_when_warned(row), 0.0)
-	instance.player_at = her
-	instance.player_running = false
+	instance_where.tell(her)
 	return instance
 
 ## Whether anything `instance` draws on this frame overlaps the camera's whole `view` (corners

@@ -710,7 +710,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t) -> void:
 	var waited := 0.0
 	while waited < PATIENCE and not escort.is_queued_for_deletion():
 		if is_instance_valid(busker) and not busker.is_finished:
-			busker.player_at = her[0]
+			_city.events.world.where_she_is().tell(her[0])
 			busker.step(STEP)
 		var was_closed := cordon.is_closed()
 		_tick(happenings, her[0], shows.is_valid())
@@ -804,7 +804,7 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 				her[0] = (her[0] as Vector2).move_toward(way[0], Tuning.WALK_SPEED * STEP)
 				if (her[0] as Vector2).distance_to(way[0]) < 0.5:
 					way.remove_at(0)
-			busker.player_at = her[0]
+			_city.events.world.where_she_is().tell(her[0])
 			busker.step(STEP)
 			_tick(happenings, her[0], shows.is_valid())
 			clock += STEP
@@ -859,7 +859,7 @@ func _test_someone_already_leaving_is_walked_out_through_the_gap(t) -> void:
 		while clock < PATIENCE and is_instance_valid(busker) and not busker.is_finished:
 			if after_the_touch >= 0.0 and clock >= after_the_touch and not busker.is_leaving:
 				_set_off_on_their_own(busker, her[0])
-			busker.player_at = her[0]
+			_city.events.world.where_she_is().tell(her[0])
 			busker.step(STEP)
 			_tick(happenings, her[0], shows.is_valid())
 			cordon = happenings.cordon
@@ -888,7 +888,7 @@ func _set_off_on_their_own(person: EventInstance, her: Vector2,
 	walking.solid_parts = person.def.solid_parts
 	walking.departs_at = pace
 	person.def = walking
-	person.player_at = her
+	_city.events.world.where_she_is().tell(her)
 	person.leave_for_a_completed_task()
 
 ## **An escort sent back out alone is let out before the gap shuts.** His person goes before he
@@ -960,7 +960,7 @@ func _test_a_slow_person_leaving_alone_holds_the_gap_from_across_the_park(t) -> 
 	var cordon: ParkCordon = null
 	var gap_tiles: Array[Vector2i] = []
 	while clock < PATIENCE * 2.0 and is_instance_valid(busker) and not busker.is_finished:
-		busker.player_at = her[0]
+		_city.events.world.where_she_is().tell(her[0])
 		busker.step(STEP)
 		_tick(happenings, her[0], shows.is_valid())
 		cordon = happenings.cordon

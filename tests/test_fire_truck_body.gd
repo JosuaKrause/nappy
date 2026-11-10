@@ -33,10 +33,10 @@ func _truck() -> EventDef:
 
 ## A live truck on `route`, its warning spent (`spawn_warned()` hands it over with the telegraph
 ## used up), in the tree so its body exists, stepped by hand.
-func _engine(t, route: PackedVector2Array) -> EventInstance:
+func _engine(t, route: PackedVector2Array, where: WhereSheIs) -> EventInstance:
 	var def := _truck()
 	var engine := EventInstance.new()
-	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(), null)
+	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(), null, null, where)
 	engine.resume(def.telegraph_time, 0.0)
 	t.add_child(engine)
 	engine.set_process(false)
@@ -53,9 +53,8 @@ func _her(t, at: Vector2, facing: Vector2) -> Stroller:
 	pram.position = facing * Tuning.PLAYER_BODY_RADIUS
 	return player
 
-func _step(engine: EventInstance, player: Stroller) -> void:
-	engine.player_at = player.global_position
-	engine.pram_at = player.global_position + player.facing * Tuning.PLAYER_BODY_RADIUS
+func _step(engine: EventInstance, where: WhereSheIs, player: Stroller) -> void:
+	where.tell(player.global_position, player.global_position + player.facing * Tuning.PLAYER_BODY_RADIUS)
 	engine.step(STEP)
 	var body := _body_of(engine)
 	if body:
@@ -98,13 +97,14 @@ func _test_the_row_is_a_car_with_the_engines_body(t) -> void:
 
 ## Walked at side-on, a parked or driving truck stops her at its flank; lethal only ahead.
 func _test_the_body_is_solid_while_it_drives_and_lethal_only_ahead(t) -> void:
-	var engine := _engine(t, PackedVector2Array([Vector2(-300.0, 0.0), Vector2(900.0, 0.0)]))
+	var engine_where := WhereSheIs.nowhere()
+	var engine := _engine(t, PackedVector2Array([Vector2(-300.0, 0.0), Vector2(900.0, 0.0)]), engine_where)
 	var player := _her(t, Vector2(0.0, 70.0), Vector2.UP)
 	var struck := false
 	var pressed := false
 	var stopped := false
 	for i in int(5.0 / STEP):
-		_step(engine, player)
+		_step(engine, engine_where, player)
 		struck = struck or engine.is_lethal_at(player.global_position)
 		if not pressed and absf(engine.global_position.x) < 6.0:
 			pressed = true
@@ -120,14 +120,15 @@ func _test_the_body_is_solid_while_it_drives_and_lethal_only_ahead(t) -> void:
 ## body would ever stop against her.
 func _test_in_front_of_it_the_warning_comes_first(t) -> void:
 	for facing in [Vector2.LEFT, Vector2.UP]:
-		var engine := _engine(t, PackedVector2Array([Vector2(-700.0, 0.0), Vector2(900.0, 0.0)]))
+		var engine_where := WhereSheIs.nowhere()
+		var engine := _engine(t, PackedVector2Array([Vector2(-700.0, 0.0), Vector2(900.0, 0.0)]), engine_where)
 		var player := _her(t, Vector2.ZERO, facing)
 		var warned_at := -1.0
 		var struck_at := -1.0
 		var held := false
 		for i in int(8.0 / STEP):
 			var was_at := engine.global_position
-			_step(engine, player)
+			_step(engine, engine_where, player)
 			var now := float(i) * STEP
 			if warned_at < 0.0 and engine.car.closes_on(player.global_position):
 				warned_at = now
@@ -173,12 +174,13 @@ func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 			continue
 		if place.distance_to(her) < warning_reach:
 			nearer_than_its_warning += 1
-		var engine := _engine(t, PackedVector2Array([place, stop]))
+		var engine_where := WhereSheIs.nowhere()
+		var engine := _engine(t, PackedVector2Array([place, stop]), engine_where)
 		var player := _her(t, her, -travel)
 		var struck := false
 		var moved := false
 		for i in int(3.0 / STEP):
-			_step(engine, player)
+			_step(engine, engine_where, player)
 			struck = struck or engine.is_lethal_at(player.global_position)
 			moved = moved or engine.global_position.distance_to(place) > 1.0
 		t.check(not struck and not moved,
@@ -189,7 +191,7 @@ func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 		var warned_at := -1.0
 		var struck_at := -1.0
 		for i in int(5.0 / STEP):
-			_step(engine, player)
+			_step(engine, engine_where, player)
 			var now := float(i) * STEP
 			if warned_at < 0.0 and engine.car.closes_on(player.global_position):
 				warned_at = now
@@ -215,12 +217,13 @@ func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 ## struck by an engine that parks short of her, and does not hold it off screen.
 func _test_nothing_reaches_past_its_kerb(t) -> void:
 	# 120px past the kerb, the truck already driving: no warning that cannot come true.
-	var engine := _engine(t, PackedVector2Array([Vector2(-600.0, 0.0), Vector2.ZERO]))
+	var engine_where := WhereSheIs.nowhere()
+	var engine := _engine(t, PackedVector2Array([Vector2(-600.0, 0.0), Vector2.ZERO]), engine_where)
 	var player := _her(t, Vector2(120.0, 0.0), Vector2.LEFT)
 	var warned := false
 	var lethal := false
 	for i in int(5.0 / STEP):
-		_step(engine, player)
+		_step(engine, engine_where, player)
 		warned = warned or engine.car.closes_on(player.global_position)
 		lethal = lethal or engine.excitement.will_be_lethal(player.global_position) \
 				or engine.is_lethal_at(player.global_position)
@@ -232,11 +235,11 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 	engine.free()
 	# 50-60px past it, her pram on the far side: it parks short of her and ends nothing.
 	for past: float in [50.0, 55.0, 60.0]:
-		engine = _engine(t, PackedVector2Array([Vector2(-600.0, 0.0), Vector2.ZERO]))
+		engine = _engine(t, PackedVector2Array([Vector2(-600.0, 0.0), Vector2.ZERO]), engine_where)
 		player = _her(t, Vector2(past, 0.0), Vector2.RIGHT)
 		lethal = false
 		for i in int(5.0 / STEP):
-			_step(engine, player)
+			_step(engine, engine_where, player)
 			lethal = lethal or engine.is_lethal_at(player.global_position)
 			if engine.is_parked:
 				break
@@ -250,10 +253,10 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 	# drives on and parks. (Nearer than 43px its parked body would overlap hers, and it stands
 	# against her there rather than driving into her.)
 	for past: float in [60.0, 120.0, 250.0]:
-		engine = _engine(t, PackedVector2Array([Vector2(-200.0, 0.0), Vector2.ZERO]))
+		engine = _engine(t, PackedVector2Array([Vector2(-200.0, 0.0), Vector2.ZERO]), engine_where)
 		player = _her(t, Vector2(past, 0.0), Vector2.RIGHT)
 		for i in int(3.0 / STEP):
-			_step(engine, player)
+			_step(engine, engine_where, player)
 			if engine.is_parked:
 				break
 		t.check(engine.is_parked, "%.0fpx past its kerb when it is created, it drives on and parks"
@@ -261,12 +264,12 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 		player.free()
 		engine.free()
 	# And between it and its kerb she is still warned in full and struck.
-	engine = _engine(t, PackedVector2Array([Vector2(-700.0, 0.0), Vector2.ZERO]))
+	engine = _engine(t, PackedVector2Array([Vector2(-700.0, 0.0), Vector2.ZERO]), engine_where)
 	player = _her(t, Vector2(-100.0, 0.0), Vector2.LEFT)
 	var warned_at := -1.0
 	var struck_at := -1.0
 	for i in int(5.0 / STEP):
-		_step(engine, player)
+		_step(engine, engine_where, player)
 		var now := float(i) * STEP
 		if warned_at < 0.0 and engine.car.closes_on(player.global_position):
 			warned_at = now
@@ -281,12 +284,13 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 
 ## Behind it and beside it, driving, nothing strikes her.
 func _test_behind_and_beside_it_nothing_strikes(t) -> void:
-	var engine := _engine(t, PackedVector2Array([Vector2(40.0, 0.0), Vector2(1200.0, 0.0)]))
+	var engine_where := WhereSheIs.nowhere()
+	var engine := _engine(t, PackedVector2Array([Vector2(40.0, 0.0), Vector2(1200.0, 0.0)]), engine_where)
 	var player := _her(t, Vector2.ZERO, Vector2.RIGHT)
 	var struck := false
 	var touched := false
 	for i in int(2.5 / STEP):
-		_step(engine, player)
+		_step(engine, engine_where, player)
 		struck = struck or engine.is_lethal_at(player.global_position)
 		if player.move_and_collide(Vector2.RIGHT * Tuning.WALK_SPEED * STEP) != null:
 			touched = true
@@ -296,11 +300,11 @@ func _test_behind_and_beside_it_nothing_strikes(t) -> void:
 	player.free()
 	engine.free()
 	# Standing beside its line, it passes her without a strike.
-	engine = _engine(t, PackedVector2Array([Vector2(-300.0, 0.0), Vector2(600.0, 0.0)]))
+	engine = _engine(t, PackedVector2Array([Vector2(-300.0, 0.0), Vector2(600.0, 0.0)]), engine_where)
 	player = _her(t, Vector2(0.0, 45.0), Vector2.LEFT)
 	struck = false
 	for i in int(5.0 / STEP):
-		_step(engine, player)
+		_step(engine, engine_where, player)
 		struck = struck or engine.is_lethal_at(player.global_position)
 	t.check(not struck and engine.global_position.x > 100.0,
 			"and one driving past her on the next lane never strikes her (%.0f)"
@@ -313,10 +317,11 @@ func _test_behind_and_beside_it_nothing_strikes(t) -> void:
 ## Once it has stopped at the fire it is a body she walks round and nothing that can end the day,
 ## from in front of it, behind it or beside it.
 func _test_parked_it_is_solid_and_harmless(t) -> void:
-	var engine := _engine(t, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(0.0, 0.0)]))
+	var engine_where := WhereSheIs.nowhere()
+	var engine := _engine(t, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(0.0, 0.0)]), engine_where)
 	var player := _her(t, Vector2(300.0, 300.0), Vector2.UP)
 	for i in int(4.0 / STEP):
-		_step(engine, player)
+		_step(engine, engine_where, player)
 		if engine.is_parked:
 			break
 	t.check(engine.is_parked, "the truck parks where its route ends")
@@ -353,10 +358,11 @@ func _test_parked_its_field_is_a_points(t) -> void:
 	t.check(is_equal_approx(def.field_reach(), moving),
 			"and its field's reach is a moving point's, %.0fpx, not its body's (%.0fpx)"
 			% [moving, def.field_reach()])
-	var engine := _engine(t, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(0.0, 0.0)]))
+	var engine_where := WhereSheIs.nowhere()
+	var engine := _engine(t, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(0.0, 0.0)]), engine_where)
 	var player := _her(t, Vector2(300.0, 300.0), Vector2.UP)
 	for i in int(4.0 / STEP):
-		_step(engine, player)
+		_step(engine, engine_where, player)
 		if engine.is_parked:
 			break
 	t.check(engine.is_parked and engine.travel_velocity().is_zero_approx(),
@@ -506,7 +512,8 @@ func _passes(map: CityMap, at: Vector2, along: Vector2, body: GroundShape,
 # ----------------------------------------------------------------- picture ---
 
 func _test_its_picture_stands_over_its_body(t) -> void:
-	var engine := _engine(t, PackedVector2Array([Vector2.ZERO, Vector2(0.0, 600.0)]))
+	var engine_where := WhereSheIs.nowhere()
+	var engine := _engine(t, PackedVector2Array([Vector2.ZERO, Vector2(0.0, 600.0)]), engine_where)
 	var shape := _truck().shape
 	t.check(is_equal_approx(engine.look.body_anchor("side").y,
 			shape.half_length * absf(engine.solid_axis().y) + shape.radius

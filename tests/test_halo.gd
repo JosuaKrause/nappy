@@ -146,10 +146,10 @@ func _instance_at(def: EventDef, at: Vector2) -> EventInstance:
 ## `tests/test_events.gd`'s own `_instance()` helper, kept local here rather than shared, because
 ## the two suites hold different halves of this class and neither should have to know the other's
 ## rig.
-func _rig_instance(t, def: EventDef, at: Vector2) -> EventInstance:
+func _rig_instance(t, def: EventDef, at: Vector2, where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.atlas = _atlas
-	instance.setup(def, at)
+	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT, null, null, where)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
@@ -701,13 +701,14 @@ func _test_a_cat_dash_is_selected_and_lands(t) -> void:
 ## siting it at `Vector2.ZERO` and reading `contribution_at()` there for the whole burst.
 func _test_a_flock_is_selected_and_lands(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
-	var flock := _rig_instance(t, def, Vector2.ZERO)
+	var flock_where := WhereSheIs.nowhere()
+	var flock := _rig_instance(t, def, Vector2.ZERO, flock_where)
 	t.check(flock.flock.birds.size() == def.flock_size,
 			"_ready() (live in the tree) built the flock, unlike a bare _instance_at()")
 	# Standing in it: a flock waits on the pavement until she is inside `EventDef.notice`, and both
 	# the telegraph and the burst below are measured from the moment it notices her — which is the
 	# end of a frame, so the notice gets a frame of its own before the telegraph is stepped.
-	flock.player_at = Vector2.ZERO
+	flock_where.tell(Vector2.ZERO)
 	flock.step(STEP)
 
 	flock.step(def.telegraph_time * 0.5)
@@ -739,11 +740,12 @@ func _test_a_flock_is_selected_and_lands(t) -> void:
 ## emits like any other).
 func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
-	var flock := _rig_instance(t, def, Vector2.ZERO)
+	var flock_where := WhereSheIs.nowhere()
+	var flock := _rig_instance(t, def, Vector2.ZERO, flock_where)
 	# Standing in it, so it notices her and starts — the notice lands at the end of a frame, so it
 	# gets one of its own — then past the telegraph, so the birds are up and flying rather than
 	# pecking about on the ground.
-	flock.player_at = Vector2.ZERO
+	flock_where.tell(Vector2.ZERO)
 	flock.step(STEP)
 	flock.step(def.telegraph_time + 0.1)
 

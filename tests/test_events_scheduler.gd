@@ -263,14 +263,15 @@ func _test_the_mouse_waits_until_she_is_near(t) -> void:
 		return
 
 	var at := map.tile_to_world(rect.position + Vector2i(rect.size.x / 2, rect.size.y / 2))
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT, map)
+	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT, map, null, instance_where)
 	t.add_child(instance)
 	instance.set_process(false)
 
 	# Far away — well past the trigger, and past where `EventManager` actually streams a `MAP` row
 	# in from (`EVENT_STREAM_RADIUS`, 900px).
-	instance.player_at = at + Vector2(def.notice_within() + 400.0, 0.0)
+	instance_where.tell(at + Vector2(def.notice_within() + 400.0, 0.0))
 	_advance(instance, 5.0)
 	t.check(instance.is_waiting(), "far away, it is still only waiting several seconds later")
 	t.check(not instance.is_telegraphing(), "and has not started telegraphing")
@@ -278,7 +279,7 @@ func _test_the_mouse_waits_until_she_is_near(t) -> void:
 	t.check(not instance.is_finished, "and has not finished")
 
 	# She steps inside the trigger: the notice, and the clock, start now.
-	instance.player_at = at + Vector2(def.notice_within() - 10.0, 0.0)
+	instance_where.tell(at + Vector2(def.notice_within() - 10.0, 0.0))
 	instance.step(STEP)
 	t.check(not instance.is_waiting(), "she notices it")
 	t.check(instance.is_telegraphing(), "and it starts telegraphing from the notice, not from dawn")
@@ -429,11 +430,13 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 		up += Tuning.TILE_SIZE
 		checked += 1
 		var created: Array[EventInstance] = []
+		var her_where := WhereSheIs.nowhere()
 		var where := func(at: Vector2) -> Vector2:
 			return PendingWarning.on_its_route(truck, at, kerb, travel, 4000.0)
 		var arrive := func(place: Vector2, _at: Vector2) -> bool:
 			var instance := EventInstance.new()
-			instance.setup(truck, place, PackedVector2Array([place, kerb]))
+			instance.setup(truck, place, PackedVector2Array([place, kerb]), Vector2.RIGHT, null, null,
+					her_where)
 			instance.resume(truck.telegraph_time, 0.0)
 			created.append(instance)
 			return true
@@ -458,7 +461,7 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 			wrong.append("created in sight at %v with her at %v" % [place, her])
 		var to_reach := 0.0
 		while engine.excitement.contribution_at(her) <= 0.0 and to_reach < 10.0:
-			engine.player_at = her
+			her_where.tell(her)
 			engine.step(STEP)
 			to_reach += STEP
 		var badge_to_reach := warning.shown + to_reach

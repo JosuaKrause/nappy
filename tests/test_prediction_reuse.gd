@@ -113,9 +113,11 @@ func _test_catalogue_and_mutations(t) -> void:
 	var positive := 0
 	var flock_queries := 0
 	for definition: EventDef in EventCatalogue.all():
+		var source_where := WhereSheIs.nowhere()
 		var source := CountedEvent.new()
 		source.setup(_copy_definition(definition), Vector2.ZERO,
-			PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]))
+			PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]), Vector2.RIGHT, null, null,
+			source_where)
 		if source.def.flock_size > 0:
 			source.flock.build()
 		_event_parity(t, source, Vector2(80.0, 0.0), definition.id + " before player")
@@ -153,7 +155,7 @@ func _test_catalogue_and_mutations(t) -> void:
 		if source.def.detain_seconds > 0.0:
 			source.hold.start()
 			_event_parity(t, source, at, definition.id + " chatting")
-		source.baby_awake = false
+		source_where.tell(at, Vector2.INF, Rect2(), false, false)
 		_event_parity(t, source, at, definition.id + " sleep")
 		if source.hold:
 			source.hold.stop()
@@ -274,13 +276,18 @@ func _test_live_net_and_skipped_work(t) -> void:
 	crowd.free()
 
 func _test_consumer_order(t) -> void:
+	var cached_where := WhereSheIs.nowhere()
 	var cached := CountedEvent.new()
+	var reference_where := WhereSheIs.nowhere()
 	var reference := ReferenceEvent.new()
 	var car := CountedCrowd.new()
 	var reference_car := ReferenceCrowd.new()
-	for source: EventInstance in [cached, reference]:
-		source.setup(_copy_definition(EventCatalogue.by_id("cyclist")), Vector2.ZERO,
-			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]))
+	cached.setup(_copy_definition(EventCatalogue.by_id("cyclist")), Vector2.ZERO,
+			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT, null, null,
+			cached_where)
+	reference.setup(_copy_definition(EventCatalogue.by_id("cyclist")), Vector2.ZERO,
+			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT, null, null,
+			reference_where)
 	for source: CrowdAgent in [car, reference_car]:
 		source.kind = CrowdAgent.Kind.CAR
 		source._speed = 80.0
@@ -292,8 +299,8 @@ func _test_consumer_order(t) -> void:
 		reference.age = cached.age
 		car.excitement.advance(0.1)
 		reference_car.excitement.advance(0.1)
-		cached.player_at = at
-		reference.player_at = at
+		cached_where.tell(at)
+		reference_where.tell(at)
 		t.check(cached.excitement.caret_strength() == reference.excitement.caret_strength(), "pre-halo event mark parity")
 		t.check(car.excitement.caret_strength() == reference_car.excitement.caret_strength(), "pre-halo car mark parity")
 		for source in [cached, reference, car, reference_car]:

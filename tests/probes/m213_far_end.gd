@@ -214,15 +214,17 @@ func _in_a_through_alley(map: CityMap, tile: Vector2i) -> bool:
 	return false
 
 func _stays_asleep(robbery: EventDef, guard_at: Vector2, legs: Array[Vector2]) -> bool:
+	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
-	robber.setup(robbery, guard_at)
+	robber.setup(robbery, guard_at, PackedVector2Array(), Vector2.RIGHT, null, null,
+			robber_where)
 	var woke := false
 	for leg in legs.size() - 1:
 		var from: Vector2 = legs[leg]
 		var to: Vector2 = legs[leg + 1]
 		var steps := ceili(from.distance_to(to) / 8.0)
 		for s in steps + 1:
-			robber.player_at = from.lerp(to, float(s) / float(maxi(steps, 1)))
+			robber_where.tell(from.lerp(to, float(s) / float(maxi(steps, 1))))
 			robber.step(STEP)
 			if not robber.is_waiting():
 				woke = true

@@ -441,7 +441,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 			var trap: EventInstance = sent[0] if sent.size() == 1 else null
 			t.check(trap != null, "the shifted camera still leaves legal ground for the trap")
 			if trap != null:
-				trap.player_at = her
+				_city.events.world.where_she_is().tell(her)
 				var drawing := trap.look.drawn_rect_now()
 				t.check(view.view.intersects(Rect2(initial + drawing.position, drawing.size)),
 						"the camera moved far enough to expose a trap at the initial badge position")
@@ -522,7 +522,7 @@ func _check_the_trap_comes_from_off_screen(t, her: Vector2, row_id: String, labe
 					"%s: with no clear run from %s, none from %v off her either"
 					% [label, _city.map.world_to_tile(start), candidate - her])
 	t.check(not chaser.is_waiting(), "%s: never waiting, even before his first frame" % label)
-	chaser.player_at = her
+	_city.events.world.where_she_is().tell(her)
 	chaser.step(STEP)
 	var closed := start.distance_to(her) - chaser.global_position.distance_to(her)
 	t.check(closed > chaser.def.chase_speed() * STEP * 0.9 or (across and closed > 0.0),
@@ -534,7 +534,7 @@ func _check_the_trap_comes_from_off_screen(t, her: Vector2, row_id: String, labe
 	var elapsed := 0.0
 	while elapsed < chaser.def.telegraph_time + chaser.def.duration \
 			and not chaser.is_finished and not caught:
-		chaser.player_at = her
+		_city.events.world.where_she_is().tell(her)
 		chaser.step(STEP)
 		elapsed += STEP
 		caught = chaser.is_lethal_at(her)
@@ -729,8 +729,9 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 func _walk_the_trap(t, def: EventDef, start: Vector2, speed: float,
 		turn_to_run_after := INF) -> Dictionary:
 	var bearing := start.normalized()
+	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
-	robber.setup(def, start)
+	robber.setup(def, start, PackedVector2Array(), Vector2.RIGHT, null, null, robber_where)
 	robber.came_under_a_warning = true
 	if def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		robber.resume(EventSpawner.age_when_warned(def), 0.0)
@@ -757,8 +758,7 @@ func _walk_the_trap(t, def: EventDef, start: Vector2, speed: float,
 		stroller.position = her
 		stroller.velocity = bearing * velocity
 		await tree.physics_frame
-		robber.player_at = her
-		robber.player_running = absf(velocity) > Tuning.WALK_SPEED
+		robber_where.tell(her, Vector2.INF, Rect2(), absf(velocity) > Tuning.WALK_SPEED)
 		var box := robber.drawn_box()
 		var in_sight := VisibleView.around(her, null).sees_any(
 				Rect2(robber.global_position + box.position, box.size))

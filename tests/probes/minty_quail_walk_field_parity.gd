@@ -72,7 +72,7 @@ func _the_guard(t, seed_value: int, walks: bool) -> void:
 			her = her.move_toward(route[next], Tuning.WALK_SPEED * FRAME)
 			if her.distance_to(route[next]) < 0.01:
 				next += 1
-		guard.player_at = her
+		city.events.world.where_she_is().tell(her)
 		guard.step(FRAME)
 		clock += FRAME
 		print("%s tick %d: at (%.3f, %.3f) heading (%.5f, %.5f) arrow tile %s" % [label, tick,

@@ -37,9 +37,9 @@ func _patrol() -> EventDef:
 	return EventCatalogue.by_id("police_patrol")
 
 ## A live car of `def` on `route`, in the tree so its body exists, stepped by hand.
-func _car(t, def: EventDef, route: PackedVector2Array, map: CityMap = null) -> EventInstance:
+func _car(t, def: EventDef, route: PackedVector2Array, map: CityMap, where: WhereSheIs) -> EventInstance:
 	var car := EventInstance.new()
-	car.setup(def, route[0], route, (route[1] - route[0]).normalized(), map)
+	car.setup(def, route[0], route, (route[1] - route[0]).normalized(), map, null, where)
 	t.add_child(car)
 	car.set_process(false)
 	return car
@@ -64,15 +64,14 @@ func _her(t, at: Vector2, facing: Vector2) -> Stroller:
 	pram.position = facing * Tuning.PLAYER_BODY_RADIUS
 	return player
 
-## What `EventManager` tells every instance once a frame: where she is and where her pram is.
-func _tell(car: EventInstance, player: Stroller) -> void:
-	car.player_at = player.global_position
-	car.pram_at = player.global_position + player.facing * Tuning.PLAYER_BODY_RADIUS
+## What `EventManager` tells the one object every instance hears once a frame: where she is and where her pram is.
+func _tell(where: WhereSheIs, player: Stroller) -> void:
+	where.tell(player.global_position, player.global_position + player.facing * Tuning.PLAYER_BODY_RADIUS)
 
 ## One frame of the car, its body's transform (the car and everything under it) pushed to the physics
 ## server at once rather than at the tree's next flush, which a synchronous sweep never reaches.
-func _drive(car: EventInstance, player: Stroller) -> void:
-	_tell(car, player)
+func _drive(car: EventInstance, where: WhereSheIs, player: Stroller) -> void:
+	_tell(where, player)
 	car.step(STEP)
 	car.propagate_call("force_update_transform", [], true)
 
@@ -87,9 +86,9 @@ func _walk(player: Stroller, heading: Vector2, distance: float) -> float:
 
 ## Whether the car holds still for one more step with her where she is: it is held when the step it
 ## takes leaves it where it was, which is all a car standing for her shows.
-func _stands(car: EventInstance, player: Stroller) -> bool:
+func _stands(car: EventInstance, where: WhereSheIs, player: Stroller) -> bool:
 	var was_at := car.global_position
-	_drive(car, player)
+	_drive(car, where, player)
 	return car.global_position.is_equal_approx(was_at)
 
 func _gap(car: EventInstance) -> float:
@@ -100,7 +99,8 @@ func _gap(car: EventInstance) -> float:
 ## **The reproduction**: walked at side-on, a standing patrol car stops her at its flank — with no
 ## body she walked straight through it and out of the far side.
 func _test_her_walk_into_a_standing_car_stops_at_its_side(t) -> void:
-	var car := _car(t, _patrol(), PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)]))
+	var car_where := WhereSheIs.nowhere()
+	var car := _car(t, _patrol(), PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)]), null, car_where)
 	var shape := car.def.shape
 	for approach in [Vector2.DOWN, Vector2.UP]:
 		var start: Vector2 = -approach * 80.0
@@ -135,7 +135,8 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t) -> void:
 	t.check(shape.reach() * 2.0 <= side.x, "and no longer than the side view is drawn (%.0fpx)"
 			% side.x)
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(0.0, 80.0), Vector2(400.0, 80.0)])
-	var car := _car(t, _patrol(), route)
+	var car_where := WhereSheIs.nowhere()
+	var car := _car(t, _patrol(), route, null, car_where)
 	var collision := _body_shape(car)
 	var capsule := collision.shape as CapsuleShape2D
 	t.check(capsule != null and is_equal_approx(capsule.radius, shape.radius)
@@ -162,14 +163,15 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t) -> void:
 ## Beside a car driving past, she is never struck, the car never comes into her, and walking into
 ## its flank stops her against it.
 func _test_a_driving_car_beside_her_is_solid_and_not_lethal(t) -> void:
-	var car := _car(t, _patrol(), PackedVector2Array([Vector2(-200.0, 0.0), Vector2(400.0, 0.0)]))
+	var car_where := WhereSheIs.nowhere()
+	var car := _car(t, _patrol(), PackedVector2Array([Vector2(-200.0, 0.0), Vector2(400.0, 0.0)]), null, car_where)
 	var player := _her(t, Vector2(0.0, 60.0), Vector2.UP)
 	var struck := false
 	var deepest := INF
 	var pressed := false
 	var stopped := false
 	for i in int(6.0 / STEP):
-		_drive(car, player)
+		_drive(car, car_where, player)
 		struck = struck or car.is_lethal_at(player.global_position)
 		deepest = minf(deepest, _gap(car))
 		# Level with its middle, she walks up into its flank and leans on it as it passes.
@@ -187,12 +189,13 @@ func _test_a_driving_car_beside_her_is_solid_and_not_lethal(t) -> void:
 ## Behind a car driving away from her, nothing strikes her; she follows it and walks into its rear,
 ## which stops her.
 func _test_a_driving_car_ahead_of_her_is_solid_and_not_lethal(t) -> void:
-	var car := _car(t, _patrol(), PackedVector2Array([Vector2(40.0, 0.0), Vector2(800.0, 0.0)]))
+	var car_where := WhereSheIs.nowhere()
+	var car := _car(t, _patrol(), PackedVector2Array([Vector2(40.0, 0.0), Vector2(800.0, 0.0)]), null, car_where)
 	var player := _her(t, Vector2.ZERO, Vector2.RIGHT)
 	var struck := false
 	var touched := false
 	for i in int(3.0 / STEP):
-		_drive(car, player)
+		_drive(car, car_where, player)
 		struck = struck or car.is_lethal_at(player.global_position)
 		# She walks after it faster than it drives, so she catches its rear bumper.
 		if player.move_and_collide(Vector2.RIGHT * Tuning.WALK_SPEED * STEP) != null:
@@ -207,14 +210,15 @@ func _test_a_driving_car_ahead_of_her_is_solid_and_not_lethal(t) -> void:
 ## before its body would ever stop against her.
 func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t) -> void:
 	for facing in [Vector2.LEFT, Vector2.UP, Vector2.RIGHT]:
-		var car := _car(t, _patrol(), PackedVector2Array([Vector2(-300.0, 0.0), Vector2(600.0, 0.0)]))
+		var car_where := WhereSheIs.nowhere()
+		var car := _car(t, _patrol(), PackedVector2Array([Vector2(-300.0, 0.0), Vector2(600.0, 0.0)]), null, car_where)
 		var player := _her(t, Vector2.ZERO, facing)
 		var warned_at := -1.0
 		var struck_at := -1.0
 		var held := false
 		for i in int(6.0 / STEP):
 			var was_at := car.global_position
-			_drive(car, player)
+			_drive(car, car_where, player)
 			var now := float(i) * STEP
 			if warned_at < 0.0 and car.car.closes_on(player.global_position):
 				warned_at = now
@@ -240,7 +244,8 @@ func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t) -> void:
 ## the investigating car, which stops where it notices her and stands for the man it lets out.
 func _test_a_car_that_is_not_driving_strikes_nobody(t) -> void:
 	# Its route runs out short of her, and it leaves the way it was going: at her.
-	var leaving := _car(t, _patrol(), PackedVector2Array([Vector2(-300.0, 0.0), Vector2(-100.0, 0.0)]))
+	var leaving_where := WhereSheIs.nowhere()
+	var leaving := _car(t, _patrol(), PackedVector2Array([Vector2(-300.0, 0.0), Vector2(-100.0, 0.0)]), null, leaving_where)
 	var player := _her(t, Vector2(0.0, 0.0), Vector2.LEFT)
 	var frames := 0
 	while not leaving.is_leaving and frames < int(10.0 / STEP):
@@ -250,21 +255,22 @@ func _test_a_car_that_is_not_driving_strikes_nobody(t) -> void:
 	var struck := false
 	var deepest := INF
 	for i in int(5.0 / STEP):
-		_drive(leaving, player)
+		_drive(leaving, leaving_where, player)
 		struck = struck or leaving.is_lethal_at(player.global_position)
 		deepest = minf(deepest, _gap(leaving))
 	t.check(not struck, "a leaving car never strikes her in front of it")
-	t.check(deepest >= -0.01 and _stands(leaving, player),
+	t.check(deepest >= -0.01 and _stands(leaving, leaving_where, player),
 			"it stops against her instead (closest %.2fpx)" % deepest)
 	leaving.free()
 	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
 	var start := Vector2(-140.0, 0.0)
-	var investigating := _car(t, hot, PackedVector2Array([start, Vector2(600.0, 0.0)]))
+	var investigating_where := WhereSheIs.nowhere()
+	var investigating := _car(t, hot, PackedVector2Array([start, Vector2(600.0, 0.0)]), null, investigating_where)
 	struck = false
 	var noticed := false
 	var furthest := 0.0
 	for i in int(4.0 / STEP):
-		_drive(investigating, player)
+		_drive(investigating, investigating_where, player)
 		noticed = noticed or not investigating.is_waiting()
 		struck = struck or investigating.is_lethal_at(player.global_position)
 		furthest = maxf(furthest, investigating.global_position.distance_to(start))
@@ -289,18 +295,19 @@ func _test_off_the_carriageway_it_stops_for_her_pram(t) -> void:
 	var route := PackedVector2Array([lane - along * 200.0, lane + along * 200.0])
 	# Her centre a few pixels onto the sidewalk, her pram reaching into the lane toward the car.
 	var on_the_sidewalk := edge + outward * 4.0
-	var car := _car(t, _patrol(), route, map)
+	var car_where := WhereSheIs.nowhere()
+	var car := _car(t, _patrol(), route, map, car_where)
 	var player := _her(t, on_the_sidewalk, -outward)
 	var struck := false
 	var deepest := INF
 	for i in int(6.0 / STEP):
-		_drive(car, player)
+		_drive(car, car_where, player)
 		struck = struck or car.is_lethal_at(player.global_position)
 		deepest = minf(deepest, _gap(car))
 	t.check(map.tile_at(map.world_to_tile(on_the_sidewalk)) == GameEnums.TileType.SIDEWALK,
 			"she stands on the sidewalk")
 	t.check(not struck, "with her on the sidewalk, a car never strikes her")
-	t.check(_stands(car, player) and deepest >= -0.01,
+	t.check(_stands(car, car_where, player) and deepest >= -0.01,
 			"it stops for her pram in its lane instead (closest %.2fpx)" % deepest)
 	# Standing for her, it stays harmless however she then steps into the road in front of it.
 	var nose := car.global_position + along * (car.def.shape.reach() + Tuning.PLAYER_BODY_RADIUS
@@ -308,24 +315,24 @@ func _test_off_the_carriageway_it_stops_for_her_pram(t) -> void:
 	player.global_position = Vector2(nose.x, lane.y)
 	player.facing = -along
 	for i in int(3.0 / STEP):
-		_drive(car, player)
+		_drive(car, car_where, player)
 		struck = struck or car.is_lethal_at(player.global_position)
-	t.check(not struck and _stands(car, player),
+	t.check(not struck and _stands(car, car_where, player),
 			"a car standing for her never strikes her when she steps in front of it")
 	# And it drives on once she is out of its way.
 	player.global_position = on_the_sidewalk + outward * float(Tuning.TILE_SIZE)
 	var stood_at := car.global_position
 	for i in int(1.0 / STEP):
-		_drive(car, player)
+		_drive(car, car_where, player)
 	t.check(car.global_position.distance_to(stood_at) > 30.0,
 			"and it drives on once she is out of its way")
 	car.free()
 	var in_the_road := edge - outward * 4.0
 	player.global_position = in_the_road
-	car = _car(t, _patrol(), route, map)
+	car = _car(t, _patrol(), route, map, car_where)
 	struck = false
 	for i in int(6.0 / STEP):
-		_drive(car, player)
+		_drive(car, car_where, player)
 		if car.is_lethal_at(player.global_position):
 			struck = true
 			break
@@ -368,14 +375,15 @@ func _test_the_car_never_drives_into_her(t) -> void:
 				continue
 			for facing in [Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT, Vector2.UP]:
 				cases += 1
-				var car := _car(t, _patrol(), route)
+				var car_where := WhereSheIs.nowhere()
+				var car := _car(t, _patrol(), route, null, car_where)
 				var player := _her(t, at, facing)
 				for i in int(5.0 / STEP):
-					_drive(car, player)
+					_drive(car, car_where, player)
 					if car.is_lethal_at(player.global_position):
 						break
 					worst = minf(worst, _gap(car))
-				if _stands(car, player):
+				if _stands(car, car_where, player):
 					held += 1
 				player.free()
 				car.free()
@@ -404,7 +412,8 @@ func _test_an_investigating_car_never_leaves_the_carriageway(t) -> void:
 	# sidewalk is found on runs out a few tiles the other way.
 	var route := PackedVector2Array([lane - inward.orthogonal() * 260.0,
 			lane + inward.orthogonal() * 60.0])
-	var car := _car(t, hot, route, map)
+	var car_where := WhereSheIs.nowhere()
+	var car := _car(t, hot, route, map, car_where)
 	var player := _her(t, at, -inward)
 	t.check(Tile.is_road(map.tile_type_at_world(route[0]))
 			and Tile.is_road(map.tile_type_at_world(route[1])), "its route is on the carriageway")
@@ -412,7 +421,7 @@ func _test_an_investigating_car_never_leaves_the_carriageway(t) -> void:
 	var stopped_at := Vector2.INF
 	var moved_after := 0.0
 	for i in int(6.0 / STEP):
-		_drive(car, player)
+		_drive(car, car_where, player)
 		if not Tile.is_road(map.tile_type_at_world(car.global_position)):
 			off_the_road += 1
 		if stopped_at == Vector2.INF and not car.is_waiting():
@@ -468,43 +477,45 @@ func _test_the_raids_car_never_reverses_onto_her(t) -> void:
 	raid.paces = true
 	var beat := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	for behind in [41.0, 49.0, 61.0, 101.0, 141.0]:
-		var car := _car(t, raid, beat)
+		var car_where := WhereSheIs.nowhere()
+		var car := _car(t, raid, beat, null, car_where)
 		var player := _her(t, Vector2(0.0, 80.0), Vector2.UP)
 		# Drive it to just short of the end of its beat, then step in behind it.
 		while car.global_position.x < 396.0:
-			_drive(car, player)
+			_drive(car, car_where, player)
 		player.global_position = Vector2(car.global_position.x - behind, 0.0)
 		var struck := false
 		var deepest := INF
 		for i in int(6.0 / STEP):
-			_drive(car, player)
+			_drive(car, car_where, player)
 			struck = struck or car.is_lethal_at(player.global_position)
 			deepest = minf(deepest, _gap(car))
 		t.check(not struck, "stepped in %.0fpx behind the raid's car at the end of its beat, it never "
 				% behind + "strikes her")
-		t.check(_stands(car, player) and car.facing_now().is_equal_approx(Vector2.RIGHT),
+		t.check(_stands(car, car_where, player) and car.facing_now().is_equal_approx(Vector2.RIGHT),
 				"%.0fpx behind: it stands, still facing away from her, rather than turning onto her"
 				% behind)
 		t.check(deepest >= -0.01, "%.0fpx behind: and its body never came into her" % behind)
 		# Out of its lane, it turns and paces on.
 		player.global_position = Vector2(player.global_position.x, 80.0)
 		for i in int(1.0 / STEP):
-			_drive(car, player)
-		t.check(not _stands(car, player) and car.facing_now().is_equal_approx(Vector2.LEFT),
+			_drive(car, car_where, player)
+		t.check(not _stands(car, car_where, player) and car.facing_now().is_equal_approx(Vector2.LEFT),
 				"%.0fpx behind: once she is out of its lane it turns and paces back" % behind)
 		player.free()
 		car.free()
 	# Further behind than its warning reaches, it turns at once and drives back at her, warning her
 	# its whole horn time before the strike.
-	var car := _car(t, raid, beat)
+	var car_where := WhereSheIs.nowhere()
+	var car := _car(t, raid, beat, null, car_where)
 	var player := _her(t, Vector2(0.0, 80.0), Vector2.RIGHT)
 	while car.global_position.x < 396.0:
-		_drive(car, player)
+		_drive(car, car_where, player)
 	player.global_position = Vector2(car.global_position.x - 260.0, 0.0)
 	var warned_at := -1.0
 	var struck_at := -1.0
 	for i in int(8.0 / STEP):
-		_drive(car, player)
+		_drive(car, car_where, player)
 		if warned_at < 0.0 and car.car.closes_on(player.global_position):
 			warned_at = float(i) * STEP
 		if car.is_lethal_at(player.global_position):
@@ -525,9 +536,11 @@ func _test_the_raids_car_never_reverses_onto_her(t) -> void:
 ## was going, past her, facing the same way every frame, and is gone only once out of her sight.
 func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t) -> void:
 	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
-	var car := _car(t, hot, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(600.0, 0.0)]))
+	var car_where := WhereSheIs.nowhere()
+	var car := _car(t, hot, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(600.0, 0.0)]), null, car_where)
 	var player := _her(t, Vector2.ZERO, Vector2.LEFT)
 	var officer: EventInstance = null
+	var officer_where := WhereSheIs.nowhere()
 	var stopped_at := Vector2.INF
 	var struck := false
 	var stood_for_her := 0.0
@@ -537,21 +550,22 @@ func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t) -> void:
 	var aside := false
 	var elapsed := 0.0
 	while elapsed < 30.0:
-		_drive(car, player)
+		_drive(car, car_where, player)
 		elapsed += STEP
 		struck = struck or car.is_lethal_at(player.global_position)
 		turned = turned or car.facing_now().dot(Vector2.RIGHT) < 0.999
 		if car.officers_owed() > 0:
 			officer = EventInstance.new()
 			officer.setup(EventCatalogue.out_of_the_car(DaySpec.for_day(6)), car.door_for_its_officer(
-					EventCatalogue.out_of_the_car(DaySpec.for_day(6))))
+					EventCatalogue.out_of_the_car(DaySpec.for_day(6))), PackedVector2Array(),
+					Vector2.RIGHT, null, null, officer_where)
 			t.add_child(officer)
 			officer.set_process(false)
 			car.let_out(officer)
 			stopped_at = car.global_position
 			officer.give_up_the_chase()
 		if officer and not officer.is_finished:
-			officer.player_at = player.global_position
+			officer_where.tell(player.global_position)
 			officer.step(STEP)
 		elif officer and not aside:
 			# He is back in. She stays in its lane for two seconds, then steps out of it.
@@ -592,23 +606,24 @@ func _test_it_gives_way_at_a_zebra_she_waits_at(t) -> void:
 	if zebra == Vector2.INF:
 		return
 	var route := PackedVector2Array([zebra - Vector2(160.0, 0.0), zebra + Vector2(400.0, 0.0)])
-	var car := _car(t, _patrol(), route, map)
+	var car_where := WhereSheIs.nowhere()
+	var car := _car(t, _patrol(), route, map, car_where)
 	var player := _her(t, zebra, Vector2.UP)
 	var struck := false
 	var warned := false
 	for i in int(5.0 / STEP):
-		_drive(car, player)
+		_drive(car, car_where, player)
 		struck = struck or car.is_lethal_at(player.global_position)
 		warned = warned or car.car.closes_on(player.global_position)
 	var nose := car.global_position.x + car.def.shape.reach()
 	var paint := floorf(zebra.x / Tuning.TILE_SIZE) * Tuning.TILE_SIZE
 	t.check(not struck and not warned, "on the zebra she is never warned or struck")
-	t.check(_stands(car, player) and nose <= paint,
+	t.check(_stands(car, car_where, player) and nose <= paint,
 			"it stands short of the paint (nose %.0f, paint %.0f)" % [nose, paint])
 	player.global_position = zebra + Vector2(0.0, -float(Tuning.TILE_SIZE) * 5.0)
 	var stood_at := car.global_position
 	for i in int(2.0 / STEP):
-		_drive(car, player)
+		_drive(car, car_where, player)
 	t.check(car.global_position.x > stood_at.x + 60.0, "and drives over once she has crossed")
 	player.free()
 	car.free()
@@ -653,7 +668,8 @@ func _test_it_stops_at_a_red_light(t) -> void:
 		signals.elapsed += 0.25
 	t.check(not signals.green_for(junction, false), "the east-west arm is red")
 	var route := PackedVector2Array([Vector2(box_x - 260.0, lane), Vector2(box_x + 400.0, lane)])
-	var car := _car(t, _patrol(), route, map)
+	var car_where := WhereSheIs.nowhere()
+	var car := _car(t, _patrol(), route, map, car_where)
 	car.signals = signals
 	var was_at := car.global_position
 	for i in int(5.0 / STEP):
@@ -728,18 +744,19 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t) -> void:
 			for k in Tuning.SIDEWALK_WIDTH:
 				for out in [0.0, 64.0, 96.0]:
 					var her: Vector2 = Vector2((float(first + k) + 0.5) * tile, lane - out)
-					var car := _car(t, _patrol(), route, map)
+					var car_where := WhereSheIs.nowhere()
+					var car := _car(t, _patrol(), route, map, car_where)
 					car.signals = signals
 					var player := _her(t, her, Vector2.UP)
 					var furthest := -INF
 					for i in int(6.0 / STEP):
-						_drive(car, player)
+						_drive(car, car_where, player)
 						var nose: float = (car.global_position.x - near) * direction \
 								+ car.def.shape.reach()
 						furthest = maxf(furthest, nose)
 					cases += 1
 					worst = maxf(worst, furthest)
-					t.check(furthest <= -Tuning.CAR_STOP_LINE_SETBACK + 0.5 and _stands(car, player),
+					t.check(furthest <= -Tuning.CAR_STOP_LINE_SETBACK + 0.5 and _stands(car, car_where, player),
 							("at %s, driving %s, her at the far zebra's tile %d, %.0fpx out: it holds "
 							% [what, "east" if direction > 0.0 else "west", k + 1, out])
 							+ "at the box's entry line (nose %.1fpx from the box)" % furthest)
@@ -770,7 +787,7 @@ func _test_the_log_names_the_patrol_for_its_mark(t) -> void:
 			PackedVector2Array([lane - along * 150.0, lane + along * 650.0]))
 	_already_driving(car)
 	var player := _her(t, lane, -along)
-	_tell(car, player)
+	_tell(city.events.world.where_she_is(), player)
 	var baby := Baby.new()
 	var clock := DayController.new()
 	var run_log := RecordingLog.new()
@@ -788,7 +805,7 @@ func _test_the_log_names_the_patrol_for_its_mark(t) -> void:
 	t.check(in_lane.contains("| police_patrol "),
 			"the log names the patrol for the mark (%s)" % in_lane)
 	player.global_position = lane + outward * float(Tuning.TILE_SIZE * 2)
-	_tell(car, player)
+	_tell(city.events.world.where_she_is(), player)
 	var out_of_lane := await _the_mark_cue(t, player, run_log)
 	t.check(out_of_lane != "" and not out_of_lane.contains("| police_patrol"),
 			"and out of its lane it names nothing of it (%s)" % out_of_lane)

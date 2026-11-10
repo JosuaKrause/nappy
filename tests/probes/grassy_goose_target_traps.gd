@@ -192,8 +192,9 @@ func _runs_through_a_door(city: City, start: Vector2, her: Vector2) -> bool:
 ## `Tuning.WALK_SPEED` (standing still for `Vector2.ZERO`), for his whole notice and chase. Whether
 ## he catches her.
 func _chase(t, city: City, def: EventDef, start: Vector2, her_at: Vector2, heading: Vector2) -> bool:
+	var chaser_where := WhereSheIs.nowhere()
 	var chaser := EventInstance.new()
-	chaser.setup(def, start, PackedVector2Array(), Vector2.RIGHT, city.map)
+	chaser.setup(def, start, PackedVector2Array(), Vector2.RIGHT, city.map, null, chaser_where)
 	t.add_child(chaser)
 	chaser.set_process(false)
 	var her := her_at
@@ -202,8 +203,7 @@ func _chase(t, city: City, def: EventDef, start: Vector2, her_at: Vector2, headi
 	var limit := def.telegraph_time + def.duration + 1.0
 	while elapsed < limit and not chaser.is_finished and not chaser.is_leaving:
 		her += _her_step(city.map, her, heading * Tuning.WALK_SPEED * STEP)
-		chaser.player_at = her
-		chaser.player_running = false
+		chaser_where.tell(her)
 		chaser.step(STEP)
 		elapsed += STEP
 		if chaser.is_lethal_at(her):
