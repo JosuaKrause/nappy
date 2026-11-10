@@ -243,7 +243,7 @@
 # which is the whole thing this rule exists to stop). So this reads the command's raw text, quotes
 # and backslashes stripped before it is split into words, and a mention (a write's name inside an
 # echo, a commit message, a code comment) denies exactly like a real invocation would, outside the
-# three whole-command shapes whose text is told apart for certain (`text_shape`, below). Each word
+# three shapes whose text is told apart for certain (`text_shape`, below). Each word
 # still remembers which shell word it came from, and which quoted word inside a quoted script, so
 # an option's argument is skipped whole however it is quoted, escaped or joined by a comma: `git
 # -C "/x y" push`, `git -c 'a=b c' push`, `FOO="a b" tools/release.sh patch push` and `bash -c 'git
@@ -300,34 +300,53 @@
 # for an encoded command or one kept in a file the shell then runs.
 #
 # **Three shapes are text, and nothing else is** *(plaid-tapir, statement 4: the player chose "B",
-# the rule narrowed to what can be told for certain, everything else read as before)*. Each is the
-# whole command, one simple command and nothing around it -- no `;`, `&&`, `||`, `|`, `&`, second
-# line, group, subshell, `$(...)`, backtick, process substitution, assignment prefix or other
-# redirection -- made only of plain words (letters, digits and `_./:@,+=-`; a file may start with
-# `~`) besides what is named:
+# the rule narrowed to what can be told for certain, everything else read as before; inbox #1292
+# asks that a command which only writes text naming the GitHub CLI is not refused, so each shape is
+# as wide as that certainty reaches and no wider)*. Each is made only of plain words (letters,
+# digits and `_./:@,+=-`) besides what is named, so nothing in it is quoted, expanded, globbed,
+# grouped, substituted, assigned or redirected except as the shape says:
 #
-# - `cat > FILE <<'DELIM'` or `cat <<'DELIM' > FILE` (`>>` too; the delimiter in single or double
-#   quotes or after a backslash), the body running to the first line that is exactly the delimiter
-#   and nothing after that but blank lines. The shell passes a quoted delimiter's body on as it
-#   stands, and `cat` only copies it to the file, so the body is text and the command reads as
+# - `cat > FILE <<'DELIM'` or `cat <<'DELIM' > FILE` (`>>` too), the body running to the first line
+#   that is exactly the delimiter. The delimiter is in single or double quotes or after a
+#   backslash, and the shell then passes the body on as it stands; or it is a bare name over a body
+#   holding no `$`, backtick or backslash, the only three characters the shell acts on in such a
+#   body, so that body is passed on as it stands too. The file is a plain path (it may start with
+#   `~`) or one behind a single variable, `$NAME/...` or `${NAME}/...`, which names a path and runs
+#   nothing. `cat` only copies the body to the file, so the body is text and the command reads as
 #   `cat > FILE`.
 # - `tools/agent-identity.py run <role> -- git commit -F - <<'DELIM'` (or `-F /dev/stdin`,
 #   `--file=-`, `--file=/dev/stdin`; the wrapper as `tools/agent-identity.py` or
 #   `./tools/agent-identity.py`, with `uv run python`, a bare `python3` or `.venv/bin/python` in
 #   front or none, never a program elsewhere that is merely named so; `run`'s own `--repo`; and
 #   `git commit` options that are a dash and letters alone, `-a` or `--amend`), the role a coder's
-#   or the orchestrator's, the body as above. Git takes its standard input as the message and runs
-#   none of it, so the body is text and the command reads as the wrapped commit it is.
+#   or the orchestrator's, the delimiter and the body as above. Git takes its standard input as the
+#   message and runs none of it, so the body is text and the command reads as the wrapped commit it
+#   is.
 # - `rg` or `grep` with plain options and paths and one pattern in single quotes, or in double
 #   quotes holding no `$`, backtick or backslash, and neither `--pre` nor `--hostname-bin` (the two
 #   `rg` options that run a program). A search runs nothing it is given, so the pattern is text and
 #   the command reads with it empty.
 #
-# A near miss of any of them -- an unquoted delimiter, `<<-`, a second command, a wrapper word, a
-# glob, a quoted path -- is read exactly as it would be without this. What a shape cannot see is
-# what happens to its file afterwards: a script `cat` writes and a later, separate command runs (a
-# shell's startup file, a git hook) is that file, which no reading of this command sees, and the
-# later command is read on its own, as every command is.
+# **The commit is the whole command; the `cat` and the search may stand in a sequence of plain
+# reads.** A plain read is `pwd`, `true`, `echo`, `ls`, `wc`, `head`, `tail`, `cat`, `cut` or
+# `mkdir` with plain words, each a program that runs nothing it is given, neither an argument nor
+# its input, and that writes no file (`mkdir` makes a directory); and one `cd` to a plain path as
+# the command's first word. They are joined by `&&`, `||`, `;`, `|` or a new line, and with only
+# plain words between them each of those is a separator for certain. The `cat` writing a file ends
+# its line, with `&&` or `;` before it and never a pipe, its body starts on the next line, and the
+# line after its delimiter is the next command. So the text of such a command goes to a file or
+# into a search and to nothing that runs it: `cd D && cat >> brief.md <<'EOF'`, the body, `EOF`,
+# `pwd` reads as `cd D`, `cat >> brief.md`, `pwd`, and `rg -n 'x' f | head -5` reads with its
+# pattern empty. With the text taken out, what is left is read as every command is, so a write
+# named outside the text still denies (`echo git push`).
+#
+# A near miss of any of them -- a bare delimiter over a body with a `$`, `<<-`, a command that is
+# no plain read (`sed`, `awk`, `sort`, `find`, `xargs`, `git`, `python3`, `bash`, a path: each can
+# run a program or the file just written), a `&`, a redirection, a wrapper word, a glob, a quoted
+# path -- is read exactly as it would be without this. What a shape cannot see is what happens to
+# its file afterwards: a script `cat` writes and a later, separate command runs (a shell's startup
+# file, a git hook) is that file, which no reading of this command sees, and the later command is
+# read on its own, as every command is.
 #
 # Guards both of Claude Code's tools that run a shell command (`Bash`, `Monitor`) the same way
 # `git-grep-guard.sh` does, and reads the same hook JSON shape on stdin. Needs bash 3.2 and jq only.
@@ -1801,18 +1820,43 @@ def findings($w; $w0; $levels; $unsure; $wn; $has):
   | {out, reviewer_push, wrapped, issue_write, approval};
 
 # **The three shapes whose text is told apart for certain** (the header's list): the command with
-# that text taken out, or the command unchanged, to be read as it stands. Every shape is matched
-# against the whole command, so a second command, a group, an expansion or a redirection anywhere
-# makes it no shape at all. `shape_plain` is a word the shell neither splits, quotes, expands nor
-# globs; `shape_delim` is a heredoc operator's delimiter that quotes its body (in single or double
-# quotes, or after a backslash, as a whole word), with the delimiter in the capture `d`, `q` or `b`.
+# that text taken out, or the command unchanged, to be read as it stands. Every line of the command
+# is matched whole, so anything the header does not name (a command that is no plain read, a group,
+# an expansion, a redirection) anywhere makes it no shape at all. `shape_plain` is a word the shell
+# neither splits, quotes, expands nor globs; `shape_delim` is a heredoc operator's delimiter, with
+# the delimiter in the capture `d`, `q` or `b` where it quotes its body (in single or double
+# quotes, or after a backslash, as a whole word) and in `u` where it is a bare name.
 def shape_plain: "[A-Za-z0-9_./:@,+=-]+";
+def shape_name: "[A-Za-z_][A-Za-z0-9_]*";
+# The capture `u` is a delimiter with no quoting at all, a bare name: every regex that uses this
+# puts whitespace or the line's end right after it, so `<<EOF-1`, `<<EOF.` and `<<EOF"X"` match
+# nothing, and `shape_body_ends` then refuses a body the shell would expand.
 def shape_delim:
-  "<<[ \t]*(?:'(?<d>[A-Za-z_][A-Za-z0-9_.-]*)'|\"(?<q>[A-Za-z_][A-Za-z0-9_.-]*)\"|\\\\(?<b>[A-Za-z_][A-Za-z0-9_]*))";
-def shape_file: ">>?[ \t]*~?" + shape_plain;
+  "<<[ \t]*(?:'(?<d>[A-Za-z_][A-Za-z0-9_.-]*)'|\"(?<q>[A-Za-z_][A-Za-z0-9_.-]*)\"|\\\\(?<b>" + shape_name
+  + ")|(?<u>" + shape_name + "))";
+# The file a `cat` writes: a plain path, or one behind a single variable (`$NAME/...`,
+# `${NAME}/...`), an expansion that names a path and runs nothing.
+def shape_file:
+  "(?<f>>>?[ \t]*(?:~?" + shape_plain + "|\\$(?:" + shape_name + "|\\{" + shape_name + "\\})(?:/"
+  + shape_plain + ")?))";
+def shape_args: "(?:[ \t]+" + shape_plain + ")*";
+def shape_quoted: "(?:'[^'\n]*'|\"[^\"$`\\\\\n]*\")";
+# One simple command that runs nothing it is given: a plain read (the header's list; `sed`, `awk`,
+# `sort`, `find`, `xargs`, `git` and every interpreter are left out because each can run a program
+# or a file), or a search with one quoted pattern.
+def shape_item:
+  "(?:(?:pwd|true|echo|ls|wc|head|tail|cat|cut|mkdir)" + shape_args
+  + "|(?:rg|grep)" + shape_args + "[ \t]+" + shape_quoted + shape_args + ")";
+def shape_items: shape_item + "(?:[ \t]*(?:&&|\\|\\||;|\\|)[ \t]*" + shape_item + ")*";
+# A `cd` to a plain path, only as the command's first word.
+def shape_cd_first: "^[ \t]*(?<c>cd[ \t]+" + shape_plain + ")[ \t]*(?:(?:&&|;)[ \t]*(?<r>.*))?$";
+def shape_items_line: "^[ \t]*" + shape_items + "[ \t]*$";
+# A line that ends in the `cat` writing a file from a heredoc, with nothing before it (`p` empty)
+# or simple commands that end in `&&` or `;`, never a pipe into the `cat`.
 def shape_cat_lines:
-  ["^cat[ \t]+" + shape_file + "[ \t]+" + shape_delim + "[ \t]*$",
-   "^cat[ \t]+" + shape_delim + "[ \t]+" + shape_file + "[ \t]*$"];
+  ("^[ \t]*(?<p>(?:" + shape_items + "[ \t]*(?:&&|;)[ \t]*)?)cat[ \t]+") as $head
+  | [$head + shape_file + "[ \t]+" + shape_delim + "[ \t]*$",
+     $head + shape_delim + "[ \t]+" + shape_file + "[ \t]*$"];
 def shape_commit_line:
   "(?:-[A-Za-z]+|--[a-z][a-z-]*)" as $flag
   # The repository's own wrapper, run by name or by a python the shape can name (`uv run python`,
@@ -1823,26 +1867,58 @@ def shape_commit_line:
     + "[ \t]+(?:claude-coder|codex-coder|claude-orchestrator)[ \t]+--[ \t]+git[ \t]+commit"
     + "(?:[ \t]+" + $flag + ")*[ \t]+(?:-F[ \t]+(?:-|/dev/stdin)|--file=(?:-|/dev/stdin))"
     + "(?:[ \t]+" + $flag + ")*[ \t]+" + shape_delim + "[ \t]*$";
-def shape_search:
-  "^(?<c>rg|grep)(?<a>(?:[ \t]+" + shape_plain + ")*)[ \t]+(?:'[^'\n]*'|\"[^\"$`\\\\\n]*\")"
-  + "(?<z>(?:[ \t]+" + shape_plain + ")*)[ \t]*$";
+# The index of the line that ends the heredoc opened on line `$i` by the capture `$op`, or null
+# where the body is not text for certain: no line that is exactly the delimiter, or a bare
+# delimiter over a body holding a `$`, a backtick or a backslash, which the shell would expand.
+def shape_body_ends($lines; $i; $op):
+  ($op.d // $op.q // $op.b // $op.u) as $d
+  | (first(range($i + 1; $lines | length) | select($lines[.] == $d)) // null) as $k
+  | if $k == null then null
+    elif $op.u != null and any($lines[$i + 1:$k][]; test("[$`\\\\]")) then null
+    else $k end;
+# A validated line holds quotes only around a search's pattern, so every quoted run is one.
+def shape_blank_patterns: gsub(shape_quoted; "''");
+def shape_runs_a_program: test("(^|[ \t])--(pre|hostname-bin)");
+# The lines of a command made only of the first and third shapes and plain reads, each with its
+# text taken out, or null where any line is something else. A heredoc's body is skipped whole: the
+# shell reads it from the line after its operator's own to the delimiter, and the next command
+# starts on the line after that.
+def shape_sequence($lines):
+  {i: 0, out: [], ok: true}
+  | until((.ok | not) or .i >= ($lines | length);
+      .i as $i
+      | $lines[$i] as $l
+      | if ($l | test("^[ \t]*$")) then .i += 1
+        else
+          (first(shape_cat_lines[] as $re | $l | capture($re)) // null) as $op
+          | if $op != null then
+              shape_body_ends($lines; $i; $op) as $k
+              | ($op.p | shape_blank_patterns) as $before
+              | if $k == null or ($before | shape_runs_a_program) then .ok = false
+                else .out += [$before + "cat " + $op.f] | .i = $k + 1 end
+            elif ($l | test(shape_items_line)) then
+              ($l | shape_blank_patterns) as $read
+              | if ($read | shape_runs_a_program) then .ok = false
+                else .out += [$read] | .i += 1 end
+            else .ok = false end
+        end)
+  | if .ok then .out else null end;
 def text_shape:
   . as $c
   | (split("\n")) as $lines
   | ($lines[0]) as $l1
-  | (first((shape_cat_lines + [shape_commit_line])[] as $re | $l1 | capture($re))
-     // null) as $op
+  | (first($l1 | capture(shape_commit_line)) // null) as $op
   | if $op != null then
-      ($op.d // $op.q // $op.b) as $d
-      | (first(range(1; $lines | length) | select($lines[.] == $d)) // null) as $k
+      shape_body_ends($lines; 0; $op) as $k
       | if $k != null and all($lines[$k + 1:][]; test("^[ \t]*$"))
         then $l1 | sub("[ \t]*" + shape_delim; "")
         else $c end
     else
-      (first($c | capture(shape_search)) // null) as $s
-      | if $s != null and (($s.a + " " + $s.z) | test("(^|[ \t])--(pre|hostname-bin)") | not)
-        then $s.c + $s.a + " ''" + $s.z
-        else $c end
+      (first($l1 | capture(shape_cd_first)) // null) as $cd
+      | (if $cd == null then {pre: [], lines: $lines}
+         else {pre: [$cd.c], lines: ([$cd.r // ""] + $lines[1:])} end) as $s
+      | shape_sequence($s.lines) as $out
+      | if $out == null then $c else ($s.pre + $out) | join("\n") end
     end;
 
 # A command longer than `too_long` is not read at all: the character pass and the word scans are
