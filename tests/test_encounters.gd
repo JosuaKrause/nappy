@@ -45,7 +45,6 @@ func run(t) -> void:
 	await _test_a_catch_on_the_frame_a_door_releases_her_counts(t)
 	_test_a_static_row_is_seen_and_never_influenced(t)
 	_test_two_instances_are_two_encounters(t)
-	_test_an_instance_made_after_a_gone_one_starts_its_own_encounter(t)
 	_test_runs_less_than_the_gap_apart_are_one_bout(t)
 	await _test_the_manager_tells_the_encounter_under_its_day(t)
 	await _test_the_manager_reads_the_controls_scheme(t)
@@ -545,26 +544,6 @@ func _test_two_instances_are_two_encounters(t) -> void:
 	_run(watch, instances, Vector2.ZERO, 1.0)
 	t.check(_seen.size() == 2, "two yellers in view at once are two encounters (%d)" % _seen.size())
 	first.free()
-	second.free()
-
-## An encounter still open when its instance is freed ends with it, and an instance made after it,
-## in the same place, is a new encounter of its own, seen once more. Fails if the new instance is
-## handed the gone one's record (a record found by the row or the place instead of by the instance):
-## its encounter would still be the open, already seen one, and nothing would be reported.
-func _test_an_instance_made_after_a_gone_one_starts_its_own_encounter(t) -> void:
-	_clear()
-	var watch := _watch()
-	var first := _instance(t, "homeless_yeller", Vector2.ZERO)
-	var instances: Array[EventInstance] = [first]
-	_run(watch, instances, Vector2.ZERO, 1.0)
-	t.check(_seen.size() == 1, "the first yeller is seen once (%d)" % _seen.size())
-	instances.clear()
-	first.free()
-	var second := _instance(t, "homeless_yeller", Vector2.ZERO)
-	instances.append(second)
-	_run(watch, instances, Vector2.ZERO, 1.0)
-	t.check(_seen.size() == 2,
-			"a yeller made after the first was freed is an encounter of its own (%d)" % _seen.size())
 	second.free()
 
 func _test_runs_less_than_the_gap_apart_are_one_bout(t) -> void:

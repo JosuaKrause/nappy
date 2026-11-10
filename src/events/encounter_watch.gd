@@ -49,13 +49,14 @@ extends RefCounted
 ## test `EventManager` already makes) after `RUN_BOUT_GAP` or more without running, or the
 ## first time in a day.
 ##
-## **Cheap by construction**, since it runs every physics frame for every player: one pass over
+## **Plain by construction**, since it runs every physics frame for every player: one pass over
 ## the live instances, where one out of view with nothing open and nothing new landed — most of them
-## — costs one box test and nothing more; the covered corners laid onto the view once a frame
-## (`VisibleView.look()`), not once an instance; a record made once per instance the first time it
-## is present, and nothing allocated on a frame otherwise. The records are the watch's own table,
-## keyed by the instance's id and let go once the instance has gone; the open encounters are a short
-## list of their own, so an encounter can be closed after its instance has gone.
+## — costs a table lookup, the instance's landed total and one box test; the covered corners laid
+## onto the view once a frame (`VisibleView.look()`), not once an instance; a record made once per
+## instance the first time it is present. The records are the watch's own table, keyed by the
+## instance's id; a gone instance's record is let go at the end of the tick, and the table is
+## cleared at the day's end. The open encounters are a short list of their own, so an encounter can
+## be closed after its instance has gone.
 
 ## How long an event instance has to have been off screen, in seconds, before coming back counts as
 ## a new encounter rather than the one it left. *(misty-newt, the player: "I would define the gap as
@@ -92,9 +93,8 @@ class Record:
 var _clock := 0.0
 var _frame := 0
 var _open: Array[Record] = []
-## Every live instance's record, by `Object.get_instance_id()`. A record is let go once its instance
-## is gone, and one found for an id is its instance's only if it names that instance, since an id
-## can be handed to a new node once the old one is freed.
+## Every live instance's record, by `Object.get_instance_id()`. A gone instance's record is let
+## go at the end of the tick, and the table is cleared when the day ends.
 var _records: Dictionary[int, Record] = {}
 var _running := false
 var _ran_last := -INF
@@ -120,7 +120,7 @@ func tick(delta: float, instances: Array[EventInstance], visible: VisibleView, h
 	var view := visible.view
 	for instance in instances:
 		# Most live instances are out of view, with nothing open and nothing new landed, and there is
-		# nothing to do for them: asked here, before any call, since a call is most of the cost.
+		# nothing to do for them: asked here, before the look at one, which is most of the cost.
 		var record := _record_of(instance)
 		if record == null or not record.open:
 			var landed_before := record.landed_last if record != null else 0.0
@@ -224,15 +224,9 @@ func _hold_begins_for(instance: EventInstance, her: Vector2) -> bool:
 		_hold = _hold_source.call(her)
 	return _hold == instance
 
-## The record of `instance`, or `null` when it has none yet. A record under its id that names
-## another instance belongs to a node long freed, and is dropped.
+## The record of `instance`, or `null` when it has none yet.
 func _record_of(instance: EventInstance) -> Record:
-	var id := instance.get_instance_id()
-	var record: Record = _records.get(id)
-	if record != null and record.instance != instance:
-		_records.erase(id)
-		return null
-	return record
+	return _records.get(instance.get_instance_id())
 
 ## Lets go of the record of every instance that has gone. An open encounter of one has just been
 ## closed by `_close_what_is_over()`, which holds its own reference.

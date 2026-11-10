@@ -10,10 +10,11 @@ extends ExcitementSources
 ##   world is off (`holds_her_alone()`).
 ## - **A region boundary's structures charge as one source rather than as their sum** — *"since two
 ##   gates can be adjacent to each other their influence shouldn't add up"*. Every instance that
-##   counts as one barrier (`EventInstance.counts_as_one_barrier()`) is a piece of a street being held, and the strongest of
-##   them at her lands; the rest are not in the pairs at all, so the meter attributes what reaches
-##   the bar to the structure that was the maximum and the halo's colour follows it. Everything else
-##   in the catalogue sums, which is the contract the density is built on.
+##   counts as one barrier (`EventInstance.counts_as_one_barrier()`) is a piece of a street being
+##   held, and the strongest of them at her lands; the rest are not in the pairs at all, so the
+##   meter attributes what reaches the bar to the structure that was the maximum and the halo's
+##   colour follows it. Everything else in the catalogue sums, which is the contract the density
+##   is built on.
 
 ## The world the events stand in, whose live instances this set answers for.
 var _world: EventWorld

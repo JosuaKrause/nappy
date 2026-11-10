@@ -16,8 +16,8 @@ extends RefCounted
 ## Its own door rules, as the player gave them, are in `docs/EVENTS.md`, "Checkpoints".
 
 ## How far past a door body's own solid edge the released side of a detention sets her down, beyond
-## `obstructs_radius + Tuning.PLAYER_BODY_RADIUS` — a few pixels of daylight rather than a shove, so she
-## comes out **where the far side of the door is** and nowhere further.
+## `solid_reach() + Tuning.PLAYER_BODY_RADIUS` — a few pixels of daylight rather than a shove, so
+## she comes out **where the far side of the door is** and nowhere further.
 ##
 ## **Deliberately not enough to clear the hold's own trigger**, which reaches further than a body is
 ## wide and so cannot be escaped by any release that does not throw her past the door
@@ -34,6 +34,9 @@ const CHECKPOINT_RELEASE_MARGIN := 8.0
 ## crossing".)* Measured the same way as `EventCatalogue.CHARGER_WARNING` (`tests/test_checkpoints.gd`).
 const CROSSING_WARNING := 2.0
 
+## The event bus script, so a signal this file emits is checked when the file is parsed.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+
 ## The world the doors stand in: the live instances, the map, the trace and the player.
 var world: EventWorld
 ## `func(def: EventDef, at: Vector2) -> EventInstance`: puts a guard in the world.
@@ -41,10 +44,10 @@ var _spawn: Callable
 ## The row a crossing sets on her (`EventCatalogue.door_guard()`).
 var _guard: EventDef
 ## Where it tells the observers what a door did — a hold begun (`player_detained`), a guard's raised
-## hand (`pursuit_warned`): `EventBus` in the game, a fake in a test.
-var _bus: Node
+## hand (`pursuit_warned`): `EventBus`.
+var _bus: _BUS
 
-func _init(the_world: EventWorld, spawn: Callable, bus: Node, guard: EventDef) -> void:
+func _init(the_world: EventWorld, spawn: Callable, bus: _BUS, guard: EventDef) -> void:
 	world = the_world
 	_spawn = spawn
 	_bus = bus
@@ -216,7 +219,7 @@ func check_detentions() -> void:
 	holds_her.emit(nearest.detains_for())
 	# `VisitCounter`'s own "chat"/"checkpoint" — `nearest.row_id()` names which. See
 	# docs/TELEMETRY.md, "The page counts visits".
-	_bus.emit_signal(&"player_detained", nearest.row_id())
+	_bus.player_detained.emit(nearest.row_id())
 	world.trace.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
 		nearest.row_id(), RunTrace.tile(world.map.world_to_tile(nearest.global_position)),
 		nearest.detains_for(),
@@ -452,7 +455,8 @@ func watch_the_door_lines(delta := 0.0) -> void:
 ## crossing will start the timer and if the player goes back no charge happens but if they stay
 ## crossed the charge will start. Warning starts when the player is crossing")*: the guard at
 ## the hut across the road from her (or an alley door's post) raises his hand at her
-## (`EventInstance.raise_its_guards_hand()`, drawn by `warn_at_the_doors()`) from the frame she crosses.
+## (`EventInstance.raise_its_guards_hand()`, drawn by `warn_at_the_doors()`) from the frame she
+## crosses.
 ## Back across the line before `CROSSING_WARNING` has run, the crossing is called off and
 ## nothing comes; still across it once it has run, a guard is set on her
 ## (`_set_a_guard_on_her()`). One crossing at a time, and none while a guard is already after
@@ -596,8 +600,8 @@ func _hut_on_the_line_nearest(door: EventInstance, here: Vector2, farthest := fa
 ## the guard at the hut on its line across the road from her — the one who would come for her —
 ## raises his hand, or an alley's post's own guard, its post being its whole door, and the page
 ## counts each time he does (`EventBus.pursuit_warned`, `door-guard-warned`;
-## `EventInstance.raise_its_guards_hand()`). Every other guard stands as he always does. A drawing only: it
-## changes nothing a hut does.
+## `EventInstance.raise_its_guards_hand()`). Every other guard stands as he always does. A drawing
+## only: it changes nothing a hut does.
 func warn_at_the_doors() -> void:
 	var warned := {}
 	if is_instance_valid(_crossing_hut):
@@ -608,7 +612,7 @@ func warn_at_the_doors() -> void:
 			# `VisitCounter`'s own "door-guard-warned", each time a guard raises his hand: the
 			# warning level of the checkpoint guard, who is not in the world until she goes under.
 			if warns and not instance.is_its_guard_warning():
-				_bus.emit_signal(&"pursuit_warned", "door_guard")
+				_bus.pursuit_warned.emit("door_guard")
 			instance.raise_its_guards_hand(warns)
 
 ## *(2026-09-24, the player, answering whether a hold should end the chase: "we can try b. if she
