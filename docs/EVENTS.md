@@ -2974,9 +2974,9 @@ Three things it does **not** announce, each for its own reason:
   approach, not a distance — the same 800px is a fire engine four seconds away and a dawdler
   twenty seconds away, and only one of those is a route decision.
 - **Anything that does not telegraph its coming** (`EventDef.telegraphs`, "What telegraphs"). The
-  crossing cat comes faster than a walk, and it gets no badge because it does not telegraph: the
-  director sites it across her line a fixed lead in front of her, and its entire content is the
-  moment it happens to her.
+  crossing cat comes faster than a walk, and it gets no badge because it does not telegraph: it
+  crosses her line rather than coming at her, and costs her about nothing (the player's own
+  exception, PLAYTEST-145 20).
 
 **A warning with nothing in the world yet is announced for the whole of it.** Something that
 arrives from off screen under the badge is warned of before it exists (see "Everything arrives from

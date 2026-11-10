@@ -258,7 +258,9 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 	# The thing itself, so the arrow says *what* rather than *something*. Scaled to fit the
 	# badge with its aspect kept: these are authored at world scale and a square box squashes a
 	# fire engine into something unrecognisable, which defeats the whole cue. Every row the badge
-	# announces has a silhouette: the catalogue suite fails the build on one that does not.
+	# draws has a picture, and every picture has a silhouette: the catalogue suite fails the build
+	# on one that does not. (A warned creation is raised by `BadgeModel` without asking
+	# `announces_its_coming()`; every warned row announces, so the two paths draw the same rows.)
 	# The size comes from the region table rather than from the texture, so the badge's own fit is
 	# arithmetic that needs nothing loaded; the region itself is the one thing here that does, and
 	# the `events` page is held for the whole process from either boot's own loading window
