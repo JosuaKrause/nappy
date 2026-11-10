@@ -150,8 +150,8 @@ static func _place_the_basement(map: InteriorMapPlan, rng: RandomNumberGenerator
 	var steam := EventCatalogue.by_id("basement_steam")
 	for i in sites.size():
 		var vent := EventScheduler.Planned.new(steam, sites[i])
-		vent.repeat_every = periods[i]
-		vent.comes_in = periods[i] * float(i + 1) / float(sites.size())
+		vent.come_again_every(periods[i])
+		vent.come_first_in(periods[i] * float(i + 1) / float(sites.size()))
 		plans.append(vent)
 
 ## The explosions outside: every `EventCatalogue.FINALE_EXPLOSION_INTERVAL`, the first one interval in, the
@@ -160,10 +160,9 @@ static func _place_the_basement(map: InteriorMapPlan, rng: RandomNumberGenerator
 static func _place_the_explosions_outside(plans: Array[EventScheduler.Planned]) -> void:
 	var row := EventCatalogue.explosion_outside()
 	var bang := EventScheduler.Planned.new(row, Vector2.INF)
-	bang.at_her = true
-	bang.comes_in = row.repeat_every
-	bang.arrives_aged = row.telegraph_time
-	bang.age = bang.arrives_aged
+	bang.come_where_she_stands()
+	bang.come_first_in(row.comes_again_every())
+	bang.arrive_aged(row.telegraphs_for())
 	plans.append(bang)
 
 ## **Where each vent's floor grate lies, for the whole escape**: on each vent's own point
