@@ -349,16 +349,17 @@ func _test_it_patrols_while_it_waits(t) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	t.check(hot.investigates() and hot.mobile, "the fully heated patrol is a mobile investigator")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(hot, path[0], path)
+	instance.setup(hot, path[0], path, Vector2.RIGHT, null, null, instance_where)
 	t.add_child(instance)
 	instance.set_process(false)
 	# Nowhere near her own trigger radius, so nothing here is about noticing.
 	var far := Vector2(200000.0, 200000.0)
-	instance.player_at = far
+	instance_where.tell(far)
 	var start := instance.position
 	for i in int(round(3.0 / STEP)):
-		instance.player_at = far
+		instance_where.tell(far)
 		instance.step(STEP)
 	t.check(instance.is_waiting(), "three seconds later it still has not noticed her")
 	t.check(instance.position.distance_to(start) > 150.0,
@@ -374,15 +375,16 @@ func _test_it_patrols_while_it_waits(t) -> void:
 func _test_a_patrol_that_never_notices_drives_off_its_route(t) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(300.0, 0.0)])
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(hot, path[0], path)
+	instance.setup(hot, path[0], path, Vector2.RIGHT, null, null, instance_where)
 	t.add_child(instance)
 	instance.set_process(false)
 	var far := Vector2(200000.0, 200000.0)
-	instance.player_at = far
+	instance_where.tell(far)
 	var elapsed := 0.0
 	while elapsed < 10.0 and not instance.is_leaving and not instance.is_finished:
-		instance.player_at = far
+		instance_where.tell(far)
 		instance.step(STEP)
 		elapsed += STEP
 	t.check(instance.is_waiting(), "it never noticed her, the whole way down its route")
@@ -397,22 +399,25 @@ func _test_a_patrol_that_never_notices_drives_off_its_route(t) -> void:
 func _test_the_patrol_stops_once_it_notices(t) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(hot, path[0], path)
+	instance.setup(hot, path[0], path, Vector2.RIGHT, null, null, instance_where)
 	t.add_child(instance)
 	instance.set_process(false)
 	var her := Vector2(hot.notice_within() - 10.0, -40.0)
-	instance.player_at = her
+	instance_where.tell(her)
 	instance.step(STEP)
 	t.check(not instance.is_waiting(), "she is inside its reach, so it notices her")
 	t.check(instance.officers_owed() == 1, "and owes the man it lets out")
 	var stopped_at := instance.position
+	var officer_where := WhereSheIs.nowhere()
 	var officer := EventInstance.new()
 	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(6))
-	officer.setup(out, instance.door_for_its_officer(out))
+	officer.setup(out, instance.door_for_its_officer(out), PackedVector2Array(), Vector2.RIGHT,
+			null, null, officer_where)
 	instance.let_out(officer)
 	for i in int(round(3.0 / STEP)):
-		instance.player_at = her
+		instance_where.tell(her)
 		instance.step(STEP)
 	t.check(instance.position == stopped_at and not instance.is_leaving,
 			"it stands where it stopped while he is after her")
@@ -420,12 +425,12 @@ func _test_the_patrol_stops_once_it_notices(t) -> void:
 	t.check(not instance.is_lethal_at(ahead), "and a standing car strikes nobody just ahead of it")
 	officer.give_up_the_chase()
 	t.check(officer.is_leaving and not officer.is_finished, "he gives up and walks back")
-	instance.player_at = her
+	instance_where.tell(her)
 	instance.step(STEP)
 	t.check(instance.position == stopped_at, "and the car waits for him")
 	var walked := 0
 	while not officer.is_finished and walked < 600:
-		officer.player_at = her
+		officer_where.tell(her)
 		officer.step(STEP)
 		walked += 1
 	t.check(officer.is_finished, "he is back in at its door")
@@ -433,7 +438,7 @@ func _test_the_patrol_stops_once_it_notices(t) -> void:
 	# She steps back from its lane, so nothing holds it.
 	her = Vector2(hot.notice_within() - 10.0, -120.0)
 	for i in int(round(1.0 / STEP)):
-		instance.player_at = her
+		instance_where.tell(her)
 		instance.step(STEP)
 	t.check(not instance.is_leaving and instance.position.x > stopped_at.x + 30.0,
 			"once he is back in, it drives on along its route (%.0fpx)"
@@ -464,13 +469,14 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 	var cold := _cold_roadblock()
 	var post := Vector2(400.0, 0.0)
 
+	var band_where := WhereSheIs.nowhere()
 	var band := EventInstance.new()
-	band.setup(cold, post)
+	band.setup(cold, post, PackedVector2Array(), Vector2.RIGHT, null, null, band_where)
 	# Drawn through a drawer that records what it is told instead of painting it, since this rig
 	# holds no atlas.
 	band.drawer = RecordingEventDrawer.new()
 	t.add_child(band)
-	band.player_at = post + Vector2(cold.obstructs_radius + Tuning.PLAYER_BODY_RADIUS, 0.0)
+	band_where.tell(post + Vector2(cold.obstructs_radius + Tuning.PLAYER_BODY_RADIUS, 0.0))
 	# A drawn frame passes with it in the tree, its own `_process()` and drawing with it.
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
@@ -480,20 +486,21 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 			segments += 1
 	t.check(segments > 0, "the band was drawn in the frames that passed (%d segments)" % segments)
 	t.check(band.is_solid(), "a cold roadblock is a solid band")
-	t.check(not band.is_lethal_at(band.player_at) and not band.is_lethal_at(post),
+	t.check(not band.is_lethal_at(band_where.at()) and not band.is_lethal_at(post),
 			"and it takes nobody, at its own edge or standing in it")
 	band.free()
 
 	var hot := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
+	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
-	guard.setup(hot, post)
+	guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT, null, null, guard_where)
 	t.add_child(guard)
 	guard.set_process(false)
 	t.check(guard.is_solid(), "a hunting one is the same band until it notices her")
 	t.check(not guard.barrier_post.has_left_its_body(), "with its body still under its own feet")
 
 	var her := post + Vector2(hot.notice_within() - 10.0, 0.0)
-	guard.player_at = her
+	guard_where.tell(her)
 	guard.step(STEP)
 	t.check(not guard.is_waiting(), "she comes inside the trigger and the guard notices her")
 	t.check(guard.is_solid() and guard.barrier_post.has_left_its_body(),
@@ -508,7 +515,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 	while guard.is_telegraphing() and frames < int((hot.pursuit.warns_for + 1.0) / STEP):
 		t.check(not guard.is_lethal_at(guard.global_position),
 				"nothing is lethal while he warns")
-		guard.player_at = her
+		guard_where.tell(her)
 		guard.step(STEP)
 		frames += 1
 	t.check(absf(frames * STEP - hot.pursuit.warns_for) <= 2.0 * STEP,
@@ -531,7 +538,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 	# still while he closes, so what this measures is him leaving rather than her drawing him off.
 	var chased := 0.0
 	while chased < 2.0:
-		guard.player_at = her
+		guard_where.tell(her)
 		guard.step(STEP)
 		chased += STEP
 	t.check(guard.body_position().is_equal_approx(post),
@@ -559,18 +566,19 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 	for vertical: bool in [false, true]:
 		for side: int in [-1, 1]:
 			var what := "%s, side %d" % ["end-on" if vertical else "broadside", side]
+			var guard_where := WhereSheIs.nowhere()
 			var guard := EventInstance.new()
 			# End-on, he stands on an east-west street, which his band reads its axis off as it
 			# does in a city; broadside, on open ground.
 			guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,
-					EastWestStreet.new() if vertical else null)
+					EastWestStreet.new() if vertical else null, null, guard_where)
 			t.check(guard.runs_vertically() == vertical, "%s: the band runs %s" % [what,
 					"down the screen" if vertical else "across it"])
 			t.add_child(guard)
 			guard.set_process(false)
 			var across := Vector2(1.0, 0.0) if vertical else Vector2(0.0, 1.0)
 			var her := post + across * side * (hot.notice_within() - 1.0)
-			guard.player_at = her
+			guard_where.tell(her)
 			guard.step(STEP)
 			t.check(guard.barrier_post.has_left_its_body() and guard.barrier_post.chaser_side() == side,
 					"%s: the guard on her side sets off" % what)
@@ -583,7 +591,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 			var lethal := false
 			while guard.is_telegraphing() and frames < int(10.0 / STEP):
 				lethal = lethal or guard.is_lethal_at(her)
-				guard.player_at = her
+				guard_where.tell(her)
 				guard.step(STEP)
 				frames += 1
 			t.check(not lethal and absf(frames * STEP - hot.pursuit.warns_for) <= 2.0 * STEP,
@@ -600,13 +608,14 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 
+	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(hot, path[0], path)
+	first.setup(hot, path[0], path, Vector2.RIGHT, null, null, first_where)
 	t.add_child(first)
 	first.set_process(false)
 	var far := Vector2(200000.0, 200000.0)
 	for i in int(round(3.0 / STEP)):
-		first.player_at = far
+		first_where.tell(far)
 		first.step(STEP)
 	t.check(first.is_waiting(), "streamed out mid-patrol, still unnoticed")
 	var age := first.age
@@ -639,16 +648,17 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 
+	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(hot, path[0], path)
+	first.setup(hot, path[0], path, Vector2.RIGHT, null, null, first_where)
 	t.add_child(first)
 	first.set_process(false)
 	var her := Vector2(hot.notice_within() - 10.0, 0.0)
-	first.player_at = her
+	first_where.tell(her)
 	first.step(STEP)
 	t.check(not first.is_waiting(), "she is inside the trigger, so it notices her")
 	for i in int(round(1.0 / STEP)):
-		first.player_at = her
+		first_where.tell(her)
 		first.step(STEP)
 	t.check(not first.is_waiting(), "and a second later it has still stopped, not patrolling")
 	var age := first.age
@@ -656,8 +666,9 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 	var noticed_at := first.noticed_at()
 	first.free()
 
+	var second_where := WhereSheIs.nowhere()
 	var second := EventInstance.new()
-	second.setup(hot, path[0], path)
+	second.setup(hot, path[0], path, Vector2.RIGHT, null, null, second_where)
 	t.add_child(second)
 	second.resume(age, travelled, noticed_at)
 	t.check(not second.is_waiting(),
@@ -668,7 +679,7 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 	var resumed_at := second.position
 	her = Vector2(hot.notice_within() - 10.0, -120.0)
 	for i in int(round(1.0 / STEP)):
-		second.player_at = her
+		second_where.tell(her)
 		second.step(STEP)
 	t.check(not second.is_leaving and second.position.x > resumed_at.x + 30.0,
 			"with nobody of its own out, it drives on along its route (%.0fpx)"
@@ -719,12 +730,13 @@ func _test_every_waiting_row_resumes_the_notice(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	t.check(def.notice_within() > 0.0, "'alley_robbery' is a waiting pursuer, cold")
 
+	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(def, Vector2.ZERO)
+	first.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, first_where)
 	t.add_child(first)
 	first.set_process(false)
 	var her := Vector2(def.notice_within() - 10.0, 0.0)
-	first.player_at = her
+	first_where.tell(her)
 	first.step(STEP)
 	t.check(not first.is_waiting(), "she is inside the trigger, so he notices her")
 	var age := first.age

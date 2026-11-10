@@ -94,15 +94,18 @@ func _heading_row(def_id: String, by_view: Dictionary) -> Array:
 		instance.free()
 	return row
 
-## The waiting robber's own target-facing: `player_at` set at each of the eight bearings, read back
-## through `robber_waiting_heading()` exactly as `_draw_robber()` does while `is_waiting()`.
+## The waiting robber's own target-facing: where she is told at each of the eight bearings,
+## read back through `robber_waiting_heading()` exactly as `_draw_robber()` does while
+## `is_waiting()`.
 func _robber_waiting_row() -> Array:
 	var row := []
 	var def := EventCatalogue.by_id("alley_robbery")
 	for sector in range(8):
+		var instance_where := WhereSheIs.nowhere()
 		var instance := EventInstance.new()
-		instance.setup(def, Vector2.ZERO)
-		instance.player_at = _sector_heading(sector) * (def.notice_within() + 40.0)
+		instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+				instance_where)
+		instance_where.tell(_sector_heading(sector) * (def.notice_within() + 40.0))
 		var view := instance.look.select_view(instance.look.robber_waiting_heading())
 		row.append(_entry(EventPictures.ROBBER_WAITING_BY_VIEW[view],
 				EightDirection.is_mirrored(instance.look._view_sector)))

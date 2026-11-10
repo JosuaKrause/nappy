@@ -176,7 +176,7 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t) -> void:
 	t.check(not guard.is_finished, "and he is not retired in front of her")
 
 	_look_at(Rect2())
-	guard.player_at = feet + (old_at - feet).normalized() * 60.0
+	_city.events.world.where_she_is().tell(feet + (old_at - feet).normalized() * 60.0)
 	guard.step(STEP)
 	t.check(not guard.is_waiting(), "she stood within his notice as he stepped, and he is awake")
 	director.tick(STEP)
@@ -184,7 +184,7 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t) -> void:
 			"off her screen but awake, the mark still stays where it is")
 	t.check(not guard.is_finished, "and he is not retired out of his chase")
 
-	guard.player_at = far_alley
+	_city.events.world.where_she_is().tell(far_alley)
 	guard.step(STEP)
 	t.check(guard.is_waiting(), "she has stood out of his notice as he stepped, and he waits again")
 	director.tick(STEP)
@@ -534,8 +534,10 @@ func _check_the_courtyard_guard(t, robbery: EventDef, map: CityMap, tile: Vector
 ## `_test_the_mark_is_reachable_from_its_own_end` asks of both draws, over the same walk.
 func _stays_asleep_walking_in_and_out(robbery: EventDef, guard_at: Vector2, near: Vector2,
 		mark: Vector2) -> bool:
+	var robber_where := WhereSheIs.nowhere()
 	var robber := EventInstance.new()
-	robber.setup(robbery, guard_at)
+	robber.setup(robbery, guard_at, PackedVector2Array(), Vector2.RIGHT, null, null,
+			robber_where)
 	var woke := false
 	var froms: Array[Vector2] = [near, mark]
 	var tos: Array[Vector2] = [mark, near]
@@ -545,7 +547,7 @@ func _stays_asleep_walking_in_and_out(robbery: EventDef, guard_at: Vector2, near
 		var steps := ceili(from.distance_to(to) / 8.0)
 		for s in steps + 1:
 			var at := from.lerp(to, float(s) / float(maxi(steps, 1)))
-			robber.player_at = at
+			robber_where.tell(at)
 			robber.step(STEP)
 			if not robber.is_waiting():
 				woke = true

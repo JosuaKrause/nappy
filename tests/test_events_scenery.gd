@@ -20,10 +20,10 @@ func run(t) -> void:
 	_test_a_crouching_event_holds_still_until_it_bolts(t)
 
 
-func _instance(t, def: EventDef, at := Vector2.ZERO,
-		path := PackedVector2Array()) -> EventInstance:
+func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
+		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path)
+	instance.setup(def, at, path, Vector2.RIGHT, null, null, where)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
@@ -36,11 +36,12 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 ## where she is every tick the way the world does, and answers how far from the middle she was on
 ## the first frame the birds were off the ground — `INF` if they never left it.
 func _flock_flushes_at(t, def: EventDef, offset: float) -> float:
-	var instance := _instance(t, def, Vector2.ZERO)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	var her := Vector2(-def.outer_radius - 120.0, offset)
 	var answer := INF
 	for _i in int(ceil(((def.outer_radius + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
-		instance.player_at = her
+		instance_where.tell(her)
 		instance.step(STEP)
 		if not instance.is_waiting() and not instance.is_telegraphing():
 			answer = her.distance_to(instance.position)
@@ -53,11 +54,12 @@ func _flock_flushes_at(t, def: EventDef, offset: float) -> float:
 ## `Tuning.WALK_SPEED`, telling the instance where she is every tick the way the world does — the
 ## one thing `M174Pass`'s rig never does, and why `docs/COSTS.md` cannot price this row.
 func _flock_walked_through(t, def: EventDef, offset: float) -> float:
-	var instance := _instance(t, def, Vector2.ZERO)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	var her := Vector2(-def.outer_radius - 120.0, offset)
 	var net := 0.0
 	for _i in int(ceil(((def.outer_radius + 240.0) * 2.0 / Tuning.WALK_SPEED) / STEP)):
-		instance.player_at = her
+		instance_where.tell(her)
 		instance.step(STEP)
 		if her.distance_to(instance.position) <= def.outer_radius:
 			net += (instance.excitement.contribution_at(her) - Tuning.EXCITEMENT_DECAY_WALKING) * STEP
@@ -96,11 +98,12 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	t.check(def.flock_spread < def.outer_radius,
 			"and the room it takes up comes out of the field it emits over, not on top of it")
-	var instance := _instance(t, def, Vector2.ZERO)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	# Standing in it, so it notices her on the first step and the telegraph is the 1.7s it spends on
 	# the ground about to go. Without a player position a flock waits for ever and every assertion
 	# below would be made about eleven birds pecking — see `_test_a_flock_is_a_place_she_can_see`.
-	instance.player_at = Vector2.ZERO
+	instance_where.tell(Vector2.ZERO)
 	_advance(instance, def.telegraph_time + 0.2)
 	t.check(not instance.is_waiting() and not instance.is_telegraphing() and not instance.is_leaving,
 			"the flock is up")
@@ -147,9 +150,9 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 ## it. **Walked past without being reached, it still goes up on its clock**, so a flock she skirted
 ## is startled rather than ignored, and `telegraph_time` still means something.
 ##
-## Stated over the walk rather than over the numbers it was written from: the rig sets `player_at`
-## every tick, which is the one thing the pass rig behind `docs/COSTS.md` never does and the reason
-## that table dashes this row.
+## Stated over the walk rather than over the numbers it was written from: the rig tells where
+## she is (`WhereSheIs.tell()`) every tick, which is the one thing the pass rig behind
+## `docs/COSTS.md` never does and the reason that table dashes this row.
 func _test_a_flock_goes_up_when_she_reaches_the_birds(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var touch := def.flock_spread + Tuning.PLAYER_BODY_RADIUS
@@ -247,8 +250,9 @@ func _test_a_flock_is_a_place_she_can_see(t) -> void:
 			% [Tuning.EVENT_STREAM_RADIUS - Tuning.RUN_SPEED * STEP, corner])
 
 	# As far off as `EventManager` ever first builds one, and five seconds of it.
-	var instance := _instance(t, def, Vector2.ZERO)
-	instance.player_at = Vector2(Tuning.EVENT_STREAM_RADIUS, 0.0)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
+	instance_where.tell(Vector2(Tuning.EVENT_STREAM_RADIUS, 0.0))
 	_advance(instance, 5.0)
 	t.check(instance.is_waiting() and not instance.is_finished,
 			"five seconds out of reach and the flock is still standing there")
@@ -261,7 +265,7 @@ func _test_a_flock_is_a_place_she_can_see(t) -> void:
 			"and pecking costs a fraction of what going up does", 0.1)
 
 	# She comes inside the trigger: the notice starts here rather than at dawn.
-	instance.player_at = Vector2(def.notice_within() - 10.0, 0.0)
+	instance_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	instance.step(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(),
 			"walking up to it is what starts it")

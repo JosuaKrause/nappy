@@ -316,7 +316,7 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 		var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"),
 				Tuning.RESISTANCE_GOAL)
 		var van := city.events.spawn_extra(hot, her + Vector2(hot.notice_within() - 10.0, 0.0))
-		van.player_at = her
+		city.events.world.where_she_is().tell(her)
 		van.step(STEP)
 		var owed := van.officers_owed()
 		city.events.ahead.let_the_officers_out()

@@ -35,8 +35,8 @@ func step(_delta: float) -> void:
 		_taken_at = INF
 		return
 	if _taken_at == INF:
-		if event.player_at == Vector2.INF \
-				or event.global_position.distance_to(event.player_at) > def.outer_radius \
+		if _where.at() == Vector2.INF \
+				or event.global_position.distance_to(_where.at()) > def.outer_radius \
 				or _time_left() < def.abduction.taken_over:
 			return
 		_taken_at = event.age

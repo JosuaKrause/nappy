@@ -236,7 +236,7 @@ func create(def: EventDef, at: Vector2, path := PackedVector2Array(), record_sca
 	instance.atlas = world.atlas
 	instance.drawer = world.drawer
 	instance.trace = world.trace
-	instance.setup(def, at, path, facing, world.map, world.navigator())
+	instance.setup(def, at, path, facing, world.map, world.navigator(), world.where_she_is())
 	instance.signals = world.signals
 	instance.points_at = world.where_protests_point
 	world.map.add_entity(instance)

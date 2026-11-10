@@ -549,7 +549,7 @@ func _test_the_fire_she_meets_is_seen_coming(t) -> void:
 						else arrived.excitement.contribution_at(her_at) > 0.0
 			var on_her_at_once: bool = reaches.call()
 			while not reaches.call() and to_reach < 10.0:
-				arrived.player_at = her_at
+				_city.events.world.where_she_is().tell(her_at)
 				arrived.step(Rig.WALK_STEP)
 				to_reach += Rig.WALK_STEP
 			print("      the engine is created %.0fpx from her after %.2fs of badge, its field %s"

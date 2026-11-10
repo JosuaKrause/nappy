@@ -1239,7 +1239,7 @@ func _test_the_column_comes_down_the_main_road(t) -> void:
 				"its front truck is created just out of sight, up the lane the badge pointed")
 		var to_reach := 0.0
 		while front.excitement.contribution_at(her) <= 0.0 and to_reach < 10.0:
-			front.player_at = her
+			_city.events.world.where_she_is().tell(her)
 			front.step(STEP)
 			to_reach += STEP
 		t.check(warning.shown + to_reach + 0.001 >= warning.def.minimum_telegraph(),

@@ -59,8 +59,10 @@ static func _waiting_chargers() -> Array[EventDef]:
 
 ## One walk; `{"charged", "caught", "closest"}`, the closest measured from his charge on.
 static func _walk(t, def: EventDef, walk: String) -> Dictionary:
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			instance_where)
 	t.add_child(instance)
 	instance.set_process(false)
 	var her := Vector2(0.0, def.notice_within() + 20.0)
@@ -85,8 +87,7 @@ static func _walk(t, def: EventDef, walk: String) -> Dictionary:
 						wanted = Tuning.RUN_SPEED
 		speed = move_toward(speed, wanted, Tuning.ACCELERATION * STEP)
 		her.y += speed * STEP
-		instance.player_at = her
-		instance.player_running = speed > Tuning.WALK_SPEED
+		instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
 		instance.step(STEP)
 		elapsed += STEP
 		if warned_at == INF and not instance.is_waiting():

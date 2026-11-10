@@ -38,19 +38,20 @@ func _chasing(t, post: Vector2, atlas: AtlasLibrary = null) -> Array:
 	var stage := RoadblockRig.Stage.new(t, WorldMap.open_ground(), atlas)
 	var guard := stage.stand(EventScheduler.Planned.new(hot, post))
 	await RoadblockRig.settle(t)
+	var where := stage.manager.world.where_she_is()
 	var her := post + Vector2(0.0, hot.notice_within() - 10.0)
-	guard.player_at = her
+	where.tell(her)
 	guard.step(STEP)
-	her = _charge(guard)
+	her = _charge(guard, where)
 	return [guard, her, stage]
 
 ## Holds her where she stands, inside the radius of a guard who is warning her, until his warning
 ## has run and he charges; answers where she stands.
-func _charge(guard: EventInstance) -> Vector2:
-	var her := guard.player_at
+func _charge(guard: EventInstance, where: WhereSheIs) -> Vector2:
+	var her := where.at()
 	var frames := 0
 	while guard.is_telegraphing() and frames < int((guard.def.pursuit.warns_for + 1.0) / STEP):
-		guard.player_at = her
+		where.tell(her)
 		guard.step(STEP)
 		frames += 1
 	return her
@@ -84,6 +85,7 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> vo
 	var made := await _chasing(t, post, atlas)
 	var guard: EventInstance = made[0]
 	var stage: RoadblockRig.Stage = made[2]
+	var where := stage.manager.world.where_she_is()
 	var her: Vector2 = made[1]
 	t.check(guard.barrier_post.has_left_its_body(), "he has set off")
 	var worst := 0.0
@@ -94,7 +96,7 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> vo
 			"the band is its own node beside the guard, so it sorts at its own feet")
 	for i in int(6.0 / STEP):
 		her = guard.global_position + Vector2(0.0, 200.0) # keeps him walking, never catches her
-		guard.player_at = her
+		where.tell(her)
 		guard.step(STEP)
 		await t.get_tree().process_frame
 		lifted = lifted or absf(guard.look.current_bob()) > 0.1
@@ -112,11 +114,11 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
 	var stage: RoadblockRig.Stage = made[2]
+	var where := stage.manager.world.where_she_is()
 	var frames := 0
 	# She runs: outrunning him for `PURSUIT_SHAKEN_OFF` seconds ends the chase.
 	while not guard.gave_up and frames < int(60.0 / STEP):
-		guard.player_at = guard.global_position + Vector2(0.0, 300.0)
-		guard.player_running = true
+		where.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 		guard.step(STEP)
 		frames += 1
 	t.check(guard.gave_up, "she shakes him off (%d frames)" % frames)
@@ -124,9 +126,10 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	var barrier_held := true
 	var body_held := true
 	var walked := 0
-	var stood := guard.player_at
+	var stood := where.at()
 	while guard.is_leaving and walked < int(30.0 / STEP):
-		guard.player_at = stood # she stands still; he walks out of her sight
+		# She stands still; he walks out of her sight.
+		where.tell(stood, Vector2.INF, Rect2(), where.is_running())
 		guard.step(STEP)
 		walked += 1
 		var body := _its_body(guard)
@@ -141,7 +144,7 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	t.check(guard.global_position.is_equal_approx(post), "the node is back on the barrier")
 	# The day carries on: it still stands a long time later.
 	for i in int(120.0 / STEP):
-		guard.player_at = post + Vector2(0.0, 90.0)
+		where.tell(post + Vector2(0.0, 90.0), Vector2.INF, Rect2(), where.is_running())
 		guard.step(STEP)
 	t.check(not guard.is_finished and guard.is_solid(), "it is still there two minutes on")
 	stage.close()
@@ -151,18 +154,19 @@ func _test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t) -> void:
 	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
 	var stage: RoadblockRig.Stage = made[2]
+	var where := stage.manager.world.where_she_is()
 	var her: Vector2 = made[1]
 	var frames := 0
 	# She stands still out of his reach's way so the clock, not a catch, ends it.
 	while not guard.is_leaving and not guard.is_finished and frames < int(120.0 / STEP):
-		guard.player_at = guard.global_position + Vector2(0.0, 400.0)
+		where.tell(guard.global_position + Vector2(0.0, 400.0))
 		guard.step(STEP)
 		frames += 1
 	t.check(guard.is_leaving and not guard.gave_up,
 			"the clock, not her running, ends his chase (%d frames)" % frames)
 	var walked := 0
 	while guard.is_leaving and walked < int(30.0 / STEP):
-		guard.player_at = guard.global_position + Vector2(0.0, 400.0)
+		where.tell(guard.global_position + Vector2(0.0, 400.0))
 		guard.step(STEP)
 		walked += 1
 	t.check(not guard.is_finished and guard.is_solid()
@@ -174,20 +178,21 @@ func _test_a_guard_who_is_gone_does_not_come_back(t) -> void:
 	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
 	var stage: RoadblockRig.Stage = made[2]
+	var where := stage.manager.world.where_she_is()
 	guard.give_up_the_chase()
 	var walked := 0
 	while guard.is_leaving and walked < int(30.0 / STEP):
-		guard.player_at = post + Vector2(0.0, 500.0)
+		where.tell(post + Vector2(0.0, 500.0))
 		guard.step(STEP)
 		walked += 1
 	t.check(not guard.is_leaving and guard.is_waiting(), "he is gone and the barrier waits")
 	# She walks right up to it: nobody notices, nobody chases, nothing is lethal.
-	guard.player_at = post + Vector2(0.0, 20.0)
+	where.tell(post + Vector2(0.0, 20.0))
 	for i in 120:
 		guard.step(STEP)
 	t.check(guard.is_waiting(), "walking up to it again wakes nobody")
-	t.check(not guard.is_lethal_at(guard.player_at), "and it takes nobody (%s)"
-			% guard.is_lethal_at(guard.player_at))
+	t.check(not guard.is_lethal_at(where.at()), "and it takes nobody (%s)"
+			% guard.is_lethal_at(where.at()))
 	guard.give_up_the_chase()
 	t.check(not guard.is_leaving and not guard.is_finished,
 			"and a second give-up does not send the barrier away")
@@ -200,11 +205,12 @@ func _test_he_is_never_removed_in_view_while_she_stays_near(t) -> void:
 	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
 	var stage: RoadblockRig.Stage = made[2]
+	var where := stage.manager.world.where_she_is()
 	guard.give_up_the_chase()
 	var frames := 0
 	var last_leaving_at := guard.global_position
 	while guard.is_leaving and frames < int(8.0 / STEP):
-		guard.player_at = guard.global_position + Vector2(0.0, 250.0)
+		where.tell(guard.global_position + Vector2(0.0, 250.0))
 		last_leaving_at = guard.global_position
 		guard.step(STEP)
 		frames += 1
@@ -221,6 +227,7 @@ func _test_the_barrier_rim_survives_the_departure(t) -> void:
 	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
 	var stage: RoadblockRig.Stage = made[2]
+	var where := stage.manager.world.where_she_is()
 	# What `ExcitementHalo` does to a source it picks: the strength it lights the source's rim with.
 	var source := guard.excitement.rim
 	source.set_strength(0.8, Color.RED) # the chase's own rim, on the man
@@ -233,7 +240,7 @@ func _test_the_barrier_rim_survives_the_departure(t) -> void:
 	var man_free := true
 	var frames := 0
 	while guard.is_leaving and frames < int(30.0 / STEP):
-		guard.player_at = beside
+		where.tell(beside)
 		source.set_strength(0.8, Color.RED)
 		var banded := _band_halo(guard)
 		if rim == null:
@@ -295,18 +302,18 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 		city.free()
 		return
 	await RoadblockRig.settle(t)
+	var where := city.events.world.where_she_is()
 	var her := post + Vector2(0.0, _hot_roadblock().notice_within() - 10.0)
-	guard.player_at = her
+	where.tell(her)
 	guard.step(STEP)
-	her = _charge(guard)
+	her = _charge(guard, where)
 	t.check(not guard.is_telegraphing(), "she stays in his radius and he charges")
 	t.check(guard.barrier_post.has_left_its_body() and not guard.is_waiting(), "he has set off (%s %s %s age %s)" % [guard.barrier_post.has_left_its_body(), guard.is_waiting(), guard.global_position, guard.age])
 	var side := guard.barrier_post.chaser_side()
 	# Stream out in the middle of his walking away.
 	var frames := 0
 	while not guard.is_leaving and frames < int(60.0 / STEP):
-		guard.player_at = guard.global_position + Vector2(0.0, 300.0)
-		guard.player_running = true
+		where.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
 		guard.step(STEP)
 		frames += 1
 	t.check(guard.is_leaving, "she shook him off and he is walking away")
@@ -326,10 +333,10 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 		t.check(back.departure.save().is_empty() and not back.departure.walks_a_way(),
 				"and with nothing of the walk he was on when it streamed out")
 		# She walks up to it: nobody notices.
-		back.player_at = post + Vector2(0.0, 20.0)
+		where.tell(post + Vector2(0.0, 20.0))
 		for i in 120:
 			back.step(STEP)
-		t.check(back.is_waiting() and not back.is_lethal_at(back.player_at),
+		t.check(back.is_waiting() and not back.is_lethal_at(where.at()),
 				"she walks up to it and nothing sets off")
 		# Streamed out once more, spent for good this time.
 		city.events.streaming.stream_out(plan)
@@ -366,9 +373,10 @@ func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t) -> void:
 		return
 	var far := body * 2.0 - near
 	var made: Array[EventInstance] = [guard]
+	var where := stage.manager.world.where_she_is()
 	var frames := 0
 	while guard.is_waiting() and frames < int(5.0 / STEP):
-		RoadblockRig.tick(made, near, false)
+		RoadblockRig.tick(where, made, near, false)
 		frames += 1
 	t.check(guard.is_telegraphing(), "he notices her on the near side and warns")
 	t.check(guard.global_position.distance_to(body) > 1.0, "from his post, off the band's middle")
@@ -383,7 +391,7 @@ func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t) -> void:
 	# She walks round to the far side while he warns, and he charges anyway.
 	frames = 0
 	while not guard.is_chasing() and frames < int((guard.def.pursuit.warns_for + 2.0) / STEP):
-		RoadblockRig.tick(made, far, false)
+		RoadblockRig.tick(where, made, far, false)
 		frames += 1
 	t.check(guard.is_chasing(), "he charges her across his own band (%d frames)" % frames)
 	stage.close()
@@ -422,9 +430,10 @@ func _test_his_catch_does_not_reach_through_his_own_band(t) -> void:
 		stage.close()
 		return
 	var made: Array[EventInstance] = [guard]
+	var where := stage.manager.world.where_she_is()
 	var frames := 0
 	while not guard.is_chasing() and frames < int((def.pursuit.warns_for + 3.0) / STEP):
-		RoadblockRig.tick(made, near, false)
+		RoadblockRig.tick(where, made, near, false)
 		frames += 1
 	t.check(guard.is_chasing(), "he charges (%d frames)" % frames)
 	var reach := def.lethal_reach()

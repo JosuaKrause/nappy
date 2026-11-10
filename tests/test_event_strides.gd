@@ -127,10 +127,12 @@ func _test_moving_instance_alternates_gait_frames(t) -> void:
 ## whatever `_gait_phase` happens to be sitting on.
 func _test_waiting_robber_holds_frame_a(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			instance_where)
 	# Well outside `EventDef.notice`, so he stays `is_waiting()` for the whole run.
-	instance.player_at = Vector2(9999.0, 9999.0)
+	instance_where.tell(Vector2(9999.0, 9999.0))
 	for i in 120:
 		instance.step(STEP)
 		t.check(instance.is_waiting(), "still only waiting at tick %d" % i)
@@ -319,10 +321,12 @@ func _the_dog_drawn(instance: EventInstance) -> Array[String]:
 ## has, over the fixed walk rather than an open-ended one.
 func _test_victim_gait_starts_on_frame_a_and_later_steps(t) -> void:
 	var def := EventCatalogue.by_id("abduction")
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			instance_where)
 	t.check(not instance.look.victim_gait_is_stepping(), "no take is running yet")
-	instance.player_at = instance.global_position
+	instance_where.tell(instance.global_position)
 	instance.abduction.step(0.0)
 	t.check(not instance.look.victim_gait_is_stepping(), "the walk starts on frame a")
 	var saw_b := false

@@ -625,12 +625,14 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
 	var step := 1.0 / 60.0
 	var her := Vector2(200.0, 0.0)
 
+	var placed_where := WhereSheIs.nowhere()
 	var placed := EventInstance.new()
-	placed.setup(def, Vector2.ZERO)
+	placed.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			placed_where)
 	t.add_child(placed)
 	placed.set_process(false)
 	for i in int(ceil((def.telegraph_time + 0.5) / step)):
-		placed.player_at = her
+		placed_where.tell(her)
 		placed.step(step)
 	t.check(began.size() == 1, "placed at once, its chase is reported once after its telegraph "
 		+ "(%d reports)" % began.size())
@@ -639,25 +641,29 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
 	placed.free()
 
 	began.clear()
+	var streamed_where := WhereSheIs.nowhere()
 	var streamed := EventInstance.new()
-	streamed.setup(def, Vector2.ZERO)
+	streamed.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			streamed_where)
 	t.add_child(streamed)
 	streamed.set_process(false)
 	streamed.resume(age, travelled)
 	for i in 10:
-		streamed.player_at = her
+		streamed_where.tell(her)
 		streamed.step(step)
 	t.check(began.is_empty(), "streamed back in mid-chase, the same chase is not reported again")
 	streamed.free()
 
+	var warned_where := WhereSheIs.nowhere()
 	var warned := EventInstance.new()
-	warned.setup(def, Vector2.ZERO)
+	warned.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			warned_where)
 	t.add_child(warned)
 	warned.set_process(false)
 	warned.came_under_a_warning = true
 	warned.resume(def.telegraph_time, 0.0)
 	for i in 10:
-		warned.player_at = her
+		warned_where.tell(her)
 		warned.step(step)
 	t.check(began.size() == 1 and began[0] == "charging_dog",
 		"created where its warning pointed, its chase is reported once (%s)" % [began])
@@ -676,22 +682,24 @@ func _test_a_waiting_dog_is_counted_warned_then_chased(t) -> void:
 	var day := counter.run.header.day
 	var def := EventCatalogue.by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
 	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
-	var dog := _charger(t, def)
-	_walk(dog, Vector2(def.notice_within() - 10.0, 0.0), 1.0)
+	var dog_where := WhereSheIs.nowhere()
+	var dog := _charger(t, def, dog_where)
+	_walk(dog, dog_where, Vector2(def.notice_within() - 10.0, 0.0), 1.0)
 	t.check(counter.sent == ["nappy-day-%d-dog-warned" % day],
 		"warning her, the dog is counted warned and not chased (%s)" % [counter.sent])
-	_walk(dog, Vector2(def.notice_within() + 10.0, 0.0), 0.5)
-	_walk(dog, Vector2(def.notice_within() - 10.0, 0.0), 0.5)
+	_walk(dog, dog_where, Vector2(def.notice_within() + 10.0, 0.0), 0.5)
+	_walk(dog, dog_where, Vector2(def.notice_within() - 10.0, 0.0), 0.5)
 	t.check(counter.sent.size() == 1, "walked out of and back into, it is not counted again (%s)"
 		% [counter.sent])
-	_walk(dog, Vector2(standoff - 2.0, 0.0), def.pursuit.warns_for + 0.2)
+	_walk(dog, dog_where, Vector2(standoff - 2.0, 0.0), def.pursuit.warns_for + 0.2)
 	t.check(counter.sent == ["nappy-day-%d-dog-warned" % day, "nappy-day-%d-dog-chased" % day],
 		"its charge, once its warning has run with her still inside, is counted chased (%s)"
 		% [counter.sent])
 	dog.free()
 	counter.sent.clear()
-	var robber := _charger(t, EventCatalogue.by_id("alley_robbery"))
-	_walk(robber, Vector2(170.0, 0.0), 1.0 / 60.0)
+	var robber_where := WhereSheIs.nowhere()
+	var robber := _charger(t, EventCatalogue.by_id("alley_robbery"), robber_where)
+	_walk(robber, robber_where, Vector2(170.0, 0.0), 1.0 / 60.0)
 	t.check(counter.sent == ["nappy-day-%d-alley-robbery-warned" % day],
 		"the robber's warning is counted under his own name (%s)" % [counter.sent])
 	robber.free()
@@ -739,23 +747,25 @@ func _test_a_charge_ends_in_exactly_one_of_three(t) -> void:
 	var def := EventCatalogue.by_id("robber_giving_chase")
 	var name := "nappy-day-%d-robber-giving-chase-" % day
 
-	var caught := _charger(t, def)
-	_walk(caught, Vector2(300.0, 0.0), 0.2)
+	var caught_where := WhereSheIs.nowhere()
+	var caught := _charger(t, def, caught_where)
+	_walk(caught, caught_where, Vector2(300.0, 0.0), 0.2)
 	caught.report_the_catch()
 	caught.report_the_catch()
-	t.check(_finish_by_its_own_frames(caught), "the caught robber is finished anyway, by his own clock")
+	t.check(_finish_by_its_own_frames(caught, caught_where),
+			"the caught robber is finished anyway, by his own clock")
 	t.check(counter.sent == [name + "chased", name + "caught"],
 		"caught, it is counted caught once and never also outlasted (%s)" % [counter.sent])
 	caught.free()
 
 	counter.sent.clear()
-	var shaken := _charger(t, def)
+	var shaken_where := WhereSheIs.nowhere()
+	var shaken := _charger(t, def, shaken_where)
 	var step := 1.0 / 60.0
 	var her := Vector2(300.0, 0.0)
 	for i in int(round(3.0 / step)):
 		her.x += Tuning.RUN_SPEED * step
-		shaken.player_at = her
-		shaken.player_running = true
+		shaken_where.tell(her, Vector2.INF, Rect2(), true)
 		shaken.step(step)
 		if shaken.is_leaving:
 			break
@@ -764,9 +774,10 @@ func _test_a_charge_ends_in_exactly_one_of_three(t) -> void:
 	shaken.free()
 
 	counter.sent.clear()
-	var outlasted := _charger(t, def)
+	var outlasted_where := WhereSheIs.nowhere()
+	var outlasted := _charger(t, def, outlasted_where)
 	for i in int(round((def.telegraph_time + def.duration + 1.0) / step)):
-		outlasted.player_at = outlasted.global_position + Vector2(400.0, 0.0)
+		outlasted_where.tell(outlasted.global_position + Vector2(400.0, 0.0))
 		outlasted.step(step)
 		if outlasted.is_leaving:
 			break
@@ -784,8 +795,9 @@ func _test_the_lesson_dog_has_its_own_set(t) -> void:
 	counter.listen(EventBus)
 	var day := counter.run.header.day
 	var def := EventCatalogue.lesson_of(EventCatalogue.by_id("charging_dog"))
-	var lesson := _charger(t, def)
-	_walk(lesson, Vector2(400.0, 0.0), def.telegraph_time + 0.5)
+	var lesson_where := WhereSheIs.nowhere()
+	var lesson := _charger(t, def, lesson_where)
+	_walk(lesson, lesson_where, Vector2(400.0, 0.0), def.telegraph_time + 0.5)
 	lesson.report_the_catch()
 	t.check(counter.sent == ["nappy-day-%d-dog-tutorial-chased" % day,
 			"nappy-day-%d-dog-tutorial-caught" % day],
@@ -793,8 +805,9 @@ func _test_the_lesson_dog_has_its_own_set(t) -> void:
 	lesson.free()
 	counter.sent.clear()
 	var dog := EventCatalogue.by_id("charging_dog")
-	var later := _charger(t, dog)
-	_walk(later, Vector2(400.0, 0.0), dog.telegraph_time + 0.5)
+	var later_where := WhereSheIs.nowhere()
+	var later := _charger(t, dog, later_where)
+	_walk(later, later_where, Vector2(400.0, 0.0), dog.telegraph_time + 0.5)
 	t.check(counter.sent == ["nappy-day-%d-dog-chased" % day],
 		"a dog that is not the lesson's is an ordinary dog (%s)" % [counter.sent])
 	later.free()
@@ -809,26 +822,28 @@ func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t) -> void:
 	counter.listen(EventBus)
 	var day := counter.run.header.day
 	var def := EventCatalogue.out_of_the_car(DaySpec.for_day(Tuning.REGION_WALL_FIRST_DAY))
-	var man := _charger(t, def)
+	var man_where := WhereSheIs.nowhere()
+	var man := _charger(t, def, man_where)
 	man.global_position = Vector2(150.0, 0.0)
-	_walk(man, Vector2.ZERO, 1.0 / 60.0)
+	_walk(man, man_where, Vector2.ZERO, 1.0 / 60.0)
 	var name := "nappy-day-%d-guardsman-giving-chase-" % day
 	t.check(counter.sent == [name + "warned"],
 		"his raised hand is counted warned at once (%s)" % [counter.sent])
-	_walk(man, Vector2.ZERO, def.telegraph_time - 0.1)
+	_walk(man, man_where, Vector2.ZERO, def.telegraph_time - 0.1)
 	t.check(counter.sent == [name + "warned"],
 		"and nothing more while it is up (%s)" % [counter.sent])
-	_walk(man, Vector2.ZERO, 0.2)
+	_walk(man, man_where, Vector2.ZERO, 0.2)
 	t.check(counter.sent == [name + "warned", name + "chased"],
 		"his charge is counted chased (%s)" % [counter.sent])
 	man.free()
 	counter.sent.clear()
-	var guard := _charger(t, EventCatalogue.task_guard())
+	var guard_where := WhereSheIs.nowhere()
+	var guard := _charger(t, EventCatalogue.task_guard(), guard_where)
 	guard.notice_her_at(Vector2(300.0, 0.0), Tuning.WARNING_ALONE_MAX, true)
-	_walk(guard, Vector2(300.0, 0.0), 0.5)
+	_walk(guard, guard_where, Vector2(300.0, 0.0), 0.5)
 	t.check(counter.sent == ["nappy-day-%d-task-guard-warned" % day],
 		"day 13's guard warning in her view is counted warned, as the task's guard (%s)" % [counter.sent])
-	_walk(guard, Vector2(300.0, 0.0), 0.7)
+	_walk(guard, guard_where, Vector2(300.0, 0.0), 0.7)
 	t.check(counter.sent == ["nappy-day-%d-task-guard-warned" % day,
 			"nappy-day-%d-task-guard-chased" % day],
 		"and his charge after his second chased (%s)" % [counter.sent])
@@ -845,17 +860,18 @@ func _test_the_masked_man_has_his_counter(t) -> void:
 	var def := EventCatalogue.by_id("masked_pursuer")
 	var name := "nappy-day-%d-masked-pursuer-" % day
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(0.0, -400.0)])
+	var man_where := WhereSheIs.nowhere()
 	var man := EventInstance.new()
-	man.setup(def, Vector2.ZERO, path)
+	man.setup(def, Vector2.ZERO, path, Vector2.RIGHT, null, null, man_where)
 	t.add_child(man)
 	man.set_process(false)
-	_walk(man, Vector2(0.0, -(def.notice.runs_within + 100.0)), 0.5)
+	_walk(man, man_where, Vector2(0.0, -(def.notice.runs_within + 100.0)), 0.5)
 	t.check(counter.sent == [name + "warned"], "warning her, he is counted warned (%s)" % [counter.sent])
-	_walk(man, Vector2(0.0, -(def.notice.runs_within - 10.0)), 1.0 / 60.0)
+	_walk(man, man_where, Vector2(0.0, -(def.notice.runs_within - 10.0)), 1.0 / 60.0)
 	t.check(counter.sent == [name + "warned", name + "chased"],
 		"his run is counted chased (%s)" % [counter.sent])
 	for i in int(round(6.0 / (1.0 / 60.0))):
-		man.player_at = Vector2(200.0, 0.0)
+		man_where.tell(Vector2(200.0, 0.0))
 		man.step(1.0 / 60.0)
 		if man.is_leaving:
 			break
@@ -863,11 +879,13 @@ func _test_the_masked_man_has_his_counter(t) -> void:
 		"and his run over without a catch is counted outlasted (%s)" % [counter.sent])
 	man.free()
 	counter.sent.clear()
+	var caught_where := WhereSheIs.nowhere()
 	var caught := EventInstance.new()
-	caught.setup(def, Vector2.ZERO, path)
+	caught.setup(def, Vector2.ZERO, path, Vector2.RIGHT, null, null, caught_where)
 	t.add_child(caught)
 	caught.set_process(false)
-	_walk(caught, Vector2(0.0, -(def.notice.runs_within - 10.0)), Tuning.WARNING_ALONE_MAX + 0.1)
+	_walk(caught, caught_where, Vector2(0.0, -(def.notice.runs_within - 10.0)),
+			Tuning.WARNING_ALONE_MAX + 0.1)
 	caught.report_the_catch()
 	t.check(counter.sent == [name + "warned", name + "chased", name + "caught"],
 		"a run that catches her is counted caught (%s)" % [counter.sent])
@@ -883,46 +901,49 @@ func _test_a_charge_cut_short_by_the_day_is_counted_ended(t) -> void:
 	counter.listen(EventBus)
 	var day := counter.run.header.day
 	var name := "nappy-day-%d-robber-giving-chase-" % day
-	var robber := _charger(t, EventCatalogue.by_id("robber_giving_chase"))
-	_walk(robber, Vector2(300.0, 0.0), 0.2)
+	var robber_where := WhereSheIs.nowhere()
+	var robber := _charger(t, EventCatalogue.by_id("robber_giving_chase"), robber_where)
+	_walk(robber, robber_where, Vector2(300.0, 0.0), 0.2)
 	robber.report_the_charge_cut_short()
 	robber.report_the_charge_cut_short()
-	t.check(_finish_by_its_own_frames(robber), "the cut-short robber is finished after, by his own clock")
+	t.check(_finish_by_its_own_frames(robber, robber_where),
+			"the cut-short robber is finished after, by his own clock")
 	t.check(counter.sent == [name + "chased", name + "ended"],
 		"cut short by the day, it is counted ended once and nothing else (%s)" % [counter.sent])
 	robber.free()
 	counter.sent.clear()
-	var waiting := _charger(t, EventCatalogue.by_id("alley_robbery"))
-	_walk(waiting, Vector2(500.0, 0.0), 0.2)
+	var waiting_where := WhereSheIs.nowhere()
+	var waiting := _charger(t, EventCatalogue.by_id("alley_robbery"), waiting_where)
+	_walk(waiting, waiting_where, Vector2(500.0, 0.0), 0.2)
 	waiting.report_the_charge_cut_short()
 	t.check(counter.sent.is_empty(), "a charger that never charged has nothing to end (%s)" % [counter.sent])
 	waiting.free()
 	_done(counter)
 
 ## A charger at the origin, in the tree, stepped by hand.
-func _charger(t: Node, def: EventDef) -> EventInstance:
+func _charger(t: Node, def: EventDef, where: WhereSheIs) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, where)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
 
 ## Steps `instance` with her held well away until it leaves or is finished the way the game
 ## finishes it, its own clock run out (or her shaken off), and says whether it did.
-func _finish_by_its_own_frames(instance: EventInstance) -> bool:
+func _finish_by_its_own_frames(instance: EventInstance, where: WhereSheIs) -> bool:
 	var step := 1.0 / 60.0
 	for i in int(round((instance.def.telegraph_time + instance.def.duration + 1.0) / step)):
-		instance.player_at = instance.global_position + Vector2(400.0, 0.0)
+		where.tell(instance.global_position + Vector2(400.0, 0.0))
 		instance.step(step)
 		if instance.is_leaving or instance.is_finished:
 			return true
 	return false
 
 ## Steps `instance` for `seconds` with her held at `her`.
-func _walk(instance: EventInstance, her: Vector2, seconds: float) -> void:
+func _walk(instance: EventInstance, where: WhereSheIs, her: Vector2, seconds: float) -> void:
 	var step := 1.0 / 60.0
 	for i in maxi(1, int(round(seconds / step))):
-		instance.player_at = her
+		where.tell(her)
 		instance.step(step)
 
 ## The pelican's own four moments, each its own day-numbered event *(inbox #527 in azure-tapir, the player: "when

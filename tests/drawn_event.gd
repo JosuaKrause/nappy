@@ -18,8 +18,8 @@ const AT := Vector2(300.0, 300.0)
 ## instance, which takes its slices with it.
 static func stand(parent: Node, def: EventDef, vertical: bool,
 		atlas: AtlasLibrary = null, map: WorldMap = null, at := AT,
-		heading := Vector2.RIGHT) -> EventInstance:
-	var instance := build(parent, def, vertical, atlas, map, at, heading)
+		heading := Vector2.RIGHT, where: WhereSheIs = null) -> EventInstance:
+	var instance := build(parent, def, vertical, atlas, map, at, heading, where)
 	await frames(parent)
 	return instance
 
@@ -27,14 +27,14 @@ static func stand(parent: Node, def: EventDef, vertical: bool,
 ## lets pass (`frames()`), so many can be drawn by one wait.
 static func build(parent: Node, def: EventDef, vertical: bool,
 		atlas: AtlasLibrary = null, map: WorldMap = null, at := AT,
-		heading := Vector2.RIGHT) -> EventInstance:
+		heading := Vector2.RIGHT, where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.atlas = atlas
 	instance.drawer = RecordingEventDrawer.new(atlas)
 	var ground: WorldMap = map
 	if ground == null:
 		ground = EastWestStreet.new() if vertical else WorldMap.open_ground()
-	instance.setup(def, at, PackedVector2Array(), heading, ground)
+	instance.setup(def, at, PackedVector2Array(), heading, ground, null, where)
 	parent.add_child(instance)
 	return instance
 

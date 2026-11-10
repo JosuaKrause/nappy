@@ -11,7 +11,8 @@ extends RefCounted
 ##
 ## Run in each revision's checkout and compare the `EVENT_CAR_TRACE_JSON` lines run for run:
 ## `tools/test.sh probes/event_car_give_way_trace.gd`. Reads only what both revisions have
-## (`EventInstance.step()`, whether the step moved the car, `signals`, `player_at`, `pram_at`).
+## (`EventInstance.step()`, whether the step moved the car, `signals`, and where she and her
+## pram are told, through `WhereSheIs.tell()`).
 const STEP := 1.0 / 60.0
 const SEEDS: Array[int] = [4242, 478156010]
 const TICKS := 600
@@ -183,8 +184,9 @@ func _zebras_either_side_v(map: CityMap, column: int, c: int) -> bool:
 
 func _drive(t, map: CityMap, def: EventDef, rig: Dictionary) -> Dictionary:
 	var route: PackedVector2Array = rig["route"]
+	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
-	car.setup(def, route[0], route, (route[1] - route[0]).normalized(), map)
+	car.setup(def, route[0], route, (route[1] - route[0]).normalized(), map, null, car_where)
 	t.add_child(car)
 	car.set_process(false)
 	var signals := TrafficSignals.new(map)
@@ -210,8 +212,7 @@ func _drive(t, map: CityMap, def: EventDef, rig: Dictionary) -> Dictionary:
 	for tick in TICKS:
 		if her != Vector2.INF:
 			var at: Vector2 = her if tick < LEAVES_AT else her + rig.get("leave", Vector2(0.0, -160.0))
-			car.player_at = at
-			car.pram_at = at + Vector2.UP * Tuning.PLAYER_BODY_RADIUS
+			car_where.tell(at, at + Vector2.UP * Tuning.PLAYER_BODY_RADIUS)
 		if rig["red"] and tick == LEAVES_AT:
 			var junction: Vector2i = rig["junction"]
 			while not signals.green_for(junction, rig.get("vertical", false)):

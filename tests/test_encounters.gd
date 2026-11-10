@@ -524,14 +524,16 @@ func _test_a_static_row_is_seen_and_never_influenced(t) -> void:
 
 ## A dog of `def` that has been warned of and is coming for her at the origin, from 200px off.
 func _chasing_dog(t, def: EventDef) -> EventInstance:
+	var dog_where := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
-	dog.setup(def, Vector2(200.0, 0.0))
+	dog.setup(def, Vector2(200.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null,
+			dog_where)
 	t.add_child(dog)
 	dog.set_process(false)
 	dog.came_under_a_warning = true
 	dog.resume(def.telegraph_time, 0.0)
 	for _i in 3:
-		dog.player_at = Vector2.ZERO
+		dog_where.tell(Vector2.ZERO)
 		dog.step(STEP)
 	return dog
 

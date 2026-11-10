@@ -582,7 +582,7 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem,
 		event.drawer.stand(canvas, wheels, grounded, Vector2.ZERO, mirror)
 
 ## Which way the waiting posture faces: her, whenever a caller has told the event where she is
-## (`set_player_at()`) and **nothing built stands between them** (`clear_line_to()`, the test his
+## and **nothing built stands between them** (`EventInstance.sight_line_to_her()`, the test his
 ## notice asks), since she is the one thing worth turning toward before he has actually noticed
 ## her — `EventPursuit`'s own `is_waiting()` branch does not turn the event until she is inside
 ## `EventDef.notice`, see that function's doc. With a building between them he has not seen her, so
@@ -590,11 +590,8 @@ func _draw_eight_view(by_view: Dictionary, heading: Vector2, canvas: CanvasItem,
 ## a clear line")*: he keeps the facing he was sited with, which is also the harmless default a
 ## data-level rig with no player position gets.
 func robber_waiting_heading() -> Vector2:
-	if event.player_at != Vector2.INF:
-		var toward := event.player_at - event.global_position
-		if toward.length_squared() > 0.0001 and event.clear_line_to(event.player_at):
-			return toward
-	return event.facing_now()
+	var toward := event.sight_line_to_her()
+	return toward if toward != Vector2.ZERO else event.facing_now()
 
 ## Whether the mast is in the silent, amber-lamped warning that opens every broadcast cycle right
 ## now — `Tuning.MAST_FIRST_DAY`'s own "a 3s telegraph, a 22s period", read off `age` because a

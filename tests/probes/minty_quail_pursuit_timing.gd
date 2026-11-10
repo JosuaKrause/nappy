@@ -266,8 +266,9 @@ func _tick(city: City) -> void:
 	var events := city.events
 	events._tell_them_where_she_is()
 	if _running:
-		for instance in events.instances():
-			instance.player_running = true
+		var where := events.world.where_she_is()
+		where.tell(where.at(), where.pram_at(), where.view(), true, where.baby_is_awake(),
+				where.is_held_at_a_door())
 	events._step_them(STEP)
 	events.ahead.let_the_officers_out()
 	events.streaming.retire_finished()

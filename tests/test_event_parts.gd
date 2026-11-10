@@ -64,7 +64,7 @@ func _test_streaming_carries_a_plan_out_and_back_on_its_own(t) -> void:
 	if plan.live == null:
 		_free_manager(manager)
 		return
-	plan.live.player_at = at + Vector2(def.notice.within - 10.0, 0.0)
+	manager.world.where_she_is().tell(at + Vector2(def.notice.within - 10.0, 0.0))
 	for _i in 3:
 		plan.live.step(STEP)
 	var age := plan.live.age
@@ -185,7 +185,7 @@ func _test_a_door_says_what_it_does_to_her_and_moves_nobody(t) -> void:
 	doors.holds_her.connect(func(seconds: float) -> void: said.append(["hold", seconds]))
 	doors.lets_her_out.connect(func(at: Vector2) -> void: said.append(["out", at]))
 	var standing := her.global_position
-	hut.player_at = standing
+	manager.world.where_she_is().tell(standing)
 	doors.check_detentions()
 	t.check(said.size() == 2 and said[0][0] == "in" and said[0][1] == hut.global_position
 			and said[1][0] == "hold" and is_equal_approx(said[1][1], hut.def.detain_seconds),
@@ -220,7 +220,10 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t) -> void:
 	var plan := EventScheduler.Planned.new(def, at)
 	manager.walk_events().take([plan] as Array[EventScheduler.Planned])
 	var her := _her(t)
-	her.global_position = at
+	# Off the robber's own heading and beyond his notice, so he stands as he was sited, and the side
+	# a man would get out of him on is hers once he knows where she is (`door_for_its_officer()`).
+	var off := Vector2(def.notice.within, def.notice.within)
+	her.global_position = at + off
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
 	t.check(plan.live == null,
@@ -228,19 +231,24 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t) -> void:
 	manager.use_player(her)
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
-	t.check(plan.live != null and plan.live.player_at == at,
+	t.check(plan.live != null and _her_side(plan.live, def) > 0.0,
 			"handed in, the events around her stream in and are told where she is")
 	# Stood aside for the title, she is handed in and still nobody the events see.
 	her.stand_aside()
-	# A position that is neither hers nor the default, so a manager that told the events anything
-	# about her, or reset what they hold, shows in it; the check above is what proves frames run.
-	var untold := Vector2(7.0, 7.0)
-	plan.live.player_at = untold
+	# Moved to his other side, so a manager that told the events anything about her shows in it;
+	# the check above is what proves frames run.
+	her.global_position = at - off
 	await t.get_tree().physics_frame
 	await t.get_tree().physics_frame
-	t.check(not manager.world.has_player() and plan.live.player_at == untold,
+	t.check(not manager.world.has_player() and _her_side(plan.live, def) > 0.0,
 			"stood aside for the title, she is told nothing and nothing can strike her")
 	manager.use_player(null)
 	manager.free()
 	her.free()
 	holder.free()
+
+## Which side of `event` a man would get out on, toward where it was last told she was: positive
+## for the side of `at + off` in `_test_the_manager_sees_her_only_once_she_is_handed_in()`.
+func _her_side(event: EventInstance, row: EventDef) -> float:
+	var door := event.door_for_its_officer(row) - event.global_position
+	return door.dot(Vector2.ONE)

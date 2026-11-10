@@ -547,24 +547,25 @@ func _step_them(delta: float) -> void:
 		if is_instance_valid(instance) and not instance.held_by_hand:
 			instance.step(delta)
 
-## Hands every instance her position.
+## **Tells where she is, once a tick** (`WhereSheIs.tell()`, `EventWorld.where_she_is()`), which
+## every instance was handed when it was made and hears from the word after.
 ##
 ## Here rather than in the instance for the same reason `Crowd` writes `pedestrian_ahead` rather
 ## than letting each car look: the player is found once a frame in one place, and an
 ## `EventInstance` has never had to know she exists. It is handed a point, and everything it does
 ## with the point is a distance.
 ##
-## Everything gets it, not only the pursuers: *"am I out of sight yet"* is the same question asked
+## Everything hears it, not only the pursuers: *"am I out of sight yet"* is the same question asked
 ## by anything that is **leaving** — see `EventInstance._be_done`.
 ##
-## The second fact handed over is whether she is running, and **`world.player` is deliberately a
+## Whether she is running is one of the facts, and **`world.player` is deliberately a
 ## `Node2D`**: the cast is here rather than on the field so that "an instance is handed a point"
 ## stays true of everything except the one row that has to know. A `Node2D` has no
 ## `run_excess_ratio`, so reading it off the untyped field is a per-frame runtime error that aborts
 ## this whole callback and stops the day dead — and `check.sh` cannot see it, because nothing is
 ## wrong until it runs.
-## **The third fact is which barrier structure is the one charging her**, and it is handed over
-## here because this is already the once-a-frame visit to every instance that knows where she is.
+## **Then each instance is told which barrier structure is the one charging her**, here because
+## this is already the once-a-frame visit to every instance that knows where she is.
 ## `EventSources` keeps only the strongest of the boundary kit, so a caret or a halo rim on one of
 ## the others would be promising a cost the meter is not taking (`ExcitementSource.outranked`).
 func _tell_them_where_she_is() -> void:
@@ -574,20 +575,16 @@ func _tell_them_where_she_is() -> void:
 	var strongest := sources.strongest_barrier_at(world.player.global_position)
 	# Inside a district door's hold, nothing but the door's toll reaches her
 	# (`door_holding_her_at()`), so a man who would stop her waits for her outside
-	# (`EventInstance.she_is_held`).
+	# (`WhereSheIs.is_held_at_a_door()`).
 	var held := door_holding_her_at(world.player.global_position) != null
 	# Her pram's own body, on her circumference along her facing — what a car that drives keeps clear
-	# of as well as her (`EventInstance.pram_at`). None while she carries the baby.
+	# of as well as her (`WhereSheIs.pram_at()`). None while she carries the baby.
 	var pram := Vector2.INF
 	if stroller != null and not stroller.carrying:
 		pram = stroller.global_position + stroller.facing * Tuning.PLAYER_BODY_RADIUS
+	world.where_she_is().tell(world.player.global_position, pram, world.visible.view, running,
+			awake, held)
 	for instance in world.instances:
-		instance.player_at = world.player.global_position
-		instance.player_view = world.visible.view
-		instance.pram_at = pram
-		instance.player_running = running
-		instance.baby_awake = awake
-		instance.she_is_held = held
 		instance.excitement.outranked = instance.def.barrier_structure and instance != strongest
 
 func check_hard_fails() -> void:

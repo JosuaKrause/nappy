@@ -1279,7 +1279,7 @@ func _test_his_run_stops_at_the_building_walls(t: Node) -> void:
 	var leaving_frames := 0
 	var at := 0.0
 	while at < 15.0 and not man.is_finished:
-		man.player_at = man.global_position + Vector2(40.0, -40.0)
+		events.world.where_she_is().tell(man.global_position + Vector2(40.0, -40.0))
 		man.step(STEP)
 		if man.is_leaving:
 			leaving_frames += 1
@@ -1688,15 +1688,16 @@ func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: Node) -> void:
 	const STEP := 1.0 / 60.0
 	const STAND_AT := 30.0
 	var steam := EventCatalogue.by_id("basement_steam")
+	var blow_where := WhereSheIs.nowhere()
 	var blow := EventInstance.new()
 	# Set up before it joins the tree, the order `EventSpawner.create()` uses: `_ready()` reads the
 	# def.
-	blow.setup(steam, Vector2.ZERO)
+	blow.setup(steam, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, blow_where)
 	t.add_child(blow)
 	var cost := 0.0
 	var elapsed := 0.0
 	while not blow.is_finished and elapsed < 20.0:
-		blow.player_at = Vector2(STAND_AT, 0.0)
+		blow_where.tell(Vector2(STAND_AT, 0.0))
 		blow.step(STEP)
 		cost += blow.excitement.contribution_at(Vector2(STAND_AT, 0.0)) * STEP
 		elapsed += STEP

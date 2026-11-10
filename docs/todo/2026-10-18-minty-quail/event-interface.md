@@ -66,10 +66,9 @@ Three objects are meant by "an event" below, and each is named this way througho
    fields 481 times today, underscore-private ones included. They ask it through one narrow
    interface and are handed what never changes, as the crowd's lane strategies ask their mover
    (the record brisk-lark).
-7. **Where she is becomes one object.** Six fields are written into every live event every tick
-   (`player_at`, `pram_at`, `player_view`, `player_running`, `baby_awake`, `she_is_held`). One
-   object holds them, the event manager writes it once a tick, and every event and part is handed
-   it.
+7. **Where she is is one object** (`WhereSheIs`). The event manager tells it once a tick,
+   and every live event, behaviour and excitement source is handed it; each live event hears it
+   through a handle of its own, which keeps the timing its own fields had (section 2.10).
 8. **Five steps, the first two of which start now beside placement**: the callers outside the
    events folder, then the live event's inside. The dawn, the walk and the manager's parts follow
    placement and the scheduler's breakup; then the row's parts and the draft; then the suites.
@@ -77,7 +76,7 @@ Three objects are meant by "an event" below, and each is named this way througho
    hundreds of agents, and rows that cannot change take per-frame reads out of the baby's sweep
    and the danger prediction. Section 6 names the probes.
 10. **Nothing the player sees or the logs say changes.** Every step is at test parity, the run
-    log and GoatCounter names included. Four answers that are slightly wrong today are each
+    log and GoatCounter names included. The answers that are slightly wrong today are each
     made correct in a pull request of its own, after the step that names it (section 7, point 6).
 
 ## 1. The parts
@@ -379,7 +378,7 @@ shared state. What it asks, and what the event is asked on its behalf:
 | Does a row hold her, from how far, for how long, again | live `detains_her()` ok, `detain_distance()` ok, `detains_for()` ok, `detains_again()` ok | hold |
 | Is a hold running, has it held her; start one | live `is_chatting()` ok, `has_chatted()` ok, `start_chat()` ok | hold |
 | Is this door body the boom | live `is_a_boom()` ok, plan `is_a_boom()` | body |
-| Where she is, for every event and part | `WhereSheIs` (new, section 2.10): `at()`, `pram_at()`, `view()`, `is_running()`, `baby_is_awake()`, `is_held_at_a_door()` | the event manager writes it |
+| Where she is, for every event and part | `WhereSheIs` ok (section 2.10): `at()`, `pram_at()`, `view()`, `is_running()`, `baby_is_awake()`, `is_held_at_a_door()`, all ok | the event manager tells it |
 
 ### 2.5 The danger cues and the HUD
 
@@ -434,7 +433,7 @@ shared state. What it asks, and what the event is asked on its behalf:
 
 A test is a caller like any other ("yes", inbox #1182 in gray-dolphin): it asks the same methods.
 Nothing is added for tests alone. A test that sets a row's field today builds the row it needs
-with a draft; a test that writes `player_at` hands the live event a `WhereSheIs` and moves it; a
+with a draft; a test hands the live event a `WhereSheIs` and tells it where she is; a
 test that reads `phase` asks the question it means (`is_waiting()`, `is_telegraphing()`,
 `is_active()`, `has_stopped_her()`, `is_on_its_way_out()`, `has_parked()`,
 `is_only_its_barrier()`, `is_gone()`).
@@ -464,11 +463,16 @@ strategies did (the record brisk-lark):
   `is_its_guard_warning()`, `is_drawn_as_a_pelican()`, `boom_openness()`), and is handed its
   `LookSpec` and its drawer.
 
-**`WhereSheIs`** (a name this design proposes) is the one object that says where she is this tick:
-her position, her pram's, the camera's view, whether she runs, whether the baby is awake, whether
-a door holds her. The event manager writes it once a tick, where today it writes six fields into
-every live event; the halo's word once a drawn frame goes to the same object. A fact derived once
-and handed around (inbox #1156 in gray-dolphin).
+**`WhereSheIs`** (a name this design proposes) is the one object that says where she is
+this tick: her position, her pram's, the camera's view, whether she runs, whether the baby is
+awake, whether a door holds her. The event manager tells it once a tick in one call, and the
+events' world holds it. A fact derived once and handed around (inbox #1156 in gray-dolphin). Each
+live event hears it through a handle of its own, so that an event made after the tick's word
+knows nothing of her until the next one, as its own fields did; the halo's word once a drawn
+frame, an officer's first sight of her and a notice's point go to that event's handle and not to
+the shared object. The handle is the builder's choice, open to the player's overturn (the record
+minty-quail-olive-finch): it keeps today's answers, three of which are slightly wrong (section 7,
+point 6).
 
 ### 2.11 Several reads that become one question
 
@@ -488,7 +492,6 @@ and handed around (inbox #1156 in gray-dolphin).
 | `mast_id == "" or def.role != MAST or silenced`, twice | the resistance | plan `is_a_live_mast()` |
 | `plan.row().id == candidate.row().id` | the street rules | plan `is_the_same_row_as(other)` |
 | `age`, `travelled`, `noticed_at`, `behaviours` copied out and back one by one | streaming, the scene recipes | live `save()`, `restore(save)`; plan `keep(save)`, `saved()` |
-| `player_at`, `player_view`, `pram_at`, `player_running`, `baby_awake`, `she_is_held` written into each live event | the event manager | `WhereSheIs` |
 
 ### 2.12 The skill's two tests, applied
 
@@ -573,7 +576,7 @@ and `--summary`, and with `rg` for what the check cannot see.
   `region_planner.gd` (one write). In all `rg` finds 51 reads of a row's field through `.def.` in
   14 files outside the events folder, 24 of them `id`.
 - **The tests**: 138 files under `tests/` read an event's field. `.def.id` 258 times,
-  `.player_at` 225, `.is_finished` 154, `.live` 144, `.is_leaving` 133, `.def.obstructs_radius`
+  `.is_finished` 154, `.live` 144, `.is_leaving` 133, `.def.obstructs_radius`
   46, `.phase` 40; 11 files build a row with `EventDef.new()` and 18 write a row's field.
   `tools/cost_table.gd` reads 28 and the probes name the plan record or a row's field 130 times in
   48 files.
@@ -654,7 +657,6 @@ counted where it only writes.
 | `is_parked` | 3 in, 1 out (the resistance) | `has_parked()` |
 | `phase` | 2 in; 40 in tests | the phase questions (`is_waiting()` ok, `is_telegraphing()` ok, `is_active()`, `has_stopped_her()` ok, `is_only_its_barrier()`); `transition()` reached by its parts through `Figure.begin()` |
 | `age` | 7 in, 1 out (the readout); set by rigs and recipes | `age()`; set only by its own tick and by `resume()`, which becomes `restore(save)` in 3b |
-| `player_at`, `pram_at`, `player_view`, `player_running`, `baby_awake`, `she_is_held` | 13 in for `player_at`, 1 each for the rest; 225 writes in tests | `WhereSheIs`, handed in at setup |
 | `path` | 7 in | `walks()`, `beat()`, `way_left()` ok |
 | `_heading`, `_path_travelled`, `_gait_phase`, `_gait_moving` | 8, 4, 1 and 1 in (the behaviours) | `Figure.heading()`, `travelled()`, `turn_to()`, `walk_on()`; outside: `facing_now()` ok, `path_travelled()` ok, `gait_phase()` ok |
 | `_map`, `_navigator`, `_mover` | 4 in each | handed to each part at setup |
@@ -716,7 +718,7 @@ questions, and is at test parity with the run log and GoatCounter's names unchan
 | # | What | Files it owns | When |
 |---|---|---|---|
 | **1** | **Two reads left of the callers outside the events folder**, which otherwise ask the event (the record minty-quail-rosy-lynx). A method and a variable cannot share a name, so the plan's `role`, read by the run log's map, becomes `role()` when the plan's fields go private in 3a. The row's `speed`, read where a badge is made for a warning with nothing in the world yet, is the fourth of the slightly wrong answers (section 7, point 6): the pull request that makes it `approach_speed()` removes the read | `src/telemetry/telemetry_map.gd` (in 3a); `src/ui/danger_edge.gd` (in point 6's pull request for it) | With 3a; after this row's first step has merged |
-| **2a** | **The live event's behaviours ask it through `Figure`, and are handed the rest.** `WhereSheIs`, and `EventBody` taken out of `EventInstance`; the composer hands each behaviour its settings, the map, the navigator and its siblings; the eight existing specs get their methods | `src/events/event_instance.gd`, `behaviours/*`, `event_excitement.gd`, `checkpoint_controller.gd` (its two reads of whether the baby is awake), `charge_record.gd`, `warning.gd`, the eight spec files (methods added). One function of `event_manager.gd`, the write of where she is | **Now, beside placement**, after 1 (both add to `event_instance.gd`). The one foreign function is coordinated with the third hand-ins pull request, which rewrites the manager's setup |
+| **2a** | **The live event's behaviours ask it through `Figure`, and are handed the rest.** `EventBody` taken out of `EventInstance`; the composer hands each behaviour its settings, the map, the navigator and its siblings; the eight existing specs get their methods | `src/events/event_instance.gd`, `behaviours/*`, `event_excitement.gd`, `charge_record.gd`, `warning.gd`, the eight spec files (methods added) | **Now, beside placement**, after 1 (both add to `event_instance.gd`). The third hand-ins pull request, which rewrites the manager's setup, meets `WhereSheIs` there: the events' world holds it and `EventSpawner.create()` hands it to each live event |
 | **2b** | **The looks ask the live event and are handed their settings.** | `src/events/views/*`, `event_footprints.gd`, `event_scenery.gd` | **Now**, beside 2a once `Figure` and the outward questions are in |
 | **3a** | **The dawn and the walk's ground ask rows and plans.** The plan's fields go private. Small where placement wrote against section 3 | `event_plan.gd`, `event_scheduler.gd` and what the breakup made of it (`dawn_phases/`, `plan_builder.gd`, `row_ground.gd`, `dawn_context.gd`), `street_rules/*`, `street_invalidation.gd`, the location files, `view_bag.gd`, `walk_ground.gd`, `day_events.gd`, `walk_events.gd`, `day_reach.gd`, `mast_sites.gd`, `day_planner.gd`, `src/routes/seal_planner.gd`, `region_planner.gd` | After placement and the scheduler's breakup close |
 | **3b** | **The event manager's parts.** Streaming keeps its own state per plan, tells the plan what happened and carries a live event's state out and back as one `EventSave`; the spawner hands a live event everything in one setup call; `EventWorld`'s 55 lines | `event_manager.gd`, `event_world.gd`, `event_streaming.gd`, `event_spawner.gd`, `event_director.gd`, `events_ahead.gd`, `warning_board.gd`, `pending_warning.gd` | After placement (its step 4 rewrites the director's and `EventsAhead`'s siting) and the third hand-ins pull request. Beside 3a and 3c |
@@ -884,8 +886,9 @@ each question as it was shown).
    read-back's, which is what the player answered: each is a pull request of its own after the step
    that gives it a name, not a change inside that step, saying what it changes in play and in the
    run log, with its pictures. Playtests decide what then needs fixing. The fourth answer below was
-   found in review after the player answered; *read as* (the orchestrator's, open to the player's
-   correction) covered by the same words.
+   found in review after the player answered, and the last three in building where she is as one
+   object; *read as* (the orchestrator's, open to the player's correction) covered by the same
+   words.
    - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
      its five callers do, though the field of a row with a long body is a capsule about that body.
      Answering with the real field changes when the run log says "out of range" and when the
@@ -899,3 +902,11 @@ each question as it was shown).
      which a pursuer warned of first does not set: the run log says the day-3 charging dog's badge
      is "closing 0px/s" while the dog comes at its chase speed. The badge asks the row's
      `approach_speed()` as a badge for a live event does.
+   - A car made after the tick's word knows nothing of her in its first frame, so it puts its
+     body down at once even where she stands, though the comment at that place promises it holds
+     the body back round her.
+   - An officer let out of a car is told her position and none of the other five facts (her
+     pram's place, the view, whether she runs, whether the baby is awake, whether a door holds
+     her) until the next tick's word.
+   - The halo's word once a drawn frame reaches only the events it lights; every other live event
+     keeps the tick's word.

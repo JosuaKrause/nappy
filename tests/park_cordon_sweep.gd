@@ -282,7 +282,7 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 				way.remove_at(0)
 		var before := _where_the_officers_stand(city)
 		if not _gone(busker):
-			busker.player_at = her[0]
+			city.events.world.where_she_is().tell(her[0])
 			busker.step(STEP)
 		_tick(city, cordon, her[0])
 		clock += STEP

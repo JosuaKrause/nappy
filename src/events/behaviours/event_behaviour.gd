@@ -18,13 +18,18 @@ extends RefCounted
 
 ## The event this behaviour is part of.
 var event: EventInstance
+## Where she is (`WhereSheIs`): its event's own handle, handed in as the event is set up, so the
+## behaviour and its event ask one object.
+var _where := WhereSheIs.nowhere()
 ## Whether `step()` runs in the event's ordinary tick. False for one the event runs in a tick of
 ## its own (`EventHold`, which freezes everything else while it runs).
 var steps_each_tick := true
 
-## Attaches this behaviour to `owner`, once, as the event is set up.
-func attach(owner: EventInstance) -> void:
+## Attaches this behaviour to `owner`, once, as the event is set up, with where she is as `owner`
+## hears it.
+func attach(owner: EventInstance, where: WhereSheIs) -> void:
 	event = owner
+	_where = where
 
 ## One tick of what it does while its event is neither leaving nor held in a conversation.
 func step(_delta: float) -> void:

@@ -345,8 +345,10 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t) -
 	for id: String in ["policeman_giving_chase", "guardsman_giving_chase"]:
 		var def := EventCatalogue.by_id(id)
 		for running: bool in [false, true]:
+			var pursuer_where := WhereSheIs.nowhere()
 			var pursuer := EventInstance.new()
-			pursuer.setup(def, Vector2(0.0, -SpawnSiting.least_distance() - 40.0))
+			pursuer.setup(def, Vector2(0.0, -SpawnSiting.least_distance() - 40.0),
+					PackedVector2Array(), Vector2.RIGHT, null, null, pursuer_where)
 			pursuer.came_under_a_warning = true
 			pursuer.resume(EventSpawner.age_when_warned(def), 0.0)
 			var at := Vector2.ZERO
@@ -355,8 +357,7 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t) -
 			var speed := Tuning.RUN_SPEED if running else Tuning.WALK_SPEED
 			while elapsed < def.duration + 1.0:
 				at += Vector2.DOWN * speed * STEP
-				pursuer.player_at = at
-				pursuer.player_running = running
+				pursuer_where.tell(at, Vector2.INF, Rect2(), running)
 				pursuer.step(STEP)
 				elapsed += STEP
 				if pursuer.is_lethal_at(at):
@@ -407,13 +408,15 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 				% [day, out.telegraph_time])
 		t.check(out.validate(), "day %d: and the pursuit contract holds him" % day)
 		var her := Vector2.ZERO
+		var man_where := WhereSheIs.nowhere()
 		var man := EventInstance.new()
-		man.setup(out, Vector2(60.0, 0.0))
+		man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null,
+				man_where)
 		var stopped := INF
 		var struck := false
 		var elapsed := 0.0
 		while elapsed < out.telegraph_time + 4.0:
-			man.player_at = her
+			man_where.tell(her)
 			man.step(STEP)
 			elapsed += STEP
 			struck = struck or man.is_lethal_at(her)
@@ -445,14 +448,16 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t) -> void:
 			"but more than the push at the cap, so a meter already high can be ended by it")
 	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(8))
 	for walks_away: bool in [false, true]:
+		var man_where := WhereSheIs.nowhere()
 		var man := EventInstance.new()
-		man.setup(out, Vector2(60.0, 0.0))
+		man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null,
+				man_where)
 		var her := Vector2.ZERO
 		var landed := 0.0
 		var after := 0.0
 		var elapsed := 0.0
 		while elapsed < out.telegraph_time + 8.0 and not man.is_finished:
-			man.player_at = her
+			man_where.tell(her)
 			man.step(STEP)
 			elapsed += STEP
 			if man.has_stopped_her() and not man.is_leaving:
@@ -476,20 +481,21 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t) -> void:
 ## frame she is let out, he does.
 func _test_he_waits_outside_a_hold_to_stop_her(t) -> void:
 	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(8))
+	var man_where := WhereSheIs.nowhere()
 	var man := EventInstance.new()
-	man.setup(out, Vector2(60.0, 0.0))
+	man.setup(out, Vector2(60.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null,
+			man_where)
 	var her := Vector2.ZERO
 	var elapsed := 0.0
-	man.she_is_held = true
+	man_where.tell(man_where.at(), Vector2.INF, Rect2(), false, true, true)
 	while elapsed < out.telegraph_time + 4.0:
-		man.player_at = her
+		man_where.tell(her, Vector2.INF, Rect2(), false, true, man_where.is_held_at_a_door())
 		man.step(STEP)
 		elapsed += STEP
 	t.check(not man.has_stopped_her() and man.global_position.distance_to(her) <= out.lethal_reach(),
 			"held in a hut, he is beside her (%.0fpx) and has not stopped her"
 			% man.global_position.distance_to(her))
-	man.she_is_held = false
-	man.player_at = her
+	man_where.tell(her)
 	man.step(STEP)
 	t.check(man.has_stopped_her(), "let out, she is stopped at once")
 	man.free()
@@ -761,15 +767,16 @@ func _beside(map: CityMap, at: Vector2, along: Vector2) -> Vector2:
 ## stopping. The car is left for the caller to free.
 func _drive_until_it_stops(t, hot: EventDef, route: PackedVector2Array, map: CityMap,
 		her: Vector2) -> Array:
+	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
-	car.setup(hot, route[0], route, (route[1] - route[0]).normalized(), map)
+	car.setup(hot, route[0], route, (route[1] - route[0]).normalized(), map, null, car_where)
 	t.add_child(car)
 	car.set_process(false)
 	var saw_in_a_box := false
 	var seen_her := false
 	var elapsed := 0.0
 	while elapsed < 60.0 and car.is_waiting() and not car.is_leaving and not car.is_finished:
-		car.player_at = her
+		car_where.tell(her)
 		# What the car notices her by, asked as it is about to step: inside its notice distance on
 		# a clear line, the same condition `EventInvestigation` latches its `_seen_her` on while the
 		# car waits; a condition added there has to be added here too. Still waiting after the
@@ -844,12 +851,13 @@ func _test_no_vehicle_pursues_her(t) -> void:
 func _test_a_hunting_van_waits_for_its_men(t) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"), Tuning.RESISTANCE_GOAL)
 	t.check(hot.duration > 0.0, "the hunting van has a duration of its own (%.0fs)" % hot.duration)
+	var van_where := WhereSheIs.nowhere()
 	var van := EventInstance.new()
-	van.setup(hot, Vector2.ZERO)
+	van.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, van_where)
 	t.add_child(van)
 	van.set_process(false)
 	var far := Vector2(hot.notice_within() - 10.0, 0.0)
-	van.player_at = far
+	van_where.tell(far)
 	van.step(STEP)
 	t.check(van.officers_owed() == 2, "it notices her and owes two men")
 	var men: Array[EventInstance] = []
@@ -861,7 +869,7 @@ func _test_a_hunting_van_waits_for_its_men(t) -> void:
 	var elapsed := 0.0
 	var past := hot.telegraph_time + hot.duration + 2.0
 	while elapsed < past:
-		van.player_at = Vector2(2000.0, 0.0)
+		van_where.tell(Vector2(2000.0, 0.0))
 		van.step(STEP)
 		elapsed += STEP
 	t.check(not van.is_finished and not van.is_leaving,
@@ -944,12 +952,13 @@ func _test_the_car_does_not_notice_her_through_a_building(t) -> void:
 		return
 	var lane: Vector2 = found[0]
 	var hidden: Vector2 = found[1]
+	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
 	car.setup(hot, lane, PackedVector2Array([lane, lane + Vector2(4000.0, 0.0)]), Vector2.RIGHT,
-			map)
+			map, null, car_where)
 	t.add_child(car)
 	car.set_process(false)
-	car.player_at = hidden
+	car_where.tell(hidden)
 	car.step(STEP)
 	t.check(car.is_waiting() and car.officers_owed() == 0,
 			"with a building between them, %.0fpx off, it has not noticed her"

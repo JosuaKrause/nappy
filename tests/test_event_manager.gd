@@ -437,11 +437,11 @@ func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
 		return
 
 	var her := plan.position + Vector2(def.notice_within() - 10.0, 0.0)
-	plan.live.player_at = her
+	_city.events.world.where_she_is().tell(her)
 	plan.live.step(1.0 / 60.0)
 	t.check(not plan.live.is_waiting(), "she is inside the trigger, so it notices her")
 	for i in 60:
-		plan.live.player_at = her
+		_city.events.world.where_she_is().tell(her)
 		plan.live.step(1.0 / 60.0)
 	t.check(not plan.live.is_waiting(), "and a second later it is still chasing, not patrolling")
 	var chase_age_before := plan.live.chase_age()

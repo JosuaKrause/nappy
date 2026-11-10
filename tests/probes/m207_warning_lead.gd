@@ -20,9 +20,10 @@ extends RefCounted
 ## position and when the time is right the object is spawned in at that location just offscreen."*
 ##
 ## **The rig.** A real `EventInstance` of the catalogue's own def, never added to a tree, ticked at
-## 60Hz beside her with `player_at` told to it every frame the way `EventManager` does. Open ground,
-## no map: a straight street with nothing in it, so nothing but the row's own warning, siting and
-## speed decides the numbers. A row that is **warned of before it exists** — the cyclist, the
+## 60Hz beside her with where she is told to it every frame (`WhereSheIs.tell()`) the way
+## `EventManager` does. Open ground, no map: a straight street with nothing in it, so nothing but
+## the row's own warning, siting and speed decides the numbers. A row that is **warned of before
+## it exists** — the cyclist, the
 ## day-3 dog, the fire engine, day 13's column — is a real `PendingWarning` first, with the
 ## same place function the game gives it (`PendingWarning.down_her_line()`, `along_her_heading()`,
 ## `on_its_route()`, `in_its_lane()`, each with the camera on her) and nothing in the world; the
@@ -159,9 +160,10 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.along_her_heading(null, def, at, heading)
 	var made: Array[EventInstance] = []
+	var created_where := WhereSheIs.nowhere()
 	var arrive := func(place: Vector2, _at: Vector2) -> bool:
 		var created := EventInstance.new()
-		created.setup(def, place, PackedVector2Array())
+		created.setup(def, place, PackedVector2Array(), Vector2.RIGHT, null, null, created_where)
 		created.came_under_a_warning = true
 		# Created as `EventManager.spawn_warned()` creates it: one that arrives chasing (the
 		# resistance's sent robber and guard) with its telegraph spent.
@@ -189,8 +191,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 				instance = made[0]
 				result["created_at"] = clock - warned_at
 			continue
-		instance.player_at = her
-		instance.player_running = answer == Answer.RUN
+		created_where.tell(her, Vector2.INF, Rect2(), answer == Answer.RUN)
 		instance.step(STEP)
 		var at := instance.global_position
 		var in_view := _in_view(at - her, 0.0)
@@ -393,8 +394,9 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 	var def: EventDef = encounter["def"]
 	var path: PackedVector2Array = encounter["path"]
 	var spawn: Vector2 = encounter.get("spawn", path[0] if path.size() > 0 else Vector2.ZERO)
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, spawn, path)
+	instance.setup(def, spawn, path, Vector2.RIGHT, null, null, instance_where)
 	if encounter.has("age"):
 		instance.resume(float(encounter["age"]), 0.0)
 	var her: Vector2 = encounter["her"]
@@ -415,8 +417,7 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 	var elapsed := 0.0
 	while elapsed < LIMIT:
 		her += velocity * STEP
-		instance.player_at = her
-		instance.player_running = false
+		instance_where.tell(her)
 		instance.step(STEP)
 		elapsed += STEP
 		if instance.is_finished or instance.is_leaving:
@@ -453,10 +454,11 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 	var heading: Vector2 = encounter["heading"]
 	var result := _result()
 	var created: Array[EventInstance] = []
+	var instance_where := WhereSheIs.nowhere()
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		var path: PackedVector2Array = route.call(place, at)
 		var instance := EventInstance.new()
-		instance.setup(def, path[0], path)
+		instance.setup(def, path[0], path, Vector2.RIGHT, null, null, instance_where)
 		instance.came_under_a_warning = true
 		if def.pursuit == null:
 			instance.resume(EventSpawner.age_when_warned(def), 0.0)
@@ -480,8 +482,7 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 				result["pointed"] = warning.place
 			continue
 		var instance := created[0]
-		instance.player_at = her
-		instance.player_running = false
+		instance_where.tell(her)
 		instance.step(STEP)
 		if instance.is_finished or instance.is_leaving:
 			result["why"] = "it left"

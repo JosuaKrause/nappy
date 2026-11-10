@@ -25,10 +25,10 @@ func run(t) -> void:
 	_test_flocks_are_not_skipped(t)
 
 
-func _instance(t, def: EventDef, at := Vector2.ZERO,
-		path := PackedVector2Array()) -> EventInstance:
+func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
+		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path)
+	instance.setup(def, at, path, Vector2.RIGHT, null, null, where)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
@@ -194,17 +194,18 @@ func _test_duration_and_finish(t) -> void:
 func _test_an_event_leaves_rather_than_vanishing(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	t.check(def.departure_speed() > 0.0, "a flock has somewhere to go")
-	var instance := _instance(t, def, Vector2.ZERO)
-	instance.player_at = Vector2(60.0, 0.0)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
+	instance_where.tell(Vector2(60.0, 0.0))
 	_advance(instance, def.telegraph_time + def.duration + 0.1)
 	t.check(not instance.is_finished, "a flock that is done is not deleted where it stands")
 	t.check(instance.is_leaving, "it is leaving")
-	t.close_to(instance.excitement.contribution_at(instance.player_at), 0.0,
+	t.close_to(instance.excitement.contribution_at(instance_where.at()), 0.0,
 			"and it stops emitting the moment it does")
 
 	# Away from her, since a flock has no route to carry on along.
 	_advance(instance, 0.5)
-	t.check(instance.global_position.distance_to(instance.player_at) > 60.0,
+	t.check(instance.global_position.distance_to(instance_where.at()) > 60.0,
 			"it goes away from her rather than in any direction it likes")
 	_advance(instance, Tuning.OUT_OF_SIGHT / def.departure_speed())
 	t.check(instance.is_finished, "and it is gone once it is out of sight")
@@ -213,10 +214,11 @@ func _test_an_event_leaves_rather_than_vanishing(t) -> void:
 	# The backstop, for a rig or a streamed-out day where there is nobody to be out of sight of. One
 	# frame with her standing in it is what starts the flock's own clock — it waits until it notices
 	# her — and she is gone again for the whole of the rest of it.
-	var alone := _instance(t, def, Vector2.ZERO)
-	alone.player_at = Vector2.ZERO
+	var alone_where := WhereSheIs.nowhere()
+	var alone := _instance(t, def, Vector2.ZERO, PackedVector2Array(), alone_where)
+	alone_where.tell(Vector2.ZERO)
 	alone.step(STEP)
-	alone.player_at = Vector2.INF
+	alone_where.tell(Vector2.INF)
 	_advance(alone, def.telegraph_time + def.duration + EventDeparture.LEAVING_GIVES_UP + 0.2)
 	t.check(alone.is_finished, "with nobody watching it leaves on a timer rather than for ever")
 	alone.free()

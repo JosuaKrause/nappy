@@ -169,6 +169,10 @@ src/
 	event_excitement.gd   an event as a thing that charges her (`EventExcitement`): its field's
 	                       present rate cached on its age, the walls it does not pass, its live
 	                       course and rate for the projection, whether that course is lethal
+	where_she_is.gd       where she is this tick (`WhereSheIs`): her place, her pram's, the
+	                       camera's view, whether she runs, whether the baby is awake, whether a
+	                       door holds her; told once a tick by the manager, handed to every live
+	                       event, which hands it on to its behaviours and its excitement
 	event_sources.gd      a day's live events as one set of things that charge her
 	                       (`EventSources`): the door's toll alone inside a held door, a region
 	                       boundary's structures as their strongest

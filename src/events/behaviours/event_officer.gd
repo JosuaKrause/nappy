@@ -41,9 +41,9 @@ func stand_with_her() -> void:
 ## After his chase's step (`EventPursuit`): **his catch, made a stop** — chasing, within his
 ## catch's own reach of her and along a clear line (`clear_line_to()`, the sight, which differs from a catch's strict line only for a body of his own, and his row has none) —
 ## and the next point of his trail; once he has stopped her, standing with her instead. **A man
-## who would stop her waits outside a door's hold** (`EventInstance.she_is_held`): a stop is a cost
-## on the meter, and inside a hold nothing but the door's toll reaches her, so he keeps after her
-## and stops her once she is let out. *Chosen while building, open to overturn.*
+## who would stop her waits outside a door's hold** (`WhereSheIs.is_held_at_a_door()`): a stop is a
+## cost on the meter, and inside a hold nothing but the door's toll reaches her, so he keeps after
+## her and stops her once she is let out. *Chosen while building, open to overturn.*
 ##
 ## Overrides EventBehaviour.step.
 func step(_delta: float) -> void:
@@ -55,9 +55,9 @@ func step(_delta: float) -> void:
 
 func _stop_her_if_he_has_reached_her() -> void:
 	var def: EventDef = event.def
-	var her: Vector2 = event.player_at
+	var her: Vector2 = _where.at()
 	if def.pursuit.stop_excitement <= 0.0 or has_stopped_her() or her == Vector2.INF \
-			or event.she_is_held:
+			or _where.is_held_at_a_door():
 		return
 	if event.is_finished or event.is_leaving or event.is_waiting() or event.is_telegraphing():
 		return

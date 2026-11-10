@@ -478,8 +478,9 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 					at += north * STEP
 			path = PendingWarning.route_down_her_line(map,
 					PendingWarning.down_her_line(map, def, at, direction), at, direction)
+		var instance_where := WhereSheIs.nowhere()
 		var instance := EventInstance.new()
-		instance.setup(def, path[0], path)
+		instance.setup(def, path[0], path, Vector2.RIGHT, null, null, instance_where)
 		if def.comes_down_her_line():
 			instance.resume(EventSpawner.age_when_warned(def), 0.0)
 		t.add_child(instance)
@@ -488,7 +489,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 		var closest := INF
 		for i in int(round(15.0 / STEP)):
 			at += north * STEP
-			instance.player_at = at
+			instance_where.tell(at)
 			instance.step(STEP)
 			closest = minf(closest, instance.global_position.distance_to(at))
 			if instance.is_finished:

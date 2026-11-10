@@ -333,8 +333,9 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 	_advance(wide, def.telegraph_time + STEP)
 	# 60px off its own line, inside the outer radius (90) so its field still reads along the way,
 	# but past the inner radius (33) it would have to cross to end the day.
-	wide.excitement.set_player_at(wide.global_position + Vector2(0.0, 60.0))
-	t.check(not wide.excitement.will_be_lethal(wide.player_at),
+	var her := wide.global_position + Vector2(0.0, 60.0)
+	wide.excitement.set_player_at(her)
+	t.check(not wide.excitement.will_be_lethal(her),
 			"the same cyclist passing 60px wide of her own line never reaches her lethal radius")
 	wide.free()
 

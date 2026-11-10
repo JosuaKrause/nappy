@@ -28,9 +28,9 @@ func _init() -> void:
 	steps_each_tick = false
 
 ## Overrides EventBehaviour.attach.
-func attach(owner: EventInstance) -> void:
-	super.attach(owner)
-	far = RoadblockFarGuard.new(owner)
+func attach(owner: EventInstance, where: WhereSheIs) -> void:
+	super.attach(owner, where)
+	far = RoadblockFarGuard.new(owner, where)
 
 ## Whether the barrier has been left behind — read by `RoadblockLook._draw_roadblock()` to know
 ## whether to draw the band under its own feet or back at the post.
@@ -72,7 +72,7 @@ func leave_the_body() -> void:
 	keep_the_body()
 
 func _set_off_from_the_near_post() -> void:
-	var her: Vector2 = event.player_at
+	var her: Vector2 = _where.at()
 	var vertical: bool = event._spread_vertical
 	var toward: Vector2 = her - event.global_position if her != Vector2.INF else Vector2.ZERO
 	_chaser_side = EventFootprints.guard_side_toward(vertical, toward)

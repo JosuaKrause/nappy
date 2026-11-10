@@ -117,11 +117,10 @@ func _tick(at: Vector2, awake: bool) -> float:
 	_events.streaming.retire_finished()
 	_events.streaming.bring_back_what_repeats(STEP)
 	var incoming := 0.0
+	_events.world.where_she_is().tell(at, Vector2.INF, Rect2(), false, awake)
 	for instance in _events.instances():
 		if instance.def.id != "basement_steam":
 			continue
-		instance.player_at = at
-		instance.baby_awake = awake
 		instance.step(STEP)
 		incoming += instance.excitement.contribution_at(at)
 	return incoming

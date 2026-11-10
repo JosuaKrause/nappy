@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name EventInstance
 extends Node2D
 ## One live event in the world: its lifetime, its telegraph phase and its excitement field. What
@@ -192,43 +191,11 @@ var silenced := false
 ## `--skip events`, handed in by the manager that makes this instance: nothing of it is drawn.
 var skip_draw := false
 
-## Where the player is, in world space, or `INF` for nowhere.
-##
-## Written once per frame by `EventManager`, which is the one place that already knows. An instance
-## looking her up itself would be thirty lookups a frame for one answer, and — more to the point —
-## `EventInstance` does not know the player exists: it is handed a point, and everything it does
-## with the point is a distance.
-##
-## Two things want it, and neither is a reference to her: a pursuer walks toward it, and anything
-## that is *leaving* uses it to know when it is out of sight. `ExcitementHalo` writes the same
-## value again every frame through `excitement.set_player_at()`, which keeps it here, for the caret
-## — the two writers agree because both read `_player.global_position` the same frame.
-var player_at := Vector2.INF
-
-## Where her pram's own body is (`Stroller.PRAM_BODY_RADIUS`, on her circumference along her
-## facing), told beside `player_at` by `EventManager`, or `Vector2.INF` with no pram (a rig, or the
-## escape's carrying). Only a car that drives asks it (`EventDef.vehicle`): the pram is the part of
-## her that meets a car first when she faces it, so a car that stopped only for her own body would
-## shove the pram, and a strike stated over her body alone would be stopped short by the pram.
-var pram_at := Vector2.INF
-
-## The camera's whole view this frame (`VisibleView.view`), written beside `player_at` by
-## `EventManager._tell_them_where_she_is()`: what a waiting charger's notice is held to
-## (`_would_stand_in_her_view()`). Empty where nothing has looked through a camera.
-var player_view := Rect2()
-
-## Whether she is running right now. Written beside `player_at` and by the same pass, because the
-## one thing that reads it asks both together: a pursuer gives up because **she ran**, which is a
-## fact about her and not about the gap. See `EventPursuit`.
-var player_running := false
-
-## Whether the baby is awake right now. Written once a frame by `EventManager` alongside
-## `player_at`, and read by exactly one row: `chatting_mother`'s conversation is the only thing in
-## the catalogue whose contribution differs by the baby's own state, and this is how it can without
-## ever writing to `Baby.excitement` — the read happens here, in `current_intensity()`, so
-## excitement stays a pure query. `true` with nobody to ask, which is the harmless default a
-## data-level test gets.
-var baby_awake := true
+## **Where she is** (`WhereSheIs`): this event's own handle on the word `EventManager` tells once a
+## physics tick, made in `setup()` from the one it is handed and handed on to its behaviours and its
+## excitement source, so all of them ask one object. Nowhere until it is set up, and for an event
+## nobody names one for (a rig that steps it directly).
+var _where := WhereSheIs.nowhere()
 
 ## The shared boom state a `checkpoint_gate` draws raised or lowered from — `RegionPlanner.
 ## GateState`, set by `EventStreaming.stream_in` from `Planned.gate_state`. `null` for every look
@@ -315,11 +282,19 @@ var _stationary_vehicle_side := true
 
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
+##
+## `where` is where she is (`WhereSheIs`), the one its manager tells once a tick
+## (`EventWorld.where_she_is()`, which `EventSpawner.create()` hands in); the event hears it
+## through a handle of its own from the next word on (`WhereSheIs.heard_from_now()`), and hands
+## that to its behaviours and its excitement source. None, and it is nowhere.
 func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = PackedVector2Array(),
-		face := Vector2.RIGHT, map: WorldMap = null, navigator: Navigator = null) -> void:
+		face := Vector2.RIGHT, map: WorldMap = null, navigator: Navigator = null,
+		where: WhereSheIs = null) -> void:
 	def = definition
 	path = route
-	_behaviours = EventBehaviours.compose(self, definition)
+	_where = where.heard_from_now() if where else WhereSheIs.nowhere()
+	excitement.use_where_she_is(_where)
+	_behaviours = EventBehaviours.compose(self, definition, _where)
 	_map = map if map else WorldMap.open_ground()
 	_navigator = navigator if navigator else _map.navigator()
 	_mover = mover_for(definition)
@@ -442,23 +417,24 @@ func body_position() -> Vector2:
 	return barrier_post.body_position() if barrier_post else global_position
 
 ## **Whether a waiting charger would raise his warning in her view**: the whole of his warning
-## picture (`warning_rect()`) inside the camera's view this frame (`player_view`; inbox #788 in
-## minty-lemur). Every charger that waits for her and pursues notices her only then, on a day as in
+## picture (`warning_rect()`) inside the camera's view this frame (`WhereSheIs.view()`; inbox #788
+## in minty-lemur). Every charger that waits for her and pursues notices her only then, on a day as in
 ## the escape, so his warning never starts off the screen, and his warning's clock starts from
 ## there. The view is the camera's own, look-ahead and trailing included. Always true for any other
-## row, and for an instance nobody has handed a view (`player_view` empty, a rig that steps it
+## row, and for an instance nobody has handed a view (an empty view, a rig that steps it
 ## directly), where the notice is the radius alone.
 func _would_stand_in_her_view() -> bool:
-	if def.pursuit == null or not warns_by_radius() or not player_view.has_area():
+	var view := _where.view()
+	if def.pursuit == null or not warns_by_radius() or not view.has_area():
 		return true
-	return player_view.encloses(warning_rect())
+	return view.encloses(warning_rect())
 
 ## The world rect his warning picture fills, at the widest and tallest of its views, standing on his
 ## feet: a roadblock's guard at the post on her side of the band
 ## (`EventFootprints.warning_guard_rect()`), anyone else where he stands.
 func warning_rect() -> Rect2:
 	if barrier_post:
-		return EventFootprints.warning_guard_rect(_spread_vertical, body_position(), player_at)
+		return EventFootprints.warning_guard_rect(_spread_vertical, body_position(), _where.at())
 	var size := EventFootprints.warning_picture_size(def)
 	return Rect2(global_position - Vector2(size.x * 0.5, size.y), size)
 
@@ -584,9 +560,9 @@ var _arm_was_open := false
 ## body again, which are a repair and an admission respectively. Deferring costs nothing and can
 ## only leave ground reachable that would otherwise have been closed.
 ##
-## `player_at` is `Vector2.INF` until something tells the instance where she is — every world that
-## has her does, once a frame — and an infinite distance is outside every footprint, so a rig with
-## no player in it gets the body immediately rather than never.
+## Where she is (`WhereSheIs.at()`) is `Vector2.INF` until something tells the instance — every
+## world that has her does, once a frame — and an infinite distance is outside every footprint, so
+## a rig with no player in it gets the body immediately rather than never.
 func _become_solid_once_it_starts() -> void:
 	if car and _obstruction == null and car.gap_to_her(position, _heading) >= 0.0:
 		_build_obstruction()
@@ -595,7 +571,7 @@ func _become_solid_once_it_starts() -> void:
 		return
 	if is_finished or is_leaving or is_waiting() or is_telegraphing():
 		return
-	if global_position.distance_to(player_at) <= def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS:
+	if global_position.distance_to(_where.at()) <= def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS:
 		return
 	_build_obstruction()
 
@@ -937,17 +913,13 @@ func let_out(officer: EventInstance) -> void:
 ## px from its middle along its length — `side` 1 for her side, -1 for the other.
 func door_for_its_officer(row: EventDef, side := 1.0, along := 0.0) -> Vector2:
 	var across := _heading.orthogonal()
-	if player_at != Vector2.INF and (player_at - global_position).dot(across) < 0.0:
+	var her := _where.at()
+	if her != Vector2.INF and (her - global_position).dot(across) < 0.0:
 		across = -across
 	var reach := def.shape.radius + (row.shape.reach() if row.shape else 0.0) + 1.0
 	return global_position + across * side * reach + _heading * along
 
 # ------------------------------------------------------------------- the stop ---
-
-## Whether she is inside a district door's hold this frame, told by
-## `EventManager._tell_them_where_she_is()`: a man who would stop her waits outside for her
-## (`EventOfficer`).
-var she_is_held := false
 
 ## Whether this man has reached her and stopped her (`EventOfficer`, `PursuitSpec.stop_excitement`).
 func has_stopped_her() -> bool:
@@ -964,6 +936,12 @@ func give_up_the_chase() -> void:
 		return
 	gave_up = true
 	_be_done()
+
+## **Has seen her at `at` itself**, ahead of its manager's next word (`WhereSheIs.see_her_at()`):
+## an officer let out after the tick's word (`EventsAhead.let_the_officers_out()`), who otherwise
+## knows nothing of her until the next.
+func see_her_at(at: Vector2) -> void:
+	_where.see_her_at(at)
 
 ## **Notices her now, wherever she is**: a waiting pursuer set on her by what she did rather than
 ## by what it saw — day 13's waiting guard the moment she has done the roadblock's task
@@ -993,7 +971,7 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 	pursuit.lunge_held = false
 	if stand:
 		_charge.warned = false
-	player_at = her
+	_where.see_her_at(her)
 	if _chase_way == null:
 		_chase_way = _navigator.way_to(_mover, _sight)
 	_notice_time = notice
@@ -1164,14 +1142,16 @@ func save_behaviours() -> Dictionary:
 	for behaviour in _behaviours:
 		var state := behaviour.save()
 		if not state.is_empty():
-			out[behaviour.get_script().get_global_name()] = state
+			var script: Script = behaviour.get_script()
+			out[script.get_global_name()] = state
 	return out
 
 ## Puts back what `save_behaviours()` gave, after `resume()` has put back the age, the distance and
 ## the notice. A row composed of a behaviour the state does not name keeps it fresh.
 func restore_behaviours(state: Dictionary) -> void:
 	for behaviour in _behaviours:
-		var key: StringName = behaviour.get_script().get_global_name()
+		var script: Script = behaviour.get_script()
+		var key := script.get_global_name()
 		if state.has(key):
 			behaviour.restore(state[key])
 
@@ -1460,9 +1440,10 @@ func _hold_the_notice_clock(delta: float) -> void:
 	if def.notice and def.notice.runs_within > 0.0 and chase_age() - delta < def.telegraph_time:
 		_notice.hold(delta)
 		return
-	if warns_by_radius() and def.pursuit and player_at != Vector2.INF \
+	var her := _where.at()
+	if warns_by_radius() and def.pursuit and her != Vector2.INF \
 			and chase_age() >= notice_time() and chase_age() - delta < notice_time() \
-			and not clear_line_to(player_at):
+			and not clear_line_to(her):
 		_notice.hold(delta)
 		return
 	_pause_a_held_notice(delta)
@@ -1473,12 +1454,13 @@ func _hold_the_notice_clock(delta: float) -> void:
 ## still running at the start of this tick: a chase already under way is never turned back into
 ## a notice.
 func _pause_a_held_notice(delta: float) -> void:
+	var her := _where.at()
 	if pursuit == null or not pursuit.lunge_held or _telegraph_ended or is_waiting() \
-			or player_at == Vector2.INF:
+			or her == Vector2.INF:
 		return
 	if chase_age() - delta >= notice_time():
 		return
-	if global_position.distance_to(player_at) < charge_radius():
+	if global_position.distance_to(her) < charge_radius():
 		_notice.hold(delta)
 
 ## Current peak intensity at the centre, after the telegraph damping and the pulse envelope.
@@ -1509,10 +1491,12 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 	if is_chatting():
 		# A flat rate for the whole conversation rather than a falloff: she is inside `inner_radius`
 		# by construction (`detain_distance() < inner_radius`), so there is no distance to shape.
-		# Gated on `baby_awake`, read and never written — see the field's own comment — which is
-		# what makes "asleep, it is a pure time loss" true of the meter and not only of the words:
+		# Gated on whether the baby is awake (`WhereSheIs.baby_is_awake()`), read and never
+		# written: `chatting_mother`'s conversation is the one row whose contribution differs by the
+		# baby's own state, and the read happening here keeps excitement a pure query. It is what
+		# makes "asleep, it is a pure time loss" true of the meter and not only of the words:
 		# nothing here scales through `Baby.SLEEPING_SENSITIVITY`, it emits exactly zero.
-		return (Tuning.CHAT_EXCITEMENT / def.detain_seconds) if baby_awake else 0.0
+		return (Tuning.CHAT_EXCITEMENT / def.detain_seconds) if _where.baby_is_awake() else 0.0
 	var value := def.intensity
 	if not is_equal_approx(def.intensity_ramp, 1.0) and def.duration > 0.0:
 		# `chase_age()` rather than `age`, so a ramp measures the burst rather than the wait in
@@ -1706,6 +1690,19 @@ func is_lethal_at(world_position: Vector2) -> bool:
 	if global_position.distance_to(world_position) > def.lethal_reach():
 		return false
 	return def.pursuit == null or _navigator.clear_line(global_position, world_position, _sight)
+
+## **The way from it to her where it can see her**: from its node to where she is, when something
+## has told it where she is and nothing built stands between them (`clear_line_to()`, the line its
+## notice asks), or `Vector2.ZERO` otherwise, standing on her included. What a waiting robber's look
+## turns him toward before he has noticed her (`EventLook.robber_waiting_heading()`).
+func sight_line_to_her() -> Vector2:
+	var her := _where.at()
+	if her == Vector2.INF:
+		return Vector2.ZERO
+	var toward := her - global_position
+	if toward.length_squared() <= 0.0001 or not clear_line_to(her):
+		return Vector2.ZERO
+	return toward
 
 ## Whether the straight line from this node to `world_position` crosses only ground this figure
 ## may enter, street ground or not (`Navigator.clear_line()`, as `_sight`) — the question its notice

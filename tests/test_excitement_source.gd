@@ -110,19 +110,22 @@ func _test_an_event_caches_its_rate_on_its_age(t) -> void:
 
 func _test_an_event_caret_reads_where_its_instance_says_she_is(t) -> void:
 	var def := EventCatalogue.by_id("cyclist")
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]))
+	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]),
+			Vector2.RIGHT, null, null, instance_where)
 	for _i in int(ceil(def.telegraph_time / 0.1)) + 1:
 		instance.step(0.1)
-	instance.player_at = instance.global_position + Vector2(def.lethal_reach() * 0.5, 0.0)
+	instance_where.tell(instance.global_position + Vector2(def.lethal_reach() * 0.5, 0.0))
 	t.check(instance.excitement.caret_strength() == 2,
 			"her place told to the instance by its manager is where the caret measures her from")
-	instance.player_at = instance.global_position + Vector2(0.0, def.outer_radius * 4.0)
+	instance_where.tell(instance.global_position + Vector2(0.0, def.outer_radius * 4.0))
 	t.check(instance.excitement.caret_strength() == 0,
 			"and the answer moves with her inside one tick, keyed on where she is")
-	instance.excitement.set_player_at(instance.global_position + Vector2(10.0, 0.0))
-	t.check(instance.player_at == instance.global_position + Vector2(10.0, 0.0),
-			"the halo's word on where she is reaches the instance too")
+	instance.excitement.set_player_at(instance.global_position
+			+ Vector2(def.lethal_reach() * 0.5, 0.0))
+	t.check(instance.excitement.caret_strength() == 2,
+			"the halo's word on where she is, once a drawn frame, is where it measures from too")
 	instance.free()
 
 func _test_an_outranked_source_projects_nothing(t) -> void:

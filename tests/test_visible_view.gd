@@ -282,8 +282,10 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t) -> void:
 		var player := Node2D.new()
 		t.add_child(player)
 		player.global_position = her
+		var bike_where := WhereSheIs.nowhere()
 		var bike := EventInstance.new()
-		bike.setup(EventCatalogue.by_id("cyclist"), start, PackedVector2Array([start, her]))
+		bike.setup(EventCatalogue.by_id("cyclist"), start, PackedVector2Array([start, her]),
+				Vector2.RIGHT, null, null, bike_where)
 		bike.resume(EventCatalogue.by_id("cyclist").telegraph_time, 0.0)
 		bike.came_under_a_warning = true
 		source.live.append(bike)
@@ -296,7 +298,7 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t) -> void:
 		# far as it ever rode here: still under the corner.
 		var step := 1.0 / 60.0
 		for i in 6:
-			bike.player_at = her
+			bike_where.tell(her)
 			bike.step(step)
 			await t.get_tree().process_frame
 		var badged := false

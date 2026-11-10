@@ -21,9 +21,9 @@ var _not_closing_for := 0.0
 
 ## Overrides EventBehaviour.step.
 func step(delta: float) -> void:
-	if event.is_finished or event.is_leaving or event.player_at == Vector2.INF:
+	if event.is_finished or event.is_leaving or _where.at() == Vector2.INF:
 		return
-	var gap: float = event.global_position.distance_to(event.player_at)
+	var gap: float = event.global_position.distance_to(_where.at())
 	if gap <= Tuning.OUT_OF_SIGHT:
 		_gap_looked_at = INF
 		_look_clock = 0.0
