@@ -29,9 +29,10 @@ hold at the one moment it mattered.
   in the orchestrating skill's `references/writing-a-brief.md`. The hook reads the number out of
   that sentence and holds none; its test fails on a reworded, removed or doubled sentence.
 - **Three numbers, each of context and none of turns**: about 300k is the size a task is scoped to
-  finish under, which nothing enforces; 400k is the refusal; 500k is the reassessment, which this
-  pull request only names. `references/writing-a-brief.md` drops "about 150 turns" and the aim of
-  30 to 60 turns for a review, and `tools/agents-to-reassess.py` reads the scoping sentence in its
+  finish under, which nothing enforces; 400k is the refusal; 500k is the reassessment, which the
+  refusal's pull request only named; the pull request that wrote its rule is the section "The
+  reassessment at 500k", below. `references/writing-a-brief.md` drops "about 150 turns" and the
+  aim of 30 to 60 turns for a review, and `tools/agents-to-reassess.py` reads the scoping sentence in its
   new wording and flags nothing for turns alone; its `turns` column stays as information.
 - **The skills** say what the hook enforces: the orchestrating skill's opening list, its bullet on
   an agent staying on one task, and the using-tools paragraph on the hooks. Two more sentences of
@@ -88,7 +89,43 @@ agreed to has no turn counters anywhere; no limit and no flag reads it. And the 
 ruling: the refusal carries no sentence about a model, though the player's words are "never switch
 a model with the full context. when switching a model do a new brief" (merry-badger #1298).
 
-## What is left of the entry
+## The reassessment at 500k
 
-`reassessment-rule.md`: the sentence in the orchestrating skill that a sub-agent reaching about 500k
-tokens is reassessed, with its clause on a new brief at a change of model.
+**The ask.** "if a subagent grows to like 500k it should be reassessed whether that agent model is
+suitable for that kind of work or whether it got stuck or into an infinite loop", "let's go with
+500k", "(of course there are exceptions)", "do a script that tells you which agents to reassess",
+and "also never switch a model with the full context. when switching a model do a new brief"
+(merry-badger #1298).
+
+**What was written**, in the orchestrating skill, the entry's last item:
+
+- **The rule**, in the opening list and as a bullet of "What the orchestrator keeps" beside the one
+  on an agent staying on one task: a sub-agent whose context reaches about 500k tokens is
+  reassessed before it goes on or is sent anything more, for whether its model suits the work,
+  whether it is stuck and whether it is looping; `tools/agents-to-reassess.py` flags it, run by the
+  recurring check on the running agents, whose bullet names the script.
+- **The change of model** as a clause of that bullet: work that moves to another model starts from
+  a new brief written for that model's agent, never from the old agent's context.
+- **What it narrows**, said beside the rule that a task is scoped and never policed
+  (inbox #896 in plaid-raven): the recurring check's reading of each running agent's size, by the
+  script from the agent's transcript, is the one exception to the orchestrator not watching an
+  agent's count while it runs; it costs the agent no turn. The resume hook reads a size too, only
+  when a message is sent, which is no watching.
+- **Two small corrections to the bullet on reusing a warm agent**, notes of the resume refusal's
+  last review: an agent compacted automatically is named beside the size, and a line is rewrapped.
+
+**Choices open to the player's overturn**, each marked so in the skill:
+
+- The reassessment is a judgement and not a stop: a running agent goes on meanwhile and one found
+  fine goes on after it. It happens once the agent is flagged and before it is sent anything more.
+- The orchestrator judges which case is an exception.
+- The check that reads a running agent's size is the recurring one, about every 30 minutes; the
+  table the player agreed to names the 45-minute check.
+- No exception is named in the rule. The usage-review session proposed three (an agent whose
+  context is mostly the output of runs, one that finished its change cleanly, one already on
+  Fable), and they stand in the skill only as that proposal.
+- The change of model is a clause and not a rule of its own. Asked which of the evening's rules are
+  permanent, the player said of it "should become a rule -- is it even relevant? can claude switch
+  models mid-agent-session?" (inbox #1303). The orchestrator's answer: a sub-agent's model is set
+  when it is spawned and a resume carries no choice of one, so a change of model is always a new
+  agent, and the words decide only that the new agent is briefed afresh.
