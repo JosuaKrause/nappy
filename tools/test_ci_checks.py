@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import ci_classify
 import ci_code_pr_queue
+import ci_fable_only
 import ci_no_handoff
 import ci_pr_questions
 import ci_queue_update
@@ -831,6 +832,141 @@ class PrQuestionsTests(unittest.TestCase):
             git(repo, "commit", "-q", "-am", "the check changed")
             added_at = git(repo, "log", "-1", "--format=%cI", "HEAD~1").strip()
             self.assertEqual(ci_pr_questions.arrival("main", cwd=repo), datetime.fromisoformat(added_at))
+
+
+class FableOnlyTests(unittest.TestCase):
+    RECORD = added(f"docs/decisions/{ENTRY}.md")
+
+    def test_the_line_counts_only_in_the_opening_block_and_only_as_true(self) -> None:
+        for readme in (
+            "priority: now\nfable-only: true\n\n# leafy-finch\n",
+            "priority: now\nafter: 2026-09-09-M100\nupnext: true\nfable-only:  true \r\n\r\n# leafy-finch\r\n",
+        ):
+            with self.subTest(readme=readme):
+                self.assertTrue(ci_fable_only.says_fable_only(readme))
+        for readme in (
+            "",
+            "priority: now\n\n# leafy-finch\n",
+            "priority: now\nfable-only: yes\n\n# leafy-finch\n",
+            "priority: now\n\n# leafy-finch\n\nfable-only: true\n",
+            "priority: now\n\nfable-only: true\n",
+            "# leafy-finch\nfable-only: true\n",
+        ):
+            with self.subTest(readme=readme):
+                self.assertFalse(ci_fable_only.says_fable_only(readme))
+
+    def test_a_record_added_or_changed_names_the_entry_it_builds(self) -> None:
+        for name in (f"{ENTRY}.md", f"{ENTRY}-2.md", f"{ENTRY}-brisk-heron.md"):
+            for change in (added(f"docs/decisions/{name}"), modified(f"docs/decisions/{name}")):
+                with self.subTest(name=name, status=change.status):
+                    self.assertEqual(ci_fable_only.built_entries([change]), {ENTRY: change.path})
+        milestone = added("docs/decisions/2026-09-26-M210.md")
+        self.assertEqual(ci_fable_only.built_entries([milestone]), {"2026-09-26-M210": milestone.path})
+
+    def test_a_filing_a_deleted_record_and_a_record_of_no_entry_build_nothing(self) -> None:
+        changes = [
+            # A filing adds, rewords and drops items, and moves the entry's own lines.
+            added(f"docs/todo/{ENTRY}/new.md"),
+            modified(f"docs/todo/{ENTRY}/capture.md"),
+            deleted(f"docs/todo/{ENTRY}/dropped.md"),
+            modified(f"docs/todo/{ENTRY}/README.md"),
+            deleted(f"docs/decisions/{ENTRY}.md"),
+            added("docs/decisions/how-the-spent-park-was-rebuilt.md"),
+            added(f"docs/review/{ENTRY}.md"),
+            modified("tools/queue.sh"),
+        ]
+        self.assertEqual(ci_fable_only.built_entries(changes), {})
+
+    def test_a_fable_only_entry_built_without_the_label_fails_naming_the_record_and_the_entry(self) -> None:
+        built = ci_fable_only.built_entries([self.RECORD])
+        for labels in (set(), {"bug", "fable"}):
+            with self.subTest(labels=labels):
+                failures, _ = ci_fable_only.check(built, {ENTRY}, labels)
+                self.assertEqual(len(failures), 1)
+                self.assertIn(self.RECORD.path, failures[0])
+                self.assertIn(f"record of {ENTRY}", failures[0])
+
+    def test_the_label_passes_it_and_an_entry_without_the_line_owes_none(self) -> None:
+        built = ci_fable_only.built_entries([self.RECORD])
+        failures, passed = ci_fable_only.check(built, {ENTRY}, {"bug", "fable-only"})
+        self.assertEqual(failures, [])
+        self.assertIn(ENTRY, passed)
+        self.assertEqual(ci_fable_only.check(built, set(), set())[0], [])
+        self.assertEqual(ci_fable_only.check({}, {ENTRY}, set())[0], [])
+
+    def test_file_at_reads_a_commit_and_answers_none_for_a_missing_file_or_a_folder(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repo = Path(temporary)
+            git(repo, "init", "-q", "-b", "main")
+            readme = f"docs/todo/{ENTRY}/README.md"
+            (repo / readme).parent.mkdir(parents=True)
+            (repo / readme).write_text("priority: now\nfable-only: true\n")
+            git(repo, "add", ".")
+            git(repo, "commit", "-q", "-m", "base")
+            git(repo, "rm", "-q", "-r", f"docs/todo/{ENTRY}")
+            git(repo, "commit", "-q", "-m", "the last item built")
+            self.assertEqual(lib_ci.file_at("HEAD~1", readme, cwd=repo), "priority: now\nfable-only: true\n")
+            self.assertIsNone(lib_ci.file_at("HEAD", readme, cwd=repo))
+            self.assertIsNone(lib_ci.file_at("HEAD~1", f"docs/todo/{ENTRY}", cwd=repo))
+
+    def test_pr_labels_are_the_names_read_through_the_api(self) -> None:
+        pull = {"body": "", "labels": [{"name": "fable-only", "color": "5319e7"}, {"name": "bug"}]}
+        with mock.patch.object(lib_ci, "gh_api", return_value=pull) as api:
+            self.assertEqual(lib_ci.pr_labels("o/r", 9), {"fable-only", "bug"})
+        api.assert_called_once_with("repos/o/r/pulls/9")
+        with mock.patch.object(lib_ci, "gh_api", return_value={"body": ""}), self.assertRaises(lib_ci.CiError):
+            lib_ci.pr_labels("o/r", 9)
+
+    def run_main(self, readmes: dict[str, str], labels: set[str], argv: list[str]) -> tuple[int, str, mock.Mock]:
+        """Runs the check on a pull request filing ENTRY's record; `readmes` is the entry's README.md by ref."""
+
+        def file_at(ref: str, path: str) -> str | None:
+            self.assertEqual(path, f"docs/todo/{ENTRY}/README.md")
+            return readmes.get(ref)
+
+        out = io.StringIO()
+        with (
+            mock.patch.object(lib_ci, "changed_files", return_value=[modified("tools/queue.sh"), self.RECORD]),
+            mock.patch.object(lib_ci, "file_at", side_effect=file_at),
+            mock.patch.object(lib_ci, "default_repo", return_value="o/r"),
+            mock.patch.object(lib_ci, "default_pr", return_value=None),
+            mock.patch.object(lib_ci, "pr_labels", return_value=labels) as pr_labels,
+            contextlib.redirect_stdout(out),
+        ):
+            code = ci_fable_only.main(argv)
+        return code, out.getvalue(), pr_labels
+
+    def test_the_line_on_either_side_holds_the_pull_request_to_the_label(self) -> None:
+        marked = "priority: now\nfable-only: true\n"
+        plain = "priority: now\n"
+        cases = (
+            # The last item built: the folder is gone at the head, and the base still says it.
+            {"origin/main": marked},
+            # The line dropped by the pull request that builds under it.
+            {"origin/main": marked, "HEAD": plain},
+            # The line added by the pull request itself.
+            {"origin/main": plain, "HEAD": marked},
+            {"origin/main": marked, "HEAD": marked},
+        )
+        for readmes in cases:
+            with self.subTest(readmes=readmes):
+                code, text, _ = self.run_main(readmes, set(), ["--pr", "9"])
+                self.assertEqual(code, 1)
+                self.assertIn(f"record of {ENTRY}", text)
+                code, _, pr_labels = self.run_main(readmes, {"fable-only"}, ["--pr", "9"])
+                self.assertEqual(code, 0)
+                pr_labels.assert_called_once_with("o/r", 9)
+
+    def test_an_entry_without_the_line_reads_no_label_and_no_pull_request_carries_none(self) -> None:
+        for readmes in ({}, {"origin/main": "priority: now\n", "HEAD": "priority: now\n"}):
+            with self.subTest(readmes=readmes):
+                code, _, pr_labels = self.run_main(readmes, set(), ["--pr", "9"])
+                self.assertEqual(code, 0)
+                pr_labels.assert_not_called()
+        code, text, pr_labels = self.run_main({"HEAD": "priority: now\nfable-only: true\n"}, {"fable-only"}, [])
+        self.assertEqual(code, 1)
+        self.assertIn("no pull request given", text)
+        pr_labels.assert_not_called()
 
 
 if __name__ == "__main__":

@@ -42,7 +42,7 @@ A stronger model than a row's takes a milestone whose geometry or contracts warr
 | Task kind | Model |
 |---|---|
 | A task that needs planning or complex reasoning | Fable is considered (inbox #1264 in olive-ferret) |
-| A pull request labelled `fable-only`, a label put only on work the player names | Fable designs its code and reviews it; writing the code may go to another model (inbox #1293) |
+| A pull request labelled `fable-only`, a label put only on work the player names; the label also comes from the entry the pull request builds, whose opening block says `fable-only: true` (`docs/TODO.md`) | Fable designs its code and reviews it; writing the code may go to another model (inbox #1293, inbox #1299) |
 | The review of anything Fable designed | Fable (inbox #1299) |
 | Drawing: making or revising artwork, SVG, PNG or a review sheet | Opus (PLAYTEST-123 8) |
 | Waiting on a merge or a check, polling | no agent: a timer or a script in a background shell, which costs no tokens (inbox #1070 in gentle-walrus, inbox #1072 in gentle-walrus) |

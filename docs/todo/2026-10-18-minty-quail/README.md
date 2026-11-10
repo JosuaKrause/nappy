@@ -1,4 +1,5 @@
 priority: now
+fable-only: true
 
 # minty-quail — One engine: the codebase refactored by layer, the escape a day spec · filed 2026-10-18
 

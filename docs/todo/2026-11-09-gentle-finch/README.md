@@ -1,5 +1,6 @@
 priority: later
 after: 2026-10-18-minty-quail
+fable-only: true
 
 # gentle-finch — The caret, the home arrow and the edge badge's pointer become picture files · filed 2026-11-09
 

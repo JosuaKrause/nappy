@@ -1165,6 +1165,28 @@ add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 printf 'upnext: true\n' >> "$queue_repo/docs/todo/2026-09-03-slow-owl/README.md"
 queue_check_fails "queue.sh --check rejects an upnext below the opening block" "outside the opening block"
 add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
+# The same three for `fable-only:`, the line that says every pull request building one of the
+# entry's items carries the GitHub label; then the line whole, which changes no order and tags the
+# entry's line, after `[up next]` where the entry has both.
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nfable-only: yes')" "slow-owl — Parked"
+queue_check_fails "queue.sh --check rejects a fable-only with any value but true" "\`fable-only:\` takes only"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nfable-only: true\nfable-only: true')" "slow-owl — Parked"
+queue_check_fails "queue.sh --check rejects a repeated fable-only" "\`fable-only: true\` twice"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
+printf 'fable-only: true\n' >> "$queue_repo/docs/todo/2026-09-03-slow-owl/README.md"
+queue_check_fails "queue.sh --check rejects a fable-only below the opening block" "outside the opening block of the file: \`fable-only: true\`"
+add_entry 2026-09-03-slow-owl "$(printf 'priority: parked\nfable-only: true')" "slow-owl — Parked"
+add_entry 2026-09-02-calm-fox "$(printf 'priority: next\nupnext: true\nfable-only: true\nafter: 2026-09-25-lazy-cat')" "calm-fox — Waits · filed 2026-09-02"
+(cd "$queue_repo" && ./tools/queue.sh --check)
+status=$?
+tagged_order="$(cd "$queue_repo" && ./tools/queue.sh 2>/dev/null | awk '{ print $1 " " $2 }' | tr '\n' ' ')"
+line="$(cd "$queue_repo" && ./tools/queue.sh --band parked)"
+both="$(cd "$queue_repo" && ./tools/queue.sh | grep calm-fox)"
+plain="$(cd "$queue_repo" && ./tools/queue.sh | grep -c 'fable-only')"
+check_that "queue.sh --check passes a fable-only beside a band, which tags the entry's line and no other and moves nothing" \
+    '[[ $status -eq 0 && "$tagged_order" == "$order" && "$line" == "parked  2026-09-03-slow-owl  slow-owl — Parked  [fable-only]" && "$both" == *"(after 2026-09-25-lazy-cat)  [up next]  [fable-only]" && "$plain" -eq 2 ]]'
+add_entry 2026-09-02-calm-fox "$(printf 'priority: next\nafter: 2026-09-25-lazy-cat')" "calm-fox — Waits · filed 2026-09-02"
+add_entry 2026-09-03-slow-owl "priority: parked" "slow-owl — Parked"
 # A bug entry prints before now (newest first among bugs); an upnext entry prints first under its
 # heading with its own band shown, and leaves its band's place.
 add_entry 2026-09-10-sad-hen "priority: bug" "sad-hen — Older bug"
