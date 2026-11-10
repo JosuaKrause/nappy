@@ -73,6 +73,44 @@ same hash on `main` at `db614cdf5`, the commit this branch was made from, and on
 `probes/tall_osprey_catch.gd` print the same lines on both trees once their timing figures are
 taken out.
 
+## Measured
+
+The per-frame cost, by a separate measuring agent, on `main` at `db614cdf5`, the commit this branch
+was made from, and on this pull request at `2f270fd52`, the code before the review's fixes (those
+deleted `EventInstance._step()`, which nothing called, and changed comments and the kept lines'
+reasons). Four probes, each run alone, twelve rounds alternated base, head, head, base; the load
+average is the one-minute figure before the round. The review's own suites and identity probes, and
+the review fixes' checks, ran on the machine during the batch, and the control moved with the rest.
+Nothing is concluded from it and no cut is held or tuned for a time (inbox #1278 in olive-ferret):
+the reading is recorded, not judged. For the end remeasure, the entry's one remeasure after its last
+item (inbox #813 in curly-moose), this change lists the events' per-frame cost, the four probes
+below.
+
+| Round | Tree | Load | Events' step, ms | Baby's sweep, ms | Halo's frame, ms | Fields, seed 4242, ms | Fields, seed 5551212, ms | Crowd tick, ms (control) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | base | 3.42 | 12320.1 | 122.4 | 3691.9 | 37.9 | 36.4 | 52467.2 |
+| 2 | head | 3.88 | 14466.0 | 143.2 | 3938.5 | 37.1 | 37.8 | 52983.9 |
+| 3 | head | 3.84 | 14846.8 | 148.5 | 3919.5 | 37.0 | 37.6 | 54069.3 |
+| 4 | base | 3.83 | 14297.5 | 140.9 | 3530.0 | 33.1 | 33.5 | 50232.2 |
+| 5 | base | 4.62 | 15057.2 | 150.9 | 3794.5 | 33.5 | 34.2 | 47322.5 |
+| 6 | head | 3.68 | 12978.1 | 128.5 | 3396.9 | 33.5 | 32.8 | 48742.4 |
+| 7 | head | 3.84 | 14919.8 | 147.9 | 3932.3 | 37.7 | 40.5 | 54806.6 |
+| 8 | base | 5.29 | 12706.3 | 127.3 | 3357.4 | 32.5 | 33.2 | 46340.7 |
+| 9 | base | 3.31 | 12667.1 | 125.7 | 3499.7 | 32.8 | 33.1 | 46425.5 |
+| 10 | head | 3.23 | 12699.5 | 125.2 | 3477.6 | 44.9 | 33.6 | 46805.7 |
+| 11 | head | 3.50 | 12721.6 | 126.1 | 3382.7 | 32.7 | 33.2 | 46929.3 |
+| 12 | base | 3.06 | 12741.0 | 126.2 | 3393.3 | 32.7 | 32.8 | 46829.2 |
+| median | base | | 12723.6 | 126.7 | 3514.9 | 33.0 | 33.4 | 47075.9 |
+| median | head | | 13722.0 | 135.8 | 3698.5 | 37.0 | 35.6 | 50863.1 |
+
+The columns: the events' step and the baby's sweep are the totals of
+`probes/m159_tick_sweep_events_cost.gd`'s whole-mode lines over its 36 runs; the halo's frame is
+the sum of `probes/excitement_fingerprint.gd`'s nine `XF_COST` figures; the fields are
+`probes/calm_pelican_fields_layer_cost.gd`'s whole map, cold, for two seeds; the control is
+`probes/m159_crowd_tick_cost.gd`'s whole-mode total, a path this pull request does not touch. The
+sweep probe's own split-against-whole checks fail on both trees alike (6 of 36), and its timing
+lines print regardless. The medians are the measuring agent's, taken from the unrounded figures.
+
 ## Two members kept public for the suites, open to the player's overturn
 
 `tools/test_only_members.txt` gains two lines in its `[kept]` group, each with its reason, where
