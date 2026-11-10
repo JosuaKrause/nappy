@@ -22,8 +22,8 @@ extends EventBehaviour
 ##   is a subset of the one disc `Tuning.validate_event` checked. Widening the wheel without shrinking
 ##   the per-bird radius would quietly move the field the contract was written about.
 ## - **They wheel rather than fly straight.** A bird that flies straight leaves, and a flock that
-##   leaves is a flock that is over — so being over is said with `is_leaving`, and only then do they
-##   all pick the same direction.
+##   leaves is a flock that is over — so being over is said by its event leaving
+##   (`EventInstance.Figure.is_on_its_way_out()`), and only then do they all pick the same direction.
 
 ## One bird. Deliberately not a node: eleven Node2Ds per flock, y-sorted against a city, to draw
 ## eleven 18px sprites that are always within 60px of each other, is a great deal of tree for a
@@ -52,6 +52,13 @@ class Bird extends RefCounted:
 
 ## Its birds, each its own body.
 var birds: Array[Bird] = []
+## Its row: how many birds, how far they spread, and the field each one's share is cut from.
+var _row: EventDef
+
+## Handed, as its event is set up, the figure it moves and its row.
+func _init(figure: EventInstance.Figure, row: EventDef) -> void:
+	_figure = figure
+	_row = row
 
 ## How fast a bird crosses the ground once it is up, and how slowly it shuffles before it is.
 const FLIGHT_SPEED := 96.0
@@ -68,13 +75,13 @@ const DEPARTURE_GAIN := 2.1
 ## gives the same flock every time the same flock is built, which is the property that matters.
 func build() -> void:
 	birds.clear()
-	var count: int = event.def.flock_size
+	var count: int = _row.flock_size
 	for i in count:
 		var bird := Bird.new()
 		# Spread round the middle rather than scattered independently, so eleven birds read as a
 		# flock rather than as eleven birds who happen to be near each other.
 		var angle := TAU * (float(i) + 0.35 * _roll(i, 1)) / float(count)
-		var reach: float = event.def.flock_spread * (0.3 + 0.7 * _roll(i, 2))
+		var reach: float = _row.flock_spread * (0.3 + 0.7 * _roll(i, 2))
 		bird.at = Vector2(cos(angle), sin(angle) * GROUND_SQUASH) * reach
 		bird.heading = Vector2.from_angle(TAU * _roll(i, 3))
 		bird.view_sector = EightDirection.nearest(bird.heading)
@@ -94,8 +101,9 @@ const GROUND_SQUASH := 0.55
 ## A deterministic 0..1 from the flock's own position, its index and a salt. One salt per property,
 ## or every bird's speed would be a function of its own heading.
 func _roll(index: int, salt: int) -> float:
-	var mixed: int = int(event.global_position.x) * 73856093 + int(event.global_position.y) * 19349663 \
-			+ index * 83492791 + salt * 2971215073
+	var at := _figure.place()
+	var mixed: int = int(at.x) * 73856093 + int(at.y) * 19349663 + index * 83492791 \
+			+ salt * 2971215073
 	return float(absi(mixed) % 4096) / 4096.0
 
 ## Steps every bird. Three phases, and they are the whole event: **on the pavement** while it waits
@@ -111,7 +119,7 @@ func _roll(index: int, salt: int) -> float:
 func _fly(delta: float) -> void:
 	if birds.is_empty():
 		return
-	var grounded: bool = event.is_waiting() or event.is_telegraphing()
+	var grounded: bool = _figure.is_waiting() or _figure.is_telegraphing()
 	for bird in birds:
 		bird.phase += bird.beat * TAU * delta
 		if grounded:
@@ -121,10 +129,10 @@ func _fly(delta: float) -> void:
 			bird.speed = GROUND_SPEED
 			bird.heading = bird.heading.rotated(bird.turn * 0.5 * delta)
 			bird.lift = 0.0
-		elif event.is_leaving:
+		elif _figure.is_on_its_way_out():
 			# Everybody the same way now, and climbing hard. What is over says so by leaving, and a
 			# flock that was still wheeling would read as still happening.
-			bird.heading = _steer(bird.heading, event._heading, TURN_IN, delta)
+			bird.heading = _steer(bird.heading, _figure.heading(), TURN_IN, delta)
 			bird.speed = move_toward(bird.speed, FLIGHT_SPEED * DEPARTURE_GAIN,
 					260.0 * delta)
 			bird.lift += bird.climb * delta
@@ -141,16 +149,16 @@ func _fly(delta: float) -> void:
 			# of about 21px, so a bird that is still heading outwards when it reaches the edge is
 			# already outside by the time it has come round. Starting at half the spread leaves it
 			# the room the turn costs.
-			if bird.at.length() > event.def.flock_spread * 0.5:
+			if bird.at.length() > _row.flock_spread * 0.5:
 				bird.heading = _steer(bird.heading, -bird.at.normalized(), TURN_IN, delta)
 		bird.at += bird.heading * bird.speed * Vector2(1.0, GROUND_SQUASH) * delta
-		if not event.is_leaving and bird.at.length() > event.def.flock_spread:
+		if not _figure.is_on_its_way_out() and bird.at.length() > _row.flock_spread:
 			# The steering above is what a bird turning back *looks* like; this is the line that
 			# makes it a **guarantee**, and the fairness contract needs one rather than a tendency:
 			# `bird_outer()` is `outer_radius - flock_spread` precisely so that a bird at the rim
 			# reaches exactly as far as the event was validated to. Steering from half way out means
 			# it shaves a pixel or two when it fires at all, so nothing visible rides on it.
-			bird.at = bird.at.normalized() * event.def.flock_spread
+			bird.at = bird.at.normalized() * _row.flock_spread
 
 ## Turns `heading` toward `wanted` at up to `rate` radians a second.
 ##
@@ -171,7 +179,7 @@ const TURN_IN := 4.6
 ## The radius one bird emits over. The rest of the field is the room the flock takes up: a bird at
 ## the far edge of the wheel reaches exactly as far as the event says it does and no further.
 func bird_outer() -> float:
-	return maxf(event.def.inner_radius + 1.0, event.def.outer_radius - event.def.flock_spread)
+	return maxf(_row.inner_radius + 1.0, _row.outer_radius - _row.flock_spread)
 
 ## A tick of the flock while its event is neither leaving nor held: pecking on the ground through
 ## the wait and the telegraph, up and wheeling once it has gone up.

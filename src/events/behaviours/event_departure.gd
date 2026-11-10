@@ -34,9 +34,31 @@ var _way_speed := 0.0
 ## Whether this departure has begun (`begin()`, `for_a_completed_task()`, `along()`) and not been
 ## cleared since (`reset()`): what `save()` carries only then.
 var _begun := false
+## Its row: whether it walks a route, whether it drives, the pace it leaves and chases at.
+var _row: EventDef
+## The ground it plans a way out over, and plans and steps it through, as what it walks as.
+var _map: WorldMap
+var _navigator: Navigator
+var _mover: Mover
+## The barrier its guard walks out of (`EventBarrierPost`), and the man on foot who may walk back to
+## the vehicle that let him out (`EventOfficer`); null for a row with neither.
+var _barrier_post: EventBarrierPost
+var _on_foot: EventOfficer
 
-func _init() -> void:
+## Handed, as its event is set up, the figure it moves, where she is, its row, the ground and how it
+## moves over it, and the two behaviours its way out depends on.
+func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, map: WorldMap,
+		navigator: Navigator, mover: Mover, barrier_post: EventBarrierPost,
+		on_foot: EventOfficer) -> void:
 	steps_each_tick = false
+	_figure = figure
+	_where = where
+	_row = row
+	_map = map
+	_navigator = navigator
+	_mover = mover
+	_barrier_post = barrier_post
+	_on_foot = on_foot
 
 ## The departure's start, the frame its event turns to `Phase.LEAVING` (`EventInstance._be_done()`):
 ## something on a route carries on the way it was going, anything else goes away from her — the
@@ -44,18 +66,17 @@ func _init() -> void:
 func begin() -> void:
 	_begun = true
 	_leaving_for = 0.0
-	var def: EventDef = event.def
 	var her: Vector2 = _where.at()
-	if not (def.mobile and event.path.size() > 1) and her != Vector2.INF \
-			and not event.global_position.is_equal_approx(her):
-		event._heading = (event.global_position - her).normalized()
-	if def.vehicle != null:
+	if not (_row.mobile and _figure.walks().size() > 1) and her != Vector2.INF \
+			and not _figure.place().is_equal_approx(her):
+		_figure.turn_to((_figure.place() - her).normalized())
+	if _row.vehicle != null:
 		# **A car leaves the way it can, and never vanishes beside her.** Every step of a departure
 		# into her is refused, and a car that has a body she can stand against is gone only once she
 		# could not be watching. An investigating car reaches here only at the end of its route,
 		# which it drives on to once its man is back in, so it leaves the way it was going.
 		_must_clear_sight = true
-	if event.barrier_post and event.barrier_post.has_left_its_body():
+	if _barrier_post and _barrier_post.has_left_its_body():
 		# **He is in her view as he goes**, and **he walks off over walkable ground**, by the way
 		# planned on from here, never in a straight line across a roof — and never through his own
 		# band (`_way_avoids`): she usually stands on the side she lured him from, so the nearest
@@ -65,9 +86,9 @@ func begin() -> void:
 		_walks_a_way = true
 		_way = PackedVector2Array()
 		_way_on = PackedVector2Array()
-		_way_avoids = event.barrier_post.tiles_under_the_band()
-		event.barrier_post.send_the_far_guard_off()
-	if event.on_foot and event.on_foot.walks_back():
+		_way_avoids = _barrier_post.tiles_under_the_band()
+		_barrier_post.send_the_far_guard_off()
+	if _on_foot and _on_foot.walks_back():
 		# **A man a vehicle let out walks back to it** rather than away from her, in her view as he
 		# goes, so he is gone only at its door or out of her sight.
 		_must_clear_sight = true
@@ -79,8 +100,8 @@ func for_a_completed_task() -> void:
 	_begun = true
 	_must_clear_sight = true
 	var her: Vector2 = _where.at()
-	if her != Vector2.INF and not event.global_position.is_equal_approx(her):
-		event._heading = (event.global_position - her).normalized()
+	if her != Vector2.INF and not _figure.place().is_equal_approx(her):
+		_figure.turn_to((_figure.place() - her).normalized())
 
 ## **Leaves down a way chosen for it** (`EventInstance.leave_along()`): walks `way`'s points in order
 ## at `speed` (0 keeps the row's own departure speed), then **plans the rest from where she is
@@ -93,13 +114,13 @@ func for_a_completed_task() -> void:
 ## whether it is now leaving along the way: not for something finished, parked, a spent guard or a
 ## guard leaving his barrier, or a row that ends rather than leaving (`aftermath.on_finish`).
 func along(way: PackedVector2Array, speed := 0.0, avoid := Rect2i()) -> bool:
-	if event.is_finished or event.is_parked or event._guard_spent \
-			or event.barrier_post and event.barrier_post.has_left_its_body():
+	if _figure.is_gone() or _figure.has_parked() or _figure.is_only_its_barrier() \
+			or _barrier_post and _barrier_post.has_left_its_body():
 		return false
 	_way_speed = speed
-	if not event.is_leaving:
-		event._be_done(false)
-	if not event.is_leaving:
+	if not _figure.is_on_its_way_out():
+		_figure.be_done(false)
+	if not _figure.is_on_its_way_out():
 		_way_speed = 0.0
 		return false
 	_way = way.duplicate()
@@ -126,9 +147,9 @@ func way_left() -> PackedVector2Array:
 func speed() -> float:
 	if _way_speed > 0.0:
 		return _way_speed
-	if event.barrier_post and event.barrier_post.has_left_its_body():
-		return event.def.chase_speed()
-	return event.def.departure_speed()
+	if _barrier_post and _barrier_post.has_left_its_body():
+		return _row.chase_speed()
+	return _row.departure_speed()
 
 ## One tick of the departure. **It is gone once she could not be watching**: past
 ## `Tuning.OUT_OF_SIGHT` from her, or — only for a departure not held to her sight, or with no
@@ -140,28 +161,28 @@ func leave(delta: float) -> void:
 	var her: Vector2 = _where.at()
 	if _walks_a_way:
 		_walk_the_way(step)
-	elif event.on_foot and event.on_foot.walks_back():
-		if not event.on_foot.walk_back(step):
+	elif _on_foot and _on_foot.walks_back():
+		if not _on_foot.walk_back(step):
 			return
 	else:
-		var wanted: Vector2 = event._heading * step
-		var moved: Vector2 = event._step(wanted)
+		var wanted: Vector2 = _figure.heading() * step
+		var moved: Vector2 = _navigator.step(_figure.place(), wanted, _mover)
 		if moved.is_zero_approx() and not wanted.is_zero_approx() and her != Vector2.INF:
 			_walks_a_way = true
 			_way = PackedVector2Array()
 			_way_on = PackedVector2Array()
 			_walk_the_way(step)
 		else:
-			event.position += moved
-			event._path_travelled += step if moved == wanted else moved.length()
+			_figure.step_by(moved)
+			_figure.walk_on(step if moved == wanted else moved.length())
 	var gone: bool = her != Vector2.INF \
-			and event.global_position.distance_to(her) > Tuning.OUT_OF_SIGHT
+			and _figure.place().distance_to(her) > Tuning.OUT_OF_SIGHT
 	var may_give_up: bool = not _must_clear_sight or her == Vector2.INF or gone
 	if gone or (may_give_up and _leaving_for >= LEAVING_GIVES_UP):
-		if event.barrier_post and event.barrier_post.has_left_its_body():
-			event.barrier_post.stand_as_the_barrier()
+		if _barrier_post and _barrier_post.has_left_its_body():
+			_barrier_post.stand_as_the_barrier()
 		else:
-			event._finish()
+			_figure.begin(EventInstance.Phase.DONE)
 
 ## Clears a departure that has ended in its event standing again (a guard back as his barrier).
 func reset() -> void:
@@ -176,8 +197,7 @@ func reset() -> void:
 ## her, outside the ground it avoids, square steps only. Empty when none is found. The far guard at a
 ## band walks off from his post by the same search.
 func way_out_from(at: Vector2) -> PackedVector2Array:
-	return event._navigator.way_out(at, _where.at(), Tuning.OUT_OF_SIGHT, event._mover,
-			_way_avoids)
+	return _navigator.way_out(at, _where.at(), Tuning.OUT_OF_SIGHT, _mover, _way_avoids)
 
 ## The ground a departure from here never steps onto (`along()`'s `avoid`, a guard's own band).
 func avoids() -> Rect2i:
@@ -187,9 +207,9 @@ func avoids() -> Rect2i:
 ## point it did not reach, and counts the ground it covered.
 func take_the_walk(walked: Navigator.Walked) -> void:
 	if walked.heading != Vector2.ZERO:
-		event._heading = walked.heading
-	event.global_position = walked.at
-	event._path_travelled += walked.travelled
+		_figure.turn_to(walked.heading)
+	_figure.arrive_at(walked.at)
+	_figure.walk_on(walked.travelled)
 
 ## Walks `step` pixels of the way it was given; past its end, of a way planned on from where it
 ## stands (again each time one runs out while she could still be watching); and only where none is
@@ -200,13 +220,13 @@ func _walk_the_way(step: float) -> void:
 		return
 	var her: Vector2 = _where.at()
 	if _way_on.is_empty() and her != Vector2.INF:
-		_way_on = way_out_from(event.global_position)
+		_way_on = way_out_from(_figure.place())
 	left = _walk_points(true, left)
 	if left <= 0.0:
 		return
-	var away: Vector2 = event._heading
-	if her != Vector2.INF and not event.global_position.is_equal_approx(her):
-		away = (event.global_position - her).normalized()
+	var away: Vector2 = _figure.heading()
+	if her != Vector2.INF and not _figure.place().is_equal_approx(her):
+		away = (_figure.place() - her).normalized()
 	var moved := _step_clear_of_the_avoided(away * left)
 	if moved.is_zero_approx() and her != Vector2.INF:
 		# Straight away from her is a wall or the city's edge: along it, whichever way takes it
@@ -214,20 +234,20 @@ func _walk_the_way(step: float) -> void:
 		for side: Vector2 in [away.orthogonal(), -away.orthogonal()]:
 			var along_it := _step_clear_of_the_avoided(side * left)
 			if not along_it.is_zero_approx() \
-					and (event.global_position + along_it).distance_to(her) \
-					> (event.global_position + moved).distance_to(her):
+					and (_figure.place() + along_it).distance_to(her) \
+					> (_figure.place() + moved).distance_to(her):
 				moved = along_it
 	if moved.is_zero_approx():
 		return
-	event._heading = moved.normalized()
-	event.position += moved
-	event._path_travelled += moved.length()
+	_figure.turn_to(moved.normalized())
+	_figure.step_by(moved)
+	_figure.walk_on(moved.length())
 
-## The event's step (`EventInstance._step()`) of `delta_pos`, or none where it would end on the
-## ground it avoids.
+## Its step of `delta_pos` through the navigator (`Navigator.step()`), or none where it would end on
+## the ground it avoids.
 func _step_clear_of_the_avoided(delta_pos: Vector2) -> Vector2:
-	var moved: Vector2 = event._step(delta_pos)
-	if _way_avoids.has_point(event._map.world_to_tile(event.global_position + moved)):
+	var moved: Vector2 = _navigator.step(_figure.place(), delta_pos, _mover)
+	if _way_avoids.has_point(_map.world_to_tile(_figure.place() + moved)):
 		return Vector2.ZERO
 	return moved
 
@@ -237,8 +257,7 @@ func _step_clear_of_the_avoided(delta_pos: Vector2) -> Vector2:
 ## the way was chosen turns the walker rather than holding it in front of her.
 func _walk_points(planned: bool, step: float) -> float:
 	var points := _way_on if planned else _way
-	var walked: Navigator.Walked = event._navigator.walk(event.global_position, points, step,
-			event._mover)
+	var walked: Navigator.Walked = _navigator.walk(_figure.place(), points, step, _mover)
 	take_the_walk(walked)
 	if walked.stopped:
 		walked.points = PackedVector2Array()
