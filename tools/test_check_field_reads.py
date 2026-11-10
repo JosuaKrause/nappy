@@ -195,6 +195,17 @@ class ReadTests(unittest.TestCase):
         )
         self.assertEqual(found(reader(body)), set())
 
+    def test_self_inside_an_inner_class_is_an_engine_value_and_nothing_behind_it_is_seen(self) -> None:
+        # The docstring's blind spot: `self` heads a chain as the inner class's own member names do not.
+        body = (
+            "class In:\n\tvar t: Thing\n\tfunc f() -> int:\n\t\treturn self.t.count\n"
+            "\tfunc g() -> void:\n\t\tself.t.go\n"
+        )
+        self.assertEqual((found(reader(body)), unknown(reader(body))), (set(), []))
+        bare = body.replace("self.t.", "t.")
+        self.assertEqual(found(reader(bare)), {("Thing", "src/reader.gd", "count")})
+        self.assertEqual(unknown(reader(bare)), [(8, "t.go")])
+
     def test_a_comment_and_a_string_are_not_a_read(self) -> None:
         body = 'var t: Thing\nfunc f() -> String:\n\t# t.count\n\treturn "t.count"\n'
         self.assertEqual(found(reader(body)), set())

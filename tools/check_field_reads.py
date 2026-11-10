@@ -22,23 +22,23 @@ is one class); a class reading a related class's field (an ancestor or a descend
 and the subclass and its base are one design).
 
 **How the receiver's class is told.** By static reading: a chain `a.b().c[i].d` resolved from its head, which is
-`self` (the file's class; in an inner class, the inner class), an inner class of the file named bare (`In.new()`),
-a `class_name` (a static use or `Foo.new()`), an autoload from `project.godot`, a script a `const` preloads, an
-engine class or a constant (`Vector2.ZERO`), a node path (`$Camera`), a parenthesised expression, a call of the
-file's own method or of an engine or global function (`Array(...)` and `Dictionary(...)` give an untyped one), or a
-name the file declares. A name's class comes from its declaration: its type (`var x: Foo`, a parameter, `for x:
-Foo in`, `Array[Foo]`, `Dictionary[K, V]`), or what `:=` infers from (`Foo.new()`, `as Foo`, a chain, a literal, a
-constructor such as `Vector2(...)`, an arithmetic or logical expression, which GDScript never overloads, so its
-value is never a class under `src/`), or what an untyped `for` iterates (a typed array's element, a typed
-dictionary's key); one type for the name in its top-level block (a func, a var, an inner class), a name typed two
-ways there taking the declaration in scope on the line (by line and indent) and being unknown where none or two
-disagree. A name the block never declares is a field of the file's own class or an ancestor, and so is one that
-shadows such a field on a line no declaration of it reaches (after a `for` over it, before a later `var`).
-Each step after the head is a field's declared type, a method's declared `-> Type`, an array or dictionary element,
-or for a receiver that is not a class under `src/` an engine property (an engine class) or an engine call (an
-engine class, unless it is one that returns a Variant: `get()`, `call()`, `back()` and the like, the element type
-on a typed array or dictionary). A type that names no class under `src/` and is not `Variant` is told as not one:
-the receiver is known, and no read.
+`self` (the file's class; inside an inner class an engine value, a blind spot below), an inner class of the file
+named bare (`In.new()`), a `class_name` (a static use or `Foo.new()`), an autoload from `project.godot`, a script a
+`const` preloads, an engine class or a constant (`Vector2.ZERO`), a node path (`$Camera`), a parenthesised
+expression, a call of the file's own method or of an engine or global function (`Array(...)` and `Dictionary(...)`
+give an untyped one), or a name the file declares. A name's class comes from its declaration: its type (`var x:
+Foo`, a parameter, `for x: Foo in`, `Array[Foo]`, `Dictionary[K, V]`), or what `:=` infers from (`Foo.new()`, `as
+Foo`, a chain, a literal, a constructor such as `Vector2(...)`, an arithmetic or logical expression, which GDScript
+never overloads, so its value is never a class under `src/`), or what an untyped `for` iterates (a typed array's
+element, a typed dictionary's key); one type for the name in its top-level block (a func, a var, an inner class), a
+name typed two ways there taking the declaration in scope on the line (by line and indent) and being unknown where
+none or two disagree. A name the block never declares is a field of the file's own class or an ancestor, and so is
+one that shadows such a field on a line no declaration of it reaches (after a `for` over it, before a later `var`).
+Each step after the head is a field's declared type (an inner class's field included), a method's declared
+`-> Type`, an array or dictionary element, or for a receiver that is not a class under `src/` an engine property
+(an engine class) or an engine call (an engine class, unless it is one that returns a Variant: `get()`, `call()`,
+`back()` and the like, the element type on a typed array or dictionary). A type that names no class under `src/` and
+is not `Variant` is told as not one: the receiver is known, and no read.
 
 **The opt-out line, and a converted file.** `project.godot` makes the engine fail an access it cannot type
 (`untyped_declaration`, `unsafe_property_access`, `unsafe_method_access` are errors), and a `.gd` file not yet
@@ -75,8 +75,8 @@ typed runner header, `func run(t: TestRunner) -> void:`, anything else a typed d
 `.gd` file outside `docs/` is read for the line (`src/`, `tests/`, `tools/`: the setting reaches every script the
 engine parses in this project); only `src/` is read for reads.
 
-**Blind spots, stated.** A chain through an engine property typed `Variant` (`JSON.data`) or through an inner
-class's field is told as an engine value, so a read behind it is not seen; a read of another file's inner class's
+**Blind spots, stated.** A chain through an engine property typed `Variant` (`JSON.data`), or from `self` inside an
+inner class, is told as an engine value, so a read behind it is not seen; a read of another file's inner class's
 field is not listed; a bare name nothing declares is taken for an engine property of the file's own class; a
 parameter of a function whose parameter list runs over several lines (`func f(` ending its line) has no type
 here, so a read through it is neither a read nor an unknown. A
