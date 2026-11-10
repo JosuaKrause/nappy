@@ -125,16 +125,6 @@ src/events/event_instance.gd ended
 src/events/event_instance.gd warned
 
 # [City] src/city/city.gd
-src/city/blackout.gd events
-src/city/blackout.gd map
-src/city/blackout.gd run
-src/city/blackout.gd signals
-src/city/poster_walls.gd events
-src/city/scenery_ground.gd map
-src/city/scenery_residency.gd _building_shadows
-src/city/scenery_residency.gd _decals
-src/city/scenery_residency.gd map
-src/city/scenery_residency.gd scenery_ground
 src/dev/debug_readout.gd crowd
 src/dev/debug_readout.gd events
 src/dev/debug_readout.gd map
@@ -1310,7 +1300,6 @@ src/autoload/game_save.gd header
 src/autoload/game_save.gd run_parts
 src/autoload/visit_counter.gd calendar
 src/autoload/visit_counter.gd header
-src/city/blackout.gd resistance
 src/city/city.gd attempt_spend
 src/city/city.gd posters
 src/city/city.gd resistance
@@ -1378,7 +1367,6 @@ src/events/event_scenery.gd drawer
 src/events/event_scenery.gd frame_b
 
 # [SceneryResidency] src/city/scenery_residency.gd
-src/city/city.gd city
 src/city/city.gd frame_locked
 src/city/city.gd timing
 src/city/city.gd view

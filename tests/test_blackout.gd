@@ -5,19 +5,16 @@ extends RefCounted
 ##
 ## **This suite tests `Blackout`, the one decision**: when the city goes dark, once, and when it comes
 ## back. It builds no city and plans no day. The parts the blackout switches are stand-ins that keep
-## what it did to them: a bare `City` holding only what `Blackout` reads off it (a hand-drawn map
-## with a power station on it, a run, a `TrafficSignals` that holds the one `powered` flag, a
-## `FakeEventManager` that counts the masts it is asked to silence) and three `Building`s that were
-## never put in a world. The map's station is the lot seed 4242's generated city has, read off once.
+## what it did to them: the parts `Blackout` is handed (a hand-drawn map with a power station on it,
+## a run's resistance, a `TrafficSignals` that holds the one `powered` flag, a `FakeEventManager`
+## that counts the masts it is asked to silence) and three `Building`s that were never put in a
+## world. The map's station is the lot seed 4242's generated city has, read off once.
 ##
 ## What each switched part does once it is off is that part's own suite: a hall and its clerestory
 ## (`tests/test_power_station.gd`), a signal head and a light that decides nothing
 ## (`tests/test_traffic_light.gd`, `tests/test_traffic_signals.gd`), the spine's traffic with its lights
 ## out (`tests/test_dark_spine.gd`), every mast silenced (`tests/test_masts.gd`), and the escape
 ## building's lighting (`tests/test_interior.gd`).
-##
-## **`Blackout` takes a concrete `City`**, so the stand-in is a `City` that was never built, which
-## `src/city/` (not this change's) has no narrower hand-in for.
 
 const BASE_SEED := 4242
 ## Seed 4242's generated power station: the pair of blocks it stands on and the door's tile rect.
@@ -26,10 +23,10 @@ const STATION_DOOR := Rect2i(Vector2i(93, 42), Vector2i(2, 1))
 ## How many windows' worth of buildings the blackout is handed.
 const BUILDINGS := 3
 
-## The city and the run the test now running stands in: `_begin()` makes them afresh at the top of
-## every test and `_end()` frees them at its bottom, so no test reads what an earlier one left.
+## The run the test now running stands in: `_begin()` makes it afresh at the top of every test and
+## `_end()` frees what it made at its bottom, so no test reads what an earlier one left.
 var _run: RunState
-var _city: City
+var _map: CityMap
 var _signals: TrafficSignals
 var _events: FakeEventManager
 var _buildings: Array[Building] = []
@@ -49,22 +46,17 @@ func run(t) -> void:
 	await _test_a_retry_gives_the_power_back(t)
 	_test_the_escape_is_dark_from_its_first_frame(t)
 
-## A blackout over a city on the last day with the sabotage not yet done, standing where the city
-## hands it its parts (`City.build()`): the city holds them and the blackout is in the tree.
+## A blackout over a city on the last day with the sabotage not yet done, handed its parts the way
+## `City.build()` hands them, and in the tree.
 func _begin(t, from_the_start := false) -> void:
 	_run = RunState.new()
 	_run.resistance.sabotage_done = false
-	var map := CityMap.new()
-	map.power_station = STATION
-	map.power_station_door = STATION_DOOR
+	_map = CityMap.new()
+	_map.power_station = STATION
+	_map.power_station_door = STATION_DOOR
 	_signals = TrafficSignals.new(null)
 	_events = FakeEventManager.new()
 	_events.masts_to_silence = 2
-	_city = City.new()
-	_city.map = map
-	_city.run = _run
-	_city.signals = _signals
-	_city.events = _events
 	_buildings.clear()
 	for i in BUILDINGS:
 		_buildings.append(Building.new())
@@ -75,7 +67,7 @@ func _begin(t, from_the_start := false) -> void:
 	_blackout = Blackout.new()
 	_blackout.dark_from_the_start = from_the_start
 	t.add_child(_blackout)
-	_blackout.setup(_city, _buildings)
+	_blackout.setup(_map, _buildings, _signals, _events, _run.resistance)
 
 func _count_dark() -> void:
 	_went_dark += 1
@@ -92,11 +84,10 @@ func _end() -> void:
 	for building in _buildings:
 		building.free()
 	_events.free()
-	_city.free()
 	_blackout = null
 	_her = null
-	_city = null
 	_run = null
+	_map = null
 	_signals = null
 	_events = null
 
@@ -135,7 +126,7 @@ func _powered_buildings() -> int:
 
 ## A point `distance` px straight south of the station's lot, the way she walks off from its door.
 func _south_of_the_station(distance: float) -> Vector2:
-	var lot := _city.map.tile_rect_to_world(CityMap.blocks_tile_rect(_city.map.power_station))
+	var lot := _map.tile_rect_to_world(CityMap.blocks_tile_rect(_map.power_station))
 	return Vector2(lot.get_center().x, lot.end.y + distance)
 
 # ---------------------------------------------------------------------- tests ---
@@ -152,7 +143,7 @@ func _test_nothing_goes_dark_without_the_sabotage(t) -> void:
 func _test_nothing_goes_dark_beside_the_station(t) -> void:
 	_begin(t)
 	_do_the_sabotage()
-	await _she_stands_at(t, _city.map.power_station_door_position())
+	await _she_stands_at(t, _map.power_station_door_position())
 	t.check(not _is_dark(), "at the door she has just touched, nothing is off yet")
 	await _she_stands_at(t, _south_of_the_station(Blackout.BLACKOUT_DISTANCE - 4.0))
 	t.check(not _is_dark() and _went_dark == 0, "nor just short of the distance")
@@ -177,7 +168,7 @@ func _test_everything_goes_dark_at_once(t) -> void:
 func _test_it_stays_dark_walking_back(t) -> void:
 	_begin(t)
 	await _go_dark(t)
-	await _she_stands_at(t, _city.map.power_station_door_position())
+	await _she_stands_at(t, _map.power_station_door_position())
 	t.check(_is_dark() and _powered_buildings() == 0 and _went_dark == 1,
 			"walking back to the door does not put the lights on")
 	_end()

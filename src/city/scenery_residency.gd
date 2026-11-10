@@ -25,7 +25,14 @@ var budget_usec := BUDGET_USEC
 ## Where an update charges its time to the frame record, handed in by the city that builds this; the
 ## null sink until then.
 var timing := FrameTiming.new()
-var city: City
+## What the residency keeps resident, handed in by `setup()`: the node whose view and visibility it
+## follows (the city), the map that places the doorstep it looks at before any camera exists, and the
+## three owners of what is prepared and released around the view.
+var _world: CanvasItem
+var _map: CityMap
+var _ground: SceneryGround
+var _shadows: BuildingShadows
+var _decals: CityDecals
 ## A scripted recipe's frame-locked playback: every update prepares its whole load view in that
 ## frame, with no budget and no deferral, so a recorded frame never shows unprepared ground. Handed
 ## in by the city that builds this. Free play keeps ordinary streaming.
@@ -48,12 +55,20 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	process_priority = 1000
 
+func setup(world: CanvasItem, map: CityMap, ground: SceneryGround, shadows: BuildingShadows,
+		decals: CityDecals) -> void:
+	_world = world
+	_map = map
+	_ground = ground
+	_shadows = shadows
+	_decals = decals
+
 func register(item: Node2D) -> void:
 	_items.append(item)
 	item.set_scenery_resident(false)
 
 func _process(_delta: float) -> void:
-	if city and city.map and city.is_visible_in_tree():
+	if _world and _world.is_visible_in_tree():
 		var next := _camera_view()
 		# The guard remains at least 80px ahead between these 16px maintenance steps.
 		if _pending or next.size != view.size \
@@ -61,9 +76,9 @@ func _process(_delta: float) -> void:
 			update(next)
 
 func _camera_view() -> Rect2:
-	var viewport := city.get_viewport()
+	var viewport := _world.get_viewport()
 	if viewport.get_camera_2d() == null:
-		return Rect2(city.map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
+		return Rect2(_map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
 				Tuning.VIEW_HALF_EXTENT * 2.0)
 	var inverse := viewport.get_canvas_transform().affine_inverse()
 	var size := viewport.get_visible_rect().size
@@ -90,7 +105,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 	var load_view := view.grow(LOAD_MARGIN)
 	var retained := view.grow(RETAIN_MARGIN)
 	var guard := load_view if immediate or relocated else view.grow(GUARD_MARGIN)
-	var ground := city.scenery_ground
+	var ground := _ground
 	for key: Vector2i in ground.chunks.keys():
 		if not retained.intersects(SceneryGround.bounds(key)):
 			ground.release(key)
@@ -150,9 +165,9 @@ func update(next_view: Rect2, immediate := false) -> void:
 			if recording:
 				job.kind = enqueued_kind[0]
 			pending.append(job)
-	city._building_shadows.update_view(load_view, retained, enqueue)
+	_shadows.update_view(load_view, retained, enqueue)
 	enqueued_kind[0] = FrameTiming.Job.DECAL
-	city._decals.update_view(load_view, retained, enqueue)
+	_decals.update_view(load_view, retained, enqueue)
 	pending.sort_custom(func(a: Dictionary, b: Dictionary): return a.distance < b.distance)
 	_pending = false
 	# At least one job runs before the budget can stop the queue, in every mode and for every kind
