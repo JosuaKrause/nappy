@@ -45,9 +45,9 @@ Checked against the engine's documentation and by experiment on the project's Go
   `_restore` naming one of the three, or whose argument it cannot read, fails. In a file under
   `src/` without the line, a method named without its parentheses fails too: on an unknown
   receiver, read with a name a class under `src/` declares as a method and nothing declares as a
-  var, signal or constant (engine properties and builtin types' members excepted); and on a known
-  receiver, its own method, unless the reference hands the Callable on (a call's argument, never
-  `assert(...)`'s; an array literal's element; an assignment's right side; a returned value; a
+  var, a signal, a constant or an enum (engine properties and builtin types' members excepted); and
+  on a known receiver, its own method, unless the reference hands the Callable on (a step following
+  it, `.bind(` or `.call(`; a call's argument, never `assert(...)`'s; an array literal's element; an assignment's right side; a returned value; a
   ternary's branch; a parenthesised expression counting as what its parentheses are). A statement
   on its own (`crowd.clear` for `crowd.clear()`) fails. `--summary` prints the files still carrying
   the line by folder and by warning and the uses still skipped; `--base` fails a file that gains the line or a warning on
