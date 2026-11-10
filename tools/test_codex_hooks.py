@@ -17,7 +17,30 @@ from unittest import mock
 SOURCE = Path(__file__).resolve().parent.parent
 
 
+def on_ci() -> bool:
+    """Whether this run is CI's (GitHub Actions sets CI=true): the only place a time is judged."""
+    return os.environ.get("CI") == "true"
+
+
+def assert_within(test: unittest.TestCase, started: float, bound: float) -> None:
+    """Hold the time since `started` to `bound` seconds on CI; locally print it as information."""
+    took = time.monotonic() - started
+    if on_ci():
+        test.assertLess(took, bound)
+    else:
+        print(f"info {test.id()}: took {took:.2f}s (bound {bound}s, asserted on CI only)")
+
+
 class CodexHooksTest(unittest.TestCase):
+    def test_a_time_bound_is_asserted_on_ci_and_only_printed_locally(self) -> None:
+        started = time.monotonic() - 100
+        with mock.patch.dict(os.environ, {"CI": "true"}):
+            with self.assertRaises(AssertionError):
+                assert_within(self, started, 1.0)
+        env = {k: v for k, v in os.environ.items() if k != "CI"}
+        with mock.patch.dict(os.environ, env, clear=True):
+            assert_within(self, started, 1.0)
+
     def test_codex_skills_are_the_canonical_claude_files(self) -> None:
         # This must stay a directory link: adding a Claude skill then makes it
         # discoverable in Codex without adding a second file or per-skill link.
@@ -374,7 +397,7 @@ class CodexHooksTest(unittest.TestCase):
                 payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
                 started = time.monotonic()
                 result = subprocess.run([str(guard)], input=payload, text=True, capture_output=True)
-                self.assertLess(time.monotonic() - started, 1.5)
+                assert_within(self, started, 1.5)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(result.stdout.strip(), "")
 
@@ -629,7 +652,7 @@ class CodexHooksTest(unittest.TestCase):
                 payload = json.dumps({"tool_name": "Bash", "tool_input": {"command": command}})
                 started = time.monotonic()
                 result = subprocess.run([str(guard)], input=payload, text=True, capture_output=True)
-                self.assertLess(time.monotonic() - started, 1.5)
+                assert_within(self, started, 1.5)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(result.stdout.strip(), "")
 
@@ -661,7 +684,7 @@ class CodexHooksTest(unittest.TestCase):
             with self.subTest(size=len(command), expected=expected):
                 started = time.monotonic()
                 output = self.call_raw(command=command)
-                self.assertLess(time.monotonic() - started, 5.0)
+                assert_within(self, started, 5.0)
                 # An allowed call prints the shell reminder once per session, then nothing.
                 decision = (output or {}).get("hookSpecificOutput", {}).get("permissionDecision")
                 self.assertEqual(decision, expected)
@@ -699,7 +722,7 @@ class CodexHooksTest(unittest.TestCase):
         (self.root / ".claude/hooks/github-write-guard.sh").write_text("#!/usr/bin/env bash\nsleep 30\n")
         started = time.monotonic()
         output = self.call_raw(command="git status")
-        self.assertLess(time.monotonic() - started, 9.5)
+        assert_within(self, started, 9.5)
         assert output is not None
         specific = output["hookSpecificOutput"]
         self.assertEqual(specific["permissionDecision"], "deny")
