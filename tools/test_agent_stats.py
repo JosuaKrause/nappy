@@ -6,6 +6,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from datetime import date
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -118,6 +119,78 @@ class AgentStatsTests(unittest.TestCase):
         line = next(x for x in result.stdout.splitlines() if x.startswith("review"))
         self.assertEqual(line.split(), ["review", "sonnet", "2", "200", "1.0", "1", "1/0/1"])
         self.assertEqual(len(self.run_script(TOOL, "list", "--last", "1").stdout.splitlines()), 1)
+
+    def write_data(self, runs: list[dict[str, object]], grades: list[dict[str, object]]) -> None:
+        self.data.mkdir(parents=True)
+        (self.data / "runs.jsonl").write_text("".join(json.dumps(r) + "\n" for r in runs))
+        (self.data / "log.jsonl").write_text("".join(json.dumps(g) + "\n" for g in grades))
+
+    def ungraded(self, *args: str) -> list[str]:
+        result = self.run_script(TOOL, "ungraded", "--all", *args)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout.splitlines()
+
+    @staticmethod
+    def stop(agent: str, ts: str, tokens: int = 10, session: str = "s1") -> dict[str, object]:
+        return {
+            "ts": ts,
+            "agent": agent,
+            "session_id": session,
+            "tokens": tokens,
+            "model": "sonnet",
+            "description": "d " + agent,
+        }
+
+    @staticmethod
+    def grade(agent: str, day: str) -> dict[str, object]:
+        return {"kind": "fix", "model": "sonnet", "tokens": 1, "rounds": 0, "grade": "ok", "agent": agent, "date": day}
+
+    def test_ungraded_lists_never_graded_and_stops_after_the_last_grade(self) -> None:
+        runs = [
+            self.stop("aaaaaa111", "2026-11-01T10:00:00", 50),
+            self.stop("aaaaaa111", "2026-11-02T10:00:00", 90),
+            self.stop("bbbbbb222", "2026-11-01T10:00:00"),
+            self.stop("bbbbbb222", "2026-11-03T10:00:00", 70),
+            self.stop("bbbbbb222", "2026-11-04T10:00:00", 20),
+            self.stop("cccccc333", "2026-11-01T10:00:00"),
+        ]
+        self.write_data(runs, [self.grade("bbbbbb222", "2026-11-02"), self.grade("cccccc333", "2026-11-01")])
+        lines = self.ungraded()
+        self.assertEqual(len(lines), 2)
+        a = next(x for x in lines if x.startswith("aaaaaa111"))
+        self.assertIn("2 stops", a)
+        self.assertIn("90 tokens", a)
+        self.assertIn("graded never", a)
+        self.assertIn("d aaaaaa111", a)
+        b = next(x for x in lines if x.startswith("bbbbbb222"))
+        self.assertIn("2 stops", b)
+        self.assertIn("2026-11-03T10:00:00 .. 2026-11-04T10:00:00", b)
+        self.assertIn("graded 2026-11-02", b)
+
+    def test_ungraded_joins_a_short_grade_and_skips_an_ambiguous_one(self) -> None:
+        runs = [
+            self.stop("abcdef111", "2026-11-01T10:00:00"),
+            self.stop("abcxyz111", "2026-11-01T10:00:00"),
+            self.stop("abcxyz222", "2026-11-01T10:00:00"),
+        ]
+        self.write_data(runs, [self.grade("abcdef1", "2026-11-01"), self.grade("abc", "2026-11-01")])
+        self.assertEqual({x.split()[0] for x in self.ungraded()}, {"abcxyz111", "abcxyz222"})
+        self.data.joinpath("log.jsonl").write_text(json.dumps(self.grade("abcxyz", "2026-11-01")) + "\n")
+        result = self.run_script(TOOL, "ungraded", "--all")
+        self.assertIn("abcxyz111, abcxyz222", result.stderr)
+        self.assertEqual(len(result.stdout.splitlines()), 3)
+
+    def test_ungraded_since_session_and_the_default_window(self) -> None:
+        old = self.stop("oldold111", "2020-01-01T10:00:00")
+        new = self.stop("newnew111", date.today().isoformat() + "T10:00:00", session="s2")
+        self.write_data([old, new], [])
+        self.assertEqual(len(self.ungraded()), 2)
+        self.assertEqual([x.split()[0] for x in self.ungraded("--session", "s2")], ["newnew111"])
+        default = self.run_script(TOOL, "ungraded").stdout.splitlines()
+        self.assertEqual([x.split()[0] for x in default], ["newnew111"])
+        since = self.run_script(TOOL, "ungraded", "--since", "2019-12-31").stdout.splitlines()
+        self.assertEqual(len(since), 2)
+        self.assertEqual(self.run_script(TOOL, "ungraded", "--since", "2020-01-02", "--all").returncode, 2)
 
     def test_unknown_argument_is_rejected(self) -> None:
         self.assertEqual(self.run_script(TOOL, "summary", "--bogus").returncode, 2)
