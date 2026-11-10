@@ -14,7 +14,7 @@ The rules the orchestrating session must not miss, one line each; the sections b
   while the player has put one entry first means that entry's items only (inbox #1210 in
   gentle-owl), and a running agent is looked at at least every 45 minutes.
 - **The queue is read from `origin/main`, after a fetch, before a brief is written.**
-- **The model is the table's**; a design and a change to a rule file are Fable's.
+- **The model is the table's.**
 - **One task per agent, in its own sparse worktree** from `tools/agent-setup.sh`, with its brief
   written to `.claude/briefs/` before it is spawned and its GitHub role named in it.
 - **Parallel agents are split by files**, never by topic.
@@ -42,9 +42,8 @@ A stronger model than a row's takes a milestone whose geometry or contracts warr
 | Task kind | Model |
 |---|---|
 | A task that needs planning or complex reasoning | Fable is considered (inbox #1264 in olive-ferret) |
-| The design that code is built from, a seam's design included | Fable (inbox #1264 in olive-ferret) |
-| Code built from a Fable design | the orchestrator's choice (inbox #1264 in olive-ferret), by the build rows below |
-| A change to a rule file: a skill, `CLAUDE.md`, a hook's text | Fable, directly (inbox #1264 in olive-ferret) |
+| A pull request labelled `fable-only`, a label put only on work the player names | Fable designs its code and reviews it; writing the code may go to another model (inbox #1293) |
+| The review of anything Fable designed | Fable (inbox #1299) |
 | Drawing: making or revising artwork, SVG, PNG or a review sheet | Opus (PLAYTEST-123 8) |
 | Waiting on a merge or a check, polling | no agent: a timer or a script in a background shell, which costs no tokens (inbox #1070 in gentle-walrus, inbox #1072 in gentle-walrus) |
 | Merging | the orchestrating session, with no agent spawned for it; an agent or a monitor may run a merge the session hands it (**committing**, "Merging") |
@@ -337,11 +336,6 @@ to the player's correction:
 - **That a stronger model than a row's takes a milestone whose geometry or contracts warrant it**
   ("The model table"); the player's words are that the model is chosen by judgement
   (woolly-finch 15).
-- **That "the orchestrator's choice" for code built from a Fable design is made by the build
-  rows** ("The model table"); the player's words leave the choice to the orchestrator
-  (inbox #1264 in olive-ferret).
-- **That "a rule file" takes in a hook's text** ("The model table"); the player's words name rule, skill
-  and `CLAUDE.md` changes (inbox #1264 in olive-ferret).
 - **That a review of a change to what a rule says goes to Opus** and a skill's wording alone to
   Sonnet ("The model table").
 - **That a pull request that carries a drawing is reviewed by Opus** ("The model table"); the
