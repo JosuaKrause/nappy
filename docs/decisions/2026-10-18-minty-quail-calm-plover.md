@@ -1,27 +1,26 @@
-# minty-quail — A drawn poster crew is kept for her walk, a sidewalk's event closes its section, and the reach rule walks the cut · 2026-11-09
+# minty-quail — A drawn poster crew is kept for her walk, and a sidewalk's event closes its section to the draw and the roadblock phase · 2026-11-09
 
-minty-quail's `placement-by-construction.md`: three changes to the dawn's one draw, landed before
+minty-quail's `placement-by-construction.md`: two changes to the dawn's one draw, landed before
 the item's numbered steps, and what was tried for the walk's draw and replaced. The step before it
 is downy-toad.
 
 **Built.** The dawn draws every open location once, as on main (`EventScheduler._draw_the_locations()`:
-`LocationDraw.draw_all()` over `DayLocations.drawing_order()`), with three changes on purpose:
+`LocationDraw.draw_all()` over `DayLocations.drawing_order()`), with two changes on purpose:
 
 - **A poster crew is handed to her walk as it is drawn** (`LocationDraw._as_drawn()`, asking
   `EventScheduler.owed_to_her_walk()`, which replaces `_hand_to_her_walk()`), unplaced, so the rows
   drawn after it are spaced without it (`tests/test_location_draw.gd`'s crew case,
   `tests/test_events_fire.gd`'s crew test).
-- **A sidewalk a dawn phase fills closes its section to the draw**
+- **A sidewalk a dawn phase fills closes its section**
   (`DayLocations.assign_to()` → `StreetLocations.close_the_section_of()`), so the draw places
-  nothing over a dawn phase's sidewalk event (`tests/test_day_locations.gd`).
-- **The reach rule** works out what a body cuts off by growing the pieces beside its disc rather
-  than flooding the city again (`RouteReachRule._cut_off()`; `tests/test_route_rules.gd` holds that
-  it answers what the flood answers), and a disc over home cuts off everything.
+  nothing over a dawn phase's sidewalk event (`tests/test_day_locations.gd`); a mast's sidewalk is
+  one, from day 5. The roadblock phase passes a closed section over too (`RoadblockPhase._open()`,
+  `tests/test_roadblock_phase.gd`), which changes no line on the cities measured.
 
 **A retry is the same day** (PLAYTEST-119 27): the same day started twice stands the same rows on
-the same tiles, and walking moves nothing placed (`test_event_manager`'s
-`_test_a_retry_is_the_same_day_whichever_way_she_walks`). With no draw during the walk it cannot
-catch a draw that depends on her path; step 2's unit draw is what it is for.
+the same tiles (`test_event_manager`'s `_test_a_day_started_twice_stands_the_same_rows`). With no
+draw during the walk, a check that walking moves nothing could not fail, so it went; step 2's unit
+draw brings the walk back into the test.
 `tests/probes/walk_rows.gd` plans each day as the game does and counts each placed row as it comes
 within the stream radius on the day's longest walk.
 
@@ -52,22 +51,31 @@ neither is kept.
   (inbox #1180 in gray-dolphin), and its dormant branch would have flooded the city during play
   (inbox #1173 in gray-dolphin). Before its index was rebuilt it cost a p99 of about 0.7 ms a tick
   for no draw. Step 2 builds the unit draw fresh.
+- **The reach rule walking the cut** (`RouteReachRule._cut_off()`): it worked out what a body cuts
+  off by growing the pieces beside its disc rather than flooding the city again, and answered every
+  ask as the flood does. Timed over 42 dawns (3 cities × 14 days, `EventScheduler.build_day()`, the
+  fastest of each dawn's runs) it took 54.7 s against the flood's 51.6 s, slower on every day, so it
+  went (the orchestrator's ruling, open to the player's overturn); step 1 takes the reach rule out of
+  the game.
 
 **Measured.** 3 cities from 90210 in steps of 31, days 1 to 14, `tests/probes/placement_rows.gd`
-on the head against main at `a4a7621e6`. With the crew and section changes reverted locally, every
-per-row, per-view and per-kind line matches main but the poster crews', which the revert leaves
-placed, so the head is main's draw plus exactly the two changes. With them, days 1 to 4 match
-exactly; from day 5 the rows drawn after a crew are spaced without it, and a day's total moves by
-−9 to +9.
+against main at `146dbf60e`, each change also reverted alone. A key is a row on a day in a view, or
+on a kind of ground; the counts are the keys, crews left out, whose count differs from main's.
 
-| view | placed, main | placed, head |
-|---|---|---|
-| on her route | 997 | 989 |
-| route-adjacent | 1191 | 1200 |
-| off the route | 2087 | 2087 |
+| tree | keys that differ | days | on her route / route-adjacent / off the route | total |
+|---|---|---|---|---|
+| main | – | – | 997 / 1191 / 2086 | 4274 |
+| both changes reverted | 0 | none | 997 / 1191 / 2086 | 4274 |
+| crew hand-over only | 95 | 5–10, 12–14 | 989 / 1203 / 2101 | 4293 |
+| section closure only | 297 | 5–14 | 993 / 1188 / 2076 | 4257 |
+| head | 333 | 5–14 | 989 / 1200 / 2086 | 4275 |
 
-The per-row table is in the pull request's description.
+The section closure moves most of the draw, from day 5, the first day the masts stand (a mast's
+sidewalk closes its section): the protest, the reversing lorry and the market stall up 4 to 6, the
+homeless yeller down 11. The crew hand-over moves less, its largest moves the dog walker up 11 and
+day 8's route-adjacent rows up 9. The per-day, per-view and per-row tables are in the pull
+request's description.
 
 **For the end-of-refactor remeasure.** Changed on purpose: a crew is handed on as it is drawn, so
-later draws are spaced without it; a sidewalk a dawn phase fills closes its section. The counts
-above are what moved.
+later draws are spaced without it; a sidewalk a dawn phase fills closes its section to the draw
+and the roadblock phase. The counts above are what moved, the section closure most.

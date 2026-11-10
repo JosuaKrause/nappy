@@ -64,7 +64,8 @@ roadblock phase (`RoadblockPhase`), day 13's section swap, the scene recipes' lo
 fixed parts' and the scripted rows' dawn phases (`ScriptedPhase`). Every open location is drawn
 at dawn by one loop (`EventScheduler._draw_the_locations()`: `LocationDraw.draw_all()` over
 `DayLocations.drawing_order()`); a poster crew is handed to her walk as it is drawn, and a sidewalk
-a dawn phase fills closes its section to the draw. Nothing is drawn as she walks.
+a dawn phase fills closes its section to the draw and the roadblock phase. Nothing is drawn as she
+walks.
 
 ## What is left, in order
 
