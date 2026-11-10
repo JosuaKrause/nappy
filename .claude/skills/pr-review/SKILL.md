@@ -229,7 +229,8 @@ reviewer.
 **A queue update is a PR whose every changed file is under `docs/todo/`, `docs/review/` or
 `docs/playtests/`**: filing a playtest, filing or rewording an entry or an item, moving a band. CI
 calls it queue-only (`tools/ci_classify.py`) and runs its mechanical checks before the review does.
-It is merged ahead of other work (woolly-finch 35), since every brief is written from the queue on
+It is merged ahead of other work (woolly-finch 35), work on how the project is worked on included
+(**orchestrating**), since every brief is written from the queue on
 `origin/main` (**orchestrating**) and a filing left open is a brief written from the older text. A
 diff that also touches anything else, a skill or `CLAUDE.md` included, is not a queue update and
 gets the full review above; the orchestrator's queue move on a PR that builds the work is reviewed
@@ -287,6 +288,10 @@ proposes it:
 - **How the rethink after three *not ready* verdicts runs**: what counts, what else it asks, who
   writes it with no orchestrator, that a builder's rethink is checked, and where it goes ("Three
   verdicts of *not ready* mean the approach is rethought"; woolly-penguin #759).
+- **A queue update merges ahead of work on how the project is worked on** ("A queue update is
+  reviewed for faithfulness and merged first"): both are to go first (woolly-finch 35; inbox
+  #1305), and the order between them is the filer's, since a brief for either is written from the
+  queue.
 - **The first five questions of a queue update's review**, the reviewer's reading of faithfulness
   (bouncy-heron 4), the filer's proposal (leafy-finch).
 - **A fix keyed on one row's id or picture is raised as a proposal-backed finding** ("Then the
