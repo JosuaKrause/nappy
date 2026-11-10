@@ -1,10 +1,12 @@
 # Worktrees and disk
 
 How an agent's worktree is made and why it is sparse, where a spawn is made from, the one case for
-the harness's own isolation, why a branch never starts from a docs branch, and the disk check
-before a batch. **orchestrating** keeps the rules (a sparse worktree from `tools/agent-setup.sh`, a
-spawn from the main checkout, and a low-disk warning stops new work); read this before making a
-worktree by any other route, before a checkout, import, build or capture batch, and on any disk
+the harness's own isolation, how the orchestrating session writes on a branch without leaving the
+main checkout, why a branch never starts from a docs branch, and the disk check before a batch.
+**orchestrating** keeps the rules (a sparse worktree from `tools/agent-setup.sh`, a spawn from the
+main checkout, a session that never moves its own workspace while a sub-agent runs, and a low-disk
+warning stops new work); read this before making a worktree by any other route, before writing on
+a branch that a worktree holds, before a checkout, import, build or capture batch, and on any disk
 warning.
 
 ## The worktree
@@ -41,6 +43,28 @@ checkout leaves out.** It makes a full checkout, since `.claude/settings.json` s
 `worktree.sparsePaths` (which can only include whole folders) nor a `WorktreeCreate` hook. Each
 such spawn leaves a `worktree-agent-*` branch pointing at the worktree's base, which
 `tools/prune-merged.sh` deletes once its worktree is gone, keeping a live agent's.
+
+## The session stays in the main checkout
+
+**The session's workspace is one setting shared by the orchestrator and every sub-agent it
+started.** `EnterWorktree` called with the path of an agent's worktree moves all of them at
+once: from then on the harness refuses any command another agent aims at its own worktree, a
+read-only `git` included, naming the worktree the session is isolated in. An agent in
+the middle of a fix can neither commit nor push it, and one waiting on a check cannot read its
+result. So no such call is made while a sub-agent runs.
+
+**The orchestrator writes on a branch that a worktree holds through the shell, from the main
+checkout**, once that branch's agent has reported (**orchestrating**, "What the orchestrator
+keeps": nothing is committed into a worktree an agent works in). The queue move, the record and
+any other file are written with a Bash command or a Python one-off that names absolute paths
+under `.claude/worktrees/<name>`; git runs as `git -C <worktree>`, or after a `cd` into the
+worktree within the same command; the commit and the push go through the identity wrapper as
+always (**committing**). None of it moves the session.
+
+**After a switch made anyway: `ExitWorktree` with `keep`, at once**, which returns the session to
+the main checkout and leaves the worktree and its branch as they are. Then every running agent is
+told that its worktree is reachable again, since an agent that met the refusal has stopped or is
+waiting, and nothing else tells it to go on.
 
 ## Branching from a docs branch
 
