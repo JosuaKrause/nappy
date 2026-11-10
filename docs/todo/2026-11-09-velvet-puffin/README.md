@@ -39,7 +39,11 @@ model starts from a new brief and never carries the old agent's context over.
 sub-agents, each one's context size and why to reassess it: at or past 500k tokens, compacted
 automatically, quiet, or looping. Its `--help` says what it measures.
 
-**The items.** `reassessment-rule.md` is the rule's sentence in the orchestrating skill.
-`resume-refusal-at-400k.md` is the hook's number and the end of every turn count.
+**What answers the resume's number already.** `.claude/hooks/resume-guard.py` refuses, once, the
+resume of a sub-agent past 400k tokens of context or of one compacted automatically, and the
+orchestrating skill's `references/writing-a-brief.md` holds the size a task is scoped to and the
+size a resume is refused at; no limit counts turns.
+
+**The item.** `reassessment-rule.md` is the rule's sentence in the orchestrating skill.
 
 *Proposed, not asked for:* the band `now`, since the player named none.
