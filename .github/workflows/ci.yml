@@ -7,7 +7,7 @@
 #   gates       the repository's consistency, on every run, needing no Godot: lint.sh,
 #               test_cli_help.sh, test_lib_agent_role.sh, test_agent_setup.sh, pycheck.sh, the
 #               layer check, the telemetry table's check, and on a pull request the checks that
-#               read its files and its description.
+#               read its files, its description and its labels.
 #   hooks       test_rules_hooks.sh, the rule-loading hooks' check, on every run, beside `gates`
 #               rather than inside it: it is a long step of the repository's consistency,
 #               and a job of its own keeps it from setting the run's length.
@@ -49,12 +49,21 @@
 # since each boots the engine.
 name: ci
 
+# A pull request's run starts when it opens, reopens or gets a new head, which are the default, and
+# when a label is added or removed: `gates` holds a pull request that builds an item of a
+# `fable-only` queue entry to the label of that name (tools/ci_fable_only.py), and without the two
+# label events a label taken off a green pull request would leave its `test` green. `test` is the
+# one check main's ruleset requires, so the whole run starts again, and the concurrency group
+# below cancels the one in progress: a label put on after the pull request opens starts a second
+# run, which cancels the first.
 on:
   push:
     branches: [main]
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
 
-# Read-only: a check reads the pull request's description and the issues it names through the API,
+# Read-only: a check reads the pull request's description, its labels and the issues it names
+# through the API,
 # and writes nothing anywhere.
 permissions:
   contents: read
@@ -304,6 +313,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
         run: uv run python tools/ci_code_pr_queue.py --base "origin/${GITHUB_BASE_REF}"
+
+      # A queue entry whose README.md says `fable-only: true` is one Fable designs and reviews
+      # (docs/TODO.md), and the label of that name is how a session knows it of a pull request: one
+      # that adds a record of such an entry, which every pull request building an item does,
+      # fails without the label; a record it only changes (an inbox filing's citations) does not
+      # count. Any kind of pull request may add a record, so it runs on every one. The labels are read
+      # through the API when it runs, and a label added or removed starts a run (`on:` above).
+      - name: A pull request that builds an item of a fable-only entry carries the fable-only label
+        if: ${{ !cancelled() && github.event_name == 'pull_request' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: uv run python tools/ci_fable_only.py --base "origin/${GITHUB_BASE_REF}"
 
       # pr-review's architecture questions, made a check of presence: a pull request touching src/,
       # tests/ or tools/ answers each question under `## Architecture questions`, or says

@@ -607,6 +607,51 @@ class Planned extends RefCounted:
 	func keeps_its_field_clear() -> bool:
 		return def.hard_fail and role != GameEnums.BlockerRole.WALL and def.pursuit == null
 
+	# ----------------------------------------------------- what a caller asks ---
+	# The questions a caller outside the events asks a plan, answered for its row where the
+	# question is the row's, and what the building's plan tells one as it makes it.
+
+	## Whether its body holds a walker at its door (`EventDef.detains_her()`): the door bodies the
+	## crowd's walkers are held at (`Crowd`).
+	func detains_her() -> bool:
+		return def.detains_her()
+
+	## How far round where it stands its body stops her (`EventDef.obstructs_within()`), or 0: the
+	## discs a siting reads off the wall and the doors (`DayStreets.siting_region()`).
+	func obstructs_within() -> float:
+		return def.obstructs_within()
+
+	## Whether walking into its reach ends her day (`EventDef.ends_the_day()`).
+	func ends_the_day() -> bool:
+		return def.ends_the_day()
+
+	## Whether its field reaches `point`: from where it stands now (`where_it_stands_now()`)
+	## against how far its row is heard (`EventDef.heard_within()`), measured from the centre as
+	## every caller has measured it.
+	func field_reaches(point: Vector2) -> bool:
+		return where_it_stands_now().distance_to(point) <= def.heard_within()
+
+	## Makes it come again `seconds` after each of its instances came, on its own clock
+	## (`repeat_every`), in place of its row's: each of the building's vents has its own period.
+	func come_again_every(seconds: float) -> void:
+		repeat_every = seconds
+
+	## Makes its first instance come `seconds` from the start (`comes_in`), so plans that come
+	## again on clocks of their own start out of step: the building's vents, its explosions.
+	func come_first_in(seconds: float) -> void:
+		comes_in = seconds
+
+	## Makes each of its instances come where she stands rather than where it was placed
+	## (`at_her`): the explosion outside, whose charge is wherever in the building she has got to.
+	func come_where_she_stands() -> void:
+		at_her = true
+
+	## Makes each of its instances arrive `seconds` into its life (`arrives_aged`), its first
+	## included (`age`): the explosion outside, whose notice is already over when it comes.
+	func arrive_aged(seconds: float) -> void:
+		arrives_aged = seconds
+		age = seconds
+
 ## A line of the day's planning for the run log, written when the caller handed a trace in: the
 ## manager hands its own, and a test or a probe that plans a day by hand may hand none.
 static func _note(trace: RunTrace, kind: String, text: String) -> void:
@@ -680,7 +725,6 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	# open park she can reach from the swing"). Dawn keeps it by construction: the calm other than
 	# `calm.besides()` is the ground the calm rule and `_calm_kept_clean()` keep clean, and the
 	# day's routes, which `RouteReachRule` keeps reached, run to it.
-	_hand_to_her_walk(events)
 	_count_what_is_left_uncovered(beside_the_routes, map, events, route, trace)
 	return events
 
@@ -1007,23 +1051,14 @@ static func _touched_from(map: CityMap, shut: Dictionary, plan: Planned) -> Arra
 				found.append(tile)
 	return found
 
-## **A recurring row sited from her walk is rolled and placed at dawn like any other, then handed to
-## her walk** — `poster_crew`, which pastes the walls she passes (`EventDef.on_her_way`). The
-## dawn placement is what spends the day's own stream exactly as it was spent before the crew was
-## sited from her walk, so every row the roll places after it stands where it always stood; this
-## then drops the position, and `EventDirector.site_what_is_on_her_way()` sites it ahead of her.
-##
-## **Last, and only ever a removal.** Every guarantee the passes above make is about reaching
-## somewhere, and taking a placed body off the ground can only add reachable ground (the **city**
-## skill's one monotonic exception), so nothing they decided can become false here. A one-shot owed
-## to her walk arrives already unplaced from `_place_one_shots` and is left alone.
-static func _hand_to_her_walk(events: DayEvents) -> void:
-	for plan in events.placements():
-		if not plan.def.is_handed_to_her_walk() or not plan.is_placed():
-			continue
-		var owed := Planned.new(plan.def, Vector2.INF)
-		owed.role = plan.role
-		events.replace(plan, owed)
+## **`plan`'s row, unplaced, for her walk to site** (`EventDirector.site_what_is_on_her_way()`):
+## what a recurring row handed to her walk (`EventDef.is_handed_to_her_walk()`, the poster crew)
+## becomes as a location draws it (`LocationDraw`), so no row drawn after it is spaced from a place
+## it never stands at. A one-shot owed to her walk is planned unplaced by `_place_one_shots`.
+static func owed_to_her_walk(plan: Planned) -> Planned:
+	var owed := Planned.new(plan.def, Vector2.INF)
+	owed.role = plan.role
+	return owed
 
 # ------------------------------------------------------ the walk's streets from a bag ---
 
@@ -1550,10 +1585,10 @@ static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 ## the shortest side of the calm ground, floored at that constant. That is what lets a market take
 ## over a whole park and keeps it out of a back yard.
 ##
-## **And it has to stay where it was put.** A row handed to her walk (`EventDef.is_handed_to_her_walk()`,
-## the sidewalk `poster_crew`) is taken off the map at the end of the day's plan
-## (`_hand_to_her_walk()`), so a park it was meant to spoil would stand empty, against PLAYTEST-140 8
-## (a used park is shut by the events placed in it). None is offered.
+## **And it has to stay where it was put.** A row handed to her walk
+## (`EventDef.is_handed_to_her_walk()`, the sidewalk `poster_crew`) stands where her walk sites it,
+## never where the dawn would put it, so a park it was meant to spoil would stand empty, against
+## PLAYTEST-140 8 (a used park is shut by the events placed in it). None is offered.
 static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> Array[EventDef]:
 	var allowed := maxf(OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(ground.size.x, ground.size.y) / 16.0)

@@ -11,6 +11,8 @@ func run(t) -> void:
 	_test_the_wall_s_body_says_so(t)
 	_test_what_stands_clear_of_it(t)
 	_test_which_plans_are_fixed_parts(t)
+	_test_a_walker_is_held_at_the_hut_and_never_at_the_boom(t)
+	_test_what_its_field_reaches(t)
 
 ## A body of the row `id` as the region planner stands it, at `at`.
 func _sealed(id: String, at := Vector2(320, 320)) -> EventScheduler.Planned:
@@ -100,3 +102,24 @@ func _test_which_plans_are_fixed_parts(t) -> void:
 	t.check(mast.is_a_fixed_part(), "and a loudspeaker mast")
 	var playground := EventScheduler.Planned.new(EventCatalogue.by_id("playground"), Vector2(320, 320))
 	t.check(playground.is_a_fixed_part(), "and an ambient row")
+
+## **A walker the crowd holds at a door is held at the gatehouse on its own sidewalk, like her, and
+## never on the road** (PLAYTEST-58; `docs/MECHANICS.md`, "The crowd is held at the same
+## gatehouses"): `Crowd` builds a walker's door hold at each door body that `detains_her()`, so of a
+## door's bodies the hut on each sidewalk and the alley door's post hold a walker, and the boom over
+## the road holds nobody, since what stops at it is the cars.
+func _test_a_walker_is_held_at_the_hut_and_never_at_the_boom(t) -> void:
+	t.check(_door("checkpoint_hut").detains_her() and _door("checkpoint_post").detains_her(),
+			"a door's hut and an alley door's post hold a walker")
+	t.check(not _door("checkpoint_gate").detains_her(), "the boom over the road holds nobody")
+
+## **Whether its field reaches a point** (`field_reaches()`), from where it stands now: where it was
+## placed while it is not in the world, and **measured from its centre**, out to where its row is
+## heard.
+func _test_what_its_field_reaches(t) -> void:
+	var row := EventCatalogue.by_id("alley_robbery")
+	var plan := EventScheduler.Planned.new(row, Vector2(320, 320))
+	t.check(plan.field_reaches(Vector2(320, 320) + Vector2(row.heard_within() - 1.0, 0.0)),
+			"its field reaches a point just inside where its row is heard")
+	t.check(not plan.field_reaches(Vector2(320, 320) + Vector2(row.heard_within() + 1.0, 0.0)),
+			"and not one just outside")

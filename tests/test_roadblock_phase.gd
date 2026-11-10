@@ -13,6 +13,7 @@ extends RefCounted
 func run(t) -> void:
 	_test_it_stops_once_every_route_tile_has_one_close_by(t)
 	_test_a_section_offered_none_is_never_drawn(t)
+	_test_a_section_closed_to_a_draw_is_never_drawn(t)
 	_test_it_stops_once_no_section_could_cover_a_tile_left(t)
 	_test_it_stops_at_the_most_it_stands(t)
 	_test_every_offered_section_is_in_the_draw(t)
@@ -167,6 +168,27 @@ func _test_a_section_offered_none_is_never_drawn(t) -> void:
 				and phase.left_uncovered() == 1
 	t.check(never, "a section the day's ground offers no roadblock is never drawn, and the route "
 			+ "tile only it was close by is left counted without one (%d seeds)" % SEEDS)
+
+## A section closed to a draw, as one is once a sidewalk of it holds a fixed part
+## (`StreetLocations.close_the_section_of()` records it drawn empty), is never drawn: a roadblock
+## spans the street and would take that sidewalk over the part standing there.
+func _test_a_section_closed_to_a_draw_is_never_drawn(t) -> void:
+	var never := true
+	for seed_value in SEEDS:
+		var closed := _section(Vector3i(2, 2, 1), 1)
+		var other := _section(Vector3i(6, 4, 0), 1)
+		closed.record(null)
+		var ground := _Ground.new()
+		ground.tiles = _tiles([1, 2])
+		ground.close_by = {closed: _tiles([1]), other: _tiles([2])}
+		var locations := _Locations.new()
+		locations.sections = [closed, other] as Array[Location]
+		var phase := RoadblockPhase.new(locations, ground)
+		var placed := phase.place(_rng(seed_value))
+		never = never and not closed.is_taken() and placed.size() == 1 \
+				and ground.section_of(placed[0]) == other and phase.left_uncovered() == 1
+	t.check(never, "a section closed to a draw by its sidewalk's event is never drawn, and the "
+			+ "route tile only it was close by is left counted without one (%d seeds)" % SEEDS)
 
 ## A route tile no section reaches is never covered, so full coverage cannot be reached. The phase
 ## still stops: once A, the one section close by the other route tile, stands, no section left could

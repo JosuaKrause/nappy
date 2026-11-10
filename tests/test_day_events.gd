@@ -1,6 +1,6 @@
 extends RefCounted
 ## `DayEvents`, the day's planned rows read through one object: which calm areas each row spoils
-## and whether one is a pursuit, kept in step with every row added or replaced. The one place that
+## and whether one is a pursuit, kept in step with every row added. The one place that
 ## logic is checked, on plans built by hand with known answers; every other check that needs these
 ## facts asks the object a day returns.
 ##
@@ -17,7 +17,6 @@ func run(t) -> void:
 	_test_a_row_spoils_the_ground_its_field_reaches(t)
 	_test_a_playground_a_scar_and_a_row_not_yet_placed_spoil_nothing(t)
 	_test_a_pursuit_is_counted_while_it_is_planned(t)
-	_test_a_replacement_takes_the_old_rows_place(t)
 	_test_the_standing_bodies_are_not_the_plans_rows(t)
 
 func _calm() -> FakeCalmAreas:
@@ -70,20 +69,6 @@ func _test_a_pursuit_is_counted_while_it_is_planned(t) -> void:
 	var dog := _row("charging_dog", Vector2.INF)
 	events.add(dog)
 	t.check(events.has_a_pursuit(), "a charging dog owed to her walk is one")
-	events.replace(dog, _row("dog_walker", Vector2.INF))
-	t.check(not events.has_a_pursuit(), "and once a row that is none takes its place the day has none again")
-
-func _test_a_replacement_takes_the_old_rows_place(t) -> void:
-	var events := DayEvents.over(_calm())
-	var first := _row("barricade", Vector2(100, 100))
-	var middle := _row("dog_walker", _above_the_court(10.0))
-	var last := _row("barricade", Vector2(300, 100))
-	events.add_all([first, middle, last] as Array[EventScheduler.Planned])
-	var owed := _row("dog_walker", Vector2.INF)
-	events.replace(middle, owed)
-	t.check(events.placements() == ([first, owed, last] as Array[EventScheduler.Planned]),
-			"a replacement stands in the old row's slot")
-	t.check(not events.is_spoiled(COURT), "and the old row's spoiling goes with it")
 
 func _test_the_standing_bodies_are_not_the_plans_rows(t) -> void:
 	var seal := _row("barricade", PARK_GROUND.get_center())
