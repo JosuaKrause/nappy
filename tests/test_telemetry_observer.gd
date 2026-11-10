@@ -15,7 +15,7 @@ extends RefCounted
 ## narrower interface to hand a fake, and what it reads off them (a position, a velocity, the
 ## meters, the clock's reading) is state a case sets on the real node, as the game does. The
 ## event source it watches is a stand-in where a case needs one (`StandInSource`, holding one plain
-## `EventInstance` set up with a catalogue row), since the observer asks it only for `instances()` and its `sources`.
+## `EventInstance` set up with a catalogue row), since the observer asks it only for `instances()` and its event sources, which answer nothing there.
 ##
 ## **No case builds a real `City`**: the observer is handed the run and the clock (`setup()`), and
 ## per walk the map she walks, its events, her and the baby, and in a city the city's map, today's
@@ -156,16 +156,11 @@ func _lines_of(kind: String) -> Array[String]:
 			found.append(line)
 	return found
 
-## The sum of the event fields at a point, which the stand-in source answers as nothing.
-class NoFields:
-	func total_at(_at: Vector2) -> float:
-		return 0.0
-
 ## The event source of a building with one live event, as `EventManager` answers the observer.
-class StandInSource extends Node:
+class StandInSource extends FakeEventManager:
 	var live: Array[EventInstance] = []
-	var sources := NoFields.new()
 
+	## Overrides EventManager.instances.
 	func instances() -> Array[EventInstance]:
 		return live
 
