@@ -11,8 +11,14 @@ from pathlib import Path
 
 TOOLS = Path(__file__).resolve().parent
 ROLES = "ROLE 1 crate 1\nROLE 1 bench 2\nROLE 2 crate 1\n"
-MAIN = "RD 1 2 100 4\nRV 1 crate 0 100\nRV 1 bench 1 100\nRK 1 crate sidewalk 100\nRV 2 crate 2 50\n"
-HEAD = "RD 1 2 40 4\nRV 1 crate 0 40\nRV 1 bench 1 100\nRK 1 crate sidewalk 40\nRV 2 crate 2 50\n"
+MAIN = (
+    "".join(f"RD {d} 2 100 4\n" for d in range(1, 15))
+    + "RV 1 crate 0 100\nRV 1 bench 1 100\nRK 1 crate sidewalk 100\nRV 2 crate 2 50\n"
+)
+HEAD = (
+    "".join(f"RD {d} 2 40 4\n" for d in range(1, 15))
+    + "RV 1 crate 0 40\nRV 1 bench 1 100\nRK 1 crate sidewalk 40\nRV 2 crate 2 50\n"
+)
 
 
 class CompareTest(unittest.TestCase):
@@ -100,6 +106,14 @@ class CompareTest(unittest.TestCase):
         self.assertIn("no RD line", self.refuse_with(None, *self.sample(head=empty)))
         self.assertIn("no RD line", self.refuse_with(None, *self.sample(main=empty)))
 
+    def test_a_log_cut_short_or_with_a_repeated_day_is_refused(self) -> None:
+        cut = self.roles.parent / "cut.log"
+        cut.write_text("".join(line for line in HEAD.splitlines(keepends=True) if not line.startswith("RD 9 ")))
+        self.assertIn("day 9 has no RD line", self.refuse_with(None, *self.sample(head=cut)))
+        twice = self.roles.parent / "twice.log"
+        twice.write_text(HEAD + "RD 3 2 40 4\n")
+        self.assertIn("day 3 has more than one RD line", self.refuse_with(None, *self.sample(head=twice)))
+
     def test_a_role_table_without_roles_or_malformed_is_refused(self) -> None:
         self.assertIn("no ROLE line", self.refuse_with(self.main, *self.sample()))
         for text in ("ROLE 1 crate\n", "ROLE x crate 1\n", "ROLE 1 crate 1 9\n"):
@@ -110,7 +124,7 @@ class CompareTest(unittest.TestCase):
     def test_a_city_count_the_logs_do_not_carry_is_refused(self) -> None:
         self.assertIn("counts 2 cities, not 9", self.refuse_with(None, *self.sample(cities="9")))
         other = self.roles.parent / "other.log"
-        other.write_text(HEAD.replace("RD 1 2", "RD 1 3"))
+        other.write_text(HEAD.replace("RD 1 2", "RD 1 3", 1))
         self.assertIn("counts 3 cities, not 2", self.refuse_with(None, *self.sample(head=other)))
 
     def test_a_malformed_row_is_refused(self) -> None:

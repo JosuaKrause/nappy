@@ -20,7 +20,8 @@ Lines of the logs (a line of another kind is ignored; the runner's other output 
   ROLE day row role              the role table, role 1 a wall and 2 friction (other roles are ignored)
 
 Refused with exit 2, usage or message on stderr and nothing on stdout: an unreadable or non-UTF-8
-file; a log with no RD line or a malformed or out-of-range line; an RD line whose city count is not
+file; a log without exactly one RD line for each of the days 1 to 14 (cut short, or a day repeated)
+or with a malformed or out-of-range line; an RD line whose city count is not
 CITIES (so the two logs of a sample agree); a role table with no ROLE line or a malformed one; a
 CITIES that is not a positive decimal number.
 """
@@ -93,7 +94,7 @@ def read_roles(path: Path) -> dict[tuple[int, str], str]:
 
 def cells(path: Path, roles: dict[tuple[int, str], str], cities: int) -> Counts:
     c: Counts = collections.Counter()
-    days_seen = 0
+    days_seen: set[int] = set()
     for line in read_lines(path):
         f = line.split()
         if not f:
@@ -103,7 +104,9 @@ def cells(path: Path, roles: dict[tuple[int, str], str], cities: int) -> Counts:
                 d = whole_number(f[1])
                 if whole_number(f[2]) != cities:
                     raise InputError(f"{path}: the line {line!r} counts {f[2]} cities, not {cities}")
-                days_seen += 1
+                if d in days_seen:
+                    raise InputError(f"{path}: day {d} has more than one RD line")
+                days_seen.add(d)
                 c[("the day's whole count", "", f"day {d}", 1)] += whole_number(f[3])
             elif f[0] == "RV":
                 d, row, v, n = whole_number(f[1]), f[2], whole_number(f[3]), whole_number(f[4])
@@ -123,6 +126,9 @@ def cells(path: Path, roles: dict[tuple[int, str], str], cities: int) -> Counts:
             raise InputError(f"{path}: cannot read the line {line!r}") from exc
     if not days_seen:
         raise InputError(f"{path} has no RD line")
+    for d in range(1, DAYS + 1):
+        if d not in days_seen:
+            raise InputError(f"{path}: day {d} has no RD line")
     return c
 
 
