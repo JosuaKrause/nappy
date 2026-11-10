@@ -73,6 +73,44 @@ same hash on `main` at `6cfefd380`, the commit this branch was made from, and on
 trees once their timing figures are taken out; they are compared because the crowd's conversion
 broke on a path its cost probe did not reach (minty-quail-brisk-lark).
 
+## Measured
+
+The per-frame cost, by a separate measuring agent, on `main` at `6cfefd380`, the commit this branch
+was made from, and on this pull request at `32abb6eef`, the code before the review's fixes (those
+moved the take's run log to a hand-in and changed three suites, nothing a probe times). Four
+probes, each run alone, twelve rounds alternated base, head, head, base; the load average is the
+one-minute figure before the round, and the review fixes' own checks, suites and parity probes ran
+on the machine during rounds 9 to 12. Nothing is concluded from it and no cut is held or tuned for
+a time (inbox #1278 in olive-ferret): the reading is recorded, not judged. For the end remeasure,
+the entry's one remeasure after its last item (inbox #813 in curly-moose), this change lists the
+events' per-frame cost, the four probes below.
+
+| Round | Tree | Load | Events' step, ms | Baby's sweep, ms | Halo's frame, ms | Fields, seed 4242, ms | Fields, seed 5551212, ms | Crowd tick, ms (control) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | base | 3.10 | 12076.6 | 122.3 | 3231.3 | 30.9 | 32.5 | 46379.0 |
+| 2 | head | 4.23 | 12141.2 | 122.9 | 3188.3 | 30.9 | 31.0 | 43601.8 |
+| 3 | head | 2.30 | 11863.8 | 119.0 | 3135.2 | 33.1 | 30.4 | 43256.2 |
+| 4 | base | 2.55 | 11700.4 | 117.9 | 3153.2 | 30.5 | 31.3 | 43476.9 |
+| 5 | base | 2.40 | 11657.7 | 116.4 | 3136.8 | 30.0 | 30.4 | 44252.8 |
+| 6 | head | 3.17 | 11808.4 | 117.1 | 3167.1 | 30.5 | 30.9 | 43381.6 |
+| 7 | head | 2.43 | 11752.5 | 117.6 | 3133.7 | 30.5 | 31.0 | 43282.5 |
+| 8 | base | 2.22 | 11704.0 | 117.6 | 3161.9 | 30.5 | 31.1 | 43421.1 |
+| 9 | base | 2.68 | 12454.9 | 130.7 | 3200.2 | 31.1 | 30.9 | 43970.2 |
+| 10 | head | 3.40 | 12922.0 | 133.0 | 3566.2 | 36.8 | 36.1 | 52764.2 |
+| 11 | head | 5.09 | 13341.2 | 134.9 | 3508.7 | 35.6 | 35.8 | 43789.5 |
+| 12 | base | 3.08 | 12344.9 | 124.4 | 3389.1 | 32.3 | 33.4 | 46975.6 |
+| median | base | | 11890.3 | 120.1 | 3181.0 | 30.7 | 31.2 | 44111.5 |
+| median | head | | 12002.5 | 121.0 | 3177.7 | 32.0 | 31.0 | 43491.7 |
+
+The columns: the events' step and the baby's sweep are the totals of
+`probes/m159_tick_sweep_events_cost.gd`'s whole-mode lines over its 36 runs; the halo's frame is
+the sum of `probes/excitement_fingerprint.gd`'s nine `XF_COST` figures; the fields are
+`probes/calm_pelican_fields_layer_cost.gd`'s whole map, cold, for two seeds; the control is
+`probes/m159_crowd_tick_cost.gd`'s whole-mode total, a path this pull request does not touch. The
+sweep probe's own split-against-whole checks fail on both trees alike (6 of 36: its hand-written
+copy of the event manager's tick has fallen behind `main`), and its timing lines print regardless.
+The medians are the measuring agent's, taken from the unrounded figures.
+
 ## Choices the builder made where the design was silent, open to the player's overturn
 
 - **`walks()` answers the route itself**, as the plan's `walks()` does; the route walk walks it and
