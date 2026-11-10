@@ -312,6 +312,7 @@ class Meeting extends RefCounted:
 		_city.crowd.start_day(int(_label.day), rng, player.global_position)
 		_city.crowd.set_gates(_city.streets().region_plan().gates)
 		_city.crowd._player = player
+		_city.crowd.use_bus(EventBus)
 
 	func tick_the_crowd() -> void:
 		var started := Time.get_ticks_usec()

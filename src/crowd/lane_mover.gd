@@ -342,6 +342,38 @@ class Lane:
 		_of.gap_ahead = INF
 		_of.leader_speed = 0.0
 
+	# ------------------------------------------------------- what the crowd finds ---
+	# What `Crowd` works out once a tick over the pair of them or over the street, and tells the car:
+	# whose turn it is at a box, a gate down ahead, somebody near its road.
+
+	## The crowd found a junction box ahead that it has to give way at, with the stop line
+	## `distance` ahead of it (`Crowd._give_way_at_junctions()`).
+	func find_a_junction_to_hold_at(distance: float) -> void:
+		_of.junction_hold = distance
+
+	## The crowd found no junction box ahead that it has to give way at: it has the right of way,
+	## or is near none.
+	func find_no_junction_to_hold_at() -> void:
+		_of.junction_hold = INF
+
+	## The crowd found a lowered checkpoint gate ahead that it has to stop for, with the stop line
+	## `distance` ahead of it (`Crowd._stop_for_gates()`).
+	func find_a_gate_to_hold_at(distance: float) -> void:
+		_of.gate_hold = distance
+
+	## The crowd found no gate ahead that it has to stop for.
+	func find_no_gate_to_hold_at() -> void:
+		_of.gate_hold = INF
+
+	## The crowd found somebody standing at `at`, near enough to its road to watch
+	## (`Crowd._meet_the_player()`).
+	func find_a_pedestrian_at(at: Vector2) -> void:
+		_of.pedestrian_ahead = at
+
+	## The crowd found nobody near enough to its road to watch.
+	func find_no_pedestrian() -> void:
+		_of.pedestrian_ahead = Vector2.INF
+
 ## Stepped on the physics tick, inside the crowd's own (`step()`), so it is drawn interpolated
 ## between two ticks as she and the events are, and moves as smoothly as they do on a screen drawing
 ## faster than thirty frames a second. It inherits the setting from `City`'s shared, y-sorted

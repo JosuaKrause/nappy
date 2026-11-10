@@ -940,10 +940,13 @@ func _put_her_in(map: WorldMap) -> void:
 ## is live**, which is when the crowd's old lookup by that group would first have found her: not
 ## behind the title (`Stroller.stand_aside()` takes her out of the group, so a crowd handed her
 ## then would step round and bump a pram nobody sees), but at `_engage_the_day()`, and where a day
-## is walked with no title in front of it. Never taken back, as the lookup's result never was.
+## is walked with no title in front of it. Never taken back, as the lookup's result never was. With
+## her, the bus the crowd reports her bumps, a car's strike and its horn on (`Crowd.use_bus()`):
+## all three are about her, so the crowd says nothing before it has her.
 func _hand_the_crowd_her() -> void:
 	if _city and _city.crowd and _player:
 		_city.crowd.use_player(_player)
+		_city.crowd.use_bus(EventBus)
 
 ## Hands each world's events what the on-screen controls cover of the screen, for their view of what
 ## she can see (`VisibleView`, `EventManager.use_controls()`). Idempotent, and called wherever either

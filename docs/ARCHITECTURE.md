@@ -114,8 +114,10 @@ src/
   crowd/
 	crowd.gd              owns the day's agents and the `crowd` atlas page, held for its own life
 	                      rather than released between days; spaces out the traffic and meets
-	                      her once a physics tick, then steps every agent; hands the world its
-	                      agents as one set of things that charge her
+	                      her once a physics tick, then steps every agent; tells each car through
+	                      its lane what it found (a box or a gate to hold at, somebody near its
+	                      road); reports a bump, a strike and a horn on the bus it is handed with
+	                      her; hands the world its agents as one set of things that charge her
 	crowd_sources.gd      the crowd as one set of things that charge her (`CrowdSources`): the
 	                      sweep that skips a body out of earshot, and the widest jolt it skips by
 	crowd_excitement.gd   a crowd body as a thing that charges her (`CrowdExcitement`): its field,
