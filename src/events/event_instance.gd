@@ -144,11 +144,6 @@ const PELICAN_NAME := "pelican"
 ## its ledger of what it has landed, its projection and its caret's strength.
 var excitement := EventExcitement.new(self)
 
-## `EncounterWatch`'s own record of this instance's encounters with her, made the first time it is
-## on screen or lands on her, or `null` until then. Telemetry only, like
-## `ExcitementSource.landed_ever`.
-var encounter: EncounterWatch.Record = null
-
 ## The box, in this node's own space, that what this instance draws roughly fills
 ## (`EventFootprints.drawn_box_of()`), with the run its own street gives a spread. Worked out once,
 ## on first asking, from what `setup()` decided.
@@ -2006,3 +2001,49 @@ func field_reaches(point: Vector2) -> bool:
 ## (`gave_up`).
 func has_given_up() -> bool:
 	return gave_up
+
+## Whether it holds her when she comes to it (`EventDef.detains_her()`): a chatting mother's
+## conversation, a door's hut or post.
+func detains_her() -> bool:
+	return def.detains_her()
+
+## How far from its centre her own centre has to come for a hold to begin
+## (`EventDef.detain_distance()`).
+func detain_distance() -> float:
+	return def.detain_distance()
+
+## How long a hold of hers lasts, in seconds (`EventDef.detains_for()`).
+func detains_for() -> float:
+	return def.detains_for()
+
+## Whether it is a door's hut or post, armed again once she has been let out and has walked away
+## (`EventDef.detains_again()`).
+func detains_again() -> bool:
+	return def.detains_again()
+
+## Whether it is a door's boom, solid only while lowered (`EventDef.is_a_boom()`).
+func is_a_boom() -> bool:
+	return def.is_a_boom()
+
+## How far round its centre its body stops her (`EventDef.solid_reach()`): where her centre comes
+## to rest against it, which is the reach a door's guard steps out at and she is set down past.
+func solid_reach() -> float:
+	return def.solid_reach()
+
+## Whether several of it count as the strongest one only (`EventDef.counts_as_one_barrier()`): the
+## pieces of a street being held.
+func counts_as_one_barrier() -> bool:
+	return def.counts_as_one_barrier()
+
+## This event as a thing that charges the baby (`excitement`).
+func source() -> EventExcitement:
+	return excitement
+
+## Tells it that the hand of its guard goes up (`on`) or comes down: a hut's guard raising his hand
+## at her while a crossing of its door is warning her (`is_its_guard_warning()`).
+func raise_its_guards_hand(on: bool) -> void:
+	guard_warns_her = on
+
+## Whether its guard has his hand raised at her (`raise_its_guards_hand()`).
+func is_its_guard_warning() -> bool:
+	return guard_warns_her
