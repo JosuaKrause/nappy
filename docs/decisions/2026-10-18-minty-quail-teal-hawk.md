@@ -10,12 +10,16 @@ folder; the end-of-refactor remeasure runs it once more (the entry's README, "Or
 - **`tools/compare-placement-rows.py`**: one `--sample NAME CITIES MAIN_LOG HEAD_LOG` per sample,
   `--roles FILE`, and labels for the two trees' headings. It prints the cells outside two standard
   deviations pooled, the cells outside them on two or more samples with the same sign, a summary and the
-  counts, and nothing that belongs to one step. Help on `--help` and `-h`; a missing sample, an
-  unknown flag, a bad city count or an unreadable log is refused before any work.
+  counts, and nothing that belongs to one step. `--help` and `-h` print the rule, the cells,
+  the log lines' formats and the refusals. Bad input is refused with exit 2, a message and nothing
+  on stdout, before any output: a missing sample, an unknown flag, an unreadable or non-UTF-8 file,
+  a log with no row-day lines or other than one per day 1 to 14, a role table with no or a malformed
+  `ROLE` line, a city count that differs from a log's, a view index out of range, a non-ASCII
+  digit.
 - **`tests/probes/placement_roles.gd`**, the role probe moved out of the evidence folder and typed:
   it prints the role table the tool reads, since the rows log carries no roles and an older tree has
   no `role_for()`, so one table serves both trees.
-- `tools/test_compare_placement_rows.py` (four cases, run by `tools/pycheck.sh`), the tool's entry in
+- `tools/test_compare_placement_rows.py` (a case for each refusal and for the same-sign rule, run by `tools/pycheck.sh`), the tool's entry in
   `tools/test_cli_help.py`, and its row in the using-tools catalogue.
 - Run on the first baseline reading's logs, the tool prints a file byte-identical to that reading's
   `raw/placement_comparison.txt`.
