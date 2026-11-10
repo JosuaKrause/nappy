@@ -8,7 +8,7 @@ event scheduler is a 3,453-line hub that 65 source files and 119 test files name
 breaks it up", the player asked "what is its suggestion on how to break it up?", and, given the
 suggestion's three parts (the record of one placed event into its own file; the ground judges and
 the density tables moved out; the dawn as a list of phases handed one context object): "agree on
-all design review points. let's do it" (inbox #1268). The lens is the entry's own: "separation of
+all design review points. let's do it" (inbox #1268 in olive-ferret). The lens is the entry's own: "separation of
 concerns, composability, cohesion, coupling" (inbox #785 in minty-lemur), and "things will ultimately be
 independent" (inbox #845 in minty-dolphin).
 
@@ -16,7 +16,7 @@ independent" (inbox #845 in minty-dolphin).
 holds today has a file of its own that can be read, tested and changed alone.
 
 **Build**, the design review's shape, which the player approved ("I saw the review and approved
-it", inbox #1268); the file-by-file detail was worked out by the same review after the approval, and
+it", inbox #1268 in olive-ferret); the file-by-file detail was worked out by the same review after the approval, and
 the line counts are its estimates. All under `src/events/`:
 
 - **`EventPlan`** (`event_plan.gd`): today's inner class `EventScheduler.Planned`, one placed

@@ -29,9 +29,8 @@ either names every listed break in a file the pull request touches and every lin
 removes from that list, and says why; a pull request that puts a file in another layer says why the
 map was wrong.
 
-*Proposed, open to overturn:* the sixth carries the player's own question first, ahead of the
-question it overlaps, rather than standing as an eighth (plush-egret #892; the player offered the
-choice, plaid-raven #894), so the two are answered once, together.
+The sixth carries the player's own question first, ahead of the question it overlaps, rather than
+standing as an eighth, so the two are answered once, together (plush-egret #892).
 
 ## Where they are answered
 
@@ -64,3 +63,11 @@ time the pull request was opened.
 - **The reviewer** checks each answer against the diff and against `tools/check_layers.py --list`
   on the pull request's head; an answer the diff or the check contradicts is a finding
   (**pr-review**, "Then the code").
+
+## Proposed, not asked for
+
+This rule above is the filer's proposal, not the player's words, and holds until the player
+corrects it. The citation is the player's word it extends:
+
+- **The player's own question is folded into the sixth, not added as an eighth** ("The
+  questions"): the player leaves the choice between the two open (plaid-raven #894).

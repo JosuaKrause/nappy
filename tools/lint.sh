@@ -12,7 +12,8 @@
 #   tools/lint.sh              # the whole governed set
 #   tools/lint.sh a.md b.md    # just these files (how the PostToolUse hook calls it)
 #
-# Governed: AGENTS.md, CLAUDE.md, .claude/skills/*/SKILL.md, README.md, docs/*.md, and every file
+# Governed: AGENTS.md, CLAUDE.md, every Markdown file under .claude/skills/ (each SKILL.md and the
+# reference files beside it, at any depth), README.md, docs/*.md, and every file
 # of the queue (docs/todo/<entry>/*.md) and of the review list (docs/review/*.md) — except
 # docs/DECISIONS.md, the records under docs/decisions/ and the playtests under docs/playtests/,
 # which are history and primary sources and are allowed to say what was true then, and
@@ -54,8 +55,8 @@ count, a ticked box, a status marker anywhere in the doc) and materialized track
 well-formed XML. Absent skip-worktree SVGs are explicitly reported as omitted; other missing
 or unreadable SVGs and parser failures fail the command. With no arguments, scans the whole
 governed set (AGENTS.md, CLAUDE.md, README.md, every
-.claude/skills/*/SKILL.md, every docs/*.md except DECISIONS.md, and every file under docs/todo/
-and docs/review/). Also checks the queue's layout: a name used for two things across docs/todo,
+.claude/skills/**/*.md, a skill's reference files included, every docs/*.md except DECISIONS.md,
+and every file under docs/todo/ and docs/review/). Also checks the queue's layout: a name used for two things across docs/todo,
 docs/decisions, docs/review and docs/playtests, a checkbox under docs/todo/, a link in
 docs/TODO.md to an entry folder that does not exist, and every entry's band line (through
 tools/queue.sh --check), and the citations of the player's words in CLAUDE.md and every
@@ -92,9 +93,13 @@ else
     [[ -f AGENTS.md ]] && files+=("AGENTS.md")
     [[ -f CLAUDE.md ]] && files+=("CLAUDE.md")
     [[ -f README.md ]] && files+=("README.md")
-    for f in .claude/skills/*/SKILL.md; do
-        [[ -f "$f" ]] && files+=("$f")
-    done
+    # A skill's reference files are rules like its SKILL.md, so every Markdown file under the
+    # folder is governed, at any depth; find stands in for the globstar bash 3.2 lacks.
+    if [[ -d .claude/skills ]]; then
+        while IFS= read -r f; do
+            files+=("$f")
+        done < <(find .claude/skills -type f -name '*.md' | LC_ALL=C sort)
+    fi
     for f in docs/*.md docs/todo/*/*.md docs/review/*.md; do
         [[ -f "$f" ]] && files+=("$f")
     done

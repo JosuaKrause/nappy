@@ -5,7 +5,26 @@ description: Godot 4.7 and GDScript traps that have cost real time in this proje
 
 # Godot 4.7 / GDScript gotchas
 
-These are not obvious and the engine does not warn about most of them.
+These are not obvious and the engine does not warn about most of them. **The ones not to miss:**
+
+- **`set(key, value)` silently drops a type mismatch.** Never build typed objects from dictionaries.
+- **`var x := <a Variant>` is a parse error**, and `load(path).instantiate()` is a Variant: annotate.
+- **An untyped `Array` passed as `Array[T]` leaks at shutdown**, and `.slice()` drops the element type.
+- **No warning the engine prints is left standing** (woolly-finch 19).
+- **A feature is tied to a flag the environment informs, never to the environment** (PLAYTEST-25 1).
+- **`process_mode` is inherited**: a node added under `Main` needs `main._pauses_with_the_game()`.
+- **`SomeNode.new()` has no name, and a `Node` is not refcounted**: name it, and free a test double.
+- **`_draw()` is retained, and `draw_set_transform` replaces** the transform somebody else set.
+- **A picture is an asset, never code** (the **cues** skill).
+- **`art/`, `docs/` and `tools/` keep no `.import` sidecars; `.godot/` is never committed.**
+- **Comments are in the present tense, and an override carries `## Overrides Class.method.`**
+
+`references/rare-traps.md` holds the traps met less often, each under its trigger: `.slice()` and
+cross-script enums, a press read under `Control`s, the title's pause split, a paused camera,
+Y-sorting, `instance uniform`s, a flood fill's structure, a worktree's import cache, and what the
+Web build leaves out. **That one gives no error on the desktop**: the release Web engine has no
+3D, navigation, networking peers, TLS backend, streamed-media codecs, alternate texture loaders,
+procedural noise or ZIP; read it before using one.
 
 ## Types
 
@@ -27,31 +46,15 @@ nothing to override and nothing to say about it once a run.
 
 This does not show up until the project actually boots, which is why `check.sh` exists. The form
 that catches people is `var x := load(path).instantiate()`, because it reads as obviously typed and
-is not — and in a **test** it fails at load time, so the suite prints nothing at all and looks like
-it hung. Write:
+is not — and in a **test** it fails at load time, so the runner reports that suite as `LOAD FAIL`
+and runs none of its checks. Write:
 
 ```gdscript
 var scene: PackedScene = load(path)
 var node: Node = scene.instantiate()
 ```
 
-**`.slice()` on a typed `Array` drops the element type.** `for map in _maps.slice(0, 3):` over
-an `Array[CityMap]` leaves `map` untyped under 4.7's static inference, so the first `:=` further
-down the call chain — `var centre := map.tile_rect_to_world(...).get_center()` — is the
-Variant-inference error above, and in a test that aborts `_ready()` before it can quit, so the
-runner sits printing nothing. Annotate the loop variable: `for map: CityMap in _maps.slice(0, 3):`.
-
-**A cross-script enum is not the same type as itself.** `static func f(side: Side)` in one script,
-called from another where `x` came from `OtherScript.Side`, fails to parse: *"argument 2 should be
-Side but is StreetNetwork.Side"*. Widen the parameter to `int` and say why in a comment.
-`StreetNetwork.beside_block()` is the one place that does.
-
 ## Capabilities
-
-The release Web engine omits 3D, navigation, Godot networking peers and the mbedTLS backend,
-streamed-media codecs, alternate texture loaders, procedural noise and ZIP support; before using
-one of those feature families, follow
-[Turning a module back on](../../../tools/web-template/README.md#turning-a-module-back-on).
 
 **Never tie a feature straight to the environment. Tie it to a flag the environment *informs*, and
 leave the override**, so that, for one, telemetry can be had when it is needed (PLAYTEST-25 1).
@@ -67,14 +70,16 @@ if OS.has_feature("web"):
 
 # Right — the platform picks the default and the flag is what the code reads.
 static func available(config: RunConfig = null) -> bool:
-    if config != null and config.touch_forced:
+    if config != null and config.forces_touch():
         return true
     return DisplayServer.is_touchscreen_available()
 ```
 
 `TouchInput.available(config)` is that second shape and is the model to copy: the platform fact and the
 policy built on it are separate, so `--touch` can render a touch-only screen on a machine with no
-touchscreen, and a screenshot rig can photograph it.
+touchscreen, and a screenshot rig can photograph it. It asks the configuration through a method,
+`RunConfig.forces_touch()`, never by reading its field: `tools/check_field_reads.py` fails a new
+read of a `var` another class declares (the **designing-classes** skill).
 
 **Why it is a rule rather than a preference: a hard-tied gate makes a whole branch unreachable from
 every test you own** — it does not cause a bug, it makes one unfindable, and nothing about it looks
@@ -98,29 +103,22 @@ node is looked up by path.**
 **Nodes are not refcounted.** A test double extending a `Node` class must be `free()`d by hand or it
 leaks. `RefCounted` doubles do not.
 
-**A press read in `_unhandled_input()` must cross every `Control` above it.** The GUI pass runs
-first and ends a press at the topmost `Control` under it whose `mouse_filter` is STOP, and a bare
-`Control`, `ColorRect` or `Panel` defaults to STOP; containers default to PASS. So every drawn-only
-`Control` over such a screen is set to IGNORE. A test that calls `_unhandled_input()` directly skips
-the GUI pass and cannot see this: send the press through `Input.parse_input_event()` and
-`Input.flush_buffered_events()`. (The title's Hard Mode box took no tap or click at all while a
-full-width scrim left at STOP sat over it, and its test, calling the handler, passed.)
-
 **Never commit `.godot/`** — the **committing** skill, "Never commit", says why and what a fresh
 clone needs instead.
 
-**Texture `.import` sidecars are repository files; `.godot/imported/` is the cache.** A folder
-excluded by `.gdignore`, including all its descendants, keeps no `.import` sidecars; remove
-obsolete sidecars when moving assets into such a folder. `art/`, `docs/` and `tools/` are all
-excluded this way, so the game's own pictures have no sidecars at all: they are baked into atlas
-pages, and only the pages — written into the gitignored `assets/atlases/baked/` — are imported.
-After checking out an asset branch, run `check.sh` in the actual test folder: a worktree's imported
-textures do not travel with commits. `run.sh` checks for missing global classes and for `.import`
-sidecars whose imported copy is absent, and runs the import pass itself when either is found;
-`shot.sh` and a bare `godot --path` do not. A failed texture preload can leave a GDScript
-uncompiled and produce nonexistent `new()` followed by nil-method errors. Read the first load/parse
-error before changing the constructor. For illustrated assets, the **illustrated-png** skill says
-which import, boot and visual checks a texture change owes.
+**A folder behind a `.gdignore` keeps no `.import` sidecars, and this section owns that rule.** An
+empty `.gdignore` is the engine's own *this directory is not mine*: it covers the folder and every
+folder under it, the engine imports nothing there, and nothing there is carried into the exported
+build. `art/`, `docs/` and `tools/` each have one, so the game's own pictures, SVG and PNG alike,
+have no sidecars at all: the bake reads the files and writes atlas pages into the gitignored
+`assets/atlases/baked/`, and only the pages are imported (`docs/VISUALS.md`, "Where the pictures
+live"). So a picture under `art/` is committed on its own, an obsolete sidecar is removed when an
+asset moves into such a folder, and `docs/.gdignore` is never deleted, since it is what keeps the
+engine out of the evidence and the reference photos. The one picture the engine imports itself is
+the application icon, root `icon.png`, a raster outside `art/` that keeps its sidecar.
+
+What a worktree's import cache does and does not carry, and what a failed texture preload looks
+like, are `references/rare-traps.md`, "Imports".
 
 ## Pausing
 
@@ -132,19 +130,8 @@ all inherit the exemption and `get_tree().paused = true` pauses nothing.
 `main._pauses_with_the_game()` is called on every node that is the game rather than the frame around
 it. **If you add a node under `Main`, it needs that call**, and nothing warns you.
 
-The title screen needs the split the other way round — the **city** running while the **day** does
-not — so `_city` goes to `ALWAYS` for the duration and `_player` is pinned to `PAUSABLE`, because
-she is a child of it and would otherwise inherit the exemption. **Anything that wants the same trick
-names its own exceptions the same way; there is no "pause everything except" switch and there should
-not be one.**
-
-**A paused `Camera2D` with smoothing on never arrives.** `position_smoothing_enabled` is applied in
-the camera's **own** process callback, so a camera that is `PAUSABLE` under a paused tree stops
-following the thing it is attached to and sits wherever it last was — which on the first frame of a
-run is the world origin, clamped to the corner of the boundary wall.
-
-`Stroller.stand_aside()` puts the camera on `ALWAYS` for the duration. The thing that looks like the
-cause and is not: **hiding a `Node2D` does not deactivate a `Camera2D` under it.**
+The title screen's split the other way round (the city running while the day does not) and a
+paused `Camera2D` that never arrives are `references/rare-traps.md`, "Pausing".
 
 ## Physics and drawing
 
@@ -158,8 +145,8 @@ as idle and starts making sleep progress. **A second displacement goes through i
 **A picture is an asset, never code.** A glyph, an icon, a silhouette or a symbol is an image file
 under `art/` drawn as a texture, never assembled in `_draw()` out of `draw_circle`, `draw_rect`,
 `draw_line`, `draw_arc` or `draw_colored_polygon`; layout — a bar's fill, a scrim, a debug overlay —
-is not a picture. The rule in full, with its reasons, is the **cues** skill, "A picture is an asset,
-never code".
+is not a picture. The rule in full, with its reasons, is the **cues** skill's
+`references/picture-is-an-asset.md`.
 
 **A negative-width `Rect2` does not flip `draw_texture_rect`.** It is normalised on the way through,
 so the sprite lands a full width to one side — which looks like art sliding off its own shadow, not
@@ -170,38 +157,14 @@ like a failed flip. Mirror by setting a transform that scales x by −1 about th
 already set, and there is no getter to read the old one back.** So a helper that sets an absolute
 matrix silently discards whatever its caller had already set, and the caller cannot defend itself —
 it can only hand the helper what it set. `Sprites` carries a base transform for exactly this reason;
-the contract a caller keeps is the **cues** skill, "Drawing through `Sprites`".
-
-**Y-sorting compares origins**, so a thing whose mass extends away from its own origin sorts wrong.
-**Before reaching for a better comparison, ask whether the two things can ever legitimately be on
-opposite sides of each other.** Buildings cannot — no lot tile is walkable — so they are a layer of
-their own and sort against nothing. The one thing a building has that rises over walkable ground,
-a power station's stack, is therefore not part of the building: it is an entity of its own in
-`Entities`, sorted at its foot.
+the contract a caller keeps is the **cues** skill's `references/drawing-and-redraw-gates.md`,
+"Drawing through `Sprites`".
 
 **`_draw()` is retained.** It re-runs only on `queue_redraw()`, so an expensive one-off draw (the
 city ground) is fine, but anything animated must call `queue_redraw()` itself.
 
-**Only sixteen canvas items can carry a readable `instance uniform` at once, and only a browser
-shows it.** The Compatibility renderer — this project's on every platform (`project.godot`,
-`rendering_method="gl_compatibility"`) — gives each such item a 16-`vec4` block, first free block
-first, and its canvas shader declares only 256 `vec4`s to read them from. An item handed a block
-past the sixteenth reads past the declared array, which GLSL leaves undefined: a desktop GL driver
-happens to read on into the buffer and draws it right, while WebGL reads zero and draws it as if
-the uniform were zero, for as long as it lives, with no error anywhere. A headless test has no
-renderer at all, so a native run, a headless test and a screenshot rig all look right. **Build
-such an item only while it is needed, free it on the spot with `remove_child()` and `free()`, and
-keep a count**: freeing a canvas item hands blocks to items built earlier in the same frame before
-it releases its own, so a `queue_free()` still holds its block while that frame's new items take
-theirs. `EntityHalo.RIM_BUDGET`, `EntityHalo.release()` and its class doc are the worked case.
-
-## Performance
-
-**A `Dictionary` keyed by `Vector2i` hashes a Variant on every lookup.** Fine for a small set; not
-fine for a flood fill, where it costs about 3.6× a flat `PackedInt32Array` indexed by tile. Paint
-the blocked set into the grid before the sweep rather than asking per neighbour, and write the four
-neighbour steps out rather than looping an offset array — the loop's own bounds test costs more than
-the arithmetic it guards.
+Y-sorting against a thing whose mass extends away from its origin, and the sixteen canvas items
+that can carry a readable `instance uniform`, are `references/rare-traps.md`, "Drawing".
 
 ## Code style
 
@@ -234,13 +197,18 @@ is the only part that governs the code in front of them.
 - **Document the why and the edge cases; do not restate the implementation.** The code is right
   there.
 - **GDScript has no `@override`, so a method that overrides one of a project class says so**: a line
-  `## Overrides Class.method.` among its `##` lines, which `tools/lint.sh` holds true through
-  `tools/check_overrides.py`: an override without it, a misspelled method that carries it, a line naming
-  other than the nearest declaring ancestor and a malformed line fail, while a misspelled method with no
-  line at all is a new method to the check (inbox #1154 in gray-dolphin). *Proposed, not asked for, open to the player's
-  correction:* the line names the nearest declaring ancestor (its `class_name`, `Outer.Inner`, or the file's
-  stem), an engine virtual no project class declares needs none, and `src/` and `tests/` are the scope.
+  `## Overrides Class.method.` among its `##` lines, naming the nearest declaring ancestor (its
+  `class_name`, `Outer.Inner`, or the file's stem). `tools/check_overrides.py`, which
+  `tools/lint.sh` runs over `src/` and `tests/`, fails a missing line and an untrue one; a
+  misspelled method with no line at all is a new method to the check (inbox #1154 in gray-dolphin).
+  An engine virtual no project class declares needs no line.
 - Section dividers inside longer files:
   `# ---------------------------------------------------------------- drawing ---`
 - Leading underscore for private members and methods. Godot lifecycle methods (`_ready`, `_draw`,
   `_process`) are the exception and are not private.
+
+## Proposed, not asked for
+
+- **What the `## Overrides` line names and where it is asked for** — the nearest declaring
+  ancestor, no line for an engine virtual no project class declares, and `src/` and `tests/` as the
+  scope — is the filer's proposal, open to the player's correction (inbox #1154 in gray-dolphin).

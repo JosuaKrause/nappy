@@ -30,9 +30,9 @@ func run(t, seed_value: int) -> void:
 	await _play_a_run(t, seed_value)
 
 ## One run: the city is built over a run of its own (`RunCity.with_own_run()`), and every day of it
-## is started the way the game starts one, through `DayDirector.start_day()` handed the pieces `main`
-## hands it (the city, its events, the resistance, her, the baby and the day's clock), and played on
-## real physics ticks.
+## is started the way the game starts one, through `DayDirector.start()` handed the pieces `main`
+## hands it (the city standing with her and the baby in it, `StandingCity`, the resistance and the
+## day's clock), and played on real physics ticks.
 func _play_a_run(t, seed_value: int) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	var run := city.run
@@ -50,8 +50,9 @@ func _play_a_run(t, seed_value: int) -> void:
 			city.spawn_siting)
 
 	# Her, in the tree as the scene has her, so the baby takes the stroller she rides in from her
-	# parent; and the day's clock, set up the way `main` sets it up, so falling asleep on calm ground
-	# is remembered where the game remembers it (`DayController._remember_the_calm_she_found()`).
+	# parent; and the day's clock, handed the run the way `main` hands it, so falling asleep on calm
+	# ground is remembered where the game remembers it (`DayController._remember_the_calm_she_found()`)
+	# once each day's start has handed it her and the home's map from the world it stood.
 	# Neither walks nor ticks: nobody steers her, `main` is what ticks the clock, and the baby's
 	# meters are not this suite's question — she settles when the rig says she does (`_settle()`).
 	var player := Stroller.new()
@@ -67,11 +68,12 @@ func _play_a_run(t, seed_value: int) -> void:
 	baby.set_physics_process(false)
 	var clock := DayController.new()
 	t.add_child(clock)
-	clock.setup(city.map, player, run)
+	clock.setup(run)
 
 	var config := RunConfig.parse(PackedStringArray(), "", true)
 	var days := DayDirector.new(run.calendar, run.facts, run.attempt_spend, config)
 	days.use_the_world(city, city.events, resistance, player, baby, clock)
+	days.use_worlds(StandingCity.new(city, player, baby))
 
 	var one_shots_seen := {}
 	var contacts_offered := 0
@@ -82,7 +84,7 @@ func _play_a_run(t, seed_value: int) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		t.check(run.header.day == day,
 				"seed %d: the calendar is on day %d (%d)" % [seed_value, day, run.header.day])
-		days.start_day(DaySpec.for_day(day, config.day_length_for(day)))
+		days.start(DaySpec.for_day(day, config.day_length_for(day)))
 		# Every area off today's tree is one she used earlier this act, the fenced park included —
 		# it is chosen from the areas handed over as used, so it holds no exemption here; a wiring
 		# that shut the wrong area fails on the day it does. Whether any day shuts one at all is
@@ -145,7 +147,7 @@ func _play_a_run(t, seed_value: int) -> void:
 		# A won day is one she settled on: on calm ground, through the baby's own falling asleep,
 		# which the clock hears and remembers (`RunCalendar.remember_where_she_settled()`) and the
 		# events hear too (the return patrols owed). What she used is what the next day of the act
-		# reads back through `DayDirector.start_day()` (`CityMap.set_spent_calm()`).
+		# reads back through `DayDirector.start()` (`CityMap.set_spent_calm()`).
 		_settle(city, run, player, baby)
 		t.check(clock.is_running(), "seed %d day %d: the day is still under way when she settles"
 				% [seed_value, day])

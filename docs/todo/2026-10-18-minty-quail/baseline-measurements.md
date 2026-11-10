@@ -4,7 +4,7 @@
 refactor's head", but the refactor merges into main as it goes. Shown the design review's finding
 that "the single remeasure at the end has no stored 'before'. No baseline commit is named and no
 winnability or route-cost numbers from before the refactor are saved. Capturing them now blocks
-nothing", the player: "sure" (inbox #1268).
+nothing", the player: "sure" (inbox #1268 in olive-ferret).
 
 **Read as:** the before-numbers are measured on the tree from before the refactor and kept in the
 repository, so the end remeasure has something to compare with. *The specifics are the
@@ -22,7 +22,7 @@ orchestrator's, proposed and open to the player's correction.*
   day, by view (`tests/probes/placement_rows.gd` on main, its counterpart on the old tree).
 - **Where it is kept:** a folder under `docs/evidence/` with a README naming the two commits, each
   command, the seeds and the machine, and one table per measurement with both columns, kept as the
-  run printed them (**verify**, "experiment evidence").
+  run printed them (**verify**, its `references/evidence.md`).
 - **Two more readings later, in the background:** winnability and frame time on `main` when
   placement closes, and again after the events' field-read conversion, each added to the same
   folder as a third and fourth column.

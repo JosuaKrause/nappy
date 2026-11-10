@@ -154,6 +154,14 @@ ENGINE_MEMBERS: frozenset[str] = frozenset(
 )
 
 EPILOG = """\
+what a line of tools/test_only_members.txt owes (this file's header comment says the rest):
+  - a [kept] line with no reason after its # fails;
+  - a moved file carries its lines only where git reports the rename, so the moved file is
+    tracked first (git mv, or git add it); untracked, its lines read under --base as added;
+  - a renamed member is not carried: it is fixed, or given a [kept] line with its reason;
+  - a member the game reaches only through a string (call("name"), has_method("name")) is a
+    false failure, and takes a [kept] line with its reason.
+
 examples:
   uv run python tools/check_test_only_members.py
   uv run python tools/check_test_only_members.py --list

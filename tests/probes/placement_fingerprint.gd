@@ -11,11 +11,11 @@ extends RefCounted
 ## Three kinds of walk, each started the way the game starts it, through a real `City` or
 ## `InteriorScene` and the walk's `EventManager`:
 ##
-## - **the escape's city** (`main._plan_the_finale_city()`) on the eight seeds record
+## - **the escape's city** (`DayDirector.start()`'s plan for the city section) on the eight seeds record
 ##   minty-quail-8 fingerprinted, on the `--start-escape city` boot's stream (the run on day 1) and
 ##   on the stream a played run reaches it on (day 14);
-## - **the building** (`main._start_section()`'s building half) on a few seeds;
-## - **a day** (`DayDirector.start_day()`'s city and events half) on days 1, 4, 8, 9, 10, 12 and 14
+## - **the building** (`DayDirector.start()`'s plan for the building section) on a few seeds;
+## - **a day** (`DayDirector.start()`'s city and events half) on days 1, 4, 8, 9, 10, 12 and 14
 ##   of two seeds.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
@@ -40,8 +40,8 @@ func run(t) -> void:
 	print("FP_TOTAL %d placements" % lines)
 	t.check(lines > 0, "there were placements to print (%d)" % lines)
 
-## The escape's city, built and dressed as `main._build_the_finale_city()` does and planned as
-## `main._plan_the_finale_city()` does.
+## The escape's city, built as `main._build_the_escape_city()` does and dressed and planned as
+## `DayDirector.start()` does.
 func _the_escape_city(t, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
@@ -73,7 +73,7 @@ func _the_building(t, seed_value: int) -> int:
 	scene.free()
 	return printed
 
-## A day, as `DayDirector.start_day()` plans it: the city's own morning, then the events.
+## A day, as `DayDirector.start()` plans it: the city's own morning, then the events.
 func _a_day(t, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_day(day)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
