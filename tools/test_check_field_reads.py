@@ -205,6 +205,11 @@ class ReadTests(unittest.TestCase):
         bare = body.replace("self.t.", "t.")
         self.assertEqual(found(reader(bare)), {("Thing", "src/reader.gd", "count")})
 
+    def test_a_chain_through_an_engine_property_typed_variant_is_not_seen(self) -> None:
+        # The docstring's blind spot: `JSON.data` is typed Variant, and the chain is told as an engine value.
+        body = "func f() -> int:\n\tvar j := JSON.new()\n\treturn j.data.count\n"
+        self.assertEqual((found(reader(body)), unknown(reader(body))), (set(), []))
+
     def test_a_parameter_list_closing_at_the_margin_hides_its_parameters(self) -> None:
         # The docstring's blind spot: a `)` at the margin opens a new block, which declares no parameter.
         tail = "\treturn a.count + b.size\n"
@@ -339,13 +344,38 @@ class MethodReferenceTests(unittest.TestCase):
         # taken for the project's method until the list gains it.
         self.assertIn("scale", reads.ENGINE_PROPERTIES)
         self.assertNotIn("visible", reads.ENGINE_PROPERTIES)
+        self.assertIn("rect", reads.ENGINE_PROPERTIES)
+        # `rect` is also an inner class's var here, which no longer excuses a method's name: the list does.
         other = (
-            "class_name Other\nextends RefCounted\nfunc scale() -> float:\n\treturn 1.0\n"
-            "func visible() -> bool:\n\treturn true\n"
+            "class_name Other\nextends RefCounted\nclass Box:\n\tvar rect := Rect2()\nfunc scale() -> float:"
+            "\n\treturn 1.0\nfunc visible() -> bool:\n\treturn true\nfunc rect() -> Rect2:\n\treturn Rect2()\n"
         )
-        body = "func a(items: Array) -> void:\n\tprint(items[0].scale, items[0].visible)\n"
+        body = "func a(items: Array) -> void:\n\tprint(items[0].scale, items[0].visible, items[0].rect)\n"
         self.assertEqual(
             self.kinds(reader(body) | {"src/other.gd": other}), [(4, "items[0].visible", reads.UNKNOWN_METHOD)]
+        )
+
+    def test_an_inner_classs_and_a_nameless_files_members_count_like_a_classs(self) -> None:
+        # A method an inner class or a file with no class_name declares is a method; a constant or an enum an inner
+        # class declares excuses a method's name; a signal an inner class declares does not.
+        other = (
+            "class_name Other\nextends RefCounted\nclass Box:\n\tconst cap := 1\n\tenum Kind { A }\n\tsignal rang\n"
+            "\tfunc poke() -> void:\n\t\tpass\n\tstatic func forge() -> void:\n\t\tpass\n"
+            "func cap() -> void:\n\tpass\nfunc Kind() -> void:\n\tpass\nfunc rang() -> void:\n\tpass\n"
+        )
+        nameless = "extends Node\nfunc prod() -> void:\n\tpass\n"
+        body = (
+            "func a(items: Array) -> void:\n\tprint(items[0].poke, items[0].forge, items[0].prod)\n"
+            "\tprint(items[0].cap, items[0].Kind)\n\tprint(items[0].rang)\n"
+        )
+        self.assertEqual(
+            self.kinds(reader(body) | {"src/other.gd": other, "src/nameless.gd": nameless}),
+            [
+                (4, "items[0].poke", reads.UNKNOWN_METHOD),
+                (4, "items[0].forge", reads.UNKNOWN_METHOD),
+                (4, "items[0].prod", reads.UNKNOWN_METHOD),
+                (6, "items[0].rang", reads.UNKNOWN_METHOD),
+            ],
         )
 
 

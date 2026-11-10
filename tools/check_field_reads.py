@@ -51,16 +51,16 @@ returns a Variant, a name declared `: Variant`) warns of nothing, and neither do
 parentheses, on any receiver: `thing.hard_fail` is a reference to the function, always true. So in a file under
 `src/` **without** the line this check fails, naming the file, the line and the expression:
 
-- a `.name` use with no `(` after it, whose receiver's class it cannot tell, whether or not the use hands a
-  Callable on, where the name is a var as above, or a method a file or an inner class under `src/` declares
+- a `.name` use with no `(` after it, whose receiver's class it cannot tell, whether or not the use hands a Callable
+  on, where the name is a var as above, or a method a file or an inner class under `src/` declares
   (`method_names_of`). A method's name is not taken for one where it is also such a var (the use fails as the
-  var's), a constant or an enum any file or inner class declares, or a name in `ENGINE_PROPERTIES`. That is a
-  fixed list, written when it was made: the names an engine class had as a property or a signal, or a builtin
-  type as a member, that a method under `src/` also had, which on a receiver nothing types is as likely the
-  engine's member as the project's method. A method added later with another engine name is taken for a method
-  until the list gains it. A name only an inner class or a file with no `class_name` declares as a var, or one
-  declared as a signal, does not excuse a method's name. The fix is a typed name to read through, or, for a
-  dictionary's key, a subscript.
+  var's), a constant or an enum any file or inner class declares, or a name in `ENGINE_PROPERTIES`. That is a fixed
+  list, the engine's names among the method names nothing else excuses, read from the engine when it was last made:
+  a name an engine class has as a property or a signal, or a builtin type as a member, which on a receiver nothing
+  types is as likely the engine's member as the project's method. A method added later with another engine name is
+  taken for a method until the list gains it. A name only an inner class or a file with no `class_name` declares as
+  a var, or one declared as a signal, does not excuse a method's name. The fix is a typed name to read through, or,
+  for a dictionary's key, a subscript.
 
 In a file **with** the line such a use is skipped, never listed and never failed, and `--summary` counts the
 skipped uses of a var's name.
@@ -327,17 +327,20 @@ VARIANT_CALLS = frozenset(
 )
 # On a typed array these return its element; on a typed dictionary, `get` and `get_or_add` its value.
 ELEMENT_CALLS = frozenset({"back", "front", "pick_random", "pop_back", "pop_front", "pop_at", "get", "min", "max"})
-# The names an engine class declares as a property or a signal in Godot 4.7.2 (ClassDB.class_get_property_list
-# and class_get_signal_list), or a builtin type declares as a member (`Rect2.end`: the `members` of the
-# `builtin_classes` that `godot --headless --dump-extension-api` writes, which ClassDB does not list), that a method
-# under src/ also has. On a receiver whose class cannot be told such a name is as likely the engine's property as
-# the project's method, so it is not taken for a method read without its parentheses. A method added under src/
-# with another such name is taken for one, and the fix, a typed name to read through, is right either way.
+# The engine's names among the method names nothing else excuses (`method_names_of` without this list): a name an
+# engine class declares as a property or a signal in Godot 4.7.2 (ClassDB.class_get_property_list and
+# class_get_signal_list), or a builtin type declares as a member (`Rect2.end`: the `members` of the `builtin_classes`
+# that `godot --headless --dump-extension-api` writes, which ClassDB does not list). An engine name that is also a
+# var of a class with a `class_name` (`size`, `path`) needs no entry: the use fails as the var's. On a receiver
+# whose class cannot be told such a name is as likely the engine's property as the project's method, so it is not
+# taken for a method read without its parentheses. A method added under src/ with another such name is taken for
+# one until the list gains it, and the fix, a typed name to read through, is right either way.
 ENGINE_PROPERTIES = frozenset(
     {
         "_source",
         "columns",
         "content_scale_size",
+        "continued",
         "depth",
         "direction",
         "enabled",
@@ -346,8 +349,10 @@ ENGINE_PROPERTIES = frozenset(
         "frames",
         "grow",
         "layers",
+        "nodes",
         "offsets",
         "pose",
+        "rect",
         "region",
         "region_rect",
         "release",
