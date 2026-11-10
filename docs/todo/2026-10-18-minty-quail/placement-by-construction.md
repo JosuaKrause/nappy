@@ -61,9 +61,10 @@ The locations of every day (`DayLocations`, `StreetLocations`, `Location`, each 
 the bag per view and its draw (`ViewBag`, `LocationDraw`), the day's placement rules as classes
 (`StreetRule`, composed by `StreetInvalidation`, with a location's own ground in `LocationFit`), the
 roadblock phase (`RoadblockPhase`), day 13's section swap, the scene recipes' locations, and the
-fixed parts' and the scripted rows' dawn phases (`ScriptedPhase`). The walk's drawing machinery
-(`WalkDraw`: a band ahead of her, never in her view, one draw a tick) is built, and the game uses
-it once: the dawn draws every open location through it, so the band finds nothing left to draw.
+fixed parts' and the scripted rows' dawn phases (`ScriptedPhase`). Every open location is drawn
+at dawn by one loop (`EventScheduler._draw_the_locations()`: `LocationDraw.draw_all()` over
+`DayLocations.drawing_order()`); a poster crew is handed to her walk as it is drawn, and a sidewalk
+a dawn phase fills closes its section to the draw. Nothing is drawn as she walks.
 
 ## What is left, in order
 
@@ -90,7 +91,7 @@ full text names the files each step owns.
    the same alley, park or square) with a lower rank draws first. The day is then exactly what
    drawing every unit at dawn in rank order would give, whatever her path, without paying for
    streets she never comes near. The rows with a body are drawn this way too. The dawn's one draw
-   of every open location (`WalkDraw.draw_everywhere()`) and the daily caps for drawn rows go
+   of every open location (`LocationDraw.draw_all()`) and the daily caps for drawn rows go
    (a cap depends on order; "at most one of a row per street" replaces the same-row spacing and the
    roomiest-tile ranking). A body drawn out of her view onto a lane a car stands in has the crowd
    recycle that car. `docs/MECHANICS.md`'s "A retry is the same day" stays true of every drawn row, and the
