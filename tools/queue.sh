@@ -40,10 +40,15 @@
 # it free. Every marked line ends in `[up next]`, in the section or not. `--band B` lists a band's
 # entries, the ones in the section first, with no heading.
 #
+# An entry may also carry `fable-only: true` in the opening block: every pull request that builds
+# one of its items carries the GitHub label `fable-only` (docs/TODO.md says what the label means;
+# tools/ci_fable_only.py holds a pull request to it). The line changes no order; the entry's line
+# ends in `[fable-only]`, after `[up next]` where it has both.
+#
 # --check reports, as `<file>:<line>: <label>` lines and a non-zero exit, an entry with no
 # `priority:` line opening its README.md, a band outside the set, an `after:` naming neither an
-# open entry nor a closed one, an `after:` cycle, an `upnext:` line with any value but `true` or
-# repeated, and a `priority:`, `after:` or `upnext:` line anywhere but the opening block. tools/lint.sh runs it, so the band set and the rules live here only. Printing
+# open entry nor a closed one, an `after:` cycle, an `upnext:` or `fable-only:` line with any value but `true` or
+# repeated, and a `priority:`, `after:`, `upnext:` or `fable-only:` line anywhere but the opening block. tools/lint.sh runs it, so the band set and the rules live here only. Printing
 # the queue refuses on the same errors.
 #
 # Bash 3.2-safe, like the rest of tools/ -- see tools/lint.sh's own header.
@@ -59,8 +64,8 @@ usage() {
 usage: tools/queue.sh [--help|-h] [--band bug|now|next|later|parked] [--check]
 
 Prints the open queue in order, from the band line every docs/todo/<entry>/README.md opens with
-(`priority: bug|now|next|later|parked`, then any `after: <entry folder name>` lines and an optional
-`upnext: true`). The bands come in that order; within `bug` and `now` the newest entry first,
+(`priority: bug|now|next|later|parked`, then any `after: <entry folder name>` lines, an optional
+`upnext: true` and an optional `fable-only: true`). The bands come in that order; within `bug` and `now` the newest entry first,
 within the others the oldest first, by the date the folder's name starts with. Every `upnext: true`
 entry prints first, under an `up next` heading, with its real band shown, unless its `after:`
 names an open entry: then it stays behind that entry in its band. Every marked line ends in
@@ -69,7 +74,8 @@ numbers in number order, then named entries by their words; reversed in `bug` an
 order. An entry never prints before an open entry its `after:` names: it is held back to straight
 behind it. An `after:` naming a closed entry (a record under docs/decisions/ by that name) holds
 nothing back and prints as `<name>, closed`. A line is the band, the entry's folder name, its
-title and what it waits on.
+title and what it waits on. An entry whose opening block says `fable-only: true` (every pull request
+building one of its items carries the GitHub label `fable-only`) ends its line in `[fable-only]`.
 
   --band B   print only band B's entries, in the order the whole queue gives them
   --check    print nothing but the band lines' errors, as `<file>:<line>: <label>`, and exit
@@ -140,7 +146,7 @@ parse() {
                 print "E", file ":1: no `priority:` line opening the entry (its README.md starts with `priority: bug|now|next|later|parked`)"
                 band = "?"
             }
-            print "R", (band in rank) ? rank[band] : 9, key, name, band, afters, title, upnext
+            print "R", (band in rank) ? rank[band] : 9, key, name, band, afters, title, upnext, fable
         }
         FNR == 1 {
             finish()
@@ -149,7 +155,7 @@ parse() {
             date = substr(name, 1, 10); rest = substr(name, 12)
             if (rest ~ /^M[0-9]+$/) rest = sprintf("M%08d", substr(rest, 2) + 0)
             key = date " " rest
-            band = ""; afters = ""; title = ""; has_priority = 0; opening = 1; upnext = 0
+            band = ""; afters = ""; title = ""; has_priority = 0; opening = 1; upnext = 0; fable = 0
         }
         {
             line = $0
@@ -178,8 +184,17 @@ parse() {
                 upnext = 1
                 next
             }
+            if (opening && FNR > 1 && has_priority && line ~ /^fable-only:/) {
+                value = line; sub(/^fable-only:[ \t]*/, "", value); sub(/[ \t]+$/, "", value)
+                if (value != "true")
+                    print "E", file ":" FNR ": `fable-only:` takes only `true`: `" line "`"
+                else if (fable)
+                    print "E", file ":" FNR ": `fable-only: true` twice in the opening block"
+                fable = 1
+                next
+            }
             opening = 0
-            if (line ~ /^(priority|after|upnext):/)
+            if (line ~ /^(priority|after|upnext|fable-only):/)
                 print "E", file ":" FNR ": a band line outside the opening block of the file: `" line "`"
             if (title == "" && line ~ /^#/) {
                 title = line
@@ -226,7 +241,7 @@ done)"
 ordered="$(printf '%s\n' "$base" | CLOSED="$closed" awk -F'\t' '
     BEGIN { m = split(ENVIRON["CLOSED"], c, "\n"); for (i = 1; i <= m; i++) if (c[i] != "") done[c[i]] = 1 }
     NF {
-        n++; name[n] = $3; band[n] = $4; title[n] = $6; after[n] = $5; mark[n] = $7
+        n++; name[n] = $3; band[n] = $4; title[n] = $6; after[n] = $5; mark[n] = $7; fable[n] = $8
         idx[$3] = n
     }
     END {
@@ -262,7 +277,7 @@ ordered="$(printf '%s\n' "$base" | CLOSED="$closed" awk -F'\t' '
             }
             if (!found) break
             placed[found] = 1; placed_count++
-            print "O\t" band[found] "\t" name[found] "\t" title[found] "\t" after[found] "\t" ((mark[found] == 1 && deps[found] == 0) ? 1 : 0) "\t" mark[found]
+            print "O\t" band[found] "\t" name[found] "\t" title[found] "\t" after[found] "\t" ((mark[found] == 1 && deps[found] == 0) ? 1 : 0) "\t" mark[found] "\t" fable[found]
         }
         if (placed_count == n) exit
         # What is left waits on a cycle or is in one; strip the ones nothing left waits on until
@@ -303,13 +318,13 @@ fi
 
 printf '%s\n' "$ordered" | awk -F'\t' -v only="$band" '
     $1 == "O" && (only == "" || $2 == only) {
-        n++; b[n] = $2; nm[n] = $3; t[n] = $4; a[n] = $5; u[n] = $6; m[n] = $7
+        n++; b[n] = $2; nm[n] = $3; t[n] = $4; a[n] = $5; u[n] = $6; m[n] = $7; f[n] = $8
         if (length($3) > width) width = length($3)
     }
     function show(i,    waits) {
         waits = ""
         if (a[i] != "") { waits = a[i]; gsub(/;/, "; ", waits); waits = "  (after " waits ")" }
-        printf "%-6s  %-" width "s  %s%s%s\n", b[i], nm[i], t[i], waits, (m[i] == 1 ? "  [up next]" : "")
+        printf "%-6s  %-" width "s  %s%s%s\n", b[i], nm[i], t[i], waits, (m[i] == 1 ? "  [up next]" : "") (f[i] == 1 ? "  [fable-only]" : "")
     }
     END {
         # Marked entries first (under a heading on the whole queue), then everything else.
