@@ -17,6 +17,8 @@ extends RefCounted
 
 ## The event whose band he guards.
 var event: EventInstance
+## Where she is (`WhereSheIs`), as the event whose band he guards hears it.
+var _where: WhereSheIs
 ## Where his feet are while he walks away, in world space; `Vector2.INF` while he stands at his
 ## post, and once he is gone.
 var at := Vector2.INF
@@ -32,8 +34,9 @@ var gone := false
 ## whenever it is empty.
 var way := PackedVector2Array()
 
-func _init(owner: EventInstance) -> void:
+func _init(owner: EventInstance, where: WhereSheIs) -> void:
 	event = owner
+	_where = where
 
 ## Whether he has left his post, walking or gone.
 func has_left() -> bool:
@@ -49,7 +52,7 @@ func send_off(side: int) -> void:
 	var vertical: bool = event._spread_vertical
 	at = event.body_position() + EventFootprints.guard_post_offset(vertical, side)
 	heading = EventFootprints.guard_post_heading(vertical, side)
-	var her: Vector2 = event.player_at
+	var her: Vector2 = _where.at()
 	if her != Vector2.INF and not her.is_equal_approx(at):
 		heading = (at - her).normalized()
 	walked = 0.0
@@ -60,7 +63,7 @@ func send_off(side: int) -> void:
 func walk_off(delta: float) -> void:
 	if at == Vector2.INF:
 		return
-	var her: Vector2 = event.player_at
+	var her: Vector2 = _where.at()
 	var step: float = event.def.chase_speed() * delta
 	var left := step
 	if her != Vector2.INF:

@@ -218,11 +218,12 @@ func check_detentions() -> void:
 	# `VisitCounter`'s own "chat"/"checkpoint" — `nearest.def.id` names which. See
 	# docs/TELEMETRY.md, "The page counts visits".
 	_bus.player_detained.emit(nearest.def.id)
+	var awake := world.where_she_is().baby_is_awake()
 	world.trace.note("chat", "%s at %s, %.1fs, baby %s, meter %s" % [
 		nearest.def.id, RunTrace.tile(world.map.world_to_tile(nearest.global_position)),
 		nearest.def.detain_seconds,
-		"awake" if nearest.baby_awake else "asleep",
-		("+%.0f" % Tuning.CHAT_EXCITEMENT) if nearest.baby_awake else "+0 (asleep)"])
+		"awake" if awake else "asleep",
+		("+%.0f" % Tuning.CHAT_EXCITEMENT) if awake else "+0 (asleep)"])
 
 ## The instance whose hold would begin on this frame with her at `at`, or null: the test
 ## `check_detentions()` makes, here so that `EncounterWatch` asks the very same question (a pure

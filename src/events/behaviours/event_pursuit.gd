@@ -52,7 +52,7 @@ func step(delta: float) -> void:
 	_chase(delta)
 
 func _chase(delta: float) -> void:
-	var her: Vector2 = event.player_at
+	var her: Vector2 = _where.at()
 	if her == Vector2.INF or event.is_telegraphing_still() or event._guard_spent:
 		return
 	var def: EventDef = event.def
@@ -93,9 +93,9 @@ func _chase(delta: float) -> void:
 	# **Day 13's task guard walks round buildings toward her** (`EventInstance._chase_way`):
 	# where no clear line runs to her he follows the walk instead. Only the direction changes.
 	if event._chase_way != null:
-		event._chase_way.keep_fresh(event.player_at, event.global_position)
+		event._chase_way.keep_fresh(_where.at(), event.global_position)
 		if step > 0.0:
-			event._heading = event._chase_way.toward(event.global_position, event.player_at,
+			event._heading = event._chase_way.toward(event.global_position, _where.at(),
 					event._heading)
 	var moved: Vector2 = event._step(event._heading * step)
 	event.position += moved
@@ -108,7 +108,7 @@ func _chase(delta: float) -> void:
 ## the notice is wider than the stand-off on every row, the wall held the lunge back too.
 func _notice(toward: Vector2, standoff: float) -> void:
 	var range_to_her := toward.length()
-	if range_to_her > event.def.notice_within() or not event.clear_line_to(event.player_at) \
+	if range_to_her > event.def.notice_within() or not event.clear_line_to(_where.at()) \
 			or not event._would_stand_in_her_view():
 		return
 	event._notice_her()
@@ -127,7 +127,7 @@ func _notice(toward: Vector2, standoff: float) -> void:
 ## running counts while it is still off screen (tall-owl).
 func _shaken_off(delta: float, range_to_her: float) -> bool:
 	var def: EventDef = event.def
-	if event.player_running and not (event.warns_by_radius() and event.is_telegraphing()):
+	if _where.is_running() and not (event.warns_by_radius() and event.is_telegraphing()):
 		outrun_for += delta
 	else:
 		outrun_for = 0.0
@@ -157,7 +157,7 @@ func _close_through_the_telegraph(delta: float, step: float, range_to_her: float
 	var beside_her := def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER)
 	if def.pursuit.walk_speed > 0.0 and not (beside_her or lunge_held):
 		step = minf(def.pursuit.walk_speed * delta, range_to_her)
-	var clear: bool = event.clear_line_to(event.player_at)
+	var clear: bool = event.clear_line_to(_where.at())
 	if beside_her or lunge_held:
 		step = clampf(range_to_her - standoff, 0.0, step)
 		if lunge_held and clear and range_to_her >= standoff:

@@ -33,7 +33,7 @@ func step(delta: float) -> void:
 ## masked man's shaft are the ground it watches — and turns to face her, which costs nothing: its
 ## route overwrites the heading the instant it starts moving.
 func _check_for_notice() -> void:
-	var her: Vector2 = event.player_at
+	var her: Vector2 = _where.at()
 	if her == Vector2.INF or not event.is_waiting():
 		return
 	var toward: Vector2 = her - event.global_position
@@ -53,7 +53,7 @@ func _check_for_notice() -> void:
 ## (`EventInstance._hold_the_notice_clock()`).
 func _warn_on_its_line(delta: float) -> void:
 	var notice: NoticeSpec = event.def.notice
-	var her: Vector2 = event.player_at
+	var her: Vector2 = _where.at()
 	if notice == null or notice.runs_within <= 0.0 or event._telegraph_ended \
 			or event.is_waiting() or her == Vector2.INF:
 		return
@@ -83,8 +83,8 @@ func _keep_warning_once_it_has_run() -> void:
 
 ## Whether she is back outside the masked man's notice: what calls his warning off.
 func _she_has_left_his_notice() -> bool:
-	return event.player_at != Vector2.INF \
-			and event.global_position.distance_to(event.player_at) > event.def.notice_within()
+	return _where.at() != Vector2.INF \
+			and event.global_position.distance_to(_where.at()) > event.def.notice_within()
 
 ## **Birds go up when she reaches them, and a clock cannot know when that is** (2026-09-20: they
 ## should basically start fluttering when I touch them, not after). The flush fires on her arrival
@@ -93,7 +93,7 @@ func _she_has_left_his_notice() -> bool:
 ## flock she came near and never reached, not the wait.
 func _flush_the_flock_if_she_is_among_them() -> void:
 	var def: EventDef = event.def
-	var her: Vector2 = event.player_at
+	var her: Vector2 = _where.at()
 	if def.flock_size <= 0 or event._telegraph_ended or her == Vector2.INF:
 		return
 	if event.is_waiting() or not event.is_telegraphing():

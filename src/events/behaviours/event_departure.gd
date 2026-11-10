@@ -45,7 +45,7 @@ func begin() -> void:
 	_begun = true
 	_leaving_for = 0.0
 	var def: EventDef = event.def
-	var her: Vector2 = event.player_at
+	var her: Vector2 = _where.at()
 	if not (def.mobile and event.path.size() > 1) and her != Vector2.INF \
 			and not event.global_position.is_equal_approx(her):
 		event._heading = (event.global_position - her).normalized()
@@ -78,7 +78,7 @@ func begin() -> void:
 func for_a_completed_task() -> void:
 	_begun = true
 	_must_clear_sight = true
-	var her: Vector2 = event.player_at
+	var her: Vector2 = _where.at()
 	if her != Vector2.INF and not event.global_position.is_equal_approx(her):
 		event._heading = (event.global_position - her).normalized()
 
@@ -137,7 +137,7 @@ func speed() -> float:
 func leave(delta: float) -> void:
 	_leaving_for += delta
 	var step := speed() * delta
-	var her: Vector2 = event.player_at
+	var her: Vector2 = _where.at()
 	if _walks_a_way:
 		_walk_the_way(step)
 	elif event.on_foot and event.on_foot.walks_back():
@@ -176,7 +176,7 @@ func reset() -> void:
 ## her, outside the ground it avoids, square steps only. Empty when none is found. The far guard at a
 ## band walks off from his post by the same search.
 func way_out_from(at: Vector2) -> PackedVector2Array:
-	return event._navigator.way_out(at, event.player_at, Tuning.OUT_OF_SIGHT, event._mover,
+	return event._navigator.way_out(at, _where.at(), Tuning.OUT_OF_SIGHT, event._mover,
 			_way_avoids)
 
 ## The ground a departure from here never steps onto (`along()`'s `avoid`, a guard's own band).
@@ -198,7 +198,7 @@ func _walk_the_way(step: float) -> void:
 	var left := _walk_points(false, step)
 	if left <= 0.0:
 		return
-	var her: Vector2 = event.player_at
+	var her: Vector2 = _where.at()
 	if _way_on.is_empty() and her != Vector2.INF:
 		_way_on = way_out_from(event.global_position)
 	left = _walk_points(true, left)

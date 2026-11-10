@@ -107,8 +107,8 @@ func note_the_pose(at: Vector2) -> void:
 	# nor turns onto her, where it cannot reach her.
 	_left = route_left(_travelled)
 	_warning = short_of_its_stop(PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME, _left)
-	_known = event.player_at != Vector2.INF
-	_ahead_before = _known and meets_her(at, _heading_was, event.player_at, _warning)
+	_known = _where.at() != Vector2.INF
+	_ahead_before = _known and meets_her(at, _heading_was, _where.at(), _warning)
 	_was_leaving = event.is_leaving
 
 ## **Checks the pose its event's tick proposed** (`move.to`, the event's own position by now), and
@@ -127,7 +127,7 @@ func check(move: MoveProposal, ends_its_route: bool) -> bool:
 	var in_its_way := _standing and on_its_route and _ahead_before
 	var turns_onto_her := on_its_route and _known and not _ahead_before \
 			and not event._heading.is_equal_approx(_heading_was) \
-			and meets_her(move.to, event._heading, event.player_at, _warning)
+			and meets_her(move.to, event._heading, _where.at(), _warning)
 	var past_its_line := on_its_route and _line < INF \
 			and (move.to - at).dot(_heading_was) > maxf(_line, 0.0) + 0.001
 	if not (into_her or in_its_way or turns_onto_her or past_its_line):
@@ -146,7 +146,7 @@ func check(move: MoveProposal, ends_its_route: bool) -> bool:
 	event._gait_phase = _gait_phase
 	event._gait_moving = false
 	var strikes_her := into_her and on_its_route and not _standing and not turns_onto_her \
-			and not past_its_line and meets_her(at, _heading_was, event.player_at,
+			and not past_its_line and meets_her(at, _heading_was, _where.at(),
 					short_of_its_stop(PATROL_STRIKE_LEAD, _left))
 	_standing = not strikes_her
 	return false
@@ -222,7 +222,7 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 		var corridor := CityMap.junction_index(floori(cross / float(Tuning.TILE_SIZE)))
 		if GiveWay.is_red(event.signals, GiveWay.junction_at(index, corridor, vertical), vertical):
 			room = minf(room, box_line)
-	var gives_way := GiveWay.owes_her_way(event._map, vertical, at, event.player_at)
+	var gives_way := GiveWay.owes_her_way(event._map, vertical, at, _where.at())
 	# **The zebra on the far side of the box ahead is decided at the box's entry line**, wherever
 	# she is along it rather than within a sight circle: decided any later, the nose is already in
 	# the box and the car would stand there, short of that zebra — and nothing enters a box it
@@ -231,11 +231,11 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	# box's entry line, where a red light stops it.
 	if gives_way and within_sight_of_the_box \
 			and GiveWay.waits_past_the_box(event._map, index, direction, cross, vertical,
-					event.player_at):
+					_where.at()):
 		room = minf(room, box_line)
 	# The zebra she is waiting at.
-	if gives_way and at.distance_to(event.player_at) <= Tuning.CAR_ZEBRA_SIGHT:
-		var edge := GiveWay.zebra_edge_ahead(event._map, at, vertical, direction, event.player_at)
+	if gives_way and at.distance_to(_where.at()) <= Tuning.CAR_ZEBRA_SIGHT:
+		var edge := GiveWay.zebra_edge_ahead(event._map, at, vertical, direction, _where.at())
 		if edge < INF:
 			var to_the_paint := (edge - along) * direction
 			# A zebra on the far side of the box ahead would stand the car inside the box, where the
@@ -292,11 +292,11 @@ func turn_the_body() -> void:
 ## `heading`: the smaller gap, negative where they would overlap, `INF` for anything that does not
 ## drive or with nobody told where she is.
 func gap_to_her(at: Vector2, heading: Vector2) -> float:
-	if event.def.shape == null or event.player_at == Vector2.INF:
+	if event.def.shape == null or _where.at() == Vector2.INF:
 		return INF
-	var gap := _gap_to(at, heading, event.player_at, Tuning.PLAYER_BODY_RADIUS)
-	if event.pram_at != Vector2.INF:
-		gap = minf(gap, _gap_to(at, heading, event.pram_at, Stroller.PRAM_BODY_RADIUS))
+	var gap := _gap_to(at, heading, _where.at(), Tuning.PLAYER_BODY_RADIUS)
+	if _where.pram_at() != Vector2.INF:
+		gap = minf(gap, _gap_to(at, heading, _where.pram_at(), Stroller.PRAM_BODY_RADIUS))
 	return gap
 
 func _gap_to(at: Vector2, heading: Vector2, centre: Vector2, radius: float) -> float:
@@ -347,9 +347,9 @@ func meets_her(at: Vector2, heading: Vector2, her: Vector2, seconds: float) -> b
 		return false
 	if _in_front(at, heading, her, Tuning.PLAYER_BODY_RADIUS, seconds):
 		return true
-	if event.pram_at == Vector2.INF or event.player_at == Vector2.INF:
+	if _where.pram_at() == Vector2.INF or _where.at() == Vector2.INF:
 		return false
-	return _in_front(at, heading, her + (event.pram_at - event.player_at),
+	return _in_front(at, heading, her + (_where.pram_at() - _where.at()),
 			Stroller.PRAM_BODY_RADIUS, seconds)
 
 ## Whether `at` is on the carriageway: a road or a crossing tile (`WorldMap.is_carriageway()`),

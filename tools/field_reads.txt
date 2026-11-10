@@ -797,7 +797,6 @@ src/dev/still_watch.gd def
 src/dev/still_watch.gd is_finished
 src/events/behaviours/event_abduction.gd age
 src/events/behaviours/event_abduction.gd def
-src/events/behaviours/event_abduction.gd player_at
 src/events/behaviours/event_abduction.gd trace
 src/events/behaviours/event_barrier_post.gd _charge
 src/events/behaviours/event_barrier_post.gd _heading
@@ -808,7 +807,6 @@ src/events/behaviours/event_barrier_post.gd def
 src/events/behaviours/event_barrier_post.gd departure
 src/events/behaviours/event_barrier_post.gd is_leaving
 src/events/behaviours/event_barrier_post.gd phase
-src/events/behaviours/event_barrier_post.gd player_at
 src/events/behaviours/event_behaviours.gd abduction
 src/events/behaviours/event_behaviours.gd barrier_post
 src/events/behaviours/event_behaviours.gd car
@@ -833,8 +831,6 @@ src/events/behaviours/event_car_driving.gd is_finished
 src/events/behaviours/event_car_driving.gd is_leaving
 src/events/behaviours/event_car_driving.gd is_parked
 src/events/behaviours/event_car_driving.gd path
-src/events/behaviours/event_car_driving.gd player_at
-src/events/behaviours/event_car_driving.gd pram_at
 src/events/behaviours/event_car_driving.gd route
 src/events/behaviours/event_car_driving.gd signals
 src/events/behaviours/event_departure.gd _guard_spent
@@ -850,7 +846,6 @@ src/events/behaviours/event_departure.gd is_leaving
 src/events/behaviours/event_departure.gd is_parked
 src/events/behaviours/event_departure.gd on_foot
 src/events/behaviours/event_departure.gd path
-src/events/behaviours/event_departure.gd player_at
 src/events/behaviours/event_flock.gd _heading
 src/events/behaviours/event_flock.gd def
 src/events/behaviours/event_flock.gd is_leaving
@@ -862,7 +857,6 @@ src/events/behaviours/event_investigation.gd is_finished
 src/events/behaviours/event_investigation.gd is_leaving
 src/events/behaviours/event_investigation.gd on_foot
 src/events/behaviours/event_investigation.gd path
-src/events/behaviours/event_investigation.gd player_at
 src/events/behaviours/event_investigation.gd route
 src/events/behaviours/event_notice_run.gd _charge
 src/events/behaviours/event_notice_run.gd _heading
@@ -871,7 +865,6 @@ src/events/behaviours/event_notice_run.gd _telegraph_ended
 src/events/behaviours/event_notice_run.gd age
 src/events/behaviours/event_notice_run.gd def
 src/events/behaviours/event_notice_run.gd path
-src/events/behaviours/event_notice_run.gd player_at
 src/events/behaviours/event_notice_run.gd route
 src/events/behaviours/event_officer.gd _heading
 src/events/behaviours/event_officer.gd _mover
@@ -882,8 +875,6 @@ src/events/behaviours/event_officer.gd departure
 src/events/behaviours/event_officer.gd investigation
 src/events/behaviours/event_officer.gd is_finished
 src/events/behaviours/event_officer.gd is_leaving
-src/events/behaviours/event_officer.gd player_at
-src/events/behaviours/event_officer.gd she_is_held
 src/events/behaviours/event_pursuit.gd _charge
 src/events/behaviours/event_pursuit.gd _chase_way
 src/events/behaviours/event_pursuit.gd _guard_spent
@@ -892,8 +883,6 @@ src/events/behaviours/event_pursuit.gd _path_travelled
 src/events/behaviours/event_pursuit.gd def
 src/events/behaviours/event_pursuit.gd gave_up
 src/events/behaviours/event_pursuit.gd path
-src/events/behaviours/event_pursuit.gd player_at
-src/events/behaviours/event_pursuit.gd player_running
 src/events/behaviours/event_pursuit.gd route
 src/events/behaviours/event_route_walk.gd _heading
 src/events/behaviours/event_route_walk.gd _mover
@@ -904,15 +893,12 @@ src/events/behaviours/event_route_walk.gd is_parked
 src/events/behaviours/event_route_walk.gd path
 src/events/behaviours/event_unreachable.gd is_finished
 src/events/behaviours/event_unreachable.gd is_leaving
-src/events/behaviours/event_unreachable.gd player_at
 src/events/behaviours/roadblock_far_guard.gd _map
 src/events/behaviours/roadblock_far_guard.gd _mover
 src/events/behaviours/roadblock_far_guard.gd _navigator
 src/events/behaviours/roadblock_far_guard.gd _spread_vertical
 src/events/behaviours/roadblock_far_guard.gd def
 src/events/behaviours/roadblock_far_guard.gd departure
-src/events/behaviours/roadblock_far_guard.gd player_at
-src/events/checkpoint_controller.gd baby_awake
 src/events/checkpoint_controller.gd def
 src/events/checkpoint_controller.gd guard_warns_her
 src/events/checkpoint_controller.gd is_finished
@@ -925,18 +911,11 @@ src/events/event_excitement.gd car
 src/events/event_excitement.gd def
 src/events/event_excitement.gd is_finished
 src/events/event_excitement.gd is_leaving
-src/events/event_excitement.gd player_at
 src/events/event_footprints.gd def
-src/events/event_manager.gd baby_awake
 src/events/event_manager.gd def
 src/events/event_manager.gd excitement
 src/events/event_manager.gd held_by_hand
 src/events/event_manager.gd is_pelican
-src/events/event_manager.gd player_at
-src/events/event_manager.gd player_running
-src/events/event_manager.gd player_view
-src/events/event_manager.gd pram_at
-src/events/event_manager.gd she_is_held
 src/events/event_sources.gd def
 src/events/event_sources.gd excitement
 src/events/event_spawner.gd atlas
@@ -961,7 +940,6 @@ src/events/event_streaming.gd silenced
 src/events/events_ahead.gd def
 src/events/events_ahead.gd is_finished
 src/events/events_ahead.gd is_leaving
-src/events/events_ahead.gd player_at
 src/events/views/checkpoint_look.gd def
 src/events/views/checkpoint_look.gd gate_state
 src/events/views/checkpoint_look.gd guard_warns_her
@@ -976,7 +954,6 @@ src/events/views/event_look.gd guard_warns_her
 src/events/views/event_look.gd is_finished
 src/events/views/event_look.gd is_leaving
 src/events/views/event_look.gd path
-src/events/views/event_look.gd player_at
 src/events/views/event_look.gd points_at
 src/events/views/event_look.gd silenced
 src/events/views/event_look.gd skip_draw

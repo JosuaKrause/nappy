@@ -67,6 +67,16 @@ var visible := VisibleView.new()
 ## a rig that sets the map itself.
 var _navigator: Navigator
 
+## Where she is this tick (`WhereSheIs`), told once a physics tick by
+## `EventManager._tell_them_where_she_is()` while she is in the world, and handed to every instance
+## made here (`EventSpawner.create()`). One for the world's whole life, never replaced, so an
+## instance keeps it.
+var _where_she_is := WhereSheIs.nowhere()
+
+## Where she is this tick, the one every instance made here is handed.
+func where_she_is() -> WhereSheIs:
+	return _where_she_is
+
 func use_navigator(navigator: Navigator) -> void:
 	_navigator = navigator
 

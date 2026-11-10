@@ -42,7 +42,7 @@ func _investigate() -> void:
 			_left_her_once = true
 		return
 	if event.is_waiting():
-		var her: Vector2 = event.player_at
+		var her: Vector2 = _where.at()
 		if not _seen_her and her != Vector2.INF \
 				and event.global_position.distance_to(her) <= def.notice_within() \
 				and event.clear_line_to(her):
@@ -74,7 +74,7 @@ func is_quiet_for_its_man() -> bool:
 ## Whether she is outside this car's field from where it is: further than its outer radius past its
 ## own body, or nobody to be near.
 func _left_her() -> bool:
-	return event.player_at == Vector2.INF or event.global_position.distance_to(event.player_at) \
+	return _where.at() == Vector2.INF or event.global_position.distance_to(_where.at()) \
 			> event.def.outer_radius + event.def.shape.reach()
 
 ## Whether it is running its route: before it has stopped for her, and again once it is done.
