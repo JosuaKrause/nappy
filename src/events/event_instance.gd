@@ -2,7 +2,8 @@ class_name EventInstance
 extends Node2D
 ## One live event in the world: its lifetime, its telegraph phase and its excitement field. What
 ## it does is its behaviours' (`src/events/behaviours/`); how it looks is its look's
-## (`src/events/views/`), which reads its public state and draws it.
+## (`src/events/views/`), which is handed its row and its drawer, asks it and reads some of its
+## public state, and draws it.
 ##
 ## The excitement model is entirely a *query*, asked of the source it composes (`excitement`, an
 ## `EventExcitement`) over the field it states here (`field_at()`). Nothing pushes a value at the
@@ -1750,8 +1751,8 @@ func rim() -> EntityHalo:
 # ------------------------------------------------------------------ the look ---
 
 ## How this instance looks (`EventLooks.for_row()`, handed its row and its drawer in `setup()`): it
-## draws the instance from what it asks it, decides when it is drawn again, and holds the drawing
-## nodes a long picture is drawn in.
+## draws the instance from what it asks it and, in the family looks, from some of its public state,
+## decides when it is drawn again, and holds the drawing nodes a long picture is drawn in.
 var look: EventLook
 
 ## What a protest points its placards at, handed in by whoever knows (`EventManager.points_at`,

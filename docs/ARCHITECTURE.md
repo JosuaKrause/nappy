@@ -182,7 +182,8 @@ src/
 	event_sources.gd      a day's live events as one set of things that charge her
 	                       (`EventSources`): the door's toll alone inside a held door, a region
 	                       boundary's structures as their strongest
-	views/                how an event looks, asked of the event: `EventPictures` names
+	views/                how an event looks, asked of the event and, in the family looks,
+	                       still partly read off its public state: `EventPictures` names
 	                       every picture (each a region of the baked `events` page) and the
 	                       tables that pick one; `EventLooks.for_row()` gives each row the look
 	                       that draws its family (a figure, a vehicle, a pursuer, a spread, a

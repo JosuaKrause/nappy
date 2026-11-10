@@ -4,10 +4,11 @@ extends RefCounted
 ## redraw gate that decides when it is drawn again. A family of rows that draw alike has a look of
 ## its own (`EventLooks.for_row()` picks it by the row's picture); this base holds what they share.
 ##
-## **A look asks the event and never writes it.** It is handed what never changes under it when it
-## is made: its event, the event's row, the drawer it paints through and whether nothing of it is
-## drawn. It asks the row what the row is (its picture, its shape, its shadow, its peak) and the live
-## event what changes, through the questions any caller asks. It holds the eight-view sector last
+## **A look never writes the event.** It is handed what never changes under it when it is made: its
+## event, the event's row, the drawer it paints through and whether nothing of it is drawn. This
+## base asks the row what the row is (its picture, its shape, its shadow, its peak) and the live
+## event what changes, through the questions any caller asks; the family looks still read some of
+## the event's and the row's fields as well. It holds the eight-view sector last
 ## drawn, the redraw key, the caret's cache and the drawing nodes a long picture is drawn in, and
 ## draws on the event's own canvas. What the event does is its behaviours'
 ## (`src/events/behaviours/`); nothing here decides it.
@@ -366,14 +367,14 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 ## patches under two cars for the one row that does, so the ground under a crash is dark where the
 ## cars are and lit where the picture leaves a way through.
 ##
-## A row that casts none (`EventDef.casts_a_shadow()`, whose doc names which) is left out entirely,
-## its body and its picture untouched: this is the one function that puts a shadow patch down, so
+## A row that casts none (`EventDef.casts_a_shadow()`; the doc of `draws_body_shadow` names which)
+## is left out entirely, its body and its picture untouched: this is the one function that puts a shadow patch down, so
 ## refusing here is the whole of "no shadow" rather than a special case at each call site.
 func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 	if not _row.casts_a_shadow():
 		return
 	for piece in _row.body_pieces():
-		_draw_shape_shadow(canvas, piece.shape,
+		_draw_shape_shadow(canvas, piece.ground_shape(),
 				origin + event.spread_at(piece.offset_for(event.runs_vertically())))
 
 ## Whether this event is worth a mark at all.
