@@ -97,12 +97,15 @@ func hold_fixed_part(plan: EventScheduler.Planned, tile: Vector2i, type: int) ->
 		assign_to(location, plan)
 
 ## Assigns `plan`, which a dawn phase placed in `location`, for the day, so no draw happens there:
-## a section takes its two sidewalk locations with it.
+## a section takes its two sidewalk locations with it, and a sidewalk closes its section to a draw
+## (`StreetLocations.close_the_section_of()`).
 func assign_to(location: Location, plan: EventScheduler.Planned) -> void:
 	if location.kind() == Location.Kind.SECTION and location.segment():
 		(_streets[location.segment().key()] as StreetLocations).take_section(location, plan)
 	else:
 		location.take(plan)
+		if location.kind() == Location.Kind.SIDEWALK and location.segment():
+			(_streets[location.segment().key()] as StreetLocations).close_the_section_of(location)
 
 ## The alleys of `map`, each as the rect of its connected `ALLEY` tiles.
 static func _alleys(map: CityMap) -> Array[Rect2i]:

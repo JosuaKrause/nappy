@@ -61,9 +61,11 @@ The locations of every day (`DayLocations`, `StreetLocations`, `Location`, each 
 the bag per view and its draw (`ViewBag`, `LocationDraw`), the day's placement rules as classes
 (`StreetRule`, composed by `StreetInvalidation`, with a location's own ground in `LocationFit`), the
 roadblock phase (`RoadblockPhase`), day 13's section swap, the scene recipes' locations, and the
-fixed parts' and the scripted rows' dawn phases (`ScriptedPhase`). The walk's drawing machinery
-(`WalkDraw`: a band ahead of her, never in her view, one draw a tick) is in the open pull request
-for the walk's draw, which lands it with the game drawing every open location once, at dawn.
+fixed parts' and the scripted rows' dawn phases (`ScriptedPhase`). Every open location is drawn
+at dawn by one loop (`EventScheduler._draw_the_locations()`: `LocationDraw.draw_all()` over
+`DayLocations.drawing_order()`); a poster crew is handed to her walk as it is drawn, and a sidewalk
+a dawn phase fills closes its section to the draw and the roadblock phase. Nothing is drawn as she
+walks.
 
 ## What is left, in order
 
@@ -89,17 +91,17 @@ full text names the files each step owns.
    seed: before a unit draws, every undrawn unit touching it (sharing a junction box, or bordering
    the same alley, park or square) with a lower rank draws first. The day is then exactly what
    drawing every unit at dawn in rank order would give, whatever her path, without paying for
-   streets she never comes near. The rows with a body are drawn this way too. The dawn sweep, the
-   second set of bags, the split of rows by whether they block, and the daily caps for drawn rows go
+   streets she never comes near. The rows with a body are drawn this way too. The dawn's one draw
+   of every open location (`LocationDraw.draw_all()`) and the daily caps for drawn rows go
    (a cap depends on order; "at most one of a row per street" replaces the same-row spacing and the
    roomiest-tile ranking). A body drawn out of her view onto a lane a car stands in has the crowd
-   recycle that car. `docs/MECHANICS.md`'s "A retry is the same day" stays true of every drawn row and gains a
-   test: the same city and day drawn along two different walks hold the same drawn rows on the same
-   tiles. The test does not cover what is sited from her walk (the moments and step 4's rigged
+   recycle that car. `docs/MECHANICS.md`'s "A retry is the same day" stays true of every drawn row, and the
+   test that holds it for the dawn's draw (`test_event_manager`, a day started twice) gains the walk
+   for the unit draw: the same city and day drawn along two different walks hold the same drawn
+   rows on the same tiles. The test does not cover what is sited from her walk (the moments and step 4's rigged
    marbles), and the doc's sentence says so.
 3. **One declared table replaces the fitted ones.** `VIEW_SHARES`, `VIEW_SHARE_SCALES`,
-   `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS`, `MOMENTS_PER_DAY` and
-   `WALK_SHARE_SCALES` go. In their place: the events per hundred locations by view, kind of ground
+   `WALL_VIEW_SCALES`, `FRICTION_VIEW_SCALES`, `GROUND_WEIGHTS` and `MOMENTS_PER_DAY` go. In their place: the events per hundred locations by view, kind of ground
    and act; the moments per act; and the role-by-view weights that are already declared constants.
    A row's mix stays on its catalogue row, with an optional weight per kind of ground where it is
    rare there. The table is seeded once from main's measured placements (planned as the game plans

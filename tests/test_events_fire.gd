@@ -19,7 +19,7 @@ func run(t) -> void:
 	_test_a_corner_is_not_a_change_of_mind(t)
 	_test_the_engine_parks_at_the_fire(t)
 	_test_the_fire_is_the_days_only_unsited_place(t)
-	_test_the_crews_on_her_way_move_no_other_row(t)
+	_test_a_crew_drawn_is_handed_to_her_walk(t)
 	_test_a_rig_meets_the_three_things_that_arrive(t)
 	_test_hard_fail_only_when_active(t)
 
@@ -367,9 +367,8 @@ func _test_the_engine_parks_at_the_fire(t) -> void:
 
 ## **One set piece, the day's crews, and the day is otherwise exactly the day it was.** A set piece
 ## the day owes her walk is budgeted like any other one-shot — one plan, tagged as its own group.
-## The only other rows left for the walk to site are the poster crews, rolled at dawn like any
-## recurring row and handed over with no position (`EventScheduler._hand_to_her_walk`), so no other
-## row changes shape because of either.
+## The only other rows left for the walk to site are the poster crews, drawn at a location like any
+## recurring row and handed over with no position (`LocationDraw.draw_all()`).
 func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 	var owed := 0
 	var crews := 0
@@ -394,11 +393,12 @@ func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 	t.check(owed == 1, "exactly one set piece in a fourteen-day run is owed to her walk (%d)" % owed)
 	t.check(crews > 0, "and there are poster crews for her walk to site (%d)" % crews)
 
-## **Handing the crews to her walk moves no other row.** The dawn roll still places every crew by
-## its own `pavement_side` and only then drops the position, so the day planned with the crews
-## handed over and the day planned with the flag off are the same day, row for row and place for
-## place, and differ only in where the crews stand.
-func _test_the_crews_on_her_way_move_no_other_row(t) -> void:
+## **A crew a location draws is handed to her walk unplaced.** With the crews on her walk, every
+## crew the day draws has no position, for the director to site; with the flag off, the same day
+## stands its crews placed. A location's draw hands a crew on as it draws it
+## (`LocationDraw.draw_all()`), so the rows drawn after it are spaced without it and the two days
+## need not match beyond the crews.
+func _test_a_crew_drawn_is_handed_to_her_walk(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var crew := EventCatalogue.by_id("poster_crew")
 	var crew_way := crew.on_her_way
@@ -410,17 +410,24 @@ func _test_the_crews_on_her_way_move_no_other_row(t) -> void:
 		var kept := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
 				CalmAreas.of(map), MastSites.compute(map), [], [], tree).placements()
 		crew.on_her_way = crew_way
-		var same := handed.size() == kept.size()
-		var crews := 0
-		for i in mini(handed.size(), kept.size()):
-			same = same and handed[i].def.id == kept[i].def.id
-			if handed[i].def.id == "poster_crew":
-				crews += 1
-				same = same and not handed[i].is_placed() and kept[i].is_placed()
-			else:
-				same = same and handed[i].position == kept[i].position
-		t.check(crews > 0, "day %d: the day rolled crews (%d)" % [day, crews])
-		t.check(same, "day %d: every other row stands where the roll put it, crews or no crews" % day)
+		var handed_crews := 0
+		var handed_placed := 0
+		for plan in handed:
+			if plan.def.id == "poster_crew":
+				handed_crews += 1
+				handed_placed += 1 if plan.is_placed() else 0
+		var kept_crews := 0
+		var kept_placed := 0
+		for plan in kept:
+			if plan.def.id == "poster_crew":
+				kept_crews += 1
+				kept_placed += 1 if plan.is_placed() else 0
+		t.check(handed_crews > 0 and handed_placed == 0,
+				"day %d: every crew drawn for her walk has no position (%d of %d placed)"
+				% [day, handed_placed, handed_crews])
+		t.check(kept_crews > 0 and kept_placed == kept_crews,
+				"day %d: with the flag off, every crew stands placed (%d of %d)"
+				% [day, kept_placed, kept_crews])
 
 ## **The three rows that never had an impact, meeting the rig they were designed for.** The bike,
 ## the loose dog and the cat were each sited in a way that meant she could walk the whole day

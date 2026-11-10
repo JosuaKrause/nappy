@@ -113,7 +113,7 @@ is skipped on a docs-only pull request. A check that the repository agrees with
 itself runs on every one, Godot or not: the doc lint, the CLI help test, the hook tests, the
 agent-role test, the Python gate, the telemetry table's check (`tools/ci_telemetry_kinds.py`), the
 cost table's check (`tools/cost-table.sh --check`, the one that needs Godot), and the pull
-request's own checks, which read its files and its description:
+request's own checks, which read its files, its description and its labels:
 
 - no file it adds is a handoff file (`tools/ci_no_handoff.py`);
 - every inbox note it names on a `Filed from #N` line is the player's and is copied word for word
@@ -121,7 +121,12 @@ request's own checks, which read its files and its description:
 - on a pull request touching code, it resolves a queue item and files a record, or says `No queue
   item: <reason>` (`tools/ci_code_pr_queue.py`);
 - on a queue update, it rewrites no playtest and deletes nothing open unaccounted for
-  (`tools/ci_queue_update.py`).
+  (`tools/ci_queue_update.py`);
+- on a pull request touching `src/`, `tests/` or `tools/`, its description answers the
+  architecture questions or says `No new piece or dependency: <what>` (`tools/ci_pr_questions.py`);
+- a pull request that adds a record of a queue entry whose `README.md` says `fable-only: true`
+  carries the `fable-only` label, which the check reads through the API when it runs, and a label
+  added or removed starts a new run (`tools/ci_fable_only.py`).
 
 **A new check that compares a doc with the code goes where a docs-only pull request runs it** — a
 `tools/` script in CI's `gates` job, not an assertion inside a suite, which a docs-only pull
