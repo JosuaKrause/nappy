@@ -97,12 +97,15 @@
 #     own --dry-run, prune-merged.sh always) in command position only -- past an assignment or a
 #     wrapper word's own options/duration, never where its name is merely a read's argument (cat,
 #     sed, git log/diff/show --, rg); each as a real invocation and as a mention (an echo, a commit
-#     message) alike, outside three whole-command shapes whose text is told apart for certain: cat >
-#     FILE <<'EOF' (the delimiter quoted), a coder's or the orchestrator's wrapped git commit -F -
-#     <<'EOF', and a lone rg or grep with one quoted pattern -- each allows with prose naming gh
-#     issue comment, git push and tools/prune-merged.sh, and each near miss (an unquoted delimiter,
-#     <<-, a second command, a pipe, a reviewer's commit, rg --pre, a $ in the pattern) and every
-#     reproduction from PR #429's three reviews decides as main's guard does. A flag between a gh noun and its own verb (gh pr -R O/R merge, gh pr --repo
+#     message) alike, outside three shapes whose text is told apart for certain: cat > FILE <<'EOF'
+#     (the delimiter quoted, or bare over a body with no $, backtick or backslash; the file plain
+#     or behind one variable), a coder's or the orchestrator's wrapped git commit -F - <<'EOF' as
+#     the whole command, and rg or grep with one quoted pattern, the first and the third alone or
+#     in a sequence of plain reads (cd first, pwd, echo, ls, wc, head, tail, cat, cut, mkdir) --
+#     each allows with prose naming gh issue comment, git push and tools/prune-merged.sh, and each
+#     near miss (a bare delimiter over a $(...) or a backtick, <<-, a second command that writes
+#     or runs the file, a pipe to a shell, a reviewer's commit, rg --pre, a $ in the pattern) and
+#     every reproduction from PR #429's three reviews denies. A flag between a gh noun and its own verb (gh pr -R O/R merge, gh pr --repo
 #     O/R comment) does not skip the check, and neither does a noun/verb landing on a separator
 #     (gh status | head) or an endpoint/value merely ending in /gh or /git. A read (git status/
 #     log/fetch/diff, gh pr view/list/checks/diff/status/checkout, gh issue/release list/view, gh
@@ -2490,10 +2493,11 @@ assert_write_guard "a direct gh issue comment, the append's own write outside th
 assert_write_guard "a wrapped direct gh issue comment -> deny" deny \
     "$orch gh issue comment 504 --body-file /tmp/more.md"
 
-# **The three text shapes** (the guard's header; plaid-tapir, statement 4: the player's "B"). Each
-# is the whole command, and its text -- here prose naming gh issue comment, git push and
-# tools/prune-merged.sh -- is not read as commands. The two denials the write-guard item named, a
-# heredoc writing a brief and a heredoc commit message, allow in these shapes.
+# **The three text shapes** (the guard's header; plaid-tapir, statement 4: the player's "B"). The
+# commit is the whole command; the cat and the search may stand among plain reads (further down).
+# Each one's text -- here prose naming gh issue comment, git push and tools/prune-merged.sh -- is
+# not read as commands. The two denials the write-guard item named, a heredoc writing a brief and a
+# heredoc commit message, allow in these shapes.
 assert_write_guard "shape 1: cat > brief <<'EOF' naming gh issue comment, git push, prune-merged -> allow" allow \
     "cat > /tmp/brief.md <<'EOF'
 run gh issue comment only through tools/inbox.py; git push only wrapped; tools/prune-merged.sh after
@@ -2537,8 +2541,8 @@ assert_write_guard "shape 3: grep -c with a quoted pattern naming git push -> al
 assert_write_guard "shape 3: rg for tools/prune-merged.sh or gh issue close -> allow" allow \
     "rg -n 'tools/prune-merged.sh|gh issue close' .claude/skills tools"
 # A near miss of a shape is read as main's guard reads it, so each of these denies.
-assert_write_guard "near shape 1: an unquoted delimiter -> deny" deny "cat > /tmp/b.md <<EOF
-git push
+assert_write_guard "near shape 1: an unquoted delimiter over a body with a \$ -> deny" deny "cat > /tmp/b.md <<EOF
+git push costs \$5
 EOF"
 assert_write_guard "near shape 1: <<- -> deny" deny "cat > /tmp/b.md <<-'EOF'
 	git push
@@ -2549,7 +2553,7 @@ EOF
 git push"
 assert_write_guard "near shape 1: no terminator -> deny" deny "cat > /tmp/b.md <<'EOF'
 git push"
-assert_write_guard "near shape 1: mkdir -p && cat > ... <<'EOF' -> deny" deny "mkdir -p /tmp/a && cat > /tmp/a/b.md <<'EOF'
+assert_write_guard "near shape 1: mktemp -d && cat > ... <<'EOF' -> deny, mktemp is no plain read" deny "mktemp -d /tmp/a.XXXX && cat > /tmp/a/b.md <<'EOF'
 git push
 EOF"
 assert_write_guard "near shape 1: cat with no file -> deny" deny "cat <<'EOF'
@@ -2567,10 +2571,9 @@ EOF"
 assert_write_guard "near shape 1: tee instead of cat -> deny" deny "tee /tmp/b.md <<'EOF'
 git push
 EOF"
-assert_write_guard "near shape 1: two heredocs one after the other -> deny" deny "cat > /tmp/a.md <<'EOF'
+assert_write_guard "near shape 1: two heredocs on one line -> deny" deny "cat > /tmp/a.md <<'EOF' && cat > /tmp/b.md <<'EOF'
 run git push only wrapped
 EOF
-cat > /tmp/b.md <<'EOF'
 never gh issue close by hand
 EOF"
 assert_write_guard "near shape 2: a reviewer's commit -> deny" deny \
@@ -2624,6 +2627,133 @@ assert_write_guard "near shape 3: a glob path -> deny" deny 'rg "git push" *.md'
 assert_write_guard "near shape 3: a redirection -> deny" deny 'rg "git push" x > /tmp/out'
 assert_write_guard "near shape 3: egrep -> deny, only rg and grep" deny 'egrep "git push" x'
 assert_write_guard "an echo of a quoted forced push -> deny, no text shape" deny 'echo "git push --force origin main"'
+
+# **The shapes at their widest** (inbox #1292): each allow below is the form of a command a
+# session ran, whose GitHub words are only text written to a file or searched for. A bare delimiter over a body with no $,
+# backtick or backslash is passed on as a quoted one's is; a file behind one variable is a path;
+# and the cat and the search may stand in a sequence of plain reads (cd first, then pwd, true,
+# echo, ls, wc, head, tail, cat, cut, mkdir), none of which runs what it is given.
+assert_write_guard "shape 1: a bare delimiter, a body with no \$, backtick or backslash -> allow" allow "cat > /tmp/b.md <<EOF
+git push and gh pr merge 3
+EOF"
+assert_write_guard "shape 2: a bare delimiter on the wrapped commit, a plain body -> allow" allow \
+    "uv run python tools/agent-identity.py run claude-coder -- git commit -F - <<EOF
+mention git push
+EOF"
+assert_write_guard "shape 1: a file behind \$NAME/ -> allow" allow "cat > \$CLAUDE_JOB_DIR/tmp/x.md <<'EOF'
+git push
+EOF"
+assert_write_guard "shape 1: a file behind \${NAME}/ -> allow" allow "cat > \${CLAUDE_JOB_DIR}/tmp/x.md <<'EOF'
+git push
+EOF"
+assert_write_guard "shape 1: cd && cat >> brief <<'EOF' naming tools/update-pr.sh, then pwd -> allow" allow \
+    "cd /x/y && cat >> .claude/briefs/b.md <<'EOF'
+run tools/update-pr.sh 3; git push only wrapped
+EOF
+pwd"
+assert_write_guard "shape 1: cat > brief <<'EOF', then echo ok -> allow" allow "cat > .claude/briefs/b.md <<'EOF'
+gh pr merge 3
+EOF
+echo ok"
+assert_write_guard "shape 1: cat >> brief <<'EOF', then tail piped to head -> allow" allow "cat >> .claude/briefs/b.md <<'EOF'
+gh pr merge 3
+EOF
+tail -3 .claude/briefs/b.md | head -1"
+assert_write_guard "shape 1: mkdir -p && cat > ... <<'EOF', then echo ok -> allow" allow "mkdir -p /tmp/a && cat > /tmp/a/b.md <<'EOF'
+git push
+EOF
+echo ok"
+assert_write_guard "shape 1: three heredocs one after the other, then wc -> allow" allow "cd /x/briefs && cat >> a.md <<'EOF'
+run git push only wrapped
+EOF
+cat >> b.md <<'EOF'
+never gh issue close by hand
+EOF
+cat >> c.md <<'EOF'
+tools/land-prs.sh lands them
+EOF
+wc -l a.md b.md c.md"
+assert_write_guard "shape 3: cd && rg with a quoted pattern, piped to head -> allow" allow \
+    "cd /x && rg -n 'gh pr merge' tools | head -5"
+assert_write_guard "shape 3: two searches, one piped to cut -> allow" allow \
+    "rg -n \"git push\" a | cut -c1-80; grep -c 'gh issue close' b"
+assert_write_guard "shape 3: grep piped to grep piped to head -> allow" allow \
+    'grep -n -i -A3 "merge" a.md | grep -i -E "squash|gh pr merge|release" | head -30'
+# The near misses of the wider shapes: the shell would expand the body, something other than a
+# plain read stands beside the text, or a real write does.
+assert_write_guard "near shape 1: a bare delimiter around \$(gh pr merge 3) -> deny" deny "cat > /tmp/b.md <<EOF
+\$(gh pr merge 3)
+EOF"
+assert_write_guard "near shape 1: a bare delimiter around a backticked gh pr merge -> deny" deny "cat > /tmp/b.md <<EOF
+\`gh pr merge 3\`
+EOF"
+assert_write_guard "near shape 1: a bare delimiter, a backslash joining the terminator's line -> deny" deny "cat > /tmp/b.md <<EOF
+git push \\
+EOF
+EOF"
+assert_write_guard "near shape 1: quoted first, then a bare delimiter around \$(git push) -> deny" deny "cat > /tmp/b.md <<'A'
+x
+A
+cat > /tmp/c.md <<B
+\$(git push)
+B"
+assert_write_guard "near shape 1: a file behind \$A\$(git push)/ -> deny" deny "cat > \$A\$(git push)/x <<'EOF'
+x
+EOF"
+assert_write_guard "near shape 1: a file behind \${A:-\$(git push)}/ -> deny" deny "cat > \${A:-\$(git push)}/x <<'EOF'
+git push
+EOF"
+assert_write_guard "near shape 1: cd \$(git push) && cat -> deny" deny "cd \$(git push) && cat > x <<'EOF'
+x
+EOF"
+assert_write_guard "near shape 1: a cd that is not first -> deny" deny "pwd; cd /x && cat > x <<'EOF'
+git push
+EOF"
+assert_write_guard "near shape 1: echo ok, then a second command that writes -> deny" deny "cat > /tmp/b.md <<'EOF'
+x
+EOF
+echo ok; gh pr merge 3"
+assert_write_guard "near shape 1: cd, a brief, then the PR-update script run -> deny" deny "cd /x && cat > /tmp/b.md <<'EOF'
+prose
+EOF
+tools/update-pr.sh 3"
+assert_write_guard "near shape 1: the written file run by its path -> deny" deny "cd /x && cat > x.sh <<'EOF'
+git push
+EOF
+./x.sh"
+assert_write_guard "near shape 1: the written file piped to sh -> deny" deny "cat > /tmp/b.md <<'EOF'
+git push
+EOF
+cat /tmp/b.md | sh"
+assert_write_guard "near shape 1: the heredoc's cat piped to sh -> deny" deny "cat > /tmp/b.md <<'EOF' | sh
+git push
+EOF"
+assert_write_guard "near shape 1: a pipe into the heredoc's cat -> deny" deny "rg -o 'git push' f | cat > /tmp/b.md <<'EOF'
+git push
+EOF"
+assert_write_guard "near shape 1: sed after the body -> deny, sed is no plain read" deny "cat > /tmp/b.md <<'EOF'
+git push
+EOF
+sed -n 1p /tmp/b.md"
+assert_write_guard "near shape 1: python3 running the written file -> deny" deny "cat > /tmp/s.py <<'EOF'
+subprocess.run(['git', 'push'])
+EOF
+python3 -I /tmp/s.py"
+assert_write_guard "near shape 1: a read sent to the background -> deny" deny "cat > /tmp/b.md <<'EOF'
+git push
+EOF
+pwd &"
+assert_write_guard "near shape 1: echo with a redirection after the body -> deny" deny "cat > /tmp/b.md <<'EOF'
+git push
+EOF
+echo ok > /tmp/x.sh"
+assert_write_guard "near shape 1: echo \$(git push) after the body -> deny" deny "cat > /tmp/b.md <<'EOF'
+git push
+EOF
+echo \$(git push)"
+assert_write_guard "near shape 3: cd && rg --pre sh, piped to head -> deny" deny "cd /x && rg --pre sh 'git push' x | head"
+assert_write_guard "near shape 3: rg piped to xargs sh -c -> deny" deny "rg 'git push' x | xargs sh -c"
+assert_write_guard "near shape 3: echo ok && git push -> deny" deny 'echo ok && git push'
 
 # Every reproduction from PR #429's three reviews, each denied by main's guard: none is a text
 # shape, so each is read as main reads it and denies here too.

@@ -120,17 +120,24 @@ command of its own:
    `tools/inbox.py capture --body-file <file>`. Read the file back before passing it on.
 
 The second call stands alone because of the guard: **a write's words in text deny like a call** —
-in an echo, a commit message, a body, a heredoc — **except in three shapes, each the whole command
-and nothing else in it** (plaid-tapir 4):
+in an echo, a commit message, a body, a heredoc — **except in three shapes whose text it can tell
+apart for certain** (plaid-tapir 4), each as wide as that certainty reaches so that a command which
+only writes text naming the GitHub CLI is not refused (inbox #1292):
 
-- `cat > FILE <<'EOF'` (or `cat <<'EOF' > FILE`, `>>`), the delimiter quoted, whose body is text;
-- a coder's or the orchestrator's wrapped `git commit -F - <<'EOF'`, whose body is text and which
-  is judged as the wrapped commit;
+- `cat > FILE <<'EOF'` (or `cat <<'EOF' > FILE`, `>>`), whose body is text: the delimiter quoted,
+  or bare over a body with no `$`, backtick or backslash; the file a plain path or one behind a
+  single variable (`$NAME/...`);
+- a coder's or the orchestrator's wrapped `git commit -F - <<'EOF'` as the whole command, whose
+  body is text and which is judged as the wrapped commit;
 - `rg` or `grep` with one quoted pattern, plain options and paths, whose pattern is text.
 
-Anything else — `d=$(mktemp -d)` or `mkdir -p … &&` in front, a second command after the body, an
-unquoted delimiter, `<<-`, a `$` in a double-quoted pattern, a pipe — is read as the guard reads
-every command, and a body that names a write then denies.
+The `cat` and the search may stand in a sequence of plain reads, which run nothing they are given:
+`cd <path> &&` first, then `pwd`, `echo`, `ls`, `wc`, `head`, `tail`, `cat`, `cut` or `mkdir` with
+plain words, so a brief appended with `cd … && cat >> … <<'EOF'` and a `pwd` after it, or a search
+piped to `head`, passes. The guard's header holds the exact list. Anything else — `d=$(mktemp -d)`
+in front, a command after the body that is no plain read (`python3`, `bash`, `sed`, `git`), a bare
+delimiter over a body with a `$`, `<<-`, a `$` in a double-quoted pattern, a pipe to anything else —
+is read as the guard reads every command, and a body that names a write then denies.
 
 ## Pushing
 
