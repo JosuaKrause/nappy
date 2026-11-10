@@ -41,8 +41,8 @@ automatically, quiet, or looping. Its `--help` says what it measures.
 
 **What answers the resume's number already.** `.claude/hooks/resume-guard.py` refuses, once, the
 resume of a sub-agent past 400k tokens of context or of one compacted automatically, and the
-orchestrating skill's `references/writing-a-brief.md` holds the three numbers; no limit counts
-turns.
+orchestrating skill's `references/writing-a-brief.md` holds the size a task is scoped to and the
+size a resume is refused at; no limit counts turns.
 
 **The item.** `reassessment-rule.md` is the rule's sentence in the orchestrating skill.
 

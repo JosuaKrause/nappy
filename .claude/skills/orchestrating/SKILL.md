@@ -307,12 +307,12 @@ before spawning:
   `references/writing-a-brief.md` says where the limit falls and how a task is cut to it (one kind
   of work per agent, one mechanism per build, a fresh agent per pull request of a split plan).
 - **A warm agent is reused while rebriefing would cost more** (inbox #896 in plaid-raven). Briefing a fresh agent
-  costs tokens too, so a follow-up on the agent's own pull request (review fixes, a delta review, a
-  merge of `main`) goes back to its agent while it is warm (the cold-resume rule below), which
-  saves the rebriefing. Past the size a resume is refused at, only the short jobs the refusal names
-  as a follow-up (a delta review, review or CI fixes, a merge of `main`, a stop or wrap-up) still
-  save it, and the next step of the change is new work for a fresh agent, which is the question the
-  hook's refusal asks. What the orchestrator is told for free, such as the token count in an agent's
+  costs tokens too, so work on the agent's own pull request (review fixes, a delta review, a merge
+  of `main`, the next step of the same change) goes back to its agent while it is warm (the
+  cold-resume rule below) and under the size a resume is refused at, which saves the rebriefing.
+  Past that size, only the short jobs the refusal names as a follow-up (a delta review, review or
+  CI fixes, a merge of `main`, a stop or wrap-up) still save it, and the next step of the change is
+  new work for a fresh agent, which is the question the hook's refusal asks. What the orchestrator is told for free, such as the token count in an agent's
   finishing notification, is used: it says whether the agent is past the size a resume is refused
   at, and how the next brief should be sized.
 - **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent that

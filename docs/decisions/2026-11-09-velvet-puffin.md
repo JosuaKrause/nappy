@@ -34,7 +34,12 @@ hold at the one moment it mattered.
   30 to 60 turns for a review, and `tools/agents-to-reassess.py` reads the scoping sentence in its
   new wording and flags nothing for turns alone; its `turns` column stays as information.
 - **The skills** say what the hook enforces: the orchestrating skill's opening list, its bullet on
-  an agent staying on one task, and the using-tools paragraph on the hooks.
+  an agent staying on one task, and the using-tools paragraph on the hooks. Two more sentences of
+  the orchestrating skill change what the orchestrator does: the model table's row for review fixes
+  reads "the builder, while warm", since a fix on the agent's own pull request is sent again at any
+  size, and the bullet on reusing a warm agent sends work on its own pull request, the next step of
+  the same change included, back to it while it is warm and under the size a resume is refused at;
+  past that size only the refusal's short follow-up jobs go back.
 
 ## Measured
 
@@ -60,6 +65,15 @@ player does not act on cost alone (inbox #1291).
   goes a bit over now and then" asks for.
 - **"Never for more work"** as the refusal's wording in the first build: the refusal asks its one
   question instead, and only new work goes to a fresh agent.
+- **A sentence in the refusal that work never moves to another model by a resume, only by a new
+  brief**, which the design's refusal text held and the hook and its test carried. It was taken
+  out: a resume carries no choice of model, since a message goes to the agent as it runs, so the
+  sentence warned of something a resume cannot do. The player's words on a change of model belong
+  to the reassessment, and `reassessment-rule.md` holds them.
+- **A warm-agent bullet that named only review fixes, a delta review and a merge of `main`**, the
+  first fix of that bullet: it took the next step of a change away from a warm agent under the
+  size, where the player's rule bounds the reuse by the agent's size and not by the kind of job
+  (inbox #896 in plaid-raven), and the later words narrow it past 400k only.
 
 ## Choices open to the player's overturn
 
@@ -70,7 +84,9 @@ strictly more than the number; the reworded item on a cold agent's follow-up in
 request: the refusal prints exact token counts; exactly one matching sentence is required and a
 size of zero is unreadable. And one in `tools/agents-to-reassess.py`: its `turns` column still
 shows a turn count, for information, as a sign an agent is stuck, where the table the player
-agreed to has no turn counters anywhere; no limit and no flag reads it.
+agreed to has no turn counters anywhere; no limit and no flag reads it. And the orchestrator's
+ruling: the refusal carries no sentence about a model, though the player's words are "never switch
+a model with the full context. when switching a model do a new brief" (merry-badger #1298).
 
 ## What is left of the entry
 
