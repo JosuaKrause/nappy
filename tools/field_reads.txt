@@ -500,13 +500,7 @@ src/events/behaviours/event_officer.gd pursuit
 src/events/behaviours/event_pursuit.gd pursuit
 src/events/behaviours/event_route_walk.gd paces
 src/events/behaviours/event_route_walk.gd speed
-src/events/checkpoint_controller.gd detain_seconds
-src/events/checkpoint_controller.gd id
-src/events/checkpoint_controller.gd obstructs_radius
-src/events/checkpoint_controller.gd redetains
-src/events/checkpoint_controller.gd solid_when
 src/events/day_events.gd pursuit
-src/events/encounter_watch.gd detain_seconds
 src/events/event_catalogue.gd abduction
 src/events/event_catalogue.gd act_tag
 src/events/event_catalogue.gd aftermath
@@ -667,7 +661,6 @@ src/events/event_scheduler.gd repeat_every
 src/events/event_scheduler.gd role
 src/events/event_scheduler.gd spawn_mode
 src/events/event_scheduler.gd weight
-src/events/event_sources.gd barrier_structure
 src/events/event_spawner.gd aftermath
 src/events/event_spawner.gd detain_seconds
 src/events/event_spawner.gd from_outside
@@ -913,13 +906,6 @@ src/events/behaviours/roadblock_far_guard.gd def
 src/events/behaviours/roadblock_far_guard.gd departure
 src/events/behaviours/roadblock_far_guard.gd player_at
 src/events/checkpoint_controller.gd baby_awake
-src/events/checkpoint_controller.gd def
-src/events/checkpoint_controller.gd guard_warns_her
-src/events/checkpoint_controller.gd is_finished
-src/events/checkpoint_controller.gd is_leaving
-src/events/encounter_watch.gd def
-src/events/encounter_watch.gd encounter
-src/events/encounter_watch.gd excitement
 src/events/event_excitement.gd age
 src/events/event_excitement.gd car
 src/events/event_excitement.gd def
@@ -937,8 +923,6 @@ src/events/event_manager.gd player_running
 src/events/event_manager.gd player_view
 src/events/event_manager.gd pram_at
 src/events/event_manager.gd she_is_held
-src/events/event_sources.gd def
-src/events/event_sources.gd excitement
 src/events/event_spawner.gd atlas
 src/events/event_spawner.gd came_under_a_warning
 src/events/event_spawner.gd def
