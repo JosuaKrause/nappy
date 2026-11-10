@@ -43,7 +43,7 @@ extends Control
 ## offscreen"; calm-kestrel, inbox #559: "place the object immediately off screen so it will
 ## immediately start coming on the screen turning off the warning".)* Nothing about it is measured:
 ## the warning is the claim that it is coming. Then the thing exists just out of sight and keeps the
-## badge (`EventInstance.came_under_a_warning`) until she can see it, which is as soon as it moves.
+## badge (`EventInstance.was_warned_of()`) until she can see it, which is as soon as it moves.
 
 ## How far in from each screen edge the chevrons sit, as left/top/right/bottom. Asymmetric
 ## because the screen is: the clock and the run header are along the top, and the two meters and
@@ -174,20 +174,20 @@ func _measure(delta: float) -> void:
 		_own_view.look_through(_player)
 	var subjects: Array = []
 	for instance in _live():
-		if not instance.is_finished:
+		if not instance.is_gone():
 			subjects.append(_subject_of(instance))
 	for warning in _warnings():
-		if warning.place != Vector2.INF:
+		if warning.points_at() != Vector2.INF:
 			subjects.append(_subject_of_warning(warning))
-	model.step(delta, _player.global_position, subjects, sees, Tuning.WALK_SPEED)
+	model.step(delta, _player.global_position, subjects, sees)
 
 ## The facts the model reads about a live instance.
 func _subject_of(instance: EventInstance) -> BadgeModel.Subject:
-	var subject := subject_for_def(instance.def)
+	var subject := subject_for_def(instance.row())
 	subject.key = instance.get_instance_id()
 	subject.position = instance.global_position
-	subject.finished = instance.is_finished
-	subject.warned = instance.came_under_a_warning
+	subject.finished = instance.is_gone()
+	subject.warned = instance.was_warned_of()
 	subject.charging = instance.has_charged()
 	subject.shown = _shows(instance)
 	subject.logged_name = instance.logged_name()
@@ -195,25 +195,23 @@ func _subject_of(instance: EventInstance) -> BadgeModel.Subject:
 
 ## The facts the model reads about a warning with nothing in the world yet.
 func _subject_of_warning(warning: PendingWarning) -> BadgeModel.Subject:
-	var subject := subject_for_def(warning.def)
+	var subject := subject_for_def(warning.row())
 	subject.pending = true
-	subject.position = warning.place
-	subject.left = warning.left
+	subject.position = warning.points_at()
+	subject.left = warning.seconds_left()
 	subject.logged_name = warning.logged_name()
 	return subject
 
+## The facts the model reads about a row, live or warned of: whether its coming is worth an arrow
+## (`EventDef.announces_its_coming()` at her walk), how fast it comes at her and where its field's
+## edge is.
 static func subject_for_def(def: EventDef) -> BadgeModel.Subject:
 	var subject := BadgeModel.Subject.new()
 	subject.payload = def
+	subject.announces = def.announces_its_coming(Tuning.WALK_SPEED)
+	subject.approach_speed = def.approach_speed()
 	subject.speed = def.speed
-	subject.outer_radius = def.outer_radius
-	subject.chase_speed = def.chase_speed() if def.pursuit != null else def.speed
-	subject.telegraphs = def.telegraphs
-	subject.has_icon = not EventPictures.icon_for(def.look).is_empty()
-	subject.ahead_of_player = def.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER
-	subject.pursues = def.pursuit != null
-	subject.hard_fail = def.hard_fail
-	subject.mobile = def.mobile
+	subject.heard_within = def.heard_within()
 	return subject
 
 ## What is on the edge of the screen right now: `{id, distance, approach}` per badge, nearest
@@ -249,7 +247,7 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 
 	# The same two colours the caret over the entity uses, meaning the same two things.
 	# A badge and a caret that disagreed about what red meant would be two vocabularies.
-	var colour := Palette.MARK_LETHAL if def.hard_fail else Palette.MARK_COSTLY
+	var colour := Palette.MARK_LETHAL if def.ends_the_day() else Palette.MARK_COSTLY
 	# A disc under the whole thing, so the icon and the number read over a pale pavement and a
 	# dark carriageway alike. The one place in the game a filled circle is still allowed —
 	# it is a badge on the screen, not a field drawn in the world.
@@ -260,24 +258,25 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 
 	# The thing itself, so the arrow says *what* rather than *something*. Scaled to fit the
 	# badge with its aspect kept: these are authored at world scale and a square box squashes a
-	# fire engine into something unrecognisable, which defeats the whole cue.
-	var picture := EventPictures.icon_for(def.look)
-	if not picture.is_empty():
-		# The size comes from the region table rather than from the texture, so the badge's own
-		# fit is arithmetic that needs nothing loaded; the region itself is the one thing here
-		# that does, and the `events` page is held for the whole process from either boot's own
-		# loading window (`main.RESIDENT_GROUPS`), so it is there in the building as in the city.
-		var name := StringName(picture)
-		var art := Vector2(AtlasTable.baked().native_size(name))
-		var fit := ICON / maxf(art.x, art.y)
-		var drawn := art * fit
-		var rect := Rect2(at - drawn * 0.5, drawn)
-		draw_texture_rect(atlas.region(name), rect, false)
-		# A vehicle's wheels are a picture of their own on the same canvas, so they fit the same
-		# rectangle and go over the body the way the street draws them.
-		var wheels := EventPictures.icon_wheels_for(def.look)
-		if not wheels.is_empty():
-			draw_texture_rect(atlas.region(StringName(wheels)), rect, false)
+	# fire engine into something unrecognisable, which defeats the whole cue. Every row the badge
+	# draws has a picture, and every picture has a silhouette: the catalogue suite fails the build
+	# on one that does not. (A warned creation is raised by `BadgeModel` without asking
+	# `announces_its_coming()`; every warned row announces, so the two paths draw the same rows.)
+	# The size comes from the region table rather than from the texture, so the badge's own fit is
+	# arithmetic that needs nothing loaded; the region itself is the one thing here that does, and
+	# the `events` page is held for the whole process from either boot's own loading window
+	# (`main.RESIDENT_GROUPS`), so it is there in the building as in the city.
+	var name := StringName(EventPictures.icon_for(def.picture()))
+	var art := Vector2(AtlasTable.baked().native_size(name))
+	var fit := ICON / maxf(art.x, art.y)
+	var drawn := art * fit
+	var rect := Rect2(at - drawn * 0.5, drawn)
+	draw_texture_rect(atlas.region(name), rect, false)
+	# A vehicle's wheels are a picture of their own on the same canvas, so they fit the same
+	# rectangle and go over the body the way the street draws them.
+	var wheels := EventPictures.icon_wheels_for(def.picture())
+	if not wheels.is_empty():
+		draw_texture_rect(atlas.region(StringName(wheels)), rect, false)
 
 	var label := Texts.DISTANCE_METRES % roundi(distance / Tuning.TILE_SIZE * 1.5)
 	var font := ThemeDB.fallback_font

@@ -77,7 +77,7 @@ Three objects are meant by "an event" below, and each is named this way througho
    hundreds of agents, and rows that cannot change take per-frame reads out of the baby's sweep
    and the danger prediction. Section 6 names the probes.
 10. **Nothing the player sees or the logs say changes.** Every step is at test parity, the run
-    log and GoatCounter names included. Three answers that are slightly wrong today are each
+    log and GoatCounter names included. Four answers that are slightly wrong today are each
     made correct in a pull request of its own, after the step that names it (section 7, point 6).
 
 ## 1. The parts
@@ -332,7 +332,7 @@ sites, and the seal and region planners under `src/routes/`.
 | Does it close ground, and how far | row `closes_ground()`, `obstructs_within()` ok | body |
 | Does it stop her, how far, and where are its pieces | row `has_a_body()`, `solid_reach()` ok, `body_pieces()` (today `parts()`), `ground_shape()` | body |
 | Is its body recorded on the ground for the whole day (a standing body that is no door and no boom) | row `stands_as_a_fixed_body()` | body, hold |
-| Does entering it end the day, and within what | row `ends_the_day()`, `lethal_reach()` ok, `effect()` ok | lethal |
+| Does entering it end the day, and within what | row `ends_the_day()` ok, `lethal_reach()` ok, `effect()` ok | lethal |
 | How far does its field reach, and how far does it charge more than a walk takes off | row `field_reach()` ok, `line_reach()` ok, `reach_above(rate)` ok, `has_a_field()` ok, `reaches_the_far_lane()` ok | field (with body and route) |
 | What does walking through it cost | row `walk_through_cost()` ok | field |
 | Does a zero-cost line have to get past it | row `has_a_line_to_avoid()` ok; plan `counts_against_the_line()` ok | the row; the plan |
@@ -358,8 +358,8 @@ shared state. What it asks, and what the event is asked on its behalf:
 
 | What is asked | Method | Answered by |
 |---|---|---|
-| Which door bodies hold a walker (asked once as a day starts, `Crowd`) | plan `detains_her()`, `placed_at()` ok | hold |
-| The discs of the wall's and the doors' bodies, for siting (`DayStreets.siting_region()`) | plan `obstructs_within()`, `placed_at()` ok | body |
+| Which door bodies hold a walker (asked once as a day starts, `Crowd`) | plan `detains_her()` ok, `placed_at()` ok | hold |
+| The discs of the wall's and the doors' bodies, for siting (`DayStreets.siting_region()`) | plan `obstructs_within()` ok, `placed_at()` ok | body |
 | Is a figure standing still walked round or walked through; has it parked for good | asked by the live body as it fills its event's move: the body part's `is_walked_round()`, `parks()` | body |
 | Which tiles a standing body takes (the map's blocked record, written by `EventSpawner`) | row `stands_as_a_fixed_body()`, `body_pieces()` | body |
 | Is the boom up | live `is_raised()` ok | body |
@@ -369,7 +369,7 @@ shared state. What it asks, and what the event is asked on its behalf:
 | What is asked | Method | Answered by |
 |---|---|---|
 | What the baby is charged at a point | `EventManager` sums `ExcitementSource.contribution_at(at)` ok over the live events' sources; live `source()` hands the source to the manager | field |
-| Has anything ended her day, and what | live `is_lethal_at(her)` ok, `logged_name()` ok, `row_id()` | lethal (a car: its driving) |
+| Has anything ended her day, and what | live `is_lethal_at(her)` ok, `logged_name()` ok, `row_id()` ok | lethal (a car: its driving) |
 | Does a row hold her, from how far, for how long, again | live `detains_her()`, `detain_distance()` (on the row today), `detains_for()`, `detains_again()` | hold |
 | Is a hold running, has it held her; start one | live `is_chatting()` ok, `has_chatted()` ok, `start_chat()` ok | hold |
 | Is this door body the boom | live and plan `is_a_boom()` | body |
@@ -379,13 +379,13 @@ shared state. What it asks, and what the event is asked on its behalf:
 
 | What is asked | Method | Answered by |
 |---|---|---|
-| Does its coming get a badge at the screen edge (today nine fields read into `BadgeModel.Subject`, and the rule in `worth_an_arrow()`) | row `announces_its_coming(walk_speed)`; the badge adds its own "and it has an icon" | warning, lethal, route, pursuit |
-| How fast does it come at her | row `approach_speed()` | pursuit, route |
-| How far out is its field's edge (the badge's gap) | row `heard_within()` | field |
-| Which colour, which icon | row `ends_the_day()`, `picture()` | lethal, look |
-| Is it gone, did it come under a warning, is it charging, is it in view | live `is_gone()`, `was_warned_of()`, `has_charged()` ok, `drawn_box()` ok | the live event |
-| A warning with nothing in the world yet (`PendingWarning`) | `row()`, `points_at()`, `seconds_left()`, `logged_name()` ok | the warning |
-| The run lesson's hint: is this a pursuer, how long does it telegraph | live `pursues()`, `telegraphs_for()` | pursuit, warning |
+| Does its coming get a badge at the screen edge | row `announces_its_coming(walk_speed)` ok | warning, lethal, route, pursuit |
+| How fast does it come at her | row `approach_speed()` ok | pursuit, route |
+| How far out is its field's edge (the badge's gap) | row `heard_within()` ok | field |
+| Which colour, which icon | row `ends_the_day()` ok, `picture()` ok | lethal, look |
+| Is it gone, did it come under a warning, is it charging, is it in view | live `is_gone()` ok, `was_warned_of()` ok, `has_charged()` ok, `drawn_box()` ok | the live event |
+| A warning with nothing in the world yet (`PendingWarning`) | `row()` ok, `points_at()` ok, `seconds_left()` ok, `logged_name()` ok | the warning |
+| The run lesson's hint: is this a pursuer, how long does it telegraph | live `pursues()` ok, `telegraphs_for()` ok | pursuit, warning |
 | The halo, the caret and the mark over her head | `ExcitementSource` ok: `contribution_at()`, `expected_gross_at()`, `will_be_lethal()`, its rim | field |
 | The debug view's fields layer | live `field_rings()` (the radii it draws), `ends_the_day()`, `field_shape()` ok, `solid_axis()` ok, `ground_shape()` | field, body |
 
@@ -393,11 +393,11 @@ shared state. What it asks, and what the event is asked on its behalf:
 
 | What is asked | Method | Answered by |
 |---|---|---|
-| What an event is called | live `logged_name()` ok, `row_id()`; plan `row_id()` ok | the row |
-| What raised the mark over her head | live `closes_on(point)` (a car warning her), `ends_the_day()`, `field_reaches(point)` | car, lethal, field |
-| A chase's log lines | live `pursues()`, `is_waiting()` ok, `is_telegraphing()` ok, `is_chasing()` ok, `is_gone()`, `is_on_its_way_out()`, `has_stopped_her()` ok | pursuit, the live event |
-| Which planned events she has met | plan `is_in_the_world()` ok, `field_reaches(point)` | the plan, asking field |
-| The telemetry map's marks | plan `is_placed()` ok, `role()`, `walks()` ok, `placed_at()` ok, `ends_the_day()` | the plan |
+| What an event is called | live `logged_name()` ok, `row_id()` ok; plan `row_id()` ok | the row |
+| What raised the mark over her head | live `closes_on(point)` ok (a car warning her), `ends_the_day()` ok, `field_reaches(point)` ok | car, lethal, field |
+| A chase's log lines | live `pursues()` ok, `is_waiting()` ok, `is_telegraphing()` ok, `is_chasing()` ok, `is_gone()` ok, `is_on_its_way_out()` ok, `has_stopped_her()` ok | pursuit, the live event |
+| Which planned events she has met | plan `is_in_the_world()` ok, `field_reaches(point)` ok | the plan, asking field |
+| The telemetry map's marks | plan `is_placed()` ok, `role()`, `walks()` ok, `placed_at()` ok, `ends_the_day()` ok | the plan |
 | The day's counts by row | plan `row_id()` ok | the plan |
 | The nearest event, for the readouts | live `row_id()`, `age()`, `telegraphs_for()`, `field_reaches(point)` | the live event |
 | What an encounter was (`EncounterWatch`, inside the events) | live `detains_her()`, `source()`; its own record kept in its own table, not on the live event | hold, field |
@@ -468,10 +468,8 @@ and handed around (inbox #1156 in gray-dolphin).
 
 | Today | Where | One question |
 |---|---|---|
-| nine fields copied into `BadgeModel.Subject`, then `telegraphs and has_icon and not (ahead and not pursues) and (hard_fail or mobile and speed > walk)` | `DangerEdge`, `BadgeModel` | row `announces_its_coming(walk_speed)` |
-| `chase_speed() if pursuit != null else speed` | `DangerEdge` | row `approach_speed()` |
 | `pursuit.speed if pursuit else (speed if mobile else 0.0)`, three times | `EventDef` | one private helper of the row |
-| a distance compared with `def.outer_radius`, five times | the run log's observer (four), the unmarked van's take | live and plan `field_reaches(point)` |
+| a distance compared with `def.outer_radius` | the unmarked van's take | live `field_reaches(point)` ok, which the run log's observer already asks |
 | `distance <= def.inner_radius` | the resistance's contact point | live `core_reaches(point)` |
 | `not is_finished and def.hard_fail and not def.mobile` | the route rig | live `is_a_standing_lethal_place()` |
 | `shape != null and obstructs_radius > 0 and not mobile and detain_seconds <= 0 and solid_when != WHILE_LOWERED` | the route rig, and the spawner's own record in other words | row `stands_as_a_fixed_body()` |
@@ -556,10 +554,9 @@ plan then answers `stands_at()` and `body_tiles()` itself.
 Counted on `main` as it stood on 2026-11-09 with `uv run python tools/check_field_reads.py --list`
 and `--summary`, and with `rg` for what the check cannot see.
 
-- **The check's list**: 1,220 lines in 77 classes. 688 have their reader in `src/events/`; 677 are
-  reads of a class declared in `src/events/`, 589 from inside the folder and 88 crossing in from
-  outside (`src/dev/` 31, `src/resistance/` 19, `src/ui/` 17, `src/routes/` 9, `src/city/` 6,
-  `src/telemetry/` 4, `src/finale/` 2).
+- **The check's list**: 1,187 lines in 77 classes. 687 have their reader in `src/events/`; 655 are
+  reads of a class declared in `src/events/`, 589 from inside the folder and 66 crossing in from
+  outside (`src/dev/` 31, `src/resistance/` 19, `src/routes/` 9, `src/city/` 6, `src/ui/` 1).
 - **A line is one reader file and one field**, so the uses are more: 1,504 of the row's fields
   (974 of them the catalogue writing its rows), 583 of the live event's, 57 of `PursuitSpec`'s.
 - **The plan record is not in the list at all**: the check does not see an inner class. `rg` by
@@ -567,11 +564,9 @@ and `--summary`, and with `rg` for what the check cannot see.
   `event_streaming.gd` (the search guesses receivers by name, so the builder counts again once
   `EventPlan` is a class the check sees).
 - **Reads through an untyped receiver, which the check skips**, found with `rg '\.def\.'` outside
-  `src/events/`: `crowd.gd` (the door bodies' `detain_seconds`), `day_streets.gd`
-  (`obstructs_radius`), `poster_walls.gd` and `city.gd` (`id`), `debug_layers.gd` (five),
-  `dev_rig.gd` (seven), `region_planner.gd` (one write). In all `rg` finds 70 reads of a row's
-  field through `.def.` in 19 files outside the events folder, 30 of them `id`, where the check
-  lists 53 lines.
+  `src/events/`: `city.gd` (`id`), `debug_layers.gd` (five), `dev_rig.gd` (seven),
+  `region_planner.gd` (one write). In all `rg` finds 51 reads of a row's field through `.def.` in
+  14 files outside the events folder, 24 of them `id`.
 - **The tests**: 138 files under `tests/` read an event's field. `.def.id` 258 times,
   `.player_at` 225, `.is_finished` 154, `.live` 144, `.is_leaving` 133, `.def.obstructs_radius`
   46, `.phase` 40; 11 files build a row with `EventDef.new()` and 18 write a row's field.
@@ -585,7 +580,7 @@ counted where it only writes.
 
 | Field | Reader files | Replaced by |
 |---|---|---|
-| `id` | 9 in, 5 out (the readouts, the route rig, the scene recipes, the still watch, the resistance), 30 untyped | row `id()`; through a live event `row_id()` and `logged_name()` ok; through a plan `row_id()` ok, `is_the_same_row_as()` |
+| `id` | 9 in, 5 out (the readouts, the route rig, the scene recipes, the still watch, the resistance), 24 untyped | row `id()`; through a live event `row_id()` and `logged_name()` ok; through a plan `row_id()` ok, `is_the_same_row_as()` |
 | `display_name` | written by the catalogue; no reader in `src/`, `tests/` or `tools/` | deleted, nobody would miss it (section 7) |
 | `noun`, `noun_plural` | 2 in (`EventsAhead`'s run-log lines) | row `noun(count)` |
 | `counts_charges_as` | 2 in | row `charges_counted_as()` (its own id where it names none) |
@@ -597,47 +592,47 @@ counted where it only writes.
 | `placement` | 4 in (the scheduler nine times, the director, the pending warning) | row `stands_on(tile_type)`, `ground_kinds()`, `stands_only_in_alleys()`, `ground_key()` |
 | `pavement_side` | 2 in, 1 out (`SealPlanner`) | row `sidewalk_lane()`; a draft for the seal's copy |
 | `_spans_the_street` | private already | row `spans_the_street()` ok; the draft's `spanning_the_street()` replaces `span_the_street()` |
-| `spawn_mode`, `from_day_after` (`DaySwitch`: `after_day`, `spawn_mode`, `notice`) | 2 in, 1 out (the badge); 7 lines of `DaySwitch`, all in | row `spawn_mode_on(day)` ok, `for_day(day)` ok, `comes_down_her_line()` ok, `crosses_ahead_of_her()`; `DaySwitch` becomes private to the row |
+| `spawn_mode`, `from_day_after` (`DaySwitch`: `after_day`, `spawn_mode`, `notice`) | 2 in; 7 lines of `DaySwitch`, all in | row `spawn_mode_on(day)` ok, `for_day(day)` ok, `comes_down_her_line()` ok, `crosses_ahead_of_her()`; `DaySwitch` becomes private to the row |
 | `on_her_way` (`OnHerWay.at_a_front`) | 2 in | row `is_sited_from_her_walk()`, `stands_at_a_front()`, `is_handed_to_her_walk()` ok, `is_a_set_piece_on_her_way()` |
 | `role` | 2 in, 1 out (the scene recipes), the resistance untyped | row `is_scenery()`, `is_a_mast()`; plan `is_a_mast()` |
 | `ambient_source` | 1 in (the scheduler) | row `ambient_source()` |
 | `duration` | 3 in | row `lasts_for()`; the field asks it for its swell |
 | `departs_at` | the catalogue | row `departure_speed()` ok |
-| `repeat_every`, `repeat_after` | 2 in, 1 out (the building's plan) | row `comes_again_every()`, `comes_again_after()`, asked once as a plan is made; plan `repeats()` ok |
+| `repeat_every`, `repeat_after` | 2 in | row `comes_again_every()` ok, `comes_again_after()`, asked once as a plan is made; plan `repeats()` ok |
 | `shape` | 11 in, 3 out (the route rig, the happenings, `SealPlanner`) | row `ground_shape()`; the field part's `datum()`; a draft for the copies; the live body and the look are handed the body part |
 | `solid_parts`, `_default_parts` | 1 in, 2 out (both copying it into a variant) | row `body_pieces()`; a draft copies parts, so the hand copy goes |
-| `obstructs_radius` | 10 in, 2 out (the route rig, `SealPlanner`), `day_streets.gd` untyped | row `obstructs_within()` ok, `closes_ground()`, `has_a_body()`, `solid_reach()` ok; the looks ask `drawn_width()` |
+| `obstructs_radius` | 10 in, 2 out (the route rig, `SealPlanner`) | row `obstructs_within()` ok, `closes_ground()`, `has_a_body()`, `solid_reach()` ok; the looks ask `drawn_width()` |
 | `solid_when` | 4 in, 1 out (the route rig), the resistance untyped | row `is_a_boom()`, `stands_as_a_fixed_body()`; the body part's `solid_from()` for the live body; live `is_solid()` ok |
 | `stands_as`, `when_it_stops` | 2 in each (the live event filling its move) | the body part's `is_walked_round()`, `parks()`, asked by the live body |
 | `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()`; the body part's `lies()` (one choice of four) for the footprints |
 | `vehicle` (`VehicleSpec.field_from_its_centre`) | 8 in, 2 out (the scene recipes, the park cordon); 3 lines of the spec | row `drives()`; the field part's `datum()` |
 | `intensity` | 7 in | row `has_a_field()` ok; the field part's `peak()` and `peak_through()` for the live event and the looks |
 | `inner_radius` | 6 in, 2 out (the resistance's contact point and director) | row `core_within()`; live `core_reaches(point)`; the flock and the looks are handed the field's spec |
-| `outer_radius` | 7 in, 2 out (the run log's observer, the badge), the dev rig untyped | row `heard_within()`; live and plan `field_reaches(point)`; live `field_rings()` |
+| `outer_radius` | 7 in, the dev rig untyped | row `heard_within()` ok; live and plan `field_reaches(point)` ok; live `field_rings()` |
 | `core_intensity`, `core_radius`, `falloff_power` | 2 in each | inside `FieldSpec`: `emission_at_distance()` ok, `reach_above()` ok, `silent_beyond()` ok |
 | `pulse_period`, `intensity_ramp` | 4 and 2 in | the field part's `peak_through()`, `pulses_every()` (the looks' flicker) |
 | `from_outside` | 2 in | the field part's `passes_walls()`, asked by the event's source and the spawner |
 | `barrier_structure` | 1 in, the manager and `EventSources` untyped | the field part's `counts_as_one_barrier()`, asked by `EventSources` |
-| `hard_fail` | 5 in, 2 out (the route rig, the badge), three untyped | row `ends_the_day()`, `effect()` ok; live `ends_the_day()`, `is_lethal_at()` ok |
+| `hard_fail` | 5 in, 1 out (the route rig), three untyped | row `ends_the_day()` ok, `effect()` ok; live `ends_the_day()` ok, `is_lethal_at()` ok |
 | `catch_reach` (and `PursuitSpec.catch_reach`) | the catalogue, `EventDef` | row `lethal_reach()` ok, stored once in `LethalSpec` |
-| `detain_seconds` | 6 in, 2 out (the route rig and its planner), `crowd.gd` untyped | row, plan and live `detains_her()`; `detains_for()` |
+| `detain_seconds` | 6 in, 2 out (the route rig and its planner) | row and plan `detains_her()` ok, live `detains_her()`; `detains_for()` |
 | `detain_radius` | the catalogue | row `detain_distance()` ok |
 | `redetains` | 3 in, four untyped out | row, plan and live `detains_again()` |
-| `pursuit` | 12 in, 6 out (the auto screenshot, the scene recipes, the park cordon, the run log's observer, the badge, the HUD) | `pursues()` on all three; row `chase_speed()` ok, `approach_speed()`, `starts_by()` ok, `standoff_reach()` ok, `was_sent_at_her()`; the pursuit behaviour is handed the spec |
+| `pursuit` | 12 in, 3 out (the auto screenshot, the scene recipes, the park cordon) | `pursues()` on all three (the live event's exists); row `chase_speed()` ok, `approach_speed()` ok, `starts_by()` ok, `standoff_reach()` ok, `was_sent_at_her()`; the pursuit behaviour is handed the spec |
 | `PursuitSpec`: `speed`, `start`, `warns_for`, `stands`, `walk_speed`, `lunge_reach`, `stop_excitement`, `leaves_its_body`, `warns_over_the_street` | 25 lines, all in (the row, the live event, two behaviours) | methods of the spec of the same names, the yes-or-no ones renamed (`stands_for_its_notice()`, `leaves_its_body_standing()`, `is_drawn_over_the_street()`); built by `PursuitSpec.at(speed).walking_at(...)` |
 | `notice` (`NoticeSpec`: `within`, `quiet`, `runs_within`) | 4 in; 7 lines of the spec, all in | row `waits_for_her()`, `notice_within()` ok; the spec's `within()`, `is_quiet()`, `runs_within()` |
 | `hunts`, `hunting`, `heat_response` (`HuntSpec`: `lets_out`, `pursuit`, `ends_the_day`) | the row itself, `EventsAhead`; 3 lines of the spec | row `answers_to_heat()`, `investigates()` ok, `lets_out()` ok, `at_heat(level)` ok |
-| `telegraph_time` | 4 in, 3 out (the readout, the building's plan, the HUD) | row and live `telegraphs_for()`; row `warning_time()` ok, `warned_for()` ok |
+| `telegraph_time` | 4 in, 1 out (the readout) | row and live `telegraphs_for()` ok; row `warning_time()` ok, `warned_for()` ok |
 | `still_while_telegraphing` | 3 in | the warning part's `holds_still()`; row `ahead_of_player_lead()` ok |
-| `telegraphs` | 2 in, 1 out (the badge) | row `telegraphs_its_coming()`, `announces_its_coming(walk_speed)` |
+| `telegraphs` | 2 in | row `telegraphs_its_coming()`, `announces_its_coming(walk_speed)` ok |
 | `warned_first`, `offscreen_notice` | 1 in and 1 out (the park cordon); 2 in | row `warns_before_it_exists()` ok, `warned_for()` ok, `was_sent_at_her()`, `as_warned_first()` ok |
-| `mobile` | 10 in, 2 out (the route rig, the badge) | row `moves()`, `approach_speed()` |
-| `speed` | 7 in, 2 out (the resistance, the badge) | row `speed()` |
+| `mobile` | 10 in, 1 out (the route rig) | row `moves()`, `approach_speed()` ok |
+| `speed` | 7 in, 2 out (the resistance; the badge, for a warning with nothing in the world yet, which section 7's point 6 makes `approach_speed()`) | row `speed()` |
 | `paces` | 4 in, 1 out (the happenings), the resistance untyped | row `paces_a_beat()`; live `beat()` |
 | `path_mode`, `path_length_tiles` | 3 and 2 in | the route part's `kind()`, `tiles()`, asked by the plan builder |
 | `stops_where_it_arrives` | 3 in, 1 out (the scene recipes) | row `parks_where_it_arrives()`; live `has_parked()` |
 | `flock_size`, `flock_spread` | 5 and 4 in | row `is_a_flock()`; `EventFlock` is handed `FlockSpec` |
-| `look` | 13 in (every look), 1 out (the badge's icon) | row `picture()`; each look is handed its `LookSpec` |
+| `look` | 13 in (every look) | row `picture()` ok; each look is handed its `LookSpec` |
 | `warning_picture`, `draws_body_shadow`, `trails_a_lead`, `hides_in_its_hold`, `may_be_a_pelican` | 2 or 3 in each (the footprints, the looks, the spawner) | methods of `LookSpec`, asked by the looks, the footprints and the spawner only |
 | `guard_sides` | 2 in, 1 out (`SealPlanner`), `RegionPlanner` writing | `LookSpec.guard_sides()`; a draft for the wall's copies |
 | `abduction` (`AbductionSpec`: `taken_over`, `standing_offset`) | 5 in; 5 lines of the spec | the abduction behaviour and the van's look are handed the spec; its two methods |
@@ -648,9 +643,9 @@ counted where it only writes.
 
 | Field | Reader files | Replaced by |
 |---|---|---|
-| `def` | 29 in, 11 out | the questions of section 2 on the live event; `row()` for passing the row on |
-| `is_finished` | 12 in, 8 out; 154 reads in tests | `is_gone()` |
-| `is_leaving` | 13 in; 133 in tests | `is_on_its_way_out()` |
+| `def` | 29 in, 8 out | the questions of section 2 on the live event; `row()` ok for passing the row on |
+| `is_finished` | 12 in, 6 out; 154 reads in tests | `is_gone()` ok |
+| `is_leaving` | 13 in; 133 in tests | `is_on_its_way_out()` ok |
 | `is_parked` | 3 in, 1 out (the resistance) | `has_parked()` |
 | `phase` | 2 in; 40 in tests | the phase questions (`is_waiting()` ok, `is_telegraphing()` ok, `is_active()`, `has_stopped_her()` ok, `is_only_its_barrier()`); `transition()` reached by its parts through `Figure.begin()` |
 | `age` | 7 in, 1 out (the readout); set by rigs and recipes | `age()`; set only by its own tick and by `resume()`, which becomes `restore(save)` in 3b |
@@ -659,14 +654,14 @@ counted where it only writes.
 | `_heading`, `_path_travelled`, `_gait_phase`, `_gait_moving` | 8, 4, 1 and 1 in (the behaviours) | `Figure.heading()`, `travelled()`, `turn_to()`, `walk_on()`; outside: `facing_now()` ok, `path_travelled()` ok, `gait_phase()` ok |
 | `_map`, `_navigator`, `_mover` | 4 in each | handed to each part at setup |
 | `_obstruction`, `_spread_vertical` | 2 in each (the barrier post, the car, the far guard) | `EventBody`: `drop()`, `pin_where_it_stands()`, `runs_vertically()` ok |
-| `_charge` (`ChargeRecord`: `began`, `ended`, `warned`), `_notice` (`Warning`: `length`, `cancel_if`, `on_expired`), `_telegraph_ended`, `_chase_way`, `_guard_spent`, `gave_up` | 1 to 3 in each (four behaviours) | `Figure.charge_began()`, `charge_ended()`, `hold_the_notice()`, `notice_has_run()`; `has_charged()` ok, `is_chasing()` ok, `has_given_up()` |
-| `hold`, `abduction`, `departure`, `route`, `car`, `barrier_post`, `investigation`, `pursuit`, `on_foot`, `notice_run`, `flock`, `unreachable` | 30 lines in (the composer, behaviours reaching siblings, three looks); the run log's observer reaches `car` untyped | private; siblings handed to each other by the composer; outside callers ask the live event (`closes_on(point)`, `is_taking_a_victim()` ok) |
+| `_charge` (`ChargeRecord`: `began`, `ended`, `warned`), `_notice` (`Warning`: `length`, `cancel_if`, `on_expired`), `_telegraph_ended`, `_chase_way`, `_guard_spent`, `gave_up` | 1 to 3 in each (four behaviours) | `Figure.charge_began()`, `charge_ended()`, `hold_the_notice()`, `notice_has_run()`; `has_charged()` ok, `is_chasing()` ok, `has_given_up()` ok |
+| `hold`, `abduction`, `departure`, `route`, `car`, `barrier_post`, `investigation`, `pursuit`, `on_foot`, `notice_run`, `flock`, `unreachable` | 30 lines in (the composer, behaviours reaching siblings, three looks) | private; siblings handed to each other by the composer; outside callers ask the live event (`closes_on(point)` ok, `is_taking_a_victim()` ok) |
 | `excitement` | 4 in | `source()` |
 | `drawer`, `atlas`, `timing`, `trace`, `signals`, `skip_draw`, `points_at`, `is_pelican` | 1 to 9 in (written by the spawner after it makes the event, read by the looks) | handed in at setup in one call; the looks are handed the drawer; `is_drawn_as_a_pelican()` |
 | `gate_state` | 2 in (two looks) | `is_raised()` ok, `boom_openness()`; handed in at setup from the plan's `gate()` |
 | `guard_warns_her` | 2 in | `raise_its_guards_hand(on)`, `is_its_guard_warning()` |
 | `silenced` | 2 in; written by streaming | `silence()`, `is_silenced()` |
-| `came_under_a_warning` | 1 out (the badge) | `was_warned_of()` |
+| `came_under_a_warning` | the live event itself | `was_warned_of()` ok |
 | `look` | 2 in (two looks reading another's) | private; a look is handed the look it needs |
 | `encounter` | 1 in (`EncounterWatch` keeping its record on the event) | deleted from the event; the watch keeps its own table |
 
@@ -676,17 +671,17 @@ Reads by `rg`, since the check does not list it.
 
 | Field | Reads | Replaced by |
 |---|---|---|
-| `def` | about 100 | `row()` ok for passing it on, `row_id()` ok, and the row's questions answered by the plan where callers ask through it (`pursues()`, `ends_the_day()`, `detains_her()`, `detains_again()`, `detain_distance()`, `is_a_boom()`, `obstructs_within()`, `field_reaches(point)`, `stands_as_a_fixed_body()`, `body_pieces()`) |
+| `def` | about 100 | `row()` ok for passing it on, `row_id()` ok, and the row's questions answered by the plan where callers ask through it (`pursues()`, `ends_the_day()` ok, `detains_her()` ok, `detains_again()`, `detain_distance()`, `is_a_boom()`, `obstructs_within()` ok, `field_reaches(point)` ok, `stands_as_a_fixed_body()`, `body_pieces()`) |
 | `position` | about 80 | `placed_at()` ok, `is_placed()` ok, `distance_from()` ok; `place_at(at)` for the one writer, her walk's siting |
 | `path` | 18 | `walks()` ok, `stands_still()` ok, `ends()` ok |
 | `facing` | 18 | `faces()`; set as the plan is built |
-| `live` | about 60 (streaming, the route rig, the scene recipes, the run log's observer, the resistance) | plan `is_in_the_world()` ok, `where_it_stands_now()` ok, `faces_now()`; `EventManager.event_of(plan)` for the live event itself; streaming tells the plan `enter_the_world(node)` and `leave_the_world(save)` |
+| `live` | about 60 (streaming, the route rig, the scene recipes, the resistance) | plan `is_in_the_world()` ok, `where_it_stands_now()` ok, `faces_now()`; `EventManager.event_of(plan)` for the live event itself; streaming tells the plan `enter_the_world(node)` and `leave_the_world(save)` |
 | `spent` | 18 | `is_spent()` ok, `spend()` ok |
 | `mast_id`, `silenced` | 17 and 5 | `is_a_mast()`, `mast_id()`, `stand_as_a_mast(id)`, `is_silenced()`, `silence()`, `is_a_live_mast()` |
-| `age`, `travelled`, `noticed_at`, `behaviours` | 7, 3, 4 and 3 | one `EventSave`: `keep(save)`, `saved()`; `arrive_aged(seconds)` for a recipe that stages an event part-way through |
+| `age`, `travelled`, `noticed_at`, `behaviours` | 7, 3, 4 and 3 | one `EventSave`: `keep(save)`, `saved()`; `arrive_aged(seconds)` ok for a recipe that stages an event part-way through |
 | `role` | 6 | `role()`, `give_role()` ok |
-| `comes_in`, `wait_began`, `kept_live`, `was_live` | 6, 3, 3 and 5 (streaming) | streaming's own state per plan; `keep_in_the_world()` ok stays as the way to ask for it |
-| `repeat_every`, `repeat_after`, `at_her`, `arrives_aged` | 5 in all (the building's plan) | `repeats()` ok; `come_again_every(seconds)`, `come_where_she_stands()`, `arrive_aged(seconds)` as the building's plan is made; `comes_where_she_stands()`, `arrives_aged()` |
+| `comes_in`, `wait_began`, `kept_live`, `was_live` | 6, 3, 3 and 5 (streaming) | streaming's own state per plan; `keep_in_the_world()` ok stays as the way to ask for it, and `come_first_in(seconds)` ok, by which the building's plan says when an event first comes, tells streaming rather than writing a field |
+| `repeat_every`, `repeat_after`, `at_her`, `arrives_aged` | 5 (streaming) | `repeats()` ok; `come_again_every(seconds)` ok, `come_where_she_stands()` ok, `arrive_aged(seconds)` ok as the building's plan is made; `comes_where_she_stands()`, `arrives_aged()` |
 | `gate_state` | 2 | `gate()`, set as the region's doors are made |
 | `permanent` | 1 | `is_permanent()` ok, `make_permanent()` |
 | `_is_door`, `_in_the_wall`, `_is_a_seal` | private already | as they are |
@@ -716,7 +711,7 @@ questions, and is at test parity with the run log and GoatCounter's names unchan
 
 | # | What | Files it owns | When |
 |---|---|---|---|
-| **1** | **Callers outside the events folder ask the event.** The questions of sections 2.3 to 2.6 are added to the row, the live event, the plan and the pending warning, and their callers converted. `BadgeModel.Subject.worth_an_arrow()`'s rule moves to the row as `announces_its_coming()`. | `src/ui/danger_edge.gd`, `badge_model.gd`, `hud.gd`; `src/telemetry/telemetry_observer.gd`, `telemetry_map.gd`; `src/crowd/crowd.gd` (one read); `src/city/day_streets.gd`, `poster_walls.gd`; `src/finale/building_plan.gd`. Adds methods, and changes no existing line, in `event_def.gd`, `event_instance.gd`, `pending_warning.gd` and `event_plan.gd` | **Now, beside placement.** The plan's methods wait for the rename, which lands before placement's step 1. Where another open pull request holds one of these files, its reads move to that pull request under the names here |
+| **1** | **Two reads left of the callers outside the events folder**, which otherwise ask the event (the record minty-quail-rosy-lynx). A method and a variable cannot share a name, so the plan's `role`, read by the run log's map, becomes `role()` when the plan's fields go private in 3a. The row's `speed`, read where a badge is made for a warning with nothing in the world yet, is the fourth of the slightly wrong answers (section 7, point 6): the pull request that makes it `approach_speed()` removes the read | `src/telemetry/telemetry_map.gd` (in 3a); `src/ui/danger_edge.gd` (in point 6's pull request for it) | With 3a; after this row's first step has merged |
 | **2a** | **The live event's behaviours ask it through `Figure`, and are handed the rest.** `WhereSheIs`, and `EventBody` taken out of `EventInstance`; the composer hands each behaviour its settings, the map, the navigator and its siblings; the eight existing specs get their methods; `EncounterWatch` keeps its own records | `src/events/event_instance.gd`, `behaviours/*`, `event_excitement.gd`, `event_sources.gd`, `encounter_watch.gd`, `checkpoint_controller.gd`, `charge_record.gd`, `warning.gd`, the eight spec files (methods added). One function of `event_manager.gd`, the write of where she is | **Now, beside placement**, after 1 (both add to `event_instance.gd`). The one foreign function is coordinated with the third hand-ins pull request, which rewrites the manager's setup |
 | **2b** | **The looks ask the live event and are handed their settings.** | `src/events/views/*`, `event_footprints.gd`, `event_scenery.gd` | **Now**, beside 2a once `Figure` and the outward questions are in |
 | **3a** | **The dawn and the walk's ground ask rows and plans.** The plan's fields go private. Small where placement wrote against section 3 | `event_plan.gd`, `event_scheduler.gd` and what the breakup made of it (`dawn_phases/`, `plan_builder.gd`, `row_ground.gd`, `dawn_context.gd`), `street_rules/*`, `street_invalidation.gd`, the location files, `walk_draw.gd`, `view_bag.gd`, `walk_ground.gd`, `day_events.gd`, `walk_events.gd`, `day_reach.gd`, `mast_sites.gd`, `day_planner.gd`, `src/routes/seal_planner.gd`, `region_planner.gd` | After placement and the scheduler's breakup close |
@@ -870,21 +865,23 @@ each question as it was shown).
    events' step and the baby's sweep with the probes of section 6 and reports the numbers in its
    pull request, so that there are numbers to look at later; no step is held, tuned or sent back for
    its cost.
-6. **Does a step fix an answer that is slightly wrong today?** Offered keeping the three below
-   and listing them for the end remeasure (a), or (b), in the board's words, "fix each in the step
-   that names it, as a change made on purpose with pictures": "the shape change is desired. as I
-   said earlier the main real measure will be playtests. This will tell us what needs fixing.
-   Let's not obsess over theoretical numbers. We currently have no established base anymore since
-   we changed a lot. Playtest will decide which deviations need to be fixed". Read back on the
-   board as "I read this as b, not a: each of the three is made right, the field's real shape
-   first, and nothing is kept wrong to hold old numbers. Each is its own small pull request after
-   the step that names it, saying what it changes, and playtests decide what then needs fixing.
-   Tell me if you meant only the field's shape.": "whatever is the *correct* implementation. if
-   that is b then let's do that" (inbox #1278 in olive-ferret). **Read as:** all three are made
-   correct. The timing is the read-back's, which is what the player answered: each is a pull
-   request of its own after the step that gives it a name, not a change inside that step, saying
-   what it changes in play and in the run log, with its pictures. Playtests decide what then
-   needs fixing.
+6. **Does a step fix an answer that is slightly wrong today?** Offered keeping the three answers
+   the board named (the first three below) and listing them for the end remeasure (a), or (b), in
+   the board's words, "fix each in the step that names it, as a change made on purpose with
+   pictures": "the shape change is desired. as I said earlier the main real measure will be
+   playtests. This will tell us what needs fixing. Let's not obsess over theoretical numbers. We
+   currently have no established base anymore since we changed a lot. Playtest will decide which
+   deviations need to be fixed". Read back on the board as "I read this as b, not a: each of the
+   three is made right, the field's real shape first, and nothing is kept wrong to hold old
+   numbers. Each is its own small pull request after the step that names it, saying what it
+   changes, and playtests decide what then needs fixing. Tell me if you meant only the field's
+   shape.": "whatever is the *correct* implementation. if that is b then let's do that" (inbox
+   #1278 in olive-ferret). **Read as:** every answer below is made correct. The timing is the
+   read-back's, which is what the player answered: each is a pull request of its own after the step
+   that gives it a name, not a change inside that step, saying what it changes in play and in the
+   run log, with its pictures. Playtests decide what then needs fixing. The fourth answer below was
+   found in review after the player answered; *read as* (the orchestrator's, open to the player's
+   correction) covered by the same words.
    - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
      its five callers do, though the field of a row with a long body is a capsule about that body.
      Answering with the real field changes when the run log says "out of range" and when the
@@ -894,3 +891,7 @@ each question as it was shown).
      `blocking_radius()`, the scheduler's clearance round where she starts, the walk ground's
      lethal disc less her radius). *Read as* (the filer's, open to the player's correction):
      made correct means they become one stated fact, asked under one name.
+   - A badge for a warning with nothing in the world yet is made with the row's plain `speed`,
+     which a pursuer warned of first does not set: the run log says the day-3 charging dog's badge
+     is "closing 0px/s" while the dog comes at its chase speed. The badge asks the row's
+     `approach_speed()` as a badge for a live event does.

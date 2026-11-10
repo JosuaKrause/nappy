@@ -316,10 +316,10 @@ func start_day(day: int, rng: RandomNumberGenerator, focus := Vector2.INF,
 			# can be held at is a question about that walker's own line of travel rather than about
 			# the row, and `_hold_walkers_at_doors()` answers it.
 			for body in plan.door_bodies:
-				if body.def.detain_seconds <= 0.0:
+				if not body.detains_her():
 					continue
 				var hold := WalkerDoorHold.new()
-				hold.stand_at(body.position)
+				hold.stand_at(body.placed_at())
 				_door_holds.append(hold)
 	# Before either `_populate` call: `setup()` refuses a spot in a pocket the way it refuses one
 	# behind a barrier, and a record built afterwards would refuse nothing on the morning it is most

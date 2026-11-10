@@ -334,7 +334,7 @@ func _physics_process(delta: float) -> void:
 ## it stands. A crew that has finished stands and works on, and its wall keeps what it pasted.
 func _work_the_crews(delta: float) -> void:
 	for instance in _city.events.instances():
-		if not is_instance_valid(instance) or instance.def.id != "poster_crew":
+		if not is_instance_valid(instance) or instance.row_id() != "poster_crew":
 			continue
 		var tile := _map.world_to_tile(instance.global_position)
 		if not _by_tile.has(tile):

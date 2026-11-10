@@ -430,9 +430,6 @@ src/events/event_instance.gd steps_each_tick
 
 # [EventDef] src/events/event_def.gd
 src/city/city.gd id
-src/city/day_streets.gd obstructs_radius
-src/city/poster_walls.gd id
-src/crowd/crowd.gd detain_seconds
 src/dev/auto_screenshot.gd pursuit
 src/dev/debug_layers.gd hard_fail
 src/dev/debug_layers.gd inner_radius
@@ -746,8 +743,6 @@ src/events/warning_board.gd hard_fail
 src/events/warning_board.gd inner_radius
 src/events/warning_board.gd outer_radius
 src/events/warning_board.gd vehicle
-src/finale/building_plan.gd repeat_every
-src/finale/building_plan.gd telegraph_time
 src/resistance/contact_point.gd inner_radius
 src/resistance/happenings.gd paces
 src/resistance/happenings.gd shape
@@ -773,27 +768,12 @@ src/routes/seal_planner.gd obstructs_radius
 src/routes/seal_planner.gd pavement_side
 src/routes/seal_planner.gd shape
 src/routes/seal_planner.gd solid_parts
-src/telemetry/telemetry_observer.gd hard_fail
-src/telemetry/telemetry_observer.gd id
-src/telemetry/telemetry_observer.gd outer_radius
-src/telemetry/telemetry_observer.gd pursuit
-src/telemetry/telemetry_observer.gd vehicle
-src/ui/danger_edge.gd hard_fail
-src/ui/danger_edge.gd look
-src/ui/danger_edge.gd mobile
-src/ui/danger_edge.gd outer_radius
-src/ui/danger_edge.gd pursuit
-src/ui/danger_edge.gd spawn_mode
 src/ui/danger_edge.gd speed
-src/ui/danger_edge.gd telegraphs
-src/ui/hud.gd pursuit
-src/ui/hud.gd telegraph_time
 
 # [EventFlock] src/events/behaviours/event_flock.gd
 src/events/event_instance.gd birds
 
 # [EventInstance] src/events/event_instance.gd
-src/city/poster_walls.gd def
 src/dev/auto_screenshot.gd def
 src/dev/debug_layers.gd def
 src/dev/debug_layers.gd excitement
@@ -1045,15 +1025,6 @@ src/resistance/resistance_director.gd is_finished
 src/resistance/resistance_director.gd is_parked
 src/resistance/resistance_director.gd path
 src/run/day_director.gd excitement
-src/telemetry/telemetry_observer.gd car
-src/telemetry/telemetry_observer.gd def
-src/telemetry/telemetry_observer.gd gave_up
-src/telemetry/telemetry_observer.gd is_finished
-src/telemetry/telemetry_observer.gd is_leaving
-src/ui/danger_edge.gd came_under_a_warning
-src/ui/danger_edge.gd def
-src/ui/danger_edge.gd is_finished
-src/ui/hud.gd def
 
 # [EventManager] src/events/event_manager.gd
 src/city/city.gd atlas
@@ -1278,9 +1249,6 @@ src/events/events_ahead.gd on_withdrawn
 src/events/warning_board.gd on_withdrawn
 src/events/warning_board.gd shown
 src/events/warning_board.gd withdrawn
-src/ui/danger_edge.gd def
-src/ui/danger_edge.gd left
-src/ui/danger_edge.gd place
 
 # [PosterState] src/city/poster_state.gd
 src/city/city.gd pasted_through

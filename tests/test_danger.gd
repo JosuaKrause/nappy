@@ -6,7 +6,9 @@ extends RefCounted
 ## a question for a screenshot and a person. What *is* testable is the set of rules underneath
 ## it, and those are the part that would rot silently: which things get a mark and which do
 ## not, that the mark still breathes, which two levels the cue over the player has and that one
-## system cannot clear another's warning, and which things earn an arrow at the screen edge.
+## system cannot clear another's warning, and what the screen edge hands its badges on real frames.
+## Which rows earn an arrow is the row's own question (`EventDef.announces_its_coming()`), checked
+## in `tests/test_events_catalogue.gd`; that the edge asks it is checked here.
 ##
 ## The standing decision this suite exists to keep, from `CLAUDE.md`:
 ##
@@ -29,10 +31,9 @@ func run(t) -> void:
 	await _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t)
 	await _test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
 	_test_a_car_sounding_its_horn_carries_its_own_mark(t)
-	_test_only_what_she_cannot_outwalk_earns_an_arrow(t)
-	_test_a_director_sited_pursuer_earns_an_arrow(t)
 	_test_the_screen_edge_is_the_same_size_for_everyone(t)
 	await _test_the_badge_measures_the_things_own_speed(t)
+	await _test_the_edge_badges_only_what_the_row_announces(t)
 	await _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t)
 	await _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t)
 	_test_the_pram_says_how_the_baby_is(t)
@@ -616,62 +617,6 @@ func _test_a_car_sounding_its_horn_carries_its_own_mark(t) -> void:
 
 # ------------------------------------------------------------- the screen edge ---
 
-## The gap the ring never covered and could not: `fire_truck` does 190px/s with a 340px radius,
-## and a ring is only useful once it is on screen, which at that speed is most of the warning
-## gone. The rule is the same line the telegraph contract draws — what she cannot outwalk.
-func _test_only_what_she_cannot_outwalk_earns_an_arrow(t) -> void:
-	var edge := DangerEdge.new()
-	var wanted := ["fire_truck", "military_convoy", "abduction", "alley_robbery"]
-	var not_wanted := ["dog_walker", "cafe_tables", "poster_crew", "poster_crew_square", "busker",
-			"construction"]
-
-	for id in wanted:
-		var def := EventCatalogue.by_id(id)
-		if not def:
-			continue
-		var instance := _instance(def)
-		t.check(DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
-				"'%s' is announced from off-screen: it is lethal or faster than a walk" % id)
-		instance.free()
-
-	for id in not_wanted:
-		var def := EventCatalogue.by_id(id)
-		if not def:
-			continue
-		var instance := _instance(def)
-		t.check(not DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
-				"'%s' is not, because turning round and leaving is enough" % id)
-		instance.free()
-
-	edge.free()
-
-## **A pursuer sited off screen has to have something announcing it while it is off screen.**
-## `charging_dog` carries `spawn_mode == AHEAD_OF_PLAYER`, the same as the cat's three-second
-## crossing that the badge deliberately never announces — but `EventDirector` now sites the dog
-## outside the view and lets it close in, so unlike the cat it has an offscreen phase worth
-## something to warn about. A row moved further out without the badge following it would have
-## *less* warning than the old close siting gave, not more.
-func _test_a_director_sited_pursuer_earns_an_arrow(t) -> void:
-	var edge := DangerEdge.new()
-	var dog := EventCatalogue.by_id("charging_dog")
-	t.check(dog != null and dog.spawn_mode == EventDef.SpawnMode.AHEAD_OF_PLAYER and dog.pursuit != null,
-			"charging_dog is still a director-sited pursuer")
-	if dog:
-		var instance := _instance(dog)
-		t.check(DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
-				"the day-3 dog is announced off screen once it is sited there")
-		instance.free()
-
-	# And the cat it shares a spawn mode with still is not — the exemption is for a pursuer only,
-	# not for the whole spawn mode.
-	var cat := EventCatalogue.by_id("cat_dash")
-	if cat:
-		var instance := _instance(cat)
-		t.check(not DangerEdge.subject_for_def(instance.def).worth_an_arrow(Tuning.WALK_SPEED),
-				"a three-second crossing still has nothing to announce before it arrives")
-		instance.free()
-	edge.free()
-
 ## `MARGIN` and `SCREEN_MARGIN` are screen px, which is only a fair unit if every player's screen
 ## shows the same slice of world. `"expand"` would let a wide monitor see more city than a laptop
 ## before the same margin fires, buying it more warning for nothing the player did — `"keep"` holds
@@ -724,6 +669,39 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 		driven += delta
 		await t.get_tree().process_frame
 	t.check(edge.model.announcing().size() == 1, "a fire engine actually coming down the street does")
+
+	edge.free()
+	standing.free()
+	_free_manager(manager)
+
+## **The edge badges what the row announces, and nothing else that comes fast.** Whether a row's
+## coming is worth an arrow is the row's own answer (`EventDef.announces_its_coming()`); this is
+## that the edge asks it. The crossing cat comes at 240px/s, fast enough to be badged on its speed
+## alone, and its row does not announce it (it does not telegraph its coming, PLAYTEST-145 20), so
+## a second of it running at her from off screen puts nothing on the edge.
+func _test_the_edge_badges_only_what_the_row_announces(t) -> void:
+	var manager := _manager(t)
+	manager.set_physics_process(false)
+	var standing := Node2D.new()
+	t.add_child(standing)
+	var edge := DangerEdge.new()
+	edge.atlas = _atlas
+	edge.setup(manager, standing)
+	t.add_child(edge)
+
+	var def := EventCatalogue.by_id("cat_dash")
+	t.check(not def.announces_its_coming(Tuning.WALK_SPEED),
+			"the cat's row does not announce its coming, so the check below is about the edge")
+	var cat := manager.spawn_extra(def, Vector2(700.0, 0.0))
+	var ran := 0.0
+	var announced := false
+	while ran < 1.0:
+		var delta: float = t.get_process_delta_time()
+		cat.global_position -= Vector2(def.approach_speed() * delta, 0.0)
+		ran += delta
+		await t.get_tree().process_frame
+		announced = announced or not edge.announcing().is_empty()
+	t.check(not announced, "a cat running at her from off screen gets no badge at the edge")
 
 	edge.free()
 	standing.free()

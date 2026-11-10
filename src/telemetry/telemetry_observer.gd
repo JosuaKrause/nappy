@@ -191,10 +191,10 @@ var _trail: Array[Vector3] = []
 ## all, and a stray sentinel value would be one more thing to keep in sync with it.
 var _trail_last := Vector2.ZERO
 
-## Which planned events she actually met today — came within `def.outer_radius` of, the field she
-## can feel — keyed by the `EventScheduler.Planned` itself so the dusk map can ask "was this one of
-## them" with no second identifier to keep in sync with the plan list it is already drawing. See
-## `_watch_met_events`.
+## Which planned events she actually met today — came within the field she can feel
+## (`Planned.field_reaches()`) — keyed by the `EventScheduler.Planned` itself so the dusk map can
+## ask "was this one of them" with no second identifier to keep in sync with the plan list it is
+## already drawing. See `_watch_met_events`.
 var _met_events := {}
 
 # When a bump was last written down, and how many have gone unwritten since.
@@ -683,33 +683,33 @@ func _watch_the_cues(delta: float) -> void:
 func _where_is(id: String) -> String:
 	var best := INF
 	for instance in _live():
-		if instance.logged_name() == id and not instance.is_finished:
+		if instance.logged_name() == id and not instance.is_gone():
 			best = minf(best, instance.global_position.distance_to(_player.global_position))
 	return "now %.0fpx away" % best if best < INF else "no longer in the world"
 
 ## What put the mark over her head, rather than what merely happened to be nearest.
 ##
 ## Exactly three things can: a `hard_fail` event whose radius covers her, a car that drives — the
-## patrol car or the fire engine — closing on her in its lane (`EventDef.vehicle`,
-## `EventCarDriving.closes_on()`), and a crowd car closing on the
+## patrol car or the fire engine — closing on her in its lane (`EventInstance.drives()`,
+## `EventInstance.closes_on()`), and a crowd car closing on the
 ## lane she is standing in. **`_nearest()` answers a different question and answers it misleadingly
 ## here** — it will blame an ice cream van five hundred pixels away for a car's horn, which is the
 ## *"unattributable"* mark this entry exists to explain, reproduced in the log meant to settle it.
 func _what_raised_the_mark() -> String:
 	var here := _player.global_position
 	for instance in _live():
-		if instance.is_finished:
+		if instance.is_gone():
 			continue
-		if instance.def.vehicle != null:
-			if instance.car and instance.car.closes_on(here):
+		if instance.drives():
+			if instance.closes_on(here):
 				return "%s %.0fpx" % [instance.logged_name(),
 						instance.global_position.distance_to(here)]
 			continue
-		if not instance.def.hard_fail:
+		if not instance.ends_the_day():
 			continue
-		var distance := instance.global_position.distance_to(here)
-		if distance <= instance.def.outer_radius:
-			return "%s %.0fpx" % [instance.logged_name(), distance]
+		if instance.field_reaches(here):
+			return "%s %.0fpx" % [instance.logged_name(),
+					instance.global_position.distance_to(here)]
 	if _map and Tile.is_road(_map.tile_type_at_world(here)):
 		return "a car, and she is in the road"
 	return "nothing in reach"
@@ -870,18 +870,16 @@ func _because_of_a_closure() -> String:
 	return ", %.1fs after seeing the %s" % [
 		_log.clock() - _last_closure_at, _last_closure]
 
-## What came within reach, and whether it kept coming. The threshold is the event's own outer
-## radius — the distance at which it starts to reach the meter — so nothing here invents a
-## number about what "near" means.
+## What came within reach, and whether it kept coming. The threshold is the event's own field
+## (`EventInstance.field_reaches()`) — the distance at which it starts to reach the meter — so
+## nothing here invents a number about what "near" means.
 func _watch_what_is_near(here: Vector2) -> void:
 	var live := {}
 	for instance in _live():
-		if instance.is_finished:
+		if instance.is_gone() or not instance.field_reaches(here):
 			continue
 		var id := instance.get_instance_id()
 		var distance := instance.global_position.distance_to(here)
-		if distance > instance.def.outer_radius:
-			continue
 		live[id] = true
 		var last: float = _near.get(id, INF)
 		if distance > last * NEAR_CLOSER_FRACTION and last != INF:
@@ -924,20 +922,20 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 		# A pursuer that has not noticed her is not a chase, it is scenery with teeth. The span
 		# starts the moment it comes for her, which for a robbery is the whole finding; for one that
 		# warns by radius, that is its charge rather than its warning.
-		if instance.def.pursuit == null or instance.is_finished or instance.is_waiting() \
+		if not instance.pursues() or instance.is_gone() or instance.is_waiting() \
 				or _is_warning(instance):
 			continue
 		var id := instance.get_instance_id()
 		seen[id] = true
 		if not _chases.has(id):
 			_chases[id] = {"since": _log.clock(), "closest": INF, "ran": 0.0,
-					"id": instance.def.id, "gave_up": false, "stopped_her": false, "over": false}
-			_log.note("chase", "%s came for her at %s | %s" % [instance.def.id,
+					"id": instance.row_id(), "gave_up": false, "stopped_her": false, "over": false}
+			_log.note("chase", "%s came for her at %s | %s" % [instance.row_id(),
 					RunTrace.tile(_tile_of(instance.global_position)), _meters()])
 			# The one encounter in the game with a right answer, and the open question about it is
 			# whether a dog that stops short and barks *reads* as "go now". A picture of the frame
 			# it starts on is the only thing that can say.
-			_log.snapshot("chase-%s" % instance.def.id)
+			_log.snapshot("chase-%s" % instance.row_id())
 		var chase: Dictionary = _chases[id]
 		if chase["over"]:
 			continue
@@ -946,12 +944,12 @@ func _watch_the_chase(here: Vector2, delta: float) -> void:
 		# Its own account of how it ended, read on the frame it breaks off. The entry is kept, and
 		# kept closed, until the instance goes: a dog that has lost interest is still in the world
 		# for as long as it takes to trot out of shot, and none of that is the chase.
-		chase["gave_up"] = bool(chase["gave_up"]) or instance.gave_up
+		chase["gave_up"] = bool(chase["gave_up"]) or instance.has_given_up()
 		# The man a patrol car let out, whose catch is a stop: he reached her, and the day goes on.
 		chase["stopped_her"] = bool(chase["stopped_her"]) or instance.has_stopped_her()
 		if _player.run_excess_ratio() > 0.0:
 			chase["ran"] = float(chase["ran"]) + delta
-		if instance.is_leaving:
+		if instance.is_on_its_way_out():
 			chase["over"] = true
 			_write_the_chase(chase)
 	for id: int in _chases.keys():
@@ -978,7 +976,7 @@ var _warnings := {}
 
 ## Whether `instance` is warning her by radius right now, rather than chasing or waiting.
 static func _is_warning(instance: EventInstance) -> bool:
-	return instance.def.pursuit != null and not instance.is_finished and not instance.is_waiting() \
+	return instance.pursues() and not instance.is_gone() and not instance.is_waiting() \
 			and instance.warns_by_radius() and instance.is_telegraphing()
 
 ## The warning span of a pursuer that warns by radius: a line when it starts warning her, and a line
@@ -993,13 +991,13 @@ func _watch_the_warning(here: Vector2) -> void:
 		if not _is_warning(instance):
 			if _warnings.has(id) and instance.is_waiting():
 				waits_again[id] = true
-			elif _warnings.has(id) and instance.def.pursuit != null and not instance.is_finished:
+			elif _warnings.has(id) and instance.pursues() and not instance.is_gone():
 				charged[id] = true
 			continue
 		seen[id] = true
 		if not _warnings.has(id):
-			_warnings[id] = {"since": _log.clock(), "closest": INF, "id": instance.def.id}
-			_log.note("chase", "%s warned her at %s | %s" % [instance.def.id,
+			_warnings[id] = {"since": _log.clock(), "closest": INF, "id": instance.row_id()}
+			_log.note("chase", "%s warned her at %s | %s" % [instance.row_id(),
 					RunTrace.tile(_tile_of(instance.global_position)), _meters()])
 		var warning: Dictionary = _warnings[id]
 		warning["closest"] = minf(float(warning["closest"]),
@@ -1071,22 +1069,23 @@ func _watch_the_trail(here: Vector2) -> void:
 	_trail.append(Vector3(here.x, here.y, _player.run_excess_ratio()))
 	_trail_last = here
 
-## Which planned events she actually met — came within `def.outer_radius`, the field she can
-## actually feel, rather than merely close enough for `EventManager.stream_around` to have loaded
-## them into the world at `Tuning.EVENT_STREAM_RADIUS` (900px, more than twice the field of a
-## typical row). `plan.was_live` answers the looser, streaming question; the dusk map wants the one
-## that says whether a placement did anything to her, which is what decides whether it was a wall
-## or decoration. See `docs/TODO.md`, M66, "Which events she actually met".
+## Which planned events she actually met — came within the field she can actually feel
+## (`Planned.field_reaches()`), rather than merely close enough for
+## `EventManager.stream_around` to have loaded them into the world at
+## `Tuning.EVENT_STREAM_RADIUS` (900px, more than twice the field of a typical row).
+## `plan.was_live` answers the looser, streaming question; the dusk map wants the one that says
+## whether a placement did anything to her, which is what decides whether it was a wall or
+## decoration. See `docs/TODO.md`, M66, "Which events she actually met".
 ##
 ## Once a plan is met it stays met for the rest of the day: the dictionary is never cleared except
 ## in `start()`, so streaming an event back out and in again does not un-meet it.
 func _watch_met_events(here: Vector2) -> void:
 	if not _map:
 		return
-	for plan in _events.plans():
-		if _met_events.has(plan) or not plan.is_placed() or not plan.live:
+	for plan: EventScheduler.Planned in _events.plans():
+		if _met_events.has(plan) or not plan.is_placed() or not plan.is_in_the_world():
 			continue
-		if plan.live.global_position.distance_to(here) <= plan.def.outer_radius:
+		if plan.field_reaches(here):
 			_met_events[plan] = true
 
 ## The trail and the met events, for `RunSession` to hand to `Telemetry.write_map` at dusk beside
@@ -1198,7 +1197,7 @@ func _nearest() -> String:
 	var closest: EventInstance = null
 	var best := INF
 	for instance in _live():
-		if instance.is_finished:
+		if instance.is_gone():
 			continue
 		var distance := instance.global_position.distance_to(_player.global_position)
 		if distance < best:
@@ -1207,4 +1206,4 @@ func _nearest() -> String:
 	if not closest:
 		return "nothing live"
 	return "%s %.0fpx%s" % [closest.logged_name(), best,
-			"" if best <= closest.def.outer_radius else " (out of range)"]
+			"" if closest.field_reaches(_player.global_position) else " (out of range)"]
