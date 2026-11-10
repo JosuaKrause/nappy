@@ -228,7 +228,7 @@ def guard(payload):
         " from the brief file under .claude/briefs/ and what this agent left: its branch, its pull request and"
         " its last report.\n"
         "The reassessment of an agent grown far past this size applies on top (inbox #1298 in merry-badger: its model, stuck,"
-        " looping), and work never moves to another model by a resume, only by a new brief."
+        " looping)."
     )
     rule = (
         'The rule is orchestrating\'s (.claude/skills/orchestrating/SKILL.md, "What the orchestrator keeps");'

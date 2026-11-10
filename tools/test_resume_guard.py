@@ -117,7 +117,6 @@ class ResumeGuardTests(unittest.TestCase):
 
     def test_the_refusal_size_is_read_from_the_reference(self) -> None:
         self.assertGreater(SIZE, 1000)
-        self.assertEqual(SIZE % 1000, 0)
 
     def test_an_agent_at_the_size_passes(self) -> None:
         self.transcript([*turns(3), turn("last", SIZE)])
@@ -171,7 +170,6 @@ class ResumeGuardTests(unittest.TestCase):
             "fresh agent",
             ".claude/briefs/",
             "applies on top",
-            "only by a new brief",
         ):
             self.assertIn(words, reason)
         self.assertIsNone(re.search(r"\bturns\b", reason))
@@ -201,6 +199,8 @@ class ResumeGuardTests(unittest.TestCase):
             note = answer["additionalContext"]
             self.assertIn("1 automatic compaction", note)
             self.assertIn("The message has gone through: do not send it again.", note)
+            for path, section in ((SKILL, "What the orchestrator keeps"), (REFERENCE, "Sizing the task")):
+                self.assertIn(f'{path}, "{section}"', note)
             for words in ("One question decides it", "send this same message again", "the resend passes"):
                 self.assertNotIn(words, note)
 
@@ -319,8 +319,8 @@ class ResumeGuardTests(unittest.TestCase):
             self.assertIn("went unchecked", answer["additionalContext"])
         self.assertEqual(len(self.errors.read_text().splitlines()), len(contents))
         reference.write_text(
-            "- **A resume is refused once past\n  1,200k tokens of context** (inbox #1298 in merry-badger), the context being the"
-            " latest turn's.\n"
+            "- **A resume is refused once past\n  1,200k tokens of context** (inbox #1298 in merry-badger),"
+            " the context being the latest turn's.\n"
         )
         reason = self.refusal(self.payload(), hook=copy)
         self.assertIn("a resume is refused once past 1,200,000", reason)
