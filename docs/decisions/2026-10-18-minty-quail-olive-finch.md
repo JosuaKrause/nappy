@@ -45,7 +45,7 @@ was made from, and on this pull request at `1a370b204`, the commit before `main`
 it (the merge brought the change to the doors, the sources and the encounter watch, whose own table
 is in the record minty-quail-velvet-owl). Four probes, each run alone, twelve rounds alternated
 base, head, head, base; the load average is the one-minute figure before the round, and the
-merge's own checks and suites ran on the machine during the early rounds. Nothing is concluded from
+merge's own checks and suites ran on the machine during round 3. Nothing is concluded from
 it and no cut is held or tuned for a time (inbox #1278 in olive-ferret): the reading is recorded,
 not judged. For the end remeasure, the entry's one remeasure after its last item (inbox #813 in
 curly-moose), this change lists the events' per-frame cost, the four probes below.
