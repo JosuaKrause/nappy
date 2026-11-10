@@ -23,7 +23,7 @@ src/
                           once at boot and never changed (see "Dev flags and release builds")
   build_info.gd           which build is running: git's answer, or what an export baked
   run_trace.gd            the sink game logic writes its account of a decision into, handed in
-  drawn_frame.gd          the wait for a frame the viewport has actually drawn, for any capture
+  drawn_frame.gd          the wait for a frame the viewport has actually drawn, for any capture (an observer's)
   game_enums.gd           shared enums (see below)
   frame_timing.gd         the sink a timed system charges its time to the frame record through; the null
                           sink here, `FrameRecord` (`src/telemetry/`) is the one that keeps the ledger
@@ -432,7 +432,8 @@ src/
 	excitement_halo.gd    which sources earn a halo this frame, and how each rim reads
 	source_rim.gd         one source's rim as the halo lights it (`SourceRim`): built on its first
 	                      glow, given back once faded; an event's adds its band
-	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo
+	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo (on
+	                      the world's layer: the drawing a body composes of itself)
 	title_screen.gd       the screen a run opens on and goes back to; asks which control scheme
 	day_summary.gd        the screen between days, and the one at the end of a run; renders a
 	                      `SummaryModel`
@@ -566,11 +567,12 @@ Every file under `src/` sits in one layer, and a layer names only its own and th
 catalogue, `Tuning`, `RunConfig`, the specs, `Texts`, the art's pages, the value types rows are
 written in), **the domain model** (the map and its interface, generation, routes, closures, the
 run's sub-states, the building's plan), **the world** (the navigator, the world's context, the draw
-layers, siting, and the scene nodes that draw the city's and the building's ground and furniture),
+layers, siting, the scene nodes that draw the city's and the building's ground and furniture, and the
+rim a body draws round itself, `EntityHalo` and `SourceRim`),
 **simulation** (her, the baby, the crowd, the events, the resistance, each with the looks it draws
 itself by), **run flow** (the day's director and controller, the screens' order), **observers** (the
 run log, GoatCounter, the save, the developer's readouts) and **the view** (the HUD, the screens, the
-badges, the halo, the controls), **siblings at one level** that both read from the run flow and the
+badges, the halo's lighting, the controls), **siblings at one level** that both read from the run flow and the
 simulation below and neither names the other (the player's, inbox #904 in freckled-moose), and **the composition
 root** (`main.gd` and the developer's rigs). The map's lookup (`WorldMap` and its records) is with
 the city maps in the domain model, as the player decided (inbox #904 in freckled-moose).

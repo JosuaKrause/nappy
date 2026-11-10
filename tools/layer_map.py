@@ -36,14 +36,14 @@ LAYER_TEXT: dict[str, str] = {
     "(WorldMap and its records), its generation, the routes, the closures, the run's sub-states, the building's plan",
     "world": "the world: the navigator, passability, the draw layers, the screen cover and what the world can "
     "see, and the scene nodes that draw the world's own ground and furniture (the map interface and its "
-    "records are the model's)",
+    "records are the model's) and the rim a body draws round itself",
     "simulation": "simulation: everything that moves or happens -- her, the baby, the crowd, the events and "
     "their behaviours and looks, the resistance -- and the drawing of each, which it composes",
     "flow": "run flow: a day started and finished from its spec, the screens' order",
     "observers": "observers (a sibling of the view): the run log, GoatCounter, the save and the developer's "
     "readouts, which only listen",
     "view": "the view (a sibling of the observers): the screen's own furniture -- the HUD, the screens, the "
-    "badges, the halo, the controls",
+    "badges, the halo's lighting, the controls",
     "root": "the composition root and the rigs: main, which builds every layer and hands each what it needs, "
     "and the developer's rigs that drive the game from outside",
 }
@@ -75,7 +75,7 @@ FOLDERS: dict[str, str] = {
 FILES: dict[str, str] = {
     # src/ itself has no folder layer: each file is placed.
     "src/build_info.gd": "data",
-    "src/drawn_frame.gd": "view",
+    "src/drawn_frame.gd": "observers",  # the run log's screen and the rigs wait on it; it only listens
     "src/field.gd": "data",
     "src/frame_timing.gd": "data",
     "src/game_enums.gd": "data",
@@ -114,6 +114,9 @@ FILES: dict[str, str] = {
     "src/city/poster_walls.gd": "simulation",
     "src/city/recipe_city_builder.gd": "root",
     "src/city/recipe_city_context.gd": "root",
+    # crowd: the lanes' geometry is a function of the map and the lane numbers, so the generation and
+    # the street trees that plan on it name it from the model.
+    "src/crowd/crowd_lanes.gd": "model",
     # day: the spec is data, the loss rules are the model, the controller (the folder's) is flow.
     "src/day/day_spec.gd": "data",
     "src/day/loss_cause.gd": "model",
@@ -186,9 +189,12 @@ FILES: dict[str, str] = {
     # run: the day's director, its end, the screens' flow and an authored scene's ask are flow.
     "src/run/authored_scene.gd": "flow",
     "src/run/day_director.gd": "flow",
-    "src/run/day_end.gd": "flow",
+    "src/run/day_end.gd": "model",
     "src/run/run_flow.gd": "flow",
-    # ui: the texts are data; the frame graph is a developer's readout.
+    # ui: the texts are data; the frame graph is a developer's readout; the halo's rim is the drawing
+    # a body composes of itself, so it stands in the world beside the excitement source that holds it.
+    "src/ui/entity_halo.gd": "world",
+    "src/ui/source_rim.gd": "world",
     "src/ui/texts.gd": "data",
     "src/ui/frame_graph.gd": "observers",
 }
@@ -293,20 +299,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "CrowdLanes",
-        "the lane geometry's constants live on the crowd's class, and the city's generation needs them",
-        (
-            "src/city/city.gd",
-            "src/city/city_generator.gd",
-            "src/city/street_trees.gd",
-        ),
-        more=(
-            ("src/city/city.gd", 2),
-            ("src/city/city_generator.gd", 3),
-        ),
-    ),
-    Exception_(
-        "names",
         "CrowdTiming",
         "the city scene hands the crowd its timing sink, since it builds the crowd",
         ("src/city/city.gd",),
@@ -332,13 +324,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "DayEnd",
-        "the summary's model is built from the day's end, which sits with the run flow",
-        ("src/run/summary_model.gd",),
-        more=(("src/run/summary_model.gd", 2),),
-    ),
-    Exception_(
-        "names",
         "DevRig",
         "a day's start asks the dev rig where a --spawn target is",
         ("src/run/day_director.gd",),
@@ -352,32 +337,11 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "DrawnFrame",
-        "the run log's viewport screen waits for a drawn frame",
-        ("src/telemetry/telemetry_viewport_screen.gd",),
-    ),
-    Exception_(
-        "names",
         "DrawnView",
         "an event's look asks the view whether its picture is on the screen",
         (
             "src/events/views/event_look.gd",
             "src/events/views/roadblock_look.gd",
-        ),
-    ),
-    Exception_(
-        "names",
-        "EntityHalo",
-        "each body composes the halo's rim and margin rather than the view drawing over it",
-        (
-            "src/crowd/crowd_agent.gd",
-            "src/events/event_footprints.gd",
-            "src/events/event_instance.gd",
-            "src/events/views/event_look.gd",
-        ),
-        more=(
-            ("src/crowd/crowd_agent.gd", 2),
-            ("src/events/event_instance.gd", 5),
         ),
     ),
     Exception_(
@@ -472,16 +436,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "ScreenOrientation",
         "her input is turned by the screen's rotation, read from the view",
         ("src/player/stroller.gd",),
-    ),
-    Exception_(
-        "names",
-        "SourceRim",
-        "each body composes the halo's rim rather than the view drawing over it",
-        (
-            "src/crowd/crowd_agent.gd",
-            "src/events/event_instance.gd",
-        ),
-        more=(("src/events/event_instance.gd", 3),),
     ),
     Exception_(
         "names",

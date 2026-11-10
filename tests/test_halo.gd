@@ -394,7 +394,7 @@ func _told_for(t, net: float) -> Array:
 # that a straight line to `Tuning.EXPECTED_IMPACT_POINTS` would leave flat.
 
 func _test_the_rim_brightness_emphasises_low_values(t) -> void:
-	var floor_alpha := ExcitementHalo.MIN_MAGNITUDE * ExcitementHalo.MAX_ALPHA
+	var floor_alpha := ExcitementHalo.MIN_MAGNITUDE * EntityHalo.MAX_ALPHA
 	t.check(is_equal_approx((await _told_for(t, 0.0))[0], floor_alpha),
 			"nothing landed yet reads at the floor, not at zero -- a picked source is never " +
 			"invisible while it is still earning its first point")
@@ -406,9 +406,9 @@ func _test_the_rim_brightness_emphasises_low_values(t) -> void:
 	t.check(one < five and five < fifteen,
 			"the curve rises fast through the low end, which is the whole point of it")
 	t.check(is_equal_approx((await _told_for(t, ExcitementHalo.LOW_EMPHASIS_POINTS))[0],
-			ExcitementHalo.MAX_ALPHA),
+			EntityHalo.MAX_ALPHA),
 			"LOW_EMPHASIS_POINTS is where the curve saturates")
-	t.check(is_equal_approx(forty, ExcitementHalo.MAX_ALPHA),
+	t.check(is_equal_approx(forty, EntityHalo.MAX_ALPHA),
 			"well past LOW_EMPHASIS_POINTS stays solid rather than overshooting -- colour, not " +
 			"transparency, is what carries the difference between fifteen and forty")
 
@@ -430,7 +430,7 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 	# The frame the two entered on passes first, so every frame after the glow is set is one both
 	# were processed on.
 	await t.get_tree().process_frame
-	halo.set_glow(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	halo.set_glow(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var from := clock.elapsed
 	var on_the_line := true
 	var part_way := false
@@ -438,12 +438,12 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 		await t.get_tree().process_frame
 		var alpha := _drawn(halo).a
 		var share := minf((clock.elapsed - from) / EntityHalo.FADE_IN_SECONDS, 1.0)
-		on_the_line = on_the_line and absf(alpha - ExcitementHalo.MAX_ALPHA * share) < 0.001
-		part_way = part_way or (alpha > 0.0 and alpha < ExcitementHalo.MAX_ALPHA)
+		on_the_line = on_the_line and absf(alpha - EntityHalo.MAX_ALPHA * share) < 0.001
+		part_way = part_way or (alpha > 0.0 and alpha < EntityHalo.MAX_ALPHA)
 	t.check(on_the_line and part_way,
 			"on every frame of FADE_IN_SECONDS the rim draws the share of its target the frames so far "
 			+ "have covered, part way up between -- never a jump from nothing to the target in one frame")
-	t.close_to(_drawn(halo).a, ExcitementHalo.MAX_ALPHA,
+	t.close_to(_drawn(halo).a, EntityHalo.MAX_ALPHA,
 			"a target held for the whole of FADE_IN_SECONDS is reached", 0.01)
 	var colour := _drawn(halo)
 	t.check(Color(colour.r, colour.g, colour.b).is_equal_approx(Palette.HALO_STRONG),
@@ -452,7 +452,7 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 	var frames_before := clock.frames
 	await _frames_for(t, clock, 0.05)
 	var frames := clock.frames - frames_before
-	t.check(_is_drawn_at(halo, ExcitementHalo.MAX_ALPHA) and halo.is_showing() and frames > 0
+	t.check(_is_drawn_at(halo, EntityHalo.MAX_ALPHA) and halo.is_showing() and frames > 0
 			and traced[0] - traced_before == frames * EntityHalo.HALO_OFFSETS,
 			"a rim holding a steady target is settled *and* drawn, and traced afresh every frame "
 			+ "(%d copies over %d frames), because the body under a steady glow moves"
@@ -491,7 +491,7 @@ func _test_a_fade_leaving_a_hair_of_alpha_arrives_at_zero(t) -> void:
 	t.add_child(clock)
 	t.add_child(halo)
 	await t.get_tree().process_frame
-	halo.set_glow(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	halo.set_glow(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	await _frames_for(t, clock, EntityHalo.FADE_IN_SECONDS + STEP)
 	halo.set_glow(5e-6, Palette.HALO_STRONG)
 	await _frames_for(t, clock, EntityHalo.FADE_OUT_SECONDS + STEP)
@@ -766,16 +766,16 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
 	# And the rim over them is exactly the state that used to stop re-tracing.
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
-	(flock.excitement.rim as SourceRim).set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	(flock.excitement.rim as SourceRim).set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var halo: EntityHalo = flock.rim()
 	await _frames_until(t, clock, func() -> bool:
-		return _is_drawn_at(halo, ExcitementHalo.MAX_ALPHA), EntityHalo.FADE_IN_SECONDS + 1.0)
+		return _is_drawn_at(halo, EntityHalo.MAX_ALPHA), EntityHalo.FADE_IN_SECONDS + 1.0)
 	var drawn := [0]
 	halo.draw.connect(func() -> void: drawn[0] += 1)
 	var frames_before := clock.frames
 	await _frames_for(t, clock, 0.05)
 	var frames := clock.frames - frames_before
-	t.check(_is_drawn_at(halo, ExcitementHalo.MAX_ALPHA) and halo.is_showing() and frames > 0
+	t.check(_is_drawn_at(halo, EntityHalo.MAX_ALPHA) and halo.is_showing() and frames > 0
 			and drawn[0] == frames,
 			"the flock's own rim is settled, lit and drawn again on every frame (%d of %d) while "
 			% [drawn[0], frames] + "its birds keep moving, where it once held the freeze frame the "
@@ -893,12 +893,12 @@ func _test_an_event_holds_no_rim_until_it_is_picked(t) -> void:
 	var rim_of := instance.excitement.rim as SourceRim
 	t.check(instance.rim() == null and not rim_of.is_held(),
 			"a live event holds no rim before anything has picked it")
-	rim_of.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	rim_of.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	t.check(instance.rim() != null and rim_of.is_held(),
 			"its first nonzero glow builds the rim")
 	var rim: EntityHalo = instance.rim()
 	await _frames_until(t, clock, func() -> bool:
-		return _is_drawn_at(rim, ExcitementHalo.MAX_ALPHA), EntityHalo.FADE_IN_SECONDS + 1.0)
+		return _is_drawn_at(rim, EntityHalo.MAX_ALPHA), EntityHalo.FADE_IN_SECONDS + 1.0)
 	rim_of.set_strength(0.0, Palette.HALO_WEAK)
 	t.check(instance.rim() == rim,
 			"told zero, the rim stays to fade out rather than vanishing on the spot")
@@ -1023,12 +1023,12 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 	var held: Array[EventInstance] = []
 	for i in EntityHalo.RIM_BUDGET:
 		var instance := manager.spawn_extra(_def("held_%d" % i, 20.0), Vector2(32.0 * float(i), 0.0))
-		(instance.excitement.rim as SourceRim).set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+		(instance.excitement.rim as SourceRim).set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 		held.append(instance)
 	# Lit fully before the halo is in the tree, so each fade is a whole FADE_OUT_SECONDS.
 	await _frames_until(t, clock, func() -> bool:
 		for instance in held:
-			if not _is_drawn_at(instance.rim(), ExcitementHalo.MAX_ALPHA):
+			if not _is_drawn_at(instance.rim(), EntityHalo.MAX_ALPHA):
 				return false
 		return true, EntityHalo.FADE_IN_SECONDS + 1.0)
 	# Far from every one of them: all told zero, all still fading, all counted.
@@ -1077,7 +1077,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 ## A body whose source is nothing but an `ExcitementSource`, for a picked set a test turns over by
 ## hand: `strength` is its excitement/s anywhere, and it holds its rim through a `SourceRim` as every
 ## body does — built on its first nonzero glow, freed on the spot once faded. It has landed enough
-## that a lit rim reads at `ExcitementHalo.MAX_ALPHA`, so every fade out is a whole
+## that a lit rim reads at `EntityHalo.MAX_ALPHA`, so every fade out is a whole
 ## `EntityHalo.FADE_OUT_SECONDS`, the longest a rim can hold its block after it is dropped.
 class ChurnSource extends Node2D:
 	var strength := 0.0
@@ -1152,7 +1152,7 @@ func _fill_the_budget_with_fading_rims(t, events: ChurnEvents, clock: HaloRig.Fr
 		var source := ChurnSource.new()
 		events.add_child(source)
 		events.list.append(source)
-		told.append(ExcitementHalo.MAX_ALPHA * float(EntityHalo.RIM_BUDGET + i + 1)
+		told.append(EntityHalo.MAX_ALPHA * float(EntityHalo.RIM_BUDGET + i + 1)
 				/ float(2 * EntityHalo.RIM_BUDGET))
 		source.rim.set_strength(told[i], Palette.HALO_STRONG)
 		fading.append(source)
@@ -1431,11 +1431,11 @@ func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t
 		var source := ChurnSource.new()
 		events.add_child(source)
 		events.list.append(source)
-		source.rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+		source.rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 		others.append(source)
 	await _frames_until(t, clock, func() -> bool:
 		for source: ChurnSource in others:
-			if not _is_drawn_at(source.rim.entity_halo(), ExcitementHalo.MAX_ALPHA):
+			if not _is_drawn_at(source.rim.entity_halo(), EntityHalo.MAX_ALPHA):
 				return false
 		return true, EntityHalo.FADE_IN_SECONDS + 1.0)
 	t.add_child(halo)
