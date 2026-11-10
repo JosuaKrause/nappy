@@ -458,13 +458,13 @@ strategies did (the record brisk-lark):
   What happened, each carrying the whole change: `turn_to(heading)`, `walk_on(distance)`,
   `step_by(delta)`, `begin(phase)`, `be_done()`, `drop_its_body()`, `charge_began()`,
   `hold_the_notice(delta)`. The body's collision shape, the notice clock and the charge record
-  stay private to the live event. `Figure` has these, of the phase questions the ones the seven
-  below ask (all of section 2.9's but `is_active()` and `has_stopped_her()`), and not
-  `drop_its_body()` or `hold_the_notice(delta)`, which no behaviour that asks through it calls
-  yet; it has further questions and events the record minty-quail-tiny-alpaca lists. The departure, the route walk,
-  the hold, the unmarked van's take, the flock, the notice run and the row retired when it cannot
-  reach her ask through it and are handed their parts; the pursuit, the man on foot, the barrier
-  post, the far guard, the investigation and the car still hold their event.
+  stay private to the live event. `Figure` has these, of the phase questions the ones the
+  behaviours below ask (all of section 2.9's but `is_active()` and `has_stopped_her()`), and not
+  `drop_its_body()`, which no behaviour that asks through it calls yet; it has further questions
+  and events the records minty-quail-tiny-alpaca and minty-quail-tawny-swan list. The departure,
+  the route walk, the hold, the unmarked van's take, the flock, the notice run, the row retired
+  when it cannot reach her, the pursuit, the man on foot, the barrier post and its far guard ask
+  through it and are handed their parts; the investigation and the car still hold their event.
 - **A look asks the same questions outside callers ask**, plus its own few (`is_silenced()`,
   `is_its_guard_warning()`, `is_drawn_as_a_pelican()`, `boom_openness()`), and is handed its
   `LookSpec` and its drawer.
@@ -633,8 +633,8 @@ counted where it only writes.
 | `detain_radius` | the catalogue | row `detain_distance()` ok |
 | `redetains` | the live event and its hold; the resistance and the route rig's planner out | row and live `detains_again()` ok, plan `detains_again()` |
 | `pursuit` | 12 in, 3 out (the auto screenshot, the scene recipes, the park cordon) | `pursues()` on all three (the live event's exists); row `chase_speed()` ok, `approach_speed()` ok, `starts_by()` ok, `standoff_reach()` ok, `was_sent_at_her()`; the pursuit behaviour is handed the spec |
-| `PursuitSpec`: `speed`, `start`, `warns_for`, `stands`, `walk_speed`, `lunge_reach`, `stop_excitement`, `leaves_its_body`, `warns_over_the_street` | 25 lines, all in (the row, the live event, two behaviours) | methods of the spec of the same names, the yes-or-no ones renamed (`stands_for_its_notice()`, `leaves_its_body_standing()`, `is_drawn_over_the_street()`); built by `PursuitSpec.at(speed).walking_at(...)` |
-| `notice` (`NoticeSpec`: `within`, `quiet`, `runs_within`) | 4 in; 7 lines of the spec, all in | row `waits_for_her()`, `notice_within()` ok; the spec's `within()`, `is_quiet()`, `runs_within()` |
+| `PursuitSpec`: `speed`, `start`, `warns_for`, `stands`, `walk_speed`, `lunge_reach`, `stop_excitement`, `leaves_its_body`, `warns_over_the_street` | 25 lines, all in (the row, the live event, two behaviours) | methods of the spec of the same names, the yes-or-no ones renamed (`stands_for_its_notice()` ok, `leaves_its_body_standing()`, `is_drawn_over_the_street()` ok); built by `PursuitSpec.at(speed).walking_at(...)` |
+| `notice` (`NoticeSpec`: `within`, `quiet`, `runs_within`) | 4 in; 7 lines of the spec, all in | row `waits_for_her()`, `notice_within()` ok; the spec's `within()`, `is_quiet()` ok, `runs_within()` |
 | `hunts`, `hunting`, `heat_response` (`HuntSpec`: `lets_out`, `pursuit`, `ends_the_day`) | the row itself, `EventsAhead`; 3 lines of the spec | row `answers_to_heat()`, `investigates()` ok, `lets_out()` ok, `at_heat(level)` ok |
 | `telegraph_time` | 4 in, 1 out (the readout) | row and live `telegraphs_for()` ok; row `warning_time()` ok, `warned_for()` ok |
 | `still_while_telegraphing` | 3 in | the warning part's `holds_still()`; row `ahead_of_player_lead()` ok |
@@ -666,8 +666,8 @@ counted where it only writes.
 | `path` | 7 in | `walks()`, `beat()`, `way_left()` ok |
 | `_heading`, `_path_travelled`, `_gait_phase`, `_gait_moving` | 8, 4, 1 and 1 in (the behaviours) | `Figure.heading()` ok, `travelled()` ok, `turn_to()` ok, `walk_on()` ok; outside: `facing_now()` ok, `path_travelled()` ok, `gait_phase()` ok |
 | `_map`, `_navigator`, `_mover` | 4 in each | handed to each part at setup |
-| `_obstruction`, `_spread_vertical` | 2 in each (the barrier post, the car, the far guard) | `EventBody`: `drop()`, `pin_where_it_stands()`, `runs_vertically()` ok |
-| `_charge` (`ChargeRecord`: `began`, `ended`, `warned`), `_notice` (`Warning`: `length`, `cancel_if`, `on_expired`), `_telegraph_ended`, `_chase_way`, `_guard_spent`, `gave_up` | 1 to 3 in each (four behaviours) | `Figure.charge_began()` ok, `charge_ended()`, `hold_the_notice()`, `notice_has_run()` ok; `has_charged()` ok, `is_chasing()` ok, `has_given_up()` ok |
+| `_obstruction`, `_spread_vertical` | 2 in each (the barrier post, the car, the far guard) | `EventBody`: `drop()`, `pin_where_it_stands()`, `runs_vertically()` ok; the barrier post and the far guard reach them through `Figure` ok, the car still directly |
+| `_charge` (`ChargeRecord`: `began`, `ended`, `warned`), `_notice` (`Warning`: `length`, `cancel_if`, `on_expired`), `_telegraph_ended`, `_chase_way`, `_guard_spent`, `gave_up` | 1 to 3 in each (four behaviours) | `Figure.charge_began()` ok, `charge_ended()` ok, `hold_the_notice()` ok, `notice_has_run()` ok, the behaviours reach the rest only through `Figure` ok; `has_charged()` ok, `is_chasing()` ok, `has_given_up()` ok (`gave_up` stays public while suites and probes read it) |
 | `hold`, `abduction`, `departure`, `route`, `car`, `barrier_post`, `investigation`, `pursuit`, `on_foot`, `notice_run`, `flock`, `unreachable` | 30 lines in (the composer, behaviours reaching siblings, three looks) | private; siblings handed to each other by the composer; outside callers ask the live event (`closes_on(point)` ok, `is_taking_a_victim()` ok) |
 | `excitement` | 4 in | `source()` ok |
 | `drawer`, `atlas`, `timing`, `trace`, `signals`, `skip_draw`, `points_at`, `is_pelican` | 1 to 9 in (written by the spawner after it makes the event, read by the looks) | handed in at setup in one call; the looks are handed the drawer; `is_drawn_as_a_pelican()`; the unmarked van's take is handed `trace` at setup ok |

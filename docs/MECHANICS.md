@@ -1127,7 +1127,7 @@ follows nowhere: it stands where it is and lunges the same way. **A pursuer that
 waited for her charges on its warning's clock** (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for`), so a
 late notice at an alley mouth is answered by the warning's whole length to leave in, and where the wall
 keeps the line from clearing until she is out of its radius, it never charges and waits again. **The timed notice of a guard a task sets on her does not run out while a
-held lunge has her inside the stand-off** (`_pause_a_held_notice()`), since a notice ending there
+held lunge has her inside the stand-off** (`EventPursuit.pause_a_held_notice()`), since a notice ending there
 would start the chase from a fraction of it, the same trap reached by standing still. A
 held pursuer she stays beside never sets off: it stands turned toward her with the doubled red caret
 up and its field charging her, and the way out is the walk the contract was written for. A waiting

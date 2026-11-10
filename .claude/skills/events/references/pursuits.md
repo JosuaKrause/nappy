@@ -24,10 +24,10 @@ on, and verifying escape with the actual Baby meter.
   beside her charges from where it stood once its notice has run. A wall between them that holds the lunge back is the same trap: at an
   alley mouth the line clears with her already inside the stand-off. The notice, the lunge and the
   catch all ask for a clear line, so a held lunge is not deferred until the line clears: the pursuer
-  holds the ground of one that sets off beside her (`EventPursuit.lunge_held`) — it stands while
+  holds the ground of one that sets off beside her (`EventPursuit`'s held lunge) — it stands while
   she is nearer than the stand-off and follows at it once she is further, or only stands if it
   stands for its notice — and lunges once she is back at the
-  full stand-off; a timed notice does not run out while she is inside it (`_pause_a_held_notice()`)
+  full stand-off; a timed notice does not run out while she is inside it (`EventPursuit.pause_a_held_notice()`)
   — a notice ending there is the same trap, reached by her standing still.
 - **A waiting charger has one radius and charges on a clock, never on a distance.** Charged at a
   stand-off while she walks into it, `PursuitSpec.PURSUIT_REACTION` of its approach is worth about a fifth of a
