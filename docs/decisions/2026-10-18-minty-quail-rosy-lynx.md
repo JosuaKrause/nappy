@@ -31,7 +31,7 @@ step, the callers outside the events folder.
   picture. None of the three decided any row's answer, and a guard kept for a row that may come
   later is no exception to the player's rule. That an announced row carries a silhouette is held by
   the catalogue suite's check alone, before a row is accepted, and the design's section on the badge
-  (`event-interface.md`, 2.5), which had the badge test its own icon, says the same.
+  (`event-interface.md`, 2.5), which had the badge test its own icon, no longer has it.
 - **A live event and a plan ask the row's methods and not its fields**, so the new methods add no
   line to the list of field reads; 22 lines left it.
 - **Only the questions these nine files ask were added.** A public method nothing calls is
