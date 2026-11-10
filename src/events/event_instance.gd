@@ -1945,3 +1945,63 @@ func idle_offset() -> float:
 ## The map it stands on.
 func world_map() -> WorldMap:
 	return _map
+
+# --------------------------------------------------------- what a caller asks ---
+# The questions a caller outside the events asks a live event, so it never reaches through it to
+# its row or its behaviours. Each answers for the row where the question is the row's.
+
+## The row this is a live one of, for the caller that passes the row on (the badge's drawing);
+## a caller asking something of it asks this event instead.
+func row() -> EventDef:
+	return def
+
+## The id of the row this is a live one of (`EventDef.id`), which the run log's chase lines and the
+## poster walls name it by. `logged_name()` is the name a log line calls the thing she met.
+func row_id() -> String:
+	return def.id
+
+## Whether it is over and gone (`Phase.DONE`).
+func is_gone() -> bool:
+	return phase == Phase.DONE
+
+## Whether it has stopped being an event and is only getting out of shot (`Phase.LEAVING`).
+func is_on_its_way_out() -> bool:
+	return phase == Phase.LEAVING
+
+## Whether it was created where a warning pointed, once that warning was over
+## (`came_under_a_warning`): the badge it had carries on until it comes into view.
+func was_warned_of() -> bool:
+	return came_under_a_warning
+
+## Whether it comes after her (its row's `pursuit`).
+func pursues() -> bool:
+	return def.pursuit != null
+
+## Whether it is a car that drives (its row's `vehicle`), whose strike is its driving's.
+func drives() -> bool:
+	return def.vehicle != null
+
+## How long its row's telegraph lasts, in seconds.
+func telegraphs_for() -> float:
+	return def.telegraphs_for()
+
+## Whether walking into its reach ends her day (`EventDef.ends_the_day()`); a car's strike is not
+## this, it is its driving's (`closes_on()`).
+func ends_the_day() -> bool:
+	return def.ends_the_day()
+
+## **Whether this car is closing on `point` with the mark over her head**
+## (`EventCarDriving.closes_on()`): false for anything that does not drive.
+func closes_on(point: Vector2) -> bool:
+	return car != null and car.closes_on(point)
+
+## Whether its field reaches `point`: the distance from where it stands to `point` against how far
+## its row is heard (`EventDef.heard_within()`). **Measured from its centre**, as every caller has
+## always measured it, though the field of a row with a long body runs along that body.
+func field_reaches(point: Vector2) -> bool:
+	return global_position.distance_to(point) <= def.heard_within()
+
+## Whether its chase ended because she shook it off rather than because the clock ran out
+## (`gave_up`).
+func has_given_up() -> bool:
+	return gave_up

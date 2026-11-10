@@ -56,14 +56,6 @@ PRICES: dict[str, Price] = {
 HAIKU_LONG_MODEL = "claude-haiku-5-5"
 HAIKU_LONG_CONTEXT = 100_000
 HAIKU_LONG_PRICE: Price = (0.50, 2.50, 0.05)
-# Prices that are estimates rather than read from the reference (a cache read the reference does not
-# state: a tenth of input).
-ESTIMATED_PRICES = {
-    "claude-haiku-5-5": "cache read",
-    "claude-opus-5": "cache read",
-    "claude-sonnet-5": "cache read",
-    "claude-haiku-4-5-20251001": "cache read",
-}
 FAMILIES = ("fable", "opus", "sonnet", "haiku")
 
 # The harness's own placeholder messages (no API call, no usage worth counting) are skipped.
@@ -484,7 +476,7 @@ def comparison(rows: list[Row], compare_to: str) -> list[str]:
     other = family_model(compare_to)
     assert other is not None
     out = [
-        f" model comparison (all turns; 'at {compare_to}' prices the same tokens at {compare_to} prices):",
+        f" model comparison (all turns; 'at {compare_to}' prices the same tokens at {other} prices):",
         f"  {'family':8} {'weighted':>9} {'actual $':>10} {'at ' + compare_to:>10} {'ratio':>6}",
     ]
     for fam in sorted({family(x.model) for r in rows for x in r.turns}, key=family_sort):
@@ -500,9 +492,10 @@ def comparison(rows: list[Row], compare_to: str) -> list[str]:
     # inbox #1291: the player's words behind this caveat.
     out.extend(
         [
-            f"  for information only. The same tokens is an assumption: Fable typically needs fewer turns and tokens "
-            f"than Opus on the same task and does work Opus cannot, so the 'at {compare_to}' column is not what "
-            "another model would have cost.",
+            "  For information only. The same tokens is an assumption: a model that gets more done per turn would "
+            "not have used the same tokens (Fable typically needs fewer turns and tokens than Opus on the same "
+            f"task and does work Opus cannot), so the 'at {compare_to}' column ({other}) is not what the work "
+            "would have cost there.",
             "  A model is never chosen on this column alone (inbox #1291).",
         ]
     )
@@ -526,16 +519,21 @@ def window_report(
     sub = [r for r in rows if r.session.is_sub]
     n_turns = sum(len(r.turns) for r in rows)
     n_unpriced = sum(r.unpriced_turns for r in rows)
-    if n_unpriced * 2 > n_turns:
+    mostly_unpriced = n_unpriced * 2 > n_turns
+    if mostly_unpriced:
         priced = f"n/a at API prices ({n_unpriced} of {n_turns} turns have no price)"
     else:
         priced = f"{fmt_usd(dollars)} at API prices ({fmt_usd(dollars / hours)}/h)"
+
+    def money(group: list[Row]) -> str:
+        return "n/a" if mostly_unpriced else fmt_usd(sum(r.dollars for r in group))
+
     out = [
         f"\n=== window {index + 1}: {window.label()} ({hours:.0f}h): total weighted {total / 1e6:.1f}M "
         f"({total / 1e6 / hours:.2f}M/h), {priced}",
         f" main {len({r.session.path for r in main})} sessions {sum(r.weighted for r in main) / total:.0%} of tokens, "
-        f"{fmt_usd(sum(r.dollars for r in main))}; sub-agents {len({r.session.path for r in sub})} "
-        f"{sum(r.weighted for r in sub) / total:.0%}, {fmt_usd(sum(r.dollars for r in sub))}; merged PRs {prs}",
+        f"{money(main)}; sub-agents {len({r.session.path for r in sub})} "
+        f"{sum(r.weighted for r in sub) / total:.0%}, {money(sub)}; merged PRs {prs}",
     ]
     unpriced = sorted({x.model for r in rows for x in r.turns if x.model not in PRICES})
     if unpriced:
@@ -611,10 +609,8 @@ def report(
         f"usage report, generated {now.astimezone(UTC):%Y-%m-%d %H:%MZ}; prices read {PRICE_DATE}: "
         + ", ".join(f"{m} {p[0]:g}/{p[1]:g}/{p[2]:g}" for m, p in PRICES.items())
         + " (input/output/cache read per million tokens)",
-        "estimated, not read from the reference: "
-        + ", ".join(f"{m} {what} price" for m, what in ESTIMATED_PRICES.items()),
         f"{HAIKU_LONG_MODEL} above {HAIKU_LONG_CONTEXT // 1000}K tokens of prompt: "
-        f"{HAIKU_LONG_PRICE[0]:g}/{HAIKU_LONG_PRICE[1]:g}/{HAIKU_LONG_PRICE[2]:g} (cache read estimated)",
+        f"{HAIKU_LONG_PRICE[0]:g}/{HAIKU_LONG_PRICE[1]:g}/{HAIKU_LONG_PRICE[2]:g}",
         "weighted tokens: input 1, 5-minute write 1.25, 1-hour write 2, cache read 0.1, output 5",
     ]
     for i, w in enumerate(windows):

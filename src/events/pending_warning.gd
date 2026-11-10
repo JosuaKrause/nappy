@@ -238,3 +238,17 @@ static func in_its_lane(row: EventDef, her: Vector2, lane_x: float, going: float
 			and not siting.allows(SpawnSiting.Rule.OUT_OF_SIGHT, asked, at):
 		return Vector2.INF
 	return at
+
+# ------------------------------------------------------- what a caller asks ---
+
+## The row it warns of: what the badge draws and what it asks how fast it will close.
+func row() -> EventDef:
+	return def
+
+## Where the badge points, in world px (`place`), or `Vector2.INF` before it is put up.
+func points_at() -> Vector2:
+	return place
+
+## Seconds of the badge alone still to run.
+func seconds_left() -> float:
+	return _clock.left(shown)

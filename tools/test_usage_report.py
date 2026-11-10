@@ -126,6 +126,27 @@ class UsageReportTests(unittest.TestCase):
         self.assertEqual({f: len(r.turns) for f, r in by_family.items()}, {"fable": 2, "opus": 1})
         self.assertAlmostEqual(by_family["fable"].dollars, 16.0)
         self.assertAlmostEqual(by_family["opus"].dollars, 4.0)
+        self.assertIn(" main 1 sessions", self.render(rows))
+
+    def render(self, rows: list[Any]) -> str:
+        text: str = ur.report(
+            [ur.Window(None, None)], rows, self.sessions(), "opus", 8, ["n/a"], datetime(2026, 11, 2, tzinfo=UTC)
+        )
+        return text
+
+    def test_sub_agent_that_switches_model_is_one_sub_agent_in_the_counts(self) -> None:
+        self.sub_session(
+            "s1",
+            "a",
+            "Build x",
+            [
+                line("a", "2026-11-01T10:00:00Z", model=FABLE, inp=1),
+                line("b", "2026-11-01T10:01:00Z", model=OPUS, inp=1),
+            ],
+        )
+        rows = ur.build_rows(self.sessions(), [ur.Window(None, None)])
+        self.assertEqual(len(rows), 2)
+        self.assertIn("sub-agents 1 ", self.render(rows))
 
     def test_the_pause_before_a_rewrite_is_measured_from_the_previous_turn_of_any_model(self) -> None:
         self.main_session(
@@ -163,6 +184,7 @@ class UsageReportTests(unittest.TestCase):
             [window], ur.build_rows(sessions, [window]), sessions, "opus", 8, ["n/a"], datetime(2026, 11, 3, tzinfo=UTC)
         )
         self.assertIn("n/a at API prices (1 of 1 turns have no price)", text)
+        self.assertIn("main 1 sessions 100% of tokens, n/a;", text)
         self.assertNotIn("$0.00 at API prices", text)
 
     def test_haiku_above_100k_of_prompt_is_priced_at_the_upper_tier(self) -> None:
@@ -289,7 +311,7 @@ class UsageReportTests(unittest.TestCase):
         )
         self.assertIn("unpriced models", text)
         self.assertIn("claude-mystery-9", text)
-        self.assertIn("estimated, not read from the reference: claude-haiku-5-5 cache read price", text)
+        self.assertNotIn("estimated", text)
 
     def test_rewrite_rule(self) -> None:
         self.main_session(
@@ -327,7 +349,8 @@ class UsageReportTests(unittest.TestCase):
         self.assertIn("$48.00", fable_line)  # 8 + 40
         self.assertIn("$24.00", fable_line)  # 4 + 20 at opus prices
         self.assertIn("2.00x", fable_line)
-        self.assertIn("for information only", text)
+        self.assertIn("For information only", text)
+        self.assertIn("at claude-opus-5-5 prices", text)
         self.assertIn("same tokens is an assumption", text)
         self.assertIn("fewer turns and tokens than Opus", text)
         self.assertIn("does work Opus cannot", text)

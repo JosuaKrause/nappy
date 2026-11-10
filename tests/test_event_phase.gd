@@ -15,6 +15,8 @@ func run(t) -> void:
 	_test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t)
 	_test_a_held_notice_comes_back_as_far_run(t)
 	_test_a_hunting_copy_does_not_share_its_rows_pursuit(t)
+	_test_a_badge_up_alone_points_and_counts_down(t)
+	_test_a_live_event_answers_for_its_row(t)
 
 # ------------------------------------------------------------------- the clock ---
 
@@ -60,8 +62,13 @@ func _test_a_row_with_no_wait_is_in_its_telegraph_then_active(t) -> void:
 	instance.setup(def, Vector2.ZERO)
 	t.check(instance.phase == EventInstance.Phase.WARNING and instance.is_telegraphing(),
 			"a row with no wait starts in its telegraph")
-	var steps := int(ceil(def.telegraph_time / STEP)) + 1
-	for i in steps:
+	var before := int(floor(instance.telegraphs_for() / STEP)) - 1
+	for i in before:
+		instance.step(STEP)
+	t.check(instance.is_telegraphing(),
+			"and is still in it a step before the %.2fs it says it telegraphs for"
+			% instance.telegraphs_for())
+	for i in int(ceil(instance.telegraphs_for() / STEP)) + 1 - before:
 		instance.step(STEP)
 	t.check(instance.phase == EventInstance.Phase.ACTIVE and not instance.is_telegraphing(),
 			"and is active once its telegraph has run")
@@ -104,7 +111,8 @@ func _test_a_departure_and_a_finish_are_phases(t) -> void:
 	while not instance.is_leaving and frames < 400:
 		instance.step(STEP)
 		frames += 1
-	t.check(instance.phase == EventInstance.Phase.LEAVING and instance.is_leaving,
+	t.check(instance.phase == EventInstance.Phase.LEAVING and instance.is_leaving
+			and instance.is_on_its_way_out() and not instance.is_gone(),
 			"off the end of its route it is leaving (%d frames)" % frames)
 	t.check(instance.current_intensity() == 0.0, "and emits nothing while it goes")
 	var leaving_ticks := 0
@@ -112,7 +120,8 @@ func _test_a_departure_and_a_finish_are_phases(t) -> void:
 		instance.step(STEP)
 		leaving_ticks += 1
 	t.check(instance.phase == EventInstance.Phase.DONE and instance.is_finished
-			and not instance.is_leaving, "finished, it is done, and only done")
+			and instance.is_gone() and not instance.is_leaving and not instance.is_on_its_way_out(),
+			"finished, it is done, and only done")
 	instance.free()
 
 ## **A telegraph is a promise about the clock, not the phase.** The day-3 lesson dog spends its
@@ -137,6 +146,7 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 			"run from 1.2s, the lesson dog gives up %.1fs into its %.1fs telegraph"
 			% [dog.chase_age(), def.telegraph_time])
 	t.check(dog.is_telegraphing(), "and is still telegraphing as it leaves")
+	t.check(dog.has_given_up(), "having given up: she shook it off, its clock did not run out")
 	# She follows it at 100px, so it stays in her sight and in the world while its clock runs.
 	while dog.chase_age() < def.telegraph_time - 2.0 * STEP and not dog.is_finished:
 		dog.player_at = dog.global_position + Vector2(100.0, 0.0)
@@ -193,3 +203,48 @@ func _test_a_hunting_copy_does_not_share_its_rows_pursuit(t) -> void:
 			"at the ladder's speed, leaving the row's spec as it was")
 	t.check(hot.notice != null and is_equal_approx(hot.notice.within, EventDef.HEAT_HUNTS_WITHIN),
 			"noticing her at the ladder's distance")
+
+# -------------------------------------------------------------- the badge alone ---
+
+## A warning up before its thing exists points where the thing will come from, moving only with
+## her, and counts down the row's own warning, on the clock above.
+func _test_a_badge_up_alone_points_and_counts_down(t) -> void:
+	var def := EventSpawner.as_warned(EventCatalogue.by_id("cyclist"))
+	var arrived := [0]
+	var where := func(her: Vector2) -> Vector2: return her + Vector2(600.0, 0.0)
+	var arrive := func(_at: Vector2, _her: Vector2) -> bool:
+		arrived[0] += 1
+		return true
+	var warning := PendingWarning.new(def, where, arrive)
+	t.check(warning.row() == def, "it warns of the row it was made for")
+	t.check(warning.points_at() == Vector2.INF, "and points nowhere before it is put up")
+	warning.put_up(Vector2.ZERO)
+	t.check(warning.points_at() == Vector2(600.0, 0.0), "put up, it points where the thing would come")
+	t.close_to(warning.seconds_left(), def.warned_for(), "with the row's whole warning to run")
+	warning.tick(STEP, Vector2(0.0, 50.0))
+	t.check(warning.points_at() == Vector2(600.0, 50.0), "and the place moves only with her")
+	t.close_to(warning.seconds_left(), def.warned_for() - STEP, "a step less to run after a step")
+	var steps := 0
+	while arrived[0] == 0 and steps < 100:
+		warning.tick(STEP, Vector2(0.0, 50.0))
+		steps += 1
+	t.check(arrived[0] == 1 and warning.seconds_left() <= 0.0,
+			"its thing comes once nothing is left of it")
+
+## A live event made where it stands came under no warning, one that does not drive closes on
+## nothing, and its field reaches exactly where its row's field is heard: the reach the run log's
+## lines ask (`field_reaches()`) agrees with the field the meter is charged from.
+func _test_a_live_event_answers_for_its_row(t) -> void:
+	for id: String in ["alley_robbery", "police_patrol", "cafe_tables", "cyclist"]:
+		var def := EventCatalogue.by_id(id)
+		var instance := EventInstance.new()
+		instance.setup(def, Vector2.ZERO)
+		t.check(not instance.was_warned_of(), "'%s' made where it stands came under no warning" % id)
+		if not instance.drives():
+			t.check(not instance.closes_on(Vector2.ZERO),
+					"'%s' drives nothing, so it closes on nothing" % id)
+		for distance: float in [0.0, def.heard_within() - 1.0, def.heard_within() + 1.0, 2000.0]:
+			var at := Vector2(0.0, distance)
+			t.check(instance.field_reaches(at) == (def.emission_at_distance(distance) > 0.0),
+					"'%s' reaches %.0fpx out exactly where its row's field is heard" % [id, distance])
+		instance.free()

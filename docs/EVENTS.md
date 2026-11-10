@@ -517,7 +517,7 @@ from that frame, pointing at the place the thing will come from.
   beat that has it reach her at its loudest, `EventSpawner.age_when_warned()`). **A pursuer is
   created with its telegraph still to run**, since a pursuer's telegraph is its approach, the sight
   of it closing that she is owed. It keeps the badge it had until it has come into view
-  (`EventInstance.came_under_a_warning`), which is as soon as it moves.
+  (`EventInstance.was_warned_of()`), which is as soon as it moves.
 - **Where its ground has no place for it when the second is up, the warning is withdrawn**: the badge
   goes down, nothing comes, and the run log says so. A fire engine withdrawn this way is summoned
   again while the fire is in sight.
@@ -642,7 +642,7 @@ sited against the view in the first place.
 
 **The screen-edge badge is what makes the offscreen phase worth anything.** For a warned row it *is*
 the warning: up for the whole of it, since there is nothing in the world to see yet. Once the thing
-exists just off screen, `BadgeModel.Subject.worth_an_arrow()` keeps announcing it the way it announces
+exists just off screen, `EventDef.announces_its_coming()` keeps announcing it the way it announces
 anything lethal or faster than a walk that is out of sight and closing, until she can see it.
 
 ## Solid things are solid
@@ -2973,9 +2973,10 @@ Three things it does **not** announce, each for its own reason:
 - **Anything further off than its own arrival window.** The cap is `LEAD_TIME` seconds of its
   approach, not a distance — the same 800px is a fire engine four seconds away and a dawdler
   twenty seconds away, and only one of those is a route decision.
-- **An `AHEAD_OF_PLAYER` event.** The director sites it across her line a fixed lead in front of
-  her and its entire content is the moment it happens to her. A badge for one appears and vanishes
-  within the same second as the cat walks into view, which is an interruption announced away.
+- **Anything that does not telegraph its coming** (`EventDef.telegraphs`, "What telegraphs"). The
+  crossing cat comes faster than a walk, and it gets no badge because it does not telegraph: it
+  crosses her line rather than coming at her, and costs her about nothing (the player's own
+  exception, PLAYTEST-145 20).
 
 **A warning with nothing in the world yet is announced for the whole of it.** Something that
 arrives from off screen under the badge is warned of before it exists (see "Everything arrives from

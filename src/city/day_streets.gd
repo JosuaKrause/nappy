@@ -82,8 +82,8 @@ func siting_region() -> SpawnSiting.Region:
 	var region := SpawnSiting.Region.new()
 	region.walled_alleys = _region_plan.alley_walls
 	for body: EventScheduler.Planned in _region_plan.wall_bodies + _region_plan.door_bodies:
-		region.centres.append(body.position)
-		region.radii.append(body.def.obstructs_radius)
+		region.centres.append(body.placed_at())
+		region.radii.append(body.obstructs_within())
 	_sited_region = region
 	_sited_from = _region_plan
 	return region

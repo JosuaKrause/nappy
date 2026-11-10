@@ -632,8 +632,6 @@ src/events/views/roadblock_look.gd look
 src/events/views/spread_look.gd look
 src/events/views/spread_look.gd obstructs_radius
 src/events/views/spread_look.gd shape
-src/finale/building_plan.gd repeat_every
-src/finale/building_plan.gd telegraph_time
 src/resistance/contact_point.gd inner_radius
 src/resistance/happenings.gd paces
 src/resistance/happenings.gd shape
@@ -654,18 +652,7 @@ src/routes/seal_planner.gd obstructs_radius
 src/routes/seal_planner.gd pavement_side
 src/routes/seal_planner.gd shape
 src/routes/seal_planner.gd solid_parts
-src/telemetry/telemetry_observer.gd outer_radius
-src/telemetry/telemetry_observer.gd pursuit
-src/ui/danger_edge.gd hard_fail
-src/ui/danger_edge.gd look
-src/ui/danger_edge.gd mobile
-src/ui/danger_edge.gd outer_radius
-src/ui/danger_edge.gd pursuit
-src/ui/danger_edge.gd spawn_mode
 src/ui/danger_edge.gd speed
-src/ui/danger_edge.gd telegraphs
-src/ui/hud.gd pursuit
-src/ui/hud.gd telegraph_time
 
 # [EventFlock] src/events/behaviours/event_flock.gd
 src/events/event_instance.gd birds
@@ -882,12 +869,6 @@ src/resistance/park_cordon.gd is_finished
 src/resistance/resistance_director.gd def
 src/resistance/resistance_director.gd is_finished
 src/resistance/resistance_director.gd is_parked
-src/telemetry/telemetry_observer.gd def
-src/telemetry/telemetry_observer.gd is_finished
-src/ui/danger_edge.gd came_under_a_warning
-src/ui/danger_edge.gd def
-src/ui/danger_edge.gd is_finished
-src/ui/hud.gd def
 
 # [EventManager] src/events/event_manager.gd
 src/city/city.gd atlas
@@ -1064,9 +1045,6 @@ src/events/event_spawner.gd draws
 src/events/event_spawner.gd on_withdrawn
 src/events/events_ahead.gd is_pelican
 src/events/events_ahead.gd on_withdrawn
-src/ui/danger_edge.gd def
-src/ui/danger_edge.gd left
-src/ui/danger_edge.gd place
 
 # [PosterState] src/city/poster_state.gd
 src/city/city.gd pasted_through
