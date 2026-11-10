@@ -371,7 +371,7 @@ shared state. What it asks, and what the event is asked on its behalf:
 |---|---|---|
 | What the baby is charged at a point | `EventManager` sums `ExcitementSource.contribution_at(at)` ok over the live events' sources; live `source()` hands the source to the manager | field |
 | Has anything ended her day, and what | live `is_lethal_at(her)` ok, `logged_name()` ok, `row_id()` ok | lethal (a car: its driving) |
-| Does a row hold her, from how far, for how long, again | live `detains_her()`, `detain_distance()` (on the row today), `detains_for()`, `detains_again()` | hold |
+| Does a row hold her, from how far, for how long, again | live `detains_her()` ok, `detain_distance()` ok, `detains_for()` ok, `detains_again()` ok | hold |
 | Is a hold running, has it held her; start one | live `is_chatting()` ok, `has_chatted()` ok, `start_chat()` ok | hold |
 | Is this door body the boom | live and plan `is_a_boom()` | body |
 | Where she is, for every event and part | `WhereSheIs` (new, section 2.10): `at()`, `pram_at()`, `view()`, `is_running()`, `baby_is_awake()`, `is_held_at_a_door()` | the event manager writes it |
@@ -401,7 +401,7 @@ shared state. What it asks, and what the event is asked on its behalf:
 | The telemetry map's marks | plan `is_placed()` ok, `role()`, `walks()` ok, `placed_at()` ok, `ends_the_day()` ok | the plan |
 | The day's counts by row | plan `row_id()` ok | the plan |
 | The nearest event, for the readouts | live `row_id()`, `age()`, `telegraphs_for()`, `field_reaches(point)` | the live event |
-| What an encounter was (`EncounterWatch`, inside the events) | live `detains_her()`, `source()`; its own record kept in its own table, not on the live event | hold, field |
+| What an encounter was (`EncounterWatch`, inside the events) | live `detains_her()` ok, `source()` ok; its own record kept in its own table, not on the live event | hold, field |
 
 ### 2.7 The resistance
 
@@ -475,7 +475,7 @@ and handed around (inbox #1156 in gray-dolphin).
 | `not is_finished and def.hard_fail and not def.mobile` | the route rig | live `is_a_standing_lethal_place()` |
 | `shape != null and obstructs_radius > 0 and not mobile and detain_seconds <= 0 and solid_when != WHILE_LOWERED` | the route rig, and the spawner's own record in other words | row `stands_as_a_fixed_body()` |
 | `kind != AMBIENT and pursuit == null and vehicle == null and not warned_first and not starts_by(ARRIVES_CHASING)` | the park cordon | live `is_ambient()`, `was_sent_at_her()`, `drives()` |
-| `solid_when == WHILE_LOWERED`, eight places; `redetains` read as "this is a door's hut or post", sixteen places | the checkpoint controller, the live event, the spawner, the resistance, the route rig | `is_a_boom()`, `detains_again()` |
+| `solid_when == WHILE_LOWERED`, eight places; `redetains` read as "this is a door's hut or post", sixteen places | the live event, the spawner, the resistance, the route rig (the checkpoint controller asks already) | `is_a_boom()` ok, `detains_again()` ok |
 | `on_her_way != null and on_her_way.at_a_front`, three times; `on_her_way != null and kind == ONE_SHOT`, twice | the scheduler, streaming | row `stands_at_a_front()`, `is_a_set_piece_on_her_way()` |
 | `placement.size() == 1 and placement[0] == ALLEY` | the scheduler | row `stands_only_in_alleys()` |
 | `vehicle and vehicle.field_from_its_centre`, three times | `EventDef`, `EventInstance` | the field part's `datum()` |
@@ -488,8 +488,7 @@ and handed around (inbox #1156 in gray-dolphin).
 ### 2.12 The skill's two tests, applied
 
 **Would any caller miss it.** Deleted, since nobody would: `display_name` (and the table
-`Texts.EVENT_NAMES` it is read from, section 7); `EventInstance.encounter` (the encounter watch's
-own record stored on the live event, which moves into the watch's own table); the plan's
+`Texts.EVENT_NAMES` it is read from, section 7); the plan's
 `kept_live`, `was_live`, `comes_in` and `wait_began` as plan fields (streaming's bookkeeping); the
 four saved-state fields (one `EventSave`); `VehicleSpec.field_from_its_centre` as a vehicle
 setting (it is the field's); `EventInstance`'s twelve public behaviour fields. Not added, since
@@ -613,12 +612,12 @@ counted where it only writes.
 | `core_intensity`, `core_radius`, `falloff_power` | 2 in each | inside `FieldSpec`: `emission_at_distance()` ok, `reach_above()` ok, `silent_beyond()` ok |
 | `pulse_period`, `intensity_ramp` | 4 and 2 in | the field part's `peak_through()`, `pulses_every()` (the looks' flicker) |
 | `from_outside` | 2 in | the field part's `passes_walls()`, asked by the event's source and the spawner |
-| `barrier_structure` | 1 in, the manager and `EventSources` untyped | the field part's `counts_as_one_barrier()`, asked by `EventSources` |
+| `barrier_structure` | the manager, untyped | the field part's `counts_as_one_barrier()` ok (the row's and the live event's until the part exists), asked by `EventSources` |
 | `hard_fail` | 5 in, 1 out (the route rig), three untyped | row `ends_the_day()` ok, `effect()` ok; live `ends_the_day()` ok, `is_lethal_at()` ok |
 | `catch_reach` (and `PursuitSpec.catch_reach`) | the catalogue, `EventDef` | row `lethal_reach()` ok, stored once in `LethalSpec` |
-| `detain_seconds` | 6 in, 2 out (the route rig and its planner) | row and plan `detains_her()` ok, live `detains_her()`; `detains_for()` |
+| `detain_seconds` | 6 in, 2 out (the route rig and its planner) | row and plan `detains_her()` ok, live `detains_her()` ok; `detains_for()` ok |
 | `detain_radius` | the catalogue | row `detain_distance()` ok |
-| `redetains` | 3 in, four untyped out | row, plan and live `detains_again()` |
+| `redetains` | the live event and its hold; the resistance and the route rig's planner out | row and live `detains_again()` ok, plan `detains_again()` |
 | `pursuit` | 12 in, 3 out (the auto screenshot, the scene recipes, the park cordon) | `pursues()` on all three (the live event's exists); row `chase_speed()` ok, `approach_speed()` ok, `starts_by()` ok, `standoff_reach()` ok, `was_sent_at_her()`; the pursuit behaviour is handed the spec |
 | `PursuitSpec`: `speed`, `start`, `warns_for`, `stands`, `walk_speed`, `lunge_reach`, `stop_excitement`, `leaves_its_body`, `warns_over_the_street` | 25 lines, all in (the row, the live event, two behaviours) | methods of the spec of the same names, the yes-or-no ones renamed (`stands_for_its_notice()`, `leaves_its_body_standing()`, `is_drawn_over_the_street()`); built by `PursuitSpec.at(speed).walking_at(...)` |
 | `notice` (`NoticeSpec`: `within`, `quiet`, `runs_within`) | 4 in; 7 lines of the spec, all in | row `waits_for_her()`, `notice_within()` ok; the spec's `within()`, `is_quiet()`, `runs_within()` |
@@ -660,11 +659,10 @@ counted where it only writes.
 | `excitement` | 4 in | `source()` |
 | `drawer`, `atlas`, `timing`, `trace`, `signals`, `skip_draw`, `points_at`, `is_pelican` | 1 to 9 in (written by the spawner after it makes the event, read by the looks) | handed in at setup in one call; the looks are handed the drawer; `is_drawn_as_a_pelican()` |
 | `gate_state` | 2 in (two looks) | `is_raised()` ok, `boom_openness()`; handed in at setup from the plan's `gate()` |
-| `guard_warns_her` | 2 in | `raise_its_guards_hand(on)`, `is_its_guard_warning()` |
+| `guard_warns_her` | the looks (the checkpoint controller asks already) | `raise_its_guards_hand(on)` ok, `is_its_guard_warning()` ok |
 | `silenced` | 2 in; written by streaming | `silence()`, `is_silenced()` |
 | `came_under_a_warning` | the live event itself | `was_warned_of()` ok |
 | `look` | 2 in (two looks reading another's) | private; a look is handed the look it needs |
-| `encounter` | 1 in (`EncounterWatch` keeping its record on the event) | deleted from the event; the watch keeps its own table |
 
 ### 4.3 The plan (`EventScheduler.Planned`, to be `EventPlan`)
 
@@ -713,7 +711,7 @@ questions, and is at test parity with the run log and GoatCounter's names unchan
 | # | What | Files it owns | When |
 |---|---|---|---|
 | **1** | **Two reads left of the callers outside the events folder**, which otherwise ask the event (the record minty-quail-rosy-lynx). A method and a variable cannot share a name, so the plan's `role`, read by the run log's map, becomes `role()` when the plan's fields go private in 3a. The row's `speed`, read where a badge is made for a warning with nothing in the world yet, is the fourth of the slightly wrong answers (section 7, point 6): the pull request that makes it `approach_speed()` removes the read | `src/telemetry/telemetry_map.gd` (in 3a); `src/ui/danger_edge.gd` (in point 6's pull request for it) | With 3a; after this row's first step has merged |
-| **2a** | **The live event's behaviours ask it through `Figure`, and are handed the rest.** `WhereSheIs`, and `EventBody` taken out of `EventInstance`; the composer hands each behaviour its settings, the map, the navigator and its siblings; the eight existing specs get their methods; `EncounterWatch` keeps its own records | `src/events/event_instance.gd`, `behaviours/*`, `event_excitement.gd`, `event_sources.gd`, `encounter_watch.gd`, `checkpoint_controller.gd`, `charge_record.gd`, `warning.gd`, the eight spec files (methods added). One function of `event_manager.gd`, the write of where she is | **Now, beside placement**, after 1 (both add to `event_instance.gd`). The one foreign function is coordinated with the third hand-ins pull request, which rewrites the manager's setup |
+| **2a** | **The live event's behaviours ask it through `Figure`, and are handed the rest.** `WhereSheIs`, and `EventBody` taken out of `EventInstance`; the composer hands each behaviour its settings, the map, the navigator and its siblings; the eight existing specs get their methods | `src/events/event_instance.gd`, `behaviours/*`, `event_excitement.gd`, `charge_record.gd`, `warning.gd`, the eight spec files (methods added). One function of `event_manager.gd`, the write of where she is | **Now, beside placement**, after 1 (both add to `event_instance.gd`). The one foreign function is coordinated with the third hand-ins pull request, which rewrites the manager's setup |
 | **2b** | **The looks ask the live event and are handed their settings.** | `src/events/views/*`, `event_footprints.gd`, `event_scenery.gd` | **Now**, beside 2a once `Figure` and the outward questions are in |
 | **3a** | **The dawn and the walk's ground ask rows and plans.** The plan's fields go private. Small where placement wrote against section 3 | `event_plan.gd`, `event_scheduler.gd` and what the breakup made of it (`dawn_phases/`, `plan_builder.gd`, `row_ground.gd`, `dawn_context.gd`), `street_rules/*`, `street_invalidation.gd`, the location files, `view_bag.gd`, `walk_ground.gd`, `day_events.gd`, `walk_events.gd`, `day_reach.gd`, `mast_sites.gd`, `day_planner.gd`, `src/routes/seal_planner.gd`, `region_planner.gd` | After placement and the scheduler's breakup close |
 | **3b** | **The event manager's parts.** Streaming keeps its own state per plan, tells the plan what happened and carries a live event's state out and back as one `EventSave`; the spawner hands a live event everything in one setup call; `EventWorld`'s 55 lines | `event_manager.gd`, `event_world.gd`, `event_streaming.gd`, `event_spawner.gd`, `event_director.gd`, `events_ahead.gd`, `warning_board.gd`, `pending_warning.gd` | After placement (its step 4 rewrites the director's and `EventsAhead`'s siting) and the third hand-ins pull request. Beside 3a and 3c |
