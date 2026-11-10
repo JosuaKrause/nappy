@@ -39,9 +39,26 @@ sys.modules[SPEC.name] = agent_identity
 SPEC.loader.exec_module(agent_identity)
 
 
+def assert_within(test: unittest.TestCase, took: float, bound: float, message: str = "") -> None:
+    """Hold a measured time to `bound` seconds on CI (GitHub Actions sets CI=true); locally print it."""
+    if os.environ.get("CI") == "true":
+        test.assertLess(took, bound, message or None)
+    else:
+        print(f"info {test.id()}: took {took:.2f}s (bound {bound}s, asserted on CI only)")
+
+
 def _b64url_decode(text: str) -> bytes:
     padded = text + "=" * (-len(text) % 4)
     return base64.urlsafe_b64decode(padded)
+
+
+class TimeBoundTests(unittest.TestCase):
+    def test_a_time_bound_is_asserted_on_ci_and_only_printed_locally(self) -> None:
+        with mock.patch.dict(os.environ, {"CI": "true"}), self.assertRaises(AssertionError):
+            assert_within(self, 100.0, 1.0, "too slow")
+        with mock.patch.dict(os.environ, {"CI": ""}), redirect_stdout(io.StringIO()) as printed:
+            assert_within(self, 100.0, 1.0, "too slow")
+        self.assertIn("took 100.00s (bound 1.0s, asserted on CI only)", printed.getvalue())
 
 
 class RoleTableTests(unittest.TestCase):
@@ -791,7 +808,7 @@ class ManifestCallbackTests(unittest.TestCase):
                 self._run(Path(temp), opened)
             elapsed = time.monotonic() - started
         message = str(caught.exception)
-        self.assertLess(elapsed, 15, "the flow waited out its timeout instead of ending on the error")
+        assert_within(self, elapsed, 15, "the flow waited out its timeout instead of ending on the error")
         self.assertIn("simulated disk full", message)
         self.assertIn("https://github.com/settings/apps/nappy-claude-coder", message)
         self.assertIn("create claude-coder --force", message)
