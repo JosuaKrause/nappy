@@ -35,9 +35,14 @@ func run(t) -> void:
 	_test_a_hunting_van_stays_solid_once_it_notices_her(t)
 
 
+## A live event of `def`, set up as `EventSpawner.create()` sets one up: its `trace`, where one is
+## given, handed in before `setup()`, which hands it on to its behaviours.
 func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
-		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
+		path := PackedVector2Array(), where: WhereSheIs = null,
+		trace: RunTrace = null) -> EventInstance:
 	var instance := EventInstance.new()
+	if trace:
+		instance.trace = trace
 	instance.setup(def, at, path, Vector2.RIGHT, null, null, where)
 	t.add_child(instance)
 	instance.set_process(false)
@@ -330,8 +335,8 @@ func _test_a_completed_take_is_logged_exactly_once(t) -> void:
 	var lines: Array[String] = []
 	var def := EventCatalogue.by_id("abduction")
 	var instance_where := WhereSheIs.nowhere()
-	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
-	instance.trace = RunTrace.recording(lines)
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where,
+			RunTrace.recording(lines))
 	instance_where.tell(Vector2(def.outer_radius - 20.0, 0.0))
 	_advance(instance, instance.def.abduction.taken_over * 0.5)
 	t.check(_takes(lines) == 0, "nothing is logged while the walk is still happening")
@@ -365,8 +370,8 @@ func _test_a_hunting_van_draws_no_victim(t) -> void:
 	var lines: Array[String] = []
 	var hot := _hunting_abduction()
 	var instance_where := WhereSheIs.nowhere()
-	var instance := _instance(t, hot, Vector2.ZERO, PackedVector2Array(), instance_where)
-	instance.trace = RunTrace.recording(lines)
+	var instance := _instance(t, hot, Vector2.ZERO, PackedVector2Array(), instance_where,
+			RunTrace.recording(lines))
 	# Inside the field but outside the trigger, so it is only waiting — the take may begin exactly
 	# as it would for a cold van.
 	instance_where.tell(Vector2(hot.notice_within() + 20.0, 0.0))

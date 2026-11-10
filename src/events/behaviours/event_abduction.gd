@@ -8,6 +8,8 @@ extends EventBehaviour
 var _row: EventDef
 ## The take's own settings: how long the walk to the van takes.
 var _spec: AbductionSpec
+## Where its event writes its own account for the run log (`EventInstance.trace`).
+var _trace: RunTrace
 
 ## The event's age the take began at, or `INF` before it has and after a hunting van abandons one
 ## mid-walk.
@@ -15,14 +17,15 @@ var _taken_at := INF
 ## Whether the one run-log line for this take has been written.
 var _logged := false
 
-## Handed, as its event is set up, the figure it moves, where she is, its row and its take's
-## settings.
+## Handed, as its event is set up, the figure it moves, where she is, its row, its take's settings
+## and where its one run-log line goes.
 func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef,
-		spec: AbductionSpec) -> void:
+		spec: AbductionSpec, trace: RunTrace) -> void:
 	_figure = figure
 	_where = where
 	_row = row
 	_spec = spec
+	_trace = trace
 
 ## Whether the walk is running right now.
 func is_taking() -> bool:
@@ -57,7 +60,7 @@ func step(_delta: float) -> void:
 	if _logged or _figure.age() - _taken_at < _spec.taken_over:
 		return
 	_logged = true
-	_figure.trace().note("taken", "'%s' takes a bystander" % _row.id)
+	_trace.note("taken", "'%s' takes a bystander" % _row.id)
 
 ## How long the van has before it is simply gone, or `INF` where the question does not yet apply:
 ## a row still waiting has no expiry of its own.

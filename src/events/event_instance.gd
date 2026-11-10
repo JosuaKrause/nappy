@@ -302,7 +302,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_navigator = navigator if navigator else _map.navigator()
 	_mover = mover_for(definition)
 	_behaviours = EventBehaviours.compose(self, definition, _where, _figure, _map, _navigator,
-			_mover)
+			_mover, trace)
 	_move.radius = _mover.radius
 	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
 	# walked through as a person or an animal (`EventDef.stands_as`).
@@ -1163,7 +1163,7 @@ func restore_behaviours(state: Dictionary) -> void:
 # ------------------------------------------------------------------- the take ---
 
 ## Where the instance writes its own account for the run log, handed in by the manager that
-## creates it; silent otherwise.
+## creates it before `setup()`, which hands it on to the take (`EventAbduction`); silent otherwise.
 var trace := RunTrace.new()
 
 ## Whether the van's take of a bystander is running right now (`EventAbduction`), for
@@ -2029,10 +2029,6 @@ class Figure:
 	## Whether its field reaches `point` (`EventInstance.field_reaches()`).
 	func field_reaches(point: Vector2) -> bool:
 		return _of.field_reaches(point)
-
-	## Where it writes its own account for the run log (`EventInstance.trace`).
-	func trace() -> RunTrace:
-		return _of.trace
 
 	# ------------------------------------------------------------- what happened ---
 

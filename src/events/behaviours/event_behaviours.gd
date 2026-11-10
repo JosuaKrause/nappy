@@ -6,8 +6,9 @@ extends RefCounted
 ## The behaviours an event of `row` is made of, in the order `step()` runs them each tick. Each is
 ## handed what never changes under it as it is made: the figure it moves (`figure`, the event's
 ## `EventInstance.Figure`), its settings (the row, or its part's settings class), where she is as
-## `event` hears it (`where`), the map, the navigator, what the event walks as (`mover`) and the
-## behaviours beside it it works with, where it needs them. The pursuit, the man on foot, the
+## `event` hears it (`where`), the map, the navigator, what the event walks as (`mover`), where the
+## event writes its account for the run log (`trace`) and the behaviours beside it it works with,
+## where it needs them. The pursuit, the man on foot, the
 ## barrier post, the investigation and the car are attached to `event` instead
 ## (`EventBehaviour.attach()`). `event`'s typed fields (`hold`, `flock`, ...) are set to the same
 ## objects, so the event can answer for each.
@@ -17,7 +18,7 @@ extends RefCounted
 ## its route. A vehicle that investigates is never also a pursuer (`EventDef.validate()`).
 static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 		figure: EventInstance.Figure, map: WorldMap, navigator: Navigator,
-		mover: Mover) -> Array[EventBehaviour]:
+		mover: Mover, trace: RunTrace) -> Array[EventBehaviour]:
 	# The siblings another behaviour is handed are made first; each ticks in its own place below.
 	var on_foot: EventOfficer = null
 	if row.pursuit != null:
@@ -62,7 +63,7 @@ static func compose(event: EventInstance, row: EventDef, where: WhereSheIs,
 		event.unreachable = EventUnreachable.new(figure, where)
 		out.append(event.unreachable)
 	if row.abduction != null:
-		event.abduction = EventAbduction.new(figure, where, row, row.abduction)
+		event.abduction = EventAbduction.new(figure, where, row, row.abduction, trace)
 		out.append(event.abduction)
 	return out
 
