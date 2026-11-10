@@ -110,3 +110,20 @@ func _draw_abduction(canvas: CanvasItem) -> void:
 	# West-authored, like `delivery_van` and `fire_engine` above — see `_draw_eight_view()`'s own
 	# doc comment on `side_faces_west`.
 	_draw_eight_view(EventPictures.UNMARKED_VAN_BY_VIEW, event.facing_now(), canvas, true)
+
+## The victim's own short scripted walk to the van (`EventAbduction`) is a straight-line lerp on
+## `age` rather than anything that touches the ground travelled, so it gets its own derived stride
+## instead of sharing `gait_phase()` — a persistent field would have nothing to reset between takes
+## that the walk's own time (`EventAbduction.walked_for()`) restarting at zero does not already
+## give it. The walk is at a constant speed by construction (linear interpolation over a fixed
+## time), so the distance covered by moment `t` is exactly `t * (AbductionSpec.standing_offset /
+## AbductionSpec.taken_over)`, fed through the same
+## `GAIT_RATE` and doubled-phase test `gait_is_stepping()` uses. `sin(0) == 0`, so the walk always
+## starts on frame a rather than mid-stride.
+## Overrides EventLook.victim_gait_is_stepping.
+func victim_gait_is_stepping() -> bool:
+	if not event.is_taking_a_victim():
+		return false
+	var elapsed := event.abduction.walked_for()
+	var speed := event.def.abduction.standing_offset / event.def.abduction.taken_over
+	return sin(elapsed * speed * EventInstance.GAIT_RATE * 2.0) > 0.0

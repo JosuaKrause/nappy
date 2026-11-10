@@ -182,15 +182,17 @@ src/
 	event_sources.gd      a day's live events as one set of things that charge her
 	                       (`EventSources`): the door's toll alone inside a held door, a region
 	                       boundary's structures as their strongest
-	views/                how an event looks, read off its public state: `EventPictures` names
+	views/                how an event looks, asked of the event: `EventPictures` names
 	                       every picture (each a region of the baked `events` page) and the
 	                       tables that pick one; `EventLooks.for_row()` gives each row the look
 	                       that draws its family (a figure, a vehicle, a pursuer, a spread, a
-	                       rank, the roadblock, a fire, the checkpoint kit, the flock), which
-	                       holds the redraw gate, the caret and the slices a long picture is
-	                       drawn in; every picture a look draws goes through one `EventDrawer`
+	                       rank, the roadblock, a fire, the checkpoint kit, the flock), handed
+	                       its event, its row and its drawer as it is made, which holds the
+	                       redraw gate, the caret and the slices a long picture is drawn in;
+	                       every picture a look draws goes through one `EventDrawer`
 	                       (`views/event_drawer.gd`), which the manager builds over its atlas
-	                       and its spawner hands every instance (`EventInstance.drawer`)
+	                       and its spawner hands every instance (`EventInstance.drawer`) before
+	                       `setup()` hands it to the look
 	behaviours/           what an event does, one rule and its state each, composed per row
 	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
 	                       line run, a route, a flock, a hold, a stop, a departure, a car's

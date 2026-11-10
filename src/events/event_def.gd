@@ -347,6 +347,10 @@ func solid_reach() -> float:
 func ground_shape() -> GroundShape:
 	return shape
 
+## Whether a shadow is put down under its body (`draws_body_shadow`).
+func casts_a_shadow() -> bool:
+	return draws_body_shadow
+
 ## The pieces its body is made of, in the scene's own frame (`parts()`, which the readers outside
 ## the live event's body still ask): one piece at the origin for every row but the crash.
 func body_pieces() -> Array[SolidPart]:
@@ -1766,6 +1770,11 @@ func peak_through(age: float, into_its_burst: float, beat := -1.0) -> float:
 ## pulse.
 func pulses_every() -> float:
 	return pulse_period
+
+## The peak rate of its field at its centre (`intensity`), before a swell, a pulse or a phase moves
+## it, or 0 for a row with no field: what the share it emits now is measured against.
+func peak() -> float:
+	return intensity
 
 ## **The shape its field is priced from** (`EventInstance.field_shape()`), and the reach a long
 ## body gives it (`field_reach()`): its `shape`, or none — a point at its centre — for a row whose

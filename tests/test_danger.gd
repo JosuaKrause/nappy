@@ -919,12 +919,11 @@ func _free_manager(manager: EventManager) -> void:
 	manager.free()
 
 ## The danger carets `instance` asks its drawer for, drawn in a real frame: it is put in the tree,
-## asked to redraw, and what the recording drawer holds for that draw is read back. One entry for a
-## costly mark, two stacked for a lethal one (`colour`, and `size.x` its width), none when no mark
-## is wanted.
+## asked to redraw, and what the recording drawer it was handed before `setup()` (`_instance()`)
+## holds for that draw is read back. One entry for a costly mark, two stacked for a lethal one
+## (`colour`, and `size.x` its width), none when no mark is wanted.
 func _carets(t, instance: EventInstance) -> Array[Dictionary]:
-	var drawer := RecordingEventDrawer.new(_atlas)
-	instance.drawer = drawer
+	var drawer := instance.drawer as RecordingEventDrawer
 	if not instance.is_inside_tree():
 		t.add_child(instance)
 	instance.queue_redraw()
@@ -940,9 +939,12 @@ func _is_the_doubled_red(carets: Array[Dictionary]) -> bool:
 	return carets.size() == 2 and carets.all(func(each: Dictionary) -> bool:
 			return each["colour"] == Palette.MARK_LETHAL)
 
+## `def` live at the origin along `route`, handed a recording drawer before `setup()`, as its
+## manager's spawner hands the real one, so `_carets()` reads what its look draws.
 func _instance(def: EventDef, route := PackedVector2Array()) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.atlas = _atlas
+	instance.drawer = RecordingEventDrawer.new(_atlas)
 	instance.setup(def, Vector2.ZERO, route)
 	return instance
 

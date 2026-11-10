@@ -105,17 +105,24 @@ func _rng(day: int) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d:resistance" % [SEED, day])
 	return rng
 
-## The pictures a protest the city's events made stands its rank in, drawn: it is handed a
-## recording drawer through `EventInstance.drawer`, the member its manager's spawner assigns, and
-## real frames pass so its slices are put in beside it and drawn, one protester each.
+## Hands the city's events a recording drawer to give every instance they make from here on, as
+## `tests/test_pelican.gd` does: a look is handed its drawer as it is made.
+func _record_the_drawing() -> void:
+	_city.events.world.drawer = RecordingEventDrawer.new()
+
+## The pictures a protest the city's events made stands its rank in, drawn: it was handed the
+## recording drawer its manager's spawner hands every instance (`_record_the_drawing()`), and real
+## frames pass so its slices are put in beside it and drawn, one protester each. Only what is drawn
+## on the protest and its slices is read, since the drawer is every later instance's too.
 func _rank_drawn(t, protest: EventInstance) -> Array[String]:
-	var drawer := RecordingEventDrawer.new()
-	protest.drawer = drawer
+	var drawer := protest.drawer as RecordingEventDrawer
 	for i in 3:
 		await t.get_tree().process_frame
 	var pictures: Array[String] = []
 	for entry in drawer.shown():
-		if entry.kind == &"stand":
+		var slice := entry.canvas as SpreadLook.Slice
+		var its_own: bool = entry.canvas == protest or (slice != null and slice.instance == protest)
+		if entry.kind == &"stand" and its_own:
 			pictures.append(entry.picture)
 	return pictures
 
@@ -166,6 +173,7 @@ func _test_a_protest_the_city_makes_points_where_its_director_does(t) -> void:
 	director.contact().complete_now()
 	var objective: Vector2 = _city.events.points_at.call()
 	t.check(objective != Vector2.INF, "the perform step gives the protest somewhere to point")
+	_record_the_drawing()
 	var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"),
 			objective + Vector2(0.0, 300.0))
 	t.check(protest.points_at.call() == objective,
@@ -184,6 +192,7 @@ func _test_a_protest_the_city_makes_points_where_its_director_does(t) -> void:
 ## and stands its rank plain.
 func _test_a_protest_with_no_director_points_at_nothing(t) -> void:
 	_build_city(t)
+	_record_the_drawing()
 	var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"), Vector2(300.0, 300.0))
 	t.check(not protest.points_at.is_valid() or protest.points_at.call() == Vector2.INF,
 			"a protest with no director handed in has nothing to point at")
