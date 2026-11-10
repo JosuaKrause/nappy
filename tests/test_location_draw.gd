@@ -1,12 +1,13 @@
 @warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
-## `LocationDraw`, the day's open locations each drawn from its view's bag at dawn (inbox #1185 in gentle-owl):
-## each open location drawn once and what it drew recorded, an event drawn stood in the day, a
-## location taken, unavailable or already drawn left alone, a row the day's ground refuses at a
-## location never drawn there, a row not drawn once it has stood as many times as the caps handed in say, and
-## each location's weight handed to its bag. Run with stand-ins for what it is handed: the day's
-## locations (`_Locations`, a handful built by hand), the ground (`_Ground`, whose refusals and
-## weights a check sets); the bags are real (`ViewBag`), of a few marbles each.
+## `LocationDraw`, the day's open locations each drawn from its view's bag at dawn
+## (inbox #1185 in gentle-owl): each open location drawn once and what it drew recorded, an event
+## drawn stood in the day, a location taken, unavailable or already drawn left alone, a row the
+## day's ground refuses at a location never drawn there, a row not drawn once it has stood as many
+## times as the caps handed in say, each location's weight handed to its bag, and a row handed to
+## her walk drawn unplaced. Run with stand-ins for what it is handed: the day's locations
+## (`_Locations`, a handful built by hand), the ground (`_Ground`, whose refusals and weights a
+## check sets); the bags are real (`ViewBag`), of a few marbles each.
 
 func run(t) -> void:
 	_test_each_open_location_is_drawn_once(t)
@@ -14,6 +15,7 @@ func run(t) -> void:
 	_test_a_row_the_ground_refuses_is_never_drawn_there(t)
 	_test_a_row_at_its_cap_is_not_drawn(t)
 	_test_a_locations_weight_reaches_its_bag(t)
+	_test_a_row_handed_to_her_walk_is_drawn_unplaced(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 
@@ -159,3 +161,18 @@ func _test_a_locations_weight_reaches_its_bag(t) -> void:
 	t.check(heavy > 190, "a location weighing the cafe a thousand times over draws it (%d of 200)" % heavy)
 	t.check(plain > 60 and plain < 140, "one weighing it as the bag does, about half the time (%d of 200)"
 			% plain)
+
+## A bag of one poster crew, a row her walk sites (`EventDef.is_handed_to_her_walk()`): the location
+## draws it, and what is recorded, stood and answered is the crew with no position, for the walk.
+func _test_a_row_handed_to_her_walk_is_drawn_unplaced(t) -> void:
+	var location := _location(0)
+	var locations := _Locations.new()
+	locations.order = [location] as Array[Location]
+	var ground := _Ground.new()
+	var placed := _drawn(locations, {"poster_crew": 1}, {"poster_crew": _row("poster_crew")},
+			ground)
+	var recorded: EventScheduler.Planned = locations.recorded.get(location)
+	t.check(placed.size() == 1 and placed[0].row_id() == "poster_crew" \
+			and not placed[0].is_placed(), "a drawn crew is answered with no position")
+	t.check(recorded == placed[0] and ground.stood == placed,
+			"and it is what the location records and the day stands")

@@ -2,7 +2,7 @@ class_name DayEvents
 extends RefCounted
 ## **What the day's events are, read through one object while dawn plans them**: the rows in the
 ## order they were placed, and the facts derived from them — which calm areas each spoils and
-## whether one is a pursuit — kept in step with every row added or replaced.
+## whether one is a pursuit — kept in step with every row added.
 ##
 ## *(inbox #1156 in gray-dolphin: "have an object that contains the derived information -- don't rederive over
 ## and over again -- then pass that object around".)* `EventScheduler.build_day()` makes one per
@@ -14,10 +14,11 @@ extends RefCounted
 ## of the day's plan rather than of the city, because it changes with every day and as one day is
 ## planned, and the city's own `SPOILED` ground, which its arcs paint, is another thing.
 ##
-## **A row is never changed in place once added**, in anything the facts are derived from (its def,
-## position, path, `permanent`, whether it is placed): a change is a `replace()`, which is what keeps
-## every answer true. **Never saved**: a load plans the day again from the run's saved inputs, and the
-## same plan gives the same answers.
+## **A row is never changed once added**, in anything the facts are derived from (its def,
+## position, path, `permanent`, whether it is placed), which is what keeps every answer true; a row
+## handed to her walk is added already unplaced (`EventScheduler.owed_to_her_walk()`). **Never
+## saved**: a load plans the day again from the run's saved inputs, and the same plan gives the same
+## answers.
 ##
 ## **The constructor derives nothing**, so a test hands a consumer a stand-in that overrides the
 ## questions and the writes below and answers what the test set, with no city built.
@@ -55,39 +56,14 @@ func add_all(rows: Array[EventScheduler.Planned]) -> void:
 	for row in rows:
 		add(row)
 
-## Puts `new` in `old`'s place in the plan, as `old` is forgotten and `new` learned.
-func replace(old: EventScheduler.Planned, new: EventScheduler.Planned) -> void:
-	var at := _rows.find(old)
-	if at < 0:
-		return
-	_forget(old)
-	_rows[at] = new
-	_learn(new)
-
+## Learns the facts `row`, the plan's last row, adds: each calm area it spoils keeps it after the
+## rows already spoiling it, so a fact's rows are in plan order.
 func _learn(row: EventScheduler.Planned) -> void:
 	for block: Vector2i in _spoilers:
 		if row.spoils(_calm.ground_of(block)):
-			_in_plan_order(_spoilers[block], row)
+			(_spoilers[block] as Array[EventScheduler.Planned]).append(row)
 	if row.def.pursuit != null:
 		_pursuits += 1
-
-func _forget(row: EventScheduler.Planned) -> void:
-	for block: Vector2i in _spoilers:
-		(_spoilers[block] as Array[EventScheduler.Planned]).erase(row)
-	if row.def.pursuit != null:
-		_pursuits -= 1
-
-## Puts `row` into `kept` where it stands in the plan: at the end for a row just added, at its own
-## slot for a replacement, so a fact's rows are always in plan order.
-func _in_plan_order(kept: Array[EventScheduler.Planned], row: EventScheduler.Planned) -> void:
-	if _rows.back() == row:
-		kept.append(row)
-		return
-	var at := _rows.find(row)
-	var slot := kept.size()
-	while slot > 0 and _rows.find(kept[slot - 1]) > at:
-		slot -= 1
-	kept.insert(slot, row)
 
 # ---------------------------------------------------------------- questions ---
 

@@ -19,7 +19,9 @@ building places and *where* is its own, and even that is expressed through the d
 review below applies the five principles to the whole codebase, not only the escape.
 
 **Nothing else is worked on until this entry is done** (inbox #1210 in gentle-owl): work built on the code before
-the refactor is done twice. *Read as, open to the player's correction:* a pull request another entry
+the refactor is done twice. Work on how the project is worked on (a skill, `CLAUDE.md`, a rule, a
+hook, a general project script, or anything else of that kind) is the exception and goes first
+(inbox #1305). *Read as, open to the player's correction:* a pull request another entry
 already has stays open as a draft and resumes after this entry closes.
 
 ## The review this entry files
@@ -93,9 +95,9 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    (`standing-layer-breaks.md`), its interface and field reads with the receivers typed
    (`field-reads.md`), then its suites (`tests-one-module.md`). The player approved going
    module by module in parallel; the tracks are the design review's worked-out detail:
-   - **Placement:** the walk's draw landing with every location drawn at dawn; then
-     `placement-by-construction.md`'s steps with `scheduler-breakup.md` interleaved. Nothing else
-     changes where events go until it is done (inbox #1185 in gentle-owl).
+   - **Placement:** `placement-by-construction.md`'s
+     steps with `scheduler-breakup.md` interleaved. Nothing else changes where events go until it
+     is done (inbox #1185 in gentle-owl).
    - **Run flow:** `one-start-for-every-spec.md`'s start, then its signals and run log, then who
      builds the events and the crowd together with `city-hand-ins.md`'s third pull request.
    - **The modules that do not wait for the events:** telemetry; the player and the baby; the atlas

@@ -29,6 +29,7 @@ func run(t) -> void:
 		_test_a_row_warned_down_her_line_arrives_at_its_own_intensity,
 		_test_the_first_dog_of_the_run_day_is_the_lesson,
 		_test_a_moved_guard_keeps_what_he_is_in_the_middle_of,
+		_test_a_day_started_twice_stands_the_same_rows,
 	]
 	for test in tests:
 		_build_city(t)
@@ -99,6 +100,42 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 ## replace it — the manager's reference count across days and teardown, and every picture a look
 ## can draw resolving on the `events` page — are about `AtlasLibrary` rather than about this
 ## suite's city.
+
+## **A day started twice stands the same rows on the same tiles** (PLAYTEST-119 27;
+## `docs/MECHANICS.md`, "A retry is the same day"): the dawn draws every location before she can
+## move (`LocationDraw.draw_all()`), so day 4 started a second time, after a walk east on the first
+## start, plans from nothing the first start or the walk left in the city or the manager.
+func _test_a_day_started_twice_stands_the_same_rows(t) -> void:
+	var events := _city.events
+	events.stream_radius = Tuning.EVENT_STREAM_RADIUS
+	var home := _city.map.doorstep_world_position()
+	var rig := Rig.walker(t, _city, home)
+	var started: Array[String] = []
+	for start in 2:
+		Rig.start(_city, 4)
+		events.use_player(rig)
+		var placed: Array[EventScheduler.Planned] = []
+		for plan in events.plans():
+			if plan.is_placed():
+				placed.append(plan)
+		started.append(_where_they_stand(placed))
+		if start == 0:
+			rig.global_position = home
+			var each := func(_n: int) -> void:
+				rig.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
+				rig.global_position += rig.velocity * Rig.WALK_STEP
+			await PhysicsTicks.pass_ticks(t, 60, each, Rig.WALK_SCALE)
+	t.check(started[0] == started[1] and started[0] != "",
+			"started twice, day 4 stands the same rows on the same tiles")
+	events.use_player(null)
+	rig.free()
+
+## Each of `plans` as its row and the place it was put, in order.
+static func _where_they_stand(plans: Array[EventScheduler.Planned]) -> String:
+	var parts: Array[String] = []
+	for plan in plans:
+		parts.append("%s@%s" % [plan.row_id(), plan.placed_at()])
+	return ";".join(parts)
 
 func _teardown() -> void:
 	_city.free()
