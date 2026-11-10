@@ -59,7 +59,7 @@ ready. What ended it:
 
 - **A retry was not the same day.** The walk drew from one running stream per bag in the order she
   reached locations, so a different path gave a different day (PLAYTEST-119 27).
-- **The player called the two draws redundant** (inbox #1268) and set exact parity with main aside
+- **The player called the two draws redundant** (inbox #1268 in olive-ferret) and set exact parity with main aside
   as the bar.
 - **It needed a refit that did not close.** Fitted on two samples of cities and checked on two
   more (64 cities), four passes over three tables took the cells outside 2σ pooled from 128 of 498

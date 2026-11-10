@@ -5,7 +5,7 @@ extends RefCounted
 ## decided (`finish_day()`). `RunFlow` has it start each walk; `main` and the tests build it.
 ##
 ## **One start, and what differs is the spec's settings.** *(minty-lemur #785: "the escape is just
-## like a normal day with some special settings"; inbox #1268.)* Every walk takes the same steps in the
+## like a normal day with some special settings"; inbox #1268 in olive-ferret.)* Every walk takes the same steps in the
 ## same order: the spec to the clock; the spec's world asked for, and what the walk is won at in it
 ## handed on; the world dressed for the day; the events planned; the resistance started, or an authored scene installing itself instead; her put
 ## down and the crowd started; the clock started. Whether the dawn is photographed, whether the
