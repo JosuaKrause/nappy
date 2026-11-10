@@ -102,10 +102,12 @@ of another kind can be read in ways that take a function as silently (a test aga
 `match`, a lookup), and this rule does not cover it. One method that predates the rule keeps a
 yes-or-no field's name, `EventDef.investigates()`, with no read of it left without parentheses.
 
-**Two lists hold "Fields are not API" while `src/` is converted, and each only shrinks.** Much of `src/` still
+**Two lists hold "Fields are not API" while `src/` is converted, and neither gains a read.** Much of `src/` still
 reads fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that
-adds a reader file's first read of another class's field, today's being listed in
-`tools/field_reads.txt`, and a change that converts a file's last read of a field deletes its line.
+adds a read of another class's field, today's being listed in `tools/field_reads.txt`, unless the
+read only moved (its reader file renamed, code moved into a new file with no more uses of that
+class's field, or an inner class lifted into a file of its own, whose reads the list gains as
+lines), and a change that converts a file's last read of a field deletes its line.
 The second list is what makes the check see every read (inbox #1268 in olive-ferret), since a read through a
 receiver whose class nothing can tell is a read no list holds. `project.godot` makes the engine
 fail an access it cannot type: the warnings `untyped_declaration`, `unsafe_property_access` and
@@ -203,5 +205,9 @@ that proposes it, and says so where the player's words name nothing on the point
   the builder's choice (minty-quail-busy-heron). The player's words ask that the check be made to
   work and approve the design review's way to do it (inbox #1268 in olive-ferret), and that design has the check
   fail an unknown receiver only once no file carries the line.
+- **A read that only moved passes the field-read check** (a new file with no more uses, an inner
+  class lifted out), the planning agent's proposal (minty-quail-breezy-bison), so that the plan record's lift
+  and the scheduler's breakup can move code; the player's words ask that the check be made to work
+  (inbox #1268 in olive-ferret) and name no rule for a move.
 - **A design where a fake has nothing to be handed to is wrong** (inbox #1156 in gray-dolphin).
 - **What no caller would miss goes** (inbox #1156 in gray-dolphin).
