@@ -327,7 +327,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         ),
         more=(
             ("src/telemetry/run_session.gd", 2),
-            ("src/telemetry/telemetry_observer.gd", 3),
+            ("src/telemetry/telemetry_observer.gd", 2),
         ),
     ),
     Exception_(

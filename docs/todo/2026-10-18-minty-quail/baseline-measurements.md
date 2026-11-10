@@ -10,26 +10,16 @@ nothing", the player: "sure" (inbox #1268 in olive-ferret).
 repository, so the end remeasure has something to compare with. *The specifics are the
 orchestrator's, proposed and open to the player's correction.*
 
-**Build:**
+**What is left** (the first reading is built: `docs/evidence/minty-quail-baseline-2026-11-09/`,
+`v0.29.0` beside today's `main`, record mossy-raven):
 
-- **The baseline is `v0.29.0`**, the tree this entry's review read. It is checked out in a scratch
-  worktree and measured there; today's `main` is measured the same way beside it, so the two
-  columns come from one machine on one day.
-- **What is measured**, each by a probe that runs on both trees (a probe written for today's tree
-  that the old tree cannot run is rewritten to ask only what both have, and the rewrite is noted):
-  winnability across seeds and days; what a route costs to walk; the frame time and the crowd's
-  tick on a walked day; the dawn's planning time; and how many of each event row a city holds a
-  day, by view (`tests/probes/placement_rows.gd` on main, its counterpart on the old tree).
-- **Where it is kept:** a folder under `docs/evidence/` with a README naming the two commits, each
-  command, the seeds and the machine, and one table per measurement with both columns, kept as the
-  run printed them (**verify**, its `references/evidence.md`).
-- **Two more readings later, in the background:** winnability and frame time on `main` when
-  placement closes, and again after the events' field-read conversion, each added to the same
-  folder as a third and fourth column.
+- **Two more readings, in the background:** winnability and frame time on `main` when placement
+  closes, and again after the events' field-read conversion, each added to the same folder as a
+  further column, with the same commands and seeds, and the machine's load noted before each run.
 - **Nothing is judged here.** A number that moved is listed for the end remeasure; no step waits on
   a reading.
 
 The script that compares the placement rows of two trees (the record grassy-magpie states its rule;
-it has been run by hand at every placement step and lives outside the repository) becomes a
-`tools/` entry point in this item, since it is a manual sequence done more than twice (woolly-finch
-23), with its row in the using-tools catalogue.
+it has been run by hand at every placement step, and a copy sits in the first reading's evidence
+folder) becomes a `tools/` entry point in this item, since it is a manual sequence done more than
+twice (woolly-finch 23), with its row in the using-tools catalogue.

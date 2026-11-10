@@ -19,8 +19,8 @@ extends Node
 ## only a `count.js` genuinely never loading (missing or blocked) leaves that queue unsent.
 ##
 ## **It only listens**, the same discipline `TelemetryObserver` keeps for the run log: everything
-## here answers an `EventBus` signal, reads nothing gameplay decides by, and writes nothing back
-## into anything gameplay reads. The telemetry skill's own invariant — the game plays identically
+## here answers an `EventBus` signal or the run flow's `day_started`, reads nothing gameplay decides
+## by, and writes nothing back into anything gameplay reads. The telemetry skill's own invariant — the game plays identically
 ## with this off — holds for this counter exactly as it holds for the run log, and it is why every
 ## signal it listens to already exists for another reason (or was added purely to be listened to,
 ## with no behaviour of its own — see `EventBus`'s own doc on each one).
@@ -86,7 +86,9 @@ extends Node
 ## `EventBus` (`listen()`) and the page's outbox (`send_through()`), and finds it there after, so
 ## its count of the run (the day, the open tasks, whether the run's beginning was reported) outlives
 ## the scene reloads a run makes, the held restart included, exactly as long as the page's
-## process does. A suite that boots `main` gets the counter of the sitting it hands, freed with it.
+## process does. Every boot hands it that boot's run flow as well (`listen_to_the_flow()`), whose
+## walks begin there. A suite that boots `main` gets the counter of the sitting it hands, freed with
+## it.
 
 ## Connects every handler below to `bus`'s signals. `main` hands it the game's `EventBus`; a
 ## test hands in a bus of its own, so what it emits reaches this counter alone, and frees the
@@ -95,11 +97,16 @@ func listen(bus: Node) -> void:
 	for pair in _handlers(bus):
 		pair[0].connect(pair[1])
 
+## Connects the counter to `flow`, the run flow of the boot that is playing (`RunFlow`): each walk it
+## begins is counted as its day's `began`, and names what is counted while it is walked. `main` hands
+## it every boot's own; a test hands one of its own.
+func listen_to_the_flow(flow: RunFlow) -> void:
+	flow.day_started.connect(_on_day_started)
+
 ## Each signal of `bus` the counter answers, with the handler that answers it.
 func _handlers(bus: Node) -> Array:
 	return [
 		[bus.run_begun, _on_run_begun],
-		[bus.day_started, _on_day_started],
 		[bus.day_ended, _on_day_ended],
 		[bus.run_restarted, _on_run_restarted],
 		[bus.run_ended, _on_run_ended],
@@ -142,7 +149,7 @@ func _handlers(bus: Node) -> Array:
 var _config: RunConfig
 
 ## The run this page is counting, handed in by `main` at boot (`configure()`): its mode, read as a
-## day begins, and its day, which names what is counted before any `day_started` has been heard.
+## day begins, and its day, which names what is counted before any walk has begun on this page.
 var _run: RunState
 
 ## Hands the counter the run's configuration and the run; a `null` configuration puts it back to
@@ -294,25 +301,26 @@ func _on_run_begun(day: int, resumed: bool) -> void:
 	_reported_run_begun = true
 	_send_event(_run_begun_name(day, actually_resumed))
 
-## The day the last `day_started` announced — one of the fourteen, or one of the escape's two
-## sections under their own numbers (`DaySpec.number`) — which everything counted while it is walked
-## is named by: a charge, an encounter, a poster, a hold. `0` until one is heard on this page.
+## The day of the walk last begun (`RunFlow.day_started`, off its spec) — one of the fourteen, or one
+## of the escape's two sections under their own numbers (`DaySpec.number`) — which everything counted
+## while it is walked is named by: a charge, an encounter, a poster, a hold. `0` until one is heard on
+## this page.
 var _day := 0
 
-## The day what happens now is counted under: the one `day_started` announced, or, before any has
-## been heard on this page — a suite driving the counter by hand — the run's own day. `0` when
+## The day what happens now is counted under: the walk last begun's, or, before any has begun on this
+## page — a suite driving the counter by hand — the run's own day. `0` when
 ## there is no run: `main` always configures one, and a counter configured with none (the test
 ## runner's, between boots) sends nothing.
 func _counted_day() -> int:
 	return _day if _day > 0 or _run == null else _run.header.day
 
-func _on_day_started(day: int) -> void:
-	_day = day
-	for name in _day_began_names(day, _run != null and _run.calendar.hard_mode):
+func _on_day_started(spec: DaySpec) -> void:
+	_day = spec.day_number()
+	for name in _day_began_names(_day, _run != null and _run.calendar.hard_mode):
 		_send_event(name)
 
 ## A fresh run's mode, from its title. **The day behind that title has already begun** — the first
-## morning is built and its `day_started` sent before the title is dismissed, while the run still
+## morning is built and its walk begun before the title is dismissed, while the run still
 ## reads as normal — so a hard run sends that day's hard copy here, once its mode is known.
 func _on_run_mode_chosen(hard: bool, day: int) -> void:
 	_send_event(_mode_event_name(hard))

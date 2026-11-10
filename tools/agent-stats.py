@@ -11,6 +11,18 @@ rounds: how many times the agent's work came back not ready, or needed another a
 --redone: the orchestrator redid or overrode the agent's own conclusion; it counts as a correction,
 and a task handed out whole is graded on what the agent itself concluded, never on what the
 orchestrator added.
+
+ungraded: the finished agents nobody graded, or graded before they stopped again. An agent is listed
+when runs.jsonl has a stop for it after the date of its last grade in log.jsonl (every stop when it
+has no grade), joined by agent id as above. The comparison is by date, since a grade carries a date
+and no time: a stop later on the same day as a grade counts as graded, so an agent resumed on the
+day it was graded is not listed for that day's stops. A grade whose prefix several agents share is
+reported on stderr and attributed to none of them. One line per agent: id, model, stops counted,
+first and last stop, largest tokens, last grade's date or "never", description. Stops are counted
+from --since (default: the last 7 days), --all lifts the limit, --session keeps one session's agents.
+
+A line of either file that is not a JSON object (a line torn by two sessions appending at once) is
+skipped with a note on stderr, by every subcommand.
 """
 
 from __future__ import annotations
@@ -20,7 +32,7 @@ import json
 import statistics
 import sys
 from collections import defaultdict
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -38,9 +50,17 @@ def read_lines(name: str) -> list[Row]:
     if not path.exists():
         return []
     rows: list[Row] = []
-    for line in path.read_text().splitlines():
-        if line.strip():
-            rows.append(json.loads(line))
+    for number, line in enumerate(path.read_text().splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            row = None
+        if isinstance(row, dict):
+            rows.append(row)
+        else:
+            print(f"agent-stats.py: {name} line {number} is not a JSON object; skipped", file=sys.stderr)
     return rows
 
 
@@ -63,6 +83,59 @@ def run_for(agent: str, runs: list[Row]) -> Row | None:
     if len(found) > 1:
         raise AmbiguousAgentError(f"agent prefix {agent!r} matches {', '.join(sorted(found))}")
     return next(iter(found.values()), None)
+
+
+def agent_id(run: Row) -> str:
+    return str(run.get("agent") or run.get("agent_id") or "")
+
+
+def last_grades(runs: list[Row], grades: list[Row]) -> dict[str, str]:
+    """The date of each agent's last grade, by full agent id; a grade is joined by prefix like run_for."""
+    ids = {agent_id(r) for r in runs} - {""}
+    last: dict[str, str] = {}
+    for grade in grades:
+        prefix = str(grade.get("agent") or "")
+        if len(prefix) < MIN_PREFIX:
+            continue
+        found = sorted(i for i in ids if i.startswith(prefix))
+        if len(found) > 1:
+            print(f"agent-stats.py: grade prefix {prefix!r} matches {', '.join(found)}; skipped", file=sys.stderr)
+        elif found:
+            last[found[0]] = max(last.get(found[0], ""), str(grade.get("date") or ""))
+    return last
+
+
+def ungraded_lines(runs: list[Row], grades: list[Row], since: date | None, session: str | None) -> list[str]:
+    graded = last_grades(runs, grades)
+    stops: defaultdict[str, list[Row]] = defaultdict(list)
+    for run in runs:
+        ident = agent_id(run)
+        ts = str(run.get("ts") or "")
+        if not ident or (session and run.get("session_id") != session):
+            continue
+        if since and ts[:10] < since.isoformat():
+            continue
+        if ts[:10] <= graded.get(ident, ""):
+            continue
+        stops[ident].append(run)
+    lines: list[tuple[str, str]] = []
+    for ident, rows in stops.items():
+        times = sorted(str(r.get("ts") or "") for r in rows)
+        tokens = max((int(r["tokens"]) for r in rows if r.get("tokens") is not None), default=0)
+        info = rows[-1]
+        text = (
+            f"{ident}  {info.get('model') or '-':7} {len(rows):>3} stops  {times[0]} .. {times[-1]}  "
+            f"{tokens:>8} tokens  graded {graded.get(ident) or 'never'}  {info.get('description') or '-'}"
+        )
+        lines.append((times[-1], text))
+    return [text for _, text in sorted(lines)]
+
+
+def ungraded(args: argparse.Namespace) -> int:
+    since = None if args.all else args.since or date.today() - timedelta(days=7)
+    for line in ungraded_lines(read_lines("runs.jsonl"), read_lines("log.jsonl"), since, args.session):
+        print(line)
+    return 0
 
 
 def add(args: argparse.Namespace) -> int:
@@ -143,6 +216,16 @@ def parser() -> argparse.ArgumentParser:
     sub.add_parser("summary", help="per kind and model: count, mean tokens, mean rounds, redone, grades")
     ls = sub.add_parser("list", help="the raw entries")
     ls.add_argument("--last", type=int, default=20)
+    u = sub.add_parser(
+        "ungraded",
+        help="agents with no grade, or stops after their last grade's date",
+        description="The finished agents with no grade, or with stops after their last grade's date. The comparison "
+        "is by date: a stop later on the same day as a grade counts as graded.",
+    )
+    window = u.add_mutually_exclusive_group()
+    window.add_argument("--since", type=date.fromisoformat, metavar="DATE", help="stops on or after DATE (YYYY-MM-DD)")
+    window.add_argument("--all", action="store_true", help="no date limit (default: the last 7 days)")
+    u.add_argument("--session", help="only the agents of this session id")
     return p
 
 
@@ -150,6 +233,8 @@ def main() -> int:
     args = parser().parse_args()
     if args.cmd == "add":
         return add(args)
+    if args.cmd == "ungraded":
+        return ungraded(args)
     if args.cmd == "list":
         return list_rows(args.last)
     return summary()

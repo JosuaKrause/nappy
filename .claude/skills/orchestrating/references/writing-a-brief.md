@@ -65,11 +65,16 @@ The player's rules are **orchestrating**'s: an agent stays on one task and no ag
 and a warm agent is reused while rebriefing would cost more (inbox #896 in plaid-raven). Where the
 limit falls and how a task is cut to it:
 
-- The limit is about 150 turns or 300k tokens of context. Re-reading grows with the square of the
-  turns, so two agents of 150 turns cost well under one of 300. `.claude/hooks/resume-guard.py`
-  reads the two numbers out of this item's first sentence, a turn being one request to the model
-  and the context being the latest turn's, so the limit is written nowhere else and that sentence
-  keeps its form (`tools/test_resume_guard.py` fails when the hook cannot read it).
+- The limit is about 300k tokens of context, and no limit counts turns (inbox #1298). Every turn
+  re-reads the whole context, so an agent's cost grows much faster than its length: two agents that
+  each end at half the size cost well under one that ends at the whole.
+- A resume is refused once past 400k tokens of context (inbox #1298), the context being what the
+  agent's latest turn read. It is a second, higher number on purpose: the limit above is where a
+  task is scoped to finish, an agent that ran a bit over it is still resumed unasked, and a resume
+  is refused earlier than an agent is reassessed (inbox #1298). `.claude/hooks/resume-guard.py`
+  reads the number out of this item's first sentence and reads no other, so it is written nowhere
+  else and that sentence keeps its form (`tools/test_resume_guard.py` fails when the hook cannot
+  read it).
 - One kind of work per agent: building, measuring (long probe runs, many-seed statistics) and
   capturing pictures are separate agents on the one pull request, each briefed from the brief
   file, the review threads and what the one before it left. A measurement
@@ -78,8 +83,9 @@ limit falls and how a task is cut to it:
   past a handful of files, is split into pull requests, or into agents on one pull request.
 - The brief names every probe, suite and evidence rig the work needs, with its command, so no
   turns go on finding them.
-- A cold or near-limit agent's follow-up goes to a fresh agent briefed from the brief file, the
-  review threads and what the one before it left.
+- A cold agent's follow-up goes to a fresh agent briefed from the brief file, the review threads
+  and what the one before it left, and so does new work for an agent past the size a resume is
+  refused at (**orchestrating**, "What the orchestrator keeps").
 - A builder stays with its pull request through merges of `main` while it is warm
   (**orchestrating**'s cold-resume rule), since that work reuses the context it built.
 - A plan split across several pull requests is built by a fresh agent per pull request, each
@@ -87,15 +93,17 @@ limit falls and how a task is cut to it:
 - A brief names the files and the records to read and does not ask for the whole history,
   so a fresh agent's start stays small.
 - A reviewer is fresh per pull request and is resumed, while warm, for that pull request's
-  delta reviews; a review aims at about 30–60 turns.
+  delta reviews.
 
 ## Proposed, not asked for
 
 The rules in this file that are the filer's proposal, not the player's words, each open to the
 player's correction:
 
-- **Every line of "Sizing the task"**: the player asked that a task stay under the limit by
-  construction (inbox #896 in plaid-raven), and where the limit falls and how a task is sized to it
-  is proposed.
+- **Every line of "Sizing the task" that carries no citation**: the player asked that a task stay
+  under the limit by construction (inbox #896 in plaid-raven), and how a task is sized to it is
+  proposed. Where the limit falls is the filer's number, which the player's answer on the resume
+  leaves standing; that no limit counts turns, and the size a resume is refused at, are the
+  player's (inbox #1298).
 - **That a brief names the layer its work belongs to**, made in **designing-classes**
   (plush-kestrel).

@@ -19,23 +19,9 @@ order to start it, and an escape start is testable without booting the whole gam
 **What is left**, the design review's shape, which the player approved ("I saw the review and
 approved it", inbox #1268 in olive-ferret); the detail was worked out by the same review after the approval:
 
-- **One signal each for "a day started" and "a day planned"**, on the run flow, carrying the spec
-  and its world; `EventBus.day_started(day)`, `EventBus.day_planned(day)` and
-  `escape_section_started` are deleted, and the HUD, the page counter and the run log read the day
-  number off the spec. The start still sends `escape_section_started` for sections only, the one
-  branch on "is this a section" left in it, because the run log's escape path listens for it; it
-  goes here.
-- **The run log watches any spec the same way**, from that signal: the run log's session
-  (`RunSession`) loses its escape-only entry points and its casts of the world to the city or the
-  building. The recorded baseline `tests/fixtures/observed_run_log.txt` staying line for line
-  identical is the proof.
 - **Who builds the event manager and the crowd**, with the third hand-ins pull request
   (`city-hand-ins.md`): the city scene stops building its own, and the building and the city get
   theirs from one factory (`standing-layer-breaks.md`, the city scene as builder).
 
-**The pull requests:**
-
-- **The signals and the run log**: the signal bus, the page counter, `src/telemetry/`, the HUD and
-  the run flow. It touches nothing under `src/events/` and runs beside placement.
-- **Who builds the event manager and the crowd**: it touches the event manager's setup and lands
-  between two placement pull requests.
+**The pull request:** it touches the event manager's setup and lands between two placement pull
+requests.

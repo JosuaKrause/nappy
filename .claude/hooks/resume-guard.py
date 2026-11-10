@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PreToolUse hook on SendMessage: refuses, once, the resume of a sub-agent that has outgrown the limit.
+"""PreToolUse hook on SendMessage: refuses, once, the resume of a sub-agent grown past the size a resume is refused at, or compacted automatically.
 
 A sub-agent re-reads its whole context on every turn, so one kept on through SendMessage for task
 after task costs more with every step, and the choice to resume it is made one message at a time,
@@ -16,26 +16,25 @@ is not "message" (a shutdown or another protocol message), and any other tool pa
 
 The message is refused when the target's transcript holds
   - a compaction the harness started itself (a `compact_boundary` whose compactMetadata.trigger is
-    "auto"; one the player asked for is "manual" and does not count),
-  - more assistant turns than the limit, counted as distinct message ids, since one turn is
-    written as several lines, or
+    "auto"; one the player asked for is "manual" and does not count), or
   - a latest turn whose context (input, cache-read and cache-creation tokens of the last
-    assistant usage that reports any) is past the limit.
+    assistant usage that reports any) is more than the size.
+Nothing counts turns.
 
-The limit has one owner, and it is not this file: the two numbers are read from the line of
-.claude/skills/orchestrating/references/writing-a-brief.md ("Sizing the task") that LIMIT_LINE
-matches, so the sentence the orchestrator sizes a task by is the one enforced.
-tools/test_resume_guard.py fails when that line no longer parses; in a session, a line that
-cannot be read, and a transcript that cannot be measured, pass the message with a note beside it
-saying the resume went unchecked.
+The size has one owner, and it is not this file: it is read from the one sentence of
+.claude/skills/orchestrating/references/writing-a-brief.md ("Sizing the task") that
+REFUSAL_SENTENCE matches, and exactly one sentence must match. tools/test_resume_guard.py fails
+when that sentence no longer parses; in a session, a sentence that cannot be read, and a
+transcript that cannot be measured, pass the message with a note beside it saying the resume went
+unchecked.
 
-The refusal is a prompt to decide and not a ban: the same message to the same agent sent again
-passes. That is how a message that only stops a runaway agent ("push what you have and report")
-still gets through, and how an orchestrator who has judged the agent fine to go a bit over the
-limit keeps it. The marker for a refused message is a file under $TMPDIR/claude-nappy-resume-guard/<session>/
-(<session>-<agent id> when a sub-agent sends), named by a hash of the target and the text; it is
-kept the way project-rules.sh keeps its own, and like that hook this one refuses only where the
-marker could be written, since a refusal that cannot be remembered would refuse for good.
+The refusal is a prompt to decide and not a ban, and it asks one question: is the message a
+follow-up on the agent's own pull request, or new work? A follow-up is sent again, and the same
+message to the same agent passes; new work goes to a fresh agent. The marker for a refused message
+is a file under $TMPDIR/claude-nappy-resume-guard/<session>/ (<session>-<agent id> when a sub-agent
+sends), named by a hash of the target and the text; it is kept the way project-rules.sh keeps its
+own, and like that hook this one refuses only where the marker could be written, since a refusal
+that cannot be remembered would refuse for good.
 
 The hook never breaks a session: any error passes the message, goes to errors.log beside the
 agent counter's data (~/.claude/nappy-agent-stats/), and the exit status is 0. A transcript can
@@ -55,26 +54,32 @@ from pathlib import Path
 
 HOOKS = Path(__file__).resolve().parent
 REFERENCE = HOOKS.parent / "skills" / "orchestrating" / "references" / "writing-a-brief.md"
-LIMIT_LINE = re.compile(r"about ([\d,]+) turns or ([\d,]+)k tokens of context")
+REFUSAL_SENTENCE = re.compile(r"resume is refused once past (\d[\d,]*)k tokens of context")
 ERRORS = Path.home() / ".claude" / "nappy-agent-stats" / "errors.log"
 CONTEXT_KEYS = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
 SAFE_ID = re.compile(r"[A-Za-z0-9_-]+")
 
 
-class LimitUnreadable(Exception):
+class SizeUnreadable(Exception):
     pass
 
 
-def read_limits():
-    """The limit as (assistant turns, context tokens), from the reference's own sentence."""
+def read_refusal_size():
+    """The context, in tokens, past which a resume is refused, from the reference's own sentence."""
     try:
-        found = LIMIT_LINE.search(REFERENCE.read_text(encoding="utf-8"))
+        text = REFERENCE.read_text(encoding="utf-8")
     except (OSError, ValueError) as e:  # a decode error is a ValueError
-        raise LimitUnreadable(repr(e)) from e
-    if not found:
-        raise LimitUnreadable(f"no line of {REFERENCE} matches {LIMIT_LINE.pattern!r}")
-    turns, thousands = (int(group.replace(",", "")) for group in found.groups())
-    return turns, thousands * 1000
+        raise SizeUnreadable(repr(e)) from e
+    text = " ".join(text.split())  # a sentence wrapped across two lines still matches
+    found = REFUSAL_SENTENCE.findall(text)
+    if len(found) != 1:
+        raise SizeUnreadable(
+            f"{len(found)} sentences of {REFERENCE} match {REFUSAL_SENTENCE.pattern!r}, and exactly one must"
+        )
+    size = int(found[0].replace(",", "")) * 1000
+    if size <= 0:
+        raise SizeUnreadable(f"the size read from {REFERENCE} is {size}")
+    return size
 
 
 def started(transcript):
@@ -121,8 +126,8 @@ def resolve(payload):
 
 
 def measure(transcript):
-    """(assistant turns, the latest turn's context in tokens, automatic compactions)."""
-    turns, unnamed, context, compactions = set(), 0, 0, 0
+    """(the latest turn's context in tokens, automatic compactions)."""
+    context, compactions = 0, 0
     with transcript.open(encoding="utf-8", errors="replace") as lines:
         for line in lines:
             if '"assistant"' not in line and "compact_boundary" not in line:
@@ -139,16 +144,11 @@ def measure(transcript):
                 continue
             if entry.get("type") != "assistant":
                 continue
-            message = entry.get("message") or {}
-            if message.get("id"):
-                turns.add(message["id"])
-            else:
-                unnamed += 1
-            usage = message.get("usage") or {}
+            usage = (entry.get("message") or {}).get("usage") or {}
             used = sum(usage.get(key) or 0 for key in CONTEXT_KEYS)
             if used:
                 context = used
-    return len(turns) + unnamed, context, compactions
+    return context, compactions
 
 
 def description(transcript):
@@ -186,27 +186,23 @@ def guard(payload):
         return
     agent = transcript.stem[len("agent-") :]
     try:
-        turn_limit, context_limit = read_limits()
-    except LimitUnreadable as e:
+        size = read_refusal_size()
+    except SizeUnreadable as e:
         log(e)
         unchecked(
-            f"could not read the limit an agent may grow to ({e}; restore the sentence it reads, in"
+            f"could not read the size past which a resume is refused ({e}; restore the sentence it reads, in"
             ' .claude/skills/orchestrating/references/writing-a-brief.md, "Sizing the task")'
         )
         return
     try:
-        turns, context, compactions = measure(transcript)
+        context, compactions = measure(transcript)
     except Exception as e:  # an entry of a shape measure() does not expect
         log(e)
         unchecked(f"could not measure sub-agent {agent} from its transcript ({e!r})")
         return
     past = []
-    if turns > turn_limit:
-        past.append(f"{turns:,} turns (the limit is {turn_limit:,})")
-    if context > context_limit:
-        past.append(
-            f"{round(context / 1000):,}k tokens of context in its latest turn (the limit is {context_limit // 1000:,}k)"
-        )
+    if context > size:
+        past.append(f"{context:,} tokens of context in its latest turn (a resume is refused once past {size:,})")
     if compactions:
         past.append(f"{compactions} automatic compaction{'s' if compactions > 1 else ''} of its context")
     if not past:
@@ -222,31 +218,32 @@ def guard(payload):
         return
     about = description(transcript)
     who = f"sub-agent {agent}" + (f' ("{about}")' if about else "")
-    reason = (
-        f"{who} has outgrown the limit for a resume: {'; '.join(past)}.\n"
-        "The rule is orchestrating's, that an agent stays on one task and no agent grows huge"
-        ' (.claude/skills/orchestrating/SKILL.md, "What the orchestrator keeps"); where the limit falls is in'
-        ' .claude/skills/orchestrating/references/writing-a-brief.md, "Sizing the task".\n'
-        "Follow-up work goes to a fresh agent, briefed from the brief file under .claude/briefs/ and what this"
-        " agent left: its branch, its pull request and its last report.\n"
+    head = f"{who} is past what a resume goes through unasked: {'; '.join(past)}."
+    question = (
+        "One question decides it: is this message a follow-up on the agent's own pull request, or new work?\n"
+        "- A follow-up on its own pull request (a delta review, review or CI fixes, a merge of main, a stop or"
+        " wrap-up): send this same message again, and the resend passes. Resuming is the cheaper way for a job"
+        " that short.\n"
+        "- New work (the next step, the next pull request, another task): do not resend. Brief a fresh agent"
+        " from the brief file under .claude/briefs/ and what this agent left: its branch, its pull request and"
+        " its last report.\n"
+        "The reassessment of an agent grown far past this size applies on top (inbox #1298: its model, stuck,"
+        " looping), and work never moves to another model by a resume, only by a new brief."
     )
-    # Only a refusal asks for the message again: on the path below it has already gone through.
-    resend = (
-        "This is a prompt to decide, not a ban. Send this same message again, and the resend passes, when it"
-        " only stops or wraps the agent up, or when you judge the agent fine to go a bit over; an agent grown"
-        " far past that is reassessed first, as the rule says (its model, stuck, looping), and work never moves"
-        " to another model by a resume, only by a new brief."
+    rule = (
+        'The rule is orchestrating\'s (.claude/skills/orchestrating/SKILL.md, "What the orchestrator keeps");'
+        ' the size is in .claude/skills/orchestrating/references/writing-a-brief.md, "Sizing the task".'
     )
     try:
         seen.parent.mkdir(parents=True, exist_ok=True)
         seen.write_text(time.strftime("%Y-%m-%dT%H:%M:%S\n"))
     except OSError:
         answer(
-            additionalContext=f"Not refused, since the refusal could not be remembered: {reason}"
+            additionalContext=f"Not refused, since the refusal could not be remembered: {head}\n{rule}\n"
             "The message has gone through: do not send it again."
         )
         return
-    answer(permissionDecision="deny", permissionDecisionReason=f"Refused once: {reason}{resend}")
+    answer(permissionDecision="deny", permissionDecisionReason=f"Refused once: {head}\n{question}\n{rule}")
 
 
 def log(error):

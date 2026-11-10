@@ -6,9 +6,10 @@ extends RefCounted
 ## when "Double tap to run" is allowed to say anything at all, and which lines the debug build keeps
 ## or drops. The HUD is configured the way `main` configures it (`configure()`, `use_touch()`,
 ## `use_run()`), put in the tree, and driven by the signals the game sends it
-## (`EventBus.event_telegraphed`, `day_started`, `resistance_contact_available`, ...) and by real
-## frames; what is read back is what it draws, found by the names the scene gives its labels. The
-## release shape is a HUD configured with `debug` false: a test is itself a debug process, so the
+## (`EventBus.event_telegraphed`, `resistance_contact_available`, ...), by the day the run flow
+## hands it (`use_the_day()`, which `main` connects to `RunFlow.day_started`) and by real frames;
+## what is read back is what it draws, found by the names the scene gives its labels. The release
+## shape is a HUD configured with `debug` false: a test is itself a debug process, so the
 ## default would otherwise leave the release shape asserted by nothing.
 ##
 ## Each test hands its HUD a run of its own (`RunState.new()`), so none leans on, or leaves behind,
@@ -180,7 +181,7 @@ func _test_the_walk_hint_names_a_tap_on_a_touch_device(t) -> void:
 	var run := _run_on(1)
 	var hud := _hud(t, run, true, false)
 
-	EventBus.day_started.emit(1)
+	hud.use_the_day(DaySpec.for_day(1, 210.0))
 	t.check(_teach(hud).line == "Tap to walk, double tap to run",
 			"day 1 tells every device to tap — no key is named for a keyboard either")
 
@@ -201,7 +202,7 @@ func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
 	t.check(_teach(hud).line == "Double tap to run", "the first attempt teaches the run")
 
 	# The day restarts on the same HUD, exactly as a spent nerve does.
-	EventBus.day_started.emit(Tuning.RUN_TAUGHT_DAY)
+	hud.use_the_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY, 210.0))
 	var second := _pursuer()
 	EventBus.event_telegraphed.emit(second)
 	t.check(_teach(hud).line == "Double tap to run",
@@ -637,7 +638,7 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
 	var hud := _hud(t, run)
 	var teach := _teach(hud)
 
-	EventBus.day_started.emit(1)
+	hud.use_the_day(DaySpec.for_day(1, 210.0))
 	t.check(teach.line == "Tap to walk, hold {run} or double tap to run",
 			"joystick, day 1: walking by tap, running by the run button or a double tap")
 	var p1 := _pursuer()
@@ -651,11 +652,11 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
 			% [with_symbol, teach.get_content_width()])
 
 	controls.set_mode(ControlsMode.Mode.TAP)
-	EventBus.day_started.emit(1)
+	hud.use_the_day(DaySpec.for_day(1, 210.0))
 	t.check(teach.line == "Tap to walk, double tap to run",
 			"tap, day 1: no run button on screen, so none in the line")
 
-	EventBus.day_started.emit(Tuning.RUN_TAUGHT_DAY)
+	hud.use_the_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY, 210.0))
 	var p2 := _pursuer()
 	EventBus.event_telegraphed.emit(p2)
 	t.check(teach.line == "Double tap to run", "tap, first pursuit: unchanged")
@@ -687,11 +688,11 @@ func _test_learned_lessons_say_no_control_lesson(t) -> void:
 	var stroller := _stroller(t)
 	var hud := _hud(t, run, true, false, true)
 	var teach := _teach(hud)
-	EventBus.day_started.emit(1)
+	hud.use_the_day(DaySpec.for_day(1, 210.0))
 	t.check(teach.line == "", "learned: day 1 says no walking lesson at dawn")
 	EventBus.controls_chosen.emit(true, false)
 	t.check(teach.line == "", "learned: choosing the controls says no walking lesson")
-	EventBus.day_started.emit(Tuning.RUN_TAUGHT_DAY)
+	hud.use_the_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY, 210.0))
 	run.header.day = Tuning.RUN_TAUGHT_DAY
 	var pursuer := _pursuer()
 	EventBus.event_telegraphed.emit(pursuer)
@@ -719,12 +720,12 @@ func _test_unlearned_lessons_are_all_said(t) -> void:
 	var stroller := _stroller(t)
 	var hud := _hud(t, run, true, false, false)
 	var teach := _teach(hud)
-	EventBus.day_started.emit(1)
+	hud.use_the_day(DaySpec.for_day(1, 210.0))
 	t.check(teach.line != "", "unlearned: day 1 says the walking lesson at dawn")
 	teach.show_line("")
 	EventBus.controls_chosen.emit(true, false)
 	t.check(teach.line != "", "unlearned: choosing the controls says it again")
-	EventBus.day_started.emit(Tuning.RUN_TAUGHT_DAY)
+	hud.use_the_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY, 210.0))
 	run.header.day = Tuning.RUN_TAUGHT_DAY
 	var pursuer := _pursuer()
 	EventBus.event_telegraphed.emit(pursuer)

@@ -47,7 +47,8 @@ class RecordingCounter extends VisitCounter:
 	var sent: Array[String] = []
 
 	## Counts `run` and listens to the game's bus, as `main` hands the real counter the run it plays
-	## and the bus.
+	## and the bus; seated in a boot's sitting (`_seat()`), it is the counter that boot takes, and is
+	## handed the boot's run flow as the real one is.
 	func _init(run: RunState) -> void:
 		configure(null, run)
 		listen(EventBus)
@@ -55,6 +56,13 @@ class RecordingCounter extends VisitCounter:
 	## Overrides VisitCounter._send_event.
 	func _send_event(name: String) -> void:
 		sent.append(name)
+
+## Seats `counter` in the sitting `home` parks, under the name the boot looks for it by
+## (`VisitCounter.NODE_NAME`), so the boot takes it as the sitting's page counter and hands it its
+## own run flow, whose walks each count a day's `began`. Freed with the home, or before it.
+static func _seat(counter: VisitCounter, home: Node) -> void:
+	counter.name = VisitCounter.NODE_NAME
+	home.get_node(NodePath(Sitting.NODE_NAME)).add_child(counter)
 
 func run(t) -> void:
 	var day_lines: Array[String] = await _test_a_day_lost_to_each_cause_won_and_the_next_begun(t)
@@ -71,7 +79,6 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 	var saved_paused: bool = t.get_tree().paused
 	var run := RunState.new()
 	var counter := RecordingCounter.new(run)
-	t.add_child(counter)
 	t.get_tree().paused = true
 	# A recording run log, open before the boot and handed to it: `--no-telemetry` keeps the boot
 	# from opening one, and it writes into the one it is handed.
@@ -84,6 +91,7 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 	# title, the neighbor walking on, so the distance a loss line reports to her would depend on how
 	# many frames the title was up.
 	var home := Boot.home_playing(t, run)
+	_seat(counter, home)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE,
 			Boot.config(["--seed", str(SEED), "--no-title"]),
 			func(m: Node) -> void:
@@ -133,8 +141,8 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 
 	booted.free_all()
 	run_log.free()
-	home.free()
 	counter.free()
+	home.free()
 	t.get_tree().paused = saved_paused
 	return lines
 
@@ -175,7 +183,6 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	run.header.day = Tuning.RUN_LENGTH_DAYS
 	run.facts.escape_section = DaySpec.Section.BUILDING
 	var counter := RecordingCounter.new(run)
-	t.add_child(counter)
 	t.get_tree().paused = true
 	var run_log := RecordingLog.new()
 	run_log.begin_run(SEED)
@@ -183,6 +190,7 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 	# No `--no-telemetry`: the escape's boot keeps a log already open, so the recording log above,
 	# which it is handed, is the one it writes into, its own section header included.
 	var home := Boot.home_playing(t, run)
+	_seat(counter, home)
 	var config := RunConfig.parse(PackedStringArray(["--no-save"]), "", true)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, config,
 			func(m: Node) -> void:
@@ -223,8 +231,8 @@ func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
 
 	booted.free_all()
 	run_log.free()
-	home.free()
 	counter.free()
+	home.free()
 	t.get_tree().paused = saved_paused
 	return lines
 

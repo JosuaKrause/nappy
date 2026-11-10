@@ -14,16 +14,15 @@ The rules the orchestrating session must not miss, one line each; the sections b
   while the player has put one entry first means that entry's items only (inbox #1210 in
   gentle-owl), and a running agent is looked at at least every 45 minutes.
 - **The queue is read from `origin/main`, after a fetch, before a brief is written.**
-- **The model is the table's**; a design and a change to a rule file are Fable's.
+- **The model is the table's.**
 - **One task per agent, in its own sparse worktree** from `tools/agent-setup.sh`, with its brief
   written to `.claude/briefs/` before it is spawned and its GitHub role named in it.
 - **Parallel agents are split by files**, never by topic.
 - **The queue and the archive are the orchestrator's**; nothing is committed into a worktree an
   agent works in, and no agent runs `git stash`.
-- **An agent is resumed only while its cache is warm** (55 minutes in Claude Code) **and it is
-  under the limit**; after that a fresh one is briefed, and a hook refuses, once, the resume of one
-  past the limit (inbox #1291), which asks for a decision: a little over now and then is the
-  orchestrator's call.
+- **An agent is resumed only while its cache is warm** (55 minutes in Claude Code); after that a
+  fresh one is briefed. **A hook refuses, once, the resume of an agent that has grown too large**
+  (inbox #1298): a follow-up on its own pull request is sent again, new work goes to a fresh agent.
 - **After a report**: the queue move, a review under **pr-review**, the merge and the retirement
   under **committing**, and a grade in `tools/agent-stats.py`.
 - **A usage limit changes nothing about delegation.**
@@ -44,9 +43,8 @@ A stronger model than a row's takes a milestone whose geometry or contracts warr
 | Task kind | Model |
 |---|---|
 | A task that needs planning or complex reasoning | Fable is considered (inbox #1264 in olive-ferret) |
-| The design that code is built from, a seam's design included | Fable (inbox #1264 in olive-ferret) |
-| Code built from a Fable design | the orchestrator's choice (inbox #1264 in olive-ferret), by the build rows below |
-| A change to a rule file: a skill, `CLAUDE.md`, a hook's text | Fable, directly (inbox #1264 in olive-ferret) |
+| A pull request labelled `fable-only`, a label put only on work the player names | Fable designs its code and reviews it; writing the code may go to another model (inbox #1293) |
+| The review of anything Fable designed | Fable (inbox #1299) |
 | Drawing: making or revising artwork, SVG, PNG or a review sheet | Opus (PLAYTEST-123 8) |
 | Waiting on a merge or a check, polling | no agent: a timer or a script in a background shell, which costs no tokens (inbox #1070 in gentle-walrus, inbox #1072 in gentle-walrus) |
 | Merging | the orchestrating session, with no agent spawned for it; an agent or a monitor may run a merge the session hands it (**committing**, "Merging") |
@@ -272,27 +270,30 @@ before spawning:
 - **An agent stays on one task, and no agent grows huge** (inbox #874 in minty-dolphin). An agent re-reads its
   whole context on every turn, so the cost of a long-lived one grows with every step it is kept
   for; a fresh agent instead rebuilds its context from scratch, so too many fresh agents cost too.
-  **A hook holds this at the resume** (inbox #1291): `.claude/hooks/resume-guard.py` refuses a
-  `SendMessage` to a sub-agent that is past the limit, or whose context the harness has compacted
-  on its own, once, naming what the agent is past. **The refusal is a prompt to decide, not a
-  ban**: the same message sent again passes, which is how an instruction to stop or wrap up gets
-  through, and how the orchestrator keeps an agent it judges fine to run a little past the limit,
-  as one may now and then (inbox #1291). **An agent grown to about 500k tokens is reassessed before
-  it is sent anything more**: whether its model suits that kind of work, and whether it is stuck or
-  looping (inbox #1298). **Work never moves to another model by a resume with the full context**:
-  the other model's agent starts from a new brief (inbox #1298).
+  **A hook holds this at the resume** (inbox #1291): `.claude/hooks/resume-guard.py` refuses, once,
+  a `SendMessage` to a sub-agent whose context is past the size `references/writing-a-brief.md`
+  gives for a resume, or whose context the harness has compacted on its own, naming which. That
+  size is above the limit a task is scoped to, since an agent may go a bit over now and then
+  (inbox #1291), and it comes earlier than the reassessment of an agent, since it is about resuming;
+  neither it nor the limit counts turns (inbox #1298). **The refusal asks one question: is the
+  message a follow-up on the agent's own pull request, or new work** (inbox #1298)? A follow-up (a
+  delta review, review or CI fixes, a merge of `main`, an instruction to stop or wrap up) is sent
+  again and the same message passes, since a job that short costs less on the agent that knows the
+  pull request than on a fresh one. New work (the next step, the next pull request, another task)
+  goes to a fresh agent briefed from the brief file and what this one left. The reassessment of an
+  agent near 500k tokens applies on top (inbox #1298).
 - **A task is scoped to stay under the limit by construction, never policed** (inbox #896 in plaid-raven). A brief
   carries no size line asking the agent to count its turns or tokens, and the orchestrator does not
   watch an agent's count while it runs, since either spends tokens on bookkeeping instead of the
-  work (the hook above reads the count only when a message is sent, and spends none); the
+  work (the hook above reads the agent's size only when a message is sent, and spends none); the
   orchestrator sizes every task before spawning it so that it finishes well under the limit.
   `references/writing-a-brief.md` says where the limit falls and how a task is cut to it (one kind
   of work per agent, one mechanism per build, a fresh agent per pull request of a split plan).
 - **A warm agent is reused while rebriefing would cost more** (inbox #896 in plaid-raven). Briefing a fresh agent
   costs tokens too, so follow-up work on a pull request (review fixes, the next step of the same
   change) goes back to its agent while it is warm (the cold-resume rule below) and not huge, which
-  saves the rebriefing; past the limit the saving is gone, and the hook's refusal is where the
-  orchestrator chooses between a fresh agent and letting this one run a little over. What the orchestrator is told for free, such as the token count in
+  saves the rebriefing; past the size a resume is refused at, only a follow-up on the agent's own
+  pull request still saves it, which is the question the hook's refusal asks. What the orchestrator is told for free, such as the token count in
   an agent's finishing notification, is used: it says whether the agent is far enough under the
   limit to reuse, and how the next brief should be sized.
 - **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent that
@@ -349,11 +350,6 @@ to the player's correction:
 - **That a stronger model than a row's takes a milestone whose geometry or contracts warrant it**
   ("The model table"); the player's words are that the model is chosen by judgement
   (woolly-finch 15).
-- **That "the orchestrator's choice" for code built from a Fable design is made by the build
-  rows** ("The model table"); the player's words leave the choice to the orchestrator
-  (inbox #1264 in olive-ferret).
-- **That "a rule file" takes in a hook's text** ("The model table"); the player's words name rule, skill
-  and `CLAUDE.md` changes (inbox #1264 in olive-ferret).
 - **That a review of a change to what a rule says goes to Opus** and a skill's wording alone to
   Sonnet ("The model table").
 - **That a pull request that carries a drawing is reviewed by Opus** ("The model table"); the
@@ -368,13 +364,15 @@ to the player's correction:
   from a switch (`references/worktrees-and-disk.md`): the filer's fix of a gap in this skill.
 - **That the 45-minute check is a recurring job about every 30 minutes**, and the reading that it
   is not a tick under the contract's one-notification rule (the rule is gentle-owl #1255).
-- **That the resume hook refuses once and lets the same message through when it is sent again**
-  ("What the orchestrator keeps"): the filer's design. What the player approved is a hook that
-  refuses the resume of an agent that has compacted automatically or is past the limit
-  (inbox #1291).
-- **What the refusal and the resend mean** ("What the orchestrator keeps"): the orchestrator's
-  reading of the player's words, which do not name the hook. Read as: the hook refuses at the
-  first turn or token past the number, and the room to run a little over (inbox #1291) is the
-  orchestrator's judgement at the resend; the reassessment of an agent near 500k tokens comes
-  before any resend to it; and a resume under another model is one of the ways a model is switched
-  with the full context (inbox #1298).
+- **How the resume hook remembers and words its refusal** ("What the orchestrator keeps"): the
+  filer's design. The player's are the hook itself, refusing the resume of an agent that has
+  compacted automatically or grown too large (inbox #1291), the size it refuses at, that nothing
+  counts turns, and the question the refusal asks, with a follow-up sent again and new work given
+  to a fresh agent (inbox #1298). Proposed: that a refusal is remembered for one sender, one target
+  and one message text, so that only the very same message passes when sent again; which jobs the
+  refusal lists as a follow-up and as new work; and that the hook refuses at the first token past
+  the number.
+- **How the player's other words on agent size bear on the refusal** ("What the orchestrator
+  keeps"): the orchestrator's reading. Read as: the room to go a bit over now and then
+  (inbox #1291) is the distance between the limit a task is scoped to and the size a resume is
+  refused at, and a resend to an agent near 500k tokens waits for its reassessment (inbox #1298).

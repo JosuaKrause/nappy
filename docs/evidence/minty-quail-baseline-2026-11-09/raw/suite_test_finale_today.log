@@ -1,0 +1,99 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+-- test_finale_a.gd                       50157 ms
+[RunState] run started, seed=4216201080
+[Main] 10 atlas pages held from escape in 27 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] finale planned in 542 ms (seed 4216201080): tunnel via 3 calm, 119 cells | bridge via 3 calm, 177 cells | 33 open streets, 583 placements
+-- test_finale_b.gd                       63307 ms
+[RunState] run started, seed=4242
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 28 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] finale planned in 585 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] finale planned in 562 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[RunState] run started, seed=4242
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 29 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] finale planned in 660 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 27 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] finale planned in 616 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] finale planned in 554 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 27 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] finale planned in 717 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 26 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 28 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] finale planned in 597 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[RunState] run started, seed=9182
+[RunState] run started, seed=9182
+[RunState] run started, seed=9182
+[RunState] run started, seed=9182
+[RunState] run started, seed=9182
+[RunState] run started, seed=4242
+[RunState] run started, seed=1128092420
+[Main] 10 atlas pages held from escape in 26 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[RunState] run started, seed=4242
+[RunState] run started, seed=825097932
+[Main] 10 atlas pages held from escape in 25 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[RunState] run started, seed=4242
+[RunState] run started, seed=2169586043
+[Main] 10 atlas pages held from escape in 41 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[RunState] run started, seed=4242
+[RunState] run started, seed=1595995197
+[Main] 10 atlas pages held from escape in 27 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[RunState] run started, seed=4242
+[RunState] run started, seed=104771651
+[Main] 10 atlas pages held from escape in 27 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[RunState] run started, seed=4242
+[RunState] run started, seed=3171516291
+[Main] 10 atlas pages held from escape in 27 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[RunState] run started, seed=4242
+[RunState] run started, seed=4242
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 31 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 27 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 28 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] finale planned in 544 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[Main] finale planned in 511 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 25 ms
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 0 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] finale planned in 533 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 25 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] finale planned in 528 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 26 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[RunState] run started, seed=4242
+[Main] 10 atlas pages held from escape in 25 ms
+[DebugLayers] keys:  1 fields   2 shadows   3 bounding boxes   4 readout   5 routes
+[Main] finale planned in 549 ms (seed 4242): tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+-- test_finale_c.gd                       42709 ms
+
+9501 checks, 0 failures
+PARTIAL RUN — only suites matching test_finale. Not a green build.
