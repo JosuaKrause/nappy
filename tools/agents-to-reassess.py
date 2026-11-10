@@ -14,20 +14,31 @@ What is measured, per transcript:
   context   input + cache-read + cache-creation tokens of the last assistant usage reporting any
   turns     requests to the model: distinct assistant message ids, one turn being several lines
   idle      minutes since the file was last written
-  finished  the last assistant message ended its turn or handed its report back
-            (SubagentHandback), and no new prompt came after it
+  state     finished: the last assistant message ended its turn or handed its report back
+            (SubagentHandback), and no new prompt came after it.
+            stopped: the transcript's last word is the harness's interrupt marker, a user entry
+            reading "[Request interrupted by user]" or "[Request interrupted by user for tool
+            use]", which is what stopping an agent writes; a later prompt or assistant message
+            means it was resumed.
+            running: anything else. A harness notice (isMeta) is no prompt and changes nothing.
 
-Which agents are printed: the running ones, meaning written in the last --recent minutes or not
-finished. --all prints every agent; --quiet keeps only the lines that carry a flag or a note.
+Which agents are printed: the running ones, and a finished or stopped one written in the last
+--recent minutes. --all prints every agent; --quiet keeps only the lines that carry a flag or a
+note.
+
+What a transcript cannot say: an agent whose session was cut off in the middle of a call leaves
+no marker, so it shows as running and is flagged quiet until another session is the one looked at.
 
 Reassess flags:
   size            context at or past 500k tokens (inbox #1298)
   auto-compacted  the harness compacted the context itself (a compact_boundary whose trigger
                   is "auto"; one asked for by hand does not count)
-  quiet           not finished and no write for 45 minutes, the interval at which the
+  quiet           running and no write for 45 minutes, the interval at which the
                   orchestrating skill has a running agent looked at
   looping         one tool call, same tool and same input, made 5 or more times within the
-                  agent's last 20 tool calls. The window and the count are this tool's own
+                  agent's last 20 tool calls. The same call made several times in parallel in
+                  one turn counts once, since a loop is a repeat from turn to turn. The window
+                  and the count are this tool's own
                   choice, nobody's rule: wide enough to catch a repeat with other calls between,
                   high enough that reading a status three times is not a loop.
 
@@ -71,6 +82,10 @@ LOOP_WINDOW = 20  # this tool's choice: the last tool calls looked at
 LOOP_COUNT = 5  # this tool's choice: identical calls in the window that make a loop
 RECENT_MINUTES = 10  # the default of --recent
 
+# What the harness writes as a user entry when an agent is stopped.
+INTERRUPT_MARKERS = ("[Request interrupted by user]", "[Request interrupted by user for tool use]")
+RUNNING, FINISHED, STOPPED = "running", "finished", "stopped"
+
 CONTEXT_KEYS = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens")
 HANDBACK = "SubagentHandback"
 
@@ -93,7 +108,7 @@ class Measure:
     context: int = 0
     model: str = "?"
     auto_compactions: int = 0
-    finished: bool = False
+    state: str = RUNNING
     recent_calls: deque[tuple[str, str]] = field(default_factory=lambda: deque(maxlen=LOOP_WINDOW))
 
     def loop(self) -> tuple[str, int] | None:
@@ -127,11 +142,20 @@ def _is_prompt(message: dict[str, Any]) -> bool:
     return not any(isinstance(block, dict) and block.get("type") == "tool_result" for block in content)
 
 
+def _is_interrupt(message: dict[str, Any]) -> bool:
+    """Whether a user entry is the harness's marker of a stopped agent: one text block, or a string."""
+    content = message.get("content")
+    if isinstance(content, list) and len(content) == 1 and isinstance(content[0], dict):
+        content = content[0].get("text") if content[0].get("type") == "text" else None
+    return isinstance(content, str) and content.strip() in INTERRUPT_MARKERS
+
+
 def measure(transcript: Path) -> Measure:
     """Reads one transcript once, line by line, since one can be tens of megabytes."""
     result = Measure()
     turn_ids: set[str] = set()
     call_ids: set[str] = set()
+    calls_of_turn: set[tuple[str, str, str]] = set()
     unnamed_turns = 0
     with transcript.open(errors="replace") as lines:
         for line in lines:
@@ -149,8 +173,12 @@ def measure(transcript: Path) -> Measure:
             if not isinstance(message, dict):
                 continue
             if entry.get("type") == "user":
-                if _is_prompt(message):
-                    result.finished = False
+                if entry.get("isMeta"):
+                    continue
+                if _is_interrupt(message):
+                    result.state = STOPPED
+                elif _is_prompt(message):
+                    result.state = RUNNING
                 continue
             if entry.get("type") != "assistant":
                 continue
@@ -178,12 +206,18 @@ def measure(transcript: Path) -> Measure:
                         continue
                     call_ids.add(call_id)
                 canonical = json.dumps(block.get("input"), sort_keys=True, default=str)
-                result.recent_calls.append((name, hashlib.sha256(canonical.encode()).hexdigest()))
+                digest = hashlib.sha256(canonical.encode()).hexdigest()
+                if message.get("id"):
+                    in_turn = (str(message["id"]), name, digest)
+                    if in_turn in calls_of_turn:
+                        continue
+                    calls_of_turn.add(in_turn)
+                result.recent_calls.append((name, digest))
             stop = message.get("stop_reason")
             if handed_back or (isinstance(stop, str) and stop != "tool_use"):
-                result.finished = True
-            elif stop == "tool_use":
-                result.finished = False
+                result.state = FINISHED
+            elif stop == "tool_use" or result.state == STOPPED:
+                result.state = RUNNING
     result.turns = len(turn_ids) + unnamed_turns
     return result
 
@@ -199,7 +233,7 @@ def reasons(found: Measure, idle_minutes: int, limits: Limits) -> tuple[list[str
         reassess.append(f"size ({thousands(found.context)} >= {thousands(REASSESS_CONTEXT)})")
     if found.auto_compactions:
         reassess.append(f"auto-compacted (x{found.auto_compactions})")
-    if not found.finished and idle_minutes >= QUIET_MINUTES:
+    if found.state == RUNNING and idle_minutes >= QUIET_MINUTES:
         reassess.append(f"quiet ({idle_minutes}m >= {QUIET_MINUTES}m, not finished)")
     loop = found.loop()
     if loop:
@@ -265,7 +299,7 @@ def report(session_dir: Path, limits: Limits, *, show_all: bool, only_flagged: b
     for transcript in transcripts:
         idle = max(0, int((now - transcript.stat().st_mtime) // 60))
         found = measure(transcript)
-        if not show_all and found.finished and idle >= recent:
+        if not show_all and found.state != RUNNING and idle >= recent:
             continue
         reassess, notes = reasons(found, idle, limits)
         flagged += bool(reassess)
@@ -273,8 +307,8 @@ def report(session_dir: Path, limits: Limits, *, show_all: bool, only_flagged: b
             continue
         why = "; ".join([*(["REASSESS: " + ", ".join(reassess)] if reassess else []), *(f"note: {n}" for n in notes)])
         agent = transcript.stem.removeprefix("agent-")
-        state = "finished" if found.finished else "running"
-        rows.append((agent, found.model, thousands(found.context), str(found.turns), f"{idle}m", state, why or "-"))
+        cells = (agent, found.model, thousands(found.context), str(found.turns), f"{idle}m", found.state, why or "-")
+        rows.append(cells)
     header = ("agent", "model", "context", "turns", "idle", "state", "reassess")
     widths = [max(len(row[i]) for row in [header, *rows]) for i in range(len(header) - 1)]
     out = [f"session {session_dir.name}: {len(transcripts)} sub-agents, {len(rows)} shown, {flagged} to reassess"]

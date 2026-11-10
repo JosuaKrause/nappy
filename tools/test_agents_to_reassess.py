@@ -114,6 +114,40 @@ class AgentsToReassessTests(unittest.TestCase):
         self.assertEqual(self.line(out, "handed").split()[5:], ["finished", "-"])
         self.assertIn("REASSESS: quiet (90m >= 45m, not finished)", self.line(out, "resumed"))
 
+    def test_a_stopped_agent_is_listed_like_a_finished_one_and_never_quiet(self) -> None:
+        for number, marker in enumerate(tool.INTERRUPT_MARKERS):
+            stop = {"type": "user", "message": {"content": [{"type": "text", "text": marker}]}}
+            self.agent(f"stopped-{number}", [*working(2), stop], idle=90)
+            self.agent(f"just-stopped-{number}", [*working(2), stop], idle=2)
+            self.agent(f"prompted-{number}", [*working(2), stop, prompt()], idle=90)
+            again = turn(50, 50_000, call("Bash", "after", "again"))
+            self.agent(f"answered-{number}", [*working(2), stop, again], idle=90)
+        self.assertEqual(len(tool.INTERRUPT_MARKERS), 2)
+        default = self.run_tool().stdout
+        everything = self.run_tool("--all").stdout
+        for number in range(2):
+            self.assertNotIn(f"\nstopped-{number} ", default)
+            self.assertEqual(self.line(default, f"just-stopped-{number}").split()[5:], ["stopped", "-"])
+            self.assertEqual(self.line(everything, f"stopped-{number}").split()[5:], ["stopped", "-"])
+            for resumed in (f"prompted-{number}", f"answered-{number}"):
+                self.assertIn("running", self.line(default, resumed))
+                self.assertIn("REASSESS: quiet (90m >= 45m, not finished)", self.line(default, resumed))
+        self.assertIn("4 to reassess", everything)
+
+    def test_a_harness_notice_after_the_final_message_leaves_the_agent_finished(self) -> None:
+        notice = {"type": "user", "isMeta": True, "message": {"content": "SECRET-NOTICE"}}
+        self.agent("noticed", [*done(), notice], idle=90)
+        self.assertEqual(self.line(self.run_tool("--all").stdout, "noticed").split()[5:], ["finished", "-"])
+
+    def test_the_context_is_the_last_usage_that_reports_any(self) -> None:
+        entries = working(3, 80_000)
+        silent = turn(40, 50_000, call("Read", "x", "silent-1"))
+        silent["message"]["usage"] = {"input_tokens": 0, "cache_read_input_tokens": 0}
+        bare = turn(41, 50_000, call("Read", "y", "silent-2"))
+        del bare["message"]["usage"]
+        self.agent("abc", [*entries, silent, bare])
+        self.assertEqual(self.line(self.run_tool().stdout, "abc").split()[2], "80k")
+
     def test_size_is_flagged_at_the_players_number_and_not_below_it(self) -> None:
         self.agent("at", working(2, 500_000))
         self.agent("below", working(2, 499_999))
@@ -144,10 +178,12 @@ class AgentsToReassessTests(unittest.TestCase):
 
     def test_quiet_needs_an_unfinished_agent_and_the_interval(self) -> None:
         self.agent("stuck", working(2), idle=46)
+        self.agent("at", working(2), idle=45)
         self.agent("slow", working(2), idle=44)
         self.agent("done", done(), idle=300)
         out = self.run_tool("--all").stdout
         self.assertIn("REASSESS: quiet (46m >= 45m, not finished)", self.line(out, "stuck"))
+        self.assertIn("REASSESS: quiet (45m >= 45m, not finished)", self.line(out, "at"))
         self.assertEqual(self.line(out, "slow").split()[5:], ["running", "-"])
         self.assertEqual(self.line(out, "done").split()[5:], ["finished", "-"])
 
@@ -163,9 +199,12 @@ class AgentsToReassessTests(unittest.TestCase):
         self.agent("moved-on", [*working(3), *same, *after])
         # One call written on two lines is one call.
         self.agent("rewritten", [*working(3), *same[:-1], same[0]])
+        # The same call made several times in parallel in one turn is one call of that turn.
+        parallel = turn(400, 50_000, *(call("Bash", "poll", f"par{n}") for n in range(count)))
+        self.agent("parallel", [*working(3), parallel])
         out = self.run_tool().stdout
         self.assertIn(f"REASSESS: looping (Bash x{count} in the last {3 + count} calls)", self.line(out, "loop"))
-        for name in ("almost", "two-tools", "moved-on", "rewritten"):
+        for name in ("almost", "two-tools", "moved-on", "rewritten", "parallel"):
             self.assertEqual(self.line(out, name).split()[5:], ["running", "-"])
 
     def test_quiet_flag_keeps_only_flagged_and_noted_agents(self) -> None:
