@@ -302,7 +302,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_navigator = navigator if navigator else _map.navigator()
 	_mover = mover_for(definition)
 	_behaviours = EventBehaviours.compose(self, definition, _where, _figure, _map, _navigator,
-			_mover, trace)
+			_mover, trace, _move)
 	_move.radius = _mover.radius
 	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
 	# walked through as a person or an animal (`EventDef.stands_as`).
@@ -584,9 +584,10 @@ func _become_solid_once_it_starts() -> void:
 # `EventDef.vehicle`: a body that moves and never into her, and a strike ahead of its nose while it
 # drives — `EventCarDriving`, which answers for the car below.
 
-## The lights the crowd's cars stop at, told by `EventManager` when the instance is made, so a car
-## that drives stops where they stop (`EventCarDriving._room_to_its_line()`). Null in a rig with no
-## city, which then has no red light to stop at.
+## The lights the crowd's cars stop at, told by `EventManager` when the instance is made, after it
+## is set up, so a car that drives stops where they stop (`EventCarDriving._room_to_its_line()`,
+## which asks them through its figure, `Figure.lights()`). Null in a rig with no city, which then
+## has no red light to stop at.
 var signals: TrafficSignals = null
 
 ## **The end of its route, reached or cut short** (`EventRouteWalk`), acted on only for a committed
@@ -690,7 +691,7 @@ func _propose_the_step() -> void:
 	_ends_its_route_on_commit = false
 	_may_park_on_commit = true
 	if car != null:
-		car.note_the_pose(position)
+		car.note_the_pose()
 
 ## **Closes the step**: the pose the tick proposed is checked (a car's own checks; a figure's were
 ## made as each part was taken), committed, and only then is what the tick decided on it acted on —
@@ -700,7 +701,7 @@ func _commit_the_step() -> void:
 	_move.to = position
 	var ends := _ends_its_route_on_commit
 	_ends_its_route_on_commit = false
-	if car != null and not car.check(_move, ends):
+	if car != null and not car.check(ends):
 		ends = false
 	var at := _move.commit()
 	if position != at:
@@ -909,18 +910,25 @@ func is_quiet_for_its_man() -> bool:
 func officers_owed() -> int:
 	return investigation.officers_owed() if investigation else 0
 
-## Hands the vehicle one man `EventManager` put down at its door, so it stands until he is back and
-## he walks back to that door (`EventInvestigation.let_out()`).
+## Hands the vehicle one man `EventManager` put down at its door, so it stands until he is back
+## (`EventInvestigation.let_out()`), and starts his trail at that door with this vehicle as the one
+## he walks back to (`EventOfficer.let_out_of()`).
 func let_out(officer: EventInstance) -> void:
 	if investigation:
 		investigation.let_out(officer)
+		if officer.on_foot:
+			officer.on_foot.let_out_of(self)
 
-## Calls back every man this vehicle let out but `stopped_by`, the one who has stopped her
-## (`EventInvestigation.call_back_its_officers()`): asked by that man's figure the frame he stops
-## her (`Figure.stopped_her()`).
+## **One of its men has stopped her: every man it let out walks back to it** (inbox #669 in
+## coral-lark), so a vehicle that let out more than one man whose catch is a stop costs her once,
+## not once a man. Every man this vehicle let out (`EventInvestigation.its_officers()`) but
+## `stopped_by`, the one who stopped her and stands with her through his stop first, is over and
+## walks back. Asked by that man's figure the frame he stops her (`Figure.stopped_her()`).
 func call_back_its_officers(stopped_by: EventInstance) -> void:
 	if investigation:
-		investigation.call_back_its_officers(stopped_by)
+		for officer in investigation.its_officers():
+			if officer != stopped_by:
+				officer._be_done()
 
 ## Where a man gets out: beside the body's flank on her side, clear of it by his own reach, `along`
 ## px from its middle along its length — `side` 1 for her side, -1 for the other.
@@ -2035,6 +2043,15 @@ class Figure:
 	func way_round_to_her() -> ChaseWay:
 		return _of._chase_way
 
+	## Where its stride is (`EventInstance.gait_phase()`), which a step taken back puts back.
+	func gait_phase() -> float:
+		return _of._gait_phase
+
+	## The lights it stops at (`TrafficSignals`), which its manager tells its event once it is set
+	## up (`EventInstance.signals`); null where there are none.
+	func lights() -> TrafficSignals:
+		return _of.signals
+
 	# ------------------------------------------------------------- what happened ---
 
 	## It turned to face `heading`.
@@ -2118,6 +2135,24 @@ class Figure:
 	func unpin_its_body() -> void:
 		if _of._obstruction:
 			_of._obstruction.position = Vector2.ZERO
+
+	## Its body is turned to `angle`, in radians, as a car's spine follows its heading; nothing
+	## before its body is down.
+	func turn_its_body_to(angle: float) -> void:
+		if _of._obstruction == null:
+			return
+		for child in _of._obstruction.get_children():
+			var collision := child as CollisionShape2D
+			if collision and not is_equal_approx(collision.rotation, angle):
+				collision.rotation = angle
+
+	## Its step was taken back: it faces `heading`, has covered `travelled` px of its way and its
+	## stride is at `gait_phase` again, and it stood still this tick.
+	func take_back_its_step(heading: Vector2, travelled: float, gait_phase: float) -> void:
+		_of._heading = heading
+		_of._path_travelled = travelled
+		_of._gait_phase = gait_phase
+		_of._gait_moving = false
 
 	## It is drawn from where it now stands at once, not slid there between two ticks.
 	func appear_where_it_stands() -> void:

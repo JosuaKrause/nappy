@@ -5,16 +5,23 @@ extends EventBehaviour
 ## `VehicleSpec` for why the body and the strike are separate things.
 ##
 ## **It is the check on its event's step** (`EventInstance.step()`, which proposes, checks, then
-## commits every mover's step, `MoveProposal`): `note_the_pose()` as the step is proposed, the
-## event's ordinary tick, then `check()` on the pose the tick proposes, which takes back whatever part
-## of it would have brought the body into her or her pram — the step along its route, the chase, the
-## departure and a turn onto a new heading alike — so the car stands where it was, facing the way it
-## faced, until she moves. It stops rather than pushes: a car that shoved her could shove her into a
-## wall, which is the pin the mobile exemption from solidity exists to prevent. **What the tick
+## commits every mover's step, `MoveProposal`, the event's move it is handed): `note_the_pose()` as
+## the step is proposed, the event's ordinary tick, then `check()` on the pose the tick proposes,
+## which takes back whatever part of it would have brought the body into her or her pram — the step
+## along its route, the chase, the departure and a turn onto a new heading alike — so the car stands
+## where it was, facing the way it faced, until she moves. It stops rather than pushes: a car that
+## shoved her could shove her into a wall, which is the pin the mobile exemption from solidity
+## exists to prevent. **What the tick
 ## decided on the pose it would have ended on goes with it**: the end of its route, reached or cut
 ## short (`EventRouteWalk`), is acted on — parking, leaving — only once that pose is committed
 ## (`EventInstance._end_its_route()`, which keeps it while a car's step is open, and which `check()`
 ## drops with a pose it takes back), so a last step taken back never parks it short of its kerb.
+##
+## **It is handed what never changes under it** as its event is set up: the figure it moves
+## (`EventInstance.Figure`), where she is, its row (its body's shape, its speed, whether it parks
+## where it arrives, paces or pursues), the map it drives on, its route walk, the vehicle's
+## investigation and the event's move. What changes it asks its figure, the lights it stops at
+## included (`Figure.lights()`), which its manager tells its event after it is set up.
 ##
 ## **Positional, never a force**, the crowd's own rule for bodies (the **crowd-traffic** skill): the
 ## pose the step would end on is checked, rather than a brake asked to want something, because a
@@ -88,19 +95,46 @@ var _known := false
 var _ahead_before := false
 var _was_leaving := false
 
-func _init() -> void:
+## Its row: its body's `shape`, its `speed`, whether it parks where it arrives or paces a beat,
+## whether it moves and whether it pursues.
+var _row: EventDef
+## The map it drives on: the street lattice its give-way is laid on, the zebras, the carriageway.
+var _map: WorldMap
+## Its route walk (`EventRouteWalk`), which says how long its route is; null for a row that does
+## not move.
+var _route: EventRouteWalk
+## The vehicle's investigation (`EventInvestigation`), which stops it for her; null for a car that
+## does not investigate.
+var _investigation: EventInvestigation
+## Its event's move this tick (`MoveProposal`): the pose the step began at, and the one the tick
+## proposes, which `check()` takes back where it refuses it.
+var _move: MoveProposal
+
+## Handed, as its event is set up, the figure it moves, where she is, its row, the map, its route
+## walk (or none), the vehicle's investigation (or none) and its event's move.
+func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, map: WorldMap,
+		route: EventRouteWalk, investigation: EventInvestigation, move: MoveProposal) -> void:
 	steps_each_tick = false
+	_figure = figure
+	_where = where
+	_row = row
+	_map = map
+	_route = route
+	_investigation = investigation
+	_move = move
 
 ## Stands it for her: a car that stood for its men, say (`EventInvestigation`), pulls away only
 ## once she is out of its way.
 func stand() -> void:
 	_standing = true
 
-## Notes, as its event's step is proposed at `at`, what the step will be checked against.
-func note_the_pose(at: Vector2) -> void:
-	_heading_was = event._heading
-	_travelled = event._path_travelled
-	_gait_phase = event._gait_phase
+## Notes, as its event's step is proposed at the pose it stands at (`MoveProposal.stands_at()`),
+## what the step will be checked against.
+func note_the_pose() -> void:
+	var at := _move.stands_at()
+	_heading_was = _figure.heading()
+	_travelled = _figure.travelled()
+	_gait_phase = _figure.gait_phase()
 	_was = gap_to_her(at, _heading_was)
 	_line = _room_to_its_line(at, _heading_was)
 	# Never further than the end of a route it stops at (`route_left()`): it never stands for her,
@@ -109,42 +143,42 @@ func note_the_pose(at: Vector2) -> void:
 	_warning = short_of_its_stop(PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME, _left)
 	_known = _where.at() != Vector2.INF
 	_ahead_before = _known and meets_her(at, _heading_was, _where.at(), _warning)
-	_was_leaving = event.is_leaving
+	_was_leaving = _figure.is_on_its_way_out()
 
-## **Checks the pose its event's tick proposed** (`move.to`, the event's own position by now), and
-## takes it back where it is refused: the step to `move.from`, with the heading, the distance
-## travelled and the stride it began with. `ends_its_route` is whether the tick reached the end of
+## **Checks the pose its event's tick proposed** (`MoveProposal.steps_to()`, the event's own
+## position by now), and takes it back where it is refused: the step to where it began
+## (`MoveProposal.stands_at()`), with the heading, the distance travelled and the stride it began
+## with (`Figure.take_back_its_step()`). `ends_its_route` is whether the tick reached the end of
 ## its route on the proposed pose. Answers whether the pose is kept; one taken back takes that end
 ## with it, and the event drops it. A finished event is not checked, and stands no longer.
-func check(move: MoveProposal, ends_its_route: bool) -> bool:
-	if event.is_finished:
+func check(ends_its_route: bool) -> bool:
+	if _figure.is_gone():
 		_standing = false
 		return true
-	var at := move.from
+	var at := _move.stands_at()
+	var to := _move.steps_to()
+	var departing := _figure.heading()
 	var on_its_route := drives_its_route() and not ends_its_route
-	var now := gap_to_her(move.to, event._heading)
+	var now := gap_to_her(to, departing)
 	var into_her := now < DRIVEN_CLEARANCE and now < _was - 0.001
 	var in_its_way := _standing and on_its_route and _ahead_before
 	var turns_onto_her := on_its_route and _known and not _ahead_before \
-			and not event._heading.is_equal_approx(_heading_was) \
-			and meets_her(move.to, event._heading, _where.at(), _warning)
+			and not departing.is_equal_approx(_heading_was) \
+			and meets_her(to, departing, _where.at(), _warning)
 	var past_its_line := on_its_route and _line < INF \
-			and (move.to - at).dot(_heading_was) > maxf(_line, 0.0) + 0.001
+			and (to - at).dot(_heading_was) > maxf(_line, 0.0) + 0.001
 	if not (into_her or in_its_way or turns_onto_her or past_its_line):
 		_standing = false
 		return true
-	var departing: Vector2 = event._heading
-	move.to = at
-	event._heading = _heading_was
+	_move.step_to(at)
+	var facing := _heading_was
 	# A departure that began this step keeps the way it is leaving in, whatever else the step did —
 	# the chase's last step into her is what is taken back, not the turn away from her, which
 	# `_be_done()` made where the car stands and which brings it no nearer.
-	if event.is_leaving and not _was_leaving \
+	if _figure.is_on_its_way_out() and not _was_leaving \
 			and gap_to_her(at, departing) >= minf(_was, DRIVEN_CLEARANCE) - 0.001:
-		event._heading = departing
-	event._path_travelled = _travelled
-	event._gait_phase = _gait_phase
-	event._gait_moving = false
+		facing = departing
+	_figure.take_back_its_step(facing, _travelled, _gait_phase)
 	var strikes_her := into_her and on_its_route and not _standing and not turns_onto_her \
 			and not past_its_line and meets_her(at, _heading_was, _where.at(),
 					short_of_its_stop(PATROL_STRIKE_LEAD, _left))
@@ -155,8 +189,8 @@ func check(move: MoveProposal, ends_its_route: bool) -> bool:
 ## within `PATROL_STRIKE_LEAD` of its travel past the touch, short of the end of a route it
 ## stops at. What `EventInstance.is_lethal_at()` answers for a car.
 func strikes(her: Vector2) -> bool:
-	return _is_driving() and meets_her(event.global_position, event._heading, her,
-			short_of_its_stop(PATROL_STRIKE_LEAD, route_left(event._path_travelled)))
+	return _is_driving() and meets_her(_figure.place(), _figure.heading(), her,
+			short_of_its_stop(PATROL_STRIKE_LEAD, route_left(_figure.travelled())))
 
 ## **Whether it will strike her if she stays where she is**: driving now, and her in front of its
 ## nose on the carriageway from some point of its next `Tuning.EXPECTED_IMPACT_HORIZON` straight
@@ -165,17 +199,19 @@ func strikes(her: Vector2) -> bool:
 func will_strike(her: Vector2) -> bool:
 	if not _is_driving():
 		return false
-	var speed: float = event.def.speed
+	var speed: float = _row.speed
+	var at := _figure.place()
+	var heading := _figure.heading()
 	var horizon := speed * Tuning.EXPECTED_IMPACT_HORIZON
-	var line := _room_to_its_line(event.global_position, event._heading)
+	var line := _room_to_its_line(at, heading)
 	if line < INF:
 		horizon = minf(horizon, maxf(line, 0.0))
-	var left := route_left(event._path_travelled)
+	var left := route_left(_figure.travelled())
 	horizon = minf(horizon, left)
 	var steps := ceili(horizon / (speed * 0.25))
 	for i in steps + 1:
 		var ahead := minf(float(i) * speed * 0.25, horizon)
-		if meets_her(event.global_position + event._heading * ahead, event._heading, her,
+		if meets_her(at + heading * ahead, heading, her,
 				short_of_its_stop(PATROL_STRIKE_LEAD, left - ahead)):
 			return true
 	return false
@@ -200,7 +236,7 @@ func will_strike(her: Vector2) -> bool:
 ## Only on its route and along a street's own axis, which is every route a patrol drives, and only
 ## on a map laid out on the street lattice (`WorldMap.has_street_lattice()`).
 func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
-	if not event._map.has_street_lattice() or not drives_its_route():
+	if not _map.has_street_lattice() or not drives_its_route():
 		return INF
 	var vertical := absf(heading.y) > absf(heading.x)
 	if absf(heading.y if vertical else heading.x) < 0.99:
@@ -208,7 +244,7 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	var direction := signf(heading.y if vertical else heading.x)
 	var along := at.y if vertical else at.x
 	var cross := at.x if vertical else at.y
-	var nose := event.def.shape.reach()
+	var nose := _row.shape.reach()
 	var room := INF
 	# The junction box this car is coming to: the crossing street's whole corridor, its zebras
 	# included. `to_the_box` is from the nose to its near edge.
@@ -220,9 +256,9 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	# The red light.
 	if within_sight_of_the_box:
 		var corridor := CityMap.junction_index(floori(cross / float(Tuning.TILE_SIZE)))
-		if GiveWay.is_red(event.signals, GiveWay.junction_at(index, corridor, vertical), vertical):
+		if GiveWay.is_red(_figure.lights(), GiveWay.junction_at(index, corridor, vertical), vertical):
 			room = minf(room, box_line)
-	var gives_way := GiveWay.owes_her_way(event._map, vertical, at, _where.at())
+	var gives_way := GiveWay.owes_her_way(_map, vertical, at, _where.at())
 	# **The zebra on the far side of the box ahead is decided at the box's entry line**, wherever
 	# she is along it rather than within a sight circle: decided any later, the nose is already in
 	# the box and the car would stand there, short of that zebra — and nothing enters a box it
@@ -230,12 +266,12 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 	# So from `CAR_JUNCTION_SIGHT` out, with her waiting at either tile of that zebra, it holds at the
 	# box's entry line, where a red light stops it.
 	if gives_way and within_sight_of_the_box \
-			and GiveWay.waits_past_the_box(event._map, index, direction, cross, vertical,
+			and GiveWay.waits_past_the_box(_map, index, direction, cross, vertical,
 					_where.at()):
 		room = minf(room, box_line)
 	# The zebra she is waiting at.
 	if gives_way and at.distance_to(_where.at()) <= Tuning.CAR_ZEBRA_SIGHT:
-		var edge := GiveWay.zebra_edge_ahead(event._map, at, vertical, direction, _where.at())
+		var edge := GiveWay.zebra_edge_ahead(_map, at, vertical, direction, _where.at())
 		if edge < INF:
 			var to_the_paint := (edge - along) * direction
 			# A zebra on the far side of the box ahead would stand the car inside the box, where the
@@ -253,11 +289,11 @@ func _room_to_its_line(at: Vector2, heading: Vector2) -> float:
 ## car that will stand at a red light or a zebra short of her, or park short of her, neither warns
 ## her nor reads as lethal to her, since it never reaches her.
 func short_of_its_line(seconds: float) -> float:
-	var cut := short_of_its_stop(seconds, route_left(event._path_travelled))
-	var line := _room_to_its_line(event.global_position, event._heading)
-	if line == INF or event.def.speed <= 0.0:
+	var cut := short_of_its_stop(seconds, route_left(_figure.travelled()))
+	var line := _room_to_its_line(_figure.place(), _figure.heading())
+	if line == INF or _row.speed <= 0.0:
 		return cut
-	return minf(cut, PATROL_STRIKE_LEAD + maxf(line, 0.0) / event.def.speed)
+	return minf(cut, PATROL_STRIKE_LEAD + maxf(line, 0.0) / _row.speed)
 
 ## **How far a car that stops where it arrives (`EventDef.stops_where_it_arrives`, the fire engine
 ## at its kerb) has still to go along its route** once it has `travelled`, in px; `INF` for every
@@ -267,32 +303,29 @@ func short_of_its_line(seconds: float) -> float:
 ## `PATROL_STRIKE_LEAD` past it. Uncut, an engine parking 7-17px short of her ended the day,
 ## and one created with her past its kerb stood off screen for as long as she stayed there.
 func route_left(travelled: float) -> float:
-	if not event.def.stops_where_it_arrives or event.def.paces or event.path.size() < 2:
+	if not _row.stops_where_it_arrives or _row.paces or _figure.walks().size() < 2:
 		return INF
-	return maxf(event.route.length() - travelled, 0.0)
+	return maxf(_route.length() - travelled, 0.0)
 
 ## `seconds` of the car's travel cut to the `left` px of a route it stops at (`route_left()`).
 func short_of_its_stop(seconds: float, left: float) -> float:
-	if left == INF or event.def.speed <= 0.0:
+	if left == INF or _row.speed <= 0.0:
 		return seconds
-	return minf(seconds, left / event.def.speed)
+	return minf(seconds, left / _row.speed)
 
-## Lays a car's body along its heading, which `_build_obstruction()` read once. A capsule turns; a
+## Lays a car's body along its heading, which `_build_obstruction()` read once
+## (`Figure.turn_its_body_to()`, which turns nothing before the body is down). A capsule turns; a
 ## point would not need to.
 func turn_the_body() -> void:
-	if event._obstruction == null or event.def.shape == null or event.def.shape.half_length <= 0.0:
+	if _row.shape == null or _row.shape.half_length <= 0.0:
 		return
-	var angle := event.solid_axis().angle() - PI * 0.5
-	for child in event._obstruction.get_children():
-		var collision := child as CollisionShape2D
-		if collision and not is_equal_approx(collision.rotation, angle):
-			collision.rotation = angle
+	_figure.turn_its_body_to(_figure.solid_axis().angle() - PI * 0.5)
 
 ## How far apart the car's body would be from her and from her pram with the car at `at` facing
 ## `heading`: the smaller gap, negative where they would overlap, `INF` for anything that does not
 ## drive or with nobody told where she is.
 func gap_to_her(at: Vector2, heading: Vector2) -> float:
-	if event.def.shape == null or _where.at() == Vector2.INF:
+	if _row.shape == null or _where.at() == Vector2.INF:
 		return INF
 	var gap := _gap_to(at, heading, _where.at(), Tuning.PLAYER_BODY_RADIUS)
 	if _where.pram_at() != Vector2.INF:
@@ -301,7 +334,7 @@ func gap_to_her(at: Vector2, heading: Vector2) -> float:
 
 func _gap_to(at: Vector2, heading: Vector2, centre: Vector2, radius: float) -> float:
 	var local := (centre - at).rotated(-heading.angle())
-	return event.def.shape.distance_to_spine(local) - event.def.shape.radius - radius
+	return _row.shape.distance_to_spine(local) - _row.shape.radius - radius
 
 ## Whether this car is driving right now: the one state its warning and its strike are live in. On
 ## its route (`drives_its_route()`) and not standing (`_standing`).
@@ -314,15 +347,15 @@ func _is_driving() -> bool:
 ## man it let out pursues her (`EventDef.investigates()`, `EventInvestigation`), and a standing car
 ## strikes nobody. Once he is back in it drives its route again, and is a car on it like any other.
 func drives_its_route() -> bool:
-	if event.is_finished or event.is_leaving or event.is_parked:
+	if _figure.is_gone() or _figure.is_on_its_way_out() or _figure.has_parked():
 		return false
-	if not event.def.mobile or event.path.size() < 2 or event.is_telegraphing_still():
+	if not _row.mobile or _figure.walks().size() < 2 or _figure.is_telegraphing_still():
 		return false
-	if event.def.pursuit != null and not event.is_waiting():
+	if _row.pursuit != null and not _figure.is_waiting():
 		return false
-	if event.investigation and not event.investigation.runs_its_route():
+	if _investigation != null and not _investigation.runs_its_route():
 		return false
-	return event.def.speed >= Tuning.CAR_STRIKE_MIN_SPEED
+	return _row.speed >= Tuning.CAR_STRIKE_MIN_SPEED
 
 ## Whether a circle of `radius` at `centre` is in front of a car at `at` facing `heading`, within
 ## `seconds` of its travel past the point its body would touch it: past the nose (`shape`'s spine
@@ -333,10 +366,10 @@ func drives_its_route() -> bool:
 func _in_front(at: Vector2, heading: Vector2, centre: Vector2, radius: float,
 		seconds: float) -> bool:
 	var local := (centre - at).rotated(-heading.angle())
-	var nose := event.def.shape.half_length
-	if local.x <= nose or absf(local.y) > event.def.shape.radius + radius:
+	var nose := _row.shape.half_length
+	if local.x <= nose or absf(local.y) > _row.shape.radius + radius:
 		return false
-	return local.x <= nose + event.def.shape.radius + radius + event.def.speed * seconds
+	return local.x <= nose + _row.shape.radius + radius + _row.speed * seconds
 
 ## Whether her body or her pram, with her at `her`, is in front of a car at `at` facing `heading`
 ## within `seconds` of its travel past the touch, **with her on the carriageway** — the crowd car's
@@ -355,7 +388,7 @@ func meets_her(at: Vector2, heading: Vector2, her: Vector2, seconds: float) -> b
 ## Whether `at` is on the carriageway: a road or a crossing tile (`WorldMap.is_carriageway()`),
 ## anywhere on open ground, as `clear_line_to()` is.
 func _on_the_carriageway(at: Vector2) -> bool:
-	return event._map.is_carriageway(event._map.world_to_tile(at))
+	return _map.is_carriageway(_map.world_to_tile(at))
 
 ## **The car's warning, a horn said with the mark over her head**: true while it drives at her where
 ## she stands on the carriageway, within `Tuning.CAR_HORN_TIME` of its travel of the strike — so the
@@ -365,5 +398,5 @@ func _on_the_carriageway(at: Vector2) -> bool:
 ## while a line it gives way at, or the end of a route it parks at, stands between them
 ## (`short_of_its_line()`): it will stop there.
 func closes_on(her: Vector2) -> bool:
-	return _is_driving() and meets_her(event.global_position, event._heading, her,
+	return _is_driving() and meets_her(_figure.place(), _figure.heading(), her,
 			short_of_its_line(PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME))
