@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name EventPictures
 extends RefCounted
 ## Every picture an event is drawn in, by name, and the tables and rules that pick one: what a row
@@ -351,7 +350,7 @@ const ROBBER_LUNGING_BY_VIEW_B := {
 	"back_diagonal": "events/robber_lunging_back_diagonal_b",
 }
 ## His warning, between the wait and the lunge: both hands out of his coat, held low, walking at her
-## through his notice *(inbox #748: "robber can walk towards her")*. 26×44 against the waiting
+## through his notice (inbox #748 in woolly-penguin). 26×44 against the waiting
 ## picture's 22×44, the body moved with the canvas, so the swap keeps his feet where they were.
 const ROBBER_ALERT_BY_VIEW := {
 	"front": "events/robber_alert_front",
@@ -394,9 +393,8 @@ const POLICEMAN_LUNGING_BY_VIEW := {
 ## guard's alert is drawn (`GUARD_ALERT_BY_VIEW`): the man an investigating patrol car or a hunting
 ## van lets out, through day 8, for the second he stands beside her before he charges
 ## (`PursuerLook._policeman_pictures()`). On the policeman's own canvases and bottom-centre anchor,
-## sharing his waiting picture's body. *(Inbox #764 in minty-lemur, the player: van guardsmen about
-## to charge hold up their hands; an event that does not spawn already charging always needs a
-## warning.)*
+## sharing his waiting picture's body. A guardsman about to charge holds up his hands, and an event
+## that does not spawn already charging always has a warning (inbox #764 in minty-lemur).
 const POLICEMAN_ALERT_BY_VIEW := {
 	"front": "events/policeman_alert_front",
 	"back": "events/policeman_alert_back",
@@ -500,9 +498,7 @@ const DOG_BY_VIEW_B := {
 	"back_diagonal": "events/dog_back_diagonal_b",
 }
 ## The normal dog's third picture per view — the dog walker's and the loose dog's, not the charging
-## dog's — so it walks step, rest, opposite step, rest *(2026-09-27, teal-marmot: "the normal dog
-## should have three frames. we have the resting one now and one leg forward. now we need one
-## frame with the other leg forward")*. What a c picture *is* depends on the view, and
+## dog's — so it walks step, rest, opposite step, rest (teal-marmot). What a c picture *is* depends on the view, and
 ## `dog_picture()` is the one place that says so.
 const DOG_BY_VIEW_C := {
 	"front": "events/dog_front_c",
@@ -542,15 +538,12 @@ const CHARGING_DOG_BY_VIEW_B := {
 	"front_diagonal": "events/charging_dog_front_diagonal_b",
 	"back_diagonal": "events/charging_dog_back_diagonal_b",
 }
-## **The dog that waits for her has a stage of its own on each side of the gallop** *(velvet-marten,
-## #698: "the waiting charging dog needs a proper resting frame when in wait. It looks like it's
-## flying"; polite-toad, #722: "a distinct alert and rest post for each charger that gets triggered
-## by the player")*: sitting, ears soft and tail on the ground, while it waits, and up on four stiff
+## **The dog that waits for her has a stage of its own on each side of the gallop** (inbox #698 in
+## velvet-marten; inbox #722 in polite-toad): sitting, ears soft and tail on the ground, while it waits, and up on four stiff
 ## legs with its hackles raised and its jaw shut on its teeth while it stands for its notice, the
-## open red jaw kept for the charge. Each is one still picture — "nobody walks -- only the robber"
-## (inbox #748) — on the gallop's own canvases and bottom-centre anchor, so the swap does not move
-## the dog. Drawn from the SVGs: the gallop keeps its comic transfers, and the player judges the
-## style switch in the game (inbox #748: "yes that's what I've been saying all along").
+## open red jaw kept for the charge. Each is one still picture, since nobody walks but the robber, on
+## the gallop's own canvases and bottom-centre anchor, so the swap does not move the dog. Drawn from
+## the SVGs: the gallop keeps its comic transfers (inbox #748 in woolly-penguin).
 const CHARGING_DOG_RESTING_BY_VIEW := {
 	"front": "events/charging_dog_resting_front",
 	"back": "events/charging_dog_resting_back",
@@ -581,9 +574,8 @@ const CYCLIST_BY_VIEW_B := {
 	"front_diagonal": "events/cyclist_front_diagonal_b",
 	"back_diagonal": "events/cyclist_back_diagonal_b",
 }
-## The pelican that about one cyclist in four hundred is instead *(minty-hedgehog, statement 8: "One
-## in ~400 bikers should be a pelican riding a bicycle instead. Needs to be svg only")* — the same
-## bike, path for path, on the same canvases, so it shares the cyclist's registration, wheel contact
+## The pelican that about one cyclist in four hundred is instead (minty-hedgehog 8), drawn from SVG
+## only: the same bike, path for path, on the same canvases, so it shares the cyclist's registration, wheel contact
 ## and pedal frames and only the rider differs. Drawn when `is_pelican` is set; see
 ## `EventSpawner.rolls_a_pelican()` for who decides that and when.
 const PELICAN_BY_VIEW := {
@@ -686,8 +678,7 @@ const RIOT_VAN_BY_VIEW := {
 	"back_diagonal": RIOT_VAN_BACK_DIAGONAL,
 }
 
-## **The vehicles that move roll on wheels that stay on the ground.** *(2026-09-11, the player:
-## "cars could bop up and down while the wheels stay in the same place".)* Each of these looks' five
+## **The vehicles that move roll on wheels that stay on the ground** (PLAYTEST-56). Each of these looks' five
 ## views is drawn as its ordinary picture — the body — and a wheels picture on the same canvas and
 ## anchor, which `EventLook._draw_eight_view()` draws back down by `EventLook.current_bob()` so the
 ## lift `EventLook.draw()` gives the whole drawing reaches the body alone. The parked delivery and
@@ -786,8 +777,7 @@ const GUARD_LUNGING_BY_VIEW := {
 	"front_diagonal": "checkpoints/guard_lunging_front_diagonal",
 	"back_diagonal": "checkpoints/guard_lunging_back_diagonal",
 }
-## **A guard who has noticed her stands square-on with one hand raised, palm out** *(inbox #748:
-## "guards should lift their hand in warning")*, held still for his notice: the hunting roadblock's
+## **A guard who has noticed her stands square-on with one hand raised, palm out** (inbox #748 in woolly-penguin), held still for his notice: the hunting roadblock's
 ## guard at his post, the guardsman a vehicle lets out beside its door, the masked man at the foot
 ## of the shaft (`PursuerLook._masked_pursuer_pictures()`), and — the front view — a checkpoint hut's
 ## or post's guard while her crossing of its door's line warns her (`guard_warns_her`). Never the
@@ -1251,7 +1241,7 @@ static func _collect(sources: Dictionary, pictures: Array) -> void:
 
 static func _collect_views(sources: Dictionary, tables: Array) -> void:
 	for table: Dictionary in tables:
-		for view in table.keys():
+		for view: Variant in table.keys():
 			sources[str(table[view])] = true
 
 ## The five-view generalisation of `EventLook._draw_simple`, for a family that has the full
