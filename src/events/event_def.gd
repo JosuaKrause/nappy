@@ -285,7 +285,8 @@ class SolidPart extends RefCounted:
 	var along_vertical := 0.0
 	var shape: GroundShape = null
 
-	## The offset the instance places this piece at, given its own `_spread_vertical`.
+	## The offset the instance places this piece at, given whether its body lies down the screen
+	## (`EventBody.runs_vertically()`).
 	func offset_for(vertical: bool) -> float:
 		return along_vertical if vertical else along
 
@@ -336,6 +337,40 @@ func solid_reach() -> float:
 	for piece in parts():
 		furthest = maxf(furthest, piece.reach())
 	return furthest
+
+## Its ground shape (`shape`): the datum its shadow and its solid body are both derived from, or
+## null for a row with no picture.
+func ground_shape() -> GroundShape:
+	return shape
+
+## The pieces its body is made of, in the scene's own frame (`parts()`, which the readers outside
+## the live event's body still ask): one piece at the origin for every row but the crash.
+func body_pieces() -> Array[SolidPart]:
+	return parts()
+
+## Whether it has a body at all (`obstructs_radius`): something she is stopped by, rather than a
+## figure she walks up to or a picture flat on the ground.
+func has_a_body() -> bool:
+	return obstructs_radius > 0.0
+
+## When its body is solid to her (`solid_when`): from its first frame, once it starts, or while a
+## boom's arm is down.
+func solid_from() -> SolidWhen:
+	return solid_when
+
+## Whether a crowd walker goes round its figure while it stands still, as round an object or a
+## vehicle, rather than through it, as through a person or an animal (`stands_as`).
+func is_walked_round() -> bool:
+	return stands_as == StandsAs.SOMETHING
+
+## Whether its figure, once it stands, stands there for good (`when_it_stops`): a crowd car behind
+## it turns round rather than waits.
+func parks() -> bool:
+	return when_it_stops == WhenItStops.PARKS
+
+## Whether it moves along a route of its own (`mobile`).
+func moves() -> bool:
+	return mobile
 
 ## Whether `EventLook._draw_body_shadow()` puts anything down for this row. `true` for every row but
 ## three: `burst_water_main` is a crater sunk into the road, and `burning_building` and
