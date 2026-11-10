@@ -758,8 +758,9 @@ func _tick(delta: float) -> void:
 	# only bodies that move, and `EventCarDriving` is what keeps them off her.
 	if _obstruction and def.pursuit != null and def.vehicle == null and not is_waiting():
 		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
-		# `_step`'s own note says why a moving pursuer may not keep a body: "giving a
-		# pursuer one would let a moving wall pin her against a building on a two-tile pavement."
+		# The pursuit's own note on its step says why a moving pursuer may not keep a body
+		# (`EventPursuit`): giving a pursuer one would let a moving wall pin her against a
+		# building on a two-tile pavement.
 		# A hunting `abduction` or raid never gets here: it lets its men out (`EventDef.hunts`)
 		# and stays parked, solid, while its men come after her.
 		#
@@ -993,33 +994,14 @@ func notice_her_at(her: Vector2, notice := -1.0, stand := false) -> void:
 		_heading = toward.normalized()
 	pursuit.was_set_on_her(her)
 
-## **The part of the step `delta_pos` this figure takes** (`Navigator.step()`): the whole of it where
-## the swept step is open to it, else a slide along whichever single axis is, else none. Everything
-## that moves this figure decides *how far and which way*; this is the one place that gets to say
-## no, so a chase, a walk back and a departure all stop where she would.
-##
-## **Swept, and with its body's reach**: the tiles the whole step crosses are asked, so a long frame
-## cannot carry a chaser through a wall a tile thick, and the ground its radius reaches past the
-## landing point in the way it is going has to be open too. **Not a body**: `obstructs_radius` is
-## for something that stands still — see "Solid things are solid" in docs/EVENTS.md — and giving a
-## pursuer one would let a moving wall pin her against a building on a two-tile pavement, exactly
-## what `dog_walker`'s own exemption exists to avoid.
-##
-## **Slides along whichever single axis is still open** rather than stopping dead the instant it
-## grazes a corner, because a chase that gives up meters before the wall does is not one that was
-## ever really following her round it. Tried larger component first, so a pursuer coming at a wall
-## nearly square-on slides along it rather than snagging on whichever axis happens to be smaller.
-func _step(delta_pos: Vector2) -> Vector2:
-	return _navigator.step(global_position, delta_pos, _mover)
-
 # ------------------------------------------------------ the task guard's way to her ---
 
 ## The way he walks to her round buildings rather than straight at her (`ChaseWay`, made by
 ## `Navigator.way_to()`), or null for a pursuer who chases straight: set by `notice_her_at()`, which
 ## only day 13's done task calls, for the waiting guard it sets on her from wherever he stands — at
 ## another roadblock, a city away, with blocks between them. Every other pursuer starts within sight
-## of her or just off screen with a straight run at her, so it keeps the straight line `_step()`
-## slides along walls. *Proposed, not asked for:* the way round is for this guard alone.
+## of her or just off screen with a straight run at her, so it keeps the straight line its step
+## through the navigator slides along walls (`EventPursuit`, `Navigator.step()`). *Proposed, not asked for:* the way round is for this guard alone.
 var _chase_way: ChaseWay
 ## The notice `notice_her_at()` was given, in seconds, or negative for the row's own
 ## `telegraph_time` (`notice_time()`).
@@ -1694,7 +1676,7 @@ func sight_line_to_her() -> Vector2:
 ## `WorldMap.clear_line()` walks it, the one walk every caller asks, so a line that clips a
 ## building's corner by a pixel is blocked however short it is; a guard sees out of the band he
 ## stands in, and her own tile never hides her. True on open ground, which is every data-level rig
-## built without a map, exactly as `_step()` is.
+## built without a map, exactly as a step through the navigator is (`Navigator.step()`).
 ##
 ## **Seeing out of his own band is not reaching through it.** The line a guard notices her along and
 ## lunges along does not ask the tiles of his own body (`_own_body_tiles()`), because he steps out to

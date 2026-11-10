@@ -126,7 +126,16 @@ func _chase(delta: float) -> void:
 		way_round.keep_fresh(_where.at(), _figure.place())
 		if step > 0.0:
 			_figure.turn_to(way_round.toward(_figure.place(), _where.at(), _figure.heading()))
-	# Through the navigator, the one place that gets to say no, so a chase stops where she would.
+	# **Through the navigator** (`Navigator.step()`): this decides how far and which way, and the
+	# navigator is the one place that gets to say no, so a chase stops where she would. **Swept,
+	# and with its body's reach**: a long frame cannot carry him through a wall a tile thick, and
+	# the ground his radius reaches past the landing point has to be open too. **Not a body**:
+	# `obstructs_radius` is for something that stands still ("Solid things are solid" in
+	# docs/EVENTS.md), and giving a pursuer one would let a moving wall pin her against a building
+	# on a two-tile pavement, what `dog_walker`'s own exemption exists to avoid. **It slides along
+	# whichever single axis is still open**, the larger first, rather than stopping dead the instant
+	# it grazes a corner: a chase that gives up meters before the wall does was never really
+	# following her round it.
 	var moved: Vector2 = _navigator.step(_figure.place(), _figure.heading() * step, _mover)
 	_figure.step_by(moved)
 	# Ground covered, not ground gained: sliding along a wall is still moving.
