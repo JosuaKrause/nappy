@@ -75,4 +75,5 @@ Left, each its own design question:
   `src/routes/`, `src/dev/`, `scene_recipe*`, `day_director.gd`, `main.gd`, `day_planner.gd`,
   `run_session.gd`, the event manager and `EventWorld`, scenery residency and ground, the blackout,
   the still watch and the debug readout) are converted after those land, and the fields they read
-  become underscore-private with the method taking the field's name.
+  become underscore-private behind a method, which takes the field's name unless the field is a
+  yes-or-no one (designing-classes, "Fields are not API").

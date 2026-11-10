@@ -2,10 +2,9 @@
 
 **Proposed, not asked for:** the whole item is the orchestrator's proposal. The player's words on the
 field-read check ask that it be made to work (inbox #1268 in olive-ferret) and say nothing of a
-method read without its parentheses. The plainer alternative is to leave it: the events' naming rule
-keeps the events' conversion from creating the case. The other areas' conversions can still create
-it, since `field-reads.md`'s last bullet has the method take the field's name; whether the naming
-rule is widened to every conversion is a question put to the player.
+method read without its parentheses. The plainer alternative is to leave it: the naming rule keeps
+the conversion of a yes-or-no field from creating the case (below), and what is left is listed
+under "What is left".
 
 **The trap.** `thing.is_ready`, where `is_ready` is a method, is a reference to the function: always
 true in a condition, and a statement that does nothing where a call was meant (`crowd.clear` for
@@ -17,28 +16,47 @@ engine's default level, a warning, and no headless run prints a warning.
 
 - `tools/check_field_reads.py` fails a method's name read through a receiver whose class it cannot
   tell, in a file under `src/` without the opt-out line. Its `--help` says which names count.
-- The events' interface's naming rule (`event-interface.md`, point 3), for the events only: a
-  yes-or-no question never takes the name of the field it replaces, so a read left behind after a
-  conversion names something that no longer exists. On a typed receiver it stops parsing; on a
-  value the engine types as Variant it fails when the line runs.
+- The naming rule of designing-classes ("Fields are not API"), for every conversion of a yes-or-no
+  field: its method takes a name the field did not have, so a read left behind after a conversion
+  names something that no longer exists. It stops parsing on a typed receiver in a file that does
+  not silence `unsafe_property_access`; everywhere else it fails when the line runs.
 
 **What nothing reports:** the same mistake on a receiver the check can type (a class under `src/` or
 an engine value), in a file under `src/` that still carries the opt-out line, in a test, or as a
 bare name of the file's own class with no receiver (`if is_ready:`).
 
-**Where it bites first:** the yes-or-no fields outside the events that `tools/field_reads.txt`
-lists, such as `Building.is_home_building`, `ContactPoint.is_done`, `DayEnd.is_section`,
-`RunConfig.is_rig` and `Stroller.is_male`. When one becomes a method of the same name, a read left
-behind on a typed receiver parses, is always true and passes the check; the list does not catch it
-either, since the name is no longer a var.
+**What is left.**
+
+- A method's name written without its parentheses by hand, in new code or an edit, where no field
+  of that name ever was.
+- A read a conversion leaves behind where the new name fails only when the line runs: in a file
+  whose opt-out line names `unsafe_property_access` (`tools/check_field_reads.py --summary` counts
+  them; `src/main.gd` and `src/dev/scene_recipe_runtime.gd` are among the heaviest readers), on a
+  receiver typed too wide, and on a Variant. A clean boot does not show that none is left there.
+- `EventDef.investigates()`, which took its yes-or-no field's name before the rule; no read of it
+  without parentheses is left, and a rename is a change of its own.
+- **A field that is not yes-or-no and goes behind a method of its own name**, where a read left
+  behind is one that takes a function silently. The record minty-quail-coral-trout
+  (`tools/decisions.sh coral-trout`) holds what was measured: a test for truth or against null, a
+  `match`, `in`, `has()` and `get()`, a format string, an untyped argument, an inferred `:=` and an
+  equality between two reads of the field all take one silently; arithmetic, an ordering
+  comparison and a typed argument fail. Cases in the tree: the row's `pursuit`, a part or null
+  tested against null; its `look`, an enum read in a `match`; `Run.index`, compared between two
+  runs. The events' design names accessors after such fields (`pursuit()`, `look()`).
 
 **Ways to build it, none chosen.**
 
-- **The naming rule beyond the events**: a method that replaces a yes-or-no field never takes the
-  field's name, as one sentence in designing-classes for every conversion, with `field-reads.md`'s
-  last bullet changed to match. It covers what conversion creates and nothing typed wrong by hand,
-  and it helps only the conversions that come after it, so it is the one way with a deadline: before
-  the passes outside the events convert such fields.
+- **How far the new name goes beyond yes-or-no fields**, a question put to the player, since
+  either wider answer renames accessors across the events' design: every method that replaces a
+  field takes a new name, a number's included, which needs no knowledge of the engine and costs a
+  name for every converted field; or only a number keeps its name, which leaves a number read in
+  any of the silent ways above: assigned with `:=`, made into text, handed to an untyped
+  argument, tested for truth, compared with another read of itself. A third way, the name kept
+  wherever every read of the field fails, is ruled out: it needs a list of such reads, and the
+  same record says how three wordings of one were each wrong. Beside either answer or in place
+  of both, a conversion's pull request can show a search for the old name read without its
+  parentheses coming back empty, which finds the read the conversion missed and not one a branch
+  merged later brings.
 - **The engine's own warning for a statement that does nothing**, raised to an error like the three
   warnings of the typed-access step. Measured (the record minty-quail-busy-heron,
   `tools/decisions.sh busy-heron`): a method's name alone on a line then fails the parse, and a name

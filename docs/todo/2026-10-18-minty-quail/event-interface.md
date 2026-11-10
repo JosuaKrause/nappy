@@ -300,14 +300,19 @@ What the form buys, beyond the rule:
 2. **An event without a part answers that part's questions with nothing**: a reach of zero,
    `false`, an empty list. No caller tests whether a part is there.
 3. **A name says what the caller wants, and a yes-or-no question never takes the name of the field
-   it replaces**: `hard_fail` becomes `ends_the_day()`, `is_finished` becomes `is_gone()`,
-   `mobile` becomes `moves()`. The reason is the trap the godot skill's "Types" names: once a method
+   it replaces** (designing-classes' rule for every conversion, "Fields are not API"): `hard_fail`
+   becomes `ends_the_day()`, `is_finished` becomes `is_gone()`, `mobile` becomes `moves()`. The reason is the trap the godot skill's "Types" names: once a method
    has a field's old name, a read left behind without its parentheses (`thing.is_finished`) is a
    reference to the function, which is always true; the engine reports nothing, and the field-read
    check fails it only through a receiver whose class it cannot tell, in a file under `src/` that
    no longer carries the opt-out line; on a typed receiver nothing reports it
-   (`method-without-parentheses.md`), so with a new name the stale read fails loudly everywhere. A number may keep its name (`speed()`), since a function used as a
-   number fails at once.
+   (`method-without-parentheses.md`). With a new name the stale read names nothing and fails: at
+   the parse on a typed receiver in a file that does not silence `unsafe_property_access`, when
+   the line runs everywhere else. A number may keep its name (`speed()`), since a function used
+   as a number fails at once. The rule stops at yes-or-no questions: a field of another kind whose
+   accessor point 1 lists under the field's own name can be read in a way that takes a function
+   as silently (the row's `pursuit`, tested against null; its `look`, read in a `match`), and
+   whether such an accessor takes a new name too is open (`method-without-parentheses.md`).
 4. **A change is told as what happened, never set as a value**: `silence()`, `spend()`,
    `notice_her_at()`, `place_at()`; the event works out what it already knows (the record
    brisk-lark's "events instead of setters").
