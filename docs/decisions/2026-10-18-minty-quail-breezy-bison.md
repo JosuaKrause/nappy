@@ -6,7 +6,7 @@ README, "Order"). The check's `--base` mode failed two kinds of move that add no
 into a file the pull request adds, and an inner class lifted into a file of its own, whose fields
 the check could not see before. The placement track's next steps (the plan record lifted out of
 the scheduler as `EventPlan`, the scheduler's breakup into `PlanBuilder` and its phases) are both
-kinds; on a copy of the tree the lift alone failed 95 lines. The planning agent's proposal.
+kinds; on a copy of the tree the lift alone failed about 93 lines (83 under the lifted class, 10 of the row's fields read from its new file). The planning agent's proposal.
 
 ## What was built
 
@@ -19,17 +19,25 @@ and no other:
   differ between base and head the head's uses of that class's field are no more than the base's,
   counted the same way on both trees, one count per class and field, so a file split in several
   passes.
-- **An inner class lifted out**: the line's class is a file new since the base, and the base
-  declared the field in an inner class the head no longer declares. Nothing is counted here, since
-  the base could not see an inner class's fields.
+- **An inner class lifted out**: the line's class is a file new since the base and no git rename of
+  an existing class file, and it declares every var of one inner class that declared the field at
+  the base and that the head no longer declares; a lift that drops a var fails. Nothing is counted
+  here, since the base could not see an inner class's fields, so a lifting diff's new readers pass
+  uncounted and review reads that diff for them.
 
 Every other added line still fails with the message it had: a new file reading a field no changed
-file read, a move that also adds a use, a new class with a public var read from outside. A change
+file read, a move that also adds a use, a new class with a public var read from outside, a new class
+that only shares a var's name with an inner class that left the diff. A change
 to the checker itself still compares nothing (`checker_changed`). The docstring, the `--base` help
 and the list's generated header say the rule; the designing-classes skill's sentence on the check
 says it too, and lists the rule as proposed. `tools/test_check_field_reads.py` holds a passing and
-a failing case for each rule, each with the mutation that would fail it, and one case end to end
-through a temporary git repository.
+a failing case for each rule, each with the mutation that would fail it (eight mutated checkers,
+each failing a case), and one case end to end through a temporary git repository. The base's tree
+is built only when an added line is neither listed nor paired by a rename.
+
+Whether the list may gain a moved read's lines is put to the player on the board
+(moved-reads-list), since their "yes" was to a list that only shrinks (inbox #1182 in
+gray-dolphin); this pull request merges only after the answer.
 
 ## Choices the builder made, open to the player's overturn
 
