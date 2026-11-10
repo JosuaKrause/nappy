@@ -1,0 +1,28 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+
+== gross points over the day's routes: through walls | as built (32px, 16px in a one-tile wall) | 16px everywhere ==
+    seed  day routes  seconds   events                       crowd                     
+[RunState] run started, seed=2
+    4242    1     15      942     1207.3   1207.3   1190.0     2092.3   2092.3   2092.3
+    4242    5     15      646      790.8    790.8    790.8     1319.2   1319.2   1319.2
+    4242    9     15     1273     1709.7   1707.2   1707.1      877.6    877.6    877.6
+    4242   13     15      729     1668.7   1668.7   1666.6     1056.5   1056.5   1056.5
+[RunState] run started, seed=2
+   90210    1     14      778     1112.1   1109.9   1104.2     1955.0   1955.0   1955.0
+   90210    5     14     1036     1656.0   1653.2   1645.8     2088.0   2088.0   2088.0
+   90210    9     14      954     1407.8   1404.3   1382.4      573.5    573.5    573.5
+   90210   13     14      705     1242.1   1230.0   1224.3      875.4    875.4    875.4
+[RunState] run started, seed=2
+    1337    1     17      914     1455.6   1409.1   1409.1     1917.2   1917.2   1917.2
+    1337    5     17     1444     1837.6   1837.6   1776.0     3101.6   3101.6   3101.6
+    1337    9     17      833     1378.4   1375.8   1375.8      454.5    454.5    454.5
+    1337   13     17      812     1355.2   1338.6   1316.6      859.2    859.2    859.2
+          all    184    11065    16821.4  16732.5  16588.8    17170.0  17170.0  17170.0
+  per minute walked: events     91.2     90.7     89.9, crowd     93.1     93.1     93.1
+  share kept: events 99.5% / 98.6%, crowd 100.0% / 100.0%
+-- polite_rabbit_wall_costs.gd          2328217 ms
+
+2 checks, 0 failures
+PARTIAL RUN — only suites matching probes/polite_rabbit_wall_costs.gd. Not a green build.
