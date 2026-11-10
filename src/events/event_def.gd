@@ -285,7 +285,8 @@ class SolidPart extends RefCounted:
 	var along_vertical := 0.0
 	var shape: GroundShape = null
 
-	## The offset the instance places this piece at, given its own `_spread_vertical`.
+	## The offset the instance places this piece at, given whether its body lies down the screen
+	## (`EventBody.runs_vertically()`).
 	func offset_for(vertical: bool) -> float:
 		return along_vertical if vertical else along
 
@@ -293,6 +294,10 @@ class SolidPart extends RefCounted:
 	## what `EventDef.solid_reach()` maximises and what `validate()` holds inside `shape.reach()`.
 	func reach() -> float:
 		return maxf(absf(along), absf(along_vertical)) + shape.reach()
+
+	## The `GroundShape` this piece collides and casts its shadow as (`shape`).
+	func ground_shape() -> GroundShape:
+		return shape
 
 static func part(along: float, along_vertical: float, part_shape: GroundShape) -> SolidPart:
 	var made := SolidPart.new()
@@ -307,8 +312,8 @@ static func part(along: float, along_vertical: float, part_shape: GroundShape) -
 var solid_parts: Array[SolidPart] = []
 
 ## `solid_parts` with the default filled in: the declared pieces, or one piece at the origin
-## carrying `shape`. The one form `EventInstance` builds its bodies, shadows and per-tile record
-## from. The default is built once per def, since `EventLook._draw_body_shadow()` asks on every draw
+## carrying `shape`. The one form a live event's body (`EventBody`, through `body_pieces()`), its
+## shadow and the per-tile record are built from. The default is built once per def, since `EventLook._draw_body_shadow()` asks on every draw
 ## of every visible event; `solid()` drops the cache when it replaces `shape`.
 func parts() -> Array[SolidPart]:
 	if not solid_parts.is_empty():
@@ -336,6 +341,40 @@ func solid_reach() -> float:
 	for piece in parts():
 		furthest = maxf(furthest, piece.reach())
 	return furthest
+
+## Its ground shape (`shape`): the datum its shadow and its solid body are both derived from, or
+## null for a row with no picture.
+func ground_shape() -> GroundShape:
+	return shape
+
+## The pieces its body is made of, in the scene's own frame (`parts()`, which the readers outside
+## the live event's body still ask): one piece at the origin for every row but the crash.
+func body_pieces() -> Array[SolidPart]:
+	return parts()
+
+## Whether it has a body at all (`obstructs_radius`): something she is stopped by, rather than a
+## figure she walks up to or a picture flat on the ground.
+func has_a_body() -> bool:
+	return obstructs_radius > 0.0
+
+## When its body is solid to her (`solid_when`): from its first frame, once it starts, or while a
+## boom's arm is down.
+func solid_from() -> SolidWhen:
+	return solid_when
+
+## Whether a crowd walker goes round its figure while it stands still, as round an object or a
+## vehicle, rather than through it, as through a person or an animal (`stands_as`).
+func is_walked_round() -> bool:
+	return stands_as == StandsAs.SOMETHING
+
+## Whether its figure, once it stands, stands there for good (`when_it_stops`): a crowd car behind
+## it turns round rather than waits.
+func parks() -> bool:
+	return when_it_stops == WhenItStops.PARKS
+
+## Whether it moves along a route of its own (`mobile`).
+func moves() -> bool:
+	return mobile
 
 ## Whether `EventLook._draw_body_shadow()` puts anything down for this row. `true` for every row but
 ## three: `burst_water_main` is a crater sunk into the road, and `burning_building` and
@@ -723,11 +762,11 @@ enum SolidWhen {
 	## gets near it. A vent on a timer closes ground she may be walking down at the moment it fires,
 	## and a body that appears around her is not something a telegraph can answer.
 	##
-	## So the notice runs with no body and the body goes down at the end of it, and `EventInstance`
-	## withholds it for as long as she is still inside the footprint: **a vent never turns on with
-	## her in it.** Nothing is placed and then moved, and withholding obstruction can only leave
-	## more ground reachable. Standing in a vent to keep it open costs the full field, so it is the
-	## most expensive way through rather than a way past.
+	## So the notice runs with no body and the body goes down at the end of it, and the live event's
+	## body (`EventBody.come_down_clear_of_her()`) withholds it for as long as she is still inside
+	## the footprint: **a vent never turns on with her in it.** Nothing is placed and then moved,
+	## and withholding obstruction can only leave more ground reachable. Standing in a vent to keep
+	## it open costs the full field, so it is the most expensive way through rather than a way past.
 	##
 	## **A planner's own record does not know about this**: `EventManager` rasterises a row's body
 	## into `CityMap.obstructed_tiles` from the *plan*, before any instance exists, so a row solid
@@ -747,7 +786,8 @@ enum SolidWhen {
 	## Read in three more places, each because a boom is a door body that does not detain:
 	## `EventSpawner.obstructed_footprint()` keeps it out of the crowd's per-tile record as it keeps
 	## the huts out (the cars' answer to it is the gate hold), `EventDirector` keeps the door's clear
-	## ground around it, and `EventInstance` lets its collision body follow the arm.
+	## ground around it, and the live event's body lets its collision body follow the arm
+	## (`EventBody.follow_the_arm()`).
 	WHILE_LOWERED,
 }
 

@@ -598,17 +598,13 @@ src/events/event_instance.gd duration
 src/events/event_instance.gd id
 src/events/event_instance.gd mobile
 src/events/event_instance.gd notice
-src/events/event_instance.gd obstructs_radius
 src/events/event_instance.gd path_mode
 src/events/event_instance.gd pursuit
 src/events/event_instance.gd redetains
 src/events/event_instance.gd shape
-src/events/event_instance.gd solid_when
 src/events/event_instance.gd speed
-src/events/event_instance.gd stands_as
 src/events/event_instance.gd stops_where_it_arrives
 src/events/event_instance.gd vehicle
-src/events/event_instance.gd when_it_stops
 src/events/event_manager.gd barrier_structure
 src/events/event_manager.gd id
 src/events/event_scheduler.gd aftermath

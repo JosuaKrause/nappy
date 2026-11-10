@@ -121,7 +121,7 @@ func transition(to: Phase) -> void:
 	# **Parked while it stands for good, and only then** (`MoveProposal.parked`): a row that parks
 	# has once it stops where it arrives, and nothing leaving or gone stands anywhere for good.
 	if to == Phase.PARKED:
-		_move.parked = def.when_it_stops == EventDef.WhenItStops.PARKS
+		_move.parked = _body.parks()
 	elif to == Phase.LEAVING or to == Phase.DONE:
 		_move.parked = false
 
@@ -153,7 +153,7 @@ var excitement := EventExcitement.new(self)
 func drawn_box() -> Rect2:
 	if not _drawn_box_known:
 		_drawn_box_known = true
-		_drawn_box = EventFootprints.drawn_box_of(def, _spread_vertical)
+		_drawn_box = EventFootprints.drawn_box_of(def, _body.runs_vertically())
 	return _drawn_box
 
 var _drawn_box := Rect2()
@@ -251,13 +251,10 @@ var _mover: Mover
 ## may drive and not what it can see. A car that investigates notices her in an alley mouth or on
 ## a square as a figure would.
 var _sight: Mover
-## The tiles of its own solid body, and where that body stood when they were worked out
-## (`_own_body_tiles()`).
-var _own_tiles := {}
-var _own_tiles_at := Vector2.INF
-## The solid body `_build_obstruction()` made, or `null` before it exists and after
-## its step has dropped it. See `is_solid()`.
-var _obstruction: StaticBody2D
+## **What it is on the ground** (`EventBody`): its collision body, the tiles that body is recorded
+## on, the axis it lies along on its street, the side a vehicle standing still shows. Made in
+## `setup()`, asked for every answer about its body, and told what happens to it.
+var _body: EventBody
 
 ## The rim `ExcitementHalo` lights on this event (`Rim`), handed to its source: its own body's,
 ## or the band's while a guard walks away from his barrier.
@@ -273,16 +270,6 @@ func _init() -> void:
 ## — see `step()` — so a spent instance's history simply stops moving rather than continuing
 ## to drain toward zero after nothing more can land on it.
 var _clock := 0.0
-
-## Whether `SpreadLook._draw_spread` and `RankLook._draw_cafe` lay their segments along local Y
-## rather than local X. Decided once, in `setup()`, from the street the instance stands on — see
-## `_spread_is_vertical`. Never a per-row field: two rows on the same street face the same way for
-## the same reason, and a row that had to say so itself could disagree with the street it was
-## actually placed on.
-var _spread_vertical := false
-## Whether a stationary vehicle shows its side. The moving van sits along the street while the
-## burnt car lies across it; a junction, off-street ground or data-level rig follows its facing.
-var _stationary_vehicle_side := true
 
 ## `face` is where a *stationary* event was sited looking. A mobile one overwrites it from the
 ## direction it is travelling on its first step, which is why the default is harmless.
@@ -304,13 +291,6 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	_behaviours = EventBehaviours.compose(self, definition, _where, _figure, _map, _navigator,
 			_mover, trace, _move)
 	_move.radius = _mover.radius
-	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
-	# walked through as a person or an animal (`EventDef.stands_as`).
-	_move.stood_round = definition.stands_as == EventDef.StandsAs.SOMETHING
-	# Whether it has parked, for a crowd car behind it in its lane (`EventDef.when_it_stops`): a
-	# figure that never moves has parked from the start; one that drives to where it stops parks
-	# once it is there (`transition()`).
-	_move.parked = definition.when_it_stops == EventDef.WhenItStops.PARKS and not definition.mobile
 	_sight = Mover.of(_mover.blocked_by & ~Mover.STREETS)
 	var start := EventFootprints.stands_at(_map, definition, route[0] if route.size() > 0 else at)
 	position = start
@@ -319,8 +299,15 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	look.face(face)
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
-	_spread_vertical = _spread_is_vertical(_map, position)
-	_stationary_vehicle_side = EventFootprints.stands_side_on(definition, _map, position, face)
+	_body = EventBody.new(definition, _map, _where, self, position, face,
+			_spread_is_vertical(_map, position))
+	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
+	# walked through as a person or an animal (`EventBody.is_walked_round()`).
+	_move.stood_round = _body.is_walked_round()
+	# Whether it has parked, for a crowd car behind it in its lane (`EventBody.parks()`): a figure
+	# that never moves has parked from the start; one that drives to where it stops parks once it is
+	# there (`transition()`).
+	_move.parked = _body.has_parked_from_the_start()
 	# A stride never starts mid-cycle — the mother's own `reset_at()` precedent.
 	_gait_phase = 0.0
 	_gait_moving = false
@@ -404,13 +391,12 @@ func _ready() -> void:
 	_telegraph_announced = true
 	# `EventDef.SolidWhen.ONCE_IT_STARTS` is the one row shape that does not put its body down here
 	# — see its own doc, and `_become_solid_once_it_starts()` below, which is where it goes down.
-	if def.obstructs_radius > 0.0 and def.solid_when != EventDef.SolidWhen.ONCE_IT_STARTS:
-		_build_obstruction()
+	_body.come_into_the_world(_heading)
 	# A car's body is its `shape` (`EventDef.vehicle`), put down here like any other unless she is
 	# already where it would stand, in which case `_become_solid_once_it_starts()` puts it down the
 	# first frame she is not — a body never goes down around her.
 	if car and car.gap_to_her(position, _heading) >= 0.0:
-		_build_obstruction()
+		_body.go_down(_heading)
 	if flock:
 		flock.build()
 	look.build_nodes()
@@ -439,22 +425,10 @@ func _would_stand_in_her_view() -> bool:
 ## (`EventFootprints.warning_guard_rect()`), anyone else where he stands.
 func warning_rect() -> Rect2:
 	if barrier_post:
-		return EventFootprints.warning_guard_rect(_spread_vertical, body_position(), _where.at())
+		return EventFootprints.warning_guard_rect(_body.runs_vertically(), body_position(),
+				_where.at())
 	var size := EventFootprints.warning_picture_size(def)
 	return Rect2(global_position - Vector2(size.x * 0.5, size.y), size)
-
-## Some events are physically in the way. The body is a child so it travels with a mobile
-## event and disappears with the instance.
-##
-## **Built from the row's solid footprint** (`EventFootprints.solid_footprint_of()`), the one the
-## day's blocked record is written from too (`EventSpawner.obstructed_footprint()`), so the body that
-## stops her and the tiles that stop every other mover are one solid read twice. One `StaticBody2D` holds every
-## piece, so nothing downstream — the debug view's bounding-box layer, which walks the physics
-## tree, or `is_solid()` — has to learn that a row may have more than one.
-func _build_obstruction() -> void:
-	var body := EventFootprints.solid_footprint_of(def, solid_axis(), _spread_vertical).body()
-	add_child(body)
-	_obstruction = body
 
 ## How far a figure's body reaches round its feet when the row's own shape is the solid it stands
 ## at rather than the figure — a guard at his band — in px: the alley robber's own, a man on foot.
@@ -466,32 +440,21 @@ const FIGURE_RADIUS := 9.0
 ## car — and a man's (`FIGURE_RADIUS`) where the shape is a solid he stands at.
 static func mover_for(row: EventDef) -> Mover:
 	var radius := FIGURE_RADIUS
-	if row.shape != null and (row.obstructs_radius <= 0.0 or row.vehicle != null):
-		radius = row.shape.reach()
-	return Mover.vehicle(radius) if row.vehicle != null else Mover.on_foot(radius)
+	var shape := row.ground_shape()
+	if shape != null and (not row.has_a_body() or row.drives()):
+		radius = shape.reach()
+	return Mover.vehicle(radius) if row.drives() else Mover.on_foot(radius)
 
-## Where each of this instance's solid pieces stands, in world space — paired index for index with
-## `solid_part_shapes()` below, the same two-parallel-arrays shape `flock_offsets()` and
-## `flock_velocities()` already hand `DebugLayers`.
-##
-## **A per-tile solid record reads the same pieces, index for index.**
-## `EventSpawner.obstructed_footprint()` steps `def.parts()` on its own rather than calling this
-## pair, but it is the same data: one disc of `obstructs_radius` for every row but the crash, which
-## records tiles under each car and leaves the ground between them open — the whole reason the crowd
-## steps round the cars and walks the debris.
+## Where each of this instance's solid pieces stands, in world space (`EventBody.solid_part_centres()`)
+## — paired index for index with `solid_part_shapes()` below, the same two-parallel-arrays shape
+## `flock_offsets()` and `flock_velocities()` already hand `DebugLayers`.
 func solid_part_centres() -> PackedVector2Array:
-	var centres := PackedVector2Array()
-	for piece in def.parts():
-		centres.append(global_position + spread_at(piece.offset_for(_spread_vertical)))
-	return centres
+	return _body.solid_part_centres(global_position)
 
-## The `GroundShape` of each solid piece, index for index with `solid_part_centres()`. Each lies
-## along `solid_axis()`, the same axis its collision shape and its shadow are rotated by.
+## The `GroundShape` of each solid piece, index for index with `solid_part_centres()`
+## (`EventBody.solid_part_shapes()`).
 func solid_part_shapes() -> Array[GroundShape]:
-	var shapes: Array[GroundShape] = []
-	for piece in def.parts():
-		shapes.append(piece.shape)
-	return shapes
+	return _body.solid_part_shapes()
 
 ## Built by its rim the first time `ExcitementHalo` picks this instance, never in
 ## `_ready()`: a day has dozens of events live at once, and a rim each would take every block the
@@ -517,13 +480,12 @@ func _rim_holder() -> Node2D:
 	var holder := look.rim_holder()
 	return holder if holder != null else self
 
-## Whether this instance is solid right now. True from `_ready()` for anything with
-## `obstructs_radius`, false once a pursuer that had a body stops waiting — see `_tick()` —
-## false through the notice of a `SolidWhen.ONCE_IT_STARTS` row, which is what that setting is for, and
-## false while a boom (`EventDef.SolidWhen.WHILE_LOWERED`) stands raised.
+## Whether this instance is solid right now (`EventBody.is_solid()`). True from `_ready()` for
+## anything with a body, false once a pursuer that had a body stops waiting — see `_tick()` —
+## false through the notice of a `SolidWhen.ONCE_IT_STARTS` row, which is what that setting is for,
+## and false while a boom (`EventDef.SolidWhen.WHILE_LOWERED`) stands raised (`is_raised()`).
 func is_solid() -> bool:
-	return _obstruction != null \
-			and not (def.solid_when == EventDef.SolidWhen.WHILE_LOWERED and is_raised())
+	return _body.is_solid(is_raised())
 
 ## Whether this boom's arm is up right now — `RegionPlanner.GateState.raised`, which only `Crowd`
 ## writes. `false` with no `gate_state`, the same safe default the drawing reads: a gate that has
@@ -531,54 +493,19 @@ func is_solid() -> bool:
 func is_raised() -> bool:
 	return gate_state != null and gate_state.raised
 
-## A boom's body follows its arm: solid while it is down, not while it is up. Called once a step from
-## `_tick()`; the shapes are switched rather than the body freed and rebuilt, so nothing that
-## holds the body — the debug view's bounding-box layer — ever sees it vanish.
-##
-## **It never comes down on her, and that is `Crowd`'s half, not this one's.** The arm is the one
-## fact both halves read, and `Crowd._stop_for_gates()` does not lower it while she is under it, so
-## the body cannot go down around her: following the arm is enough. Deferred, because the switch
-## can land while the physics server is mid-query.
-func _let_the_body_follow_the_arm() -> void:
-	if def.solid_when != EventDef.SolidWhen.WHILE_LOWERED or _obstruction == null:
-		return
-	var open := is_raised()
-	if open == _arm_was_open:
-		return
-	_arm_was_open = open
-	for child in _obstruction.get_children():
-		var collision := child as CollisionShape2D
-		if collision:
-			collision.set_deferred("disabled", open)
-
-## What `_let_the_body_follow_the_arm()` last set the shapes to, so a boom standing still in either
-## position costs a comparison rather than a deferred call a frame.
-var _arm_was_open := false
-
 ## The body of a `SolidWhen.ONCE_IT_STARTS` row, put down the frame its notice ends — **unless she is
-## standing in it**, in which case the vent goes on emitting at full rate and stays passable until
-## she is out of the footprint.
-##
-## Her centre comes to rest `obstructs_radius + PLAYER_BODY_RADIUS` from the middle of a body, so
-## that distance is exactly "inside it": closing at any point nearer would put a wall around her
-## rather than in front of her, and the only ways out of one are teleporting her or deleting the
-## body again, which are a repair and an admission respectively. Deferring costs nothing and can
-## only leave ground reachable that would otherwise have been closed.
-##
-## Where she is (`WhereSheIs.at()`) is `Vector2.INF` until something tells the instance — every
-## world that has her does, once a frame — and an infinite distance is outside every footprint, so
-## a rig with no player in it gets the body immediately rather than never.
+## standing in it** (`EventBody.come_down_clear_of_her()`), in which case the vent goes on emitting
+## at full rate and stays passable until she is out of the footprint — and a car's body, held back
+## from `_ready()` while she stood where it would stand, put down the first frame she does not.
 func _become_solid_once_it_starts() -> void:
-	if car and _obstruction == null and car.gap_to_her(position, _heading) >= 0.0:
-		_build_obstruction()
+	if car and not _body.is_in_place() and car.gap_to_her(position, _heading) >= 0.0:
+		_body.go_down(_heading)
 		return
-	if def.solid_when != EventDef.SolidWhen.ONCE_IT_STARTS or _obstruction != null:
+	if not _body.waits_to_come_down():
 		return
 	if is_finished or is_leaving or is_waiting() or is_telegraphing():
 		return
-	if global_position.distance_to(_where.at()) <= def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS:
-		return
-	_build_obstruction()
+	_body.come_down_clear_of_her(global_position, _heading)
 
 # -------------------------------------------------------------------- a car ---
 # `EventDef.vehicle`: a body that moves and never into her, and a strike ahead of its nose while it
@@ -757,7 +684,7 @@ func _tick(delta: float) -> void:
 
 	# A car that drives keeps its body through a chase (`EventDef.vehicle`): cars that drive are the
 	# only bodies that move, and `EventCarDriving` is what keeps them off her.
-	if _obstruction and def.pursuit != null and def.vehicle == null and not is_waiting():
+	if _body.is_in_place() and pursues() and not drives() and not is_waiting():
 		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
 		# The pursuit's own note on its step says why a moving pursuer may not keep a body
 		# (`EventPursuit`): giving a pursuer one would let a moving wall pin her against a
@@ -773,11 +700,11 @@ func _tick(delta: float) -> void:
 		if barrier_post:
 			barrier_post.leave_the_body()
 		else:
-			_obstruction.queue_free()
-			_obstruction = null
+			_body.drop()
 
 	_become_solid_once_it_starts()
-	_let_the_body_follow_the_arm()
+	# A boom's body follows its arm (`EventBody.follow_the_arm()`), once a step.
+	_body.follow_the_arm(is_raised())
 
 	_advance_gait(_path_travelled - _travelled_before)
 	if _has_expired():
@@ -1128,8 +1055,7 @@ func move_to(at: Vector2) -> void:
 	var stands := EventFootprints.stands_at(_map, def, at)
 	global_position = stands
 	_move.place(position)
-	_spread_vertical = _spread_is_vertical(_map, stands)
-	_stationary_vehicle_side = EventFootprints.stands_side_on(def, _map, stands, _heading)
+	_body.land_at(stands, _heading, _spread_is_vertical(_map, stands))
 	_idle_phase_offset = _position_roll(101)
 	excitement.invalidate_contribution()
 	reset_physics_interpolation()
@@ -1684,23 +1610,13 @@ func sight_line_to_her() -> Vector2:
 ## built without a map, exactly as a step through the navigator is (`Navigator.step()`).
 ##
 ## **Seeing out of his own band is not reaching through it.** The line a guard notices her along and
-## lunges along does not ask the tiles of his own body (`_own_body_tiles()`), because he steps out to
-## his post on her side and she may stand on the band's far side; the catch above asks every body,
-## his own included, and every other body's tile stops either question.
+## lunges along does not ask the tiles of his own body (`EventBody.tiles_at()`, where the body
+## stands), because he steps out to his post on her side and she may stand on the band's far side;
+## the catch above asks every body, his own included, and every other body's tile stops either
+## question.
 func clear_line_to(world_position: Vector2) -> bool:
-	return _navigator.clear_line(global_position, world_position, _sight, _own_body_tiles())
-
-## The tiles this event's own solid body is recorded on (`EventSpawner.obstructed_footprint()`, the
-## record the planned body and the live one are written from), as a set; empty for a row with no
-## body. Worked out once for where the body stands.
-func _own_body_tiles() -> Dictionary:
-	var at := body_position()
-	if _own_tiles_at != at:
-		_own_tiles_at = at
-		_own_tiles.clear()
-		for tile in EventSpawner.obstructed_footprint(_map, def, at, _heading):
-			_own_tiles[tile] = true
-	return _own_tiles
+	return _navigator.clear_line(global_position, world_position, _sight,
+			_body.tiles_at(body_position(), _heading))
 
 
 ## Whether it is holding still through its telegraph — a crouching cat is not walking.
@@ -1742,17 +1658,18 @@ func _position_roll(salt: int) -> float:
 # outward on its own.
 
 ## The ground-plane direction a spread-shaped shadow sweeps along — local Y when the street this
-## instance stands on is east-west (`_spread_vertical`), local X otherwise. The same axis
+## instance stands on is east-west, local X otherwise (`EventBody.spread_axis()`). The same axis
 ## `spread_at()` already lays the drawn body along.
 func spread_axis() -> Vector2:
-	return Vector2.DOWN if _spread_vertical else Vector2.RIGHT
+	return _body.spread_axis()
 
 ## The ground-plane direction this instance's own solid body's spine lies along
 ## (`EventFootprints.solid_axis_of()`): its heading for a car that drives, its street's axis for a
 ## spread, the side it shows for a stationary vehicle. Read by its body, its field, its behaviours,
-## its look's shadow and `DebugLayers`, so a segment is turned one way everywhere.
+## its look's shadow and `DebugLayers`, so a segment is turned one way everywhere
+## (`EventBody.solid_axis()`).
 func solid_axis() -> Vector2:
-	return EventFootprints.solid_axis_of(def, _heading, _spread_vertical, _stationary_vehicle_side)
+	return _body.solid_axis(_heading)
 
 ## **This event's rim** (`SourceRim`), as `ExcitementHalo` lights it once a frame. Its own body's
 ## rim, with two rules of an event's own on top of the lifetime every rim keeps:
@@ -1874,18 +1791,19 @@ func add_beside_it(node: Node2D) -> void:
 	else:
 		get_parent().add_child(node)
 
-## A point `offset` along whichever axis `_spread_vertical` says this instance spreads on — local X
-## by default, local Y on an east-west street. See `_spread_is_vertical`.
+## A point `offset` along whichever axis this instance spreads on (`EventBody.spread_at()`) — local
+## X by default, local Y on an east-west street. See `_spread_is_vertical`.
 func spread_at(offset: float) -> Vector2:
-	return Vector2(0.0, offset) if _spread_vertical else Vector2(offset, 0.0)
+	return _body.spread_at(offset)
 
-## Whether its spread runs down the screen rather than across it (`_spread_is_vertical()`).
+## Whether its spread runs down the screen rather than across it (`EventBody.runs_vertically()`,
+## decided from the street it landed on by `_spread_is_vertical()`).
 func runs_vertically() -> bool:
-	return _spread_vertical
+	return _body.runs_vertically()
 
-## Whether a stationary vehicle shows its side rather than its end (`EventFootprints.stands_side_on()`).
+## Whether a stationary vehicle shows its side rather than its end (`EventBody.stands_side_on()`).
 func stands_side_on() -> bool:
-	return _stationary_vehicle_side
+	return _body.stands_side_on()
 
 ## The stride's phase, in radians of `GAIT_RATE` per pixel walked (`_advance_gait()`).
 func gait_phase() -> float:
@@ -1999,13 +1917,13 @@ class Figure:
 	func body_place() -> Vector2:
 		return _of.body_position()
 
-	## Which way its spread runs (`EventInstance.runs_vertically()`): down the screen, or across it.
+	## Which way its spread runs (`EventBody.runs_vertically()`): down the screen, or across it.
 	func runs_vertically() -> bool:
-		return _of.runs_vertically()
+		return _of._body.runs_vertically()
 
-	## The direction its solid body's spine lies along (`EventInstance.solid_axis()`).
+	## The direction its solid body's spine lies along as it heads now (`EventBody.solid_axis()`).
 	func solid_axis() -> Vector2:
-		return _of.solid_axis()
+		return _of._body.solid_axis(_of._heading)
 
 	## Whether the straight line from where it stands to `point` is one it sees along
 	## (`EventInstance.clear_line_to()`): what a pursuer's notice, lunge and stop ask.
@@ -2122,26 +2040,20 @@ class Figure:
 		_of.transition(EventInstance.Phase.SPENT)
 		_of._notice.stop()
 
-	## Its body is held at `at`, in world space, where its guard left it, wherever it moves itself;
-	## nothing for a row with no body.
+	## Its body is held at `at`, in world space, where its guard left it, wherever it moves itself
+	## (`EventBody.pin_at()`); nothing for a row with no body.
 	func pin_its_body_at(at: Vector2) -> void:
-		if _of._obstruction:
-			_of._obstruction.global_position = at
+		_of._body.pin_at(at)
 
-	## Its body is under its own feet again, and moves with it; nothing for a row with no body.
+	## Its body is under its own feet again, and moves with it (`EventBody.unpin()`); nothing for a
+	## row with no body.
 	func unpin_its_body() -> void:
-		if _of._obstruction:
-			_of._obstruction.position = Vector2.ZERO
+		_of._body.unpin()
 
-	## Its body is turned to `angle`, in radians, as a car's spine follows its heading; nothing
-	## before its body is down.
+	## Its body is turned to `angle`, in radians, as a car's spine follows its heading
+	## (`EventBody.turn_to()`); nothing before its body is down.
 	func turn_its_body_to(angle: float) -> void:
-		if _of._obstruction == null:
-			return
-		for child in _of._obstruction.get_children():
-			var collision := child as CollisionShape2D
-			if collision and not is_equal_approx(collision.rotation, angle):
-				collision.rotation = angle
+		_of._body.turn_to(angle)
 
 	## Its step was taken back: it faces `heading`, has covered `travelled` px of its way and its
 	## stride is at `gait_phase` again, and it stood still this tick.
