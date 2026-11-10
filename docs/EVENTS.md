@@ -674,8 +674,9 @@ rank and the firefight, one slice a figure at its own feet, the protest's back r
 of its front one.
 
 **A row may be solid in parts, and one is.** `EventDef.solid_parts` is a list of pieces — each an
-offset along the scene's own spread axis and a `GroundShape` of its own — and a live event's body
-(`EventBody`) puts down one collision shape, one shadow patch and one entry in the per-tile solid record per piece.
+offset along the scene's own spread axis and a `GroundShape` of its own — and a live event puts
+down one collision shape (its body, `EventBody`), one shadow patch (its look) and one entry in the
+per-tile solid record (`EventSpawner.obstructed_footprint()`) per piece.
 Every other row declares none, which means one piece at the origin carrying `shape`: exactly the
 single body they always had. **The pieces live inside `shape` and never past it**, which
 `EventDef.validate()` refuses, and that is what keeps every planner reading one disc:
