@@ -25,8 +25,12 @@ field asks its row, and its body is a part of its own.
   walk, and the car once the car is made (`take_its_car()`), held by a `WeakRef`, the shape the
   chase gave the man on foot's departure, since the car holds the investigation.
 - **`EventInstance.let_out(officer)` starts the man's trail itself** (`officer.on_foot.let_out_of(self)`),
-  since the investigation has no event to name itself by; the order is unchanged. The
-  investigation asks a man it let out `is_gone()` instead of reading `is_finished`.
+  since the investigation has no event to name itself by; the order is unchanged. **The men it
+  let out are called back by the event too**: the loop that ends every man but the one who stopped
+  her moved from the investigation into `EventInstance.call_back_its_officers(stopped_by)`, which
+  asks the investigation for its men (`its_officers()`), so no behaviour calls another live event's
+  private `_be_done()`; the investigation's own method is gone. The investigation asks a man it
+  let out `is_gone()` instead of reading `is_finished`.
 - `docs/ARCHITECTURE.md` says no behaviour holds its event. `tools/field_reads.txt` lost 25 lines
   and gained none; `tools/test_only_members.txt` is unchanged; no suite or probe changed.
 
@@ -43,8 +47,8 @@ body.
 ## Parity
 
 The run log is line for line what it was (`tools/test.sh observers`). Both identity probes give the
-same hash on `main` at `75ef3ad57`, the commit this branch was made from, and on the code commit
-`52a42b9c8`: what every source charges her tick by tick (`probes/excitement_fingerprint.gd`, its
+same hash on `main` at `75ef3ad57`, the commit this branch was made from, and on the code commits
+`52a42b9c8` and `80f1d84f2` (the review's fixes): what every source charges her tick by tick (`probes/excitement_fingerprint.gd`, its
 `XF` lines less `XF_COST`), and every event, crowd agent and baby meter on every tick
 (`probes/m159_tick_sweep_events_cost.gd`, the `chain` values). `probes/event_car_give_way_trace.gd`
 prints the same lines on both trees once its timing line is taken out.
@@ -73,9 +77,6 @@ prints the same lines on both trees once its timing line is taken out.
 - **The row's fields read through the handed row** where the row has no method yet (`shape`,
   `speed`, `stops_where_it_arrives`, `paces`, `mobile`, `pursuit`, `vehicle`); where it has one, it
   is asked (`notice_within()`, `lets_out()`, `heard_within()` in place of `outer_radius`).
-- **`officer._be_done()`** in `EventInvestigation.call_back_its_officers()`: a private method of a
-  man the vehicle let out, another live event, called as before; no public event says "called
-  back", and adding one was beyond this step.
 - **No field of the live event was made private**: each one the two stopped reading still has a
   reader elsewhere (the looks, streaming, the warning board, the resistance, the dev rigs, the
   suites), apart from `_heading`, `_path_travelled`, `_gait_phase`, `_gait_moving`, `_map` and
