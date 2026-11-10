@@ -22,9 +22,10 @@ three files inside the events folder that are callers of a live event like any c
 - **On the row** (`event_def.gd`): `detains_for()`, `detains_again()`, `is_a_boom()` and
   `counts_as_one_barrier()`, each the design's name; the live event's questions answer through
   them.
-- **Typing.** `checkpoint_controller.gd` lost its opt-out line. The engine then failed three
-  things: the latches' dictionary is iterated with a typed loop variable, and the two bus signals
-  are sent with `emit_signal`, since a signal cannot be read off a plain `Node`.
+- **Typing.** `checkpoint_controller.gd` lost its opt-out line. The engine then failed two kinds
+  of access: the latches' dictionary is iterated with a loop variable declared `Variant`, and the
+  bus is typed through a preload of its script (`event_bus.gd`), so its two signals are emitted
+  as before and a misspelt name fails the parse.
 - `tools/field_reads.txt` lost 16 lines and gained none.
 
 ## Parity
@@ -44,22 +45,33 @@ and baby meter on every tick (`probes/m159_tick_sweep_events_cost.gd`, the `chai
   since the design's first rule lets no caller write `instance.row().x()`.
 - **`raise_its_guards_hand(on)` takes a yes or no**, where the design's fourth rule prefers a
   change told as what happened: the controller sets it every frame, so it is a frame's state.
-- **The watch's table is keyed by the instance's id, and a lookup checks that the record names the
-  instance asked**, since an id is reused once a node is freed. Records of gone instances are let
-  go at the end of each tick, after the open encounters are closed, and the table is cleared at the
-  end of the day.
-- **The bus is signalled by name** until the bus is a typed object.
+- **The watch's table is keyed by the instance's id.** Records of gone instances are let go at the
+  end of each tick, after the open encounters are closed, and the table is cleared at the end of
+  the day.
+
+## Tried and replaced
+
+- **A check that a record names the instance asked**, on the brief's premise that an instance's
+  id is reused once a node is freed. The review made and freed 200,000 nodes on the project's
+  engine and saw no id twice, so the check had nothing to catch and was deleted.
+- **The bus signalled by name** (`emit_signal`), the first answer to the engine failing a signal
+  read off a plain `Node`: a misspelt name then parsed and failed only when the line ran. The
+  preloaded type replaced it.
+- **A new check in `tests/test_encounters.gd`** that an event made after a freed one starts its own
+  encounter: it passed under the mutation it named, since the freed event's record is closed in
+  the same tick. It was deleted.
 
 ## What stays public, and who still reads it
 
 `def`, `excitement`, `is_finished` and `is_leaving` of the live event are read across the events
-folder, the resistance, the dev tools, the crowd, the HUD and the tests; `guard_warns_her` by the
+folder, the resistance, the dev tools, the day director and the tests; `guard_warns_her` by the
 looks and the tests; the row's `barrier_structure` by the event manager, the catalogue and the
 tests. Each goes private in the step that converts its last reader.
 
 ## Held by a test
 
-One new check in `tests/test_encounters.gd`: an encounter still open when its event is freed ends
-with it, and an event made after it starts an encounter of its own. It fails when the watch hands
-the new event the gone one's record. The new questions are one-line forwards and are held through
-the suites of the doors, the holds and the encounters.
+No check is added. That two events are two encounters is held by
+`_test_two_instances_are_two_encounters` in `tests/test_encounters.gd`; the table's letting go and
+its clearing at the day's end have no behaviour a test can see without reading private state. The
+new questions are one-line forwards and are held through the suites of the doors, the holds and
+the encounters.

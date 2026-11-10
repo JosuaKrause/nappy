@@ -369,11 +369,11 @@ shared state. What it asks, and what the event is asked on its behalf:
 
 | What is asked | Method | Answered by |
 |---|---|---|
-| What the baby is charged at a point | `EventManager` sums `ExcitementSource.contribution_at(at)` ok over the live events' sources; live `source()` hands the source to the manager | field |
+| What the baby is charged at a point | `EventManager` sums `ExcitementSource.contribution_at(at)` ok over the live events' sources; live `source()` ok hands the source to the manager | field |
 | Has anything ended her day, and what | live `is_lethal_at(her)` ok, `logged_name()` ok, `row_id()` ok | lethal (a car: its driving) |
 | Does a row hold her, from how far, for how long, again | live `detains_her()` ok, `detain_distance()` ok, `detains_for()` ok, `detains_again()` ok | hold |
 | Is a hold running, has it held her; start one | live `is_chatting()` ok, `has_chatted()` ok, `start_chat()` ok | hold |
-| Is this door body the boom | live and plan `is_a_boom()` | body |
+| Is this door body the boom | live `is_a_boom()` ok, plan `is_a_boom()` | body |
 | Where she is, for every event and part | `WhereSheIs` (new, section 2.10): `at()`, `pram_at()`, `view()`, `is_running()`, `baby_is_awake()`, `is_held_at_a_door()` | the event manager writes it |
 
 ### 2.5 The danger cues and the HUD
@@ -407,7 +407,7 @@ shared state. What it asks, and what the event is asked on its behalf:
 
 | What is asked | Method | Answered by |
 |---|---|---|
-| Does a contact's rider have a body, and how far out does a touch count | live `has_a_body()`, `solid_reach()` | body |
+| Does a contact's rider have a body, and how far out does a touch count | live `has_a_body()`, `solid_reach()` ok | body |
 | Is she inside its core (a task completed at the core) | live `core_reaches(point)` | field |
 | Is the task's event still there, parked, and where is its beat | live `row_id()`, `is_gone()`, `has_parked()`, `beat()` | the live event, route |
 | A street's door: its boom and its huts | plan `is_a_boom()`, `detains_again()`, `placed_at()` ok, `faces()` | body, hold |
@@ -475,7 +475,7 @@ and handed around (inbox #1156 in gray-dolphin).
 | `not is_finished and def.hard_fail and not def.mobile` | the route rig | live `is_a_standing_lethal_place()` |
 | `shape != null and obstructs_radius > 0 and not mobile and detain_seconds <= 0 and solid_when != WHILE_LOWERED` | the route rig, and the spawner's own record in other words | row `stands_as_a_fixed_body()` |
 | `kind != AMBIENT and pursuit == null and vehicle == null and not warned_first and not starts_by(ARRIVES_CHASING)` | the park cordon | live `is_ambient()`, `was_sent_at_her()`, `drives()` |
-| `solid_when == WHILE_LOWERED`, eight places; `redetains` read as "this is a door's hut or post", sixteen places | the live event, the spawner, the resistance, the route rig (the checkpoint controller asks already) | `is_a_boom()` ok, `detains_again()` ok |
+| `solid_when == WHILE_LOWERED`, five places; `redetains` read as "this is a door's hut or post", six places | the live event and its hold, the spawner, the crowd, the resistance, the route rig (the checkpoint controller asks already) | row and live `is_a_boom()` ok, `detains_again()` ok; the plan's `is_a_boom()` and `detains_again()` |
 | `on_her_way != null and on_her_way.at_a_front`, three times; `on_her_way != null and kind == ONE_SHOT`, twice | the scheduler, streaming | row `stands_at_a_front()`, `is_a_set_piece_on_her_way()` |
 | `placement.size() == 1 and placement[0] == ALLEY` | the scheduler | row `stands_only_in_alleys()` |
 | `vehicle and vehicle.field_from_its_centre`, three times | `EventDef`, `EventInstance` | the field part's `datum()` |
@@ -602,7 +602,7 @@ counted where it only writes.
 | `shape` | 11 in, 3 out (the route rig, the happenings, `SealPlanner`) | row `ground_shape()`; the field part's `datum()`; a draft for the copies; the live body and the look are handed the body part |
 | `solid_parts`, `_default_parts` | 1 in, 2 out (both copying it into a variant) | row `body_pieces()`; a draft copies parts, so the hand copy goes |
 | `obstructs_radius` | 10 in, 2 out (the route rig, `SealPlanner`) | row `obstructs_within()` ok, `closes_ground()`, `has_a_body()`, `solid_reach()` ok; the looks ask `drawn_width()` |
-| `solid_when` | 4 in, 1 out (the route rig), the resistance untyped | row `is_a_boom()`, `stands_as_a_fixed_body()`; the body part's `solid_from()` for the live body; live `is_solid()` ok |
+| `solid_when` | 4 in, 1 out (the route rig), the resistance untyped | row `is_a_boom()` ok, `stands_as_a_fixed_body()`; the body part's `solid_from()` for the live body; live `is_solid()` ok |
 | `stands_as`, `when_it_stops` | 2 in each (the live event filling its move) | the body part's `is_walked_round()`, `parks()`, asked by the live body |
 | `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()`; the body part's `lies()` (one choice of four) for the footprints |
 | `vehicle` (`VehicleSpec.field_from_its_centre`) | 8 in, 2 out (the scene recipes, the park cordon); 3 lines of the spec | row `drives()`; the field part's `datum()` |
@@ -656,7 +656,7 @@ counted where it only writes.
 | `_obstruction`, `_spread_vertical` | 2 in each (the barrier post, the car, the far guard) | `EventBody`: `drop()`, `pin_where_it_stands()`, `runs_vertically()` ok |
 | `_charge` (`ChargeRecord`: `began`, `ended`, `warned`), `_notice` (`Warning`: `length`, `cancel_if`, `on_expired`), `_telegraph_ended`, `_chase_way`, `_guard_spent`, `gave_up` | 1 to 3 in each (four behaviours) | `Figure.charge_began()`, `charge_ended()`, `hold_the_notice()`, `notice_has_run()`; `has_charged()` ok, `is_chasing()` ok, `has_given_up()` ok |
 | `hold`, `abduction`, `departure`, `route`, `car`, `barrier_post`, `investigation`, `pursuit`, `on_foot`, `notice_run`, `flock`, `unreachable` | 30 lines in (the composer, behaviours reaching siblings, three looks) | private; siblings handed to each other by the composer; outside callers ask the live event (`closes_on(point)` ok, `is_taking_a_victim()` ok) |
-| `excitement` | 4 in | `source()` |
+| `excitement` | 4 in | `source()` ok |
 | `drawer`, `atlas`, `timing`, `trace`, `signals`, `skip_draw`, `points_at`, `is_pelican` | 1 to 9 in (written by the spawner after it makes the event, read by the looks) | handed in at setup in one call; the looks are handed the drawer; `is_drawn_as_a_pelican()` |
 | `gate_state` | 2 in (two looks) | `is_raised()` ok, `boom_openness()`; handed in at setup from the plan's `gate()` |
 | `guard_warns_her` | the looks (the checkpoint controller asks already) | `raise_its_guards_hand(on)` ok, `is_its_guard_warning()` ok |
@@ -711,7 +711,7 @@ questions, and is at test parity with the run log and GoatCounter's names unchan
 | # | What | Files it owns | When |
 |---|---|---|---|
 | **1** | **Two reads left of the callers outside the events folder**, which otherwise ask the event (the record minty-quail-rosy-lynx). A method and a variable cannot share a name, so the plan's `role`, read by the run log's map, becomes `role()` when the plan's fields go private in 3a. The row's `speed`, read where a badge is made for a warning with nothing in the world yet, is the fourth of the slightly wrong answers (section 7, point 6): the pull request that makes it `approach_speed()` removes the read | `src/telemetry/telemetry_map.gd` (in 3a); `src/ui/danger_edge.gd` (in point 6's pull request for it) | With 3a; after this row's first step has merged |
-| **2a** | **The live event's behaviours ask it through `Figure`, and are handed the rest.** `WhereSheIs`, and `EventBody` taken out of `EventInstance`; the composer hands each behaviour its settings, the map, the navigator and its siblings; the eight existing specs get their methods | `src/events/event_instance.gd`, `behaviours/*`, `event_excitement.gd`, `charge_record.gd`, `warning.gd`, the eight spec files (methods added). One function of `event_manager.gd`, the write of where she is | **Now, beside placement**, after 1 (both add to `event_instance.gd`). The one foreign function is coordinated with the third hand-ins pull request, which rewrites the manager's setup |
+| **2a** | **The live event's behaviours ask it through `Figure`, and are handed the rest.** `WhereSheIs`, and `EventBody` taken out of `EventInstance`; the composer hands each behaviour its settings, the map, the navigator and its siblings; the eight existing specs get their methods | `src/events/event_instance.gd`, `behaviours/*`, `event_excitement.gd`, `checkpoint_controller.gd` (its two reads of whether the baby is awake), `charge_record.gd`, `warning.gd`, the eight spec files (methods added). One function of `event_manager.gd`, the write of where she is | **Now, beside placement**, after 1 (both add to `event_instance.gd`). The one foreign function is coordinated with the third hand-ins pull request, which rewrites the manager's setup |
 | **2b** | **The looks ask the live event and are handed their settings.** | `src/events/views/*`, `event_footprints.gd`, `event_scenery.gd` | **Now**, beside 2a once `Figure` and the outward questions are in |
 | **3a** | **The dawn and the walk's ground ask rows and plans.** The plan's fields go private. Small where placement wrote against section 3 | `event_plan.gd`, `event_scheduler.gd` and what the breakup made of it (`dawn_phases/`, `plan_builder.gd`, `row_ground.gd`, `dawn_context.gd`), `street_rules/*`, `street_invalidation.gd`, the location files, `view_bag.gd`, `walk_ground.gd`, `day_events.gd`, `walk_events.gd`, `day_reach.gd`, `mast_sites.gd`, `day_planner.gd`, `src/routes/seal_planner.gd`, `region_planner.gd` | After placement and the scheduler's breakup close |
 | **3b** | **The event manager's parts.** Streaming keeps its own state per plan, tells the plan what happened and carries a live event's state out and back as one `EventSave`; the spawner hands a live event everything in one setup call; `EventWorld`'s 55 lines | `event_manager.gd`, `event_world.gd`, `event_streaming.gd`, `event_spawner.gd`, `event_director.gd`, `events_ahead.gd`, `warning_board.gd`, `pending_warning.gd` | After placement (its step 4 rewrites the director's and `EventsAhead`'s siting) and the third hand-ins pull request. Beside 3a and 3c |
