@@ -112,7 +112,7 @@ static func _with_the_drop(row: EventDef, box: Rect2) -> Rect2:
 ## entry — one at the origin carrying `shape` for every row that declares none, a car per piece
 ## for the crash — each offset along the spread axis (`spread_vertical`,
 ## `EventInstance.spread_at()`) by the piece's own reading of whichever picture is in use, its spine
-## along `axis` (`solid_axis_of()`). The physics body (`EventInstance._build_obstruction()`) and the
+## along `axis` (`solid_axis_of()`). The physics body (`EventBody.go_down()`) and the
 ## blocked record (`EventSpawner.obstructed_footprint()`) both come from here.
 static func solid_footprint_of(row: EventDef, axis: Vector2, spread_vertical: bool) -> Footprint:
 	var footprint := Footprint.new()

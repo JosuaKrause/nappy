@@ -348,7 +348,7 @@ func _test_as_warned_first_carries_solid_parts_too(t) -> void:
 ## **A body on a pavement has to fit on the pavement — the whole of it, not the lane it happened to
 ## be planned on.** `_draw_spread` and its cousins draw a body at exactly the width `obstructs_radius`
 ## says, and `EventInstance.setup()` centres a stationary, unpinned body on the pavement band before
-## either the drawing or `_build_obstruction()`'s collision shape ever reads its position — so the
+## either the drawing or `EventBody.go_down()`'s collision shape ever reads its position — so the
 ## width is a promise about where she can walk and the promise is kept against the band a `SIDEWALK`
 ## placement actually offers, not against whichever of its two lanes the scheduler rolled. `SQUARE`,
 ## `PARK` and `ALLEY` are wide open and carry no bound here; a tile type with no clearance defined is

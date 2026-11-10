@@ -313,7 +313,7 @@ func short_of_its_stop(seconds: float, left: float) -> float:
 		return seconds
 	return minf(seconds, left / _row.speed)
 
-## Lays a car's body along its heading, which `_build_obstruction()` read once
+## Lays a car's body along its heading, which `EventBody.go_down()` read once
 ## (`Figure.turn_its_body_to()`, which turns nothing before the body is down). A capsule turns; a
 ## point would not need to.
 func turn_the_body() -> void:
