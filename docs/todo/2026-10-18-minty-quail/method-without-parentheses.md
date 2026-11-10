@@ -2,10 +2,8 @@
 
 **Proposed, not asked for:** the whole item is the orchestrator's proposal. The player's words on the
 field-read check ask that it be made to work (inbox #1268 in olive-ferret) and say nothing of a
-method read without its parentheses. The plainer alternative is to leave it: the events' naming rule
-keeps the events' conversion from creating the case. The other areas' conversions can still create
-it, since `field-reads.md`'s last bullet has the method take the field's name; whether the naming
-rule is widened to every conversion is a question put to the player.
+method read without its parentheses. The plainer alternative is to leave it: the naming rule keeps
+a conversion from creating the case (below), and what is left is the mistake made by hand.
 
 **The trap.** `thing.is_ready`, where `is_ready` is a method, is a reference to the function: always
 true in a condition, and a statement that does nothing where a call was meant (`crowd.clear` for
@@ -17,8 +15,8 @@ engine's default level, a warning, and no headless run prints a warning.
 
 - `tools/check_field_reads.py` fails a method's name read through a receiver whose class it cannot
   tell, in a file under `src/` without the opt-out line. Its `--help` says which names count.
-- The events' interface's naming rule (`event-interface.md`, point 3), for the events only: a
-  yes-or-no question never takes the name of the field it replaces, so a read left behind after a
+- The naming rule of designing-classes ("Fields are not API"), for every conversion: a method that
+  replaces a yes-or-no field never takes the field's name, so a read left behind after a
   conversion names something that no longer exists. On a typed receiver it stops parsing; on a
   value the engine types as Variant it fails when the line runs.
 
@@ -26,19 +24,11 @@ engine's default level, a warning, and no headless run prints a warning.
 an engine value), in a file under `src/` that still carries the opt-out line, in a test, or as a
 bare name of the file's own class with no receiver (`if is_ready:`).
 
-**Where it bites first:** the yes-or-no fields outside the events that `tools/field_reads.txt`
-lists, such as `Building.is_home_building`, `ContactPoint.is_done`, `DayEnd.is_section`,
-`RunConfig.is_rig` and `Stroller.is_male`. When one becomes a method of the same name, a read left
-behind on a typed receiver parses, is always true and passes the check; the list does not catch it
-either, since the name is no longer a var.
+**What is left** is a method's name written without its parentheses by hand, in new code or an
+edit, where no field of that name ever was.
 
 **Ways to build it, none chosen.**
 
-- **The naming rule beyond the events**: a method that replaces a yes-or-no field never takes the
-  field's name, as one sentence in designing-classes for every conversion, with `field-reads.md`'s
-  last bullet changed to match. It covers what conversion creates and nothing typed wrong by hand,
-  and it helps only the conversions that come after it, so it is the one way with a deadline: before
-  the passes outside the events convert such fields.
 - **The engine's own warning for a statement that does nothing**, raised to an error like the three
   warnings of the typed-access step. Measured (the record minty-quail-busy-heron,
   `tools/decisions.sh busy-heron`): a method's name alone on a line then fails the parse, and a name

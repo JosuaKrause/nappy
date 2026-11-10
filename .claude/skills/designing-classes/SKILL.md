@@ -90,6 +90,14 @@ declare; it does not cover an engine object's properties (`position`, `visible`,
 field across objects, a change that touches such a read moves it behind a method, and state another
 class needs is kept in an underscore field behind a method.
 
+**A method that replaces a yes-or-no field never takes the field's name**: `is_finished` becomes
+`is_gone()`, `hard_fail` becomes `ends_the_day()`. A read left behind without its parentheses
+then names nothing and fails, at the parse on a typed receiver and when the line runs on a
+Variant. Under the field's old name it would be a reference to the function, which is always
+true in a condition, and nothing reports that on a receiver whose class is known (**godot**,
+"Types"). A number or any other value may keep its name (`speed()`), since a function used as a
+number fails at once.
+
 **Two lists hold the rule while `src/` is converted, and each only shrinks.** Much of `src/` still
 reads fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that
 adds a reader file's first read of another class's field, today's being listed in
@@ -180,6 +188,11 @@ that proposes it, and says so where the player's words name nothing on the point
 - **One interface and composition for anything many classes use, not only events**, a reading of
   inbox #1173 in gray-dolphin.
 - **Which members "Fields are not API" covers**, a reading of inbox #1173 in gray-dolphin.
+- **A method that replaces a yes-or-no field never takes the field's name** ("Fields are not
+  API"): the orchestrator's proposal, taken from the events' interface design and widened to every
+  conversion (minty-quail-busy-heron); the player's words on fields (inbox #1173 in gray-dolphin)
+  say nothing of a method's name. The plainer alternative is the field's name kept, with a read a
+  conversion misses staying true and unreported.
 - **New code reads no field across objects, and a touched read moves behind a method**
   (inbox #1173 in gray-dolphin).
 - **The check fails an unknown receiver file by file, from the day a file loses its opt-out line**,
