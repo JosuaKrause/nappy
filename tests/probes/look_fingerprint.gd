@@ -35,9 +35,11 @@ extends RefCounted
 ##
 ## **Which rows:** the catalogue's, each one's full-heat copy (`@heat`) and last-day copy (`@late`)
 ## where either differs from the row, so the roadblock's guard who sets off, its far guard and the
-## later-day charging dog are drawn, and the three derived rows a day makes (`out_of_the_car`,
-## `building_fire`, `task_guard_sent`). The far guard's node places itself on the engine's physics
-## tick, which two runs do not share, so the `N` lines leave his place out; his `D` lines are stable.
+## later-day charging dog are drawn, and the derived rows a day makes: the man a patrol car lets out,
+## the policeman on day 1 (through day 8) and the guardsman on the last day, each as a stop and as a
+## hunt (`out_of_the_car`), and `building_fire`, `task_guard_sent`. The far guard's node places
+## itself on the engine's physics tick, which two runs do not share, so the `N` lines leave his
+## place out; his `D` lines are stable.
 ## The cost pass stands events of its own, after the fingerprint, so asking the gate changes no line.
 ## What no sample separates is a key term alone (`is_waiting()`, `is_chatting()`, `has_stopped_her()`,
 ## `is_leaving`): each changes at the same sample as another term.
@@ -46,11 +48,13 @@ extends RefCounted
 ## `look`, `hold`, `atlas`, `drawer`, `is_chasing()`, `leave_for_a_completed_task()`,
 ## `give_up_the_chase()`, `raise_its_guards_hand()`, `start_chat()`, and the members the spawner,
 ## streaming and the checkpoint controller write today (`is_pelican`, `silenced`, `gate_state`,
-## `points_at`). Of the look: `drawn_rect_now()`, `mark_rect()`, `drawn_heading()`, `current_bob()`,
-## `band_node()`, `redraw_if_the_picture_changed()`. Of the rows: `EventDef.id`, `look`, `speed`,
-## `for_day()`, and `EventCatalogue.all()`, `heated()`, `heat_levels()`, `out_of_the_car()`,
-## `building_fire()`, `task_guard_sent()`. A later change which makes one of those private changes
-## this probe with it.
+## `points_at`). By string, so a rename shows as a difference in the labels rather than hiding one: a
+## slice's `index` read through `get()` and the far guard's node found by its name `FarGuard`.
+## Of the look: `drawn_rect_now()`, `mark_rect()`, `drawn_heading()`, `current_bob()`,
+## `band_node()`, `redraw_if_the_picture_changed()`. Of the rows: `EventDef.id`, `look`,
+## `speed`, `for_day()`, and `EventCatalogue.all()`, `heated()`, `heat_levels()`,
+## `out_of_the_car()`, `building_fire()`, `task_guard_sent()`. A later change which makes one
+## of those private changes this probe with it.
 
 const DrawnEvent := preload("res://tests/drawn_event.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
@@ -141,7 +145,7 @@ func run(t: TestRunner) -> void:
 
 ## The rows the game stands, each with its name: the catalogue's, each one's full-heat copy
 ## (`EventCatalogue.heated()`) and its copy on the last day (`EventDef.for_day()`) where either
-## differs from the row, and the three derived rows a day makes (`out_of_the_car()`,
+## differs from the row, and the derived rows a day makes (`out_of_the_car()`,
 ## `building_fire()`, `task_guard_sent()`).
 func _stand_the_rows() -> void:
 	var last_day := DaySpec.for_day(Tuning.RUN_LENGTH_DAYS)
@@ -153,8 +157,11 @@ func _stand_the_rows() -> void:
 		var late := row.for_day(Tuning.RUN_LENGTH_DAYS)
 		if late != row:
 			_add_a_row(late, row.id + "@late")
-	_add_a_row(EventCatalogue.out_of_the_car(last_day), "out_of_the_car")
-	_add_a_row(EventCatalogue.out_of_the_car(last_day, false), "out_of_the_car@hunts")
+	_add_a_row(EventCatalogue.out_of_the_car(last_day), "guardsman_out_of_the_car")
+	_add_a_row(EventCatalogue.out_of_the_car(last_day, false), "guardsman_out_of_the_car@hunts")
+	var first_day := DaySpec.for_day(1)
+	_add_a_row(EventCatalogue.out_of_the_car(first_day), "policeman_out_of_the_car")
+	_add_a_row(EventCatalogue.out_of_the_car(first_day, false), "policeman_out_of_the_car@hunts")
 	_add_a_row(EventCatalogue.building_fire(), "building_fire")
 	_add_a_row(EventCatalogue.task_guard_sent(), "task_guard_sent")
 
