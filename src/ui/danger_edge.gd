@@ -257,24 +257,23 @@ func _draw_arrow(def: EventDef, world_position: Vector2, distance: float,
 
 	# The thing itself, so the arrow says *what* rather than *something*. Scaled to fit the
 	# badge with its aspect kept: these are authored at world scale and a square box squashes a
-	# fire engine into something unrecognisable, which defeats the whole cue.
-	var picture := EventPictures.icon_for(def.picture())
-	if not picture.is_empty():
-		# The size comes from the region table rather than from the texture, so the badge's own
-		# fit is arithmetic that needs nothing loaded; the region itself is the one thing here
-		# that does, and the `events` page is held for the whole process from either boot's own
-		# loading window (`main.RESIDENT_GROUPS`), so it is there in the building as in the city.
-		var name := StringName(picture)
-		var art := Vector2(AtlasTable.baked().native_size(name))
-		var fit := ICON / maxf(art.x, art.y)
-		var drawn := art * fit
-		var rect := Rect2(at - drawn * 0.5, drawn)
-		draw_texture_rect(atlas.region(name), rect, false)
-		# A vehicle's wheels are a picture of their own on the same canvas, so they fit the same
-		# rectangle and go over the body the way the street draws them.
-		var wheels := EventPictures.icon_wheels_for(def.picture())
-		if not wheels.is_empty():
-			draw_texture_rect(atlas.region(StringName(wheels)), rect, false)
+	# fire engine into something unrecognisable, which defeats the whole cue. Every row the badge
+	# announces has a silhouette: the catalogue suite fails the build on one that does not.
+	# The size comes from the region table rather than from the texture, so the badge's own fit is
+	# arithmetic that needs nothing loaded; the region itself is the one thing here that does, and
+	# the `events` page is held for the whole process from either boot's own loading window
+	# (`main.RESIDENT_GROUPS`), so it is there in the building as in the city.
+	var name := StringName(EventPictures.icon_for(def.picture()))
+	var art := Vector2(AtlasTable.baked().native_size(name))
+	var fit := ICON / maxf(art.x, art.y)
+	var drawn := art * fit
+	var rect := Rect2(at - drawn * 0.5, drawn)
+	draw_texture_rect(atlas.region(name), rect, false)
+	# A vehicle's wheels are a picture of their own on the same canvas, so they fit the same
+	# rectangle and go over the body the way the street draws them.
+	var wheels := EventPictures.icon_wheels_for(def.picture())
+	if not wheels.is_empty():
+		draw_texture_rect(atlas.region(StringName(wheels)), rect, false)
 
 	var label := Texts.DISTANCE_METRES % roundi(distance / Tuning.TILE_SIZE * 1.5)
 	var font := ThemeDB.fallback_font
