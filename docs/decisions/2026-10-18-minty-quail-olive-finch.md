@@ -3,9 +3,11 @@
 
 **The ask.** "never read fields directly. always read through a method", and "fields are not API
 interaction between different objects need to go through APIs" (inbox #1173 in gray-dolphin); a
-fact derived once and handed around (inbox #1156 in gray-dolphin). The events' interface design
-(`docs/todo/2026-10-18-minty-quail/event-interface.md`) cuts its step "a live event's behaviours ask
-it through one interface" into seven pull requests; this is the one that moves where she is.
+fact derived once and handed around (inbox #1156 in gray-dolphin). The step "a live event's
+behaviours ask it through one interface" of the events' interface design
+(`docs/todo/2026-10-18-minty-quail/event-interface.md`, its row 2a) is built as seven pull requests,
+a cut the orchestrator's planning agent made and no tracked file holds; this is the one that moves
+where she is.
 
 ## What was built
 

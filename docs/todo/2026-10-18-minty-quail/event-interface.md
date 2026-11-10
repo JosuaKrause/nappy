@@ -66,7 +66,7 @@ Three objects are meant by "an event" below, and each is named this way througho
    fields 481 times today, underscore-private ones included. They ask it through one narrow
    interface and are handed what never changes, as the crowd's lane strategies ask their mover
    (the record brisk-lark).
-7. **Where she is is one object** (`WhereSheIs`, built). The event manager tells it once a tick,
+7. **Where she is is one object** (`WhereSheIs`). The event manager tells it once a tick,
    and every live event, behaviour and excitement source is handed it; each live event hears it
    through a handle of its own, which keeps the timing its own fields had (section 2.10).
 8. **Five steps, the first two of which start now beside placement**: the callers outside the
@@ -463,7 +463,7 @@ strategies did (the record brisk-lark):
   `is_its_guard_warning()`, `is_drawn_as_a_pelican()`, `boom_openness()`), and is handed its
   `LookSpec` and its drawer.
 
-**`WhereSheIs`** (a name this design proposes; built) is the one object that says where she is
+**`WhereSheIs`** (a name this design proposes) is the one object that says where she is
 this tick: her position, her pram's, the camera's view, whether she runs, whether the baby is
 awake, whether a door holds her. The event manager tells it once a tick in one call, and the
 events' world holds it. A fact derived once and handed around (inbox #1156 in gray-dolphin). Each
@@ -577,7 +577,7 @@ and `--summary`, and with `rg` for what the check cannot see.
   `region_planner.gd` (one write). In all `rg` finds 51 reads of a row's field through `.def.` in
   14 files outside the events folder, 24 of them `id`.
 - **The tests**: 138 files under `tests/` read an event's field. `.def.id` 258 times,
-  `.player_at` 225, `.is_finished` 154, `.live` 144, `.is_leaving` 133, `.def.obstructs_radius`
+  `.is_finished` 154, `.live` 144, `.is_leaving` 133, `.def.obstructs_radius`
   46, `.phase` 40; 11 files build a row with `EventDef.new()` and 18 write a row's field.
   `tools/cost_table.gd` reads 28 and the probes name the plan record or a row's field 130 times in
   48 files.
@@ -891,14 +891,6 @@ each question as it was shown).
    found in review after the player answered, and the last three in building where she is as one
    object; *read as* (the orchestrator's, open to the player's correction) covered by the same
    words.
-   - A car made after the tick's word knows nothing of her in its first frame, so it puts its
-     body down at once even where she stands, though the comment at that place promises it holds
-     the body back round her.
-   - An officer let out of a car is told her position and none of the other five facts (her
-     pram's place, the view, whether she runs, whether the baby is awake, whether a door holds
-     her) until the next tick's word.
-   - The halo's word once a drawn frame reaches only the events it lights; every other live event
-     keeps the tick's word.
    - `field_reaches(point)` compares the distance to the event's centre with its outer radius, as
      its five callers do, though the field of a row with a long body is a capsule about that body.
      Answering with the real field changes when the run log says "out of range" and when the
@@ -912,3 +904,11 @@ each question as it was shown).
      which a pursuer warned of first does not set: the run log says the day-3 charging dog's badge
      is "closing 0px/s" while the dog comes at its chase speed. The badge asks the row's
      `approach_speed()` as a badge for a live event does.
+   - A car made after the tick's word knows nothing of her in its first frame, so it puts its
+     body down at once even where she stands, though the comment at that place promises it holds
+     the body back round her.
+   - An officer let out of a car is told her position and none of the other five facts (her
+     pram's place, the view, whether she runs, whether the baby is awake, whether a door holds
+     her) until the next tick's word.
+   - The halo's word once a drawn frame reaches only the events it lights; every other live event
+     keeps the tick's word.
