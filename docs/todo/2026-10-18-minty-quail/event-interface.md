@@ -458,9 +458,10 @@ strategies did (the record brisk-lark):
   What happened, each carrying the whole change: `turn_to(heading)`, `walk_on(distance)`,
   `step_by(delta)`, `begin(phase)`, `be_done()`, `drop_its_body()`, `charge_began()`,
   `hold_the_notice(delta)`. The body's collision shape, the notice clock and the charge record
-  stay private to the live event. `Figure` has all of these but `drop_its_body()` and
-  `hold_the_notice(delta)`, which no behaviour that asks through it calls yet, and further
-  questions and events the record minty-quail-tiny-alpaca lists. The departure, the route walk,
+  stay private to the live event. `Figure` has these, of the phase questions the ones the seven
+  below ask (all of section 2.9's but `is_active()` and `has_stopped_her()`), and not
+  `drop_its_body()` or `hold_the_notice(delta)`, which no behaviour that asks through it calls
+  yet; it has further questions and events the record minty-quail-tiny-alpaca lists. The departure, the route walk,
   the hold, the unmarked van's take, the flock, the notice run and the row retired when it cannot
   reach her ask through it and are handed their parts; the pursuit, the man on foot, the barrier
   post, the far guard, the investigation and the car still hold their event.
@@ -666,10 +667,10 @@ counted where it only writes.
 | `_heading`, `_path_travelled`, `_gait_phase`, `_gait_moving` | 8, 4, 1 and 1 in (the behaviours) | `Figure.heading()` ok, `travelled()` ok, `turn_to()` ok, `walk_on()` ok; outside: `facing_now()` ok, `path_travelled()` ok, `gait_phase()` ok |
 | `_map`, `_navigator`, `_mover` | 4 in each | handed to each part at setup |
 | `_obstruction`, `_spread_vertical` | 2 in each (the barrier post, the car, the far guard) | `EventBody`: `drop()`, `pin_where_it_stands()`, `runs_vertically()` ok |
-| `_charge` (`ChargeRecord`: `began`, `ended`, `warned`), `_notice` (`Warning`: `length`, `cancel_if`, `on_expired`), `_telegraph_ended`, `_chase_way`, `_guard_spent`, `gave_up` | 1 to 3 in each (four behaviours) | `Figure.charge_began()` ok, `charge_ended()`, `hold_the_notice()`, `notice_has_run()`; `has_charged()` ok, `is_chasing()` ok, `has_given_up()` ok |
+| `_charge` (`ChargeRecord`: `began`, `ended`, `warned`), `_notice` (`Warning`: `length`, `cancel_if`, `on_expired`), `_telegraph_ended`, `_chase_way`, `_guard_spent`, `gave_up` | 1 to 3 in each (four behaviours) | `Figure.charge_began()` ok, `charge_ended()`, `hold_the_notice()`, `notice_has_run()` ok; `has_charged()` ok, `is_chasing()` ok, `has_given_up()` ok |
 | `hold`, `abduction`, `departure`, `route`, `car`, `barrier_post`, `investigation`, `pursuit`, `on_foot`, `notice_run`, `flock`, `unreachable` | 30 lines in (the composer, behaviours reaching siblings, three looks) | private; siblings handed to each other by the composer; outside callers ask the live event (`closes_on(point)` ok, `is_taking_a_victim()` ok) |
 | `excitement` | 4 in | `source()` ok |
-| `drawer`, `atlas`, `timing`, `trace`, `signals`, `skip_draw`, `points_at`, `is_pelican` | 1 to 9 in (written by the spawner after it makes the event, read by the looks) | handed in at setup in one call; the looks are handed the drawer; `is_drawn_as_a_pelican()` |
+| `drawer`, `atlas`, `timing`, `trace`, `signals`, `skip_draw`, `points_at`, `is_pelican` | 1 to 9 in (written by the spawner after it makes the event, read by the looks) | handed in at setup in one call; the looks are handed the drawer; `is_drawn_as_a_pelican()`; the unmarked van's take is handed `trace` at setup ok |
 | `gate_state` | 2 in (two looks) | `is_raised()` ok, `boom_openness()`; handed in at setup from the plan's `gate()` |
 | `guard_warns_her` | the looks (the checkpoint controller asks already) | `raise_its_guards_hand(on)` ok, `is_its_guard_warning()` ok |
 | `silenced` | 2 in; written by streaming | `silence()`, `is_silenced()` |

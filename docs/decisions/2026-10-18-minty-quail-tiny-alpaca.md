@@ -25,16 +25,26 @@ where she is as one object (minty-quail-olive-finch).
 - **What each is handed**: the departure the figure, where she is, the row, the map, the
   navigator, the mover, the barrier post and the man on foot (either may be none); the route walk
   the figure, the row, the navigator and the mover; the hold the figure and the row; the take the
-  figure, where she is, the row and its `AbductionSpec`; the flock the figure and the row; the
+  figure, where she is, the row, its `AbductionSpec` and the event's run log (`RunTrace`); the
+  flock the figure and the row; the
   notice run the figure, where she is, the row, its `NoticeSpec` and the route walk (or none); the
   retired row the figure and where she is.
 - **The composer** makes the siblings another behaviour is handed (the man on foot, the barrier
   post, the route walk) before the behaviours handed them; the order the behaviours tick in is
   unchanged. `setup()` sets the map, the navigator and the mover before it composes.
-- **The pursuit, the man on foot, the barrier post, the far guard, the investigation and the car
-  keep their event** (`attach()` and the base's `event`), until the pull requests that follow.
+- **The pursuit, the man on foot, the barrier post, the investigation and the car keep their
+  event** (`attach()` and the base's `event`), and **the far guard**, which is no `EventBehaviour`
+  but a part the barrier post makes in its `attach()`, keeps the event its constructor is given,
+  until the pull requests that follow.
 - `docs/EVENTS.md` and `docs/ARCHITECTURE.md` say what a behaviour is handed and asks through.
-  `tools/field_reads.txt` lost 42 lines and gained none. No test changed.
+  `tools/field_reads.txt` lost 42 lines and gained none.
+- **Three suites now reach a row or a trace the way the game does**, since a behaviour answers
+  from what it was handed at setup: `tests/test_park_cordon.gd` spawns its walking busker from the
+  walking copy of his row instead of swapping the row under a live event;
+  `tests/test_prediction_reuse.gd` swaps the row only of an event with no birds, since a flock's
+  birds would answer from the row they were handed while the event answered from the new one; and
+  two checks of `tests/test_events_chat.gd` set the trace before `setup()`, as
+  `EventSpawner.create()` does. Nothing under `src/` swaps a live event's row or trace after setup.
 
 ## `Figure`'s questions and events
 
@@ -44,9 +54,9 @@ questions (`is_waiting()`, `is_telegraphing()`, `is_telegraphing_still()`, `is_o
 `turn_to(heading)`, `walk_on(distance)`, `step_by(delta)`, `begin(phase)`, `be_done()`,
 `charge_began()`.
 
-Not in the design, each one call the event already made for itself, and each the builder's choice
-open to the player's overturn: the questions `notice_time()`, `field_reaches(point)` and `trace()`;
-the events `arrive_at(at)`, `end_its_route()`, `notice_her()`, `warning_went_up()` and
+Not in the design, each a call, a read or a write the behaviours already made on their event, and
+each the builder's choice open to the player's overturn: the questions `notice_time()` and
+`field_reaches(point)`; the events `arrive_at(at)`, `end_its_route()`, `notice_her()`, `warning_went_up()` and
 `wait_for_her_again()`.
 
 Named by the design and not added, since no converted behaviour calls them yet (a method with no
@@ -55,8 +65,8 @@ caller is code nothing reaches): `drop_its_body()`, `hold_the_notice(delta)`, `c
 ## Parity
 
 The run log is line for line what it was (`tools/test.sh observers`). Both identity probes give the
-same hash on `main` at `6cfefd380`, the commit this branch was made from, and on the code commit
-`8979970a8`: what every source charges her tick by tick (`probes/excitement_fingerprint.gd`, its
+same hash on `main` at `6cfefd380`, the commit this branch was made from, and on the code commits
+`8979970a8` and `4331f666f` (the review's fixes): what every source charges her tick by tick (`probes/excitement_fingerprint.gd`, its
 `XF` lines less `XF_COST`), and every event, crowd agent and baby meter on every tick
 (`probes/m159_tick_sweep_events_cost.gd`, the `chain` values). Two more probes,
 `probes/m110_bodies.gd` and `probes/event_car_give_way_trace.gd`, print the same lines on both
@@ -75,9 +85,15 @@ broke on a path its cost probe did not reach (minty-quail-brisk-lark).
 - **`notice_has_run()` answers the event's `_telegraph_ended`**, the reading of the design's row.
 - **`be_done()` keeps its argument** (`may_park`), which the departure's walk down a given way
   passes as false; `begin(Phase.DONE)` stands where the private `_finish()` stood.
-- **The base holds `_figure` and `_where`, and each converted behaviour sets them in its own
-  constructor**, since a base constructor would need defaults for the behaviours that still use
-  `attach()`.
+- **The base holds `_figure` and `_where`, and each converted behaviour sets what it is handed in
+  its own constructor**, since a base constructor would need defaults for the behaviours that
+  still use `attach()`: all seven set `_figure`, the four that ask where she is (the departure,
+  the take, the notice run, the retired row) set `_where` too, and the route walk, the hold and
+  the flock keep the base's "nowhere", which none of them asks, on `main` or here.
+- **The take is handed the event's run log at setup**, not asked for it through a `trace()` on
+  `Figure`: the review found that the spawner sets the trace before `setup()`, so the trace is one
+  of the things that never change under the take, which the design hands in. The orchestrator's
+  pick of the review's two ways out, the design's rule, open to the player's overturn.
 - **The notice run no longer tests its `NoticeSpec` for none**: the composer makes it only for a
   row with one.
 
