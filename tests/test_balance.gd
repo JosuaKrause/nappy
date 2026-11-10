@@ -102,6 +102,7 @@ func _build_rig(t) -> void:
 	_baby = Baby.new()
 	_stroller.add_child(_baby)
 	_baby.set_world(_city)
+	_baby.use_bus(EventBus)
 	_clock = DayController.new()
 	t.add_child(_clock)
 	_clock.setup(_city.run)

@@ -156,6 +156,7 @@ func _time_to_full_sleep(t, city: City, busker_at: Vector2, standing_at: Vector2
 	stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var baby := Baby.new()
 	baby.name = "Baby"
+	baby.use_bus(EventBus)
 	stroller.add_child(baby)
 	baby.set_physics_process(false)
 	baby.excitement = Tuning.EXCITEMENT_CALM_THRESHOLD
@@ -338,6 +339,7 @@ func _playground_settles(t) -> void:
 			stroller.global_position = at
 			stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 			var baby := Baby.new()
+			baby.use_bus(EventBus)
 			stroller.add_child(baby)
 			baby.set_physics_process(false)
 

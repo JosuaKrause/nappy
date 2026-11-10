@@ -340,7 +340,7 @@ func _city(t, atlas: AtlasLibrary) -> City:
 func _rig(t, male: bool, atlas: AtlasLibrary) -> Stroller:
 	var rig := Stroller.new()
 	rig.atlas = atlas
-	rig.is_male = male
+	rig.draw_as_father(male)
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS

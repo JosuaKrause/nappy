@@ -610,8 +610,8 @@ the dev rigs (`AutoScreenshot.from_config()`, the scene-recipe runtime), and han
 day and the baby the plain values they need out of it: a day's length
 (`RunConfig.day_length_for()`, the one place it is decided) to `DayController.start()`, the
 resistance and the run log, and an escape section's length (`RunConfig.escape_section_length()`)
-to its `DaySpec`; `DayController.invincible` and `Baby.excitement_frozen`; and, on `City` before
-`build()`, the ground mode,
+to its `DaySpec`; `DayController.invincible` and the baby's frozen meter
+(`Baby.freeze_excitement()`); and, on `City` before `build()`, the ground mode,
 the frame lock, the four `--skip` words, the forced blackout, `--pelican` and `--force`, which the
 city passes to the part each belongs to. Nothing in the simulation reads a flag, the command line
 or the address bar, and nothing asks for them every frame. A test builds the run it wants with
@@ -792,7 +792,10 @@ file. The contracts that are about shared numbers rather than about a row (traff
 return patrols) are `tests/test_tuning_fairness.gd`'s checks, so an unfair number fails the suite.
 
 ### `EventBus`
-Global signal hub. Decouples systems that should not know about each other. Every signal is
+Global signal hub. Decouples systems that should not know about each other. The observers and the
+view listen on the autoload. The baby is handed it rather than fetching it (`Baby.use_bus()`, which
+`main._make_player()` calls), and a baby handed none tells nobody; the emitters `tools/layer_map.py`
+lists under `EventBus` still fetch it. Every signal is
 declared in `src/autoload/event_bus.gd`, grouped by what it reports — meters, day/run state,
 events, bodies, resistance, the escape, presentation — read it directly for the current list and
 each signal's payload type; `event_telegraphed` and `event_activated` are deliberately untyped,

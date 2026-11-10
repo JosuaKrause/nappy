@@ -429,11 +429,8 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
         "HelpText",
-        "the texts compose the controls' token, and she tells the controls through their class",
-        (
-            "src/player/stroller.gd",
-            "src/ui/texts.gd",
-        ),
+        "the texts compose the controls' token",
+        ("src/ui/texts.gd",),
     ),
     Exception_(
         "names",
@@ -466,12 +463,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "ResistanceHappenings",
         "the run reads the day of the neighbor's raid (NEIGHBOR_DAY) to say whether she was taken",
         ("src/run/run_state.gd",),
-    ),
-    Exception_(
-        "names",
-        "ScreenOrientation",
-        "her input is turned by the screen's rotation, read from the view",
-        ("src/player/stroller.gd",),
     ),
     Exception_(
         "names",
@@ -524,7 +515,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/events/event_manager.gd",
             "src/events/event_spawner.gd",
             "src/events/events_ahead.gd",
-            "src/player/baby.gd",
             "src/resistance/park_cordon.gd",
             "src/resistance/resistance_director.gd",
         ),
@@ -536,15 +526,8 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             ("src/events/event_manager.gd", 5),
             ("src/events/event_spawner.gd", 4),
             ("src/events/events_ahead.gd", 2),
-            ("src/player/baby.gd", 9),
             ("src/resistance/resistance_director.gd", 2),
         ),
-    ),
-    Exception_(
-        "group",
-        "HelpText.CONTROLS_GROUP",
-        "she tells the on-screen controls to stand still through their group",
-        ("src/player/stroller.gd",),
     ),
     Exception_(
         "group",

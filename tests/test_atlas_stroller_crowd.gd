@@ -55,7 +55,8 @@ func _test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t) -> void:
 	var groups: Array[StringName] = [Stroller.parent_atlas(false), Stroller.STROLLER_ATLAS,
 			Stroller.INDICATOR_ATLAS]
 	var rig := _rig(t, atlas)
-	t.check(not rig.is_male, "the rig this file builds draws the mother's page")
+	t.check(rig.pose(1.0).mother_sources[0].begins_with("rig/mother_"),
+			"the rig this file builds draws the mother's page")
 	for group in groups:
 		t.check(pages.held(group),
 				"'%s' is acquired the moment she is ready" % group)

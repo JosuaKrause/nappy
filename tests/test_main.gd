@@ -174,7 +174,8 @@ func _test_main_binds_the_family_before_the_first_draw(t) -> void:
 		var booted: Boot.Booted = await _boot_catching_the_rig(t, seat, ["--parent", parent], on_a_day)
 		var rig := Boot.player(booted.main)
 		t.check(in_the_escape == [male] and on_a_day == [male] and rig != null
-				and rig.is_male == male and seat.run.header.player_is_male == male,
+				and rig.pose(1.0).mother_sources[0].begins_with("rig/father_") == male
+				and seat.run.header.player_is_male == male,
 				"ordinary and escape construction share a choice bound before the first draw")
 		booted.free_all()
 		seat.end()
@@ -184,7 +185,7 @@ func _test_main_binds_the_family_before_the_first_draw(t) -> void:
 func _boot_catching_the_rig(t, seat: Seat, words: Array, entered: Array[bool]) -> Boot.Booted:
 	var catch := func(node: Node) -> void:
 		if node is Stroller:
-			entered.append((node as Stroller).is_male)
+			entered.append((node as Stroller).pose(1.0).mother_sources[0].begins_with("rig/father_"))
 	t.get_tree().node_added.connect(catch)
 	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words, null, false, MapCache.source())
 	t.get_tree().node_added.disconnect(catch)
@@ -237,6 +238,7 @@ class ReadoutRig:
 		t.add_child(stroller)
 		stroller.set_physics_process(false)
 		baby.name = "Baby"
+		baby.use_bus(EventBus)
 		stroller.add_child(baby)
 		baby.set_physics_process(false)
 		t.add_child(day)

@@ -802,6 +802,7 @@ func _test_the_log_names_the_patrol_for_its_mark(t) -> void:
 	var player := _her(t, lane, -along)
 	_tell(city.events.world.where_she_is(), player)
 	var baby := Baby.new()
+	baby.use_bus(EventBus)
 	var clock := DayController.new()
 	var run_log := RecordingLog.new()
 	var observer := TelemetryObserver.new(run_log)
