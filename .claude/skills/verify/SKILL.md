@@ -134,22 +134,24 @@ request never runs.
 
 ## What each one cannot see
 
-**A time a test reports is read from CI's run of the pull request, never from a local one, bar the optimization case below**
-(inbox #1307): a suite's duration, a case's own time, a check that holds a time bound. CI is where
-a time matters, and a loaded machine makes the same case fail locally again and again, each
-failure then explained in a report, a review and a description. A time bound is not asserted
-locally: the timed cases of `tools/test_rules_hooks.sh`, `tools/test_codex_hooks.py` and
-`tools/test_agent_identity.py`, and the wait_or_kill case of `tools/test_cli_help.sh`, assert their
-bound only where `CI=true` (GitHub Actions sets it) and print the time as an information line
-otherwise; a new timed check does the same, through one helper per script. A local run's time is
-information, and a report or a review does not list it as a failure. **The rule is about tests, which are what CI measures**
-(inbox #1307): while an optimization of a test's time (a suite's duration, the speed of the test
-run itself) is being written, its versions are compared locally and in quick succession, since
-CI's cycle is too slow for that, and the proof that it works is CI's timings, which are more
-reliable than a local machine's; a builder reads them from the shard logs of the pull request's
-run (`gh run view <run id> --log`), where the runner prints one `-- test_x.gd  N ms` line per
-suite. A measurement of the game (a probe of the dawn's time, the crowd tick, a frame profile) is
-outside the rule and is measured as its brief says.
+**A time a test reports is read from CI's run of the pull request, never from a local one, bar
+the optimization case below** (inbox #1307): a suite's duration, a case's own time, a check that
+holds how fast something ran. CI is where a time matters, and a local run's time is information,
+which a report or a review does not list as a failure. **The rule is about tests, which are what
+CI measures** (inbox #1307): while an optimization of a test's time (a suite's duration, the speed
+of the test run itself) is being written, its versions are compared locally and in quick
+succession, since CI's cycle is too slow for that, and the proof that it works is CI's timings,
+which are more reliable than a local machine's; a builder reads them from the shard logs of the
+pull request's run (`gh run view <run id> --log`), where the runner prints one
+`-- test_x.gd  N ms` line per suite. A measurement of the game (a probe of the dawn's time, the
+crowd tick, a frame profile) is outside the rule and is measured as its brief says.
+
+**Proposed:** a check of how fast something ran asserts its bound only where `CI=true` (GitHub
+Actions sets it) and prints the time as an information line otherwise (see "Proposed, not asked
+for"). The timed cases of `tools/test_rules_hooks.sh`, `tools/test_codex_hooks.py` and
+`tools/test_agent_identity.py` do. A timeout that stops a hang still fails a local run, and so does
+`tools/test_cli_help.sh`'s wait_or_kill bound, which checks that a wait ends, not how fast a
+thing ran.
 
 **A green `test.sh` says nothing about whether a *run* behaves.** Every run writes an ordered trace;
 if you changed anything the player experiences, **play a minute of it and read the log back**.
@@ -242,6 +244,7 @@ explain, and before changing the runner or its fixtures.
 
 ## Proposed, not asked for
 
-- **That a timed check asserts its bound only on CI** and prints the time locally is the filer's
-  proposal, open to the player's correction (inbox #1307); the plainer alternative is the sentence
-  alone, with local failures still reported.
+- **That a check of how fast something ran asserts its bound only where `CI=true` and prints its
+  time otherwise, that a new one does the same, and that each script does it through one helper**
+  ("What each one cannot see") are the filer's proposal, open to the player's correction (inbox
+  #1307); the plainer alternative is the rule alone, with local failures still reported.

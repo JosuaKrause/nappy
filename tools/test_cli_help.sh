@@ -792,15 +792,8 @@ wok_out="$(
     echo "returned $? status $WAIT_OR_KILL_STATUS"
 )"
 wok_elapsed=$(( SECONDS - wok_started ))
-# The 5-second bound is held on CI only (GitHub Actions sets CI=true); locally the time is printed.
-if [ "${CI:-}" = true ]; then
-    wok_in_time='$wok_elapsed -lt 5'
-else
-    echo "info wait_or_kill returned in ${wok_elapsed}s (bound 5s, asserted on CI only)"
-    wok_in_time='1'
-fi
 check_that "wait_or_kill returns at once for a process that exited, with no watchdog holding the pipe" \
-    '[[ "$wok_out" == "returned 0 status 0" && '"$wok_in_time"' ]]'
+    '[[ "$wok_out" == "returned 0 status 0" && $wok_elapsed -lt 5 ]]'
 
 # A limit that is not whole seconds is refused, never turned into an instant kill, and the
 # caller's own fd 9 is the same file after a call as before it.
