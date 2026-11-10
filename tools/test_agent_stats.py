@@ -192,6 +192,57 @@ class AgentStatsTests(unittest.TestCase):
         self.assertEqual(len(since), 2)
         self.assertEqual(self.run_script(TOOL, "ungraded", "--since", "2020-01-02", "--all").returncode, 2)
 
+    def test_ungraded_uses_the_later_of_two_grades_and_counts_the_grade_day_as_graded(self) -> None:
+        runs = [
+            self.stop("aaaaaa111", "2026-11-02T10:00:00"),
+            self.stop("aaaaaa111", "2026-11-04T23:00:00"),
+            self.stop("aaaaaa111", "2026-11-05T10:00:00", 30),
+            self.stop("bbbbbb222", "2026-11-04T23:00:00"),
+        ]
+        later_first = [
+            self.grade("aaaaaa111", "2026-11-04"),
+            self.grade("aaaaaa1", "2026-11-01"),
+            self.grade("bbbbbb222", "2026-11-01"),
+            self.grade("bbbbbb222", "2026-11-04"),
+        ]
+        self.write_data(runs, later_first)
+        lines = self.ungraded()
+        self.assertEqual([x.split()[0] for x in lines], ["aaaaaa111"])
+        self.assertIn("  1 stops", lines[0])
+        self.assertIn("2026-11-05T10:00:00 .. 2026-11-05T10:00:00", lines[0])
+        self.assertIn("graded 2026-11-04", lines[0])
+
+    def test_ungraded_lists_a_run_row_that_carries_only_agent_id(self) -> None:
+        self.write_data([{"ts": "2026-11-01T10:00:00", "agent_id": "onlyid111"}], [])
+        lines = self.ungraded()
+        self.assertEqual(len(lines), 1)
+        self.assertEqual(lines[0].split()[:4], ["onlyid111", "-", "1", "stops"])
+        self.assertTrue(lines[0].endswith("0 tokens  graded never  -"), lines[0])
+        self.data.joinpath("log.jsonl").write_text(json.dumps(self.grade("onlyid", "2026-11-01")) + "\n")
+        self.assertEqual(self.ungraded(), [])
+
+    def test_a_malformed_line_is_skipped_with_a_note_on_stderr(self) -> None:
+        self.data.mkdir(parents=True)
+        good = json.dumps(self.stop("aaaaaa111", "2026-11-01T10:00:00"))
+        torn = '{"ts": "2026-11-02T10:00:00", "agent": "bbbb'
+        (self.data / "runs.jsonl").write_text("\n".join([good, torn, "[1, 2]", good]) + "\n")
+        (self.data / "log.jsonl").write_text(
+            '{"kind": "fix", "mod\n' + json.dumps(self.grade("zzzzzz999", "2026-11-01")) + "\n"
+        )
+        result = self.run_script(TOOL, "ungraded", "--all")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertIn("runs.jsonl line 2", result.stderr)
+        self.assertIn("runs.jsonl line 3", result.stderr)
+        self.assertIn("log.jsonl line 1", result.stderr)
+        lines = result.stdout.splitlines()
+        self.assertEqual(len(lines), 1)
+        self.assertIn("aaaaaa111", lines[0])
+        self.assertIn("2 stops", lines[0])
+        summary = self.run_script(TOOL, "summary")
+        self.assertEqual(summary.returncode, 0, summary.stderr)
+        self.assertIn("log.jsonl line 1", summary.stderr)
+
     def test_unknown_argument_is_rejected(self) -> None:
         self.assertEqual(self.run_script(TOOL, "summary", "--bogus").returncode, 2)
         self.assertEqual(self.run_script(TOOL, "--help").returncode, 0)

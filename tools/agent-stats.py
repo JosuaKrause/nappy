@@ -14,10 +14,15 @@ orchestrator added.
 
 ungraded: the finished agents nobody graded, or graded before they stopped again. An agent is listed
 when runs.jsonl has a stop for it after the date of its last grade in log.jsonl (every stop when it
-has no grade), joined by agent id as above. A grade whose prefix several agents share is reported on
-stderr and attributed to none of them. One line per agent: id, model, stops counted, first and last
-stop, largest tokens, last grade's date or "never", description. Stops are counted from --since
-(default: the last 7 days), --all lifts the limit, --session keeps one session's agents.
+has no grade), joined by agent id as above. The comparison is by date, since a grade carries a date
+and no time: a stop later on the same day as a grade counts as graded, so an agent resumed on the
+day it was graded is not listed for that day's stops. A grade whose prefix several agents share is
+reported on stderr and attributed to none of them. One line per agent: id, model, stops counted,
+first and last stop, largest tokens, last grade's date or "never", description. Stops are counted
+from --since (default: the last 7 days), --all lifts the limit, --session keeps one session's agents.
+
+A line of either file that is not a JSON object (a line torn by two sessions appending at once) is
+skipped with a note on stderr, by every subcommand.
 """
 
 from __future__ import annotations
@@ -45,9 +50,17 @@ def read_lines(name: str) -> list[Row]:
     if not path.exists():
         return []
     rows: list[Row] = []
-    for line in path.read_text().splitlines():
-        if line.strip():
-            rows.append(json.loads(line))
+    for number, line in enumerate(path.read_text().splitlines(), start=1):
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError:
+            row = None
+        if isinstance(row, dict):
+            rows.append(row)
+        else:
+            print(f"agent-stats.py: {name} line {number} is not a JSON object; skipped", file=sys.stderr)
     return rows
 
 
@@ -203,7 +216,12 @@ def parser() -> argparse.ArgumentParser:
     sub.add_parser("summary", help="per kind and model: count, mean tokens, mean rounds, redone, grades")
     ls = sub.add_parser("list", help="the raw entries")
     ls.add_argument("--last", type=int, default=20)
-    u = sub.add_parser("ungraded", help="agents with no grade, or stops after their last grade's date")
+    u = sub.add_parser(
+        "ungraded",
+        help="agents with no grade, or stops after their last grade's date",
+        description="The finished agents with no grade, or with stops after their last grade's date. The comparison "
+        "is by date: a stop later on the same day as a grade counts as graded.",
+    )
     window = u.add_mutually_exclusive_group()
     window.add_argument("--since", type=date.fromisoformat, metavar="DATE", help="stops on or after DATE (YYYY-MM-DD)")
     window.add_argument("--all", action="store_true", help="no date limit (default: the last 7 days)")
