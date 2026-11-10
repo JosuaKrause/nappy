@@ -15,11 +15,11 @@ engine's default level, a warning, and no headless run prints a warning.
 
 - `tools/check_field_reads.py` fails a method's name read through a receiver whose class it cannot
   tell, in a file under `src/` without the opt-out line. Its `--help` says which names count.
-- The naming rule of designing-classes ("Fields are not API"), for every conversion: a method never
-  takes its field's name where a read of the field can stand as a truth test (a yes-or-no field, a
-  value tested for truth or against null), so a read left behind after a conversion names
-  something that no longer exists. It stops parsing on a typed receiver in a file that does not
-  silence `unsafe_property_access`; everywhere else it fails when the line runs.
+- The naming rule of designing-classes ("Fields are not API"), for every conversion: a method takes
+  a new name unless every read of its field is one a function fails in, so a read left behind
+  after a conversion names something that no longer exists. It stops parsing on a typed receiver
+  in a file that does not silence `unsafe_property_access`; everywhere else it fails when the line
+  runs.
 
 **What nothing reports:** the same mistake on a receiver the check can type (a class under `src/` or
 an engine value), in a file under `src/` that still carries the opt-out line, in a test, or as a

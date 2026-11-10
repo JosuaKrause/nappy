@@ -75,6 +75,6 @@ Left, each its own design question:
   `src/routes/`, `src/dev/`, `scene_recipe*`, `day_director.gd`, `main.gd`, `day_planner.gd`,
   `run_session.gd`, the event manager and `EventWorld`, scenery residency and ground, the blackout,
   the still watch and the debug readout) are converted after those land, and the fields they read
-  become underscore-private behind a method. The method takes the field's name only where no
-  reader tests the field for truth or against null; a yes-or-no field's method, and that of a
-  part or a count tested that way, takes a new one (designing-classes, "Fields are not API").
+  become underscore-private behind a method. The method takes the field's name only where every
+  read of the field is one a function fails in; otherwise it takes a new one (designing-classes,
+  "Fields are not API", which lists those reads).
