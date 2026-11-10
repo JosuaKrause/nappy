@@ -378,7 +378,7 @@ shared state. What it asks, and what the event is asked on its behalf:
 
 | What is asked | Method | Answered by |
 |---|---|---|
-| Does its coming get a badge at the screen edge | row `announces_its_coming(walk_speed)` ok; the badge adds its own "and it has an icon" | warning, lethal, route, pursuit |
+| Does its coming get a badge at the screen edge | row `announces_its_coming(walk_speed)` ok | warning, lethal, route, pursuit |
 | How fast does it come at her | row `approach_speed()` ok | pursuit, route |
 | How far out is its field's edge (the badge's gap) | row `heard_within()` ok | field |
 | Which colour, which icon | row `ends_the_day()` ok, `picture()` ok | lethal, look |
@@ -680,7 +680,7 @@ Reads by `rg`, since the check does not list it.
 | `age`, `travelled`, `noticed_at`, `behaviours` | 7, 3, 4 and 3 | one `EventSave`: `keep(save)`, `saved()`; `arrive_aged(seconds)` ok for a recipe that stages an event part-way through |
 | `role` | 6 | `role()`, `give_role()` ok |
 | `comes_in`, `wait_began`, `kept_live`, `was_live` | 6, 3, 3 and 5 (streaming) | streaming's own state per plan; `keep_in_the_world()` ok stays as the way to ask for it, and `come_first_in(seconds)` ok, by which the building's plan says when an event first comes, tells streaming rather than writing a field |
-| `repeat_every`, `repeat_after`, `at_her`, `arrives_aged` | 3 (the catalogue and the event scheduler) | `repeats()` ok; `come_again_every(seconds)` ok, `come_where_she_stands()` ok, `arrive_aged(seconds)` ok as the building's plan is made; `comes_where_she_stands()`, `arrives_aged()` |
+| `repeat_every`, `repeat_after`, `at_her`, `arrives_aged` | 5 (streaming) | `repeats()` ok; `come_again_every(seconds)` ok, `come_where_she_stands()` ok, `arrive_aged(seconds)` ok as the building's plan is made; `comes_where_she_stands()`, `arrives_aged()` |
 | `gate_state` | 2 | `gate()`, set as the region's doors are made |
 | `permanent` | 1 | `is_permanent()` ok, `make_permanent()` |
 | `_is_door`, `_in_the_wall`, `_is_a_seal` | private already | as they are |
