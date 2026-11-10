@@ -28,7 +28,9 @@ she is as one object (minty-quail-olive-finch) and the seven behaviours that wal
   constructor, so a strong reference each way would be a cycle never freed.
 - **The held lunge's pause and the stop-warning moved from the event into the pursuit**
   (`EventPursuit.pause_a_held_notice(delta)`, asked by the event at the same moment of its tick;
-  `EventInstance._stop_warning()` is gone, and the pursuit tells its figure
+  `EventInstance._stop_warning()` is gone, and so is `EventInstance._step()`, whose one caller was
+  the pursuit, which now takes its navigator's step itself with the step's reasons beside it; the
+  pursuit tells its figure
   `wait_for_her_again()`, forgets its held lunge and puts a roadblock's guard back at his band).
   `EventInstance.notice_her_at()` tells the pursuit `was_set_on_her(her)`. The event reads no field
   of the pursuit; the held lunge is internal (`_lunge_held`).
@@ -78,16 +80,21 @@ the brief said the list loses lines and gains none. Taking the four off their ev
 last reader outside the event's own file of two members the suites and probes read:
 
 - **`EventInstance.gave_up`** (whether a chase ended because she outran it), which the pursuit now
-  sets through `Figure.give_up()`. Three probes and some 30 suite lines read it, and the probes
-  were outside the brief's fence; the brief kept it public while a suite reads it.
-- **`EventInstance.transition()`**, which the four now reach through `Figure.begin()`. Nine lines of
-  five suites put an event in a phase with it directly; reaching each phase the way the game does
-  is the design's test step (its 2.9, row 4a), and a suite changes here only as far as the code it
-  reaches moved (inbox #1278 in olive-ferret).
+  sets through `Figure.give_up()`. Three probes, a rig and seven suites read it, and the probes
+  were outside the brief's fence; the brief kept it public while a suite reads it. It goes when
+  they ask `has_given_up()`, the scripted rewrite of the events' tests (the design's row 4a, the
+  order the player chose, inbox #1278 in olive-ferret).
+- **`EventInstance.transition()`**, which the four now reach through `Figure.begin()`. Fifteen lines
+  of six suites call it to put an event in a phase that sets a check up (six of them in
+  `tests/test_prediction_reuse.gd`). No phase question replaces those calls and row 4a's rewrite,
+  which replaces reads of `phase`, does not touch them: each goes when its suite reaches the phase
+  the way the game does or is handed a fake event. The design's step 5 `FakeEvent` covers the
+  crowd-yield and resistance suites; it names nothing yet for `test_scenery_animation` and
+  `test_prediction_reuse`, which the item now lists as open. A suite changes here only as far as
+  the code it reaches moved (inbox #1278 in olive-ferret).
 
 The builder's choice, which the orchestrator kept. The plainer alternative is both made internal
-and the probes and suites converted in this pull request. Each line goes once its readers ask
-through `has_given_up()` and the phase questions.
+and the probes and suites converted in this pull request.
 
 ## Choices the builder made where the design was silent, open to the player's overturn
 
