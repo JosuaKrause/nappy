@@ -68,7 +68,7 @@ func place(rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
 			and _something_left_to_cover(candidates, offers):
 		var pool: Array[Location] = []
 		for section in candidates:
-			if section.is_taken():
+			if not _open(section):
 				continue
 			if not offers.has(section):
 				offers[section] = _ground.offer(section)
@@ -90,11 +90,18 @@ func place(rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
 				_covers.erase(section)
 	return _placed
 
+## Whether `section` is still open to a roadblock: not taken, and not closed to a draw, as a section
+## is once one of its sidewalks holds a fixed part (an ambient row, a mast, a wall's body;
+## `StreetLocations.close_the_section_of()`), since a roadblock spans the street and would take that
+## sidewalk over the part standing there.
+static func _open(section: Location) -> bool:
+	return not section.is_taken() and not section.is_drawn()
+
 ## Whether some section still offered a roadblock would bring one close by a route tile that has
 ## none: the phase's stop, asked before each draw.
 func _something_left_to_cover(candidates: Array[Location], offers: Dictionary) -> bool:
 	for section in candidates:
-		if section.is_taken():
+		if not _open(section):
 			continue
 		if not offers.has(section):
 			offers[section] = _ground.offer(section)
