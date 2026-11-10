@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name GroundRecipe
 extends RefCounted
 ## The ground's composition recipe (`assets/ground_layers.json`), read from disk by the first ask and
@@ -38,4 +37,5 @@ func _read_file() -> Dictionary:
 		push_warning("Ignoring invalid ground layer manifest: %s" % PATH)
 		return {}
 	var data: Variant = parser.data
-	return data if data is Dictionary and int(data.get("version", 0)) == 1 else {}
+	var recipe := data as Dictionary
+	return recipe if recipe != null and int(recipe.get("version", 0)) == 1 else {}
