@@ -20,7 +20,7 @@ func run(t) -> void:
 	_test_a_crouching_event_holds_still_until_it_bolts(t)
 
 
-func _instance(t, def: EventDef, at := Vector2.ZERO,
+func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, path, Vector2.RIGHT, null, null, where)
@@ -150,9 +150,9 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 ## it. **Walked past without being reached, it still goes up on its clock**, so a flock she skirted
 ## is startled rather than ignored, and `telegraph_time` still means something.
 ##
-## Stated over the walk rather than over the numbers it was written from: the rig sets `player_at`
-## every tick, which is the one thing the pass rig behind `docs/COSTS.md` never does and the reason
-## that table dashes this row.
+## Stated over the walk rather than over the numbers it was written from: the rig tells where
+## she is (`WhereSheIs.tell()`) every tick, which is the one thing the pass rig behind
+## `docs/COSTS.md` never does and the reason that table dashes this row.
 func _test_a_flock_goes_up_when_she_reaches_the_birds(t) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var touch := def.flock_spread + Tuning.PLAYER_BODY_RADIUS

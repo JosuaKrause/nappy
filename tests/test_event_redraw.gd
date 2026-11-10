@@ -319,10 +319,11 @@ func _test_the_caret_strength_is_in_the_key(t) -> void:
 ## **The gate asks for the caret once a tick, and that must not be the answer the rest of the frame
 ## gets.** `caret_strength()` caches its projection so that the four things wanting it in one
 ## frame share one sampling loop — and the gate is now the *first* of the four to ask, at the end
-## of this instance's own `_process()`, while `player_at` is written from outside by
-## `EventManager` and `ExcitementHalo` at whatever point in the frame those nodes run. Keyed on
-## `age` alone the gate's answer stood for the whole tick, computed against wherever she was last
-## frame, or against `Vector2.INF` before anything had said where she was at all: a lethal cyclist
+## of this instance's own `_process()`, while where she is is told from outside by
+## `EventManager` (`WhereSheIs.tell()`) and `ExcitementHalo` at whatever point in the frame
+## those nodes run. Keyed on `age` alone the gate's answer stood for the whole tick, computed
+## against wherever she was last frame, or against `Vector2.INF` before anything had said where
+## she was at all: a lethal cyclist
 ## ridden straight at her read as carrying no caret.
 func _test_asking_for_the_key_does_not_freeze_the_caret(t) -> void:
 	var def := EventCatalogue.by_id("cyclist")
@@ -333,7 +334,7 @@ func _test_asking_for_the_key_does_not_freeze_the_caret(t) -> void:
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(1000.0, 0.0)]))
 	# Ticks with nobody's position known, so the gate caches an answer for this `age` against
 	# `Vector2.INF` — the state the running game is in on any frame whose event `_process()` runs
-	# before whoever writes `player_at`.
+	# before whoever tells where she is (`WhereSheIs.tell()`).
 	for i in int(ceil(def.telegraph_time / STEP)) + 1:
 		instance.step(STEP)
 	t.check(instance.excitement.caret_strength() == 0, "with nobody to aim at there is no caret")

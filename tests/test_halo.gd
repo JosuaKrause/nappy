@@ -146,7 +146,8 @@ func _instance_at(def: EventDef, at: Vector2) -> EventInstance:
 ## `tests/test_events.gd`'s own `_instance()` helper, kept local here rather than shared, because
 ## the two suites hold different halves of this class and neither should have to know the other's
 ## rig.
-func _rig_instance(t, def: EventDef, at: Vector2, where: WhereSheIs = null) -> EventInstance:
+func _rig_instance(t: TestRunner, def: EventDef, at: Vector2,
+		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.atlas = _atlas
 	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT, null, null, where)

@@ -128,7 +128,8 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	var walked := 0
 	var stood := where.at()
 	while guard.is_leaving and walked < int(30.0 / STEP):
-		where.tell(stood, Vector2.INF, Rect2(), where.is_running()) # she stands still; he walks out of her sight
+		# She stands still; he walks out of her sight.
+		where.tell(stood, Vector2.INF, Rect2(), where.is_running())
 		guard.step(STEP)
 		walked += 1
 		var body := _its_body(guard)
@@ -143,7 +144,7 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	t.check(guard.global_position.is_equal_approx(post), "the node is back on the barrier")
 	# The day carries on: it still stands a long time later.
 	for i in int(120.0 / STEP):
-		where.tell(post + Vector2(0.0, 90.0))
+		where.tell(post + Vector2(0.0, 90.0), Vector2.INF, Rect2(), where.is_running())
 		guard.step(STEP)
 	t.check(not guard.is_finished and guard.is_solid(), "it is still there two minutes on")
 	stage.close()

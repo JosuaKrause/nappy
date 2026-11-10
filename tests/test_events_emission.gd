@@ -25,7 +25,7 @@ func run(t) -> void:
 	_test_flocks_are_not_skipped(t)
 
 
-func _instance(t, def: EventDef, at := Vector2.ZERO,
+func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, path, Vector2.RIGHT, null, null, where)

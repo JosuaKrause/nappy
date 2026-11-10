@@ -689,6 +689,8 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 		var group: Array[EventScheduler.Planned] = [band_plan]
 		for bearing in 16:
 			var made := RoadblockRig.build(t, map, group)
+			var stage: RoadblockRig.Stage = made[0]
+			var told := stage.manager.world.where_she_is()
 			var guard: EventInstance = made[1][0]
 			var band := guard.body_position()
 			var toward := Vector2.from_angle(TAU * float(bearing) / 16.0)
@@ -705,19 +707,19 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 				frames_in += 1
 				var tile := map.world_to_tile(her)
 				if map.in_bounds(tile) and map.is_walkable(tile):
-					caught = RoadblockRig.tick(made[0].manager.world.where_she_is(), made[1], her, false)
+					caught = RoadblockRig.tick(told, made[1], her, false)
 				if caught:
 					break
 			var frames := 0
 			while not caught and guard.is_chasing() and frames < int(10.0 / step):
 				her += toward * Tuning.RUN_SPEED * step
-				caught = RoadblockRig.tick(made[0].manager.world.where_she_is(), made[1], her, true)
+				caught = RoadblockRig.tick(told, made[1], her, true)
 				frames += 1
 			if caught or not guard.is_leaving:
 				made[0].close()
 				continue
 			walks += 1
-			if _watch_them_walk_off(t, map, made[0].manager.world.where_she_is(), made[1], her, where):
+			if _watch_them_walk_off(t, map, told, made[1], her, where):
 				far_walks += 1
 			made[0].close()
 	t.check(walks > 0 and far_walks > 0,
@@ -736,23 +738,27 @@ func _test_neither_guard_walks_off_over_a_building(t) -> void:
 				map.tile_to_world(reviewed))
 	var group: Array[EventScheduler.Planned] = [reviewed_plan]
 	var made := RoadblockRig.build(t, map, group)
+	var stage: RoadblockRig.Stage = made[0]
+	var told := stage.manager.world.where_she_is()
 	var guard: EventInstance = made[1][0]
 	var her := map.tile_to_world(Vector2i(70, 50))
 	var frames := 0
 	while guard.is_waiting() and frames < int(20.0 / step):
-		RoadblockRig.tick(made[0].manager.world.where_she_is(), made[1], her, false)
+		RoadblockRig.tick(told, made[1], her, false)
 		frames += 1
 	t.check(not guard.is_waiting(), "the band at (73,50) notices her standing at (70,50)")
 	guard.give_up_the_chase()
 	t.check(guard.is_leaving, "and its guard gives up and walks away")
-	t.check(_watch_them_walk_off(t, map, made[0].manager.world.where_she_is(), made[1], her, "the band at (73,50), with her at (70,50)"),
+	t.check(_watch_them_walk_off(t, map, told, made[1], her,
+			"the band at (73,50), with her at (70,50)"),
 			"and the band at (73,50), with her at (70,50), sent its far guard off")
 	made[0].close()
 
 ## Steps `instances` (one band, its guard on her side already walking away) with her standing at
 ## `her` until both guards are gone, and checks every frame either guard walks that he stands on a
 ## walkable tile of `map`; answers whether the far guard walked.
-func _watch_them_walk_off(t, map: CityMap, told: WhereSheIs, instances: Array[EventInstance], her: Vector2,
+func _watch_them_walk_off(t: TestRunner, map: CityMap, told: WhereSheIs,
+		instances: Array[EventInstance], her: Vector2,
 		where: String) -> bool:
 	var guard := instances[0]
 	var far_walked := false
@@ -975,6 +981,8 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 			var group: Array[EventScheduler.Planned] = [band_plan]
 			for bearing in 16:
 				var made := RoadblockRig.build(t, map, group, atlas)
+				var stage: RoadblockRig.Stage = made[0]
+				var told := stage.manager.world.where_she_is()
 				var guard: EventInstance = made[1][0]
 				# Drawn on the real frames this loop waits for, which take the draw layer.
 				guard.set_process(true)
@@ -1007,7 +1015,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t) -> void:
 						if not view.encloses(EventFootprints.warning_guard_rect(
 								guard.runs_vertically(), band, her)):
 							off_by_the_radius += 1
-					RoadblockRig.tick(made[0].manager.world.where_she_is(), made[1], her, false, -toward)
+					RoadblockRig.tick(told, made[1], her, false, -toward)
 					# The layer is taken on the drawn frame, from what the tick left: a real frame
 					# where the draw layer is read, which is when his hand goes up and when he charges.
 					if (was_waiting and guard.is_standing_for_its_notice()) or guard.is_chasing():

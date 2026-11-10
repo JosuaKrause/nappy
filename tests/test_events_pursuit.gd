@@ -52,7 +52,7 @@ func run(t) -> void:
 ## A bare instance of `def` at `at`, in the tree, its frames stepped by the test (`_advance()`), on
 ## `map` with a navigator of its own when one is given, as `EventInstance.setup()` is handed them,
 ## and on open ground otherwise.
-func _instance(t, def: EventDef, at := Vector2.ZERO,
+func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), map: CityMap = null,
 		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
@@ -1343,7 +1343,7 @@ func _an_alley_mouth(map: CityMap) -> Dictionary:
 ## `EventInstance.setup()` is handed them, at a walkable tile with a clear straight run east to her,
 ## since the notice asks for a clear line; each check moves him from there. He hears where she is
 ## from `where`, which a check goes on telling.
-func _a_chasing_robber(t, map: CityMap, where: WhereSheIs) -> EventInstance:
+func _a_chasing_robber(t: TestRunner, map: CityMap, where: WhereSheIs) -> EventInstance:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var run := def.notice_within() - 10.0
 	var origin := Vector2.INF
@@ -1402,7 +1402,7 @@ func _test_the_robber_does_not_catch_her_through_a_wall(t) -> void:
 
 ## Where the alley robber waits for these tests: in the middle of the alley tile, `back` px in from
 ## the mouth's edge, so the building's corner stands between him and the sidewalk round it.
-func _a_waiting_robber(t, map: CityMap, mouth: Dictionary, back: float,
+func _a_waiting_robber(t: TestRunner, map: CityMap, mouth: Dictionary, back: float,
 		where: WhereSheIs = null) -> EventInstance:
 	var corner: Vector2 = mouth["corner"]
 	var d1: Vector2 = mouth["d1"]

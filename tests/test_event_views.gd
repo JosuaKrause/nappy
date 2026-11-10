@@ -513,7 +513,8 @@ func _test_setup_resets_the_view_to_the_exact_siting(t) -> void:
 ## "A stationary actor whose action has a target faces that target": the waiting robber has not
 ## noticed her yet (`is_waiting()` stays true — `EventPursuit` only turns `_heading` toward her once
 ## she is inside `EventDef.notice`), but a man only watching the street is worth nothing next to a
-## man watching *her*, so `robber_waiting_heading()` reads `player_at` directly.
+## man watching *her*, so `robber_waiting_heading()` asks the event for the line to her
+## (`sight_line_to_her()`).
 func _test_robber_waiting_faces_her(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
@@ -535,10 +536,8 @@ func _test_robber_waiting_faces_her(t) -> void:
 
 func _test_robber_waiting_falls_back_to_its_siting_with_no_player(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
-	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), _heading_for_sector(6), null, null,
-			instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), _heading_for_sector(6))
 	t.check(instance.look.robber_waiting_heading() == instance.facing_now(),
 			"with nothing to face, the waiting posture keeps the site's own authored facing")
 	instance.free()
@@ -636,7 +635,7 @@ func _hold(instance: EventInstance, where: WhereSheIs, her: Vector2, seconds: fl
 
 ## `def` standing at the origin in the tree, drawn through a recording drawer by the frames the caller
 ## lets pass (`_stood_pictures()`); the caller frees it.
-func _drawn_at_the_origin(t, def: EventDef, where: WhereSheIs) -> EventInstance:
+func _drawn_at_the_origin(t: TestRunner, def: EventDef, where: WhereSheIs) -> EventInstance:
 	return DrawnEvent.build(t, def, false, null, null, Vector2.ZERO, Vector2.RIGHT, where)
 
 ## The pictures `instance` is drawn with on its own canvas once drawn frames have passed: what its
@@ -726,7 +725,8 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, instance_where)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			instance_where)
 	_hold(instance, instance_where, Vector2(def.notice_within() + 40.0, 0.0), 0.5)
 	t.check(instance.is_waiting() and await _drawn_from(t, instance, [EventPictures.ROBBER_WAITING_BY_VIEW]),
 			"waiting, hood up and hands in his coat")
@@ -765,7 +765,8 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 	# waiting, and warns again when she comes back in.
 	var walker_where := WhereSheIs.nowhere()
 	var walker := EventInstance.new()
-	walker.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, walker_where)
+	walker.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			walker_where)
 	_hold(walker, walker_where, her, 0.5)
 	var stopped_at := walker.global_position
 	t.check(walker.is_telegraphing() and stopped_at.x > 10.0,
@@ -783,7 +784,8 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 	# The sent robber arrives chasing, with no notice to be alert through.
 	var sent_where := WhereSheIs.nowhere()
 	var sent := EventInstance.new()
-	sent.setup(EventCatalogue.by_id("robber_giving_chase"), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, sent_where)
+	sent.setup(EventCatalogue.by_id("robber_giving_chase"), Vector2.ZERO, PackedVector2Array(),
+			Vector2.RIGHT, null, null, sent_where)
 	_hold(sent, sent_where, Vector2(300.0, 0.0), STEP)
 	t.check(not await _drawn_from(t, sent, [EventPictures.ROBBER_ALERT_BY_VIEW]),
 			"the robber a task sends is drawn coming from his first frame")
@@ -828,7 +830,8 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t) -> v
 			"the door guard owes no notice of his own")
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
-	guard.setup(def, Vector2(32.0, 80.0), PackedVector2Array(), Vector2.RIGHT, null, null, guard_where)
+	guard.setup(def, Vector2(32.0, 80.0), PackedVector2Array(), Vector2.RIGHT, null, null,
+			guard_where)
 	_hold(guard, guard_where, Vector2(1.0, 0.0), STEP)
 	t.check(not guard.is_telegraphing() and not guard.is_standing_for_its_notice()
 			and await _drawn_from(t, guard, [EventPictures.GUARD_LUNGING_BY_VIEW]),
@@ -863,7 +866,8 @@ func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t) -> void:
 					if def.look == EventDef.Look.POLICEMAN_GIVING_CHASE else EventPictures.GUARD_ALERT_BY_VIEW
 			var man_where := WhereSheIs.nowhere()
 			var man := EventInstance.new()
-			man.setup(def, Vector2(32.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null, man_where)
+			man.setup(def, Vector2(32.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null,
+					man_where)
 			var her := Vector2(0.0, 0.0)
 			var still := true
 			var alert := true
@@ -908,12 +912,13 @@ func _test_no_guard_who_arrives_charging_takes_the_alert(t) -> void:
 				"'%s' arrives charging and does not stand for a notice" % id)
 		var instance_where := WhereSheIs.nowhere()
 		var instance := EventInstance.new()
-		instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, instance_where)
+		instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+				instance_where)
 		var alert := false
 		for i in int(round(3.0 / STEP)):
 			_hold(instance, instance_where, Vector2(0.0, 100.0), STEP)
-			alert = alert or await _drawn_from(t, instance, [EventPictures.GUARD_ALERT_BY_VIEW,
-					EventPictures.POLICEMAN_ALERT_BY_VIEW])
+			alert = alert or await _drawn_from(t, instance,
+					[EventPictures.GUARD_ALERT_BY_VIEW, EventPictures.POLICEMAN_ALERT_BY_VIEW])
 		t.check(not alert, "'%s' never draws an alert" % id)
 		instance.free()
 

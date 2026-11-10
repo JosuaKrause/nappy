@@ -235,12 +235,13 @@ static func view_round(her: Vector2, heading: Vector2) -> Rect2:
 	var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
 	return Rect2(her + lead - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 
-## One frame of the world round her: `where` (the one the instances were handed) told where she is,
-## every instance stepped, then asked whether it catches her. True on a catch. With a `heading` (the
-## way she faces), the camera's view round her is told too (`view_round()`).
-static func tick(where: WhereSheIs, instances: Array[EventInstance], her: Vector2, running: bool,
-		heading := Vector2.ZERO) -> bool:
-	where.tell(her, Vector2.INF, view_round(her, heading) if heading != Vector2.ZERO else Rect2(), running)
+## One frame of the world round her: `where` (the one the instances were handed) told where
+## she is, every instance stepped, then asked whether it catches her. True on a catch. With a
+## `heading` (the way she faces), the camera's view round her is told too (`view_round()`).
+static func tick(where: WhereSheIs, instances: Array[EventInstance], her: Vector2,
+		running: bool, heading := Vector2.ZERO) -> bool:
+	var view := view_round(her, heading) if heading != Vector2.ZERO else Rect2()
+	where.tell(her, Vector2.INF, view, running, false)
 	for instance in instances:
 		instance.step(STEP)
 	for instance in instances:
@@ -264,7 +265,8 @@ static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 		to: Vector2, meter: Meter, built: Array = []) -> Dictionary:
 	var made: Array = built if not built.is_empty() else build(t, map, group)
 	var instances: Array[EventInstance] = made[1]
-	var where: WhereSheIs = made[0].manager.world.where_she_is()
+	var stage: Stage = made[0]
+	var where := stage.manager.world.where_she_is()
 	var start := meter.value
 	# The peak is this walk's own, not what an earlier lure ran the meter up to.
 	meter.peak = meter.value
@@ -313,7 +315,8 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 		to: Vector2, meter: Meter) -> Dictionary:
 	var made := build(t, map, group)
 	var instances: Array[EventInstance] = made[1]
-	var where: WhereSheIs = made[0].manager.world.where_she_is()
+	var stage: Stage = made[0]
+	var where := stage.manager.world.where_she_is()
 	var start := meter.value
 	var heading := (to - from).normalized()
 	var her := from

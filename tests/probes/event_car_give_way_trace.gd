@@ -11,7 +11,8 @@ extends RefCounted
 ##
 ## Run in each revision's checkout and compare the `EVENT_CAR_TRACE_JSON` lines run for run:
 ## `tools/test.sh probes/event_car_give_way_trace.gd`. Reads only what both revisions have
-## (`EventInstance.step()`, whether the step moved the car, `signals`, `player_at`, `pram_at`).
+## (`EventInstance.step()`, whether the step moved the car, `signals`, and where she and her
+## pram are told, through `WhereSheIs.tell()`).
 const STEP := 1.0 / 60.0
 const SEEDS: Array[int] = [4242, 478156010]
 const TICKS := 600

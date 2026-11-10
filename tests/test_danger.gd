@@ -329,13 +329,13 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 			"a cyclist whose line reaches her lethal radius is the doubled red caret")
 	on_course.free()
 
-	var wide_where := WhereSheIs.nowhere()
-	var wide := _instance(def, route, wide_where)
+	var wide := _instance(def, route)
 	_advance(wide, def.telegraph_time + STEP)
 	# 60px off its own line, inside the outer radius (90) so its field still reads along the way,
 	# but past the inner radius (33) it would have to cross to end the day.
-	wide.excitement.set_player_at(wide.global_position + Vector2(0.0, 60.0))
-	t.check(not wide.excitement.will_be_lethal(wide_where.at()),
+	var her := wide.global_position + Vector2(0.0, 60.0)
+	wide.excitement.set_player_at(her)
+	t.check(not wide.excitement.will_be_lethal(her),
 			"the same cyclist passing 60px wide of her own line never reaches her lethal radius")
 	wide.free()
 
@@ -940,11 +940,10 @@ func _is_the_doubled_red(carets: Array[Dictionary]) -> bool:
 	return carets.size() == 2 and carets.all(func(each: Dictionary) -> bool:
 			return each["colour"] == Palette.MARK_LETHAL)
 
-func _instance(def: EventDef, route := PackedVector2Array(),
-		where: WhereSheIs = null) -> EventInstance:
+func _instance(def: EventDef, route := PackedVector2Array()) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.atlas = _atlas
-	instance.setup(def, Vector2.ZERO, route, Vector2.RIGHT, null, null, where)
+	instance.setup(def, Vector2.ZERO, route)
 	return instance
 
 ## Runs the one thing under test, rather than a whole `_physics_process`. A bare `EventManager`

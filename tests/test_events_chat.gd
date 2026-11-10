@@ -35,7 +35,7 @@ func run(t) -> void:
 	_test_a_hunting_van_stays_solid_once_it_notices_her(t)
 
 
-func _instance(t, def: EventDef, at := Vector2.ZERO,
+func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, path, Vector2.RIGHT, null, null, where)
@@ -308,7 +308,7 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
 
 # `abduction` draws its own scripted victim rather than touching a real `CrowdAgent` — see
 # docs/TODO.md, M56. Drawing and telemetry only, so a data-level rig can drive the whole scene by
-# hand: `player_at` is the same write `EventManager` makes every frame in the real game.
+# hand: `WhereSheIs.tell()` is the same call `EventManager` makes every frame in the real game.
 
 ## The design's own sentence is that the take "only means anything where she can see it happen" —
 ## a van she never comes near takes nobody, and it begins the moment she does.

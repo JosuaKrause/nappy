@@ -20,9 +20,10 @@ extends RefCounted
 ## position and when the time is right the object is spawned in at that location just offscreen."*
 ##
 ## **The rig.** A real `EventInstance` of the catalogue's own def, never added to a tree, ticked at
-## 60Hz beside her with `player_at` told to it every frame the way `EventManager` does. Open ground,
-## no map: a straight street with nothing in it, so nothing but the row's own warning, siting and
-## speed decides the numbers. A row that is **warned of before it exists** — the cyclist, the
+## 60Hz beside her with where she is told to it every frame (`WhereSheIs.tell()`) the way
+## `EventManager` does. Open ground, no map: a straight street with nothing in it, so nothing but
+## the row's own warning, siting and speed decides the numbers. A row that is **warned of before
+## it exists** — the cyclist, the
 ## day-3 dog, the fire engine, day 13's column — is a real `PendingWarning` first, with the
 ## same place function the game gives it (`PendingWarning.down_her_line()`, `along_her_heading()`,
 ## `on_its_route()`, `in_its_lane()`, each with the camera on her) and nothing in the world; the

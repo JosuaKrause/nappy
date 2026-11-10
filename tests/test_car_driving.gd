@@ -14,7 +14,7 @@ func run(t) -> void:
 	_test_a_last_step_taken_back_does_not_park_it_short(t)
 	_test_a_car_comes_back_standing(t)
 
-func _engine(t, route: PackedVector2Array, where: WhereSheIs) -> EventInstance:
+func _engine(t: TestRunner, route: PackedVector2Array, where: WhereSheIs) -> EventInstance:
 	var def := EventCatalogue.by_id("fire_truck")
 	var engine := EventInstance.new()
 	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(), null, null, where)

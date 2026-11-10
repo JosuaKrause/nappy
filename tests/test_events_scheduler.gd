@@ -435,7 +435,8 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 			return PendingWarning.on_its_route(truck, at, kerb, travel, 4000.0)
 		var arrive := func(place: Vector2, _at: Vector2) -> bool:
 			var instance := EventInstance.new()
-			instance.setup(truck, place, PackedVector2Array([place, kerb]), Vector2.RIGHT, null, null,
+			instance.setup(truck, place, PackedVector2Array([place, kerb]), Vector2.RIGHT, null,
+					null,
 					her_where)
 			instance.resume(truck.telegraph_time, 0.0)
 			created.append(instance)

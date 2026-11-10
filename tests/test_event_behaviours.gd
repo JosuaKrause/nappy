@@ -26,7 +26,7 @@ func run(t) -> void:
 	_test_the_manager_streams_a_behaviours_state(t)
 
 ## An instance of `def` out of the tree, stepped by hand: nothing here draws.
-func _instance(_t, def: EventDef, at := Vector2.ZERO,
+func _instance(_t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, path, Vector2.RIGHT, null, null, where)
@@ -39,7 +39,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 ## A fresh instance of `first`'s row and path, put back where `first` had got to as
 ## `EventStreaming.stream_in()` does; checks the state names the behaviour under test (`behaviour`,
 ## its class name) and comes back whole. It hears where she is from `where`, as `first` may.
-func _round_trip(t, first: EventInstance, what: String, behaviour: StringName,
+func _round_trip(t: TestRunner, first: EventInstance, what: String, behaviour: StringName,
 		where: WhereSheIs = null) -> EventInstance:
 	var state := first.save_behaviours()
 	t.check(state.has(behaviour), "%s: there is state to carry" % what)

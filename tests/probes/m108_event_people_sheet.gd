@@ -94,8 +94,9 @@ func _heading_row(def_id: String, by_view: Dictionary) -> Array:
 		instance.free()
 	return row
 
-## The waiting robber's own target-facing: `player_at` set at each of the eight bearings, read back
-## through `robber_waiting_heading()` exactly as `_draw_robber()` does while `is_waiting()`.
+## The waiting robber's own target-facing: where she is told at each of the eight bearings,
+## read back through `robber_waiting_heading()` exactly as `_draw_robber()` does while
+## `is_waiting()`.
 func _robber_waiting_row() -> Array:
 	var row := []
 	var def := EventCatalogue.by_id("alley_robbery")

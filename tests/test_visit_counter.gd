@@ -752,7 +752,8 @@ func _test_a_charge_ends_in_exactly_one_of_three(t) -> void:
 	_walk(caught, caught_where, Vector2(300.0, 0.0), 0.2)
 	caught.report_the_catch()
 	caught.report_the_catch()
-	t.check(_finish_by_its_own_frames(caught, caught_where), "the caught robber is finished anyway, by his own clock")
+	t.check(_finish_by_its_own_frames(caught, caught_where),
+			"the caught robber is finished anyway, by his own clock")
 	t.check(counter.sent == [name + "chased", name + "caught"],
 		"caught, it is counted caught once and never also outlasted (%s)" % [counter.sent])
 	caught.free()
@@ -883,7 +884,8 @@ func _test_the_masked_man_has_his_counter(t) -> void:
 	caught.setup(def, Vector2.ZERO, path, Vector2.RIGHT, null, null, caught_where)
 	t.add_child(caught)
 	caught.set_process(false)
-	_walk(caught, caught_where, Vector2(0.0, -(def.notice.runs_within - 10.0)), Tuning.WARNING_ALONE_MAX + 0.1)
+	_walk(caught, caught_where, Vector2(0.0, -(def.notice.runs_within - 10.0)),
+			Tuning.WARNING_ALONE_MAX + 0.1)
 	caught.report_the_catch()
 	t.check(counter.sent == [name + "warned", name + "chased", name + "caught"],
 		"a run that catches her is counted caught (%s)" % [counter.sent])
@@ -904,7 +906,8 @@ func _test_a_charge_cut_short_by_the_day_is_counted_ended(t) -> void:
 	_walk(robber, robber_where, Vector2(300.0, 0.0), 0.2)
 	robber.report_the_charge_cut_short()
 	robber.report_the_charge_cut_short()
-	t.check(_finish_by_its_own_frames(robber, robber_where), "the cut-short robber is finished after, by his own clock")
+	t.check(_finish_by_its_own_frames(robber, robber_where),
+			"the cut-short robber is finished after, by his own clock")
 	t.check(counter.sent == [name + "chased", name + "ended"],
 		"cut short by the day, it is counted ended once and nothing else (%s)" % [counter.sent])
 	robber.free()
