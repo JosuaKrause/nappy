@@ -102,6 +102,15 @@ enum Start {
 ## warning (inbox #771 in minty-lemur).
 @export var warns_over_the_street := false
 
+## Whether it stands still in its alert pose for its notice rather than closing on her (`stands`).
+func stands_for_its_notice() -> bool:
+	return stands
+
+## Whether the man is drawn over the street's other figures while he stands for his notice
+## (`warns_over_the_street`).
+func is_drawn_over_the_street() -> bool:
+	return warns_over_the_street
+
 ## A pursuer at `speed` that notices her first, the shape most rows start from.
 static func at(chase_speed: float) -> PursuitSpec:
 	var spec := PursuitSpec.new()

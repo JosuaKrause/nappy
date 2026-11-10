@@ -59,10 +59,15 @@ func _test_the_pursuit_round_trips(t) -> void:
 	first_where.tell(Vector2(def.notice.within - 10.0, 0.0))
 	_advance(first, 0.3)
 	t.check(first.phase == EventInstance.Phase.WARNING, "the robber has noticed her")
-	first.pursuit.lunge_held = true
-	first.pursuit.outrun_for = 0.4
+	# His held lunge is his own state, so it is set the one way the game sets it from outside: the
+	# state a stream-out carries, put back (`EventPursuit.restore()`).
+	var state := first.pursuit.save()
+	state["lunge_held"] = true
+	state["outrun_for"] = 0.4
+	first.pursuit.restore(state)
 	var second := _round_trip(t, first, "pursuit", &"EventPursuit")
-	t.check(second.pursuit.lunge_held and is_equal_approx(second.pursuit.outrun_for, 0.4),
+	var carried := second.pursuit.save()
+	t.check(bool(carried["lunge_held"]) and is_equal_approx(second.pursuit.outrun_for, 0.4),
 			"his held lunge and his running clock come back")
 	t.check(second.phase == EventInstance.Phase.WARNING, "and he is still warning")
 	first.free()
@@ -308,14 +313,16 @@ func _test_the_manager_streams_a_behaviours_state(t) -> void:
 		return
 	manager.world.where_she_is().tell(at + Vector2(def.notice.within - 10.0, 0.0))
 	_advance(robber, 0.3)
-	robber.pursuit.lunge_held = true
+	var held := robber.pursuit.save()
+	held["lunge_held"] = true
+	robber.pursuit.restore(held)
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
 	manager.stream_around(far)
 	t.check(plan.live == null and plan.behaviours.has(&"EventPursuit"),
 			"streamed out, his plan carries his pursuit's state")
 	manager.stream_around(at)
-	t.check(plan.live != null and plan.live.pursuit.lunge_held,
+	t.check(plan.live != null and bool(plan.live.pursuit.save()["lunge_held"]),
 			"and streamed back in, his lunge is still held")
 	manager.free()
 	world.free()
