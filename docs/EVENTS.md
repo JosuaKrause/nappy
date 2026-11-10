@@ -3159,7 +3159,10 @@ Defs live in code, not in `.tres` files — see "Where events are defined".
    behaviour that reads it owns (`PursuitSpec`, `VehicleSpec`, `AbductionSpec`, ...) where there is
    one — and handle it in the behaviour that owns that rule under `src/events/behaviours/`, or in a
    new `EventBehaviour` that `EventBehaviours.compose()` adds for every row whose data asks for it,
-   saving and restoring its own state. **Key new behaviour on data, not on `look` or `id`**: a
+   saving and restoring its own state. The composer hands a behaviour what never changes under it
+   (its settings, the map, the navigator, what it walks as, where she is, the behaviours beside it
+   it works with), and it asks its event what changes through the event's narrow interface,
+   `EventInstance.Figure`, never through its fields. **Key new behaviour on data, not on `look` or `id`**: a
    picture is for drawing, and a part one row plays elsewhere is an `EventDef.Role`. Resist a script per event:
    `EventDef.pursuit`, `still_while_telegraphing` and `pavement_side` are all one field each, and
    each one is shared or checkable.
