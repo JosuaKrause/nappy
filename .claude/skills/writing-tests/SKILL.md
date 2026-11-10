@@ -81,17 +81,15 @@ goes in through a public seam, so nothing stays untyped to make a test work** (i
 seam's parameter has a type, and the fake extends it, as `tests/recording_log.gd` extends
 `Telemetry` and is handed to `main.use_run_log()`.
 
-**A new suite opens with these two lines**, and every function it hands the runner to takes it the
-same way, `t: Runner`:
+**A new suite opens with this one line**, and every function it hands the runner to takes it the
+same way, `t: TestRunner`:
 
 ```gdscript
-const Runner := preload("res://tests/run_tests.gd")
-
-func run(t: Runner) -> void:
+func run(t: TestRunner) -> void:
 ```
 
-The runner, `tests/run_tests.gd`, has no `class_name`, so the suite names its script by the
-preload, the way suites name the other helpers under `tests/`. `t.check()`, `t.close_to()` and
+The runner, `tests/run_tests.gd`, is `class_name TestRunner`, so that the header is one line and
+a suite preloads nothing to name it (inbox #1282). `t.check()`, `t.close_to()` and
 the runner's own `Node` calls (`t.add_child()`, `t.get_tree()`) are then typed calls. A bare
 `func run(t)` does not parse in a file without the opt-out line: the parameter is an untyped
 declaration and `t.check()` an unsafe method access, and the suite is a `LOAD FAIL`. **A suite
@@ -203,5 +201,5 @@ words, and hold until the player corrects them. The citation is the player's wor
 - **The own-file rule also reaches vars and signals, and not constants** (inbox #1098 in
   curly-rabbit).
 - **A hand-in stays public, in a kept group** (minty-lemur #794; inbox #1095 in curly-rabbit).
-- **The form of the typed runner header**, the preload named `Runner`, is the orchestrator's
-  choice; the player's words say that tests are typed and name no form (inbox #1280 in olive-ferret).
+- **The runner's class name, `TestRunner`**, is the builder's choice; the player's words ask for
+  a class name so that the header is one line, and name none (inbox #1282).

@@ -81,21 +81,30 @@ below. **writing-tests** says what that asks of a suite and its fakes.
 **So a new file is typed from its first line; only a file not yet typed opts out, with one line.**
 That line is the file's very first, `@warning_ignore_start("untyped_declaration",
 "unsafe_method_access")`, naming exactly those of the three warnings the file still trips and
-nothing else, and it silences them to the end of the file. The files carrying it are a list that
+nothing else, and it silences them to the end of the file. It has one form: the whole first line,
+the names in double quotes separated by `, `, each once and in the order of the list above, and
+nothing after the closing parenthesis. The files carrying it are a list that
 only shrinks: the change that types a file deletes its line, or the names the file no longer
 trips (a name deleted while the file still trips it fails the file's parse, in `check.sh`'s boot
 or its suite's load, which is how to find out). No other ignore of the three is written anywhere:
 `tools/check_field_reads.py` fails an `@warning_ignore`, `@warning_ignore_start` or
-`@warning_ignore_restore` naming one of them below a file's first line and a malformed opt-out
-line, and in CI a file that gains the line or a warning on it.
+`@warning_ignore_restore` that names one of them, or whose argument it cannot read, anywhere but
+that line in its one form, in every `.gd` file outside `docs/`, and in CI a file that gains the
+line or a warning on it.
 
 **The engine warns of nothing on a property read off a Variant.** An element of an untyped
 `Array` or `Dictionary`, the inner level of a nested one, what `back()` or `get()` returns, a name
 declared `: Variant`: `things[0].count` parses at every warning level, where `things[0].make()` is
 an unsafe method access. So such a value is read through a typed name (`var thing: Thing = things[0]`, `for thing:
 Thing in things`, `things[0] as Thing`), and in a file under `src/` without the opt-out line
-`tools/check_field_reads.py` fails the read the engine lets through, wherever the name read is one
-a class under `src/` declares as a `var`.
+`tools/check_field_reads.py` fails the use the engine lets through, wherever the receiver's class
+cannot be told and the name is one a class under `src/` declares as a `var` or as a method.
+
+**Nor does the engine warn of a method named without its parentheses**, on any receiver:
+`thing.is_ready` is a reference to the function, and always true in a condition. In a file under
+`src/` without the opt-out line the check fails it on a receiver whose class it can tell, unless
+the line hands the Callable on: a step follows it (`.bind(`, `.call(`), or it is an argument, an
+array element, the right side of an assignment, a returned value or a ternary's branch.
 
 **The setting reaches every script a debug build parses in this project, and no release export.**
 That is `src/`, `tests/` with its rigs, fixtures and probes, the `.gd` scripts under `tools/`
