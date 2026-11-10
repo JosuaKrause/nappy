@@ -14,10 +14,23 @@ other warning is ignored, and each file's own opt-out line is out of the way. At
 not fail the files that depend on it; at error level it does. A message is told to its warning by its wording, and
 a message of none of the three is an error of this tool, never a miscount.
 
-**What is put back.** `project.godot` is never left changed: it is restored on every exit, a signal included, and
-the run refuses to start on a tree where it is already modified. Each `.gd` file that lost its line for the run is
-written back byte for byte, `--write` rewriting it afterwards where its line is wrong. A killed process (SIGKILL)
-cannot restore anything; `git checkout project.godot` and `git diff --stat` show what is left.
+**What is put back.** `project.godot` is never left changed: it is restored byte for byte on every exit, and the
+run refuses to start on a tree where it is already modified. Only a `.gd` file that carried an opt-out line is
+touched for the run: its first line is replaced by an empty one (so the line numbers do not move), and afterwards
+that empty line is replaced by the original first line, byte for byte (line endings kept). An edit saved to a
+script during the run stays: only the first line is put back, and a file whose first line somebody else changed is
+named on stderr and left as it is found. SIGINT, SIGTERM, SIGHUP and SIGQUIT restore as well, ending with a
+message; a SIGKILL cannot, and `git checkout project.godot` and `git diff --stat` show what is left. `--write`
+rewrites a first line after the restore.
+
+**A census is taken only from a run that finished and loaded everything it can trust.** The engine must exit 0 and
+print `CENSUS_DONE` with the count of files it was handed and one `CENSUS_LOADED` or `CENSUS_FAILED` for each;
+otherwise every mode stops with an error and changes no file. It needs the import cache (`.godot/`, made by
+`./tools/check.sh`) and refuses to start without it, since without it no `class_name` resolves and most files
+fail. A file that fails to load (a syntax error) is named, and `--check` fails for it. A failed file also changes
+what the files that depend on it are counted to trip, so `--write` refuses, naming the failed files, when one
+is under `src/` or another file names it (by path, by `class_name` or as an autoload); a failed file nothing names
+(a probe that does not parse) is left out and does not stop `--write`.
 
 **Another warning.** A warning's name given as an argument (`standalone_expression`) is counted the same way in a
 run of its own, per folder with a count, and per line with `--lines`; no file is touched for it.
@@ -25,7 +38,11 @@ run of its own, per folder with a count, and per line with `--lines`; no file is
 **`--check`** fails naming file and warning where a file's line names a warning it does not trip or lacks one it
 trips, and where a file trips something with no line at all. **`--write`** rewrites each file's first line to
 exactly what it trips and deletes the line of a file that trips none; it adds no line to a file without one (such a
-file fails the engine already, and is named).
+file fails the engine already, and is named). `--check` and `--write` together are refused.
+
+**Blind spot.** The census loads files, so an opt-out line inside a string that a suite writes out as a script at
+run time (`PROBE` in `tests/test_scene_recipe_runtime.gd` and `tests/test_scene_recipe_activity.gd`) is never read.
+Line numbers in `--lines` are those of the file as it stands, the opt-out line counted.
 """
 
 from __future__ import annotations
@@ -64,7 +81,14 @@ MESSAGES = (
 WARNING_LINE = re.compile(r"^(?:USER )?WARNING: (.*)$")
 AT_LINE = re.compile(r"^\s+at: GDScript::reload \((res://.+?):(\d+)\)")
 FAILED = re.compile(r"CENSUS_FAILED (res://\S+)")
+LOADED = re.compile(r"CENSUS_LOADED (res://\S+)")
+DONE = re.compile(r"CENSUS_DONE (\d+)")
 SETTING = re.compile(r"^gdscript/warnings/([a-z_]+)=")
+CLASS_NAME = re.compile(r"^class_name\s+(\w+)", re.MULTILINE)
+
+
+class CensusError(Exception):
+    """A run that cannot be taken as a census; the message says why, and no file is changed."""
 
 
 @dataclass(frozen=True)
@@ -99,9 +123,12 @@ def split_first_line(text: str) -> tuple[str, str]:
 
 
 def without_line(text: str) -> str:
-    """The text without its opt-out line, when the first line is one."""
+    """The text with its opt-out line replaced by an empty one, when the first line is one.
+
+    The empty line keeps every later line at its number.
+    """
     head, rest = split_first_line(text)
-    return rest if opt_out_names(head) is not None else text
+    return "\n" + rest if opt_out_names(head) is not None else text
 
 
 def with_line(text: str, tripped: set[str]) -> str:
@@ -112,7 +139,26 @@ def with_line(text: str, tripped: set[str]) -> str:
     head, rest = split_first_line(text)
     if opt_out_names(head) is None:
         return text
-    return opt_out_line(tripped) + rest if tripped else rest
+    if not tripped:
+        return rest
+    line = opt_out_line(tripped)
+    return line.removesuffix("\n") + "\r\n" + rest if head.endswith("\r\n") else line + rest
+
+
+def check_file(path: str, first_line: str, trips: set[str]) -> list[str]:
+    """What `--check` finds in one file: its first line against the warnings it trips."""
+    named = opt_out_names(first_line)
+    if named is None:
+        return [f"{path}: trips {', '.join(sorted(trips))} and has no opt-out line"] if trips else []
+    bad: list[str] = []
+    for w in TYPING:
+        if w in named and w not in trips:
+            bad.append(f"{path}: names {w}, which it does not trip")
+        if w in trips and w not in named:
+            bad.append(f"{path}: trips {w}, which its line does not name")
+    if named != [w for w in TYPING if w in set(named)] or len(named) != len(set(named)):
+        bad.append(f"{path}: its line is not in the one form")
+    return bad
 
 
 def classify(message: str) -> str | None:
@@ -120,6 +166,39 @@ def classify(message: str) -> str | None:
         if pattern.search(message):
             return name
     return None
+
+
+def finished(returncode: int, output: str, paths: Sequence[str]) -> str | None:
+    """Why a run is not a census (None when it is): the engine's exit, its `CENSUS_DONE` and one line per path."""
+    if returncode != 0:
+        return f"the engine exited with {returncode}"
+    done = DONE.findall(output)
+    if len(done) != 1 or int(done[0]) != len(paths):
+        return f"the scene did not print CENSUS_DONE {len(paths)}"
+    answered = Counter(m.removeprefix("res://") for m in (*LOADED.findall(output), *FAILED.findall(output)))
+    unanswered = [p for p in paths if answered[p] != 1]
+    if unanswered:
+        return f"{len(unanswered)} files were not loaded or failed exactly once, such as {unanswered[0]}"
+    return None
+
+
+def untrusted_failures(failed: Sequence[str], texts: dict[str, str], project_text: str) -> list[str]:
+    """The failed files whose failing changes what other files are counted to trip.
+
+    A failed file under `src/`, one named by another listed file (by its `res://` path or its `class_name`) or one
+    that is an autoload. A failed file nothing names, such as a probe that does not parse, is not one.
+    """
+    out: list[str] = []
+    for path in failed:
+        text = texts.get(path, "")
+        names = CLASS_NAME.findall(text)
+        others = [t for p, t in texts.items() if p != path]
+        named = any(f"res://{path}" in t for t in others) or any(
+            re.search(rf"\b{re.escape(n)}\b", t) for n in names for t in others
+        )
+        if path.startswith("src/") or named or f"res://{path}" in project_text:
+            out.append(path)
+    return out
 
 
 def parse_output(output: str) -> tuple[list[Hit], list[str]]:
@@ -165,8 +244,9 @@ class Tree:
     def __init__(self, root: Path) -> None:
         self.root = root
         self.project = root / "project.godot"
-        self.original_project: str | None = None
-        self.originals: dict[Path, str] = {}
+        self.original_project: bytes | None = None
+        # The first line of each file whose line was replaced for the run, as read.
+        self.first_lines: dict[Path, bytes] = {}
 
     def gd_files(self) -> list[Path]:
         files: list[Path] = []
@@ -185,20 +265,30 @@ class Tree:
         return None
 
     def restore(self) -> None:
+        """Puts back `project.godot` and the first lines taken out, and only those, byte for byte.
+
+        A file whose first line is no longer the empty one put there is named on stderr and left as found.
+        """
         if self.original_project is not None:
-            self.project.write_text(self.original_project)
+            self.project.write_bytes(self.original_project)
             self.original_project = None
-        for path, text in self.originals.items():
-            path.write_text(text)
-        self.originals = {}
+        for path, head in self.first_lines.items():
+            current = path.read_bytes() if path.exists() else b""
+            if current.startswith(b"\n"):
+                path.write_bytes(head + current[1:])
+            else:
+                print(f"tools/typing_census.py: {path} was changed during the run; left as it is", file=sys.stderr)
+        self.first_lines = {}
 
     def take_lines_out(self, files: Sequence[Path]) -> None:
         for path in files:
-            text = path.read_text()
-            self.originals[path] = text
-            stripped = without_line(text)
-            if stripped != text:
-                path.write_text(stripped)
+            raw = path.read_bytes()
+            text = raw.decode("utf-8")
+            if without_line(text) == text:
+                continue
+            head, _ = split_first_line(text)
+            self.first_lines[path] = head.encode("utf-8")
+            path.write_bytes(b"\n" + raw[len(head.encode("utf-8")) :])
 
 
 def installed_warnings() -> list[str]:
@@ -212,22 +302,30 @@ def installed_warnings() -> list[str]:
 
 
 def run_census(tree: Tree, paths: list[str], levels: dict[str, int], all_names: list[str]) -> tuple[str, float]:
+    """The engine's output of one census run; a run that is not one raises `CensusError`."""
     assert tree.original_project is not None
     full = dict.fromkeys(all_names, 0) | levels
-    tree.project.write_text(settings_text(tree.original_project, full))
+    tree.project.write_bytes(settings_text(tree.original_project.decode("utf-8"), full).encode("utf-8"))
     with tempfile.TemporaryDirectory() as tmp:
         listing = Path(tmp) / "list.txt"
         listing.write_text("".join(f"res://{p}\n" for p in paths))
         start = time.monotonic()
-        r = subprocess.run(
-            [GODOT, "--headless", "-d", "--path", str(tree.root), SCENE, "--", str(listing)],
-            capture_output=True,
-            text=True,
-            stdin=subprocess.DEVNULL,
-            timeout=RUN_TIMEOUT_SECONDS,
-        )
+        try:
+            r = subprocess.run(
+                [GODOT, "--headless", "-d", "--path", str(tree.root), SCENE, "--", str(listing)],
+                capture_output=True,
+                text=True,
+                stdin=subprocess.DEVNULL,
+                timeout=RUN_TIMEOUT_SECONDS,
+            )
+        except subprocess.TimeoutExpired:
+            raise CensusError(f"the engine was stuck after {RUN_TIMEOUT_SECONDS} s; no file was changed") from None
         elapsed = time.monotonic() - start
-    return r.stdout + "\n" + r.stderr, elapsed
+    output = r.stdout + "\n" + r.stderr
+    why = finished(r.returncode, output, paths)
+    if why is not None:
+        raise CensusError(f"the run did not finish ({why}); no file was changed")
+    return output, elapsed
 
 
 def warning_name(word: str) -> str:
@@ -258,7 +356,10 @@ def parse(argv: list[str]) -> argparse.Namespace:
     p.add_argument("--check", action="store_true", help="fail where a file's opt-out line is stale or missing a name")
     p.add_argument("--write", action="store_true", help="rewrite each file's opt-out line to what it trips")
     p.add_argument("--lines", action="store_true", help="print the lines themselves, not only the files")
-    return p.parse_args(argv)
+    args = p.parse_args(argv)
+    if args.check and args.write:
+        p.error("--check and --write are exclusive")
+    return args
 
 
 def folder_of(path: str) -> str:
@@ -268,12 +369,12 @@ def folder_of(path: str) -> str:
 
 def main(argv: list[str]) -> int:
     args = parse(argv)
-    if args.check and args.write:
-        print("tools/typing_census.py: --check and --write are exclusive", file=sys.stderr)
-        return 2
     if not Path(GODOT).exists():
         print(f"godot not found at {GODOT} (override with GODOT=...)", file=sys.stderr)
         return 127
+    if not (ROOT / ".godot" / "global_script_class_cache.cfg").exists():
+        print("tools/typing_census.py: no import cache (.godot/); run ./tools/check.sh first", file=sys.stderr)
+        return 1
     tree = Tree(ROOT)
     problem = tree.refuse_if_dirty()
     if problem is not None:
@@ -290,17 +391,18 @@ def main(argv: list[str]) -> int:
 
     def _on_signal(signum: int, _frame: FrameType | None) -> None:
         tree.restore()
+        print(f"tools/typing_census.py: interrupted (signal {signum}); the tree is put back", file=sys.stderr)
         sys.exit(128 + signum)
 
-    for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP):
+    for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT):
         signal.signal(sig, _on_signal)
     atexit.register(tree.restore)
 
     files = tree.gd_files()
     paths = [str(f.relative_to(ROOT)) for f in files]
-    tree.original_project = tree.project.read_text()
+    tree.original_project = tree.project.read_bytes()
     tripped: dict[str, set[str]] = {p: set() for p in paths}
-    lines: dict[str, list[tuple[int, str]]] = {w: [] for w in (*TYPING, *args.warnings)}
+    lines: dict[str, set[tuple[int, str]]] = {w: set() for w in (*TYPING, *args.warnings)}
     failed: list[str] = []
     elapsed_total = 0.0
     try:
@@ -318,55 +420,53 @@ def main(argv: list[str]) -> int:
                 return 1
             if h.path in tripped:
                 tripped[h.path].add(warning)
-                lines[warning].append((h.line, h.path))
+                lines[warning].add((h.line, h.path))
         for extra in args.warnings:
             out, elapsed = run_census(tree, paths, {extra: 1}, names)
             elapsed_total += elapsed
             extra_hits, _ = parse_output(out)
-            lines[extra] = [(h.line, h.path) for h in extra_hits if h.path in tripped]
+            lines[extra] = {(h.line, h.path) for h in extra_hits if h.path in tripped}
+    except CensusError as e:
+        print(f"tools/typing_census.py: {e}", file=sys.stderr)
+        return 1
     finally:
         tree.restore()
 
+    texts = {path: f.read_bytes().decode("utf-8") for f, path in zip(files, paths, strict=True)}
     bad: list[str] = []
-    for f, path in zip(files, paths, strict=True):
-        if path in failed:
-            continue
-        text = f.read_text()
-        head, _ = split_first_line(text)
-        named = opt_out_names(head)
-        trips = tripped[path]
-        if named is None:
-            if trips:
-                bad.append(f"{path}: trips {', '.join(sorted(trips))} and has no opt-out line")
-            continue
-        for w in TYPING:
-            if w in named and w not in trips:
-                bad.append(f"{path}: names {w}, which it does not trip")
-            if w in trips and w not in named:
-                bad.append(f"{path}: trips {w}, which its line does not name")
-        if named != [w for w in TYPING if w in set(named)] or len(named) != len(set(named)):
-            bad.append(f"{path}: its line is not in the one form")
-    if args.write:
-        for f, path in zip(files, paths, strict=True):
-            text = f.read_text()
-            new = text if path in failed else with_line(text, tripped[path])
-            if new != text:
-                f.write_text(new)
-                print(f"rewrote {path}")
+    for path in paths:
+        if path not in failed:
+            bad.extend(check_file(path, split_first_line(texts[path])[0], tripped[path]))
     report(tripped, lines, args, failed, elapsed_total)
-    if args.check and bad:
-        for b in bad:
-            print("FAIL " + b)
-        return 1
     if args.write:
+        untrusted = untrusted_failures(failed, texts, tree.project.read_bytes().decode("utf-8"))
+        if untrusted:
+            print(
+                "tools/typing_census.py: --write refused, no file changed: a file others depend on failed to load "
+                f"({', '.join(untrusted)}), so what the rest trip is not the census of a tree that loads",
+                file=sys.stderr,
+            )
+            return 1
+        for f, path in zip(files, paths, strict=True):
+            new = texts[path] if path in failed else with_line(texts[path], tripped[path])
+            if new != texts[path]:
+                f.write_bytes(new.encode("utf-8"))
+                print(f"rewrote {path}")
         for b in (x for x in bad if "no opt-out line" in x):
             print("NO LINE " + b)
+        return 0
+    if args.check:
+        for b in bad:
+            print("FAIL " + b)
+        for path in failed:
+            print(f"FAIL {path}: failed to load, so its line cannot be checked")
+        return 1 if bad or failed else 0
     return 0
 
 
 def report(
     tripped: dict[str, set[str]],
-    lines: dict[str, list[tuple[int, str]]],
+    lines: dict[str, set[tuple[int, str]]],
     args: argparse.Namespace,
     failed: list[str],
     elapsed: float,
