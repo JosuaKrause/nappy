@@ -41,12 +41,15 @@ rest is comments and a deleted test.
 
 ## Measured
 
-The per-frame cost, by a separate measuring agent, on `origin/main` (`521439a75`) and on this pull
-request at `3d39389a6`, the commit before the review's fixes (which typed the bus, deleted a branch
-that never ran and changed comments). Four probes, each run alone, twelve rounds alternated base,
-head, head, base, on a machine where other agents were working; the load average is the one-minute
-figure before the round. Nothing is concluded from it, no cut is held or tuned for a time (inbox
-#1278 in olive-ferret), and the cut is listed for the remeasure at the end of the step.
+The per-frame cost, by a separate measuring agent, on `main` at `521439a75`, the commit this branch
+was made from, and on this pull request at `3d39389a6`, the commit before the review's fixes
+(which typed the bus, deleted a branch that never ran, deleted a test and changed comments). Four
+probes, each run alone, twelve rounds alternated base, head, head, base, on a machine where other
+agents were working; the load average is the one-minute figure before the round. Nothing is
+concluded from it and no cut is held or tuned for a time (inbox #1278 in olive-ferret): the
+reading is recorded, not judged. For the end remeasure, the entry's one remeasure after its last
+item (inbox #813 in curly-moose), this change lists the events' per-frame cost, the four probes
+below.
 
 | Round | Tree | Load | Events' step, ms | Baby's sweep, ms | Halo's frame, ms | Fields, seed 4242, ms | Fields, seed 5551212, ms | Crowd tick, ms (control) |
 |---|---|---|---|---|---|---|---|---|
