@@ -31,9 +31,12 @@ three files inside the events folder that are callers of a live event like any c
 ## Parity
 
 The run log is line for line what it was (`tools/test.sh observers`). Both identity probes give the
-same hash on `origin/main` and on the head: what every source charges her tick by tick
-(`probes/excitement_fingerprint.gd`, its `XF` lines less `XF_COST`), and every event, crowd agent
-and baby meter on every tick (`probes/m159_tick_sweep_events_cost.gd`, the `chain` values).
+same hash on `origin/main` and on the builder's commit `c15e5cefa`: what every source charges her
+tick by tick (`probes/excitement_fingerprint.gd`, its `XF` lines less `XF_COST`), and every event,
+crowd agent and baby meter on every tick (`probes/m159_tick_sweep_events_cost.gd`, the `chain`
+values). The commits after it change no answer and the probes were not run again: the bus is the
+same object reached through a typed name, the deleted identity check's branch never ran, and the
+rest is comments and a deleted test.
 
 ## Choices the builder made where the design was silent, open to the player's overturn
 
@@ -72,6 +75,7 @@ tests. Each goes private in the step that converts its last reader.
 
 No check is added. That two events are two encounters is held by
 `_test_two_instances_are_two_encounters` in `tests/test_encounters.gd`; the table's letting go and
-its clearing at the day's end have no behaviour a test can see without reading private state. The
+its clearing at the day's end have no behaviour a test can see, in a state the game can reach,
+without reading private state. The
 new questions are one-line forwards and are held through the suites of the doors, the holds and
 the encounters.
