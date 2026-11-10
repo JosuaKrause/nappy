@@ -32,7 +32,7 @@ extends RefCounted
 ## `MAP` mover streams in.
 ##
 ## **The first warning** is, for a warned row, the frame its warning goes up: the badge is up from
-## then (`DangerEdge.subject_for_def()`'s `worth_an_arrow()` is asked, so a row the badge would not draw is never
+## then (`DangerEdge.subject_for_def()`'s `announces` is asked, so a row the badge would not draw is never
 ## counted as warned). For any other row it is the first frame, once its own telegraph has started
 ## (for a row that waits, once it has noticed her), at which either the thing itself is inside the
 ## view — the `Tuning.VIEW_HALF_EXTENT` box about her, the camera being centred on her — or
@@ -169,7 +169,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 		made.append(created)
 		return true
 	var warning := PendingWarning.new(def, where, arrive)
-	if not warning.put_up(her) or not DangerEdge.subject_for_def(def).worth_an_arrow(Tuning.WALK_SPEED):
+	if not warning.put_up(her) or not DangerEdge.subject_for_def(def).announces:
 		result["ends"] = "no badge"
 		return result
 	var velocity := _answered(answer, heading)
@@ -428,7 +428,7 @@ static func measure(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> 
 		subject.shown = in_view
 		subject.charging = instance.has_charged()
 		subject.warned = instance.came_under_a_warning
-		model.step(STEP, her, [subject], sees, Tuning.WALK_SPEED)
+		model.step(STEP, her, [subject], sees)
 		var badge := model.has_badges()
 		if result["warned_at"] == INF and not instance.is_waiting() and (in_view or badge):
 			result["warned_at"] = elapsed
@@ -462,7 +462,7 @@ static func _measure_warned(encounter: Dictionary, answer: Answer, edge: DangerE
 		created.append(instance)
 		return true
 	var warning := PendingWarning.new(def, encounter["where"], arrive)
-	if not warning.put_up(her) or not DangerEdge.subject_for_def(def).worth_an_arrow(Tuning.WALK_SPEED):
+	if not warning.put_up(her) or not DangerEdge.subject_for_def(def).announces:
 		result["why"] = "no badge"
 		return result
 	result["warned_at"] = 0.0

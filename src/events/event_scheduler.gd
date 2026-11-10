@@ -607,6 +607,51 @@ class Planned extends RefCounted:
 	func keeps_its_field_clear() -> bool:
 		return def.hard_fail and role != GameEnums.BlockerRole.WALL and def.pursuit == null
 
+	# ----------------------------------------------------- what a caller asks ---
+	# The questions a caller outside the events asks a plan, answered for its row where the
+	# question is the row's, and what the building's plan tells one as it makes it.
+
+	## Whether its body holds a walker at its door (`EventDef.detains_her()`): the door bodies the
+	## crowd's walkers are held at (`Crowd`).
+	func detains_her() -> bool:
+		return def.detains_her()
+
+	## How far round where it stands its body stops her (`EventDef.obstructs_within()`), or 0: the
+	## discs a siting reads off the wall and the doors (`DayStreets.siting_region()`).
+	func obstructs_within() -> float:
+		return def.obstructs_within()
+
+	## Whether walking into its reach ends her day (`EventDef.ends_the_day()`).
+	func ends_the_day() -> bool:
+		return def.ends_the_day()
+
+	## Whether its field reaches `point`: from where it stands now (`where_it_stands_now()`)
+	## against how far its row is heard (`EventDef.heard_within()`), measured from the centre as
+	## every caller has measured it.
+	func field_reaches(point: Vector2) -> bool:
+		return where_it_stands_now().distance_to(point) <= def.heard_within()
+
+	## Makes it come again `seconds` after each of its instances came, on its own clock
+	## (`repeat_every`), in place of its row's: each of the building's vents has its own period.
+	func come_again_every(seconds: float) -> void:
+		repeat_every = seconds
+
+	## Makes its first instance come `seconds` from the start (`comes_in`), so plans that come
+	## again on clocks of their own start out of step: the building's vents, its explosions.
+	func come_first_in(seconds: float) -> void:
+		comes_in = seconds
+
+	## Makes each of its instances come where she stands rather than where it was placed
+	## (`at_her`): the explosion outside, whose charge is wherever in the building she has got to.
+	func come_where_she_stands() -> void:
+		at_her = true
+
+	## Makes each of its instances arrive `seconds` into its life (`arrives_aged`), its first
+	## included (`age`): the explosion outside, whose notice is already over when it comes.
+	func arrive_aged(seconds: float) -> void:
+		arrives_aged = seconds
+		age = seconds
+
 ## A line of the day's planning for the run log, written when the caller handed a trace in: the
 ## manager hands its own, and a test or a probe that plans a day by hand may hand none.
 static func _note(trace: RunTrace, kind: String, text: String) -> void:
