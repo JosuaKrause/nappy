@@ -25,8 +25,9 @@ resume refusal; 500k: the model reassessment; 300k: a sizing target for a brief,
 turn counters anywhere), the player said "it comes from mr budget but I fully agree"
 (merry-badger #1298).
 
-The player asked for the note to be filed alone and built next: "the other agent added some color
-to the 500k rule. let's file that and do it next" (merry-badger #1298).
+Of filing it, the player said: "the other agent added some color to the 500k rule. let's file that
+and do it next" (merry-badger #1298). **Read as:** this note is filed alone, ahead of the other open
+notes, and its rule is built next, which is the entry's `upnext: true`.
 
 **Read as:** three numbers, each of context tokens and none of turns. A task is sized to finish
 under about 300k, which nothing enforces. A resume of a sub-agent past 400k, or of one that
@@ -41,5 +42,4 @@ automatically, quiet, or looping. Its `--help` says what it measures.
 **The items.** `reassessment-rule.md` is the rule's sentence in the orchestrating skill.
 `resume-refusal-at-400k.md` is the hook's number and the end of every turn count.
 
-*Proposed, not asked for:* the band `now`, since the player named none; `upnext: true` is the
-player's "do it next".
+*Proposed, not asked for:* the band `now`, since the player named none.

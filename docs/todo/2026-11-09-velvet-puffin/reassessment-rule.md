@@ -19,6 +19,22 @@ the filer's.
 **Read as:** the reassessment is a judgement the orchestrator makes at 500k, not a stop: an agent
 found fine goes on.
 
+**What it narrows, and what stands.** The orchestrating skill says today that a task is scoped
+under the limit by construction and never policed, and that the orchestrator does not watch an
+agent's count while it runs (inbox #896 in plaid-raven). The player's later words make one
+exception: "do a script that tells you which agents to reassess", and "it comes from mr budget but
+I fully agree" of a table which, as the note's context gives it, has the reassessment reach any
+agent that reaches 500k, flagged by the script or the 45-minute check, running or not
+(merry-badger #1298). **Read as:** a running agent's
+size is read at the recurring check, by the script, from its transcript, which costs the agent no
+turn; everything else of that rule stands: a brief carries no size line, an agent is never asked
+to count its own turns or tokens, and a task is still sized before it is spawned. The sentence
+written into the skill says so beside the rule it narrows.
+
+**The citations.** The pull request that builds this item runs `uv run python tools/inbox.py cite
+1298`, which turns the plain `inbox #1298` in `.claude/skills/using-tools/SKILL.md` and in
+`tools/agents-to-reassess.py` into the form that names this note's playtest.
+
 **Open, and built on the reading until the player says otherwise.** Asked on 2026-11-09 which of
 the evening's rules are permanent, the player said of the model switch: "should become a rule -- is
 it even relevant? can claude switch models mid-agent-session?" (inbox #1303). The orchestrator's
@@ -33,4 +49,6 @@ clause of the reassessment's sentence, not a rule of its own, unless the player 
   proposed three: an agent whose context is mostly run output (measuring, capturing), an agent that
   finished its change cleanly, and an agent already on Fable. They are that session's and are
   written, if at all, as a proposal.
-- **That the recurring check on running agents reads each one's size**, by running the script.
+- **That the check which reads a running agent's size is the recurring one**, run about every
+  30 minutes while agents work; the table, as the note's context gives it, names the 45-minute
+  check.

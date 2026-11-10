@@ -16,9 +16,9 @@ under, which nothing enforces, and 400k as the point of the refusal; neither it,
 `tools/agents-to-reassess.py` counts turns as a limit. The reassessment at 500k
 (`reassessment-rule.md`) applies on top.
 
-**This item is being built** in the pull request that adds the hook: a design by Fable, the code by
-another model, the review Fable's, as the player said of it: "okay, fable can design and review"
-(merry-badger #1298).
+**This item is being built** in the pull request that adds the hook. Of who builds it the player
+said "okay, fable can design and review" (merry-badger #1298). **Read as:** Fable designs the
+change and reviews it, and the code may be written by another model.
 
 *Proposed, not asked for:* the refusal's two kinds of follow-up and what counts as each, which are
 the usage-review session's recommendation that the player's "yes, 400k as mr budget said" accepted
