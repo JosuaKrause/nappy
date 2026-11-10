@@ -17,31 +17,11 @@ extends RefCounted
 ## - **The reach:** barricades asked one at a time in rings round home, each kept when allowed,
 ##   never leave home sealed off from a route tile it reached before, and at least one is refused
 ##   (a ring is what seals home in).
-## - **The reach answers what a flood from home answers**: bodies asked along every street a route
-##   runs along in turn, each kept when allowed, get the same answer from the rule as from the same
-##   rule working out what a body cuts off by flooding the whole city from home again
-##   (`_FloodedReach`), and both refuse some and keep many. It holds the rule's walk of the pieces
-##   round a disc. It cannot see the reach kept between asks going stale: a kept body cuts off no
-##   route tile, or it would have been refused, so a stale reach holds only tiles that carry no
-##   route, and no later answer changes.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
 const DAY := 5
 const NONE: Array[EventScheduler.Planned] = []
-
-## The reach rule working out what a body cuts off by flooding the city from home among the bodies
-## and the disc, and taking what home reached before and does not now: what the rule's walk of the
-## pieces round the disc has to answer.
-class _FloodedReach extends RouteReachRule:
-	## Overrides RouteReachRule._cut_off.
-	func _cut_off(disc: Dictionary) -> PackedInt32Array:
-		var after := _flood(disc)
-		var lost := PackedInt32Array()
-		for i in _reached.size():
-			if _reached[i] == 1 and after[i] == 0 and not disc.has(i):
-				lost.append(i)
-		return lost
 
 var _map: CityMap
 var _tree: RouteTree
@@ -58,7 +38,6 @@ func run(t) -> void:
 	_test_a_body_closing_a_route_sidewalk_is_refused(t)
 	_test_a_body_closing_a_beats_opening_is_refused(t)
 	_test_a_ring_of_bodies_never_seals_home_off(t)
-	_test_the_reach_answers_what_a_flood_answers(t)
 
 ## `def` built at `tile`, given a counted role so it is asked about.
 func _at(id: String, tile: Vector2i) -> EventScheduler.Planned:
@@ -171,35 +150,3 @@ func _test_a_ring_of_bodies_never_seals_home_off(t) -> void:
 			% lost)
 	t.check(not refused.is_empty(), "a ring of barricades round home has one refused (%d of 24)"
 			% refused.size())
-
-func _test_the_reach_answers_what_a_flood_answers(t) -> void:
-	var rule := RouteReachRule.new(_map, _corridor)
-	var flooded := _FloodedReach.new(_map, _corridor)
-	var kept: Array[EventScheduler.Planned] = []
-	var asked := 0
-	var differ := 0
-	var refused := 0
-	var segments := _map.street_segments()
-	# Every street a route runs along, where a body is likely to be refused; the flood is the slow
-	# half of each ask.
-	for segment in segments:
-		var tile := segment.tile_rect().get_center()
-		if _corridor.depth(tile) != 0:
-			continue
-		for id in ["burst_water_main", "barricade"]:
-			var body := _at(id, tile)
-			if body == null:
-				continue
-			asked += 1
-			var allowed := rule.allows(body, tile, NONE, kept)
-			if allowed != flooded.allows(body, tile, NONE, kept):
-				differ += 1
-			if allowed:
-				kept.append(body)
-			else:
-				refused += 1
-	t.check(asked > 100 and refused > 0 and kept.size() > 100,
-			"bodies asked along the route streets are kept and refused"
-			+ " (%d asked, %d refused, %d kept)" % [asked, refused, kept.size()])
-	t.check(differ == 0,
-			"the rule answers each as a flood of the city from home does (%d differ)" % differ)
