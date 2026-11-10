@@ -1789,14 +1789,9 @@ static func _band_crossing(intensity: float, inner: float, outer: float, rate: f
 ## **Whether its coming gets a badge at the screen edge**, for her walking at `walk_speed`: lethal
 ## always, and otherwise only what she cannot outwalk (a thing slower than a walk is one she can
 ## turn round and leave). A thing that does not telegraph its coming (`telegraphs`) is outside the
-## badge; an `AHEAD_OF_PLAYER` crossing is sited close and gone in seconds and is its own moment,
-## except a pursuer, which is warned of first and then placed just out of sight to close in.
-## `TOWARD_PLAYER` falls through on purpose: a road, not an ambush. Whether there is a silhouette
-## to put in the badge is the badge's own question (`DangerEdge.subject_for_def()`).
+## badge.
 func announces_its_coming(walk_speed: float) -> bool:
 	if not telegraphs:
-		return false
-	if spawn_mode == SpawnMode.AHEAD_OF_PLAYER and pursuit == null:
 		return false
 	if hard_fail:
 		return true

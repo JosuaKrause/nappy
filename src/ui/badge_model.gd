@@ -56,8 +56,8 @@ class Subject extends RefCounted:
 	var key := 0
 	var position := Vector2.ZERO
 	## Whether it deserves an arrow at all: its row announces its coming
-	## (`EventDef.announces_its_coming()`, asked at her walk) and has a silhouette to put in the
-	## badge. Neither changes while it is handed over, so the adapter asks once.
+	## (`EventDef.announces_its_coming()`, asked at her walk). That does not change while it is
+	## handed over, so the adapter asks once.
 	var announces := true
 	## How fast it comes at her under its own steam (`EventDef.approach_speed()`): what a thing
 	## that arrives under its warning starts closing at.

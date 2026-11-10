@@ -202,13 +202,12 @@ func _subject_of_warning(warning: PendingWarning) -> BadgeModel.Subject:
 	return subject
 
 ## The facts the model reads about a row, live or warned of: whether its coming is worth an arrow
-## (`EventDef.announces_its_coming()` at her walk, and a silhouette for the badge to carry, which is
-## the badge's own question), how fast it comes at her and where its field's edge is.
+## (`EventDef.announces_its_coming()` at her walk), how fast it comes at her and where its field's
+## edge is.
 static func subject_for_def(def: EventDef) -> BadgeModel.Subject:
 	var subject := BadgeModel.Subject.new()
 	subject.payload = def
-	subject.announces = def.announces_its_coming(Tuning.WALK_SPEED) \
-			and not EventPictures.icon_for(def.picture()).is_empty()
+	subject.announces = def.announces_its_coming(Tuning.WALK_SPEED)
 	subject.approach_speed = def.approach_speed()
 	subject.speed = def.speed
 	subject.heard_within = def.heard_within()

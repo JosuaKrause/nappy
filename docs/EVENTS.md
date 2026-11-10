@@ -2973,9 +2973,10 @@ Three things it does **not** announce, each for its own reason:
 - **Anything further off than its own arrival window.** The cap is `LEAD_TIME` seconds of its
   approach, not a distance — the same 800px is a fire engine four seconds away and a dawdler
   twenty seconds away, and only one of those is a route decision.
-- **An `AHEAD_OF_PLAYER` event.** The director sites it across her line a fixed lead in front of
-  her and its entire content is the moment it happens to her. A badge for one appears and vanishes
-  within the same second as the cat walks into view, which is an interruption announced away.
+- **Anything that does not telegraph its coming** (`EventDef.telegraphs`, "What telegraphs"). The
+  crossing cat comes faster than a walk, and it gets no badge because it does not telegraph: the
+  director sites it across her line a fixed lead in front of her, and its entire content is the
+  moment it happens to her.
 
 **A warning with nothing in the world yet is announced for the whole of it.** Something that
 arrives from off screen under the badge is warned of before it exists (see "Everything arrives from
