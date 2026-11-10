@@ -26,9 +26,9 @@ SUB = "class_name SubThing\nextends Thing\nvar extra := 0\n"
 LINE = '@warning_ignore_start("untyped_declaration", "unsafe_method_access")\n'
 
 
-def rd(name: str, uses: int = 1, member: str = "count") -> str:
-    """A file `name` whose `uses` functions each read `member` of a typed `Thing`."""
-    body = f"class_name {name}\nextends Node\nvar t: Thing\n"
+def rd(name: str, uses: int = 1, member: str = "count", kind: str = "Thing") -> str:
+    """A file `name` whose `uses` functions each read `member` of a typed `kind`."""
+    body = f"class_name {name}\nextends Node\nvar t: {kind}\n"
     return body + "".join(f"func f{n}() -> int:\n\treturn t.{member}\n" for n in range(uses))
 
 
@@ -532,7 +532,12 @@ class ListTests(unittest.TestCase):
     ) -> list[str]:
         head_tree, before_tree = self.trees(before, head)
         return reads.base_failures(
-            reads.entries_of(now_list), reads.entries_of(base_list), renames or {}, changed, head_tree, before_tree
+            reads.entries_of(now_list),
+            reads.entries_of(base_list),
+            renames or {},
+            changed,
+            head_tree,
+            lambda: before_tree,
         )
 
     def test_against_the_base_an_added_line_fails_unless_it_moves_or_the_checker_changed(self) -> None:
@@ -551,7 +556,7 @@ class ListTests(unittest.TestCase):
         self.assertEqual(self.failing(base_list, now_list, before, head, changed=True), [])
         head_tree, before_tree = self.trees(before, head)
         self.assertEqual(
-            reads.base_failures(reads.entries_of(now_list), None, {}, False, head_tree, before_tree),
+            reads.base_failures(reads.entries_of(now_list), None, {}, False, head_tree, lambda: before_tree),
             [],
         )
 
@@ -568,16 +573,21 @@ class ListTests(unittest.TestCase):
         self.assertEqual(len(got), 1)
         self.assertIn("src/b.gd count", got[0])
 
-    # Rule 1. Mutations each case fails: not_grown always true (a grown move and a new reader would pass), not_grown
-    # always false (the moved function would fail), counting the head's uses over every file instead of the files that
-    # differ (a new reader beside an unchanged one that read the field would still fail, but a move out of a changed
-    # file would count the whole tree), counting per file instead of per class and field (a split would fail).
+    # Rule 2 of the docstring, the new reader file. Mutations the cases below fail: not_grown always true (a grown
+    # move and a new reader pass), always false (the moved function fails), `<=` made `<` (the move fails), the head
+    # counted over every file but the base over the differing ones (the unchanged reader in the first case), the
+    # count keyed by the class alone or by the field's name alone (the two cases of the class-and-field test), the
+    # count per file (the split), the new-file condition dropped (the file that exists at the base).
     def test_code_moved_into_a_new_file_passes_when_the_uses_did_not_grow(self) -> None:
-        before = {"src/thing.gd": THING, "src/a.gd": rd("RA")}
-        head = {"src/thing.gd": THING, "src/a.gd": "class_name RA\nextends Node\n", "src/b.gd": rd("RB")}
-        self.assertEqual(
-            self.failing("# [Thing] x\nsrc/a.gd count\n", "# [Thing] x\nsrc/b.gd count\n", before, head), []
-        )
+        before = {"src/thing.gd": THING, "src/a.gd": rd("RA"), "src/keep.gd": rd("RK")}
+        head = {
+            "src/thing.gd": THING,
+            "src/a.gd": "class_name RA\nextends Node\n",
+            "src/b.gd": rd("RB"),
+            "src/keep.gd": rd("RK"),
+        }
+        base_list = "# [Thing] x\nsrc/a.gd count\nsrc/keep.gd count\n"
+        self.assertEqual(self.failing(base_list, "# [Thing] x\nsrc/b.gd count\nsrc/keep.gd count\n", before, head), [])
 
     def test_a_file_split_into_several_passes_as_one_count_per_class_and_field(self) -> None:
         before = {"src/thing.gd": THING, "src/a.gd": rd("RA", 2)}
@@ -592,7 +602,7 @@ class ListTests(unittest.TestCase):
 
     def test_the_same_move_with_one_more_use_fails(self) -> None:
         before = {"src/thing.gd": THING, "src/a.gd": rd("RA")}
-        head = {"src/thing.gd": THING, "src/a.gd": "class_name RA\nextends Node\n", "src/b.gd": rd("RA", 2)}
+        head = {"src/thing.gd": THING, "src/a.gd": "class_name RA\nextends Node\n", "src/b.gd": rd("RB", 2)}
         got = self.failing("# [Thing] x\nsrc/a.gd count\n", "# [Thing] x\nsrc/b.gd count\n", before, head)
         self.assertEqual(len(got), 1)
         self.assertIn("src/b.gd count is added under [Thing]", got[0])
@@ -614,6 +624,26 @@ class ListTests(unittest.TestCase):
         now = "# [Thing] x\nsrc/a.gd count\nsrc/b.gd count\n"
         self.assertEqual(len(self.failing("# [Thing] x\nsrc/a.gd count\n", now, before, head)), 1)
 
+    def test_the_count_is_keyed_by_class_and_field(self) -> None:
+        other = "class_name Other\nextends RefCounted\nvar count := 0\n"
+        # a changed file drops its read of Thing.count while a new file reads Thing.size
+        before = {"src/thing.gd": THING, "src/a.gd": rd("RA")}
+        head = {"src/thing.gd": THING, "src/a.gd": "class_name RA\nextends Node\n", "src/b.gd": rd("RB", member="size")}
+        self.assertEqual(
+            len(self.failing("# [Thing] x\nsrc/a.gd count\n", "# [Thing] x\nsrc/b.gd size\n", before, head)), 1
+        )
+        # two classes declare `count`: one loses a reader, the other gains one
+        before = {"src/thing.gd": THING, "src/other.gd": other, "src/a.gd": rd("RA", kind="Other")}
+        head = {
+            "src/thing.gd": THING,
+            "src/other.gd": other,
+            "src/a.gd": "class_name RA\nextends Node\n",
+            "src/b.gd": rd("RB"),
+        }
+        self.assertEqual(
+            len(self.failing("# [Other] x\nsrc/a.gd count\n", "# [Thing] x\nsrc/b.gd count\n", before, head)), 1
+        )
+
     def test_an_added_line_for_a_file_the_base_had_never_passes_by_count(self) -> None:
         # a reader file that exists at the base is not the new-file case, whatever the counts
         before = {"src/thing.gd": THING, "src/a.gd": rd("RA"), "src/b.gd": "class_name RB\nextends Node\n"}
@@ -621,10 +651,12 @@ class ListTests(unittest.TestCase):
         now = "# [Thing] x\nsrc/b.gd count\n"
         self.assertEqual(len(self.failing("# [Thing] x\nsrc/a.gd count\n", now, before, head)), 1)
 
-    # Rule 2. Mutations: lifted_from_inner always true (a new class with a public var and a new reader would pass),
-    # always false (the lift would fail), ignoring that the base's inner class is gone from the head (a class that
-    # only adds a file beside the inner class would pass), ignoring the field's name (a lifted class gaining another
-    # field read would pass).
+    # Rule 3 of the docstring, the lifted inner class. Mutations the cases below fail: always true (a new class beside
+    # a deleted or renamed inner class passes), always false (the lift fails), the inner class's absence from the head
+    # ignored (the second new class of the true lift), the field's name ignored (the field the inner class did not
+    # declare), "declares every var" dropped (the namesake and the lift that drops a var), the new-file condition
+    # dropped (the existing class), the renamed class file not excluded (the renamed class), the inner class's file
+    # rename ignored (the renamed file holding the inner class).
     def test_an_inner_class_lifted_into_a_file_of_its_own_passes(self) -> None:
         before = {
             "src/sched.gd": "class_name Sched\nextends Node\nclass Planned:\n\tvar mobile := false\n",
@@ -657,6 +689,88 @@ class ListTests(unittest.TestCase):
             "src/user.gd": "class_name User\nextends Node\nvar p: Plan\nfunc f() -> int:\n\treturn p.fresh\n",
         }
         self.assertEqual(len(self.failing("# [Sched] x\n", "# [Plan] x\nsrc/user.gd fresh\n", before, head)), 1)
+
+    def lifted(self, planned: str, plan: str, extra: dict[str, str] | None = None) -> dict[str, str]:
+        """The head of a lift: `Sched` without its inner class, `Plan` with `plan`, a reader, and `extra`."""
+        user = "class_name User\nextends Node\nvar p: Plan\nfunc f() -> bool:\n\treturn p.mobile\n"
+        return {
+            "src/sched.gd": "class_name Sched\nextends Node\n",
+            "src/plan.gd": f"class_name Plan\nextends RefCounted\n{plan}",
+            "src/user.gd": user,
+            **(extra or {}),
+        }
+
+    def test_a_new_class_beside_a_deleted_or_renamed_inner_class_with_a_namesake_var_fails(self) -> None:
+        row = "class_name Sched\nextends Node\nclass Row:\n\tvar pos := 0\n\tvar kind := 0\n"
+        user = "class_name User\nextends Node\nvar m: Marker\nfunc f() -> int:\n\treturn m.pos\n"
+        marker = "class_name Marker\nextends RefCounted\nvar pos := 0\n"
+        before = {"src/sched.gd": row, "src/user.gd": "class_name User\nextends Node\n"}
+        now = "# [Marker] x\nsrc/user.gd pos\n"
+        deleted = {"src/sched.gd": "class_name Sched\nextends Node\n", "src/marker.gd": marker, "src/user.gd": user}
+        self.assertEqual(len(self.failing("# [Sched] x\n", now, before, deleted)), 1)
+        renamed = {"src/sched.gd": row.replace("Row", "Entry"), "src/marker.gd": marker, "src/user.gd": user}
+        self.assertEqual(len(self.failing("# [Sched] x\n", now, before, renamed)), 1)
+
+    def test_a_true_lift_beside_a_second_new_class_passes_only_the_lifted_one(self) -> None:
+        planned = "class_name Sched\nextends Node\nclass Planned:\n\tvar mobile := false\n\tvar pos := 0\n"
+        user = "class_name User\nextends Node\nvar p: Plan\nfunc f() -> bool:\n\treturn p.mobile\n"
+        build = "class_name Builder\nextends RefCounted\nvar pos := 0\n"
+        reader = "class_name Peek\nextends Node\nvar b: Builder\nfunc f() -> int:\n\treturn b.pos\n"
+        before = {"src/sched.gd": planned, "src/user.gd": "class_name User\nextends Node\n"}
+        head = self.lifted(
+            planned, "var mobile := false\nvar pos := 0\n", {"src/builder.gd": build, "src/peek.gd": reader}
+        )
+        head["src/user.gd"] = user
+        now = "# [Builder] x\nsrc/peek.gd pos\n# [Plan] x\nsrc/user.gd mobile\n"
+        got = self.failing("# [Sched] x\n", now, before, head)
+        self.assertEqual(len(got), 1)
+        self.assertIn("[Builder]", got[0])
+
+    def test_a_lift_that_drops_a_var_of_the_inner_class_fails(self) -> None:
+        planned = "class_name Sched\nextends Node\nclass Planned:\n\tvar mobile := false\n\tvar pos := 0\n"
+        before = {"src/sched.gd": planned}
+        head = self.lifted(planned, "var mobile := false\n")
+        self.assertEqual(len(self.failing("# [Sched] x\n", "# [Plan] x\nsrc/user.gd mobile\n", before, head)), 1)
+
+    def test_an_existing_class_gaining_the_var_of_a_deleted_inner_class_fails(self) -> None:
+        row = "class_name Sched\nextends Node\nclass Row:\n\tvar pos := 0\n"
+        thing = THING
+        user = "class_name User\nextends Node\nvar t: Thing\nfunc f() -> int:\n\treturn t.pos\n"
+        before = {"src/sched.gd": row, "src/thing.gd": thing, "src/user.gd": "class_name User\nextends Node\n"}
+        head = {
+            "src/sched.gd": "class_name Sched\nextends Node\n",
+            "src/thing.gd": thing + "var pos := 0\n",
+            "src/user.gd": user,
+        }
+        self.assertEqual(len(self.failing("# [Sched] x\n", "# [Thing] x\nsrc/user.gd pos\n", before, head)), 1)
+
+    def test_a_class_file_git_renames_is_not_new(self) -> None:
+        row = "class_name Sched\nextends Node\nclass Row:\n\tvar pos := 0\n"
+        user = "class_name User\nextends Node\nvar t: Thing\nfunc f() -> int:\n\treturn t.pos\n"
+        before = {"src/sched.gd": row, "src/thing.gd": THING, "src/user.gd": "class_name User\nextends Node\n"}
+        head = {
+            "src/sched.gd": "class_name Sched\nextends Node\n",
+            "src/thing2.gd": THING + "var pos := 0\n",
+            "src/user.gd": user,
+        }
+        got = self.failing(
+            "# [Sched] x\n", "# [Thing] x\nsrc/user.gd pos\n", before, head, {"src/thing.gd": "src/thing2.gd"}
+        )
+        self.assertEqual(len(got), 1)
+
+    def test_an_inner_class_kept_in_a_renamed_file_is_not_a_lift(self) -> None:
+        planned = "class_name Sched\nextends Node\nclass Planned:\n\tvar mobile := false\n"
+        user = "class_name User\nextends Node\nvar p: Plan\nfunc f() -> bool:\n\treturn p.mobile\n"
+        before = {"src/sched.gd": planned, "src/user.gd": "class_name User\nextends Node\n"}
+        head = {
+            "src/sched2.gd": planned,
+            "src/plan.gd": "class_name Plan\nextends RefCounted\nvar mobile := false\n",
+            "src/user.gd": user,
+        }
+        got = self.failing(
+            "# [Sched] x\n", "# [Plan] x\nsrc/user.gd mobile\n", before, head, {"src/sched.gd": "src/sched2.gd"}
+        )
+        self.assertEqual(len(got), 1)
 
 
 class EndToEndTests(unittest.TestCase):

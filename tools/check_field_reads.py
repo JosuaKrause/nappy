@@ -4,8 +4,8 @@
 designing-classes' "Fields are not API" (inbox #1173 in gray-dolphin): one object never reads or writes another
 object's fields, every interaction goes through the other's methods. This finds the places that still do, and
 `tools/field_reads.txt` lists today's, grouped by the class whose field is read, one `<reader file> <field>`
-line per reader file and field. The list only shrinks (minty-quail's `field-reads.md`, the board's
-field-read-check, inbox #1182 in gray-dolphin).
+line per reader file and field. The list only shrinks, bar a read that only moved (below; minty-quail's
+`field-reads.md`, the board's field-read-check, inbox #1182 in gray-dolphin).
 
 **A read** is `receiver.name` (a plain read, an assignment, a compound assignment) where
 
@@ -108,9 +108,14 @@ unless the same diff changes this checker (a better checker sees reads the old o
 2. its reader file is new since `REV` and the uses of that class's field did not grow: over the files that differ
    between `REV` and the tree, the tree's uses of the class's field are no more than `REV`'s, counted one total per
    class and field, so code moved into a new file, or a file split into several, passes and one more use fails; or
-3. its class is a file new since `REV` and `REV` declared the field in an inner class the tree no longer declares (an
-   inner class lifted into a file of its own). Nothing is counted there: `REV` could not see the reads of an inner
-   class's field.
+3. its class is a file new since `REV` (not a git rename of one) that declares every var of one inner class `REV`
+   declared and the tree no longer declares, and that inner class declared the field (an inner class lifted into a
+   file of its own). A lift that drops a var fails. Nothing is counted there: `REV` could not see the reads of an
+   inner class's field, so a file the lifting diff adds that reads the lifted class passes too, and review reads
+   that diff for a new reader.
+
+The count in 2 is a net over the files that differ: a use removed from one changed file offsets one added in a new
+file.
 
 Any other added line fails: a new file reading a field no changed file read, a move that also adds a use, a new
 class with a public var read from outside. A `REV` without the list yet compares nothing. `--rev` and `--root` read
@@ -1440,16 +1445,20 @@ def uses_in(tree: Tree, paths: set[str]) -> Counter[tuple[str, str]]:
 
 
 def lifted_from_inner(e: Entry, head: Tree, before: Tree, renames: dict[str, str]) -> bool:
-    """Whether `e`'s class is a file new since `before`, and `before` declared the field in an inner class that
-    `head` no longer declares: the class was lifted out of an inner class into a file of its own."""
+    """Whether `e`'s class is an inner class of `before` lifted into a file of its own: the class's file is new since
+    `before` (not a file git reports renamed from one), `before` declared the field in an inner class `head` no
+    longer declares, and the new class declares every var of that inner class. A class that only shares one name
+    with a deleted or renamed inner class, or drops one of its vars, is a new class and fails."""
     path = head.by_name.get(e.klass)
-    if path is None or path in before.src:
+    if path is None or path in before.src or path in renames.values():
         return False
+    declared = set(head.files[path].fields)
     for key, body in before.inner_bare.items():
         file, _, inner = key.partition(INNER)
         if f"{renames.get(file, file)}{INNER}{inner}" in head.inner_bare:
             continue
-        if any(match.group(1) == e.name for match in VAR.finditer(body)):
+        names = {match.group(1) for match in VAR.finditer(body)}
+        if e.name in names and names <= declared:
             return True
     return False
 
@@ -1460,7 +1469,7 @@ def base_failures(
     renames: dict[str, str],
     checker_changed: bool,
     head: Tree,
-    before: Tree,
+    before_tree: Callable[[], Tree],
 ) -> list[str]:
     """Against the base's list, a line added fails (the list only shrinks) unless its read moved:
 
@@ -1472,7 +1481,8 @@ def base_failures(
        declares (an inner class lifted into a file of its own). Nothing is counted there: the base could not see a
        read of an inner class's field.
 
-    `head` and `before` are the trees of the head and of the base."""
+    `head` is the head's tree; `before_tree` reads the base's, called only when an added line is neither listed nor
+    paired by a rename, since building it costs seconds."""
     if base is None or checker_changed:
         return []
     listed = {e.key for e in base}
@@ -1480,6 +1490,12 @@ def base_failures(
     gone = [e for e in base if e.key not in now]
     paired: set[tuple[str, str, str]] = set()
     counts: list[Counter[tuple[str, str]]] = []
+    trees: list[Tree] = []
+
+    def base_tree() -> Tree:
+        if not trees:
+            trees.append(before_tree())
+        return trees[0]
 
     def moved(e: Entry) -> bool:
         for g in gone:
@@ -1489,6 +1505,7 @@ def base_failures(
         return False
 
     def not_grown(e: Entry) -> bool:
+        before = base_tree()
         if e.path in before.src:
             return False
         if not counts:
@@ -1500,7 +1517,10 @@ def base_failures(
         f"{LIST_NAME}:{e.number}: {e.path} {e.name} is added under [{e.klass}], and the list only shrinks; "
         f"read {e.klass}.{e.name} through a method of {e.klass} instead"
         for e in entries
-        if e.key not in listed and not moved(e) and not not_grown(e) and not lifted_from_inner(e, head, before, renames)
+        if e.key not in listed
+        and not moved(e)
+        and not not_grown(e)
+        and not lifted_from_inner(e, head, base_tree(), renames)
     ]
 
 
@@ -1682,9 +1702,13 @@ def main(argv: list[str]) -> int:
             base = read_base(args.base, root)
             renames = read_renames(args.base, root, args.rev)
             changed = read_checker_changed(args.base, root, args.rev)
-            if base is not None and not changed:
-                base_src, base_autoloads, _ = read_rev(args.base, root)
-                failures.extend(base_failures(entries, base, renames, changed, tree, Tree(base_src, base_autoloads)))
+            if base is not None:
+
+                def before_tree() -> Tree:
+                    base_src, base_autoloads, _ = read_rev(args.base, root)
+                    return Tree(base_src, base_autoloads)
+
+                failures.extend(base_failures(entries, base, renames, changed, tree, before_tree))
             failures.extend(
                 base_line_failures(lines_of(scripts), lines_of(read_scripts_rev(args.base, root)), renames, changed)
             )
