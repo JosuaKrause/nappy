@@ -55,9 +55,12 @@ item of that entry carries the GitHub label `fable-only`, and the label means th
 code and reviews it, while writing the code may go to another model (inbox #1293, inbox #1299); the
 model table in **orchestrating** says so for the session that picks a model. The line goes only on an
 entry the player names. It changes no order: `tools/queue.sh` ends the entry's line in
-`[fable-only]`, and CI fails a pull request that files a record of such an entry under
-[decisions/](decisions/) without the label (`tools/ci_fable_only.py`), a record being what every
-pull request that builds an item files and no filing does.
+`[fable-only]`, and CI fails a pull request that adds a record of such an entry under
+[decisions/](decisions/) without the label (`tools/ci_fable_only.py`), a new record being what every
+pull request that builds an item adds. A record the pull request only changes does not count, since
+an inbox filing rewrites citations in existing records and no filing builds. A pull request that
+closes such an entry by adding its record needs the label too, whoever writes it, since closing it
+is a judgement about the work the player put under Fable.
 
 `bug` is the band above `now`, for what
 the player calls a bug; a note from playing is still filed `now` unless the player names `bug`.

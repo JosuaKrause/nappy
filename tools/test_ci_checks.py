@@ -855,13 +855,33 @@ class FableOnlyTests(unittest.TestCase):
             with self.subTest(readme=readme):
                 self.assertFalse(ci_fable_only.says_fable_only(readme))
 
-    def test_a_record_added_or_changed_names_the_entry_it_builds(self) -> None:
+    def test_an_added_record_names_the_entry_it_builds_and_a_changed_one_does_not(self) -> None:
         for name in (f"{ENTRY}.md", f"{ENTRY}-2.md", f"{ENTRY}-brisk-heron.md"):
-            for change in (added(f"docs/decisions/{name}"), modified(f"docs/decisions/{name}")):
-                with self.subTest(name=name, status=change.status):
-                    self.assertEqual(ci_fable_only.built_entries([change]), {ENTRY: change.path})
+            with self.subTest(name=name):
+                change = added(f"docs/decisions/{name}")
+                self.assertEqual(ci_fable_only.built_entries([change]), {ENTRY: change.path})
+                self.assertEqual(ci_fable_only.built_entries([modified(f"docs/decisions/{name}")]), {})
         milestone = added("docs/decisions/2026-09-26-M210.md")
         self.assertEqual(ci_fable_only.built_entries([milestone]), {"2026-09-26-M210": milestone.path})
+
+    def test_a_pull_request_closing_an_entry_by_adding_its_record_builds_it_too(self) -> None:
+        # The entry's folder goes in the same commit as the record that closes it.
+        changes = [deleted(f"docs/todo/{ENTRY}/README.md"), deleted(f"docs/todo/{ENTRY}/last.md"), self.RECORD]
+        self.assertEqual(ci_fable_only.built_entries(changes), {ENTRY: self.RECORD.path})
+
+    def test_an_inbox_filing_builds_nothing_whatever_it_changes(self) -> None:
+        # The shape of a real filing: the playtest and the entry's new files are added, the entry's
+        # existing records have `inbox #N` rewritten to `inbox #N in <playtest>` (tools/inbox.py cite).
+        changes = [
+            added("docs/playtests/2026-11-09-merry-badger.md"),
+            added(f"docs/todo/{ENTRY}/new.md"),
+            modified(f"docs/todo/{ENTRY}/README.md"),
+            modified(f"docs/decisions/{ENTRY}-brisk-heron.md"),
+            modified(f"docs/decisions/{ENTRY}.md"),
+        ]
+        self.assertEqual(ci_fable_only.built_entries(changes), {})
+        failures, _ = ci_fable_only.check(ci_fable_only.built_entries(changes), {ENTRY}, set())
+        self.assertEqual(failures, [])
 
     def test_a_filing_a_deleted_record_and_a_record_of_no_entry_build_nothing(self) -> None:
         changes = [

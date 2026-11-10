@@ -54,8 +54,8 @@ name: ci
 # `fable-only` queue entry to the label of that name (tools/ci_fable_only.py), and without the two
 # label events a label taken off a green pull request would leave its `test` green. `test` is the
 # one check main's ruleset requires, so the whole run starts again, and the concurrency group
-# below cancels the one in progress: a label goes on when the pull request is opened
-# (`gh pr create --label`), which costs no second run.
+# below cancels the one in progress: a label put on after the pull request opens starts a second
+# run, which cancels the first.
 on:
   push:
     branches: [main]
@@ -316,10 +316,10 @@ jobs:
 
       # A queue entry whose README.md says `fable-only: true` is one Fable designs and reviews
       # (docs/TODO.md), and the label of that name is how a session knows it of a pull request: one
-      # that files a record of such an entry, which every pull request building an item does,
-      # fails without the label. Any kind of pull request may file a record, so it runs on every
-      # one. The labels are read through the API when it runs, and a label added or removed starts
-      # a run (`on:` above).
+      # that adds a record of such an entry, which every pull request building an item does,
+      # fails without the label; a record it only changes (an inbox filing's citations) does not
+      # count. Any kind of pull request may add a record, so it runs on every one. The labels are read
+      # through the API when it runs, and a label added or removed starts a run (`on:` above).
       - name: A pull request that builds an item of a fable-only entry carries the fable-only label
         if: ${{ !cancelled() && github.event_name == 'pull_request' }}
         env:

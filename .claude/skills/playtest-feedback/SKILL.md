@@ -90,7 +90,10 @@ number keep it, and so do the entries and records that already have one.
 - **A playtest** is `docs/playtests/<name>.md`.
 - **A queue entry** is a folder, `docs/todo/<name>/`. Its `README.md` opens with the entry's band,
   `priority: bug|now|next|later|parked`, optionally an `upnext: true` line (it prints first,
-  whatever the band, until the work starts), and an `after: <entry folder>` line for each entry it
+  whatever the band, until the work starts), optionally a `fable-only: true` line (every pull
+  request that builds an item of the entry carries the GitHub label `fable-only`: Fable designs the
+  code and reviews it, and writing the code may go to another model; only for an entry the player
+  names, inbox #1293, inbox #1299), and an `after: <entry folder>` line for each entry it
   truly waits on; `tools/queue.sh` prints the queue in the order the bands give, and there is no
   order list to edit (brisk-heron 13). **A playtest note is filed `now`** unless the player names
   another band, since a note from playing is a bug report (olive-koala 11): pass `--priority now` to
@@ -113,7 +116,8 @@ its folder goes, and what is left is filed as a fresh entry (`tools/new-name.sh 
 it is filed, so the queue holds no entry that lingers for months on its last items. The fresh entry opens
 with the player's words, names the old entry by its two words (or number) and title, and carries the
 old item's text where it still holds; a band the player did not name is the filer's proposal, as
-above. Closing an entry whose items the player has let go is a drop, and the pull request quotes the
+above. **A fresh entry filed from a closed `fable-only: true` entry's leftovers carries the line**,
+since it is the same work the player named. Closing an entry whose items the player has let go is a drop, and the pull request quotes the
 player's words for it (`Dropped: <path> — "<the player's words>"`, **pr-review**).
 
 The failure mode is specific and it is not laziness: **a finding arrives as a complaint plus a
@@ -243,3 +247,7 @@ corrects it. The citation is the player's word it extends:
 - **Where a set-aside idea is kept** ("A parked option comes back as a question, never as a
   plan"): in a record with a name of its own under `docs/decisions/`, never one named after an
   entry, which the entry it was weighed for names (curly-moose #829, #831).
+- **The `fable-only: true` line on a fresh entry filed from a closed marked entry's leftovers**
+  ("An entry whose work is mostly built is closed, and what is left of it is filed fresh"): the
+  player named the closed entry's work as Fable's, and the leftovers are that work, so the filer
+  carries the line over (inbox #1299).
