@@ -37,7 +37,9 @@ W_OUTPUT = 5.0
 
 # Dollars per million tokens: (input, output, cache read). A cache write costs 1.25x input for five
 # minutes and 2x for one hour. From the Claude API reference cached 2026-11-03. A model with no
-# entry is counted in tokens and listed as unpriced, never guessed.
+# entry is counted in tokens and listed as unpriced, never guessed. The current ids come first:
+# a family's price for --compare-to is its first entry. The older ids are the ones the transcripts of
+# 2026-09-05 to 2026-10-03 hold.
 PRICE_DATE = "2026-11-03"
 Price = tuple[float, float, float]
 PRICES: dict[str, Price] = {
@@ -45,9 +47,23 @@ PRICES: dict[str, Price] = {
     "claude-opus-5-5": (4.0, 20.0, 0.20),
     "claude-sonnet-5-5": (2.0, 10.0, 0.10),
     "claude-haiku-5-5": (0.10, 0.50, 0.01),
+    "claude-fable-5-1": (10.0, 50.0, 0.25),
+    "claude-opus-5": (5.0, 25.0, 0.50),
+    "claude-sonnet-5": (2.0, 10.0, 0.20),
+    "claude-haiku-4-5-20251001": (1.0, 5.0, 0.10),
 }
-# Prices that are estimates rather than read from the reference (Haiku's cache read: a tenth of input).
-ESTIMATED_PRICES = {"claude-haiku-5-5": "cache read"}
+# Haiku 5.5 above 100K tokens of prompt: (input, output, cache read).
+HAIKU_LONG_MODEL = "claude-haiku-5-5"
+HAIKU_LONG_CONTEXT = 100_000
+HAIKU_LONG_PRICE: Price = (0.50, 2.50, 0.05)
+# Prices that are estimates rather than read from the reference (a cache read the reference does not
+# state: a tenth of input).
+ESTIMATED_PRICES = {
+    "claude-haiku-5-5": "cache read",
+    "claude-opus-5": "cache read",
+    "claude-sonnet-5": "cache read",
+    "claude-haiku-4-5-20251001": "cache read",
+}
 FAMILIES = ("fable", "opus", "sonnet", "haiku")
 
 # The harness's own placeholder messages (no API call, no usage worth counting) are skipped.
@@ -69,14 +85,16 @@ sub-agents used, per window, by kind (main session, build, review) and model fam
 
   --window START..END  a window; repeatable. START and END are ISO 8601 dates or datetimes (a bare
                        datetime is local time; Z or an offset is honoured); either may be empty for
-                       open. Default: the last 7 days and the 7 days before them.
+                       open. END is exclusive and must be after START.
+                       Default: the last 7 days and the 7 days before them.
   --compare-to FAMILY  price every family's tokens also at this family's prices (fable, opus, sonnet
                        or haiku; default opus): "what this work would have cost there at the same
-                       tokens", which assumes the same tokens would have been used.
+                       tokens", for information only: it assumes the same tokens would have been used.
   --top N              how many of the costliest sub-agents and main sessions to list (default 8).
   --no-prs             do not ask the GitHub CLI for the merged pull requests of each window.
   --json               print the rows (one per session and window) instead of the report.
-  --save               also write the report and the rows under ~/.claude/nappy-agent-stats/usage/<today>/.
+  --save               also write the report and the rows under ~/.claude/nappy-agent-stats/usage/<today>/,
+                       as <HH-MM-SS>-report.txt and <HH-MM-SS>-rows.json; an existing file is never overwritten.
   --projects-dir DIR   the transcripts' root (default ~/.claude/projects).
   --repo DIR           the repository whose sessions are read (default: this repository's main checkout).
   --help, -h           this text.
@@ -166,11 +184,19 @@ def family(model: str) -> str:
     return model
 
 
-def family_price(name: str) -> Price | None:
-    for model, price in PRICES.items():
+def family_model(name: str) -> str | None:
+    """The current model id of a family: the first of its entries in PRICES."""
+    for model in PRICES:
         if family(model) == name:
-            return price
+            return model
     return None
+
+
+def price_for(model: str, context: int) -> Price | None:
+    """A turn's price: Haiku 5.5 is dearer above 100K tokens of prompt; None when the model has none."""
+    if model == HAIKU_LONG_MODEL and context > HAIKU_LONG_CONTEXT:
+        return HAIKU_LONG_PRICE
+    return PRICES.get(model)
 
 
 def parse_time(text: str) -> datetime:
@@ -186,7 +212,9 @@ def project_dir_name(repo: Path) -> str:
 # Reading transcripts
 
 
-def read_session(path: Path) -> Session | None:
+def read_session(path: Path, seen: set[str]) -> Session | None:
+    """One transcript's session. `seen` holds the message ids already taken from other files, and
+    takes this file's: a message in two files is counted once, in the file read first."""
     is_sub = "subagents" in path.parts
     description = ""
     if is_sub:
@@ -196,7 +224,10 @@ def read_session(path: Path) -> Session | None:
             description = ""
     session_id = path.parent.parent.name if is_sub else path.stem
     session = Session(str(path), session_id, is_sub, description)
-    seen: set[str] = set()
+    # Claude Code writes one line per content block of a message, and on older transcripts the
+    # earlier lines carry a partial output_tokens: a message is its first line's time and its last
+    # line's usage.
+    messages: dict[str, tuple[datetime, dict[str, Any], str]] = {}
     for line in path.read_text(errors="replace").splitlines():
         if '"usage"' not in line and '"compact_boundary"' not in line:
             continue
@@ -213,9 +244,15 @@ def read_session(path: Path) -> Session | None:
             mid = message.get("id")
             if d.get("type") != "assistant" or not usage or not mid or mid in seen:
                 continue
-            seen.add(mid)
             if message.get("model") == SYNTHETIC_MODEL:
                 continue
+            first = messages[mid][0] if mid in messages else parse_time(d["timestamp"])
+            messages[mid] = (first, usage, str(message.get("model", "?")))
+        except ValueError, KeyError, TypeError, AttributeError:
+            continue
+    seen.update(messages)
+    for first, usage, model in messages.values():
+        try:
             created = usage.get("cache_creation") or {}
             w1 = int(created.get("ephemeral_1h_input_tokens", 0) or 0)
             w5 = int(created.get("ephemeral_5m_input_tokens", 0) or 0)
@@ -224,8 +261,8 @@ def read_session(path: Path) -> Session | None:
                 w5 += total - w1 - w5
             session.turns.append(
                 Turn(
-                    parse_time(d["timestamp"]),
-                    str(message.get("model", "?")),
+                    first,
+                    model,
                     int(usage.get("input_tokens", 0) or 0),
                     w1,
                     w5,
@@ -233,20 +270,23 @@ def read_session(path: Path) -> Session | None:
                     int(usage.get("output_tokens", 0) or 0),
                 )
             )
-        except ValueError, KeyError, TypeError, AttributeError:
+        except ValueError, TypeError, AttributeError:
             continue
     session.turns.sort(key=lambda x: x.t)
     return session if session.turns or session.compactions else None
 
 
 def read_sessions(projects_dir: Path, repo: Path) -> list[Session]:
-    sessions: list[Session] = []
     prefix = project_dir_name(repo)
-    for project in sorted(projects_dir.glob(prefix + "*")):
-        for path in sorted(project.rglob("*.jsonl")):
-            s = read_session(path)
-            if s:
-                sessions.append(s)
+    paths = [p for project in sorted(projects_dir.glob(prefix + "*")) for p in project.rglob("*.jsonl")]
+    # Sub-agent files first, so a message found in both a session and its sub-agent is the sub-agent's.
+    paths.sort(key=lambda p: ("subagents" not in p.parts, str(p)))
+    seen: set[str] = set()
+    sessions: list[Session] = []
+    for path in paths:
+        s = read_session(path, seen)
+        if s:
+            sessions.append(s)
     return sessions
 
 
@@ -285,6 +325,7 @@ class Row:
             "kind": self.kind,
             "description": self.session.description,
             "model": self.model,
+            "family": self.family,
             "turns": len(self.turns),
             "first": self.turns[0].t.isoformat(),
             "last": self.turns[-1].t.isoformat(),
@@ -300,33 +341,41 @@ class Row:
         }
 
 
-def make_row(index: int, session: Session, turns: list[Turn]) -> Row:
+def rewrite_pauses(turns: list[Turn]) -> list[float | None]:
+    """Per turn of one session's window: the pause before it when it rewrote the cache, else None."""
+    out: list[float | None] = [None]
+    for prev, cur in pairwise(turns):
+        gap = (cur.t - prev.t).total_seconds()
+        rewrote = (
+            gap >= REWRITE_GAP_SECONDS
+            and cur.writes > REWRITE_SHARE * cur.context
+            and cur.context > REWRITE_MIN_CONTEXT
+        )
+        out.append(gap if rewrote else None)
+    return out[: len(turns)]
+
+
+def make_row(index: int, session: Session, turns: list[Turn], pauses: list[float | None]) -> Row:
+    """One row: a session's turns of one model family in one window, with each turn's rewrite pause."""
     counts: dict[str, int] = {}
     for x in turns:
         counts[x.model] = counts.get(x.model, 0) + 1
     gaps: list[float] = []
     rewrite_weighted = 0.0
     rewrite_dollars = 0.0
-    for prev, cur in pairwise(turns):
-        gap = (cur.t - prev.t).total_seconds()
-        if (
-            gap >= REWRITE_GAP_SECONDS
-            and cur.writes > REWRITE_SHARE * cur.context
-            and cur.context > REWRITE_MIN_CONTEXT
-        ):
-            gaps.append(gap)
-            rewrite_weighted += W_WRITE_5M * cur.w5 + W_WRITE_1H * cur.w1
-            price = PRICES.get(cur.model)
-            if price:
-                rewrite_dollars += cur.write_dollars(price)
     dollars = 0.0
     unpriced = 0
-    for x in turns:
-        price = PRICES.get(x.model)
+    for x, pause in zip(turns, pauses, strict=True):
+        price = price_for(x.model, x.context)
         if price is None:
             unpriced += 1
         else:
             dollars += x.dollars(price)
+        if pause is not None:
+            gaps.append(pause)
+            rewrite_weighted += W_WRITE_5M * x.w5 + W_WRITE_1H * x.w1
+            if price:
+                rewrite_dollars += x.write_dollars(price)
     return Row(
         index,
         session,
@@ -343,12 +392,18 @@ def make_row(index: int, session: Session, turns: list[Turn]) -> Row:
 
 
 def build_rows(sessions: Iterable[Session], windows: list[Window]) -> list[Row]:
+    """A row per session, window and model family, so a session that switches model books each
+    family's turns under that family."""
     rows: list[Row] = []
     for s in sessions:
         for i, w in enumerate(windows):
             turns = [x for x in s.turns if w.contains(x.t)]
-            if turns:
-                rows.append(make_row(i, s, turns))
+            if not turns:
+                continue
+            pauses = rewrite_pauses(turns)
+            for fam in sorted({family(x.model) for x in turns}, key=family_sort):
+                picked = [(x, p) for x, p in zip(turns, pauses, strict=True) if family(x.model) == fam]
+                rows.append(make_row(i, s, [x for x, _ in picked], [p for _, p in picked]))
     return rows
 
 
@@ -426,7 +481,7 @@ def describe_group(rows: list[Row], total: float) -> str:
 
 
 def comparison(rows: list[Row], compare_to: str) -> list[str]:
-    other = family_price(compare_to)
+    other = family_model(compare_to)
     assert other is not None
     out = [
         f" model comparison (all turns; 'at {compare_to}' prices the same tokens at {compare_to} prices):",
@@ -435,16 +490,21 @@ def comparison(rows: list[Row], compare_to: str) -> list[str]:
     for fam in sorted({family(x.model) for r in rows for x in r.turns}, key=family_sort):
         turns = [x for r in rows for x in r.turns if family(x.model) == fam]
         weighted = fmt_m(sum(x.weighted() for x in turns))
-        at_other = sum(x.dollars(other) for x in turns)
+        at_other = sum(x.dollars(price_for(other, x.context) or PRICES[other]) for x in turns)
         if any(x.model not in PRICES for x in turns):
             out.append(f"  {fam:8} {weighted:>9} {'unpriced':>10} {fmt_usd(at_other):>10} {'n/a':>6}")
             continue
-        actual = sum(x.dollars(PRICES[x.model]) for x in turns)
+        actual = sum(x.dollars(price_for(x.model, x.context) or PRICES[x.model]) for x in turns)
         ratio = f"{actual / at_other:5.2f}x" if at_other else "n/a"
         out.append(f"  {fam:8} {weighted:>9} {fmt_usd(actual):>10} {fmt_usd(at_other):>10} {ratio:>6}")
-    out.append(
-        "  (the 'at' column assumes the same tokens: another model would take other turn counts, contexts "
-        "and cache hits)"
+    # inbox #1291: the player's words behind this caveat.
+    out.extend(
+        [
+            f"  for information only. The same tokens is an assumption: Fable typically needs fewer turns and tokens "
+            f"than Opus on the same task and does work Opus cannot, so the 'at {compare_to}' column is not what "
+            "another model would have cost.",
+            "  A model is never chosen on this column alone (inbox #1291).",
+        ]
     )
     return out
 
@@ -464,12 +524,18 @@ def window_report(
     dollars = sum(r.dollars for r in rows)
     main = [r for r in rows if not r.session.is_sub]
     sub = [r for r in rows if r.session.is_sub]
+    n_turns = sum(len(r.turns) for r in rows)
+    n_unpriced = sum(r.unpriced_turns for r in rows)
+    if n_unpriced * 2 > n_turns:
+        priced = f"n/a at API prices ({n_unpriced} of {n_turns} turns have no price)"
+    else:
+        priced = f"{fmt_usd(dollars)} at API prices ({fmt_usd(dollars / hours)}/h)"
     out = [
         f"\n=== window {index + 1}: {window.label()} ({hours:.0f}h): total weighted {total / 1e6:.1f}M "
-        f"({total / 1e6 / hours:.2f}M/h), {fmt_usd(dollars)} at API prices ({fmt_usd(dollars / hours)}/h)",
-        f" main {len(main)} sessions {sum(r.weighted for r in main) / total:.0%} of tokens, "
-        f"{fmt_usd(sum(r.dollars for r in main))}; sub-agents {len(sub)} {sum(r.weighted for r in sub) / total:.0%}, "
-        f"{fmt_usd(sum(r.dollars for r in sub))}; merged PRs {prs}",
+        f"({total / 1e6 / hours:.2f}M/h), {priced}",
+        f" main {len({r.session.path for r in main})} sessions {sum(r.weighted for r in main) / total:.0%} of tokens, "
+        f"{fmt_usd(sum(r.dollars for r in main))}; sub-agents {len({r.session.path for r in sub})} "
+        f"{sum(r.weighted for r in sub) / total:.0%}, {fmt_usd(sum(r.dollars for r in sub))}; merged PRs {prs}",
     ]
     unpriced = sorted({x.model for r in rows for x in r.turns if x.model not in PRICES})
     if unpriced:
@@ -547,6 +613,8 @@ def report(
         + " (input/output/cache read per million tokens)",
         "estimated, not read from the reference: "
         + ", ".join(f"{m} {what} price" for m, what in ESTIMATED_PRICES.items()),
+        f"{HAIKU_LONG_MODEL} above {HAIKU_LONG_CONTEXT // 1000}K tokens of prompt: "
+        f"{HAIKU_LONG_PRICE[0]:g}/{HAIKU_LONG_PRICE[1]:g}/{HAIKU_LONG_PRICE[2]:g} (cache read estimated)",
         "weighted tokens: input 1, 5-minute write 1.25, 1-hour write 2, cache read 0.1, output 5",
     ]
     for i, w in enumerate(windows):
@@ -572,9 +640,12 @@ def parse_window(text: str) -> Window:
         raise UsageError(f"--window {text!r} is not START..END")
     a, b = text.split("..", 1)
     try:
-        return Window(parse_time(a) if a else None, parse_time(b) if b else None)
+        window = Window(parse_time(a) if a else None, parse_time(b) if b else None)
     except ValueError as e:
         raise UsageError(f"--window {text!r}: {e}") from e
+    if window.start and window.end and window.end <= window.start:
+        raise UsageError(f"--window {text!r} ends before it starts")
+    return window
 
 
 def main_repo() -> Path:
@@ -611,7 +682,7 @@ def run(argv: list[str], now: datetime | None = None) -> int:
         if args.help:
             print(USAGE, end="")
             return 0
-        if args.compare_to not in FAMILIES or family_price(args.compare_to) is None:
+        if args.compare_to not in FAMILIES or family_model(args.compare_to) is None:
             raise UsageError(f"--compare-to {args.compare_to!r} is not a priced family ({', '.join(FAMILIES)})")
         if args.top < 1:
             raise UsageError("--top must be at least 1")
@@ -623,6 +694,20 @@ def run(argv: list[str], now: datetime | None = None) -> int:
         print(f"usage-report.py: {e}", file=sys.stderr)
         print(USAGE, end="", file=sys.stderr)
         return 2
+
+    saved: list[Path] = []
+    if args.save:
+        # A file per run, named by the time, never overwritten: a day's earlier runs stay.
+        folder = Path.home() / ".claude" / "nappy-agent-stats" / "usage" / now.astimezone().strftime("%Y-%m-%d")
+        prefix = now.astimezone().strftime("%H-%M-%S")
+        saved = (
+            [folder / f"{prefix}-rows.json"]
+            if args.json
+            else [folder / f"{prefix}-report.txt", folder / f"{prefix}-rows.json"]
+        )
+        if clash := [p for p in saved if p.exists()]:
+            print(f"usage-report.py: {clash[0]} exists; --save never overwrites", file=sys.stderr)
+            return 1
 
     repo = (args.repo or main_repo()).resolve()
     sessions = read_sessions(args.projects_dir, repo)
@@ -638,12 +723,11 @@ def run(argv: list[str], now: datetime | None = None) -> int:
         text = report(windows, rows, sessions, args.compare_to, args.top, prs, now)
     print(text, end="")
     if args.save:
-        folder = Path.home() / ".claude" / "nappy-agent-stats" / "usage" / now.astimezone().strftime("%Y-%m-%d")
-        folder.mkdir(parents=True, exist_ok=True)
-        if not args.json:
-            (folder / "report.txt").write_text(text)
-        (folder / "rows.json").write_text(rows_text)
-        print(f"saved under {folder}", file=sys.stderr)
+        saved[0].parent.mkdir(parents=True, exist_ok=True)
+        for path in saved:
+            with path.open("x") as f:
+                f.write(rows_text if path.name.endswith("rows.json") else text)
+        print(f"saved {', '.join(str(p) for p in saved)}", file=sys.stderr)
     return 0
 
 

@@ -14,7 +14,7 @@ var _evaluate: Callable
 ## for — flushed the cheap way, from `send()` itself the next time anything is asked for, rather
 ## than a timer or a per-frame poll: nothing here may cost anything while the game is otherwise
 ## between events. A cold, first-ever visit is the case this exists for — `count.js` is a real
-## network fetch, and the earliest events of a run (`run_begun`, day 1's `day_started`) can race
+## network fetch, and the earliest events of a run (`run_begun`, day 1's `began`) can race
 ## ahead of it; a later visit, with the script already cached, never queues anything at all.
 var _pending: Array[String] = []
 

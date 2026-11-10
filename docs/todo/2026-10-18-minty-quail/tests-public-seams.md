@@ -88,10 +88,8 @@ ticks give, and is kept with its reason:
 - **`RouteLines.routes()`**, a public member no game class calls, is read by `test_route_lines.gd`'s
   picture sweep.
 - **`test_touch.gd`** reads `TouchControls._FOCUS_KNOB_OFFSET` and `_FOCUS_KNOB_RADIUS` (the knob
-  drawn inside its ring has no reader but the drawing); **`HelpText.line`** is read only by tests (the
-  HUD's teaching line, whose parsed text drops the icons); and the HUD suite restores
-  `VisitCounter._day` by emitting `EventBus.day_started`, which the counter's own conversion would
-  remove by handing it the run.
+  drawn inside its ring has no reader but the drawing), and **`HelpText.line`** is read only by tests
+  (the HUD's teaching line, whose parsed text drops the icons).
 - **The recording counter's override of `_send_event()`** in `test_visit_counter.gd` and
   `test_observers.gd`: the counter's gate reads the platform, which a headless run cannot fake.
 - **The scene recipe suites leave untested:** the director's own use of the arrow ground (it wants a

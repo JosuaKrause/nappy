@@ -113,24 +113,34 @@ run's text, and a write of one's own that did not land then publishes theirs. Th
 command of its own:
 
 1. `mktemp -d`, which prints the new directory.
-2. `cat > <that literal path>/<name> <<'EOF'`, the text, `EOF`, and nothing else in the command:
-   the path pasted as printed, no variable, no quotes around it, no second command.
+2. `cat > <that literal path>/<name> <<'EOF'`, the text and `EOF`: the path pasted as the first
+   call printed it, since a shell variable set in one call is gone in the next, and with no quotes
+   around it. Neither `mktemp` nor the write shares this command.
 3. The write, passing the file: `git commit -F <file>`, `gh pr create --body-file <file>`, `gh api
    -F body=@<file>` (capital `-F`; lowercase `-f` sends the literal text `@<file>`),
    `tools/inbox.py capture --body-file <file>`. Read the file back before passing it on.
 
-The second call stands alone because of the guard: **a write's words in text deny like a call** —
-in an echo, a commit message, a body, a heredoc — **except in three shapes, each the whole command
-and nothing else in it** (plaid-tapir 4):
+The three stay apart because of how the guard reads the second: **a write's words in text deny
+like a call** —
+in an echo, a commit message, a body, a heredoc — **except in three shapes whose text it can tell
+apart for certain** (plaid-tapir 4), each as wide as that certainty reaches so that a command which
+only writes text naming the GitHub CLI is not refused (inbox #1292):
 
-- `cat > FILE <<'EOF'` (or `cat <<'EOF' > FILE`, `>>`), the delimiter quoted, whose body is text;
-- a coder's or the orchestrator's wrapped `git commit -F - <<'EOF'`, whose body is text and which
-  is judged as the wrapped commit;
+- `cat > FILE <<'EOF'` (or `cat <<'EOF' > FILE`, `>>`), whose body is text: the delimiter quoted,
+  or bare over a body with no `$`, backtick or backslash; the file a plain path or one behind a
+  single variable (`$NAME/...`);
+- a coder's or the orchestrator's wrapped `git commit -F - <<'EOF'` as the whole command, whose
+  body is text and which is judged as the wrapped commit;
 - `rg` or `grep` with one quoted pattern, plain options and paths, whose pattern is text.
 
-Anything else — `d=$(mktemp -d)` or `mkdir -p … &&` in front, a second command after the body, an
-unquoted delimiter, `<<-`, a `$` in a double-quoted pattern, a pipe — is read as the guard reads
-every command, and a body that names a write then denies.
+The `cat` and the search may stand in a sequence of plain reads, programs that run nothing they
+are given, such as a `cd <path> &&` in front and a `pwd`, `echo` or `wc` after; so a brief appended
+with `cd … && cat >> … <<'EOF'` and a `pwd` after it, or a search piped to `head`, passes. The
+guard's header holds the exact list of them. Anything else is read as the guard reads every
+command, and a body that names a write then denies: `d=$(mktemp -d)` in front, which is why the
+first call is its own; the write after the body, or any other command there that is no plain read
+(`python3`, `bash`, `sed`, `git`), which is why the third is; a bare delimiter over a body with a
+`$`, `<<-`, a `$` in a double-quoted pattern, a pipe to anything else.
 
 ## Pushing
 

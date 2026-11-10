@@ -105,9 +105,11 @@ deferred markers, no branch that changes what the body does.
 
 A system that decides things writes its own account through the `RunTrace` it was handed
 (`src/run_trace.gd`), never `Telemetry` itself: `RunSession` makes the one that writes into the
-log, `main` hands it on, and a component handed none writes nowhere. A day's or a section's start
-and end reach the log as `EventBus` events `RunSession` listens to (docs/TELEMETRY.md, "Who writes
-it"); nothing in the run flow calls the log or the observer inline.
+log, `main` hands it on, and a component handed none writes nowhere. A walk's start reaches the log
+as the run flow's signals (`RunFlow.world_stood`, `day_planned`) and its end as
+`EventBus.day_ended`, all of which `RunSession` listens to, the same way for a day and for an
+escape section (docs/TELEMETRY.md, "Who writes it"); nothing in the run flow calls the log or the
+observer inline.
 
 ## Adding an entry
 

@@ -16,8 +16,9 @@ extends RefCounted
 ## event source it watches is a stand-in where a case needs one (`StandInSource`, holding one plain
 ## `EventInstance` set up with a catalogue row), since the observer asks it only for `instances()` and its `sources`.
 ##
-## **No case builds a real `City`**: the observer is handed the run, the city's map, its events,
-## today's streets and the crowd's sources (`setup()`, `watch_city()`), and the cases hand it a
+## **No case builds a real `City`**: the observer is handed the run and the clock (`setup()`), and
+## per walk the map she walks, its events, her and the baby, and in a city the city's map, today's
+## streets and the crowd's sources (`watch()`), and the cases hand it a
 ## `RunState`, a map, a `StandInEvents` (a `FakeEventManager` that answers a day's plans as the case
 ## sets them), a `DayStreets` of no day (`DayStreets.new()`, which holds a null tree and no closures
 ## as a day with none does) and the base `ExcitementSources`, which answers nothing. A map is a
@@ -42,8 +43,9 @@ const RUN_SEED := 2
 const CITY_SEED := 4242
 
 ## One observer in the tree watching a running day clock, with the player, the baby and the clock
-## it is handed — what `main` hands a day's observer (`world` given: `setup()`) or the escape's
-## (`setup_escape()`, then the building's map or none). A test places the player, lets time pass
+## it is handed (`setup()`), and the world it is watching (`watch()`): a day's city (`day` given),
+## the escape's building on `map`, or with neither a city of streets the rig makes itself, which
+## keeps a trail as every city does. A test places the player, lets time pass
 ## through `frame()`, which moves the day's clock on and waits for a real frame — the observer
 ## mirrors that clock into the run log's as every real frame does — and reads the run log or the
 ## observer's own queries. The observer writes into the recording log it is handed (`_fresh_log()`); the
@@ -59,18 +61,22 @@ class Rig extends RefCounted:
 	var clock := DayController.new()
 	var tree: SceneTree
 	var elapsed := 0.0
+	## The city of streets the rig made itself, handed neither a map nor a day; freed with it.
+	var _own_day: WatchedDayParts
 
 	func _init(parent: Node, run_log: Telemetry, map: WorldMap = null, day: WatchedDayParts = null,
 			spikes := false) -> void:
 		observer = TelemetryObserver.new(run_log)
 		tree = parent.get_tree()
+		if day == null and map == null:
+			_own_day = WatchedDayParts.new(StreetMap.full())
+			day = _own_day
 		if day != null:
-			observer.setup(day.run, day.map, day.events, day.streets, day.crowd,
-					player, baby, clock, null, spikes)
+			observer.setup(day.run, clock, null, spikes)
+			observer.watch(day.map, day.events, player, baby, day.map, day.streets, day.crowd, "")
 		else:
-			observer.setup_escape(null, player, baby, clock, spikes)
-			if map != null:
-				observer.watch_building(map, null)
+			observer.setup(null, clock, null, spikes)
+			observer.watch(map, null, player, baby, null, null, null, "the building")
 		parent.add_child(observer)
 		clock.start(LENGTH)
 
@@ -83,6 +89,8 @@ class Rig extends RefCounted:
 	func free_all() -> void:
 		for node: Node in [observer, player, baby, clock]:
 			node.free()
+		if _own_day:
+			_own_day.free_all()
 
 ## What a day's observer is handed besides her, the baby and the clock: the run, the city's map, the
 ## day's events, today's streets and the crowd's sources, each a plain value or a stand-in.
@@ -190,11 +198,12 @@ func _test_a_retried_section_restarts_the_clock(t) -> void:
 	var baby := Baby.new()
 	var clock := DayController.new()
 	var observer := TelemetryObserver.new(_log)
-	observer.setup_escape(null, player, baby, clock, false)
+	observer.setup(null, clock, null, false)
+	observer.watch(WorldMap.open_ground(), null, player, baby, null, null, null, "the building")
 	_log.begin_run(0)
 	_log.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
 	_log.set_clock(45.0)
-	observer.start_section(true)
+	observer.start(true)
 	t.check(_log.restarts == 1,
 			"a retry puts the clock back through restart_section_clock(), which restarts the "
 			+ "snapshot schedule with it, and not through set_clock(0.0) (%d calls)" % _log.restarts)
@@ -239,13 +248,13 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	# The run the escape's city stands in, handed to the observer as the session hands it the boot's.
 	var day := WatchedDayParts.new(StreetMap.full())
 	var observer := TelemetryObserver.new(_log)
-	observer.setup_escape(day.run, player, baby, clock, false)
+	observer.setup(day.run, clock, null, false)
 	t.add_child(observer)
 
 	_log.begin_run(0)
 	_log.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
-	observer.watch_building(CityMap.new(), events)
-	observer.start_section(false)
+	observer.watch(CityMap.new(), events, player, baby, null, null, null, "the building")
+	observer.start(false)
 	clock.start(180.0)
 	# One frame of every watcher a day runs, in a building with no map, no corridor, no crowd and
 	# no resistance: the ones with nothing to ask have to say nothing rather than fail.
@@ -256,11 +265,11 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	clock.failure_reason = "They were on the stairs."
 	observer.day_finished(GameEnums.DayResult.LOST_HARD_FAIL, "masked-pursuer")
 	player.global_position = start
-	observer.start_section(true)
+	observer.start(true)
 
 	player.global_position = _on_a_sidewalk(day.map)
-	observer.watch_city(day.map, day.events, day.streets, day.crowd)
-	observer.start_section(false)
+	observer.watch(day.map, day.events, player, baby, day.map, day.streets, day.crowd, "the city")
+	observer.start(false)
 	clock.start(180.0)
 	await t.get_tree().process_frame
 	_log.set_clock(40.0)
@@ -474,7 +483,7 @@ func _test_the_trail_carries_whether_she_was_running(t) -> void:
 	_log.end_run()
 	rig.free_all()
 
-## `start_day()` resets everything else about yesterday, and the trail is no exception: a rewound
+## `start()` resets everything else about yesterday, and the trail is no exception: a rewound
 ## day was not walked, so the picture of it must start from nothing rather than carrying the
 ## abandoned attempt's trail into the retry.
 func _test_a_lost_day_restarts_the_trail(t) -> void:
@@ -482,18 +491,18 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 	_fresh_log()
 	var rig := Rig.new(t, _log, null, day)
 	# Not added to the tree: a bare `Stroller.new()` has no `Camera2D` child, which only the scene
-	# it is normally instanced from provides, and `start_day()` reads nothing that needs one.
+	# it is normally instanced from provides, and `start()` reads nothing that needs one.
 	rig.player.global_position = _on_a_sidewalk(day.map)
 	rig.player.facing = Vector2.DOWN
 	_log.begin_run(0)
 	_log.begin_day(1, 1, 1, 1, 180.0)
 
-	rig.observer.start_day()
+	rig.observer.start(false)
 	rig.player.global_position += Vector2(200.0, 0.0)
 	await rig.frame()
 	t.check(not rig.observer.trail().is_empty(), "the trail records a point during the day")
 
-	rig.observer.start_day()
+	rig.observer.start(false)
 	t.check(rig.observer.trail().is_empty(),
 			"a new day's start — including a rewound day's — starts the trail over from nothing")
 

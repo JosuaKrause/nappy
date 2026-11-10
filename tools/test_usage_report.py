@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import json
 import os
 import subprocess
@@ -84,19 +86,136 @@ class UsageReportTests(unittest.TestCase):
         found: list[Any] = ur.read_sessions(self.projects, self.repo)
         return found
 
-    def test_dedup_by_message_id_and_garbage_lines(self) -> None:
+    def test_dedup_by_message_id_keeps_the_last_usage_at_the_first_time(self) -> None:
         self.main_session(
             "s1",
             [
                 line("m1", "2026-11-01T10:00:00Z", inp=10, out=5),
-                line("m1", "2026-11-01T10:00:01Z", inp=10, out=99),
+                line("m1", "2026-11-01T10:00:01Z", inp=10, out=40),
+                line("m1", "2026-11-01T10:00:02Z", inp=10, out=99),
                 'not json {"usage"',
                 line("m2", "2026-11-01T10:01:00Z", inp=1),
             ],
         )
         (session,) = self.sessions()
         self.assertEqual([t.inp for t in session.turns], [10, 1])
-        self.assertEqual(session.turns[0].out, 5)
+        self.assertEqual(session.turns[0].out, 99)
+        self.assertEqual(session.turns[0].t, ur.parse_time("2026-11-01T10:00:00Z"))
+
+    def test_a_message_in_two_files_is_counted_once_in_the_sub_agents(self) -> None:
+        self.main_session(
+            "s1", [line("shared", "2026-11-01T10:00:00Z", inp=7), line("own", "2026-11-01T10:01:00Z", inp=1)]
+        )
+        self.sub_session("s1", "a", "Build x", [line("shared", "2026-11-01T10:00:00Z", inp=7)])
+        sessions = self.sessions()
+        self.assertEqual(sum(len(s.turns) for s in sessions), 2)
+        sub = next(s for s in sessions if s.is_sub)
+        self.assertEqual(len(sub.turns), 1)
+
+    def test_a_session_that_switches_model_books_each_family_under_its_own_row(self) -> None:
+        self.main_session(
+            "s1",
+            [
+                line("a", "2026-11-01T10:00:00Z", model=FABLE, inp=1_000_000),
+                line("b", "2026-11-01T10:01:00Z", model=OPUS, inp=1_000_000),
+                line("c", "2026-11-01T10:02:00Z", model=FABLE, inp=1_000_000),
+            ],
+        )
+        rows = ur.build_rows(self.sessions(), [ur.Window(None, None)])
+        by_family = {r.family: r for r in rows}
+        self.assertEqual({f: len(r.turns) for f, r in by_family.items()}, {"fable": 2, "opus": 1})
+        self.assertAlmostEqual(by_family["fable"].dollars, 16.0)
+        self.assertAlmostEqual(by_family["opus"].dollars, 4.0)
+
+    def test_the_pause_before_a_rewrite_is_measured_from_the_previous_turn_of_any_model(self) -> None:
+        self.main_session(
+            "s1",
+            [
+                line("a", "2026-11-01T10:00:00Z", model=FABLE, rd=30_000),
+                line("b", "2026-11-01T10:29:00Z", model=OPUS, rd=30_000),
+                line("c", "2026-11-01T10:30:00Z", model=FABLE, w1=40_000),
+            ],
+        )
+        rows = ur.build_rows(self.sessions(), [ur.Window(None, None)])
+        self.assertEqual({r.family: r.rewrites for r in rows}, {"fable": [], "opus": []})
+
+    def test_older_model_ids_are_priced_and_the_headline_says_n_a_when_most_turns_are_not(self) -> None:
+        self.main_session(
+            "s1",
+            [
+                line("a", "2026-11-01T10:00:00Z", model="claude-opus-5", inp=1_000_000, out=1_000_000),
+                line("b", "2026-11-01T10:01:00Z", model="claude-fable-5-1", inp=1_000_000),
+                line("c", "2026-11-01T10:02:00Z", model="claude-sonnet-5", inp=1_000_000),
+                line("d", "2026-11-01T10:03:00Z", model="claude-haiku-4-5-20251001", inp=1_000_000),
+            ],
+        )
+        by_family = {r.family: r for r in ur.build_rows(self.sessions(), [ur.Window(None, None)])}
+        self.assertEqual({f: r.unpriced_turns for f, r in by_family.items()}, dict.fromkeys(by_family, 0))
+        self.assertAlmostEqual(by_family["opus"].dollars, 30.0)
+        self.assertAlmostEqual(by_family["fable"].dollars, 10.0)
+        self.assertAlmostEqual(by_family["sonnet"].dollars, 2.0)
+        self.assertAlmostEqual(by_family["haiku"].dollars, 1.0)
+
+        self.main_session("s2", [line("u", "2026-11-02T10:00:00Z", model="claude-mystery-9", inp=5)])
+        window = ur.Window(ur.parse_time("2026-11-02"), None)
+        sessions = self.sessions()
+        text = ur.report(
+            [window], ur.build_rows(sessions, [window]), sessions, "opus", 8, ["n/a"], datetime(2026, 11, 3, tzinfo=UTC)
+        )
+        self.assertIn("n/a at API prices (1 of 1 turns have no price)", text)
+        self.assertNotIn("$0.00 at API prices", text)
+
+    def test_haiku_above_100k_of_prompt_is_priced_at_the_upper_tier(self) -> None:
+        haiku = "claude-haiku-5-5"
+        self.main_session(
+            "s1",
+            [
+                line("a", "2026-11-01T10:00:00Z", model=haiku, inp=100_000),
+                line("b", "2026-11-01T10:01:00Z", model=haiku, inp=100_001),
+            ],
+        )
+        (row,) = ur.build_rows(self.sessions(), [ur.Window(None, None)])
+        self.assertAlmostEqual(row.dollars, 100_000 * 0.10 / 1e6 + 100_001 * 0.50 / 1e6)
+
+    def test_a_reversed_or_empty_window_is_refused(self) -> None:
+        for text in ("2026-11-05..2026-11-01", "2026-11-01..2026-11-01"):
+            with self.assertRaises(ur.UsageError):
+                ur.parse_window(text)
+        ur.parse_window("2026-11-01..")
+        ur.parse_window("..2026-11-01")
+
+    def test_save_names_files_by_time_and_never_overwrites(self) -> None:
+        self.main_session("s1", [line("a", "2026-11-01T10:00:00Z", inp=100)])
+        base = ["--projects-dir", str(self.projects), "--repo", str(self.repo), "--no-prs", "--save"]
+        old_home = os.environ.get("HOME")
+        os.environ["HOME"] = str(self.home)
+
+        def restore() -> None:
+            if old_home is None:
+                del os.environ["HOME"]
+            else:
+                os.environ["HOME"] = old_home
+
+        self.addCleanup(restore)
+        folder = self.home / ".claude" / "nappy-agent-stats" / "usage" / "2026-11-02"
+        folder.mkdir(parents=True)
+        (folder / "report.txt").write_text("the hand-made reference")
+        first = datetime(2026, 11, 2, 12, 0, 0).astimezone()
+        later = datetime(2026, 11, 2, 12, 0, 5).astimezone()
+        with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(ur.run(base, first), 0)
+            self.assertEqual(ur.run(base, later), 0)
+            self.assertEqual(ur.run(base, first), 1, "the same second again is refused")
+        self.assertEqual((folder / "report.txt").read_text(), "the hand-made reference")
+        self.assertEqual(
+            sorted(p.name for p in folder.iterdir() if p.name != "report.txt"),
+            [
+                f"{first:%H-%M-%S}-report.txt",
+                f"{first:%H-%M-%S}-rows.json",
+                f"{later:%H-%M-%S}-report.txt",
+                f"{later:%H-%M-%S}-rows.json",
+            ],
+        )
 
     def test_other_projects_are_not_read(self) -> None:
         other = self.projects / "-some-other-repo"
@@ -108,7 +227,7 @@ class UsageReportTests(unittest.TestCase):
     def test_worktree_sessions_share_the_prefix(self) -> None:
         worktree = self.projects / (ur.project_dir_name(self.repo) + "--claude-worktrees-x")
         worktree.mkdir()
-        (worktree / "w.jsonl").write_text(line("m1", "2026-11-01T10:00:00Z", inp=1) + "\n")
+        (worktree / "w.jsonl").write_text(line("m2", "2026-11-01T10:00:00Z", inp=1) + "\n")
         self.main_session("s1", [line("m1", "2026-11-01T10:00:00Z", inp=1)])
         self.assertEqual(len(self.sessions()), 2)
 
@@ -154,12 +273,19 @@ class UsageReportTests(unittest.TestCase):
                 line("b", "2026-11-01T10:01:00Z", model="claude-mystery-9", inp=5),
             ],
         )
-        (row,) = ur.build_rows(self.sessions(), [ur.Window(None, None)])
+        rows = {r.family: r for r in ur.build_rows(self.sessions(), [ur.Window(None, None)])}
+        row = rows["opus"]
         # opus: 4 input + 20 output + 0.2 read + writes 1.25x4 and 2x4
         self.assertAlmostEqual(row.dollars, 4 + 20 + 0.2 + 5 + 8)
-        self.assertEqual(row.unpriced_turns, 1)
+        self.assertEqual(rows["claude-mystery-9"].unpriced_turns, 1)
         text = ur.report(
-            [ur.Window(None, None)], [row], self.sessions(), "opus", 8, ["n/a"], datetime(2026, 11, 2, tzinfo=UTC)
+            [ur.Window(None, None)],
+            list(rows.values()),
+            self.sessions(),
+            "opus",
+            8,
+            ["n/a"],
+            datetime(2026, 11, 2, tzinfo=UTC),
         )
         self.assertIn("unpriced models", text)
         self.assertIn("claude-mystery-9", text)
@@ -201,7 +327,11 @@ class UsageReportTests(unittest.TestCase):
         self.assertIn("$48.00", fable_line)  # 8 + 40
         self.assertIn("$24.00", fable_line)  # 4 + 20 at opus prices
         self.assertIn("2.00x", fable_line)
-        self.assertIn("assumes the same tokens", text)
+        self.assertIn("for information only", text)
+        self.assertIn("same tokens is an assumption", text)
+        self.assertIn("fewer turns and tokens than Opus", text)
+        self.assertIn("does work Opus cannot", text)
+        self.assertIn("never chosen on this column alone", text)
         sonnet = ur.report(
             [ur.Window(None, None)], rows, self.sessions(), "sonnet", 8, ["n/a"], datetime(2026, 11, 2, tzinfo=UTC)
         )
@@ -248,9 +378,9 @@ class UsageReportTests(unittest.TestCase):
         done = self.run_cli(*base, "--save")
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertIn("merged PRs n/a", done.stdout)
-        saved = list((self.home / ".claude" / "nappy-agent-stats" / "usage").glob("*/report.txt"))
+        saved = list((self.home / ".claude" / "nappy-agent-stats" / "usage").glob("*/*-report.txt"))
         self.assertEqual(len(saved), 1)
-        self.assertTrue(saved[0].with_name("rows.json").exists())
+        self.assertTrue(saved[0].with_name(saved[0].name.replace("report.txt", "rows.json")).exists())
         as_json = self.run_cli(*base, "--json")
         self.assertEqual(json.loads(as_json.stdout)[0]["turns"], 1)
         skipped = self.run_cli(*base, "--no-prs")
@@ -261,7 +391,15 @@ class UsageReportTests(unittest.TestCase):
             done = self.run_cli(flag)
             self.assertEqual(done.returncode, 0)
             self.assertIn("usage: tools/usage-report.py", done.stdout)
-        for bad in (["--nope"], ["stray"], ["--window"], ["--window", "x"], ["--compare-to", "gpt"], ["--top", "0"]):
+        for bad in (
+            ["--nope"],
+            ["stray"],
+            ["--window"],
+            ["--window", "x"],
+            ["--window", "2026-11-05..2026-11-01"],
+            ["--compare-to", "gpt"],
+            ["--top", "0"],
+        ):
             done = self.run_cli(*bad)
             self.assertEqual(done.returncode, 2, bad)
             self.assertIn("usage:", done.stderr)
