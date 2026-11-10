@@ -241,8 +241,8 @@ indistinguishable from the project not having listened.
 
 ## Proposed, not asked for
 
-This rule above is the filer's proposal, not the player's words, and holds until the player
-corrects it. The citation is the player's word it extends:
+These rules above are the filer's proposals, not the player's words, and hold until the player
+corrects them. The citation is the player's word each one extends:
 
 - **Where a set-aside idea is kept** ("A parked option comes back as a question, never as a
   plan"): in a record with a name of its own under `docs/decisions/`, never one named after an
