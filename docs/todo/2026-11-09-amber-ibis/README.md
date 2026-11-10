@@ -1,4 +1,4 @@
-priority: later
+priority: now
 after: 2026-10-18-minty-quail
 
 # amber-ibis — What the rules review found outside the rule files: three rules no test holds, two suites that do not exist, and small tool gaps · filed 2026-11-09
@@ -10,8 +10,9 @@ matching each rule to the suite that holds it, its builders and reviewers found 
 rule files that the rework could not fix. They are filed here so they are not lost.
 
 *Not asked for:* none of these items is the player's request. Each is a defect the rework found
-and named, filed by the orchestrator; the band `later` and the wait for the refactor (many of them
-are comments and docs in files the refactor is rewriting) are the filer's proposal.
+and named, filed by the orchestrator. The wait for the refactor (many of them are comments and
+docs in files the refactor is rewriting) is the filer's proposal; the band is the player's: "now of
+course with after" (inbox #1295).
 
 **It speaks of the skills as the rework leaves them.** Where an item says a skill no longer cites
 a suite, or says a rule is unenforced, or names the record sandy-alpaca, that is the state once the
