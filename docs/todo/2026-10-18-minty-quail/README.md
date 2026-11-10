@@ -108,8 +108,9 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      (`field-reads.md`), and then `typed-everywhere.md`: code is typed wherever the language can
      type it, the tests included (its scripted rewrite of the suites' runner is the orchestrator's
      proposal, marked so there). `method-without-parentheses.md`, a typed receiver's method named
-     without its parentheses being reported, is the orchestrator's proposal and waits for no
-     other item.
+     without its parentheses being reported, is the orchestrator's proposal; its first way, the naming
+     rule for every conversion, helps only if it is written before the passes outside the events
+     convert a yes-or-no field.
    - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a
      pursuit and the rest as parts an event has, and every caller asking through methods). Its
      first steps, the callers outside the events folder and the live event's own behaviours and

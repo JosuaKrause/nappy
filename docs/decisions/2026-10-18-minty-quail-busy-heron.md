@@ -59,8 +59,10 @@ Checked against the engine's documentation and by experiment on the project's Go
 - **The checker types far more receivers than it did**: engine and builtin types, typed arrays and
   dictionaries with indexing and loops, inner classes, preloaded constants, constructors, node
   paths, arithmetic, a ternary of a class and its subclass. The uses it skips fell from 2,320 to
-  34, and it sees 290 reads it could not see before, which `tools/field_reads.txt` now lists (the
-  list's own rule allows that when the checker changes). Nothing was converted.
+  34, and on the day it was built it saw 290 reads it could not see before, which
+  `tools/field_reads.txt` gained (the list's own rule allows that when the checker changes);
+  conversions merged from `main` since have taken some of them out again. Nothing was converted
+  here.
 
 ## What it still cannot see
 
@@ -87,10 +89,14 @@ Checked against the engine's documentation and by experiment on the project's Go
 - The scripts under `docs/evidence/` get no line and are not read: they are frozen and rerun from
   the revision they name.
 - Three probes that already fail to parse on `main` are left as they were.
-- The engine's own names are not taken for methods: `ENGINE_PROPERTIES` lists the engine classes'
-  properties and the builtin types' members that a method under `src/` shares, read from the
-  engine (its class list and `--dump-extension-api`). It is a fixed list: a method added later
-  with another engine name is taken for a method until the list gains it.
+- The engine's own names are not taken for methods: `ENGINE_PROPERTIES` lists the engine's names
+  among the method names nothing else excuses (an engine class's property or signal, a builtin
+  type's member), read from the engine (its class list and `--dump-extension-api`). An engine name
+  that is also a named class's var needs no entry, since the use fails as the var's. It is a fixed
+  list: a method added later with another engine name is taken for a method until the list gains
+  it, and a change to what excuses a name means reading the list from the engine again, as the
+  rethink's build showed: it exposed three names (`rect`, `nodes`, `continued`) the list then
+  gained.
 - The method failure applies only in a file without the opt-out line and only on a receiver the
   check cannot tell; a name only an inner class or a file with no `class_name` declares as a var,
   or one declared as a signal, does not excuse it. The player's words ask that the field-read
@@ -107,19 +113,30 @@ was built, and it left the pull request in the orchestrator's rethink after the 
 verdict (the pull request's conversation holds the rethink), a choice open to the player's
 overturn:
 
-- the list of accepted forms was restated in six texts (the checker's docstring, the godot skill,
-  the using-tools row, this record, the queue item and the description), and one of them had
-  drifted in each review round;
-- the rule did not reach 58 method names, `crowd.clear` among them, the example all six texts gave;
-- every finding of the last two rounds about a method without its parentheses sat in this half,
-  which no words of the player ask for.
+- the list of accepted forms was restated in six texts (the checker's docstring, `--help`'s own
+  description, the godot skill, the using-tools row, this record and the description), and one of
+  them had drifted in each review round;
+- the rule did not reach 58 method names, `crowd.clear` among them, the example four of those
+  texts gave;
+- the findings that came back round after round were in this half and in the texts restating its
+  forms, a half no words of the player ask for; the half that stays had findings too, each fixed
+  where it was found.
+
+Measured in the reviews, for the item that holds this as open work: with the engine's warning for
+a statement that does nothing (`standalone_expression`) raised to an error, a method's name alone
+on a line fails the parse, and a name in a condition still parses. How many lines of the tree trip
+that warning is not measured.
 
 Its code (`hands_on`, `list_bracket`, `enclosing`, the `HANDED_*` patterns and their unit cases in
 `tools/check_field_reads.py` and its test) is at the branch's commit `acd6704d2`, which stays
 reachable through the pull request. What it costs: a stale read of a method on a typed receiver
-(`thing.is_finished` after `is_finished()` replaced the field) is reported by nothing; the events'
+(`thing.is_finished` after `is_finished()` replaced the field) is reported by nothing. The events'
 interface's renaming rule (a yes-or-no question never takes the name of the field it replaces)
-covers the reads that conversion creates. The queue item
+covers the reads the events' conversion creates, and only those: for the other areas the queue
+has the method take the field's name (`field-reads.md`'s last bullet), so a yes-or-no field
+converted there (`Building.is_home_building`, `ContactPoint.is_done`, `RunConfig.is_rig`) leaves
+every missed read on a typed receiver parsing and always true. Whether the naming rule is widened
+to every conversion is put to the player. The queue item
 `docs/todo/2026-10-18-minty-quail/method-without-parentheses.md` holds it as open work, proposed
 and not asked for.
 
