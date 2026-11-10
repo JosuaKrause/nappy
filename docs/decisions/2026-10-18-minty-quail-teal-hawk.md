@@ -8,8 +8,8 @@ folder; the end-of-refactor remeasure runs it once more (the entry's README, "Or
 ## What was built
 
 - **`tools/compare-placement-rows.py`**: one `--sample NAME CITIES MAIN_LOG HEAD_LOG` per sample,
-  `--roles FILE`, and labels for the two trees' headings. It prints the rows outside two standard
-  errors pooled, the rows outside them on two or more samples with the same sign, a summary and the
+  `--roles FILE`, and labels for the two trees' headings. It prints the cells outside two standard
+  deviations pooled, the cells outside them on two or more samples with the same sign, a summary and the
   counts, and nothing that belongs to one step. Help on `--help` and `-h`; a missing sample, an
   unknown flag, a bad city count or an unreadable log is refused before any work.
 - **`tests/probes/placement_roles.gd`**, the role probe moved out of the evidence folder and typed:
