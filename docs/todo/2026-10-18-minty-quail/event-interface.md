@@ -674,13 +674,13 @@ Reads by `rg`, since the check does not list it.
 | `position` | about 80 | `placed_at()` ok, `is_placed()` ok, `distance_from()` ok; `place_at(at)` for the one writer, her walk's siting |
 | `path` | 18 | `walks()` ok, `stands_still()` ok, `ends()` ok |
 | `facing` | 18 | `faces()`; set as the plan is built |
-| `live` | about 60 (streaming, the route rig, the scene recipes, the run log's observer, the resistance) | plan `is_in_the_world()` ok, `where_it_stands_now()` ok, `faces_now()`; `EventManager.event_of(plan)` for the live event itself; streaming tells the plan `enter_the_world(node)` and `leave_the_world(save)` |
+| `live` | about 60 (streaming, the route rig, the scene recipes, the resistance) | plan `is_in_the_world()` ok, `where_it_stands_now()` ok, `faces_now()`; `EventManager.event_of(plan)` for the live event itself; streaming tells the plan `enter_the_world(node)` and `leave_the_world(save)` |
 | `spent` | 18 | `is_spent()` ok, `spend()` ok |
 | `mast_id`, `silenced` | 17 and 5 | `is_a_mast()`, `mast_id()`, `stand_as_a_mast(id)`, `is_silenced()`, `silence()`, `is_a_live_mast()` |
 | `age`, `travelled`, `noticed_at`, `behaviours` | 7, 3, 4 and 3 | one `EventSave`: `keep(save)`, `saved()`; `arrive_aged(seconds)` ok for a recipe that stages an event part-way through |
 | `role` | 6 | `role()`, `give_role()` ok |
 | `comes_in`, `wait_began`, `kept_live`, `was_live` | 6, 3, 3 and 5 (streaming) | streaming's own state per plan; `keep_in_the_world()` ok stays as the way to ask for it, and `come_first_in(seconds)` ok, by which the building's plan says when an event first comes, tells streaming rather than writing a field |
-| `repeat_every`, `repeat_after`, `at_her`, `arrives_aged` | 5 in all (the building's plan) | `repeats()` ok; `come_again_every(seconds)` ok, `come_where_she_stands()` ok, `arrive_aged(seconds)` ok as the building's plan is made; `comes_where_she_stands()`, `arrives_aged()` |
+| `repeat_every`, `repeat_after`, `at_her`, `arrives_aged` | 3 (the catalogue and the event scheduler) | `repeats()` ok; `come_again_every(seconds)` ok, `come_where_she_stands()` ok, `arrive_aged(seconds)` ok as the building's plan is made; `comes_where_she_stands()`, `arrives_aged()` |
 | `gate_state` | 2 | `gate()`, set as the region's doors are made |
 | `permanent` | 1 | `is_permanent()` ok, `make_permanent()` |
 | `_is_door`, `_in_the_wall`, `_is_a_seal` | private already | as they are |
@@ -864,8 +864,8 @@ each question as it was shown).
    events' step and the baby's sweep with the probes of section 6 and reports the numbers in its
    pull request, so that there are numbers to look at later; no step is held, tuned or sent back for
    its cost.
-6. **Does a step fix an answer that is slightly wrong today?** Offered keeping the answers below
-   and listing them for the end remeasure (a), or (b), in the board's words, "fix each in the step
+6. **Does a step fix an answer that is slightly wrong today?** Offered keeping the three answers
+   the board named (the first three below) and listing them for the end remeasure (a), or (b), in the board's words, "fix each in the step
    that names it, as a change made on purpose with pictures": "the shape change is desired. as I
    said earlier the main real measure will be playtests. This will tell us what needs fixing.
    Let's not obsess over theoretical numbers. We currently have no established base anymore since
@@ -874,8 +874,8 @@ each question as it was shown).
    first, and nothing is kept wrong to hold old numbers. Each is its own small pull request after
    the step that names it, saying what it changes, and playtests decide what then needs fixing.
    Tell me if you meant only the field's shape.": "whatever is the *correct* implementation. if
-   that is b then let's do that" (inbox #1278 in olive-ferret). **Read as:** every answer below is made correct.
-   The timing is the read-back's, which is what the player answered: each is a pull request of
+   that is b then let's do that" (inbox #1278 in olive-ferret). **Read as:** every answer below is
+   made correct. The timing is the read-back's, which is what the player answered: each is a pull request of
    its own after the step that gives it a name, not a change inside that step, saying what it
    changes in play and in the run log, with its pictures. Playtests decide what then needs fixing.
    The fourth answer below was found in review after the player answered; *read as* (the
