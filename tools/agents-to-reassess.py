@@ -3,7 +3,7 @@
 
 One line per sub-agent: its id, model, context size, turns and the minutes since its transcript
 was last written, then why to reassess it. Reassessing asks whether the model suits the work or
-whether the agent is stuck or in a loop (inbox #1298); nothing here stops, resumes or messages an
+whether the agent is stuck or in a loop (inbox #1298 in merry-badger); nothing here stops, resumes or messages an
 agent, and work that moves to another model starts from a new brief, never the old context.
 
 It reads ~/.claude/projects/<project>/<session>/subagents/agent-<id>.jsonl, where <project> is the
@@ -30,7 +30,7 @@ What a transcript cannot say: an agent whose session was cut off in the middle o
 no marker, so it shows as running and is flagged quiet until another session is the one looked at.
 
 Reassess flags:
-  size            context at or past 500k tokens (inbox #1298)
+  size            context at or past 500k tokens (inbox #1298 in merry-badger)
   auto-compacted  the harness compacted the context itself (a compact_boundary whose trigger
                   is "auto"; one asked for by hand does not count)
   quiet           running and no write for 45 minutes, the interval at which the
@@ -43,7 +43,7 @@ Reassess flags:
                   high enough that reading a status three times is not a loop.
 
 Note, informational and below the reassess line:
-  past-guide      more turns or more context than the limit in "Sizing the task" of
+  past-guide      more context than the limit in "Sizing the task" of
                   .claude/skills/orchestrating/references/writing-a-brief.md, read from that
                   file's own sentence; this tool exits 2 if the sentence can no longer be read.
 
@@ -73,10 +73,10 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 REFERENCE = ROOT / ".claude" / "skills" / "orchestrating" / "references" / "writing-a-brief.md"
-# The sentence of "Sizing the task" that owns the limit; the numbers are written nowhere else.
-LIMIT_LINE = re.compile(r"about ([\d,]+) turns or ([\d,]+)k tokens of context")
+# The sentence of "Sizing the task" that owns the limit; the number is written nowhere else.
+LIMIT_LINE = re.compile(r"The limit is about (\d[\d,]*)k tokens of context")
 
-REASSESS_CONTEXT = 500_000  # the player's number (inbox #1298)
+REASSESS_CONTEXT = 500_000  # the player's number (inbox #1298 in merry-badger)
 QUIET_MINUTES = 45  # orchestrating, "What the orchestrator keeps": a wait is checked every 45 minutes
 LOOP_WINDOW = 20  # this tool's choice: the last tool calls looked at
 LOOP_COUNT = 5  # this tool's choice: identical calls in the window that make a loop
@@ -96,7 +96,6 @@ class ReassessError(Exception):
 
 @dataclass(frozen=True)
 class Limits:
-    turns: int
     context: int
 
 
@@ -122,7 +121,7 @@ class Measure:
 def read_limits(reference: Path = REFERENCE) -> Limits:
     """The brief guide's limit, from the reference's own sentence."""
     try:
-        found = LIMIT_LINE.search(reference.read_text())
+        found = LIMIT_LINE.search(" ".join(reference.read_text().split()))  # a wrapped sentence still matches
     except OSError as e:
         raise ReassessError(f"cannot read the limit: {e}") from e
     if not found:
@@ -130,8 +129,7 @@ def read_limits(reference: Path = REFERENCE) -> Limits:
             f"no line of {reference} matches {LIMIT_LINE.pattern!r}: "
             "the limit's sentence changed, so LIMIT_LINE in this tool changes with it"
         )
-    turns, thousands = (int(group.replace(",", "")) for group in found.groups())
-    return Limits(turns=turns, context=thousands * 1000)
+    return Limits(context=int(found.group(1).replace(",", "")) * 1000)
 
 
 def _is_prompt(message: dict[str, Any]) -> bool:
@@ -239,13 +237,8 @@ def reasons(found: Measure, idle_minutes: int, limits: Limits) -> tuple[list[str
     if loop:
         reassess.append(f"looping ({loop[0]} x{loop[1]} in the last {len(found.recent_calls)} calls)")
     notes: list[str] = []
-    over: list[str] = []
-    if found.turns > limits.turns:
-        over.append(f"{found.turns} > {limits.turns} turns")
     if found.context > limits.context:
-        over.append(f"{thousands(found.context)} > {thousands(limits.context)}")
-    if over:
-        notes.append(f"past-guide ({', '.join(over)})")
+        notes.append(f"past-guide ({thousands(found.context)} > {thousands(limits.context)})")
     return reassess, notes
 
 

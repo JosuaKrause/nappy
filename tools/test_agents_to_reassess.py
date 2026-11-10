@@ -156,13 +156,17 @@ class AgentsToReassessTests(unittest.TestCase):
         self.assertTrue(self.line(out, "below").endswith("note: past-guide (499k > 300k)"))
         self.assertIn("1 to reassess", out)
 
-    def test_past_the_guide_is_a_note_for_turns_or_context(self) -> None:
+    def test_past_the_guide_is_a_note_for_context_alone(self) -> None:
         limits = tool.read_limits()
-        self.agent("turns", working(limits.turns + 1))
-        self.agent("at-limit", working(limits.turns, limits.context))
+        self.agent("many-turns", working(2500))
+        self.agent("past", working(2, limits.context + 1000))
+        self.agent("at-limit", working(2, limits.context))
         out = self.run_tool().stdout
+        self.assertEqual(self.line(out, "many-turns").split()[5:], ["running", "-"])
         self.assertTrue(
-            self.line(out, "turns").endswith(f"note: past-guide ({limits.turns + 1} > {limits.turns} turns)")
+            self.line(out, "past").endswith(
+                f"note: past-guide ({limits.context // 1000 + 1}k > {limits.context // 1000}k)"
+            )
         )
         self.assertEqual(self.line(out, "at-limit").split()[5:], ["running", "-"])
         self.assertIn("0 to reassess", out)
@@ -249,14 +253,13 @@ class AgentsToReassessTests(unittest.TestCase):
 
     def test_the_limit_is_read_from_the_brief_guide_and_an_unreadable_sentence_fails(self) -> None:
         limits = tool.read_limits()
-        self.assertGreater(limits.turns, 0)
         self.assertGreater(limits.context, 1000)
         reworded = self.project / "writing-a-brief.md"
-        reworded.write_text("- The limit is roughly 1,200 turns or 2,500k tokens of context.\n")
+        reworded.write_text("- The limit is roughly 2,500k tokens of context.\n")
         with self.assertRaises(tool.ReassessError):
             tool.read_limits(reworded)
-        reworded.write_text("- The limit is about 1,200 turns or 2,500k tokens of context.\n")
-        self.assertEqual(tool.read_limits(reworded), tool.Limits(turns=1200, context=2_500_000))
+        reworded.write_text("- The limit is about 2,500k tokens of\n  context, and no limit counts turns.\n")
+        self.assertEqual(tool.read_limits(reworded), tool.Limits(context=2_500_000))
         with self.assertRaises(tool.ReassessError):
             tool.read_limits(self.project / "no-such-file.md")
 

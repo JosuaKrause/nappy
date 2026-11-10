@@ -31,7 +31,7 @@ anything it does not understand, one place the flag list lives), not what each i
 | `tools/scene-draft.sh` | Walks a recipe's scripted route once and writes the first draft of a task scene's stretch, for the author to edit. | Making a new task scene, or drafting one again after the city it was cut from changed. | `docs/SCENE_RECIPES.md`, "The task scenes" |
 | `tools/measure-ground-frames.sh` | Compares the three ground preparation modes (`--ground-mode`) on the committed HEAD under matched camera routes, in a clean detached checkout it removes itself. It checks its runtime and collector hashes around every launch, waits up to five minutes for another Godot to end, rejects a capture whose city ran another mode or whose covered window forced a draw, and records the load average. | Comparing the ground modes' frame cost. | verify |
 | `tools/agent-stats.py` | The counter of what each sub-agent did and how it went, kept outside the repository: `add` a grade, `summary`, `list`, and `ungraded`, the finished agents with no grade or with stops after their last grade's date. | After every finished sub-agent, to grade it; `ungraded` to find the agents still to grade; before choosing a model for a kind of task. | orchestrating |
-| `tools/agents-to-reassess.py` | Flags which of a session's running sub-agents to reassess, from their transcripts: huge, auto-compacted, quiet or looping (inbox #1298). | At each look at the running agents. | orchestrating |
+| `tools/agents-to-reassess.py` | Flags which of a session's running sub-agents to reassess, from their transcripts: huge, auto-compacted, quiet or looping (inbox #1298 in merry-badger). | At each look at the running agents. | orchestrating |
 | `tools/usage-report.py` | What this repository's sessions and sub-agents used over date windows: weighted tokens and API-price dollars by kind and model family, each family also priced at another's, for information only. Data stays outside the repository. | Analysing a week's agent usage, or before choosing models or changing how agents run. | orchestrating |
 | `tools/agent-identity.py` | Gives each agent role its own GitHub bot identity: `status` says whether a role is usable, `run <role> -- <command>` runs a command as it, `create` sets one up on the player's machine. | Before and for every commit, push or post. | committing |
 | `tools/agent-setup.sh` | Sets an agent up: `<name> <branch>` makes the sparse worktree and the brief's header and prints the spawn prompt; `--agent` credits an agent id, `--release` marks the brief `cleanup: ready`, `--detach <ref> <name>` makes a review agent's scratch checkout and `--remove <name>` removes a clean one. `tools/test_agent_setup.sh` runs it against a scratch clone. | Starting an agent, the moment its id is known, when its work is done, and around a review. | orchestrating |
@@ -118,6 +118,12 @@ search use `rg`, add `-I`, or restrict the pathspec (`-- '*.md' '*.gd' '*.sh'`).
 **committing** owns that rule ("Who a commit and a pull request are from") and how text that names
 a write is handed over ("Text handed to a write goes through a file"). Each hook's header comment
 is the exact list of what it denies, and each denial names the way out.
+
+**A third guards the resume of a sub-agent.** `.claude/hooks/resume-guard.py`, on every
+`SendMessage`, refuses once a message to a sub-agent whose context is past the size a resume is
+refused at, or was compacted by the harness, and passes the same message sent again;
+**orchestrating** owns that rule and the question the refusal asks ("What the orchestrator keeps"), and `tools/test_resume_guard.py` holds the hook's
+cases.
 
 ## A manual sequence done a second time becomes a script
 

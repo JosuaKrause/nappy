@@ -5,6 +5,9 @@
 #
 #   tools/test_rules_hooks.sh
 #
+# A case that holds a time bound (the "decided quickly" ones) asserts it only where CI=true, which
+# GitHub Actions sets; a local run prints the time as an information line and never fails on it.
+#
 # Asserts:
 #   - project-rules.sh refuses the first edit of an area with the index of the skills that govern
 #     it (each one's name, path, size and the opening of its description, never its text), and
@@ -414,7 +417,9 @@ cases_finish() {
 # $1 label  $2 decision function (guard_decision or write_guard_decision)  $3 expected decision
 # $4 command  $5 bound in seconds (default 8)
 #
-# Asserts the decision and that the hook reached it inside the bound. A timing check guards two
+# Asserts the decision and, on CI, that the hook reached it inside the bound; a local run prints the
+# time as one information line and neither fails nor counts a check on it, since a time is read from
+# CI's run (GitHub Actions sets CI=true) and a loaded machine slows any run. A timing check guards two
 # things: a hook that runs past its 10-second timeout lets the command through, and a reading that
 # walks again from every word costs the square of the command's length. The default bound, 8
 # seconds, keeps the first with a margin, and a run past a bound is timed once more before it
@@ -433,14 +438,20 @@ assert_decided_in_time_now() {
         started=$(now)
         got="$("$decide" "$cmd")"
         secs=$(perl -e 'printf "%.2f", $ARGV[1] - $ARGV[0]' "$started" "$(now)")
+        [ "${CI:-}" = true ] || break
         perl -e 'exit($ARGV[0] < $ARGV[1] ? 0 : 1)' "$secs" "$bound" && break
     done
-    checks=$((checks + 2))
+    checks=$((checks + 1))
     if [ "$got" = "$want" ]; then
         echo "ok   $label"
     else
         fail "$label: expected $want, got $got"
     fi
+    if [ "${CI:-}" != true ]; then
+        echo "info $label: decided in ${secs}s (bound ${bound}s, asserted on CI only)"
+        return
+    fi
+    checks=$((checks + 1))
     if perl -e 'exit($ARGV[0] < $ARGV[1] ? 0 : 1)' "$secs" "$bound"; then
         echo "ok   $label: decided in ${secs}s, under ${bound}s"
     else

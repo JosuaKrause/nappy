@@ -25,7 +25,12 @@ The rules the orchestrating session must not miss, one line each; the sections b
 - **The queue and the archive are the orchestrator's**; nothing is committed into a worktree an
   agent works in, and no agent runs `git stash`.
 - **An agent is resumed only while its cache is warm** (55 minutes in Claude Code); after that a
-  fresh one is briefed.
+  fresh one is briefed. **A hook refuses, once, the resume of an agent that has grown too large**
+  (inbox #1298 in merry-badger): a follow-up on its own pull request is sent again, new work goes
+  to a fresh agent.
+- **A sub-agent whose context reaches about 500k tokens is reassessed** (inbox #1298 in
+  merry-badger): whether its model suits the work, whether it is stuck, whether it is looping. Work
+  that moves to another model starts from a new brief.
 - **After a report**: the queue move, a review under **pr-review**, the merge and the retirement
   under **committing**, and a grade in `tools/agent-stats.py`.
 - **A usage limit changes nothing about delegation.**
@@ -57,7 +62,7 @@ A stronger model than a row's takes a milestone whose geometry or contracts warr
 | Measure: run a named probe batch into a fixed table, no conclusion | Haiku |
 | Measure with interpretation: what is noise, what is real, what a picture shows | Sonnet |
 | Capture named moments for a PR | Haiku, the pictures judged by the measurer or the reviewer |
-| Review fixes | the builder, while warm and not near the limit |
+| Review fixes | the builder, while warm |
 | Review of a play-changing or design PR, of one that carries a drawing, or of a change to what a rule says | Opus |
 | Review of queue, docs, a skill's wording alone or a small delta | Sonnet |
 
@@ -262,8 +267,10 @@ before spawning:
 - **A wait is checked at least every 45 minutes** (gentle-owl #1255). While a sub-agent runs,
   the orchestrator looks at it at least every 45 minutes (its output, its worktree and its
   pushes) for signs it is stuck: no new commits, a loop that has stopped improving, a wait with
-  no end. The completion notice alone is not enough, since an agent that is stuck never sends
-  it. No wait of the orchestrator's own runs past 45 minutes without such a check. The check is a
+  no end. The check runs `tools/agents-to-reassess.py`, which says from each running agent's
+  transcript which to reassess (inbox #1298 in merry-badger; the bullet on the reassessment,
+  below). The completion notice alone is not enough, since an agent that is stuck never sends it.
+  No wait of the orchestrator's own runs past 45 minutes without such a check. The check is a
   recurring job about every 30 minutes, since a scheduler can fire up to half its period late, and
   the job is deleted when no agent is left running. It is not a tick in the sense of the agent
   contract's one-notification rule, which keeps a wait from ending a turn on every minute.
@@ -286,19 +293,49 @@ before spawning:
 - **An agent stays on one task, and no agent grows huge** (inbox #874 in minty-dolphin). An agent re-reads its
   whole context on every turn, so the cost of a long-lived one grows with every step it is kept
   for; a fresh agent instead rebuilds its context from scratch, so too many fresh agents cost too.
+  **A hook holds this at the resume** (inbox #1291): `.claude/hooks/resume-guard.py` refuses, once,
+  a `SendMessage` to a sub-agent whose context is past the size `references/writing-a-brief.md`
+  gives for a resume, or whose context the harness has compacted on its own, naming which. That
+  size is above the limit a task is scoped to, since an agent may go a bit over now and then
+  (inbox #1291), and it comes earlier than the reassessment of an agent, since it is about resuming;
+  neither it nor the limit counts turns (inbox #1298 in merry-badger). **The refusal asks one question: is the
+  message a follow-up on the agent's own pull request, or new work** (inbox #1298 in merry-badger)? A follow-up (a
+  delta review, review or CI fixes, a merge of `main`, an instruction to stop or wrap up) is sent
+  again and the same message passes, since a job that short costs less on the agent that knows the
+  pull request than on a fresh one. New work (the next step, the next pull request, another task)
+  goes to a fresh agent briefed from the brief file and what this one left. The reassessment of an
+  agent near 500k tokens applies on top (inbox #1298 in merry-badger).
+- **A sub-agent whose context reaches about 500k tokens is reassessed** (inbox #1298 in
+  merry-badger): whether its model suits that kind of work, whether it is stuck, and whether it is
+  looping. There are exceptions. `tools/agents-to-reassess.py` flags such an agent, and the
+  recurring check on the running agents (above) runs it; the agent is reassessed once it is
+  flagged, and before it is sent anything more. The reassessment is a judgement and not a stop: a
+  running agent goes on meanwhile, one found fine goes on after it, and which case is an
+  exception the orchestrator judges. **Work that moves to another model starts from a new brief written for that model's
+  agent**, whether the reassessment moves it or anything else does, and never from the old agent's
+  context or transcript (inbox #1298 in merry-badger); a sub-agent's model is set when it is
+  spawned and a resume carries no choice of one, so a change of model is always a new agent.
 - **A task is scoped to stay under the limit by construction, never policed** (inbox #896 in plaid-raven). A brief
   carries no size line asking the agent to count its turns or tokens, and the orchestrator does not
   watch an agent's count while it runs, since either spends tokens on bookkeeping instead of the
-  work; the orchestrator sizes every task before spawning it so that it finishes well under the
-  limit. `references/writing-a-brief.md` says where the limit falls and how a task is cut to it
-  (one kind of work per agent, one mechanism per build, a fresh agent per pull request of a split
-  plan).
+  work. **The one exception is the recurring check** (inbox #1298 in merry-badger): there the
+  orchestrator does read each running agent's size, by `tools/agents-to-reassess.py` from the
+  agent's transcript, which costs the agent no turn and the orchestrator one run of a script. The
+  hook above is no watching: it reads an agent's size only when a message is sent to it, and
+  spends no model tokens. The orchestrator sizes every task before spawning it so that it
+  finishes well under the limit.
+  `references/writing-a-brief.md` says where the limit falls and how a task is cut to it (one kind
+  of work per agent, one mechanism per build, a fresh agent per pull request of a split plan).
 - **A warm agent is reused while rebriefing would cost more** (inbox #896 in plaid-raven). Briefing a fresh agent
-  costs tokens too, so follow-up work on a pull request (review fixes, the next step of the same
-  change) goes back to its agent while it is warm (the cold-resume rule below) and not huge, which
-  saves the rebriefing. What the orchestrator is told for free, such as the token count in an agent's
-  finishing notification, is used: it says whether the agent is far enough under the limit to
-  reuse, and how the next brief should be sized.
+  costs tokens too, so work on the agent's own pull request (review fixes, a delta review, a merge
+  of `main`, the next step of the same change) goes back to its agent while it is warm (the
+  cold-resume rule below), under the size a resume is refused at and not compacted automatically,
+  which saves the rebriefing. Past that size, or once compacted, only the short jobs the refusal
+  names as a follow-up (a delta review, review or CI fixes, a merge of `main`, a stop or wrap-up)
+  still save it, and the next step of the change is new work for a fresh agent, which is the
+  question the hook's refusal asks. What the orchestrator is told for free, such as the token
+  count in an agent's finishing notification, is used: it says whether the agent is past the size
+  a resume is refused at, and how the next brief should be sized.
 - **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent that
   reported an hour ago replays its whole transcript at full price, because the prompt cache behind
   it has expired (woolly-finch 5). Resume only while the cache is live, and the windows are exact:
@@ -377,3 +414,32 @@ to the player's correction:
   from a switch (`references/worktrees-and-disk.md`): the filer's fix of a gap in this skill.
 - **That the 45-minute check is a recurring job about every 30 minutes**, and the reading that it
   is not a tick under the contract's one-notification rule (the rule is gentle-owl #1255).
+- **How the resume hook remembers and words its refusal** ("What the orchestrator keeps"): the
+  filer's design. The player's are the hook itself, refusing the resume of an agent that has
+  compacted automatically or grown too large (inbox #1291), the size it refuses at, that nothing
+  counts turns, and the question the refusal asks, with a follow-up sent again and new work given
+  to a fresh agent (inbox #1298 in merry-badger). Proposed: that a refusal is remembered for one sender, one target
+  and one message text, so that only the very same message passes when sent again; which jobs the
+  refusal lists as a follow-up and as new work; and that the hook refuses at the first token past
+  the number.
+- **How the player's other words on agent size bear on the refusal** ("What the orchestrator
+  keeps"): the orchestrator's reading. Read as: the room to go a bit over now and then
+  (inbox #1291) is the distance between the limit a task is scoped to and the size a resume is
+  refused at, and a resend to an agent near 500k tokens waits for its reassessment (inbox #1298 in merry-badger).
+- **What the reassessment of a sub-agent at about 500k tokens adds to the player's words** ("What
+  the orchestrator keeps"). The player's are the number, the three questions, that there are
+  exceptions, the script that says which agents to reassess, and the new brief at a change of
+  model (inbox #1298 in merry-badger). The filer's: that it is a judgement and not a stop, so a
+  running agent goes on meanwhile and one found fine goes on after it; when it happens, once the
+  agent is flagged and before it is sent anything more; that the check which reads a running
+  agent's size is the recurring one; that this reading by the script is the one exception to the
+  rule against watching an agent's count while it runs (inbox #896 in plaid-raven), a brief still
+  carrying no size line and no agent counting its own turns or tokens; that the orchestrator
+  judges which case is an exception; and which exceptions there are, none being named in the rule,
+  where the session that reviewed the usage proposed three: an agent whose context is mostly the
+  output of runs (measuring, capturing), one that finished its change cleanly, and one already on
+  Fable.
+- **That the change of model is a clause of the reassessment and not a rule of its own** ("What
+  the orchestrator keeps"): the orchestrator's answer to the player's question whether it is
+  relevant at all (inbox #1303). A resume cannot change an agent's model, so the words decide only
+  that the new model's agent is briefed afresh and is not handed the old one's context.

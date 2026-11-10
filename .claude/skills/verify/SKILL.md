@@ -9,6 +9,7 @@ description: How to verify a change in this project — the verification command
 - **The unfiltered suite is CI's**, on the merge result; a local `PARTIAL RUN` is the expected state.
 - **Headless unless the picture is the question**, and an agent's game run always carries a dev flag or `--no-save`.
 - **A green suite says nothing about a run, the page or the picture**: play a minute and read the log back, open the screenshot.
+- **A time a test reports is read from CI's run of the pull request, not a local one; a test-time optimization is compared locally while written and proven by CI's timings.**
 - **Evidence about anything that moves is a burst, not a still.**
 - **A suite leaves the shared state as it found it and never quits the tree, and an engine error fails the run.**
 - **A check that compares a doc with the code is a `tools/` script in CI's `gates` job**, never an assertion in a suite.
@@ -133,6 +134,25 @@ request never runs.
 
 ## What each one cannot see
 
+**A time a test reports is read from CI's run of the pull request, never from a local one, bar
+the optimization case below** (inbox #1307): a suite's duration, a case's own time, a check that
+holds how fast something ran. CI is where a time matters, and a local run's time is information,
+which a report or a review does not list as a failure. **The rule is about tests, which are what
+CI measures** (inbox #1307): while an optimization of a test's time (a suite's duration, the speed
+of the test run itself) is being written, its versions are compared locally and in quick
+succession, since CI's cycle is too slow for that, and the proof that it works is CI's timings,
+which are more reliable than a local machine's; a builder reads them from the shard logs of the
+pull request's run (`gh run view <run id> --log`), where the runner prints one
+`-- test_x.gd  N ms` line per suite. A measurement of the game (a probe of the dawn's time, the
+crowd tick, a frame profile) is outside the rule and is measured as its brief says.
+
+**Proposed:** a check of how fast something ran asserts its bound only where `CI=true` (GitHub
+Actions sets it) and prints the time as an information line otherwise (see "Proposed, not asked
+for"). The timed cases of `tools/test_rules_hooks.sh`, `tools/test_codex_hooks.py` and
+`tools/test_agent_identity.py` do. A timeout that stops a hang still fails a local run, and so does
+`tools/test_cli_help.sh`'s wait_or_kill bound, which checks that a wait ends, not how fast a
+thing ran.
+
 **A green `test.sh` says nothing about whether a *run* behaves.** Every run writes an ordered trace;
 if you changed anything the player experiences, **play a minute of it and read the log back**.
 Defects found only that way include a `run` entry claiming a six-hundred-pixel event was "in reach",
@@ -224,3 +244,10 @@ How a test is written — what it builds, what it mocks, what it holds — is **
 
 `references/runner.md` has the detail; read it when a run fails in a way these lines do not
 explain, and before changing the runner or its fixtures.
+
+## Proposed, not asked for
+
+- **That a check of how fast something ran asserts its bound only where `CI=true` and prints its
+  time otherwise, that a new one does the same, and that each script does it through one helper**
+  ("What each one cannot see") are the filer's proposal, open to the player's correction (inbox
+  #1307); the plainer alternative is the rule alone, with local failures still reported.
