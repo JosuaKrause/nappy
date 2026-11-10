@@ -3,7 +3,7 @@
 
 One line per sub-agent: its id, model, context size, turns and the minutes since its transcript
 was last written, then why to reassess it. Reassessing asks whether the model suits the work or
-whether the agent is stuck or in a loop (inbox #1298); nothing here stops, resumes or messages an
+whether the agent is stuck or in a loop (inbox #1298 in merry-badger); nothing here stops, resumes or messages an
 agent, and work that moves to another model starts from a new brief, never the old context.
 
 It reads ~/.claude/projects/<project>/<session>/subagents/agent-<id>.jsonl, where <project> is the
@@ -30,7 +30,7 @@ What a transcript cannot say: an agent whose session was cut off in the middle o
 no marker, so it shows as running and is flagged quiet until another session is the one looked at.
 
 Reassess flags:
-  size            context at or past 500k tokens (inbox #1298)
+  size            context at or past 500k tokens (inbox #1298 in merry-badger)
   auto-compacted  the harness compacted the context itself (a compact_boundary whose trigger
                   is "auto"; one asked for by hand does not count)
   quiet           running and no write for 45 minutes, the interval at which the
@@ -76,7 +76,7 @@ REFERENCE = ROOT / ".claude" / "skills" / "orchestrating" / "references" / "writ
 # The sentence of "Sizing the task" that owns the limit; the number is written nowhere else.
 LIMIT_LINE = re.compile(r"The limit is about (\d[\d,]*)k tokens of context")
 
-REASSESS_CONTEXT = 500_000  # the player's number (inbox #1298)
+REASSESS_CONTEXT = 500_000  # the player's number (inbox #1298 in merry-badger)
 QUIET_MINUTES = 45  # orchestrating, "What the orchestrator keeps": a wait is checked every 45 minutes
 LOOP_WINDOW = 20  # this tool's choice: the last tool calls looked at
 LOOP_COUNT = 5  # this tool's choice: identical calls in the window that make a loop

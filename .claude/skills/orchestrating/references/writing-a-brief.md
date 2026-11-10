@@ -65,13 +65,13 @@ The player's rules are **orchestrating**'s: an agent stays on one task and no ag
 and a warm agent is reused while rebriefing would cost more (inbox #896 in plaid-raven). Where the
 limit falls and how a task is cut to it:
 
-- The limit is about 300k tokens of context, and no limit counts turns (inbox #1298). Every turn
+- The limit is about 300k tokens of context, and no limit counts turns (inbox #1298 in merry-badger). Every turn
   re-reads the whole context, so an agent's cost grows much faster than its length: two agents that
   each end at half the size cost well under one that ends at the whole.
-- A resume is refused once past 400k tokens of context (inbox #1298), the context being what the
+- A resume is refused once past 400k tokens of context (inbox #1298 in merry-badger), the context being what the
   agent's latest turn read. It is a second, higher number on purpose: the limit above is where a
   task is scoped to finish, an agent that ran a bit over it is still resumed unasked, and a resume
-  is refused earlier than an agent is reassessed (inbox #1298). `.claude/hooks/resume-guard.py`
+  is refused earlier than an agent is reassessed (inbox #1298 in merry-badger). `.claude/hooks/resume-guard.py`
   reads the number out of this item's first sentence and reads no other, so it is written nowhere
   else and that sentence keeps its form (`tools/test_resume_guard.py` fails when the hook cannot
   read it).
@@ -104,6 +104,6 @@ player's correction:
   under the limit by construction (inbox #896 in plaid-raven), and how a task is sized to it is
   proposed. Where the limit falls is the filer's number, which the player's answer on the resume
   leaves standing; that no limit counts turns, and the size a resume is refused at, are the
-  player's (inbox #1298).
+  player's (inbox #1298 in merry-badger).
 - **That a brief names the layer its work belongs to**, made in **designing-classes**
   (plush-kestrel).

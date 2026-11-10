@@ -22,7 +22,7 @@ The rules the orchestrating session must not miss, one line each; the sections b
   agent works in, and no agent runs `git stash`.
 - **An agent is resumed only while its cache is warm** (55 minutes in Claude Code); after that a
   fresh one is briefed. **A hook refuses, once, the resume of an agent that has grown too large**
-  (inbox #1298): a follow-up on its own pull request is sent again, new work goes to a fresh agent.
+  (inbox #1298 in merry-badger): a follow-up on its own pull request is sent again, new work goes to a fresh agent.
 - **After a report**: the queue move, a review under **pr-review**, the merge and the retirement
   under **committing**, and a grade in `tools/agent-stats.py`.
 - **A usage limit changes nothing about delegation.**
@@ -275,13 +275,13 @@ before spawning:
   gives for a resume, or whose context the harness has compacted on its own, naming which. That
   size is above the limit a task is scoped to, since an agent may go a bit over now and then
   (inbox #1291), and it comes earlier than the reassessment of an agent, since it is about resuming;
-  neither it nor the limit counts turns (inbox #1298). **The refusal asks one question: is the
-  message a follow-up on the agent's own pull request, or new work** (inbox #1298)? A follow-up (a
+  neither it nor the limit counts turns (inbox #1298 in merry-badger). **The refusal asks one question: is the
+  message a follow-up on the agent's own pull request, or new work** (inbox #1298 in merry-badger)? A follow-up (a
   delta review, review or CI fixes, a merge of `main`, an instruction to stop or wrap up) is sent
   again and the same message passes, since a job that short costs less on the agent that knows the
   pull request than on a fresh one. New work (the next step, the next pull request, another task)
   goes to a fresh agent briefed from the brief file and what this one left. The reassessment of an
-  agent near 500k tokens applies on top (inbox #1298).
+  agent near 500k tokens applies on top (inbox #1298 in merry-badger).
 - **A task is scoped to stay under the limit by construction, never policed** (inbox #896 in plaid-raven). A brief
   carries no size line asking the agent to count its turns or tokens, and the orchestrator does not
   watch an agent's count while it runs, since either spends tokens on bookkeeping instead of the
@@ -368,11 +368,11 @@ to the player's correction:
   filer's design. The player's are the hook itself, refusing the resume of an agent that has
   compacted automatically or grown too large (inbox #1291), the size it refuses at, that nothing
   counts turns, and the question the refusal asks, with a follow-up sent again and new work given
-  to a fresh agent (inbox #1298). Proposed: that a refusal is remembered for one sender, one target
+  to a fresh agent (inbox #1298 in merry-badger). Proposed: that a refusal is remembered for one sender, one target
   and one message text, so that only the very same message passes when sent again; which jobs the
   refusal lists as a follow-up and as new work; and that the hook refuses at the first token past
   the number.
 - **How the player's other words on agent size bear on the refusal** ("What the orchestrator
   keeps"): the orchestrator's reading. Read as: the room to go a bit over now and then
   (inbox #1291) is the distance between the limit a task is scoped to and the size a resume is
-  refused at, and a resend to an agent near 500k tokens waits for its reassessment (inbox #1298).
+  refused at, and a resend to an agent near 500k tokens waits for its reassessment (inbox #1298 in merry-badger).

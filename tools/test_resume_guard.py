@@ -319,7 +319,7 @@ class ResumeGuardTests(unittest.TestCase):
             self.assertIn("went unchecked", answer["additionalContext"])
         self.assertEqual(len(self.errors.read_text().splitlines()), len(contents))
         reference.write_text(
-            "- **A resume is refused once past\n  1,200k tokens of context** (inbox #1298), the context being the"
+            "- **A resume is refused once past\n  1,200k tokens of context** (inbox #1298 in merry-badger), the context being the"
             " latest turn's.\n"
         )
         reason = self.refusal(self.payload(), hook=copy)

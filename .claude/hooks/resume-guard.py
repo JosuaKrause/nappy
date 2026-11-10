@@ -227,7 +227,7 @@ def guard(payload):
         "- New work (the next step, the next pull request, another task): do not resend. Brief a fresh agent"
         " from the brief file under .claude/briefs/ and what this agent left: its branch, its pull request and"
         " its last report.\n"
-        "The reassessment of an agent grown far past this size applies on top (inbox #1298: its model, stuck,"
+        "The reassessment of an agent grown far past this size applies on top (inbox #1298 in merry-badger: its model, stuck,"
         " looping), and work never moves to another model by a resume, only by a new brief."
     )
     rule = (

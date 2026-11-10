@@ -48,24 +48,29 @@ player does not act on cost alone (inbox #1291).
 ## Tried and replaced
 
 - **A refusal at about 150 turns or 300k tokens**, the limit `references/writing-a-brief.md` held,
-  an orchestrator's proposal of 2026-10-31 that the player never set. It was built first and
-  refused mostly short, cheap follow-ups: 132 refusals, 108 of them short.
+  an orchestrator's proposal of 2026-10-31 that the player never set. It was built first.
+  Replayed by the usage-review session over the resumes since 2026-10-31 it would have refused
+  132 times, most of them short, cheap follow-ups.
 - **A refusal at 500k, tokens only**, the usage-review session's first recommendation. The player
   asked for it earlier than the reassessment, since it is about resuming.
 - **A turn trigger beside the context**: it would add 37 refusals in 9 days to catch little, and a
   turn costs whatever its context costs.
-- **A tolerance inside the hook** for an agent a little past the number: a second number to own.
-  The resend is how the orchestrator lets one go on.
-- **"Never for more work"** as the refusal's wording: the player's "it's fine if it goes a bit over
-  now and then" makes the refusal a prompt to decide and not a ban.
+- **A tolerance inside the hook** on top of its number: the distance between the size a task is
+  scoped to and the size a resume is refused at already is the room the player's "it's fine if it
+  goes a bit over now and then" asks for.
+- **"Never for more work"** as the refusal's wording in the first build: the refusal asks its one
+  question instead, and only new work goes to a fresh agent.
 
 ## Choices open to the player's overturn
 
-The filer's, each marked so in the skills: a refusal is remembered per sender, target and exact
-message text and never cleared within a session; which jobs the refusal's two lists name; "past"
-is strictly more than the number; the refusal prints exact token counts; the reworded item on a
-cold agent's follow-up in `references/writing-a-brief.md`; exactly one matching sentence is
-required and a size of zero is unreadable.
+The filer's. Marked so in the skills: a refusal is remembered per sender, target and exact message
+text and never cleared within a session; which jobs the refusal's two lists name; "past" is
+strictly more than the number; the reworded item on a cold agent's follow-up in
+`references/writing-a-brief.md`. Held by the hook alone, and named only here and in the pull
+request: the refusal prints exact token counts; exactly one matching sentence is required and a
+size of zero is unreadable. And one in `tools/agents-to-reassess.py`: its `turns` column still
+shows a turn count, for information, as a sign an agent is stuck, where the table the player
+agreed to has no turn counters anywhere; no limit and no flag reads it.
 
 ## What is left of the entry
 

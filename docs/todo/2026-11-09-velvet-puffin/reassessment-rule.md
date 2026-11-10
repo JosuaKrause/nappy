@@ -31,10 +31,6 @@ turn; everything else of that rule stands: a brief carries no size line, an agen
 to count its own turns or tokens, and a task is still sized before it is spawned. The sentence
 written into the skill says so beside the rule it narrows.
 
-**The citations.** The pull request that builds this item runs `uv run python tools/inbox.py cite
-1298`, which turns the plain `inbox #1298` in `.claude/skills/using-tools/SKILL.md` and in
-`tools/agents-to-reassess.py` into the form that names this note's playtest.
-
 **Open, and built on the reading until the player says otherwise.** Asked on 2026-11-09 which of
 the evening's rules are permanent, the player said of the model switch: "should become a rule -- is
 it even relevant? can claude switch models mid-agent-session?" (inbox #1303). The orchestrator's
