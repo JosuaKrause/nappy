@@ -1476,7 +1476,7 @@ it: the trail is drawn, never logged, the same as the corridor.
 
 **The dawn map keeps drawing no trail.** There is no walk yet, and a picture that invented one
 would be worse than a picture without one — the same reasoning that keeps the corridor off a
-picture given no tree. **A lost day restarts the trail**, in the same `start_day()` reset that
+picture given no tree. **A lost day restarts the trail**, in the same `TelemetryObserver.start()` reset that
 clears everything else about yesterday: a rewound day was not walked.
 
 **It has to be read *against* the corridor the day planned for her**, which is the entire value of
