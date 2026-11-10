@@ -10,6 +10,7 @@ extends RefCounted
 const Boot := preload("res://tests/booted_main.gd")
 const MapCache := preload("res://tests/city_map_cache.gd")
 const UI := preload("res://tests/ui_screens.gd")
+const RecordingLog := preload("res://tests/recording_log.gd")
 const SEED := 4242
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_run_flow_scratch.json"
@@ -19,6 +20,8 @@ var _saved_paused := false
 ## made fresh for each boot, so no check reads or sets a run it shares with another.
 var _run: RunState
 var _home: Node
+## The run log each boot is handed, open before the boot, whose headers say which walks it began.
+var _run_log: RecordingLog
 
 func run(t) -> void:
 	_test_raising_a_brief_announces_it(t)
@@ -190,9 +193,10 @@ func _test_the_escape_screens_hold_esc_back_only_in_a_section(t) -> void:
 				"a section" if case[0] == section else "a day", M.keys()[case[1]],
 				"holds" if case[2] else "does not hold"])
 
-## The spec begun is the one the observers hear: announced before the day director starts it and
-## planned once it has, with the same spec. An authored scene's walk is never announced planned, and
-## what its setup could not stand is handed back.
+## The spec begun is the one the observers hear, at the moments the day director tells the flow of:
+## begun, its world as it stands with whether it is a retry, and planned with that world once the
+## director has started it. An authored scene's walk is never announced planned, and what its setup
+## could not stand is handed back.
 func _test_the_observers_hear_the_spec_begun_and_planned(t) -> void:
 	var run := RunState.new()
 	var scene := AuthoredScene.new()
@@ -200,33 +204,43 @@ func _test_the_observers_hear_the_spec_begun_and_planned(t) -> void:
 		var flow := RunFlow.new(scene if authored else null)
 		var heard: Array = []
 		flow.day_started.connect(func(spec: DaySpec) -> void: heard.append(["started", spec]))
-		flow.day_planned.connect(func(spec: DaySpec) -> void: heard.append(["planned", spec]))
+		flow.world_stood.connect(func(spec: DaySpec, world: DayWorld, restarted: bool) -> void:
+			heard.append(["stood", spec, world, restarted]))
+		flow.day_planned.connect(func(spec: DaySpec, world: DayWorld) -> void:
+			heard.append(["planned", spec, world]))
 		var director := _HeardDirector.new(run, heard)
 		var spec := DaySpec.for_section(DaySpec.Section.CITY, 60.0) if authored \
 				else DaySpec.for_day(5, 210.0)
 		var errors := flow.start(director, spec, authored)
+		var world := director.world
 		if authored:
-			t.check(flow.spec == spec and heard == [["started", spec], ["director", spec, true]]
-					and errors == director.problems, "an authored walk is started, never planned, "
-					+ "and hands back what did not stand (%s)" % [heard])
-		else:
-			t.check(flow.spec == spec and heard == [["started", spec], ["director", spec, false],
-					["planned", spec]], "a day is announced, started and planned with its spec (%s)"
+			t.check(flow.spec == spec and heard == [["started", spec], ["stood", spec, world, true],
+					["director", spec]] and errors == director.problems, "an authored walk is "
+					+ "begun and stood, never planned, and hands back what did not stand (%s)"
 					% [heard])
+		else:
+			t.check(flow.spec == spec and heard == [["started", spec], ["stood", spec, world, false],
+					["director", spec], ["planned", spec, world]], "a day is announced begun, stood "
+					+ "and planned with its spec and its world (%s)" % [heard])
 	scene.free()
 
-## A day director that notes being asked to start a walk and starts nothing.
+## A day director that tells the flow a walk has begun and its world stands, as the real one does,
+## notes being asked to start it, and starts nothing.
 class _HeardDirector extends DayDirector:
 	var _heard: Array
 	var problems: Array[String] = ["a problem"]
+	## The world it says stands.
+	var world := DayWorld.new()
 
 	func _init(run: RunState, heard: Array) -> void:
 		super(run.calendar, run.facts, run.attempt_spend, RunConfig.parse(PackedStringArray(), "", true))
 		_heard = heard
 
 	## Overrides DayDirector.start.
-	func start(the_spec: DaySpec, restarted := false) -> Array[String]:
-		_heard.append(["director", the_spec, restarted])
+	func start(the_spec: DaySpec, started := Callable(), stood := Callable()) -> Array[String]:
+		started.call()
+		stood.call(world)
+		_heard.append(["director", the_spec])
 		return problems
 
 # ------------------------------------------------------------- the real boot ---
@@ -247,13 +261,11 @@ func _test_a_tap_then_a_key_continue_once(t) -> void:
 	EventBus.hard_fail_triggered.emit("car_strike")
 	t.check(Boot.summary(main).is_showing(), "the lost day's summary is up")
 
-	var started: Array[int] = []
-	var count := func(day_number: int) -> void: started.append(day_number)
-	EventBus.day_started.connect(count)
+	var before := _walks_begun()
 	await _tap_then_key(t, main)
-	EventBus.day_started.disconnect(count)
-	t.check(started == [1], "a tap and a key inside the tap's two frames start the day once (%s)"
-			% [started])
+	var started := _walks_begun().slice(before.size())
+	t.check(started.size() == 1 and started[0].begins_with("begin_day 1 "),
+			"a tap and a key inside the tap's two frames start the day once (%s)" % [started])
 
 	# Every reload goes through one function, which the held restart calls straight from the walk
 	# (the pause screen's restart) as an authored scene failing its own retry does: the flow says
@@ -320,11 +332,9 @@ func _test_a_tap_then_a_key_on_a_lost_section_show_the_retry_brief(t) -> void:
 	t.get_tree().paused = true
 	EventBus.hard_fail_triggered.emit("car_strike")
 	t.check(summary.is_showing() and not day.is_running(), "the lost section's screen is up")
-	var started: Array[int] = []
-	var count := func(day_number: int) -> void: started.append(day_number)
-	EventBus.day_started.connect(count)
+	var before := _walks_begun()
 	await _tap_then_key(t, main)
-	EventBus.day_started.disconnect(count)
+	var started := _walks_begun().slice(before.size())
 	t.check(summary.is_showing() and _title_of(main) == _city_words() and started.size() == 1,
 			"the retry's brief is up rather than the retry walked past it (%d started, '%s')"
 			% [started.size(), _title_of(main)])
@@ -339,8 +349,13 @@ func _boot(t, args: Array) -> Boot.Booted:
 	words.append_array(args)
 	_run = RunState.new()
 	_home = Boot.home_playing(t, _run)
+	_run_log = RecordingLog.new()
+	_run_log.begin_run(SEED)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words),
-			func(main: Node) -> void: main.use_sitting_home(_home), false, MapCache.source())
+			func(main: Node) -> void:
+				main.use_sitting_home(_home)
+				main.use_run_log(_run_log),
+			false, MapCache.source())
 	t.get_tree().paused = true
 	return booted
 
@@ -376,7 +391,17 @@ func _physics_frames(t, count: int) -> void:
 	for _tick in count:
 		await t.get_tree().physics_frame
 
+## The walks the boot has begun so far, each the header the run log opened it with (`begin_day N`,
+## or `begin_section N ...` for a section of the escape), in order.
+func _walks_begun() -> Array[String]:
+	var begun: Array[String] = []
+	for line in _run_log.lines:
+		if line.begins_with("begin_"):
+			begun.append(line)
+	return begun
+
 func _shut_down(t, booted: Boot.Booted) -> void:
 	booted.free_all()
+	_run_log.free()
 	_home.free()
 	t.get_tree().paused = _saved_paused

@@ -11,16 +11,27 @@ extends RefCounted
 ## run (the day director is handed the scene, `DayDirector.use_the_scene()`), its city is built on the
 ## scene's own map, and the HUD says none of the control lessons the scene has learned.
 ##
-## It also announces the day being walked to the observers that draw it — the developer readout, the
-## HUD's clock and the route rig — through `day_started` and `day_planned`, which carry the day's
-## `DaySpec`, and a brief going up through `brief_opened`; `main` connects them.
+## **It announces every walk to the observers and the view**, the one place they hear a day begin:
+## `day_started`, `world_stood` and `day_planned`, each carrying the walk's `DaySpec` — a day's, an
+## authored scene's or a section of the escape's, all the same way — and the last two its world
+## (`DayWorld`); and a brief going up through `brief_opened`. `main` connects the HUD, the page's
+## counter, the run log, the developer readout and the dev rigs to them.
 
-## A day or a section is about to be built: `spec` is what it is. Before anything is placed.
+## A day or a section begins, the first time or again after a loss: `spec` is what it is. The dawn is
+## photographed and nothing of the walk is stood or placed yet, so a listener clears yesterday's
+## state here, and whatever the walk's world does as it is built (the escape's city goes dark as it
+## is built) is already this walk's. The HUD, the page's counter and the developer readout read the
+## day being walked here.
 signal day_started(spec: DaySpec)
-## The day or section has been built and placed, and its shape announced on `EventBus.day_planned`.
-## An authored scene's day, a section of the escape included, is installed rather than planned, so
-## it never sends this.
-signal day_planned(spec: DaySpec)
+## The world `spec` is walked in stands (`world`), and nothing is dressed or placed in it yet: every
+## walk, an authored scene's included, the first time or again after a loss (`restarted`). The run
+## log heads the walk here, with what only its world can name, and watches the world from here.
+signal world_stood(spec: DaySpec, world: DayWorld, restarted: bool)
+## The day or section has been built and placed in `world`, she is put down and its clock runs. An
+## authored scene's day, a section of the escape included, is installed rather than planned, so it
+## never sends this. The run log writes the walk's plan lines, its dawn picture and her `start` line
+## here.
+signal day_planned(spec: DaySpec, world: DayWorld)
 ## A brief has been raised (`open_brief()`) over `spec`, the day or section it leads into. The screen
 ## itself is shown right after, by `main`; the route rig answers the first brief of an escape section a
 ## frame later by calling `main`'s continue handler.
@@ -101,6 +112,8 @@ var mode := Mode.BOOTING
 var opening := Opening.FRESH
 ## The day or section being walked; an ordinary day until one starts.
 var spec := DaySpec.new()
+## The world the day or section being walked stands in, once its start has stood it; null before.
+var _world: DayWorld
 ## The authored scene (a scene recipe's playback) this boot plays, or null for the game's own run.
 var scene: AuthoredScene
 ## Whether an authored scene is played rather than the game's own run.
@@ -147,17 +160,23 @@ func escape_screen_waits() -> bool:
 # ------------------------------------------------------------------ the day ---
 
 ## A day or a section begins, the first time or again after a loss (`restarted`), and `director`
-## starts it (`DayDirector.start()`, the one start every walk goes through): announced with its spec,
-## started, and announced planned once placed. An authored scene's walk is installed by the scene
-## rather than planned, and is never announced planned. Returns the problems that kept an authored
-## scene's setup from standing, empty when the walk stands.
+## starts it (`DayDirector.start()`, the one start every walk goes through): announced started with
+## its spec once the dawn is photographed, its world announced as it stands, and announced planned
+## once placed. An authored scene's walk is installed by the scene rather than planned, and is never
+## announced planned. Returns the problems that kept an authored scene's setup from standing, empty
+## when the walk stands.
 func start(director: DayDirector, the_spec: DaySpec, restarted := false) -> Array[String]:
 	spec = the_spec
-	day_started.emit(the_spec)
-	var errors := director.start(the_spec, restarted)
+	var errors := director.start(the_spec, func() -> void: day_started.emit(the_spec),
+			func(world: DayWorld) -> void: _stood(world, restarted))
 	if not authored:
-		day_planned.emit(spec)
+		day_planned.emit(the_spec, _world)
 	return errors
+
+## The world of the walk being started stands: kept for its plan's announcement, and announced.
+func _stood(world: DayWorld, restarted: bool) -> void:
+	_world = world
+	world_stood.emit(spec, world, restarted)
 
 # ----------------------------------------------------------- the screens ---
 
