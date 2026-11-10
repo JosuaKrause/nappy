@@ -49,10 +49,14 @@ bare name of the file's own class with no receiver (`if is_ready:`).
 - **How far the new name goes beyond yes-or-no fields**, a question put to the player, since
   either wider answer renames accessors across the events' design: every method that replaces a
   field takes a new name, a number's included, which needs no knowledge of the engine and costs a
-  name for every converted field; or only a number keeps its name, which leaves a number tested
-  for truth or compared with another read of itself. A third way, the name kept wherever every
-  read of the field is shown to fail, was written as a list of such reads and was wrong in each of
-  three reviews (the same record).
+  name for every converted field; or only a number keeps its name, which leaves a number read in
+  any of the silent ways above: assigned with `:=`, made into text, handed to an untyped
+  argument, tested for truth, compared with another read of itself. A third way, the name kept
+  wherever every read of the field fails, is ruled out: it needs a list of such reads, and the
+  same record says how three wordings of one were each wrong. Beside either answer or in place
+  of both, a conversion's pull request can show a search for the old name read without its
+  parentheses coming back empty, which finds the read the conversion missed and not one a branch
+  merged later brings.
 - **The engine's own warning for a statement that does nothing**, raised to an error like the three
   warnings of the typed-access step. Measured (the record minty-quail-busy-heron,
   `tools/decisions.sh busy-heron`): a method's name alone on a line then fails the parse, and a name
