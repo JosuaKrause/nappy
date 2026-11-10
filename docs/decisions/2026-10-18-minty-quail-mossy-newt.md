@@ -18,19 +18,27 @@ typing pass need it again. A manual sequence done a second time becomes a script
   that trips none, and never adds one. Any other warning's name is counted per folder (and per line
   with `--lines`), touching no file. A name the engine has no setting for is refused before the
   run.
-- **How the run is made and undone**: the tool sets the three warnings to warn and every other to
-  off in `project.godot`, strips the opt-out lines, runs `tools/typing_census.tscn` headless over
-  the file list, and writes `project.godot` and every stripped file back byte for byte on every exit
-  and on an interrupt; it refuses to start while `project.godot` has uncommitted changes. A message
-  of none of the three warnings stops it with an error rather than a miscount; a file that fails to
-  parse is named and left out.
-- `tools/test_typing_census.py` (sixteen cases, run by `tools/pycheck.sh`), the entry point in
+- **How the run is made and undone**: the tool refuses to start without the import cache (it names
+  `./tools/check.sh`) or while `project.godot` has uncommitted changes; it sets the three warnings to
+  warn and every other to off in `project.godot`, blanks each opt-out line (so line numbers stay
+  put), runs `tools/typing_census.tscn` headless over the file list, and puts back, byte for byte
+  and only in the files it changed, `project.godot` and each first line, on every exit, an
+  interrupt or a timeout; a file whose first line changed meanwhile is named and left as found.
+- **A census counts only from a run that finished**: the engine exits 0, its scene prints
+  `CENSUS_DONE` with the count handed, and every path is answered once; otherwise every mode stops
+  and changes no file. A file that fails to load fails `--check`; `--write` refuses while a failed
+  file is under `src/`, is an autoload, or is named by another listed file, since its dependents'
+  counts cannot be trusted. A message of none of the three warnings stops the tool rather than
+  miscount. It cannot see an opt-out line inside a string a suite writes at run time.
+- `tools/test_typing_census.py` (34 cases, each naming the mutation it fails, run by `tools/pycheck.sh`), the entry point in
   `tools/test_cli_help.py`, the using-tools row, and the field-read check's blind-spots sentence:
   a stale name on an opt-out line is found by the census's `--check`.
 
 ## What it found on `main` at the time
 
-`src/telemetry/telemetry_observer.gd` names `untyped_declaration`, which it does not trip; three
-probes do not parse (`m159_contribution_cost`, `minty_quail_walk_field_parity`,
-`lazy_scenery_city`), which no queue item owns yet; `standalone_expression` is tripped on no line
+`src/telemetry/telemetry_observer.gd` names `untyped_declaration`, which it does not trip (the
+telemetry typing pull request owns that file); three probes do not parse (`m159_contribution_cost`,
+`minty_quail_walk_field_parity`, `lazy_scenery_city`), which no queue item owns yet, so `--check`
+fails on `main` until they do and `--write` refuses while `lazy_scenery_measure.gd` preloads the
+third; `standalone_expression` is tripped on no line
 under `src/`, `tests/` or `tools/`.
