@@ -27,7 +27,10 @@ and no other:
 
 Every other added line still fails with the message it had: a new file reading a field no changed
 file read, a move that also adds a use, a new class with a public var read from outside, a new class
-that only shares a var's name with an inner class that left the diff. A change
+that declares only some of the vars of an inner class that left the diff. A new class that declares
+them all is taken for that class lifted, a one-var inner class included, and one such inner class
+vouches for each new class that declares its vars; each such added line is a visible line of the
+list, which review reads. A change
 to the checker itself still compares nothing (`checker_changed`). The docstring, the `--base` help
 and the list's generated header say the rule; the designing-classes skill's sentence on the check
 says it too, and lists the rule as proposed. `tools/test_check_field_reads.py` holds a passing and
