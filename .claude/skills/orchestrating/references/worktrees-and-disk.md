@@ -55,15 +55,19 @@ one waiting on a check cannot read its result. So no such call is made while a s
 **The orchestrator writes on a branch that a worktree holds through the shell, from the main
 checkout**, once that branch's agent has reported (**orchestrating**, "What the orchestrator
 keeps": nothing is committed into a worktree an agent works in). The queue move, the record and
-any other file are written with a Bash command or a Python one-off that names absolute paths
-under `.claude/worktrees/<name>`, and git runs as `git -C <worktree>`, the commit and the push
-through the identity wrapper as always (**committing**). **No command `cd`s into the worktree**:
+any other file are written by absolute paths under `.claude/worktrees/<name>`. A file's text
+goes in as `cat > <absolute path> <<'EOF'`, the delimiter quoted and the whole command nothing
+else: the write guard runs on every shell call and denies any other command whose text names a
+GitHub write, as a record may (**committing**, "Text handed to a write goes through a file"). A
+Python one-off is for a change whose command names none. Git runs as `git -C <worktree>`, the
+commit and the push through the identity wrapper as always (**committing**). **No command `cd`s
+into the worktree**:
 the orchestrating session's shell keeps a `cd` for its next call, so it would stand in the
 worktree, and in a deleted directory once that worktree is pruned ("The worktree", on spawning).
 A tool that has to run from the worktree runs in a subshell, `( cd <worktree> && … )`, which
 leaves the shell where it was. Written this way, nothing moves the session or its shell.
 
-**A write through the shell meets no hook**: the one that refuses an area's first edit until its
+**A write through the shell meets neither edit hook**: the one that refuses an area's first edit until its
 skills are read (`.claude/hooks/project-rules.sh`) and the lint after an edit fire on the edit
 tools only. So the skills that govern the files written are read as they would be for an edit
 (**committing** for `docs/decisions/**`, **playtest-feedback** for `docs/todo/**` and
