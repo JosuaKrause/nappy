@@ -1568,6 +1568,28 @@ func warning_time() -> float:
 func warned_for() -> float:
 	return offscreen_notice if pursuit else telegraph_time
 
+## Whether it holds still through its telegraph (`still_while_telegraphing`): a crouching cat is
+## not walking.
+func holds_still() -> bool:
+	return still_while_telegraphing
+
+## Whether it waits for her (`notice`): a place until she comes within its notice of it, its
+## telegraph and duration measured from that moment rather than from its birth.
+func waits_for_her() -> bool:
+	return notice != null
+
+## Whether it runs its own line once she comes close (`NoticeSpec.runs_within`), rather than
+## ending its notice on a clock: the masked man on the escape's stairs.
+func runs_its_own_line() -> bool:
+	return notice != null and notice.runs_within > 0.0
+
+## **Whether its warning emits only a telegraph's share of its peak**: its telegraph, and its wait
+## where it has one. True for a row that does not wait and for one whose wait is quiet
+## (`NoticeSpec.is_quiet()`, birds pecking on a pavement); false for one whose waiting is itself
+## the threat, which emits at full strength through its wait and its notice alike.
+func warns_quietly() -> bool:
+	return notice == null or notice.is_quiet()
+
 ## Whether this row is warned of before it exists rather than created at once: its screen-edge
 ## badge goes up with nothing in the world, and its instance is created where the badge points once
 ## `warned_for()` is over (see `PendingWarning`). Two kinds are: a `TOWARD_PLAYER` row on foot that
@@ -1608,7 +1630,7 @@ func as_warned_first() -> EventDef:
 ## outgrows its resting radius (`Planned.keeps_its_field_clear()`'s clearance, the streaming rect,
 ## `ExcitementSource.expected_gross_at()`'s early-out).
 ##
-## `half_length + outer_radius` for a segment whose field is priced from that segment; this does not
+## `half_length + outer_radius` for a segment its field is priced from (`datum()`); this does not
 ## grow with speed, so for the patrol car it is the reach of its field standing. A row whose field
 ## is priced from its centre (`VehicleSpec.field_from_its_centre`, the fire engine) is a point,
 ## whatever its body. Otherwise `outer_radius * Field.scale(e)`, `e` from whichever speed the row's
@@ -1620,9 +1642,9 @@ func as_warned_first() -> EventDef:
 ## crosses no building (docs/EVENTS.md, "Solid things are solid", and
 ## `EventInstance.is_lethal_at()`).
 func field_reach() -> float:
-	if shape != null and shape.kind == GroundShape.Kind.SEGMENT \
-			and not (vehicle and vehicle.field_from_its_centre):
-		return shape.half_length + outer_radius
+	var priced_from := datum()
+	if priced_from != null and priced_from.kind == GroundShape.Kind.SEGMENT:
+		return priced_from.half_length + outer_radius
 	var moving_speed := pursuit.speed if pursuit else (speed if mobile else 0.0)
 	return outer_radius * Field.scale(Field.eccentricity(moving_speed))
 
@@ -1676,7 +1698,7 @@ func emission_at(at: Vector2) -> float:
 	for i in flock_size:
 		var angle := TAU * float(i) / float(flock_size)
 		var bird := Vector2(cos(angle), sin(angle)) * flock_spread * 0.65
-		total += Field.falloff(bird.distance_to(at), share, inner_radius, outer, falloff_power)
+		total += bird_emission_at(bird.distance_to(at), share, outer)
 	return total
 
 ## What a row emits at a distance from its centre: the field, and the core over the top of it where
@@ -1710,6 +1732,54 @@ func stands_on_its_band_middle() -> bool:
 ## round it, so standing clear of it is standing clear of its body.
 func has_a_field() -> bool:
 	return intensity > 0.0
+
+## **The peak of its field at its centre**, before a phase damps it: `intensity`, swelled toward
+## `intensity_ramp` over its `duration` and beating with its pulse. `into_its_burst` is how long
+## its burst has been running (`EventInstance.current_intensity()` hands its notice's run less
+## its telegraph), which the swell is measured on; `age` is its own clock, which the pulse beats
+## on, since a pulse is the thing's own rhythm whether or not anybody has walked up to it.
+##
+## The pulse's reading is `0.25 + 0.75 × (0.5 − 0.5·cos(phase))`, so a pulsing row is never
+## entirely silent between beats; `beat` (`< 0.0` means "not given") replaces that reading with
+## a multiplier the caller worked out, the caret's mean over its horizon
+## (`EventInstance.caret_intensity_over_horizon()`). A row that neither swells nor pulses answers
+## its `intensity`.
+func peak_through(age: float, into_its_burst: float, beat := -1.0) -> float:
+	var value := intensity
+	if not is_equal_approx(intensity_ramp, 1.0) and duration > 0.0:
+		var through := clampf(into_its_burst / duration, 0.0, 1.0)
+		value *= lerpf(1.0, intensity_ramp, through)
+	if pulse_period > 0.0:
+		if beat >= 0.0:
+			value *= beat
+		else:
+			var phase := TAU * age / pulse_period
+			value *= 0.25 + 0.75 * (0.5 - 0.5 * cos(phase))
+	return value
+
+## How many seconds one beat of its pulse lasts (`pulse_period`), or 0 for a row that does not
+## pulse.
+func pulses_every() -> float:
+	return pulse_period
+
+## **The shape its field is priced from** (`EventInstance.field_shape()`), and the reach a long
+## body gives it (`field_reach()`): its `shape`, or none — a point at its centre — for a row whose
+## field is priced from its centre (`VehicleSpec.field_from_its_centre`, the fire engine) or that
+## has no shape.
+func datum() -> GroundShape:
+	return null if vehicle and vehicle.field_from_its_centre else shape
+
+## Whether what its field lands on her ignores every wall between (`from_outside`), where every
+## other field stops at one: the explosion outside the building.
+func passes_walls() -> bool:
+	return from_outside
+
+## What one of its flock's birds emits at `at_distance` from the bird, carrying `share` of the
+## peak over a field that ends at `outer`: its own core edge (`inner_radius`) and its own drop-off
+## (`falloff_power`). Each bird is its own point, so a flock is priced as the sum of these, by the
+## row (`emission_at()`) and by its live event alike.
+func bird_emission_at(at_distance: float, share: float, outer: float) -> float:
+	return Field.falloff(at_distance, share, inner_radius, outer, falloff_power)
 
 ## A straight-line distance from a live instance's node beyond which its field is exactly zero,
 ## whatever its intensity, speed, heading or the way its shape lies, so an event's source
@@ -1846,6 +1916,20 @@ func heard_within() -> float:
 ## strike is its driving's (`EventCarDriving`), not this.
 func ends_the_day() -> bool:
 	return hard_fail
+
+## Whether it is a permanent feature of a fixed map (`GameEnums.EventKind.AMBIENT`), which never
+## appears: the fairness contract exempts it, and nothing marks it.
+func is_ambient() -> bool:
+	return kind == GameEnums.EventKind.AMBIENT
+
+## Whether it is a car that drives (`vehicle`), whose strike is its driving's.
+func drives() -> bool:
+	return vehicle != null
+
+## The id of the row it leaves where it ends (`Aftermath.on_finish`), or "" for a row that leaves
+## nothing: the escape's explosion leaves its crater in the road.
+func leaves_behind() -> String:
+	return aftermath.on_finish
 
 ## The picture it is drawn as, which is the silhouette its badge carries (`EventPictures.icon_for()`).
 func picture() -> Look:

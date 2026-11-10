@@ -329,7 +329,7 @@ sites, and the seal and region planners under `src/routes/`.
 |---|---|---|
 | Is the row available on this day | row `available_on(day)` ok | the row |
 | Is it placed at dawn, sited from her walk, or sited by the director, on this day | row `spawn_mode_on(day)` ok, `is_sited_from_her_walk()`, `is_handed_to_her_walk()` ok, `is_a_set_piece_on_her_way()` | the row |
-| Which kind of row is it | row `is_ambient()`, `is_a_one_shot()`, `is_scripted()`; `ambient_source()` | the row |
+| Which kind of row is it | row `is_ambient()` ok, `is_a_one_shot()`, `is_scripted()`; `ambient_source()` | the row |
 | Which ground takes it | row `stands_on(tile_type)`, `ground_kinds()`, `stands_only_in_alleys()`, `sidewalk_lane()`, `stands_at_a_front()` | the row |
 | Does it need one street to lie across (so a corner is no site) | row `lies_as_a_spread()` | body |
 | Does it take a whole section of a street | row `spans_the_street()` ok | the row |
@@ -345,7 +345,7 @@ sites, and the seal and region planners under `src/routes/`.
 | Does it move, pace a beat, pursue | row `moves()`, `paces_a_beat()`, `pursues()` | route, pursuit |
 | How is its route built (asked by the plan builder, which is handed the part) | the route part's `kind()`, `tiles()` | route |
 | Is it scenery, is it the mast | row `is_scenery()`, `is_a_mast()` | the row |
-| What does it leave or call in | row `scar_id()`, `leaves_behind()`, `calls_in()` | aftermath |
+| What does it leave or call in | row `scar_id()`, `leaves_behind()` ok, `calls_in()` | aftermath |
 | Where does a plan stand, walk, face | plan `is_placed()` ok, `placed_at()` ok, `walks()` ok, `stands_still()` ok, `ends()` ok, `faces()` | the plan |
 | How far is a plan from a point or another plan | plan `distance_from(at)` ok, `gap_to(other)` ok | the plan |
 | Does a plan block her way, and what disc does it shut | plan `obstructs()` ok, `blocking_radius()` ok, `clearance(her_reach)` ok | the plan, asking body and lethal |
@@ -424,7 +424,7 @@ shared state. What it asks, and what the event is asked on its behalf:
 
 | What is asked | Method | Answered by |
 |---|---|---|
-| May a row be staged, held, made to charge or made relentless | row `pursues()`, `drives()`, `investigates()` ok, `parks_where_it_arrives()`, `leaves_behind()`, `leaves_its_body()` ok, `notice_within()` ok, `starts_by()` ok, `is_a_mast()`, `spawn_mode_on()` ok, `available_on()` ok, `most_in_a_day()` ok, `field_reach()` ok | each part |
+| May a row be staged, held, made to charge or made relentless | row `pursues()`, `drives()` ok, `investigates()` ok, `parks_where_it_arrives()`, `leaves_behind()` ok, `leaves_its_body()` ok, `notice_within()` ok, `starts_by()` ok, `is_a_mast()`, `spawn_mode_on()` ok, `available_on()` ok, `most_in_a_day()` ok, `field_reach()` ok | each part |
 | Stage a plan at an age, keep it in the world, make it a mast | plan `arrive_aged(seconds)`, `keep_in_the_world()` ok, `stand_as_a_mast(id)` | the plan |
 | The live event of a plan, to name or command it | `EventManager.event_of(plan)`; then live `notice_her_at()` ok | streaming |
 | The route rig's hazards and bodies | live `is_a_standing_lethal_place()`, `lethal_reach()`; plan `stands_as_a_fixed_body()`, `body_pieces()`; plan `detains_again()`, `detain_distance()`, `where_it_stands_now()` ok, `faces_now()` | lethal, body, hold |
@@ -492,8 +492,8 @@ point 6).
 | `solid_when == WHILE_LOWERED`, five places; `redetains` read as "this is a door's hut or post", six places | the live event and its hold, the spawner, the resistance, the route rig (the checkpoint controller asks already) | row and live `is_a_boom()` ok, `detains_again()` ok; the plan's `is_a_boom()` and `detains_again()` |
 | `on_her_way != null and on_her_way.at_a_front`, three times; `on_her_way != null and kind == ONE_SHOT`, twice | the scheduler, streaming | row `stands_at_a_front()`, `is_a_set_piece_on_her_way()` |
 | `placement.size() == 1 and placement[0] == ALLEY` | the scheduler | row `stands_only_in_alleys()` |
-| `vehicle and vehicle.field_from_its_centre`, three times | `EventDef`, `EventInstance` | the field part's `datum()` |
-| the ramp over its duration and the pulse, five fields | `EventInstance.current_intensity()` | the field part's `peak_through(age, into_its_burst)` |
+| `vehicle and vehicle.field_from_its_centre`, three times | `EventDef`, `EventInstance` | the field part's `datum()` (the row's `datum()` until the field part exists ok) |
+| the ramp over its duration and the pulse, five fields | `EventInstance.current_intensity()` | the field part's `peak_through(age, into_its_burst)` (the row's `peak_through(age, into_its_burst, beat)` until the field part exists ok; the caret passes its closed-form mean as `beat`) |
 | `mast_id == "" or def.role != MAST or silenced`, twice | the resistance | plan `is_a_live_mast()` |
 | `plan.row().id == candidate.row().id` | the street rules | plan `is_the_same_row_as(other)` |
 | `age`, `travelled`, `noticed_at`, `behaviours` copied out and back one by one | streaming, the scene recipes | live `save()`, `restore(save)`; plan `keep(save)`, `saved()` |
@@ -598,7 +598,7 @@ counted where it only writes.
 | `noun`, `noun_plural` | 2 in (`EventsAhead`'s run-log lines) | row `noun(count)` |
 | `counts_charges_as` | 2 in | row `charges_counted_as()` (its own id where it names none) |
 | `act_tag` | 1 in, 1 out (`SealPlanner`) | row `act()`; set by `EventDraft.from_day(first_day, act)` |
-| `kind` | 3 in, 2 out (the park cordon, `SealPlanner`), the dev rig untyped | row `is_ambient()`, `is_a_one_shot()`, `is_scripted()` |
+| `kind` | 3 in, 2 out (the park cordon, `SealPlanner`), the dev rig untyped | row `is_ambient()` ok, `is_a_one_shot()`, `is_scripted()` |
 | `first_day`, `last_day`, `scripted_day` | the catalogue; `SealPlanner` copies `first_day` | row `available_on(day)` ok; a draft for the copy |
 | `weight` | the catalogue; `at_heat()` | row `drawn_as_often()` ok, `drawn_as_often_on(ground)` |
 | `max_per_day` | 3 in, 1 out (the scene recipes) | row `most_in_a_day()` ok |
@@ -618,13 +618,13 @@ counted where it only writes.
 | `solid_when` | 4 in, 1 out (the route rig), the resistance untyped | row `is_a_boom()` ok, `stands_as_a_fixed_body()`; the body part's `solid_from()` for the live body (the row's until the body part exists ok); live `is_solid()` ok |
 | `stands_as`, `when_it_stops` | 2 in each (the live event filling its move) | the body part's `is_walked_round()`, `parks()`, asked by the live body (the row's until the body part exists ok) |
 | `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()`; the body part's `lies()` (one choice of four) for the footprints |
-| `vehicle` (`VehicleSpec.field_from_its_centre`) | 8 in, 2 out (the scene recipes, the park cordon); 3 lines of the spec | row `drives()`; the field part's `datum()` |
+| `vehicle` (`VehicleSpec.field_from_its_centre`) | 8 in, 2 out (the scene recipes, the park cordon); 3 lines of the spec | row `drives()` ok; the field part's `datum()` |
 | `intensity` | 7 in | row `has_a_field()` ok; the field part's `peak()` and `peak_through()` for the live event and the looks |
 | `inner_radius` | 6 in, 2 out (the resistance's contact point and director) | row `core_within()`; live `core_reaches(point)`; the flock and the looks are handed the field's spec |
 | `outer_radius` | 7 in, the dev rig untyped | row `heard_within()` ok; live and plan `field_reaches(point)` ok; live `field_rings()` |
 | `core_intensity`, `core_radius`, `falloff_power` | 2 in each | inside `FieldSpec`: `emission_at_distance()` ok, `reach_above()` ok, `silent_beyond()` ok |
-| `pulse_period`, `intensity_ramp` | 4 and 2 in | the field part's `peak_through()`, `pulses_every()` (the looks' flicker) |
-| `from_outside` | 2 in | the field part's `passes_walls()`, asked by the event's source and the spawner |
+| `pulse_period`, `intensity_ramp` | 4 and 2 in | the field part's `peak_through()`, `pulses_every()` (the looks' flicker); the live event asks the row's ok, the looks and the spawner still read `pulse_period` |
+| `from_outside` | 2 in | the field part's `passes_walls()`, asked by the event's source (the row's ok) and the spawner |
 | `barrier_structure` | the manager, untyped | the field part's `counts_as_one_barrier()` ok (the row's and the live event's until the part exists), asked by `EventSources` |
 | `hard_fail` | 5 in, 1 out (the route rig), three untyped | row `ends_the_day()` ok, `effect()` ok; live `ends_the_day()` ok, `is_lethal_at()` ok |
 | `catch_reach` (and `PursuitSpec.catch_reach`) | the catalogue, `EventDef` | row `lethal_reach()` ok, stored once in `LethalSpec` |
@@ -633,10 +633,10 @@ counted where it only writes.
 | `redetains` | the live event and its hold; the resistance and the route rig's planner out | row and live `detains_again()` ok, plan `detains_again()` |
 | `pursuit` | 12 in, 3 out (the auto screenshot, the scene recipes, the park cordon) | `pursues()` on all three (the live event's exists); row `chase_speed()` ok, `approach_speed()` ok, `starts_by()` ok, `standoff_reach()` ok, `was_sent_at_her()`; the pursuit behaviour is handed the spec |
 | `PursuitSpec`: `speed`, `start`, `warns_for`, `stands`, `walk_speed`, `lunge_reach`, `stop_excitement`, `leaves_its_body`, `warns_over_the_street` | 25 lines, all in (the row, the live event, two behaviours) | methods of the spec of the same names, the yes-or-no ones renamed (`stands_for_its_notice()` ok, `leaves_its_body_standing()`, `is_drawn_over_the_street()` ok); built by `PursuitSpec.at(speed).walking_at(...)` |
-| `notice` (`NoticeSpec`: `within`, `quiet`, `runs_within`) | 4 in; 7 lines of the spec, all in | row `waits_for_her()`, `notice_within()` ok; the spec's `within()`, `is_quiet()` ok, `runs_within()` |
+| `notice` (`NoticeSpec`: `within`, `quiet`, `runs_within`) | 4 in; 7 lines of the spec, all in | row `waits_for_her()` ok, `notice_within()` ok; the spec's `within()`, `is_quiet()` ok, `runs_within()`; meanwhile the row's `runs_its_own_line()` (a notice that runs its own line) and `warns_quietly()` (no notice, or a quiet one) ok, which the live event asks, and which `EventInstance.counts_a_charge()` and `EventDef.validate()` still write out: the first goes when the live event's notice section is converted, the second with the row written as its parts (4b) |
 | `hunts`, `hunting`, `heat_response` (`HuntSpec`: `lets_out`, `pursuit`, `ends_the_day`) | the row itself, `EventsAhead`; 3 lines of the spec | row `answers_to_heat()`, `investigates()` ok, `lets_out()` ok, `at_heat(level)` ok |
 | `telegraph_time` | 4 in, 1 out (the readout) | row and live `telegraphs_for()` ok; row `warning_time()` ok, `warned_for()` ok |
-| `still_while_telegraphing` | 3 in | the warning part's `holds_still()`; row `ahead_of_player_lead()` ok |
+| `still_while_telegraphing` | 3 in | the warning part's `holds_still()` (the row's, asked by the live event ok); row `ahead_of_player_lead()` ok |
 | `telegraphs` | 2 in | row `telegraphs_its_coming()`, `announces_its_coming(walk_speed)` ok |
 | `warned_first`, `offscreen_notice` | 1 in and 1 out (the park cordon); 2 in | row `warns_before_it_exists()` ok, `warned_for()` ok, `was_sent_at_her()`, `as_warned_first()` ok |
 | `mobile` | 10 in, 1 out (the route rig) | row `moves()`, `approach_speed()` ok |
@@ -649,7 +649,7 @@ counted where it only writes.
 | `warning_picture`, `draws_body_shadow`, `trails_a_lead`, `hides_in_its_hold`, `may_be_a_pelican` | 2 or 3 in each (the footprints, the looks, the spawner) | methods of `LookSpec`, asked by the looks, the footprints and the spawner only |
 | `guard_sides` | 2 in, 1 out (`SealPlanner`), `RegionPlanner` writing | `LookSpec.guard_sides()`; a draft for the wall's copies |
 | `abduction` (`AbductionSpec`: `taken_over`, `standing_offset`) | 5 in; 5 lines of the spec | the abduction behaviour and the van's look are handed the spec; its two methods |
-| `aftermath` (`Aftermath`: `scar`, `on_finish`, `on_sight`) | 4 in, 2 out (the scene recipes, `SealPlanner`); 10 lines of the spec | row `scar_id()`, `leaves_behind()`, `calls_in()`, `has_an_aftermath()`; a draft's `without_its_aftermath()` |
+| `aftermath` (`Aftermath`: `scar`, `on_finish`, `on_sight`) | 4 in, 2 out (the scene recipes, `SealPlanner`); 10 lines of the spec | row `scar_id()`, `leaves_behind()` (asked by the live event ok), `calls_in()`, `has_an_aftermath()`; a draft's `without_its_aftermath()` |
 | `_cost_cache` | private | stays inside `FieldSpec`, worked out when the spec is built |
 
 ### 4.2 The live event (`EventInstance`)
@@ -740,7 +740,8 @@ waits, because it converts the files those two tracks are rewriting.
 **A live half before its spec exists.** Until 4b the body, the field, the hold, the route and the
 flock have no spec of their own, so in 2a their live halves are handed the row and ask the row;
 4b hands each its spec, one constructor line apiece. The eight specs that exist are handed over
-from 2a on.
+from 2a on. The field's live half is so handed: the event's source takes the row and where she is
+at setup (`use_row_and_where_she_is()`), ok.
 
 **Skills and docs.** 4b rewrites the events skill's "Adding a row" and its field names, and
 designing-classes' sentence that much of `src/` still reads fields goes with the last line of the
@@ -794,7 +795,7 @@ or hands the value in once. The paths that run every tick or every drawn frame:
 |---|---|---|
 | **The events' physics step** (`EventManager._physics_process()`, each live event's `step()` and its behaviours) | the behaviours read their event's heading, distance travelled, her position and their row's settings: the car's driving alone reads its event's and its row's fields 97 times | settings, the map, the navigator and siblings are handed in at setup and held as members, so reading them is reading a member; `WhereSheIs` is asked once a tick per behaviour; only what changes goes through `Figure` ok, but for the traffic lights, which the car asks through `Figure.lights()` until the one setup call (3b) hands them in |
 | **Streaming** (`EventStreaming.stream_around()`, every plan of the day, every tick) | five plan fields per plan | streaming's own state per plan in its own members, and one `distance_from(at)` per plan that is neither spent nor waiting. It is the loop with the most turns in the events' tick, so the first place to look if the step's time moves |
-| **The baby's sweep** (`Baby._physics_process()`, through `EventSources.sources_at()` to each source's `contribution_at()`) | a far event: five row fields to work out the distance beyond which it is silent, on every call; a near one: about eight row fields in `current_intensity()`, then `emission_at_distance()` | the silent distance is worked out once when the `FieldSpec` is built, since a built row cannot change (today it is worked out on every call because a rig may change the row); the ramp and the pulse are one question to the field; the kernel is the method it is today |
+| **The baby's sweep** (`Baby._physics_process()`, through `EventSources.sources_at()` to each source's `contribution_at()`) | a far event: five row fields to work out the distance beyond which it is silent, on every call; a near one: about eight row fields in `current_intensity()`, then `emission_at_distance()` | the silent distance is worked out once when the `FieldSpec` is built, since a built row cannot change (today it is worked out on every call because a rig may change the row); the ramp and the pulse are one question to the field (to the row, until the field part exists, ok); the kernel is the method it is today |
 | **The danger prediction** (the caret: `ExcitementSource.expected_gross_at()`, twenty samples a source a drawn frame, behind a cache) | the cache's key copies nine values of the row and its shape every frame, to notice a row that was changed | the key holds the field's spec and the shape by reference; the samples call the same two methods as today. Fewer reads than now |
 | **The fields layer** (the debug view's overlay, `DebugLayers._draw_fields()`) | three row fields and the shape per live event per redraw | one `field_rings()` |
 | **Drawing** (each visible event's look, every drawn frame) | `def.look` sixteen times in `event_look.gd`, the shape, the body's width | the look holds its `LookSpec` and the width from construction; the mark's question (`walk_through_cost()`) is cached in the field's spec |

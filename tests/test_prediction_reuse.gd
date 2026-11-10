@@ -181,14 +181,11 @@ func _test_catalogue_and_mutations(t) -> void:
 		_event_parity(t, source, at, definition.id + " body axis")
 		source.def.shape = null
 		_event_parity(t, source, at, definition.id + " no shape")
-		# A row replaced under a live event reaches the event and not its behaviours, which were
-		# handed theirs as it was set up (`EventBehaviours.compose()`): a flock's birds would go on
-		# answering from the row before it. So a row is replaced only where no bird answers, and a
-		# flock, whose birds are never cached, is asked on the row it was set up with.
-		if source.birds().is_empty():
-			source.def = _copy_definition(definition)
-			_event_parity(t, source, at, definition.id + " definition replacement")
-		else:
+		# No row is replaced under a live event: its behaviours (`EventBehaviours.compose()`) and its
+		# excitement source (`EventExcitement.use_row_and_where_she_is()`) answer from the row they
+		# were handed as it was set up. A flock, whose birds are never cached, is asked again with
+		# its birds moved.
+		if not source.birds().is_empty():
 			flock_queries += 1
 			var runs := source.sampling_runs
 			source.birds()[0].at += Vector2(17.0, 4.0)
