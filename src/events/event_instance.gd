@@ -919,12 +919,16 @@ func let_out(officer: EventInstance) -> void:
 		if officer.on_foot:
 			officer.on_foot.let_out_of(self)
 
-## Calls back every man this vehicle let out but `stopped_by`, the one who has stopped her
-## (`EventInvestigation.call_back_its_officers()`): asked by that man's figure the frame he stops
-## her (`Figure.stopped_her()`).
+## **One of its men has stopped her: every man it let out walks back to it** (inbox #669 in
+## coral-lark), so a vehicle that let out more than one man whose catch is a stop costs her once,
+## not once a man. Every man this vehicle let out (`EventInvestigation.its_officers()`) but
+## `stopped_by`, the one who stopped her and stands with her through his stop first, is over and
+## walks back. Asked by that man's figure the frame he stops her (`Figure.stopped_her()`).
 func call_back_its_officers(stopped_by: EventInstance) -> void:
 	if investigation:
-		investigation.call_back_its_officers(stopped_by)
+		for officer in investigation.its_officers():
+			if officer != stopped_by:
+				officer._be_done()
 
 ## Where a man gets out: beside the body's flank on her side, clear of it by his own reach, `along`
 ## px from its middle along its length — `side` 1 for her side, -1 for the other.

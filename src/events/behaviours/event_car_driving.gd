@@ -9,8 +9,9 @@ extends EventBehaviour
 ## the step is proposed, the event's ordinary tick, then `check()` on the pose the tick proposes,
 ## which takes back whatever part of it would have brought the body into her or her pram — the step
 ## along its route, the chase, the departure and a turn onto a new heading alike — so the car stands
-## where it was, facing the way it faced, until she moves. It stops rather than pushes: a car that shoved her could shove her into a
-## wall, which is the pin the mobile exemption from solidity exists to prevent. **What the tick
+## where it was, facing the way it faced, until she moves. It stops rather than pushes: a car that
+## shoved her could shove her into a wall, which is the pin the mobile exemption from solidity
+## exists to prevent. **What the tick
 ## decided on the pose it would have ended on goes with it**: the end of its route, reached or cut
 ## short (`EventRouteWalk`), is acted on — parking, leaving — only once that pose is committed
 ## (`EventInstance._end_its_route()`, which keeps it while a car's step is open, and which `check()`

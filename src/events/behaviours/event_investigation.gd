@@ -57,7 +57,7 @@ func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, map: 
 	_route = route
 
 ## Handed the car's driving it stands for her once its men are back, as its event is set up: the
-## car is made after it, since it is handed the car (`EventBehaviours.compose()`).
+## car is made after it, since the car is handed this investigation (`EventBehaviours.compose()`).
 func take_its_car(car: EventCarDriving) -> void:
 	_car = weakref(car)
 
@@ -156,14 +156,6 @@ func its_officers() -> Array[EventInstance]:
 		if is_instance_valid(officer):
 			out.append(officer)
 	return out
-
-## **One of its men has stopped her: every man it let out walks back to it** (inbox #669 in
-## coral-lark), so a vehicle that let out more than one man whose catch is a stop costs her once,
-## not once a man. The one who stopped her stands with her through his stop first.
-func call_back_its_officers(stopped_by: EventInstance) -> void:
-	for officer in its_officers():
-		if officer != stopped_by:
-			officer._be_done()
 
 ## Overrides EventBehaviour.save.
 func save() -> Dictionary:
