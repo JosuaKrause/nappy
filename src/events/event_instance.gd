@@ -441,9 +441,9 @@ const FIGURE_RADIUS := 9.0
 static func mover_for(row: EventDef) -> Mover:
 	var radius := FIGURE_RADIUS
 	var shape := row.ground_shape()
-	if shape != null and (not row.has_a_body() or row.vehicle != null):
+	if shape != null and (not row.has_a_body() or row.drives()):
 		radius = shape.reach()
-	return Mover.vehicle(radius) if row.vehicle != null else Mover.on_foot(radius)
+	return Mover.vehicle(radius) if row.drives() else Mover.on_foot(radius)
 
 ## Where each of this instance's solid pieces stands, in world space (`EventBody.solid_part_centres()`)
 ## — paired index for index with `solid_part_shapes()` below, the same two-parallel-arrays shape
@@ -498,7 +498,7 @@ func is_raised() -> bool:
 ## at full rate and stays passable until she is out of the footprint — and a car's body, held back
 ## from `_ready()` while she stood where it would stand, put down the first frame she does not.
 func _become_solid_once_it_starts() -> void:
-	if car and not _body.is_down() and car.gap_to_her(position, _heading) >= 0.0:
+	if car and not _body.is_in_place() and car.gap_to_her(position, _heading) >= 0.0:
 		_body.go_down(_heading)
 		return
 	if not _body.waits_to_come_down():
@@ -684,7 +684,7 @@ func _tick(delta: float) -> void:
 
 	# A car that drives keeps its body through a chase (`EventDef.vehicle`): cars that drive are the
 	# only bodies that move, and `EventCarDriving` is what keeps them off her.
-	if _body.is_down() and pursues() and not drives() and not is_waiting():
+	if _body.is_in_place() and pursues() and not drives() and not is_waiting():
 		# **Anything that stands still is solid at the width it is drawn, and nothing else is.**
 		# The pursuit's own note on its step says why a moving pursuer may not keep a body
 		# (`EventPursuit`): giving a pursuer one would let a moving wall pin her against a

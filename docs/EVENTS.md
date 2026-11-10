@@ -674,8 +674,8 @@ rank and the firefight, one slice a figure at its own feet, the protest's back r
 of its front one.
 
 **A row may be solid in parts, and one is.** `EventDef.solid_parts` is a list of pieces — each an
-offset along the scene's own spread axis and a `GroundShape` of its own — and `EventInstance` puts
-down one collision shape, one shadow patch and one entry in the per-tile solid record per piece.
+offset along the scene's own spread axis and a `GroundShape` of its own — and a live event's body
+(`EventBody`) puts down one collision shape, one shadow patch and one entry in the per-tile solid record per piece.
 Every other row declares none, which means one piece at the origin carrying `shape`: exactly the
 single body they always had. **The pieces live inside `shape` and never past it**, which
 `EventDef.validate()` refuses, and that is what keeps every planner reading one disc:
@@ -2266,7 +2266,7 @@ asked of a box round the placement, its whole rim the arms) — which is what ke
 in the middle of a block open as well as the street it opens onto. The bodies are counted as they
 stand for the whole walk and at the body they have: the hunting van parked, the roadblock's band
 after its guard has gone, a burst at the crater it leaves, each recentred and laid along the street
-the way `EventInstance` builds it, and the seals with them. **A lethal reach that stands is counted
+the way a live event's body (`EventBody`) builds it, and the seals with them. **A lethal reach that stands is counted
 as ground she cannot cross**, as well as the body under it: the parked van's 54px round where it
 stands (`WalkGround.held_by()`), since a sidewalk left open past its 22px body but inside its reach
 is a walk that ends the section; a pursuer's reach moves with him and warns first, so a roadblock

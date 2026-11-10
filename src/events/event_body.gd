@@ -94,8 +94,9 @@ func spread_at(offset: float) -> Vector2:
 func solid_axis(heading: Vector2) -> Vector2:
 	return EventFootprints.solid_axis_of(_row, heading, _spread_vertical, _stationary_vehicle_side)
 
-## Whether its collision body is down: put down and not dropped since.
-func is_down() -> bool:
+## Whether its collision body is in place: put down and not dropped since, whatever a boom's arm
+## is doing.
+func is_in_place() -> bool:
 	return _obstruction != null
 
 ## **Whether it is solid right now**: its body is down, and it is not a boom whose arm is up
@@ -126,7 +127,7 @@ func solid_part_centres(at: Vector2) -> PackedVector2Array:
 func solid_part_shapes() -> Array[GroundShape]:
 	var shapes: Array[GroundShape] = []
 	for piece in _row.body_pieces():
-		shapes.append(piece.shape)
+		shapes.append(piece.ground_shape())
 	return shapes
 
 ## The tiles its body is recorded on (`EventSpawner.obstructed_footprint()`) for a body standing at
