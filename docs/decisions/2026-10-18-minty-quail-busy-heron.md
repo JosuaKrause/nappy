@@ -43,10 +43,14 @@ Checked against the engine's documentation and by experiment on the project's Go
   three anywhere in the file); the line has one form (the whole first line, double quotes, the
   three warnings in a fixed order, nothing after), and any other `@warning_ignore`, `_start` or
   `_restore` naming one of the three, or whose argument it cannot read, fails. In a file under
-  `src/` without the line, a method named without its parentheses fails too (an unknown receiver
-  read with a name a class under `src/` declares as a method, or a known receiver's own method),
-  unless the line hands the Callable on. `--summary` prints the files still carrying the line by folder and
-  by warning and the uses still skipped; `--base` fails a file that gains the line or a warning on
+  `src/` without the line, a method named without its parentheses fails too: on an unknown
+  receiver, read with a name a class under `src/` declares as a method and nothing declares as a
+  var, signal or constant (engine properties and builtin types' members excepted); and on a known
+  receiver, its own method, unless the reference hands the Callable on (a call's argument, never
+  `assert(...)`'s; an array literal's element; an assignment's right side; a returned value; a
+  ternary's branch; a parenthesised expression counting as what its parentheses are). A statement
+  on its own (`crowd.clear` for `crowd.clear()`) fails. `--summary` prints the files still carrying
+  the line by folder and by warning and the uses still skipped; `--base` fails a file that gains the line or a warning on
   it.
 - **The checker types far more receivers than it did**: engine and builtin types, typed arrays and
   dictionaries with indexing and loops, inner classes, preloaded constants, constructors, node
@@ -62,6 +66,9 @@ Checked against the engine's documentation and by experiment on the project's Go
 - a bare name nothing declares, taken for an engine property;
 - a method named without its parentheses on a receiver typed as an engine value, or as a bare name
   of its own class with no receiver;
+- a parameter of a parameter list that runs over several lines (`func f(` with its parameters on
+  the lines after), which has no type for the check;
+- a further read of a field its reader file is already listed for;
 - a name left on an opt-out line that its file no longer trips.
 
 ## Choices the builder made, open to the player's overturn
@@ -73,6 +80,13 @@ Checked against the engine's documentation and by experiment on the project's Go
 - The scripts under `docs/evidence/` get no line and are not read: they are frozen and rerun from
   the revision they name.
 - Three probes that already fail to parse on `main` are left as they were.
+- The engine's own names are not taken for methods: `ENGINE_PROPERTIES` lists the engine classes'
+  properties and the builtin types' members that a method under `src/` shares, read from the
+  engine (its class list and `--dump-extension-api`).
+- The method rule applies only in a file without the opt-out line, and on a known receiver only
+  the forms above hand a Callable on: a call's argument list is a `(` after a name that is not a
+  keyword or after a closing bracket, an array is a `[` after neither, and a Callable as a
+  dictionary's value is not one of them.
 
 ## Measured
 
