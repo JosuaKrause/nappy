@@ -49,12 +49,14 @@ extends RefCounted
 ## test `EventManager` already makes) after `RUN_BOUT_GAP` or more without running, or the
 ## first time in a day.
 ##
-## **Cheap by construction**, since it runs every physics frame for every player: one pass over
+## **Plain by construction**, since it runs every physics frame for every player: one pass over
 ## the live instances, where one out of view with nothing open and nothing new landed — most of them
-## — costs one box test and nothing more; the covered corners laid onto the view once a frame
-## (`VisibleView.look()`), not once an instance; a record made once per instance the first time it
-## is present, and nothing allocated on a frame otherwise. The open encounters are a short list of their own, so an encounter can be closed after
-## its instance has gone.
+## — costs a table lookup, the instance's landed total and one box test; the covered corners laid
+## onto the view once a frame (`VisibleView.look()`), not once an instance; a record made once per
+## instance the first time it is present. The records are the watch's own table, keyed by the
+## instance's id; a gone instance's record is let go at the end of the tick, and the table is
+## cleared at the day's end. The open encounters are a short list of their own, so an encounter can
+## be closed after its instance has gone.
 
 ## How long an event instance has to have been off screen, in seconds, before coming back counts as
 ## a new encounter rather than the one it left. *(misty-newt, the player: "I would define the gap as
@@ -68,8 +70,8 @@ const ENCOUNTER_INFLUENCE_POINTS := Tuning.METER_MAX * 0.1
 ## 10s".)*
 const RUN_BOUT_GAP := 10.0
 
-## One instance's encounters. Kept on the instance (`EventInstance.encounter`) so finding it costs
-## nothing, and on `_open` while an encounter is open, so it can be closed after the instance is gone.
+## One instance's encounters. Kept in `_records` while the instance is live, and on `_open` while an
+## encounter is open, so it can be closed after the instance is gone.
 class Record:
 	var instance: Object
 	## `EventInstance.logged_name()`, kept so an encounter can be named once its instance is freed.
@@ -91,6 +93,9 @@ class Record:
 var _clock := 0.0
 var _frame := 0
 var _open: Array[Record] = []
+## Every live instance's record, by `Object.get_instance_id()`. A gone instance's record is let
+## go at the end of the tick, and the table is cleared when the day ends.
+var _records: Dictionary[int, Record] = {}
 var _running := false
 var _ran_last := -INF
 ## `CheckpointController.hold_that_would_begin()`, or empty when nothing hands one in (a rig
@@ -115,16 +120,17 @@ func tick(delta: float, instances: Array[EventInstance], visible: VisibleView, h
 	var view := visible.view
 	for instance in instances:
 		# Most live instances are out of view, with nothing open and nothing new landed, and there is
-		# nothing to do for them: asked here, before any call, since a call is most of the cost.
-		var record := instance.encounter
+		# nothing to do for them: asked here, before the look at one, which is most of the cost.
+		var record := _record_of(instance)
 		if record == null or not record.open:
 			var landed_before := record.landed_last if record != null else 0.0
-			if instance.excitement.landed_ever <= landed_before:
+			if instance.source().landed_ever <= landed_before:
 				var box := instance.drawn_box()
 				if not Rect2(box.position + instance.global_position, box.size).intersects(view):
 					continue
 		_look_at(instance, visible, her)
 	_close_what_is_over()
+	_let_go_of_the_gone()
 	_watch_the_running(running)
 
 ## Tells the watch that `instance` has just caught her where she now stands, on a frame whose own
@@ -146,6 +152,7 @@ func end_day() -> void:
 	for record in _open:
 		_close(record)
 	_open.clear()
+	_records.clear()
 	_clock = 0.0
 	_running = false
 	_ran_last = -INF
@@ -153,24 +160,24 @@ func end_day() -> void:
 func _look_at(instance: EventInstance, visible: VisibleView, her: Vector2) -> void:
 	var box := instance.drawn_box()
 	var world := Rect2(box.position + instance.global_position, box.size)
-	var record := instance.encounter
-	var landing := instance.excitement.landed_ever > (record.landed_last if record != null else 0.0)
+	var record := _record_of(instance)
+	var landing := instance.source().landed_ever > (record.landed_last if record != null else 0.0)
 	var share := visible.share_of(world)
 	var in_view := share > 0.0
 	if record == null:
-		if not in_view and instance.excitement.landed_ever <= 0.0:
+		if not in_view and instance.source().landed_ever <= 0.0:
 			return
 		record = Record.new()
 		record.instance = instance
 		record.name = instance.logged_name()
-		instance.encounter = record
+		_records[instance.get_instance_id()] = record
 	record.last_frame = _frame
 	if in_view or landing:
 		if not record.open:
 			_open_an_encounter(record)
 		record.last_present = _clock
 	if not record.open:
-		record.landed_last = instance.excitement.landed_ever
+		record.landed_last = instance.source().landed_ever
 		return
 	if not record.seen and share >= Tuning.ENCOUNTER_SEEN_SHARE:
 		record.seen = true
@@ -184,7 +191,7 @@ func _look_at(instance: EventInstance, visible: VisibleView, her: Vector2) -> vo
 			EventBus.encounter_influenced.emit(day, record.name, true)
 		else:
 			record.influence_waiting = true
-	record.landed_last = instance.excitement.landed_ever
+	record.landed_last = instance.source().landed_ever
 
 ## Opens a new encounter on `record`: nothing seen or influenced yet, and its landing counted from
 ## what the instance had landed before this frame, so a landing that opens it is part of it.
@@ -199,13 +206,13 @@ func _open_an_encounter(record: Record) -> void:
 ## The meaningful-encounter test — see the class doc. The same three ways in for every row: what a
 ## row cannot do (land anything, chase, catch or hold her) simply never happens.
 func _is_meaningful(instance: EventInstance, record: Record, her: Vector2) -> bool:
-	if instance.excitement.landed_ever - record.landed_at_open >= ENCOUNTER_INFLUENCE_POINTS:
+	if instance.source().landed_ever - record.landed_at_open >= ENCOUNTER_INFLUENCE_POINTS:
 		return true
 	if instance.is_chasing():
 		return true
 	if instance.is_lethal_at(her):
 		return true
-	return instance.def.detain_seconds > 0.0 and _hold_begins_for(instance, her)
+	return instance.detains_her() and _hold_begins_for(instance, her)
 
 ## Whether the game's own hold test picks `instance` this frame. Asked of the manager once a frame
 ## and only for an instance that can hold her at all.
@@ -216,6 +223,20 @@ func _hold_begins_for(instance: EventInstance, her: Vector2) -> bool:
 		_hold_frame = _frame
 		_hold = _hold_source.call(her)
 	return _hold == instance
+
+## The record of `instance`, or `null` when it has none yet.
+func _record_of(instance: EventInstance) -> Record:
+	return _records.get(instance.get_instance_id())
+
+## Lets go of the record of every instance that has gone. An open encounter of one has just been
+## closed by `_close_what_is_over()`, which holds its own reference.
+func _let_go_of_the_gone() -> void:
+	var gone: Array[int] = []
+	for id in _records:
+		if not is_instance_valid(_records[id].instance):
+			gone.append(id)
+	for id in gone:
+		_records.erase(id)
 
 ## Closes every open encounter whose instance has gone, or has been away for the gap. Removal swaps
 ## the last record in, so the list never shifts.

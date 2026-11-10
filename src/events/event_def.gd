@@ -1821,6 +1821,24 @@ func picture() -> Look:
 func detains_her() -> bool:
 	return detain_seconds > 0.0
 
+## How long a hold of hers lasts, in seconds (`detain_seconds`), or 0 for a row that holds nobody.
+func detains_for() -> float:
+	return detain_seconds
+
+## Whether it is a door's hut or post: armed again once she has been let out and has walked away,
+## where a chatting mother's conversation is spent for good (`redetains`).
+func detains_again() -> bool:
+	return redetains
+
+## Whether it is a door's boom, solid only while lowered (`SolidWhen.WHILE_LOWERED`).
+func is_a_boom() -> bool:
+	return solid_when == SolidWhen.WHILE_LOWERED
+
+## Whether several of it count as the strongest one only (`barrier_structure`): the pieces of a
+## street being held, whose fields do not add up.
+func counts_as_one_barrier() -> bool:
+	return barrier_structure
+
 ## How long its telegraph lasts, in seconds (`telegraph_time`).
 func telegraphs_for() -> float:
 	return telegraph_time
