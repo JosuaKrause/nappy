@@ -218,6 +218,11 @@ before spawning:
 - **Spawn from the main checkout, never from a worktree that has just been removed**: `cd` back
   to the repository's own folder after removing one, since a shell still standing in a deleted
   worktree fails every spawn (`references/worktrees-and-disk.md`, "The worktree").
+- **The orchestrating session never moves its own workspace while a sub-agent runs**: no
+  `EnterWorktree`, nor any other call that switches the session into a worktree, since the switch
+  reaches every agent of the session and the harness then refuses each one's commands in its own
+  worktree, reads included. It writes on a branch from the main checkout, by absolute paths
+  (`references/worktrees-and-disk.md`, "The session stays in the main checkout").
 - **A push that starts no CI run is diagnosed, not waited on**: `references/recovery.md` says how.
 - **Tell each agent who else is alive** and which files those agents own, so a scope fence is a
   sentence in the prompt and not a discovery in the diff.
@@ -352,6 +357,9 @@ to the player's correction:
   **designing-classes** (plush-kestrel).
 - **That a task waiting only on the player does not keep the session open** ("What the
   orchestrator keeps"; the rule it qualifies is inbox #1196 in gentle-owl).
+- **That the orchestrating session never moves its own workspace while a sub-agent runs**
+  ("Running agents in parallel"), with the way it writes on a branch instead and the way back
+  from a switch (`references/worktrees-and-disk.md`): the filer's fix of a gap in this skill.
 - **That the 45-minute check is a recurring job about every 30 minutes**, and the reading that it
   is not a tick under the contract's one-notification rule (the rule is gentle-owl #1255).
 - **That the resume hook refuses once and lets the same message through when it is sent again**,
