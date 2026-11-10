@@ -191,8 +191,8 @@ src/
 	                       driving, a barrier's posts, a van's take, ...; each saves and restores
 	                       its own state, which a streamed-out plan carries; each is handed what
 	                       never changes as it is composed and asks its event what changes through
-	                       the event's narrow view of itself (`EventInstance.Figure`), but the
-	                       investigation and the car, which hold their event and read its fields
+	                       the event's narrow view of itself (`EventInstance.Figure`); none holds
+	                       its event
 	charge_record.gd      a charger's warning, charge and the one way it ended, as counted
 	warning.gd            the one warning clock: started, held, called off or run out, read against
 	                      its owner's clock — an event's notice, a door crossing, a badge up alone

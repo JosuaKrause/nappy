@@ -480,7 +480,6 @@ src/events/behaviours/event_flock.gd flock_spread
 src/events/behaviours/event_flock.gd inner_radius
 src/events/behaviours/event_flock.gd outer_radius
 src/events/behaviours/event_investigation.gd mobile
-src/events/behaviours/event_investigation.gd outer_radius
 src/events/behaviours/event_investigation.gd shape
 src/events/behaviours/event_investigation.gd vehicle
 src/events/behaviours/event_notice_run.gd flock_size
@@ -788,28 +787,6 @@ src/events/behaviours/event_behaviours.gd on_foot
 src/events/behaviours/event_behaviours.gd pursuit
 src/events/behaviours/event_behaviours.gd route
 src/events/behaviours/event_behaviours.gd unreachable
-src/events/behaviours/event_car_driving.gd _gait_moving
-src/events/behaviours/event_car_driving.gd _gait_phase
-src/events/behaviours/event_car_driving.gd _heading
-src/events/behaviours/event_car_driving.gd _map
-src/events/behaviours/event_car_driving.gd _obstruction
-src/events/behaviours/event_car_driving.gd _path_travelled
-src/events/behaviours/event_car_driving.gd def
-src/events/behaviours/event_car_driving.gd investigation
-src/events/behaviours/event_car_driving.gd is_finished
-src/events/behaviours/event_car_driving.gd is_leaving
-src/events/behaviours/event_car_driving.gd is_parked
-src/events/behaviours/event_car_driving.gd path
-src/events/behaviours/event_car_driving.gd route
-src/events/behaviours/event_car_driving.gd signals
-src/events/behaviours/event_investigation.gd _map
-src/events/behaviours/event_investigation.gd car
-src/events/behaviours/event_investigation.gd def
-src/events/behaviours/event_investigation.gd is_finished
-src/events/behaviours/event_investigation.gd is_leaving
-src/events/behaviours/event_investigation.gd on_foot
-src/events/behaviours/event_investigation.gd path
-src/events/behaviours/event_investigation.gd route
 src/events/event_excitement.gd age
 src/events/event_excitement.gd car
 src/events/event_excitement.gd def
@@ -1077,8 +1054,6 @@ src/ui/hud.gd markers
 src/ui/hud.gd value
 
 # [MoveProposal] src/world/move_proposal.gd
-src/events/behaviours/event_car_driving.gd from
-src/events/behaviours/event_car_driving.gd to
 src/events/event_instance.gd open
 src/events/event_instance.gd parked
 src/events/event_instance.gd radius

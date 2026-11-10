@@ -12,34 +12,23 @@ extends RefCounted
 ## changed only through `EventInstance.transition()`, which it asks for with `Figure.begin()`. What
 ## never changes under it — its settings (the row, where its part has no settings class of its
 ## own), the map, the navigator, what it walks as, where she is, the run log its event writes to,
-## and the behaviours beside it it works with — it is handed by the composer and holds. What the rest of the game asks of a
-## behaviour it asks of the event, which answers for it.
-##
-## **The investigation and the car still hold their event** (`event`, given by `attach()`) and read
-## its fields; every other behaviour is handed its figure and never holds the event.
+## and the behaviours beside it it works with — it is handed by the composer and holds. It never
+## holds its event. What the rest of the game asks of a behaviour it asks of the event, which
+## answers for it.
 ##
 ## **Each saves and restores its own state** (`save()`, `restore()`), so a plan streamed out and
 ## back in comes back as it was (`EventInstance.save_behaviours()`). What cannot round-trip — another
 ## instance it holds, a node it built — is left out, and the behaviour says so where it keeps it.
 
-## The event this behaviour is part of, for a behaviour that still holds it (`attach()`); null for
-## one handed its figure.
-var event: EventInstance
-## The figure it moves (`EventInstance.Figure`), handed in as the event is set up; null for a
-## behaviour that still holds its event.
+## The figure it moves (`EventInstance.Figure`), handed in its constructor as the event is set up.
 var _figure: EventInstance.Figure
 ## Where she is (`WhereSheIs`): its event's own handle, handed in as the event is set up, so the
-## behaviour and its event ask one object.
+## behaviour and its event ask one object; nowhere for a behaviour that never asks.
 var _where := WhereSheIs.nowhere()
 ## Whether `step()` runs in the event's ordinary tick. False for one the event runs in a tick of
-## its own (`EventHold`, which freezes everything else while it runs).
+## its own (`EventHold`, which freezes everything else while it runs) or at a moment of its own
+## (`EventCarDriving`, the check on its event's step).
 var steps_each_tick := true
-
-## Attaches a behaviour that still holds its event to `owner`, once, as the event is set up, with
-## where she is as `owner` hears it.
-func attach(owner: EventInstance, where: WhereSheIs) -> void:
-	event = owner
-	_where = where
 
 ## One tick of what it does while its event is neither leaving nor held in a conversation.
 func step(_delta: float) -> void:
