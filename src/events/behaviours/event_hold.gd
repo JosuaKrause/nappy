@@ -5,8 +5,14 @@ extends EventBehaviour
 ## (`EventDef.redetains`). `CheckpointController` decides *when* — it holds the player, whom it
 ## detains, hides and lets out — and this is the clock of *what happens once it has*.
 
-func _init() -> void:
+## Its row: how long it holds her, and whether it takes her again.
+var _row: EventDef
+
+## Handed, as its event is set up, the figure it moves and its row.
+func _init(figure: EventInstance.Figure, row: EventDef) -> void:
 	steps_each_tick = false
+	_figure = figure
+	_row = row
 
 ## Whether she has ever had her one conversation: once true, a row that does not redetain never
 ## detains again, whatever she does — spent as a detainer the moment the first one starts.
@@ -27,7 +33,7 @@ func has_held() -> bool:
 ## so a second call before this one ends can never restart it.
 func start() -> void:
 	_has_chatted = true
-	_seconds_left = event.def.detain_seconds
+	_seconds_left = _row.detains_for()
 
 ## Ends a running hold where it is, without the departure or the release its clock running out
 ## would bring: for a rig that sets the hold by hand.
@@ -43,8 +49,8 @@ func stop() -> void:
 ## Overrides EventBehaviour.step.
 func step(delta: float) -> void:
 	_seconds_left = maxf(0.0, _seconds_left - delta)
-	if _seconds_left <= 0.0 and not event.def.redetains:
-		event._be_done()
+	if _seconds_left <= 0.0 and not _row.detains_again():
+		_figure.be_done()
 
 ## Overrides EventBehaviour.save.
 func save() -> Dictionary:

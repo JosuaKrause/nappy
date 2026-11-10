@@ -36,6 +36,10 @@ var came_under_a_warning := false
 ## `EventBehaviour` owning its own state, ticked in this order. The typed fields below are the same
 ## objects, null for a behaviour the row is not composed of.
 var _behaviours: Array[EventBehaviour] = []
+## **The figure its behaviours move** (`Figure`): what changes about it — its place, heading, way
+## covered, clocks and phase — as its behaviours may ask it and tell it, handed to each as it is
+## composed.
+var _figure := Figure.new(self)
 ## A conversation or a door's hold (`EventDef.detain_seconds`).
 var hold: EventHold
 ## The unmarked van's take of a bystander.
@@ -294,10 +298,11 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	path = route
 	_where = where.heard_from_now() if where else WhereSheIs.nowhere()
 	excitement.use_where_she_is(_where)
-	_behaviours = EventBehaviours.compose(self, definition, _where)
 	_map = map if map else WorldMap.open_ground()
 	_navigator = navigator if navigator else _map.navigator()
 	_mover = mover_for(definition)
+	_behaviours = EventBehaviours.compose(self, definition, _where, _figure, _map, _navigator,
+			_mover, trace)
 	_move.radius = _mover.radius
 	# What its figure is to a walker that meets it standing: walked round as an object or a vehicle,
 	# walked through as a person or an animal (`EventDef.stands_as`).
@@ -1158,7 +1163,7 @@ func restore_behaviours(state: Dictionary) -> void:
 # ------------------------------------------------------------------- the take ---
 
 ## Where the instance writes its own account for the run log, handed in by the manager that
-## creates it; silent otherwise.
+## creates it before `setup()`, which hands it on to the take (`EventAbduction`); silent otherwise.
 var trace := RunTrace.new()
 
 ## Whether the van's take of a bystander is running right now (`EventAbduction`), for
@@ -1938,6 +1943,141 @@ func idle_offset() -> float:
 ## The map it stands on.
 func world_map() -> WorldMap:
 	return _map
+
+# ------------------------------------------------- the figure its behaviours move ---
+
+## **What a behaviour may ask of its event, and tell it.** The event's place, heading, the way it
+## has covered, its clocks and its phase are its own; this is the narrow view it builds over them
+## (`_figure`) and hands each behaviour it is composed of (`EventBehaviours.compose()`), as
+## `LaneMover.Lane` is a lane mover's view of itself. A behaviour asks it questions and tells it
+## what happened, and never reads or writes the event's fields; what never changes under a
+## behaviour (its settings, the map, the navigator, what it walks as, where she is, the run log the
+## event writes to, the behaviours beside it) it is handed instead. **The stored phase changes only in `transition()`**, which a
+## behaviour asks for with `begin()`; the notice clock and the charge record stay the event's, and
+## are told what happened. An inner class, because it is the event's own view of itself.
+class Figure:
+	extends RefCounted
+	var _of: EventInstance
+
+	func _init(event: EventInstance) -> void:
+		_of = event
+
+	# ------------------------------------------------------------------ questions ---
+
+	## Where it stands, in world space.
+	func place() -> Vector2:
+		return _of.global_position
+
+	## Which way it faces.
+	func heading() -> Vector2:
+		return _of._heading
+
+	## How far along its way it has come, in px: its route's distance, folded or not.
+	func travelled() -> float:
+		return _of._path_travelled
+
+	## How long it has existed, in seconds: its own clock.
+	func age() -> float:
+		return _of._age
+
+	## How long it has been happening (`EventInstance.chase_age()`).
+	func chase_age() -> float:
+		return _of.chase_age()
+
+	## How long its notice runs once it has noticed her (`EventInstance.notice_time()`).
+	func notice_time() -> float:
+		return _of.notice_time()
+
+	## The route it walks, in world space; empty, or one point, for one that stands.
+	func walks() -> PackedVector2Array:
+		return _of.path
+
+	## Whether it waits for her and has not noticed her (`EventInstance.is_waiting()`).
+	func is_waiting() -> bool:
+		return _of.is_waiting()
+
+	## Whether its telegraph or notice is still running (`EventInstance.is_telegraphing()`).
+	func is_telegraphing() -> bool:
+		return _of.is_telegraphing()
+
+	## Whether it holds still through a telegraph that is still running
+	## (`EventInstance.is_telegraphing_still()`).
+	func is_telegraphing_still() -> bool:
+		return _of.is_telegraphing_still()
+
+	## Whether its telegraph or notice ended into `Phase.ACTIVE`: run out, or cut short by a lunge,
+	## a flush or the masked man's run.
+	func notice_has_run() -> bool:
+		return _of._telegraph_ended
+
+	## Whether it is over and only getting out of shot (`Phase.LEAVING`).
+	func is_on_its_way_out() -> bool:
+		return _of.is_on_its_way_out()
+
+	## Whether it has stopped where its route ended, for the rest of the day (`Phase.PARKED`).
+	func has_parked() -> bool:
+		return _of.is_parked
+
+	## Whether its guard is gone for good and it is only its barrier (`Phase.SPENT`).
+	func is_only_its_barrier() -> bool:
+		return _of._guard_spent
+
+	## Whether it is gone (`Phase.DONE`).
+	func is_gone() -> bool:
+		return _of.is_gone()
+
+	## Whether its field reaches `point` (`EventInstance.field_reaches()`).
+	func field_reaches(point: Vector2) -> bool:
+		return _of.field_reaches(point)
+
+	# ------------------------------------------------------------- what happened ---
+
+	## It turned to face `heading`.
+	func turn_to(heading: Vector2) -> void:
+		_of._heading = heading
+
+	## It covered `distance` px more of its way, the distance its stride bobs on.
+	func walk_on(distance: float) -> void:
+		_of._path_travelled += distance
+
+	## It stepped by `delta` in world space.
+	func step_by(delta: Vector2) -> void:
+		_of.position += delta
+
+	## It arrived at `at`, where a walk or its route brought it.
+	func arrive_at(at: Vector2) -> void:
+		_of.global_position = at
+
+	## It asks for `phase` (`EventInstance.transition()`, the one place the phase changes).
+	func begin(phase: EventInstance.Phase) -> void:
+		_of.transition(phase)
+
+	## It is over (`EventInstance._be_done()`): it leaves, parks where `may_park` lets it, or is
+	## gone where it has nowhere to go.
+	func be_done(may_park := true) -> void:
+		_of._be_done(may_park)
+
+	## Its route ran out, or was cut short where it stands (`EventInstance._end_its_route()`): over
+	## at once, or for a car once its step is committed.
+	func end_its_route() -> void:
+		_of._end_its_route()
+
+	## It noticed her: its notice's clock starts now and it is warning.
+	func notice_her() -> void:
+		_of._notice_her()
+
+	## Its warning went up, counted once for a row with a charging counter.
+	func warning_went_up() -> void:
+		_of._report_the_warning()
+
+	## Its charge began, for its counter (`EventBus.pursuit_began`).
+	func charge_began() -> void:
+		_of._charge.begin()
+
+	## She left its notice while it warned: its notice's clock stops and it waits for her again.
+	func wait_for_her_again() -> void:
+		_of._notice.stop()
+		_of.transition(EventInstance.Phase.WAITING)
 
 # --------------------------------------------------------- what a caller asks ---
 # The questions a caller outside the events asks a live event, so it never reaches through it to

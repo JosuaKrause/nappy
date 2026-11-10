@@ -19,11 +19,16 @@ var _gap_looked_at := INF
 var _look_clock := 0.0
 var _not_closing_for := 0.0
 
+## Handed, as its event is set up, the figure it moves and where she is.
+func _init(figure: EventInstance.Figure, where: WhereSheIs) -> void:
+	_figure = figure
+	_where = where
+
 ## Overrides EventBehaviour.step.
 func step(delta: float) -> void:
-	if event.is_finished or event.is_leaving or _where.at() == Vector2.INF:
+	if _figure.is_gone() or _figure.is_on_its_way_out() or _where.at() == Vector2.INF:
 		return
-	var gap: float = event.global_position.distance_to(_where.at())
+	var gap: float = _figure.place().distance_to(_where.at())
 	if gap <= Tuning.OUT_OF_SIGHT:
 		_gap_looked_at = INF
 		_look_clock = 0.0
@@ -39,7 +44,7 @@ func step(delta: float) -> void:
 	_gap_looked_at = gap
 	_look_clock = 0.0
 	if _not_closing_for >= GIVES_UP:
-		event._finish()
+		_figure.begin(EventInstance.Phase.DONE)
 
 ## Overrides EventBehaviour.save.
 func save() -> Dictionary:

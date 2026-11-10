@@ -13,8 +13,24 @@ extends EventBehaviour
 var _line_warning := Warning.new()
 ## Whether he noticed her already inside his run distance, so his run waits for his warning.
 var _noticed_inside := false
+## Its row: how near she comes before it notices her, whether it walks a route, and a flock's
+## spread.
+var _row: EventDef
+## How it notices her (`NoticeSpec`): the distance a row that runs its own line runs from.
+var _spec: NoticeSpec
+## Its route walk (`EventRouteWalk`), which it walks once it has noticed her; null for a row that
+## does not move.
+var _route: EventRouteWalk
 
-func _init() -> void:
+## Handed, as its event is set up, the figure it moves, where she is, its row, how it notices her
+## and the route walk it walks once it has.
+func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, spec: NoticeSpec,
+		route: EventRouteWalk) -> void:
+	_figure = figure
+	_where = where
+	_row = row
+	_spec = spec
+	_route = route
 	_line_warning.cancel_if = _she_has_left_his_notice
 	_line_warning.on_expired = _keep_warning_once_it_has_run
 
@@ -25,22 +41,22 @@ func step(delta: float) -> void:
 	_check_for_notice()
 	_warn_on_its_line(delta)
 	_flush_the_flock_if_she_is_among_them()
-	if not event.is_waiting() and event.def.mobile and event.path.size() > 1 \
-			and not event.is_telegraphing_still():
-		event.route.advance(delta)
+	if not _figure.is_waiting() and _row.mobile and _figure.walks().size() > 1 \
+			and not _figure.is_telegraphing_still():
+		_route.advance(delta)
 
 ## **It notices her within its notice radius**, with no clear line asked — the mouse's alley and the
 ## masked man's shaft are the ground it watches — and turns to face her, which costs nothing: its
 ## route overwrites the heading the instant it starts moving.
 func _check_for_notice() -> void:
 	var her: Vector2 = _where.at()
-	if her == Vector2.INF or not event.is_waiting():
+	if her == Vector2.INF or not _figure.is_waiting():
 		return
-	var toward: Vector2 = her - event.global_position
-	if toward.length() > event.def.notice_within():
+	var toward: Vector2 = her - _figure.place()
+	if toward.length() > _row.notice_within():
 		return
-	event._notice_her()
-	event._heading = toward.normalized()
+	_figure.notice_her()
+	_figure.turn_to(toward.normalized())
 
 ## **A row that runs its own line runs on a distance, with no warning clock** (`NoticeSpec.
 ## runs_within`, the masked man): the one exception to the one-radius rule every waiting charger
@@ -52,39 +68,37 @@ func _check_for_notice() -> void:
 ## (`Phase.ACTIVE`), as a flock's flush is; its notice does not run out before then
 ## (`EventInstance._hold_the_notice_clock()`).
 func _warn_on_its_line(delta: float) -> void:
-	var notice: NoticeSpec = event.def.notice
 	var her: Vector2 = _where.at()
-	if notice == null or notice.runs_within <= 0.0 or event._telegraph_ended \
-			or event.is_waiting() or her == Vector2.INF:
+	if _spec.runs_within <= 0.0 or _figure.notice_has_run() or _figure.is_waiting() \
+			or her == Vector2.INF:
 		return
-	var range_to_her: float = event.global_position.distance_to(her)
+	var range_to_her: float = _figure.place().distance_to(her)
 	if not _line_warning.is_running():
-		_noticed_inside = range_to_her <= notice.runs_within
-		event._report_the_warning()
+		_noticed_inside = range_to_her <= _spec.runs_within
+		_figure.warning_went_up()
 		# From the start of this tick, since this tick's `delta` is already its first.
-		_line_warning.start(event.age - delta, Tuning.WARNING_ALONE_MAX)
-	if _line_warning.tick(event.age) == Warning.Outcome.CALLED_OFF:
-		event._notice.stop()
-		event.transition(EventInstance.Phase.WAITING)
+		_line_warning.start(_figure.age() - delta, Tuning.WARNING_ALONE_MAX)
+	if _line_warning.tick(_figure.age()) == Warning.Outcome.CALLED_OFF:
+		_figure.wait_for_her_again()
 		return
-	if range_to_her > notice.runs_within:
+	if range_to_her > _spec.runs_within:
 		_noticed_inside = false
 		return
 	if not _noticed_inside:
-		event.transition(EventInstance.Phase.ACTIVE)
+		_figure.begin(EventInstance.Phase.ACTIVE)
 		# His run is his charge, for his counter (`EventBus.pursuit_began`).
-		event._charge.begin()
+		_figure.charge_began()
 
 ## Once his warning has run, he runs the moment she is inside his run distance, wherever she was
 ## when he noticed her; his warning stays up, still called off by her leaving his notice.
 func _keep_warning_once_it_has_run() -> void:
 	_noticed_inside = false
-	_line_warning.start(event.age)
+	_line_warning.start(_figure.age())
 
 ## Whether she is back outside the masked man's notice: what calls his warning off.
 func _she_has_left_his_notice() -> bool:
 	return _where.at() != Vector2.INF \
-			and event.global_position.distance_to(_where.at()) > event.def.notice_within()
+			and _figure.place().distance_to(_where.at()) > _row.notice_within()
 
 ## **Birds go up when she reaches them, and a clock cannot know when that is** (2026-09-20: they
 ## should basically start fluttering when I touch them, not after). The flush fires on her arrival
@@ -92,15 +106,14 @@ func _she_has_left_his_notice() -> bool:
 ## its notice a pursuer's lunge makes (`Phase.ACTIVE`). Its `telegraph_time` is the backstop for a
 ## flock she came near and never reached, not the wait.
 func _flush_the_flock_if_she_is_among_them() -> void:
-	var def: EventDef = event.def
 	var her: Vector2 = _where.at()
-	if def.flock_size <= 0 or event._telegraph_ended or her == Vector2.INF:
+	if _row.flock_size <= 0 or _figure.notice_has_run() or her == Vector2.INF:
 		return
-	if event.is_waiting() or not event.is_telegraphing():
+	if _figure.is_waiting() or not _figure.is_telegraphing():
 		return
-	if event.global_position.distance_to(her) > def.flock_spread + Tuning.PLAYER_BODY_RADIUS:
+	if _figure.place().distance_to(her) > _row.flock_spread + Tuning.PLAYER_BODY_RADIUS:
 		return
-	event.transition(EventInstance.Phase.ACTIVE)
+	_figure.begin(EventInstance.Phase.ACTIVE)
 
 ## His warning's start on the event's clock and its length (`INF` once it has run), and whether he
 ## noticed her inside his run distance.

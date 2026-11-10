@@ -760,12 +760,21 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t) -> void:
 			"and the officer is gone where she cannot see him (%.1fs)" % waited)
 	_end(fixture)
 
-## The suite's busker, standing in the park's north-west when the cordon starts.
-func _busker_in_the_park() -> EventInstance:
+## The suite's busker, standing in the park's north-west when the cordon starts. Given a `pace`, he
+## is made from a copy of his row that leaves at that pace, since a busker has none of his own:
+## the row is handed to his behaviours as he is set up, so a departure of his own
+## (`_set_off_on_their_own()`) walks at it.
+func _busker_in_the_park(pace := 0.0) -> EventInstance:
 	var park := CityGenerator.swing_park(_city.map)
 	var area := _city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(_city.map, park))
-	return _city.events.spawn_extra(EventCatalogue.by_id("busker"),
-			area.position + area.size * Vector2(0.25, 0.3))
+	var row := EventCatalogue.by_id("busker")
+	if pace > 0.0:
+		var walking: EventDef = row.duplicate()
+		walking.shape = row.shape
+		walking.solid_parts = row.solid_parts
+		walking.departs_at = pace
+		row = walking
+	return _city.events.spawn_extra(row, area.position + area.size * Vector2(0.25, 0.3))
 
 ## **A person walked out never ends in her view** *("Nothing vanishes while you are looking at
 ## it": the end of an event is a departure, not a deletion)*. The way out ends out of sight of where
@@ -844,7 +853,7 @@ func _test_someone_already_leaving_is_walked_out_through_the_gap(t) -> void:
 	for after_the_touch: float in [-1.0, 0.5]:
 		var person: Array = [null]
 		var fixture := _at_the_swing(t, func() -> void:
-			person[0] = _busker_in_the_park()
+			person[0] = _busker_in_the_park(ParkCordon.PARK_CLOSING_LEAVE_SPEED)
 			if after_the_touch < 0.0:
 				_set_off_on_their_own(person[0], _swing_now))
 		var happenings: ResistanceHappenings = fixture.happenings
@@ -879,15 +888,9 @@ func _test_someone_already_leaving_is_walked_out_through_the_gap(t) -> void:
 		t.check(through_tape == 0, "without walking through tape (%d)" % through_tape)
 		_end(fixture)
 
-## Sends `person` off on a departure of their own, straight away from `her`: a copy of their row
-## with a walking pace, since a busker has none.
-func _set_off_on_their_own(person: EventInstance, her: Vector2,
-		pace := ParkCordon.PARK_CLOSING_LEAVE_SPEED) -> void:
-	var walking: EventDef = person.def.duplicate()
-	walking.shape = person.def.shape
-	walking.solid_parts = person.def.solid_parts
-	walking.departs_at = pace
-	person.def = walking
+## Sends `person` off on a departure of their own, straight away from `her`, at the pace their row
+## leaves at (`_busker_in_the_park()` gives a busker one).
+func _set_off_on_their_own(person: EventInstance, her: Vector2) -> void:
 	_city.events.world.where_she_is().tell(her)
 	person.leave_for_a_completed_task()
 
@@ -946,8 +949,8 @@ func _test_an_escort_sent_back_alone_is_let_out_before_the_gap_shuts(t) -> void:
 func _test_a_slow_person_leaving_alone_holds_the_gap_from_across_the_park(t) -> void:
 	var person: Array = [null]
 	var fixture := _at_the_swing(t, func() -> void:
-		person[0] = _busker_in_the_park()
-		_set_off_on_their_own(person[0], _swing_now, ParkCordon.PARK_CLOSING_LEAVE_SPEED / 10.0))
+		person[0] = _busker_in_the_park(ParkCordon.PARK_CLOSING_LEAVE_SPEED / 10.0)
+		_set_off_on_their_own(person[0], _swing_now))
 	var happenings: ResistanceHappenings = fixture.happenings
 	var busker: EventInstance = person[0]
 	var her := [fixture.swing]
