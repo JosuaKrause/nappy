@@ -51,18 +51,22 @@ parentheses, on any receiver: `thing.hard_fail` is a reference to the function, 
 
 - a `.name` use whose receiver's class it cannot tell, where the name is a var some class under `src/` declares, or
   a method one declares that no class declares as a var, a signal, a constant or an enum and that no engine class
-  has as a property (`ENGINE_PROPERTIES`): the fix is a typed name to read through;
+  has as a property, nor a builtin type as a member (`ENGINE_PROPERTIES`): the fix is a typed name to read
+  through, or, for a dictionary's key, a subscript;
 - a method of the receiver's known class (or an ancestor) named without its parentheses, unless it hands a
-  Callable on: a step follows it (`.bind(`, `.call(`), or it is an argument, an array element, the right side of
-  an assignment, a returned value or a ternary's branch. A condition or an operand is the mistake.
+  Callable on: a step follows it (`.bind(`, `.call(`), or it is a call's argument, an element of an array literal,
+  the right side of an assignment, a returned value or a ternary's branch, a parenthesised expression being what
+  its parentheses are. A condition (`assert(...)`'s included), an operand or a statement on its own (`crowd.clear`
+  for `crowd.clear()`) is the mistake.
 
 In a file **with** the line such a use is skipped, never listed and never failed, and `--summary` counts the
 skipped uses of a var's name.
 
 **The line has one form**, the file's whole first line, `@warning_ignore_start("untyped_declaration",
 "unsafe_method_access")`: double-quoted names separated by `, `, only those three warnings, each once, in that
-order, nothing after it. The engine honours other forms (a trailing comment, a space before the parenthesis, a line
-break or a comment inside it, single quotes, the annotation lower in the file), so every `@warning_ignore`,
+order, nothing after it. The engine honours other forms (a trailing comment, a space or a backslash line
+continuation before the parenthesis, a line break or a comment inside it, single quotes, the annotation lower in
+the file), so every `@warning_ignore`,
 `@warning_ignore_start` and `@warning_ignore_restore` in a file's code is read whole, and any but that line that
 names one of the three, or has an argument the check cannot read (a constant), fails with the line in its one
 form: an ignore the check cannot see would let the list grow unnoticed, and a converted file would hide an
@@ -73,7 +77,9 @@ engine parses in this project); only `src/` is read for reads.
 
 **Blind spots, stated.** A chain through an engine property typed `Variant` (`JSON.data`) or through an inner
 class's field is told as an engine value, so a read behind it is not seen; a read of another file's inner class's
-field is not listed; a bare name nothing declares is taken for an engine property of the file's own class. A
+field is not listed; a bare name nothing declares is taken for an engine property of the file's own class; a
+parameter of a function whose parameter list runs over several lines (`func f(` ending its line) has no type
+here, so a read through it is neither a read nor an unknown. A
 method named without its parentheses is not seen on a receiver told as an engine value, nor as a bare name of the
 file's own class with no receiver (`if is_ready:`). A second read of a field a file already reads is not a new
 line, so a change that adds one to a listed reader file and field passes `--base`: review reads the diff for it.
@@ -317,10 +323,11 @@ VARIANT_CALLS = frozenset(
 # On a typed array these return its element; on a typed dictionary, `get` and `get_or_add` its value.
 ELEMENT_CALLS = frozenset({"back", "front", "pick_random", "pop_back", "pop_front", "pop_at", "get", "min", "max"})
 # The names an engine class declares as a property or a signal in Godot 4.7.2 (ClassDB.class_get_property_list
-# and class_get_signal_list) that a method under src/ also has. On a receiver whose class cannot be told such a
-# name is as likely the engine's property as the project's method, so it is not taken for a method read without
-# its parentheses. A method added under src/ with another such name is taken for one, and the fix, a typed name to
-# read through, is right either way.
+# and class_get_signal_list), or a builtin type declares as a member (`Rect2.end`: the `members` of the
+# `builtin_classes` that `godot --headless --dump-extension-api` writes, which ClassDB does not list), that a method
+# under src/ also has. On a receiver whose class cannot be told such a name is as likely the engine's property as
+# the project's method, so it is not taken for a method read without its parentheses. A method added under src/
+# with another such name is taken for one, and the fix, a typed name to read through, is right either way.
 ENGINE_PROPERTIES = frozenset(
     {
         "_source",
@@ -329,6 +336,7 @@ ENGINE_PROPERTIES = frozenset(
         "depth",
         "direction",
         "enabled",
+        "end",
         "environment",
         "frames",
         "grow",
@@ -348,10 +356,37 @@ ENGINE_PROPERTIES = frozenset(
 )
 SIGNAL = re.compile(r"^signal[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
 CONSTANT = re.compile(r"^(?:static[ \t]+)?(?:const|enum)[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
-# What may stand before a method reference that hands a Callable on, and what may follow it: an argument or an
-# array element, the right side of an assignment, a returned value, a ternary's branch.
-HANDED_BEFORE = re.compile(r"(?:^|[(\[,]|(?<![=!<>:])=|:=|\breturn|\belse)[ \t]*$")
+# What may stand before a method reference that hands a Callable on, and what may follow it. Before it on its line:
+# the right side of an assignment, a returned value, a ternary's else branch (HANDED_STATEMENT); or, measured from
+# the bracket holding it, nothing or a comma, an element of that bracket's list (HANDED_ELEMENT), which counts only
+# where the bracket is a call's argument list or an array literal (`list_bracket`). After it: the end of the line, a
+# closing bracket, a comma, or a ternary's `if`.
+HANDED_STATEMENT = re.compile(r"(?:(?<![=!<>:])=|:=|\breturn|\belse)[ \t]*$")
+HANDED_ELEMENT = re.compile(r"(?:^|,)\s*$")
 HANDED_AFTER = re.compile(r"^[ \t]*(?:$|[)\],]|if\b)")
+# The words a `(` or a `[` may follow without being a call or a subscript: after `assert(`, `if (` or `while (` the
+# bracket holds a condition, and after `return [` or `in [` an array literal.
+KEYWORDS = frozenset(
+    [
+        "and",
+        "as",
+        "assert",
+        "await",
+        "elif",
+        "else",
+        "for",
+        "if",
+        "in",
+        "is",
+        "match",
+        "not",
+        "or",
+        "return",
+        "when",
+        "while",
+    ]
+)
+TRAILING_WORD = re.compile(r"[A-Za-z_]\w*$")
 
 
 class FieldReadsError(Exception):
@@ -507,14 +542,19 @@ def annotation_arguments(text: str) -> tuple[tuple[str, ...], bool]:
 
 def ignores_of(text: str) -> list[Ignore]:
     """Every `@warning_ignore`, `@warning_ignore_start` and `@warning_ignore_restore` in the file's code (not in a
-    comment or a string), read whole: a space before the parenthesis, line breaks and comments inside it, either
-    quote style. An annotation whose parenthesis never closes is unreadable."""
+    comment or a string), read whole: a space or a backslash line continuation before the parenthesis, line breaks
+    and comments inside it, either quote style. An annotation whose parenthesis never closes is unreadable."""
     bare = check_layers.blank(text).bare
     out: list[Ignore] = []
     for match in ANY_IGNORE.finditer(bare):
         at = match.end()
-        while at < len(bare) and bare[at] in " \t":
-            at += 1
+        while at < len(bare):
+            if bare[at] in " \t":
+                at += 1
+            elif bare.startswith(("\\\n", "\\\r\n"), at):
+                at = bare.index("\n", at) + 1
+            else:
+                break
         names: tuple[str, ...] = ()
         unreadable = False
         if at < len(bare) and bare[at] == "(":
@@ -1189,15 +1229,57 @@ def method_names_of(tree: Tree) -> set[str]:
     return methods - others - ENGINE_PROPERTIES
 
 
-def hands_on(line: str, start: int, end: int) -> bool:
-    """Whether the method reference spanning `start` to `end` of `line` hands a Callable on: a step follows it
-    (`.bind(`, `.call(`), or it is an argument, an array element, the right side of an assignment, a returned value
-    or a ternary's branch. Anything else, a condition or an operand above all, is a function where a value was
-    meant: always true."""
-    after = line[end:]
+def enclosing(bare: str, at: int) -> int:
+    """The index of the innermost bracket left open before `at`, or -1 where none is."""
+    depth = 0
+    for index in range(at - 1, -1, -1):
+        char = bare[index]
+        if char in ")]}":
+            depth += 1
+        elif char in "([{":
+            if depth == 0:
+                return index
+            depth -= 1
+    return -1
+
+
+def list_bracket(bare: str, opener: int) -> bool:
+    """Whether the bracket at `opener` holds a list a Callable may be an element of: a call's argument list (a `(`
+    after a name that is not a keyword, or after a closing bracket) or an array literal (a `[` after neither). A `(`
+    after `assert`, `if` or `while` holds a condition, a `(` after an operator is a parenthesised expression, a `[`
+    after a name a subscript, and a `{` a dictionary."""
+    before = bare[:opener].rstrip(" \t")
+    word = TRAILING_WORD.search(before)
+    called = bool(word and word.group(0) not in KEYWORDS) or before.endswith((")", "]"))
+    if bare[opener] == "(":
+        return called
+    return bare[opener] == "[" and not called
+
+
+def hands_on(bare: str, start: int, end: int) -> bool:
+    """Whether the method reference spanning `start` to `end` of the file's blanked code hands a Callable on: a step
+    follows it (`.bind(`, `.call(`), or it is a call's argument, an array element, the right side of an assignment,
+    a returned value or a ternary's branch; a parenthesised expression is what its parentheses are. Anything else is
+    a function where a value was meant, always true: a condition (`assert(...)` included), an operand, a statement
+    on its own (`crowd.clear` for `crowd.clear()`)."""
+    line_start = bare.rfind("\n", 0, start) + 1
+    line_end = bare.find("\n", end)
+    after = bare[end : len(bare) if line_end < 0 else line_end]
     if after.lstrip(" \t").startswith("."):
         return True
-    return bool(HANDED_BEFORE.search(line[:start]) and HANDED_AFTER.match(after))
+    if not HANDED_AFTER.match(after):
+        return False
+    opener = enclosing(bare, start)
+    if HANDED_STATEMENT.search(bare[max(line_start, opener + 1) : start]):
+        return True
+    if opener < 0 or not HANDED_ELEMENT.search(bare[opener + 1 : start]):
+        return False
+    if list_bracket(bare, opener):
+        return True
+    close = close_of(bare, opener)
+    if bare[opener] != "(" or close < 0 or bare[opener + 1 : start].strip() or bare[end:close].strip():
+        return False
+    return hands_on(bare, opener, close + 1)
 
 
 def reads_of(tree: Tree) -> Found:
@@ -1212,7 +1294,9 @@ def reads_of(tree: Tree) -> Found:
         owner_block = block_index(tree.bare[path])
         inner = inner_lines(tree.bare[path])
         converted = path not in tree.opted_out
+        offset = 0
         for index, line in enumerate(lines):
+            line_offset, offset = offset, offset + len(line) + 1
             if "." not in line:
                 continue
             for match in USE.finditer(line):
@@ -1235,7 +1319,11 @@ def reads_of(tree: Tree) -> Found:
                     and klass in tree.files
                     and tree.method_return(klass, name)[0]
                     and not tree.member_field_type(klass, name)[0]
-                    and not hands_on(line, len(line[: match.start()].rstrip(" \t")) - len(receiver or ""), match.end())
+                    and not hands_on(
+                        tree.bare[path],
+                        line_offset + len(line[: match.start()].rstrip(" \t")) - len(receiver or ""),
+                        line_offset + match.end(),
+                    )
                 ):
                     unknown.append(Unknown(path, index + 1, expression, REFERENCE))
                     continue
@@ -1332,7 +1420,9 @@ def unknown_failure(u: Unknown) -> str:
             f"{where}: cannot tell the class of the receiver in `{u.expression}`, in a file without the opt-out line,"
             " and a class under src/ declares that name as a method: a method read without its parentheses is a"
             " reference to the function, always true; call it with `()`, or read the receiver through a typed name"
-            f" ({TYPED_NAME})"
+            f' ({TYPED_NAME}); where the name is a dictionary\'s key, subscript it (`station["blocks"]`), or read'
+            " the dictionary that holds it through a typed name (`var station: Dictionary = ...`), a nested one"
+            " included"
         )
     return (
         f"{where}: cannot tell the class of the receiver in `{u.expression}`, in a file without the opt-out line;"
@@ -1563,10 +1653,11 @@ def parse(argv: list[str]) -> argparse.Namespace:
             " a file under src/ without that line, a use .name fails, naming the file, the line and the expression,"
             " where the receiver's class cannot be told by static reading and the name is a var some class under"
             " src/ declares, or a method one declares (not also a var, a signal, a constant or an engine"
-            " property); and so does a method of the receiver's known class named without its parentheses, a"
-            " reference to the function and always true, unless it hands the Callable on (followed by a step such"
-            " as .bind(, or an argument, an array element, an assignment's right side, a returned value or a"
-            " ternary's branch). In a file with the line, a receiver whose class cannot be told is skipped. A"
+            " property or builtin member); and so does a method of the receiver's known class named without its"
+            " parentheses, a reference to the function and always true, unless it hands the Callable on (followed"
+            " by a step such as .bind(, or a call's argument, an array literal's element, an assignment's right"
+            " side, a returned value or a ternary's branch; never a condition, assert()'s included, an operand or a"
+            " statement on its own). In a file with the line, a receiver whose class cannot be told is skipped. A"
             " malformed line, and any other @warning_ignore, @warning_ignore_start or @warning_ignore_restore in"
             " any .gd file outside docs/ that names one of the three or whose argument cannot be read, fails. The"
             " list and the files carrying the line only shrink; a file that would need the line is told what to"

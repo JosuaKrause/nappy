@@ -247,6 +247,12 @@ class MethodReferenceTests(unittest.TestCase):
         self.assertEqual(self.kinds(reader(body, LINE + "class_name Reader\nextends Node\n")), [])
         failure = reads.failures_of(reads.reads_of(reads.Tree(reader(body), {})), [])[0]
         self.assertIn("a reference to the function, always true", failure)
+        self.assertIn("where the name is a dictionary's key, subscript it", failure)
+
+    def test_a_builtin_types_member_is_not_taken_for_a_method(self) -> None:
+        other = "class_name Other\nextends RefCounted\nfunc end() -> int:\n\treturn 0\n"
+        body = "func a(rects: Array) -> void:\n\tprint(rects[0].end)\n"
+        self.assertEqual(self.kinds(reader(body) | {"src/other.gd": other}), [])
 
     def test_a_known_receivers_method_without_parentheses_fails_where_no_callable_is_handed_on(self) -> None:
         body = (
@@ -259,6 +265,31 @@ class MethodReferenceTests(unittest.TestCase):
             [(5, "t.make", reads.REFERENCE), (7, "t.make", reads.REFERENCE)],
         )
         self.assertEqual(self.kinds(reader(body, LINE + "class_name Reader\nextends Node\n")), [])
+
+    def test_a_statement_on_its_own_an_assert_and_a_parenthesised_condition_hand_nothing_on(self) -> None:
+        body = (
+            "var t: Thing\nfunc f() -> void:\n\tt.go\n\tassert(t.make)\n\tassert(t.make, 'message')\n"
+            "\tif (\n\t\tt.make\n\t):\n\t\tpass\n\tif (t.make):\n\t\tpass\n\tvar xs := d[t.make]\n"
+        )
+        self.assertEqual(
+            self.kinds(reader(body)),
+            [
+                (5, "t.go", reads.REFERENCE),
+                (6, "t.make", reads.REFERENCE),
+                (7, "t.make", reads.REFERENCE),
+                (9, "t.make", reads.REFERENCE),
+                (12, "t.make", reads.REFERENCE),
+                (14, "t.make", reads.REFERENCE),
+            ],
+        )
+
+    def test_a_callable_handed_on_across_lines_or_through_parentheses_still_passes(self) -> None:
+        body = (
+            "var t: Thing\nfunc f() -> Callable:\n\tg(\n\t\t1,\n\t\tt.make,\n\t)\n\tvar xs := [\n\t\tt.make,\n\t]\n"
+            "\tvar cb := (t.make)\n\th(func() -> Callable: return t.make)\n\treturn (\n\t\tt.make\n\t)\n"
+            "func g(n: int, c: Callable) -> void:\n\tpass\nfunc h(c: Callable) -> void:\n\tpass\n"
+        )
+        self.assertEqual(self.kinds(reader(body)), [])
 
     def test_a_name_that_is_also_a_var_a_signal_a_constant_or_an_engine_property_is_not_taken_for_a_method(
         self,
@@ -308,6 +339,10 @@ class OptOutTests(unittest.TestCase):
             "src/f.gd": '@warning_ignore_start("unsafe_method_access", "untyped_declaration")\n',
             "src/g.gd": 'extends Node\nconst W := "untyped_declaration"\n@warning_ignore_start(W)\n',
             "src/h.gd": 'extends Node\n@warning_ignore_restore("unsafe_method_access") # a comment\n',
+            "src/i.gd": '@warning_ignore_start \\\n("untyped_declaration")\nextends RefCounted\nvar x = 3\n',
+            "src/j.gd": (
+                'extends Node\nfunc f() -> void:\n\t@warning_ignore_start \\\n\t("untyped_declaration")\n\tvar x = 3\n'
+            ),
             "src/ok.gd": (
                 '# @warning_ignore("untyped_declaration")\nextends Node\n'
                 'var s := "@warning_ignore(\\"untyped_declaration\\")"\n@warning_ignore("unused_variable")\n'
@@ -325,6 +360,8 @@ class OptOutTests(unittest.TestCase):
                 "src/f.gd:1",
                 "src/g.gd:3",
                 "src/h.gd:2",
+                "src/i.gd:1",
+                "src/j.gd:3",
             ],
         )
         self.assertIn('`@warning_ignore_start("untyped_declaration")`', failing[0])
