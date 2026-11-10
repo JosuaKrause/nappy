@@ -41,10 +41,10 @@ A stronger model than a row's takes a milestone whose geometry or contracts warr
 
 | Task kind | Model |
 |---|---|
-| A task that needs planning or complex reasoning | Fable is considered (inbox #1264) |
-| The design that code is built from, a seam's design included | Fable (inbox #1264) |
-| Code built from a Fable design | the orchestrator's choice (inbox #1264), by the build rows below |
-| A change to a rule file: a skill, `CLAUDE.md`, a hook's text | Fable, directly (inbox #1264) |
+| A task that needs planning or complex reasoning | Fable is considered (inbox #1264 in olive-ferret) |
+| The design that code is built from, a seam's design included | Fable (inbox #1264 in olive-ferret) |
+| Code built from a Fable design | the orchestrator's choice (inbox #1264 in olive-ferret), by the build rows below |
+| A change to a rule file: a skill, `CLAUDE.md`, a hook's text | Fable, directly (inbox #1264 in olive-ferret) |
 | Drawing: making or revising artwork, SVG, PNG or a review sheet | Opus (PLAYTEST-123 8) |
 | Waiting on a merge or a check, polling | no agent: a timer or a script in a background shell, which costs no tokens (inbox #1070 in gentle-walrus, inbox #1072 in gentle-walrus) |
 | Merging | the orchestrating session, with no agent spawned for it; an agent or a monitor may run a merge the session hands it (**committing**, "Merging") |
@@ -217,6 +217,11 @@ before spawning:
 - **Spawn from the main checkout, never from a worktree that has just been removed**: `cd` back
   to the repository's own folder after removing one, since a shell still standing in a deleted
   worktree fails every spawn (`references/worktrees-and-disk.md`, "The worktree").
+- **The orchestrating session never moves its own workspace while a sub-agent runs**: no
+  `EnterWorktree`, nor any other call that switches the session into a worktree, since the switch
+  reaches every agent of the session and the harness then refuses each one's commands in its own
+  worktree, reads included. It writes on a branch from the main checkout, by absolute paths
+  (`references/worktrees-and-disk.md`, "The session stays in the main checkout").
 - **A push that starts no CI run is diagnosed, not waited on**: `references/recovery.md` says how.
 - **Tell each agent who else is alive** and which files those agents own, so a scope fence is a
   sentence in the prompt and not a discovery in the diff.
@@ -334,9 +339,9 @@ to the player's correction:
   (woolly-finch 15).
 - **That "the orchestrator's choice" for code built from a Fable design is made by the build
   rows** ("The model table"); the player's words leave the choice to the orchestrator
-  (inbox #1264).
+  (inbox #1264 in olive-ferret).
 - **That "a rule file" takes in a hook's text** ("The model table"); the player's words name rule, skill
-  and `CLAUDE.md` changes (inbox #1264).
+  and `CLAUDE.md` changes (inbox #1264 in olive-ferret).
 - **That a review of a change to what a rule says goes to Opus** and a skill's wording alone to
   Sonnet ("The model table").
 - **That a pull request that carries a drawing is reviewed by Opus** ("The model table"); the
@@ -346,5 +351,8 @@ to the player's correction:
   **designing-classes** (plush-kestrel).
 - **That a task waiting only on the player does not keep the session open** ("What the
   orchestrator keeps"; the rule it qualifies is inbox #1196 in gentle-owl).
+- **That the orchestrating session never moves its own workspace while a sub-agent runs**
+  ("Running agents in parallel"), with the way it writes on a branch instead and the way back
+  from a switch (`references/worktrees-and-disk.md`): the filer's fix of a gap in this skill.
 - **That the 45-minute check is a recurring job about every 30 minutes**, and the reading that it
   is not a tick under the contract's one-notification rule (the rule is gentle-owl #1255).

@@ -28,7 +28,7 @@ each read, and its pull requests in order, the first of which run beside the pla
   field under `src/`, with today's reads listed once in a list that only shrinks. It is
   `tools/check_field_reads.py`, with the list in `tools/field_reads.txt`, run in CI's `gates` job.
 
-**Every receiver gets a class the check can tell** (inbox #1268). Shown "The field-read check
+**Every receiver gets a class the check can tell** (inbox #1268 in olive-ferret). Shown "The field-read check
 skips about two thirds of reads because it cannot tell the receiver's class", the player: "isn't
 that the point of a class hierarchy? it should be made working". The check and the engine's
 settings are built (record minty-quail-busy-heron): `project.godot` makes the engine fail an untyped

@@ -1,9 +1,9 @@
 # polite-sparrow — The domain skills after the rules review: true against the code, one owner per rule, detail in reference files · 2026-11-09 · not from an entry
 
 **The ask.** The player had a review made of every rule file ("have another fable agent review all
-skills/claude/rule files", inbox #1267), read its summary, and said "let's do all the suggested
+skills/claude/rule files", inbox #1267 in olive-ferret), read its summary, and said "let's do all the suggested
 changes for the hooks/skills/claudes etc", "four PRs is fine with me -- can we parallelize?" and
-"for the rule/skill/claude changes I want fable to do it directly" (inbox #1267). The work was split
+"for the rule/skill/claude changes I want fable to do it directly" (inbox #1267 in olive-ferret). The work was split
 by files into four pull requests. This record is the one for the thirteen skills about the game
 itself: events, crowd-traffic, city, balance, telemetry, cues, godot, svg-art, illustrated-png,
 reference-photos, sound-effects, session-captures and rejected-graphics.

@@ -1,9 +1,9 @@
 # leafy-dolphin — The rules are delivered: a hook names the skills for a file and the first edit waits, with the hook rows complete and the orchestrating session defined · 2026-11-09 · not from an entry
 
 **The ask.** The player had a review made of every rule file ("have another fable agent review all
-skills/claude/rule files", inbox #1267), read its summary, and said "let's do all the suggested
+skills/claude/rule files", inbox #1267 in olive-ferret), read its summary, and said "let's do all the suggested
 changes for the hooks/skills/claudes etc", "four PRs is fine with me -- can we parallelize?" and
-"for the rule/skill/claude changes I want fable to do it directly" (inbox #1267). Shown the six
+"for the rule/skill/claude changes I want fable to do it directly" (inbox #1267 in olive-ferret). Shown the six
 picks the summary ended with, the player took them with that go-ahead; three are built here: the
 first edit in an area is refused until its skills are read; the orchestrating session is defined;
 branches are named with a dash. The work was split by files into four pull requests. This record is
