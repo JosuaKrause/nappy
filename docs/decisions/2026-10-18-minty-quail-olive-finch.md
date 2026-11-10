@@ -38,6 +38,44 @@ charges her tick by tick (`probes/excitement_fingerprint.gd`, its `XF` lines les
 every event, crowd agent and baby meter on every tick (`probes/m159_tick_sweep_events_cost.gd`, the
 `chain` values). The commits after it change tests and docs only.
 
+## Measured
+
+The per-frame cost, by a separate measuring agent, on `main` at `521439a75`, the commit this branch
+was made from, and on this pull request at `1a370b204`, the commit before `main` was merged into
+it (the merge brought the change to the doors, the sources and the encounter watch, whose own table
+is in the record minty-quail-velvet-owl). Four probes, each run alone, twelve rounds alternated
+base, head, head, base; the load average is the one-minute figure before the round, and the
+merge's own checks and suites ran on the machine during the early rounds. Nothing is concluded from
+it and no cut is held or tuned for a time (inbox #1278 in olive-ferret): the reading is recorded,
+not judged. For the end remeasure, the entry's one remeasure after its last item (inbox #813 in
+curly-moose), this change lists the events' per-frame cost, the four probes below.
+
+| Round | Tree | Load | Events' step, ms | Baby's sweep, ms | Halo's frame, ms | Fields, seed 4242, ms | Fields, seed 5551212, ms | Crowd tick, ms (control) |
+|---|---|---|---|---|---|---|---|---|
+| 1 | base | 2.89 | 11303.5 | 123.3 | 3178.4 | 30.4 | 32.4 | 44126.1 |
+| 2 | head | 3.23 | 10927.8 | 119.4 | 3132.3 | 30.5 | 30.5 | 43484.6 |
+| 3 | head | 3.46 | 11173.3 | 123.2 | 3150.7 | 31.1 | 30.7 | 43385.8 |
+| 4 | base | 2.75 | 11018.2 | 118.5 | 3086.9 | 30.6 | 30.3 | 43553.1 |
+| 5 | base | 2.41 | 11007.8 | 116.8 | 3092.7 | 30.6 | 30.9 | 43426.1 |
+| 6 | head | 2.76 | 10781.8 | 117.2 | 3134.7 | 30.4 | 32.0 | 43398.9 |
+| 7 | head | 2.20 | 10830.2 | 118.0 | 3134.6 | 30.6 | 31.0 | 43616.5 |
+| 8 | base | 2.21 | 10973.0 | 116.8 | 3092.3 | 30.7 | 31.0 | 43546.8 |
+| 9 | base | 2.53 | 10975.5 | 118.0 | 3083.3 | 30.5 | 31.1 | 43436.0 |
+| 10 | head | 2.28 | 10720.7 | 117.3 | 3150.1 | 30.5 | 31.1 | 43626.7 |
+| 11 | head | 2.64 | 10763.8 | 116.8 | 3138.7 | 30.4 | 30.8 | 43369.9 |
+| 12 | base | 2.86 | 11010.5 | 118.5 | 3096.2 | 30.5 | 31.0 | 43419.7 |
+| median | base | | 11009.2 | 118.2 | 3092.5 | 30.6 | 31.0 | 43491.4 |
+| median | head | | 10806.0 | 117.6 | 3136.7 | 30.5 | 30.9 | 43441.8 |
+
+The columns: the events' step and the baby's sweep are the totals of
+`probes/m159_tick_sweep_events_cost.gd`'s whole-mode lines over its 36 runs; the halo's frame is
+the sum of `probes/excitement_fingerprint.gd`'s nine `XF_COST` figures; the fields are
+`probes/calm_pelican_fields_layer_cost.gd`'s whole map, cold, for two seeds; the control is
+`probes/m159_crowd_tick_cost.gd`'s whole-mode total, a path this pull request does not touch. The
+sweep probe's own split-against-whole checks fail on both trees alike (6 of 36), and its timing
+lines print regardless. The medians are the measuring agent's, taken from the unrounded figures,
+so two of them differ by one in the last place from the median of the rows as printed.
+
 ## The handle, and why
 
 One shared object knows where she is before each event's own fields did. To keep today's answers,
