@@ -1951,8 +1951,8 @@ func world_map() -> WorldMap:
 ## (`_figure`) and hands each behaviour it is composed of (`EventBehaviours.compose()`), as
 ## `LaneMover.Lane` is a lane mover's view of itself. A behaviour asks it questions and tells it
 ## what happened, and never reads or writes the event's fields; what never changes under a
-## behaviour (its settings, the map, the navigator, what it walks as, where she is, the behaviours
-## beside it) it is handed instead. **The stored phase changes only in `transition()`**, which a
+## behaviour (its settings, the map, the navigator, what it walks as, where she is, the run log the
+## event writes to, the behaviours beside it) it is handed instead. **The stored phase changes only in `transition()`**, which a
 ## behaviour asks for with `begin()`; the notice clock and the charge record stay the event's, and
 ## are told what happened. An inner class, because it is the event's own view of itself.
 class Figure:

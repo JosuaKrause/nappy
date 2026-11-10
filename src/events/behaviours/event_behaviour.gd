@@ -11,8 +11,8 @@ extends RefCounted
 ## (`EventInstance.Figure`), told what happened rather than written field by field, and the phase
 ## changed only through `EventInstance.transition()`, which it asks for with `Figure.begin()`. What
 ## never changes under it — its settings (the row, where its part has no settings class of its
-## own), the map, the navigator, what it walks as, where she is, and the behaviours beside it it
-## works with — it is handed by the composer and holds. What the rest of the game asks of a
+## own), the map, the navigator, what it walks as, where she is, the run log its event writes to,
+## and the behaviours beside it it works with — it is handed by the composer and holds. What the rest of the game asks of a
 ## behaviour it asks of the event, which answers for it.
 ##
 ## **The pursuit, the man on foot, the barrier post, the investigation and the car still hold their
