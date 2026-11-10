@@ -34,8 +34,10 @@ Checked against the engine's documentation and by experiment on the project's Go
   class.
 - **Every file not yet typed carries one first line**, `@warning_ignore_start(...)`, naming
   exactly the warnings it still trips: 438 files on the day it was built (71 of 302 under `src/`,
-  365 of 414 under `tests/`, 2 of 3 under `tools/`). Two test suites write a script at run time and
-  boot it in a child process; each such script opens with the line too.
+  365 of 414 under `tests/`, 2 of 3 under `tools/`). A probe a merge of `main` brought,
+  `tests/probes/walk_rows.gd`, gained the line after that, naming the two warnings it trips. Two
+  test suites write a script at run time and boot it in a child process; each such script opens
+  with the line too.
 - **`tools/check_field_reads.py`**: in a file under `src/` without the line, a read whose
   receiver's class it cannot tell fails, naming the file, the line and the expression; in a file
   with the line it is skipped and counted, as before. The line itself is checked wherever it
@@ -43,15 +45,17 @@ Checked against the engine's documentation and by experiment on the project's Go
   three anywhere in the file); the line has one form (the whole first line, double quotes, the
   three warnings in a fixed order, nothing after), and any other `@warning_ignore`, `_start` or
   `_restore` naming one of the three, or whose argument it cannot read, fails. In a file under
-  `src/` without the line, a method named without its parentheses fails too: on an unknown
-  receiver, read with a name a class under `src/` declares as a method and nothing declares as a
-  var, a signal, a constant or an enum (engine properties and builtin types' members excepted); and
-  on a known receiver, its own method, unless the reference hands the Callable on (a step following
-  it, `.bind(` or `.call(`; a call's argument, never `assert(...)`'s; an array literal's element; an assignment's right side; a returned value; a
-  ternary's branch; a parenthesised expression counting as what its parentheses are). A statement
-  on its own (`crowd.clear` for `crowd.clear()`) fails. `--summary` prints the files still carrying
-  the line by folder and by warning and the uses still skipped; `--base` fails a file that gains the line or a warning on
-  it.
+  `src/` without the line, a method's name read through a receiver it cannot tell fails too,
+  whether or not it is handed on: a name some file or inner class under `src/` declares as a
+  method, unless a class a receiver can name (a file with a `class_name` or an autoload name)
+  declares it as a var (the use then fails as the var's), it is a constant or an enum, or it is in
+  the fixed list `ENGINE_PROPERTIES`. A method named without its parentheses on a receiver the
+  check can type is not seen ("Built and taken out", below). `--summary` prints the files still
+  carrying the line by folder and by warning and the uses still skipped; `--base` fails a file that
+  gains the line or a warning on it.
+- **The checker's docstring is the one text of what the check sees**, printed by `--help`, with a
+  unit case per stated form; the skills and the using-tools row say what the check is for and
+  point at it.
 - **The checker types far more receivers than it did**: engine and builtin types, typed arrays and
   dictionaries with indexing and loops, inner classes, preloaded constants, constructors, node
   paths, arithmetic, a ternary of a class and its subclass. The uses it skips fell from 2,320 to
@@ -62,12 +66,15 @@ Checked against the engine's documentation and by experiment on the project's Go
 
 - a chain through an engine property typed Variant (`JSON.data`);
 - a read of another file's inner class's field;
-- `self` inside an inner class;
+- a chain from `self` inside an inner class;
 - a bare name nothing declares, taken for an engine property;
-- a method named without its parentheses on a receiver typed as an engine value, or as a bare name
-  of its own class with no receiver;
-- a parameter of a parameter list that runs over several lines (`func f(` with its parameters on
-  the lines after), which has no type for the check;
+- a method named without its parentheses on a receiver the check can type (a class under `src/` or
+  an engine value), or as a bare name of its own class with no receiver;
+- a parameter of a function whose parameter list closes at the margin (a line starting with `)`),
+  which has no type for the check;
+- a var only an inner class or a file with no `class_name` declares, which is not a var for the
+  check: a receiver it cannot tell read with such a name fails only where some file or inner class
+  declares the name as a method;
 - a further read of a field its reader file is already listed for;
 - a name left on an opt-out line that its file no longer trips.
 
@@ -82,11 +89,39 @@ Checked against the engine's documentation and by experiment on the project's Go
 - Three probes that already fail to parse on `main` are left as they were.
 - The engine's own names are not taken for methods: `ENGINE_PROPERTIES` lists the engine classes'
   properties and the builtin types' members that a method under `src/` shares, read from the
-  engine (its class list and `--dump-extension-api`).
-- The method rule applies only in a file without the opt-out line, and on a known receiver only
-  the forms above hand a Callable on: a call's argument list is a `(` after a name that is not a
-  keyword or after a closing bracket, an array is a `[` after neither, and a Callable as a
-  dictionary's value is not one of them.
+  engine (its class list and `--dump-extension-api`). It is a fixed list: a method added later
+  with another engine name is taken for a method until the list gains it.
+- The method failure applies only in a file without the opt-out line and only on a receiver the
+  check cannot tell; a name only an inner class or a file with no `class_name` declares as a var,
+  or one declared as a signal, does not excuse it. The player's words ask that the field-read
+  check be made to work (inbox #1268 in olive-ferret) and say nothing of a method read without its
+  parentheses, so the whole method failure is the builder's choice.
+
+## Built and taken out: a typed receiver's method named without its parentheses
+
+The orchestrator's ruling on the first review added a second half to the method rule: on a
+receiver the check can type, the receiver's own method named without its parentheses failed unless
+the reference handed the Callable on (a step following it, `.bind(` or `.call(`; a call's argument;
+an array literal's element; an assignment's right side; a returned value; a ternary's branch). It
+was built, and it left the pull request in the orchestrator's rethink after the third *not ready*
+verdict (the pull request's conversation holds the rethink), a choice open to the player's
+overturn:
+
+- the list of accepted forms was restated in six texts (the checker's docstring, the godot skill,
+  the using-tools row, this record, the queue item and the description), and one of them had
+  drifted in each review round;
+- the rule did not reach 58 method names, `crowd.clear` among them, the example all six texts gave;
+- every finding of the last two rounds about a method without its parentheses sat in this half,
+  which no words of the player ask for.
+
+Its code (`hands_on`, `list_bracket`, `enclosing`, the `HANDED_*` patterns and their unit cases in
+`tools/check_field_reads.py` and its test) is at the branch's commit `acd6704d2`, which stays
+reachable through the pull request. What it costs: a stale read of a method on a typed receiver
+(`thing.is_finished` after `is_finished()` replaced the field) is reported by nothing; the events'
+interface's renaming rule (a yes-or-no question never takes the name of the field it replaces)
+covers the reads that conversion creates. The queue item
+`docs/todo/2026-10-18-minty-quail/method-without-parentheses.md` holds it as open work, proposed
+and not asked for.
 
 ## Measured
 
