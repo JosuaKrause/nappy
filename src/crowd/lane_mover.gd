@@ -10,8 +10,8 @@ extends Node2D
 ## the look-ahead, the held step, placement and recycling, the junction and queue questions, the
 ## heading and the velocity — is here, and never asks which kind it is; what only one kind does is
 ## its `strategy`, a `WalkerStrategy` or a `CarStrategy` that `kind` installs (`LaneStrategy` says
-## what it is asked). The per-frame inputs `Crowd` writes for the cars and for the walkers at a door
-## are fields of the mover the crowd hands them to.
+## what it is asked). The per-frame inputs `Crowd` works out for the cars and for the walkers at a
+## door it tells the mover through its lane (`Lane`'s events), which keeps them as fields.
 ##
 ## **The mover has no picture, no excitement and no halo.** `CrowdAgent` is the crowd member built on
 ## it: it adds the field it contributes to the baby's meter, the halo and caret that warn of it, and
