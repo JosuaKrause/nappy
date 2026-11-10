@@ -93,8 +93,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    (`standing-layer-breaks.md`), its interface and field reads with the receivers typed
    (`field-reads.md`), then its suites (`tests-one-module.md`). The player approved going
    module by module in parallel; the tracks are the design review's worked-out detail:
-   - **Placement:** the reach rule walking the cut, a drawn poster crew handed to her walk and a
-     sidewalk's event closing its section, landing first; then `placement-by-construction.md`'s
+   - **Placement:** `placement-by-construction.md`'s
      steps with `scheduler-breakup.md` interleaved. Nothing else changes where events go until it
      is done (inbox #1185 in gentle-owl).
    - **Run flow:** `one-start-for-every-spec.md`'s start, then its signals and run log, then who

@@ -15,7 +15,22 @@ is downy-toad.
   (`DayLocations.assign_to()` → `StreetLocations.close_the_section_of()`), so the draw places
   nothing over a dawn phase's sidewalk event (`tests/test_day_locations.gd`); a mast's sidewalk is
   one, from day 5. The roadblock phase passes a closed section over too (`RoadblockPhase._open()`,
-  `tests/test_roadblock_phase.gd`), which changes no line on the cities measured.
+  `tests/test_roadblock_phase.gd`). What closes a section before that phase runs is a fixed part
+  on its sidewalk, in practice a loudspeaker mast. **That is the orchestrator's reading, where the
+  player's words are silent**, open to the player's overturn: nothing says whether the dawn's
+  roadblock may take a section whose sidewalk a fixed part holds. It follows what the player said
+  of the swap, which replaces only events that were placed and never a guard house or a district
+  barrier (gray-dolphin #1173), and of a mast, which is placed in its location (inbox #1185 in
+  gentle-owl). Main asks such a section for a roadblock like any other, and when it takes one the
+  roadblock overwrites the mast's hold of its sidewalk while the mast still stands. **It is not
+  free.** On the three cities measured below it changes no line. On the probe's own 18 cities
+  (90210 in steps of 31), day 13, it changes 4 cities and 33 keys: 353 roadblocks against 348
+  without the check, 2,231 rows placed against 2,220, and 502 route tiles with no roadblock within
+  1,024px along her paths against 384. Most of that is where the cap of 25 roadblocks falls in a
+  different sequence of rolls: with the cap lifted the 18 cities leave 349 tiles uncovered against
+  341, and two cities need more roadblocks to cover their routes (90458: 33 against 20; 90520: 42
+  against 31). One sequence of rolls a city, so this is the size of the effect and not a rate. The
+  player's own backstop for a stretch with no roadblock close by is the swap during her walk.
 
 **A retry is the same day** (PLAYTEST-119 27): the same day started twice stands the same rows on
 the same tiles (`test_event_manager`'s `_test_a_day_started_twice_stands_the_same_rows`). With no
@@ -51,16 +66,21 @@ neither is kept.
   (inbox #1180 in gray-dolphin), and its dormant branch would have flooded the city during play
   (inbox #1173 in gray-dolphin). Before its index was rebuilt it cost a p99 of about 0.7 ms a tick
   for no draw. Step 2 builds the unit draw fresh.
-- **The reach rule walking the cut** (`RouteReachRule._cut_off()`): it worked out what a body cuts
-  off by growing the pieces beside its disc rather than flooding the city again, and answered every
-  ask as the flood does. Timed over 42 dawns (3 cities × 14 days, `EventScheduler.build_day()`, the
-  fastest of each dawn's runs) it took 54.7 s against the flood's 51.6 s, slower on every day, so it
-  went (the orchestrator's ruling, open to the player's overturn); step 1 takes the reach rule out of
-  the game.
+- **The reach rule walking the cut** (`RouteReachRule._cut_off()`, last on the branch at
+  `d0c0a6264`): it worked out what a body cuts off by growing the pieces beside its disc rather
+  than flooding the city again, and answered every ask as the flood does. Timed over 42 dawns (3
+  cities × 14 days, `EventScheduler.build_day()`, the fastest of each dawn's runs) it took 54.7 s
+  against the flood's 51.6 s, slower on every day, so it went (the orchestrator's ruling, open to
+  the player's overturn); step 1 takes the reach rule out of the game. The timing is weak
+  evidence of a 6% difference: two runs a tree, on a machine whose load average ran from 5 to 28,
+  with a probe that is not checked in. What decided it is that about 140 lines bought no saving
+  that could be measured, in a class the next step removes.
 
 **Measured.** 3 cities from 90210 in steps of 31, days 1 to 14, `tests/probes/placement_rows.gd`
 against main at `146dbf60e`, each change also reverted alone. A key is a row on a day in a view, or
 on a kind of ground; the counts are the keys, crews left out, whose count differs from main's.
+"Crews left out" drops the poster crew on a square as well as the crews on her way: it stands
+placed on every tree, once, on day 12, so the totals here are one below the probe's own sums.
 
 | tree | keys that differ | days | on her route / route-adjacent / off the route | total |
 |---|---|---|---|---|
@@ -78,4 +98,6 @@ request's description.
 
 **For the end-of-refactor remeasure.** Changed on purpose: a crew is handed on as it is drawn, so
 later draws are spaced without it; a sidewalk a dawn phase fills closes its section to the draw
-and the roadblock phase. The counts above are what moved, the section closure most.
+and the roadblock phase. The counts above are what moved, the section closure most, and day 13's
+roadblocks on the 18 cities named under the section closure above: under the cap of 25 they leave
+more of her routes with no roadblock close by, which the remeasure reads again.
