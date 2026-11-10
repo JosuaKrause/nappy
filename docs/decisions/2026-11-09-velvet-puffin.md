@@ -30,8 +30,9 @@ hold at the one moment it mattered.
   that sentence and holds none; its test fails on a reworded, removed or doubled sentence.
 - **Three numbers, each of context and none of turns**: about 300k is the size a task is scoped to
   finish under, which nothing enforces; 400k is the refusal; 500k is the reassessment, which the
-  refusal's pull request only named ("The reassessment at 500k", below, is its own). `references/writing-a-brief.md` drops "about 150 turns" and the aim of
-  30 to 60 turns for a review, and `tools/agents-to-reassess.py` reads the scoping sentence in its
+  refusal's pull request only named; the pull request that wrote its rule is the section "The
+  reassessment at 500k", below. `references/writing-a-brief.md` drops "about 150 turns" and the
+  aim of 30 to 60 turns for a review, and `tools/agents-to-reassess.py` reads the scoping sentence in its
   new wording and flags nothing for turns alone; its `turns` column stays as information.
 - **The skills** say what the hook enforces: the orchestrating skill's opening list, its bullet on
   an agent staying on one task, and the using-tools paragraph on the hooks. Two more sentences of
@@ -106,14 +107,18 @@ and "also never switch a model with the full context. when switching a model do 
 - **The change of model** as a clause of that bullet: work that moves to another model starts from
   a new brief written for that model's agent, never from the old agent's context.
 - **What it narrows**, said beside the rule that a task is scoped and never policed
-  (inbox #896 in plaid-raven): the script's reading of a running agent's transcript is the one
-  place a running agent's size is read, and it costs the agent no turn.
+  (inbox #896 in plaid-raven): the recurring check's reading of each running agent's size, by the
+  script from the agent's transcript, is the one exception to the orchestrator not watching an
+  agent's count while it runs; it costs the agent no turn. The resume hook reads a size too, only
+  when a message is sent, which is no watching.
 - **Two small corrections to the bullet on reusing a warm agent**, notes of the resume refusal's
   last review: an agent compacted automatically is named beside the size, and a line is rewrapped.
 
 **Choices open to the player's overturn**, each marked so in the skill:
 
-- The reassessment is a judgement and not a stop: an agent found fine goes on.
+- The reassessment is a judgement and not a stop: a running agent goes on meanwhile and one found
+  fine goes on after it. It happens once the agent is flagged and before it is sent anything more.
+- The orchestrator judges which case is an exception.
 - The check that reads a running agent's size is the recurring one, about every 30 minutes; the
   table the player agreed to names the 45-minute check.
 - No exception is named in the rule. The usage-review session proposed three (an agent whose

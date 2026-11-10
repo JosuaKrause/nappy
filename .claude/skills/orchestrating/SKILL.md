@@ -268,8 +268,9 @@ before spawning:
   the orchestrator looks at it at least every 45 minutes (its output, its worktree and its
   pushes) for signs it is stuck: no new commits, a loop that has stopped improving, a wait with
   no end. The check runs `tools/agents-to-reassess.py`, which says from each running agent's
-  transcript which to reassess (below). The completion notice alone is not enough, since an agent that is stuck never sends
-  it. No wait of the orchestrator's own runs past 45 minutes without such a check. The check is a
+  transcript which to reassess (inbox #1298 in merry-badger; the bullet on the reassessment,
+  below). The completion notice alone is not enough, since an agent that is stuck never sends it.
+  No wait of the orchestrator's own runs past 45 minutes without such a check. The check is a
   recurring job about every 30 minutes, since a scheduler can fire up to half its period late, and
   the job is deleted when no agent is left running. It is not a tick in the sense of the agent
   contract's one-notification rule, which keeps a wait from ending a turn on every minute.
@@ -304,22 +305,25 @@ before spawning:
   pull request than on a fresh one. New work (the next step, the next pull request, another task)
   goes to a fresh agent briefed from the brief file and what this one left. The reassessment of an
   agent near 500k tokens applies on top (inbox #1298 in merry-badger).
-- **A sub-agent whose context reaches about 500k tokens is reassessed before it goes on or is sent
-  anything more** (inbox #1298 in merry-badger): whether its model suits that kind of work, whether
-  it is stuck, and whether it is looping. `tools/agents-to-reassess.py` flags such an agent, and
-  the recurring check on the running agents (above) runs it. The reassessment is a judgement and
-  not a stop: an agent found fine goes on, and there are exceptions, which the orchestrator
-  judges. **Work that moves to another model starts from a new brief written for that model's
+- **A sub-agent whose context reaches about 500k tokens is reassessed** (inbox #1298 in
+  merry-badger): whether its model suits that kind of work, whether it is stuck, and whether it is
+  looping. There are exceptions. `tools/agents-to-reassess.py` flags such an agent, and the
+  recurring check on the running agents (above) runs it; the agent is reassessed once it is
+  flagged, and before it is sent anything more. The reassessment is a judgement and not a stop: a
+  running agent goes on meanwhile, one found fine goes on after it, and which case is an
+  exception the orchestrator judges. **Work that moves to another model starts from a new brief written for that model's
   agent**, whether the reassessment moves it or anything else does, and never from the old agent's
   context or transcript (inbox #1298 in merry-badger); a sub-agent's model is set when it is
   spawned and a resume carries no choice of one, so a change of model is always a new agent.
 - **A task is scoped to stay under the limit by construction, never policed** (inbox #896 in plaid-raven). A brief
   carries no size line asking the agent to count its turns or tokens, and the orchestrator does not
   watch an agent's count while it runs, since either spends tokens on bookkeeping instead of the
-  work. Two things read an agent's size, and neither costs the agent a turn: the hook above, only
-  when a message is sent, and the recurring check, which reads each running agent's transcript
-  with `tools/agents-to-reassess.py` (inbox #1298 in merry-badger). The orchestrator sizes every
-  task before spawning it so that it finishes well under the limit.
+  work. **The one exception is the recurring check** (inbox #1298 in merry-badger): there the
+  orchestrator does read each running agent's size, by `tools/agents-to-reassess.py` from the
+  agent's transcript, which costs the agent no turn and the orchestrator one run of a script. The
+  hook above is no watching: it reads an agent's size only when a message is sent to it, and
+  spends no model tokens. The orchestrator sizes every task before spawning it so that it
+  finishes well under the limit.
   `references/writing-a-brief.md` says where the limit falls and how a task is cut to it (one kind
   of work per agent, one mechanism per build, a fresh agent per pull request of a split plan).
 - **A warm agent is reused while rebriefing would cost more** (inbox #896 in plaid-raven). Briefing a fresh agent
@@ -425,11 +429,13 @@ to the player's correction:
 - **What the reassessment of a sub-agent at about 500k tokens adds to the player's words** ("What
   the orchestrator keeps"). The player's are the number, the three questions, that there are
   exceptions, the script that says which agents to reassess, and the new brief at a change of
-  model (inbox #1298 in merry-badger). The filer's: that it is a judgement and not a stop, so an
-  agent found fine goes on; that the check which reads a running agent's size is the recurring
-  one; that this reading by the script is the one place the rule against policing an agent's
-  size is narrowed (inbox #896 in plaid-raven), a brief still carrying no size line and no agent
-  counting its own turns or tokens; and which exceptions there are, none being named in the rule,
+  model (inbox #1298 in merry-badger). The filer's: that it is a judgement and not a stop, so a
+  running agent goes on meanwhile and one found fine goes on after it; when it happens, once the
+  agent is flagged and before it is sent anything more; that the check which reads a running
+  agent's size is the recurring one; that this reading by the script is the one exception to the
+  rule against watching an agent's count while it runs (inbox #896 in plaid-raven), a brief still
+  carrying no size line and no agent counting its own turns or tokens; that the orchestrator
+  judges which case is an exception; and which exceptions there are, none being named in the rule,
   where the session that reviewed the usage proposed three: an agent whose context is mostly the
   output of runs (measuring, capturing), one that finished its change cleanly, and one already on
   Fable.
