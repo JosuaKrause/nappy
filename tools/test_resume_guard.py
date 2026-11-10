@@ -206,7 +206,11 @@ class ResumeGuardTests(unittest.TestCase):
         for _ in range(2):
             answer = self.run_hook(self.payload())
             self.assertNotIn("permissionDecision", answer)
-            self.assertIn("1 automatic compaction", answer["additionalContext"])
+            note = answer["additionalContext"]
+            self.assertIn("1 automatic compaction", note)
+            self.assertIn("The message has gone through: do not send it again.", note)
+            for words in ("Send this same message again", "the resend passes", "a prompt to decide"):
+                self.assertNotIn(words, note)
 
     def test_a_target_named_in_its_meta_file_is_resolved(self) -> None:
         self.transcript(turns(2), agent=OTHER, name="reviewer")

@@ -229,6 +229,9 @@ def guard(payload):
         ' .claude/skills/orchestrating/references/writing-a-brief.md, "Sizing the task".\n'
         "Follow-up work goes to a fresh agent, briefed from the brief file under .claude/briefs/ and what this"
         " agent left: its branch, its pull request and its last report.\n"
+    )
+    # Only a refusal asks for the message again: on the path below it has already gone through.
+    resend = (
         "This is a prompt to decide, not a ban. Send this same message again, and the resend passes, when it"
         " only stops or wraps the agent up, or when you judge the agent fine to go a bit over; an agent grown"
         " far past that is reassessed first, as the rule says (its model, stuck, looping), and work never moves"
@@ -238,9 +241,12 @@ def guard(payload):
         seen.parent.mkdir(parents=True, exist_ok=True)
         seen.write_text(time.strftime("%Y-%m-%dT%H:%M:%S\n"))
     except OSError:
-        answer(additionalContext=f"Not refused, since the refusal could not be remembered: {reason}")
+        answer(
+            additionalContext=f"Not refused, since the refusal could not be remembered: {reason}"
+            "The message has gone through: do not send it again."
+        )
         return
-    answer(permissionDecision="deny", permissionDecisionReason=f"Refused once: {reason}")
+    answer(permissionDecision="deny", permissionDecisionReason=f"Refused once: {reason}{resend}")
 
 
 def log(error):

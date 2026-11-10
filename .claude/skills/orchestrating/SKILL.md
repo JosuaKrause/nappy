@@ -22,7 +22,8 @@ The rules the orchestrating session must not miss, one line each; the sections b
   agent works in, and no agent runs `git stash`.
 - **An agent is resumed only while its cache is warm** (55 minutes in Claude Code) **and it is
   under the limit**; after that a fresh one is briefed, and a hook refuses, once, the resume of one
-  past the limit (inbox #1291).
+  past the limit (inbox #1291), which asks for a decision: a little over now and then is the
+  orchestrator's call.
 - **After a report**: the queue move, a review under **pr-review**, the merge and the retirement
   under **committing**, and a grade in `tools/agent-stats.py`.
 - **A usage limit changes nothing about delegation.**
