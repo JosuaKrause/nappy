@@ -47,11 +47,26 @@ band next".)* An entry's opening block may carry `upnext: true` beside `priority
 its band, and `tools/queue.sh` prints every marked entry first, under an `up next` heading ahead of
 `bug`, unless its `after:` names an open entry: it then stays behind that entry, in its band, as
 every entry does. Every marked line ends in `[up next]`. When the player asks for an entry to be done immediately, that is this marker, never a band of its own and never `bug` (inbox #1025 in brisk-ferret). The marker orders the queue and fences no other work; an entry the player puts first, with everything else after it, says so in its own `README.md` instead (inbox #1210 in gentle-owl), as **orchestrating** says. The queue move that starts the work drops
-the line, and the end-of-session pass drops it from an entry an open pull request is building. `bug` is the band above `now`, for what
+the line, and the end-of-session pass drops it from an entry an open pull request is building.
+
+**`fable-only: true` says whose design and review an entry's work is.** An entry's opening block
+may carry the line beside `priority:`; an item file carries none. Every pull request that builds an
+item of that entry carries the GitHub label `fable-only`, and the label means that Fable designs the
+code and reviews it, while writing the code may go to another model (inbox #1293, inbox #1299); the
+model table in **orchestrating** says so for the session that picks a model. The line goes only on an
+entry the player names. It changes no order: `tools/queue.sh` ends the entry's line in
+`[fable-only]`, and CI fails a pull request that adds a record of such an entry under
+[decisions/](decisions/) without the label (`tools/ci_fable_only.py`), a new record being what every
+pull request that builds an item adds. A record the pull request only changes does not count, since
+an inbox filing rewrites citations in existing records and no filing builds. A pull request that
+closes such an entry by adding its record needs the label too, whoever writes it, since closing it
+is a judgement about the work the player put under Fable.
+
+`bug` is the band above `now`, for what
 the player calls a bug; a note from playing is still filed `now` unless the player names `bug`.
 `tools/queue.sh --band now` prints one band. Moving an entry between bands edits one line of one
-file, and `tools/lint.sh` rejects an entry with no band, a band outside the five, an `upnext:` line with any value but `true` or a second one, an `after:`
-naming neither an open entry nor a closed one, an `after:` cycle, and a band or `upnext:` line anywhere but the
+file, and `tools/lint.sh` rejects an entry with no band, a band outside the five, an `upnext:` or `fable-only:` line with any value but `true` or a second one, an `after:`
+naming neither an open entry nor a closed one, an `after:` cycle, and a band, `upnext:` or `fable-only:` line anywhere but the
 opening lines of the `README.md`.
 
 **A band is chosen on what the entry does to the route decision, and nothing goes lower for being a
