@@ -176,8 +176,8 @@ func _test_catalogue_and_mutations(t) -> void:
 		source.def.shape.kind = GroundShape.Kind.RECT
 		source.def.shape.half_extents = Vector2(52.0, 8.0)
 		_event_parity(t, source, at, definition.id + " shape kind/extents mutation")
-		source._spread_vertical = not source._spread_vertical
-		source._stationary_vehicle_side = not source._stationary_vehicle_side
+		source._body._spread_vertical = not source._body._spread_vertical
+		source._body._stationary_vehicle_side = not source._body._stationary_vehicle_side
 		_event_parity(t, source, at, definition.id + " body axis")
 		source.def.shape = null
 		_event_parity(t, source, at, definition.id + " no shape")

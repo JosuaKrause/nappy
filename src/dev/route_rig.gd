@@ -567,8 +567,8 @@ func _note_what_caught_her() -> void:
 	if _caught_by == "":
 		_caught_by = "a hold" if _player.is_detained() else "nothing solid (the crowd)"
 
-## The `EventInstance` whose solid body `collider` is, or `null` — `EventInstance._build_obstruction()`
-## adds its `StaticBody2D` as a direct child.
+## The `EventInstance` whose solid body `collider` is, or `null` — its body (`EventBody.go_down()`)
+## adds its `StaticBody2D` as a direct child of the event.
 func _event_owning(collider: Object) -> EventInstance:
 	if collider is Node:
 		var parent := (collider as Node).get_parent()

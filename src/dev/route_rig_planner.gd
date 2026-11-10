@@ -732,7 +732,7 @@ func _tiles_near_body(instance: EventInstance, margin: float) -> Dictionary:
 			instance.solid_axis(), margin)
 
 ## The tiles whose centre lies within `margin` of any of a body's pieces, each measured against its
-## real shape: a segment turned along `axis` the way `EventInstance._build_obstruction()` turns its
+## real shape: a segment turned along `axis` the way `EventBody.go_down()` turns its
 ## capsule, and a rectangle left square.
 func _tiles_near_pieces(centres: PackedVector2Array, shapes: Array[GroundShape], axis: Vector2,
 		margin: float) -> Dictionary:

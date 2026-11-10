@@ -165,7 +165,13 @@ src/
 	                       in order on its manager's physics tick (`step()`: proposed, checked, then
 	                       committed, a car's by its own checks); drawn by its look,
 	                       which each drawn frame redraws it if its picture changed, interpolated
-	                       between ticks; its excitement is a composed `EventExcitement`
+	                       between ticks; its excitement is a composed `EventExcitement` and
+	                       its body a composed `EventBody`
+	event_body.gd         what a live event is on the ground (`EventBody`): its collision body,
+	                       the tiles it is recorded on, the axis it lies along on its street, the
+	                       side a vehicle standing still shows, a boom's body following its arm;
+	                       handed its row, the map and where she is, asked by its event and told
+	                       what happens to it
 	event_excitement.gd   an event as a thing that charges her (`EventExcitement`): its field's
 	                       present rate cached on its age, the walls it does not pass, its live
 	                       course and rate for the projection, whether that course is lethal

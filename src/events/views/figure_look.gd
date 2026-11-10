@@ -115,7 +115,7 @@ func _draw_cat(canvas: CanvasItem) -> void:
 ## three of the ways it is unlike every other body an event is drawn as: the picture is ground
 ## rather than an object standing on ground, so it registers on its own middle
 ## (`EventPictures.CRATER_ANCHOR`) instead of on its feet, and a drop shadow under a hole would read
-## as a mound. What makes it solid anyway is `def.shape` — `EventInstance._build_obstruction()`
+## as a mound. What makes it solid anyway is `def.shape` — its body (`EventBody.go_down()`)
 ## reads that and nothing here — so the circle she cannot walk into is exactly half of the picture
 ## she can see.
 func _draw_crater(canvas: CanvasItem) -> void:

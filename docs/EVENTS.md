@@ -674,8 +674,9 @@ rank and the firefight, one slice a figure at its own feet, the protest's back r
 of its front one.
 
 **A row may be solid in parts, and one is.** `EventDef.solid_parts` is a list of pieces — each an
-offset along the scene's own spread axis and a `GroundShape` of its own — and `EventInstance` puts
-down one collision shape, one shadow patch and one entry in the per-tile solid record per piece.
+offset along the scene's own spread axis and a `GroundShape` of its own — and a live event puts
+down one collision shape (its body, `EventBody`), one shadow patch (its look) and one entry in the
+per-tile solid record (`EventSpawner.obstructed_footprint()`) per piece.
 Every other row declares none, which means one piece at the origin carrying `shape`: exactly the
 single body they always had. **The pieces live inside `shape` and never past it**, which
 `EventDef.validate()` refuses, and that is what keeps every planner reading one disc:
@@ -770,8 +771,8 @@ body from the instance's first frame is the honest picture and she can never be 
 on a timer is the opposite, and the ground it closes is ground she may be walking down when it
 fires; a body that appears around her is not something a telegraph can be an answer to, however long
 the telegraph is. So the notice runs with no body and the body goes down at the end of it, and
-`EventInstance._become_solid_once_it_starts()` withholds it for as long as she is inside the
-footprint — **a vent never turns on with her in it**. It is a precondition rather than a repair,
+the live event's body (`EventBody.come_down_clear_of_her()`) withholds it for as long as she is
+inside the footprint — **a vent never turns on with her in it**. It is a precondition rather than a repair,
 nothing is placed and then moved, and it fails in the safe direction, since withholding obstruction
 can only leave more ground reachable. She pays the field the whole time, so standing in a vent to
 hold it open is the most expensive way through it rather than a way past it. **A planner's own
@@ -1077,8 +1078,8 @@ to look at but the picture it paints is the whole of what the player sees.
 block a north-south street, where the traffic runs along Y and a barrier across it has to span X.
 On an east-west street the same default would lie parallel to the traffic and block nothing, so
 `EventInstance._spread_is_vertical()` rotates the lay onto local Y whenever the tile it is asked
-about sits on a corridor running that way. **It is a property of the street, decided once in
-`setup()`, and never a field a row sets** — two rows on the same street face the same way for the
+about sits on a corridor running that way. **It is a property of the street, decided in `setup()`
+and held by the live event's body (`EventBody.runs_vertically()`), and never a field a row sets** — two rows on the same street face the same way for the
 same reason, and `CityMap.corridor_offset` answers it for a `ROAD` or `CROSSING` tile exactly as it
 answers it for a `SIDEWALK` one, with no second lookup for either. A junction (both of a tile's
 coordinates inside a corridor band) and ground off any corridor at all (a square, a park, a
@@ -2266,7 +2267,7 @@ asked of a box round the placement, its whole rim the arms) — which is what ke
 in the middle of a block open as well as the street it opens onto. The bodies are counted as they
 stand for the whole walk and at the body they have: the hunting van parked, the roadblock's band
 after its guard has gone, a burst at the crater it leaves, each recentred and laid along the street
-the way `EventInstance` builds it, and the seals with them. **A lethal reach that stands is counted
+the way a live event's body (`EventBody`) builds it, and the seals with them. **A lethal reach that stands is counted
 as ground she cannot cross**, as well as the body under it: the parked van's 54px round where it
 stands (`WalkGround.held_by()`), since a sidewalk left open past its 22px body but inside its reach
 is a walk that ends the section; a pursuer's reach moves with him and warns first, so a roadblock
