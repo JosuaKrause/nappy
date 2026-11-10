@@ -94,13 +94,13 @@ class needs is kept in an underscore field behind a method.
 reads fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that
 adds a reader file's first read of another class's field, today's being listed in
 `tools/field_reads.txt`, and a change that converts a file's last read of a field deletes its line.
-The second list is what makes the check see every read (inbox #1268), since a read through a
+The second list is what makes the check see every read (inbox #1268 in olive-ferret), since a read through a
 receiver whose class nothing can tell is a read no list holds. `project.godot` makes the engine
 fail an access it cannot type: the warnings `untyped_declaration`, `unsafe_property_access` and
 `unsafe_method_access` are errors. A file not yet typed carries one `@warning_ignore_start(...)`
 line at its top naming the warnings it still trips, and the files carrying it are that second list:
 a module's pass types its receivers and deletes the line, a new file never carries it, since code
-is typed wherever the language can type it (inbox #1280), and CI's run of the check fails a file
+is typed wherever the language can type it (inbox #1280 in olive-ferret), and CI's run of the check fails a file
 that gains it (**godot**, "Types", owns that rule and says what the errors are and how a value is
 typed). In a file under `src/` without the line, the check fails a field read through any receiver
 whose class it cannot tell, since the engine warns of nothing on a property read off a Variant; in
@@ -185,7 +185,7 @@ that proposes it, and says so where the player's words name nothing on the point
   (inbox #1173 in gray-dolphin).
 - **The check fails an unknown receiver file by file, from the day a file loses its opt-out line**,
   the builder's choice (minty-quail-busy-heron). The player's words ask that the check be made to
-  work and approve the design review's way to do it (inbox #1268), and that design has the check
+  work and approve the design review's way to do it (inbox #1268 in olive-ferret), and that design has the check
   fail an unknown receiver only once no file carries the line.
 - **A design where a fake has nothing to be handed to is wrong** (inbox #1156 in gray-dolphin).
 - **What no caller would miss goes** (inbox #1156 in gray-dolphin).

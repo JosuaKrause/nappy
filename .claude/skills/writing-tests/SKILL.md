@@ -75,9 +75,9 @@ each for the reason its header states:
 
 ## A suite is typed, and opens with the typed runner header
 
-**Test code is typed wherever the language can type it, as the code it tests is** (inbox #1280);
+**Test code is typed wherever the language can type it, as the code it tests is** (inbox #1280 in olive-ferret);
 **godot**'s "Types" owns the rule and says what the engine fails and what it cannot type. **A fake
-goes in through a public seam, so nothing stays untyped to make a test work** (inbox #1280): the
+goes in through a public seam, so nothing stays untyped to make a test work** (inbox #1280 in olive-ferret): the
 seam's parameter has a type, and the fake extends it, as `tests/recording_log.gd` extends
 `Telemetry` and is handed to `main.use_run_log()`.
 
@@ -204,4 +204,4 @@ words, and hold until the player corrects them. The citation is the player's wor
   curly-rabbit).
 - **A hand-in stays public, in a kept group** (minty-lemur #794; inbox #1095 in curly-rabbit).
 - **The form of the typed runner header**, the preload named `Runner`, is the orchestrator's
-  choice; the player's words say that tests are typed and name no form (inbox #1280).
+  choice; the player's words say that tests are typed and name no form (inbox #1280 in olive-ferret).

@@ -2,7 +2,7 @@
 
 **The ask.** Shown that the field-read check skips about two thirds of the reads because it cannot
 tell the receiver's class, the player: "isn't that the point of a class hierarchy? it should be made
-working" (inbox #1268). The design review's way to do it, written after the player had approved its
+working" (inbox #1268 in olive-ferret). The design review's way to do it, written after the player had approved its
 points: turn GDScript's own warnings for an access the engine cannot type into errors, with a
 file-level opt-out for every file not yet converted, the files carrying it being the list that only
 shrinks. The item is `docs/todo/2026-10-18-minty-quail/field-reads.md`.

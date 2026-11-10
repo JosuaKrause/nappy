@@ -9,7 +9,7 @@ These are not obvious and the engine does not warn about most of them. **The one
 
 - **`set(key, value)` silently drops a type mismatch.** Never build typed objects from dictionaries.
 - **`var x := <a Variant>` is a parse error**, and `load(path).instantiate()` is a Variant: annotate.
-- **Code is typed wherever the language can type it, tests included** (inbox #1280): an untyped declaration and an unsafe property or method access are parse errors here, and a new file carries no ignore of them.
+- **Code is typed wherever the language can type it, tests included** (inbox #1280 in olive-ferret): an untyped declaration and an unsafe property or method access are parse errors here, and a new file carries no ignore of them.
 - **An untyped `Array` passed as `Array[T]` leaks at shutdown**, and `.slice()` drops the element type.
 - **No warning the engine prints is left standing** (woolly-finch 19).
 - **A feature is tied to a flag the environment informs, never to the environment** (PLAYTEST-25 1).
@@ -58,7 +58,7 @@ var node: Node = scene.instantiate()
 **Three more warnings are errors because `project.godot` makes them so** (its `[debug]` section
 sets each `gdscript/warnings/` entry to the error level), so that every receiver has a class the
 engine and `tools/check_field_reads.py` can tell and a read of another class's field cannot hide
-behind an untyped name (inbox #1268; the **designing-classes** skill, "Fields are not API"):
+behind an untyped name (inbox #1268 in olive-ferret; the **designing-classes** skill, "Fields are not API"):
 
 - `untyped_declaration`: a variable, a parameter, a function's return or a `for` variable with no
   static type. An inferred type is a type: `var t := Thing.new()` and a `for` over an
@@ -72,7 +72,7 @@ Each fails the parse with "Warning treated as error", and the script fails to lo
 `LOAD FAIL`.
 
 **Code is typed wherever the language can type it, and an untyped name is never a habit**
-(inbox #1280): `src/`, the suites and their rigs, fakes and probes, and the scripts under `tools/`
+(inbox #1280 in olive-ferret): `src/`, the suites and their rigs, fakes and probes, and the scripts under `tools/`
 alike. A value stays a Variant only where the language cannot type it, such as the inner level of
 a nested collection (`Array[Array[Thing]]` is itself a parse error, so the inner arrays are plain
 `Array`s) or what `back()` or `get()` returns, and it is then read through a typed name, as
@@ -266,10 +266,10 @@ is the only part that governs the code in front of them.
   scope — is the filer's proposal, open to the player's correction (inbox #1154 in gray-dolphin).
 - **An opt-out line gains no warning** is the builder's choice (minty-quail-busy-heron), open to
   the player's correction. The player's words ask that the field-read check be made to work and
-  approve the design review's way to do it (inbox #1268): the three warnings as errors, the one
+  approve the design review's way to do it (inbox #1268 in olive-ferret): the three warnings as errors, the one
   line at the top of a file not yet converted, and the files carrying it as a list that only
-  shrinks; and they say code is typed wherever it can be (inbox #1280), which a new file carrying
+  shrinks; and they say code is typed wherever it can be (inbox #1280 in olive-ferret), which a new file carrying
   the line would not be.
 - **Which values the language cannot type** ("Types": the inner level of a nested collection, what
   a Variant-returning call gives) is the filer's reading of where the player's rule ends
-  (inbox #1280), taken from what the engine accepts.
+  (inbox #1280 in olive-ferret), taken from what the engine accepts.
