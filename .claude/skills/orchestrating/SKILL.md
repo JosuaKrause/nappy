@@ -21,8 +21,8 @@ The rules the orchestrating session must not miss, one line each; the sections b
 - **The queue and the archive are the orchestrator's**; nothing is committed into a worktree an
   agent works in, and no agent runs `git stash`.
 - **An agent is resumed only while its cache is warm** (55 minutes in Claude Code) **and it is
-  under the limit**; after that a fresh one is briefed, and a hook refuses the resume of one past
-  the limit.
+  under the limit**; after that a fresh one is briefed, and a hook refuses, once, the resume of one
+  past the limit (inbox #1291).
 - **After a report**: the queue move, a review under **pr-review**, the merge and the retirement
   under **committing**, and a grade in `tools/agent-stats.py`.
 - **A usage limit changes nothing about delegation.**
@@ -271,10 +271,15 @@ before spawning:
 - **An agent stays on one task, and no agent grows huge** (inbox #874 in minty-dolphin). An agent re-reads its
   whole context on every turn, so the cost of a long-lived one grows with every step it is kept
   for; a fresh agent instead rebuilds its context from scratch, so too many fresh agents cost too.
-  **A hook holds this at the resume**: `.claude/hooks/resume-guard.py` refuses a `SendMessage` to a
-  sub-agent that is past the limit, or whose context the harness has compacted on its own, once,
-  naming what the agent is past, and the same message sent again passes, which is for an
-  instruction to stop or wrap up and never for more work.
+  **A hook holds this at the resume** (inbox #1291): `.claude/hooks/resume-guard.py` refuses a
+  `SendMessage` to a sub-agent that is past the limit, or whose context the harness has compacted
+  on its own, once, naming what the agent is past. **The refusal is a prompt to decide, not a
+  ban**: the same message sent again passes, which is how an instruction to stop or wrap up gets
+  through, and how the orchestrator keeps an agent it judges fine to run a little past the limit,
+  as one may now and then (inbox #1291). **An agent grown to about 500k tokens is reassessed before
+  it is sent anything more**: whether its model suits that kind of work, and whether it is stuck or
+  looping (inbox #1298). **Work never moves to another model by a resume with the full context**:
+  the other model's agent starts from a new brief (inbox #1298).
 - **A task is scoped to stay under the limit by construction, never policed** (inbox #896 in plaid-raven). A brief
   carries no size line asking the agent to count its turns or tokens, and the orchestrator does not
   watch an agent's count while it runs, since either spends tokens on bookkeeping instead of the
@@ -285,8 +290,8 @@ before spawning:
 - **A warm agent is reused while rebriefing would cost more** (inbox #896 in plaid-raven). Briefing a fresh agent
   costs tokens too, so follow-up work on a pull request (review fixes, the next step of the same
   change) goes back to its agent while it is warm (the cold-resume rule below) and not huge, which
-  saves the rebriefing; past the limit the saving is gone, and the hook's refusal sends the
-  follow-up to a fresh agent. What the orchestrator is told for free, such as the token count in
+  saves the rebriefing; past the limit the saving is gone, and the hook's refusal is where the
+  orchestrator chooses between a fresh agent and letting this one run a little over. What the orchestrator is told for free, such as the token count in
   an agent's finishing notification, is used: it says whether the agent is far enough under the
   limit to reuse, and how the next brief should be sized.
 - **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent that
@@ -362,6 +367,13 @@ to the player's correction:
   from a switch (`references/worktrees-and-disk.md`): the filer's fix of a gap in this skill.
 - **That the 45-minute check is a recurring job about every 30 minutes**, and the reading that it
   is not a tick under the contract's one-notification rule (the rule is gentle-owl #1255).
-- **That the resume hook refuses once and lets the same message through when it is sent again**,
-  and **that a compaction the harness started counts as past the limit** ("What the orchestrator
-  keeps"). The player approved a hook that refuses the resume of an agent past the limit.
+- **That the resume hook refuses once and lets the same message through when it is sent again**
+  ("What the orchestrator keeps"): the filer's design. What the player approved is a hook that
+  refuses the resume of an agent that has compacted automatically or is past the limit
+  (inbox #1291).
+- **What the refusal and the resend mean** ("What the orchestrator keeps"): the orchestrator's
+  reading of the player's words, which do not name the hook. Read as: the hook refuses at the
+  first turn or token past the number, and the room to run a little over (inbox #1291) is the
+  orchestrator's judgement at the resend; the reassessment of an agent near 500k tokens comes
+  before any resend to it; and a resume under another model is one of the ways a model is switched
+  with the full context (inbox #1298).

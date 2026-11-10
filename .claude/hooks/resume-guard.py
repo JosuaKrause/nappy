@@ -8,10 +8,11 @@ message itself. It spends no model tokens and looks at nothing while an agent ru
 
 It reads the hook payload on stdin and resolves the message's `to` to a sub-agent transcript of
 this session, <session transcript without .jsonl>/subagents/agent-<id>.jsonl: by id, or by the
-`name` a .meta.json beside a transcript carries (the most recently written transcript, where
-several carry the name). A target that resolves to none (a teammate, another session, a
-broadcast), a message whose `type` is not "message" (a shutdown or another protocol message), and
-any other tool pass silently.
+`name` a .meta.json beside a transcript carries. Where several carry the name, it is the agent
+that started last, by the timestamp of its transcript's first entry: the harness sends a name to
+the newest agent that took it, and an older one may well have written to its transcript since.
+A target that resolves to none (a teammate, another session, a broadcast), a message whose `type`
+is not "message" (a shutdown or another protocol message), and any other tool pass silently.
 
 The message is refused when the target's transcript holds
   - a compaction the harness started itself (a `compact_boundary` whose compactMetadata.trigger is
@@ -25,11 +26,13 @@ The limit has one owner, and it is not this file: the two numbers are read from 
 .claude/skills/orchestrating/references/writing-a-brief.md ("Sizing the task") that LIMIT_LINE
 matches, so the sentence the orchestrator sizes a task by is the one enforced.
 tools/test_resume_guard.py fails when that line no longer parses; in a session, a line that
-cannot be read passes the message with a note beside it saying the resume went unchecked.
+cannot be read, and a transcript that cannot be measured, pass the message with a note beside it
+saying the resume went unchecked.
 
-The refusal is a speed bump: the same message to the same agent sent again passes, so that a
-message that only stops a runaway agent ("push what you have and report") still gets through.
-The marker for a refused message is a file under $TMPDIR/claude-nappy-resume-guard/<session>/
+The refusal is a prompt to decide and not a ban: the same message to the same agent sent again
+passes. That is how a message that only stops a runaway agent ("push what you have and report")
+still gets through, and how an orchestrator who has judged the agent fine to go a bit over the
+limit keeps it. The marker for a refused message is a file under $TMPDIR/claude-nappy-resume-guard/<session>/
 (<session>-<agent id> when a sub-agent sends), named by a hash of the target and the text; it is
 kept the way project-rules.sh keeps its own, and like that hook this one refuses only where the
 marker could be written, since a refusal that cannot be remembered would refuse for good.
@@ -65,13 +68,26 @@ class LimitUnreadable(Exception):
 def read_limits():
     """The limit as (assistant turns, context tokens), from the reference's own sentence."""
     try:
-        found = LIMIT_LINE.search(REFERENCE.read_text())
-    except OSError as e:
+        found = LIMIT_LINE.search(REFERENCE.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:  # a decode error is a ValueError
         raise LimitUnreadable(repr(e)) from e
     if not found:
         raise LimitUnreadable(f"no line of {REFERENCE} matches {LIMIT_LINE.pattern!r}")
     turns, thousands = (int(group.replace(",", "")) for group in found.groups())
     return turns, thousands * 1000
+
+
+def started(transcript):
+    """When the agent started: the timestamp of its transcript's first entry, "" where it has none.
+
+    The harness writes every timestamp in one UTC form, so the strings order as the times do.
+    """
+    try:
+        with transcript.open(encoding="utf-8", errors="replace") as lines:
+            stamp = json.loads(lines.readline()).get("timestamp")
+    except (OSError, ValueError, AttributeError):
+        return ""
+    return stamp if isinstance(stamp, str) else ""
 
 
 def resolve(payload):
@@ -95,19 +111,19 @@ def resolve(payload):
     named = []
     for meta in agents.glob("agent-*.meta.json"):
         try:
-            data = json.loads(meta.read_text())
+            data = json.loads(meta.read_text(encoding="utf-8"))
         except (OSError, ValueError):
             continue
         transcript = meta.with_name(meta.name[: -len(".meta.json")] + ".jsonl")
         if isinstance(data, dict) and data.get("name") == to and transcript.is_file():
-            named.append((transcript.stat().st_mtime, transcript))
+            named.append((started(transcript), transcript))
     return max(named)[1] if named else None
 
 
 def measure(transcript):
     """(assistant turns, the latest turn's context in tokens, automatic compactions)."""
     turns, unnamed, context, compactions = set(), 0, 0, 0
-    with transcript.open(errors="replace") as lines:
+    with transcript.open(encoding="utf-8", errors="replace") as lines:
         for line in lines:
             if '"assistant"' not in line and "compact_boundary" not in line:
                 continue
@@ -137,7 +153,7 @@ def measure(transcript):
 
 def description(transcript):
     try:
-        meta = json.loads(transcript.with_suffix(".meta.json").read_text())
+        meta = json.loads(transcript.with_suffix(".meta.json").read_text(encoding="utf-8"))
         return str(meta.get("description") or "")
     except (OSError, ValueError, AttributeError):
         return ""
@@ -148,7 +164,7 @@ def marker(payload, agent, text):
     sender = str(payload.get("session_id") or "nosession")
     if payload.get("agent_id"):
         sender += f"-{payload['agent_id']}"
-    sender = re.sub(r"[^A-Za-z0-9_.-]", "_", sender)
+    sender = re.sub(r"[^A-Za-z0-9_-]", "_", sender)  # no dot: a session id of ".." names no parent folder
     name = hashlib.sha256(f"{agent}\0{text}".encode()).hexdigest()
     return Path(os.environ.get("TMPDIR") or "/tmp") / "claude-nappy-resume-guard" / sender / name
 
@@ -156,6 +172,10 @@ def marker(payload, agent, text):
 def answer(**fields):
     fields["hookEventName"] = "PreToolUse"
     print(json.dumps({"hookSpecificOutput": fields, "suppressOutput": True}))
+
+
+def unchecked(why):
+    answer(additionalContext=f"resume-guard.py {why}, so this resume went unchecked.")
 
 
 def guard(payload):
@@ -169,13 +189,17 @@ def guard(payload):
         turn_limit, context_limit = read_limits()
     except LimitUnreadable as e:
         log(e)
-        answer(
-            additionalContext=f"resume-guard.py could not read the limit an agent may grow to ({e}), so this"
-            " resume went unchecked. Restore the sentence it reads, in"
-            ' .claude/skills/orchestrating/references/writing-a-brief.md ("Sizing the task").'
+        unchecked(
+            f"could not read the limit an agent may grow to ({e}; restore the sentence it reads, in"
+            ' .claude/skills/orchestrating/references/writing-a-brief.md, "Sizing the task")'
         )
         return
-    turns, context, compactions = measure(transcript)
+    try:
+        turns, context, compactions = measure(transcript)
+    except Exception as e:  # an entry of a shape measure() does not expect
+        log(e)
+        unchecked(f"could not measure sub-agent {agent} from its transcript ({e!r})")
+        return
     past = []
     if turns > turn_limit:
         past.append(f"{turns:,} turns (the limit is {turn_limit:,})")
@@ -205,22 +229,18 @@ def guard(payload):
         ' .claude/skills/orchestrating/references/writing-a-brief.md, "Sizing the task".\n'
         "Follow-up work goes to a fresh agent, briefed from the brief file under .claude/briefs/ and what this"
         " agent left: its branch, its pull request and its last report.\n"
+        "This is a prompt to decide, not a ban. Send this same message again, and the resend passes, when it"
+        " only stops or wraps the agent up, or when you judge the agent fine to go a bit over; an agent grown"
+        " far past that is reassessed first, as the rule says (its model, stuck, looping), and work never moves"
+        " to another model by a resume, only by a new brief."
     )
     try:
         seen.parent.mkdir(parents=True, exist_ok=True)
         seen.write_text(time.strftime("%Y-%m-%dT%H:%M:%S\n"))
     except OSError:
-        answer(
-            additionalContext="Not refused, since the refusal could not be remembered, but this resume is against"
-            f" the rule: {reason}"
-        )
+        answer(additionalContext=f"Not refused, since the refusal could not be remembered: {reason}")
         return
-    answer(
-        permissionDecision="deny",
-        permissionDecisionReason=f"Refused once: {reason}"
-        'Send this same message again only if it is a stop or wrap-up instruction ("push what you have and'
-        ' report"): the resend passes.',
-    )
+    answer(permissionDecision="deny", permissionDecisionReason=f"Refused once: {reason}")
 
 
 def log(error):

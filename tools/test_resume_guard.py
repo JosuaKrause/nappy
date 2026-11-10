@@ -52,6 +52,11 @@ def turns(count: int, context: int = 1000) -> list[str]:
     return [turn(f"msg_{i}", context) for i in range(count)]
 
 
+def start(stamp: str) -> str:
+    """A transcript's first entry, the agent's prompt, written at `stamp`."""
+    return json.dumps({"type": "user", "timestamp": stamp, "message": {"role": "user", "content": "The brief."}})
+
+
 def compaction(trigger: str) -> str:
     return json.dumps({"type": "system", "subtype": "compact_boundary", "compactMetadata": {"trigger": trigger}})
 
@@ -167,7 +172,16 @@ class ResumeGuardTests(unittest.TestCase):
         for path, section in ((SKILL, "What the orchestrator keeps"), (REFERENCE, "Sizing the task")):
             self.assertIn(f'{path}, "{section}"', reason)
             self.assertIn(f"\n## {section}\n", (ROOT / path).read_text())
-        for words in ("fresh agent", ".claude/briefs/", "stop or wrap-up instruction", "the resend passes"):
+        for words in (
+            "fresh agent",
+            ".claude/briefs/",
+            "a prompt to decide, not a ban",
+            "the resend passes",
+            "stops or wraps the agent up",
+            "a bit over",
+            "reassessed first",
+            "only by a new brief",
+        ):
             self.assertIn(words, reason)
 
     def test_the_same_message_sent_again_passes(self) -> None:
@@ -199,6 +213,64 @@ class ResumeGuardTests(unittest.TestCase):
         self.transcript([compaction("auto")], name="builder")
         self.assertIn(f"sub-agent {AGENT}", self.refusal(self.payload(to="builder")))
         self.assert_passes(self.payload(to="reviewer"))
+
+    def test_a_name_two_agents_took_is_the_one_that_started_last(self) -> None:
+        # The older agent is the huge one and the one written last, as when it is still working, or
+        # was sent a stop, after its successor went idle; the message goes to the successor.
+        turn_limit, _ = LIMITS
+        new = [start("2026-01-01T10:00:00.000Z"), *turns(1)]
+        old = [start("2026-01-01T09:00:00.000Z"), *turns(turn_limit + 1)]
+        self.transcript(new, agent=OTHER, name="builder")
+        self.transcript(old, name="builder")
+        now = (self.agents / f"agent-{AGENT}.jsonl").stat().st_mtime
+        os.utime(self.agents / f"agent-{OTHER}.jsonl", (now - 600, now - 600))
+        self.assert_passes(self.payload(to="builder"))
+        self.assertIn(f"sub-agent {AGENT}", self.refusal(self.payload()))
+        # The other way round, the newest is the huge one, however long ago it last wrote.
+        self.transcript([start("2026-01-01T11:00:00.000Z"), compaction("auto")], agent=OTHER, name="builder")
+        os.utime(self.agents / f"agent-{OTHER}.jsonl", (now - 600, now - 600))
+        self.assertIn(f"sub-agent {OTHER}", self.refusal(self.payload(to="builder")))
+        # A transcript with no first timestamp is older than one that has it.
+        self.transcript(turns(turn_limit + 1), name="reviewer")
+        self.transcript([start("2026-01-01T08:00:00.000Z"), *turns(1)], agent=OTHER, name="reviewer")
+        self.assert_passes(self.payload(to="reviewer"))
+
+    def test_assistant_lines_with_no_message_id_count_one_each(self) -> None:
+        turn_limit, _ = LIMITS
+        line = json.dumps({"type": "assistant", "message": {"usage": {"input_tokens": 1000}, "content": []}})
+        self.transcript([line] * turn_limit)
+        self.assert_passes(self.payload())
+        self.transcript([line] * (turn_limit + 1))
+        self.assertIn(f"{turn_limit + 1:,} turns", self.refusal(self.payload()))
+
+    def test_a_transcript_that_cannot_be_measured_passes_with_a_note(self) -> None:
+        turn_limit, _ = LIMITS
+        entries = (
+            {"type": "assistant", "message": "a string where the message goes"},
+            {"type": "assistant", "message": {"id": "m", "usage": {"input_tokens": "many"}}},
+            {"type": "assistant", "message": {"id": "m", "usage": "a string where the usage goes"}},
+            {"type": "system", "subtype": "compact_boundary", "compactMetadata": "auto"},
+        )
+        for count, entry in enumerate(entries, start=1):
+            self.transcript([*turns(turn_limit + 1), json.dumps(entry)])
+            answer = self.run_hook(self.payload())
+            self.assertNotIn("permissionDecision", answer)
+            self.assertIn(f"could not measure sub-agent {AGENT}", answer["additionalContext"])
+            self.assertIn("went unchecked", answer["additionalContext"])
+            self.assertEqual(len(self.errors.read_text().splitlines()), count)
+
+    def test_a_sender_shaped_like_a_path_keeps_its_marker_in_the_state_folder(self) -> None:
+        self.transcript([compaction("auto")])
+        state = self.state / "claude-nappy-resume-guard"
+        for sender in ("..", "../..", "a/b", "."):
+            stdin = self.payload(session_id=sender)
+            self.refusal(stdin)
+            self.assert_passes(stdin)
+        markers = [path for path in self.state.rglob("*") if path.is_file()]
+        self.assertEqual(len(markers), 4)
+        for path in markers:
+            self.assertEqual(path.parent.parent, state)
+            self.assertNotIn(".", path.parent.name)
 
     def test_an_unresolvable_target_passes(self) -> None:
         self.transcript([compaction("auto")], name="builder")
@@ -235,13 +307,14 @@ class ResumeGuardTests(unittest.TestCase):
         hooks.mkdir(parents=True)
         reference.parent.mkdir(parents=True)
         copy = Path(shutil.copy(HOOK, hooks))
-        for text in (None, "The limit is generous.\n"):
-            if text is not None:
-                reference.write_text(text)
+        for content in (None, b"The limit is generous.\n", b"about 7 turns or 9k tokens of context \xff\xfe\n"):
+            if content is not None:
+                reference.write_bytes(content)
             answer = self.run_hook(self.payload(), hook=copy)
             self.assertNotIn("permissionDecision", answer)
+            self.assertIn("could not read the limit", answer["additionalContext"])
             self.assertIn("went unchecked", answer["additionalContext"])
-        self.assertEqual(len(self.errors.read_text().splitlines()), 2)
+        self.assertEqual(len(self.errors.read_text().splitlines()), 3)
         reference.write_text("- The limit is about 7 turns or 1,200k tokens of context.\n")
         reason = self.refusal(self.payload(), hook=copy)
         self.assertIn("turns (the limit is 7)", reason)
