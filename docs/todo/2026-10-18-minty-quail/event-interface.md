@@ -329,7 +329,7 @@ sites, and the seal and region planners under `src/routes/`.
 |---|---|---|
 | Is the row available on this day | row `available_on(day)` ok | the row |
 | Is it placed at dawn, sited from her walk, or sited by the director, on this day | row `spawn_mode_on(day)` ok, `is_sited_from_her_walk()`, `is_handed_to_her_walk()` ok, `is_a_set_piece_on_her_way()` | the row |
-| Which kind of row is it | row `is_ambient()`, `is_a_one_shot()`, `is_scripted()`; `ambient_source()` | the row |
+| Which kind of row is it | row `is_ambient()` ok, `is_a_one_shot()`, `is_scripted()`; `ambient_source()` | the row |
 | Which ground takes it | row `stands_on(tile_type)`, `ground_kinds()`, `stands_only_in_alleys()`, `sidewalk_lane()`, `stands_at_a_front()` | the row |
 | Does it need one street to lie across (so a corner is no site) | row `lies_as_a_spread()` | body |
 | Does it take a whole section of a street | row `spans_the_street()` ok | the row |
@@ -345,7 +345,7 @@ sites, and the seal and region planners under `src/routes/`.
 | Does it move, pace a beat, pursue | row `moves()`, `paces_a_beat()`, `pursues()` | route, pursuit |
 | How is its route built (asked by the plan builder, which is handed the part) | the route part's `kind()`, `tiles()` | route |
 | Is it scenery, is it the mast | row `is_scenery()`, `is_a_mast()` | the row |
-| What does it leave or call in | row `scar_id()`, `leaves_behind()`, `calls_in()` | aftermath |
+| What does it leave or call in | row `scar_id()`, `leaves_behind()` ok, `calls_in()` | aftermath |
 | Where does a plan stand, walk, face | plan `is_placed()` ok, `placed_at()` ok, `walks()` ok, `stands_still()` ok, `ends()` ok, `faces()` | the plan |
 | How far is a plan from a point or another plan | plan `distance_from(at)` ok, `gap_to(other)` ok | the plan |
 | Does a plan block her way, and what disc does it shut | plan `obstructs()` ok, `blocking_radius()` ok, `clearance(her_reach)` ok | the plan, asking body and lethal |
@@ -424,7 +424,7 @@ shared state. What it asks, and what the event is asked on its behalf:
 
 | What is asked | Method | Answered by |
 |---|---|---|
-| May a row be staged, held, made to charge or made relentless | row `pursues()`, `drives()`, `investigates()` ok, `parks_where_it_arrives()`, `leaves_behind()`, `leaves_its_body()` ok, `notice_within()` ok, `starts_by()` ok, `is_a_mast()`, `spawn_mode_on()` ok, `available_on()` ok, `most_in_a_day()` ok, `field_reach()` ok | each part |
+| May a row be staged, held, made to charge or made relentless | row `pursues()`, `drives()` ok, `investigates()` ok, `parks_where_it_arrives()`, `leaves_behind()` ok, `leaves_its_body()` ok, `notice_within()` ok, `starts_by()` ok, `is_a_mast()`, `spawn_mode_on()` ok, `available_on()` ok, `most_in_a_day()` ok, `field_reach()` ok | each part |
 | Stage a plan at an age, keep it in the world, make it a mast | plan `arrive_aged(seconds)`, `keep_in_the_world()` ok, `stand_as_a_mast(id)` | the plan |
 | The live event of a plan, to name or command it | `EventManager.event_of(plan)`; then live `notice_her_at()` ok | streaming |
 | The route rig's hazards and bodies | live `is_a_standing_lethal_place()`, `lethal_reach()`; plan `stands_as_a_fixed_body()`, `body_pieces()`; plan `detains_again()`, `detain_distance()`, `where_it_stands_now()` ok, `faces_now()` | lethal, body, hold |
@@ -598,7 +598,7 @@ counted where it only writes.
 | `noun`, `noun_plural` | 2 in (`EventsAhead`'s run-log lines) | row `noun(count)` |
 | `counts_charges_as` | 2 in | row `charges_counted_as()` (its own id where it names none) |
 | `act_tag` | 1 in, 1 out (`SealPlanner`) | row `act()`; set by `EventDraft.from_day(first_day, act)` |
-| `kind` | 3 in, 2 out (the park cordon, `SealPlanner`), the dev rig untyped | row `is_ambient()`, `is_a_one_shot()`, `is_scripted()` |
+| `kind` | 3 in, 2 out (the park cordon, `SealPlanner`), the dev rig untyped | row `is_ambient()` ok, `is_a_one_shot()`, `is_scripted()` |
 | `first_day`, `last_day`, `scripted_day` | the catalogue; `SealPlanner` copies `first_day` | row `available_on(day)` ok; a draft for the copy |
 | `weight` | the catalogue; `at_heat()` | row `drawn_as_often()` ok, `drawn_as_often_on(ground)` |
 | `max_per_day` | 3 in, 1 out (the scene recipes) | row `most_in_a_day()` ok |
@@ -618,7 +618,7 @@ counted where it only writes.
 | `solid_when` | 4 in, 1 out (the route rig), the resistance untyped | row `is_a_boom()` ok, `stands_as_a_fixed_body()`; the body part's `solid_from()` for the live body; live `is_solid()` ok |
 | `stands_as`, `when_it_stops` | 2 in each (the live event filling its move) | the body part's `is_walked_round()`, `parks()`, asked by the live body |
 | `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()`; the body part's `lies()` (one choice of four) for the footprints |
-| `vehicle` (`VehicleSpec.field_from_its_centre`) | 8 in, 2 out (the scene recipes, the park cordon); 3 lines of the spec | row `drives()`; the field part's `datum()` |
+| `vehicle` (`VehicleSpec.field_from_its_centre`) | 8 in, 2 out (the scene recipes, the park cordon); 3 lines of the spec | row `drives()` ok; the field part's `datum()` |
 | `intensity` | 7 in | row `has_a_field()` ok; the field part's `peak()` and `peak_through()` for the live event and the looks |
 | `inner_radius` | 6 in, 2 out (the resistance's contact point and director) | row `core_within()`; live `core_reaches(point)`; the flock and the looks are handed the field's spec |
 | `outer_radius` | 7 in, the dev rig untyped | row `heard_within()` ok; live and plan `field_reaches(point)` ok; live `field_rings()` |
@@ -633,7 +633,7 @@ counted where it only writes.
 | `redetains` | the live event and its hold; the resistance and the route rig's planner out | row and live `detains_again()` ok, plan `detains_again()` |
 | `pursuit` | 12 in, 3 out (the auto screenshot, the scene recipes, the park cordon) | `pursues()` on all three (the live event's exists); row `chase_speed()` ok, `approach_speed()` ok, `starts_by()` ok, `standoff_reach()` ok, `was_sent_at_her()`; the pursuit behaviour is handed the spec |
 | `PursuitSpec`: `speed`, `start`, `warns_for`, `stands`, `walk_speed`, `lunge_reach`, `stop_excitement`, `leaves_its_body`, `warns_over_the_street` | 25 lines, all in (the row, the live event, two behaviours) | methods of the spec of the same names, the yes-or-no ones renamed (`stands_for_its_notice()` ok, `leaves_its_body_standing()`, `is_drawn_over_the_street()` ok); built by `PursuitSpec.at(speed).walking_at(...)` |
-| `notice` (`NoticeSpec`: `within`, `quiet`, `runs_within`) | 4 in; 7 lines of the spec, all in | row `waits_for_her()`, `notice_within()` ok; the spec's `within()`, `is_quiet()` ok, `runs_within()` |
+| `notice` (`NoticeSpec`: `within`, `quiet`, `runs_within`) | 4 in; 7 lines of the spec, all in | row `waits_for_her()` ok, `notice_within()` ok; the spec's `within()`, `is_quiet()` ok, `runs_within()`; meanwhile the row's `runs_its_own_line()` (a notice that runs its own line) and `warns_quietly()` (no notice, or a quiet one) ok, which the live event asks, and which `EventInstance.counts_a_charge()` and `EventDef.validate()` still write out: the first goes when the live event's notice section is converted, the second with the row written as its parts (4b) |
 | `hunts`, `hunting`, `heat_response` (`HuntSpec`: `lets_out`, `pursuit`, `ends_the_day`) | the row itself, `EventsAhead`; 3 lines of the spec | row `answers_to_heat()`, `investigates()` ok, `lets_out()` ok, `at_heat(level)` ok |
 | `telegraph_time` | 4 in, 1 out (the readout) | row and live `telegraphs_for()` ok; row `warning_time()` ok, `warned_for()` ok |
 | `still_while_telegraphing` | 3 in | the warning part's `holds_still()` (the row's, asked by the live event ok); row `ahead_of_player_lead()` ok |
