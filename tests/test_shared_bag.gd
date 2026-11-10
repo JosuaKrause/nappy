@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A shared marble bag *(pebbly-ibis, inbox #575 in feathery-lynx)*: a bag with marbles of its own
 ## that stands as a marble in regular bags, any number of times, and is one bag wherever it stands.

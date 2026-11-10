@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name ResistanceHappenings
 extends RefCounted
 ## What the resistance's story puts in the street that is not a task: the neighbor leaving for

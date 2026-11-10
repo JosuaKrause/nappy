@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M205, "he keeps shouting for a bit": what day 6's note handover
 ## (`ResistanceSteps.by_index(2)`, the perform riding `homeless_yeller`) actually costs, from the

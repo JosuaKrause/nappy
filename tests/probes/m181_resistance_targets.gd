@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M181, "the station's front door, day 9's door and day 12's swing are
 ## reachable by construction": for each seed and each of the three days, how many of the day's target

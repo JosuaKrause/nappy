@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## What `main` boots and wires, the developer readout it hosts, the focus pause and the return
 ## window, and the ground a view is painted on.

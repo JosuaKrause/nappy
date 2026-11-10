@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `HeldStreets` (`src/city/held_streets.gd`): which street segments are held and why, and that the
 ## crowd's carve-outs (a region door, a street bordering the home block) are answered from the

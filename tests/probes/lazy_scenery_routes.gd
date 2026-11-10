@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Coverage of the actual daily offered route graph, after Main plans closures and events.
 ## This inspects generated options; it does not run a player or choose a new route.

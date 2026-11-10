@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for "measure the empty feeling before and after". Not a suite: it prints
 ## numbers rather than asserting relationships, so it lives here under `tests/probes/`, where the

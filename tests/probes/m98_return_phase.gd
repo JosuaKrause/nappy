@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M98, pressure in the empty acts — "Patrols for acts III and IV, built
 ## around encounter cost." Not a suite: it prints rather than asserting, so it lives here under

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## merry-elk: how many posters she passes within view along the routes she actually walks, per day.
 ##

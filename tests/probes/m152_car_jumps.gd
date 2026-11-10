@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Every frame-to-frame jump a car makes that it could not have driven, every reversal on the spot
 ## and what refused the arc that would have replaced it, and whether the player could see any of it

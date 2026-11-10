@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A used calm area is shut by the events placed in it, as before, and no route of the day goes
 ## through it. One used area, at most once a run and no earlier than act III, is fenced instead.

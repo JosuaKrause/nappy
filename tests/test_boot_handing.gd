@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What `main` hands the worlds it builds, played through the real `main.tscn`: the crowd is handed
 ## the player only from when the old lookup by the `player` group would first have found her (not

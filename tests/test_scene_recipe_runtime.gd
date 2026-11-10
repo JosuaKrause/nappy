@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Exercise the actual runtime and argv readers. A tiny child scene isolates exit-status
 ## assertions without booting Main, constructing another city or quitting the suite's tree.
@@ -5,7 +6,8 @@ extends RefCounted
 const AlleyMarks := preload("res://tests/alley_marks.gd")
 const EXAMPLE := "res://scene-recipes/power-station-hall.json"
 const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
-const PROBE := """extends Node
+const PROBE := """@warning_ignore_start("unsafe_method_access")
+extends Node
 class World extends Node2D:
 	var frames := 0
 	func _physics_process(_delta: float) -> void:

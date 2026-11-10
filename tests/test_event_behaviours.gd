@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The behaviours an event is composed of (`EventBehaviours.compose()`): that each one's own state
 ## survives a stream-out — saved off one instance (`save_behaviours()`), put

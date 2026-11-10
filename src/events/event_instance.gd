@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name EventInstance
 extends Node2D
 ## One live event in the world: its lifetime, its telegraph phase and its excitement field. What

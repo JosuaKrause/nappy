@@ -23,6 +23,16 @@ config/icon="res://icon.png"
 Tuning="*res://src/autoload/tuning.gd"
 EventBus="*res://src/autoload/event_bus.gd"
 
+[debug]
+
+; An access the engine cannot type fails the parse, so a field read cannot hide behind an untyped
+; name (designing-classes, "Fields are not API"). A file not yet typed opts out with one
+; @warning_ignore_start line at its top naming the warnings it still trips; the files carrying it
+; are the list that only shrinks, which tools/check_field_reads.py keeps.
+gdscript/warnings/untyped_declaration=2
+gdscript/warnings/unsafe_property_access=2
+gdscript/warnings/unsafe_method_access=2
+
 [display]
 
 window/size/viewport_width=1280

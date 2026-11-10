@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What a booted game holds of the atlas, and never reloads (PLAYTEST-109: *"don't unload anything
 ## that might be needed in one day and in the next"*): a boot holds the run's own parent page and

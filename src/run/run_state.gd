@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name RunState
 extends RefCounted
 ## Owns the state of a run: the seed, the calendar, nerves and resistance progress.

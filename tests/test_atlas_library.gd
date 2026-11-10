@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The baked atlases' own contract: that the pages on disk were baked from the tree the suite is
 ## running against, that every picture the membership file names for *this bake's mode* has a

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Focused contracts for `readout_requested()` — the release-safe query flag M133, "the readout on
 ## the live page", adds — and for the two flags parsed beside it. Each is read the same shape: a

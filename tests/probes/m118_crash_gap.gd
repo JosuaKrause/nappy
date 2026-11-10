@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What walking past a car crash costs, measured rather than derived — the number
 ## `EventCatalogue.CAR_ACCIDENT_INTENSITY` is set from.

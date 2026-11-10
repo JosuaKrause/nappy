@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name CityState
 extends RefCounted
 ## Where every block currently is along its arc, for one run.

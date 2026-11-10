@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name DevFlags
 extends RefCounted
 ## The parser behind `RunConfig`: every developer flag, read from a command line and a page query

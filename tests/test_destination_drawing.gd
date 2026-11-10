@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What a resistance contact draws (snowy-kestrel, the player: "red arrow tasks show a chalk mark at
 ## their destination"): the chalk mark and its touched picture belong to the pickup alone, and a

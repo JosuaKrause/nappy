@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for "the city feels way empty now", read as the player meant it: **nothing on
 ## the street she is walking down.** Not a suite: it prints rather than asserting, so it lives here

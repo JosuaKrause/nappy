@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends SceneTree
 ## Crops separated vector spans with the runtime SVG parser and retains their registration.
 ## Invoked only by tools/split-scenes.py; its output directory is always a fresh staging folder.

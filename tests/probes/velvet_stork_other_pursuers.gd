@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for velvet-stork: whether the pursuers on foot other than day 13's task guard,
 ## which keep the straight chase (`Navigator.step()`, straight at her, sliding along

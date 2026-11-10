@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The heat: what completing resistance tasks does to the city, and the contracts that keep the
 ## escalation from being a difficulty dial nobody checked.

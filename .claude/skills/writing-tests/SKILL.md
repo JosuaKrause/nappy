@@ -11,6 +11,7 @@ description: How a test is written — a suite tests the one module it is named 
 - **A test never asserts what a setting is**; a relationship between settings that encodes a guarantee stays.
 - **A test holds nothing when** the game cannot reach its setup, it asserts back what it just set, it would pass with the code deleted, or another suite already holds the behavior.
 - **A public member only tests read is deleted, or made internal when its own file uses it.** `tools/check_test_only_members.py` fails a new one; fix the member, never list it.
+- **A suite, a rig, a fake and a probe are typed like the code they test**: a new suite opens with the typed runner header and carries no opt-out line.
 - **A hand-drawn map for one specific interaction; a generated map for a realistic walk or a measurement.**
 - **The suite exits clean**: a leak warning at shutdown is a real retain bug.
 
@@ -71,6 +72,29 @@ each for the reason its header states:
   game's composition is what they test. Keep it that way: a version that only *plans* each day
   leaves the mobile one-shots unfinished and the whole successor-and-scar chain untested while the
   test passes.
+
+## A suite is typed, and opens with the typed runner header
+
+**Test code is typed wherever the language can type it, as the code it tests is** (inbox #1280 in olive-ferret);
+**godot**'s "Types" owns the rule and says what the engine fails and what it cannot type. **A fake
+goes in through a public seam, so nothing stays untyped to make a test work** (inbox #1280 in olive-ferret): the
+seam's parameter has a type, and the fake extends it, as `tests/recording_log.gd` extends
+`Telemetry` and is handed to `main.use_run_log()`.
+
+**A new suite opens with this one line**, and every function it hands the runner to takes it the
+same way, `t: TestRunner`:
+
+```gdscript
+func run(t: TestRunner) -> void:
+```
+
+The runner, `tests/run_tests.gd`, is `class_name TestRunner`, so that the header is one line and
+a suite preloads nothing to name it (inbox #1282). `t.check()`, `t.close_to()` and
+the runner's own `Node` calls (`t.add_child()`, `t.get_tree()`) are then typed calls. A bare
+`func run(t)` does not parse in a file without the opt-out line: the parameter is an untyped
+declaration and `t.check()` an unsafe method access, and the suite is a `LOAD FAIL`. **A suite
+that carries the opt-out line keeps it until it is typed, and a new one never has it**:
+`tools/check_field_reads.py` fails a file that gains the line.
 
 ## A realistic mock is made in two steps
 
@@ -177,3 +201,5 @@ words, and hold until the player corrects them. The citation is the player's wor
 - **The own-file rule also reaches vars and signals, and not constants** (inbox #1098 in
   curly-rabbit).
 - **A hand-in stays public, in a kept group** (minty-lemur #794; inbox #1095 in curly-rabbit).
+- **The runner's class name, `TestRunner`**, is the builder's choice; the player's words ask for
+  a class name so that the header is one line, and name none (inbox #1282).

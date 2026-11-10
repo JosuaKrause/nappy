@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 extends Node
 ## One bounded rendered pass through both real boot paths while their shader probes are live.
 

@@ -301,10 +301,12 @@ What the form buys, beyond the rule:
    `false`, an empty list. No caller tests whether a part is there.
 3. **A name says what the caller wants, and a yes-or-no question never takes the name of the field
    it replaces**: `hard_fail` becomes `ends_the_day()`, `is_finished` becomes `is_gone()`,
-   `mobile` becomes `moves()`. The reason is the trap `field-reads.md` names: once a method has a
-   field's old name, a read left behind without its parentheses (`thing.is_finished`) is a
-   reference to the function, which is always true, and nothing reports it; with a new name the
-   stale read fails loudly. A number may keep its name (`speed()`), since a function used as a
+   `mobile` becomes `moves()`. The reason is the trap the godot skill's "Types" names: once a method
+   has a field's old name, a read left behind without its parentheses (`thing.is_finished`) is a
+   reference to the function, which is always true; the engine reports nothing, and the field-read
+   check fails it only through a receiver whose class it cannot tell, in a file under `src/` that
+   no longer carries the opt-out line; on a typed receiver nothing reports it
+   (`method-without-parentheses.md`), so with a new name the stale read fails loudly everywhere. A number may keep its name (`speed()`), since a function used as a
    number fails at once.
 4. **A change is told as what happened, never set as a value**: `silence()`, `spend()`,
    `notice_her_at()`, `place_at()`; the event works out what it already knows (the record

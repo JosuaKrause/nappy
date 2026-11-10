@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for calm-pelican's day-13 guard (the-arrow-and-the-day-13-guard): walked from
 ## the mark to each of the nearest live roadblocks, **does the task's waiting guard stand over the

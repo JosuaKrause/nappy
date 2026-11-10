@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## How much of the city carries street trees, over a seed sweep — the measurement
 ## `StreetTrees.STREET_TREE_RUNS` is set from. Prints the fraction of ordinary streets that are

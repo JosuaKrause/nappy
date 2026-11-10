@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name Building
 extends StaticBody2D
 ## A 2.5D extruded block, assembled from 32px facade and roof tiles.

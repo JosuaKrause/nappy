@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The day loop: the two phases, the four ways a day ends, and the run-level bookkeeping
 ## that decides which ending you get.

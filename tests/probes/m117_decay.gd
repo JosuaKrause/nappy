@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What the meter actually does on each kind of ground, walked rather than derived. Not a suite:
 ## it prints numbers rather than asserting relationships, so it lives under `tests/probes/`, where

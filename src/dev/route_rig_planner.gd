@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name RouteRigPlanner
 extends RefCounted
 ## **Where a `--route` target is, and the walk there**: the half of `RouteRig` (`src/dev/route_rig.gd`)

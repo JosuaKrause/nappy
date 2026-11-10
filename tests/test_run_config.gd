@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `RunConfig`, the run's configuration resolved once at boot: what it reads on which build, that
 ## a resolved one cannot change, what a recipe puts on top of it, and that `main` hands the world,

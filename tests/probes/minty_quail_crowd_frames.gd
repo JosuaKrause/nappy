@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Whether the crowd is drawn moving on every frame the screen draws, faster than the 30Hz tick it
 ## steps on**: a busy street's crowd run by the engine's own loop, in a window, and a run of

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Day 13's task roadblock, found or swapped in**, on the six probe seeds: how many roadblocks the
 ## day's plan stands at dawn, how many of them stand beside her routes (on a street no route runs

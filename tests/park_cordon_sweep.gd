@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The sweep behind `test_park_cordon_seeds_a.gd`, `_b.gd` and `_c.gd`; not a suite itself.**
 ## Day 12's police cordon (`ParkCordon`) across a sweep of seeds, on every size of park the

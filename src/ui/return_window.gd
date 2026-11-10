@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 class_name ReturnWindow
 extends Node
 ## The half second after the game gets focus back, during which every input is ignored, and the

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name EventPictures
 extends RefCounted
 ## Every picture an event is drawn in, by name, and the tables and rules that pick one: what a row

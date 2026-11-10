@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The route's own curbstones, tinted whole: `City.tint_the_route()` re-sets cells on `_ground`
 ## itself where the walk marks the kerb (`RouteSource.marks_the_kerb_at()`, a day's tree at

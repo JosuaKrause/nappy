@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Every placement a walk starts with, printed one line each**, so a change to how a walk is
 ## planned can be shown to place exactly what it placed before: the row, where it stands (tile and

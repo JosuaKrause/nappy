@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Fourteen days end to end, through the real City, EventManager and ResistanceDirector, each day
 ## started by the real DayDirector.

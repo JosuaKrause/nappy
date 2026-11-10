@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `StreetInvalidation`, the rules a walk composes, with each rule's own suite holding the rule. Here:
 ## a candidate a rule refuses has no room (`-INF`); one no rule refuses has the room round it, all

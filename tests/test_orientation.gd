@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The rotated presentation for a portrait touch window — see `ScreenOrientation`.
 ##

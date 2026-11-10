@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_property_access")
 class_name TitleScreen
 extends CanvasLayer
 ## The screen the game opens on, and the screen a finished run goes back to.

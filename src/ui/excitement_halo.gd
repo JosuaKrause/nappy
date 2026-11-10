@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name ExcitementHalo
 extends Node2D
 ## Which live sources are actively charging the meter right now, and how much each is actually

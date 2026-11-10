@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The last night's blackout: once the sabotage is done and she is far enough from the power
 ## station, every lit window, every traffic light and every loudspeaker mast goes off in one frame.

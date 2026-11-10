@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What she meets on her route is drawn from a marble bag, and the bag is a queue of bags.
 ##

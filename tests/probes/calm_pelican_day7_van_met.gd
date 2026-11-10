@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for olive-badger's day-7 route van: once the rigged bag puts a second
 ## `delivery_van` on her route, does a played walk ever bring it into her view? Not a suite: it

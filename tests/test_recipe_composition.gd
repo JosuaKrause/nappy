@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Authored scenery shares the production tree source, and pedestrian overrides end with a day.
 ##

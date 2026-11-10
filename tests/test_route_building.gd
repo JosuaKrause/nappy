@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `--route` booted into the escape's building follows the run from the building to a city exit with
 ## nobody touching it: `BuildingWalker` (`src/dev/building_walker.gd`) presses the building's brief and

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## M122, the shadow every building casts. The tile arithmetic over `CityMap.building_rects` is the
 ## shadows' own; this suite hands a `BuildingShadows` footprints and a recording drawer, as the city

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `GameSave`, and the functions on `RunState` and its registry it reads and writes through
 ## (`run_parts.run_data()`/`restore_snapshot()`) — see docs/MECHANICS.md, "Saving and resuming". The

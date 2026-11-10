@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name RecipeCityContext
 extends RefCounted
 ## Explicit spatial context for an authored stretch. Generation is a drafting operation only;

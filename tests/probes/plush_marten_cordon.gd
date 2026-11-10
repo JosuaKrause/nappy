@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **Probe, not a suite** (`tools/test.sh probes/plush_marten_cordon.gd`): day 12's police cordon
 ## (`ParkCordon`) on every seed `tests/park_cordon_sweep.gd` sweeps, measured the way that

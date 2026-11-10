@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name AutoScreenshot
 extends Node
 ## Dev tool: let the game run for a while, save the viewport to a PNG, quit.

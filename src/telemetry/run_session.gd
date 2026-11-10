@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 class_name RunSession
 extends Node
 ## The run log's one owner for a boot: it opens the log for a run and closes it when the run is

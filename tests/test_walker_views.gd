@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The eight-sector heading selector (`EightDirection`) and its walker caller (`CrowdAgent`).
 ##

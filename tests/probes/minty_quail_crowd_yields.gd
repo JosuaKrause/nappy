@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Where the crowd and the event figures meet**: how often a walker's or a crowd car's body overlaps
 ## an event figure's, how long crowd cars stand for one, whether a junction stalls, and the crowd's

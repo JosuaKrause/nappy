@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/events_shared_city.gd"
 ## Day 3's fire: budgeted at dawn with no position and sited by `EventDirector` from the walk she
 ## turns out to take -- *"the fire should come first and be on your way guaranteed (a dynamic event

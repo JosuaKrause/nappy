@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `WalkEvents`, the walk's events read through one object while she walks: its plans in the order
 ## they stream, every plan but the one being placed, the doors and the day's calm areas, checked

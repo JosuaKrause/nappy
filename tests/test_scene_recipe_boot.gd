@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **A booted scene recipe runs under the walk its clock runs on**: `main` hands the authored scene
 ## (`SceneRecipeRuntime.install()`) the spec the run flow started — a day's, or the escape city's

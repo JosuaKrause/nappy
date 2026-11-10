@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The baby is handed the world she stands in, and is handed it again when the world changes.
 ##

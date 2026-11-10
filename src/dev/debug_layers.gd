@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 class_name DebugLayers
 extends Node2D
 ## Three world-space overlays over the live game state — fields, shadows and bounding boxes — each

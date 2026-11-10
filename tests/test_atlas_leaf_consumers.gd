@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## M171, "The unatlased leaf consumers": buildings, the street kit (the city edge, closure
 ## markers, traffic lights), the UI (`ModeButton`, `TouchControls`, `SaveIndicator`) and the

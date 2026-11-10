@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/events_shared_city.gd"
 ## The chase lesson, in the three answers a player can give: into it, away at a walk, away at a
 ## run -- plus the mechanics a pursuer has to keep regardless of which she picks: it leaves no

@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_property_access")
 class_name PauseScreen
 extends CanvasLayer
 ## The pause, and the only one a player can ask for — the between-days summary stops the tree too,

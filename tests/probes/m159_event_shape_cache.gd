@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Supplemental unprofiled timing for event spread classification. The active-play comparison is
 ## the performance evidence; this isolates the enum match replaced by the cached read so profiler

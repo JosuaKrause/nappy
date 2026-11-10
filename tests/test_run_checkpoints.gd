@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A run's checkpoints and its two modes — see docs/MECHANICS.md, "Nerves" and "Saving and
 ## resuming". A normal run that spends its last nerve goes back to the latest checkpoint it has

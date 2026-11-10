@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name CityMap
 extends WorldMap
 ## The generated city as data: a tile grid plus the derived features the renderer, the

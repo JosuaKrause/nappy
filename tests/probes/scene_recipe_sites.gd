@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Prints production-accepted sites on one explicit construction context for recipe authoring.
 ## It varies no city seed; use the resulting coordinates as reviewed pins in saved recipes.

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 class_name SceneRecipeRuntime
 extends AuthoredScene
 ## One saved setup feeds free play, headless assertions and frame-locked recording. Playback

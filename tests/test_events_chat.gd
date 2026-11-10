@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The one row whose whole mechanic is time under compulsion rather than a field: entering
 ## `detain_radius` locks the player's own movement input, and what she is charged while it holds

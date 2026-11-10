@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name GroundLayers
 extends RefCounted
 ## Builds the ground's presentation TileSet out of the baked `ground` page, once per repaint.

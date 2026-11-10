@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name M207Lead
 extends RefCounted
 ## Measurement probe for M207, "a warning comes shortly before its danger, and comes by itself":

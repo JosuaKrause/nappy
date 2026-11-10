@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M174, "the man shouting costs nothing to walk beside": the net rate the
 ## bar rises while walking beside a row, inside its own `inner_radius`, averaged over its own

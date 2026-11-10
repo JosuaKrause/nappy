@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `LossCause`, the pure rules behind the cause `EventBus.day_ended` carries — the hard-fail cause
 ## and the crying cause, named where the day ended for the run log and the page's counter alike.

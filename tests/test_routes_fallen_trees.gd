@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## *(2026-09-11, the player: "fallen trees should only be possible on streets with trees and one
 ## spot should be empty (the fallen tree's spot)".)* A fallen tree only falls where a tree stood,

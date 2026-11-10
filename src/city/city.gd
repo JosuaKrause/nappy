@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name City
 extends WorldContext
 ## Turns a CityMap into a scene: ground, buildings, props, boundary, and the answers the

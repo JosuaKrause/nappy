@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M180, posters she notices: whether the day's poster crews are met, now that
 ## her walk sites them (`EventDef.on_her_way`, `OnHerWay.at_a_front`), and how much they paste while

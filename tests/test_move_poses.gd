@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## **Outside a step, every mover's move stands where the mover does** (`MoveProposal`), so the list a
 ## pass over every mover reads (`WorldMap.moves`, which holds no mover, only their moves) never shows

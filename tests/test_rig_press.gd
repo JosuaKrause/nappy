@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## M202, a rig's own presses reach the game: a rig's lock-out (`RigLock._input()`) marks every
 ## event handled while `locked_out`, which is exactly the state every `--press` run is in —

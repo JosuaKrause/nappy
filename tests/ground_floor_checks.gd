@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name GroundFloorChecks
 extends RefCounted
 ## What the ground-floor suites share: where a column's cell is, and what a front's fire escape must

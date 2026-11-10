@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name GroundRecipe
 extends RefCounted
 ## The ground's composition recipe (`assets/ground_layers.json`), read from disk by the first ask and

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The posters on the walls: where a sheet may go, how the walls fill day by day, the pasting-over
 ## rule, what a save and a lost day do to them.

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What a real `City` hands its buildings**: `City._spawn_buildings()`'s own wiring of
 ## `is_home_building`, `door_world_x_range` and `covered_ground_cols` off `CityMap.home_block`,

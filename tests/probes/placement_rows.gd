@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the day's mix (`docs/EVENTS.md`, "The density, and why it is caps and
 ## bags"): **what each day places, row by row, by view and by kind of ground.** Not a suite: it

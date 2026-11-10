@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The fairness contracts that are about shared numbers rather than about an event**, stated over
 ## `Tuning` and failing the suite, and so CI, when a number is unfair. A row of the catalogue validates

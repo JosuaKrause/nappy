@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## One meeting with the escape's masked man, shared by the suites that walk her down the right shaft
 ## to meet him: `test_interior_masked_man.gd` and `test_interior_masked_man_badge.gd`.

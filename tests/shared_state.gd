@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 class_name SharedState
 extends RefCounted
 ## What the test runner records before and after each suite, so that a suite which leaves

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 class_name SceneryGround
 extends Node2D
 ## Freeable map-cell batches sharing one loading-time TileSet. Queries expose resident cells;

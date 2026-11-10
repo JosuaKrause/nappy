@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name DebugReadout
 extends Node2D
 ## The developer's furniture over a run, none of it part of the game's UI: the right-hand readout

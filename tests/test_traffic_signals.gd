@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `TrafficSignals`' power: a lit spine junction holds its own traffic for part of the cycle, and once
 ## the power is out (what `Blackout` does, `tests/test_blackout.gd`) a light decides nothing though it

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The escape, part a: the chains, their exits and the roadblocks on them.
 ## One of the parts the suite is split into so none runs two minutes serial; the cases are in `tests/finale_rig.gd`.

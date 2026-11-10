@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `EventScheduler.Planned`, one placed event: what it says about itself to whoever reads the day,
 ## checked here once on rows built by hand, with no city generated and no day planned. A region

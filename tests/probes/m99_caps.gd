@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M99, the corridor's density after the sealing — "`cyclist` and
 ## `loose_dog`'s caps no longer mean what they say." Not a suite: it prints rather than asserting,

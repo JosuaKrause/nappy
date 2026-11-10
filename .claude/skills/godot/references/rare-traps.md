@@ -8,9 +8,12 @@ feature the Web build leaves out. None of them gives an error.
 ## Types
 
 **`.slice()` on a typed `Array` drops the element type.** `for map in _maps.slice(0, 3):` over
-an `Array[CityMap]` leaves `map` untyped under 4.7's static inference, so the first `:=` further
-down the call chain — `var centre := map.tile_rect_to_world(...).get_center()` — is the
-Variant-inference error above, and a suite that carries it fails to load (`LOAD FAIL`). Annotate the loop variable: `for map: CityMap in _maps.slice(0, 3):`.
+an `Array[CityMap]` leaves `map` untyped under 4.7's static inference. In a typed file that line
+is itself the `untyped_declaration` error (`SKILL.md`, "Types"); in a file whose opt-out line
+still names that warning the loop parses, and the first `:=` further down the call chain — `var
+centre := map.tile_rect_to_world(...).get_center()` — is the Variant-inference error above. Either
+way a suite that carries it fails to load (`LOAD FAIL`). Annotate the loop variable: `for map:
+CityMap in _maps.slice(0, 3):`.
 
 **A cross-script enum is not the same type as itself.** `static func f(side: Side)` in one script,
 called from another where `x` came from `OtherScript.Side`, fails to parse: *"argument 2 should be

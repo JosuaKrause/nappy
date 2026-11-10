@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## The one draw-layer list (`DrawLayer`): nothing else writes a `z_index`, the layers keep the order
 ## each one's reason gives, a world adds a node on the layer it is asked for, and a long footprint is

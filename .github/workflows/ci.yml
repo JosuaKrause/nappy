@@ -252,8 +252,12 @@ jobs:
       # No class reads or writes another class's var under src/ (designing-classes' "Fields are not API"),
       # except the reader file and field pairs tools/field_reads.txt lists, a list that only shrinks: --base is
       # the commit the list is compared with, so a line added to it fails, and a line whose read is gone
-      # fails as a REMOVE line. The base is chosen as for the test-only member check above. Read as text,
-      # so it needs no engine and runs on every run, docs-only included.
+      # fails as a REMOVE line. The files carrying the opt-out line (@warning_ignore_start at the top of a
+      # .gd file not yet typed, naming the warnings project.godot makes errors that it still trips) are a
+      # second list that only shrinks: against the same base, a file that gains the line, or a warning on
+      # it, fails too, and without the line a receiver under src/ whose class cannot be told fails. The
+      # base is chosen as for the test-only member check above. Read as text, so it needs no engine and
+      # runs on every run, docs-only included.
       - name: No class reads another class's field
         if: ${{ !cancelled() }}
         env:

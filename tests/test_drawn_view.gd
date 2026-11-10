@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Nothing off screen is redrawn, and every cue is back on the frame it can be seen.
 ## *(velvet-marten, #700, the player: "Skipping redraws for of screen elements. Also we don't really

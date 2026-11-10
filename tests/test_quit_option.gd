@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `QuitOption.available()` with the run's configuration handed in: `--web` (`RunConfig.web_preview`)
 ## asks for the web shape on a debug build, and nothing else does.

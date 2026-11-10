@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A closure's cause lies across the street it closes, whichever way the street runs. A headless
 ## draw pass makes no pixels to read (the **verify** skill), so this pins the two queries

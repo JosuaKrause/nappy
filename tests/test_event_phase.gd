@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The event's stored phase and the one warning clock: `EventInstance.Phase` changed only by
 ## `transition()`, every row's telegraph and every waiting row's notice moving through it, a notice

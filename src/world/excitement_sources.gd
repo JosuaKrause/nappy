@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name ExcitementSources
 extends RefCounted
 ## **A set of things that charge the baby**, answered as one: a day's events (`EventSources`) or

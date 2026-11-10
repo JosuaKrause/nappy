@@ -49,6 +49,10 @@ the tree can break the atlas bake's own engine boot when `.godot/`'s class-name 
 that file's own header and the record `tools/decisions.sh M172` prints (a suite that fails to
 parse fails the test run).
 
+**A new suite that fails to load with "Warning treated as error" on its `run(t)` line is missing
+the typed runner header**: **writing-tests**, "A suite is typed, and opens with the typed runner
+header", gives the line.
+
 **The way to see a genuine hang is to stop piping the run into `tail`** — `tail` prints nothing
 until EOF, so a hung run and a silent one look identical. Redirect to a file and read it; the
 message is usually on line four.

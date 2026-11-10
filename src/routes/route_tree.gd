@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name RouteTree
 extends RouteSource
 ## The day's corridor: one branch from the doorstep to every calm area still worth reaching, and

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Focused contracts for `WebDisplay`: the page's `?dpr=` cap is read out of the query the run's
 ## configuration read at boot, behind the release-safe bundle's gate, and asks nothing of a native

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M213, "the robber stands at the far end of the mark's own alley", and for
 ## brisk-wombat's "a robber appears out of nowhere": prints numbers, asserts nothing, so it lives

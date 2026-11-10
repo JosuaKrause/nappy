@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 extends AtlasLibrary
 ## **An atlas library that remembers who asked it for a page**: each `acquire()` is counted under the
 ## script that called it, so a suite can say what a node asked the library it was handed. A node that

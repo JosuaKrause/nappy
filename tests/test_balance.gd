@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The day's pitch, measured against the real world rather than against the numbers.
 ##

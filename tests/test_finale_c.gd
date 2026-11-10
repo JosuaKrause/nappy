@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The escape, part c: where she comes out, the sections, the clock, pause and the route rig.
 ## One of the parts the suite is split into so none runs two minutes serial; the cases are in `tests/finale_rig.gd`.

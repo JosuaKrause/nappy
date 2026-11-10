@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `GiveWay`, the street rules a crowd car and an event car both give way by: the box ahead, the red
 ## light, the zebra she waits at and the exemption for the main road. The two drivers' own tests

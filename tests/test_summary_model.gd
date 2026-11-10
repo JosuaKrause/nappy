@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `SummaryModel`: what each summary screen says, built from a run of the test's own, a day's end
 ## and `Texts`, with no screen at all — and the run's standing and the resistance tally, worded once

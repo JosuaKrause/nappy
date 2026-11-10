@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The trailer's own logic (M204): the `--parent` flag, `ZoomOutCamera`'s move and `TrailerText`'s
 ## fade and tree shape, each driven the way the game drives it: a `RunConfig` parsed from the words

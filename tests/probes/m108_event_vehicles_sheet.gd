@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Evidence rig for M108's "bind vehicle views" item: renders every bound event-vehicle and the
 ## police car at all eight `EightDirection` sectors from the actual runtime selection —

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Scenery phases update their own retained layers without changing static layout or bodies.
 

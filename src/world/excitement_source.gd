@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name ExcitementSource
 extends RefCounted
 ## **One thing in the world that charges the baby**: an event (`EventExcitement`) or a body in the

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Walkers standing at a blockage made of partial bodies in neighbouring rows of a precinct. Printed,
 ## not asserted; not a suite, run by name:

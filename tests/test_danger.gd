@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The danger vocabulary: what M22 put in place of the aura rings.
 ##

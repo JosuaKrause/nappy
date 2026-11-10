@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What the observers record of a scripted run, end to end through the real `main.tscn`: the names
 ## the page's counter sends (`VisitCounter`, GoatCounter) and the notes the run log is handed.

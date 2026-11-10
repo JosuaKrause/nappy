@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A car's step is proposed, checked and then committed (`EventInstance.step()`, with the car's own
 ## check in `EventCarDriving.check()`): what the step decides on the pose it would end on — parking

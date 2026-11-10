@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name FinalePlanner
 extends RefCounted
 ## The escape's route through the city: **two ordered chains, not a tree.**

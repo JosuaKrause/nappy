@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What the title, pause and summary suites share to drive those screens the way a player does**:
 ## events pushed through the viewport, real frames let pass, controls found by the names the scene

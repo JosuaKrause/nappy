@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the bags per view (`docs/EVENTS.md`, "The three views and the placement
 ## order"): **what the day's placement puts in each view, per day.** Not a suite: it prints rather

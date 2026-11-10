@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Nobody in a day's crowd is ever inside a body the day's real plan stood in the street.
 ##

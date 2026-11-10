@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name Baby
 extends Node
 ## The two meters and the sleep state machine. See docs/MECHANICS.md.

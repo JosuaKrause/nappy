@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name RunFacts
 extends RunSubState
 ## The run's facts that ride beside the `"state"` snapshot, each read with a default for its

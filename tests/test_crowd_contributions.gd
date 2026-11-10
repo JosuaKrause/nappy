@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Contribution parity covers the elliptical boundary, transient jolts and externally moved bodies.
 ##

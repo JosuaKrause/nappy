@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for olive-badger, what she meets on her route is drawn from a marble bag. Not a
 ## suite: it prints rather than asserting, so it lives under `tests/probes/`, where the runner never

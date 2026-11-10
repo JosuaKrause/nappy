@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name WalkGround
 extends RefCounted
 ## **The walk stays open past everything that stands on it**: every street of the walk keeps one

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## How many hard blockers a day stands off its route tree: seals, road closures and wall-role
 ## catalogue rows. Printed rather than asserted. Not a suite: it lives under `tests/probes/`, where

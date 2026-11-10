@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Every start the resistance director picks for a pursuer it sends at her, printed one line
 ## each**, so a change to how a start is sited can be shown to pick exactly what it picked before:

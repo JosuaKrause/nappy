@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the escape's roadblocks (inbox #771 in minty-lemur): what walking past the roadblocks on
 ## one of the escape's streets costs the meter with their guards at their post, what luring the

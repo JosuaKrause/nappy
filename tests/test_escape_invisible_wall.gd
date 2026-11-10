@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Inbox #777 in minty-lemur: once she has walked out of the escape building, nothing of the building stands in
 ## the city's street.

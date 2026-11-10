@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name M174Pass
 extends RefCounted
 ## Measurement probe for M174, item 3, "the pass": the net points a real pass lands, walking at

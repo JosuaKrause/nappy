@@ -1,6 +1,6 @@
 ---
 name: godot
-description: Godot 4.7 and GDScript traps that have cost real time in this project — silent type drops, warnings that are errors, pause and process_mode inheritance, camera smoothing, node naming, leaks. Load this BEFORE writing or debugging any GDScript, and whenever something behaves in a way the engine gives no error for.
+description: Godot 4.7 and GDScript traps that have cost real time in this project — silent type drops, the typing every file owes and the warnings that are errors, pause and process_mode inheritance, camera smoothing, node naming, leaks. Load this BEFORE writing or debugging any GDScript, and whenever something behaves in a way the engine gives no error for.
 ---
 
 # Godot 4.7 / GDScript gotchas
@@ -9,6 +9,7 @@ These are not obvious and the engine does not warn about most of them. **The one
 
 - **`set(key, value)` silently drops a type mismatch.** Never build typed objects from dictionaries.
 - **`var x := <a Variant>` is a parse error**, and `load(path).instantiate()` is a Variant: annotate.
+- **Code is typed wherever the language can type it, tests included** (inbox #1280 in olive-ferret): an untyped declaration and an unsafe property or method access are parse errors here, and a new file carries no ignore of them.
 - **An untyped `Array` passed as `Array[T]` leaks at shutdown**, and `.slice()` drops the element type.
 - **No warning the engine prints is left standing** (woolly-finch 19).
 - **A feature is tied to a flag the environment informs, never to the environment** (PLAYTEST-25 1).
@@ -53,6 +54,68 @@ and runs none of its checks. Write:
 var scene: PackedScene = load(path)
 var node: Node = scene.instantiate()
 ```
+
+**Three more warnings are errors because `project.godot` makes them so** (its `[debug]` section
+sets each `gdscript/warnings/` entry to the error level), so that every receiver has a class the
+engine and `tools/check_field_reads.py` can tell and a read of another class's field cannot hide
+behind an untyped name (inbox #1268 in olive-ferret; the **designing-classes** skill, "Fields are not API"):
+
+- `untyped_declaration`: a variable, a parameter, a function's return or a `for` variable with no
+  static type. An inferred type is a type: `var t := Thing.new()` and a `for` over an
+  `Array[Thing]` pass.
+- `unsafe_property_access`: a property read off a type too wide to declare it, such as a `Node`
+  holding a project class.
+- `unsafe_method_access`: a method called off such a type, or off a value the engine types as
+  Variant.
+
+Each fails the parse with "Warning treated as error", and the script fails to load, a suite as a
+`LOAD FAIL`.
+
+**Code is typed wherever the language can type it, and an untyped name is never a habit**
+(inbox #1280 in olive-ferret): `src/`, the suites and their rigs, fakes and probes, and the scripts under `tools/`
+alike. A value stays a Variant only where the language cannot type it, such as the inner level of
+a nested collection (`Array[Array[Thing]]` is itself a parse error, so the inner arrays are plain
+`Array`s) or what `back()` or `get()` returns, and it is then read through a typed name, as
+below. **writing-tests** says what that asks of a suite and its fakes.
+
+**So a new file is typed from its first line; only a file not yet typed opts out, with one line.**
+That line is the file's very first, `@warning_ignore_start("untyped_declaration",
+"unsafe_method_access")`, naming exactly those of the three warnings the file still trips and
+nothing else, and it silences them to the end of the file. It has one form: the whole first line,
+the names in double quotes separated by `, `, each once and in the order of the list above, and
+nothing after the closing parenthesis. The files carrying it are a list that
+only shrinks: the change that types a file deletes its line, or the names the file no longer
+trips (a name deleted while the file still trips it fails the file's parse, in `check.sh`'s boot
+or its suite's load, which is how to find out). No other ignore of the three is written anywhere:
+`tools/check_field_reads.py` fails an `@warning_ignore`, `@warning_ignore_start` or
+`@warning_ignore_restore` that names one of them, or whose argument it cannot read, anywhere but
+that line in its one form, in every `.gd` file outside `docs/`, and in CI a file that gains the
+line or a warning on it.
+
+**The engine warns of nothing on a property read off a Variant.** An element of an untyped
+`Array` or `Dictionary`, the inner level of a nested one, what `back()` or `get()` returns, a name
+declared `: Variant`: `things[0].count` parses at every warning level, where `things[0].make()` is
+an unsafe method access. So such a value is read through a typed name (`var thing: Thing = things[0]`, `for thing:
+Thing in things`, `things[0] as Thing`).
+
+**Nor does the engine warn of a method named without its parentheses**, on any receiver:
+`thing.is_ready` is a reference to the function, and always true in a condition.
+
+**What the field-read check adds to the engine.** In a file under `src/` without the opt-out line,
+`tools/check_field_reads.py` fails a field's or a method's name read through a receiver whose
+class it cannot tell, such as a Variant, and the fix is a typed name to read through (for a
+dictionary's key, a subscript). It does not see a method named without its parentheses on a
+receiver it can type. What it counts as a field and a method, what it excuses and what else it
+cannot see is said once, in the text `uv run python tools/check_field_reads.py --help` prints.
+
+**The setting reaches every script a debug build parses in this project, and no release export.**
+That is `src/`, `tests/` with its rigs, fixtures and probes, the `.gd` scripts under `tools/`
+whether run with `--script` or as a scene, and a script a test writes at run time and boots in a
+child process: its source string is typed like a file, or opens with the opt-out line where it is
+not yet. A debug export is a debug build, so the debug Web export (`tools/export-web.sh debug`,
+which `tools/serve-web.sh` serves) is held to the setting too. The engine generates the warnings
+only in a debug build, so the release Web export is not held to it and proves nothing about it;
+`check.sh` and the suites do.
 
 ## Capabilities
 
@@ -212,3 +275,17 @@ is the only part that governs the code in front of them.
 - **What the `## Overrides` line names and where it is asked for** — the nearest declaring
   ancestor, no line for an engine virtual no project class declares, and `src/` and `tests/` as the
   scope — is the filer's proposal, open to the player's correction (inbox #1154 in gray-dolphin).
+- **An opt-out line gains no warning** is the builder's choice (minty-quail-busy-heron), open to
+  the player's correction. The player's words ask that the field-read check be made to work and
+  approve the design review's way to do it (inbox #1268 in olive-ferret): the three warnings as errors, the one
+  line at the top of a file not yet converted, and the files carrying it as a list that only
+  shrinks; and they say code is typed wherever it can be (inbox #1280 in olive-ferret), which a new file carrying
+  the line would not be.
+- **A method's name read through a receiver the check cannot tell fails, with the check's
+  exclusions** ("Types"; the names its `--help` gives), the builder's choice
+  (minty-quail-busy-heron), open to the player's correction: the player's words ask that the
+  field-read check be made to work (inbox #1268 in olive-ferret) and say nothing of a method read
+  without its parentheses.
+- **Which values the language cannot type** ("Types": the inner level of a nested collection, what
+  a Variant-returning call gives) is the filer's reading of where the player's rule ends
+  (inbox #1280 in olive-ferret), taken from what the engine accepts.

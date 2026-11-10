@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Where something sent at her may start, on ground this suite builds by hand** (`SpawnSiting`):
 ## each rule by its name against a yard of sidewalk with a building, a walled alley and a region

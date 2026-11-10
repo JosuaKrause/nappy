@@ -23,6 +23,10 @@ src/events/event_scheduler.gd scar
 src/events/event_spawner.gd on_finish
 src/events/event_spawner.gd on_sight
 src/events/event_spawner.gd scar
+src/events/walk_ground.gd on_finish
+
+# [AtlasLibrary] src/visuals/atlas_library.gd
+src/main.gd trace_note
 
 # [AttemptSpendState] src/run/attempt_spend_state.gd
 src/events/day_planner.gd scars
@@ -46,6 +50,9 @@ src/dev/scene_recipe_runtime.gd excitement
 src/dev/scene_recipe_runtime.gd sleepiness
 src/main.gd excitement_frozen
 src/main.gd timing
+src/ui/hud.gd excitement
+src/ui/hud.gd sleepiness
+src/ui/hud.gd state
 
 # [Blackout] src/city/blackout.gd
 src/city/city.gd dark_from_the_start
@@ -62,11 +69,24 @@ src/world/world_map.gd bodies
 src/world/world_map.gd body_version
 
 # [Building] src/city/building.gd
+src/city/blackout.gd powered
+src/city/city.gd condition
+src/city/city.gd covered_ground_cols
+src/city/city.gd day
 src/city/city.gd door_world_x_range
 src/city/city.gd power_station
+src/city/city.gd roof_extension_rows
+src/city/city.gd roof_extension_seamless
 src/city/city.gd scenery_clock
+src/city/city.gd seamless_cover_cols
 src/city/city.gd station_door_col
 src/city/city.gd station_yard_cols
+src/city/city.gd tint_variant
+src/city/city_fronts.gd condition
+src/city/city_fronts.gd is_home_building
+src/city/city_fronts.gd lot
+src/city/city_fronts.gd neighbor_window_col
+src/city/poster_walls.gd poster_art
 src/dev/roof_context_preview.gd atlas
 src/dev/roof_context_preview.gd district
 src/dev/roof_context_preview.gd footprint
@@ -86,10 +106,19 @@ src/dev/roof_scale_preview.gd footprint
 src/dev/roof_scale_preview.gd height
 src/dev/roof_scale_preview.gd roof_object_parent
 src/dev/roof_scale_preview.gd variant
+src/dev/scene_recipe_draft.gd condition
+src/dev/scene_recipe_draft.gd district
+src/dev/scene_recipe_draft.gd height
+src/dev/scene_recipe_draft.gd lot
+src/dev/scene_recipe_draft.gd variant
+src/dev/scene_recipe_runtime.gd lot
 
 # [BuildingShadows] src/city/building_shadows.gd
 src/city/city.gd falls_on
 src/city/city.gd streamed
+
+# [BuildingWalker] src/dev/building_walker.gd
+src/main.gd trace
 
 # [ChargeRecord] src/events/charge_record.gd
 src/events/behaviours/event_barrier_post.gd began
@@ -141,13 +170,18 @@ src/events/event_manager.gd signals
 src/main.gd all_cyclists_pelicans
 src/main.gd atlas
 src/main.gd blackout_forced
+src/main.gd crowd
 src/main.gd crowd_timing
 src/main.gd crowd_view
+src/main.gd dark_from_the_start
+src/main.gd events
 src/main.gd forced_interval
 src/main.gd forced_row
 src/main.gd frame_timing
 src/main.gd ground_mode
 src/main.gd ground_recipe
+src/main.gd map
+src/main.gd navigator
 src/main.gd poster_art
 src/main.gd run
 src/main.gd scenery_frame_locked
@@ -155,6 +189,7 @@ src/main.gd skip_crowd_drawing
 src/main.gd skip_crowd_motion
 src/main.gd skip_event_drawing
 src/main.gd skip_shadows
+src/main.gd spawn_siting
 src/main.gd trace
 src/run/day_director.gd crowd
 src/run/day_director.gd events
@@ -172,11 +207,17 @@ src/city/blackout.gd power_station
 src/city/city_generator.gd courtyard_rects
 src/city/city_generator.gd home_block
 src/city/city_generator.gd home_rect
+src/city/recipe_city_builder.gd block_layouts
 src/city/recipe_city_builder.gd block_plans
 src/city/recipe_city_builder.gd building_rects
+src/city/recipe_city_builder.gd main_road
 src/city/recipe_city_builder.gd network
+src/city/recipe_city_builder.gd precinct_spans
+src/city/recipe_city_builder.gd recipe_bounds
 src/city/recipe_city_builder.gd recipe_closures
 src/city/recipe_city_builder.gd recipe_dawn_tiles
+src/city/recipe_city_builder.gd recipe_diagnostics
+src/city/recipe_city_builder.gd recipe_exterior
 src/city/recipe_city_builder.gd recipe_tree_moves
 src/city/recipe_city_builder.gd recipe_trees
 src/city/recipe_city_builder.gd seed_used
@@ -232,6 +273,7 @@ src/events/mast_sites.gd boundary_wall_at_a
 src/events/mast_sites.gd calm_blocks
 src/events/mast_sites.gd main_road
 src/events/mast_sites.gd square_rects
+src/main.gd seed_used
 src/routes/closure_planner.gd absent_segments
 src/routes/closure_planner.gd block_layouts
 src/routes/closure_planner.gd calm_blocks
@@ -279,7 +321,14 @@ src/city/city.gd view
 src/telemetry/run_session.gd sources
 
 # [CrowdAgent] src/crowd/crowd_agent.gd
+src/crowd/crowd_sources.gd excitement
+src/dev/debug_layers.gd excitement
 src/run/day_director.gd excitement
+
+# [DangerEdge] src/ui/danger_edge.gd
+src/main.gd atlas
+src/main.gd rotated
+src/main.gd timing
 
 # [DayController] src/day/day_controller.gd
 src/dev/debug_readout.gd phase
@@ -287,6 +336,9 @@ src/dev/debug_readout.gd time_remaining
 src/dev/route_rig.gd invincible
 src/dev/route_rig.gd time_total
 src/dev/route_rig_planner.gd spec
+src/main.gd exit_reached
+src/main.gd invincible
+src/main.gd phase
 src/run/day_director.gd exit_reached
 src/run/day_director.gd failure_reason
 src/run/day_director.gd hard_fail_reason
@@ -300,7 +352,10 @@ src/main.gd first_day
 src/main.gd spec
 
 # [DayEnd] src/run/day_end.gd
+src/main.gd hands_over_to_the_escape
+src/main.gd is_section
 src/main.gd result
+src/main.gd run_over
 src/run/day_director.gd cause
 src/run/day_director.gd elapsed_seconds
 src/run/day_director.gd exit_reached
@@ -341,10 +396,17 @@ src/events/event_scheduler.gd keeps_unused_calm_clear
 src/events/event_scheduler.gd number
 src/events/event_scheduler.gd one_notice_at_a_time
 src/events/event_scheduler.gd wall_row_share
+src/main.gd a_win_leads_into
+src/main.gd daylight_runs_down
+src/main.gd saved_as_under_way
+src/main.gd title
 src/main.gd world
 src/routes/seal_planner.gd seal_pictures
 src/routes/seal_planner.gd seals_every_street_off_the_walk
 src/routes/seal_planner.gd seals_the_main_road
+src/run/run_calendar.gd a_loss_gives_back_the_attempt
+src/run/run_calendar.gd a_win_gives_a_nerve_back
+src/run/run_calendar.gd a_win_leads_into
 src/telemetry/run_session.gd title
 
 # [DaySwitch] src/events/day_switch.gd
@@ -363,16 +425,29 @@ src/events/event_manager.gd day
 src/events/event_instance.gd far
 src/events/views/roadblock_look.gd far
 
+# [EventBehaviour] src/events/behaviours/event_behaviour.gd
+src/events/event_instance.gd steps_each_tick
+
 # [EventDef] src/events/event_def.gd
+src/city/city.gd id
 src/dev/auto_screenshot.gd pursuit
+src/dev/debug_layers.gd hard_fail
+src/dev/debug_layers.gd inner_radius
+src/dev/debug_layers.gd outer_radius
+src/dev/debug_layers.gd shape
 src/dev/debug_readout.gd id
 src/dev/debug_readout.gd telegraph_time
+src/dev/dev_rig.gd id
+src/dev/dev_rig.gd kind
+src/dev/dev_rig.gd outer_radius
 src/dev/route_rig.gd detain_seconds
+src/dev/route_rig.gd id
 src/dev/route_rig_planner.gd detain_seconds
 src/dev/route_rig_planner.gd hard_fail
 src/dev/route_rig_planner.gd id
 src/dev/route_rig_planner.gd mobile
 src/dev/route_rig_planner.gd obstructs_radius
+src/dev/route_rig_planner.gd redetains
 src/dev/route_rig_planner.gd shape
 src/dev/route_rig_planner.gd solid_when
 src/dev/scene_recipe_runtime.gd aftermath
@@ -381,6 +456,7 @@ src/dev/scene_recipe_runtime.gd max_per_day
 src/dev/scene_recipe_runtime.gd pursuit
 src/dev/scene_recipe_runtime.gd role
 src/dev/scene_recipe_runtime.gd stops_where_it_arrives
+src/dev/scene_recipe_runtime.gd telegraph_time
 src/dev/scene_recipe_runtime.gd vehicle
 src/dev/still_watch.gd id
 src/events/behaviours/event_abduction.gd abduction
@@ -424,9 +500,12 @@ src/events/behaviours/event_officer.gd pursuit
 src/events/behaviours/event_pursuit.gd pursuit
 src/events/behaviours/event_route_walk.gd paces
 src/events/behaviours/event_route_walk.gd speed
+src/events/checkpoint_controller.gd detain_seconds
 src/events/checkpoint_controller.gd id
 src/events/checkpoint_controller.gd obstructs_radius
+src/events/checkpoint_controller.gd redetains
 src/events/checkpoint_controller.gd solid_when
+src/events/day_events.gd pursuit
 src/events/encounter_watch.gd detain_seconds
 src/events/event_catalogue.gd abduction
 src/events/event_catalogue.gd act_tag
@@ -447,6 +526,7 @@ src/events/event_catalogue.gd first_day
 src/events/event_catalogue.gd flock_size
 src/events/event_catalogue.gd flock_spread
 src/events/event_catalogue.gd from_day_after
+src/events/event_catalogue.gd from_outside
 src/events/event_catalogue.gd hard_fail
 src/events/event_catalogue.gd has_a_spread
 src/events/event_catalogue.gd heat_response
@@ -478,6 +558,7 @@ src/events/event_catalogue.gd pulse_period
 src/events/event_catalogue.gd pursuit
 src/events/event_catalogue.gd redetains
 src/events/event_catalogue.gd repeat_after
+src/events/event_catalogue.gd repeat_every
 src/events/event_catalogue.gd role
 src/events/event_catalogue.gd scripted_day
 src/events/event_catalogue.gd shape
@@ -499,14 +580,17 @@ src/events/event_catalogue.gd weight
 src/events/event_catalogue.gd when_it_stops
 src/events/event_director.gd from_day_after
 src/events/event_director.gd id
+src/events/event_director.gd kind
 src/events/event_director.gd max_per_day
 src/events/event_director.gd offscreen_notice
+src/events/event_director.gd on_her_way
 src/events/event_director.gd placement
 src/events/event_director.gd pursuit
 src/events/event_director.gd shape
 src/events/event_director.gd spawn_mode
 src/events/event_director.gd speed
 src/events/event_director.gd still_while_telegraphing
+src/events/event_director.gd weight
 src/events/event_excitement.gd core_intensity
 src/events/event_excitement.gd core_radius
 src/events/event_excitement.gd falloff_power
@@ -558,7 +642,10 @@ src/events/event_instance.gd stops_where_it_arrives
 src/events/event_instance.gd telegraph_time
 src/events/event_instance.gd vehicle
 src/events/event_instance.gd when_it_stops
+src/events/event_manager.gd barrier_structure
+src/events/event_manager.gd id
 src/events/event_scheduler.gd aftermath
+src/events/event_scheduler.gd ambient_source
 src/events/event_scheduler.gd hard_fail
 src/events/event_scheduler.gd has_a_spread
 src/events/event_scheduler.gd id
@@ -578,6 +665,9 @@ src/events/event_scheduler.gd pursuit
 src/events/event_scheduler.gd repeat_after
 src/events/event_scheduler.gd repeat_every
 src/events/event_scheduler.gd role
+src/events/event_scheduler.gd spawn_mode
+src/events/event_scheduler.gd weight
+src/events/event_sources.gd barrier_structure
 src/events/event_spawner.gd aftermath
 src/events/event_spawner.gd detain_seconds
 src/events/event_spawner.gd from_outside
@@ -591,15 +681,26 @@ src/events/event_spawner.gd shape
 src/events/event_spawner.gd solid_when
 src/events/event_spawner.gd speed
 src/events/event_spawner.gd telegraph_time
+src/events/event_streaming.gd id
+src/events/event_streaming.gd kind
+src/events/event_streaming.gd on_her_way
+src/events/event_streaming.gd role
 src/events/events_ahead.gd heat_response
 src/events/events_ahead.gd id
+src/events/events_ahead.gd kind
 src/events/events_ahead.gd noun
 src/events/events_ahead.gd noun_plural
+src/events/events_ahead.gd on_her_way
 src/events/events_ahead.gd pursuit
+src/events/events_ahead.gd role
 src/events/events_ahead.gd vehicle
 src/events/mast_sites.gd outer_radius
 src/events/pending_warning.gd id
 src/events/pending_warning.gd placement
+src/events/street_invalidation.gd id
+src/events/street_invalidation.gd paces
+src/events/street_rules/pacing_opening_rule.gd paces
+src/events/street_rules/route_sidewalk_rule.gd paces
 src/events/views/checkpoint_look.gd look
 src/events/views/event_look.gd abduction
 src/events/views/event_look.gd draws_body_shadow
@@ -632,6 +733,16 @@ src/events/views/roadblock_look.gd look
 src/events/views/spread_look.gd look
 src/events/views/spread_look.gd obstructs_radius
 src/events/views/spread_look.gd shape
+src/events/walk_ground.gd aftermath
+src/events/walk_ground.gd hard_fail
+src/events/walk_ground.gd mobile
+src/events/walk_ground.gd obstructs_radius
+src/events/walk_ground.gd pursuit
+src/events/walk_ground.gd shape
+src/events/warning_board.gd hard_fail
+src/events/warning_board.gd inner_radius
+src/events/warning_board.gd outer_radius
+src/events/warning_board.gd vehicle
 src/resistance/contact_point.gd inner_radius
 src/resistance/happenings.gd paces
 src/resistance/happenings.gd shape
@@ -642,7 +753,12 @@ src/resistance/park_cordon.gd vehicle
 src/resistance/park_cordon.gd warned_first
 src/resistance/resistance_director.gd id
 src/resistance/resistance_director.gd inner_radius
+src/resistance/resistance_director.gd paces
+src/resistance/resistance_director.gd redetains
+src/resistance/resistance_director.gd role
+src/resistance/resistance_director.gd solid_when
 src/resistance/resistance_director.gd speed
+src/routes/region_planner.gd guard_sides
 src/routes/seal_planner.gd act_tag
 src/routes/seal_planner.gd aftermath
 src/routes/seal_planner.gd first_day
@@ -659,12 +775,24 @@ src/events/event_instance.gd birds
 
 # [EventInstance] src/events/event_instance.gd
 src/dev/auto_screenshot.gd def
+src/dev/debug_layers.gd def
+src/dev/debug_layers.gd excitement
+src/dev/debug_layers.gd is_finished
 src/dev/debug_readout.gd age
 src/dev/debug_readout.gd def
+src/dev/dev_rig.gd def
 src/dev/route_rig.gd def
 src/dev/route_rig.gd is_finished
 src/dev/route_rig_planner.gd def
 src/dev/route_rig_planner.gd is_finished
+src/dev/scene_recipe_runtime.gd barrier_post
+src/dev/scene_recipe_runtime.gd def
+src/dev/scene_recipe_runtime.gd departure
+src/dev/scene_recipe_runtime.gd held_by_hand
+src/dev/scene_recipe_runtime.gd is_finished
+src/dev/scene_recipe_runtime.gd is_leaving
+src/dev/scene_recipe_runtime.gd on_foot
+src/dev/scene_recipe_runtime.gd pursuit
 src/dev/still_watch.gd def
 src/dev/still_watch.gd is_finished
 src/events/behaviours/event_abduction.gd age
@@ -784,7 +912,9 @@ src/events/behaviours/roadblock_far_guard.gd _spread_vertical
 src/events/behaviours/roadblock_far_guard.gd def
 src/events/behaviours/roadblock_far_guard.gd departure
 src/events/behaviours/roadblock_far_guard.gd player_at
+src/events/checkpoint_controller.gd baby_awake
 src/events/checkpoint_controller.gd def
+src/events/checkpoint_controller.gd guard_warns_her
 src/events/checkpoint_controller.gd is_finished
 src/events/checkpoint_controller.gd is_leaving
 src/events/encounter_watch.gd def
@@ -797,8 +927,20 @@ src/events/event_excitement.gd is_finished
 src/events/event_excitement.gd is_leaving
 src/events/event_excitement.gd player_at
 src/events/event_footprints.gd def
+src/events/event_manager.gd baby_awake
+src/events/event_manager.gd def
+src/events/event_manager.gd excitement
+src/events/event_manager.gd held_by_hand
+src/events/event_manager.gd is_pelican
+src/events/event_manager.gd player_at
+src/events/event_manager.gd player_running
+src/events/event_manager.gd player_view
+src/events/event_manager.gd pram_at
+src/events/event_manager.gd she_is_held
+src/events/event_sources.gd def
 src/events/event_sources.gd excitement
 src/events/event_spawner.gd atlas
+src/events/event_spawner.gd came_under_a_warning
 src/events/event_spawner.gd def
 src/events/event_spawner.gd drawer
 src/events/event_spawner.gd excitement
@@ -809,6 +951,13 @@ src/events/event_spawner.gd signals
 src/events/event_spawner.gd skip_draw
 src/events/event_spawner.gd timing
 src/events/event_spawner.gd trace
+src/events/event_streaming.gd age
+src/events/event_streaming.gd barrier_post
+src/events/event_streaming.gd excitement
+src/events/event_streaming.gd gate_state
+src/events/event_streaming.gd is_finished
+src/events/event_streaming.gd is_leaving
+src/events/event_streaming.gd silenced
 src/events/events_ahead.gd def
 src/events/events_ahead.gd is_finished
 src/events/events_ahead.gd is_leaving
@@ -862,13 +1011,20 @@ src/events/views/spread_look.gd drawer
 src/events/views/spread_look.gd is_finished
 src/events/views/spread_look.gd look
 src/events/views/spread_look.gd skip_draw
+src/events/warning_board.gd barrier_post
+src/events/warning_board.gd car
+src/events/warning_board.gd def
+src/events/warning_board.gd is_finished
 src/resistance/contact_point.gd def
 src/resistance/contact_point.gd is_finished
 src/resistance/park_cordon.gd def
 src/resistance/park_cordon.gd is_finished
+src/resistance/park_cordon.gd is_leaving
 src/resistance/resistance_director.gd def
 src/resistance/resistance_director.gd is_finished
 src/resistance/resistance_director.gd is_parked
+src/resistance/resistance_director.gd path
+src/run/day_director.gd excitement
 
 # [EventManager] src/events/event_manager.gd
 src/city/city.gd atlas
@@ -878,9 +1034,16 @@ src/city/city.gd sources
 src/city/city.gd timing
 src/city/city.gd trace
 src/dev/scene_recipe_runtime.gd world
+src/main.gd atlas
+src/main.gd skip_drawing
+src/main.gd sources
+src/main.gd stream_radius
+src/main.gd timing
+src/main.gd trace
 src/resistance/resistance_director.gd points_at
 
 # [EventPursuit] src/events/behaviours/event_pursuit.gd
+src/dev/scene_recipe_runtime.gd outrun_for
 src/events/event_instance.gd lunge_held
 
 # [EventScenery] src/events/event_scenery.gd
@@ -956,9 +1119,13 @@ src/events/warning_board.gd trace
 src/events/event_manager.gd holds_the_home_streets
 src/events/event_manager.gd sends_poster_pursuits
 
+# [ExcitementHalo] src/ui/excitement_halo.gd
+src/main.gd timing
+
 # [ExcitementSource] src/world/excitement_source.gd
 src/events/encounter_watch.gd landed_ever
 src/events/event_instance.gd rim
+src/events/event_manager.gd outranked
 src/events/event_spawner.gd on_first_landing
 
 # [FrameGraph] src/ui/frame_graph.gd
@@ -969,7 +1136,12 @@ src/city/scenery_residency.gd on
 src/events/event_instance.gd on
 src/events/event_manager.gd on
 
+# [GameSave] src/autoload/game_save.gd
+src/main.gd trace
+
 # [GroundShape] src/ground_shape.gd
+src/dev/debug_layers.gd half_length
+src/dev/route_rig_planner.gd half_length
 src/dev/route_rig_planner.gd radius
 src/events/behaviours/event_car_driving.gd half_length
 src/events/behaviours/event_car_driving.gd radius
@@ -985,6 +1157,13 @@ src/events/views/event_look.gd radius
 src/events/walk_ground.gd half_length
 src/events/walk_ground.gd kind
 src/events/walk_ground.gd radius
+src/resistance/resistance_director.gd half_length
+src/resistance/resistance_director.gd radius
+
+# [HomeArrow] src/ui/home_arrow.gd
+src/ui/hud.gd colour
+src/ui/hud.gd label_when_near
+src/ui/hud.gd rotated
 
 # [HuntSpec] src/events/hunt_spec.gd
 src/events/event_def.gd ends_the_day
@@ -992,14 +1171,32 @@ src/events/event_def.gd lets_out
 src/events/event_def.gd pursuit
 
 # [InteriorScene] src/interior/interior_scene.gd
+src/main.gd atlas
+src/main.gd map
 
 # [LaneMover] src/crowd/lane_mover.gd
+src/crowd/crowd.gd gate_hold
+src/crowd/crowd.gd junction_hold
+src/crowd/crowd.gd kind
+src/crowd/crowd.gd pedestrian_ahead
+src/crowd/crowd.gd shape
+src/dev/debug_layers.gd kind
+src/dev/debug_layers.gd shape
+src/dev/scene_recipe_draft.gd kind
+src/dev/scene_recipe_runtime.gd kind
 src/dev/still_watch.gd kind
 src/run/day_director.gd kind
 
 # [MarbleBag] src/city/marble_bag.gd
 src/events/event_scheduler.gd drawn
 src/events/event_spawner.gd drawn
+
+# [MeterBar] src/ui/meter_bar.gd
+src/ui/hud.gd fill_colour
+src/ui/hud.gd full_colour
+src/ui/hud.gd label
+src/ui/hud.gd markers
+src/ui/hud.gd value
 
 # [MoveProposal] src/world/move_proposal.gd
 src/events/behaviours/event_car_driving.gd from
@@ -1009,7 +1206,10 @@ src/events/event_instance.gd parked
 src/events/event_instance.gd radius
 src/events/event_instance.gd stood_round
 src/events/event_instance.gd to
+src/resistance/park_cordon.gd radius
+src/resistance/park_cordon.gd to
 src/world/separation_pass.gd from
+src/world/separation_pass.gd parked
 
 # [Mover] src/world/mover.gd
 src/events/event_instance.gd blocked_by
@@ -1032,6 +1232,7 @@ src/events/event_scheduler.gd at_a_front
 src/city/city.gd joined_end
 src/city/city.gd joined_start
 src/city/city.gd outward
+src/resistance/park_cordon.gd outward
 
 # [ParkFenceMarker] src/routes/park_fence_marker.gd
 src/city/city.gd draw_support
@@ -1045,6 +1246,9 @@ src/events/event_spawner.gd draws
 src/events/event_spawner.gd on_withdrawn
 src/events/events_ahead.gd is_pelican
 src/events/events_ahead.gd on_withdrawn
+src/events/warning_board.gd on_withdrawn
+src/events/warning_board.gd shown
+src/events/warning_board.gd withdrawn
 
 # [PosterState] src/city/poster_state.gd
 src/city/city.gd pasted_through
@@ -1065,6 +1269,7 @@ src/events/behaviours/event_pursuit.gd walk_speed
 src/events/event_catalogue.gd catch_reach
 src/events/event_catalogue.gd leaves_its_body
 src/events/event_catalogue.gd lunge_reach
+src/events/event_catalogue.gd speed
 src/events/event_catalogue.gd stands
 src/events/event_catalogue.gd start
 src/events/event_catalogue.gd stop_excitement
@@ -1084,6 +1289,9 @@ src/events/event_instance.gd stands
 src/events/event_instance.gd stop_excitement
 src/events/event_instance.gd warns_for
 src/events/event_instance.gd warns_over_the_street
+
+# [ResistanceDirector] src/resistance/resistance_director.gd
+src/main.gd trace
 
 # [ResistanceHappenings] src/resistance/happenings.gd
 src/dev/scene_recipe_runtime.gd column
@@ -1110,15 +1318,31 @@ src/run/run_state.gd failed_steps
 src/run/run_state.gd progress
 src/run/summary_model.gd failed_steps
 src/run/summary_model.gd progress
+src/ui/hud.gd completed_steps
+src/ui/hud.gd progress
+
+# [RigLock] src/dev/rig_lock.gd
+src/main.gd locked_out
 
 # [RoadClosure] src/routes/road_closure.gd
 src/city/city.gd kind
+src/city/city.gd segment
+src/city/city_map.gd segment
+src/city/recipe_city_builder.gd segment
+src/events/day_planner.gd segment
+src/resistance/park_cordon.gd segment
+src/telemetry/telemetry_map.gd segment
+src/telemetry/telemetry_observer.gd kind
+src/telemetry/telemetry_observer.gd segment
 
 # [RoadblockFarGuard] src/events/behaviours/roadblock_far_guard.gd
 src/events/behaviours/event_barrier_post.gd gone
 src/events/views/roadblock_look.gd at
 src/events/views/roadblock_look.gd heading
 src/events/views/roadblock_look.gd walked
+
+# [RouteRig] src/dev/route_rig.gd
+src/main.gd trace
 
 # [RouteTree] src/routes/route_tree.gd
 src/dev/route_lines.gd branches
@@ -1130,6 +1354,7 @@ src/routes/corridor.gd grid
 src/autoload/game_save.gd checkpoint
 src/autoload/game_save.gd hard_mode
 src/autoload/visit_counter.gd hard_mode
+src/main.gd hard_mode
 src/run/day_director.gd header
 src/run/run_state.gd checkpoint
 src/run/run_state.gd hard_mode
@@ -1153,16 +1378,63 @@ src/dev/scene_recipe_runtime.gd recipe_scripted
 src/dev/scene_recipe_runtime.gd recipe_validate
 src/dev/scene_recipe_runtime.gd rig_after
 src/dev/scene_recipe_runtime.gd screenshot_path
+src/main.gd active_args
+src/main.gd blackout_requested
+src/main.gd caption_text
+src/main.gd controls_word
+src/main.gd day_override
+src/main.gd debug_build
+src/main.gd ending_override
+src/main.gd follow_target
+src/main.gd forced_interval
+src/main.gd forced_row
+src/main.gd frame_record_requested
+src/main.gd frame_trace_requested
+src/main.gd ground_mode
+src/main.gd hard_mode_requested
+src/main.gd invincible
+src/main.gd is_rig
+src/main.gd nerves_override
+src/main.gd no_focus_pause
+src/main.gd overview_requested
+src/main.gd parent_override
+src/main.gd pelican
+src/main.gd player_view_requested
+src/main.gd quit_when_still_requested
+src/main.gd quit_when_still_seconds
+src/main.gd recipe_path
+src/main.gd recipe_scripted
+src/main.gd recording
+src/main.gd route_targets
+src/main.gd seed_override
+src/main.gd skip_crowd
+src/main.gd skip_events
+src/main.gd skip_motion
+src/main.gd skip_shadows
+src/main.gd start_escape
+src/main.gd start_escape_at
+src/main.gd title_card_text
+src/main.gd zoom_out_delay
+src/main.gd zoom_out_seconds
+src/main.gd zoom_override
 src/run/day_director.gd meters_override
 src/run/day_director.gd spawn_target
 src/telemetry/run_session.gd no_telemetry
 src/telemetry/run_session.gd spikes_requested
 
 # [RunFacts] src/run/run_facts.gd
+src/main.gd escape_section
 src/resistance/resistance_director.gd completed_resistance_alley_tiles
 src/run/day_director.gd fenced_park
 src/run/day_director.gd fenced_park_act
 src/run/run_calendar.gd escape_section
+
+# [RunFlow] src/run/run_flow.gd
+src/main.gd authored
+src/main.gd mode
+src/main.gd opening
+src/main.gd scene
+src/main.gd spec
 
 # [RunHeader] src/run/run_header.gd
 src/autoload/game_save.gd ending
@@ -1177,6 +1449,12 @@ src/events/event_manager.gd day
 src/events/event_spawner.gd day
 src/events/event_spawner.gd run_seed
 src/events/events_ahead.gd run_seed
+src/main.gd day
+src/main.gd ending
+src/main.gd nerves
+src/main.gd play_ticks
+src/main.gd player_is_male
+src/main.gd run_seed
 src/run/day_director.gd day
 src/run/run_calendar.gd day
 src/run/run_calendar.gd ending
@@ -1193,6 +1471,11 @@ src/telemetry/frame_recorder.gd run_seed
 src/telemetry/frame_trace.gd day
 src/telemetry/frame_trace.gd run_seed
 src/telemetry/run_session.gd run_seed
+src/ui/hud.gd day
+src/ui/hud.gd nerves
+
+# [RunSession] src/telemetry/run_session.gd
+src/main.gd trace
 
 # [RunState] src/run/run_state.gd
 src/autoload/game_save.gd calendar
@@ -1231,6 +1514,10 @@ src/events/events_ahead.gd calendar
 src/events/events_ahead.gd header
 src/events/events_ahead.gd posters
 src/events/events_ahead.gd resistance
+src/main.gd attempt_spend
+src/main.gd calendar
+src/main.gd facts
+src/main.gd header
 src/resistance/happenings.gd attempt_spend
 src/resistance/happenings.gd calendar
 src/resistance/resistance_director.gd attempt_spend
@@ -1242,7 +1529,13 @@ src/telemetry/frame_recorder.gd header
 src/telemetry/frame_trace.gd header
 src/telemetry/run_session.gd header
 src/telemetry/telemetry_observer.gd attempt_spend
+src/ui/hud.gd calendar
+src/ui/hud.gd header
+src/ui/hud.gd resistance
 src/ui/title_screen.gd calendar
+
+# [SaveIndicator] src/ui/save_indicator.gd
+src/main.gd atlas
 
 # [SceneryGround] src/city/scenery_ground.gd
 src/city/building.gd elapsed
@@ -1255,6 +1548,7 @@ src/city/scenery_residency.gd pending
 
 # [SceneryLayer] src/city/scenery_layer.gd
 src/events/event_scenery.gd drawer
+src/events/event_scenery.gd frame_b
 
 # [SceneryResidency] src/city/scenery_residency.gd
 src/city/city.gd city
@@ -1269,6 +1563,14 @@ src/city/scenery_ground.gd elapsed
 # [SettledState] src/run/settled_state.gd
 src/run/run_calendar.gd settled_in
 
+# [Sitting] src/autoload/sitting.gd
+src/main.gd atlas
+src/main.gd carry_the_run_over
+src/main.gd controls_word
+src/main.gd frame_timing
+src/main.gd ground_recipe
+src/main.gd run
+
 # [StillWatch] src/dev/still_watch.gd
 src/main.gd trace
 
@@ -1281,10 +1583,16 @@ src/events/checkpoint_controller.gd outright_moves
 src/events/event_manager.gd carrying
 src/events/event_manager.gd facing
 src/main.gd atlas
+src/main.gd carrying
 src/main.gd is_male
 
 # [TelemetryLog] src/telemetry/telemetry_log.gd
 src/dev/still_watch.gd path
+
+# [TouchControls] src/ui/touch_controls.gd
+src/main.gd atlas
+src/main.gd covering
+src/main.gd rotated
 
 # [TrafficSignals] src/city/traffic_signals.gd
 src/city/blackout.gd powered
@@ -1307,6 +1615,9 @@ src/world/spawn_siting.gd view
 src/events/behaviours/event_notice_run.gd cancel_if
 src/events/behaviours/event_notice_run.gd length
 src/events/behaviours/event_notice_run.gd on_expired
+
+# [WorldContext] src/world/world_context.gd
+src/main.gd excitement_sources
 
 # [WorldMap] src/world/world_map.gd
 src/city/city.gd world

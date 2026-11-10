@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends Node
 ## Common rendered-city collector for the three ground modes of one clean runtime checkout; the
 ## mode is the launch's own --ground-mode. Timing starts at process_frame and ends at

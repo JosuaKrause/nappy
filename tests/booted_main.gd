@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What the suites that boot the real `scenes/main.tscn` share**: the boot, waited on with real
 ## frames until the game shows her in her world, and the parts of the booted game found by the names

@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_property_access")
 class_name TelemetryScreen
 extends RefCounted
 ## What the run log photographs: whether there is a drawn frame to read at all, the wait for the

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## When a baked page may be read from disk, and which page each picture is on.
 ##

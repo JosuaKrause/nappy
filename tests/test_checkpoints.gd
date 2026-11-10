@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## The region door's own structure: `checkpoint_hut`/`checkpoint_gate`/`checkpoint_post`, placed by
 ## `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies`, detained and released by

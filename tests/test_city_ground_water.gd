@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The water a city paints off its map's southern edge, and which ground surface owns it: the shore
 ## the ground keeps resident is water on every cell outside the map and clear of the bridge's

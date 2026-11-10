@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The events draw from the one baked `events` page rather than from individually preloaded
 ## textures or a runtime-packed group per family. `tests/test_event_views.gd`,

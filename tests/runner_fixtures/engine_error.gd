@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A real Godot diagnostic, held outside suite discovery on purpose, that proves the shell
 ## boundary refuses an engine error even when the runner's own `check()` array stays empty.

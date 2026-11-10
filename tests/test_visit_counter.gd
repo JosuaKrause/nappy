@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## `VisitCounter`'s own pure halves — the gate's truth table and the event-name builders — plus a
 ## check that answering every signal it connects to touches nothing the run it counts owns, the same

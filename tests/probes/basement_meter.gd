@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the basement's cost (inbox #765 in minty-lemur): from an empty meter, awake and asleep,
 ## what walking the corridor past its three vents does to the meter, over many arrival phases.

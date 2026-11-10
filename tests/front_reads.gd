@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What a `Building`'s front shows, read off the pictures it was drawn with.
 ##

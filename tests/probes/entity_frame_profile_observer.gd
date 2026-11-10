@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 extends Node
 ## Records population and motion in late _process, matched by engine process-frame ID.
 ## Visibility means an entity's origin is inside the viewport, not occlusion-tested pixels.

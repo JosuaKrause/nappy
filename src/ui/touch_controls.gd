@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access")
 class_name TouchControls
 extends Control
 ## Pointer steering, a hold-to-run half opposite the steering side, and pause.

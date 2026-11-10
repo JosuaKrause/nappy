@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The day director alone: the one start every walk goes through (`DayDirector.start()`) and the one
 ## place a day ends (`finish_day()`).

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `WalkPlan`, a movement script's smooth option: a turn sweeps her heading gradually from one
 ## step's direction to the next and still leaves her exactly where the abrupt script does.

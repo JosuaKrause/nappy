@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## The resistance director's re-placement: an unseen mark moving to an alley she comes near, and what a relocation may never do.
 

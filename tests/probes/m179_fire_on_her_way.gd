@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M179, "the fire is on her way, guaranteed" — how long a walk takes to be
 ## handed the fire, how long after that she sees it, and what the fire and the engine parked at it

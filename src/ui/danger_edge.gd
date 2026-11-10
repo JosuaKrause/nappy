@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 class_name DangerEdge
 extends Control
 ## What is coming, drawn at the edge of the screen while it is still off it.

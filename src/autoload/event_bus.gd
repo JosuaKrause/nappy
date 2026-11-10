@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 extends Node
 ## Global signal hub.
 ##

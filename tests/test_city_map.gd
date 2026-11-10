@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A city map's copy (`CityMap.copy()`): that it is a city the generator's guarantees hold on, that
 ## it answers every question the map it was copied from answers, and that nothing either map is

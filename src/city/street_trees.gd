@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration")
 class_name StreetTrees
 extends RefCounted
 ## Where street trees stand: a handful of **tree-lined runs**, each a straight stretch of three to

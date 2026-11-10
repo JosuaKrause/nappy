@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for downy-otter, "a mark is never placed in an alley she cannot reach"
 ## (olive-koala, statement 9: *"also a mark should never be placed in an alley that is not reachable

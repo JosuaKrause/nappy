@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What day 13's two blocking beats could replace**: the blocking bodies the day's plan placed,
 ## sorted by where they stand against the day's routes, so the swap a beat makes during the walk

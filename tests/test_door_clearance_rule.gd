@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `DoorClearanceRule`: nothing's field comes within `Tuning.CHECKPOINT_EVENT_GAP` of a region door.
 ## A candidate closer than the gap and its own reach is refused, one past it allowed, and a day with

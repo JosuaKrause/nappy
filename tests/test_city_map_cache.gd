@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The cache of generated cities the rigs share (`tests/city_map_cache.gd`): that it hands out a
 ## seed's own city, a copy of its own to each caller, so nothing one caller does to its map reaches

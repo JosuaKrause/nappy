@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `DayLocations`, every street's locations for one day laid out at dawn (inbox #1185 in gentle-owl), with the
 ## `StreetLocations` and `Location` it is made of, the state it holds: a street split into three

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## `InteriorMap` and `InteriorMapPlan` — the escape scene's one building-wide map, walkability, the
 ## alternating stairwells of the ten-column grammar, and the doors that teleport between its seven

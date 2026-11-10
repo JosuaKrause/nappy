@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What the crowd and the world read of the screen, printed one line per question**, so handing
 ## them those reads instead of letting them reach for the viewport and the controls can be shown to

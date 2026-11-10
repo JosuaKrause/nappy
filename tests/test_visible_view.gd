@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What she can see (`VisibleView`), the one answer every "is it visible" question in the game asks
 ## *(feathery-lynx, inbox #581, the player: "use that everywhere where visibility is concerned -- for

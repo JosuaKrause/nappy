@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Roof art that can reach a street lives in the city's y-sorted entity layer at its feet.
 ##

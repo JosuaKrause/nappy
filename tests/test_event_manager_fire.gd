@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## EventManager against a real generated City: the fire, and a walk down the day's own routes.
 ##

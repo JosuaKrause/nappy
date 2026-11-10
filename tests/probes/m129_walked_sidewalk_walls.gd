@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Does a **solid body** ever close the walked sidewalk of a route street? Printed rather than
 ## asserted. Not a suite: it lives under `tests/probes/`, where the runner never discovers it, and

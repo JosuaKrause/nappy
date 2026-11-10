@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the escape's roadblocks (inbox #771 in minty-lemur): how many the finale's plan stands,
 ## and how near the nearest two stand, on any two streets. Not a suite: it prints rather than

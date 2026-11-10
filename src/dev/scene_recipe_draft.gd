@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name SceneRecipeDraft
 extends RefCounted
 ## **The first draft of a task scene's stretch**: a recipe's seed and route turned into a recipe

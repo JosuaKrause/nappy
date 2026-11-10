@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The power station: one big building on every city, not in the home's region, a reasonable walk
 ## from the home, on industrial ground where the city has it, with a front door on a real street.

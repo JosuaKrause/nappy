@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 class_name TelemetryObserver
 extends Node
 ## Watches the player and writes down what happened to them.

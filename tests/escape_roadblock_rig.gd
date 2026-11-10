@@ -1,3 +1,4 @@
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## A rig that walks past the roadblocks on one of the escape's streets and answers what the walk
 ## did to the meter and whether a guard caught her. Shared by `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`), which pins

@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A reproducible run choice reaches every player view and survives the day's lifecycle: the run
 ## keeps it, and the rig draws only the family it is handed.

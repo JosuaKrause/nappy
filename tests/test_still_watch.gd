@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `StillWatch`, the stillness heuristic behind `--quit-when-still`, driven the way `main` builds it:
 ## handed a city, her, and the day's clock through `setup()`, standing in a tree, and fed her

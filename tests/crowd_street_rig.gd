@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The street rig the crowd suites share: a straight stretch of a real city's ordinary street, and
 ## an agent placed on one of its lanes through the entry the game gives a task scene's pinned actors

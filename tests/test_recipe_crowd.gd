@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A city overview retains ordinary crowd density and real traffic in every quadrant,
 ## while the normal player-following field keeps its population and movement behavior.

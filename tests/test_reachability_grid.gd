@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `ReachabilityGrid`: the tile graph contracted into two-tile cells.
 ##

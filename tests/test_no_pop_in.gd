@@ -1,3 +1,4 @@
+@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Nothing that arrives from off screen is ever drawn on the frame it exists.** *(Amendment 6 of
 ## M226, the player: "objects don't spawn \"at the edge of the screen\" they spawn *offscreen*" · "I
