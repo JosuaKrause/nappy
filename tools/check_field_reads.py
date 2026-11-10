@@ -22,42 +22,64 @@ is one class); a class reading a related class's field (an ancestor or a descend
 and the subclass and its base are one design).
 
 **How the receiver's class is told.** By static reading: a chain `a.b().c[i].d` resolved from its head, which is
-`self` (the file's class; in an inner class, the inner class), a `class_name` (a static use or `Foo.new()`), an
-autoload from `project.godot`, a script a `const` preloads, an engine class or a constant (`Vector2.ZERO`), a node
-path (`$Camera`), a parenthesised expression, a call of the file's own method or of an engine or global function,
-or a name the file declares. A name's class comes from its declaration: its type (`var x: Foo`, a parameter, `for
-x: Foo in`, `Array[Foo]`, `Dictionary[K, V]`), or what `:=` infers from (`Foo.new()`, `as Foo`, a chain, a
-literal, a constructor such as `Vector2(...)`, an arithmetic or logical expression, which GDScript never
-overloads, so its value is never a class under `src/`), or what an untyped `for` iterates (a typed array's
-element, a typed dictionary's key); one type for the name in its top-level block (a func, a var, an inner class),
-a name typed two ways there being unknown, and a field of the file's own class or an ancestor otherwise. Each step
-after the head is a field's declared type, a method's declared `-> Type`, an array or dictionary element, or for
-a receiver that is not a class under `src/` an engine property (an engine class) or an engine call (an engine
-class, unless it is one that returns a Variant: `get()`, `call()`, `back()` and the like, the element type on a
-typed array or dictionary). A type that names no class under `src/` and is not `Variant` is told as not one:
+`self` (the file's class; in an inner class, the inner class), an inner class of the file named bare (`In.new()`),
+a `class_name` (a static use or `Foo.new()`), an autoload from `project.godot`, a script a `const` preloads, an
+engine class or a constant (`Vector2.ZERO`), a node path (`$Camera`), a parenthesised expression, a call of the
+file's own method or of an engine or global function (`Array(...)` and `Dictionary(...)` give an untyped one), or a
+name the file declares. A name's class comes from its declaration: its type (`var x: Foo`, a parameter, `for x:
+Foo in`, `Array[Foo]`, `Dictionary[K, V]`), or what `:=` infers from (`Foo.new()`, `as Foo`, a chain, a literal, a
+constructor such as `Vector2(...)`, an arithmetic or logical expression, which GDScript never overloads, so its
+value is never a class under `src/`), or what an untyped `for` iterates (a typed array's element, a typed
+dictionary's key); one type for the name in its top-level block (a func, a var, an inner class), a name typed two
+ways there taking the declaration in scope on the line (by line and indent) and being unknown where none or two
+disagree. A name the block never declares is a field of the file's own class or an ancestor, and so is one that
+shadows such a field on a line no declaration of it reaches (after a `for` over it, before a later `var`).
+Each step after the head is a field's declared type, a method's declared `-> Type`, an array or dictionary element,
+or for a receiver that is not a class under `src/` an engine property (an engine class) or an engine call (an
+engine class, unless it is one that returns a Variant: `get()`, `call()`, `back()` and the like, the element type
+on a typed array or dictionary). A type that names no class under `src/` and is not `Variant` is told as not one:
 the receiver is known, and no read.
 
 **The opt-out line, and a converted file.** `project.godot` makes the engine fail an access it cannot type
 (`untyped_declaration`, `unsafe_property_access`, `unsafe_method_access` are errors), and a `.gd` file not yet
-typed opts out with one line at its top, `@warning_ignore_start("untyped_declaration", ...)`, naming the warnings
-it still trips. The files carrying that line are the list of files not yet converted, which only shrinks; nothing
-else records it. The engine cannot see one kind of access: a property read on a value it types as `Variant` (an
-element of an untyped array or dictionary, a call that returns a Variant, a name declared `: Variant`) warns of
-nothing. So in a file under `src/` **without** the line this check fails every `.name` use, where the name is a
-var some class declares, whose receiver's class it cannot tell, naming the file, the line and the expression: the
-fix is a typed name to read through. In a file **with** the line such a use is skipped, never listed and never
-failed, and `--summary` counts them. The line is the file's first line, names only those three warnings, each
-once; any other `@warning_ignore` of one of them, anywhere in a file, fails, since a converted file would hide an
-untyped access behind it. Every `.gd` file outside `docs/` is read for the line (`src/`, `tests/`, `tools/`: the
-setting reaches every script the engine parses in this project); only `src/` is read for reads.
+typed opts out with one line at its top naming the warnings it still trips. The files carrying that line are the
+list of files not yet converted, which only shrinks; nothing else records it. The engine cannot see two kinds of
+access. A property read on a value it types as `Variant` (an element of an untyped array or dictionary, a call that
+returns a Variant, a name declared `: Variant`) warns of nothing, and neither does a method named without its
+parentheses, on any receiver: `thing.hard_fail` is a reference to the function, always true. So in a file under
+`src/` **without** the line this check fails, naming the file, the line and the expression:
+
+- a `.name` use whose receiver's class it cannot tell, where the name is a var some class under `src/` declares, or
+  a method one declares that no class declares as a var, a signal, a constant or an enum and that no engine class
+  has as a property (`ENGINE_PROPERTIES`): the fix is a typed name to read through;
+- a method of the receiver's known class (or an ancestor) named without its parentheses, unless it hands a
+  Callable on: a step follows it (`.bind(`, `.call(`), or it is an argument, an array element, the right side of
+  an assignment, a returned value or a ternary's branch. A condition or an operand is the mistake.
+
+In a file **with** the line such a use is skipped, never listed and never failed, and `--summary` counts the
+skipped uses of a var's name.
+
+**The line has one form**, the file's whole first line, `@warning_ignore_start("untyped_declaration",
+"unsafe_method_access")`: double-quoted names separated by `, `, only those three warnings, each once, in that
+order, nothing after it. The engine honours other forms (a trailing comment, a space before the parenthesis, a line
+break or a comment inside it, single quotes, the annotation lower in the file), so every `@warning_ignore`,
+`@warning_ignore_start` and `@warning_ignore_restore` in a file's code is read whole, and any but that line that
+names one of the three, or has an argument the check cannot read (a constant), fails with the line in its one
+form: an ignore the check cannot see would let the list grow unnoticed, and a converted file would hide an
+untyped access behind it. A failure for a file that would need the line says what to write instead: a suite the
+typed runner header, `func run(t: TestRunner) -> void:`, anything else a typed declaration or a typed name. Every
+`.gd` file outside `docs/` is read for the line (`src/`, `tests/`, `tools/`: the setting reaches every script the
+engine parses in this project); only `src/` is read for reads.
 
 **Blind spots, stated.** A chain through an engine property typed `Variant` (`JSON.data`) or through an inner
 class's field is told as an engine value, so a read behind it is not seen; a read of another file's inner class's
-field is not listed; a type is a whole-block fact, not a per-line one. A second read of a field a file already
-reads is not a new line, so a change that adds one to a listed reader file and field passes `--base`: review reads
-the diff for it. Tests are not read for reads (that is `tests-one-module.md`'s item). Whether a line still names
-only warnings its file trips is the engine's to show, not this check's: deleting a name the file still trips fails
-the boot.
+field is not listed; a bare name nothing declares is taken for an engine property of the file's own class. A
+method named without its parentheses is not seen on a receiver told as an engine value, nor as a bare name of the
+file's own class with no receiver (`if is_ready:`). A second read of a field a file already reads is not a new
+line, so a change that adds one to a listed reader file and field passes `--base`: review reads the diff for it.
+Tests are not read for reads (that is `tests-one-module.md`'s item). Whether a line still names only warnings its
+file trips is the engine's to show, not this check's: deleting a name the file still trips fails the boot, and a
+stale name left in is caught by nothing.
 
 **The list.** A header comment `# [ClassName] path` opens a class's group; a line under it is `<reader file> <field>`.
 A read not listed **fails**. A listed line with no read now **fails** as a `REMOVE` line, so the pull request that
@@ -79,7 +101,7 @@ import argparse
 import re
 import sys
 from collections import Counter
-from collections.abc import Callable, Iterator, Mapping
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -105,8 +127,17 @@ LIST_HEADER = """\
 
 # The warnings project.godot makes errors, which the opt-out line may name, in the order the line names them.
 WARNINGS = ("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
-OPT_OUT = re.compile(r"^@warning_ignore_start\((.*)\)[ \t]*$")
-ANY_IGNORE = re.compile(r"^[ \t]*@warning_ignore(?:_start|_restore)?\b[^\n]*$", re.MULTILINE)
+# The opt-out line's one form: the whole first line, double-quoted names separated by ", ", nothing after it.
+OPT_OUT = re.compile(r'^@warning_ignore_start\(((?:"\w+")(?:, "\w+")*)?\)$')
+# Every warning annotation the engine reads, found in code with its comments and strings blanked.
+ANY_IGNORE = re.compile(r"@warning_ignore(?:_start|_restore)?\b")
+# A string literal as an annotation's argument: double or single quotes, a StringName's `&` or a raw string's `r`.
+NAME_LITERAL = re.compile(r"""^[&r]?(?:"([^"\\\n]*)"|'([^'\\\n]*)')$""")
+EXAMPLE_LINE = '@warning_ignore_start("untyped_declaration", "unsafe_method_access")'
+# What a builder writes instead of the opt-out line: a suite's typed header, or a typed name.
+SUITE_HEADER = "func run(t: TestRunner) -> void:"
+SUITE_SECTION = 'writing-tests, "A suite is typed, and opens with the typed runner header"'
+TYPED_NAME = "`var x: Class = ...`, `for x: Class in`, `as Class`"
 # Folders not read for the line: the frozen evidence under docs/ is rerun from the revision it names.
 LINE_SKIPPED = ("docs",)
 
@@ -285,6 +316,42 @@ VARIANT_CALLS = frozenset(
 )
 # On a typed array these return its element; on a typed dictionary, `get` and `get_or_add` its value.
 ELEMENT_CALLS = frozenset({"back", "front", "pick_random", "pop_back", "pop_front", "pop_at", "get", "min", "max"})
+# The names an engine class declares as a property or a signal in Godot 4.7.2 (ClassDB.class_get_property_list
+# and class_get_signal_list) that a method under src/ also has. On a receiver whose class cannot be told such a
+# name is as likely the engine's property as the project's method, so it is not taken for a method read without
+# its parentheses. A method added under src/ with another such name is taken for one, and the fix, a typed name to
+# read through, is right either way.
+ENGINE_PROPERTIES = frozenset(
+    {
+        "_source",
+        "columns",
+        "content_scale_size",
+        "depth",
+        "direction",
+        "enabled",
+        "environment",
+        "frames",
+        "grow",
+        "layers",
+        "offsets",
+        "pose",
+        "region",
+        "region_rect",
+        "release",
+        "reset",
+        "scale",
+        "sections",
+        "segments",
+        "start_position",
+        "velocity",
+    }
+)
+SIGNAL = re.compile(r"^signal[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
+CONSTANT = re.compile(r"^(?:static[ \t]+)?(?:const|enum)[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
+# What may stand before a method reference that hands a Callable on, and what may follow it: an argument or an
+# array element, the right side of an assignment, a returned value, a ternary's branch.
+HANDED_BEFORE = re.compile(r"(?:^|[(\[,]|(?<![=!<>:])=|:=|\breturn|\belse)[ \t]*$")
+HANDED_AFTER = re.compile(r"^[ \t]*(?:$|[)\],]|if\b)")
 
 
 class FieldReadsError(Exception):
@@ -314,13 +381,21 @@ class Read:
     count: int = 1
 
 
+UNKNOWN_VAR = "var"
+UNKNOWN_METHOD = "method"
+REFERENCE = "reference"
+
+
 @dataclass(frozen=True)
 class Unknown:
-    """A `.name` use in a file without the opt-out line whose receiver's class cannot be told."""
+    """A `.name` use in a file without the opt-out line that fails: a receiver whose class cannot be told, where
+    `name` is a var (UNKNOWN_VAR) or a method (UNKNOWN_METHOD) some class under `src/` declares; or a method of the
+    receiver's known class read without its parentheses where no Callable is handed on (REFERENCE)."""
 
     reader: str
     line: int
     expression: str
+    kind: str = UNKNOWN_VAR
 
 
 @dataclass(frozen=True)
@@ -353,32 +428,102 @@ class OptOut:
 
 
 def opt_out_of(text: str) -> OptOut | None:
-    """The opt-out line at the top of a file, or None where its first line is none."""
+    """The opt-out line at the top of a file, or None where its first line is not one in the line's one form."""
     first = text.split("\n", 1)[0].rstrip("\r")
     match = OPT_OUT.match(first)
     if not match:
         return None
     names: list[str] = []
-    for raw in match.group(1).split(","):
-        word = raw.strip()
-        if not (len(word) >= 2 and word[0] == word[-1] == '"'):
-            return OptOut(tuple(names), f"{word!r} is not a string literal")
+    body = match.group(1)
+    for word in body.split(", ") if body else []:
         name = word[1:-1]
         if name not in WARNINGS:
             return OptOut(tuple(names), f'"{name}" is not one of {", ".join(WARNINGS)}')
         if name in names:
             return OptOut(tuple(names), f'"{name}" is named twice')
         names.append(name)
+    if names != sorted(names, key=WARNINGS.index):
+        return OptOut(tuple(names), f"it names its warnings out of the order {', '.join(WARNINGS)}")
     return OptOut(tuple(names))
 
 
-def stray_ignores(text: str) -> list[int]:
-    """The lines, after the first, carrying a `@warning_ignore` of one of the warnings the opt-out line names."""
-    out: list[int] = []
-    for match in ANY_IGNORE.finditer(text):
-        number = text.count("\n", 0, match.start()) + 1
-        if number > 1 and any(f'"{name}"' in match.group(0) for name in WARNINGS):
-            out.append(number)
+def canonical_line(names: Iterable[str]) -> str:
+    """The opt-out line naming `names`, in its one form; the example line where it names none of the three."""
+    wanted = set(names)
+    ordered = [w for w in WARNINGS if w in wanted]
+    return "@warning_ignore_start(" + ", ".join(f'"{w}"' for w in ordered) + ")" if ordered else EXAMPLE_LINE
+
+
+@dataclass(frozen=True)
+class Ignore:
+    """A warning annotation in a file: its line, its offset, the warnings it names in literals, and whether an
+    argument is something other than a literal (a name the check cannot read, so possibly one of the three)."""
+
+    line: int
+    offset: int
+    names: tuple[str, ...]
+    unreadable: bool
+
+
+def annotation_arguments(text: str) -> tuple[tuple[str, ...], bool]:
+    """The names an annotation's argument list (the text inside its parentheses) gives as string literals, and
+    whether any argument is not one. A comment inside the list is skipped, as the engine skips it."""
+    parts: list[str] = []
+    current: list[str] = []
+    index = 0
+    while index < len(text):
+        char = text[index]
+        if char == "#":
+            while index < len(text) and text[index] != "\n":
+                index += 1
+            continue
+        if char in "\"'":
+            end = index + 1
+            while end < len(text) and text[end] not in (char, "\n"):
+                end += 2 if text[end] == "\\" else 1
+            current.append(text[index : end + 1])
+            index = end + 1
+            continue
+        if char == ",":
+            parts.append("".join(current))
+            current = []
+        else:
+            current.append(char)
+        index += 1
+    parts.append("".join(current))
+    names: list[str] = []
+    unreadable = False
+    for part in parts:
+        word = re.sub(r"\s+", "", part)
+        if not word:
+            continue
+        literal = NAME_LITERAL.match(word)
+        if literal:
+            names.append(literal.group(1) if literal.group(1) is not None else literal.group(2))
+        else:
+            unreadable = True
+    return tuple(names), unreadable
+
+
+def ignores_of(text: str) -> list[Ignore]:
+    """Every `@warning_ignore`, `@warning_ignore_start` and `@warning_ignore_restore` in the file's code (not in a
+    comment or a string), read whole: a space before the parenthesis, line breaks and comments inside it, either
+    quote style. An annotation whose parenthesis never closes is unreadable."""
+    bare = check_layers.blank(text).bare
+    out: list[Ignore] = []
+    for match in ANY_IGNORE.finditer(bare):
+        at = match.end()
+        while at < len(bare) and bare[at] in " \t":
+            at += 1
+        names: tuple[str, ...] = ()
+        unreadable = False
+        if at < len(bare) and bare[at] == "(":
+            close = close_of(bare, at)
+            if close < 0:
+                unreadable = True
+            else:
+                names, unreadable = annotation_arguments(text[at + 1 : close])
+        out.append(Ignore(bare.count("\n", 0, match.start()) + 1, match.start(), names, unreadable))
     return out
 
 
@@ -597,13 +742,20 @@ class Decl:
 
 
 class Scope(Mapping[str, str]):
-    """The names a block declares, as seen from one line of it: a name's kind, empty where it is not known there."""
+    """The names a block declares, as seen from one line of it: a name's kind, empty where it is not known there. A
+    name that shadows a member of the file's class, on a line no declaration of it reaches (after a `for` over it,
+    before a later `var`), is not in the scope there, so the member is read."""
 
     def __init__(self, tree: Tree, path: str, index: int, line: int) -> None:
         self.tree, self.path, self.index, self.line = tree, path, index, line
 
     def __getitem__(self, name: str) -> str:
-        if name not in self.tree.decls[self.path][self.index]:
+        decls = self.tree.decls[self.path][self.index].get(name)
+        if not decls:
+            raise KeyError(name)
+        if self.tree.member_field_type(self.path, name)[0] and not any(
+            self.tree.visible(self.path, d, self.line) for d in decls
+        ):
             raise KeyError(name)
         return self.tree.kind_at(self.path, self.index, name, self.line)
 
@@ -899,6 +1051,11 @@ class Tree:
         elif kind_of_head == "call":
             if word in ("preload", "load"):
                 current = UNTRACKED
+            elif word == "Array":
+                # The constructor gives an untyped array: its element is a Variant.
+                current = ARRAY
+            elif word == "Dictionary":
+                current = DICT + SEP
             else:
                 has, returned = self.method_return(own, word)
                 if has:
@@ -916,6 +1073,9 @@ class Tree:
     def first_class(self, word: str, own: str, declared: Mapping[str, str], inner: bool) -> str | None:
         if word == "self":
             return UNTRACKED if inner else (own if own in self.classes else UNTRACKED)
+        # An inner class of the file, named bare (`In.new()`), as `annotation` resolves it, ahead of a global class.
+        if word[0].isupper() and f"{own.split(INNER)[0]}{INNER}{word}" in self.files:
+            return f"{own.split(INNER)[0]}{INNER}{word}"
         if word in self.by_name:
             return self.by_name[word]
         if word in declared:
@@ -1016,36 +1176,70 @@ def inner_lines(bare: str) -> list[bool]:
     return flags
 
 
+def method_names_of(tree: Tree) -> set[str]:
+    """The names some class under `src/` declares as a method and none declares as a var, a signal, a constant or
+    an enum, less the engine's property names (ENGINE_PROPERTIES): on a receiver whose class cannot be told, such a
+    name read without its parentheses can only be that method, as a reference to the function."""
+    methods = {name for klass in tree.files.values() for name in klass.methods}
+    others = {name for klass in tree.files.values() for name in klass.fields}
+    for bare in tree.bare.values():
+        others.update(SIGNAL.findall(bare), CONSTANT.findall(bare))
+    for bare in tree.inner_bare.values():
+        others.update(SIGNAL.findall(bare), CONSTANT.findall(bare))
+    return methods - others - ENGINE_PROPERTIES
+
+
+def hands_on(line: str, start: int, end: int) -> bool:
+    """Whether the method reference spanning `start` to `end` of `line` hands a Callable on: a step follows it
+    (`.bind(`, `.call(`), or it is an argument, an array element, the right side of an assignment, a returned value
+    or a ternary's branch. Anything else, a condition or an operand above all, is a function where a value was
+    meant: always true."""
+    after = line[end:]
+    if after.lstrip(" \t").startswith("."):
+        return True
+    return bool(HANDED_BEFORE.search(line[:start]) and HANDED_AFTER.match(after))
+
+
 def reads_of(tree: Tree) -> Found:
     reads: dict[tuple[str, str, str, str], Read] = {}
     unknown: list[Unknown] = []
     skipped = 0
     declared_names = {name for klass in tree.classes.values() for name in klass.fields}
+    method_names = method_names_of(tree)
     for path in sorted(tree.bare):
         own = path
         lines = tree.bare[path].split("\n")
         owner_block = block_index(tree.bare[path])
         inner = inner_lines(tree.bare[path])
+        converted = path not in tree.opted_out
         for index, line in enumerate(lines):
             if "." not in line:
                 continue
             for match in USE.finditer(line):
                 name, call = match.group(1), match.group(2)
-                if name not in declared_names:
-                    continue
-                if call:
+                is_var = name in declared_names
+                if call or not (is_var or (converted and name in method_names)):
                     continue
                 declared = Scope(tree, path, owner_block[index], index)
                 receiver = receiver_text(line, match.start())
                 klass = tree.chain_class(receiver, own, declared, inner[index]) if receiver else None
+                expression = re.sub(r"\s+", " ", f"{(receiver or '').strip() or '...'}.{name}")
                 if klass is None:
-                    if path in tree.opted_out:
+                    if not converted:
                         skipped += 1
                     else:
-                        expression = f"{(receiver or '').strip() or '...'}.{name}"
-                        unknown.append(Unknown(path, index + 1, re.sub(r"\s+", " ", expression)))
+                        unknown.append(Unknown(path, index + 1, expression, UNKNOWN_VAR if is_var else UNKNOWN_METHOD))
                     continue
-                if klass not in tree.classes:
+                if (
+                    converted
+                    and klass in tree.files
+                    and tree.method_return(klass, name)[0]
+                    and not tree.member_field_type(klass, name)[0]
+                    and not hands_on(line, len(line[: match.start()].rstrip(" \t")) - len(receiver or ""), match.end())
+                ):
+                    unknown.append(Unknown(path, index + 1, expression, REFERENCE))
+                    continue
+                if not is_var or klass not in tree.classes:
                     continue
                 owner = tree.declaring(klass, name)
                 if owner is None or tree.related(klass, own) or owner == own or owner in tree.ancestors(own):
@@ -1115,11 +1309,7 @@ def failures_of(found: Found, entries: list[Entry]) -> list[str]:
         for r in found.reads
         if (r.klass, r.reader, r.name) not in listed
     ]
-    failures.extend(
-        f"{u.reader}:{u.line}: cannot tell the class of the receiver in `{u.expression}`, in a file without the"
-        f" opt-out line; read it through a typed name (`var x: Class = ...`, `for x: Class in`, `as Class`)"
-        for u in found.unknown
-    )
+    failures.extend(unknown_failure(u) for u in found.unknown)
     failures.extend(
         f"REMOVE from {LIST_PATH}: {e.path} {e.name} (no longer reads {e.klass}.{e.name})"
         for e in entries
@@ -1128,20 +1318,60 @@ def failures_of(found: Found, entries: list[Entry]) -> list[str]:
     return failures
 
 
+def unknown_failure(u: Unknown) -> str:
+    """The failure line for a use `reads_of` could not let stand in a file without the opt-out line."""
+    where = f"{u.reader}:{u.line}"
+    if u.kind == REFERENCE:
+        return (
+            f"{where}: `{u.expression}` names a method without its parentheses: a method read without its"
+            " parentheses is a reference to the function, always true; call it with `()`, or hand the Callable on"
+            " as an argument, an assignment or a returned value"
+        )
+    if u.kind == UNKNOWN_METHOD:
+        return (
+            f"{where}: cannot tell the class of the receiver in `{u.expression}`, in a file without the opt-out line,"
+            " and a class under src/ declares that name as a method: a method read without its parentheses is a"
+            " reference to the function, always true; call it with `()`, or read the receiver through a typed name"
+            f" ({TYPED_NAME})"
+        )
+    return (
+        f"{where}: cannot tell the class of the receiver in `{u.expression}`, in a file without the opt-out line;"
+        f" type the declaration, or read the value through a typed name ({TYPED_NAME})"
+    )
+
+
 def line_failures(files: dict[str, str]) -> list[str]:
-    """A malformed opt-out line, and a `@warning_ignore` of one of its warnings anywhere but the first line."""
+    """A malformed opt-out line, and any other warning annotation that names, or may name, one of its warnings: the
+    line has one form, so every ignore the engine honours is one the check reads."""
     out: list[str] = []
     for path in sorted(files):
-        opt_out = opt_out_of(files[path])
+        text = files[path]
+        opt_out = opt_out_of(text)
         if opt_out is not None and opt_out.problem:
-            out.append(f"{path}:1: the opt-out line is malformed: {opt_out.problem}")
+            out.append(
+                f"{path}:1: the opt-out line is malformed: {opt_out.problem}; its one form is"
+                f" `{canonical_line(opt_out.warnings)}`"
+            )
         elif opt_out is not None and not opt_out.warnings:
             out.append(f"{path}:1: the opt-out line names no warning; delete it")
-        out.extend(
-            f"{path}:{number}: ignores one of {', '.join(WARNINGS)} below the first line; only the opt-out line at"
-            " the top of a file not yet typed may name them"
-            for number in stray_ignores(files[path])
-        )
+        for ignore in ignores_of(text):
+            if ignore.offset == 0 and opt_out is not None:
+                continue
+            named = [w for w in WARNINGS if w in ignore.names]
+            if not named and not ignore.unreadable:
+                continue
+            what = ", ".join(named) if named else f"an argument the check cannot read (possibly {WARNINGS[0]}, ...)"
+            if ignore.line == 1:
+                out.append(
+                    f"{path}:1: ignores {what} in a form other than the opt-out line's one form; write the whole"
+                    f" first line as `{canonical_line(named)}`, in double quotes with nothing after it"
+                )
+            else:
+                out.append(
+                    f"{path}:{ignore.line}: ignores {what} below the first line; the only ignore of"
+                    f" {', '.join(WARNINGS)} is the opt-out line, a file's whole first line in one form"
+                    f" (`{canonical_line(named)}`), on a file not yet typed"
+                )
     return out
 
 
@@ -1167,14 +1397,27 @@ def base_line_failures(
         before = base.get(moved_from.get(path, path))
         if before is None:
             out.append(
-                f"{path}:1: gains the opt-out line, and the files carrying it only shrink; type what the engine"
-                " reports instead"
+                f"{path}:1: gains the opt-out line, and the files carrying it only shrink; {what_to_write(path)}"
             )
             continue
         added = [w for w in now[path] if w not in before]
         if added:
-            out.append(f"{path}:1: the opt-out line gains {', '.join(added)}, and it only shrinks")
+            out.append(
+                f"{path}:1: the opt-out line gains {', '.join(added)}, and it only shrinks; {what_to_write(path)}"
+            )
     return out
+
+
+def what_to_write(path: str) -> str:
+    """What a file that would need the opt-out line is given instead: a suite its typed header, anything else a
+    typed declaration or a typed name to read through."""
+    typed = f"type the declaration, or read the value through a typed name ({TYPED_NAME})"
+    if path.startswith("tests/"):
+        return (
+            f"a suite takes the runner typed, `{SUITE_HEADER}`, as does every function it hands the runner to"
+            f" ({SUITE_SECTION}); otherwise {typed}"
+        )
+    return typed
 
 
 def base_failures(
@@ -1314,13 +1557,20 @@ def parse(argv: list[str]) -> argparse.Namespace:
         description=(
             "Fails when code under src/ reads or writes a var that another class under src/ declares, unless"
             " tools/field_reads.txt lists the reader file and field, and fails on a listed line whose read is gone."
-            " A .gd file not yet typed carries one opt-out line at its top,"
+            " A .gd file not yet typed carries one opt-out line, its whole first line in one form,"
             ' @warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")'
-            " naming those of the three warnings project.godot makes errors that it still trips. In a file under"
-            " src/ without that line, a receiver whose class cannot be told by static reading fails, naming the"
-            " file, the line and the expression; in a file with it, such a receiver is skipped. A malformed line,"
-            " or one of the three warnings ignored anywhere but a file's first line, fails. The list and the files"
-            " carrying the line only shrink."
+            " naming in that order those of the three warnings project.godot makes errors that it still trips. In"
+            " a file under src/ without that line, a use .name fails, naming the file, the line and the expression,"
+            " where the receiver's class cannot be told by static reading and the name is a var some class under"
+            " src/ declares, or a method one declares (not also a var, a signal, a constant or an engine"
+            " property); and so does a method of the receiver's known class named without its parentheses, a"
+            " reference to the function and always true, unless it hands the Callable on (followed by a step such"
+            " as .bind(, or an argument, an array element, an assignment's right side, a returned value or a"
+            " ternary's branch). In a file with the line, a receiver whose class cannot be told is skipped. A"
+            " malformed line, and any other @warning_ignore, @warning_ignore_start or @warning_ignore_restore in"
+            " any .gd file outside docs/ that names one of the three or whose argument cannot be read, fails. The"
+            " list and the files carrying the line only shrink; a file that would need the line is told what to"
+            " write instead (a suite: func run(t: TestRunner) -> void:)."
         ),
         epilog=(
             "Examples:\n  uv run python tools/check_field_reads.py\n"

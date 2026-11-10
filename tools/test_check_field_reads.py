@@ -206,12 +206,72 @@ class ReadTests(unittest.TestCase):
         }
         self.assertEqual(found(src, {"Bus": "src/autoload/bus.gd"}), {("Bus", "src/reader.gd", "volume")})
 
+    def test_an_inner_class_built_by_its_bare_name_is_that_class(self) -> None:
+        body = "class In:\n\tvar o: Thing\nfunc f() -> int:\n\tvar i := In.new()\n\treturn i.o.count\n"
+        self.assertEqual(found(reader(body)), {("Thing", "src/reader.gd", "count")})
+        body = "class In:\n\tvar o: Thing\nvar i := In.new()\nfunc f() -> int:\n\treturn i.o.count\n"
+        self.assertEqual(found(reader(body)), {("Thing", "src/reader.gd", "count")})
+
+    def test_a_local_shadowing_a_member_is_the_member_where_no_declaration_reaches(self) -> None:
+        after_loop = (
+            "var item: Thing\nfunc f(pts: Array[Vector2]) -> int:\n\tfor item: Vector2 in pts:\n\t\tpass\n"
+            "\treturn item.count\n"
+        )
+        self.assertEqual(found(reader(after_loop)), {("Thing", "src/reader.gd", "count")})
+        before_var = "var item: Thing\nfunc g() -> int:\n\tvar n := item.count\n\tvar item: Vector2\n\treturn n\n"
+        self.assertEqual(found(reader(before_var)), {("Thing", "src/reader.gd", "count")})
+        inside = (
+            "var item: Thing\nfunc h(pts: Array[Vector2]) -> void:\n\tfor item: Vector2 in pts:\n\t\tprint(item.x)\n"
+        )
+        self.assertEqual((found(reader(inside)), unknown(reader(inside))), (set(), []))
+
+    def test_the_array_constructor_gives_an_untyped_array(self) -> None:
+        body = "func a(items: Array[Thing]) -> int:\n\treturn Array(items)[0].count\n"
+        self.assertEqual(unknown(reader(body)), [(4, "Array(items)[0].count")])
+
     def test_a_static_var_read_through_the_class_name(self) -> None:
         src = {
             "src/c.gd": "class_name Cache\nstatic var shared := 1\n",
             "src/r.gd": "extends Node\nfunc f() -> int:\n\treturn Cache.shared\n",
         }
         self.assertEqual(found(src), {("Cache", "src/r.gd", "shared")})
+
+
+class MethodReferenceTests(unittest.TestCase):
+    def kinds(self, src: dict[str, str]) -> list[tuple[int, str, str]]:
+        return [(u.line, u.expression, u.kind) for u in reads.reads_of(reads.Tree(src, {})).unknown]
+
+    def test_a_method_of_an_unknown_receiver_read_without_parentheses_fails_in_a_converted_file(self) -> None:
+        body = "func a(items: Array) -> bool:\n\treturn items[0].make\n"
+        self.assertEqual(self.kinds(reader(body)), [(4, "items[0].make", reads.UNKNOWN_METHOD)])
+        self.assertEqual(self.kinds(reader(body, LINE + "class_name Reader\nextends Node\n")), [])
+        failure = reads.failures_of(reads.reads_of(reads.Tree(reader(body), {})), [])[0]
+        self.assertIn("a reference to the function, always true", failure)
+
+    def test_a_known_receivers_method_without_parentheses_fails_where_no_callable_is_handed_on(self) -> None:
+        body = (
+            "var t: Thing\nfunc f() -> Callable:\n\tif t.make:\n\t\tpass\n\tvar ok := not t.make\n"
+            "\tvar cb := t.make\n\tg(t.make, 1)\n\tvar bound := t.make.bind(1)\n\tvar xs := [t.make]\n"
+            "\treturn t.make if t else Callable()\nfunc g(c: Callable, n: int) -> void:\n\tpass\n"
+        )
+        self.assertEqual(
+            self.kinds(reader(body)),
+            [(5, "t.make", reads.REFERENCE), (7, "t.make", reads.REFERENCE)],
+        )
+        self.assertEqual(self.kinds(reader(body, LINE + "class_name Reader\nextends Node\n")), [])
+
+    def test_a_name_that_is_also_a_var_a_signal_a_constant_or_an_engine_property_is_not_taken_for_a_method(
+        self,
+    ) -> None:
+        other = (
+            "class_name Other\nextends RefCounted\nvar make := 0\nsignal go\nconst LIMIT := 1\nfunc woke() -> void:"
+            "\n\tpass\nfunc scale() -> float:\n\treturn 1.0\n"
+        )
+        body = "func a(items: Array) -> void:\n\tprint(items[0].scale)\n\titems[0].woke.connect(a)\n"
+        src = reader(body) | {"src/other.gd": other}
+        self.assertEqual(self.kinds(src), [])
+        body = "func a(items: Array) -> void:\n\tprint(items[0].go)\n"
+        self.assertEqual(self.kinds(reader(body) | {"src/other.gd": other}), [])
 
 
 class OptOutTests(unittest.TestCase):
@@ -235,6 +295,59 @@ class OptOutTests(unittest.TestCase):
             [f.split(":", 2)[0] + ":" + f.split(":", 2)[1] for f in failing],
             ["src/a.gd:1", "src/b.gd:1", "src/c.gd:1", "src/d.gd:1", "src/e.gd:3", "src/f.gd:2"],
         )
+
+    def test_every_form_of_ignore_the_engine_honours_is_read_and_fails_outside_the_one_form(self) -> None:
+        files = {
+            "src/a.gd": '@warning_ignore_start("untyped_declaration") # later\nvar t = 3\n',
+            "src/b.gd": '@warning_ignore_start ("untyped_declaration")\nvar t = 3\n',
+            "src/c.gd": '@warning_ignore_start(\n\t"untyped_declaration")\nvar t = 3\n',
+            "src/d.gd": "extends Node\nfunc f() -> void:\n\t@warning_ignore('untyped_declaration')\n\tvar t = 3\n",
+            "src/e.gd": (
+                'extends Node\nfunc f() -> void:\n\t@warning_ignore(\n\t\t"untyped_declaration")\n\tvar t = 3\n'
+            ),
+            "src/f.gd": '@warning_ignore_start("unsafe_method_access", "untyped_declaration")\n',
+            "src/g.gd": 'extends Node\nconst W := "untyped_declaration"\n@warning_ignore_start(W)\n',
+            "src/h.gd": 'extends Node\n@warning_ignore_restore("unsafe_method_access") # a comment\n',
+            "src/ok.gd": (
+                '# @warning_ignore("untyped_declaration")\nextends Node\n'
+                'var s := "@warning_ignore(\\"untyped_declaration\\")"\n@warning_ignore("unused_variable")\n'
+            ),
+        }
+        failing = reads.line_failures(files)
+        self.assertEqual(
+            [":".join(f.split(":", 2)[:2]) for f in failing],
+            [
+                "src/a.gd:1",
+                "src/b.gd:1",
+                "src/c.gd:1",
+                "src/d.gd:3",
+                "src/e.gd:3",
+                "src/f.gd:1",
+                "src/g.gd:3",
+                "src/h.gd:2",
+            ],
+        )
+        self.assertIn('`@warning_ignore_start("untyped_declaration")`', failing[0])
+        self.assertIn("out of the order", failing[5])
+        self.assertIn("cannot read", failing[6])
+        self.assertIsNone(reads.opt_out_of(files["src/a.gd"]))
+
+    def test_an_opt_out_line_naming_nothing_is_told_to_go(self) -> None:
+        self.assertEqual(
+            reads.line_failures({"src/d.gd": "@warning_ignore_start()\n"}),
+            ["src/d.gd:1: the opt-out line names no warning; delete it"],
+        )
+
+    def test_a_file_that_gains_the_line_is_told_what_to_write_instead(self) -> None:
+        now: dict[str, tuple[str, ...]] = {
+            "tests/test_new.gd": ("untyped_declaration",),
+            "src/new.gd": ("untyped_declaration",),
+        }
+        failing = reads.base_line_failures(now, {}, {}, False)
+        self.assertIn("type the declaration, or read the value through a typed name", failing[0])
+        self.assertNotIn("TestRunner", failing[0])
+        self.assertIn("`func run(t: TestRunner) -> void:`", failing[1])
+        self.assertIn('"A suite is typed, and opens with the typed runner header"', failing[1])
 
     def test_against_the_base_a_file_gaining_the_line_or_a_warning_fails(self) -> None:
         base = {"src/a.gd": ("untyped_declaration",), "src/old.gd": ("untyped_declaration",), "src/gone.gd": ()}
