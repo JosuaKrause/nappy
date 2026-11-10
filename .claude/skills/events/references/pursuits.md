@@ -40,9 +40,10 @@ on, and verifying escape with the actual Baby meter.
   band would send its guards off with no lure. Behind a wall at that moment it goes on warning until the line
   clears. A late notice, at an alley mouth, is answered by the warning: she has its whole length to
   leave. It notices her only with its warning picture in the camera's view
-  (`EventInstance._would_stand_in_her_view()`, the view `EventManager` hands it as `player_view`);
-  an instance stepped directly with no view handed to it gets the radius alone, so a test of the
-  view hands it one (`tests/escape_roadblock_rig.gd`, `view_round()`). **The masked man is the one
+  (`EventInstance._would_stand_in_her_view()`, the view `EventManager` tells it in
+  `WhereSheIs.view()`); an instance stepped directly with no view told to it gets the radius
+  alone, so a test of the view tells it one (`WhereSheIs.tell()`; `tests/escape_roadblock_rig.gd`,
+  `view_round()`). **The masked man is the one
   exception**: he runs a line rather than pursuing, so neither his notice nor his run asks the
   clear line, his notice asks no view, and he runs the moment she comes within his
   `NoticeSpec.runs_within` from outside it, with no warning clock; one who noticed her already
