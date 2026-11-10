@@ -772,6 +772,19 @@ class ListTests(unittest.TestCase):
         )
         self.assertEqual(len(got), 1)
 
+    def test_the_base_tree_is_not_read_when_no_added_line_needs_it(self) -> None:
+        def boom() -> reads.Tree:
+            raise AssertionError("the base's tree was read")
+
+        src = {"src/thing.gd": THING, "src/a.gd": rd("RA")}
+        head = reads.Tree(src, {})
+        listed = reads.entries_of("# [Thing] x\nsrc/a.gd count\n")
+        # no added line
+        self.assertEqual(reads.base_failures(listed, listed, {}, False, head, boom), [])
+        # an added line paired by a rename
+        moved = reads.entries_of("# [Thing] x\nsrc/b.gd count\n")
+        self.assertEqual(reads.base_failures(moved, listed, {"src/a.gd": "src/b.gd"}, False, head, boom), [])
+
 
 class EndToEndTests(unittest.TestCase):
     def setUp(self) -> None:

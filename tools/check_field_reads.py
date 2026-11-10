@@ -112,7 +112,10 @@ unless the same diff changes this checker (a better checker sees reads the old o
    declared and the tree no longer declares, and that inner class declared the field (an inner class lifted into a
    file of its own). A lift that drops a var fails. Nothing is counted there: `REV` could not see the reads of an
    inner class's field, so a file the lifting diff adds that reads the lifted class passes too, and review reads
-   that diff for a new reader.
+   that diff for a new reader. A new class that declares every var of an inner class leaving the same diff is taken
+   for that class lifted, whatever else it is (with an inner class of one var a single shared name is enough), and
+   one such inner class vouches for each new class that declares its vars: review reads a diff that removes an inner
+   class and adds a class for those lines.
 
 The count in 2 is a net over the files that differ: a use removed from one changed file offsets one added in a new
 file.
@@ -1447,8 +1450,10 @@ def uses_in(tree: Tree, paths: set[str]) -> Counter[tuple[str, str]]:
 def lifted_from_inner(e: Entry, head: Tree, before: Tree, renames: dict[str, str]) -> bool:
     """Whether `e`'s class is an inner class of `before` lifted into a file of its own: the class's file is new since
     `before` (not a file git reports renamed from one), `before` declared the field in an inner class `head` no
-    longer declares, and the new class declares every var of that inner class. A class that only shares one name
-    with a deleted or renamed inner class, or drops one of its vars, is a new class and fails."""
+    longer declares, and the new class declares every var of that inner class. A class that declares only some of the
+    vars of a deleted or renamed inner class is a new class and fails. One that declares them all is taken for that
+    class lifted, whatever else it is (an inner class of one var: a single shared name is enough), and one inner
+    class vouches for each new class that declares its vars; every such line is an added line review reads."""
     path = head.by_name.get(e.klass)
     if path is None or path in before.src or path in renames.values():
         return False
@@ -1477,9 +1482,9 @@ def base_failures(
     2. its reader file is new since the base and the field's uses did not grow: over the files that differ between
        the base and the head, the head's uses of that class's field are no more than the base's (one count per class
        and field, so a file split into several passes);
-    3. its class is a file new since the base, and the base declared the field in an inner class the head no longer
-       declares (an inner class lifted into a file of its own). Nothing is counted there: the base could not see a
-       read of an inner class's field.
+    3. its class is an inner class of the base lifted into a file of its own, which `lifted_from_inner()` states
+       (a new file, not a git rename, declaring every var of an inner class the head no longer declares). Nothing is
+       counted there: the base could not see a read of an inner class's field.
 
     `head` is the head's tree; `before_tree` reads the base's, called only when an added line is neither listed nor
     paired by a rename, since building it costs seconds."""
