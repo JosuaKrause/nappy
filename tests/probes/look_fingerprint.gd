@@ -33,10 +33,24 @@ extends RefCounted
 ## calls of each live event's `look.redraw_if_the_picture_changed()` took, the redraw gate's share
 ## of a frame, for comparing two revisions' cost.
 ##
-## **It asks only what every tree of the looks' step has**: the public methods named above and the
-## members the spawner, streaming and the checkpoint controller write today (`is_pelican`,
-## `silenced`, `gate_state`, `points_at`). A later change which makes one of those members private
-## changes this probe with it.
+## **Which rows:** the catalogue's, each one's full-heat copy (`@heat`) and last-day copy (`@late`)
+## where either differs from the row, so the roadblock's guard who sets off, its far guard and the
+## later-day charging dog are drawn, and the three derived rows a day makes (`out_of_the_car`,
+## `building_fire`, `task_guard_sent`). The far guard's node places itself on the engine's physics
+## tick, which two runs do not share, so the `N` lines leave his place out; his `D` lines are stable.
+## The cost pass stands events of its own, after the fingerprint, so asking the gate changes no line.
+## What no sample separates is a key term alone (`is_waiting()`, `is_chatting()`, `has_stopped_her()`,
+## `is_leaving`): each changes at the same sample as another term.
+##
+## **It asks only what every tree of the looks' step has.** Of `EventInstance`: `setup()`, `step()`,
+## `look`, `hold`, `atlas`, `drawer`, `is_chasing()`, `leave_for_a_completed_task()`,
+## `give_up_the_chase()`, `raise_its_guards_hand()`, `start_chat()`, and the members the spawner,
+## streaming and the checkpoint controller write today (`is_pelican`, `silenced`, `gate_state`,
+## `points_at`). Of the look: `drawn_rect_now()`, `mark_rect()`, `drawn_heading()`, `current_bob()`,
+## `band_node()`, `redraw_if_the_picture_changed()`. Of the rows: `EventDef.id`, `look`, `speed`,
+## `for_day()`, and `EventCatalogue.all()`, `heated()`, `heat_levels()`, `out_of_the_car()`,
+## `building_fire()`, `task_guard_sent()`. A later change which makes one of those private changes
+## this probe with it.
 
 const DrawnEvent := preload("res://tests/drawn_event.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
@@ -70,6 +84,8 @@ const GROUNDS: Array[String] = ["open", "street"]
 ## One event of one drive, and what the probe remembers of it between samples.
 class Rig extends RefCounted:
 	var row: EventDef
+	## The row's name in the output: its id, and which copy of it when it is not the catalogue's.
+	var label := ""
 	var ground := ""
 	var drive := ""
 	var holder: Node2D
@@ -99,11 +115,14 @@ func run(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(EventPictures.ATLAS_GROUP)
 	var seen := Seen.new()
-	for row in EventCatalogue.all():
-		seen.row_draws[row.id] = 0
+	_stand_the_rows()
+	for label in _labels:
+		seen.row_draws[label] = 0
 	for ground in GROUNDS:
 		for drive in DRIVES:
-			await _drive(t, atlas, ground, drive, seen)
+			await _drive(t, atlas, ground, drive, seen, false)
+	# The cost pass stands its own events, so asking the gate leaves the fingerprint as it was.
+	await _drive(t, atlas, "street", "walk", seen, true)
 	atlas.release(EventPictures.ATLAS_GROUP)
 	var empty: Array[String] = []
 	for id: String in seen.row_draws:
@@ -120,21 +139,52 @@ func run(t: TestRunner) -> void:
 	print("LK_TOTAL %d lines" % seen.lines)
 	t.check(seen.lines > 0, "there were pictures to print (%d)" % seen.lines)
 
-## One drive on one ground: every row it applies to stood, stepped through the drive and sampled.
-func _drive(t: TestRunner, atlas: AtlasLibrary, ground: String, drive: String, seen: Seen) -> void:
+## The rows the game stands, each with its name: the catalogue's, each one's full-heat copy
+## (`EventCatalogue.heated()`) and its copy on the last day (`EventDef.for_day()`) where either
+## differs from the row, and the three derived rows a day makes (`out_of_the_car()`,
+## `building_fire()`, `task_guard_sent()`).
+func _stand_the_rows() -> void:
+	var last_day := DaySpec.for_day(Tuning.RUN_LENGTH_DAYS)
+	for row in EventCatalogue.all():
+		_add_a_row(row, row.id)
+		var hot := EventCatalogue.heated(row, EventCatalogue.heat_levels() - 1)
+		if hot != row:
+			_add_a_row(hot, row.id + "@heat")
+		var late := row.for_day(Tuning.RUN_LENGTH_DAYS)
+		if late != row:
+			_add_a_row(late, row.id + "@late")
+	_add_a_row(EventCatalogue.out_of_the_car(last_day), "out_of_the_car")
+	_add_a_row(EventCatalogue.out_of_the_car(last_day, false), "out_of_the_car@hunts")
+	_add_a_row(EventCatalogue.building_fire(), "building_fire")
+	_add_a_row(EventCatalogue.task_guard_sent(), "task_guard_sent")
+
+func _add_a_row(row: EventDef, label: String) -> void:
+	_rows.append(row)
+	_labels.append(label)
+
+var _rows: Array[EventDef] = []
+var _labels: Array[String] = []
+
+## One drive on one ground: every row it applies to stood, stepped through the drive and sampled,
+## or, when `timing`, stepped as far as `COST_AT` without a line printed and then timed.
+func _drive(t: TestRunner, atlas: AtlasLibrary, ground: String, drive: String, seen: Seen,
+		timing: bool) -> void:
 	var where := WhereSheIs.new()
 	var rigs: Array[Rig] = []
-	for row in EventCatalogue.all():
+	for index in _rows.size():
+		var row := _rows[index]
 		if not _applies(row, drive):
 			continue
 		var rig := _stand(t, atlas, where, row, ground, drive)
+		rig.label = _labels[index]
 		if drive == "hold" and rig.instance.hold == null:
 			rig.holder.free()
 			continue
 		rigs.append(rig)
 	await DrawnEvent.frames(t)
 	for rig in rigs:
-		_sample(rig, 0, seen)
+		if not timing:
+			_sample(rig, 0, seen)
 	for tick in range(1, TICKS + 1):
 		var she := _she_at(drive, tick)
 		where.tell(she, Vector2.INF, Rect2(she - Vector2(576.0, 324.0), Vector2(1152.0, 648.0)))
@@ -145,9 +195,11 @@ func _drive(t: TestRunner, atlas: AtlasLibrary, ground: String, drive: String, s
 		if tick % SAMPLE_EVERY == 0:
 			await DrawnEvent.frames(t)
 			for rig in rigs:
-				_sample(rig, tick, seen)
-		if tick == COST_AT and ground == "street" and drive == "walk":
+				if not timing:
+					_sample(rig, tick, seen)
+		if timing and tick == COST_AT:
 			_cost(rigs, seen)
+			break
 	for rig in rigs:
 		rig.holder.free()
 
@@ -254,7 +306,7 @@ func _sample(rig: Rig, tick: int, seen: Seen) -> void:
 		return
 	var instance := rig.instance
 	var drawer := instance.drawer as RecordingEventDrawer
-	var prefix := "LK %s %s %s t%d" % [rig.ground, rig.row.id, rig.drive, tick]
+	var prefix := "LK %s %s %s t%d" % [rig.ground, rig.label, rig.drive, tick]
 	var script := instance.look.get_script() as Script
 	seen.looks[script.get_global_name()] = true
 	for entry in drawer.draws:
@@ -262,7 +314,7 @@ func _sample(rig: Rig, tick: int, seen: Seen) -> void:
 		var canvas: Node = entry.canvas
 		var mirrored: bool = entry.mirrored
 		seen.pictures[picture] = true
-		seen.row_draws[rig.row.id] = int(seen.row_draws[rig.row.id]) + 1
+		seen.row_draws[rig.label] = int(seen.row_draws[rig.label]) + 1
 		seen.lines += 1
 		print("%s D %s %s %s r=%s m=%d c=%s b=%s" % [prefix, entry.kind,
 				_canvas_name(rig, canvas), picture, _rect(entry.rect), 1 if mirrored else 0,
@@ -290,6 +342,11 @@ func _nodes(rig: Rig, node: Node, path: String) -> String:
 		var item := child as Node2D
 		if item != null:
 			var label := path + _canvas_name(rig, item, "n%d" % index)
+			# The far guard's node places itself on the engine's physics tick, which no two runs
+			# share, so only his drawn lines (`D`) are printed.
+			if label == "far_guard":
+				index += 1
+				continue
 			found += "%s@%s%s " % [label, _vec(item.global_position),
 					"+" if item.visible else "-"]
 			found += _nodes(rig, item, label + "/")
