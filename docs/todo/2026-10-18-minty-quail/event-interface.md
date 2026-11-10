@@ -92,7 +92,7 @@ boundary: callers and the live event's own parts read the flat settings directly
 
 | Ability, as she meets it | Settings today (fields of the row) | State today (on the live event) | Becomes |
 |---|---|---|---|
-| **What it is on the ground**: a footprint, solid where it blocks. Cafe tables close half a sidewalk; a dog has a footprint and blocks nothing; the boom at a checkpoint is solid only while lowered | `shape`, `solid_parts`, `obstructs_radius`, `solid_when`, `stands_as`, `when_it_stops`, `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | `_obstruction`, `_own_tiles`, `_spread_vertical`, `_stationary_vehicle_side`, `_arm_was_open` | **`BodySpec`** (new) and **`EventBody`** (new, taken out of `EventInstance`) |
+| **What it is on the ground**: a footprint, solid where it blocks. Cafe tables close half a sidewalk; a dog has a footprint and blocks nothing; the boom at a checkpoint is solid only while lowered | `shape`, `solid_parts`, `obstructs_radius`, `solid_when`, `stands_as`, `when_it_stops`, `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | `_obstruction`, `_own_tiles`, `_spread_vertical`, `_stationary_vehicle_side`, `_arm_was_open` | **`BodySpec`** (new, in 4b) and **`EventBody`** (new, taken out of `EventInstance` ok) |
 | **The noise it adds**: the field of excitement the baby is charged for | `intensity`, `inner_radius`, `outer_radius`, `core_intensity`, `core_radius`, `falloff_power`, `pulse_period`, `intensity_ramp`, `from_outside`, `barrier_structure`, and `VehicleSpec.field_from_its_centre` | `EventExcitement` (the event as an `ExcitementSource`), `silenced` | **`FieldSpec`** (new) and `EventExcitement` (exists) |
 | **Ending the day**: the reach inside which she loses | `hard_fail`, `catch_reach`, `PursuitSpec.catch_reach` | none | **`LethalSpec`** (new); no live half, the live event answers with it |
 | **A hold on her**: the chatting mother's conversation, a checkpoint hut's inspection | `detain_seconds`, `detain_radius`, `redetains` | `EventHold` | **`HoldSpec`** (new) and `EventHold` (exists) |
@@ -365,7 +365,7 @@ shared state. What it asks, and what the event is asked on its behalf:
 |---|---|---|
 | Which door bodies hold a walker (asked once as a day starts, `Crowd`) | plan `detains_her()` ok, `placed_at()` ok | hold |
 | The discs of the wall's and the doors' bodies, for siting (`DayStreets.siting_region()`) | plan `obstructs_within()` ok, `placed_at()` ok | body |
-| Is a figure standing still walked round or walked through; has it parked for good | asked by the live body as it fills its event's move: the body part's `is_walked_round()`, `parks()` | body |
+| Is a figure standing still walked round or walked through; has it parked for good | asked by the live body as it fills its event's move: the body part's `is_walked_round()`, `parks()` (the row's until the body part exists, asked by `EventBody`; the event writes the move from its answers ok) | body |
 | Which tiles a standing body takes (the map's blocked record, written by `EventSpawner`) | row `stands_as_a_fixed_body()`, `body_pieces()` | body |
 | Is the boom up | live `is_raised()` ok | body |
 
@@ -612,11 +612,11 @@ counted where it only writes.
 | `duration` | 3 in | row `lasts_for()`; the field asks it for its swell |
 | `departs_at` | the catalogue | row `departure_speed()` ok |
 | `repeat_every`, `repeat_after` | 2 in | row `comes_again_every()` ok, `comes_again_after()`, asked once as a plan is made; plan `repeats()` ok |
-| `shape` | 11 in, 3 out (the route rig, the happenings, `SealPlanner`) | row `ground_shape()`; the field part's `datum()`; a draft for the copies; the live body and the look are handed the body part |
-| `solid_parts`, `_default_parts` | 1 in, 2 out (both copying it into a variant) | row `body_pieces()`; a draft copies parts, so the hand copy goes |
-| `obstructs_radius` | 10 in, 2 out (the route rig, `SealPlanner`) | row `obstructs_within()` ok, `closes_ground()`, `has_a_body()`, `solid_reach()` ok; the looks ask `drawn_width()` |
-| `solid_when` | 4 in, 1 out (the route rig), the resistance untyped | row `is_a_boom()` ok, `stands_as_a_fixed_body()`; the body part's `solid_from()` for the live body; live `is_solid()` ok |
-| `stands_as`, `when_it_stops` | 2 in each (the live event filling its move) | the body part's `is_walked_round()`, `parks()`, asked by the live body |
+| `shape` | 11 in, 3 out (the route rig, the happenings, `SealPlanner`) | row `ground_shape()` ok; the field part's `datum()`; a draft for the copies; the live body and the look are handed the body part |
+| `solid_parts`, `_default_parts` | 1 in, 2 out (both copying it into a variant) | row `body_pieces()` ok; a draft copies parts, so the hand copy goes |
+| `obstructs_radius` | 10 in, 2 out (the route rig, `SealPlanner`) | row `obstructs_within()` ok, `closes_ground()`, `has_a_body()` ok, `solid_reach()` ok; the looks ask `drawn_width()` |
+| `solid_when` | 4 in, 1 out (the route rig), the resistance untyped | row `is_a_boom()` ok, `stands_as_a_fixed_body()`; the body part's `solid_from()` for the live body (the row's until the body part exists ok); live `is_solid()` ok |
+| `stands_as`, `when_it_stops` | 2 in each (the live event filling its move) | the body part's `is_walked_round()`, `parks()`, asked by the live body (the row's until the body part exists ok) |
 | `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()`; the body part's `lies()` (one choice of four) for the footprints |
 | `vehicle` (`VehicleSpec.field_from_its_centre`) | 8 in, 2 out (the scene recipes, the park cordon); 3 lines of the spec | row `drives()`; the field part's `datum()` |
 | `intensity` | 7 in | row `has_a_field()` ok; the field part's `peak()` and `peak_through()` for the live event and the looks |
@@ -665,7 +665,7 @@ counted where it only writes.
 | `path` | 7 in | `walks()`, `beat()`, `way_left()` ok |
 | `_heading`, `_path_travelled`, `_gait_phase`, `_gait_moving` | 8, 4, 1 and 1 in (the behaviours) | `Figure.heading()` ok, `travelled()` ok, `turn_to()` ok, `walk_on()` ok; outside: `facing_now()` ok, `path_travelled()` ok, `gait_phase()` ok |
 | `_map`, `_navigator`, `_mover` | 4 in each | handed to each part at setup |
-| `_obstruction`, `_spread_vertical` | 2 in each (the barrier post, the car, the far guard) | `EventBody`: `drop()`, `pin_where_it_stands()`, `runs_vertically()` ok; the barrier post, the far guard and the car reach them through `Figure` ok |
+| `_obstruction`, `_spread_vertical` | 2 in each (the barrier post, the car, the far guard) | `EventBody` ok: `drop()` ok, `pin_where_it_stands()` (built as `pin_at(at)`), `runs_vertically()` ok; the barrier post, the far guard and the car reach them through `Figure` ok |
 | `_charge` (`ChargeRecord`: `began`, `ended`, `warned`), `_notice` (`Warning`: `length`, `cancel_if`, `on_expired`), `_telegraph_ended`, `_chase_way`, `_guard_spent`, `gave_up` | 1 to 3 in each (four behaviours) | `Figure.charge_began()` ok, `charge_ended()` ok, `hold_the_notice()` ok, `notice_has_run()` ok, the behaviours reach the rest only through `Figure` ok; `has_charged()` ok, `is_chasing()` ok, `has_given_up()` ok (`gave_up` stays public while suites and probes read it) |
 | `hold`, `abduction`, `departure`, `route`, `car`, `barrier_post`, `investigation`, `pursuit`, `on_foot`, `notice_run`, `flock`, `unreachable` | 30 lines in (the composer, behaviours reaching siblings, three looks) | private; siblings handed to each other by the composer; outside callers ask the live event (`closes_on(point)` ok, `is_taking_a_victim()` ok) |
 | `excitement` | 4 in | `source()` ok |
