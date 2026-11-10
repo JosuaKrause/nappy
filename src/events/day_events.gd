@@ -16,8 +16,9 @@ extends RefCounted
 ##
 ## **A row is never changed once added**, in anything the facts are derived from (its def,
 ## position, path, `permanent`, whether it is placed), which is what keeps every answer true; a row
-## handed to her walk is added already unplaced (`EventScheduler.owed_to_her_walk()`). **Never saved**: a load plans the day again from the run's saved inputs, and the
-## same plan gives the same answers.
+## handed to her walk is added already unplaced (`EventScheduler.owed_to_her_walk()`). **Never
+## saved**: a load plans the day again from the run's saved inputs, and the same plan gives the same
+## answers.
 ##
 ## **The constructor derives nothing**, so a test hands a consumer a stand-in that overrides the
 ## questions and the writes below and answers what the test set, with no city built.

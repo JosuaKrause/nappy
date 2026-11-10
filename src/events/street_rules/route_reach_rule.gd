@@ -181,8 +181,8 @@ func _cut_off(disc: Dictionary) -> PackedInt32Array:
 		return everything
 	var width := _size.x
 	var count := _size.x * _size.y
-	# Per tile, the piece that walked it first, or -1; per piece, the piece it joined (itself while it
-	# stands), every tile it and the pieces it joined walked, the tiles it has still to walk from
+	# Per tile, the piece that walked it first, or -1; per piece, the piece it joined (itself while
+	# it stands), every tile it and the pieces it joined walked, the tiles it has still to walk from
 	# (`frontier` from `heads`), and whether it holds home.
 	var piece := PackedInt32Array()
 	piece.resize(count)
@@ -281,7 +281,8 @@ func _reached_but(p: int, piece: PackedInt32Array, parent: PackedInt32Array,
 		disc: Dictionary) -> PackedInt32Array:
 	var lost := PackedInt32Array()
 	for i in _reached.size():
-		if _reached[i] == 1 and not disc.has(i) and (piece[i] == -1 or _root(parent, piece[i]) != p):
+		if _reached[i] == 1 and not disc.has(i) \
+				and (piece[i] == -1 or _root(parent, piece[i]) != p):
 			lost.append(i)
 	return lost
 
@@ -301,7 +302,9 @@ func _flood(disc: Dictionary) -> PackedByteArray:
 		var i := queue[head]
 		head += 1
 		var x := i % width
-		# The four sides in turn, written out: a packed array handed to a helper is a copy.
+		# The four sides in turn, written out in the loop rather than asked of a helper, so the
+		# flood makes no call per side of a tile. (A packed array handed to a helper is not a
+		# copy: written there, it is changed for the caller, which `_join()` relies on.)
 		for side in 4:
 			var j := i
 			if side == 0:

@@ -1540,10 +1540,10 @@ static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 ## the shortest side of the calm ground, floored at that constant. That is what lets a market take
 ## over a whole park and keeps it out of a back yard.
 ##
-## **And it has to stay where it was put.** A row handed to her walk (`EventDef.is_handed_to_her_walk()`,
-## the sidewalk `poster_crew`) stands where her walk sites it, never where the dawn would put it, so a
-## park it was meant to spoil would stand empty, against PLAYTEST-140 8 (a used park is shut by the
-## events placed in it). None is offered.
+## **And it has to stay where it was put.** A row handed to her walk
+## (`EventDef.is_handed_to_her_walk()`, the sidewalk `poster_crew`) stands where her walk sites it,
+## never where the dawn would put it, so a park it was meant to spoil would stand empty, against
+## PLAYTEST-140 8 (a used park is shut by the events placed in it). None is offered.
 static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> Array[EventDef]:
 	var allowed := maxf(OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(ground.size.x, ground.size.y) / 16.0)

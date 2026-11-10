@@ -1,11 +1,12 @@
 extends RefCounted
-## `LocationDraw`, the day's open locations each drawn from its view's bag at dawn (inbox #1185 in gentle-owl):
-## each open location drawn once and what it drew recorded, an event drawn stood in the day, a
-## location taken, unavailable or already drawn left alone, a row the day's ground refuses at a
-## location never drawn there, a row not drawn once it has stood as many times as the caps handed in say,
-## each location's weight handed to its bag, and a row handed to her walk drawn unplaced. Run with stand-ins for what it is handed: the day's
-## locations (`_Locations`, a handful built by hand), the ground (`_Ground`, whose refusals and
-## weights a check sets); the bags are real (`ViewBag`), of a few marbles each.
+## `LocationDraw`, the day's open locations each drawn from its view's bag at dawn
+## (inbox #1185 in gentle-owl): each open location drawn once and what it drew recorded, an event
+## drawn stood in the day, a location taken, unavailable or already drawn left alone, a row the
+## day's ground refuses at a location never drawn there, a row not drawn once it has stood as many
+## times as the caps handed in say, each location's weight handed to its bag, and a row handed to
+## her walk drawn unplaced. Run with stand-ins for what it is handed: the day's locations
+## (`_Locations`, a handful built by hand), the ground (`_Ground`, whose refusals and weights a
+## check sets); the bags are real (`ViewBag`), of a few marbles each.
 
 func run(t) -> void:
 	_test_each_open_location_is_drawn_once(t)
@@ -167,9 +168,10 @@ func _test_a_row_handed_to_her_walk_is_drawn_unplaced(t) -> void:
 	var locations := _Locations.new()
 	locations.order = [location] as Array[Location]
 	var ground := _Ground.new()
-	var placed := _drawn(locations, {"poster_crew": 1}, {"poster_crew": _row("poster_crew")}, ground)
+	var placed := _drawn(locations, {"poster_crew": 1}, {"poster_crew": _row("poster_crew")},
+			ground)
 	var recorded: EventScheduler.Planned = locations.recorded.get(location)
-	t.check(placed.size() == 1 and placed[0].row_id() == "poster_crew" and not placed[0].is_placed(),
-			"a drawn crew is answered with no position")
+	t.check(placed.size() == 1 and placed[0].row_id() == "poster_crew" \
+			and not placed[0].is_placed(), "a drawn crew is answered with no position")
 	t.check(recorded == placed[0] and ground.stood == placed,
 			"and it is what the location records and the day stands")

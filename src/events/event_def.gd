@@ -1201,9 +1201,9 @@ func validate() -> bool:
 		return false
 	# **A row sited from her walk is a `MAP` row that stands still, or it is nothing.** Only
 	# `EventScheduler._place_one_shots` and a location's draw (`LocationDraw`) leave a plan unplaced
-	# for it, and only `EventDirector` sites what they leave. The siting is a tile with the corridor's own
-	# questions asked of it, which a director-sited row never has, and a thing that moves has no one
-	# place for its scar to be recorded at.
+	# for it, and only `EventDirector` sites what they leave. The siting is a tile with the
+	# corridor's own questions asked of it, which a director-sited row never has, and a thing that
+	# moves has no one place for its scar to be recorded at.
 	if on_her_way:
 		if kind != GameEnums.EventKind.ONE_SHOT and kind != GameEnums.EventKind.RECURRING:
 			push_error("event '%s' is sited from her walk and is neither a one-shot nor " % id

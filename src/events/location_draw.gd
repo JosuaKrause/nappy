@@ -10,11 +10,12 @@ extends RefCounted
 ## let it is not either (the orchestrator's reading of fork 5(b), open to correction). Each row's
 ## share is the location's own weight times the bag's (`LocationGround.scale()`).
 ##
-## **Every location is drawn once, at dawn**, by the day's plan (`EventScheduler._draw_the_locations()`,
-## the last phase of `EventScheduler.build_day()`), before she can move, so a retry draws the same
-## day. The locations are drawn in the day's order (`DayLocations.drawing_order()`), so a street's
-## later locations draw with its earlier draws standing. A row handed to her walk is drawn as any
-## other and kept with no position, for her walk to site (`_as_drawn()`).
+## **Every location is drawn once, at dawn**, by the day's plan
+## (`EventScheduler._draw_the_locations()`, the last phase of `EventScheduler.build_day()`), before
+## she can move, so a retry draws the same day. The locations are drawn in the day's order
+## (`DayLocations.drawing_order()`), so a street's later locations draw with its earlier draws
+## standing. A row handed to her walk is drawn as any other and kept with no position, for her walk
+## to site (`_as_drawn()`).
 ##
 ## Handed the day's locations, the three bags (`view -> ViewBag`), the rows the bags' marbles name
 ## (`id -> EventDef`), the day's ground, and the day's caps (`id -> how many may stand`, a row not
@@ -68,9 +69,9 @@ func _draw(location: Location) -> EventScheduler.Planned:
 	var drawn := bag.draw(accepts, scale)
 	return null if drawn == ViewBag.EMPTY else offered[drawn]
 
-## `plan` as its location holds it: a row handed to her walk (`EventDef.is_handed_to_her_walk()`, the
-## poster crew) with no position (`EventScheduler.owed_to_her_walk()`), for her walk to site; any
-## other plan, and the empty event, as drawn.
+## `plan` as its location holds it: a row handed to her walk (`EventDef.is_handed_to_her_walk()`,
+## the poster crew) with no position (`EventScheduler.owed_to_her_walk()`), for her walk to site;
+## any other plan, and the empty event, as drawn.
 static func _as_drawn(plan: EventScheduler.Planned) -> EventScheduler.Planned:
 	if plan and plan.row().is_handed_to_her_walk():
 		return EventScheduler.owed_to_her_walk(plan)

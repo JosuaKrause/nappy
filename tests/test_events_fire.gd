@@ -393,10 +393,11 @@ func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 	t.check(owed == 1, "exactly one set piece in a fourteen-day run is owed to her walk (%d)" % owed)
 	t.check(crews > 0, "and there are poster crews for her walk to site (%d)" % crews)
 
-## **A crew a location draws is handed to her walk unplaced.** With the crews on her walk, every crew
-## the day draws has no position, for the director to site; with the flag off, the same day stands
-## its crews placed. A location's draw hands a crew on as it draws it (`LocationDraw.draw_all()`), so
-## the rows drawn after it are spaced without it and the two days need not match beyond the crews.
+## **A crew a location draws is handed to her walk unplaced.** With the crews on her walk, every
+## crew the day draws has no position, for the director to site; with the flag off, the same day
+## stands its crews placed. A location's draw hands a crew on as it draws it
+## (`LocationDraw.draw_all()`), so the rows drawn after it are spaced without it and the two days
+## need not match beyond the crews.
 func _test_a_crew_drawn_is_handed_to_her_walk(t) -> void:
 	var map := CityGenerator.generate(4242)
 	var crew := EventCatalogue.by_id("poster_crew")
@@ -425,7 +426,8 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t) -> void:
 				"day %d: every crew drawn for her walk has no position (%d of %d placed)"
 				% [day, handed_placed, handed_crews])
 		t.check(kept_crews > 0 and kept_placed == kept_crews,
-				"day %d: with the flag off, every crew stands placed (%d of %d)" % [day, kept_placed, kept_crews])
+				"day %d: with the flag off, every crew stands placed (%d of %d)"
+				% [day, kept_placed, kept_crews])
 
 ## **The three rows that never had an impact, meeting the rig they were designed for.** The bike,
 ## the loose dog and the cat were each sited in a way that meant she could walk the whole day

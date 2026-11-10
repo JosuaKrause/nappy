@@ -18,9 +18,12 @@ extends RefCounted
 ##   never leave home sealed off from a route tile it reached before, and at least one is refused
 ##   (a ring is what seals home in).
 ## - **The reach answers what a flood from home answers**: bodies asked along every street a route
-##   runs along in turn, each kept when allowed, get the same answer from the rule as from the same rule
-##   working out what a body cuts off by flooding the whole city from home again (`_FloodedReach`),
-##   and both refuse some and keep many, so what is kept between asks stays in step too.
+##   runs along in turn, each kept when allowed, get the same answer from the rule as from the same
+##   rule working out what a body cuts off by flooding the whole city from home again
+##   (`_FloodedReach`), and both refuse some and keep many. It holds the rule's walk of the pieces
+##   round a disc. It cannot see the reach kept between asks going stale: a kept body cuts off no
+##   route tile, or it would have been refused, so a stale reach holds only tiles that carry no
+##   route, and no later answer changes.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
@@ -196,6 +199,7 @@ func _test_the_reach_answers_what_a_flood_answers(t) -> void:
 			else:
 				refused += 1
 	t.check(asked > 100 and refused > 0 and kept.size() > 100,
-			"bodies asked along the route streets are kept and refused (%d asked, %d refused, %d kept)"
-			% [asked, refused, kept.size()])
-	t.check(differ == 0, "the rule answers each as a flood of the city from home does (%d differ)" % differ)
+			"bodies asked along the route streets are kept and refused"
+			+ " (%d asked, %d refused, %d kept)" % [asked, refused, kept.size()])
+	t.check(differ == 0,
+			"the rule answers each as a flood of the city from home does (%d differ)" % differ)

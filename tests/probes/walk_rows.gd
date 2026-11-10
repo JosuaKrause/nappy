@@ -1,26 +1,26 @@
 extends RefCounted
 ## Measurement probe for the walk's mix (`docs/EVENTS.md`, "The density, and why it is caps and
 ## bags"): **what each day puts in the world as she walks, row by row, by view and by kind of
-## ground.** Not a suite: it
-## prints rather than asserting, so it lives here under `tests/probes/`, where the runner never
-## discovers it, and runs only by name:
+## ground.** Not a suite: it prints rather than asserting, so it lives here under `tests/probes/`,
+## where the runner never discovers it, and runs only by name:
 ##
 ##     tools/test.sh probes/walk_rows.gd
 ##
-## Each day is planned as `placement_rows.gd` plans it, and then walked: the day's longest route out
-## from the doorstep and home again, at walking speed, a tick a thirtieth of a second, with the
-## director siting what it sites on her way (`EventDirector.due()`, `site_what_is_on_her_way()`). A
-## placed row counts once it comes within the stream radius of her (`Tuning.EVENT_STREAM_RADIUS`),
-## the moment it would stream in, under its row, its view and its kind of ground: a row the director
-## sites on her way among them, once sited (a poster crew), but not a place her route's bag hands it.
-## It asks only what every tree has, so the same file measures main and a branch alike. Prints
-## `WD day seeds streamed`, `WV day row view count`, `WK day row kind count` and
-## `WM day met at-the-door late-out`, where the capped rows are met (`CAPPED`: within the stream
-## radius of her door, and in the second half of the walk out), summed over the seeds, and per seed
-## and day `WT day seed siting ticks median p99 worst total`, the director's siting's tick costs in
-## microseconds, and `WP day seed microseconds`, the dawn's planning of each
-## (`EventScheduler.build_day()`). Each day is planned as the game plans it: its closures, holds, region wall and
-## seals first, the seals and the wall's bodies handed in as standing.
+## Each day is planned as `placement_rows.gd` plans it, and then walked: the day's longest route
+## out from the doorstep and home again, at walking speed, a tick a thirtieth of a second, with the
+## director siting what it sites on her way (`EventDirector.due()`,
+## `site_what_is_on_her_way()`). A placed row counts once it comes within the stream radius of her
+## (`Tuning.EVENT_STREAM_RADIUS`), the moment it would stream in, under its row, its view and its
+## kind of ground: a row the director sites on her way among them, once sited (a poster crew), but
+## not a place her route's bag hands it. It asks only what every tree has, so the same file
+## measures main and a branch alike. Prints `WD day seeds streamed`, `WV day row view count`,
+## `WK day row kind count` and `WM day met at-the-door late-out`, where the capped rows are met
+## (`CAPPED`: within the stream radius of her door, and in the second half of the walk out), summed
+## over the seeds, and per seed and day `WT day seed siting ticks median p99 worst total`, the
+## director's siting's tick costs in microseconds, and `WP day seed microseconds`, the dawn's
+## planning of each (`EventScheduler.build_day()`). Each day is planned as the game plans it: its
+## closures, holds, region wall and seals first, the seals and the wall's bodies handed in as
+## standing.
 
 const SEEDS := 18
 const BASE := 90210
@@ -37,7 +37,6 @@ func run(t) -> void:
 		var by_view := {}
 		var by_kind := {}
 		var placed := 0
-		var moments := 0
 		# Where on her walk the capped rows are met: within the stream radius of her door at the
 		# start, and in the second half of the walk out.
 		var capped_met := 0
@@ -81,7 +80,8 @@ func run(t) -> void:
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("placement_rows seals:%d:%d" % [i, day])
-			var seals := SealPlanner.plan_day(map, spec, tree, seal_rng, boundary, map.held_streets())
+			var seals := SealPlanner.plan_day(map, spec, tree, seal_rng, boundary,
+					map.held_streets())
 			for seal in seals:
 				seal.stand_as_a_seal()
 			var doors := PackedVector2Array()
@@ -108,7 +108,8 @@ func run(t) -> void:
 			var walk := WalkEvents.new()
 			walk.take(plans, CalmAreas.of(map), doors)
 			# The walk's sitings are judged against the walk itself, as the game's are.
-			var siting := EventScheduler.WalkSiting.new(day, map, tree, walk, EventScheduler.Verdicts.new())
+			var siting := EventScheduler.WalkSiting.new(day, map, tree, walk,
+					EventScheduler.Verdicts.new())
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("walk_rows director:%d:%d" % [i, day])
@@ -149,16 +150,13 @@ func run(t) -> void:
 								counted[plan] = true
 								if CAPPED.has(plan.row_id()):
 									capped_met += 1
-									if plan.placed_at().distance_to(door) <= Tuning.EVENT_STREAM_RADIUS:
+									if plan.placed_at().distance_to(door) \
+											<= Tuning.EVENT_STREAM_RADIUS:
 										capped_at_the_door += 1
 									if walked > out_length * 0.5 and walked <= out_length:
 										capped_late_out += 1
 					toward = path[k] - at
 			for plan: EventScheduler.Planned in counted:
-				var mode := plan.def.spawn_mode_on(day)
-				if mode != EventDef.SpawnMode.MAP:
-					moments += 1
-					continue
 				placed += 1
 				var tile := map.world_to_tile(plan.placed_at())
 				var segment := map.network.segment_containing(tile)
@@ -173,7 +171,7 @@ func run(t) -> void:
 				var kk := "%s %s" % [plan.row_id(), _kind_of(map, tile)]
 				by_kind[kk] = int(by_kind.get(kk, 0)) + 1
 			print("WT %d %d siting %s" % [day, i, _costs(siting_ticks)])
-		print("WD %d %d %d %d" % [day, SEEDS, placed, moments])
+		print("WD %d %d %d" % [day, SEEDS, placed])
 		print("WM %d %d %d %d" % [day, capped_met, capped_at_the_door, capped_late_out])
 		for key: String in by_view:
 			print("WV %d %s %d" % [day, key, by_view[key]])
@@ -183,7 +181,8 @@ func run(t) -> void:
 
 ## The day's longest route as the line she walks, out from the doorstep: a route is grown from the
 ## area to the doorstep, so the walk out is the route reversed.
-static func _longest_route(tree: RouteTree, siting: EventScheduler.WalkSiting) -> PackedVector2Array:
+static func _longest_route(tree: RouteTree,
+		siting: EventScheduler.WalkSiting) -> PackedVector2Array:
 	var best: Array = []
 	for branch in tree.branches:
 		for route: Array in branch.routes:

@@ -3,9 +3,9 @@ extends RefCounted
 ## `StreetLocations` and `Location` it is made of, the state it holds: a street split into three
 ## sections along its length, each with two sidewalk locations; each street's sections filed under
 ## the view it is told; a street a fixed part holds left with no section open; a section an event
-## that spans the street is assigned taken for the day, its two sidewalk locations with it; a section
-## one of whose sidewalks is assigned an event closed to a draw, so nothing takes it over that; a tile
-## naming the location holding it, of the ground under it; and a fixed part (a mast)
+## that spans the street is assigned taken for the day, its two sidewalk locations with it; a
+## section one of whose sidewalks is assigned an event closed to a draw, so nothing takes it over
+## that; a tile naming the location holding it, of the ground under it; and a fixed part (a mast)
 ## holding its location, so it leaves the locations still open to a phase or a draw. Laid out
 ## on a bare city's lattice (`CityMap.new()`, every street present), with a stand-in for the corridor
 ## whose views the check sets (`_Views`); which view a street really is in is `Corridor.view_of()`'s,
