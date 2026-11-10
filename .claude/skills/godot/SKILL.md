@@ -97,14 +97,29 @@ line or a warning on it.
 declared `: Variant`: `things[0].count` parses at every warning level, where `things[0].make()` is
 an unsafe method access. So such a value is read through a typed name (`var thing: Thing = things[0]`, `for thing:
 Thing in things`, `things[0] as Thing`), and in a file under `src/` without the opt-out line
-`tools/check_field_reads.py` fails the use the engine lets through, wherever the receiver's class
-cannot be told and the name is one a class under `src/` declares as a `var` or as a method.
+`tools/check_field_reads.py` fails the use the engine lets through: a name with no `(` after it,
+read off a receiver whose class the check cannot tell (a Variant like those), where the name is a
+`var` a class under `src/` declares or a method one declares, whether or not the use hands a `Callable`
+on. A method's name is let through there when some class under `src/` also declares it as a
+`var`, a signal, a constant or an enum, or when an engine class has it as a property or a signal or
+a builtin type as a member (`scale`, `Rect2.end`), since on a receiver nothing types such a name is
+as likely the engine's member as the project's method. The fix is a typed name to read through,
+and for a dictionary's key a subscript (`station["blocks"]`).
 
 **Nor does the engine warn of a method named without its parentheses**, on any receiver:
 `thing.is_ready` is a reference to the function, and always true in a condition. In a file under
-`src/` without the opt-out line the check fails it on a receiver whose class it can tell, unless
-the line hands the Callable on: a step follows it (`.bind(`, `.call(`), or it is an argument, an
-array element, the right side of an assignment, a returned value or a ternary's branch.
+`src/` without the opt-out line the check fails it on a receiver it can tell as a class under
+`src/`, where the name is that class's or an ancestor's method and not also its `var`, unless the
+reference hands the `Callable` on. It hands it on when a step follows it (`.bind(`, `.call(`), or
+when it is an argument of a call, an element of an array literal, the right side of an
+assignment, a returned value or a ternary's branch, on one line or across several; a
+parenthesised expression counts as what its parentheses are, so `var cb := (t.make)` passes and
+`if (t.make):` fails. Anything else fails: a statement standing alone (`crowd.clear` for
+`crowd.clear()`), a condition (`if`, `elif`, `while`, `match`, and `assert(...)`, whose
+parentheses hold a condition and not a call's arguments), an operand (`not t.make`,
+`x and t.make`, `t.make == true`), a subscript (`d[t.make]`), and a dictionary's key or value. It
+sees no such reference on a receiver told as an engine value, `self` inside an inner class
+included, nor on a bare name of the file's own class with no receiver (`if is_ready:`).
 
 **The setting reaches every script a debug build parses in this project, and no release export.**
 That is `src/`, `tests/` with its rigs, fixtures and probes, the `.gd` scripts under `tools/`
@@ -279,6 +294,14 @@ is the only part that governs the code in front of them.
   line at the top of a file not yet converted, and the files carrying it as a list that only
   shrinks; and they say code is typed wherever it can be (inbox #1280 in olive-ferret), which a new file carrying
   the line would not be.
+- **What the check fails of a method named without its parentheses** ("Types"): on a receiver it
+  can tell, the reference that hands no `Callable` on, with the forms that count as handing one
+  on; on one it cannot tell, every such use, less the names an engine class or a builtin type also
+  has as a member; and neither in a file that carries the opt-out line. These are the
+  orchestrator's ruling on the pull request's review and the builder's choices
+  (minty-quail-busy-heron), open to the player's correction: the player's words ask that the
+  field-read check be made to work (inbox #1268 in olive-ferret) and say nothing of a method read
+  without its parentheses.
 - **Which values the language cannot type** ("Types": the inner level of a nested collection, what
   a Variant-returning call gives) is the filer's reading of where the player's rule ends
   (inbox #1280 in olive-ferret), taken from what the engine accepts.
