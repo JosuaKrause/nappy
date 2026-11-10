@@ -309,10 +309,10 @@ What the form buys, beyond the rule:
    (`method-without-parentheses.md`). With a new name the stale read names nothing and fails: at
    the parse on a typed receiver in a file that does not silence `unsafe_property_access`, when
    the line runs everywhere else. A number may keep its name (`speed()`), since a function used
-   as a number fails at once. An accessor in point 1's list is under the same rule: where its
-   field has a read that takes a function silently (the row's `pursuit`, tested against null; its
-   `look`, read in a `match`), the step that makes the field private gives the accessor a name the
-   field did not have, where that list has the field's own (`pursuit()`, `look()`).
+   as a number fails at once. The rule stops at yes-or-no questions: a field of another kind whose
+   accessor point 1 lists under the field's own name can be read in a way that takes a function
+   as silently (the row's `pursuit`, tested against null; its `look`, read in a `match`), and
+   whether such an accessor takes a new name too is open (`method-without-parentheses.md`).
 4. **A change is told as what happened, never set as a value**: `silence()`, `spend()`,
    `notice_her_at()`, `place_at()`; the event works out what it already knows (the record
    brisk-lark's "events instead of setters").

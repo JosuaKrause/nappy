@@ -3,7 +3,8 @@
 **Proposed, not asked for:** the whole item is the orchestrator's proposal. The player's words on the
 field-read check ask that it be made to work (inbox #1268 in olive-ferret) and say nothing of a
 method read without its parentheses. The plainer alternative is to leave it: the naming rule keeps
-a conversion from creating the case (below), and what is left is listed under "What is left".
+the conversion of a yes-or-no field from creating the case (below), and what is left is listed
+under "What is left".
 
 **The trap.** `thing.is_ready`, where `is_ready` is a method, is a reference to the function: always
 true in a condition, and a statement that does nothing where a call was meant (`crowd.clear` for
@@ -15,11 +16,10 @@ engine's default level, a warning, and no headless run prints a warning.
 
 - `tools/check_field_reads.py` fails a method's name read through a receiver whose class it cannot
   tell, in a file under `src/` without the opt-out line. Its `--help` says which names count.
-- The naming rule of designing-classes ("Fields are not API"), for every conversion: a method takes
-  a new name unless every read of its field is one a function fails in, so a read left behind
-  after a conversion names something that no longer exists. It stops parsing on a typed receiver
-  in a file that does not silence `unsafe_property_access`; everywhere else it fails when the line
-  runs.
+- The naming rule of designing-classes ("Fields are not API"), for every conversion of a yes-or-no
+  field: its method takes a name the field did not have, so a read left behind after a conversion
+  names something that no longer exists. It stops parsing on a typed receiver in a file that does
+  not silence `unsafe_property_access`; everywhere else it fails when the line runs.
 
 **What nothing reports:** the same mistake on a receiver the check can type (a class under `src/` or
 an engine value), in a file under `src/` that still carries the opt-out line, in a test, or as a
@@ -35,9 +35,24 @@ bare name of the file's own class with no receiver (`if is_ready:`).
   receiver typed too wide, and on a Variant. A clean boot does not show that none is left there.
 - `EventDef.investigates()`, which took its yes-or-no field's name before the rule; no read of it
   without parentheses is left, and a rename is a change of its own.
+- **A field that is not yes-or-no and goes behind a method of its own name**, where a read left
+  behind is one that takes a function silently. The record minty-quail-coral-trout
+  (`tools/decisions.sh coral-trout`) holds what was measured: a test for truth or against null, a
+  `match`, `in`, `has()` and `get()`, a format string, an untyped argument, an inferred `:=` and an
+  equality between two reads of the field all take one silently; arithmetic, an ordering
+  comparison and a typed argument fail. Cases in the tree: the row's `pursuit`, a part or null
+  tested against null; its `look`, an enum read in a `match`; `Run.index`, compared between two
+  runs. The events' design names accessors after such fields (`pursuit()`, `look()`).
 
 **Ways to build it, none chosen.**
 
+- **How far the new name goes beyond yes-or-no fields**, a question put to the player, since
+  either wider answer renames accessors across the events' design: every method that replaces a
+  field takes a new name, a number's included, which needs no knowledge of the engine and costs a
+  name for every converted field; or only a number keeps its name, which leaves a number tested
+  for truth or compared with another read of itself. A third way, the name kept wherever every
+  read of the field is shown to fail, was written as a list of such reads and was wrong in each of
+  three reviews (the same record).
 - **The engine's own warning for a statement that does nothing**, raised to an error like the three
   warnings of the typed-access step. Measured (the record minty-quail-busy-heron,
   `tools/decisions.sh busy-heron`): a method's name alone on a line then fails the parse, and a name

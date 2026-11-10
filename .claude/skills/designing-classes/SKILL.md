@@ -90,22 +90,17 @@ declare; it does not cover an engine object's properties (`position`, `visible`,
 field across objects, a change that touches such a read moves it behind a method, and state another
 class needs is kept in an underscore field behind a method.
 
-**A method that replaces a field takes a new name on the object the field was read from, unless
-every read of the field is one a function fails in**: `is_finished` became `is_gone()`,
-`hard_fail` became `ends_the_day()`. Under the field's old name a read left behind without its
-parentheses is a reference to the function, and many reads take one silently: a truth test is
-always true, a test against null never equal, a `match` runs no branch, `in` and a dictionary
-lookup miss, a format string prints the function's name, an untyped argument carries it on.
-Nothing reports any of these on a receiver whose class is known (**godot**, "Types"). Under a new
-name the read left behind names nothing and fails: at the parse on a typed receiver in a file
-that does not silence `unsafe_property_access`, and when the line runs everywhere else (a file
-whose opt-out line names that warning, a receiver typed too wide, a Variant). The method keeps the
-field's name (`speed()`) only where every read of the field is arithmetic, a comparison with a
-number, an equality with an enum's value, a typed assignment or argument, a loop over it, or a
-member read or a call on it: a function fails there, at the parse on a typed receiver and when
-the line runs on a Variant. One method that predates the rule keeps a yes-or-no field's name on
-the object it was read from, `EventDef.investigates()`, with no read of it left without
-parentheses.
+**A method that replaces a yes-or-no field takes a name the field did not have**, on the object
+the field was read from: in the events' design `is_finished` becomes `is_gone()` and `hard_fail`
+becomes `ends_the_day()`. Under the field's old name a read left behind without its parentheses is
+a reference to the function, always true in a condition, and nothing reports it on a receiver
+whose class is known (**godot**, "Types"). Under a new name the read left behind names nothing
+and fails: at the parse on a typed receiver in a file that does not silence
+`unsafe_property_access`, and when the line runs everywhere else (a file whose opt-out line names
+that warning, a receiver typed too wide, a Variant). The rule stops at yes-or-no fields: a field
+of another kind can be read in ways that take a function as silently (a test against null, a
+`match`, a lookup), and this rule does not cover it. One method that predates the rule keeps a
+yes-or-no field's name, `EventDef.investigates()`, with no read of it left without parentheses.
 
 **Two lists hold "Fields are not API" while `src/` is converted, and each only shrinks.** Much of `src/` still
 reads fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that
@@ -197,14 +192,11 @@ that proposes it, and says so where the player's words name nothing on the point
 - **One interface and composition for anything many classes use, not only events**, a reading of
   inbox #1173 in gray-dolphin.
 - **Which members "Fields are not API" covers**, a reading of inbox #1173 in gray-dolphin.
-- **A method takes a new name unless every read of its field is one a function fails in** ("Fields
-  are not API"): the orchestrator's proposal (minty-quail-coral-trout). The events' interface
-  design has it for a yes-or-no question and lets a number keep its name; that it holds for every
-  conversion, and for every field with a read that takes a function silently, is the
-  orchestrator's.
-  The player's words on fields (inbox #1173 in gray-dolphin) say nothing of a method's name. The
-  plainer alternative is the field's name kept, with a read a conversion misses staying true and
-  unreported.
+- **A method that replaces a yes-or-no field takes a name the field did not have** ("Fields are not
+  API"): the orchestrator's proposal (minty-quail-coral-trout). The events' interface design has
+  it; that it holds for every conversion is the orchestrator's. The player's words on fields
+  (inbox #1173 in gray-dolphin) say nothing of a method's name. The plainer alternative is the
+  field's name kept, with a read a conversion misses staying true and unreported.
 - **New code reads no field across objects, and a touched read moves behind a method**
   (inbox #1173 in gray-dolphin).
 - **The check fails an unknown receiver file by file, from the day a file loses its opt-out line**,
