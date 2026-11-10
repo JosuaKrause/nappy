@@ -53,9 +53,11 @@ func run(t) -> void:
 ## `map` with a navigator of its own when one is given, as `EventInstance.setup()` is handed them,
 ## and on open ground otherwise.
 func _instance(t, def: EventDef, at := Vector2.ZERO,
-		path := PackedVector2Array(), map: CityMap = null) -> EventInstance:
+		path := PackedVector2Array(), map: CityMap = null,
+		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path, Vector2.RIGHT, map, Navigator.new(map) if map else null)
+	instance.setup(def, at, path, Vector2.RIGHT, map, Navigator.new(map) if map else null,
+			where)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
@@ -122,22 +124,27 @@ func _test_a_failed_lesson_retry_leaves_the_director_running(t) -> void:
 func _test_a_sent_pursuer_counts_running_before_he_is_visible(t) -> void:
 	for id: String in ["robber_giving_chase", "van_guard_giving_chase", "policeman_giving_chase",
 			"guardsman_giving_chase"]:
+		var pursuer_where := WhereSheIs.nowhere()
 		var pursuer := EventInstance.new()
-		pursuer.setup(EventCatalogue.by_id(id), Vector2.ZERO)
-		pursuer.player_running = true
+		pursuer.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(),
+				Vector2.RIGHT, null, null, pursuer_where)
+		pursuer_where.tell(pursuer_where.at(), Vector2.INF, Rect2(), true)
 		for frame in int(Tuning.PURSUIT_SHAKEN_OFF / STEP) - 1:
-			pursuer.player_at = Vector2(500.0 + frame * Tuning.RUN_SPEED * STEP, 0.0)
+			pursuer_where.tell(Vector2(500.0 + frame * Tuning.RUN_SPEED * STEP, 0.0),
+					Vector2.INF, Rect2(), pursuer_where.is_running())
 			pursuer.step(STEP)
 		t.check(not pursuer.gave_up, "%s needs the full sustained run" % id)
-		pursuer.player_running = false
+		pursuer_where.tell(pursuer_where.at())
 		pursuer.step(STEP)
-		pursuer.player_running = true
+		pursuer_where.tell(pursuer_where.at(), Vector2.INF, Rect2(), true)
 		for frame in int(Tuning.PURSUIT_SHAKEN_OFF / STEP) - 1:
-			pursuer.player_at += Vector2.RIGHT * Tuning.RUN_SPEED * STEP
+			pursuer_where.tell(pursuer_where.at() + Vector2.RIGHT * Tuning.RUN_SPEED * STEP,
+					Vector2.INF, Rect2(), pursuer_where.is_running())
 			pursuer.step(STEP)
 		t.check(not pursuer.gave_up, "%s restarts the shake-off timer after a walk" % id)
 		for frame in 3:
-			pursuer.player_at += Vector2.RIGHT * Tuning.RUN_SPEED * STEP
+			pursuer_where.tell(pursuer_where.at() + Vector2.RIGHT * Tuning.RUN_SPEED * STEP,
+					Vector2.INF, Rect2(), pursuer_where.is_running())
 			pursuer.step(STEP)
 		t.check(pursuer.gave_up, "%s is shaken off by sustained running while offscreen" % id)
 		pursuer.free()
@@ -159,8 +166,10 @@ func _kinds_in(plans: Array[EventScheduler.Planned]) -> Dictionary:
 ## that is over still exists for several seconds while it leaves, and a rig that kept holding the
 ## key down through that would price the answer at whatever `departs_at` happens to be.
 func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			instance_where)
 	var her := Vector2(_sited_at(def), 0.0)
 	# Positive is away from it, matching `_chase_rig`. She starts walking in.
 	var speed := -Tuning.WALK_SPEED
@@ -177,8 +186,7 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 		if speed > Tuning.WALK_SPEED:
 			result["running"] = float(result["running"]) + STEP
 		her.x += speed * STEP
-		instance.player_at = her
-		instance.player_running = speed > Tuning.WALK_SPEED
+		instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
 		instance.step(STEP)
 		elapsed += STEP
 		if since_the_lunge != INF:
@@ -207,8 +215,10 @@ func _sited_at(def: EventDef) -> float:
 ## Walks one answer to a pursuit and reports what happened. `player_speed` is along the line between
 ## them: positive is away from it, negative is into it.
 func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			instance_where)
 	var from := _sited_at(def)
 	var her := Vector2(from, 0.0)
 	var elapsed := 0.0
@@ -217,10 +227,11 @@ func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 	var was_telegraphing := true
 	while elapsed < 12.0 and not instance.is_finished and not result["caught"]:
 		her.x += player_speed * STEP
-		instance.player_at = her
+		instance_where.tell(her, Vector2.INF, Rect2(), instance_where.is_running())
 		# The break-off is a fact about *her* since playtest 14, so a rig that only moves her is
 		# not running the rule. See `Tuning.PURSUIT_SHAKEN_OFF`.
-		instance.player_running = player_speed > Tuning.WALK_SPEED
+		instance_where.tell(instance_where.at(), Vector2.INF, Rect2(),
+				player_speed > Tuning.WALK_SPEED)
 		instance.step(STEP)
 		elapsed += STEP
 		if was_telegraphing and not instance.is_telegraphing() and not instance.is_waiting():
@@ -930,26 +941,28 @@ func _test_a_paced_event_walks_a_beat(t) -> void:
 func _test_a_pursuer_can_wait(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	t.check(def.notice_within() > 0.0, "the robber waits")
-	var instance := _instance(t, def, Vector2.ZERO)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), null, instance_where)
 
 	# Standing there, all day, at full strength.
-	instance.player_at = Vector2(def.notice_within() + 40.0, 0.0)
+	instance_where.tell(Vector2(def.notice_within() + 40.0, 0.0))
 	_advance(instance, 30.0)
 	t.check(instance.is_waiting(), "he is still standing there half a minute later")
 	t.check(not instance.is_finished, "and his duration has not been running")
 	t.close_to(instance.position.x, 0.0, "he has not moved", 0.5)
 	t.close_to(instance.current_intensity(), def.intensity,
 			"he is loud from the moment she can see him, not damped to a telegraph", 0.05)
-	t.check(not instance.is_lethal_at(instance.player_at), "and he cannot end the day yet")
+	t.check(not instance.is_lethal_at(instance_where.at()), "and he cannot end the day yet")
 	t.check(instance.excitement.contribution_at(Vector2(def.outer_radius - 10.0, 0.0)) > 0.0,
 			"his field reaches the far end of the alley")
 
 	# She steps inside the trigger: the notice starts *now*.
-	instance.player_at = Vector2(def.notice_within() - 10.0, 0.0)
+	instance_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	instance.step(STEP)
 	t.check(not instance.is_waiting(), "he notices her")
 	t.check(instance.is_telegraphing(), "and the notice starts when he does, not at dawn")
-	t.check(not instance.is_lethal_at(instance.player_at), "still not lethal during the notice")
+	t.check(not instance.is_lethal_at(instance_where.at()),
+			"still not lethal during the notice")
 
 	# Standing there, inside his radius, he walks up to her stand-off and charges once his warning
 	# has run (`PursuitSpec.warns_for`).
@@ -1061,17 +1074,18 @@ func _test_a_warning_is_not_counted_as_a_chase(t) -> void:
 	var began: Array[String] = []
 	var listen := func(id: String) -> void: began.append(id)
 	EventBus.pursuit_began.connect(listen)
-	var dog := _instance(t, def, Vector2.ZERO)
-	dog.player_at = Vector2(def.notice_within() - 10.0, 0.0)
+	var dog_where := WhereSheIs.nowhere()
+	var dog := _instance(t, def, Vector2.ZERO, PackedVector2Array(), null, dog_where)
+	dog_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	_advance(dog, def.pursuit.warns_for * 0.5)
 	t.check(dog.is_telegraphing() and began.is_empty(), "warning her, it has not begun a chase")
-	dog.player_at = Vector2(def.notice_within() + 10.0, 0.0)
+	dog_where.tell(Vector2(def.notice_within() + 10.0, 0.0))
 	_advance(dog, 0.5)
 	t.check(dog.is_waiting() and began.is_empty(), "and walked out of, it never did")
-	dog.player_at = Vector2(def.notice_within() - 10.0, 0.0)
+	dog_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
 	_advance(dog, 0.2)
 	t.check(dog.is_telegraphing() and began.is_empty(), "back inside, it warns again, still no chase")
-	dog.player_at = Vector2(standoff - 2.0, 0.0)
+	dog_where.tell(Vector2(standoff - 2.0, 0.0))
 	_advance(dog, def.pursuit.warns_for)
 	t.check(not dog.is_telegraphing() and began == ["charging_dog"],
 			"it begins one at its charge, once its warning has run (%s)" % str(began))
@@ -1084,10 +1098,11 @@ func _test_a_warning_is_not_counted_as_a_chase(t) -> void:
 ## steps back 10px inside and stands. Reports how long the first warning ran, whether he waited
 ## again, and how long after she was back inside he charged (`INF` if never).
 func _back_inside_rig(t, def: EventDef) -> Dictionary:
-	var instance := _instance(t, def, Vector2.ZERO)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), null, instance_where)
 	var result := {"first_warning": 0.0, "waited": false, "second_warning": INF}
 	var stand_at := func(off: float) -> void:
-		instance.player_at = instance.body_position() + Vector2(0.0, def.notice_within() + off)
+		instance_where.tell(instance.body_position() + Vector2(0.0, def.notice_within() + off))
 	stand_at.call(-10.0)
 	var elapsed := 0.0
 	while elapsed < def.pursuit.warns_for * 0.75 and not instance.is_finished:
@@ -1118,7 +1133,8 @@ func _back_inside_rig(t, def: EventDef) -> Dictionary:
 ## radius, then stops and stands. Reports whether she stayed inside, whether he gave up while he
 ## warned, whether he charged and whether he caught her.
 func _run_inside_the_warning_rig(t, def: EventDef) -> Dictionary:
-	var instance := _instance(t, def, Vector2.ZERO)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), null, instance_where)
 	var her := Vector2(-def.notice_within() * 0.3, def.notice_within() * 0.5)
 	var speed := 0.0
 	var ran_for := 0.0
@@ -1132,9 +1148,8 @@ func _run_inside_the_warning_rig(t, def: EventDef) -> Dictionary:
 		else:
 			speed = move_toward(speed, 0.0, Tuning.ACCELERATION * STEP)
 		her.x += speed * STEP
-		instance.player_at = her
-		instance.player_running = speed > Tuning.WALK_SPEED
-		if instance.player_running:
+		instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
+		if instance_where.is_running():
 			ran_for += STEP
 		var was_telegraphing := instance.is_telegraphing()
 		instance.step(STEP)
@@ -1194,7 +1209,8 @@ func _waiting_pursuers(keep: Callable) -> Array[EventDef]:
 ## how far it moved after.
 func _standing_rig(t, def: EventDef, player_speed: float, reaction := INF, inside := 10.0,
 		seconds := 40.0, from := INF, then_speed := Tuning.RUN_SPEED, stop_at := -1.0) -> Dictionary:
-	var instance := _instance(t, def, Vector2.ZERO)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), null, instance_where)
 	var start := from if from != INF else def.notice_within() - inside
 	var her := Vector2(0.0, start)
 	var speed := player_speed
@@ -1216,8 +1232,7 @@ func _standing_rig(t, def: EventDef, player_speed: float, reaction := INF, insid
 				and instance.global_position.distance_to(her) + speed * STEP <= stop_at:
 			speed = 0.0
 		her.y += speed * STEP
-		instance.player_at = her
-		instance.player_running = speed > Tuning.WALK_SPEED
+		instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
 		instance.step(STEP)
 		elapsed += STEP
 		if since_the_lunge != INF:
@@ -1273,15 +1288,16 @@ func _test_a_pursuer_stops_at_walls(t) -> void:
 	var east: Vector2i = corner["east"]
 
 	var def := EventCatalogue.by_id("charging_dog")
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, map.tile_to_world(north) + Vector2(-96.0, 0.0), PackedVector2Array(),
-			Vector2.RIGHT, map, Navigator.new(map))
+			Vector2.RIGHT, map, Navigator.new(map), instance_where)
 	t.add_child(instance)
 	instance.set_process(false)
 
 	# Clear the telegraph with her held far off, so what follows is about the wall and not about
 	# the stand-off.
-	instance.player_at = map.tile_to_world(north) + Vector2(-4000.0, 0.0)
+	instance_where.tell(map.tile_to_world(north) + Vector2(-4000.0, 0.0))
 	_advance(instance, def.telegraph_time + 0.1)
 	t.check(not instance.is_telegraphing(), "the dog is chasing by the time she rounds the corner")
 
@@ -1294,7 +1310,7 @@ func _test_a_pursuer_stops_at_walls(t) -> void:
 	var checked := 0
 	while her.distance_to(target) > 4.0 and elapsed < 15.0:
 		her = her.move_toward(target, Tuning.WALK_SPEED * STEP)
-		instance.player_at = her
+		instance_where.tell(her)
 		instance.step(STEP)
 		elapsed += STEP
 		var tile := map.world_to_tile(instance.global_position)
@@ -1325,8 +1341,9 @@ func _an_alley_mouth(map: CityMap) -> Dictionary:
 ## The alley robber on `map`, past his notice and chasing, so what follows is about the line between
 ## the two of them and not about the notice. He is set up on `map` with its navigator as
 ## `EventInstance.setup()` is handed them, at a walkable tile with a clear straight run east to her,
-## since the notice asks for a clear line; each check moves him from there.
-func _a_chasing_robber(t, map: CityMap) -> EventInstance:
+## since the notice asks for a clear line; each check moves him from there. He hears where she is
+## from `where`, which a check goes on telling.
+func _a_chasing_robber(t, map: CityMap, where: WhereSheIs) -> EventInstance:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var run := def.notice_within() - 10.0
 	var origin := Vector2.INF
@@ -1340,8 +1357,8 @@ func _a_chasing_robber(t, map: CityMap) -> EventInstance:
 		if origin != Vector2.INF:
 			break
 	t.check(origin != Vector2.INF, "the map has a clear %.0fpx run to start the robber on" % run)
-	var instance := _instance(t, def, origin, PackedVector2Array(), map)
-	instance.player_at = origin + Vector2(run, 0.0)
+	var instance := _instance(t, def, origin, PackedVector2Array(), map, where)
+	where.tell(origin + Vector2(run, 0.0))
 	instance.step(STEP)
 	_advance(instance, def.pursuit.warns_for + 0.1)
 	return instance
@@ -1361,7 +1378,7 @@ func _test_the_robber_does_not_catch_her_through_a_wall(t) -> void:
 	var corner: Vector2 = mouth["corner"]
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
-	var instance := _a_chasing_robber(t, map)
+	var instance := _a_chasing_robber(t, map, WhereSheIs.nowhere())
 	t.check(not instance.is_telegraphing() and not instance.is_waiting(), "he is chasing")
 	instance.position = corner + d1 * 1.0 - d2 * 7.0
 	var behind_the_wall := corner - d1 * 4.0 + d2 * Tuning.PLAYER_BODY_RADIUS
@@ -1385,12 +1402,14 @@ func _test_the_robber_does_not_catch_her_through_a_wall(t) -> void:
 
 ## Where the alley robber waits for these tests: in the middle of the alley tile, `back` px in from
 ## the mouth's edge, so the building's corner stands between him and the sidewalk round it.
-func _a_waiting_robber(t, map: CityMap, mouth: Dictionary, back: float) -> EventInstance:
+func _a_waiting_robber(t, map: CityMap, mouth: Dictionary, back: float,
+		where: WhereSheIs = null) -> EventInstance:
 	var corner: Vector2 = mouth["corner"]
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
 	var at := corner + d1 * 16.0 - d2 * back
-	return _instance(t, EventCatalogue.by_id("alley_robbery"), at, PackedVector2Array(), map)
+	return _instance(t, EventCatalogue.by_id("alley_robbery"), at, PackedVector2Array(), map,
+			where)
 
 ## **He notices her only along a clear line.** *(leafy-puffin, inbox #648, asked whether noticing
 ## her should need a clear line: "yes noticing needs a clear line".)* He waits in the alley 40px
@@ -1408,7 +1427,8 @@ func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	var corner: Vector2 = mouth["corner"]
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
-	var instance := _a_waiting_robber(t, map, mouth, 40.0)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _a_waiting_robber(t, map, mouth, 40.0, instance_where)
 	var looking := instance.look.drawn_heading().normalized()
 	var round_the_corner := corner - d1 * 60.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 	t.check(instance.global_position.distance_to(round_the_corner) < instance.def.notice_within(),
@@ -1416,7 +1436,7 @@ func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 			% instance.global_position.distance_to(round_the_corner))
 	t.check(not _sampled_line_is_walkable(map, instance.global_position, round_the_corner),
 			"with the building between them")
-	instance.player_at = round_the_corner
+	instance_where.tell(round_the_corner)
 	_advance(instance, 1.0)
 	t.check(instance.is_waiting(), "he does not notice her through the building")
 	t.check(instance.look.drawn_heading().normalized().is_equal_approx(looking),
@@ -1424,7 +1444,7 @@ func _test_the_robber_does_not_notice_her_through_a_wall(t) -> void:
 	var in_the_mouth := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 	t.check(_sampled_line_is_walkable(map, instance.global_position, in_the_mouth),
 			"in front of the mouth nothing stands between them")
-	instance.player_at = in_the_mouth
+	instance_where.tell(in_the_mouth)
 	instance.step(STEP)
 	t.check(not instance.is_waiting(), "and there he notices her")
 	t.check(instance.look.drawn_heading().normalized().is_equal_approx(
@@ -1445,25 +1465,26 @@ func _test_the_robber_does_not_lunge_through_a_wall(t) -> void:
 	var corner: Vector2 = mouth["corner"]
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
-	var instance := _a_waiting_robber(t, map, mouth, 40.0)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _a_waiting_robber(t, map, mouth, 40.0, instance_where)
 	var def := instance.def
 	var start := instance.global_position
 	var down_the_alley := start + d2 * (def.notice_within() - 20.0)
 	t.check(_sampled_line_is_walkable(map, start, down_the_alley),
 			"down the alley's line, inside his radius, nothing stands between them")
-	instance.player_at = down_the_alley
+	instance_where.tell(down_the_alley)
 	instance.step(STEP)
 	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he notices her there")
 	var round_the_corner := corner - d1 * 60.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 	t.check(not _sampled_line_is_walkable(map, instance.global_position, round_the_corner),
 			"round the corner the building stands between them")
-	instance.player_at = round_the_corner
+	instance_where.tell(round_the_corner)
 	_advance(instance, def.pursuit.warns_for + 0.5)
 	t.check(instance.is_telegraphing() and instance.global_position.distance_to(round_the_corner)
 			<= def.notice_within(),
 			"past his whole warning, inside his radius, he does not charge through the building")
 	var in_the_mouth := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
-	instance.player_at = in_the_mouth
+	instance_where.tell(in_the_mouth)
 	_advance(instance, 0.1)
 	t.check(not instance.is_telegraphing() and not instance.is_waiting(),
 			"in front of the mouth, the line clear, he charges")
@@ -1486,9 +1507,10 @@ func _test_a_late_notice_is_answered_by_his_warning(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	for back in [20.0, 40.0, 60.0, 90.0]:
 		for answer in ["run", "stand"]:
-			var instance := _a_waiting_robber(t, map, mouth, back)
+			var instance_where := WhereSheIs.nowhere()
+			var instance := _a_waiting_robber(t, map, mouth, back, instance_where)
 			var her := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
-			instance.player_at = her
+			instance_where.tell(her, Vector2.INF, Rect2(), instance_where.is_running())
 			instance.step(STEP)
 			t.check(not instance.is_waiting(), "%dpx in: he notices her in the mouth" % int(back))
 			var speed := 0.0
@@ -1499,8 +1521,7 @@ func _test_a_late_notice_is_answered_by_his_warning(t) -> void:
 				if answer == "run" and elapsed >= 0.3:
 					speed = move_toward(speed, Tuning.RUN_SPEED, Tuning.ACCELERATION * STEP)
 				her += Navigator.new(map).step(her, d1 * speed * STEP, Mover.lattice())
-				instance.player_at = her
-				instance.player_running = speed > Tuning.WALK_SPEED
+				instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
 				instance.step(STEP)
 				elapsed += STEP
 				charged = charged or instance.is_chasing()
@@ -1535,8 +1556,9 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var charged := 0
 	for back in [20.0, 40.0, 60.0, 90.0]:
+		var instance_where := WhereSheIs.nowhere()
 		var instance := _instance(t, def, corner + d1 * 16.0 - d2 * back, PackedVector2Array(),
-				map)
+				map, instance_where)
 		var her := corner - d1 * 300.0 + d2 * Tuning.PLAYER_BODY_RADIUS
 		var elapsed := 0.0
 		var noticed_at := INF
@@ -1547,7 +1569,7 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t) -> void:
 		var noticed_through_a_wall := false
 		while elapsed < 15.0 and caught_at == INF and not instance.is_finished:
 			her += d1 * Tuning.WALK_SPEED * STEP
-			instance.player_at = her
+			instance_where.tell(her)
 			var was_waiting := instance.is_waiting()
 			instance.step(STEP)
 			elapsed += STEP
@@ -1591,8 +1613,9 @@ func _test_the_red_caret_is_measured_from_the_catch(t) -> void:
 	t.check(hot.pursuit != null and hot.hard_fail and hot.lethal_reach() < hot.inner_radius,
 			"the hunting roadblock catches inside its field's core (%.0fpx < %.0fpx)"
 			% [hot.lethal_reach(), hot.inner_radius])
-	var instance := _instance(t, hot, Vector2.ZERO)
-	instance.player_at = Vector2(hot.notice_within() - 10.0, 0.0)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, hot, Vector2.ZERO, PackedVector2Array(), null, instance_where)
+	instance_where.tell(Vector2(hot.notice_within() - 10.0, 0.0))
 	instance.step(STEP)
 	t.check(not instance.is_waiting(), "the guard notices her")
 	var heading := instance.facing_now()
@@ -1617,11 +1640,12 @@ func _test_the_robber_catches_her_by_coming_round_the_corner(t) -> void:
 	var corner: Vector2 = mouth["corner"]
 	var d2: Vector2 = mouth["d2"]
 	var d1: Vector2 = mouth["d1"]
-	var instance := _a_chasing_robber(t, map)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _a_chasing_robber(t, map, instance_where)
 	var start := corner + d1 * 1.0 - d2 * 7.0
 	instance.position = start
 	var her := corner - d1 * 4.0 + d2 * Tuning.PLAYER_BODY_RADIUS
-	instance.player_at = her
+	instance_where.tell(her)
 	var elapsed := 0.0
 	var caught := false
 	var through_a_wall := 0

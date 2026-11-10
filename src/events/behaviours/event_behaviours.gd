@@ -10,7 +10,8 @@ extends RefCounted
 ## **The order is load-bearing**: a flock's birds move before its flush can put them up, a
 ## pursuer's chase runs before its man's stop is looked for, and a row that runs nothing else walks
 ## its route. A vehicle that investigates is never also a pursuer (`EventDef.validate()`).
-static func compose(event: EventInstance, row: EventDef, where: WhereSheIs) -> Array[EventBehaviour]:
+static func compose(event: EventInstance, row: EventDef,
+		where: WhereSheIs) -> Array[EventBehaviour]:
 	var out: Array[EventBehaviour] = []
 	event.departure = EventDeparture.new()
 	_add(out, event, where, event.departure)

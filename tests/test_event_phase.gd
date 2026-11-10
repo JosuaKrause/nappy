@@ -77,21 +77,23 @@ func _test_a_row_with_no_wait_is_in_its_telegraph_then_active(t) -> void:
 
 func _test_a_waiting_row_notices_warns_and_waits_again(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
+			instance_where)
 	t.check(instance.phase == EventInstance.Phase.WAITING and instance.is_waiting(),
 			"a row that waits starts waiting")
-	instance.player_at = Vector2(def.notice.within - 10.0, 0.0)
+	instance_where.tell(Vector2(def.notice.within - 10.0, 0.0))
 	instance.step(STEP)
 	t.check(instance.phase == EventInstance.Phase.WARNING and not instance.is_waiting(),
 			"inside its one radius it notices her and warns")
 	t.check(instance.noticed_at() != INF, "and its notice has a start")
-	instance.player_at = Vector2(def.notice.within + 40.0, 0.0)
+	instance_where.tell(Vector2(def.notice.within + 40.0, 0.0))
 	instance.step(STEP)
 	t.check(instance.phase == EventInstance.Phase.WAITING and instance.is_waiting(),
 			"back outside its radius, it waits again")
 	t.check(instance.noticed_at() == INF, "with no notice left")
-	instance.player_at = Vector2(def.notice.within - 10.0, 0.0)
+	instance_where.tell(Vector2(def.notice.within - 10.0, 0.0))
 	var frames := 0
 	while instance.phase == EventInstance.Phase.WARNING or frames == 0:
 		instance.step(STEP)
@@ -105,9 +107,11 @@ func _test_a_waiting_row_notices_warns_and_waits_again(t) -> void:
 
 func _test_a_departure_and_a_finish_are_phases(t) -> void:
 	var def := EventCatalogue.by_id("dog_walker")
+	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(40.0, 0.0)]))
-	instance.player_at = Vector2(0.0, 2000.0)
+	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(40.0, 0.0)]),
+			Vector2.RIGHT, null, null, instance_where)
+	instance_where.tell(Vector2(0.0, 2000.0))
 	var frames := 0
 	while not instance.is_leaving and frames < 400:
 		instance.step(STEP)
@@ -132,15 +136,16 @@ func _test_a_departure_and_a_finish_are_phases(t) -> void:
 ## the alert over her head, `event_activated`, its pictures — has always seen it.
 func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
+	var dog_where := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
-	dog.setup(def, Vector2.ZERO)
+	dog.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, dog_where)
 	var her := Vector2(400.0, 0.0)
 	var clock := 0.0
 	while not dog.is_leaving and clock < def.telegraph_time:
 		if clock >= 1.2:
-			dog.player_running = true
+			dog_where.tell(dog_where.at(), Vector2.INF, Rect2(), true)
 			her += Vector2(Tuning.RUN_SPEED * STEP, 0.0)
-		dog.player_at = her
+		dog_where.tell(her, Vector2.INF, Rect2(), dog_where.is_running())
 		dog.step(STEP)
 		clock += STEP
 	t.check(dog.is_leaving and dog.chase_age() < def.telegraph_time,
@@ -150,11 +155,13 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 	t.check(dog.has_given_up(), "having given up: she shook it off, its clock did not run out")
 	# She follows it at 100px, so it stays in her sight and in the world while its clock runs.
 	while dog.chase_age() < def.telegraph_time - 2.0 * STEP and not dog.is_finished:
-		dog.player_at = dog.global_position + Vector2(100.0, 0.0)
+		dog_where.tell(dog.global_position + Vector2(100.0, 0.0), Vector2.INF, Rect2(),
+				dog_where.is_running())
 		dog.step(STEP)
 		t.check(dog.is_telegraphing(), "every frame until its clock runs out (%.1fs)" % dog.chase_age())
 	while dog.chase_age() < def.telegraph_time + STEP and not dog.is_finished:
-		dog.player_at = dog.global_position + Vector2(100.0, 0.0)
+		dog_where.tell(dog.global_position + Vector2(100.0, 0.0), Vector2.INF, Rect2(),
+				dog_where.is_running())
 		dog.step(STEP)
 	t.check(not dog.is_finished and dog.is_leaving, "still in the world, leaving")
 	t.check(not dog.is_telegraphing(), "and not once its %.1fs have run" % def.telegraph_time)
@@ -169,14 +176,15 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 ## show the notice running afterwards, since he lunges the moment she is at the full stand-off.
 func _test_a_held_notice_comes_back_as_far_run(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
+	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(def, Vector2.ZERO)
+	first.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null, first_where)
 	var her := Vector2(60.0, 0.0)
 	t.check(her.length() < first.charge_radius(), "she stands inside the robber's stand-off")
 	first.notice_her_at(her, 5.0)
 	var held_steps := 10
 	for i in held_steps:
-		first.player_at = her
+		first_where.tell(her)
 		first.step(STEP)
 	t.check(first.phase == EventInstance.Phase.WARNING, "set on her, he is warning")
 	t.close_to(first.chase_age(), 0.0, "and his notice, held every tick, has not run", 0.0001)

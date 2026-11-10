@@ -422,8 +422,8 @@ func body_position() -> Vector2:
 	return barrier_post.body_position() if barrier_post else global_position
 
 ## **Whether a waiting charger would raise his warning in her view**: the whole of his warning
-## picture (`warning_rect()`) inside the camera's view this frame (`WhereSheIs.view()`; inbox #788 in
-## minty-lemur). Every charger that waits for her and pursues notices her only then, on a day as in
+## picture (`warning_rect()`) inside the camera's view this frame (`WhereSheIs.view()`; inbox #788
+## in minty-lemur). Every charger that waits for her and pursues notices her only then, on a day as in
 ## the escape, so his warning never starts off the screen, and his warning's clock starts from
 ## there. The view is the camera's own, look-ahead and trailing included. Always true for any other
 ## row, and for an instance nobody has handed a view (an empty view, a rig that steps it

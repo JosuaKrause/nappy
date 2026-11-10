@@ -2195,15 +2195,15 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 		moving = move_toward(moving, early, Tuning.ACCELERATION * STEP)
 		her += heading * moving * STEP
 		elapsed += STEP
+	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
-	guard.setup(def, guard_at)
+	guard.setup(def, guard_at, PackedVector2Array(), Vector2.RIGHT, null, null, guard_where)
 	var result := {"caught": false, "gave_up": false, "lethal_in_notice": false, "ended_at": INF}
 	while elapsed < 12.0 + head_start and not guard.is_finished and not guard.is_leaving:
 		var wanted := speed if elapsed >= reaction else minf(speed, Tuning.WALK_SPEED)
 		moving = move_toward(moving, wanted, Tuning.ACCELERATION * STEP)
 		her += heading * moving * STEP
-		guard.player_at = her
-		guard.player_running = moving > Tuning.WALK_SPEED
+		guard_where.tell(her, Vector2.INF, Rect2(), moving > Tuning.WALK_SPEED)
 		guard.step(STEP)
 		elapsed += STEP
 		if guard.is_lethal_at(her):

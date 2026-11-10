@@ -14,18 +14,17 @@ func run(t) -> void:
 	_test_a_last_step_taken_back_does_not_park_it_short(t)
 	_test_a_car_comes_back_standing(t)
 
-func _engine(t, route: PackedVector2Array) -> EventInstance:
+func _engine(t, route: PackedVector2Array, where: WhereSheIs) -> EventInstance:
 	var def := EventCatalogue.by_id("fire_truck")
 	var engine := EventInstance.new()
-	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(), null)
+	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(), null, null, where)
 	engine.resume(def.telegraph_time, 0.0)
 	t.add_child(engine)
 	engine.set_process(false)
 	return engine
 
-func _step(engine: EventInstance, her: Vector2, facing: Vector2) -> void:
-	engine.player_at = her
-	engine.pram_at = her + facing * Tuning.PLAYER_BODY_RADIUS
+func _step(engine: EventInstance, where: WhereSheIs, her: Vector2, facing: Vector2) -> void:
+	where.tell(her, her + facing * Tuning.PLAYER_BODY_RADIUS)
 	engine.step(STEP)
 
 ## **She stands just past its kerb, so the step that would end its route is the one taken back.**
@@ -39,12 +38,13 @@ func _test_a_last_step_taken_back_does_not_park_it_short(t) -> void:
 	var parked_short := 0
 	var past := 42.0
 	while past <= 44.0:
-		var engine := _engine(t, route)
+		var engine_where := WhereSheIs.nowhere()
+		var engine := _engine(t, route, engine_where)
 		var her := Vector2(past, 0.0)
 		var held := false
 		for i in int(3.0 / STEP):
 			var was_at := engine.global_position
-			_step(engine, her, Vector2.RIGHT)
+			_step(engine, engine_where, her, Vector2.RIGHT)
 			held = engine.global_position.is_equal_approx(was_at)
 			if engine.is_parked or (held and engine.path_travelled() > length - 4.0):
 				break
@@ -54,7 +54,7 @@ func _test_a_last_step_taken_back_does_not_park_it_short(t) -> void:
 			parked_short += 1
 		# She walks away; it drives the rest of the way, if it has any left, and parks.
 		for i in int(2.0 / STEP):
-			_step(engine, Vector2(600.0, 600.0), Vector2.RIGHT)
+			_step(engine, engine_where, Vector2(600.0, 600.0), Vector2.RIGHT)
 		t.check(engine.is_parked and engine.global_position.distance_to(route[1]) < 0.01,
 				"%.1fpx past its kerb, once she has gone it is parked at its kerb (%.2fpx off it, "
 				% [past, engine.global_position.distance_to(route[1])]
@@ -71,14 +71,15 @@ func _test_a_last_step_taken_back_does_not_park_it_short(t) -> void:
 ## only once she is out of its way.
 func _test_a_car_comes_back_standing(t) -> void:
 	var route := PackedVector2Array([Vector2(-300.0, 0.0), Vector2.ZERO])
-	var engine := _engine(t, route)
+	var engine_where := WhereSheIs.nowhere()
+	var engine := _engine(t, route, engine_where)
 	for i in int(0.5 / STEP):
-		_step(engine, Vector2(600.0, 600.0), Vector2.RIGHT)
+		_step(engine, engine_where, Vector2(600.0, 600.0), Vector2.RIGHT)
 	t.check(engine.global_position.x > -300.0 + 1.0, "the engine is driving its route (%.1fpx along)"
 			% (engine.global_position.x + 300.0))
 	var state := engine.save_behaviours()
 	t.check(not state.has(&"EventCarDriving"), "and its driving saves nothing")
-	var back := _engine(t, route)
+	var back := _engine(t, route, WhereSheIs.nowhere())
 	back.resume(engine.age, engine.path_travelled(), engine.noticed_at())
 	back.restore_behaviours(state)
 	t.check(back.global_position.is_equal_approx(engine.global_position),

@@ -36,9 +36,9 @@ func run(t) -> void:
 
 
 func _instance(t, def: EventDef, at := Vector2.ZERO,
-		path := PackedVector2Array()) -> EventInstance:
+		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(def, at, path)
+	instance.setup(def, at, path, Vector2.RIGHT, null, null, where)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
@@ -314,12 +314,13 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
 ## a van she never comes near takes nobody, and it begins the moment she does.
 func _test_the_take_begins_only_once_she_is_close(t) -> void:
 	var def := EventCatalogue.by_id("abduction")
-	var instance := _instance(t, def, Vector2.ZERO)
-	instance.player_at = Vector2(def.outer_radius + 40.0, 0.0)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
+	instance_where.tell(Vector2(def.outer_radius + 40.0, 0.0))
 	_advance(instance, 2.0)
 	t.check(not instance.is_taking_a_victim(), "outside the field, nothing has started")
 
-	instance.player_at = Vector2(def.outer_radius - 20.0, 0.0)
+	instance_where.tell(Vector2(def.outer_radius - 20.0, 0.0))
 	instance.step(STEP)
 	t.check(instance.is_taking_a_victim(), "and it begins the frame she comes inside it")
 	instance.free()
@@ -328,9 +329,10 @@ func _test_the_take_begins_only_once_she_is_close(t) -> void:
 func _test_a_completed_take_is_logged_exactly_once(t) -> void:
 	var lines: Array[String] = []
 	var def := EventCatalogue.by_id("abduction")
-	var instance := _instance(t, def, Vector2.ZERO)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	instance.trace = RunTrace.recording(lines)
-	instance.player_at = Vector2(def.outer_radius - 20.0, 0.0)
+	instance_where.tell(Vector2(def.outer_radius - 20.0, 0.0))
 	_advance(instance, instance.def.abduction.taken_over * 0.5)
 	t.check(_takes(lines) == 0, "nothing is logged while the walk is still happening")
 
@@ -362,16 +364,17 @@ func _hunting_abduction() -> EventDef:
 func _test_a_hunting_van_draws_no_victim(t) -> void:
 	var lines: Array[String] = []
 	var hot := _hunting_abduction()
-	var instance := _instance(t, hot, Vector2.ZERO)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, hot, Vector2.ZERO, PackedVector2Array(), instance_where)
 	instance.trace = RunTrace.recording(lines)
 	# Inside the field but outside the trigger, so it is only waiting — the take may begin exactly
 	# as it would for a cold van.
-	instance.player_at = Vector2(hot.notice_within() + 20.0, 0.0)
+	instance_where.tell(Vector2(hot.notice_within() + 20.0, 0.0))
 	instance.step(STEP)
 	t.check(instance.is_taking_a_victim(), "waiting, it takes a bystander exactly like a cold van")
 
 	# Now she comes inside the trigger: it notices her and stops waiting, in the same frame.
-	instance.player_at = Vector2(hot.notice_within() - 10.0, 0.0)
+	instance_where.tell(Vector2(hot.notice_within() - 10.0, 0.0))
 	instance.step(STEP)
 	t.check(not instance.is_waiting(), "she is inside the trigger, so it turns and notices her")
 	t.check(not instance.is_taking_a_victim(), "and the take it was running is abandoned")
@@ -385,10 +388,11 @@ func _test_a_hunting_van_draws_no_victim(t) -> void:
 ## out rather than moving, so its body stays where it is once it has noticed her too.
 func _test_a_hunting_van_stays_solid_once_it_notices_her(t) -> void:
 	var hot := _hunting_abduction()
-	var instance := _instance(t, hot, Vector2.ZERO)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _instance(t, hot, Vector2.ZERO, PackedVector2Array(), instance_where)
 	t.check(instance.is_solid(), "a hunting van still parked is solid, exactly like a cold one")
 
-	instance.player_at = Vector2(hot.notice_within() - 10.0, 0.0)
+	instance_where.tell(Vector2(hot.notice_within() - 10.0, 0.0))
 	instance.step(STEP)
 	t.check(not instance.is_waiting(), "she is inside the trigger, so it stops waiting")
 	t.check(instance.is_solid() and instance.officers_owed() == 2,
