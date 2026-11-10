@@ -49,6 +49,7 @@ ENTRY_POINTS = (
     "release-notes.py",
     "inbox.py",
     "agent-stats.py",
+    "agents-to-reassess.py",
     "reddit.py",
     "check_citations.py",
     "ci_classify.py",
