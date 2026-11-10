@@ -38,13 +38,15 @@ where she is as one object (minty-quail-olive-finch).
   until the pull requests that follow.
 - `docs/EVENTS.md` and `docs/ARCHITECTURE.md` say what a behaviour is handed and asks through.
   `tools/field_reads.txt` lost 42 lines and gained none.
-- **Three suites now reach a row or a trace the way the game does**, since a behaviour answers
-  from what it was handed at setup: `tests/test_park_cordon.gd` spawns its walking busker from the
-  walking copy of his row instead of swapping the row under a live event;
-  `tests/test_prediction_reuse.gd` swaps the row only of an event with no birds, since a flock's
-  birds would answer from the row they were handed while the event answered from the new one; and
-  two checks of `tests/test_events_chat.gd` set the trace before `setup()`, as
-  `EventSpawner.create()` does. Nothing under `src/` swaps a live event's row or trace after setup.
+- **Three suites changed, since a behaviour answers from what it was handed at setup.** Two now
+  reach a row or a trace the way the game does: `tests/test_park_cordon.gd` spawns its walking
+  busker from the walking copy of his row instead of swapping the row under a live event, and two
+  checks of `tests/test_events_chat.gd` set the trace before `setup()`, as `EventSpawner.create()`
+  does. `tests/test_prediction_reuse.gd` swaps the row after setup only for an event with no
+  birds, since a flock's birds would answer from the row they were handed while the event answered
+  from the new one; for the others the swap stays, harmless, since after it only the excitement
+  source, `transition()` and `retire()` are asked and no converted behaviour is. Nothing under
+  `src/` swaps a live event's row or trace after setup.
 
 ## `Figure`'s questions and events
 
@@ -77,7 +79,9 @@ broke on a path its cost probe did not reach (minty-quail-brisk-lark).
 
 The per-frame cost, by a separate measuring agent, on `main` at `6cfefd380`, the commit this branch
 was made from, and on this pull request at `32abb6eef`, the code before the review's fixes (those
-moved the take's run log to a hand-in and changed three suites, nothing a probe times). Four
+moved the take's run log to a hand-in and changed three suites; inside the timed step they add one
+argument to `EventInstance.setup()`, which an event streamed in during the window runs, and send
+the take's one log line through a member instead of two calls, neither of a size a probe shows). Four
 probes, each run alone, twelve rounds alternated base, head, head, base; the load average is the
 one-minute figure before the round, and the review fixes' own checks, suites and parity probes ran
 on the machine during rounds 9 to 12. Nothing is concluded from it and no cut is held or tuned for
