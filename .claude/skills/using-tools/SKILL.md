@@ -30,7 +30,8 @@ anything it does not understand, one place the flag list lives), not what each i
 | `tools/scene-recipes.sh` | Runs the saved scenes through their headless action assertions; `--screenshots` also photographs each one. | Checking exact authored setups and sharing scene screenshots. | verify, session-captures; `docs/SCENE_RECIPES.md` |
 | `tools/scene-draft.sh` | Walks a recipe's scripted route once and writes the first draft of a task scene's stretch, for the author to edit. | Making a new task scene, or drafting one again after the city it was cut from changed. | `docs/SCENE_RECIPES.md`, "The task scenes" |
 | `tools/measure-ground-frames.sh` | Compares the three ground preparation modes (`--ground-mode`) on the committed HEAD under matched camera routes, in a clean detached checkout it removes itself. It checks its runtime and collector hashes around every launch, waits up to five minutes for another Godot to end, rejects a capture whose city ran another mode or whose covered window forced a draw, and records the load average. | Comparing the ground modes' frame cost. | verify |
-| `tools/agent-stats.py` | The counter of what each sub-agent did and how it went, kept outside the repository: `add` a grade, `summary`, `list`. | After every finished sub-agent, to grade it; before choosing a model for a kind of task. | orchestrating |
+| `tools/agent-stats.py` | The counter of what each sub-agent did and how it went, kept outside the repository: `add` a grade, `summary`, `list`, and `ungraded`, the finished agents with no grade or with stops after their last one. | After every finished sub-agent, to grade it; before choosing a model for a kind of task. | orchestrating |
+| `tools/usage-report.py` | What this repository's Claude Code sessions and sub-agents used over date windows, read from the transcripts: weighted tokens and API-price dollars per model and kind of agent, cache rewrites, compactions, the largest agents, merged pull requests. It can save its report and rows under `~/.claude/nappy-agent-stats/usage/`. | A weekly look at what the agents cost, or comparing models (Fable against Opus) on the same kind of work. | orchestrating |
 | `tools/agent-identity.py` | Gives each agent role its own GitHub bot identity: `status` says whether a role is usable, `run <role> -- <command>` runs a command as it, `create` sets one up on the player's machine. | Before and for every commit, push or post. | committing |
 | `tools/agent-setup.sh` | Sets an agent up: `<name> <branch>` makes the sparse worktree and the brief's header and prints the spawn prompt; `--agent` credits an agent id, `--release` marks the brief `cleanup: ready`, `--detach <ref> <name>` makes a review agent's scratch checkout and `--remove <name>` removes a clean one. `tools/test_agent_setup.sh` runs it against a scratch clone. | Starting an agent, the moment its id is known, when its work is done, and around a review. | orchestrating |
 | `tools/agent-status.sh` | Surveys every agent worktree, here and in other local clones: uncommitted files, ahead and behind, its pull request and CI, its brief, and whether its agent is warm or cold. | Before touching a live agent's worktree, and as step one of recovering from an interruption. | orchestrating |
@@ -115,6 +116,11 @@ search use `rg`, add `-I`, or restrict the pathspec (`-- '*.md' '*.gd' '*.sh'`).
 **committing** owns that rule ("Who a commit and a pull request are from") and how text that names
 a write is handed over ("Text handed to a write goes through a file"). Each hook's header comment
 is the exact list of what it denies, and each denial names the way out.
+
+**A third guards the resume of a sub-agent.** `.claude/hooks/resume-guard.py`, on every
+`SendMessage`, refuses once a message to a sub-agent that has outgrown the limit an agent may
+grow to; **orchestrating** owns that rule ("What the orchestrator keeps"), and
+`tools/test_resume_guard.py` holds the hook's cases.
 
 ## A manual sequence done a second time becomes a script
 

@@ -60,6 +60,7 @@ run uv run ruff check tools
 run uv run ruff format --check tools
 run uv run mypy
 run uv run python tools/test_codex_hooks.py
+run uv run python tools/test_resume_guard.py
 run uv run python tools/test_clip.py
 run uv run python tools/test_goatcounter.py
 run uv run python tools/test_agent_identity.py

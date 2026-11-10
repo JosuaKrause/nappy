@@ -20,8 +20,9 @@ The rules the orchestrating session must not miss, one line each; the sections b
 - **Parallel agents are split by files**, never by topic.
 - **The queue and the archive are the orchestrator's**; nothing is committed into a worktree an
   agent works in, and no agent runs `git stash`.
-- **An agent is resumed only while its cache is warm** (55 minutes in Claude Code); after that a
-  fresh one is briefed.
+- **An agent is resumed only while its cache is warm** (55 minutes in Claude Code) **and it is
+  under the limit**; after that a fresh one is briefed, and a hook refuses the resume of one past
+  the limit.
 - **After a report**: the queue move, a review under **pr-review**, the merge and the retirement
   under **committing**, and a grade in `tools/agent-stats.py`.
 - **A usage limit changes nothing about delegation.**
@@ -265,19 +266,24 @@ before spawning:
 - **An agent stays on one task, and no agent grows huge** (inbox #874 in minty-dolphin). An agent re-reads its
   whole context on every turn, so the cost of a long-lived one grows with every step it is kept
   for; a fresh agent instead rebuilds its context from scratch, so too many fresh agents cost too.
+  **A hook holds this at the resume**: `.claude/hooks/resume-guard.py` refuses a `SendMessage` to a
+  sub-agent that is past the limit, or whose context the harness has compacted on its own, once,
+  naming what the agent is past, and the same message sent again passes, which is for an
+  instruction to stop or wrap up and never for more work.
 - **A task is scoped to stay under the limit by construction, never policed** (inbox #896 in plaid-raven). A brief
   carries no size line asking the agent to count its turns or tokens, and the orchestrator does not
   watch an agent's count while it runs, since either spends tokens on bookkeeping instead of the
-  work; the orchestrator sizes every task before spawning it so that it finishes well under the
-  limit. `references/writing-a-brief.md` says where the limit falls and how a task is cut to it
-  (one kind of work per agent, one mechanism per build, a fresh agent per pull request of a split
-  plan).
+  work (the hook above reads the count only when a message is sent, and spends none); the
+  orchestrator sizes every task before spawning it so that it finishes well under the limit.
+  `references/writing-a-brief.md` says where the limit falls and how a task is cut to it (one kind
+  of work per agent, one mechanism per build, a fresh agent per pull request of a split plan).
 - **A warm agent is reused while rebriefing would cost more** (inbox #896 in plaid-raven). Briefing a fresh agent
   costs tokens too, so follow-up work on a pull request (review fixes, the next step of the same
   change) goes back to its agent while it is warm (the cold-resume rule below) and not huge, which
-  saves the rebriefing. What the orchestrator is told for free, such as the token count in an agent's
-  finishing notification, is used: it says whether the agent is far enough under the limit to
-  reuse, and how the next brief should be sized.
+  saves the rebriefing; past the limit the saving is gone, and the hook's refusal sends the
+  follow-up to a fresh agent. What the orchestrator is told for free, such as the token count in
+  an agent's finishing notification, is used: it says whether the agent is far enough under the
+  limit to reuse, and how the next brief should be sized.
 - **A finished agent is not resumed after it has gone cold.** Sending a follow-up to an agent that
   reported an hour ago replays its whole transcript at full price, because the prompt cache behind
   it has expired (woolly-finch 5). Resume only while the cache is live, and the windows are exact:
@@ -348,3 +354,6 @@ to the player's correction:
   orchestrator keeps"; the rule it qualifies is inbox #1196 in gentle-owl).
 - **That the 45-minute check is a recurring job about every 30 minutes**, and the reading that it
   is not a tick under the contract's one-notification rule (the rule is gentle-owl #1255).
+- **That the resume hook refuses once and lets the same message through when it is sent again**,
+  and **that a compaction the harness started counts as past the limit** ("What the orchestrator
+  keeps"). The player approved a hook that refuses the resume of an agent past the limit.

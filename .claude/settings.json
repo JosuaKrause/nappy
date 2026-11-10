@@ -47,6 +47,17 @@
             "statusMessage": "Checking for a GitHub write outside an agent identity"
           }
         ]
+      },
+      {
+        "matcher": "SendMessage",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR:-.}/.claude/hooks/resume-guard.py\"",
+            "timeout": 10,
+            "statusMessage": "Checking the size of the agent being resumed"
+          }
+        ]
       }
     ],
     "SubagentStop": [

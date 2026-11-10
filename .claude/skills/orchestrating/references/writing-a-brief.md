@@ -66,7 +66,10 @@ and a warm agent is reused while rebriefing would cost more (inbox #896 in plaid
 limit falls and how a task is cut to it:
 
 - The limit is about 150 turns or 300k tokens of context. Re-reading grows with the square of the
-  turns, so two agents of 150 turns cost well under one of 300.
+  turns, so two agents of 150 turns cost well under one of 300. `.claude/hooks/resume-guard.py`
+  reads the two numbers out of this item's first sentence, a turn being one request to the model
+  and the context being the latest turn's, so the limit is written nowhere else and that sentence
+  keeps its form (`tools/test_resume_guard.py` fails when the hook cannot read it).
 - One kind of work per agent: building, measuring (long probe runs, many-seed statistics) and
   capturing pictures are separate agents on the one pull request, each briefed from the brief
   file, the review threads and what the one before it left. A measurement
