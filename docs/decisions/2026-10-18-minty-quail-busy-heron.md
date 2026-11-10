@@ -12,8 +12,8 @@ shrinks. The item is `docs/todo/2026-10-18-minty-quail/field-reads.md`.
 Checked against the engine's documentation and by experiment on the project's Godot version:
 
 - A warning's level is a project setting: ignore, warn, or error. At error the script fails to
-  parse. The warnings are generated only in a debug build, so a release export and the Web build
-  are not affected; the editor's binary, a debug build and a script loaded at run time are.
+  parse. The warnings are generated only in a debug build, so the release Web export is not
+  affected; the editor's binary, a debug build and a script loaded at run time are.
 - **`untyped_declaration`** fails an untyped variable, parameter, return or loop variable.
   **`unsafe_property_access`** fails a property read off a type too wide to have it (a plain
   `Node`). **`unsafe_method_access`** fails a method call the same way, and also a call on a value
@@ -40,7 +40,12 @@ Checked against the engine's documentation and by experiment on the project's Go
   receiver's class it cannot tell fails, naming the file, the line and the expression; in a file
   with the line it is skipped and counted, as before. The line itself is checked wherever it
   stands (first line, only the three warnings, each once, literals only, no other ignore of the
-  three anywhere in the file). `--summary` prints the files still carrying the line by folder and
+  three anywhere in the file); the line has one form (the whole first line, double quotes, the
+  three warnings in a fixed order, nothing after), and any other `@warning_ignore`, `_start` or
+  `_restore` naming one of the three, or whose argument it cannot read, fails. In a file under
+  `src/` without the line, a method named without its parentheses fails too (an unknown receiver
+  read with a name a class under `src/` declares as a method, or a known receiver's own method),
+  unless the line hands the Callable on. `--summary` prints the files still carrying the line by folder and
   by warning and the uses still skipped; `--base` fails a file that gains the line or a warning on
   it.
 - **The checker types far more receivers than it did**: engine and builtin types, typed arrays and
@@ -51,9 +56,13 @@ Checked against the engine's documentation and by experiment on the project's Go
 
 ## What it still cannot see
 
-A chain through an engine property typed Variant (`JSON.data`); a read of another file's inner
-class's field; `self` inside an inner class; and a line that names a warning its file no longer
-trips, which nothing catches.
+- a chain through an engine property typed Variant (`JSON.data`);
+- a read of another file's inner class's field;
+- `self` inside an inner class;
+- a bare name nothing declares, taken for an engine property;
+- a method named without its parentheses on a receiver typed as an engine value, or as a bare name
+  of its own class with no receiver;
+- a name left on an opt-out line that its file no longer trips.
 
 ## Choices the builder made, open to the player's overturn
 

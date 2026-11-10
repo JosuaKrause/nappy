@@ -32,8 +32,8 @@ engine hold a file to that.
 - **The files under `src/` are typed in the module passes** (`field-reads.md`).
 
 **Proposed, not asked for:** one scripted rewrite, as a pull request of its own right after the
-typed-access step lands, that types the runner in every suite (the runner script preloaded as a
-constant, `run` taking it as its parameter's type) and takes out of each file's ignore what the file
+typed-access step lands, that types the runner in every suite (`func run(t: TestRunner) -> void:`, the
+runner's class name being the player's ask, inbox #1282) and takes out of each file's ignore what the file
 no longer trips, the script kept in the pull request's description so a branch merging `main`
 reruns it. The plainer alternative is to leave every test file as it is until its suite is
 converted. The plan was put to the player with the count, before the third message; the player's

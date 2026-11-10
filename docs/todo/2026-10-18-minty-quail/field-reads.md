@@ -30,17 +30,13 @@ each read, and its pull requests in order, the first of which run beside the pla
 
 **Every receiver gets a class the check can tell** (inbox #1268 in olive-ferret). Shown "The field-read check
 skips about two thirds of reads because it cannot tell the receiver's class", the player: "isn't
-that the point of a class hierarchy? it should be made working". The check and the engine's
-settings are built (record minty-quail-busy-heron): `project.godot` makes the engine fail an untyped
-declaration and an unsafe property or method access; a file not yet typed opts out with one first
-line, `@warning_ignore_start(...)`, naming the warnings it still trips; and in a file under `src/`
-without that line, `tools/check_field_reads.py` fails any receiver whose class it cannot tell.
-
-**What is left of it** is the typing itself: the files that carry the opt-out line are a second
-list that only shrinks (`tools/check_field_reads.py --summary` counts them by folder and by
+that the point of a class hierarchy? it should be made working". **What is left of it** is the
+typing itself: the files that carry the opt-out line (godot's "Types" gives its one form) are a
+second list that only shrinks (`tools/check_field_reads.py --summary` counts them by folder and by
 warning). Each area's conversion below types the receivers in its files and deletes their line;
-`tests/` and the two scripts under `tools/` follow with the suites' conversion
-(`tests-one-module.md`). The engine warns of nothing on a property read off a value it types as
+`tests/` follows with the suites' conversion (`tests-one-module.md`), and the two scripts under
+`tools/` that carry it (`tools/cost_table.gd`, `tools/split-scenes-crop.gd`) are typed by the pull
+request that next changes each, or with the suites' conversion if none does first. The engine warns of nothing on a property read off a value it types as
 Variant (an untyped array's element, what `back()` or `get()` returns), so such a value is read
 through a typed name, and the check, not the engine, is what holds that.
 
