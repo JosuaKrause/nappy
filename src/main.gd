@@ -323,13 +323,16 @@ func _ready() -> void:
 	_run_log.configure(config)
 	_save.configure(config)
 	_visit_counter.configure(config, _run)
+	# The page counter outlives this boot under the sitting; the walks it counts begin on this boot's
+	# own flow.
+	_visit_counter.listen_to_the_flow(_flow)
 	# The run log's owner, listening on the bus from here on, and the trace everything this boot
 	# builds writes its own account into: the save and the atlas pages, which outlive this boot
 	# under the sitting, take this boot's.
 	_session = RunSession.new()
 	_session.name = "RunSession"
 	add_child(_session)
-	_session.setup(_run_log, config, EventBus, _run)
+	_session.setup(_run_log, config, EventBus, _flow, _run)
 	_run.use_trace(_session.trace)
 	_save.trace = _session.trace
 	_sitting.atlas.trace_note = _session.trace.note
@@ -477,12 +480,8 @@ func _ready() -> void:
 	_pauses_with_the_game(_day)
 	_day.setup(_run)
 	_day.day_finished.connect(_on_day_finished)
-	_session.watch_the_clock(_day)
 	if _readout:
 		_readout.watch(_player, _baby, _day)
-
-	if walks_a_day:
-		_session.watch_day(_city, _player, _baby, _day, _resistance, _edge)
 
 	if walks_a_day and config.frame_trace_requested:
 		var trace := FrameTrace.new()
@@ -872,10 +871,15 @@ func _city_map() -> CityMap:
 ## out of the city its two ways out — and the day director hands both on (`DayWorld.home_map()`,
 ## `exits()`).
 func _stand_the_world(spec: DaySpec) -> DayWorld:
+	var world := _the_world_of(spec)
+	_watch_the_walk()
+	return world
+
+## The world of `_stand_the_world()`, built where it is not yet and standing.
+func _the_world_of(spec: DaySpec) -> DayWorld:
 	if spec.world == DaySpec.World.BUILDING:
 		if not _interior:
 			_build_the_escape_building()
-			_watch_the_escape()
 		_interior.start_the_night(_building_seed)
 		_add_the_building_walker()
 		var start_at := _interior.part_world_position(_escape_start_part()) if _first_day \
@@ -883,7 +887,7 @@ func _stand_the_world(spec: DaySpec) -> DayWorld:
 		# The same seed on every entry, so a retry is the same building.
 		var building_rng := RandomNumberGenerator.new()
 		building_rng.seed = _building_seed
-		return DayWorld.in_the_building(_interior, _building_events, _player, _baby, start_at,
+		return DayWorld.in_the_building(_interior.map, _building_events, _player, _baby, start_at,
 				Vector2.UP, building_rng)
 	if not _city:
 		if _interior:
@@ -891,7 +895,6 @@ func _stand_the_world(spec: DaySpec) -> DayWorld:
 		_build_the_escape_city(spec)
 		if _interior:
 			_interior.put_the_pictures_away()
-		_watch_the_escape()
 		_add_the_route_rig_in_the_city()
 	if _building_events:
 		_building_events.stand_down()
@@ -902,17 +905,20 @@ func _stand_the_world(spec: DaySpec) -> DayWorld:
 	var start_at := _city.map.doorstep_world_position()
 	if spec.start_point() == DaySpec.Start.SERVICE_EXIT:
 		start_at = _finale_start_position()
-	return DayWorld.in_the_city(_city, _city.events, _player, _baby, start_at, home_map, exits)
+	return DayWorld.in_the_city(_city, _city.map, _city.events, _player, _baby, start_at, home_map,
+			exits)
 
-## The first world an escape boot builds is where the run log's observer starts watching the
-## escape — her, the baby, the day's clock and the badges, which exist from here on. Once a boot.
-func _watch_the_escape() -> void:
-	if not _escape_watched and _session:
-		_escape_watched = true
-		_session.watch_escape(_player, _baby, _day, _edge)
+## The first world a boot stands is where the run log's session is handed what it watches every
+## walk with besides the walk's world — the day's clock, the resistance (none in the escape) and the
+## badges, which all exist from here on, the escape's badges built with its first world. Once a boot,
+## before the walk is announced.
+func _watch_the_walk() -> void:
+	if not _walk_watched and _session:
+		_walk_watched = true
+		_session.watch(_day, _resistance, _edge)
 
-## Whether the run log's session has been told what to watch the escape with — once a boot.
-var _escape_watched := false
+## Whether the run log's session has been handed what it watches every walk with — once a boot.
+var _walk_watched := false
 
 ## Hands her and the baby the map of the world she now walks (`WorldMap`): the stroller asks it how
 ## the ground under her turns a press (`Stroller.set_map()`), and the baby asks its world how loud it
@@ -1097,7 +1103,7 @@ func _add_the_route_rig(resistance: ResistanceDirector) -> void:
 	_pauses_with_the_game(_route_rig)
 	_route_rig.trace = _the_trace()
 	_route_rig.setup(_city, _player, _baby, resistance, _day, config.route_targets, _run)
-	_flow.day_planned.connect(_route_rig.start_day)
+	_flow.day_planned.connect(_route_rig.start_day.unbind(1))
 	_route_rig.use_continue(_on_summary_continued)
 	_flow.brief_opened.connect(_route_rig.press_the_brief)
 
@@ -1114,7 +1120,7 @@ func _add_the_building_walker() -> void:
 	_building_walker.trace = _the_trace()
 	_building_walker.setup(_interior.map, _player, _day)
 	_building_walker.use_continue(_on_summary_continued)
-	_flow.day_planned.connect(_building_walker.start_section)
+	_flow.day_planned.connect(_building_walker.start_section.unbind(1))
 	_flow.brief_opened.connect(_building_walker.press_the_brief)
 
 ## `--route` in the escape's city: the game's own walker, built once the city stands — the first
@@ -1603,7 +1609,7 @@ func _add_the_readout() -> void:
 	add_child(_readout)
 	_readout.setup(config, _status, _status_layer, _run.header, _session, _screen_name)
 	_flow.day_started.connect(_readout.use_the_day)
-	_flow.day_planned.connect(_readout.use_the_plan)
+	_flow.day_planned.connect(_readout.use_the_plan.unbind(1))
 
 ## What screen is up, for a snapshot's line.
 func _screen_name() -> String:

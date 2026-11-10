@@ -5,10 +5,11 @@ extends RefCounted
 ## decided (`finish_day()`). `RunFlow` has it start each walk; `main` and the tests build it.
 ##
 ## **One start, and what differs is the spec's settings.** *(minty-lemur #785: "the escape is just
-## like a normal day with some special settings"; inbox #1268.)* Every walk takes the same steps in the
-## same order: the spec to the clock; the spec's world asked for, and what the walk is won at in it
-## handed on; the world dressed for the day; the events planned; the resistance started, or an authored scene installing itself instead; her put
-## down and the crowd started; the clock started. Whether the dawn is photographed, whether the
+## like a normal day with some special settings"; inbox #1268 in olive-ferret.)* Every walk takes
+## the same steps in the same order: the spec to the clock; the spec's world asked for, and what the
+## walk is won at in it handed on; the world dressed for the day; the events planned; the resistance
+## started, or an authored scene installing itself instead; her put down and the crowd started; the
+## clock started. Whether the dawn is photographed, whether the
 ## resistance runs, whether the baby starts asleep and where she starts are the spec's to say
 ## (`DaySpec.photographs_the_dawn()`, `runs_the_resistance()`, `starts_with_the_baby_asleep()`,
 ## `start_point()`), never a question of which walk this is.
@@ -22,9 +23,11 @@ extends RefCounted
 ## requires differs: `start()` requires the worlds, the day's clock and, on a walk that runs it, the
 ## resistance; `finish_day()` ends any day, a section of the building included, and requires only the
 ## clock and the run — it reads the events, the city, the player and the baby where there are some,
-## from the world `start()` stood or the one `use_the_world()` handed. It calls no observer: the
-## developer readout, the HUD and the route rig hear the day from `RunFlow`, which announces it around
-## `start()`.
+## from the world `start()` stood or the one `use_the_world()` handed. It calls no observer: every
+## observer hears the walk from `RunFlow`, which `start()` tells through the two callbacks it is
+## handed — once the dawn is photographed and before the world stands, and once the world stands,
+## before anything is dressed or placed in it — and which announces the walk planned once `start()`
+## returns.
 ##
 ## `calendar` is the run's calendar and its operations (the dawn photograph, `settled_this_act()`,
 ## `day_rng()`, a day's `finish_day()`), handed in by whoever builds the director rather than reached
@@ -105,11 +108,16 @@ func use_the_day(the_spec: DaySpec) -> void:
 	spec = the_spec
 	day.spec = the_spec
 
-## **Starts the walk `the_spec` describes**, the first time or again after a loss (`restarted`):
-## a day, an authored scene's day, or a section of the escape. Writes nothing to the save itself:
-## each caller decides what, if anything, the save should say about the walk this just started.
-## Returns the problems that kept an authored scene's setup from standing, empty when it stands.
-func start(the_spec: DaySpec, restarted := false) -> Array[String]:
+## **Starts the walk `the_spec` describes**: a day, an authored scene's day, or a section of the
+## escape, the first time or again after a loss. Writes nothing to the save itself: each caller
+## decides what, if anything, the save should say about the walk this just started. Returns the
+## problems that kept an authored scene's setup from standing, empty when it stands.
+##
+## **`started` and `stood` are where the walk is announced** (`RunFlow.start()` hands them):
+## `started` is called once the dawn is photographed and before the world is stood, `stood` with the
+## world once it stands and before anything is dressed or placed in it. Neither is required: a
+## start handed none announces nothing.
+func start(the_spec: DaySpec, started := Callable(), stood := Callable()) -> Array[String]:
 	# Timed for the same reason `_ready()` times `CityGenerator.generate()`: playtest 27 named
 	# this path — planning the day's closures, placing every event, streaming the world around
 	# the doorstep — as one of the candidates for the wait after a summary's continue button.
@@ -125,9 +133,16 @@ func start(the_spec: DaySpec, restarted := false) -> Array[String]:
 	# The walk is announced first, so listeners clear yesterday's state before anything is placed
 	# in today — announcing it afterwards wiped the contact the director had just reported, and the
 	# HUD showed nothing — and before its world is stood, so whatever the escape's building or city
-	# does as it is built is already counted as this walk's.
-	EventBus.day_started.emit(spec.day_number())
+	# does as it is built (the escape's city goes dark as it is built) is already counted as this
+	# walk's.
+	if started.is_valid():
+		started.call()
 	var world := _worlds.stand(spec)
+	# The world announced as it stands, before anything is dressed or placed in it: the run log heads
+	# the walk here, with what only the world can name (a day's city seed), and watches it from here,
+	# so the lines the dressing and the plan write are under the walk's own header.
+	if stood.is_valid():
+		stood.call(world)
 	use_the_world(world.city(), world.events(), resistance, world.player(), world.baby(), day)
 	# What the walk is won at, as the world it stands in answers it: the ways out, which the clock
 	# reads off the spec it was just handed, and her and her front door's map, which it reads itself.
@@ -150,15 +165,6 @@ func start(the_spec: DaySpec, restarted := false) -> Array[String]:
 		_plan_the_walk(world, today)
 		_put_her_down(world, today)
 		_print_the_start(Time.get_ticks_msec() - elapsed)
-	# The escape's own announcement of the world a section is walked in, which the run log's escape
-	# path watches; it is announced here, where every section starts.
-	if spec.section_kind() != DaySpec.Section.NONE:
-		EventBus.escape_section_started.emit(spec.section_kind(), restarted, world.scene(), events)
-	# Last, because the walk's shape is only true once everything has been placed: the run log
-	# writes its plan lines, its dawn picture and her `start` line here. An authored scene's day is
-	# installed rather than planned, and announces no plan.
-	if not _scene:
-		EventBus.day_planned.emit(spec.day_number())
 	return errors
 
 ## The city dressed for the day `spec` is: the run's city state brought to today, the act's spent
