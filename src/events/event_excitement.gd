@@ -6,6 +6,12 @@ extends ExcitementSource
 ## does not pass, the course its projection runs on, whether that course is lethal, and what its
 ## caret is keyed on.
 ##
+## **Handed its row and where she is as its instance is set up** (`use_row_and_where_she_is()`),
+## since neither changes under it: what its field is (how far it is silent beyond, whether it
+## passes walls, how far it reaches, whether it ends the day and within what, whether it is a car
+## or ambient) it asks the row, and its instance only what changes — its phase, its age, where it
+## stands, its present rate and course, its birds and its car's strike.
+##
 ## **Its caret measures her from where its instance hears she is** (`WhereSheIs.at()`), the handle
 ## `EventManager` tells once a physics tick for the chase and the leaving check and `ExcitementHalo`
 ## tells again once a drawn frame (`set_player_at()`): one point, so the caret and the event's
@@ -15,8 +21,11 @@ extends ExcitementSource
 static var _NO_WALLS := WorldMap.open_ground()
 
 var _event: EventInstance
-## Where she is, as its instance hears it (`WhereSheIs`), handed in as the instance is set up
-## (`use_where_she_is()`); nowhere until then.
+## The row its instance is a live one of, handed in as the instance is set up
+## (`use_row_and_where_she_is()`); none until then.
+var _row: EventDef = null
+## Where she is, as its instance hears it (`WhereSheIs`), handed in with the row; nowhere until
+## then.
 var _where := WhereSheIs.nowhere()
 
 ## The rate the projection carries, worked out once before it samples
@@ -24,11 +33,10 @@ var _where := WhereSheIs.nowhere()
 var _live_intensity := 0.0
 
 ## The field's datum, read once before the projection samples, since nothing about it moves while it
-## does: its row, where it stands, its shape and the axis its body lies along
-## (`EventInstance.field_shape()`, `solid_axis()`), and whether a sample can be priced off them directly (`_direct`) — not for a
-## flock, whose birds are each their own field, nor for a rate or a course `EventInstance.field_at()`
-## would not take as given, which it then answers in full.
-var _def: EventDef = null
+## does: where it stands, the shape its row prices it from (`EventDef.datum()`) and the axis its
+## body lies along (`EventInstance.solid_axis()`), and whether a sample can be priced off them
+## directly (`_direct`) — not for a flock, whose birds are each their own field, nor for a rate or
+## a course `EventInstance.field_at()` would not take as given, which it then answers in full.
 var _from := Vector2.ZERO
 var _shape: GroundShape = null
 var _axis := Vector2.ZERO
@@ -49,9 +57,10 @@ func _init(event: EventInstance) -> void:
 func clock() -> float:
 	return _event.clock()
 
-## Hands it where she is as its instance hears it (`EventInstance.setup()`), so the caret, the
-## instance's behaviours and its look ask one object.
-func use_where_she_is(where: WhereSheIs) -> void:
+## Hands it its instance's row and where she is as its instance hears it (`EventInstance.setup()`),
+## so the caret, the instance's behaviours and its look ask one object.
+func use_row_and_where_she_is(row: EventDef, where: WhereSheIs) -> void:
+	_row = row
 	_where = where
 
 ## The halo's word on where she is reaches its instance's handle too (`WhereSheIs.see_her_at()`),
@@ -80,25 +89,25 @@ func _contribution_stamp() -> float:
 ##
 ## Overrides ExcitementSource._field.
 func _field(at: Vector2) -> float:
-	if not _event.is_leaving and _event.birds().is_empty():
-		var reach := _event.def.silent_beyond()
+	if not _event.is_on_its_way_out() and _event.birds().is_empty():
+		var reach := _row.silent_beyond()
 		if _event.global_position.distance_squared_to(at) > reach * reach:
 			return 0.0
 	return _event.field_at(at, -1.0, Vector2.INF)
 
 ## The map the event stands on, its buildings outdoors and the building's walls indoors — open
-## ground for a row no wall stops (`EventDef.from_outside`), so the debug view's fields layer cuts
+## ground for a row no wall stops (`EventDef.passes_walls()`), so the debug view's fields layer cuts
 ## its outline exactly where the meter does.
 ##
 ## Overrides ExcitementSource.wall_grid.
 func wall_grid() -> WorldMap:
-	return _NO_WALLS if _event.def.from_outside else _event.world_map()
+	return _NO_WALLS if _row.passes_walls() else _event.world_map()
 
 ## Nothing finished or leaving projects anything.
 ##
 ## Overrides ExcitementSource._projects.
 func _projects() -> bool:
-	return not (_event.is_finished or _event.is_leaving)
+	return not (_event.is_gone() or _event.is_on_its_way_out())
 
 ## **The row's live course** (`EventInstance.caret_velocity()`), because the caret asks what this
 ## thing is on its way to doing rather than what a telegraph has it doing: a pursuer holding its
@@ -110,7 +119,7 @@ func _projection_velocity() -> Vector2:
 
 ## Overrides ExcitementSource._projection_reach.
 func _projection_reach() -> float:
-	return _event.def.field_reach()
+	return _row.field_reach()
 
 ## **The row's live rate** (`EventInstance.caret_intensity_over_horizon()`): its telegraph's damping
 ## undone, its pulse at the horizon's mean. And the field's datum, so that each sample is the kernel
@@ -125,27 +134,27 @@ func _projection_reach() -> float:
 func _begin_the_projection(velocity: Vector2) -> void:
 	_live_intensity = _event.caret_intensity_over_horizon()
 	_flock = not _event.birds().is_empty()
-	_def = _event.def
 	_from = _event.global_position
-	_shape = _event.field_shape()
+	_shape = _row.datum()
 	_axis = _event.solid_axis()
 	_direct = not _flock and _live_intensity >= 0.0 and velocity != Vector2.INF
 
 ## Every input the samples read, by value, mutable definition and shape fields included: age alone
-## cannot cover a retirement, silence, external movement or changed player state. Empty for a flock,
-## whose every bird has its own mutable geometry and is sampled afresh.
+## cannot cover a retirement, silence, external movement or changed player state, and a rig may
+## change its row's settings in place, so they are copied from the row rather than asked of it.
+## Empty for a flock, whose every bird has its own mutable geometry and is sampled afresh.
 ##
 ## Overrides ExcitementSource._projection_key.
 func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
 	if _flock:
 		return []
-	var def := _def
+	var row := _row
 	return [_from, player_position, player_velocity, velocity,
-		_live_intensity, def.intensity, def.inner_radius, def.outer_radius,
-		def.falloff_power, def.core_intensity, def.core_radius, _axis,
-		def.shape.kind if def.shape else -1,
-		def.shape.half_length if def.shape else 0.0,
-		def.shape.half_extents if def.shape else Vector2.ZERO]
+		_live_intensity, row.intensity, row.inner_radius, row.outer_radius,
+		row.falloff_power, row.core_intensity, row.core_radius, _axis,
+		row.shape.kind if row.shape else -1,
+		row.shape.half_length if row.shape else 0.0,
+		row.shape.half_extents if row.shape else Vector2.ZERO]
 
 ## The field at the translated point, at the live rate, its ellipse oriented by the source's own
 ## velocity rather than the pair's relative heading.
@@ -154,12 +163,12 @@ func _projection_key(player_position: Vector2, velocity: Vector2) -> Array:
 func _projected_field(sample: Vector2, velocity: Vector2) -> float:
 	if not _direct:
 		return _event.field_at(sample, _live_intensity, velocity)
-	return _def.emission_at_distance(
+	return _row.emission_at_distance(
 			_event.field_distance_from(_from, _shape, _axis, sample, velocity), _live_intensity)
 
 ## Whether this event's own course puts her inside the radius that ends the day before the horizon
 ## is out, her position held fixed: `EventInstance.is_lethal_at()`'s straight-line reach,
-## `def.lethal_reach()`, asked at every step of the projection.
+## `EventDef.lethal_reach()`, asked at every step of the projection.
 ##
 ## **Without the clear-line test**: a pursuer projected straight at her can read red while a
 ## building still stands between them; whether it should ask is open to overturn (the polite-rabbit
@@ -171,13 +180,13 @@ func _projected_field(sample: Vector2, velocity: Vector2) -> float:
 ##
 ## Overrides ExcitementSource.will_be_lethal.
 func will_be_lethal(player_position: Vector2) -> bool:
-	if _event.car:
-		return _event.car.will_strike(player_position)
-	if _event.is_finished or _event.is_leaving or _event.is_waiting() \
-			or not _event.def.hard_fail:
+	if _row.drives():
+		return _event.will_strike(player_position)
+	if _event.is_gone() or _event.is_on_its_way_out() or _event.is_waiting() \
+			or not _row.ends_the_day():
 		return false
 	var velocity := _event.caret_velocity()
-	var reach := _event.def.lethal_reach()
+	var reach := _row.lethal_reach()
 	var at := _event.global_position
 	if velocity.is_zero_approx():
 		return at.distance_to(player_position) <= reach
@@ -204,5 +213,4 @@ func _caret_key() -> Variant:
 ##
 ## Overrides ExcitementSource._may_mark.
 func _may_mark() -> bool:
-	return not (_event.is_finished or _event.is_leaving
-			or _event.def.kind == GameEnums.EventKind.AMBIENT)
+	return not (_event.is_gone() or _event.is_on_its_way_out() or _row.is_ambient())

@@ -297,7 +297,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	def = definition
 	path = route
 	_where = where.heard_from_now() if where else WhereSheIs.nowhere()
-	excitement.use_where_she_is(_where)
+	excitement.use_row_and_where_she_is(definition, _where)
 	_map = map if map else WorldMap.open_ground()
 	_navigator = navigator if navigator else _map.navigator()
 	_mover = mover_for(definition)
@@ -1252,7 +1252,7 @@ func _be_done(may_park := true) -> void:
 		_path_travelled = route.length()
 		queue_redraw()
 		return
-	if (departure.speed() <= 0.0 or def.aftermath.on_finish != ""):
+	if (departure.speed() <= 0.0 or def.leaves_behind() != ""):
 		_finish()
 		return
 	transition(Phase.LEAVING)
@@ -1345,13 +1345,13 @@ func is_telegraphing() -> bool:
 func is_standing_for_its_notice() -> bool:
 	var stands := def.pursuit != null and def.pursuit.stands_for_its_notice()
 	return (stands or _stands_for_this_notice) and is_telegraphing() \
-			and (def.notice != null or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER))
+			and (def.waits_for_her() or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER))
 
 ## **Holds a row that crouches before its run `seconds` longer** — a crossing whose run a solid cut
 ## short (`EventDef.crouch_for_a_run()`), so it still reaches the middle when she does. Its telegraph
 ## only grows, so the fairness contract it was validated under still holds.
 func hold_still_longer(seconds: float) -> void:
-	if seconds > 0.0 and def.still_while_telegraphing:
+	if seconds > 0.0 and def.holds_still():
 		_notice_time = notice_time() + seconds
 
 ## How long this instance's notice runs once it has noticed her: a charger that warns by radius
@@ -1363,15 +1363,15 @@ func notice_time() -> float:
 		return _notice_time
 	if warns_by_radius() and def.pursuit and def.pursuit.warns_for > 0.0:
 		return def.pursuit.warns_for
-	return def.telegraph_time
+	return def.telegraphs_for()
 
-## True for a row that waits (`EventDef.notice`) and has not noticed her: its notice's clock is not
-## running. That is `Phase.WAITING`, and it stays true of such a row that leaves or is gone without
-## ever having noticed her, and of a barrier whose guard has gone for good (`Phase.SPENT`), which
-## waits for nothing. Waiting, it emits at full strength unless its notice is quiet, it is not
-## lethal, and it does not move.
+## True for a row that waits (`EventDef.waits_for_her()`) and has not noticed her: its notice's
+## clock is not running. That is `Phase.WAITING`, and it stays true of such a row that leaves or is
+## gone without ever having noticed her, and of a barrier whose guard has gone for good
+## (`Phase.SPENT`), which waits for nothing. Waiting, it emits at full strength unless its notice is
+## quiet, it is not lethal, and it does not move.
 func is_waiting() -> bool:
-	return def.notice != null and not _notice.is_running()
+	return def.waits_for_her() and not _notice.is_running()
 
 ## How long this has been *happening*, which is not always how long it has existed.
 ##
@@ -1399,7 +1399,7 @@ func chase_age() -> float:
 ## and everything sent at her from off screen, whose approach or badge is the warning — nor one that
 ## sets off beside her, whose notice is a clock by construction.
 func warns_by_radius() -> bool:
-	return def.notice != null and (def.pursuit != null or def.notice.runs_within > 0.0) \
+	return def.waits_for_her() and (def.pursuit != null or def.runs_its_own_line()) \
 			and not def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) and _chase_way == null
 
 ## **The stand-off a pursuer closes to and holds**, `PursuitSpec.standoff()` over
@@ -1423,7 +1423,7 @@ func charge_radius() -> float:
 func _hold_the_notice_clock(delta: float) -> void:
 	if _telegraph_ended or is_waiting():
 		return
-	if def.notice and def.notice.runs_within > 0.0 and chase_age() - delta < def.telegraph_time:
+	if def.runs_its_own_line() and chase_age() - delta < def.telegraphs_for():
 		_notice.hold(delta)
 		return
 	var her := _where.at()
@@ -1435,10 +1435,11 @@ func _hold_the_notice_clock(delta: float) -> void:
 	if pursuit:
 		pursuit.pause_a_held_notice(delta)
 
-## Current peak intensity at the centre, after the telegraph damping and the pulse envelope.
+## Current peak intensity at the centre: its row's peak through its swell and its pulse
+## (`EventDef.peak_through()`), after this phase's damping (`_notice_damping()`).
 ##
 ## `pulse_multiplier_override` (`< 0.0` means "not given") replaces the instant's own
-## `0.25 + 0.75 × pulse(age)` reading — the only caller that ever passes one is
+## `0.25 + 0.75 × pulse(age)` reading (the row's `beat`) — the only caller that ever passes one is
 ## `caret_intensity_over_horizon()`, asking for the pulse's own mean over
 ## `Tuning.EXPECTED_IMPACT_HORIZON` instead of the beat this instant happens to be on.
 func current_intensity(pulse_multiplier_override := -1.0) -> float:
@@ -1468,25 +1469,15 @@ func current_intensity(pulse_multiplier_override := -1.0) -> float:
 		# baby's own state, and the read happening here keeps excitement a pure query. It is what
 		# makes "asleep, it is a pure time loss" true of the meter and not only of the words:
 		# nothing here scales through `Baby.SLEEPING_SENSITIVITY`, it emits exactly zero.
-		return (Tuning.CHAT_EXCITEMENT / def.detain_seconds) if _where.baby_is_awake() else 0.0
-	var value := def.intensity
-	if not is_equal_approx(def.intensity_ramp, 1.0) and def.duration > 0.0:
-		# `chase_age()` rather than `age`, so a ramp measures the burst rather than the wait in
-		# front of it: for everything without a trigger the two are the same number, and for a row
-		# that stood on a pavement half the morning before she came near, `age` would hand the
-		# first instant of the burst the multiplier the *end* of it is meant to have.
-		var through := clampf((chase_age() - notice_time()) / def.duration, 0.0, 1.0)
-		value *= lerpf(1.0, def.intensity_ramp, through)
-	if def.pulse_period > 0.0:
-		# 0.25..1.0, so a pulsing event is never entirely silent between beats. On `age` rather
-		# than `chase_age()` on purpose: a pulse is the thing's own rhythm, which is running
-		# whether or not anybody has walked up to it.
-		if pulse_multiplier_override >= 0.0:
-			value *= pulse_multiplier_override
-		else:
-			var phase := TAU * age / def.pulse_period
-			value *= 0.25 + 0.75 * (0.5 - 0.5 * cos(phase))
-	return value * _notice_damping()
+		return (Tuning.CHAT_EXCITEMENT / def.detains_for()) if _where.baby_is_awake() else 0.0
+	# The swell is measured on `chase_age()` rather than `age`, so a ramp measures the burst rather
+	# than the wait in front of it: for everything without a trigger the two are the same number,
+	# and for a row that stood on a pavement half the morning before she came near, `age` would
+	# hand the first instant of the burst the multiplier the *end* of it is meant to have. The
+	# pulse beats on `age` rather than `chase_age()` on purpose: a pulse is the thing's own rhythm,
+	# which is running whether or not anybody has walked up to it.
+	return def.peak_through(age, chase_age() - notice_time(), pulse_multiplier_override) \
+			* _notice_damping()
 
 ## The pulse envelope's own mean over `[age, age + Tuning.EXPECTED_IMPACT_HORIZON]`, closed-form
 ## rather than stepped: the projection wants one scalar to hold across its whole sampling loop, not
@@ -1509,7 +1500,7 @@ static func _pulse_mean_multiplier(age: float, horizon: float, period: float) ->
 	var mean_cos := (sin(w * (age + horizon)) - sin(w * age)) / (w * horizon)
 	return 0.625 - 0.375 * mean_cos
 
-## The multiplier the phase this instance is in puts on `def.intensity`, and the one place the
+## The multiplier the phase this instance is in puts on its row's peak, and the one place the
 ## three answers live — `caret_intensity_over_horizon()` divides by exactly this rather than
 ## repeating the conditions, so the caret's projection and the meter can never disagree about which
 ## phase damps.
@@ -1520,11 +1511,11 @@ static func _pulse_mean_multiplier(age: float, horizon: float, period: float) ->
 ## telegraph in the game that does not quieten what it is warning about. A quiet notice
 ## (`NoticeSpec.is_quiet()`) is the opposite case and it is a real one: birds pecking on a pavement
 ## are nearly nothing until they go up, so both their wait and their notice damp like an ordinary
-## telegraph.
+## telegraph. Its row says which (`EventDef.warns_quietly()`).
 func _notice_damping() -> float:
 	if is_waiting():
-		return TELEGRAPH_INTENSITY_FRACTION if def.notice.is_quiet() else 1.0
-	if is_telegraphing() and (def.notice == null or def.notice.is_quiet()):
+		return TELEGRAPH_INTENSITY_FRACTION if def.warns_quietly() else 1.0
+	if is_telegraphing() and def.warns_quietly():
 		return TELEGRAPH_INTENSITY_FRACTION
 	return 1.0
 
@@ -1547,9 +1538,9 @@ func _notice_damping() -> float:
 ## to the full peak of a row whose pulse turns over inside `Tuning.EXPECTED_IMPACT_HORIZON`.
 func caret_intensity_over_horizon() -> float:
 	var pulse_override := -1.0
-	if def.pulse_period > 0.0:
-		pulse_override = _pulse_mean_multiplier(age, Tuning.EXPECTED_IMPACT_HORIZON,
-				def.pulse_period)
+	var period := def.pulses_every()
+	if period > 0.0:
+		pulse_override = _pulse_mean_multiplier(age, Tuning.EXPECTED_IMPACT_HORIZON, period)
 	return current_intensity(pulse_override) / _notice_damping()
 
 ## **This event's field at a point**, with no question about what stands between: what its source
@@ -1600,10 +1591,9 @@ func field_distance_from(centre: Vector2, shape: GroundShape, axis: Vector2,
 	return GroundShape.eccentric_distance(centre, velocity, world_position)
 
 ## The datum this row's field is priced from (`field_distance_from()`) and drawn from (`DebugLayers`):
-## its `shape`, or none — a point at its centre — for a row whose field is priced from its centre
-## (`VehicleSpec.field_from_its_centre`, the fire engine) or that has no shape.
+## its row's (`EventDef.datum()`), its shape or none — a point at its centre.
 func field_shape() -> GroundShape:
-	return null if def.vehicle and def.vehicle.field_from_its_centre else def.shape
+	return def.datum()
 
 ## A flock is its birds, summed.
 ##
@@ -1630,7 +1620,7 @@ func _flock_contribution_at(world_position: Vector2, intensity := -1.0) -> float
 		var d := GroundShape.eccentric_distance(global_position + bird.at,
 				bird.heading * bird.speed,
 				world_position)
-		total += Field.falloff(d, share, def.inner_radius, outer, def.falloff_power)
+		total += def.bird_emission_at(d, share, outer)
 	return total
 
 ## True when a point is inside the radius that ends the day, for a hard-fail event that is
@@ -1657,11 +1647,18 @@ func is_lethal_at(world_position: Vector2) -> bool:
 	if car:
 		return car.strikes(world_position)
 	# The row's own flag first: it is the one most rows fail, and the two calls after it are pure.
-	if not def.hard_fail or is_finished or is_leaving or is_waiting() or is_telegraphing():
+	if not def.ends_the_day() or is_finished or is_leaving or is_waiting() or is_telegraphing():
 		return false
 	if global_position.distance_to(world_position) > def.lethal_reach():
 		return false
 	return def.pursuit == null or _navigator.clear_line(global_position, world_position, _sight)
+
+## **Whether this car's own course strikes `point` before the horizon is out**, her position held
+## fixed (`EventCarDriving.will_strike()`): the doubled caret's question for a car that drives,
+## which its source asks in place of a projection of its field. False for anything that does not
+## drive.
+func will_strike(point: Vector2) -> bool:
+	return car != null and car.will_strike(point)
 
 ## **The way from it to her where it can see her**: from its node to where she is, when something
 ## has told it where she is and nothing built stands between them (`clear_line_to()`, the line its
@@ -1708,7 +1705,7 @@ func _own_body_tiles() -> Dictionary:
 
 ## Whether it is holding still through its telegraph — a crouching cat is not walking.
 func is_telegraphing_still() -> bool:
-	return def.still_while_telegraphing and is_telegraphing()
+	return def.holds_still() and is_telegraphing()
 
 # ------------------------------------------------------------------- the gait ---
 # The event half of "every living thing that moves has a stride" — the walker's own two-frame

@@ -18,7 +18,6 @@ src/events/event_catalogue.gd on_finish
 src/events/event_catalogue.gd on_sight
 src/events/event_catalogue.gd scar
 src/events/event_def.gd on_finish
-src/events/event_instance.gd on_finish
 src/events/event_scheduler.gd scar
 src/events/event_spawner.gd on_finish
 src/events/event_spawner.gd on_sight
@@ -575,11 +574,8 @@ src/events/event_director.gd weight
 src/events/event_excitement.gd core_intensity
 src/events/event_excitement.gd core_radius
 src/events/event_excitement.gd falloff_power
-src/events/event_excitement.gd from_outside
-src/events/event_excitement.gd hard_fail
 src/events/event_excitement.gd inner_radius
 src/events/event_excitement.gd intensity
-src/events/event_excitement.gd kind
 src/events/event_excitement.gd outer_radius
 src/events/event_excitement.gd shape
 src/events/event_footprints.gd draws_body_shadow
@@ -597,30 +593,20 @@ src/events/event_footprints.gd stands_along_its_street
 src/events/event_footprints.gd trails_a_lead
 src/events/event_footprints.gd vehicle
 src/events/event_footprints.gd warning_picture
-src/events/event_instance.gd aftermath
 src/events/event_instance.gd counts_charges_as
-src/events/event_instance.gd detain_seconds
 src/events/event_instance.gd duration
-src/events/event_instance.gd falloff_power
-src/events/event_instance.gd hard_fail
 src/events/event_instance.gd id
-src/events/event_instance.gd inner_radius
-src/events/event_instance.gd intensity
-src/events/event_instance.gd intensity_ramp
 src/events/event_instance.gd mobile
 src/events/event_instance.gd notice
 src/events/event_instance.gd obstructs_radius
 src/events/event_instance.gd path_mode
-src/events/event_instance.gd pulse_period
 src/events/event_instance.gd pursuit
 src/events/event_instance.gd redetains
 src/events/event_instance.gd shape
 src/events/event_instance.gd solid_when
 src/events/event_instance.gd speed
 src/events/event_instance.gd stands_as
-src/events/event_instance.gd still_while_telegraphing
 src/events/event_instance.gd stops_where_it_arrives
-src/events/event_instance.gd telegraph_time
 src/events/event_instance.gd vehicle
 src/events/event_instance.gd when_it_stops
 src/events/event_manager.gd barrier_structure
@@ -788,10 +774,6 @@ src/events/behaviours/event_behaviours.gd pursuit
 src/events/behaviours/event_behaviours.gd route
 src/events/behaviours/event_behaviours.gd unreachable
 src/events/event_excitement.gd age
-src/events/event_excitement.gd car
-src/events/event_excitement.gd def
-src/events/event_excitement.gd is_finished
-src/events/event_excitement.gd is_leaving
 src/events/event_footprints.gd def
 src/events/event_manager.gd def
 src/events/event_manager.gd excitement
@@ -1451,7 +1433,6 @@ src/dev/scene_recipe_runtime.gd powered
 # [VehicleSpec] src/events/vehicle_spec.gd
 src/events/event_catalogue.gd field_from_its_centre
 src/events/event_def.gd field_from_its_centre
-src/events/event_instance.gd field_from_its_centre
 
 # [VisibleView] src/world/visible_view.gd
 src/dev/scene_recipe_runtime.gd controls
