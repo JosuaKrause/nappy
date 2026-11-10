@@ -789,7 +789,7 @@ since this autoload loads before `EventInstance`'s class does.
 The run log: one plain-text file per run, written as it happens. **Inert until
 `begin_run()`**, which only `RunSession.open()` calls — so the test suite, which never opens one
 unless a test boots the game, writes no files and pays nothing. It is an observer: `RunSession`
-writes the run flow's lines off the bus, `TelemetryObserver` the walk's, and game logic its own
+writes the run flow's lines off the run flow's signals and the bus, `TelemetryObserver` the walk's, and game logic its own
 account through the `RunTrace` it is handed — see docs/TELEMETRY.md, "Who writes it". `begin_run()` is also inert on a web export
 (`OS.has_feature("web")`), since `user://` there is a stranger's browser storage that nothing
 ever prunes — **unless the page's own `?telemetry=1` asks otherwise**, read from the query the run
@@ -871,12 +871,16 @@ retry, a won last day hands over to nothing, the city is built on the scene's ow
 it), and the HUD says none of the control lessons the scene has learned (`lessons_learned()`,
 handed to `HUD.configure()`). `main` keeps no recipe of its own: every place an authored scene
 differs asks the flow. It starts every walk, a day or a section of the escape alike:
-`start(director, spec, restarted)` announces it, has the director start it (`DayDirector.start()`,
-the one start) and announces it planned. It announces each day or section to the observers that
-draw it — `day_started(spec)` before anything is built and `day_planned(spec)` once it is placed —
-and `main` connects the developer readout (the day's line and its routes), the HUD (whether its
-clock reads to the hundredth) and the route rig (its targets for the day) to them; an authored
-scene's walk is installed rather than planned, and never announced planned.
+`start(director, spec, restarted)` has the director start it (`DayDirector.start()`, the one
+start), which tells it when the walk has begun and when its world stands, and announces it planned
+once the director returns. It is where every observer and the view hear a walk begin, the same way
+for every spec: `day_started(spec)` once the dawn is photographed and before the world stands,
+`world_stood(spec, world, restarted)` as the world stands and before anything is placed in it, and
+`day_planned(spec, world)` once it is placed. `main` connects the HUD (its clock's format, its
+lessons, yesterday's contact cleared), the page's counter (`VisitCounter`, a day's `began`) and the
+developer readout's day line to `day_started`; the run log (`RunSession`) to `world_stood` and
+`day_planned`; and the readout's routes and the route rig to `day_planned`. An authored scene's walk
+is installed rather than planned, and never announced planned.
 
 ### `Sitting`
 Not an autoload: a plain `Node` (`src/autoload/sitting.gd`, on the model's layer) that holds what one
@@ -916,19 +920,23 @@ and the resistance tally are worded; the pause screen reads `standing_line()`.
 ### `DayDirector`
 Not an autoload: a `RefCounted` (`src/run/day_director.gd`, the run flow) that `main` builds for the
 world as it stands when a walk starts or ends, and a test builds over whatever world it has.
-**`start(spec, restarted)` is the one start**, for the fourteen days, an authored scene's day and
-both sections of the escape, in one order: the spec to the clock; the dawn photograph where the spec
-takes one; `day_started`; the spec's world asked for; the city dressed for the day where the world
+**`start(spec, started, stood)` is the one start**, for the fourteen days, an authored scene's day
+and both sections of the escape, in one order: the spec to the clock; the dawn photograph where the
+spec takes one; `started` called; the spec's world asked for, and `stood` called with it; the city
+dressed for the day where the world
 is one (its repaint and closures, the act, the night); the events planned (`EventManager.start_day()`)
 and, in a city, the street trees refreshed and a handed-in walk tinted; the resistance's day where
 the spec runs it, or an authored scene installing itself instead; the events streamed round her
 start, the crowd at the spec's density, her and the baby put down, the baby asleep where the spec
-says so; the clock; and `day_planned` — drawing every random stream from the run's seed. What
+says so; and the clock — drawing every random stream from the run's seed. `started` and `stood` are
+the run flow's, which announces the walk at those two moments (`RunFlow.day_started`,
+`world_stood`) and announces it planned once `start()` returns. What
 differs between walks is the spec's settings (`DaySpec.photographs_the_dawn()`,
 `runs_the_resistance()`, `starts_with_the_baby_asleep()`, `start_point()` and the rest), never a
 question of which walk it is. The world comes from a `DayWorldSource` it is handed
 (`src/day/day_world_source.gd`, which `main` implements): asked to stand a spec's world, it answers
-a `DayWorld` (`src/day/day_world.gd`) — the scene, its events, her and the baby in it, where she is
+a `DayWorld` (`src/day/day_world.gd`) — the map of the ground she walks, its events, her and the
+baby in it, where she is
 put down and facing which way, the city with its streets and crowd where the world is one, the
 walk's own random stream where it has one (the building's), and what the walk is won at in it: the
 map her front door is on for a walk home, the ways out of the city for the escape's. The director
@@ -938,14 +946,15 @@ the won last night's fire, the cause (`LossCause`), the charges still running cl
 ordinary day the calendar's move. It returns a `DayEnd`; the save and the summary screen are
 `main`'s. `finish_day()` requires only the clock and the run, since the escape's building has no
 city, crowd or resistance, and reads the events, city, player and baby where there are some. It
-calls no observer: the readout, the HUD and the route rig hear the day from `RunFlow`. It is handed
+calls no observer: every observer and the view hear the walk from `RunFlow`. It is handed
 the run's parts rather than reading them off a global.
 
 ### `VisitCounter`
 Sends anonymous GoatCounter events for how far a run gets, and what a day actually ended on and
 met — see docs/TELEMETRY.md, "The page counts visits" for the full event list. Only listens: every
-method answers an `EventBus` signal — `run_begun`, `day_started`/`day_ended` (which carries what
-ended the day), `run_restarted`, `run_ended`, the resistance's own `resistance_contact_available`/
+method answers the run flow's `day_started` (a walk begun, its day read off the spec; `main` hands
+it each boot's flow, `listen_to_the_flow()`) or an `EventBus` signal — `run_begun`, `day_ended`
+(which carries what ended the day), `run_restarted`, `run_ended`, the resistance's own `resistance_contact_available`/
 `resistance_step_completed`/`_step_failed`/`_mark_seen`, `event_sighted`, `event_lit_unmet`,
 `city_gone_dark`, `pursuit_warned`/`pursuit_began`/`pursuit_caught`/`pursuit_cut_short`/`pursuit_ended`, `poster_torn`, `poster_pursuit_sent`,
 `player_detained`, `escape_begun`/`escape_city_entered`/`escape_lost`/`escape_out`,

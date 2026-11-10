@@ -165,7 +165,6 @@ src/telemetry/frame_recorder.gd events
 src/telemetry/frame_trace.gd crowd
 src/telemetry/frame_trace.gd events
 src/telemetry/run_session.gd crowd
-src/telemetry/run_session.gd events
 src/telemetry/run_session.gd map
 
 # [CityMap] src/city/city_map.gd
@@ -257,7 +256,6 @@ src/routes/seal_planner.gd network
 src/run/day_director.gd block_plans
 src/run/day_director.gd fenced_park
 src/run/day_director.gd fenced_park_act
-src/telemetry/run_session.gd seed_used
 
 # [ClosureMarker] src/routes/closure_marker.gd
 src/city/city.gd across
@@ -295,7 +293,6 @@ src/run/day_director.gd hard_fail_reason
 src/run/day_director.gd spec
 src/run/day_director.gd time_remaining
 src/run/day_director.gd time_total
-src/telemetry/run_session.gd spec
 
 # [DayDirector] src/run/day_director.gd
 src/main.gd escape_follows
@@ -348,8 +345,6 @@ src/main.gd world
 src/routes/seal_planner.gd seal_pictures
 src/routes/seal_planner.gd seals_every_street_off_the_walk
 src/routes/seal_planner.gd seals_the_main_road
-src/telemetry/run_session.gd length
-src/telemetry/run_session.gd section
 src/telemetry/run_session.gd title
 
 # [DaySwitch] src/events/day_switch.gd
@@ -997,7 +992,6 @@ src/events/event_def.gd lets_out
 src/events/event_def.gd pursuit
 
 # [InteriorScene] src/interior/interior_scene.gd
-src/telemetry/run_session.gd map
 
 # [LaneMover] src/crowd/lane_mover.gd
 src/dev/still_watch.gd kind

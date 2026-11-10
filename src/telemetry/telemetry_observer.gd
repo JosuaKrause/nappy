@@ -18,17 +18,19 @@ extends Node
 ##
 ## `RunSession` owns it: it is only added to the tree when a run is being traced, so when telemetry
 ## is off this costs nothing at all rather than costing a disabled check per frame, and the session
-## calls it on the domain events that start and end a day or a section.
+## calls it on the domain events that start and end a walk.
 ##
-## **The escape is watched by the same observer.** *("The escape shouldn't behave any different
-## than the rest of the game.")* Each of its two sections is a day with the day's own clock, so
-## `setup_escape()` hands this the run's `DayController`, the session says which world she is in as
-## each section starts — `watch_building()` or `watch_city()` — before `start_section()`, the
-## escape's `start_day()`, and a section ends on `day_finished()` as a day does. What a day's
-## watchers read that a section does not have is what switches them off, rather than a mode flag in
-## each: no route tree, so no `path`; no `ResistanceDirector`, so no `contact`; no `CityMap` in the
-## building, so no `cross`, `road`, `calm` or `left` there, no trail and no dusk map, and a tile in
-## any line is the building's own grid. The events are an
+## **Every walk is watched the same way, the escape's included.** *("The escape shouldn't behave
+## any different than the rest of the game.")* `setup()` hands it once what no world holds — the
+## run, the day's clock, the resistance where there is one, the badges — and as each walk's world
+## stands the session hands it that world's parts (`watch()`): the map she walks, its events, her
+## and the baby, and in a city the city's map, today's streets and the crowd's sources; once the
+## walk is placed, `start()` writes her `start` line, and a walk ends on `day_finished()`. What a
+## walk's world does not have is what switches a watcher off, rather than a mode flag in each: no
+## route tree (the escape's city grows none), so no `path`; no `ResistanceDirector` (the escape has
+## none), so no `contact`; no `CityMap` in the building, so no `cross`, `road`, `calm` or `left`
+## there, no trail and no dusk map, and a tile in any line is the building's own grid. The events
+## are an
 ## event source either way — an `EventManager`, the city's or the building's, answering `instances()`,
 ## with its excitement read off the world's sets (`WorldContext`) — so `near`, `chase`, `cue`, `freeze`, `run`, `idle`, `blocked`, `turn`,
 ## `frame` and the losing line read a section exactly as they read a day.
@@ -112,8 +114,8 @@ const BLOCKED_REPORT_INTERVAL := 3.0
 ## The run log every line here goes into and whose clock stamps them (`Telemetry`), handed in at
 ## its making by `RunSession`, which owns both: the boot's own log, or a suite's.
 var _log: Telemetry
-## The run being watched (`RunState`), handed in by `setup()` or `setup_escape()`: what a calm
-## arrival's block is now (`attempt_spend.city_state`).
+## The run being watched (`RunState`), handed in by `setup()`: what a calm arrival's block is now
+## (`attempt_spend.city_state`).
 var _run: RunState
 ## The city's map — the day's, or the escape's once she is out of the building — or null in the
 ## escape's building, which is what every street, calm-ground, closure, met-event and corridor
@@ -126,18 +128,17 @@ var _streets: DayStreets
 ## for the meters' breakdown. Null where there is no crowd, as in the escape's building.
 var _crowd: ExcitementSources
 ## The map of the world being walked (`WorldMap`) — the city's, or the building's while section one
-## runs — handed in with it (`setup()`, `watch_building()`, `watch_city()`): what every line that
-## names a tile asks.
+## runs — handed in with it (`watch()`): what every line that names a tile asks.
 var _world_map := WorldMap.open_ground()
 ## Whether the walk being watched keeps a trail for a dusk map: every day's and the escape's city's,
 ## not the building's, which has no city map to draw one on.
 var _keeps_a_trail := true
 ## The event source being watched — the day's `EventManager`, the escape's building's in the
-## building and the escape's city's outside it — handed in with the map (`setup()`,
-## `watch_building()`, `watch_city()`).
+## building and the escape's city's outside it — handed in with the map (`watch()`).
 var _events: Node
-## `"the building"` or `"the city"` while the escape is being watched, `""` on a day. Written into
-## the escape's own `start`, `lost`, `home` and `woke` lines.
+## `"the building"` or `"the city"` while a section of the escape is being watched, `""` on a day:
+## the section the walk's spec is (`watch()`), named in its `start`, `lost`, `home` and `woke`
+## lines.
 var _escape_section := ""
 var _player: Stroller
 var _baby: Baby
@@ -158,7 +159,7 @@ var _road_from := Vector2i.ZERO
 var _carriageway := 0.0
 
 ## The day's corridor, the very tree the day was planned on (`DayStreets.route_tree()`, read off
-## the city at `start_day()`), so that a trace says whether she was on a path or off it on the
+## the city at `start()`), so that a trace says whether she was on a path or off it on the
 ## streets she actually played, and the dawn and dusk maps `RunSession` writes are drawn on the
 ## same tree. Null in the escape, whose chains are not a route tree, which keeps `path` silent.
 var _tree: RouteTree
@@ -182,7 +183,7 @@ var _path_branches: Array[int] = []
 ## is `(x, y, run_excess_ratio)` — a third component on the one trail rather than a second trail to
 ## keep in step with it, since running is a property of a stretch of the walk and not a separate
 ## picture. Sampled by distance (`TRAIL_SAMPLE_DISTANCE`), not by frame; see `_watch_the_trail`.
-## Cleared in `start_day()`, same as everything else below it: a rewound day was not walked.
+## Cleared in `start()`, same as everything else below it: a rewound day was not walked.
 var _trail: Array[Vector3] = []
 ## The last point actually recorded, so the next one can be measured against it. `_trail` is not
 ## read back for this because `is_empty()` already has to be checked to write the first point at
@@ -238,9 +239,8 @@ var _contact_seen := false
 ## line, written into the run log (`FrameWatch`), built over the log this observer is handed.
 var _frames: FrameWatch
 
-## Whether `--spikes` was given, handed in through `setup()` or `setup_escape()` so a builder
-## cannot leave it out — the frame watch must cost nothing but this one check while the flag is
-## off.
+## Whether `--spikes` was given, handed in through `setup()` so a builder cannot leave it out —
+## the frame watch must cost nothing but this one check while the flag is off.
 var _spikes_on := false
 
 # The cues. What was up over her head, since when, and how much of that she spent on the road;
@@ -256,41 +256,17 @@ func _init(run_log: Telemetry) -> void:
 	_log = run_log
 	_frames = FrameWatch.new(run_log.note)
 
-## A day's `setup()`: the run, the city's map, the day's events, today's streets and what charges her
-## from the crowd, then her, the baby, the day's clock, the resistance and the badges.
-func setup(run: RunState, map: CityMap, events: EventManager, streets: DayStreets,
-		crowd: ExcitementSources, player: Stroller, baby: Baby, day: DayController,
-		resistance: ResistanceDirector, spikes: bool, edge: DangerEdge = null) -> void:
-	_spikes_on = spikes
-	_run = run
-	_map = map
-	_world_map = map
-	_events = events
-	_streets = streets
-	_crowd = crowd
-	_player = player
-	_baby = baby
-	_day = day
-	_resistance = resistance
-	_edge = edge
-	_listen()
-
-## The escape's own `setup()`: the run, her, the baby, the badges, and the day's clock, which times
+## What every walk of the boot is watched with, handed once: the run, the day's clock, which times
 ## and gates a section exactly as it does a day, so `_process()` and every duration below read a
-## section the way they read a day. No city yet,
-## no map and no `ResistanceDirector`: the world is told per section, by `watch_building()` or
-## `watch_city()`, and the escape has no subquest to watch.
-func setup_escape(run: RunState, player: Stroller, baby: Baby, clock: DayController, spikes: bool,
+## section the way they read a day; the resistance, null where the run has none (the escape); whether
+## `--spikes` was given; and the badges.
+func setup(run: RunState, clock: DayController, resistance: ResistanceDirector, spikes: bool,
 		edge: DangerEdge = null) -> void:
 	_spikes_on = spikes
 	_run = run
-	_player = player
-	_baby = baby
 	_day = clock
+	_resistance = resistance
 	_edge = edge
-	_listen()
-
-func _listen() -> void:
 	EventBus.return_phase_started.connect(_on_asleep)
 	EventBus.baby_state_changed.connect(_on_baby_state_changed)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
@@ -299,57 +275,46 @@ func _listen() -> void:
 	EventBus.pelican_sighted.connect(_on_pelican_sighted)
 	EventBus.pelican_struck_her.connect(_on_pelican_struck_her)
 
-## Section one: the building's map, and the events walked among in it. No `CityMap`, so the street,
-## calm-ground and closure watchers have nothing to ask and say nothing.
-func watch_building(map: WorldMap, events: Node) -> void:
+## The world a walk is walked in, as it stands: `map`, the map of the ground she walks; `events`, the
+## events walked among; her and the baby; and where the world is a city, `city_map`, today's
+## `streets` and the crowd's sources (`crowd`), each null in a world with none, which switches off
+## the street, calm-ground, closure and trail watchers and the dusk map. `section` names the section
+## of the escape the walk is in its lines, "" on a day.
+func watch(map: WorldMap, events: Node, player: Stroller, baby: Baby, city_map: CityMap,
+		streets: DayStreets, crowd: ExcitementSources, section: String) -> void:
 	_world_map = map
 	_events = events
-	_map = null
-	_streets = null
-	_crowd = null
-	_keeps_a_trail = false
-	_escape_section = "the building"
-
-## Section two: the city with nobody in it, and the finale's own plan on it — its map, its events,
-## its streets and its crowd's sources, as a day's `setup()` takes them. The map is the one
-## she walked for fourteen days, so crossings, stretches on the road and arrivals at calm ground —
-## the chains' stops — are written exactly as a day writes them.
-func watch_city(map: CityMap, events: EventManager, streets: DayStreets,
-		crowd: ExcitementSources) -> void:
-	_map = map
-	_world_map = map
-	_keeps_a_trail = true
-	_events = events
+	_player = player
+	_baby = baby
+	_map = city_map
 	_streets = streets
 	_crowd = crowd
-	_escape_section = "the city"
+	_keeps_a_trail = city_map != null
+	_escape_section = section
 
-## A section is about to be walked, the first time or again after a loss — the escape's
-## `start_day()`. Clears what the last attempt left, puts the log's clock back to zero **and its
-## automatic-snapshot schedule with it** (`Telemetry.restart_section_clock()`) so a retry's lines
-## and its shots are both timed from its own start the way a day's are from dawn, and writes the
-## `start` line. **A retry says so on it**, under the retry's own header: the `lost` line of the
-## attempt before says why, and this one says it began again.
+## The walk is placed and her clock is about to run, the first time or again after a loss
+## (`restarted`). Clears what the last attempt left, puts the log's clock back to zero **and its
+## automatic-snapshot schedule with it** (`Telemetry.restart_section_clock()`) so a retry's lines and
+## its shots are both timed from its own start, takes the corridor the walk was planned on, and
+## writes the `start` line: her doorstep on a day, and on a section of the escape which section she
+## entered — **a retry says so**, under the retry's own header: the `lost` line of the attempt
+## before says why, and this one says it began again. Called after the walk's plan has been written,
+## so the `start` line is the first thing under the header that the player is responsible for.
 ##
-## `_tree` stays null, which is what keeps `path` silent: the escape's chains are grown by
-## `FinalePlanner`, not a `RouteTree`, and there is no corridor to be on or off.
-func start_section(restarted: bool) -> void:
+## The corridor is the day's route tree (`DayStreets.route_tree()`); the escape's city grows none
+## and the building has no streets, so `_tree` stays null there, which is what keeps `path` silent.
+func start(restarted: bool) -> void:
 	_forget_the_walk()
 	_log.restart_section_clock()
-	_log.note("start", "%s %s at %s, facing %s" % [
-		"restarted" if restarted else "entered", _escape_section,
-		RunTrace.tile(_tile_of(_player.global_position)),
-		RunTrace.compass(_player.facing_direction())])
-
-## Clears yesterday. Called after the day's plan has been written, so the `start` line is the
-## first thing under the header that the player is responsible for.
-func start_day() -> void:
-	_forget_the_walk()
-	_tree = _streets.route_tree()
-	_corridor = Corridor.of(_tree)
-	_log.note("start", "doorstep %s, facing %s" % [
-		RunTrace.tile(_map.world_to_tile(_player.global_position)),
-		RunTrace.compass(_player.facing_direction())])
+	_tree = _streets.route_tree() if _streets else null
+	_corridor = Corridor.of(_tree) if _tree else null
+	var at := RunTrace.tile(_tile_of(_player.global_position))
+	var facing := RunTrace.compass(_player.facing_direction())
+	if _escape_section == "":
+		_log.note("start", "doorstep %s, facing %s" % [at, facing])
+	else:
+		_log.note("start", "%s %s at %s, facing %s" % [
+			"restarted" if restarted else "entered", _escape_section, at, facing])
 
 ## Everything one walk leaves behind, cleared for the next — a day's, or a section's. The ground
 ## state is only read where there is a map to read it from.
@@ -1112,7 +1077,7 @@ func _watch_the_trail(here: Vector2) -> void:
 ## decoration. See `docs/TODO.md`, M66, "Which events she actually met".
 ##
 ## Once a plan is met it stays met for the rest of the day: the dictionary is never cleared except
-## in `start_day()`, so streaming an event back out and in again does not un-meet it.
+## in `start()`, so streaming an event back out and in again does not un-meet it.
 func _watch_met_events(here: Vector2) -> void:
 	if not _map:
 		return
@@ -1123,7 +1088,7 @@ func _watch_met_events(here: Vector2) -> void:
 			_met_events[plan] = true
 
 ## The trail and the met events, for `RunSession` to hand to `Telemetry.write_map` at dusk beside
-## the route tree. Empty before a day has been walked — before `start_day()` and
+## the route tree. Empty before a day has been walked — before `start()` and
 ## on the dawn map, which is the correct answer rather than a gap: there is no walk yet, and a
 ## picture that invented one would be worse than a picture with none.
 func trail() -> Array[Vector3]:

@@ -1,18 +1,18 @@
 class_name DayWorld
 extends RefCounted
-## A world standing for one spec, as the day director is handed it (`DayWorldSource.stand()`): the
-## scene she walks, the events walked among, her and the baby in it, where she is put down and which
-## way she faces, the city whose streets and crowd she walks where the world is one, and what the
-## walk is won at in it — the map her front door is on, or the ways out of it. The fourteen days and
+## A world standing for one spec, as the day director and the run log are handed it
+## (`DayWorldSource.stand()`, `RunFlow.world_stood`): the map of the ground she walks, the events
+## walked among, her and the baby in it, where she is put down and which way she faces, the city
+## whose streets and crowd she walks where the world is one, and what the walk is won at in it — the map her front door is on, or the ways out of it. The fourteen days and
 ## the escape's city section stand in a city; the escape's building has no streets and no crowd,
 ## only its events.
 ##
-## Built by whoever stood the world, with everything it answers worked out there; the director only
-## asks, and hands on what the walk's goal is read from (the ways out to the spec, the home's map to
+## Built by whoever stood the world, with everything it answers worked out there; the director and
+## the run log only ask, and the director hands on what the walk's goal is read from (the ways out to the spec, the home's map to
 ## the day's clock), so a source only stands a world. `in_the_city()` and `in_the_building()` are the
 ## two shapes there are.
 
-var _scene: Node2D
+var _map: WorldMap
 var _events: EventManager
 var _player: Stroller
 var _baby: Baby
@@ -23,15 +23,16 @@ var _plan_rng: RandomNumberGenerator
 var _home_map: CityMap
 var _exits := {}
 
-## A city's world: `city` and its events, her and the baby in it, put down at `start` facing
-## `facing`. Its walk is won at her front door on `home_map` — the city's own map on a walk home,
-## null on one that is not — or at `exits`, the ways out of the city by `CityEdge.Kind`, empty on a
-## walk with none. Its walk is planned on the spec's own stream of the run (`DaySpec.events_stream()`).
-static func in_the_city(city: City, events: EventManager, player: Stroller, baby: Baby,
-		start: Vector2, home_map: CityMap, exits: Dictionary,
+## A city's world: `city`, its map `map` and its events, her and the baby in it, put down at `start`
+## facing `facing`. Its walk is won at her front door on `home_map` — the city's own map on a walk
+## home, null on one that is not — or at `exits`, the ways out of the city by `CityEdge.Kind`, empty
+## on a walk with none. Its walk is planned on the spec's own stream of the run
+## (`DaySpec.events_stream()`).
+static func in_the_city(city: City, map: CityMap, events: EventManager, player: Stroller,
+		baby: Baby, start: Vector2, home_map: CityMap, exits: Dictionary,
 		facing := Vector2.DOWN) -> DayWorld:
 	var world := DayWorld.new()
-	world._scene = city
+	world._map = map
 	world._city = city
 	world._events = events
 	world._player = player
@@ -42,15 +43,15 @@ static func in_the_city(city: City, events: EventManager, player: Stroller, baby
 	world._facing = facing
 	return world
 
-## A world with no city: `scene` and the events in it, her and the baby in it, put down at `start`
-## facing `facing`, its walk planned on `plan_rng` — the escape's building, whose events are planned
-## on a seed of its own that its night shares, the same on every entry so a retry is the same
-## building. No front door and no ways out: the building's service exit says itself when she is
+## A world with no city: the map `map` of the ground she walks and the events in it, her and the
+## baby in it, put down at `start` facing `facing`, its walk planned on `plan_rng` — the escape's
+## building, whose events are planned on a seed of its own that its night shares, the same on every
+## entry so a retry is the same building. No front door and no ways out: the building's service exit says itself when she is
 ## through it (`InteriorScene.exit_requested`).
-static func in_the_building(scene: Node2D, events: EventManager, player: Stroller, baby: Baby,
+static func in_the_building(map: WorldMap, events: EventManager, player: Stroller, baby: Baby,
 		start: Vector2, facing: Vector2, plan_rng: RandomNumberGenerator) -> DayWorld:
 	var world := DayWorld.new()
-	world._scene = scene
+	world._map = map
 	world._events = events
 	world._player = player
 	world._baby = baby
@@ -59,9 +60,10 @@ static func in_the_building(scene: Node2D, events: EventManager, player: Strolle
 	world._plan_rng = plan_rng
 	return world
 
-## The scene she walks: the city, or the building.
-func scene() -> Node2D:
-	return _scene
+## The map of the ground she walks (`WorldMap`): the city's, or the building's own grid — what a
+## line the run log writes names a tile on.
+func map() -> WorldMap:
+	return _map
 
 ## The events walked among.
 func events() -> EventManager:

@@ -21,5 +21,5 @@ func _init(city: City, player: Stroller, baby: Baby) -> void:
 ##
 ## Overrides DayWorldSource.stand.
 func stand(_spec: DaySpec) -> DayWorld:
-	return DayWorld.in_the_city(_city, _city.events, _player, _baby,
+	return DayWorld.in_the_city(_city, _city.map, _city.events, _player, _baby,
 			_city.map.doorstep_world_position(), _city.map, {})
