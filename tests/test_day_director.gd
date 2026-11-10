@@ -197,14 +197,17 @@ const EXITS := {CityEdge.Kind.TUNNEL: Vector2(900.0, 200.0), CityEdge.Kind.BRIDG
 ## Everything the fakes below are asked, in the order they are asked, as `"what detail"` lines.
 var _asked: Array[String] = []
 
-func _note_started(day: int) -> void:
-	_asked.append("day_started %d" % day)
+## The world the start's `stood` callback was handed, for a check that it is the one stood.
+var _stood: DayWorld
 
-func _note_planned(day: int) -> void:
-	_asked.append("day_planned %d" % day)
-
-func _note_section(section: int, restarted: bool, world: Node, events: Node) -> void:
-	_asked.append("section %d %s %s %s" % [section, restarted, world.name, events.name])
+## Starts `spec` on `director` handed the two callbacks the run flow hands it, each noting itself
+## among what the fakes are asked: `started N` once the walk is begun, `stood` once its world stands.
+func _start(director: DayDirector, spec: DaySpec) -> Array[String]:
+	_stood = null
+	return director.start(spec, func() -> void: _asked.append("started %d" % spec.day_number()),
+			func(world: DayWorld) -> void:
+				_stood = world
+				_asked.append("stood"))
 
 ## A director handed a fake world source standing a world of fakes for `spec`: a city world, or with
 ## `in_building` the building's, which has no city. A city world is won where `spec`'s goal says, as
@@ -226,17 +229,15 @@ func _start_rig(t, spec: DaySpec, in_building := false, scene: AuthoredScene = n
 	var city: _FakeCity = null
 	var world: DayWorld
 	if in_building:
-		var building := Node2D.new()
-		building.name = "Building"
-		world = DayWorld.in_the_building(building, events, player, baby, Vector2(30.0, 40.0),
-				Vector2.UP, _run.calendar.day_rng(1, "a seed of its own"))
+		world = DayWorld.in_the_building(WorldMap.open_ground(), events, player, baby,
+				Vector2(30.0, 40.0), Vector2.UP, _run.calendar.day_rng(1, "a seed of its own"))
 	else:
 		city = _FakeCity.new(_asked)
 		city.name = "City"
 		var home_map: CityMap = city.map if spec.goal_kind() == DaySpec.Goal.HOME else null
 		var exits: Dictionary = EXITS if spec.goal_kind() == DaySpec.Goal.CITY_EDGE else {}
-		world = DayWorld.in_the_city(city, events, player, baby, Vector2(100.0, 200.0), home_map,
-				exits)
+		world = DayWorld.in_the_city(city, city.map, events, player, baby, Vector2(100.0, 200.0),
+				home_map, exits)
 	var worlds := _FakeWorlds.new(world, _asked)
 	var config := RunConfig.parse(PackedStringArray(), "", true)
 	var director := DayDirector.new(_run.calendar, _run.facts, _run.attempt_spend, config)
@@ -245,20 +246,14 @@ func _start_rig(t, spec: DaySpec, in_building := false, scene: AuthoredScene = n
 	director.use_the_scene(scene)
 	var lines: Array[String] = []
 	director.use_trace(RunTrace.recording(lines))
-	EventBus.day_started.connect(_note_started)
-	EventBus.day_planned.connect(_note_planned)
-	EventBus.escape_section_started.connect(_note_section)
-	var nodes: Array[Node] = [clock, events, player, baby, resistance, world.scene()]
+	var nodes: Array[Node] = [clock, events, player, baby, resistance]
 	if city:
-		nodes.append(city.crowd)
+		nodes.append_array([city, city.crowd])
 	return {"director": director, "events": events, "player": player, "baby": baby,
 			"resistance": resistance, "city": city, "world": world, "clock": clock,
 			"worlds": worlds, "lines": lines, "nodes": nodes, "spec": spec}
 
 func _put_the_start_away(rig: Dictionary) -> void:
-	EventBus.day_started.disconnect(_note_started)
-	EventBus.day_planned.disconnect(_note_planned)
-	EventBus.escape_section_started.disconnect(_note_section)
 	for node: Node in rig["nodes"]:
 		node.free()
 
@@ -278,23 +273,24 @@ func _asked_any(prefixes: Array[String]) -> bool:
 				return true
 	return false
 
-## A day's start: announced, its world stood, the city dressed, the events planned round her start
-## on the run's own stream and one-shots, the resistance's day, the events streamed round her, the
-## day's crowd, her put down facing the street with the baby awake, the clock running, and its plan
-## announced last. The dawn is photographed before any of it.
+## A day's start: announced begun, its world stood and announced, the city dressed, the events
+## planned round her start on the run's own stream and one-shots, the resistance's day, the events
+## streamed round her, the day's crowd, her put down facing the street with the baby awake, and the
+## clock running. The dawn is photographed before any of it.
 func _test_a_day_starts_in_its_order(t) -> void:
 	var spec := DaySpec.for_day(1, 210.0)
 	var rig := _start_rig(t, spec)
 	var director: DayDirector = rig["director"]
 	_run.resistance.carrying_package = true
-	var errors := director.start(spec)
+	var errors := _start(director, spec)
 	t.check(errors.is_empty(), "a day's start stands")
-	t.check(_asked_in_order(["day_started 1", "stand %d" % spec.number, "dress start_day",
+	t.check(_asked_in_order(["started 1", "stand %d" % spec.number, "stood", "dress start_day",
 			"set_act 1", "plan %s" % spec.number, "refresh_street_trees", "resistance 1 210",
 			"stream (100.0, 200.0)", "crowd start_day", "reset_at (100.0, 200.0) (0.0, 1.0)",
-			"baby reset", "day_planned 1"]),
+			"baby reset"]),
 			"a day is announced, stood, dressed, planned, peopled and put down in that order (%s)"
 			% [_asked])
+	t.check(_stood == rig["world"], "the world announced as it stands is the one the source stood")
 	var events: _FakeEvents = rig["events"]
 	t.check(events.planned_with == spec and events.planned_around == Vector2(100.0, 200.0),
 			"its events are planned on its own spec round where the world puts her")
@@ -308,26 +304,24 @@ func _test_a_day_starts_in_its_order(t) -> void:
 	var clock: DayController = rig["clock"]
 	t.check(clock.is_running() and is_equal_approx(clock.seconds_total(), 210.0)
 			and clock.spec == spec, "the clock runs the day's own spec and length")
-	t.check(not _asked_any(["section"]), "and a day announces no section")
 	_put_the_start_away(rig)
 
 ## The escape's city starts on the city section's settings: no photograph, no resistance, nobody on
 ## its streets, the baby asleep, its events planned on the escape's stream with none of the run's
-## one-shots, its handed-in walk tinted and written to the run log, and the section announced with
-## the world it is walked in before its plan.
+## one-shots, and its handed-in walk tinted and written to the run log; announced begun and stood
+## the way a day is.
 func _test_the_city_section_starts_on_its_settings(t) -> void:
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, 180.0)
 	var rig := _start_rig(t, spec)
 	var director: DayDirector = rig["director"]
 	_run.resistance.carrying_package = true
-	director.start(spec, true)
+	_start(director, spec)
 	var events: _FakeEvents = rig["events"]
-	t.check(_asked_in_order(["day_started %d" % DaySpec.CITY_DAY, "dress start_day", "daylight 0.0",
-			"plan %d" % DaySpec.CITY_DAY, "tint", "stream (100.0, 200.0)", "crowd clear",
-			"reset_at (100.0, 200.0) (0.0, 1.0)", "baby reset", "baby force_sleep",
-			"section %d true City Events" % DaySpec.Section.CITY, "day_planned %d" % DaySpec.CITY_DAY]),
-			"the city section is dressed at night, planned, tinted, emptied, put down asleep and "
-			+ "announced as a restarted section before its plan (%s)" % [_asked])
+	t.check(_asked_in_order(["started %d" % DaySpec.CITY_DAY, "stood", "dress start_day",
+			"daylight 0.0", "plan %d" % DaySpec.CITY_DAY, "tint", "stream (100.0, 200.0)",
+			"crowd clear", "reset_at (100.0, 200.0) (0.0, 1.0)", "baby reset", "baby force_sleep"]),
+			"the city section is announced, dressed at night, planned, tinted, emptied and put down "
+			+ "asleep (%s)" % [_asked])
 	t.check(events.planned_on.seed == _run.calendar.day_rng(1, "finale").seed,
 			"its events are planned on the escape's own stream of the run's day")
 	t.check(not is_same(events.one_shots_spent, _run.attempt_spend.consumed_one_shots)
@@ -348,15 +342,14 @@ func _test_the_building_section_starts_with_no_city(t) -> void:
 	var spec := DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
 	var rig := _start_rig(t, spec, true)
 	var director: DayDirector = rig["director"]
-	director.start(spec)
+	_start(director, spec)
 	var events: _FakeEvents = rig["events"]
 	var world: DayWorld = rig["world"]
 	t.check(events.planned_on == world.plan_rng(), "its events are planned on the building's own seed")
-	t.check(_asked_in_order(["day_started %d" % DaySpec.BUILDING_DAY, "plan %d" % DaySpec.BUILDING_DAY,
-			"stream (30.0, 40.0)", "reset_at (30.0, 40.0) (0.0, -1.0)", "baby reset", "baby force_sleep",
-			"section %d false Building Events" % DaySpec.Section.BUILDING,
-			"day_planned %d" % DaySpec.BUILDING_DAY]),
-			"the building is planned, put down facing up with the baby asleep and announced (%s)"
+	t.check(_asked_in_order(["started %d" % DaySpec.BUILDING_DAY, "stood",
+			"plan %d" % DaySpec.BUILDING_DAY, "stream (30.0, 40.0)",
+			"reset_at (30.0, 40.0) (0.0, -1.0)", "baby reset", "baby force_sleep"]),
+			"the building is announced, planned and put down facing up with the baby asleep (%s)"
 			% [_asked])
 	t.check(not _asked_any(["dress", "crowd"]),
 			"and nothing is dressed and nobody is on its streets")
@@ -367,8 +360,8 @@ func _test_the_building_section_starts_with_no_city(t) -> void:
 
 ## An authored scene's day is the same start with the scene's install in place of the plan: the city
 ## dressed with the recipe's own closures, the clock already running as the scene installs over it,
-## no plan, no resistance's day and nobody put down by the director, and no plan announced. What the
-## install could not stand is handed back.
+## no plan, no resistance's day and nobody put down by the director. It is announced begun and stood
+## as every walk is. What the install could not stand is handed back.
 func _test_an_authored_scene_installs_in_place_of_the_plan(t) -> void:
 	var spec := DaySpec.for_day(1, 210.0)
 	var scene := _FakeScene.new(_asked)
@@ -376,16 +369,15 @@ func _test_an_authored_scene_installs_in_place_of_the_plan(t) -> void:
 	var rig := _start_rig(t, spec, false, scene)
 	var director: DayDirector = rig["director"]
 	scene.clock = rig["clock"]
-	var errors := director.start(spec)
+	var errors := _start(director, spec)
 	t.check(errors == scene.problems, "the scene's problems are the start's")
-	t.check(_asked_in_order(["day_started 1", "dress start_recipe_day", "install running"]),
+	t.check(_asked_in_order(["started 1", "stood", "dress start_recipe_day", "install running"]),
 			"the city is dressed with the recipe's closures and the scene installs over a running "
 			+ "clock (%s)" % [_asked])
 	t.check(scene.installed_with == [rig["city"], rig["player"], rig["baby"], spec, rig["resistance"]],
 			"into the world stood for it, under the walk's spec")
-	t.check(not _asked_any(["plan", "resistance", "reset_at", "day_planned"]),
-			"and nothing is planned, started or put down for it, and no plan is announced (%s)"
-			% [_asked])
+	t.check(not _asked_any(["plan", "resistance", "reset_at"]),
+			"and nothing is planned, started or put down for it (%s)" % [_asked])
 	_put_the_start_away(rig)
 	scene.free()
 

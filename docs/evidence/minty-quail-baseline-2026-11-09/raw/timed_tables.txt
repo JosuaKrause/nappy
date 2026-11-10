@@ -1,0 +1,11 @@
+== 4. dawn planning: seconds inside build_day(), 14 cities x 14 days, per run n=1..3
+before build_day [202.553, 177.92, 284.563] median 202.6 (min 177.9, max 284.6) | whole probe [333.633, 293.008, 479.616] median 333.6 (min 293.0, max 479.6)
+today build_day [256.185, 403.001, 340.105] median 340.1 (min 256.2, max 403.0) | whole probe [390.513, 598.831, 516.773] median 516.8 (min 390.5, max 598.8)
+== 5a. crowd tick, mean over the 36 cases of the case's median per-tick microseconds, per run
+before cases/run 36 | tick column [371, 347, 629] median 370.5 (min 346.8, max 629.3) | agents' own frames column [1675, 1448, 2797] median 1675.4 (min 1448.2, max 2797.1) | agents + tick median 2046.0 (min 1795.0, max 3426.4)
+today cases/run 36 | tick column [2086, 3945, 4860] median 3944.7 (min 2085.6, max 4859.8) | agents' own frames column [0, 0, 0] (inside tick) | agents + tick median 3944.7 (min 2085.6, max 4859.8)
+== 5b. per-system frame profile (entity_frame_profile.gd, seed 4242 day 1, ms), per run
+profiled before callback interval median ms median 15.5 (min 12.1, max 19.2) | main-loop wall median ms median 14.9 (min 11.6, max 18.4) | script self sum median ms median 8.9 (min 6.8, max 10.9)
+profiled today callback interval median ms median 28.8 (min 5.3, max 29.1) | main-loop wall median ms median 27.6 (min 4.5, max 28.0) | script self sum median ms median 15.9 (min 2.8, max 16.2)
+disabled before callback interval median ms median 10.7 (min 8.2, max 11.8) 
+disabled today callback interval median ms median 4.7 (min 4.2, max 6.3) 

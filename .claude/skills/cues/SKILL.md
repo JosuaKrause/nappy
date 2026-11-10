@@ -196,9 +196,11 @@ actually warned. See `docs/EVENTS.md`, "Showing the danger".
 already exists.** The vocabulary is deliberately short and adding to it is a design decision, not a
 drawing one. Never a ring.
 
-**Add a HUD element** — `scenes/ui/hud.tscn` plus `src/ui/hud.gd`. The HUD listens to `EventBus` and
-holds **no reference to the world or the event system**; it keeps the run it is handed (a
-`RunState`, through `use_run()`) and the baby and the stroller, each found by a group lookup. Anything that has to *ask the world* where things are every
+**Add a HUD element** — `scenes/ui/hud.tscn` plus `src/ui/hud.gd`. The HUD listens to `EventBus`, hears
+the day being walked from the run flow (`use_the_day()`, which `main` connects to
+`RunFlow.day_started`) and holds **no reference to the world or the event system**; it keeps the
+run it is handed (a `RunState`, through `use_run()`) and the baby and the stroller, each found by a
+group lookup. Anything that has to *ask the world* where things are every
 frame does not belong in it: `DangerEdge` is its own layer, created by `main`, for exactly that
 reason.
 

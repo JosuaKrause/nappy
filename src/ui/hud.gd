@@ -105,7 +105,6 @@ func _ready() -> void:
 	EventBus.excitement_changed.connect(_on_excitement_changed)
 	EventBus.baby_state_changed.connect(_on_baby_state_changed)
 	EventBus.nerves_changed.connect(func(_n: int) -> void: _refresh_header())
-	EventBus.day_started.connect(func(_d: int) -> void: _refresh_header())
 	EventBus.day_time_changed.connect(_on_day_time_changed)
 	EventBus.resistance_progress_changed.connect(func(_v: int) -> void: _refresh_resistance())
 	# A pickup grants no progress, so `resistance_progress_changed` never fires for the first
@@ -116,11 +115,7 @@ func _ready() -> void:
 	EventBus.resistance_contact_available.connect(_on_contact_available)
 	EventBus.city_went_quiet.connect(_on_city_went_quiet)
 	EventBus.event_telegraphed.connect(_on_event_telegraphed)
-	EventBus.day_started.connect(_teach_the_day)
 	EventBus.controls_chosen.connect(_on_controls_chosen)
-	EventBus.day_started.connect(func(_d: int) -> void:
-		_contact_step = 0
-		_refresh_resistance())
 
 	_baby = get_tree().get_first_node_in_group("baby") as Baby
 	if _baby:
@@ -329,9 +324,15 @@ func say_once(line: String) -> void:
 ## than a second clock or a second label, read off the spec of each day or section as it begins.
 var _hundredths := false
 
-## The day or section about to be walked (`RunFlow.day_started`, which `main` connects).
+## The day or section about to be walked (`RunFlow.day_started`, which `main` connects), before
+## anything is placed in it: the clock's format read off its spec, the header, the lessons its day
+## number gives, and yesterday's contact cleared.
 func use_the_day(spec: DaySpec) -> void:
 	_hundredths = spec.counts_in_hundredths()
+	_refresh_header()
+	_teach_the_day(spec.day_number())
+	_contact_step = 0
+	_refresh_resistance()
 
 func _process(delta: float) -> void:
 	_teach_the_pause(delta)

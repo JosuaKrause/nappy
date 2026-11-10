@@ -5,8 +5,9 @@ extends RefCounted
 ## invariant `tests/test_telemetry.gd` pins for the run log.
 ##
 ## Every counter is a fresh instance of the test's own, handed a `RunState` made fresh for it
-## (`configure()`, as `main` hands the one under the sitting the run it plays) and the bus it
-## listens to; nothing here reads a global run.
+## (`configure()`, as `main` hands the one under the sitting the run it plays), the bus it
+## listens to and a run flow whose walks it counts (`listen_to_the_flow()`); nothing here reads a
+## global run.
 
 ## A bus of the game's own kind with nobody listening to it: a counter handed one hears what a test
 ## emits on it and nothing the live singletons answer to.
@@ -19,6 +20,8 @@ class RecordingCounter extends VisitCounter:
 
 	## The bus of its own this counter listens to.
 	var bus: Node = EVENT_BUS_SCRIPT.new()
+	## The run flow of its own whose walks it counts, as `main` hands it each boot's.
+	var flow := RunFlow.new()
 
 	## The run it counts, made fresh for it (day 1 of a normal run). A test reaches it as
 	## `counter.run`.
@@ -29,6 +32,20 @@ class RecordingCounter extends VisitCounter:
 		run.start_run(1)
 		configure(null, run)
 		listen(bus)
+		listen_to_the_flow(flow)
+
+	## Begins the walk of day `day` on its flow, as the run flow announces one.
+	func begin(day: int) -> void:
+		flow.day_started.emit(spec_of(day))
+
+	## The spec of day `day` as the run flow carries it: a section of the escape under its own
+	## number (`DaySpec.BUILDING_DAY`, `CITY_DAY`), or an ordinary day.
+	static func spec_of(day: int) -> DaySpec:
+		if day == DaySpec.BUILDING_DAY:
+			return DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
+		if day == DaySpec.CITY_DAY:
+			return DaySpec.for_section(DaySpec.Section.CITY, 180.0)
+		return DaySpec.for_day(day, 210.0)
 
 	## Overrides VisitCounter._send_event.
 	func _send_event(name: String) -> void:
@@ -116,7 +133,7 @@ func _test_day_event_name(t) -> void:
 	counter.bus.day_ended.emit(6, GameEnums.DayResult.LOST_CRYING, "", 0.0)
 	t.check(counter.sent.back() == "nappy-day-6-lost-crying",
 		"day and suffix join the way PLAYTEST-132's own example does (%s)" % [counter.sent])
-	counter.bus.day_started.emit(1)
+	counter.begin(1)
 	t.check(counter.sent.back() == "nappy-day-1-began", "a plain day-scoped name (%s)" % [counter.sent])
 	counter.bus.resistance_contact_available.emit(2)
 	counter.bus.day_ended.emit(14, GameEnums.DayResult.WON, "", 0.0)
@@ -187,11 +204,11 @@ func _test_mode_event_name(t) -> void:
 func _test_day_began_names(t) -> void:
 	var counter := RecordingCounter.new()
 	counter.run.calendar.hard_mode = false
-	counter.bus.day_started.emit(5)
+	counter.begin(5)
 	t.check(counter.sent == ["nappy-day-5-began"], "a normal run's day sends the plain name alone")
 	counter.sent.clear()
 	counter.run.calendar.hard_mode = true
-	counter.bus.day_started.emit(5)
+	counter.begin(5)
 	t.check(counter.sent == ["nappy-day-5-began", "nappy-day-5-began-hard"],
 		"a hard run's day sends the plain name and its hard-only copy")
 	_done(counter)
@@ -207,20 +224,20 @@ func _test_checkpoint_event_name(t) -> void:
 
 ## The day a fresh run's title stands in front of has already begun as a normal run's by the time
 ## the title says the run is hard, so the counter sends that day's hard copy with the mode; every
-## later day of a hard run sends it from `day_started` itself.
+## later day of a hard run sends it as the day begins.
 func _test_a_hard_run_counts_its_days_twice_and_a_normal_run_once(t) -> void:
 	var counter := RecordingCounter.new()
 	counter.run.calendar.hard_mode = false
-	counter.bus.day_started.emit(1)
+	counter.begin(1)
 	counter.bus.run_mode_chosen.emit(true, 1)
 	counter.run.calendar.hard_mode = true
-	counter.bus.day_started.emit(2)
+	counter.begin(2)
 	t.check(counter.sent == ["nappy-day-1-began", "nappy-mode-hard", "nappy-day-1-began-hard",
 			"nappy-day-2-began", "nappy-day-2-began-hard"],
 			"a hard run's first day is counted hard once its mode is known (%s)" % [counter.sent])
 	counter.sent.clear()
 	counter.run.calendar.hard_mode = false
-	counter.bus.day_started.emit(1)
+	counter.begin(1)
 	counter.bus.run_mode_chosen.emit(false, 1)
 	counter.bus.went_back_to_a_checkpoint.emit(4, 7)
 	t.check(counter.sent == ["nappy-day-1-began", "nappy-mode-normal",
@@ -247,7 +264,7 @@ func _test_controls_event_name(t) -> void:
 func _test_detention_suffix(t) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
-	counter.bus.day_started.emit(day)
+	counter.begin(day)
 	counter.sent.clear()
 	counter.bus.player_detained.emit("chatting_mother")
 	t.check(counter.sent == ["nappy-day-%d-chat" % day], "the mother who stops her for a conversation")
@@ -266,7 +283,7 @@ func _test_detention_suffix(t) -> void:
 func _test_is_pickup_step(t) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
-	counter.bus.day_started.emit(day)
+	counter.begin(day)
 	var cases := [
 		[1, "mark-read", "index 1 is day 6's chalk mark"],
 		[2, "task-done", "index 2 is the perform step the mark unlocks"],
@@ -287,18 +304,20 @@ func _test_is_pickup_step(t) -> void:
 func _test_listening_touches_no_gameplay_state(t) -> void:
 	var counter := VisitCounter.new()
 	var bus: Node = EVENT_BUS_SCRIPT.new()
+	var flow := RunFlow.new()
 	var run := RunState.new()
 	run.start_run(1)
 	var scripts: Array[String] = []
 	counter.send_through(GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script)))
 	counter.listen(bus)
-	bus.day_started.emit(1)
+	counter.listen_to_the_flow(flow)
+	flow.day_started.emit(RecordingCounter.spec_of(1))
 	t.check(scripts.is_empty(),
 		"a counter handed no configuration sends nothing")
 	counter.configure(RunConfig.parse(PackedStringArray(), "", false), run)
 	var before := _run_snapshot(run)
 	bus.run_begun.emit(1, false)
-	bus.day_started.emit(1)
+	flow.day_started.emit(RecordingCounter.spec_of(1))
 	bus.resistance_contact_available.emit(0)
 	bus.resistance_step_completed.emit(0)
 	bus.resistance_contact_available.emit(1)
@@ -362,7 +381,7 @@ func _run_snapshot(run: RunState) -> Dictionary:
 ## the counter sends when the day ends: a skipped step is a `task-skipped` of the day it was offered.
 func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 	var counter := RecordingCounter.new()
-	counter.bus.day_started.emit(5)
+	counter.begin(5)
 	counter.bus.resistance_contact_available.emit(5)
 	counter.bus.resistance_step_completed.emit(5)
 	counter.bus.resistance_contact_available.emit(6)
@@ -378,7 +397,7 @@ func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 		% [counter.sent])
 	counter.bus.resistance_contact_available.emit(8)
 	counter.bus.resistance_step_failed.emit(8)
-	counter.bus.day_started.emit(6)
+	counter.begin(6)
 	counter.bus.resistance_contact_available.emit(7)
 	counter.sent.clear()
 	counter.bus.day_ended.emit(5, GameEnums.DayResult.WON, "", 0.0)
@@ -392,7 +411,7 @@ func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 ## not indices chosen to make a parity come out right.
 func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t) -> void:
 	var counter := RecordingCounter.new()
-	counter.bus.day_started.emit(6)
+	counter.begin(6)
 	counter.bus.resistance_contact_available.emit(1)
 	counter.bus.resistance_contact_available.emit(2)
 	counter.bus.resistance_step_completed.emit(1)
@@ -418,12 +437,12 @@ func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t) -> void:
 func _test_every_tear_and_every_hold_is_sent(t) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
-	counter.bus.day_started.emit(day)
+	counter.begin(day)
 	counter.bus.poster_torn.emit()
 	counter.bus.poster_torn.emit()
 	counter.bus.player_detained.emit("checkpoint_hut")
 	counter.bus.player_detained.emit("checkpoint_hut")
-	counter.bus.day_started.emit(day)
+	counter.begin(day)
 	counter.bus.poster_torn.emit()
 	var torn := "nappy-day-%d-poster-torn" % day
 	var held := "nappy-day-%d-checkpoint" % day
@@ -567,11 +586,13 @@ func _test_send_event_never_queues_when_it_may_never_send(t) -> void:
 	counter.configure(RunConfig.parse(PackedStringArray(), "", false), run)
 	counter.send_through(outbox)
 	counter.listen(bus)
+	var flow := RunFlow.new()
+	counter.listen_to_the_flow(flow)
 	t.check(bus.controls_chosen.get_connections().size() == 1
-			and bus.day_started.get_connections().size() == 1,
-		"the counter answers the bus it is handed, so there are events to refuse")
+			and flow.day_started.get_connections().size() == 1,
+		"the counter answers the bus and the flow it is handed, so there are events to refuse")
 	bus.run_begun.emit(1, false)
-	bus.day_started.emit(1)
+	flow.day_started.emit(RecordingCounter.spec_of(1))
 	bus.controls_chosen.emit(true, false)
 	bus.day_ended.emit(1, GameEnums.DayResult.WON, "", 0.0)
 	t.check(scripts.is_empty(), "off the web, nothing reaches a page (%s)" % [scripts])
@@ -958,7 +979,7 @@ func _test_encounters_and_runs_are_named_by_their_day_and_row(t) -> void:
 func _test_every_event_opts_out_of_sessions(t) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.run_begun.emit(1, false)
-	counter.bus.day_started.emit(1)
+	counter.begin(1)
 	counter.bus.resistance_contact_available.emit(1)
 	counter.bus.resistance_mark_seen.emit(1)
 	counter.bus.resistance_step_completed.emit(1)
@@ -1015,24 +1036,24 @@ func _test_every_event_opts_out_of_sessions(t) -> void:
 
 ## **Each of the escape's sections is counted as a day of its own, under its own number** *(minty-
 ## lemur #785: "telemetry should work the same also in escape both apartment and city")*: what is
-## counted while it is walked is named by the day `day_started` announced — the building's
+## counted while it is walked is named by the day of the walk last begun — the building's
 ## `DaySpec.BUILDING_DAY`, the city's `DaySpec.CITY_DAY` — never by the calendar, which stays on
 ## the last day for the whole escape. The escape's own names go out beside the day's, as before.
 func _test_an_escape_section_is_counted_as_a_day_of_its_own(t) -> void:
 	var counter := RecordingCounter.new()
 	counter.run.header.day = Tuning.RUN_LENGTH_DAYS
 	var building := DaySpec.BUILDING_DAY
-	counter.bus.day_started.emit(building)
+	counter.begin(building)
 	counter.bus.pursuit_warned.emit("masked_pursuer")
 	counter.bus.pursuit_began.emit("masked_pursuer")
 	counter.bus.pursuit_caught.emit("masked_pursuer")
 	counter.bus.day_ended.emit(building, GameEnums.DayResult.LOST_HARD_FAIL, "masked-pursuer", 12.0)
 	counter.bus.escape_lost.emit(DaySpec.Section.BUILDING, GameEnums.DayResult.LOST_HARD_FAIL)
-	counter.bus.day_started.emit(building)
+	counter.begin(building)
 	counter.bus.day_ended.emit(building, GameEnums.DayResult.WON, "", 40.0)
 	counter.bus.escape_city_entered.emit()
 	var city := DaySpec.CITY_DAY
-	counter.bus.day_started.emit(city)
+	counter.begin(city)
 	counter.bus.city_gone_dark.emit()
 	counter.bus.player_detained.emit("checkpoint_post")
 	counter.bus.day_ended.emit(city, GameEnums.DayResult.WON, "", 90.0)

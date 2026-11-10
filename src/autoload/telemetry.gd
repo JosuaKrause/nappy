@@ -249,8 +249,8 @@ func set_clock(seconds: float) -> void:
 	if _day_open:
 		_clock = seconds
 
-## The section's clock, put back to zero for a fresh walk — a retried section, or the second
-## section beginning after the first — with the automatic-snapshot schedule reset alongside it.
+## The section's clock, put back to zero for a fresh walk — a retried day or section, or the next
+## one beginning after the last — with the automatic-snapshot schedule reset alongside it.
 ##
 ## **`set_clock(0.0)` alone is not this.** It leaves the last shot's time wherever the previous walk's
 ## last automatic shot fell, so `snapshot()`'s spacing gate (the clock less the last shot's time under
@@ -258,8 +258,8 @@ func set_clock(seconds: float) -> void:
 ## would stay true — the new clock read as still inside the old walk's three-second window — until
 ## the new walk's own clock climbed back past whatever the old one had reached, holding every
 ## automatic snapshot back for exactly that long. This gives a walk the same clean slate
-## `begin_day()` gives a day's; `TelemetryObserver.start_section()` asks it as each section of the
-## escape begins, after its own `begin_section()`.
+## `begin_day()` gives a day's; `TelemetryObserver.start()` asks it as each walk is placed, after
+## the walk's own header.
 func restart_section_clock() -> void:
 	if not _day_open:
 		return

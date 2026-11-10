@@ -19,16 +19,6 @@ signal baby_state_changed(state: GameEnums.BabyState)
 ## `VisitCounter`, which is the only listener today — see docs/TELEMETRY.md, "The page counts
 ## visits".
 signal run_begun(day: int, resumed: bool)
-## A day begins — its first attempt or a retry — before anything is placed in it, so a listener
-## clears yesterday's state first. `DayDirector.start()`, the one start every walk goes through, is
-## the emitter: for a day, an authored scene's day and each of the escape's two sections, a day of
-## its own under its own number after the last (`DaySpec.number`).
-signal day_started(day: int)
-## Everything the day holds is placed: its closures, its calm, its plan, the resistance's contact and
-## her on the doorstep — or an escape section's world and her at its start. `DayDirector.start()` is
-## the emitter, for every walk but an authored scene's, which is installed rather than planned; the
-## run log writes the day's plan lines, its dawn map and her `start` line here (`RunSession`).
-signal day_planned(day: int)
 signal day_time_changed(remaining: float, total: float)
 signal return_phase_started() ## Baby is asleep; walk home.
 signal nerves_changed(nerves: int)
@@ -43,8 +33,8 @@ signal nerves_changed(nerves: int)
 ##
 ## Emitted by `DayDirector.finish_day()` once the charges still running are closed and above the
 ## calendar move `RunCalendar.finish_day()` makes a moment later, so a lost day's retry
-## and a won day's next dawn are both still "day N" here. Fires once per attempt, as
-## `day_started` does: a retry begins and ends this pair again for the day it repeats — an
+## and a won day's next dawn are both still "day N" here. Fires once per attempt, as a walk begins
+## once per attempt (`RunFlow.day_started`): a retry begins and ends the day it repeats again — an
 ## escape section's included, under its own number.
 signal day_ended(day: int, result: GameEnums.DayResult, cause: String, elapsed: float)
 ## The held restart — the pause screen's or the day summary's own button — with the day it
@@ -225,21 +215,14 @@ signal city_went_quiet()
 signal city_gone_dark()
 
 # ------------------------------------------------------------------- escape ---
-# The escape's own moments, emitted by `main` as its sections begin and end, beside the day's own
-# `day_started` and `day_ended` each section sends as a day: what the page counts of "how far
-# people get" past day 14 under the escape's own names (`VisitCounter`, docs/TELEMETRY.md, "The
-# page counts visits"), and the world the run log watches each section in (`RunSession`).
+# The escape's own moments, emitted by `main` as its sections begin and end, beside the start and
+# the `day_ended` each section has as a day: what the page counts of "how far people get" past day
+# 14 under the escape's own names (`VisitCounter`, docs/TELEMETRY.md, "The page counts visits").
 
 ## The escape sequence has just begun — the fresh handover from a won day 14, never a resume of one
 ## already under way (`main._ready()` tells the two apart: `RunFlow.Opening.ESCAPE_HANDED_OVER`
 ## against `ESCAPE_RESUMED`).
 signal escape_begun()
-## A section is about to be walked, the first time or again after a loss (`restarted`). `section`
-## is a `DaySpec.Section` passed as `int` (a cross-script enum is not the same type as itself as a
-## parameter, the **godot** skill); `world` is where it is walked — the building's
-## `InteriorScene` or the `City` — and `events` the events walked among there, the building's
-## `EventManager` or the city's.
-signal escape_section_started(section: int, restarted: bool, world: Node, events: Node)
 ## The building section won — she is out of its service exit — and the city section is about to
 ## begin: once per won attempt at the *building* section, never repeated by a retry of the city
 ## section alone.

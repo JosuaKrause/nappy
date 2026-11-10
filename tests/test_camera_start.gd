@@ -88,22 +88,26 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 			"and the same holds on the first frame after the title's disc is pressed")
 	# A dawn after finishing far away must prepare home before the next process callback: she is
 	# put far from home, the day is lost and its summary continued, and the home's ground is read
-	# the moment the next attempt has been placed (`EventBus.day_planned`), before any frame.
+	# the moment the next attempt has been placed and its clock started — the clock's first reading
+	# of a full day (`EventBus.day_time_changed`, which `DayController.start()` sends once she is
+	# put down) — before any frame.
 	var far := Rect2(Vector2(64, 64), Tuning.VIEW_HALF_EXTENT * 2)
 	city.scenery.update(far, true)
 	player.reset_at(far.get_center())
 	var dawns: Array[int] = []
-	var at_dawn := func(_day: int) -> void:
+	var at_dawn := func(remaining: float, total: float) -> void:
+		if remaining != total or not dawns.is_empty():
+			return
 		dawns.append(1)
 		var home_view := Rect2(city.map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
 				Tuning.VIEW_HALF_EXTENT * 2)
 		for key in city.scenery_ground.keys_in(home_view):
 			t.check(city.scenery_ground.chunks.has(key),
 					"real day reset prepares the home viewport before its first frame")
-	EventBus.day_planned.connect(at_dawn)
 	EventBus.hard_fail_triggered.emit("car_strike")
+	EventBus.day_time_changed.connect(at_dawn)
 	await Boot.press_continue(t, main)
-	EventBus.day_planned.disconnect(at_dawn)
+	EventBus.day_time_changed.disconnect(at_dawn)
 	t.check(dawns.size() == 1, "the lost day's continue placed the next attempt (%d)" % dawns.size())
 
 	_end_the_boot(boot)
