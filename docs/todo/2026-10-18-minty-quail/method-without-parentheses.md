@@ -3,7 +3,7 @@
 **Proposed, not asked for:** the whole item is the orchestrator's proposal. The player's words on the
 field-read check ask that it be made to work (inbox #1268 in olive-ferret) and say nothing of a
 method read without its parentheses. The plainer alternative is to leave it: the naming rule keeps
-a conversion from creating the case (below), and what is left is the mistake made by hand.
+a conversion from creating the case (below), and what is left is listed under "What is left".
 
 **The trap.** `thing.is_ready`, where `is_ready` is a method, is a reference to the function: always
 true in a condition, and a statement that does nothing where a call was meant (`crowd.clear` for
@@ -15,17 +15,26 @@ engine's default level, a warning, and no headless run prints a warning.
 
 - `tools/check_field_reads.py` fails a method's name read through a receiver whose class it cannot
   tell, in a file under `src/` without the opt-out line. Its `--help` says which names count.
-- The naming rule of designing-classes ("Fields are not API"), for every conversion: a method that
-  replaces a yes-or-no field never takes the field's name, so a read left behind after a
-  conversion names something that no longer exists. On a typed receiver it stops parsing; on a
-  value the engine types as Variant it fails when the line runs.
+- The naming rule of designing-classes ("Fields are not API"), for every conversion: a method never
+  takes its field's name where a read of the field can stand as a truth test (a yes-or-no field, a
+  value tested for truth or against null), so a read left behind after a conversion names
+  something that no longer exists. It stops parsing on a typed receiver in a file that does not
+  silence `unsafe_property_access`; everywhere else it fails when the line runs.
 
 **What nothing reports:** the same mistake on a receiver the check can type (a class under `src/` or
 an engine value), in a file under `src/` that still carries the opt-out line, in a test, or as a
 bare name of the file's own class with no receiver (`if is_ready:`).
 
-**What is left** is a method's name written without its parentheses by hand, in new code or an
-edit, where no field of that name ever was.
+**What is left.**
+
+- A method's name written without its parentheses by hand, in new code or an edit, where no field
+  of that name ever was.
+- A read a conversion leaves behind where the new name fails only when the line runs: in a file
+  whose opt-out line names `unsafe_property_access` (`tools/check_field_reads.py --summary` counts
+  them; `src/main.gd` and `src/dev/scene_recipe_runtime.gd` are among the heaviest readers), on a
+  receiver typed too wide, and on a Variant. A clean boot does not show that none is left there.
+- `EventDef.investigates()`, which took its yes-or-no field's name before the rule; no read of it
+  without parentheses is left, and a rename is a change of its own.
 
 **Ways to build it, none chosen.**
 
