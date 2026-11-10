@@ -204,7 +204,24 @@ class ReadTests(unittest.TestCase):
         self.assertEqual((found(reader(body)), unknown(reader(body))), (set(), []))
         bare = body.replace("self.t.", "t.")
         self.assertEqual(found(reader(bare)), {("Thing", "src/reader.gd", "count")})
-        self.assertEqual(unknown(reader(bare)), [(8, "t.go")])
+
+    def test_a_parameter_list_closing_at_the_margin_hides_its_parameters(self) -> None:
+        # The docstring's blind spot: a `)` at the margin opens a new block, which declares no parameter.
+        tail = "\treturn a.count + b.size\n"
+        seen = (
+            "func f(a: Thing,\n\t\tb: Thing) -> int:\n" + tail,
+            "func f(\n\t\ta: Thing,\n\t\tb: Thing) -> int:\n" + tail,
+            "func f(\n\ta: Thing,\n\tb: Thing,\n\t) -> int:\n" + tail,
+        )
+        for body in seen:
+            self.assertEqual(
+                found(reader(body)), {("Thing", "src/reader.gd", "count"), ("Thing", "src/reader.gd", "size")}, body
+            )
+        margin = "func f(\n\t\ta: Thing,\n\t\tb: Thing,\n) -> int:\n" + tail
+        self.assertEqual(found(reader(margin)), set())
+        hidden = "func f(\n\t\txs: Array,\n) -> int:\n\treturn xs[0].count\n"
+        self.assertEqual(unknown(reader(hidden)), [])
+        self.assertEqual(unknown(reader(hidden.replace("\n) -> int", ") -> int"))), [(5, "xs[0].count")])
 
     def test_a_comment_and_a_string_are_not_a_read(self) -> None:
         body = 'var t: Thing\nfunc f() -> String:\n\t# t.count\n\treturn "t.count"\n'
@@ -265,55 +282,71 @@ class MethodReferenceTests(unittest.TestCase):
         body = "func a(rects: Array) -> void:\n\tprint(rects[0].end)\n"
         self.assertEqual(self.kinds(reader(body) | {"src/other.gd": other}), [])
 
-    def test_a_known_receivers_method_without_parentheses_fails_where_no_callable_is_handed_on(self) -> None:
+    def test_a_method_named_without_parentheses_on_a_receiver_the_check_can_type_is_not_seen(self) -> None:
+        # The docstring's blind spot: the rule is for a receiver whose class cannot be told, handed on or not.
         body = (
-            "var t: Thing\nfunc f() -> Callable:\n\tif t.make:\n\t\tpass\n\tvar ok := not t.make\n"
-            "\tvar cb := t.make\n\tg(t.make, 1)\n\tvar bound := t.make.bind(1)\n\tvar xs := [t.make]\n"
-            "\treturn t.make if t else Callable()\nfunc g(c: Callable, n: int) -> void:\n\tpass\n"
+            "var t: Thing\nfunc f(n: Node, items: Array) -> void:\n\tif t.make:\n\t\tpass\n\tt.go\n"
+            "\tassert(n.queue_free)\n\tg(items[0].go)\n\tvar cb: Callable = items[0].make\n"
+            "func g(c: Callable) -> void:\n\tpass\n"
         )
         self.assertEqual(
             self.kinds(reader(body)),
-            [(5, "t.make", reads.REFERENCE), (7, "t.make", reads.REFERENCE)],
+            [(9, "items[0].go", reads.UNKNOWN_METHOD), (10, "items[0].make", reads.UNKNOWN_METHOD)],
         )
-        self.assertEqual(self.kinds(reader(body, LINE + "class_name Reader\nextends Node\n")), [])
 
-    def test_a_statement_on_its_own_an_assert_and_a_parenthesised_condition_hand_nothing_on(self) -> None:
-        body = (
-            "var t: Thing\nfunc f() -> void:\n\tt.go\n\tassert(t.make)\n\tassert(t.make, 'message')\n"
-            "\tif (\n\t\tt.make\n\t):\n\t\tpass\n\tif (t.make):\n\t\tpass\n\tvar xs := d[t.make]\n"
+    def test_what_counts_as_a_var_a_class_declares(self) -> None:
+        # A var of a class a receiver can name (a class_name or an autoload) counts; one only an inner class or a
+        # file with no class_name declares does not, and a use of it through an unknown receiver is not seen.
+        inner = "class_name Holder\nextends RefCounted\nclass Box:\n\tvar boxed := 0\n"
+        nameless = "extends Node\nvar loose := 0\n"
+        src = reader("func a(items: Array) -> void:\n\tprint(items[0].boxed, items[0].loose)\n") | {
+            "src/holder.gd": inner,
+            "src/nameless.gd": nameless,
+        }
+        self.assertEqual(self.kinds(src), [])
+        names = sorted(reads.var_names_of(reads.Tree(src, {})))
+        self.assertEqual(names, ["_hidden", "count", "extra", "other", "size"])
+        auto = reader("func a(items: Array) -> void:\n\tprint(items[0].loose)\n") | {"src/nameless.gd": nameless}
+        tree = reads.Tree(auto, {"Loose": "src/nameless.gd"})
+        self.assertEqual([(u.expression, u.kind) for u in reads.reads_of(tree).unknown], [("items[0].loose", "var")])
+
+    def test_what_excuses_a_methods_name_on_an_unknown_receiver(self) -> None:
+        # A var of a named class: the use fails as the var's. A constant or an enum: excused. A var only an inner
+        # class or a file with no class_name declares, or a signal: not excused, the use fails as the method's.
+        other = (
+            "class_name Other\nextends RefCounted\nvar make := 0\nconst LIMIT := 1\nenum Mode { A }\nsignal woke\n"
+            "class Box:\n\tvar boxed := 0\nfunc LIMIT() -> void:\n\tpass\nfunc Mode() -> void:\n\tpass\n"
+            "func woke() -> void:\n\tpass\nfunc boxed() -> void:\n\tpass\nfunc loose() -> void:\n\tpass\n"
         )
+        nameless = "extends Node\nvar loose := 0\n"
+        body = (
+            "func a(items: Array) -> void:\n\tprint(items[0].make)\n\tprint(items[0].LIMIT, items[0].Mode)\n"
+            "\titems[0].woke.connect(a)\n\tprint(items[0].boxed)\n\tprint(items[0].loose)\n"
+        )
+        src = reader(body) | {"src/other.gd": other, "src/nameless.gd": nameless}
         self.assertEqual(
-            self.kinds(reader(body)),
+            self.kinds(src),
             [
-                (5, "t.go", reads.REFERENCE),
-                (6, "t.make", reads.REFERENCE),
-                (7, "t.make", reads.REFERENCE),
-                (9, "t.make", reads.REFERENCE),
-                (12, "t.make", reads.REFERENCE),
-                (14, "t.make", reads.REFERENCE),
+                (4, "items[0].make", reads.UNKNOWN_VAR),
+                (6, "items[0].woke", reads.UNKNOWN_METHOD),
+                (7, "items[0].boxed", reads.UNKNOWN_METHOD),
+                (8, "items[0].loose", reads.UNKNOWN_METHOD),
             ],
         )
 
-    def test_a_callable_handed_on_across_lines_or_through_parentheses_still_passes(self) -> None:
-        body = (
-            "var t: Thing\nfunc f() -> Callable:\n\tg(\n\t\t1,\n\t\tt.make,\n\t)\n\tvar xs := [\n\t\tt.make,\n\t]\n"
-            "\tvar cb := (t.make)\n\th(func() -> Callable: return t.make)\n\treturn (\n\t\tt.make\n\t)\n"
-            "func g(n: int, c: Callable) -> void:\n\tpass\nfunc h(c: Callable) -> void:\n\tpass\n"
-        )
-        self.assertEqual(self.kinds(reader(body)), [])
-
-    def test_a_name_that_is_also_a_var_a_signal_a_constant_or_an_engine_property_is_not_taken_for_a_method(
-        self,
-    ) -> None:
+    def test_the_engine_names_are_a_fixed_list(self) -> None:
+        # `scale` is in ENGINE_PROPERTIES and excused; `visible`, an engine property the list does not hold, is
+        # taken for the project's method until the list gains it.
+        self.assertIn("scale", reads.ENGINE_PROPERTIES)
+        self.assertNotIn("visible", reads.ENGINE_PROPERTIES)
         other = (
-            "class_name Other\nextends RefCounted\nvar make := 0\nsignal go\nconst LIMIT := 1\nfunc woke() -> void:"
-            "\n\tpass\nfunc scale() -> float:\n\treturn 1.0\n"
+            "class_name Other\nextends RefCounted\nfunc scale() -> float:\n\treturn 1.0\n"
+            "func visible() -> bool:\n\treturn true\n"
         )
-        body = "func a(items: Array) -> void:\n\tprint(items[0].scale)\n\titems[0].woke.connect(a)\n"
-        src = reader(body) | {"src/other.gd": other}
-        self.assertEqual(self.kinds(src), [])
-        body = "func a(items: Array) -> void:\n\tprint(items[0].go)\n"
-        self.assertEqual(self.kinds(reader(body) | {"src/other.gd": other}), [])
+        body = "func a(items: Array) -> void:\n\tprint(items[0].scale, items[0].visible)\n"
+        self.assertEqual(
+            self.kinds(reader(body) | {"src/other.gd": other}), [(4, "items[0].visible", reads.UNKNOWN_METHOD)]
+        )
 
 
 class OptOutTests(unittest.TestCase):
@@ -571,6 +604,16 @@ class EndToEndTests(unittest.TestCase):
                 with self.assertRaises(SystemExit) as caught:
                     reads.parse(argv)
                 self.assertNotEqual(caught.exception.code, 0)
+
+    def test_help_prints_the_docstring_the_one_text_of_what_the_check_sees(self) -> None:
+        out = io.StringIO()
+        with redirect_stdout(out), self.assertRaises(SystemExit) as caught:
+            reads.parse(["--help"])
+        self.assertEqual(caught.exception.code, 0)
+        text = " ".join(out.getvalue().split())
+        self.assertIn(" ".join((reads.__doc__ or "").split()[:12]), text)
+        self.assertIn("a constant or an enum any file or inner class declares", text)
+        self.assertIn("**Blind spots, stated.**", text)
 
 
 if __name__ == "__main__":

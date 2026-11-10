@@ -102,13 +102,12 @@ line at its top naming the warnings it still trips, and the files carrying it ar
 a module's pass types its receivers and deletes the line, a new file never carries it, since code
 is typed wherever the language can type it (inbox #1280 in olive-ferret), and CI's run of the check fails a file
 that gains it (**godot**, "Types", owns that rule and says what the errors are and how a value is
-typed). In a file under `src/` without the line, the check fails a field read through any receiver
-whose class it cannot tell, since the engine warns of nothing on a property read off a Variant; in
-a file with the line it skips such a read, and its `--summary` counts the files and the skipped
-uses. In no
-file does it see a further read of a field its reader file is already listed for, so review still
-reads the diff for those; the rarer blind spots are in the comment that opens the tool, under
-"Blind spots, stated".
+typed). In a file under `src/` without the line, the check fails a field's or a method's name
+read through a receiver whose class it cannot tell, since the engine warns of nothing on a
+property read off a Variant; in a file with the line it skips such a read, and its `--summary`
+counts the files and the skipped uses. In no file does it see a further read of a field its reader
+file is already listed for, so review still reads the diff for those; which names it counts and
+the rarer blind spots are in the text `uv run python tools/check_field_reads.py --help` prints.
 
 **Every pull request that changes code answers the architecture questions** in
 **pr-review**'s `references/architecture-questions.md`, so the layering does not drift once the

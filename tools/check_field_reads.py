@@ -12,7 +12,9 @@ field-read-check, inbox #1182 in gray-dolphin).
 - the receiver's class is known from the code (below) and is a class under `src/` other than the reader's own
   class, its ancestors and its descendants,
 - `name` is a `var` (also `static var`, `@export var`, `@onready var`) declared at the top level of that class's
-  file or of a class it extends, an underscore name included (an underscore is a convention, not a fence),
+  file or of a class it extends, an underscore name included (an underscore is a convention, not a fence), where
+  the class is one a receiver can name: a file with a `class_name` or an autoload name. A var only an inner class
+  or a file with no `class_name` declares is not a var here (`var_names_of`),
 - and no call parenthesis follows (`.name(` is a method call, or a Callable called, and is the API).
 
 What is no breach: a method, a signal, a constant or an enum (`Tuning.X`); an engine object's property
@@ -49,15 +51,16 @@ returns a Variant, a name declared `: Variant`) warns of nothing, and neither do
 parentheses, on any receiver: `thing.hard_fail` is a reference to the function, always true. So in a file under
 `src/` **without** the line this check fails, naming the file, the line and the expression:
 
-- a `.name` use whose receiver's class it cannot tell, where the name is a var some class under `src/` declares, or
-  a method one declares that no class declares as a var, a signal, a constant or an enum and that no engine class
-  has as a property, nor a builtin type as a member (`ENGINE_PROPERTIES`): the fix is a typed name to read
-  through, or, for a dictionary's key, a subscript;
-- a method of the receiver's known class (or an ancestor) named without its parentheses, unless it hands a
-  Callable on: a step follows it (`.bind(`, `.call(`), or it is a call's argument, an element of an array literal,
-  the right side of an assignment, a returned value or a ternary's branch, a parenthesised expression being what
-  its parentheses are. A condition (`assert(...)`'s included), an operand or a statement on its own (`crowd.clear`
-  for `crowd.clear()`) is the mistake.
+- a `.name` use with no `(` after it, whose receiver's class it cannot tell, whether or not the use hands a
+  Callable on, where the name is a var as above, or a method a file or an inner class under `src/` declares
+  (`method_names_of`). A method's name is not taken for one where it is also such a var (the use fails as the
+  var's), a constant or an enum any file or inner class declares, or a name in `ENGINE_PROPERTIES`. That is a
+  fixed list, written when it was made: the names an engine class had as a property or a signal, or a builtin
+  type as a member, that a method under `src/` also had, which on a receiver nothing types is as likely the
+  engine's member as the project's method. A method added later with another engine name is taken for a method
+  until the list gains it. A name only an inner class or a file with no `class_name` declares as a var, or one
+  declared as a signal, does not excuse a method's name. The fix is a typed name to read through, or, for a
+  dictionary's key, a subscript.
 
 In a file **with** the line such a use is skipped, never listed and never failed, and `--summary` counts the
 skipped uses of a var's name.
@@ -65,23 +68,25 @@ skipped uses of a var's name.
 **The line has one form**, the file's whole first line, `@warning_ignore_start("untyped_declaration",
 "unsafe_method_access")`: double-quoted names separated by `, `, only those three warnings, each once, in that
 order, nothing after it. The engine honours other forms (a trailing comment, a space or a backslash line
-continuation before the parenthesis, a line break or a comment inside it, single quotes, the annotation lower in
-the file), so every `@warning_ignore`,
-`@warning_ignore_start` and `@warning_ignore_restore` in a file's code is read whole, and any but that line that
-names one of the three, or has an argument the check cannot read (a constant), fails with the line in its one
-form: an ignore the check cannot see would let the list grow unnoticed, and a converted file would hide an
-untyped access behind it. A failure for a file that would need the line says what to write instead: a suite the
-typed runner header, `func run(t: TestRunner) -> void:`, anything else a typed declaration or a typed name. Every
-`.gd` file outside `docs/` is read for the line (`src/`, `tests/`, `tools/`: the setting reaches every script the
-engine parses in this project); only `src/` is read for reads.
+continuation before the parenthesis, a line break or a comment inside it, single quotes, the annotation lower in the
+file), so every `@warning_ignore`, `@warning_ignore_start` and `@warning_ignore_restore` in a file's code is read
+whole, and any but that line that names one of the three, or has an argument the check cannot read (a constant),
+fails with the line in its one form: an ignore the check cannot see would let the list grow unnoticed, and a
+converted file would hide an untyped access behind it. A failure for a file that would need the line says what to
+write instead: a suite the typed runner header, `func run(t: TestRunner) -> void:`, anything else a typed
+declaration or a typed name. Every `.gd` file outside `docs/` is read for the line (`src/`, `tests/`, `tools/`: the
+setting reaches every script the engine parses in this project); only `src/` is read for reads.
 
 **Blind spots, stated.** A chain through an engine property typed `Variant` (`JSON.data`), or from `self` inside an
 inner class, is told as an engine value, so a read behind it is not seen; a read of another file's inner class's
-field is not listed; a bare name nothing declares is taken for an engine property of the file's own class; a
-parameter of a function whose parameter list runs over several lines (`func f(` ending its line) has no type
-here, so a read through it is neither a read nor an unknown. A
-method named without its parentheses is not seen on a receiver told as an engine value, nor as a bare name of the
-file's own class with no receiver (`if is_ready:`). A second read of a field a file already reads is not a new
+field is not listed; a var only an inner class or a file with no `class_name` declares is not a var here, so a
+receiver whose class cannot be told read with such a name fails only where some file or inner class declares the
+name as a method; a bare name nothing declares is taken for an engine property of the file's own class; a
+parameter of a function whose parameter list closes at the margin (a line starting with `)`, which opens a new
+block) has no type here, so a read through it is neither a read nor an unknown. A method named without its
+parentheses is seen only on a receiver whose class the check cannot tell: not on one it can type, a class under
+`src/` or an engine value (`if thing.is_ready:` with `thing: Thing`), nor on a bare name of the file's own class
+with no receiver (`if is_ready:`). A second read of a field a file already reads is not a new
 line, so a change that adds one to a listed reader file and field passes `--base`: review reads the diff for it.
 Tests are not read for reads (that is `tests-one-module.md`'s item). Whether a line still names only warnings its
 file trips is the engine's to show, not this check's: deleting a name the file still trips fails the boot, and a
@@ -354,39 +359,7 @@ ENGINE_PROPERTIES = frozenset(
         "velocity",
     }
 )
-SIGNAL = re.compile(r"^signal[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
 CONSTANT = re.compile(r"^(?:static[ \t]+)?(?:const|enum)[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
-# What may stand before a method reference that hands a Callable on, and what may follow it. Before it on its line:
-# the right side of an assignment, a returned value, a ternary's else branch (HANDED_STATEMENT); or, measured from
-# the bracket holding it, nothing or a comma, an element of that bracket's list (HANDED_ELEMENT), which counts only
-# where the bracket is a call's argument list or an array literal (`list_bracket`). After it: the end of the line, a
-# closing bracket, a comma, or a ternary's `if`.
-HANDED_STATEMENT = re.compile(r"(?:(?<![=!<>:])=|:=|\breturn|\belse)[ \t]*$")
-HANDED_ELEMENT = re.compile(r"(?:^|,)\s*$")
-HANDED_AFTER = re.compile(r"^[ \t]*(?:$|[)\],]|if\b)")
-# The words a `(` or a `[` may follow without being a call or a subscript: after `assert(`, `if (` or `while (` the
-# bracket holds a condition, and after `return [` or `in [` an array literal.
-KEYWORDS = frozenset(
-    [
-        "and",
-        "as",
-        "assert",
-        "await",
-        "elif",
-        "else",
-        "for",
-        "if",
-        "in",
-        "is",
-        "match",
-        "not",
-        "or",
-        "return",
-        "when",
-        "while",
-    ]
-)
-TRAILING_WORD = re.compile(r"[A-Za-z_]\w*$")
 
 
 class FieldReadsError(Exception):
@@ -418,14 +391,12 @@ class Read:
 
 UNKNOWN_VAR = "var"
 UNKNOWN_METHOD = "method"
-REFERENCE = "reference"
 
 
 @dataclass(frozen=True)
 class Unknown:
     """A `.name` use in a file without the opt-out line that fails: a receiver whose class cannot be told, where
-    `name` is a var (UNKNOWN_VAR) or a method (UNKNOWN_METHOD) some class under `src/` declares; or a method of the
-    receiver's known class read without its parentheses where no Callable is handed on (REFERENCE)."""
+    `name` is a var (UNKNOWN_VAR) or a method (UNKNOWN_METHOD) as `reads_of` counts them."""
 
     reader: str
     line: int
@@ -1216,77 +1187,29 @@ def inner_lines(bare: str) -> list[bool]:
     return flags
 
 
+def var_names_of(tree: Tree) -> set[str]:
+    """The names a class a receiver can name declares as a var (a file with a `class_name` or an autoload name): the
+    vars this check lists reads of. A var only an inner class or a file with no `class_name` declares is not among
+    them."""
+    return {name for klass in tree.classes.values() for name in klass.fields}
+
+
 def method_names_of(tree: Tree) -> set[str]:
-    """The names some class under `src/` declares as a method and none declares as a var, a signal, a constant or
-    an enum, less the engine's property names (ENGINE_PROPERTIES): on a receiver whose class cannot be told, such a
-    name read without its parentheses can only be that method, as a reference to the function."""
+    """The names some file or inner class under `src/` declares as a method, less the names `var_names_of` gives
+    (such a use fails as a var's), the names any of them declares as a constant or an enum, and ENGINE_PROPERTIES: on
+    a receiver whose class cannot be told, such a name read without its parentheses is taken for that method, a
+    reference to the function. A name only an inner class or a file with no `class_name` declares as a var, or one
+    declared as a signal, is still taken for the method."""
     methods = {name for klass in tree.files.values() for name in klass.methods}
-    others = {name for klass in tree.files.values() for name in klass.fields}
-    for bare in tree.bare.values():
-        others.update(SIGNAL.findall(bare), CONSTANT.findall(bare))
-    for bare in tree.inner_bare.values():
-        others.update(SIGNAL.findall(bare), CONSTANT.findall(bare))
-    return methods - others - ENGINE_PROPERTIES
-
-
-def enclosing(bare: str, at: int) -> int:
-    """The index of the innermost bracket left open before `at`, or -1 where none is."""
-    depth = 0
-    for index in range(at - 1, -1, -1):
-        char = bare[index]
-        if char in ")]}":
-            depth += 1
-        elif char in "([{":
-            if depth == 0:
-                return index
-            depth -= 1
-    return -1
-
-
-def list_bracket(bare: str, opener: int) -> bool:
-    """Whether the bracket at `opener` holds a list a Callable may be an element of: a call's argument list (a `(`
-    after a name that is not a keyword, or after a closing bracket) or an array literal (a `[` after neither). A `(`
-    after `assert`, `if` or `while` holds a condition, a `(` after an operator is a parenthesised expression, a `[`
-    after a name a subscript, and a `{` a dictionary."""
-    before = bare[:opener].rstrip(" \t")
-    word = TRAILING_WORD.search(before)
-    called = bool(word and word.group(0) not in KEYWORDS) or before.endswith((")", "]"))
-    if bare[opener] == "(":
-        return called
-    return bare[opener] == "[" and not called
-
-
-def hands_on(bare: str, start: int, end: int) -> bool:
-    """Whether the method reference spanning `start` to `end` of the file's blanked code hands a Callable on: a step
-    follows it (`.bind(`, `.call(`), or it is a call's argument, an array element, the right side of an assignment,
-    a returned value or a ternary's branch; a parenthesised expression is what its parentheses are. Anything else is
-    a function where a value was meant, always true: a condition (`assert(...)` included), an operand, a statement
-    on its own (`crowd.clear` for `crowd.clear()`)."""
-    line_start = bare.rfind("\n", 0, start) + 1
-    line_end = bare.find("\n", end)
-    after = bare[end : len(bare) if line_end < 0 else line_end]
-    if after.lstrip(" \t").startswith("."):
-        return True
-    if not HANDED_AFTER.match(after):
-        return False
-    opener = enclosing(bare, start)
-    if HANDED_STATEMENT.search(bare[max(line_start, opener + 1) : start]):
-        return True
-    if opener < 0 or not HANDED_ELEMENT.search(bare[opener + 1 : start]):
-        return False
-    if list_bracket(bare, opener):
-        return True
-    close = close_of(bare, opener)
-    if bare[opener] != "(" or close < 0 or bare[opener + 1 : start].strip() or bare[end:close].strip():
-        return False
-    return hands_on(bare, opener, close + 1)
+    constants = {name for bare in [*tree.bare.values(), *tree.inner_bare.values()] for name in CONSTANT.findall(bare)}
+    return methods - var_names_of(tree) - constants - ENGINE_PROPERTIES
 
 
 def reads_of(tree: Tree) -> Found:
     reads: dict[tuple[str, str, str, str], Read] = {}
     unknown: list[Unknown] = []
     skipped = 0
-    declared_names = {name for klass in tree.classes.values() for name in klass.fields}
+    declared_names = var_names_of(tree)
     method_names = method_names_of(tree)
     for path in sorted(tree.bare):
         own = path
@@ -1294,9 +1217,7 @@ def reads_of(tree: Tree) -> Found:
         owner_block = block_index(tree.bare[path])
         inner = inner_lines(tree.bare[path])
         converted = path not in tree.opted_out
-        offset = 0
         for index, line in enumerate(lines):
-            line_offset, offset = offset, offset + len(line) + 1
             if "." not in line:
                 continue
             for match in USE.finditer(line):
@@ -1313,19 +1234,6 @@ def reads_of(tree: Tree) -> Found:
                         skipped += 1
                     else:
                         unknown.append(Unknown(path, index + 1, expression, UNKNOWN_VAR if is_var else UNKNOWN_METHOD))
-                    continue
-                if (
-                    converted
-                    and klass in tree.files
-                    and tree.method_return(klass, name)[0]
-                    and not tree.member_field_type(klass, name)[0]
-                    and not hands_on(
-                        tree.bare[path],
-                        line_offset + len(line[: match.start()].rstrip(" \t")) - len(receiver or ""),
-                        line_offset + match.end(),
-                    )
-                ):
-                    unknown.append(Unknown(path, index + 1, expression, REFERENCE))
                     continue
                 if not is_var or klass not in tree.classes:
                     continue
@@ -1409,12 +1317,6 @@ def failures_of(found: Found, entries: list[Entry]) -> list[str]:
 def unknown_failure(u: Unknown) -> str:
     """The failure line for a use `reads_of` could not let stand in a file without the opt-out line."""
     where = f"{u.reader}:{u.line}"
-    if u.kind == REFERENCE:
-        return (
-            f"{where}: `{u.expression}` names a method without its parentheses: a method read without its"
-            " parentheses is a reference to the function, always true; call it with `()`, or hand the Callable on"
-            " as an argument, an assignment or a returned value"
-        )
     if u.kind == UNKNOWN_METHOD:
         return (
             f"{where}: cannot tell the class of the receiver in `{u.expression}`, in a file without the opt-out line,"
@@ -1644,25 +1546,7 @@ def read_checker_changed(base: str, cwd: Path, rev: str | None = None) -> bool:
 def parse(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="tools/check_field_reads.py",
-        description=(
-            "Fails when code under src/ reads or writes a var that another class under src/ declares, unless"
-            " tools/field_reads.txt lists the reader file and field, and fails on a listed line whose read is gone."
-            " A .gd file not yet typed carries one opt-out line, its whole first line in one form,"
-            ' @warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")'
-            " naming in that order those of the three warnings project.godot makes errors that it still trips. In"
-            " a file under src/ without that line, a use .name fails, naming the file, the line and the expression,"
-            " where the receiver's class cannot be told by static reading and the name is a var some class under"
-            " src/ declares, or a method one declares (not also a var, a signal, a constant or an engine"
-            " property or builtin member); and so does a method of the receiver's known class named without its"
-            " parentheses, a reference to the function and always true, unless it hands the Callable on (followed"
-            " by a step such as .bind(, or a call's argument, an array literal's element, an assignment's right"
-            " side, a returned value or a ternary's branch; never a condition, assert()'s included, an operand or a"
-            " statement on its own). In a file with the line, a receiver whose class cannot be told is skipped. A"
-            " malformed line, and any other @warning_ignore, @warning_ignore_start or @warning_ignore_restore in"
-            " any .gd file outside docs/ that names one of the three or whose argument cannot be read, fails. The"
-            " list and the files carrying the line only shrink; a file that would need the line is told what to"
-            " write instead (a suite: func run(t: TestRunner) -> void:)."
-        ),
+        description=__doc__,
         epilog=(
             "Examples:\n  uv run python tools/check_field_reads.py\n"
             "  uv run python tools/check_field_reads.py --base origin/main\n"
