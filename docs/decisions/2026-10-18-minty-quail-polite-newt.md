@@ -12,8 +12,9 @@ they drew; the orchestrator kept it. Proposed, not asked for, open to the player
 
 `tests/probes/look_fingerprint.gd`: every catalogue row, each row's full-heat copy
 (`EventCatalogue.heated()`) and last-day copy (`for_day()`) where either differs from the row, and
-the rows the game stands from them (the man a vehicle lets out, the burning building, the guard a
-task sends) are stood on open ground and on an east-west street with a recording drawer, a shared
+the rows the game stands from them (the policeman a patrol car lets out through day 8 and the
+guardsman of the last day, each as a stop and as a hunt, the burning building, the guard a task
+sends) are stood on open ground and on an east-west street with a recording drawer, a shared
 `WhereSheIs` told once a tick and the pictures' atlas, and stepped 540 ticks at 30 a second under
 the drives that reach each look (she stays away; she walks up, stands beside it and walks on; she
 walks away and the row leaves; and six hand-in states: a crossing pelican, a silenced mast, a boom
@@ -31,9 +32,11 @@ Each seeded mistake changes the hash: two pictures of one case swapped, a look's
 false, a spread's slice count off by one, a posted guard's side flipped, a look hidden by its hold,
 a term out of the picture's key where it changes alone, the charging dog's resting and alert
 pictures swapped (the dog of the last day, a row the first version did not stand), the far guard's
-heading flipped, the chaser's drawing removed. Unseen: a term of the picture's key taken out alone
+heading flipped, the chaser's drawing removed, the policeman's alert and waiting pictures swapped. Unseen: a term of the picture's key taken out alone
 when it changes at the same sample as another (waiting, chatting, leaving), and the stopped-her term,
 true only for the man a vehicle lets out whose catch is a stop; no sample separates them, so the
 reviewer of a pull request that touches the key reads those lines. What a look draws straight on the
 canvas (a ground shadow, a dog's lead, a muzzle flash) no headless probe sees; those builders list
-such lines for the reviewer.
+such lines for the reviewer. Nor are the protest's and the leaf blower's second stride frames drawn
+(`PROTESTER_BY_VIEW_B`, `LEAF_BLOWER_BY_VIEW_B`): only a row sent off down a chosen way
+(`leave_along()`) would draw them, and no drive sends one.
