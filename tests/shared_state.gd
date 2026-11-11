@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 class_name SharedState
 extends RefCounted
 ## What the test runner records before and after each suite, so that a suite which leaves
@@ -118,7 +117,8 @@ static func _input(out: Dictionary[String, String]) -> void:
 		out["Input.pressed.%s" % action] = str(Input.is_action_pressed(action))
 
 static func _autoload(out: Dictionary[String, String], autoload: String) -> void:
-	var node: Node = Engine.get_main_loop().root.get_node_or_null(autoload)
+	var tree := Engine.get_main_loop() as SceneTree
+	var node: Node = tree.root.get_node_or_null(autoload)
 	if node == null:
 		return
 	for property in node.get_property_list():
@@ -197,22 +197,26 @@ static func _describe(value: Variant, depth: int) -> String:
 		var object: Object = value
 		var script: Script = object.get_script()
 		return "<%s#%d>" % [script.resource_path.get_file().get_basename() if script != null else object.get_class(), object.get_instance_id()]
-	if value is Array or value is Dictionary:
+	if value is Array:
+		var items: Array = value
 		if depth <= 0:
-			return "<%s of %d>" % [type_string(typeof(value)), value.size()]
+			return "<Array of %d>" % items.size()
 		var parts: Array[String] = []
-		if value is Array:
-			for item in value:
-				parts.append(_describe(item, depth - 1))
-				if parts.size() >= MAX_ITEMS:
-					parts.append("...")
-					break
-			return "[%d: %s]" % [value.size(), ", ".join(parts)]
-		var keys: Array = value.keys()
-		for key in keys:
-			parts.append("%s=%s" % [_describe(key, 0), _describe(value[key], depth - 1)])
+		for item: Variant in items:
+			parts.append(_describe(item, depth - 1))
 			if parts.size() >= MAX_ITEMS:
 				parts.append("...")
 				break
-		return "{%d: %s}" % [value.size(), ", ".join(parts)]
+		return "[%d: %s]" % [items.size(), ", ".join(parts)]
+	if value is Dictionary:
+		var entries: Dictionary = value
+		if depth <= 0:
+			return "<Dictionary of %d>" % entries.size()
+		var parts: Array[String] = []
+		for key: Variant in entries.keys():
+			parts.append("%s=%s" % [_describe(key, 0), _describe(entries[key], depth - 1)])
+			if parts.size() >= MAX_ITEMS:
+				parts.append("...")
+				break
+		return "{%d: %s}" % [entries.size(), ", ".join(parts)]
 	return var_to_str(value)

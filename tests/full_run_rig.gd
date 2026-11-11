@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Fourteen days end to end, through the real City, EventManager and ResistanceDirector, each day
 ## started by the real DayDirector.
@@ -114,7 +113,7 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 		# The excitement field must be finite and sane wherever the player could stand.
 		var at_home := city.map.home_world_position()
 		var here := 0.0
-		for pair in city.excitement_sources_at(at_home):
+		for pair: Array in city.excitement_sources_at(at_home):
 			here += pair[1]
 		t.check(here >= 0.0 and here < 200.0,
 				"seed %d day %d: excitement at home is a sane number (%.1f)"
@@ -128,8 +127,8 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 			placed[instance] = instance.global_position
 		await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(SIMULATED_SECONDS, SIMULATION_SCALE),
 				TICK_FACTOR, Callable(), SIMULATION_SCALE)
-		for instance in placed.keys():
-			if is_instance_valid(instance) and instance.global_position != placed[instance]:
+		for held: Object in placed.keys():
+			if is_instance_valid(held) and (held as EventInstance).global_position != placed[held]:
 				events_that_moved += 1
 
 		if resistance.current_step():

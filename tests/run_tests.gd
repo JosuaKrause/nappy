@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name TestRunner
 extends Node
 ## Headless test runner.
@@ -118,13 +117,13 @@ func _ready() -> void:
 		orders.append(order)
 		if shuffled:
 			var names: PackedStringArray = []
-			for path in order:
+			for path: String in order:
 				names.append(path.trim_prefix("res://tests/"))
 			print("ORDER  seed %d  pass %d/%d  %s" % [pass_seed, pass_number, repeat, " ".join(names)])
 			print("REPLAY tools/test.sh --shuffle %d %s" % [pass_seed, " ".join(names)])
 	for pass_number in range(1, repeat + 1):
 		var failures_before := failures.size()
-		for path in orders[pass_number - 1]:
+		for path: String in orders[pass_number - 1]:
 			await _run_suite(path, pass_number, repeat)
 		if repeat > 1:
 			for i in range(failures_before, failures.size()):
@@ -162,10 +161,10 @@ func _run_suite(path: String, pass_number: int, repeat: int) -> void:
 		return
 	var suite: Object = script.new()
 	_running = path.get_file()
-	# `suite` is typed `Object`, so the call is dynamic: `await` on a `run` that is a plain
+	# `suite` is typed `Object`, so the call goes through `call()`: `await` on a `run` that is a plain
 	# function returns at once and raises no REDUNDANT_AWAIT warning, and on one that is a
 	# coroutine waits for it.
-	await suite.run(self)
+	await suite.call("run", self)
 	# One frame and one physics frame between suites let the message queue (deferred calls,
 	# `queue_redraw`, Control layout) and the delete queue (`queue_free`) drain, which a
 	# synchronous run never lets happen.
@@ -260,7 +259,7 @@ func _shuffle(items: Array, seed_value: int) -> void:
 	rng.seed = seed_value
 	for i in range(items.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
-		var held = items[i]
+		var held: Variant = items[i]
 		items[i] = items[j]
 		items[j] = held
 

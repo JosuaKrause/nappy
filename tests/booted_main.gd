@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What the suites that boot the real `scenes/main.tscn` share**: the boot, waited on with real
 ## frames until the game shows her in her world, and the parts of the booted game found by the names
@@ -31,6 +30,8 @@ extends RefCounted
 ## `boot()`'s `before`) and frees that itself.
 
 const UI := preload("res://tests/ui_screens.gd")
+## `main`'s script, the type a booted `main` is held and handed to `before` as.
+const MainScript := preload("res://src/main.gd")
 const MAIN_SCENE: PackedScene = preload("res://scenes/main.tscn")
 const DaySummaryScript := preload("res://src/ui/day_summary.gd")
 
@@ -45,7 +46,7 @@ const STILL_SCALE := 0.0000001
 ## A booted `main` and the scratch save it was handed. `free_all()` frees both and removes the
 ## scratch file.
 class Booted:
-	var main: Node2D
+	var main: MainScript
 	var save: GameSave
 	var path := ""
 
@@ -71,7 +72,7 @@ static func boot(t: TestRunner, scratch_path: String, config: RunConfig = null,
 	var booted := Booted.new()
 	booted.path = scratch_path
 	booted.save = GameSave.new(scratch_path)
-	booted.main = MAIN_SCENE.instantiate()
+	booted.main = MAIN_SCENE.instantiate() as MainScript
 	booted.main.use_save(booted.save)
 	if maps.is_valid():
 		booted.main.use_city_maps(maps)
@@ -125,7 +126,7 @@ static func home_playing(t: TestRunner, run: RunState) -> Node:
 ## it sends the corners and the centre of the 1280x720 design box to where
 ## `ScreenOrientation.to_presented_space()` says they belong once rotated.
 static func carries_the_rotation(layer: CanvasLayer) -> bool:
-	for point in [Vector2.ZERO, ScreenOrientation.DESIGN_SIZE, ScreenOrientation.DESIGN_SIZE * 0.5,
+	for point: Vector2 in [Vector2.ZERO, ScreenOrientation.DESIGN_SIZE, ScreenOrientation.DESIGN_SIZE * 0.5,
 			Vector2(300.0, 40.0)]:
 		if not (layer.transform * point).is_equal_approx(
 				ScreenOrientation.to_presented_space(point, true)):
@@ -159,7 +160,7 @@ static func resistance(main: Node) -> ResistanceDirector:
 ## Her, in whichever world she stands: on its entities layer, the node both worlds name `Entities`
 ## (`WorldMap.add_entity()`), read by path since a suite asks every tick.
 static func player(main: Node) -> Stroller:
-	for world_name in ["City", "Interior"]:
+	for world_name: String in ["City", "Interior"]:
 		var her := main.get_node_or_null(world_name + "/Entities/Stroller") as Stroller
 		if her:
 			return her
