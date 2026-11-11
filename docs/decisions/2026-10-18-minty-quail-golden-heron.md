@@ -17,22 +17,29 @@ goes as its suite is converted", after the city map and its generator were typed
   by reference, so without the copy the check that a map's copy shares nothing with the original
   could not fail: with `CityMap.copy()` sharing its `tiles`, `tools/test.sh city_map` fails seven
   checks, and none with the copy.
-- **Every read of a `CityMap` field that a method the game calls answers goes through that
-  method**: `plans_by_block()`, `city_seed()`, `street_network()`, `size()`, `calm_blocks_now()`,
-  `home_tile_rect()` and the others. No method was added for a test.
+- **Every read of a field that a method the game calls answers goes through that method**: the
+  map's `plans_by_block()`, `city_seed()`, `street_network()`, `size_in_tiles()`, `calm_blocks_now()`,
+  `home_tile_rect()`, `walk_tiles()`, `has_recipe_dawn_ground()` and the others; a block layout's
+  `open_ground()`, `square_rect()` and `alley_rect()`; a block plan's `step_count()`, `step_at()` and
+  `steps_in_order()`; a mover's `layers_blocked()`. No method was added for a test.
 
 ## Reads left, each with its reason
 
 `tools/check_field_reads.py` reads only `src/`, so it does not list these; they were found by
-reading the suites.
+searching the suites for every field read and `src/` for a method the game calls.
 
-- **`CityMap.dead_ends`, `absent_segments`, `zone_anchor`, `tiles`, `fenced_park_act`,
-  `stretch_active` and `recipe_dawn_tiles`** have no method the game calls. `test_city_map`'s
-  member comparison reads every member by name on purpose, as its header says, and compares `tiles`
-  whole between two generations.
-- **`BlockLayout.open_rect`, `square` and `alley`, `BlockPlan.steps`, `Prop.kind` and
-  `Prop.shape`** have no method.
-- **`City`'s fields in `test_world_passability`** belong to the city scene's pass.
+- **`CityMap.dead_ends`, `absent_segments` and `zone_anchor`** (`test_generator`, `test_blocks`),
+  **`map.blocked`** (`test_world_passability`), **`Prop.kind` and `Prop.shape`** (`test_blocks`):
+  no method the game calls answers them.
+- **`fenced_park_act`, `stretch_active` and `recipe_dawn_tiles` compared whole between the map and
+  its twin** (`test_city_map`): its member comparison reads every member by name on purpose, as its
+  header says.
+- **`City`'s fields**, `scenery` and `atlas` in `test_blocks` and the ones `test_world_passability`
+  reads, belong to the city scene's pass.
+
+`test_generator`'s CI time rose from about 80 s to about 106 s with the change. No method the
+suite now calls in a loop copies what it answers, and back-to-back local runs on a loaded machine
+did not reproduce the rise.
 
 ## Verified
 
