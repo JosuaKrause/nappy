@@ -51,6 +51,7 @@ ENTRY_POINTS = (
     "agent-stats.py",
     "usage-report.py",
     "agents-to-reassess.py",
+    "sweep-agent-leftovers.py",
     "reddit.py",
     "check_citations.py",
     "ci_classify.py",
