@@ -269,8 +269,8 @@ func _burnt_count(city: City) -> int:
 			burnt += 1
 	return burnt
 
-func _contains(planned: Array, id: String) -> bool:
-	for plan: EventScheduler.Planned in planned:
+func _contains(planned: Array[EventScheduler.Planned], id: String) -> bool:
+	for plan in planned:
 		if plan.def.id == id:
 			return true
 	return false

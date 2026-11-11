@@ -114,9 +114,9 @@ func _cost_to_run_through(def: EventDef) -> float:
 			+ Tuning.EXCITEMENT_DECAY_WALKING
 	return (mean - Baby.EXCITEMENT_DECAY_RUNNING + Baby.EXCITEMENT_FROM_RUNNING) * seconds
 
-func _signature(planned: Array) -> String:
+func _signature(planned: Array[EventScheduler.Planned]) -> String:
 	var parts: Array[String] = []
-	for plan: EventScheduler.Planned in planned:
+	for plan in planned:
 		parts.append("%s@%.1f,%.1f" % [plan.def.id, plan.position.x, plan.position.y])
 	return "|".join(parts)
 
