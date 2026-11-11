@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name BuildingShadows
 extends Node2D
 ## The one-tile shadow every building casts to its south and west, from a light standing to the
@@ -119,8 +118,8 @@ func _tiles_for_chunk(key: Vector2i) -> Tiles:
 		if rect.intersects(area.grow(1)):
 			nearby.append(rect.intersection(area.grow(1)))
 	var tiles := _on_the_ground(_compute(nearby))
-	tiles.full = tiles.full.filter(func(tile: Vector2i): return area.has_point(tile))
-	tiles.triangles = tiles.triangles.filter(func(tile: Vector2i): return area.has_point(tile))
+	tiles.full = tiles.full.filter(func(tile: Vector2i) -> bool: return area.has_point(tile))
+	tiles.triangles = tiles.triangles.filter(func(tile: Vector2i) -> bool: return area.has_point(tile))
 	return tiles
 
 ## `tiles` less those `falls_on` refuses.
@@ -146,7 +145,7 @@ func _rebuild_chunks() -> void:
 		remove_child(child)
 		child.free()
 	var by_chunk := split(_tiles)
-	for key in by_chunk:
+	for key: Vector2i in by_chunk:
 		var tiles: Tiles = by_chunk[key]
 		var chunk := Node2D.new()
 		chunk.name = "Chunk%d_%d" % [key.x, key.y]
@@ -194,7 +193,7 @@ static func _compute(rects: Array[Rect2i]) -> Tiles:
 	var tiles := Tiles.new()
 	var seen_full := {}
 	var seen_triangle := {}
-	for tile in occupied:
+	for tile: Vector2i in occupied:
 		# `tile` is the north-east neighbour of the candidate full-shade tile at `tile + (-1, 1)`.
 		var full_candidate: Vector2i = tile + Vector2i(-1, 1)
 		if not occupied.has(full_candidate) and not seen_full.has(full_candidate):
