@@ -34,6 +34,11 @@ baby's share of the signal bus and the stroller's two names of view classes
   listing it. Their tests ask through the seam: `draw_as_father()` and the picture she is drawn
   with (`pose(1.0).mother_sources`), `freeze_excitement()`, and in `test_run_config` what the flag
   does, whether the booted baby's excitement rises over three ticks against a loud stand-in world.
+- **Two fields stay public for the tests alone**: `Stroller.atlas` and `Baby.timing`, which nothing
+  under `src/` but their own file reads once `main` hands them in. `check_test_only_members.py` does
+  not see them, since `atlas` and `timing` are words other files use; the tests hand them in through
+  `use_atlas()` and `use_frame_timing()`, and `field-reads.md` holds them until the tests read
+  through methods.
 - **Which bus a test hands the baby.** The autoload where the test composes something that listens
   on it (the day's clock, the HUD, the run log's observer, an event manager); a bus of its own in
   `test_meters`, a suite about the baby alone; none where nothing listens.
