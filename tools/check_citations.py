@@ -34,16 +34,19 @@ letter, so a range or a date (`3-5`, `2026-09-26`) is never one.
 
 A bare name (`polite-marten`) is read only as a piece of a part: it starts the part (also after a
 leading `and`) or follows `, `, `, and `, `, see `, `, also ` or ` and `, and is followed by a comma, the
-part's end, or `and` and another such piece: `(polite-marten)`, `(PLAYTEST-145; olive-hedgehog #598)`,
-`(woolly-penguin #999, the rule)` (#999 is flagged), `(the filer's proposal, curly-rabbit #1094)`,
-`(woolly-finch 35, see woolly-finch 36)`, `(woolly-finch 35 and brisk-heron 1)`. A number list belongs
-to its citation (`brisk-heron 1, 13`, `woolly-penguin #758, #759`). Two bare names that `and` joins
-(`(well-known and long-standing)`) are prose and not read; a bare name that `and` joins to a numbered
-one is read. What a writer must avoid, or reword, or mark with `<!-- lint-allow -->`: a hyphenated
-word alone between the separators that names no file (`(polite-marten, long-standing)`), since a
-misspelt name has to be flagged without resolving it, and one alone in parentheses. A bare name after
-any other word (`or`, `&`, free text before it) is not read, and neither is a bare name followed by words
-(`(polite-marten, well-known rules apply)`).
+part's end, or `and` and another such piece: `(polite-marten)`, `(PLAYTEST-16 7, see polite-marten)`,
+`(a thing, also polite-marten)`, `(PLAYTEST-16 7; and polite-marten)`, `(PLAYTEST-16 7 and woolly-pengiun)`
+(flagged: no such file). A numbered name inside a part is a piece too, so a number list belongs to its
+citation there (`brisk-heron 1, 13`, `woolly-penguin #758, #759`); after words a numbered name takes one
+number or range or a `#N` list only, never a date, decimal or fraction (`(see PLAYTEST-16 7, 3 times)`
+reads statement 7). Two bare names that `and` joins (`(well-known and long-standing)`) are prose and
+not read; a bare name that `and` joins to a numbered one is read. What a writer must avoid, or reword, or
+mark with `<!-- lint-allow -->`: a hyphenated word alone between the separators that names no file
+(`(polite-marten, long-standing)`), since a misspelt name has to be flagged without resolving it, one
+alone in parentheses, and a hyphenated word followed by a number anywhere in parentheses
+(`(a two-step 3 times)`, `(a follow-up #1094)`). A bare name after any other word (`or`, `&`, free text
+before it) is not read, and neither is a bare name followed by words (`(polite-marten, well-known rules
+apply)`).
 
 Run by the host's own `python3` from tools/lint.sh, before CI installs uv, so it stays
 3.9-compatible (pyproject.toml pins ruff's target for it). `X | None` appears only in annotations,
@@ -76,7 +79,8 @@ PIECE = re.compile(
     rf"(?=, |$| and (?:{NAME}){SPEC}(?:, | and |$))"
 )
 # A name with a number reads as a citation wherever it stands in a part, after words too.
-NUMBERED = re.compile(rf"(?<![\w-])({NAME}) ({NOTES}|{NUMBERS})(?![\w#])")
+# After words one number or range is taken, never a list, and never a date, decimal or fraction.
+NUMBERED = re.compile(rf"(?<![\w-])({NAME}) ({NOTES}|\d+(?:[-\u2013]\d+)?)(?![\w#]|[-\u2013./]\d)")
 INBOX_IN = re.compile(rf"\binbox (#\d+(?:(?:, and |, | and )#\d+)*) in ({NAME})\b")
 NOTE_HEADING = re.compile(r"^##[ \t]+#(\d+)\b", re.MULTILINE)
 NUMBER_HEADING = re.compile(r"^#{2,3}[ \t]+(?:Finding |Statement )?(\d+)\b(?![-/])", re.MULTILINE)
