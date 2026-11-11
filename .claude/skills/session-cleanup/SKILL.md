@@ -128,6 +128,11 @@ inventoried with `tools/prune-merged.sh --all`** and retired with `--all --apply
 wrapped line **committing** ("Branches") gives; a finished agent's brief is released first
 (`cleanup: ready`), and **the script deletes a released brief as it retires the brief's branch**,
 the brief in the main checkout's `.claude/briefs/`, and keeps one that is not released.
+**What a finished agent left behind any other way is listed with `uv run python
+tools/sweep-agent-leftovers.py`** and removed with `--apply`: a brief whose branch is gone
+everywhere and whose pull request merged, and a detached checkout that holds no commit of its own
+and that nothing has written to lately. It runs bare, since it only reads GitHub, and its `--help`
+has every condition.
 **Free space is read from `df`, before and after**, since `du` counts
 shared blocks more than once. `references/storage.md` has the rest; read it before removing
 anything a job did not record as its own, after a browser run, and before multiplying worktrees or
