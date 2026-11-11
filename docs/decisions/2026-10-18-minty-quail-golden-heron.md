@@ -29,10 +29,12 @@ goes as its suite is converted", after the city map and its generator were typed
 `tools/check_field_reads.py` reads only `src/`, so it does not list these. The search covered the
 city map's own classes; other modules' fields were listed, not converted.
 
-- **`CityMap.dead_ends`, `absent_segments` and `zone_anchor`** (`test_generator`, `test_blocks`),
-  **`map.blocked`** (`test_world_passability`), **`fenced_park_act`, `stretch_active` and
-  `recipe_dawn_tiles` compared whole between the map and its twin** (`test_city_map`), and
-  **`Prop.kind` and `Prop.shape`** (`test_blocks`): no method the game calls answers them.
+- **`CityMap.dead_ends` and `zone_anchor`** (`test_generator`, `test_blocks`), **`map.blocked`**
+  (`test_world_passability`), **`fenced_park_act`, `stretch_active` and `recipe_dawn_tiles` compared
+  whole between the map and its twin** (`test_city_map`), and **`Prop.kind` and `Prop.shape`**
+  (`test_blocks`): no method the game calls answers them. **`CityMap.absent_segments`**
+  (`test_generator`) is answered with a copy by `blocked_segments()` called with no argument, as the
+  list below says; `tools/field_answers.py` prints no method for it.
 - **Other modules' fields stay for their passes**, listed whole under "Fields read and written, by
   class" below. In `test_world_passability`, the events' `is_finished`, `is_leaving`, `excitement`,
   `telegraph_time`, `outer_radius` and `mobile` and a plan's `def`, `position` and `path` have the
