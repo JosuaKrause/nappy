@@ -7,7 +7,7 @@ until its suite is converted.
 
 ## What was built
 
-- **Every function handed the runner takes `t: TestRunner`**, 2987 lines in 352 files, 19 of them by
+- **Every function handed the runner takes `t: TestRunner`**, 2987 lines in 352 files, 20 of them by
   hand and the rest by a script. No line under `src/` changed.
 - **Each test file's opt-out line names only what the file still trips**, by
   `tools/typing_census.py --write`: 136 test files lost the line, and 230 still carry one.
