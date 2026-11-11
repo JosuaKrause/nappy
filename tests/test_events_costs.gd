@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends "res://tests/events_shared_city.gd"
 ## What a street actually costs her: running is the answer to exactly the one kind of thing that
 ## follows her and nothing else, nothing is cheaper to walk through than around it, the pavement
@@ -117,7 +116,7 @@ func _cost_to_run_through(def: EventDef) -> float:
 
 func _signature(planned: Array) -> String:
 	var parts: Array[String] = []
-	for plan in planned:
+	for plan: EventScheduler.Planned in planned:
 		parts.append("%s@%.1f,%.1f" % [plan.def.id, plan.position.x, plan.position.y])
 	return "|".join(parts)
 
@@ -252,7 +251,7 @@ func _test_the_pavement_can_be_blocked_from_day_one(t: TestRunner) -> void:
 ## caps, not against any one number, since a share the catalogue cannot fill is not density.
 func _test_a_day_has_enough_in_it_to_meet(t: TestRunner) -> void:
 	var blocks := Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y
-	for day in [1, 3, 7, 14]:
+	for day: int in [1, 3, 7, 14]:
 		var planned := _planned(day)
 		var real := 0
 		for plan in planned:
@@ -346,7 +345,7 @@ func _test_the_caps_can_spend_the_budget(t: TestRunner) -> void:
 ## are what an ordinary street is mostly made of.
 func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 	var map := _map()
-	for city_seed in [4242, 77, 1301]:
+	for city_seed: int in [4242, 77, 1301]:
 		var seeded := CityGenerator.generate(city_seed)
 		var consumed: Array[String] = []
 		var rng := RandomNumberGenerator.new()
@@ -368,7 +367,7 @@ func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 ## `_roomiest_of_several` can still put two of a kind closer than `EVENT_SPACING_SAME` on a
 ## full map, so this is stated as "almost never" plus a hard floor that nothing may cross.
 func _test_two_of_a_kind_are_not_the_same_incident(t: TestRunner) -> void:
-	for day in [1, 8, 14]:
+	for day: int in [1, 8, 14]:
 		var planned := _planned(day)
 		var same_pairs := 0
 		var crowded := 0

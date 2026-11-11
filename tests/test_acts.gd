@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The escalation: act gating, the mechanics the later acts introduced, and the invariants
 ## that stop a late day from being quietly unwinnable.
@@ -92,7 +91,7 @@ func _test_scars_outlive_the_day_that_made_them(t: TestRunner) -> void:
 	t.check(not _contains(same_day, "burnt_shell"),
 			"a scar does not double up on the day it was made")
 
-	for day in [4, 9, 14]:
+	for day: int in [4, 9, 14]:
 		var later: Array[String] = []
 		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
 				CalmAreas.of(_map), MastSites.compute(_map), later, run.attempt_spend.scars).placements()
@@ -174,7 +173,7 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 			var drawn := not (col < behind.covered_ground_cols.size() and behind.covered_ground_cols[col])
 			var burning_all := true
 			var burning_any := false
-			for point in [left_edge + 1.0, left_edge + size * 0.5, left_edge + size - 1.0]:
+			for point: float in [left_edge + 1.0, left_edge + size * 0.5, left_edge + size - 1.0]:
 				var burning := false
 				for flame in flames:
 					if flame.x <= point and point <= flame.y:
@@ -271,7 +270,7 @@ func _burnt_count(city: City) -> int:
 	return burnt
 
 func _contains(planned: Array, id: String) -> bool:
-	for plan in planned:
+	for plan: EventScheduler.Planned in planned:
 		if plan.def.id == id:
 			return true
 	return false
@@ -288,8 +287,8 @@ func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(SEED)
 	var home := _map.home_rect.position
-	for radius in [3, 5, 7]:
-		for step in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
+	for radius: int in [3, 5, 7]:
+		for step: Vector2i in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
 				Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
 			# The run's own writer, on day 1, which is the day a scar stands from the day after.
 			run.add_scar("barricade", _map.tile_to_world(home + step * radius))
