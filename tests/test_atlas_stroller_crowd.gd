@@ -35,7 +35,7 @@ func run(t) -> void:
 
 func _rig(t, atlas: AtlasLibrary) -> Stroller:
 	var rig := Stroller.new()
-	rig.atlas = atlas
+	rig.use_atlas(atlas)
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
