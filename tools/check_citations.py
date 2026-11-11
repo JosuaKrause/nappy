@@ -26,19 +26,24 @@ What is read where: fenced code blocks are never read. Links and paths are flagg
 else, inside code spans too, since a path in backticks is still a path. Parenthesised citations
 and `inbox #N in name` are read outside code spans only, so an example in backticks is not checked.
 
-A parenthesis is read one `;`-separated part at a time, and every piece of a part shaped like a
-citation is checked wherever it stands: a hyphenated name, an optional number, and after it a comma,
-the part's end, or `and` and another such piece. A piece starts the part (also after a leading
-`and`) or follows `, `, `, and `, `, see `, `, also ` or ` and `: `(woolly-penguin #759)`,
-`(PLAYTEST-145; olive-hedgehog #598)`, `(woolly-penguin #999, the rule)` (#999 is flagged),
-`(the filer's proposal, curly-rabbit #1094)`, `(woolly-finch 35, see woolly-finch 36)` and
-`(woolly-finch 35 and brisk-heron 1)` are all read. A number list belongs to its citation
-(`brisk-heron 1, 13`, `woolly-penguin #758, #759`). What a writer must avoid, or reword, or mark
-with `<!-- lint-allow -->`: a hyphenated word alone between those separators that names no file
-(`(polite-marten, long-standing)`), since a misspelt name has to be flagged without resolving it,
-and a hyphenated word alone in parentheses. Two bare names joined by `and` with no number on either
-(`(well-known and long-standing)`) are prose and not read, so such a pair is never checked either.
-A piece after any other word (`or`, `&`, free text before it) is not read.
+A parenthesis is read one `;`-separated part at a time, in two ways.
+
+A name with a number (`woolly-penguin #759`, `PLAYTEST-16 7`) is a citation wherever it stands in a
+part, after words too: `(the rule is gentle-owl #1255)`, `(woolly-penguin #759 too)`. A name needs a
+letter, so a range or a date (`3-5`, `2026-09-26`) is never one.
+
+A bare name (`polite-marten`) is read only as a piece of a part: it starts the part (also after a
+leading `and`) or follows `, `, `, and `, `, see `, `, also ` or ` and `, and is followed by a comma, the
+part's end, or `and` and another such piece: `(polite-marten)`, `(PLAYTEST-145; olive-hedgehog #598)`,
+`(woolly-penguin #999, the rule)` (#999 is flagged), `(the filer's proposal, curly-rabbit #1094)`,
+`(woolly-finch 35, see woolly-finch 36)`, `(woolly-finch 35 and brisk-heron 1)`. A number list belongs
+to its citation (`brisk-heron 1, 13`, `woolly-penguin #758, #759`). Two bare names that `and` joins
+(`(well-known and long-standing)`) are prose and not read; a bare name that `and` joins to a numbered
+one is read. What a writer must avoid, or reword, or mark with `<!-- lint-allow -->`: a hyphenated
+word alone between the separators that names no file (`(polite-marten, long-standing)`), since a
+misspelt name has to be flagged without resolving it, and one alone in parentheses. A bare name after
+any other word (`or`, `&`, free text before it) is not read, and neither is a bare name followed by words
+(`(polite-marten, well-known rules apply)`).
 
 Run by the host's own `python3` from tools/lint.sh, before CI installs uv, so it stays
 3.9-compatible (pyproject.toml pins ruff's target for it). `X | None` appears only in annotations,
@@ -60,7 +65,7 @@ CODE_SPAN = re.compile(r"`[^`\n]*(?:\n[^`\n]*)?`")
 LINK = re.compile(r"\]\(([^)\s]*docs/(?:playtests|decisions)/[^)\s]*)\)")
 PATH = re.compile(r"(?<![\w/.-])(?:\.\./)*docs/(?:playtests|decisions)/[A-Za-z0-9][A-Za-z0-9_.-]*\.md\b")
 PAREN = re.compile(r"\(([^()]*)\)")
-NAME = r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+"
+NAME = r"(?=[0-9-]*[A-Za-z])[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+"
 NOTES = r"#\d+(?:, #\d+)*"
 NUMBERS = r"\d+(?:[-\u2013]\d+)?(?:, \d+(?:[-\u2013]\d+)?)*"
 SPEC = rf"(?: ({NOTES}|{NUMBERS}))?"
@@ -70,6 +75,8 @@ PIECE = re.compile(
     rf"(?:^(?:and )?|, and |, see |, also |, | and )({NAME}){SPEC}"
     rf"(?=, |$| and (?:{NAME}){SPEC}(?:, | and |$))"
 )
+# A name with a number reads as a citation wherever it stands in a part, after words too.
+NUMBERED = re.compile(rf"(?<![\w-])({NAME}) ({NOTES}|{NUMBERS})(?![\w#])")
 INBOX_IN = re.compile(rf"\binbox (#\d+(?:(?:, and |, | and )#\d+)*) in ({NAME})\b")
 NOTE_HEADING = re.compile(r"^##[ \t]+#(\d+)\b", re.MULTILINE)
 NUMBER_HEADING = re.compile(r"^#{2,3}[ \t]+(?:Finding |Statement )?(\d+)\b(?![-/])", re.MULTILINE)
@@ -176,15 +183,23 @@ def check_text(rel: str, text: str, pool: dict[str, list[Path]], root: Path) -> 
         for part in match.group(1).split(";"):
             text_part = re.sub(r"\s+", " ", part).strip()
             found = list(PIECE.finditer(text_part))
+            starts = {piece.start(1) for piece in found}
             for i, piece in enumerate(found):
-                # Two bare names joined by "and" are prose (`well-known and long-standing`), not citations.
-                before = text_part[: piece.start(1)].endswith(" and ")
-                after = text_part.startswith(" and ", piece.end())
+                # Two bare names joined by "and" are prose (`well-known and long-standing`), not citations:
+                # what the "and" joins is the name after it (the lookahead's own number, group 3) and the
+                # piece before it when that ends where this one starts.
                 if piece.group(2) is None:
-                    near = [found[j] for j, side in ((i - 1, before), (i + 1, after)) if side and 0 <= j < len(found)]
-                    if near and all(n.group(2) is None for n in near):
+                    joined = []
+                    if text_part.startswith(" and ", piece.end()):
+                        joined.append(piece.group(3))
+                    if i and found[i - 1].end() == piece.start() and text_part[: piece.start(1)].endswith(" and "):
+                        joined.append(found[i - 1].group(2))
+                    if joined and all(spec is None for spec in joined):
                         continue
                 cite(match.start(), piece.group(1), piece.group(2))
+            for numbered in NUMBERED.finditer(text_part):
+                if numbered.start(1) not in starts:
+                    cite(match.start(), numbered.group(1), numbered.group(2))
     return hits
 
 

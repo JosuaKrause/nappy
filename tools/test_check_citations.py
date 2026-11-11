@@ -137,6 +137,20 @@ class CheckCitationsTests(unittest.TestCase):
         self.flagged("A rule (dependency injection, woolly-penguin #999; the rest).\n", "(woolly-penguin #999)")
         self.flagged("A rule (a thing, also woolly-penguin #999).\n", "(woolly-penguin #999)")
 
+    def test_a_numbered_name_is_read_wherever_it_stands(self) -> None:
+        # Mutation: reading a name only as a piece after the part's start or a separator skips these.
+        self.flagged("A rule (the rule is woolly-penguin #999).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (woolly-penguin #759, PLAYTEST-16 8 too).\n", "has no statement 8")
+        self.flagged("A rule (as PLAYTEST-16 8 says; or not).\n", "has no statement 8")
+
+    def test_what_an_and_joins_decides_a_bare_name(self) -> None:
+        # Mutations: a bare name beside any "and" skipped; `all` turned into `any`; the neighbour taken from
+        # the list rather than from what the "and" joins; the lookahead's inner tail dropped or lacking " and ".
+        self.flagged("A rule (PLAYTEST-16 7 and woolly-pengiun).\n", "(woolly-pengiun) names no file")
+        self.flagged("A rule (PLAYTEST-16 7 and woolly-pengiun and polite-marten).\n", "(woolly-pengiun)")
+        self.flagged("A rule (polite-marten, the rule and woolly-pengiun).\n", "(woolly-pengiun)")
+        self.flagged("A rule (PLAYTEST-16 8 and PLAYTEST-16 7 and brisk-heron 1).\n", "has no statement 8")
+
     def test_a_third_citation_is_read(self) -> None:
         # Mutation: reading only the first further citation of a part.
         self.flagged("A rule (PLAYTEST-16 7, brisk-heron 1, PLAYTEST-16 8).\n", "has no statement 8")
@@ -156,6 +170,9 @@ class CheckCitationsTests(unittest.TestCase):
             "Free text (polite-marten, a well-known rule and a long-standing one).\n"
             "(polite-marten, well-known rules apply) (polite-marten, proposal) (well-known and good).\n"
             "(well-known and long-standing) (polite-marten, short-lived and never pushed).\n"
+            "(well-known and long-standing and good) (polite-marten, well-known and long-standing rules).\n"
+            "(a rule, short-lived and woolly-penguin #759 too).\n"
+            "(the rows, 3-5) (lines 3-5, 7-9) (woolly-penguin #759, 2026-09-26).\n"
         )
         self.assertEqual(self.run_check(), (0, "", ""))
 
