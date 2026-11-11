@@ -24,31 +24,35 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 ## Left, each with its reason
 
 - **Search: none.** No class was this pass's to search, so no read was converted.
-- **Other modules' fields stay for their passes**, by class, each checked against its class and
-  its base classes. Answered by a method the game calls that returns the field: the run
+- **Other modules' fields stay for their passes**, by class, each checked against its class and the
+  classes it extends. Answered by a method the game calls that returns the field: the run
   configuration's `debug_build` (`is_debug_build()`), `readout_requested`
   (`asks_for_the_readout()`), `invincible` (`is_invincible()`) and `active_args`
   (`dev_flag_words()`); the city's `ground_mode`, read (`ground_mode_in_force()`); the map's `size`
   (`size_in_tiles()`, inherited from `WorldMap`), `calm_blocks` (`calm_blocks_now()`), `main_road`
   (`main_road_corridor()`), `fenced_park` (`fenced_park_block()`) and `power_station`
   (`power_station_blocks()`); the live event's `def` (`row()`) and its row's id (`row_id()`); the
-  day controller's `time_remaining`, read (`seconds_left()`); the traffic signals' `powered`
+  day controller's `time_remaining` (`seconds_left()`); the traffic signals' `powered`
   (`is_powered()`); and the day spec's `length` (`seconds_on_the_clock()`). No method: the run
-  configuration's other overrides and switches, and its `invincible` and `debug_build` written;
-  the city's `map`, `events`, `crowd`, `scenery`, `scenery_ground`, `run`, `spawn_siting` and
-  `signals`, its `ground_mode` written, and the switches a test sets on it (`scenery_frame_locked`,
-  the `skip_*` switches, `blackout_forced`, `all_cyclists_pelicans`, `forced_row`,
-  `forced_interval`); the map's `shut_calm` and `stretch_active`; the event manager's
-  `stream_radius`, `skip_drawing` and `pelican_rig`; the crowd's `skip_motion` and
-  `skip_agent_drawing`; the row's `kind`; the day controller's `phase`, `spec` and `invincible`, and
-  its `time_remaining` written; the still watch's `trace`; the run state's parts and, through them,
-  the header's `day`, `nerves`, `ending`, `run_seed`, `player_is_male` and `play_ticks`, the facts'
+  configuration's `seed_override`, `day_override`, `layers_override`, `route_targets`, `skip_words`,
+  `skip_events`, `skip_crowd`, `skip_shadows`, `skip_motion`, `ground_mode`, `controls_word`,
+  `meters_override`, `ending_override`, `spawn_target`, `start_escape`, `start_escape_at`,
+  `parent_override`, `recipe_path`, `blackout_requested`, `no_focus_pause`, `is_rig`, `recording`
+  and `no_telemetry`, and its `invincible` and `debug_build` written; the city's `map`, `events`,
+  `crowd`, `scenery`, `scenery_ground`, `run`, `spawn_siting` and `signals`, its `ground_mode`
+  written, and the switches a test reads and sets on it (`scenery_frame_locked`, its four `skip_*`
+  switches, `blackout_forced`, `all_cyclists_pelicans`, `forced_row`, `forced_interval`); the map's
+  `shut_calm` and `stretch_active`; the event manager's `stream_radius`, `skip_drawing` and
+  `pelican_rig`; the crowd's `skip_motion` and `skip_agent_drawing`; the row's `kind`; the day
+  controller's `phase`, `spec` and `invincible`; the still watch's `trace`; the run state's
+  `header`, `facts`, `resistance`, `settled`, `attempt_spend` and `calendar`, and through them the
+  header's `day`, `nerves`, `ending`, `run_seed`, `player_is_male` and `play_ticks`, the facts'
   `escape_section`, the resistance state's `progress` and `sabotage_done`, the settled state's
-  `settled_in` and the attempt's `scars`; the sitting's `controls_word` and `run`
-  (`take_the_run()` makes a run when none is held, so it answers only in part); a pose's
-  `mother_sources` and a resistance step's `index` (inner classes); a crowd member's `skip_draw`,
-  the scenery residency's `frame_locked`, the scenery ground's `mode`, the building shadows'
-  `skip_draw` and the save indicator's `atlas`.
+  `settled_in` and the attempt's `scars`; the sitting's `controls_word` and `run` (`take_the_run()`
+  makes a run when none is held, so it answers only in part); a pose's `mother_sources` and a
+  resistance step's `index` (inner classes); a crowd member's `skip_draw`, the scenery residency's
+  `frame_locked`, the scenery ground's `mode`, the building shadows' `skip_draw` and the save
+  indicator's `atlas`.
 - **`main.gd` has no class name**; giving it one is a change under `src/` for the root's pass.
 
 ## Verified
