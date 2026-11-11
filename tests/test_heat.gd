@@ -471,10 +471,10 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 
 	var band_where := WhereSheIs.nowhere()
 	var band := EventInstance.new()
-	band.setup(cold, post, PackedVector2Array(), Vector2.RIGHT, null, null, band_where)
 	# Drawn through a drawer that records what it is told instead of painting it, since this rig
-	# holds no atlas.
+	# holds no atlas, handed before `setup()` as its manager's spawner hands the real one.
 	band.drawer = RecordingEventDrawer.new()
+	band.setup(cold, post, PackedVector2Array(), Vector2.RIGHT, null, null, band_where)
 	t.add_child(band)
 	band_where.tell(post + Vector2(cold.obstructs_radius + Tuning.PLAYER_BODY_RADIUS, 0.0))
 	# A drawn frame passes with it in the tree, its own `_process()` and drawing with it.

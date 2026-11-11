@@ -283,7 +283,7 @@ const VAN_VICTIM_BY_VIEW := {
 	"back_diagonal": "events/van_victim_back_diagonal",
 }
 ## See `PERSON_BY_VIEW_B` for the frame-authoring rule. Read by `EventVehicleLook._draw_abduction()`
-## off `EventLook.victim_gait_is_stepping()`, her own short scripted walk to the van rather than the
+## off `EventVehicleLook.victim_gait_is_stepping()`, her own short scripted walk to the van rather than the
 ## ordinary distance-driven gait — see that function's doc.
 const VAN_VICTIM_BY_VIEW_B := {
 	"front": "events/van_victim_front_b",

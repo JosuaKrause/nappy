@@ -9,6 +9,14 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.ROADBLOCK:
 			_draw_roadblock(canvas)
 
+## A guard still standing at his band (`barrier_post`, before he has left its body) is drawn facing
+## out from his post; once he has left it, his heading is the base's.
+## Overrides EventLook.drawn_heading.
+func drawn_heading() -> Vector2:
+	if event.barrier_post and not event.barrier_post.has_left_its_body():
+		return EventFootprints.guard_post_heading(event.runs_vertically(), 1)
+	return super()
+
 ## **A barrier with a guard standing at it, from the moment it is placed.** *(2026-09-19: "the
 ## guard needs to be at the barrier from the beginning, standing. only then does it make sense for
 ## it to start pursuing.")* Nothing here appears and nothing disappears: the band and the man are

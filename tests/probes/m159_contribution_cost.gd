@@ -34,7 +34,7 @@ func run(t) -> void:
 				var expected := 0.0
 				var silent := 0
 				for agent: CrowdAgent in city.crowd.agents():
-					var contribution := ORACLE.full_contribution(agent, here)
+					var contribution := ORACLE.full_contribution(city.map, agent, here, 0.0)
 					if contribution != agent.excitement.contribution_at(here):
 						mismatch += 1
 					expected += contribution

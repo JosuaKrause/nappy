@@ -120,7 +120,7 @@ static func _nearest_tile(director: ResistanceDirector, map: CityMap, found: Arr
 		at: Vector2) -> Vector2i:
 	var key: Variant = _arrow_nearest_at(director, map.world_to_tile(at))
 	for target in found:
-		if key != null and _same_key(target["key"], key):
+		if key != null and ResistanceDirector._same_key(target["key"], key):
 			return map.world_to_tile(target["at"])
 	return Vector2i(-1, -1)
 

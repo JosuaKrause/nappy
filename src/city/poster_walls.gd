@@ -103,7 +103,9 @@ const PRESS_REACH := Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS + 4.0
 const TEAR_PRE_BAG: Array[bool] = [false]
 const TEAR_BAG: Array[bool] = [true, false, false, false, false, false, false, false, false, false]
 
-var _city: City
+## The events, whose poster crews paste and whose pursuer a tear sends, and which the city hands over
+## once it has built them (`watch_events()`), after `setup()`.
+var _events: EventManager
 var _map: CityMap
 ## Where the walls write their own account for the run log — a crew pasting, a sheet torn and the
 ## marble it draws; the city's, set before `setup()`.
@@ -150,16 +152,19 @@ func equip(sink: RunTrace, poster_art: PosterArt, library: AtlasLibrary) -> void
 var _bag: MarbleBag = null
 var _bag_seed := 0
 
+## The events the crews are read from and a tear's pursuer is sent through.
+func watch_events(events: EventManager) -> void:
+	_events = events
+
 ## Reads every building's blank ground-floor cells. Called once by `City.build()`, whose buildings
 ## are fixed for the run.
-func setup(city: City, map: CityMap, run: RunState) -> void:
+func setup(buildings: Array[Building], map: CityMap, run: RunState) -> void:
 	_run = run
 	posters = run.posters
-	_city = city
 	_map = map
 	_walls.clear()
 	_by_tile.clear()
-	for building in city.buildings():
+	for building in buildings:
 		var cols: Array[int] = []
 		var tiles: Array[Vector2i] = []
 		for rect in building.blank_ground_floor_cells():
@@ -333,13 +338,13 @@ func _physics_process(delta: float) -> void:
 ## then any torn sheet on the same wall. One kind per crew, from its own stream: the day and where
 ## it stands. A crew that has finished stands and works on, and its wall keeps what it pasted.
 func _work_the_crews(delta: float) -> void:
-	for instance in _city.events.instances():
+	for instance in _events.instances():
 		if not is_instance_valid(instance) or instance.row_id() != "poster_crew":
 			continue
 		var tile := _map.world_to_tile(instance.global_position)
 		if not _by_tile.has(tile):
 			continue
-		if not _city.events.sees(instance.global_position):
+		if not _events.sees(instance.global_position):
 			continue
 		if not _jobs.has(tile):
 			_jobs[tile] = _job_for(tile)
@@ -470,8 +475,8 @@ func _tear(tile: Vector2i) -> void:
 			% [what, RunTrace.tile(tile), state.tears_made()])
 	trace.note("roll", "poster tear %d draws a %s marble, %d left in the bag"
 			% [state.tears_made(), "pursuit" if pursuit else "no-pursuit", bag.left()])
-	if pursuit and _city and _city.events:
-		_city.events.send_a_pursuer()
+	if pursuit and _events:
+		_events.send_a_pursuer()
 
 ## The run's marble bag, brought to where the run is: `PosterState.tears` marbles already drawn,
 ## from the bag's own stream off the run's seed, so a save, a lost day's give-back and a retry all

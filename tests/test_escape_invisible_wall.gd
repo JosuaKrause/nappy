@@ -154,7 +154,8 @@ func _test_nothing_of_the_building_is_drawn_in_the_city(t, main: Node2D) -> void
 ## release and a second load.
 static func _her_page_lives(pages: PageLog, player: Stroller) -> Array[Vector2i]:
 	var lives: Array[Vector2i] = []
-	for group: StringName in [Stroller.parent_atlas(player.is_male), Stroller.STROLLER_ATLAS,
+	var father := player.pose(1.0).mother_sources[0].begins_with("rig/father_")
+	for group: StringName in [Stroller.parent_atlas(father), Stroller.STROLLER_ATLAS,
 			Stroller.INDICATOR_ATLAS]:
 		lives.append(Vector2i(pages.loads(group), pages.releases(group)))
 	return lives

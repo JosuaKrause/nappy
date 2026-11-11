@@ -1785,6 +1785,11 @@ func peak_through(age: float, into_its_burst: float, beat := -1.0) -> float:
 func pulses_every() -> float:
 	return pulse_period
 
+## The peak rate of its field at its centre (`intensity`), before a swell, a pulse or a phase moves
+## it, or 0 for a row with no field: what the share it emits now is measured against.
+func peak() -> float:
+	return intensity
+
 ## **The shape its field is priced from** (`EventInstance.field_shape()`), and the reach a long
 ## body gives it (`field_reach()`): its `shape`, or none — a point at its centre — for a row whose
 ## field is priced from its centre (`VehicleSpec.field_from_its_centre`, the fire engine) or that

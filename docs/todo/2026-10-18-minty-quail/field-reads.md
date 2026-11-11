@@ -57,13 +57,12 @@ Left, each its own design question:
   `ResistanceRunState`, `RunFacts`, `SettledState`): the parts reached through methods and each
   part's fields behind methods; the vars are renamed, and the files the third hand-ins pull
   request touches and the tests read them, so it waits for that pull request.
-- **`BlockedLayer`**, converted with the map's property wrappers in `src/city/`.
 - **The city's own classes** have their readers converted except three groups, each with a home:
   - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
     (`RecipeCityContext`) are the scene recipes' city. They go with or after `placement-by-construction.md`'s bullet on the
     scene recipes assigning locations, which rewrites the scene recipes, so no work is done twice (inbox #1185 in gentle-owl); a design for the map
     capturing and restoring itself waits for it.
-  - `City.events` and `City.crowd`, read by the poster walls and the frame recorder and trace, go with
+  - `City.events` and `City.crowd`, read by the frame recorder and trace, go with
     the third hand-ins pull request (`city-hand-ins.md`), which hands those readers their parts. An
     accessor on `City` would add uses of `EventManager` and `Crowd` to breaks `tools/layer_map.py` lists.
   - A field only a test still reads (`CityMap.home_rect`, `home_block`, `courtyard_rects`,
@@ -71,6 +70,11 @@ Left, each its own design question:
     `station_yard_cols`, `BuildingShadows.streamed`, `falls_on`, `PosterState.pasted_through`) keeps its
     direct write in the city and goes with the tests-one-module item (`tests-one-module.md`), when its
     tests read through a method the game also calls.
+- **Her and the baby's parts that only tests read.** `Stroller.atlas` and `Baby.timing` are handed in
+  through `use_atlas()` and `use_frame_timing()` and read by their own file and the tests (the suites
+  that read `rig.atlas.region(...)`, `tests/test_frame_record_wiring.gd`); they become
+  underscore-private with the tests-one-module item (`tests-one-module.md`), when those tests read
+  through a method the game also calls.
 - **The lines the placement rewrite and the third hand-ins pull request touch** (`src/events/`,
   `src/routes/`, `src/dev/`, `scene_recipe*`, `day_director.gd`, `main.gd`, `day_planner.gd`,
   `run_session.gd`, the event manager and `EventWorld`, scenery residency and ground, the blackout,

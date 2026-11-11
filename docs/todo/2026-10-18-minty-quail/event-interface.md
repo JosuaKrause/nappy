@@ -466,7 +466,9 @@ strategies did (the record brisk-lark):
   and is handed its parts; none holds its event.
 - **A look asks the same questions outside callers ask**, plus its own few (`is_silenced()`,
   `is_its_guard_warning()`, `is_drawn_as_a_pelican()`, `boom_openness()`), and is handed its
-  `LookSpec` and its drawer.
+  `LookSpec` and its drawer. The base look (`EventLook`) is so handed ok: its row (until `LookSpec`
+  exists), its drawer and whether it draws, and it asks the live event through methods; the family
+  looks follow.
 
 **`WhereSheIs`** (a name this design proposes) is the one object that says where she is
 this tick: her position, her pram's, the camera's view, whether she runs, whether the baby is
@@ -619,7 +621,7 @@ counted where it only writes.
 | `stands_as`, `when_it_stops` | 2 in each (the live event filling its move) | the body part's `is_walked_round()`, `parks()`, asked by the live body (the row's until the body part exists ok) |
 | `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()`; the body part's `lies()` (one choice of four) for the footprints (the row's `lies()`, an `EventDef.Lie`, until the body part exists, ok) |
 | `vehicle` (`VehicleSpec.field_from_its_centre`) | 8 in, 2 out (the scene recipes, the park cordon); 3 lines of the spec | row `drives()` ok; the field part's `datum()` |
-| `intensity` | 7 in | row `has_a_field()` ok; the field part's `peak()` and `peak_through()` for the live event and the looks |
+| `intensity` | 7 in | row `has_a_field()` ok; the field part's `peak()` and `peak_through()` for the live event and the looks (the row's `peak()` and `peak_through()` until the field part exists ok) |
 | `inner_radius` | 6 in, 2 out (the resistance's contact point and director) | row `core_within()`; live `core_reaches(point)`; the flock and the looks are handed the field's spec |
 | `outer_radius` | 7 in, the dev rig untyped | row `heard_within()` ok; live and plan `field_reaches(point)` ok; live `field_rings()` |
 | `core_intensity`, `core_radius`, `falloff_power` | 2 in each | inside `FieldSpec`: `emission_at_distance()` ok, `reach_above()` ok, `silent_beyond()` ok |
@@ -657,12 +659,12 @@ counted where it only writes.
 | Field | Reader files | Replaced by |
 |---|---|---|
 | `def` | 29 in, 8 out | the questions of section 2 on the live event; `row()` ok for passing the row on |
-| `is_finished` | 12 in, 6 out; 154 reads in tests | `is_gone()` ok |
+| `is_finished` | 12 in, 6 out; 154 reads in tests | `is_gone()` ok (the base look asks it ok) |
 | `is_leaving` | 13 in; 133 in tests | `is_on_its_way_out()` ok |
 | `is_parked` | 3 in, 1 out (the resistance) | `has_parked()` |
 | `phase` | 2 in; 40 in tests | the phase questions (`is_waiting()` ok, `is_telegraphing()` ok, `is_active()`, `has_stopped_her()` ok, `is_only_its_barrier()`); `transition()` reached by its parts through `Figure.begin()` ok; fifteen lines of six suites call `transition()` to put an event in a phase that sets a check up, kept public for them (`tools/test_only_members.txt`), and each goes when its suite reaches the phase the way the game does or is handed a fake event: step 5's `FakeEvent` covers the crowd-yield and resistance suites, and nothing is named yet for `test_scenery_animation` and `test_prediction_reuse` |
 | `age` | 7 in, 1 out (the readout); set by rigs and recipes | `age()`; set only by its own tick and by `resume()`, which becomes `restore(save)` in 3b |
-| `path` | 7 in | `walks()`, `beat()`, `way_left()` ok |
+| `path` | 7 in | `walks()` ok, `beat()`, `way_left()` ok |
 | `_heading`, `_path_travelled`, `_gait_phase`, `_gait_moving` | 8, 4, 1 and 1 in (the behaviours) | `Figure.heading()` ok, `travelled()` ok, `turn_to()` ok, `walk_on()` ok; outside: `facing_now()` ok, `path_travelled()` ok, `gait_phase()` ok |
 | `_map`, `_navigator`, `_mover` | 4 in each | handed to each part at setup |
 | `_obstruction`, `_spread_vertical` | 2 in each (the barrier post, the car, the far guard) | `EventBody` ok: `drop()` ok, `pin_where_it_stands()` (built as `pin_at(at)`), `runs_vertically()` ok; the barrier post, the far guard and the car reach them through `Figure` ok |
@@ -672,7 +674,7 @@ counted where it only writes.
 | `drawer`, `atlas`, `timing`, `trace`, `signals`, `skip_draw`, `points_at`, `is_pelican` | 1 to 9 in (written by the spawner after it makes the event, read by the looks) | handed in at setup in one call; the looks are handed the drawer; `is_drawn_as_a_pelican()`; the unmarked van's take is handed `trace` at setup ok; the car asks `signals` through `Figure.lights()` meanwhile, since the spawner sets them after `setup()`, and `lights()` goes when the one setup call (3b) hands them in |
 | `gate_state` | 2 in (two looks) | `is_raised()` ok, `boom_openness()`; handed in at setup from the plan's `gate()` |
 | `guard_warns_her` | the looks (the checkpoint controller asks already) | `raise_its_guards_hand(on)` ok, `is_its_guard_warning()` ok |
-| `silenced` | 2 in; written by streaming | `silence()`, `is_silenced()` |
+| `silenced` | 2 in; written by streaming | `silence()`, `is_silenced()` ok |
 | `came_under_a_warning` | the live event itself | `was_warned_of()` ok |
 | `look` | 2 in (two looks reading another's) | private; a look is handed the look it needs |
 
@@ -741,7 +743,8 @@ waits, because it converts the files those two tracks are rewriting.
 flock have no spec of their own, so in 2a their live halves are handed the row and ask the row;
 4b hands each its spec, one constructor line apiece. The eight specs that exist are handed over
 from 2a on. The field's live half is so handed: the event's source takes the row and where she is
-at setup (`use_row_and_where_she_is()`), ok.
+at setup (`use_row_and_where_she_is()`), ok. So is the look's: `EventLooks.for_row()` hands the base
+look its row and its drawer at setup, ok, until `LookSpec` (4b).
 
 **Skills and docs.** 4b rewrites the events skill's "Adding a row" and its field names, and
 designing-classes' sentence that much of `src/` still reads fields goes with the last line of the
@@ -798,7 +801,7 @@ or hands the value in once. The paths that run every tick or every drawn frame:
 | **The baby's sweep** (`Baby._physics_process()`, through `EventSources.sources_at()` to each source's `contribution_at()`) | a far event: five row fields to work out the distance beyond which it is silent, on every call; a near one: about eight row fields in `current_intensity()`, then `emission_at_distance()` | the silent distance is worked out once when the `FieldSpec` is built, since a built row cannot change (today it is worked out on every call because a rig may change the row); the ramp and the pulse are one question to the field (to the row, until the field part exists, ok); the kernel is the method it is today |
 | **The danger prediction** (the caret: `ExcitementSource.expected_gross_at()`, twenty samples a source a drawn frame, behind a cache) | the cache's key copies nine values of the row and its shape every frame, to notice a row that was changed | the key holds the field's spec and the shape by reference; the samples call the same two methods as today. Fewer reads than now |
 | **The fields layer** (the debug view's overlay, `DebugLayers._draw_fields()`) | three row fields and the shape per live event per redraw | one `field_rings()` |
-| **Drawing** (each visible event's look, every drawn frame) | `def.look` sixteen times in `event_look.gd`, the shape, the body's width | the look holds its `LookSpec` and the width from construction; the mark's question (`walk_through_cost()`) is cached in the field's spec |
+| **Drawing** (each visible event's look, every drawn frame) | `def.look` sixteen times in `event_look.gd`, the shape, the body's width | the look holds its `LookSpec` and the width from construction (the base look holds its row ok, until `LookSpec`); the mark's question (`walk_through_cost()`) is cached in the field's spec |
 | **The crowd's tick** | no event field: the published moves, the blocked tiles, a boom's state | nothing changes; measured as the control |
 
 **How big it can be.** The events skill's own figure is a few dozen live events at once, on the

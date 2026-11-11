@@ -184,15 +184,18 @@ src/
 	event_sources.gd      a day's live events as one set of things that charge her
 	                       (`EventSources`): the door's toll alone inside a held door, a region
 	                       boundary's structures as their strongest
-	views/                how an event looks, read off its public state: `EventPictures` names
+	views/                how an event looks, asked of the event and, in the family looks,
+	                       still partly read off its public state: `EventPictures` names
 	                       every picture (each a region of the baked `events` page) and the
 	                       tables that pick one; `EventLooks.for_row()` gives each row the look
 	                       that draws its family (a figure, a vehicle, a pursuer, a spread, a
-	                       rank, the roadblock, a fire, the checkpoint kit, the flock), which
-	                       holds the redraw gate, the caret and the slices a long picture is
-	                       drawn in; every picture a look draws goes through one `EventDrawer`
+	                       rank, the roadblock, a fire, the checkpoint kit, the flock), handed
+	                       its event, its row and its drawer as it is made, which holds the
+	                       redraw gate, the caret and the slices a long picture is drawn in;
+	                       every picture a look draws goes through one `EventDrawer`
 	                       (`views/event_drawer.gd`), which the manager builds over its atlas
-	                       and its spawner hands every instance (`EventInstance.drawer`)
+	                       and its spawner hands every instance (`EventInstance.drawer`) before
+	                       `setup()` hands it to the look
 	behaviours/           what an event does, one rule and its state each, composed per row
 	                       by `EventBehaviours.compose()` from the row's data: a pursuit, a
 	                       line run, a route, a flock, a hold, a stop, a departure, a car's
@@ -614,8 +617,8 @@ the dev rigs (`AutoScreenshot.from_config()`, the scene-recipe runtime), and han
 day and the baby the plain values they need out of it: a day's length
 (`RunConfig.day_length_for()`, the one place it is decided) to `DayController.start()`, the
 resistance and the run log, and an escape section's length (`RunConfig.escape_section_length()`)
-to its `DaySpec`; `DayController.invincible` and `Baby.excitement_frozen`; and, on `City` before
-`build()`, the ground mode,
+to its `DaySpec`; `DayController.invincible` and the baby's frozen meter
+(`Baby.freeze_excitement()`); and, on `City` before `build()`, the ground mode,
 the frame lock, the four `--skip` words, the forced blackout, `--pelican` and `--force`, which the
 city passes to the part each belongs to. Nothing in the simulation reads a flag, the command line
 or the address bar, and nothing asks for them every frame. A test builds the run it wants with
@@ -796,7 +799,10 @@ file. The contracts that are about shared numbers rather than about a row (traff
 return patrols) are `tests/test_tuning_fairness.gd`'s checks, so an unfair number fails the suite.
 
 ### `EventBus`
-Global signal hub. Decouples systems that should not know about each other. Every signal is
+Global signal hub. Decouples systems that should not know about each other. The observers and the
+view listen on the autoload. The baby is handed it rather than fetching it (`Baby.use_bus()`, which
+`main._make_player()` calls), and a baby handed none tells nobody; the emitters `tools/layer_map.py`
+lists under `EventBus` still fetch it. Every signal is
 declared in `src/autoload/event_bus.gd`, grouped by what it reports — meters, day/run state,
 events, bodies, resistance, the escape, presentation — read it directly for the current list and
 each signal's payload type; `event_telegraphed` and `event_activated` are deliberately untyped,
@@ -1216,13 +1222,14 @@ field with its value before and after (`tests/shared_state.gd`).
 - `test_destination_drawing.gd` — on every task day, the mark on offer draws its chalk and keeps
   its touched picture once read, and the task's destination draws none, untouched or done, while
   the red arrow ends on it.
-- `test_blackout.gd` — the last night's blackout over stand-ins for the city and what it switches,
-  no city built: nothing off without the sabotage or beside the station, every window, light and
-  mast told off in one call past the distance, dark for as long as the sabotage stands and lit again
-  on a retry, and the escape's blackout dark from its first frame. What the switched parts do dark
-  is theirs: `test_traffic_light.gd` (a signal head with no lamp), `test_traffic_signals.gd` (a dark
-  junction left to the box rule) and `test_dark_spine.gd` (the dark spine still carrying its
-  traffic, on a real city and crowd).
+- `test_blackout.gd` — the last night's blackout over the parts `Blackout` is handed (a map,
+  buildings, signals, the run's resistance and a fake event manager), no city built: nothing off
+  without the sabotage or beside the station, every window, light and mast told off in one call
+  past the distance, dark for as long as the sabotage stands and lit again on a retry, and the
+  escape's blackout dark from its first frame. What the switched parts do dark is theirs:
+  `test_traffic_light.gd` (a signal head with no lamp), `test_traffic_signals.gd` (a dark junction
+  left to the box rule) and `test_dark_spine.gd` (the dark spine still carrying its traffic, on a
+  real city and crowd).
 - `test_full_run_a.gd`, `_b.gd` and `_c.gd` — three seeds, one per part (`tests/full_run_rig.gd`), each
   played through all 14 days with the real City, EventManager and ResistanceDirector, each day started
   by the real DayDirector, with time actually advancing. This is the check

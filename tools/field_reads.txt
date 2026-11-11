@@ -7,8 +7,6 @@
 
 # [AbductionSpec] src/events/abduction_spec.gd
 src/events/behaviours/event_abduction.gd taken_over
-src/events/views/event_look.gd standing_offset
-src/events/views/event_look.gd taken_over
 src/events/views/event_vehicle_look.gd standing_offset
 src/events/views/event_vehicle_look.gd taken_over
 
@@ -47,11 +45,6 @@ src/dev/dev_rig.gd sleepiness
 src/dev/route_rig.gd state
 src/dev/scene_recipe_runtime.gd excitement
 src/dev/scene_recipe_runtime.gd sleepiness
-src/main.gd excitement_frozen
-src/main.gd timing
-src/ui/hud.gd excitement
-src/ui/hud.gd sleepiness
-src/ui/hud.gd state
 
 # [Blackout] src/city/blackout.gd
 src/city/city.gd dark_from_the_start
@@ -59,13 +52,6 @@ src/city/city.gd forced
 
 # [BlockLayout] src/city/block_layout.gd
 src/routes/closure_planner.gd open_rect
-
-# [BlockedLayer] src/world/blocked_layer.gd
-src/city/city_map.gd closed
-src/city/city_map.gd posts
-src/city/city_map.gd soft_sealed
-src/world/world_map.gd bodies
-src/world/world_map.gd body_version
 
 # [Building] src/city/building.gd
 src/city/blackout.gd powered
@@ -125,16 +111,6 @@ src/events/event_instance.gd ended
 src/events/event_instance.gd warned
 
 # [City] src/city/city.gd
-src/city/blackout.gd events
-src/city/blackout.gd map
-src/city/blackout.gd run
-src/city/blackout.gd signals
-src/city/poster_walls.gd events
-src/city/scenery_ground.gd map
-src/city/scenery_residency.gd _building_shadows
-src/city/scenery_residency.gd _decals
-src/city/scenery_residency.gd map
-src/city/scenery_residency.gd scenery_ground
 src/dev/debug_readout.gd crowd
 src/dev/debug_readout.gd events
 src/dev/debug_readout.gd map
@@ -650,19 +626,6 @@ src/events/street_invalidation.gd paces
 src/events/street_rules/pacing_opening_rule.gd paces
 src/events/street_rules/route_sidewalk_rule.gd paces
 src/events/views/checkpoint_look.gd look
-src/events/views/event_look.gd abduction
-src/events/views/event_look.gd draws_body_shadow
-src/events/views/event_look.gd intensity
-src/events/views/event_look.gd look
-src/events/views/event_look.gd mobile
-src/events/views/event_look.gd obstructs_radius
-src/events/views/event_look.gd pulse_period
-src/events/views/event_look.gd pursuit
-src/events/views/event_look.gd shape
-src/events/views/event_look.gd speed
-src/events/views/event_look.gd telegraph_time
-src/events/views/event_look.gd vehicle
-src/events/views/event_looks.gd look
 src/events/views/event_vehicle_look.gd abduction
 src/events/views/event_vehicle_look.gd look
 src/events/views/event_vehicle_look.gd obstructs_radius
@@ -785,21 +748,7 @@ src/events/events_ahead.gd is_leaving
 src/events/views/checkpoint_look.gd def
 src/events/views/checkpoint_look.gd gate_state
 src/events/views/checkpoint_look.gd guard_warns_her
-src/events/views/event_look.gd abduction
 src/events/views/event_look.gd age
-src/events/views/event_look.gd barrier_post
-src/events/views/event_look.gd def
-src/events/views/event_look.gd drawer
-src/events/views/event_look.gd excitement
-src/events/views/event_look.gd gate_state
-src/events/views/event_look.gd guard_warns_her
-src/events/views/event_look.gd is_finished
-src/events/views/event_look.gd is_leaving
-src/events/views/event_look.gd path
-src/events/views/event_look.gd points_at
-src/events/views/event_look.gd silenced
-src/events/views/event_look.gd skip_draw
-src/events/views/event_looks.gd def
 src/events/views/event_vehicle_look.gd abduction
 src/events/views/event_vehicle_look.gd def
 src/events/views/event_vehicle_look.gd drawer
@@ -969,8 +918,6 @@ src/events/event_excitement.gd half_extents
 src/events/event_excitement.gd half_length
 src/events/event_excitement.gd kind
 src/events/event_instance.gd radius
-src/events/views/event_look.gd half_length
-src/events/views/event_look.gd radius
 src/events/walk_ground.gd half_length
 src/events/walk_ground.gd kind
 src/events/walk_ground.gd radius
@@ -1289,7 +1236,6 @@ src/autoload/game_save.gd header
 src/autoload/game_save.gd run_parts
 src/autoload/visit_counter.gd calendar
 src/autoload/visit_counter.gd header
-src/city/blackout.gd resistance
 src/city/city.gd attempt_spend
 src/city/city.gd posters
 src/city/city.gd resistance
@@ -1357,7 +1303,6 @@ src/events/event_scenery.gd drawer
 src/events/event_scenery.gd frame_b
 
 # [SceneryResidency] src/city/scenery_residency.gd
-src/city/city.gd city
 src/city/city.gd frame_locked
 src/city/city.gd timing
 src/city/city.gd view
@@ -1388,9 +1333,7 @@ src/dev/scene_recipe_runtime.gd facing
 src/events/checkpoint_controller.gd outright_moves
 src/events/event_manager.gd carrying
 src/events/event_manager.gd facing
-src/main.gd atlas
 src/main.gd carrying
-src/main.gd is_male
 
 # [TelemetryLog] src/telemetry/telemetry_log.gd
 src/dev/still_watch.gd path

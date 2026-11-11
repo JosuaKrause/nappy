@@ -595,7 +595,7 @@ func _test_pending(t, seed_value: int) -> void:
 	ground.release(key)
 	ground.prepare_step(key)
 	layer = ground.pending[key].layer
-	ground.configure(city, ground.tile_set)
+	ground.configure(city.map, city.scenery_ground_source, ground.tile_set)
 	t.check(ground.pending.is_empty() and not is_instance_valid(layer),
 			"day/reset configuration discards every unfinished allocation")
 	city.scenery.update(_home_view(city), true)

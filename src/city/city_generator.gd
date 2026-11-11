@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name CityGenerator
 extends RefCounted
 ## Builds a CityMap deterministically from a run seed. See docs/CITY.md.
@@ -214,7 +213,7 @@ static func _attempt(seed_value: int, choices: Dictionary = {}) -> CityMap:
 	# only carries that once the blockers are placed — growing regions any earlier would let a
 	# region's own growth cross ground the run is about to take away.
 	_assign_regions(map)
-	for rects in block_rects.values():
+	for rects: Array[Rect2i] in block_rects.values():
 		map.add_building_lots(rects)
 	return map
 
@@ -375,7 +374,7 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator, choices: 
 	_place_apartment_complexes(purposes, zones, shuffled, rng, map.main_road_corridor(), map.precinct_stretches(), pinned_complexes)
 
 	var calm_target := rng.randi_range(MIN_CALM_BLOCKS, Tuning.MAX_CALM_BLOCKS)
-	for block in shuffled:
+	for block: Vector2i in shuffled:
 		if areas >= calm_target:
 			break
 		if purposes.has(block) or _has_calm_neighbour(purposes, Rect2i(block, Vector2i.ONE)):
@@ -386,7 +385,7 @@ static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator, choices: 
 		areas += 1
 
 	var remaining: Array[Vector2i] = []
-	for block in shuffled:
+	for block: Vector2i in shuffled:
 		if not purposes.has(block):
 			remaining.append(block)
 
@@ -1250,7 +1249,8 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 	var made := 0
 	var station_pair := Rect2i()
 	if choices.has("power_station"):
-		var p: Array = choices.power_station.blocks
+		var station: Dictionary = choices["power_station"]
+		var p: Array = station["blocks"]
 		station_pair = Rect2i(int(p[0]), int(p[1]), int(p[2]), int(p[3]))
 	for pair in pool:
 		if made >= wanted - 1:
@@ -1278,7 +1278,8 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 	if station_pair.has_area() and map.power_station_blocks() != station_pair:
 		map.note_diagnostic("power_station.ineligible")
 	elif station_pair.has_area():
-		var door: Array = choices.power_station.door_block
+		var station: Dictionary = choices["power_station"]
+		var door: Array = station["door_block"]
 		if map.power_station_door_tiles() != _door_rect(Vector2i(int(door[0]), int(door[1]))):
 			map.note_diagnostic("power_station.door_ineligible")
 
@@ -1324,7 +1325,8 @@ static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects
 			continue
 		var door_blocks := _door_blocks(map, pair)
 		if choices.has("power_station"):
-			var door: Array = choices.power_station.door_block
+			var station: Dictionary = choices["power_station"]
+			var door: Array = station["door_block"]
 			var requested := Vector2i(int(door[0]), int(door[1]))
 			# Keep the ordinary street/distance filter and the region gate below. A pin
 			# selects among eligible doors; it never permits a fallback to another one.
@@ -1649,7 +1651,7 @@ static func validation_problems(map: CityMap, all_problems: bool = true) -> Arra
 		for member in _blocks_in(map.lot_blocks(block)):
 			owner[member] = block
 	for member: Vector2i in owner:
-		for step in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(1, -1)]:
+		for step: Vector2i in [Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1), Vector2i(1, -1)]:
 			var neighbour: Vector2i = member + step
 			if owner.has(neighbour) and owner[neighbour] != owner[member]:
 				problems.append("calm areas %s and %s are in each other's ring" % [

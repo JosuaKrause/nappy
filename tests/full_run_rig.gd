@@ -63,6 +63,7 @@ func _play_a_run(t, seed_value: int) -> void:
 	player.add_child(camera)
 	var baby := Baby.new()
 	baby.name = "Baby"
+	baby.use_bus(EventBus)
 	player.add_child(baby)
 	t.add_child(player)
 	player.set_physics_process(false)

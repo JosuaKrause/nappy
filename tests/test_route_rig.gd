@@ -131,6 +131,7 @@ func _build_fixture(t, day: int, progress_at_dawn := 0, her := true,
 	city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), consumed)
 
 	var stroller: Stroller = STROLLER_SCENE.instantiate()
+	(stroller.get_node("Baby") as Baby).use_bus(EventBus)
 	t.add_child(stroller)
 	stroller.global_position = city.map.doorstep_world_position()
 	if her:

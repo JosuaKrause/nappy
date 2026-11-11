@@ -22,7 +22,10 @@ var chunks: Dictionary = {}
 ## Visible in-tree at their real off-screen coordinates; hidden TileMaps discard render data.
 ## Only chunks owns complete regions. Each pending key owns exactly one unfinished layer.
 var pending: Dictionary = {}
-var _city: City
+var _map: CityMap
+## Which source each tile is painted from, asked of the city that owns the answer
+## (`City.scenery_ground_source()`), handed in by `configure()`.
+var _source_of := Callable()
 ## The city's library (`AtlasLibrary`), handed by the city before it configures the ground, and
 ## handed on to every water surface a chunk stands up.
 var atlas: AtlasLibrary
@@ -41,9 +44,10 @@ func _process(delta: float) -> void:
 				child.elapsed = elapsed
 				child._ripples.set_shader_parameter("elapsed", elapsed)
 
-func configure(city: City, composed: TileSet) -> void:
+func configure(map: CityMap, source_of: Callable, composed: TileSet) -> void:
 	clear()
-	_city = city
+	_map = map
+	_source_of = source_of
 	tile_set = composed
 
 static func key_for(tile: Vector2i) -> Vector2i:
@@ -91,12 +95,12 @@ func _prepare_whole(key: Vector2i) -> void:
 	for y in range(key.y * CHUNK_TILES, (key.y + 1) * CHUNK_TILES):
 		for x in range(key.x * CHUNK_TILES, (key.x + 1) * CHUNK_TILES):
 			var tile := Vector2i(x, y)
-			var source := _city.scenery_ground_source(tile)
+			var source: int = _source_of.call(tile)
 			if source == GroundTiles.WATER:
 				water_cells.append(tile)
 			elif source >= 0:
 				layer.set_cell(tile, source,
-						GroundLayers.atlas_coords_for(source, _city.map.seed_used, tile, tile_set))
+						GroundLayers.atlas_coords_for(source, _map.seed_used, tile, tile_set))
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
 		water.atlas = atlas
@@ -128,12 +132,12 @@ func prepare_step(key: Vector2i) -> bool:
 	for y in range(origin.y, origin.y + STEP_TILES):
 		for x in range(origin.x, origin.x + STEP_TILES):
 			var tile := Vector2i(x, y)
-			var source := _city.scenery_ground_source(tile)
+			var source: int = _source_of.call(tile)
 			if source == GroundTiles.WATER:
 				water_cells.append(tile)
 			elif source >= 0:
 				layer.set_cell(tile, source,
-						GroundLayers.atlas_coords_for(source, _city.map.seed_used, tile, tile_set))
+						GroundLayers.atlas_coords_for(source, _map.seed_used, tile, tile_set))
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
 		water.atlas = atlas

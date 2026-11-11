@@ -694,6 +694,8 @@ func _test_she_stands_still_when_a_hold_lets_her_out(t) -> void:
 			manager.use_player(stroller)
 			var controls: TouchControls = _TOUCH_CONTROLS.instantiate()
 			t.add_child(controls)
+			# Her release reaches the controls as `main._make_player()` connects it.
+			stroller.let_out_of_the_hold.connect(controls.stand_still_after_hold)
 			if way == "a joystick drag's finger":
 				controls.set_mode(ControlsMode.Mode.JOYSTICK)
 			var hut := _door_instance(manager, "checkpoint_hut", centre, axis)

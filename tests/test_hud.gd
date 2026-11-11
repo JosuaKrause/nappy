@@ -369,6 +369,7 @@ func _test_the_release_hud_drops_the_status_line_but_keeps_announcements(t) -> v
 	stroller.set_physics_process(false)
 	var baby := Baby.new()
 	baby.name = "Baby"
+	baby.use_bus(EventBus)
 	stroller.add_child(baby)
 	baby.set_physics_process(false)
 
@@ -412,6 +413,7 @@ func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t) -> vo
 	stroller.set_physics_process(false)
 	var baby := Baby.new()
 	baby.name = "Baby"
+	baby.use_bus(EventBus)
 	stroller.add_child(baby)
 	baby.set_physics_process(false)
 	baby.state = GameEnums.BabyState.ASLEEP
