@@ -60,13 +60,6 @@ src/city/city.gd forced
 # [BlockLayout] src/city/block_layout.gd
 src/routes/closure_planner.gd open_rect
 
-# [BlockedLayer] src/world/blocked_layer.gd
-src/city/city_map.gd closed
-src/city/city_map.gd posts
-src/city/city_map.gd soft_sealed
-src/world/world_map.gd bodies
-src/world/world_map.gd body_version
-
 # [Building] src/city/building.gd
 src/city/blackout.gd powered
 src/city/city.gd condition

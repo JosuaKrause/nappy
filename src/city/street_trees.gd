@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name StreetTrees
 extends RefCounted
 ## Where street trees stand: a handful of **tree-lined runs**, each a straight stretch of three to
@@ -191,7 +190,7 @@ static func planted(map: CityMap) -> Array[Planted]:
 		return found
 	var door_tile := _door_tile(map)
 	for run in runs(map):
-		for offset in _CURB_OFFSETS:
+		for offset: int in _CURB_OFFSETS:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("street_tree:%d:%d:%d:%d:%d" % [map.city_seed(),
 					0 if run.horizontal else 1, run.index, run.first, offset])
