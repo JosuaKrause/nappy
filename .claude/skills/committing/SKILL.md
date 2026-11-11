@@ -228,7 +228,15 @@ time; the player asks for tests that are isolated and not flaky instead.
    is reported at once. One still unmerged when the script's cap runs out is the orchestrator's to
    look at, not to loop on.
 5. **Watch `main`'s CI run on the last merge commit**, which the script prints once every PR has
-   merged.
+   merged, with the read below.
+
+**CI's state is read through GraphQL, sparingly, in every read a session writes itself.** A pull
+request's is `gh pr view <n> --json statusCheckRollup`, and `main`'s is the commit's
+`statusCheckRollup` asked through `gh api graphql`. **`gh run watch` is never used**: it polls
+GitHub's REST API every three seconds, and the account's hourly REST quota is shared by every
+session. A session reads REST once, never in a wait, for what GraphQL does not hold (a job's log, a
+test's time in a shard's log) and to diagnose a push that started no run. `tools/await-merge.sh`
+and `tools/release.sh` make their own reads.
 
 ## Releasing
 
@@ -502,6 +510,8 @@ to the player's correction:
 - **The numbers `tools/await-merge.sh` waits by**, which its `--help` gives: how the end of CI is
   estimated, the undershoot, the time between polls and the cap. The player asked for a better
   estimate, undershot a little, with the rest polled by a script (inbox #1070 in gentle-walrus).
+- **How CI's state is read** ("Merging": GraphQL, never `gh run watch`, REST read once for what
+  GraphQL does not hold), the filer's proposal (amber-swan).
 - **Why a further record of an entry is named with a pair of words and never `-2`**: read as, two
   branches building at once draw the same next number. That is the filer's reading of the player's
   remark that the reason is known (inbox #937 in plaid-penguin, inbox #941 in breezy-alpaca).
