@@ -314,7 +314,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var base: int = rng.seed
 
 	var events := DayEvents.over(calm)
-	var provenance := {}   # Planned instance id -> Source
+	var provenance := {}   # EventPlan instance id -> Source
 
 	var ambient := EventScheduler._place_ambient(day, map, 0)
 	events.add_all(ambient)

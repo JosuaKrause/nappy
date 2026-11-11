@@ -689,7 +689,8 @@ counted where it only writes.
 
 ### 4.3 The plan (`EventPlan`)
 
-Reads as `tools/field_reads.txt` lists them under `[EventPlan]`.
+The counts are uses found by `rg`; `tools/field_reads.txt` lists one line per reader file and
+field under `[EventPlan]`.
 
 | Field | Reads | Replaced by |
 |---|---|---|
@@ -705,7 +706,7 @@ Reads as `tools/field_reads.txt` lists them under `[EventPlan]`.
 | `comes_in`, `wait_began`, `kept_live`, `was_live` | 6, 3, 3 and 5 (streaming) | streaming's own state per plan; `keep_in_the_world()` ok stays as the way to ask for it, and `come_first_in(seconds)` ok, by which the building's plan says when an event first comes, tells streaming rather than writing a field |
 | `repeat_every`, `repeat_after`, `at_her`, `arrives_aged` | 5 (streaming) | `repeats()` ok; `come_again_every(seconds)` ok, `come_where_she_stands()` ok, `arrive_aged(seconds)` ok as the building's plan is made; `comes_where_she_stands()`, `arrives_aged()` |
 | `gate_state` | 2 | `gate()`, set as the region's doors are made |
-| `permanent` | 1 (the plan's own `spoils()`) | `make_permanent()` for the writers; `is_permanent()`, which no game file asks, is deleted with the test's one clause when the plan becomes `EventPlan`, since `tools/check_test_only_members.py` sees it then |
+| `permanent` | 1 (the plan's own `spoils()`) | `make_permanent()` for the writers |
 | `_is_door`, `_in_the_wall`, `_is_a_seal` | private already | as they are |
 
 Other classes of the folder with listed lines, each converted in the pull request that owns its
@@ -724,10 +725,9 @@ last reader asks a method, and the row's parts, which make every field private a
 the readers. The interface is in use from the first pull request; the parts arrive behind it
 without a caller changing, which is the swap the player's rule is for.
 
-Two things come from other tracks and are not this design's: the Tools track's change that makes
+One thing comes from another track and is not this design's: the Tools track's change that makes
 the field-read check see every read (`field-reads.md`: untyped access as an error, a file-level
-ignore per file not yet converted), and the scheduler breakup's scripted rename of the plan record
-to `EventPlan`. Every pull request below types the receivers in the files it owns, deletes those
+ignore per file not yet converted). Every pull request below types the receivers in the files it owns, deletes those
 files' ignore lines and their lines in `tools/field_reads.txt`, answers the architecture
 questions, and is at test parity with the run log and GoatCounter's names unchanged.
 

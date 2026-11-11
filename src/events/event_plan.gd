@@ -21,7 +21,7 @@ var facing := Vector2.RIGHT
 var gate_state: RegionPlanner.GateState = null
 
 ## `MastSites.Site.id` for a mast's own plan (its ordinary broadcast and, on
-## `CURFEW_ANNOUNCE_DAY`, its curfew announcement too), `""` for everything else — the
+## `EventScheduler.CURFEW_ANNOUNCE_DAY`, its curfew announcement too), `""` for everything else — the
 ## question `EventManager.silence_mast()` and the broadcast clock's own sync ask before
 ## touching a plan.
 var mast_id := ""
@@ -327,7 +327,7 @@ func gap_to(other: EventPlan) -> float:
 ##   and `PacingOpeningRule._leaves_a_pacing_beats_opening`). What every mast keeps is its site check (`MastSites.is_eligible()`: off the home
 ##   street and a calm interior), door clearance, the unused calm, spacing and a way out.
 ## - **`Role.SCENERY`** (`pigeon_flock`) is free already — *"flocks are basically free already, don't
-##   count it as block, just count is scenery"* — which is the same exemption `role_for` makes.
+##   count it as block, just count is scenery"* — which is the same exemption `EventScheduler.role_for` makes.
 ## - **a pursuer** follows her rather than sitting on a tile, and pays the telegraph contract
 ##   instead; so does anything the director sites (`AHEAD_OF_PLAYER`, `TOWARD_PLAYER`), which
 ##   reaches here as a plan with no position at all.
@@ -340,7 +340,7 @@ func gap_to(other: EventPlan) -> float:
 ##
 ## **A wall is not outside it**, and that is the player's own decision on the one thing the four
 ## rules left open: *"option 2 is valid only if the influence at a junction is low enough that it
-## can be taken without having to worry or plan around it."* A wall bounds the corridor — `_copies_of`
+## can be taken without having to worry or plan around it."* A wall bounds the corridor — `EventScheduler._copies_of`
 ## offers it zero copies of any ground a route runs along, so it never stands on a route — but its
 ## field reaches in from the far sidewalk or one street out, and being told to walk a corridor whose crossings are covered by what is
 ## bounding it is being told to pay for the guidance. So a wall's own charging disc is asked the
@@ -401,7 +401,7 @@ func reach_touches(rect: Rect2, reach: float) -> bool:
 ## 145 to 380px, cannot tile anything.
 ##
 ## **A `WALL` is exactly the off-route set and that is by construction, not by coincidence.**
-## `_copies_of` offers a wall zero copies of any tile a route actually runs along, so a placement
+## `EventScheduler._copies_of` offers a wall zero copies of any tile a route actually runs along, so a placement
 ## carrying this role is off the routes or it does not exist — including the far sidewalk of a
 ## route's own street, which is ground no route walks. What keeps its clearance is everything else: a
 ## set piece, which is sited on her way, and anything the day placed for a reason that is not about
@@ -418,7 +418,7 @@ func reach_touches(rect: Rect2, reach: float) -> bool:
 ## the first place.
 ##
 ## This was already true for every lethal pursuer in the catalogue, but by accident rather than by
-## name: `role_for` gives any placed `hard_fail` row that is not a `ONE_SHOT` the `WALL` role
+## name: `EventScheduler.role_for` gives any placed `hard_fail` row that is not a `ONE_SHOT` the `WALL` role
 ## before it ever asks whether the row pursues, so `alley_robbery` (placed, `hard_fail`, therefore
 ## always `WALL`) and `charging_dog` past `Tuning.RUN_TAUGHT_DAY` (`spawn_mode_on()` answers `MAP`
 ## from there, placed and `hard_fail` the same way) are both exempt without this line doing
@@ -427,7 +427,7 @@ func reach_touches(rect: Rect2, reach: float) -> bool:
 ## the other way a pursuer reaches this exemption. Stating it over `plan.def.pursuit` rather than
 ## leaving the exemption to follow from the `WALL` classification is what makes it survive a future
 ## pursuer the role logic does not happen to route through `WALL` — a lethal `SET_PIECE` pursuer,
-## say, which `role_for` would classify ahead of the `hard_fail` check.
+## say, which `EventScheduler.role_for` would classify ahead of the `hard_fail` check.
 func keeps_its_field_clear() -> bool:
 	return def.hard_fail and role != GameEnums.BlockerRole.WALL and def.pursuit == null
 
