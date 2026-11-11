@@ -48,13 +48,13 @@ class Clock:
 	func read() -> float:
 		return now
 
-## A camera's pose: where its centre is and how far it is zoomed.
+## A camera's pose: where its center is and how far it is zoomed.
 class Pose:
-	var centre: Vector2
+	var center: Vector2
 	var zoom: float
 
 	func _init(at: Vector2, factor: float) -> void:
-		centre = at
+		center = at
 		zoom = factor
 
 const _VIEWPORT := Vector2(1280.0, 720.0)
@@ -110,8 +110,8 @@ func _test_the_zoom_is_interpolated_on_a_log_scale(t: TestRunner) -> void:
 func _test_the_centre_is_a_plain_lerp_when_the_zoom_does_not_change(t: TestRunner) -> void:
 	var bounds := Rect2(Vector2(100.0, 200.0) - _VIEWPORT * 0.5, _VIEWPORT)
 	var pose := await _pulled_back(t, Vector2.ZERO, 1.0, bounds, 0.5)
-	t.check(pose.centre.is_equal_approx(Vector2(50.0, 100.0)),
-			"with no zoom change the centre is a plain lerp on the move's weight (got %s)" % pose.centre)
+	t.check(pose.center.is_equal_approx(Vector2(50.0, 100.0)),
+			"with no zoom change the centre is a plain lerp on the move's weight (got %s, zoom %.2f)" % [pose.center, pose.zoom])
 	t.check(is_equal_approx(pose.zoom, 1.0), "and the zoom itself never moves")
 
 func _test_the_ends_are_exactly_the_start_and_end(t: TestRunner) -> void:
@@ -120,11 +120,11 @@ func _test_the_ends_are_exactly_the_start_and_end(t: TestRunner) -> void:
 	# Bounds that fit at 0.2, centred on `end`.
 	var bounds := Rect2(end - Vector2(6400.0, 3600.0) * 0.5, Vector2(6400.0, 3600.0))
 	var at_start := await _pulled_back(t, start, 2.0, bounds, 0.0)
-	t.check(at_start.centre.is_equal_approx(start) and is_equal_approx(at_start.zoom, 2.0),
-			"the move's start is exactly her camera's pose (got %s)" % at_start.centre)
+	t.check(at_start.center.is_equal_approx(start) and is_equal_approx(at_start.zoom, 2.0),
+			"the move's start is exactly her camera's pose (got %s, zoom %.2f)" % [at_start.center, at_start.zoom])
 	var at_end := await _pulled_back(t, start, 2.0, bounds, 1.0)
-	t.check(at_end.centre.is_equal_approx(end) and is_equal_approx(at_end.zoom, 0.2),
-			"and its end is exactly the pose that frames the bounds (got %s)" % at_end.centre)
+	t.check(at_end.center.is_equal_approx(end) and is_equal_approx(at_end.zoom, 0.2),
+			"and its end is exactly the pose that frames the bounds (got %s, zoom %.2f)" % [at_end.center, at_end.zoom])
 
 # --------------------------------------------------------------------- TrailerText ---
 
