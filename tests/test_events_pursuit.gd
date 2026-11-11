@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends "res://tests/events_shared_city.gd"
 ## The chase lesson, in the three answers a player can give: into it, away at a walk, away at a
 ## run -- plus the mechanics a pursuer has to keep regardless of which she picks: it leaves no
@@ -829,7 +828,7 @@ func _test_every_pursuer_sent_from_off_screen_is_warned_first(t: TestRunner) -> 
 ## explicitly spent list, since a retry can no longer produce one.
 func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
-	for run_seed in [4242, 90210, 1234567]:
+	for run_seed: int in [4242, 90210, 1234567]:
 		var map := CityGenerator.generate(run_seed)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d:events" % [run_seed, day])
@@ -891,7 +890,7 @@ func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
 ## game will later require. A lesson that only happens on some seeds is not a lesson.
 func _test_the_run_is_always_taught(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
-	for run_seed in [4242, 90210, 1234567, 31337]:
+	for run_seed: int in [4242, 90210, 1234567, 31337]:
 		var map := CityGenerator.generate(run_seed)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d:events" % [run_seed, day])
@@ -1332,7 +1331,7 @@ func _an_alley_mouth(map: CityMap) -> Dictionary:
 		for d1 in sides:
 			if map.tile_at(tile + d1) != GameEnums.TileType.ALLEY:
 				continue
-			for d2 in [Vector2i(d1.y, d1.x), Vector2i(-d1.y, -d1.x)]:
+			for d2: Vector2i in [Vector2i(d1.y, d1.x), Vector2i(-d1.y, -d1.x)]:
 				if map.is_walkable(tile + d2) and map.is_walkable(tile + d1 + d2):
 					return {"building": tile, "d1": Vector2(d1), "d2": Vector2(d2),
 							"corner": map.tile_to_world(tile) + Vector2(d1 + d2) * 16.0}
@@ -1505,8 +1504,8 @@ func _test_a_late_notice_is_answered_by_his_warning(t: TestRunner) -> void:
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
 	var def := EventCatalogue.by_id("alley_robbery")
-	for back in [20.0, 40.0, 60.0, 90.0]:
-		for answer in ["run", "stand"]:
+	for back: float in [20.0, 40.0, 60.0, 90.0]:
+		for answer: String in ["run", "stand"]:
 			var instance_where := WhereSheIs.nowhere()
 			var instance := _a_waiting_robber(t, map, mouth, back, instance_where)
 			var her := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
@@ -1555,7 +1554,7 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t: TestRunner) -> vo
 	var d2: Vector2 = mouth["d2"]
 	var def := EventCatalogue.by_id("alley_robbery")
 	var charged := 0
-	for back in [20.0, 40.0, 60.0, 90.0]:
+	for back: float in [20.0, 40.0, 60.0, 90.0]:
 		var instance_where := WhereSheIs.nowhere()
 		var instance := _instance(t, def, corner + d1 * 16.0 - d2 * back, PackedVector2Array(),
 				map, instance_where)
