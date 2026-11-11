@@ -22,18 +22,21 @@ as its suite is converted", after the baby and the stroller were handed their pa
 
 ## Left, each with its reason
 
-- **Some setup writes stay, each because the game writes the same field the same way**:
-  `sleepiness` and `excitement`, which the game's own developer code sets by field (the dev rig and
-  the scene recipes' runtime); `last_incoming = -1.0`, a marker no game call gives; and the
-  stroller's `carrying`, which `main` writes itself. No method is added for a test.
-- **The reads of a `Stroller.Pose`'s `mother_sources`, `mirrored` and `view`** stay, since no game
-  method answers them.
-- **`Stroller.atlas` and `Baby.timing` stay public**: suites outside this pass read them
-  (`test_frame_record_wiring` among them), as `field-reads.md` says.
+- **Some setup writes stay because the game writes the same field the same way**: `sleepiness` and
+  `excitement`, which the game's own developer code sets by field (the dev rig and the scene
+  recipes' runtime), and the stroller's `carrying`, which `main` writes itself. No method is added
+  for a test.
+- **`last_incoming = -1.0` stays because no game call gives that marker**: `reset()` zeroes it.
+- **`test_stroller` writes the stroller's `facing`**, since `reset_at()` settles her view at once and
+  the cases on how she turns need real frames to turn over.
+- **The reads of a `Stroller.Pose`'s `mother_sources`, `mirrored`, `view`, `gait_frame`,
+  `walk_phase`, `pram_offset` and `pram_size`** stay, since no game method answers them.
+- **`Stroller.atlas` and `Baby.timing` stay public**: `test_atlas_boot` finds the atlas by the
+  field's name and `test_frame_record_wiring` reads the timing, as `field-reads.md` says.
 - **`test_tutorial_dog`'s case on where the scheduler places the dog** stays, since the scheduler's
   suite is not this pass's; `tests-one-module.md` keeps it as written.
 
 ## Verified
 
-The seven suites pass, `tools/typing_census.py --check` holds, and no game file changed, so the
+The nine suites pass, `tools/typing_census.py --check` holds, and no game file changed, so the
 identity probes do not apply. No check was deleted or moved.

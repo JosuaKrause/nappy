@@ -66,10 +66,12 @@ Left, each its own design question:
     direct write in the city and goes with the tests-one-module item (`tests-one-module.md`), when its
     tests read through a method the game also calls.
 - **Her and the baby's parts that only tests read.** `Stroller.atlas` and `Baby.timing` are handed in
-  through `use_atlas()` and `use_frame_timing()` and read by their own file and the tests (the suites
-  that read `rig.atlas.region(...)`, `tests/test_frame_record_wiring.gd`); they become
-  underscore-private with the tests-one-module item (`tests-one-module.md`), when those tests read
-  through a method the game also calls.
+  through `use_atlas()` and `use_frame_timing()` and read by their own file and two suites:
+  `tests/test_atlas_boot.gd` finds every node holding an atlas by the field's name (`"atlas" in node`,
+  `node.get("atlas")`), so renaming `Stroller.atlas` would make that walk skip her with no failure,
+  and `tests/test_frame_record_wiring.gd` reads `Baby.timing`. They become underscore-private with
+  the tests-one-module item (`tests-one-module.md`), when those suites read through a method the game
+  also calls.
 - **Three public fields with no reader under `src/` outside their own class.**
   `SpreadLook.Slice.index` is read only by the look probe, by string (`canvas.get(&"index")` in
   `tests/probes/look_fingerprint.gd`), which row 4a's scripted rewrite of `event-interface.md` would
