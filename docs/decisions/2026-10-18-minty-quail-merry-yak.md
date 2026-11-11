@@ -36,6 +36,39 @@ as its suite is converted", after the baby and the stroller were handed their pa
 - **`test_tutorial_dog`'s case on where the scheduler places the dog** stays, since the scheduler's
   suite is not this pass's; `tests-one-module.md` keeps it as written.
 
+## Fields read and written, by class
+
+Built with `tools/field_answers.py` at the pass's merge commit `9f34854cf`, over the `.gd` files
+under `tests/` its pull request changed, and each method read in its class and the classes it
+extends: each read with the public method that returns exactly that field, or "no method"; each
+write with every public method that assigns the field, and what it assigns.
+
+- **`Baby`**: `excitement`, written → `reset()` does `excitement = 0.0`; `last_incoming`, written →
+  `reset()` does `last_incoming = 0.0`; `sleepiness`, written → `reset()` does `sleepiness =
+  starting_sleepiness`, `force_sleep()` does `sleepiness = Tuning.METER_MAX`.
+- **`City`**: `crowd` → no method; `events` → no method; `map` → no method; `scenery` → no method;
+  `scenery_ground` → no method.
+- **`CrowdAgent`**: `excitement` → `mood()`.
+- **`EventDef`**: `from_day_after`, written → no method; `id` → no method; `inner_radius` →
+  `core_within()`; `notice` → no method; `notice.within` → `notice_within()`; `outer_radius` →
+  `heard_within()`; `shape` → `ground_shape()`; `shape`, written → `solid()` does `shape =
+  new_shape`.
+- **`EventInstance`**: `def` → `row()`; `def.id` → `row_id()`; `excitement` → `source()`.
+- **`EventScheduler.Planned`**: `def` → `row()`; `def.id` → `row_id()`.
+- **`LaneMover`**: `kind` through `CrowdAgent` → `lane().kind()` on its view.
+- **`MoveProposal`**: `from` → `stands_at()`; `open` → no method; `to` → `steps_to()`.
+- **`RunHeader`**: `day`, written → `reset()` does `day = 1`, `restore()` does `day =
+  int(data["…"])`; `player_is_male` → no method.
+- **`RunState`**: `calendar` → no method; `header` → no method.
+- **`SceneryGround`**: `chunks` → no method.
+- **`Stroller`**: `carrying`, written → no method; `facing`, written → `reset_at()` does `facing =
+  look.normalized()`.
+- **`Stroller.Pose`**: `gait_frame` → no method; `mirrored` → no method; `mother_sources` → no
+  method; `pram_offset` → no method; `pram_size` → no method; `view` → no method; `walk_phase` → no
+  method.
+- **`TouchControls`**: `rotated` → no method.
+- **`WorldMap`**: `moves` through `CityMap` → no method.
+
 ## Verified
 
 The nine suites pass, `tools/typing_census.py --check` holds, and no game file changed, so the

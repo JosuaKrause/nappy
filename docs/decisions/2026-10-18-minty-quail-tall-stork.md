@@ -25,6 +25,55 @@ the field itself. The frame recorder's and the frame trace's suites (`test_frame
 `test_frame_trace`) are not in this pass: the hand-in cut that rewrites the recorder and the trace
 takes them.
 
+## Fields read and written, by class
+
+Built with `tools/field_answers.py` at the pass's merge commit `3e007ceab`, over the `.gd` files
+under `tests/` its pull request changed, and each method read in its class and the classes it
+extends: each read with the public method that returns exactly that field, or "no method"; each
+write with every public method that assigns the field, and what it assigns.
+
+- **`AtlasLibrary`**: `trace_note`, written → no method.
+- **`CityMap`**: `block_plans` → `plans_by_block()`; `built_over` → `streets_built_over()`;
+  `built_over`, written → `record_built_over()` does `built_over[key] = rect`; `calm_blocks` →
+  `calm_blocks_now()`; `calm_blocks`, written → no method; `home_block`, written → no method;
+  `home_rect`, written → no method; `main_road` → `main_road_corridor()`; `precinct_spans` →
+  `precinct_stretches()`; `seed_used`, written → `generated_from()` does `seed_used = seed_value`;
+  `tiles` → `walk_tiles()`.
+- **`CityState`**: `trace`, written → `use_trace()` does `trace = sink`.
+- **`DayController`**: `exit_reached`, written → `start()` does `exit_reached = -1`;
+  `failure_reason`, written → `start()` does `failure_reason = "…"`, `tick()` does `failure_reason =
+  Texts.DAY_LOST_DUSK`; `spec` → no method; `time_remaining`, written → `start()` does
+  `time_remaining = length`, `tick()` does `time_remaining -= delta`.
+- **`DaySpec`**: `exits` → `exit_points()`; `section` → `section_kind()`.
+- **`EventDef`**: `duration` → no method; `hard_fail` → `ends_the_day()`; `notice` → no method;
+  `outer_radius` → `heard_within()`; `pursuit` → no method; `telegraph_time` → `telegraphs_for()`.
+- **`EventInstance`**: `age` → no method (`EventInstance.Figure.age()` returns it on a view no
+  public method hands out); `came_under_a_warning`, written → no method; `def` → `row()`;
+  `def.telegraph_time` → `telegraphs_for()`; `is_finished` → `is_gone()`; `is_leaving` →
+  `is_on_its_way_out()`.
+- **`EventScheduler.Planned`**: `def` → `row()`; `def.hard_fail` → `ends_the_day()`; `def.id` →
+  `row_id()`; `live` → `instance()`; `live`, written → no method; `path` → `walks()`; `position` →
+  `placed_at()`; `role` → no method; `role`, written → `give_role()` does `role = given`.
+- **`NoticeSpec`**: `runs_within` → no method.
+- **`PursuitSpec`**: `warns_for` → no method.
+- **`ResistanceRunState`**: `completed_steps` → no method; `failed_steps` → no method; `progress` →
+  no method; `progress`, written → `reset()` does `progress = 0`, `give_back()` does `progress =
+  _dawn_progress`, `restore()` does `progress = int(data["…"])`; `sabotage_done`, written →
+  `reset()` does `sabotage_done = false`, `give_back()` does `sabotage_done = _dawn_sabotage_done`,
+  `restore()` does `sabotage_done = bool(data["…"])`.
+- **`RunCalendar`**: `hard_mode`, written → `choose_mode()` does `hard_mode = hard`.
+- **`RunFacts`**: `escape_section`, written → `reset()` does `escape_section = 0`, `restore()` does
+  `escape_section = int(data.get("…", 0))`.
+- **`RunHeader`**: `day` → no method; `day`, written → `reset()` does `day = 1`, `restore()` does
+  `day = int(data["…"])`; `ending` → no method; `nerves` → no method; `nerves`, written → `reset()`
+  does `nerves = Tuning.STARTING_NERVES`, `restore()` does `nerves = int(data["…"])`.
+- **`RunState`**: `calendar` → no method; `facts` → no method; `header` → no method; `resistance` →
+  no method.
+- **`Stroller`**: `facing`, written → `reset_at()` does `facing = look.normalized()`.
+- **`TelemetryLog`**: `lines` → `recorded_lines()`, which returns a copy of it (the tool prints no
+  method).
+- **`WorldMap`**: `size` through `CityMap` → `size_in_tiles()`.
+
 ## Verified
 
 The six suites pass, `tools/typing_census.py --check` holds, and nothing a game file runs changed,
