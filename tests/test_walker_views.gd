@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The eight-sector heading selector (`EightDirection`) and its walker caller (`CrowdAgent`).
 ##
@@ -134,7 +133,7 @@ func _test_body_and_trim_can_never_disagree(t: TestRunner) -> void:
 	var body_views := WalkerLook.BODY_BY_VIEW.keys()
 	var trim_views := WalkerLook.TRIM_BY_VIEW.keys()
 	t.check(body_views.size() == trim_views.size(), "the walker family has as many trim views as body views")
-	for view in body_views:
+	for view: String in body_views:
 		t.check(WalkerLook.TRIM_BY_VIEW.has(view),
 				"every body view %s has a matching trim view" % view)
 		var body_region := StringName(WalkerLook.BODY_BY_VIEW[view])
@@ -287,7 +286,7 @@ func _test_walker_gait_b_tables_agree_with_a(t: TestRunner) -> void:
 	t.check(body_views_b.size() == WalkerLook.BODY_BY_VIEW.size()
 			and trim_views_b.size() == WalkerLook.TRIM_BY_VIEW.size(),
 			"the walker's gait-b family covers every view the gait-a family does")
-	for view in WalkerLook.BODY_BY_VIEW.keys():
+	for view: String in WalkerLook.BODY_BY_VIEW.keys():
 		t.check(WalkerLook.BODY_BY_VIEW_B.has(view),
 				"view %s has a gait-b body to match its gait-a body" % view)
 		t.check(WalkerLook.TRIM_BY_VIEW_B.has(view),

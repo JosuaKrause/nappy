@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## How a car gets round a corner.
 ##
@@ -111,7 +110,7 @@ func _test_the_turn_constants_hold_their_relationships(t: TestRunner) -> void:
 	var in_lane := CrowdLanes.lane_centre(0, CrowdLanes.road_lane(false, 1.0))
 	var near := 0.0
 	var far := 0.0
-	for turning in [1.0, -1.0]:
+	for turning: float in [1.0, -1.0]:
 		near = maxf(near, CarTurn.into_an_arm(false, 1.0, 0, in_lane, 0,
 				CrowdLanes.ROAD_OFFSETS[0], turning, Vector2i.ZERO).radius)
 		far = maxf(far, CarTurn.into_an_arm(false, 1.0, 0, in_lane, 0,
@@ -129,9 +128,9 @@ func _test_the_turn_constants_hold_their_relationships(t: TestRunner) -> void:
 ## every time: the path never jumped, the body never left the carriageway, it landed on the lane it
 ## was turning into and pointing along it, and it got there.
 func _test_a_car_turns_into_each_arm_from_every_approach(t: TestRunner) -> void:
-	for vertical in [true, false]:
-		for direction in [1.0, -1.0]:
-			for turning in [1.0, -1.0]:
+	for vertical: bool in [true, false]:
+		for direction: float in [1.0, -1.0]:
+			for turning: float in [1.0, -1.0]:
 				_one_arm(t, vertical, direction, turning)
 
 func _one_arm(t: TestRunner, vertical: bool, direction: float, turning: float) -> void:
@@ -165,8 +164,8 @@ func _one_arm(t: TestRunner, vertical: bool, direction: float, turning: float) -
 ## crossing street's own carriageway is the room a half turn needs, so this one is taken in the
 ## middle of the box and stays on the road for the whole of it.
 func _test_a_car_turns_round_when_every_arm_is_shut(t: TestRunner) -> void:
-	for vertical in [true, false]:
-		for direction in [1.0, -1.0]:
+	for vertical: bool in [true, false]:
+		for direction: float in [1.0, -1.0]:
 			_clear_the_holds()
 			_hold(_ahead_of(vertical, direction))
 			_hold(_arm(not vertical, 1.0))
@@ -280,7 +279,7 @@ func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t: TestRu
 	var here := floori((float(band * Tuning.TILE_SIZE) - 4.0 * float(Tuning.TILE_SIZE))
 			/ float(Tuning.TILE_SIZE))
 	var stubs: Array[Vector2i] = []
-	for step in [-2, 2]:
+	for step: int in [-2, 2]:
 		for lane in CrowdLanes.ROAD_OFFSETS:
 			stubs.append(Vector2i(_junction.x * CityMap.period() + lane, here + step))
 	_stand_a_body_on(stubs)
@@ -310,7 +309,8 @@ func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t: TestRu
 	t.check(_direction_of(car) == facing and car.lane_key() == lane_before and not turned,
 			"it keeps the heading and the lane it had, so nothing slides it across the carriageway")
 	t.check(swings < 1.0, "and it does not drift across its own street (%.1fpx in a frame)" % swings)
-	t.check(car.strategy.nowhere_to_turn, "the planner knows why, rather than the car merely being stuck")
+	t.check(car.lane().strategy().has_nowhere_to_turn(),
+			"the planner knows why, rather than the car merely being stuck")
 	# Guards against a scenario that proved nothing: the stub really was short at both ends.
 	t.check(band >= 0, "the rig had a junction band to build the stub against")
 
@@ -338,7 +338,7 @@ func _test_a_car_against_a_barrier_is_not_shunted_later(t: TestRunner) -> void:
 	var follower := _place_a_car(true, 1.0, -1, 0.0, past_the_barrier + 40.0)
 	var leader := _place_a_car(true, 1.0, -1, 0.0, past_the_barrier + 40.0 + 4.0 * Tuning.CAR_GAP_MIN)
 	leader.nudge_back(4.0 * Tuning.CAR_GAP_MIN - 20.0)
-	for car in [follower, leader]:
+	for car: CrowdAgent in [follower, leader]:
 		car.crashed_into()
 	_city.crowd.set_focus(follower.position)
 	_city.crowd.step(STEP)
@@ -520,7 +520,7 @@ func _test_a_turn_merges_into_a_lane_without_resetting_it(t: TestRunner) -> void
 			var follower := _nearest_behind(queue, turner.turn_landing())
 			if follower:
 				var to_the_booking := turner.turn_landing() - follower.queue_position()
-				room_made = room_made or absf(follower.gap_ahead - to_the_booking) < 0.5
+				room_made = room_made or absf(follower.lane().gap_ahead() - to_the_booking) < 0.5
 				came_for_the_spot = came_for_the_spot or to_the_booking < Tuning.CAR_GAP_MIN * 2.0
 		else:
 			landed = landed or turner.lane_key() == queue[0].lane_key()
@@ -603,8 +603,8 @@ func _test_two_cars_arriving_together_do_not_share_the_box(t: TestRunner) -> voi
 	# the scenario), then put level with the turner, so the box is decided rather than queued for.
 	var crossing := _place_a_car(false, 1.0, -1, 0.0,
 			float((_junction.x * CityMap.period() + Tuning.STREET_WIDTH + 4) * Tuning.TILE_SIZE))
-	crossing.position.x = float(_junction.x * CityMap.period() * Tuning.TILE_SIZE) \
-			- (float(_junction.y * CityMap.period() * Tuning.TILE_SIZE) - turner.position.y)
+	crossing.lane().be_placed_along(float(_junction.x * CityMap.period() * Tuning.TILE_SIZE) \
+			- (float(_junction.y * CityMap.period() * Tuning.TILE_SIZE) - turner.position.y))
 	var closest := INF
 	var turned := false
 	for frame in int(round(12.0 / STEP)):
@@ -631,7 +631,7 @@ func _test_a_turning_car_still_gives_way_at_a_zebra(t: TestRunner) -> void:
 	var on_the_paint := 0
 	for frame in int(round(6.0 / STEP)):
 		_city.crowd.set_focus(car.position)
-		car.pedestrian_ahead = waiting
+		car.lane().see_a_pedestrian_at(waiting)
 		_city.crowd.step(STEP)
 		if car.speed() < 1.0:
 			stopped = true
@@ -640,7 +640,7 @@ func _test_a_turning_car_still_gives_way_at_a_zebra(t: TestRunner) -> void:
 			on_the_paint += 1
 	t.check(stopped, "a car with a turn planned still stops for somebody at the zebra")
 	t.check(on_the_paint == 0, "and stops short of the paint rather than on it")
-	car.pedestrian_ahead = Vector2.INF
+	car.lane().see_no_pedestrian()
 	var watched := _watch(car, 8.0)
 	t.check(watched.turned and watched.finished, "then takes its turn once the crossing is clear")
 
@@ -659,7 +659,8 @@ func _test_a_red_light_still_holds_a_car_that_is_turning(t: TestRunner) -> void:
 	# whichever phase the scenarios before it happened to leave running.
 	var cycle := Tuning.signal_cycle_seconds()
 	for tick in int(round(cycle * 10.0)):
-		signals.elapsed = float(tick) * 0.1
+		signals.restart_cycle()
+		signals.advance(float(tick) * 0.1)
 		if signals.green_for(box, false):
 			break
 	var car := _place_a_car(true, 1.0, box.x)
@@ -883,8 +884,8 @@ func _plain_junction() -> Vector2i:
 	return Vector2i(-1, -1)
 
 func _all_four_arms_are_plain(junction: Vector2i) -> bool:
-	for vertical in [true, false]:
-		for direction in [1.0, -1.0]:
+	for vertical: bool in [true, false]:
+		for direction: float in [1.0, -1.0]:
 			var key := _key_of(junction, vertical, direction)
 			if not _city.map.has_street(key):
 				return false
@@ -892,7 +893,7 @@ func _all_four_arms_are_plain(junction: Vector2i) -> bool:
 			if _city.map.is_held(segment):
 				return false
 			var rect := segment.tile_rect()
-			for tile in [rect.position, rect.end - Vector2i.ONE]:
+			for tile: Vector2i in [rect.position, rect.end - Vector2i.ONE]:
 				if _city.map.street_kind_at(vertical, tile) != GameEnums.StreetKind.ORDINARY:
 					return false
 	# And the box itself is road rather than a park or a precinct's paving.
