@@ -1664,7 +1664,7 @@ func _test_no_pocket_between_two_vents_outlasts_the_noise(t: TestRunner) -> void
 		pairs += 1
 		var shut := _longest_both_shut(a, b, steam)
 		var half := a.placed_at().distance_to(b.placed_at()) * 0.5
-		var rate := 2.0 * Field.falloff(half, steam.intensity, steam.core_within(),
+		var rate := 2.0 * Field.falloff(half, steam.peak(), steam.core_within(),
 				steam.heard_within(), steam.falloff_power)
 		t.check(shut * rate < Tuning.METER_MAX,
 				("a pocket %.0fpx wide is shut at both ends for at most %.2fs at %.1f/s, "
