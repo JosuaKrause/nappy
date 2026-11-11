@@ -17,19 +17,25 @@ turns, give-way and traffic suites, is still to come.
   `kind()`, `strategy()` and `shape()` and the lane's questions for a door, a gate or a pedestrian
   ahead; the lane is told `see_a_pedestrian_at()`, `see_no_pedestrian()` and
   `find_no_junction_to_hold_at()`, a hut `stands_at()`, an arc `travel_on()` and a field
-  `centre_on()`, where each was written or read by field. `tools/check_field_reads.py` does not
+  `centre_on()`, where each was written or read by field. A field answers `half_extent()` and
+  `centre_point()`, a car's ground shape `spine_half_length()` and `rounding_radius()`, the traffic
+  lights are moved on by `advance()`, and a door hut's line is read through `place_of()`,
+  `committed()` and `waiting()`. `tools/check_field_reads.py` does not
   read tests, so the reads were found by search.
 
 ## Left, each with its reason
 
 - `crowd.sources`: `city.gd` and `run_session.gd` read the field too, and no method answers it.
 - `crowd.skip_motion`, written: the configuration seam `city.gd` writes.
-- A checkpoint hut's `inside` and `queue`: no game code reads them and no method answers them.
-- A field's `radius` and `centre`, read: `half_extent()` and `centre_point()` have no caller under
-  `src/`, so a test asking them would read a member only tests read.
+- A checkpoint hut's `inside`, compared with a walker: no method says who is inside.
+- The traffic lights' `elapsed`, read once to save it and written to set a departure time and to
+  restore it: `advance()` only adds and `restart_cycle()` only zeroes, so no method sets a chosen
+  time.
+- `radius`, written on a hand-built `CarTurn`: no method sets an arc's radius.
 - `agent.kind`, written on a hand-built agent: its setter installs the strategy, which is how one
   is built.
-- The events' `def.shape`, `piece.shape` and `plan.position`, which are the events' passes.
+- Other modules' fields, which are their own passes: the events' `def.shape`, `piece.shape`,
+  `plan.position` and `EventInstance.skip_draw`, `MoveProposal`'s, and the checkpoint gate state's.
 - `tests-one-module.md`'s crowd entry stays as written: `test_recipe_crowd`'s
   `Crowd.recipe_coverage` check is in another module's suite, and the events' answers in the crowd's
   suites move with the events.
