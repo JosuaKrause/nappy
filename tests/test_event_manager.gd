@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## EventManager against a real generated City.
 ##
@@ -408,7 +407,7 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t: TestRu
 	_start(day)
 	var after_city := _city.map.held_streets()
 
-	for key in alone:
+	for key: Vector3i in alone:
 		t.check(after_city.has(key),
 				"everything the manager's own fallback tree holds, City.start_day holds too")
 
@@ -550,6 +549,6 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 	if rig:
 		events.use_player(null)
 		rig.free()
-	for id in ["cyclist", "loose_dog"]:
+	for id: String in ["cyclist", "loose_dog"]:
 		t.check(checked.has(id), "'%s' is among the rows sent down her line (%s)"
 				% [id, ", ".join(checked)])

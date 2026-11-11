@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `RouteJunctionsRule`, `RouteSidewalkRule`, `PacingOpeningRule` and `RouteReachRule`, the four
 ## rules that keep the day's routes open, each asked of candidates on a generated city's routes. **Why these build a
@@ -131,8 +130,8 @@ func _test_a_ring_of_bodies_never_seals_home_off(t: TestRunner) -> void:
 	var reached_bare := grid.flood([home], _map.closed_tiles)
 	var kept: Array[EventScheduler.Planned] = []
 	var refused: Array[EventScheduler.Planned] = []
-	for radius in [3, 5, 7]:
-		for step in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
+	for radius: int in [3, 5, 7]:
+		for step: Vector2i in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
 				Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
 			var barricade := EventScheduler.Planned.new(EventCatalogue.by_id("barricade"),
 					_map.tile_to_world(home + step * radius))

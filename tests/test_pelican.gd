@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The pelican, drawn from one shared bag of 399 cyclists and 1 pelican per run *(minty-hedgehog,
 ## statement 8: "One in ~400 bikers should be a pelican riding a bicycle instead. Needs to be svg
@@ -280,7 +279,7 @@ func _test_a_pelican_rides_as_one_throughout(t: TestRunner) -> void:
 	t.check(not kid.is_pelican, "and the kid is still the kid")
 	var dog := events.spawn_warned(EventCatalogue.by_id("loose_dog"), _ride(), true)
 	t.check(not dog.is_pelican, "a loose dog sent the same way is never the pelican, whatever its roll")
-	for instance in [pelican, kid, dog]:
+	for instance: EventInstance in [pelican, kid, dog]:
 		events.retire(instance)
 
 ## The same ride, rolled both ways: the same row, the same field and the same lethal reach at every
@@ -300,7 +299,7 @@ func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t: TestRunner)
 	var same_field := true
 	var same_reach := true
 	var lethal_points := 0
-	for ring in [0.0, 20.0, 40.0, 60.0, 85.0, 120.0]:
+	for ring: float in [0.0, 20.0, 40.0, 60.0, 85.0, 120.0]:
 		for step in 8:
 			var at: Vector2 = kid.global_position + Vector2.from_angle(TAU * step / 8.0) * ring
 			if pelican.excitement.contribution_at(at) != kid.excitement.contribution_at(at):
@@ -317,7 +316,7 @@ func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t: TestRunner)
 	var kid_pictures := await _drawn_from(t, kid)
 	t.check(not pelican_pictures.is_empty() and not kid_pictures.is_empty()
 			and pelican_pictures != kid_pictures, "only the picture differs")
-	for instance in [pelican, kid]:
+	for instance: EventInstance in [pelican, kid]:
 		events.retire(instance)
 
 ## The pictures `instance` is drawn with on its own canvas once drawn frames have passed: what its
@@ -366,7 +365,8 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 		if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
 			break
 		her.y += Tuning.TILE_SIZE
-	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
+	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var stroller: Stroller = stroller_scene.instantiate()
 	t.add_child(stroller)
 	stroller.reset_at(her)
 	events.use_player(stroller)
