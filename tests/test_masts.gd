@@ -35,11 +35,11 @@ func _rng(day: int) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d" % [SEED, day])
 	return rng
 
-func _mast_plans(day: int) -> Array[EventScheduler.Planned]:
+func _mast_plans(day: int) -> Array[EventPlan]:
 	var consumed: Array[String] = []
 	var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
 			CalmAreas.of(_map), MastSites.compute(_map), consumed).placements()
-	var found: Array[EventScheduler.Planned] = []
+	var found: Array[EventPlan] = []
 	for plan in planned:
 		if plan.mast_id != "":
 			found.append(plan)
@@ -178,7 +178,7 @@ func _advance(seconds: float) -> void:
 	Engine.time_scale = clock
 	await _city.get_tree().physics_frame
 
-func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventScheduler.Planned:
+func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventPlan:
 	for plan in _city.events.plans():
 		if plan.mast_id == mast_id and plan.def.id == row_id:
 			return plan

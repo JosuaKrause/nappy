@@ -161,7 +161,7 @@ func _test_both_dog_families_draw_their_accepted_transfers(t: TestRunner) -> voi
 ## starts one): a day's planning is the planner's own work over a city, and what the lifetime
 ## tests ask is only what starting and clearing a walk does to the manager's hold on its page.
 func _start_a_day(manager: EventManager, day: int) -> void:
-	var none: Array[EventScheduler.Planned] = []
+	var none: Array[EventPlan] = []
 	manager.start_recipe(none, DaySpec.for_day(day), day, Vector2.ZERO)
 
 ## The event manager the lifetime tests watch: the real one, over a world of its own (a map of

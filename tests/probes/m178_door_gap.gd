@@ -70,7 +70,7 @@ func run(_t: TestRunner) -> void:
 ## `EventManager.start_day()`'s own call with a rig's empty run history: no scars, no settled calm,
 ## no heat, so the two halves of the comparison differ in the door argument and nothing else.
 func _plan_day(map: CityMap, day: int, tree: RouteTree,
-		doors: PackedVector2Array) -> Array[EventScheduler.Planned]:
+		doors: PackedVector2Array) -> Array[EventPlan]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = map.seed_used * 31 + day
 	var consumed: Array[String] = []
@@ -79,14 +79,14 @@ func _plan_day(map: CityMap, day: int, tree: RouteTree,
 	return EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map,
 			used_calm), MastSites.compute(map), consumed, scars, tree, 0, doors).placements()
 
-func _placed(plans: Array[EventScheduler.Planned]) -> int:
+func _placed(plans: Array[EventPlan]) -> int:
 	var total := 0
 	for plan in plans:
 		if plan.is_placed():
 			total += 1
 	return total
 
-func _inside(plans: Array[EventScheduler.Planned], doors: PackedVector2Array) -> int:
+func _inside(plans: Array[EventPlan], doors: PackedVector2Array) -> int:
 	var total := 0
 	for plan in plans:
 		if not plan.is_placed():

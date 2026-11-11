@@ -166,7 +166,7 @@ func _test_a_protest_stays_something_she_can_be_routed_through(t: TestRunner) ->
 func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corridor) -> int:
 	var no_doors := PackedVector2Array()
 	var calm := CalmAreas.of(map)
-	var nothing_down: Array[EventScheduler.Planned] = []
+	var nothing_down: Array[EventPlan] = []
 	var locations := DayLocations.lay_out(map, corridor)
 	for tile in EventScheduler.open_ground_for(def.for_day(day), map, {}):
 		var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile), 1,

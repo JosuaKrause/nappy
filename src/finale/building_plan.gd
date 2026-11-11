@@ -3,7 +3,7 @@ extends RefCounted
 ## **What the escape's building places, and where**: the building's own hand on the day's machinery.
 ## The player allows the building its own way of placing events and nothing else of its own
 ## (minty-lemur #785), so this is the whole of what is the building's: a list of plans
-## (`EventScheduler.Planned`), asked for by the day's planner when the walk is the building's
+## (`EventPlan`), asked for by the day's planner when the walk is the building's
 ## (`DayPlanner`), that the day's `EventManager` runs exactly as it runs any plan — streamed in, told
 ## where she is, summed into the meter, its catches ending the section with their cause — with the
 ## building's map under them (`InteriorMapPlan`).
@@ -48,8 +48,8 @@ const BURNING_SIDE := "left"
 const PURSUED_SIDE := "right"
 
 ## The building's plans, from `map` and `rng`, in the order they come into the world.
-static func plan(map: InteriorMapPlan, rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
-	var plans: Array[EventScheduler.Planned] = []
+static func plan(map: InteriorMapPlan, rng: RandomNumberGenerator) -> Array[EventPlan]:
+	var plans: Array[EventPlan] = []
 	_place_the_fire(map, plans)
 	_place_the_masked_man(map, plans)
 	_place_the_basement(map, rng, plans)
@@ -69,12 +69,12 @@ static func plan(map: InteriorMapPlan, rng: RandomNumberGenerator) -> Array[Even
 ## the way down it. One cell in it closes exactly the flight that approach leads onto, and every door
 ## in the shaft stays reachable: its reach is its own 30px body plus her 14px, and the door tile is
 ## 64px from the cell it stands on.
-static func _place_the_fire(map: InteriorMapPlan, plans: Array[EventScheduler.Planned]) -> void:
+static func _place_the_fire(map: InteriorMapPlan, plans: Array[EventPlan]) -> void:
 	var at := fire_tile(map)
 	if at == InteriorMapPlan.NOWHERE:
 		push_error("the second floor's approach in the %s shaft is not walkable" % BURNING_SIDE)
 		return
-	plans.append(EventScheduler.Planned.new(EventCatalogue.building_fire(), map.tile_to_world(at)))
+	plans.append(EventPlan.new(EventCatalogue.building_fire(), map.tile_to_world(at)))
 
 ## The tile the fire stands on, or `InteriorMapPlan.NOWHERE` where the second floor's approach in the
 ## burning shaft is not walkable. What a walker keeps off to take the way past it.
@@ -94,14 +94,14 @@ static func fire_tile(map: InteriorMapPlan) -> Vector2i:
 ## letting them pass"*: a shaft's walk never stands on a door's cell, so a door is always further
 ## from his line than the radius that takes the baby (`tests/test_interior.gd` measures the gap).
 static func _place_the_masked_man(map: InteriorMapPlan,
-		plans: Array[EventScheduler.Planned]) -> void:
+		plans: Array[EventPlan]) -> void:
 	var walk := map.stairwell_walk("stairwell_%s" % PURSUED_SIDE)
 	if walk.size() < 2:
 		return
 	var path := PackedVector2Array()
 	for tile in walk:
 		path.append(map.tile_to_world(tile))
-	plans.append(EventScheduler.Planned.new(EventCatalogue.by_id("masked_pursuer"), path[0], path))
+	plans.append(EventPlan.new(EventCatalogue.by_id("masked_pursuer"), path[0], path))
 
 ## The shaft's ground **below the first floor's landing**, where the masked man starts and runs the
 ## whole of it before he reaches the first floor: the cells of his walk from the foot up to, not
@@ -131,12 +131,12 @@ static func pursuer_ground_below_the_first_floor(map: InteriorMapPlan) -> Array[
 ## all, so a vent that is off costs nothing and stops nobody; its grate stays on the floor
 ## (`grates()`).
 static func _place_the_basement(map: InteriorMapPlan, rng: RandomNumberGenerator,
-		plans: Array[EventScheduler.Planned]) -> void:
+		plans: Array[EventPlan]) -> void:
 	var walk := map.basement_walk()
 	if walk.size() < 4:
 		return
 	var mouse_at: Vector2i = walk[walk.size() / 3]
-	plans.append(EventScheduler.Planned.new(EventCatalogue.by_id("alley_mouse"),
+	plans.append(EventPlan.new(EventCatalogue.by_id("alley_mouse"),
 			map.tile_to_world(mouse_at)))
 	# Spent to keep the stream where it has always been: the mouse's dash is its own short
 	# crossing indoors (`EventInstance._alley_crossing_path()`), with no alley to roll one from.
@@ -149,7 +149,7 @@ static func _place_the_basement(map: InteriorMapPlan, rng: RandomNumberGenerator
 		return
 	var steam := EventCatalogue.by_id("basement_steam")
 	for i in sites.size():
-		var vent := EventScheduler.Planned.new(steam, sites[i])
+		var vent := EventPlan.new(steam, sites[i])
 		vent.come_again_every(periods[i])
 		vent.come_first_in(periods[i] * float(i + 1) / float(sites.size()))
 		plans.append(vent)
@@ -157,9 +157,9 @@ static func _place_the_basement(map: InteriorMapPlan, rng: RandomNumberGenerator
 ## The explosions outside: every `EventCatalogue.FINALE_EXPLOSION_INTERVAL`, the first one interval in, the
 ## row's charge where she is with its notice over (`EventCatalogue.explosion_outside()`), and every
 ## window lit as it comes.
-static func _place_the_explosions_outside(plans: Array[EventScheduler.Planned]) -> void:
+static func _place_the_explosions_outside(plans: Array[EventPlan]) -> void:
 	var row := EventCatalogue.explosion_outside()
-	var bang := EventScheduler.Planned.new(row, Vector2.INF)
+	var bang := EventPlan.new(row, Vector2.INF)
 	bang.come_where_she_stands()
 	bang.come_first_in(row.comes_again_every())
 	bang.arrive_aged(row.telegraphs_for())

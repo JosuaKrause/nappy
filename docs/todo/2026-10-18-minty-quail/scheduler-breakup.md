@@ -19,8 +19,6 @@ holds today has a file of its own that can be read, tested and changed alone.
 it", inbox #1268 in olive-ferret); the file-by-file detail was worked out by the same review after the approval, and
 the line counts are its estimates. All under `src/events/`:
 
-- **`EventPlan`** (`event_plan.gd`): today's inner class `EventScheduler.Planned`, one placed
-  event's row, position, role and path, which 46 source files and most of the tests name.
 - **`DawnContext`** (`dawn_context.gd`): the one object every phase is handed, in place of the 13
   parameters: the spec, the day's seed with a stream per salt, the map, the walk (route tree or
   chains) and its corridor, the calm areas and the ground to leave alone, the doors, what stands,
@@ -43,17 +41,12 @@ Three blocks are not moved, because `placement-by-construction.md` deletes them 
 siting roll, the fitted tables, and the escape's own draw loop. The fallback that grows a route tree
 when none is handed in goes with the one in the day planner (`city-hand-ins.md`).
 
-**The pull requests, interleaved with placement:**
+**The pull requests, interleaved with placement.** Each move regenerates `tools/field_reads.txt`
+with `--write`: `--base` passes code reading listed fields moved into a new file with no more uses,
+and fails a read that is new; a read that only moved may add its line to the list (inbox #1350 in
+grassy-trout), and review reads a moving diff for the cases the check cannot count
+(minty-quail-breezy-bison).
 
-- **The rename of the plan record**, a pull request that is the scripted rename and nothing else,
-  with the script in its description so a branch merging main reruns it. No forwarder is kept for
-  the old name (inbox #852 in minty-dolphin). The plan is an inner class, so the field-read check
-  sees none of its fields today; once it is a class the check lists every reader of them, and the
-  pull request regenerates `tools/field_reads.txt` with `--write`. `--base` passes each added
-  line of a class lifted out of a file whole, and of the moves below, code reading listed fields
-  moved into a new file with no more uses, and fails a read that is new: a read that only moved
-  may add its line to the list (inbox #1350 in grassy-trout), and review reads a lifting diff for the cases the
-  check cannot count (minty-quail-breezy-bison).
 - **`PlanBuilder`**, a pure move, beside placement's route ground rule.
 - **`RowGround`**, after both: it is a seam, no pure move, since the object with its own per-day
   cache replaces the `ground: Dictionary` threaded through `StreetInvalidation`,

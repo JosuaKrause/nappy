@@ -46,9 +46,9 @@ func run(t: TestRunner) -> void:
 	_test_a_roadblock_leaves_no_section_within_its_spacing_offered(t)
 
 
-func _signature(planned: Array[EventScheduler.Planned]) -> String:
+func _signature(planned: Array[EventPlan]) -> String:
 	var parts: Array[String] = []
-	for plan: EventScheduler.Planned in planned:
+	for plan: EventPlan in planned:
 		parts.append("%s@%.1f,%.1f" % [plan.def.id, plan.position.x, plan.position.y])
 	return "|".join(parts)
 
@@ -93,7 +93,7 @@ func _test_scheduler_respects_placement_and_caps(t: TestRunner) -> void:
 	for day in range(1, 15):
 		var planned := _planned(day)
 		var counts := {}
-		for plan: EventScheduler.Planned in planned:
+		for plan: EventPlan in planned:
 			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
 			# An `AHEAD_OF_PLAYER` event has no tile: the day budgets it and the director sites
 			# it in front of the player later. The cap above still applies to it, which is the
@@ -577,7 +577,7 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t: TestRunner) -> 
 			% [share, kept, walls] + "for is %.2f" % DaySpec.GATEHOUSE_DAY_WALL_ROW_SHARE)
 
 ## The placed recurring wall-role rows of `plans` by row: `id -> [how many, the row's cap]`.
-static func _walls_by_row(plans: Array[EventScheduler.Planned]) -> Dictionary:
+static func _walls_by_row(plans: Array[EventPlan]) -> Dictionary:
 	var found := {}
 	for plan in plans:
 		if plan.role == GameEnums.BlockerRole.WALL and plan.is_placed() \
@@ -587,7 +587,7 @@ static func _walls_by_row(plans: Array[EventScheduler.Planned]) -> Dictionary:
 	return found
 
 ## How many of `plans` are placed recurring wall-role rows, the rows the bags weigh by the share.
-static func _walls_of(plans: Array[EventScheduler.Planned]) -> int:
+static func _walls_of(plans: Array[EventPlan]) -> int:
 	var count := 0
 	for plan in plans:
 		if plan.role == GameEnums.BlockerRole.WALL and plan.is_placed() \
@@ -649,7 +649,7 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t: TestRunner) -> void:
 	var corridor := Corridor.of(tree)
 	var told: Array[String] = []
 	var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, CalmAreas.of(map), MastSites.compute(map),
-			[] as Array[String], [] as Array[Dictionary], tree, 0, PackedVector2Array(), [] as Array[EventScheduler.Planned], RunTrace.recording(told),
+			[] as Array[String], [] as Array[Dictionary], tree, 0, PackedVector2Array(), [] as Array[EventPlan], RunTrace.recording(told),
 			EventCatalogue.by_id("roadblock"))
 	var stood: Array[Vector2i] = []
 	var counted := ""
@@ -666,7 +666,7 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t: TestRunner) -> void:
 		if plan.row_id() == "roadblock" and plan.is_placed():
 			by_tile[map.world_to_tile(plan.placed_at())] = plan
 	for tile in stood:
-		var plan: EventScheduler.Planned = by_tile.get(tile)
+		var plan: EventPlan = by_tile.get(tile)
 		var segment := map.network.segment_containing(tile)
 		t.check(plan != null and segment != null
 				and corridor.view_of(segment) == PlacementView.View.ROUTE_ADJACENT
@@ -713,7 +713,7 @@ func _test_a_roadblock_leaves_no_section_within_its_spacing_offered(t: TestRunne
 			true)
 	var sections := DayLocations.lay_out(map, corridor).sections_in(
 			PlacementView.View.ROUTE_ADJACENT)
-	var first: EventScheduler.Planned = null
+	var first: EventPlan = null
 	var before := {}
 	for section in sections:
 		var offered := judged.offer(section)
@@ -728,7 +728,7 @@ func _test_a_roadblock_leaves_no_section_within_its_spacing_offered(t: TestRunne
 		return
 	var near_before := 0
 	for section: Location in before:
-		var offered: EventScheduler.Planned = before[section]
+		var offered: EventPlan = before[section]
 		if offered != first and offered.gap_to(first) < EventScheduler.EVENT_SPACING_SAME:
 			near_before += 1
 	judged.stand(first)
@@ -807,20 +807,20 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 	map.close_streets(shut)
 	var grid := ReachabilityGrid.build(map)
 	# The body, across the middle of the first street only the clean area's walk uses.
-	var cutting: EventScheduler.Planned = null
+	var cutting: EventPlan = null
 	var clean_walk: Dictionary = walks["clean"]
 	var target_walk: Dictionary = walks["target"]
 	var spoiled_walk: Dictionary = walks["spoiled"]
 	for key: Vector3i in clean_walk:
 		if cutting == null and not target_walk.has(key) and not spoiled_walk.has(key):
 			var street: StreetNetwork.Segment = clean_walk[key]
-			cutting = EventScheduler.Planned.new(EventCatalogue.by_id(_CUTTING_BODY),
+			cutting = EventPlan.new(EventCatalogue.by_id(_CUTTING_BODY),
 					map.tile_rect_to_world(street.tile_rect()).get_center())
 	t.check(cutting != null, "the clean area has a street of its own to reach it by")
 	if cutting == null:
 		map.close_streets([])
 		return
-	var alone := EventScheduler.blocked_by(map, [cutting] as Array[EventScheduler.Planned])
+	var alone := EventScheduler.blocked_by(map, [cutting] as Array[EventPlan])
 	var reached_alone := grid.flood([map.home_rect.position], alone)
 	t.check(not grid.reaches(calm_tile.call(clean_block), alone, reached_alone)
 			and grid.reaches(calm_tile.call(spoiled_block), alone, reached_alone),
@@ -834,7 +834,7 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 	t.check(events.is_spoiled(spoiled_block),
 			"the area she used is spoiled, so the day has a spoiled area besides the clean one")
 	t.check(not events.is_spoiled(clean_block), "the area she has not used is clean")
-	var blockers: Array[EventScheduler.Planned] = []
+	var blockers: Array[EventPlan] = []
 	var stood_the_cut := false
 	var everything := events.placements()
 	everything.append_array(events.standing())
@@ -954,12 +954,12 @@ func _test_a_wall_body_holds_its_location_and_a_seal_none(t: TestRunner) -> void
 		return
 	var wall_tile := spots[0].tiles().get_center()
 	var seal_tile := spots[1].tiles().get_center()
-	var wall := EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"), map.tile_to_world(wall_tile))
+	var wall := EventPlan.new(EventCatalogue.by_id("roadblock"), map.tile_to_world(wall_tile))
 	wall.stand_in_the_wall()
-	var seal := EventScheduler.Planned.new(EventCatalogue.by_id("construction"),
+	var seal := EventPlan.new(EventCatalogue.by_id("construction"),
 			map.tile_to_world(seal_tile))
 	seal.stand_as_a_seal()
-	var standing: Array[EventScheduler.Planned] = [wall, seal]
+	var standing: Array[EventPlan] = [wall, seal]
 	var consumed: Array[String] = []
 	var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, CalmAreas.of(map),
 			_sites(), consumed, [], null, 0, PackedVector2Array(), standing)

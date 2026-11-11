@@ -157,7 +157,7 @@ func _where_she_stands(city: City, director: ResistanceDirector, day: int) -> Ar
 		if not city.map.is_walkable(city.map.world_to_tile(her)):
 			her += Vector2(0.0, Tuning.TILE_SIZE)
 		return [her]
-	var hut: EventScheduler.Planned = null
+	var hut: EventPlan = null
 	for body in city.streets().region_plan().door_bodies:
 		if body.def.redetains and body.position.distance_to(her) < 0.5:
 			hut = body

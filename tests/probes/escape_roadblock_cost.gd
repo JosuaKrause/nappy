@@ -36,10 +36,10 @@ func _measure(t: TestRunner, awake: bool) -> void:
 		var built := Rig.plan_for(seed_value)
 		var map: CityMap = built["map"]
 		var plan: FinalePlanner.Plan = built["plan"]
-		var placements: Array[EventScheduler.Planned] = built["placements"]
+		var placements: Array[EventPlan] = built["placements"]
 		for street: Array in Rig.roadblock_streets(map, plan, placements):
 			var segment: StreetNetwork.Segment = street[0]
-			var group: Array[EventScheduler.Planned] = []
+			var group: Array[EventPlan] = []
 			group.assign(street[1])
 			var line := Rig.her_line(t, map, segment, group)
 			if line.is_empty():

@@ -28,15 +28,15 @@ func clear() -> void:
 
 ## Which planned events have already summoned the row their own `aftermath.on_sight` names, so a
 ## `burning_building` streamed out and back in — a fresh `EventInstance` every time, unlike the
-## `Planned` it comes from, see `EventStreaming.stream_in()` — does not hand out a second fire engine. Keyed by
-## `Planned` rather than by instance for exactly that reason, and cleared with the rest of the
+## `EventPlan` it comes from, see `EventStreaming.stream_in()` — does not hand out a second fire engine. Keyed by
+## `EventPlan` rather than by instance for exactly that reason, and cleared with the rest of the
 ## day in `clear()`.
 var _sighted: Dictionary = {}
 
 ## Which planned events have already told `EventBus.event_sighted` they were seen — kept apart from
 ## `_sighted` above because that one only marks a *successful* summon and keeps retrying every frame
 ## until it gets one, while a sighting itself happens on the first on-screen frame regardless of
-## whether the warning for the engine it summons can be put up. Keyed by `Planned`, cleared with the
+## whether the warning for the engine it summons can be put up. Keyed by `EventPlan`, cleared with the
 ## rest of the day in `clear()`.
 var _sight_reported: Dictionary = {}
 
@@ -46,7 +46,7 @@ var _sight_reported: Dictionary = {}
 # necessarily force a turn around but at least avoid the solid")*. `CityMap.obstructed_tiles` is
 # the record and says which bodies it deliberately leaves out; this is the whole of what fills it.
 #
-# **Two identities record the same footprint and both give it back.** A `Planned` records its body
+# **Two identities record the same footprint and both give it back.** A `EventPlan` records its body
 # at dawn, because the crowd runs across the whole map and a body is a body whether or not the
 # player has come near enough for it to exist yet; the `EventInstance` records the same tiles again
 # while it is live, because a body placed later in the day — a successor left where a fire burnt
@@ -64,7 +64,7 @@ func record_the_body(owner: int, def: EventDef, at: Vector2, facing: Vector2) ->
 ## door body, or a row with no body at all.
 ##
 ## **The placement and the axis are read back out of `EventInstance`'s own statics rather than
-## worked out again here.** Where a body actually stands is not `Planned.position`: a stationary,
+## worked out again here.** Where a body actually stands is not `EventPlan.position`: a stationary,
 ## unpinned body is shifted onto the middle of its pavement band, and a segment body lies along
 ## whichever axis the street it stands on gives it. Both are decided in exactly one place, and a
 ## second copy of that arithmetic would agree with it right up to the first time one of the two
@@ -354,7 +354,7 @@ static func as_warned(def: EventDef) -> EventDef:
 ## Whether a live instance whose def names an `aftermath.on_sight` has been seen yet, and if it just
 ## has, creates the row it names entering along its own street. Run every frame there is a
 ## player, as `EventsAhead.place_what_is_owed_ahead()` is.
-func summon_what_has_been_sighted(plans: Array[EventScheduler.Planned]) -> void:
+func summon_what_has_been_sighted(plans: Array[EventPlan]) -> void:
 	for plan in plans:
 		if not plan.live or plan.def.aftermath.on_sight == "" or _sighted.get(plan, false):
 			continue
@@ -385,7 +385,7 @@ func summon_what_has_been_sighted(plans: Array[EventScheduler.Planned]) -> void:
 ## (`_where_the_summoned_row_stops()`), where it parks. A warning withdrawn for want of road out of
 ## sight is summoned again (`PendingWarning.on_withdrawn`).
 func _summon_the_sighted_row(source: EventDef, at: Vector2,
-		sighted_by: EventScheduler.Planned = null) -> bool:
+		sighted_by: EventPlan = null) -> bool:
 	var summoned := EventCatalogue.by_id(source.aftermath.on_sight)
 	if not summoned:
 		push_error("event '%s' summons unknown '%s' on sight" % [source.id, source.aftermath.on_sight])

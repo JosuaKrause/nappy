@@ -192,7 +192,7 @@ var _trail: Array[Vector3] = []
 var _trail_last := Vector2.ZERO
 
 ## Which planned events she actually met today — came within the field she can feel
-## (`Planned.field_reaches()`) — keyed by the `EventScheduler.Planned` itself so the dusk map can
+## (`EventPlan.field_reaches()`) — keyed by the `EventPlan` itself so the dusk map can
 ## ask "was this one of them" with no second identifier to keep in sync with the plan list it is
 ## already drawing. See `_watch_met_events`.
 var _met_events := {}
@@ -1069,7 +1069,7 @@ func _watch_the_trail(here: Vector2) -> void:
 	_trail_last = here
 
 ## Which planned events she actually met — came within the field she can actually feel
-## (`Planned.field_reaches()`), rather than merely close enough for
+## (`EventPlan.field_reaches()`), rather than merely close enough for
 ## `EventManager.stream_around` to have loaded them into the world at
 ## `Tuning.EVENT_STREAM_RADIUS` (900px, more than twice the field of a typical row).
 ## `plan.was_live` answers the looser, streaming question; the dusk map wants the one that says
@@ -1081,7 +1081,7 @@ func _watch_the_trail(here: Vector2) -> void:
 func _watch_met_events(here: Vector2) -> void:
 	if not _map:
 		return
-	for plan: EventScheduler.Planned in _events.plans():
+	for plan: EventPlan in _events.plans():
 		if _met_events.has(plan) or not plan.is_placed() or not plan.is_in_the_world():
 			continue
 		if plan.field_reaches(here):

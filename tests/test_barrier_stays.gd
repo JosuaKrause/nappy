@@ -35,7 +35,7 @@ func _hot_roadblock() -> EventDef:
 func _chasing(t: TestRunner, post: Vector2, atlas: AtlasLibrary = null) -> Array:
 	var hot := _hot_roadblock()
 	var stage := RoadblockRig.Stage.new(t, WorldMap.open_ground(), atlas)
-	var guard := stage.stand(EventScheduler.Planned.new(hot, post))
+	var guard := stage.stand(EventPlan.new(hot, post))
 	await RoadblockRig.settle(t)
 	var where := stage.manager.world.where_she_is()
 	var her := post + Vector2(0.0, hot.notice_within() - 10.0)
@@ -292,7 +292,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	EventBus.pursuit_caught.connect(listen[2])
 	EventBus.pursuit_ended.connect(listen[3])
 	EventBus.pursuit_cut_short.connect(listen[4])
-	var plan := EventScheduler.Planned.new(_hot_roadblock(), post)
+	var plan := EventPlan.new(_hot_roadblock(), post)
 	city.events.streaming.add(plan)
 	city.events.streaming.stream_in(plan)
 	var guard: EventInstance = plan.live
@@ -362,7 +362,7 @@ func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t: TestRunner
 	var map: CityMap = RoadblockRig.plan_for(4242)["map"]
 	var post := Vector2(2128.0, 80.0)
 	var stage := RoadblockRig.Stage.new(t, map)
-	var guard := stage.stand(EventScheduler.Planned.new(_hot_roadblock(), post))
+	var guard := stage.stand(EventPlan.new(_hot_roadblock(), post))
 	var body := guard.body_position()
 	t.check(map.is_obstructed(map.world_to_tile(body)), "the band's body is on the map's record")
 	var near := _open_ground_either_side(map, body)
@@ -382,7 +382,7 @@ func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t: TestRunner
 	t.check(guard.clear_line_to(far),
 			"and sees her on the band's far side across his own band's body")
 	# A body of another band in the line still hides her: a second band stands beyond her.
-	var second := stage.stand(EventScheduler.Planned.new(_hot_roadblock(),
+	var second := stage.stand(EventPlan.new(_hot_roadblock(),
 			body + (far - body) * 2.0))
 	t.check(second.body_position().distance_to(body) > 150.0
 			and not guard.clear_line_to(body + (far - body) * 2.6),
@@ -420,7 +420,7 @@ func _test_his_catch_does_not_reach_through_his_own_band(t: TestRunner) -> void:
 	var arms := def.pursuit.catch_reach
 	def.pursuit.catch_reach = 90.0
 	var stage := RoadblockRig.Stage.new(t, map)
-	var guard := stage.stand(EventScheduler.Planned.new(def, Vector2(2128.0, 80.0)))
+	var guard := stage.stand(EventPlan.new(def, Vector2(2128.0, 80.0)))
 	var body := guard.body_position()
 	var near := _open_ground_either_side(map, body)
 	t.check(near != Vector2.INF, "there is open ground either side of the band")

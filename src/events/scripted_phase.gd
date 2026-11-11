@@ -24,7 +24,7 @@ func _init(locations: DayLocations, ground: LocationGround, weigh: Callable) -> 
 
 ## **`def`'s placement for the day, drawn on `rng`**, standing in and assigned to its location, or
 ## null where no open location takes it.
-func place(def: EventDef, rng: RandomNumberGenerator) -> EventScheduler.Planned:
+func place(def: EventDef, rng: RandomNumberGenerator) -> EventPlan:
 	var pool: Array[Location] = []
 	var weights: Array[float] = []
 	for location in _locations.open_locations():

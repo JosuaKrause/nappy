@@ -35,8 +35,8 @@ static func spec() -> DaySpec:
 	return DaySpec.for_section(DaySpec.Section.BUILDING, RunConfig.FINALE_LENGTH_SECONDS)
 
 ## The basement's vents: the steam plans, in the order she meets them.
-static func vents(events: EventManager) -> Array[EventScheduler.Planned]:
-	var found: Array[EventScheduler.Planned] = []
+static func vents(events: EventManager) -> Array[EventPlan]:
+	var found: Array[EventPlan] = []
 	for plan in events.plans():
 		if plan.def.id == "basement_steam":
 			found.append(plan)

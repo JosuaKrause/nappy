@@ -215,7 +215,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 	# `checkpoint_gate` (the boom over the road) and `checkpoint_post` (an alley mouth) are
 	# skipped: the hut is the picture, standing on the pavement rather than the carriageway.
 	if target.begins_with("door"):
-		var huts: Array[EventScheduler.Planned] = []
+		var huts: Array[EventPlan] = []
 		var plan := city.streets().region_plan()
 		if plan:
 			for body in plan.door_bodies:
@@ -226,7 +226,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 					% [header.day, Tuning.REGION_WALL_FIRST_DAY])
 			return city.map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, huts.size() - 1)
-		var hut: EventScheduler.Planned = huts[which]
+		var hut: EventPlan = huts[which]
 		return _nearest_walkable(city.map, hut.position - hut.facing * Tuning.TILE_SIZE * 4.0)
 
 	var wanted: int = {

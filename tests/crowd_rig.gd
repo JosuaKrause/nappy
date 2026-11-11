@@ -1583,8 +1583,8 @@ func _check_a_walker_finds_a_hut_across_a_bucket_edge(t: TestRunner, lane: Dicti
 	var side := "just below the edge" if lane["centre"] < edge else "just above the edge"
 	var along := 8.0 * Tuning.TILE_SIZE
 	var hut_def := EventCatalogue.by_id("checkpoint_hut")
-	var below := EventScheduler.Planned.new(hut_def, Vector2(edge - 16.0, along + 50.0))
-	var above := EventScheduler.Planned.new(hut_def, Vector2(edge + 16.0, along + 50.0))
+	var below := EventPlan.new(hut_def, Vector2(edge - 16.0, along + 50.0))
+	var above := EventPlan.new(hut_def, Vector2(edge + 16.0, along + 50.0))
 	var own := below if lane["centre"] < edge else above
 	var across := above if lane["centre"] < edge else below
 	var cases: Array[Dictionary] = [
@@ -1605,7 +1605,7 @@ func _check_a_walker_finds_a_hut_across_a_bucket_edge(t: TestRunner, lane: Dicti
 				lane["corridor"], lane["offset"], along, 1.0, true, CrowdLanes.SIDEWALK_OFFSETS, -1.0,
 				_rig.seed_for_door_answer(WalkerStrategy.DoorAnswer.PASSES))
 		await PhysicsTicks.pass_ticks(t, 1)
-		var wanted: EventScheduler.Planned = case["found"]
+		var wanted: EventPlan = case["found"]
 		var hut := walker.lane().door_ahead()
 		t.check(hut != null and hut.stands_at() == wanted.position,
 				"%s, %s (found %s, wanted %s)" % [case["says"], side,

@@ -3,15 +3,15 @@ extends RefCounted
 ## reaches a calm area's rect is refused, one standing clear of it is allowed, and a rule handed no
 ## calm ground allows anything. Candidates built by hand from a catalogue row; no map, no city.
 
-const PLACED: Array[EventScheduler.Planned] = []
+const PLACED: Array[EventPlan] = []
 
 func run(t: TestRunner) -> void:
 	var cafe := EventCatalogue.by_id("cafe_tables")
 	var calm := Rect2(Vector2(1000, 1000), Vector2(256, 256))
 	var rule := UnusedCalmRule.new([calm] as Array[Rect2])
 	var reach := cafe.field_reach()
-	var inside := EventScheduler.Planned.new(cafe, calm.position - Vector2(reach * 0.5, 0.0))
-	var clear := EventScheduler.Planned.new(cafe, calm.position - Vector2(reach + 64.0, 0.0))
+	var inside := EventPlan.new(cafe, calm.position - Vector2(reach * 0.5, 0.0))
+	var clear := EventPlan.new(cafe, calm.position - Vector2(reach + 64.0, 0.0))
 	t.check(reach > 0.0, "the cafe has a field to reach with (%.0fpx)" % reach)
 	t.check(not rule.allows(inside, Vector2i.ZERO, PLACED, PLACED),
 			"a cafe whose field reaches the calm she has not used is refused")

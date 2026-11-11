@@ -522,7 +522,7 @@ func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunn
 ## `SceneRecipeRuntime` calls): nothing planned and nothing sited ahead of her, while warnings keep
 ## their production behavior.
 func _quiet_day(events: EventManager) -> void:
-	var nothing: Array[EventScheduler.Planned] = []
+	var nothing: Array[EventPlan] = []
 	events.start_recipe(nothing, DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), Tuning.RUN_TAUGHT_DAY,
 			Vector2.ZERO)
 

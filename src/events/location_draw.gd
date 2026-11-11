@@ -38,8 +38,8 @@ func _init(locations: DayLocations, bags: Dictionary, rows: Dictionary, ground: 
 
 ## **Draws every open location**, its order shuffled within each street on `rng`, and answers the
 ## events placed, in the order drawn, a row handed to her walk among them with no position.
-func draw_all(rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
-	var placed: Array[EventScheduler.Planned] = []
+func draw_all(rng: RandomNumberGenerator) -> Array[EventPlan]:
+	var placed: Array[EventPlan] = []
 	for location in _locations.drawing_order(rng):
 		if not location.is_available() or location.is_taken() or location.is_drawn():
 			continue
@@ -52,7 +52,7 @@ func draw_all(rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
 	return placed
 
 ## One location's draw: the event placed, or null for the empty event.
-func _draw(location: Location) -> EventScheduler.Planned:
+func _draw(location: Location) -> EventPlan:
 	var bag: ViewBag = _bags.get(location.view())
 	if bag == null:
 		return null
@@ -72,7 +72,7 @@ func _draw(location: Location) -> EventScheduler.Planned:
 ## `plan` as its location holds it: a row handed to her walk (`EventDef.is_handed_to_her_walk()`,
 ## the poster crew) with no position (`EventScheduler.owed_to_her_walk()`), for her walk to site;
 ## any other plan, and the empty event, as drawn.
-static func _as_drawn(plan: EventScheduler.Planned) -> EventScheduler.Planned:
+static func _as_drawn(plan: EventPlan) -> EventPlan:
 	if plan and plan.row().is_handed_to_her_walk():
 		return EventScheduler.owed_to_her_walk(plan)
 	return plan

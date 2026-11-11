@@ -337,8 +337,8 @@ class RefusingSiting extends EventScheduler.WalkSiting:
 
 	## Overrides EventScheduler.WalkSiting.ahead_of.
 	func ahead_of(def: EventDef, _rng: RandomNumberGenerator,
-			_besides: EventScheduler.Planned, _at: Vector2, _heading: Vector2,
-			_near: float, _far: float) -> EventScheduler.Planned:
+			_besides: EventPlan, _at: Vector2, _heading: Vector2,
+			_near: float, _far: float) -> EventPlan:
 		if def.id == "loudspeaker":
 			asked += 1
 		return null
@@ -465,7 +465,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	var direction := 1
 	player.global_position = path[0]
 	var handed := 0
-	var placed: Array[EventScheduler.Planned] = []
+	var placed: Array[EventPlan] = []
 	var her_at_siting := Vector2.INF
 	var heading_at_siting := Vector2.ZERO
 	var walked := 0.0
@@ -488,7 +488,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 		city.events.ahead.place_what_is_owed_ahead(STEP)
 		if city.events.owed_ahead() < owed_before:
 			handed += 1
-		for plan: EventScheduler.Planned in city.events.plans().slice(plans_before):
+		for plan: EventPlan in city.events.plans().slice(plans_before):
 			if plan.def.id == row:
 				placed.append(plan)
 				her_at_siting = player.global_position

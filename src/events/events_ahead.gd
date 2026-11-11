@@ -297,7 +297,7 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 ## `EventStreaming.silence_mast()`, counts for `EventStreaming.silence_all_masts()`, and once
 ## silenced stands silenced on later days from its scar (`EventScheduler._place_masts()`). Null when no offered tile passes, which leaves day 11 to the
 ## nearest live mast, or, when no live mast stands at all, with nowhere to go.
-func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventScheduler.Planned:
+func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventPlan:
 	if offered.is_empty():
 		return null
 	var def := EventCatalogue.heated(EventCatalogue.mast(),
@@ -323,7 +323,7 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 ## taken out of the world with its body given back, the roadblock put in the world at once and kept
 ## there for the rest of the day (`EventStreaming.swap_section()`), since the task's contact rides
 ## it. Answers its live instance, or null where the walk has no locations.
-func swap_in_a_section(section: Location, plan: EventScheduler.Planned) -> EventInstance:
+func swap_in_a_section(section: Location, plan: EventPlan) -> EventInstance:
 	var locations := _walk.locations()
 	if not section or not plan or not locations:
 		return null
@@ -387,7 +387,7 @@ func place_what_is_owed_ahead(delta: float) -> void:
 ## (`EventDirector._place_on_her_route()`, then `EventDirector.site_what_is_on_her_way()`). It joins
 ## the day's plan with the bookkeeping a dawn placement had: its body recorded per tile, the way
 ## `queue_a_mast()` records a mast's, and it streams in like any planned row once she walks on.
-func _put_down_on_her_route(plan: EventScheduler.Planned, body: Node2D) -> void:
+func _put_down_on_her_route(plan: EventPlan, body: Node2D) -> void:
 	# A mast is a mast like the one `queue_a_mast()` adds: it broadcasts on the one clock, is
 	# silenced by `EventStreaming.silence_mast()` and counts for
 	# `EventStreaming.silence_all_masts()`.

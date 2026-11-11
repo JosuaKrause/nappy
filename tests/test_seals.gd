@@ -88,7 +88,7 @@ func _tree_for(map: CityMap, day: int) -> RouteTree:
 		_tree_cache[key] = RouteTree.for_day(map, day)
 	return _tree_cache[key]
 
-func _seals_for(map: CityMap, day: int) -> Array[EventScheduler.Planned]:
+func _seals_for(map: CityMap, day: int) -> Array[EventPlan]:
 	var key := "%d:%d" % [map.seed_used, day]
 	if not _seal_cache.has(key):
 		var tree := _tree_for(map, day)
@@ -113,7 +113,7 @@ func _candidate_segments(map: CityMap, tree: RouteTree,
 
 ## Every street a plan's position actually resolves to. A plan whose position is not on any
 ## street — an alley mouth — contributes nothing here on purpose; see `_sealed_alley_tiles`.
-func _sealed_segments(map: CityMap, planned: Array[EventScheduler.Planned]) -> Dictionary:
+func _sealed_segments(map: CityMap, planned: Array[EventPlan]) -> Dictionary:
 	var found := {}
 	for plan in planned:
 		var segment := map.network.segment_containing(map.world_to_tile(plan.position))
@@ -827,7 +827,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 				boundary[rect.position] = true
 			var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day), boundary,
 					map.held_streets())
-			var standing: Array[EventScheduler.Planned] = []
+			var standing: Array[EventPlan] = []
 			standing.append_array(seals)
 			standing.append_array(region_plan.wall_bodies)
 
@@ -845,16 +845,16 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 			# seals and the wall — everything `standing` stands for plus everything `build_day`
 			# placed with it in view — of which what counts against a line is what a crossing's
 			# ground is taken by.
-			var everything: Array[EventScheduler.Planned] = rows.duplicate()
+			var everything: Array[EventPlan] = rows.duplicate()
 			everything.append_array(standing)
-			var counted: Array[EventScheduler.Planned] = []
-			for plan: EventScheduler.Planned in everything:
+			var counted: Array[EventPlan] = []
+			for plan: EventPlan in everything:
 				if plan.counts_against_the_line():
 					counted.append(plan)
 			for junction in corridor.route_junctions():
 				var box := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
 				var world := map.tile_rect_to_world(box)
-				var here: Array[EventScheduler.Planned] = []
+				var here: Array[EventPlan] = []
 				var a_row_reaches := false
 				for plan in counted:
 					if plan.distance_from(world.get_center()) \
@@ -875,7 +875,7 @@ func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 			% checked)
 
 ## The ids of the rows in `rows`, for a failure message.
-func _ids_of(rows: Array[EventScheduler.Planned]) -> String:
+func _ids_of(rows: Array[EventPlan]) -> String:
 	var ids := {}
 	for plan in rows:
 		ids[plan.def.id] = true
@@ -891,7 +891,7 @@ func _ids_of(rows: Array[EventScheduler.Planned]) -> String:
 ## a corner cut off from the streets, and a box whose two arms are each free is not a crossing if
 ## nothing joins them, which is why this is a flood fill rather than a count.
 func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vector2i, box: Rect2i,
-		rows: Array[EventScheduler.Planned]) -> bool:
+		rows: Array[EventPlan]) -> bool:
 	var free := {}
 	for y in range(box.position.y, box.end.y):
 		for x in range(box.position.x, box.end.x):
