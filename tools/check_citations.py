@@ -29,7 +29,9 @@ and `inbox #N in name` are read outside code spans only, so an example in backti
 A parenthesised citation is a parenthesis whose content, or one `;`-separated part of it, starts
 with a hyphenated name, an optional number and nothing else but, after a comma, free text:
 `(woolly-penguin #759)`, `(PLAYTEST-145; olive-hedgehog #598)`, `(woolly-penguin #999, the rule)`
-(checked: #999 is flagged). So a hyphenated word alone in parentheses that names no file is
+(checked: #999 is flagged). Every further citation in the part is checked too, after a comma, `, and`
+or `and`: `(woolly-finch 35, woolly-finch 36)`, `(woolly-finch 35 and brisk-heron 1)`.
+So a hyphenated word alone in parentheses that names no file is
 flagged too; reword it, or put `<!-- lint-allow -->` on its line.
 
 Run by the host's own `python3` from tools/lint.sh, before CI installs uv, so it stays
@@ -55,7 +57,9 @@ PAREN = re.compile(r"\(([^()]*)\)")
 NAME = r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+"
 NOTES = r"#\d+(?:, #\d+)*"
 NUMBERS = r"\d+(?:[-\u2013]\d+)?(?:, \d+(?:[-\u2013]\d+)?)*"
-CITATION = re.compile(rf"^({NAME})(?: ({NOTES}|{NUMBERS}))?(?:, .*)?$", re.DOTALL)
+SPEC = rf"(?: ({NOTES}|{NUMBERS}))?"
+FURTHER = re.compile(rf"(?:, and |, | and )({NAME}){SPEC}(?=, | and |$)")
+CITATION = re.compile(rf"^({NAME}){SPEC}(?=, |$| and (?:{NAME}){SPEC}(?:, | and |$))")
 INBOX_IN = re.compile(rf"\binbox (#\d+(?:(?:, and |, | and )#\d+)*) in ({NAME})\b")
 NOTE_HEADING = re.compile(r"^##[ \t]+#(\d+)\b", re.MULTILINE)
 NUMBER_HEADING = re.compile(r"^#{2,3}[ \t]+(?:Finding |Statement )?(\d+)\b(?![-/])", re.MULTILINE)
@@ -138,30 +142,35 @@ def check_text(rel: str, text: str, pool: dict[str, list[Path]], root: Path) -> 
             if number not in target.notes:
                 hit(match.start(), f"(inbox #{number} in {match.group(2)}): it has no `## #{number}` heading")
 
+    def cite(offset: int, name: str, spec: str | None) -> None:
+        target = one(offset, name)
+        if target is None:
+            return
+        where = target.path.relative_to(root).as_posix()
+        if spec is None:
+            if target.several():
+                form = "#N" if target.notes else "the statement's number"
+                hit(offset, f"({name}): {where} has several statements, cite one with {form}")
+        elif spec.startswith("#"):
+            for number in re.findall(r"#(\d+)", spec):
+                if number not in target.notes:
+                    hit(offset, f"({name} #{number}): {where} has no `## #{number}` heading")
+        elif target.notes:
+            hit(offset, f"({name} {spec}): {where} has `## #N` headings, cite the note as #N")
+        else:
+            for number in numbers_in(spec):
+                if number not in target.numbers:
+                    hit(offset, f"({name} {spec}): {where} has no statement {number}")
+
     for match in PAREN.finditer(prose):
         for part in match.group(1).split(";"):
-            citation = CITATION.match(re.sub(r"\s+", " ", part).strip())
+            text_part = re.sub(r"\s+", " ", part).strip()
+            citation = CITATION.match(text_part)
             if citation is None:
                 continue
-            name, spec = citation.group(1), citation.group(2)
-            target = one(match.start(), name)
-            if target is None:
-                continue
-            where = target.path.relative_to(root).as_posix()
-            if spec is None:
-                if target.several():
-                    form = "#N" if target.notes else "the statement's number"
-                    hit(match.start(), f"({name}): {where} has several statements, cite one with {form}")
-            elif spec.startswith("#"):
-                for number in re.findall(r"#(\d+)", spec):
-                    if number not in target.notes:
-                        hit(match.start(), f"({name} #{number}): {where} has no `## #{number}` heading")
-            elif target.notes:
-                hit(match.start(), f"({name} {spec}): {where} has `## #N` headings, cite the note as #N")
-            else:
-                for number in numbers_in(spec):
-                    if number not in target.numbers:
-                        hit(match.start(), f"({name} {spec}): {where} has no statement {number}")
+            cite(match.start(), citation.group(1), citation.group(2))
+            for further in FURTHER.finditer(text_part, citation.end()):
+                cite(match.start(), further.group(1), further.group(2))
     return hits
 
 

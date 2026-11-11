@@ -118,6 +118,22 @@ class CheckCitationsTests(unittest.TestCase):
 
     def test_text_after_a_comma_does_not_hide_the_citation(self) -> None:
         self.flagged("A rule (woolly-penguin #999, the rule).\n", "has no `## #999` heading")
+
+    def test_a_wrong_second_citation_is_flagged_after_each_separator(self) -> None:
+        # Mutation: reading only the first citation of a part (the old `(?:, .*)?$` tail) passes all four.
+        self.flagged("A rule (woolly-penguin #759, woolly-penguin #999).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (PLAYTEST-16 7, PLAYTEST-16 8).\n", "has no statement 8")
+        self.flagged("A rule (PLAYTEST-16 7, and brisk-heron 5).\n", "(brisk-heron 5)")
+        self.flagged("A rule (PLAYTEST-16 7 and woolly-pengiun #759).\n", "(woolly-pengiun) names no file")
+        self.flagged("A rule (PLAYTEST-16 7; woolly-penguin #759, woolly-penguin #999).\n", "(woolly-penguin #999)")
+
+    def test_second_citations_that_resolve_pass(self) -> None:
+        # Mutation: treating every word after a comma or "and" as a citation flags the free text here.
+        self.skill(
+            "A rule (woolly-penguin #759, woolly-penguin #758; PLAYTEST-16 7, and brisk-heron 1, 13).\n"
+            "Free text (polite-marten, a well-known rule and a long-standing one).\n"
+        )
+        self.assertEqual(self.run_check()[0], 0)
         self.flagged("A rule (PLAYTEST-16, finding 7).\n", "cite one with the statement's number")
 
     def test_an_inbox_citation_names_a_playtest_holding_the_note(self) -> None:
