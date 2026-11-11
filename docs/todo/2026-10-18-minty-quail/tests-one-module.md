@@ -36,9 +36,7 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
 2. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
    (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
    events;
-3. atlas and scenery: the dawn half of the check that dawn and relocation do not replace a
-   building's lasting collision, which `test_scenery_residency` held through `City.start_day()`,
-   is the city scene's suite's to hold; `test_events_scenery` waits for the events;
+3. atlas and scenery: `test_events_scenery` waits for the events;
 4. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
    and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
    what it reads from the city (its map, streets, events and poster walls) instead of the whole
