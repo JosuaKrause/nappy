@@ -111,7 +111,9 @@ func other() -> int:
 	return 1
 """
 PART = "class_name Part\nextends RefCounted\nvar count := 0\nfunc reset() -> void:\n\tcount = 0\n"
+PART += "func tally() -> int:\n\treturn count\n"
 SUB_PART = "class_name SubPart\nextends Part\nvar extra := 0\nfunc reset() -> void:\n\textra = 0\n"
+SUB_PART += "func counted() -> int:\n\treturn count\n"
 USER = """class_name User
 extends Node
 var plan: Planner.Plan
@@ -259,7 +261,33 @@ class AnswerTests(unittest.TestCase):
 
     def test_an_inherited_field_is_listed_under_the_class_that_declares_it(self) -> None:
         got = found("func f(part: SubPart) -> void:\n\tprint(part.count, part.extra)\n")
-        self.assertEqual(got, {("part", "count", "read"): [], ("sub_part", "extra", "read"): []})
+        self.assertEqual(got, {("part", "count", "read"): ["counted", "tally"], ("sub_part", "extra", "read"): []})
+
+    def test_a_getter_a_base_class_declares_answers_a_read_through_a_subclass_receiver(self) -> None:
+        body = "func f(part: SubPart) -> void:\n\tprint(part.count)\n"
+        tree = answers.Scripts({**SRC, SUITE: HEAD + body}, {})
+        made = answers.report_of(tree, [SUITE])
+        (entry,) = made.entries
+        self.assertEqual(
+            (entry.klass, entry.receivers, entry.through()), ("src/part.gd", ["src/sub_part.gd"], ["src/sub_part.gd"])
+        )
+        self.assertEqual(
+            [(a.klass, a.method) for a in entry.answers], [("src/sub_part.gd", "counted"), ("src/part.gd", "tally")]
+        )
+        line = answers.markdown(tree, made).splitlines()[2]
+        self.assertEqual(
+            line,
+            f"- `Part`: `count` read through `SubPart` (`{SUITE}`:3):"
+            " `SubPart.counted()` (0 calls), `tally()` (0 calls)",
+        )
+
+    def test_a_read_through_the_declaring_class_names_no_other_and_not_the_subclasss_getter(self) -> None:
+        body = "func f(part: Part, sub: SubPart) -> void:\n\tprint(part.count)\n"
+        tree = answers.Scripts({**SRC, SUITE: HEAD + body}, {})
+        made = answers.report_of(tree, [SUITE])
+        self.assertEqual(made.entries[0].through(), [])
+        self.assertEqual([a.method for a in made.entries[0].answers], ["tally"])
+        self.assertIn(f"`count` read (`{SUITE}`:3): `tally()`", answers.markdown(tree, made))
 
 
 class ReceiverTests(unittest.TestCase):
@@ -298,6 +326,13 @@ class ReceiverTests(unittest.TestCase):
         made = report(body, {"tests/rig.gd": rig})
         self.assertEqual([e.label for e in made.entries], ["role", "spot"])
         self.assertEqual([(u.line, u.expression) for u in made.unknown], [(10, "word.spot")])
+
+    def test_a_dot_that_opens_a_continuation_line_reads_its_receiver_from_the_lines_before(self) -> None:
+        body = "func f(plans: Array[Planner.Plan]) -> void:\n\tprint(plans[0]\n\t\t\t.spot)\n"
+        body += "\tprint(Planner.new().first(\n\t\t\t)\n\t\t\t.role)\n"
+        made = report(body)
+        self.assertEqual([(e.label, e.sites) for e in made.entries], [("role", [(SUITE, 7)]), ("spot", [(SUITE, 4)])])
+        self.assertEqual(made.unknown, [])
 
     def test_an_inner_class_named_with_an_underscore_is_told(self) -> None:
         body = "class _Fake:\n\tvar row: Row\nfunc f() -> void:\n\tvar fake := _Fake.new()\n\tprint(fake.row.loud)\n"
@@ -366,6 +401,7 @@ class OutputTests(unittest.TestCase):
         self.assertEqual((group["class"], group["path"]), ("Planner.Plan", "src/planner.gd"))
         chain = next(f for f in group["fields"] if f["field"] == "def.id")
         self.assertEqual((chain["access"], chain["declared"]), ("read", "Row.id"))
+        self.assertEqual(chain["receivers"], ["Planner.Plan"])
         self.assertEqual(chain["sites"], [{"file": SUITE, "line": 3}])
         self.assertEqual(
             chain["methods"],

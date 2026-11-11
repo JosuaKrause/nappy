@@ -9,8 +9,10 @@ per class to paste into a pull request's description, or `--json`.
 **A read** is `receiver.name` in one of the files, where the receiver's class is a class under `src/` (an inner
 class included, named `Outer.Inner`) other than the file's own class, its inner classes, its ancestors and its
 descendants, and `name` is a `var` that class or a class it extends declares; it is listed under the class that
-declares it. An assignment or a compound assignment to it, or to an element of it (`thing.list[0] = x`), is listed
-as written. A name with a call parenthesis after it is a method call and is not listed.
+declares it, naming the receiver's class where that is another (`size` read through `CityMap`, under `WorldMap`),
+and answered by the methods of the receiver's class and of every class it extends. An assignment or a compound
+assignment to it, or to an element of it (`thing.list[0] = x`), is listed as written. A name with a call parenthesis
+after it is a method call and is not listed.
 
 **The answer to a read** is a public method (no underscore) of the receiver's class or a class it extends that
 returns that field and nothing else: its body is `return field`, or that behind a null guard (`return field if field
@@ -46,8 +48,9 @@ every `.gd` file outside `docs/`, and further where a test needs it and that che
 `class_name` is the class its file declares where a `const` preloads it or an `extends "res://..."` line names it;
 an inner class is told through its outer class (`EventScheduler.Planned.new()`) and under a name that starts with an
 underscore; `self` and `super` are told in a file with no `class_name`; a value awaited from a call is what the call
-returns; the variable of a `for` whose head spans lines is typed from what it iterates; and a bare lowercase name
-that nothing declares is unknown, not an engine property.
+returns; the variable of a `for` whose head spans lines is typed from what it iterates; a dot that opens a
+continuation line reads its receiver from the lines before; and a bare lowercase name that nothing declares is
+unknown, not an engine property.
 
 **Blind spots, stated.** That reader's, less the ones above: a chain through an engine property typed `Variant` is
 told as an engine value, so a read behind it is not seen; `self` inside an inner class, an inherited member an inner
@@ -93,6 +96,8 @@ RETURN = "return "
 # The words a null guard may use beside the names of what it guards.
 GUARD_WORDS = frozenset({"null", "not", "and", "is_instance_valid"})
 DEPTH = 8
+# How many lines before a continuation line are joined to find the receiver of the dot that opens it.
+JOINED = 6
 
 # What a method or a read comes down to: `(kind, class, name)` pieces. `field` pieces, then at most one `call` piece
 # (a call handed on, named `method/arity`); or one `expr` piece alone (an expression, its spaces taken out).
@@ -352,6 +357,21 @@ def call_arguments(chain: str) -> list[str]:
             out.append(chain[index + 1 : end])
         index = end + 1
     return out
+
+
+def receiver_of(lines: list[str], index: int, start: int) -> str:
+    """The receiver of the `.name` whose dot is at `start` of line `index`. Where the dot opens a continuation line,
+    the receiver stands on the lines before, which are joined to it, up to `JOINED` of them."""
+    receiver = reads.receiver_text(lines[index], start)
+    if receiver or lines[index][:start].strip():
+        return receiver or ""
+    text = ""
+    for back in range(index - 1, max(index - 1 - JOINED, -1), -1):
+        text = lines[back].rstrip().removesuffix("\\").rstrip() + text
+        receiver = reads.receiver_text(text, len(text)) if text.strip() else None
+        if receiver:
+            return receiver
+    return ""
 
 
 def passed_in(arguments: str) -> list[str]:
@@ -618,8 +638,14 @@ class Entry:
     declared_by: str
     name: str
     sites: list[tuple[str, int]] = field(default_factory=list)
+    receivers: list[str] = field(default_factory=list)
     answers: list[Answer] = field(default_factory=list)
     asking: list[Answer] = field(default_factory=list)
+
+    def through(self) -> list[str]:
+        """The receivers' classes other than the one this entry is listed under: the classes that extend it and
+        hand its field down, which the files read it through."""
+        return [receiver for receiver in self.receivers if receiver != self.klass]
 
 
 @dataclass(frozen=True)
@@ -678,22 +704,27 @@ class Collector:
         self.unknown: dict[tuple[str, int, str], Unknown] = {}
         self.fields = {name for key, klass in tree.files.items() if key.startswith(SRC) for name in klass.fields}
 
-    def entry(self, klass: str, label: str, access: str, declared_by: str, name: str) -> Entry:
-        return self.entries.setdefault((klass, label, access), Entry(klass, label, access, declared_by, name))
+    def entry(self, klass: str, label: str, access: str, declared_by: str, name: str, receiver: str) -> Entry:
+        """The entry of a class's field or chain and its access, noting the class of the receiver it is read off."""
+        found = self.entries.setdefault((klass, label, access), Entry(klass, label, access, declared_by, name))
+        if receiver not in found.receivers:
+            found.receivers.append(receiver)
+        return found
 
     def read_file(self, path: str) -> None:
         tree = self.tree
         bare = tree.bare[path]
         blocks = reads.block_index(bare)
         inner = reads.inner_lines(bare)
-        for index, line in enumerate(bare.split("\n")):
+        lines = bare.split("\n")
+        for index, line in enumerate(lines):
             if "." not in line:
                 continue
             for match in reads.USE.finditer(line):
                 name = match.group(1)
                 if match.group(2) or name not in self.fields:
                     continue
-                receiver = reads.receiver_text(line, match.start()) or ""
+                receiver = receiver_of(lines, index, match.start())
                 parsed = reads.postfix(receiver)
                 kinds: list[str | None] = [None]
                 if parsed:
@@ -713,7 +744,7 @@ class Collector:
                     continue
                 rest = line[match.end() :]
                 if assigned(rest):
-                    found = self.entry(owner, name, "written", owner, name)
+                    found = self.entry(owner, name, "written", owner, name, klass)
                     merge(found.answers, [Answer(*setter) for setter in self.answers.assigning(klass, name)])
                 else:
                     links = links_of(tree, self.answers, receiver, parsed[1] if parsed else [], kinds)
@@ -734,13 +765,14 @@ class Collector:
         for tail, suffix in tails:
             for start in range(len(links) + (1 if suffix else 0)):
                 value = tuple(piece for link in links[start:] for piece in link.value) + tail
-                methods = answers.returning(links[start].klass if start < len(links) else klass, value)
+                head = links[start].klass if start < len(links) else klass
+                methods = answers.returning(head, value)
                 if methods:
                     label = ".".join([*(link.label for link in links[start:]), name]) + suffix
-                    found = self.entry(value[0][1], label, "read", owner, name)
+                    found = self.entry(value[0][1], label, "read", owner, name, head)
                     merge(found.answers, [Answer(*method) for method in methods])
                     return found
-        found = self.entry(owner, name, "read", owner, name)
+        found = self.entry(owner, name, "read", owner, name, klass)
         if direct:
             merge(found.answers, [Answer(*method) for method in answers.returning(klass, direct)])
         merge(found.asking, [Answer(*method) for method in answers.asking(klass, owner, name)])
@@ -788,12 +820,13 @@ def call_sites(tree: Scripts, wanted: set[tuple[str, str]]) -> dict[tuple[str, s
         bare = tree.bare[path]
         blocks = reads.block_index(bare)
         inner = reads.inner_lines(bare)
-        for index, line in enumerate(bare.split("\n")):
+        lines = bare.split("\n")
+        for index, line in enumerate(lines):
             for match in reads.USE.finditer(line):
                 name = match.group(1)
                 if not match.group(2) or name not in names:
                     continue
-                receiver = reads.receiver_text(line, match.start())
+                receiver = receiver_of(lines, index, match.start())
                 scope = reads.Scope(tree, path, blocks[index], index)
                 kind = tree.chain_class(receiver, path, scope, inner[index]) if receiver else None
                 owner = tree.method_owner(kind, name)
@@ -856,6 +889,12 @@ def answers_text(tree: Scripts, entry: Entry, calls: dict[tuple[str, str], Calls
     return text + (f"; of it alone, {asking}" if asking else "")
 
 
+def through_text(tree: Scripts, entry: Entry) -> str:
+    """` through `Sub`` where the files read the field off a class that extends the one that declares it."""
+    through = sorted(tree.display(receiver) for receiver in entry.through())
+    return f" through {', '.join(f'`{name}`' for name in through)}" if through else ""
+
+
 def markdown(tree: Scripts, report: Report, counts: bool = False) -> str:
     """The list as a builder pastes it: a line of what it is, one line per class, one per receiver not told."""
     named = ", ".join(f"`{path}`" for path in report.files)
@@ -873,7 +912,8 @@ def markdown(tree: Scripts, report: Report, counts: bool = False) -> str:
         by_class.setdefault(entry.klass, []).append(entry)
     for klass, entries in by_class.items():
         parts = [
-            f"`{e.label}` {e.access} ({sites_text(e.sites, counts)}): {answers_text(tree, e, report.calls)}"
+            f"`{e.label}` {e.access}{through_text(tree, e)} ({sites_text(e.sites, counts)}):"
+            f" {answers_text(tree, e, report.calls)}"
             for e in entries
         ]
         out.append(f"- `{tree.display(klass)}`: {'; '.join(parts)}")
@@ -908,6 +948,7 @@ def as_json(tree: Scripts, report: Report) -> str:
                 "field": entry.label,
                 "access": entry.access,
                 "declared": f"{tree.display(entry.declared_by)}.{entry.name}",
+                "receivers": sorted(tree.display(receiver) for receiver in entry.receivers),
                 "sites": [{"file": path, "line": line} for path, line in entry.sites],
                 "methods": [method(a) for a in entry.answers],
                 "asking_of_it_alone": [method(a) for a in entry.asking],
