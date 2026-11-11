@@ -41,7 +41,10 @@ crash's or a burst main's slices.
 - **`SpreadLook.Slice.index` stays a public variable.** No class under `src/` reads it, but
   `tests/probes/look_fingerprint.gd` names each slice's canvas with `canvas.get(&"index")`, and
   with the field private the probe's `LK` hash moved. It can go private once the probe asks
-  `SpreadLook.slices()` for a slice's place.
+  `SpreadLook.slices()` for a slice's place; `field-reads.md` holds that.
+- **`SceneryLayer.frame_b` and `SceneryLayer.drawer`** are public with no reader under `src/` outside
+  their own class, now that the scenery tells each layer through its methods. The file is the city's,
+  so this step left them, and `field-reads.md` holds them too.
 - The live event's `skip_draw`, `is_finished`, `drawer`, `look` and `def` stay public for readers
   outside these files, the roadblock's look among them. No kept line was added or changed in
   `tools/test_only_members.txt`.
@@ -59,6 +62,12 @@ and 14), which this step did not cause. `RankLook`'s two muzzle flashes and ever
 drawn straight on the canvas and no probe sees them: the flash's strength is now the base look's
 `_share_of_its_peak_now()`, the same number, and the shadows' positions come from `_half_run()` and
 the handed index. Nothing was timed.
+
+## History taken out of the comments
+
+`RankLook._draw_firefight()`'s comment said a firefight is people behind cover and "Not a building
+on fire, which is what it drew for fourteen milestones — the same five flames as
+`burning_building`". The comment keeps the rule, and the history is here.
 
 ## Open to the player's overturn
 
