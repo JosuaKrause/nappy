@@ -57,7 +57,6 @@ Left, each its own design question:
   `ResistanceRunState`, `RunFacts`, `SettledState`): the parts reached through methods and each
   part's fields behind methods; the vars are renamed, and the files the third hand-ins pull
   request touches and the tests read them, so it waits for that pull request.
-- **`BlockedLayer`**, converted with the map's property wrappers in `src/city/`.
 - **The city's own classes** have their readers converted except three groups, each with a home:
   - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
     (`RecipeCityContext`) are the scene recipes' city. They go with or after `placement-by-construction.md`'s bullet on the
