@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Focused contracts for `readout_requested()` — the release-safe query flag M133, "the readout on
 ## the live page", adds — and for the two flags parsed beside it. Each is read the same shape: a
@@ -206,7 +205,7 @@ func _test_day_from_query_is_not_given_when_absent(t: TestRunner) -> void:
 ## actually typed one of the bundle's parameters never touches the save the page might otherwise
 ## share with a real player.
 func _test_web_debug_flag_used_names_the_bundles_own_parameters(t: TestRunner) -> void:
-	for key in ["day", "invincible", "layers", "controls", "escape", "meters", "daylength",
+	for key: String in ["day", "invincible", "layers", "controls", "escape", "meters", "daylength",
 			"ending", "blackout", "groundmode", "framerecord"]:
 		t.check(_page("?debug=1&%s=1" % key).used_a_web_debug_flag(),
 			"'%s' is one of the bundle's own parameters" % key)
@@ -308,15 +307,15 @@ func _test_ground_mode_reads_the_command_line_and_the_open_page(t: TestRunner) -
 		"naming no mode prepares at most one whole region a frame")
 
 func _test_ground_mode_is_ignored_on_a_release_page_without_debug(t: TestRunner) -> void:
-	for query in ["?groundmode=3", "?debug=1&groundmode=3"]:
+	for query: String in ["?groundmode=3", "?debug=1&groundmode=3"]:
 		var expected := 3 if query.contains("debug=1") else 2
 		t.check(_page(query).ground_mode == expected,
 			"a release page reads %s as mode %d" % [query, expected])
 
 func _test_ground_mode_refuses_anything_but_its_three_numbers(t: TestRunner) -> void:
-	for raw in ["1", "2", "3"]:
+	for raw: String in ["1", "2", "3"]:
 		t.check(_debug_build(["--ground-mode", raw]).ground_mode == int(raw), "mode %s is read back" % raw)
-	for raw in ["0", "4", "two", ""]:
+	for raw: String in ["0", "4", "two", ""]:
 		t.check(_debug_build(["--ground-mode", raw]).ground_mode == 2 \
 			and _debug_build(["--ground-mode", raw]).ground_mode == DevFlags.GROUND_MODE_DEFAULT,
 			"'%s' refuses the flag rather than choosing a mode" % raw)
