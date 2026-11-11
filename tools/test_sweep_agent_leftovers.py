@@ -15,6 +15,7 @@ import tempfile
 import time
 import unittest
 import unittest.mock
+from datetime import date
 from pathlib import Path
 from types import ModuleType
 
@@ -87,9 +88,18 @@ class SweepTests(unittest.TestCase):
     def write_prs(self) -> None:
         self.prs_file.write_text(json.dumps(self.prs))
 
-    def pr(self, branch: str, state: str = "MERGED", number: int = 0, fork: bool = False) -> None:
-        number = number or len(self.prs) + 1
-        self.prs.append({"number": number, "state": state, "headRefName": branch, "isCrossRepository": fork})
+    def pr(self, branch: str, state: str = "MERGED", fork: bool = False, merged_at: str = "") -> None:
+        """The next pull request, numbered in the order made; a merged one merged just now."""
+        merged = (merged_at or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())) if state == "MERGED" else None
+        self.prs.append(
+            {
+                "number": len(self.prs) + 1,
+                "state": state,
+                "headRefName": branch,
+                "isCrossRepository": fork,
+                "mergedAt": merged,
+            }
+        )
         self.write_prs()
 
     def age(self, path: Path, hours: float = OLD_HOURS) -> None:
@@ -114,10 +124,12 @@ class SweepTests(unittest.TestCase):
         worktree: str = "",
         hours: float = OLD_HOURS,
         name: str = "",
+        spawned: str = "2026-01-01",
     ) -> Path:
         """A branch's brief as tools/agent-setup.sh starts it, old, its pull request merged."""
         path = self.briefs / (name or branch.replace("/", "-") + ".md")
-        header = [f"branch: {branch}", f"worktree: {worktree or self.worktrees / 'gone'}", "spawned: 2026-01-01"]
+        header = [f"branch: {branch}", f"worktree: {worktree or self.worktrees / 'gone'}"]
+        header += [f"spawned: {spawned}"] if spawned else []
         header += [f"agent: {agent}" for agent in agents]
         header += ["cleanup: ready"] if released else []
         path.write_text("\n".join(header) + "\n\n# The task\n\nbranch: not-the-header\n")
@@ -215,6 +227,46 @@ class SweepTests(unittest.TestCase):
             self.assertIn("may be the only record of its task", self.line(result, f"keep brief {brief.name}:"))
             self.assertTrue(brief.exists(), brief.name)
 
+    def test_a_brief_stays_when_only_an_earlier_use_of_its_branch_name_merged(self) -> None:
+        early = "2025-12-01T12:00:00Z"
+        # The name's first use merged; this brief is of a later use, whose pull request was closed.
+        closed = self.brief("feature/reused", merged=False)
+        self.pr("feature/reused", merged_at=early)
+        self.pr("feature/reused", "CLOSED")
+        # The later use was dropped before any pull request was opened.
+        dropped = self.brief("feature/dropped-again", merged=False)
+        self.pr("feature/dropped-again", merged_at=early)
+        # Nothing says when this brief was started, so the merge cannot be held against it.
+        undated = self.brief("feature/undated", merged=False, spawned="")
+        self.pr("feature/undated")
+        # Used twice and merged twice: the newest pull request is this brief's own.
+        twice = self.brief("feature/twice", merged=False)
+        self.pr("feature/twice", merged_at=early)
+        self.pr("feature/twice")
+        same_day = self.brief("feature/same-day", merged=False)
+        self.pr("feature/same-day", merged_at="2026-01-01T12:00:00Z")
+        # A "spawned:" line written by hand, in UTC and with a time: the merge is the evening
+        # before in local time and the same day in UTC, and the two are one piece of work.
+        in_utc = self.brief("feature/in-utc", merged=False, spawned="2026-01-02T00:30Z")
+        self.pr("feature/in-utc", merged_at="2026-01-02T01:00:00Z")
+        result = self.sweep("--apply", TZ="America/New_York")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        kept = {
+            closed: "the newest pull request of feature/reused, #2, is closed",
+            dropped: "before the brief was spawned on 2026-01-01: an earlier use of the branch name",
+            undated: 'no "spawned:" date in its header',
+        }
+        for brief, reason in kept.items():
+            self.assertIn(reason, self.line(result, f"keep brief {brief.name}:"))
+            self.assertTrue(brief.exists(), brief.name)
+        self.assertIn("PR #3 merged on 2025-12-01", self.line(result, f"keep brief {dropped.name}:"))
+        self.assertIn("PR #6 merged", self.line(result, f"removed brief {twice.name}:"))
+        for brief in (same_day, in_utc):
+            self.line(result, f"removed brief {brief.name}:")
+            self.assertFalse(brief.exists(), brief.name)
+        self.assertFalse(twice.exists())
+        self.assertIn("briefs: 3 removed, 3 kept (3 no merged pull request of its own)", result.stdout)
+
     def test_a_brief_stays_while_it_or_its_agent_was_written_recently(self) -> None:
         fresh = self.brief("feature/fresh", hours=1)
         running = self.brief("feature/running", agents=("a-old", "a-live"))
@@ -268,11 +320,18 @@ class SweepTests(unittest.TestCase):
         no_json = self.sweep("--apply")
         self.assertEqual(no_json.returncode, 1, no_json.stdout + no_json.stderr)
         self.write_prs()
+        # An origin with no branch at all would make every brief's branch read as gone.
+        empty = self.root / "empty.git"
+        self.run_git("init", "--bare", str(empty))
+        self.run_git("remote", "set-url", "origin", str(empty), cwd=self.repo)
+        no_branches = self.sweep("--apply")
+        self.assertEqual(no_branches.returncode, 1, no_branches.stdout + no_branches.stderr)
+        self.assertIn("origin answered with no branch at all", no_branches.stderr)
         self.run_git("remote", "set-url", "origin", str(self.root / "no-such-origin.git"), cwd=self.repo)
         no_origin = self.sweep("--apply")
         self.assertEqual(no_origin.returncode, 1, no_origin.stdout + no_origin.stderr)
         self.assertIn("ls-remote", no_origin.stderr)
-        for result in (no_gh, no_json, no_origin):
+        for result in (no_gh, no_json, no_branches, no_origin):
             self.assertIn("nothing was removed", result.stderr)
             self.assertEqual(result.stdout, "")
         self.assertTrue(brief.exists())
@@ -283,13 +342,28 @@ class SweepTests(unittest.TestCase):
         self.pr("feature/two")
         tool = self.load()
         with unittest.mock.patch.dict(os.environ, self.env), unittest.mock.patch.object(tool, "PR_LIMIT", 3):
-            self.assertEqual(tool.read_remote(self.repo).merged_prs, {"feature/one": 1, "feature/two": 2})
+            newest = tool.read_remote(self.repo).newest_prs
+            self.assertEqual(
+                {head: found.number for head, found in newest.items()}, {"feature/one": 1, "feature/two": 2}
+            )
         with (
             unittest.mock.patch.dict(os.environ, self.env),
             unittest.mock.patch.object(tool, "PR_LIMIT", 2),
             self.assertRaisesRegex(tool.SweepError, "did not return every pull request"),
         ):
             tool.read_remote(self.repo)
+
+    def test_a_shortened_flag_is_refused_with_nothing_read_or_removed(self) -> None:
+        brief = self.brief("feature/done")
+        checkout = self.checkout("review-old")
+        for flag in ("--a", "--ap", "--app", "--appl"):
+            result = self.sweep(flag)
+            self.assertEqual(result.returncode, 2, f"{flag}: {result.stdout}{result.stderr}")
+            self.assertEqual(result.stdout, "", flag)
+            self.assertIn("usage", result.stderr, flag)
+        self.assertTrue(brief.exists())
+        self.assertTrue(checkout.exists())
+        self.assertFalse(self.gh_calls.exists(), "nothing asked GitHub anything")
 
     def test_github_is_read_and_never_written(self) -> None:
         self.brief("feature/done")
@@ -390,6 +464,67 @@ class SweepTests(unittest.TestCase):
         self.assertEqual(self.registered(), before)
         self.assertEqual((changed / "tracked").read_text(), "unfinished\n")
 
+    def test_a_checkout_whose_head_moved_recently_stays(self) -> None:
+        # Every file is old; only HEAD, or only HEAD's log, was written since.
+        moved = {"head-moved": "HEAD", "log-written": "logs/HEAD"}
+        for name, written in moved.items():
+            checkout = self.checkout(name)
+            git_dir = Path(self.run_git("rev-parse", "--absolute-git-dir", cwd=checkout).strip())
+            os.utime(git_dir / written)
+        result = self.sweep("--apply")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        for name in moved:
+            self.assertEqual(
+                self.line(result, f"keep checkout {name}:"),
+                f"keep checkout {name}: something in it changed in the last 24 hours",
+            )
+            self.assertTrue((self.worktrees / name).exists(), name)
+
+    def agent_tree(self, name: str, branch: str) -> Path:
+        """An agent's worktree on its own new branch, then left on a detached HEAD."""
+        path = self.worktrees / name
+        self.run_git("worktree", "add", "-q", "-b", branch, str(path), cwd=self.repo)
+        self.run_git("checkout", "-q", "--detach", "main", cwd=path)
+        return path
+
+    def test_a_detached_checkout_stays_while_a_brief_claims_it_for_a_branch_still_there(self) -> None:
+        local = self.agent_tree("agent-local", "feature/live")
+        pushed = self.agent_tree("agent-pushed", "feature/pushed")
+        self.run_git("push", "-q", "origin", "feature/pushed", cwd=self.repo)
+        self.run_git("branch", "-qD", "feature/pushed", cwd=self.repo)
+        opened = self.agent_tree("agent-open", "feature/open")
+        self.run_git("branch", "-qD", "feature/open", cwd=self.repo)
+        finished = self.agent_tree("agent-finished", "feature/finished")
+        self.run_git("branch", "-qD", "feature/finished", cwd=self.repo)
+        review = self.checkout("review-live")
+        claims = {
+            local: self.brief("feature/live", merged=False, released=False, worktree=str(local)),
+            pushed: self.brief("feature/pushed", merged=False, released=False, worktree=str(pushed)),
+            opened: self.brief("feature/open", merged=False, released=False, worktree=str(opened)),
+            # A review's brief names the branch it reviews and the checkout it reviews in.
+            review: self.brief("feature/live", merged=False, worktree=str(review), name="review-9.md"),
+        }
+        self.pr("feature/open", "OPEN")
+        done = self.brief("feature/finished", worktree=str(finished))
+        for path in (local, pushed, opened, finished, review):
+            self.age(path)
+        result = self.sweep("--apply")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        for path, brief in claims.items():
+            self.assertEqual(
+                self.line(result, f"keep checkout {path.name}:"),
+                f"keep checkout {path.name}: {brief.name}, the brief of a branch that is still there, names it",
+            )
+            self.assertTrue(path.exists(), path.name)
+            self.assertTrue(brief.exists(), brief.name)
+        # The branch that is gone everywhere claims nothing: its checkout goes, and its brief, kept
+        # in this run for the directory that was still there, is left for the next.
+        self.line(result, "removed checkout agent-finished:")
+        self.assertFalse(finished.exists())
+        self.assertIn("its worktree is still there", self.line(result, f"keep brief {done.name}:"))
+        self.assertIn("removed brief", self.sweep("--apply").stdout)
+        self.assertFalse(done.exists())
+
     def test_the_callers_own_checkout_stays(self) -> None:
         checkout = self.checkout("mine")
         (checkout / "sub").mkdir()
@@ -428,6 +563,18 @@ class SweepTests(unittest.TestCase):
         # The run goes on past a refusal: the brief it listed is still removed.
         self.assertFalse(brief.exists())
 
+    def test_a_remover_that_exits_zero_and_leaves_the_directory_removed_nothing(self) -> None:
+        checkout = self.checkout("review-old")
+        (self.repo / "tools" / "agent-setup.sh").write_text("#!/bin/sh\nexit 0\n")
+        result = self.sweep("--apply")
+        self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+        self.assertEqual(
+            self.line(result, "keep checkout review-old:"),
+            "keep checkout review-old: tools/agent-setup.sh --remove exited 0 and the directory is still there",
+        )
+        self.assertIn("checkouts: 0 removed, 1 marked sweep and not removed, 0 kept", result.stdout)
+        self.assertTrue(checkout.exists())
+
     # ------------------------------------------------------------- between listing and removal ---
     def load(self) -> ModuleType:
         """The scratch copy as a module, so a test can change the checkout between its two steps."""
@@ -441,24 +588,33 @@ class SweepTests(unittest.TestCase):
 
     def test_what_changed_after_the_listing_is_kept(self) -> None:
         brief = self.brief("feature/done")
+        claimed = self.checkout("review-claimed")
         checkout = self.checkout("review-old")
         tool = self.load()
-        remote = tool.Remote(branches=frozenset(), open_prs={}, merged_prs={"feature/done": 1})
+        merged = tool.PullRequest(number=1, state="MERGED", merged_on=date.today(), fork=False)
+        remote = tool.Remote(branches=frozenset(), open_prs={}, newest_prs={"feature/done": merged})
         verdicts = tool.inventory(tool.read_local(), remote, {}, time.time())
         self.assertEqual(
-            [(verdict.name, verdict.sweep) for verdict in verdicts], [(brief.name, True), ("review-old", True)]
+            [(verdict.name, verdict.sweep) for verdict in verdicts],
+            [(brief.name, True), ("review-claimed", True), ("review-old", True)],
         )
-        # The branch comes back and a file is written in the checkout before the removals run.
+        # Before the removals run: the branch comes back, a review's brief names one checkout for
+        # it, and a file is written in the other.
         self.run_git("branch", "feature/done", cwd=self.repo)
+        self.brief("feature/done", merged=False, worktree=str(claimed), name="review-3.md")
         (checkout / "notes").write_text("work in progress\n")
-        for verdict, reason in zip(
-            verdicts, ("the branch feature/done exists locally", "1 changed or untracked"), strict=True
-        ):
+        reasons = (
+            "the branch feature/done exists locally",
+            "review-3.md, the brief of a branch that is still there, names it",
+            "1 changed or untracked",
+        )
+        for verdict, reason in zip(verdicts, reasons, strict=True):
             went, lines = tool.remove(verdict, remote, {})
             self.assertFalse(went)
             self.assertIn("changed since it was listed", lines[0])
             self.assertIn(reason, lines[0])
         self.assertTrue(brief.exists())
+        self.assertTrue(claimed.exists())
         self.assertTrue(checkout.exists())
 
 

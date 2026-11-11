@@ -20,8 +20,11 @@ A brief is swept when all of this holds:
     folder there is another kind, and no rule here removes one.
   - Its branch exists nowhere: no local branch, no branch on origin, no open pull request with
     that head, and no directory where its "worktree:" line points.
-  - A pull request of that branch merged, so what the task was is in the pull request. With none
-    merged the brief may be the only record of its task, and it stays.
+  - Its own pull request merged, so what the task was is in the pull request: the newest pull
+    request with that head is a merged one, and it merged on or after the brief's "spawned:"
+    date. A branch name is used again now and then, and an earlier use that merged says nothing
+    about this brief. With no such pull request, or no "spawned:" date, the brief may be the only
+    record of its task, and it stays.
   - Its agent is not running: neither the brief nor the transcript of any agent its "agent:" lines
     name was written in the last 24 hours.
 "cleanup: ready" is not required. That line releases a branch and a worktree for retirement, and
@@ -36,14 +39,18 @@ A detached checkout is swept when all of this holds:
     cache (tools/prune-merged.sh --help lists those).
   - It is not locked, not the caller's own, and no rebase, merge, cherry-pick, revert or bisect
     is under way in it.
+  - No brief claims it for a branch that is still there: no file in the briefs folder whose
+    header names it on its "worktree:" line has a "branch:" that exists locally or on origin or
+    has an open pull request. An agent's worktree left on a detached HEAD is such a checkout.
   - It is quiet: no file in it changed in the last 24 hours, and neither did its HEAD.
 The removal is tools/agent-setup.sh --remove <name>, never anything forced; what that refuses
-stays, and the refusal is printed.
+stays, and the refusal is printed. A checkout counts as removed once its directory is gone.
 
 Never touched: a worktree that has a branch (tools/prune-merged.sh retires those), a worktree
 outside .claude/worktrees/, a brief inside a worktree, any branch, and anything on GitHub. The
 sweep reads GitHub twice per run, the branches on origin (git ls-remote) and the pull requests
-(gh pr list), and writes nothing to it; if either read fails, the run ends with nothing removed.
+(gh pr list), and writes nothing to it; if either read fails, or origin answers with no branch at
+all, the run ends with nothing removed.
 
 Exit status: 0 for a listing, and for an applying run that removed everything it set out to; 1
 when a read failed or a removal was refused; 2 for a bad argument.
@@ -63,6 +70,7 @@ import time
 from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass
+from datetime import UTC, date, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -86,6 +94,7 @@ SWEEP = "sweep"
 # The summary's word for a file in the briefs folder that no rule here is about; such a file is
 # counted and gets no line of its own.
 OTHER_KIND = "not a branch brief"
+NOT_MERGED = "no merged pull request of its own"
 
 
 class SweepError(Exception):
@@ -110,18 +119,29 @@ class Local:
 
 
 @dataclass(frozen=True)
+class PullRequest:
+    number: int
+    state: str  # OPEN, CLOSED or MERGED
+    # The day it merged, the later of the local and the UTC one: a "spawned:" line is written in
+    # either, by tools/agent-setup.sh in local time and by hand in both.
+    merged_on: date | None
+    fork: bool  # its head is another repository's branch of the same name
+
+
+@dataclass(frozen=True)
 class Remote:
     """What GitHub says, read once per run."""
 
     branches: frozenset[str]
     open_prs: Mapping[str, int]
-    merged_prs: Mapping[str, int]
+    newest_prs: Mapping[str, PullRequest]  # by head, the pull request with the highest number
 
 
 @dataclass(frozen=True)
 class Header:
     branch: str | None
     worktree: str | None
+    spawned: date | None
     agents: tuple[str, ...]
     released: bool
 
@@ -185,12 +205,21 @@ def read_local() -> Local:
     return Local(main=main, branches=frozenset(branches), worktrees=worktrees)
 
 
+def day_merged(merged_at: str) -> date:
+    moment = datetime.fromisoformat(merged_at)
+    return max(moment.astimezone(UTC).date(), moment.astimezone().date())
+
+
 def read_remote(main: Path) -> Remote:
     heads = git(main, "ls-remote", "--heads", "origin")
     branches = frozenset(
         line.split("\t", 1)[1].removeprefix("refs/heads/") for line in heads.splitlines() if "\t" in line
     )
-    fields = "number,state,headRefName,isCrossRepository"
+    if not branches:
+        # GitHub never answers this way; an origin pointed somewhere else does, and every brief's
+        # branch would then read as gone.
+        raise SweepError("origin answered with no branch at all")
+    fields = "number,state,headRefName,isCrossRepository,mergedAt"
     listed = run(["gh", "pr", "list", "--state", "all", "--limit", str(PR_LIMIT), "--json", fields], cwd=main)
     if listed.returncode != 0:
         raise SweepError(f"gh pr list failed: {listed.stderr.strip()}")
@@ -201,15 +230,24 @@ def read_remote(main: Path) -> Remote:
     if not isinstance(prs, list) or len(prs) >= PR_LIMIT:
         raise SweepError(f"gh pr list did not return every pull request (the limit is {PR_LIMIT})")
     open_prs: dict[str, int] = {}
-    merged_prs: dict[str, int] = {}
-    for pr in prs:
-        head, number, state = str(pr["headRefName"]), int(pr["number"]), str(pr["state"])
-        if state == "OPEN":
-            open_prs[head] = max(number, open_prs.get(head, 0))
-        elif state == "MERGED" and not pr.get("isCrossRepository"):
-            # A fork's merged branch of the same name says nothing about this repository's.
-            merged_prs[head] = max(number, merged_prs.get(head, 0))
-    return Remote(branches=branches, open_prs=open_prs, merged_prs=merged_prs)
+    newest_prs: dict[str, PullRequest] = {}
+    try:
+        for pr in prs:
+            head, number, state = str(pr["headRefName"]), int(pr["number"]), str(pr["state"])
+            merged_at = pr.get("mergedAt")
+            found = PullRequest(
+                number=number,
+                state=state,
+                merged_on=day_merged(merged_at) if merged_at else None,
+                fork=bool(pr.get("isCrossRepository")),
+            )
+            if state == "OPEN":
+                open_prs[head] = max(number, open_prs.get(head, 0))
+            if head not in newest_prs or number > newest_prs[head].number:
+                newest_prs[head] = found
+    except (KeyError, TypeError, ValueError) as e:
+        raise SweepError(f"the pull-request list holds an entry that cannot be read: {e!r}") from e
+    return Remote(branches=branches, open_prs=open_prs, newest_prs=newest_prs)
 
 
 def default_project_dir(main: Path) -> Path:
@@ -246,10 +284,18 @@ def read_header(path: Path) -> Header:
     def values(key: str) -> list[str]:
         return [line.removeprefix(f"{key}: ").strip() for line in lines if line.startswith(f"{key}: ")]
 
+    def day(texts: list[str]) -> date | None:
+        # A date, with or without a time after it: "2026-10-03" and "2026-10-03T22:07Z" both occur.
+        try:
+            return date.fromisoformat(texts[0][:10])
+        except IndexError, ValueError:
+            return None
+
     branches, worktrees = values("branch"), values("worktree")
     return Header(
         branch=branches[0] if branches else None,
         worktree=worktrees[0] if worktrees else None,
+        spawned=day(values("spawned")),
         agents=tuple(values("agent")),
         released="cleanup: ready" in lines,
     )
@@ -280,10 +326,20 @@ def inspect_brief(path: Path, local: Local, remote: Remote, transcripts: Mapping
         return keep("branch still exists", f"origin has the branch {branch}")
     if branch in remote.open_prs:
         return keep("open pull request", f"PR #{remote.open_prs[branch]} of {branch} is open")
-    if branch not in remote.merged_prs:
+    only_record = "so the brief may be the only record of its task"
+    newest = remote.newest_prs.get(branch)
+    if newest is None:
+        return keep(NOT_MERGED, f"no pull request of {branch} at all, {only_record}")
+    if newest.state != "MERGED" or newest.fork or newest.merged_on is None:
+        state = "another repository's" if newest.fork else newest.state.lower()
+        return keep(NOT_MERGED, f"the newest pull request of {branch}, #{newest.number}, is {state}, {only_record}")
+    if header.spawned is None:
+        return keep(NOT_MERGED, f'no "spawned:" date in its header to hold the merge of PR #{newest.number} against')
+    if newest.merged_on < header.spawned:
         return keep(
-            "no merged pull request",
-            f"no pull request of {branch} merged, so the brief may be the only record of its task",
+            NOT_MERGED,
+            f"PR #{newest.number} merged on {newest.merged_on}, before the brief was spawned on {header.spawned}:"
+            f" an earlier use of the branch name, {only_record}",
         )
     if hours_since(written, now) < QUIET_HOURS:
         return keep("written recently", f"written in the last {QUIET_HOURS} hours")
@@ -295,8 +351,31 @@ def inspect_brief(path: Path, local: Local, remote: Remote, transcripts: Mapping
         BRIEF,
         path.name,
         SWEEP,
-        f"PR #{remote.merged_prs[branch]} merged, {branch} is gone here and on origin, {released}",
+        f"PR #{newest.number} merged, {branch} is gone here and on origin, {released}",
     )
+
+
+def claimed_worktrees(local: Local, remote: Remote) -> dict[Path, str]:
+    """The directories a brief claims for a branch that is still there, each with that brief's name.
+
+    Any file in the briefs folder whose header has a "branch:" and a "worktree:" line counts, a
+    review brief too: while the branch exists locally or on origin or has an open pull request,
+    the work the directory was made for is not finished.
+    """
+    claimed: dict[Path, str] = {}
+    for path in brief_files(local):
+        try:
+            if path.is_symlink() or not path.is_file():
+                continue
+            header = read_header(path)
+        except OSError:
+            continue
+        branch = header.branch
+        if branch is None or not header.worktree:
+            continue
+        if branch in local.branches or branch in remote.branches or branch in remote.open_prs:
+            claimed.setdefault(Path(header.worktree).resolve(), path.name)
+    return claimed
 
 
 def commits_of_its_own(worktree: Path, main: Path) -> list[str]:
@@ -358,7 +437,7 @@ def last_written(worktree: Path, git_dir: Path) -> tuple[float, int]:
     return newest, blocks * 512
 
 
-def inspect_checkout(worktree: Worktree, local: Local, now: float) -> Verdict:
+def inspect_checkout(worktree: Worktree, local: Local, claimed: Mapping[Path, str], now: float) -> Verdict:
     path, name = worktree.path, worktree.path.name
 
     def keep(group: str, reason: str, notes: tuple[str, ...] = ()) -> Verdict:
@@ -384,6 +463,9 @@ def inspect_checkout(worktree: Worktree, local: Local, now: float) -> Verdict:
                 f"it holds {count} no ref reaches, and is never removed while it does:",
                 (*subjects, f"a branch at one keeps it: git -C {local.main} branch <name> <commit>"),
             )
+        if path in claimed:
+            reason = f"{claimed[path]}, the brief of a branch that is still there, names it"
+            return keep("claimed by a live branch's brief", reason)
         changed = git(path, "status", "--porcelain", "--untracked-files=all").splitlines()
         if changed:
             return keep(
@@ -431,7 +513,8 @@ def detached_checkouts(local: Local) -> list[Worktree]:
 
 def inventory(local: Local, remote: Remote, transcripts: Mapping[str, float], now: float) -> list[Verdict]:
     briefs = [inspect_brief(path, local, remote, transcripts, now) for path in brief_files(local)]
-    checkouts = [inspect_checkout(worktree, local, now) for worktree in detached_checkouts(local)]
+    claimed = claimed_worktrees(local, remote)
+    checkouts = [inspect_checkout(worktree, local, claimed, now) for worktree in detached_checkouts(local)]
     return briefs + checkouts
 
 
@@ -445,7 +528,7 @@ def remove(verdict: Verdict, remote: Remote, transcripts: Mapping[str, float]) -
         named = [worktree for worktree in detached_checkouts(local) if worktree.path.name == verdict.name]
         if not named:
             return False, [f"keep {CHECKOUT} {verdict.name}: no longer a detached checkout"]
-        again = inspect_checkout(named[0], local, now)
+        again = inspect_checkout(named[0], local, claimed_worktrees(local, remote), now)
     if not again.sweep:
         return False, [
             f"keep {again.kind} {again.name}: changed since it was listed: {again.reason}",
@@ -464,6 +547,10 @@ def remove(verdict: Verdict, remote: Remote, transcripts: Mapping[str, float]) -
             f"keep {CHECKOUT} {verdict.name}: tools/agent-setup.sh --remove refused it:",
             *(f"    {line}" for line in refusal),
         ]
+    if (local.main / ".claude" / "worktrees" / verdict.name).exists():
+        # The remover's exit status is not the directory: a name it reads as a flag exits 0 too.
+        still = "tools/agent-setup.sh --remove exited 0 and the directory is still there"
+        return False, [f"keep {CHECKOUT} {verdict.name}: {still}"]
     return True, [f"removed {CHECKOUT} {verdict.name}: {again.reason}"]
 
 
@@ -489,8 +576,12 @@ def existing_dir(text: str) -> Path:
 
 
 def parser() -> argparse.ArgumentParser:
+    # No abbreviations: `--a` is not the explicit --apply the removing run is asked for by.
     p = argparse.ArgumentParser(
-        prog="sweep-agent-leftovers.py", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+        prog="sweep-agent-leftovers.py",
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        allow_abbrev=False,
     )
     p.add_argument(
         "--apply",
