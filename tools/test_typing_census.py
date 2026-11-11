@@ -405,6 +405,10 @@ class RealSignals(unittest.TestCase):
     # last hole: about one interrupt in five during either phase found it, so 40 that land miss it about once in
     # 7500 runs.
     TRIALS = 50
+    # At least TRIALS are always drawn; past that, drawing goes on only while fewer than TRIALS // 2 have landed, and
+    # stops at MAX_TRIALS. A measuring child that ran slow makes every delay too long, and the first trial that ends
+    # before its signal corrects the length (see `interrupt`).
+    MAX_TRIALS = 4 * TRIALS
     FILES = 120
 
     def setUp(self) -> None:
@@ -453,12 +457,18 @@ class RealSignals(unittest.TestCase):
         self.assertEqual(self.snapshot(), self.original)
         rng = random.Random(f"{self.SEED}-{phase}")
         landed = 0
-        for trial in range(self.TRIALS):
+        wanted = self.TRIALS // 2
+        trial = 0
+        while trial < self.TRIALS or (landed < wanted and trial < self.MAX_TRIALS):
             # The phase repeats one write per file, so its first four fifths hold every window and a delay drawn
             # there lands inside it even when a trial runs a little faster than the measuring one.
             delay = rng.uniform(0.0, 0.8 * length)
             code, out, err = self.child(phase, delay)
             landed += code == 128 + signal.SIGINT and "END" not in out
+            if "END" in out:
+                # The phase ran to its end before the signal. The length is the shortest phase seen so far, so a
+                # slow measurement is corrected by the first faster trial that runs to its end.
+                length = min(length, float(out.split()[-1]))
             after = self.snapshot()
             if after != self.original or "left as it is" in err:
                 added = sorted(set(after) - set(self.original))
@@ -467,7 +477,8 @@ class RealSignals(unittest.TestCase):
                     f"{phase}, trial {trial}, SIGINT {delay * 1000:.2f} ms into a {length * 1000:.1f} ms phase: "
                     f"added {added}, changed or removed {changed}; stderr {err!r}"
                 )
-        self.assertGreaterEqual(landed, self.TRIALS // 2, f"only {landed} signals landed inside the {phase} phase")
+            trial += 1
+        self.assertGreaterEqual(landed, wanted, f"only {landed} signals landed in {trial} trials of the {phase} phase")
 
     def test_a_signal_while_the_lines_are_taken_out_leaves_the_tree_as_it_was(self) -> None:
         # Fails if a signal handled inside a write can leave the file beside behind (atomic_write naming it through
