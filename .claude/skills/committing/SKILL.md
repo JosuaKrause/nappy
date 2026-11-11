@@ -230,12 +230,13 @@ time; the player asks for tests that are isolated and not flaky instead.
 5. **Watch `main`'s CI run on the last merge commit**, which the script prints once every PR has
    merged, with the read below.
 
-**CI's state is read through GraphQL, sparingly, in every session.** A pull request's is `gh pr
-view <n> --json statusCheckRollup`, and `main`'s is the commit's `statusCheckRollup` asked through
-`gh api graphql`. **`gh run watch` is never used**: it polls GitHub's REST API every three seconds,
-and the account's hourly REST quota is shared by every session. REST is for what GraphQL does not
-hold, read once and never in a wait: a job's log, a test's time in a shard's log, and whether a
-workflow run started at all.
+**CI's state is read through GraphQL, sparingly, in every read a session writes itself.** A pull
+request's is `gh pr view <n> --json statusCheckRollup`, and `main`'s is the commit's
+`statusCheckRollup` asked through `gh api graphql`. **`gh run watch` is never used**: it polls
+GitHub's REST API every three seconds, and the account's hourly REST quota is shared by every
+session. A session reads REST once, never in a wait, for what GraphQL does not hold (a job's log, a
+test's time in a shard's log) and to diagnose a push that started no run. `tools/await-merge.sh`
+and `tools/release.sh` make their own reads.
 
 ## Releasing
 

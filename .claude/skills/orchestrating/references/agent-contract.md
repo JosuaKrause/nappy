@@ -135,7 +135,8 @@ what you can into one command, so one wait gives one notification.
 GraphQL"). The read is `gh pr view <n> --json statusCheckRollup`, at most every ten minutes, in the
 one background wait above, and the wait ends when the `test` row has a conclusion and no row is
 unfinished: right after a push the list is empty or short, and a test of "every row finished" holds
-on it. `gh run watch` is never used.
+on it. A list still empty at the second read is reported, not waited on, since a push that starts
+no run never fills it. `gh run watch` is never used.
 
 **Headless first.** Any game run carries a dev flag or `--no-save`, since worktrees share the
 player's save. **No agent opens the Godot editor** (inbox #1203 in gentle-owl, inbox #1242 in gentle-owl), a Godot MCP tool
