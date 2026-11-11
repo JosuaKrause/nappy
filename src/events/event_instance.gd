@@ -111,7 +111,7 @@ var is_finished: bool:
 
 ## **The one place its phase changes**, and with it what every phase change owes: the field it
 ## answers is a function of the phase, so the contribution cache is let go. A row that is done stops
-## showing its scenery on the next drawn frame, when its look reads `is_finished`.
+## showing its scenery on the next drawn frame, when its look asks `is_gone()`.
 func transition(to: Phase) -> void:
 	if phase == to:
 		return

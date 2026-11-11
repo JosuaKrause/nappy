@@ -15,12 +15,13 @@ extends RefCounted
 ## picture looks like on the canvas. Kept apart so each is tested apart: a test hands an instance a
 ## drawer that records what it is told to paint instead of painting it, and checks the pictures the
 ## event was drawn with, without reading what the look holds. What is not an atlas picture is drawn
-## by the look itself, as before: a ground shadow, a dog's lead, a muzzle flash. The danger caret goes
+## by the look itself: a ground shadow, a dog's lead, a muzzle flash. The danger caret goes
 ## through `caret()`, so a recording drawer holds its colour and width.
 
 var _atlas: AtlasLibrary
-## What the scenery this builds lays its pictures through (`SceneryDrawer`, `EventScenery.drawer`):
-## it holds nothing, so this drawer's own serves every scenery it builds.
+## What the scenery this builds lays its pictures through (`SceneryDrawer`, handed in
+## `EventScenery.draw_through()`): it holds nothing, so this drawer's own serves every scenery it
+## builds.
 var _scenery := SceneryDrawer.new()
 
 func _init(atlas: AtlasLibrary) -> void:
@@ -51,10 +52,14 @@ func paint_band(canvas: CanvasItem, picture: String, whole: Rect2, band: Rect2) 
 func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
 		band: Rect2) -> EventScenery:
 	var built := EventScenery.new()
-	built.atlas = _atlas
-	built.drawer = _scenery
+	built.draw_through(_atlas, _scenery_drawer())
 	built.configure(picture, extent, anchor, shadow, band)
 	return built
+
+## What the scenery `scenery()` builds is handed to lay its pictures through: this drawer's own, or
+## whatever a drawer extending this one answers (a suite's recording drawer hands its own).
+func _scenery_drawer() -> SceneryDrawer:
+	return _scenery
 
 ## Draws one danger caret (`Sprites.draw_caret()`) on `canvas`: its tip at `at`, `width` across,
 ## in `colour`. The look calls it once for a costly mark and twice, stacked, for a lethal one.

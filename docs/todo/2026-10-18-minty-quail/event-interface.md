@@ -468,8 +468,8 @@ strategies did (the record brisk-lark):
   `is_its_guard_warning()`, `is_drawn_as_a_pelican()`, `boom_openness()`), and is handed its
   `LookSpec` and its drawer. The base look (`EventLook`) is so handed ok: its row (until `LookSpec`
   exists), its drawer and whether it draws, and it asks the live event through methods. The figure,
-  pursuer, vehicle, flock, checkpoint and fire looks ask the same way ok; `SpreadLook`, `RankLook`
-  and `RoadblockLook` follow.
+  pursuer, vehicle, flock, checkpoint and fire looks, `SpreadLook` and `RankLook` ask the same way
+  ok; `RoadblockLook` follows.
 
 **`WhereSheIs`** (a name this design proposes) is the one object that says where she is
 this tick: her position, her pram's, the camera's view, whether she runs, whether the baby is
@@ -677,7 +677,7 @@ counted where it only writes.
 | `guard_warns_her` | the looks (the checkpoint controller asks already) | `raise_its_guards_hand(on)` ok, `is_its_guard_warning()` ok; the field is private |
 | `silenced` | 2 in; written by streaming | `silence()`, `is_silenced()` ok |
 | `came_under_a_warning` | the live event itself | `was_warned_of()` ok |
-| `look` | 2 in (two looks reading another's) | private; a look is handed the look it needs |
+| `look` | 2 in (two looks reading another's) | private; a look is handed the look it needs; a slice is handed its look ok, the roadblock's band and far guard still read the field |
 
 ### 4.3 The plan (`EventScheduler.Planned`, to be `EventPlan`)
 
@@ -704,7 +704,7 @@ Other classes of the folder with listed lines, each converted in the pull reques
 file: `EventWorld` (55 lines, the context the event manager hands its own parts), `EventManager`
 (8, read by the city scene and waiting on the third hand-ins pull request), `ChargeRecord` (7),
 `PendingWarning` (6), `RoadblockFarGuard` (4), `EventStreaming` (3), `Warning` (3),
-`EventBarrierPost`, `EventScenery`, `EventsAhead` (2 each), `EventPursuit`, `EventFlock`,
+`EventBarrierPost`, `EventsAhead` (2 each), `EventPursuit`, `EventFlock`,
 `EncounterWatch`, `EventSpawner` (1 each).
 
 ## 5. The pull requests, in order
@@ -727,7 +727,7 @@ questions, and is at test parity with the run log and GoatCounter's names unchan
 |---|---|---|---|
 | **1** | **Two reads left of the callers outside the events folder**, which otherwise ask the event (the record minty-quail-rosy-lynx). A method and a variable cannot share a name, so the plan's `role`, read by the run log's map, becomes `role()` when the plan's fields go private in 3a. The row's `speed`, read where a badge is made for a warning with nothing in the world yet, is the fourth of the slightly wrong answers (section 7, point 6): the pull request that makes it `approach_speed()` removes the read | `src/telemetry/telemetry_map.gd` (in 3a); `src/ui/danger_edge.gd` (in point 6's pull request for it) | With 3a; after this row's first step has merged |
 | **2a** | **The live event's behaviours ask it through `Figure`, and are handed the rest.** `EventBody` taken out of `EventInstance` ok; the composer hands each behaviour its settings, the map, the navigator and its siblings ok; the eight existing specs get their methods as far as a converted reader asks them ok. Built (the records minty-quail-velvet-owl, -olive-finch, -tiny-alpaca, -tawny-swan, -striped-hawk, -striped-magpie and -silver-marmot). Left to later rows: the traffic lights, the gate's state and `_spread_is_vertical()`, handed in by the one setup call (3b); the specs' remaining methods, with the steps that convert their readers | `src/events/event_instance.gd`, `behaviours/*` (all ask through `Figure` ok), `event_excitement.gd`, `charge_record.gd`, `warning.gd`, the eight spec files (methods added) | **Now, beside placement**, after 1 (both add to `event_instance.gd`). The third hand-ins pull request, which rewrites the manager's setup, meets `WhereSheIs` there: the events' world holds it and `EventSpawner.create()` hands it to each live event |
-| **2b** | **The looks ask the live event and are handed their settings.** | `src/events/views/*`, `event_footprints.gd`, `event_scenery.gd` | **Now**, beside 2a once `Figure` and the outward questions are in |
+| **2b** | **The looks ask the live event and are handed their settings.** | `src/events/views/*`, `event_footprints.gd`, `event_scenery.gd` (handed its atlas and its drawer ok) | **Now**, beside 2a once `Figure` and the outward questions are in |
 | **3a** | **The dawn and the walk's ground ask rows and plans.** The plan's fields go private. Small where placement wrote against section 3 | `event_plan.gd`, `event_scheduler.gd` and what the breakup made of it (`dawn_phases/`, `plan_builder.gd`, `row_ground.gd`, `dawn_context.gd`), `street_rules/*`, `street_invalidation.gd`, the location files, `view_bag.gd`, `walk_ground.gd`, `day_events.gd`, `walk_events.gd`, `day_reach.gd`, `mast_sites.gd`, `day_planner.gd`, `src/routes/seal_planner.gd`, `region_planner.gd` | After placement and the scheduler's breakup close |
 | **3b** | **The event manager's parts.** Streaming keeps its own state per plan, tells the plan what happened and carries a live event's state out and back as one `EventSave`; the spawner hands a live event everything in one setup call; `EventWorld`'s 55 lines | `event_manager.gd`, `event_world.gd`, `event_streaming.gd`, `event_spawner.gd`, `event_director.gd`, `events_ahead.gd`, `warning_board.gd`, `pending_warning.gd` | After placement (its step 4 rewrites the director's and `EventsAhead`'s siting) and the third hand-ins pull request. Beside 3a and 3c |
 | **3c** | **The resistance, the scene recipes and the rigs.** | `src/resistance/*`, `src/dev/*`, `src/city/city.gd` | After placement's bullet on the scene recipes and the third hand-ins pull request. Beside 3a and 3b |

@@ -8,13 +8,12 @@ extends Node2D
 ## `EventManager` owns the events atlas page for its whole tree lifetime, including every scenery
 ## child and every streamed instance; a standalone fixture acquires that page around this node.
 
-## The baked atlas pages the event's own look draws from (`AtlasLibrary`), handed by the drawer
-## that builds this scenery for the look (`EventDrawer.scenery()`) before it is configured.
-var atlas: AtlasLibrary
-## What every layer of this scenery lays its pictures through (`SceneryDrawer`), handed by the
-## drawer that builds it (`EventDrawer.scenery()`) before it enters the tree, and handed on to each
-## layer it makes.
-var drawer: SceneryDrawer
+## The baked atlas pages the event's own look draws from (`AtlasLibrary`), handed in
+## `draw_through()`.
+var _atlas: AtlasLibrary
+## What every layer of this scenery lays its pictures through (`SceneryDrawer`), handed in
+## `draw_through()` and handed on to each layer it makes (`SceneryLayer.draw_through()`).
+var _drawer: SceneryDrawer
 var _moving_layers: Array[SceneryLayer] = []
 var _static_layers: Array[SceneryLayer] = []
 var _picture: String
@@ -37,6 +36,12 @@ func _exit_tree() -> void:
 	_static_layers.clear()
 	request_ready()
 
+## Handed, by the drawer that builds this scenery for the look (`EventDrawer.scenery()`) and before
+## it is configured, the atlas pages its pictures are cut from and what its layers lay them through.
+func draw_through(atlas: AtlasLibrary, drawer: SceneryDrawer) -> void:
+	_atlas = atlas
+	_drawer = drawer
+
 func configure(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
 		clip := Rect2()) -> void:
 	_picture = picture
@@ -47,14 +52,14 @@ func configure(picture: String, extent: Vector2, anchor: Vector2, shadow: String
 
 func _build() -> void:
 	show_behind_parent = true
-	var original := atlas.region(_picture)
+	var original := _atlas.region(_picture)
 	var scale_factor := _extent / original.get_size()
 	var top_left := _anchor - Vector2(_extent.x * 0.5, _extent.y)
 	if not _shadow.is_empty():
 		var contact := SceneryLayer.new()
-		contact.drawer = drawer
+		contact.draw_through(_drawer)
 		contact.modulate = Palette.SHADOW
-		contact.append(atlas.region(_shadow), Rect2(top_left, _extent))
+		contact.append(_atlas.region(_shadow), Rect2(top_left, _extent))
 		_static_layers.append(contact)
 		add_child(contact)
 	var stem := _picture.get_file()
@@ -63,7 +68,7 @@ func _build() -> void:
 		var moving: bool = part[5]
 		var rect := Rect2(top_left + Vector2(part[1], part[2]) * scale_factor,
 				Vector2(part[3], part[4]) * scale_factor)
-		var texture := atlas.region(region)
+		var texture := _atlas.region(region)
 		var source := Rect2()
 		if _clip.has_area():
 			var inside := rect.intersection(_clip)
@@ -73,8 +78,8 @@ func _build() -> void:
 			source = Rect2((inside.position - rect.position) * texels, inside.size * texels)
 			rect = inside
 		var layer := SceneryLayer.new()
-		layer.drawer = drawer
-		layer.append(texture, rect, atlas.region(region + "_b") if moving else null, source)
+		layer.draw_through(_drawer)
+		layer.append(texture, rect, _atlas.region(region + "_b") if moving else null, source)
 		if moving:
 			_moving_layers.append(layer)
 		else:
@@ -85,4 +90,4 @@ func _build() -> void:
 func set_frame(frame_b: bool) -> void:
 	_frame_b = frame_b
 	for layer in _moving_layers:
-		layer.frame_b = frame_b
+		layer.show_frame_b(frame_b)
