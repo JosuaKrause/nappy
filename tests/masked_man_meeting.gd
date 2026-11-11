@@ -42,7 +42,7 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 	var man: EventInstance = null
 	for instance in events.instances():
-		if instance.def.id == "masked_pursuer":
+		if instance.row_id() == "masked_pursuer":
 			man = instance
 	var origin: Vector2i = f.waypoint("stairwell_right") - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 	var door: Vector2i = (f.door("stairwell_right:landing_first") as InteriorMapPlan.Door).tile

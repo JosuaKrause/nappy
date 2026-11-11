@@ -234,7 +234,7 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 	var after_the_tick := func(ticks: int) -> bool:
 		var at := (ticks - 1) * STEP
 		for instance in events.instances():
-			if instance.def.id != "masked_pursuer":
+			if instance.row_id() != "masked_pursuer":
 				continue
 			var id := instance.get_instance_id()
 			if not known.has(id):
@@ -244,7 +244,7 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 				warned_at.append(INF)
 			# One his row's repeat made on this tick, ahead of the step, has taken his first step
 			# from the foot of his line.
-			var before: Vector2 = stood.get(id, instance.path[0])
+			var before: Vector2 = stood.get(id, instance.walks()[0])
 			var was_leaving: bool = was_leaving_by_id.get(id, false)
 			var which: int = known[id]
 			if warned_at[which] == INF and not instance.is_waiting():
@@ -254,13 +254,13 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 					moved_while_telegraphing += 1
 				if first_step_age[which] < 0.0:
 					first_step_age[which] = instance.age - warned_at[which]
-			if instance.is_leaving and not was_leaving:
+			if instance.is_on_its_way_out() and not was_leaving:
 				left.append(at)
 		stood.clear()
 		was_leaving_by_id.clear()
 		for instance in events.instances():
 			stood[instance.get_instance_id()] = instance.global_position
-			was_leaving_by_id[instance.get_instance_id()] = instance.is_leaving
+			was_leaving_by_id[instance.get_instance_id()] = instance.is_on_its_way_out()
 		# Ends once the run has shown what the checks below ask for with room to spare (they need
 		# three men, two who ran and one gap): five men come, four have left the top and four have
 		# taken their first step. The whole section holds thirteen, and a longer watch only repeats
