@@ -87,7 +87,7 @@ Left, each its own design question:
   changes no line under `src/`.
 - **The lines the placement rewrite and the third hand-ins pull request touch** (`src/events/`,
   `src/routes/`, `src/dev/`, `scene_recipe*`, `day_director.gd`, `main.gd`, `day_planner.gd`,
-  `run_session.gd`, the event manager and `EventWorld`, scenery residency and ground, the blackout,
-  the still watch and the debug readout) are converted after those land, and the fields they read
+  `run_session.gd`, the event manager and `EventWorld`, the still watch and the debug readout) are
+  converted after those land, and the fields they read
   become underscore-private behind a method, which takes the field's name unless the field is a
   yes-or-no one (designing-classes, "Fields are not API").
