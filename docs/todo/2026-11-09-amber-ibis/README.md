@@ -20,6 +20,11 @@ a suite, or says a rule is unenforced, or names the record sandy-alpaca, that is
 rework's four pull requests have merged (the game's domain skills, the process skills, the
 orchestration skills, and the hooks with `CLAUDE.md`).
 
+**Its three tool items are an entry of their own,** mossy-rabbit (the rules review's three tool
+fixes), which goes first as tooling: asked whether amber-ibis moves ahead of the refactor under
+the rule that work on skills, rules, hooks and general project scripts goes first (inbox #1305),
+the player answered "split it" (inbox #1348), the pick that the five items touching the game's
+code and tests stay here, after the refactor.
+
 **Items:** `lethal-field-across-a-day.md`, `closures-through-the-planner.md`,
-`no-pelican-png.md`, `suites-that-do-not-exist.md`, `small-false-sentences.md`,
-`citation-after-a-comma.md`, `tool-help-gaps.md`, `old-briefs.md`.
+`no-pelican-png.md`, `suites-that-do-not-exist.md`, `small-false-sentences.md`.

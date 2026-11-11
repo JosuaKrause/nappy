@@ -8,8 +8,9 @@ second counts its lines that call a frame function or emit the frame signal by h
 `rg -c '^[^#]*(\._(physics_)?process\(|\._(unhandled_)?input\(|process_frame\.emit)' tests/*.gd`.
 Both skip comment lines, count every file under `tests/` (the rigs and helpers the suites share as
 well as the suites), and neither sees access through a variable holding the name, so
-`tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print
-nothing, and a test or helper that makes them print something is a breach.
+`tests-unseen-reads.md` covers what they cannot see. Outside the two files below they print one breach still open: `tests/test_event_manager_fire.gd` and
+`tests/test_fire_truck_body.gd` each call the private `EventSpawner._where_the_summoned_row_stops()`. A test or
+helper that makes them print anything else is a breach.
 
 - `tests/shared_state.gd` stays: its matches are the names in the runner's table of statics it
   leaves out of its comparison, read by name since the runner's job is to compare every static.
@@ -78,8 +79,7 @@ ticks give, and is kept with its reason:
 - **`EventScheduler._cross_street_path`** serves no catalogue row today, since the director sites the
   cat; it wants a row or removing.
 - **A recycled walker's heading** when it chooses its lane again has no suite guarding it.
-- **`EventsAhead.walk_siting()`** has no game caller (the route bag and fire suites and two probes
-  read it), and `test_route_bag.gd` reads a place waiting for its site in the director's private
+- **`EventsAhead.walk_siting()`** has no game caller (the route bag and resistance arrow suites and two probes read it), and `test_route_bag.gd` reads a place waiting for its site in the director's private
   list, which nothing a game class asks reads. `test_day7_van.gd` reads the rigged bag through
   `EventsAhead.director().route_bag()`, an accessor no game class reads, and wants the manager or the
   resistance director to answer what is in front of her.
