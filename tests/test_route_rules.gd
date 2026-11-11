@@ -22,8 +22,9 @@ extends RefCounted
 ##   abduction, whose 22px body stops short of the route a tile away and whose 54px lethal inner
 ##   disc reaches it, standing there is refused;
 ##   a man shouting, who has no body, stands on the route itself. With the streets counted, the
-##   barricade across the sidewalk a route walks is refused and on the far sidewalk stands; with
-##   them not counted, the line rules' ground, it stands on the route's sidewalk.
+##   barricade across the sidewalk a route walks is refused and on the far sidewalk stands, and on
+##   the street she starts on, which the tree does not carry, it is refused too; with them not
+##   counted, the line rules' ground and the home street's hold, it stands on both.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
@@ -139,6 +140,11 @@ const ALLEY_ROW := 38
 ## the route walks, whose kerb-side row the body is stood on.
 const FAR_SIDEWALK_ROW := 28
 const ROUTE_SIDEWALK_ROWS: Array[int] = [32, 33]
+## The home, against the south edge of a block well east of the alley, so its door opens onto the
+## street south of that block, a street no route of the cases runs along; and the tile of that
+## street's near sidewalk the body is stood on.
+const HOME := Rect2i(65, 40, 2, 2)
+const ON_THE_HOME_STREET := Vector2i(66, 43)
 
 ## A corridor whose routes run along exactly `tiles`, the one question the ground rule asks of it.
 class _Route extends Corridor:
@@ -152,10 +158,12 @@ class _Route extends Corridor:
 	func carries_a_route(tile: Vector2i) -> bool:
 		return _tiles.has(tile)
 
-## The streets, with `ALLEY_BLOCK`'s interior painted alley, and the route of the cases below: down
-## `ROUTE_COLUMNS` of the alley and along the street north of it on `ROUTE_SIDEWALK_ROWS`.
+## The streets, with `ALLEY_BLOCK`'s interior painted alley and the home at `HOME`; the route of the
+## cases below runs down `ROUTE_COLUMNS` of the alley and along the street north of it on
+## `ROUTE_SIDEWALK_ROWS`.
 static func _alley_map() -> CityMap:
 	var map := StreetMap.full()
+	map.home_rect = HOME
 	var origin := ALLEY_BLOCK * CityMap.period() + Vector2i.ONE * Tuning.STREET_WIDTH
 	for y in range(origin.y, origin.y + Tuning.BLOCK_SIZE):
 		for x in range(origin.x, origin.x + Tuning.BLOCK_SIZE):
@@ -218,3 +226,11 @@ func _test_a_body_on_a_routes_street_is_refused_where_the_streets_count(t: TestR
 	var line_ground := RouteGroundRule.new(map, route)
 	t.check(line_ground.allows(_standing(map, "barricade", across), across, NONE, NONE),
 			"with them not counted, the body on the route's sidewalk is left to the line rules")
+	var home := ON_THE_HOME_STREET
+	t.check(not route.carries_a_route(home)
+			and ClosurePlanner.home_street(map).tile_rect().has_point(home),
+			"the tile is on the street she starts on, which no route runs along")
+	t.check(not counting.allows(_standing(map, "barricade", home), home, NONE, NONE),
+			"with the streets counted, a body on the street she starts on is refused")
+	t.check(line_ground.allows(_standing(map, "barricade", home), home, NONE, NONE),
+			"with them not counted, it is left to the home street's own hold")

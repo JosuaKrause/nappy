@@ -2309,7 +2309,8 @@ round: a body never stands on a route tile there even where a detour exists. Har
 as bodies for this rule, by their lethal inner disc: an abduction in progress is not something you
 walk through to reach the park behind it. The run's scars and the park spoilers, which the line
 rules are not asked of, are asked `RouteGroundRule` alone with a street's route tiles counted too,
-so a barricade the run left across a route's sidewalk is not stood that day. Nothing is dropped
+and the street she starts on, every route's first stretch, which the tree does not carry: a
+barricade the run left across a route's sidewalk or across her own street is not stood that day. Nothing is dropped
 after planning, so the day is never illegal on the way. A walk's sitings (the dusk fire, day 7's
 route van, day 11's added mast and the rest) and an authored scene's row are asked the same rules.
 The escape's draw asks none of the route rules, since its walk grows no corridor

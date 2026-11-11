@@ -230,10 +230,10 @@ bodies never seal it off:
   free (`RouteGroundRule`: no obstructing body's disc, and no lethal row's inner disc, covers a tile
   a route runs along on an alley, a park cut or a square), asked against everything already down,
   the seals and the region wall's own bodies included. The run's scars and the park spoilers are
-  asked `RouteGroundRule` alone, with a street's route tiles counted too, since they stand where
-  they stand rather than where a draw put them and the line rules are not asked of them. So no body
-  closes the tree, and nothing floods the city to see whether one has. A soft seal
-  stands only off the tree, so its bands never cut the tree's way to the place.
+  asked `RouteGroundRule` alone, with a street's route tiles and the street she starts on counted
+  too, since they stand where they stand rather than where a draw put them and the line rules are
+  not asked of them. So no body closes the tree, and nothing floods the city to see whether one
+  has. A soft seal stands only off the tree, so its bands never cut the tree's way to the place.
 
 **What it promises is one tile of the place, not every tile of it and not a tile chosen ahead.** The
 pool is the tiles the contact may stand on (`ResistanceSteps.target_candidates`) that pass the

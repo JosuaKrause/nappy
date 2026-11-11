@@ -1230,8 +1230,8 @@ static func _was_silenced(foot: Vector2, day: int, scars: Array[Dictionary]) -> 
 	return false
 
 ## Permanent marks left by earlier days, placed again exactly where they happened, each into
-## `events`, unless a body of one would cover a tile a route runs along (`route_ground`, the day's
-## `RouteGroundRule` counting the streets): then it is not stood today, which is the day's routes
+## `events`, unless a body of one would cover a tile a route runs along or the street she starts on
+## (`route_ground`, the day's `RouteGroundRule` counting the streets): then it is not stood today, which is the day's routes
 ## kept open by construction rather than a repair taking it away afterwards.
 static func _place_scars(day: int, scars: Array[Dictionary], map: CityMap, events: DayEvents,
 		route_ground: RouteGroundRule, heat: int = 0) -> void:
@@ -1247,8 +1247,9 @@ static func _place_scars(day: int, scars: Array[Dictionary], map: CityMap, event
 
 ## Whether `plan`, stood where it is, leaves the day's routes their ground: no body of it covers a
 ## tile a route runs along, on a street or off one (`route_ground`). Only that: a scar or a spoiler
-## is not spaced and not given a role, and stands on a route's line as it always did, so it asks
-## nothing of what the day holds or what stands.
+## is not spaced, not given a role and asked no line rule, so a field of one stands on a route's
+## line as it always did and only a body is kept off the route's tiles; it asks nothing of what the
+## day holds or what stands.
 static func _keeps_the_routes(plan: EventPlan, map: CityMap,
 		route_ground: RouteGroundRule) -> bool:
 	var none: Array[EventPlan] = []
@@ -2711,7 +2712,8 @@ static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.Block
 ## same argument that made a segment the unit a closure works in.
 ##
 ## Nothing else needs the exemption: the spoiler grid places on calm ground, a scar is where
-## something already burnt, and an ambient event has no tile.
+## something already happened (and its body is kept off this street by `RouteGroundRule`, which
+## counts it as the routes' first stretch), and an ambient event has no tile.
 static func _the_street_she_starts_on(map: CityMap) -> Rect2i:
 	var segment := ClosurePlanner.home_street(map)
 	return segment.tile_rect() if segment else Rect2i()

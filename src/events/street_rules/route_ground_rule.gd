@@ -21,7 +21,10 @@ extends StreetRule
 ## the line rules also ask (`StreetInvalidation`); on for what the line rules are not asked of, the
 ## run's scars and the park spoilers, which are not spaced and not given a role and stand where they
 ## stand: for them a route's sidewalk is ground no body may cover either, so a barricade the run
-## left across a route's street is not stood, and one on the far sidewalk is.
+## left across a route's street is not stood, and one on the far sidewalk is. So is the street she
+## starts on (`ClosurePlanner.home_street()`), every route's first stretch, which the tree does not
+## carry because a door is not a route (`RouteTree`): the home is a notch with one exit, and a body
+## across that street seals her in whatever the tree's own tiles keep.
 ##
 ## It reads the candidate's disc and the route's tiles and nothing else: nothing of what is placed
 ## or stands round it, and nothing kept between asks. With no corridor it asks nothing. Model: no
@@ -30,6 +33,8 @@ extends StreetRule
 var _map: CityMap
 var _corridor: Corridor
 var _counts_the_streets: bool
+## The tiles of the street she starts on, where the streets count; empty where they do not.
+var _home_street := Rect2i()
 
 ## The rule on `map` for the routes `corridor` runs (null for a walk with no route tree, which this
 ## refuses nothing on), counting a street's route tiles too where `counts_the_streets`.
@@ -37,6 +42,10 @@ func _init(map: CityMap, corridor: Corridor, counts_the_streets := false) -> voi
 	_map = map
 	_corridor = corridor
 	_counts_the_streets = counts_the_streets
+	if counts_the_streets:
+		var home := ClosurePlanner.home_street(map)
+		if home:
+			_home_street = home.tile_rect()
 
 ## Overrides StreetRule.allows.
 func allows(candidate: EventPlan, _tile: Vector2i,
@@ -50,14 +59,13 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 			return false
 	return true
 
-## Whether a body may not cover `tile`: a route runs along it, and it is open today and, unless the
-## streets count, no street's.
+## Whether a body may not cover `tile`: a route runs along it, or the streets count and it is the
+## street she starts on; and it is open today and, unless the streets count, no street's.
 func _is_route_ground(tile: Vector2i) -> bool:
-	if not _corridor.carries_a_route(tile):
-		return false
 	if _counts_the_streets:
-		return _map.is_open(tile)
-	return is_ground_off_the_street(_map, tile)
+		return (_corridor.carries_a_route(tile) or _home_street.has_point(tile)) \
+				and _map.is_open(tile)
+	return _corridor.carries_a_route(tile) and is_ground_off_the_street(_map, tile)
 
 ## **Walkable today and not part of a street**: a park, a square, an alley, a courtyard, a
 ## precinct's own ground. A carriageway is walkable and is not a way off a street, which is why
