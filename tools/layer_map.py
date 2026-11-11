@@ -467,7 +467,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         (
             "src/city/blackout.gd",
             "src/city/poster_walls.gd",
-            "src/crowd/crowd.gd",
             "src/events/encounter_watch.gd",
             "src/events/event_instance.gd",
             "src/events/event_manager.gd",
@@ -479,7 +478,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         ),
         more=(
             ("src/city/blackout.gd", 2),
-            ("src/crowd/crowd.gd", 3),
             ("src/events/encounter_watch.gd", 5),
             ("src/events/event_instance.gd", 3),
             ("src/events/event_manager.gd", 5),

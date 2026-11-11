@@ -578,6 +578,7 @@ func _test_the_horn_watches_further_than_the_strike_does(t) -> void:
 	_city.add_child(rig)
 	rig.set_physics_process(false)
 	_city.crowd.use_player(rig)
+	_city.crowd.use_bus(EventBus)
 
 	# Halfway between the two watches, so a few pixels of separation correction cannot land the
 	# test on the wrong side of either.
@@ -822,6 +823,7 @@ func _test_walking_into_somebody_displaces_and_startles_them(t) -> void:
 			first["push"] = walker.global_position - at
 	EventBus.crowd_bumped.connect(on_bump)
 	_city.crowd.use_player(rig)
+	_city.crowd.use_bus(EventBus)
 	_city.crowd.set_focus(here)
 	var frames := 0
 	while frames < 120 and (bumps.is_empty() or walker.is_touched()):

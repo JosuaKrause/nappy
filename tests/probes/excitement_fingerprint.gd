@@ -134,6 +134,7 @@ func _walk(t, walk: String, world: WorldContext, events: EventManager, crowd: Cr
 	events.stream_around(start)
 	if crowd:
 		crowd._player = rig
+		crowd.use_bus(EventBus)
 	var here := start
 	var reached := {}
 	var printed := 0

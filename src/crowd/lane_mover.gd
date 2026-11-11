@@ -10,8 +10,8 @@ extends Node2D
 ## the look-ahead, the held step, placement and recycling, the junction and queue questions, the
 ## heading and the velocity — is here, and never asks which kind it is; what only one kind does is
 ## its `strategy`, a `WalkerStrategy` or a `CarStrategy` that `kind` installs (`LaneStrategy` says
-## what it is asked). The per-frame inputs `Crowd` writes for the cars and for the walkers at a door
-## are fields of the mover the crowd hands them to.
+## what it is asked). The per-frame inputs `Crowd` works out for the cars and for the walkers at a
+## door it tells the mover through its lane (`Lane`'s events), which keeps them as fields.
 ##
 ## **The mover has no picture, no excitement and no halo.** `CrowdAgent` is the crowd member built on
 ## it: it adds the field it contributes to the baby's meter, the halo and caret that warn of it, and
@@ -341,6 +341,38 @@ class Lane:
 	func clear_what_is_ahead() -> void:
 		_of.gap_ahead = INF
 		_of.leader_speed = 0.0
+
+	# ------------------------------------------------------- what the crowd finds ---
+	# What `Crowd` works out once a tick over the pair of them or over the street, and tells the car:
+	# whose turn it is at a box, a gate down ahead, somebody near its road.
+
+	## The crowd found a junction box ahead that it has to give way at, with the stop line
+	## `distance` ahead of it (`Crowd._give_way_at_junctions()`).
+	func find_a_junction_to_hold_at(distance: float) -> void:
+		_of.junction_hold = distance
+
+	## The crowd found no junction box ahead that it has to give way at: it has the right of way,
+	## or is near none.
+	func find_no_junction_to_hold_at() -> void:
+		_of.junction_hold = INF
+
+	## The crowd found a lowered checkpoint gate ahead that it has to stop for, with the stop line
+	## `distance` ahead of it (`Crowd._stop_for_gates()`).
+	func find_a_gate_to_hold_at(distance: float) -> void:
+		_of.gate_hold = distance
+
+	## The crowd found no gate ahead that it has to stop for.
+	func find_no_gate_to_hold_at() -> void:
+		_of.gate_hold = INF
+
+	## The crowd found somebody standing at `at`, near enough to its road to watch
+	## (`Crowd._meet_the_player()`).
+	func see_a_pedestrian_at(at: Vector2) -> void:
+		_of.pedestrian_ahead = at
+
+	## The crowd found nobody near enough to its road to watch.
+	func see_no_pedestrian() -> void:
+		_of.pedestrian_ahead = Vector2.INF
 
 ## Stepped on the physics tick, inside the crowd's own (`step()`), so it is drawn interpolated
 ## between two ticks as she and the events are, and moves as smoothly as they do on a screen drawing

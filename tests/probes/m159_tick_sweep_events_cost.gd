@@ -104,6 +104,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	crowd.start_day(day, _rng("crowd", city_seed, day), start)
 	crowd.set_gates(city.streets().region_plan().gates)
 	crowd._player = rig
+	crowd.use_bus(EventBus)
 	events.use_player(rig)
 	rig.global_position = start
 	rig.velocity = Vector2.ZERO

@@ -316,7 +316,6 @@ src/city/city.gd view
 src/telemetry/run_session.gd sources
 
 # [CrowdAgent] src/crowd/crowd_agent.gd
-src/crowd/crowd_sources.gd excitement
 src/dev/debug_layers.gd excitement
 src/run/day_director.gd excitement
 
@@ -993,11 +992,6 @@ src/main.gd atlas
 src/main.gd map
 
 # [LaneMover] src/crowd/lane_mover.gd
-src/crowd/crowd.gd gate_hold
-src/crowd/crowd.gd junction_hold
-src/crowd/crowd.gd kind
-src/crowd/crowd.gd pedestrian_ahead
-src/crowd/crowd.gd shape
 src/dev/debug_layers.gd kind
 src/dev/debug_layers.gd shape
 src/dev/scene_recipe_draft.gd kind
