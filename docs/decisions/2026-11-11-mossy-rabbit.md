@@ -8,23 +8,25 @@ orchestrator.
 
 ## What was built
 
-- **Every citation inside one parenthesis or `;`-part is checked**, after `, `, `, and ` or ` and `:
-  `(woolly-finch 35, woolly-finch 36)` checks both.
-- **A further piece counts only when it is citation-shaped**: a hyphenated name, an optional number
-  or `#N` list, then a separator or the end. Prose with hyphenated words (`a well-known rule and a
-  long-standing one`) is not read as a citation, and a number list inside one citation
-  (`brisk-heron 1, 13`) stays one citation.
+- **Every citation-shaped piece inside one parenthesis or `;`-part is checked**: a hyphenated name
+  with an optional number or `#N` list, at the part's start, after a leading `and`, or after `, `,
+  `, and `, `, see `, `, also ` or ` and `. `(woolly-finch 35, woolly-finch 36)` checks both.
+- **Prose is not read as a citation**: two bare names joined by `and`, neither with a number
+  (`a well-known and long-standing one`), are prose, and a number list inside one citation
+  (`brisk-heron 1, 13`) stays one citation. A bare name beside a citation is still checked, so a
+  misspelt name is flagged without resolving it.
 - **`inbox #N in name` lists needed no change**: their own pattern already read each one.
-- Two unit cases, each naming the mutation it fails: a wrong second citation after each separator
-  is flagged, and resolving second citations with free hyphenated prose pass.
+- **Four citations the old check never read are now read**, and the tree passes; the one piece of
+  prose newly flagged, a job name in the release reference, is written as code.
+- Unit cases, each naming the mutation it fails, and the docstring and the using-tools row say what
+  is read and what a writer avoids.
 
 ## Choices open to overturn
 
-- `and` is a separator beside the comma and the semicolon, read only when a citation-shaped piece
-  follows it (the builder's).
+- `and`, `see` and `also` are separators beside the comma and the semicolon; `or`, `&` and free
+  text before a name are not, so a piece after them is unread (the builder's).
 
 ## Verified
 
-The whole-tree run over `CLAUDE.md` and every skill flags nothing under the stricter check, so no
-skill changed. `./tools/pycheck.sh` and `./tools/lint.sh` pass.
+The whole-tree run over `CLAUDE.md` and every skill passes under the stricter check. `./tools/pycheck.sh` and `./tools/lint.sh` pass.
 
