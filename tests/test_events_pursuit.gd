@@ -776,7 +776,8 @@ func _test_the_resistances_pursuers_are_fitted_to_the_dog(t: TestRunner) -> void
 				"'%s' reads the dog's own %.1fs badge and %.1fs chase (%.1f, %.1f)"
 				% [id, dog.offscreen_notice, dog.duration, def.offscreen_notice, def.duration])
 		for encounter in M207Lead.gold_encounters():
-			if encounter["def"].id != id or encounter["heading"] != Vector2.UP:
+			var encountered: EventDef = encounter["def"]
+			if encountered.id != id or encounter["heading"] != Vector2.UP:
 				continue
 			for answer: M207Lead.Answer in M207Lead.ANSWERS:
 				var met := M207Lead.gold(encounter, answer, edge)
