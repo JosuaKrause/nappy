@@ -202,6 +202,7 @@ class AnswerTests(unittest.TestCase):
         row += "func none() -> Tail:\n\treturn tail if tail == null else null\n"
         row += "func turned() -> Tail:\n\tif tail != null:\n\t\treturn null\n\treturn tail\n"
         row += "func either() -> Tail:\n\treturn tail if tail or id else null\n"
+        row += "func both() -> Tail:\n\treturn tail if tail and id else null\n"
         got = found("func f(row: Row) -> void:\n\tprint(row.tail, row.loud)\n", {"src/row.gd": row})
         self.assertEqual(got, {("row", "tail", "read"): ["tail_or_none"], ("row", "loud", "read"): ["heard"]})
 
@@ -243,6 +244,32 @@ class AnswerTests(unittest.TestCase):
         fields = {f["field"]: f for f in data["classes"][0]["fields"]}
         self.assertEqual([m["method"] for m in fields["flock.birds"]["behind_a_guard"]], ["birds"])
 
+    def test_a_truth_test_of_the_whole_chain_with_a_stand_in_other_than_null_is_printed_behind_its_guard(self) -> None:
+        row = ROW + "func loud_or_one() -> float:\n\treturn loud if loud else 1.0\n"
+        row += "func one_if_quiet() -> float:\n\tif not loud:\n\t\treturn 1.0\n\treturn loud\n"
+        row += "func tail_or_null() -> Tail:\n\treturn tail if tail else null\n"
+        made = report("func f(row: Row) -> void:\n\tprint(row.loud, row.tail)\n", {"src/row.gd": row})
+        by_label = {e.label: e for e in made.entries}
+        self.assertEqual([a.method for a in by_label["loud"].answers], ["heard"])
+        self.assertEqual(
+            [(a.method, a.does) for a in by_label["loud"].guarded],
+            [("loud_or_one", "loud if loud else 1.0"), ("one_if_quiet", "1.0 if not loud else loud")],
+        )
+        self.assertEqual([a.method for a in by_label["tail"].answers], ["tail_or_none", "tail_or_null"])
+        self.assertEqual(by_label["tail"].guarded, [])
+
+    def test_a_guarded_chain_is_not_looked_for_where_the_field_itself_is_answered(self) -> None:
+        flock = "class_name Flock\nextends RefCounted\nvar birds: Array = []\n"
+        flock += "func all_birds() -> Array:\n\treturn birds\n"
+        live = LIVE + "var flock: Flock\nstatic var _NONE: Array = []\n"
+        live += "func birds() -> Array:\n\treturn flock.birds if flock else _NONE\n"
+        body = "func f(live: Live) -> void:\n\tprint(live.flock.birds)\n"
+        made = report(body, {"src/flock.gd": flock, "src/live.gd": live})
+        by_label = {(e.klass, e.label): e for e in made.entries}
+        self.assertNotIn(("src/live.gd", "flock.birds"), by_label)
+        birds = by_label[("src/flock.gd", "birds")]
+        self.assertEqual(([a.method for a in birds.answers], birds.guarded), (["all_birds"], []))
+
     def test_an_early_return_of_a_member_is_printed_as_the_same_guard(self) -> None:
         row = ROW + "func tail_or_hunts() -> Variant:\n\tif tail == null:\n\t\treturn hunts\n\treturn tail\n"
         made = report("func f(row: Row) -> void:\n\tprint(row.tail)\n", {"src/row.gd": row})
@@ -280,6 +307,22 @@ class AnswerTests(unittest.TestCase):
             f"- `Mover`: `parked` read (`{SUITE}`:3): on its view, `Mover.Figure.has_parked()` (0 calls), a view no"
             f" public method hands out; `strategy` read (`{SUITE}`:3): on its view, `view().strategy()` (0 calls)",
         )
+
+    def test_a_view_is_not_looked_for_where_the_class_answers_the_read_itself(self) -> None:
+        mover = "class_name Mover\nextends RefCounted\nvar strategy := 0\nvar _view := View.new(self)\n"
+        mover += "func view() -> View:\n\treturn _view\nfunc strategy_now() -> int:\n\treturn strategy\n"
+        mover += "class View:\n\tvar _of: Mover\n\tfunc strategy() -> int:\n\t\treturn _of.strategy\n"
+        made = report("func f(mover: Mover) -> void:\n\tprint(mover.strategy)\n", {"src/mover.gd": mover})
+        (entry,) = made.entries
+        self.assertEqual(([a.method for a in entry.answers], entry.views), (["strategy_now"], []))
+
+    def test_a_private_method_does_not_hand_a_view_out(self) -> None:
+        mover = "class_name Mover\nextends RefCounted\nvar strategy := 0\nvar _view := View.new(self)\n"
+        mover += "func _the_view() -> View:\n\treturn _view\n"
+        mover += "class View:\n\tvar _of: Mover\n\tfunc strategy() -> int:\n\t\treturn _of.strategy\n"
+        made = report("func f(mover: Mover) -> void:\n\tprint(mover.strategy)\n", {"src/mover.gd": mover})
+        (entry,) = made.entries
+        self.assertEqual([(a.klass, a.method, a.does) for a in entry.views], [("src/mover.gd::View", "strategy", "")])
 
     def test_a_yes_or_no_method_that_names_another_member_too_is_not_asking_of_the_field_alone(self) -> None:
         planner = PLANNER.replace(
@@ -469,6 +512,28 @@ class ReceiverTests(unittest.TestCase):
         made = report(body)
         self.assertEqual(made.entries, [])
         self.assertEqual([(u.line, u.expression) for u in made.unknown], [(6, "inside.loud"), (7, "typed.id")])
+
+    def test_a_class_nested_inside_an_inner_class_named_through_its_outer_class_is_not_told(self) -> None:
+        holder = "class_name Holder\nextends RefCounted\nclass Outer:\n\tvar row: Row\n"
+        holder += "\tclass Deep extends Row:\n\t\tvar more := 0\n"
+        body = "class Outer:\n\tclass Deep extends Row:\n\t\tvar more := 0\nfunc f(x) -> void:\n"
+        body += "\tvar near := Outer.Deep.new()\n\tprint(near.loud)\n\tvar typed: Outer.Deep\n\tprint(typed.id)\n"
+        body += "\tprint((x as Outer.Deep).label)\n\tprint(Holder.Outer.Deep.new().loud)\n"
+        body += "\tvar far: Holder.Outer.Deep\n\tprint(far.id, Holder.Outer.new().row.loud)\n"
+        made = report(body, {"src/holder.gd": holder})
+        self.assertEqual(
+            [(e.klass, e.label) for e in made.entries], [("src/holder.gd::Outer", "row"), ("src/row.gd", "loud")]
+        )
+        self.assertEqual(
+            [(u.line, u.expression) for u in made.unknown],
+            [
+                (7, "near.loud"),
+                (9, "typed.id"),
+                (10, "(x as Outer.Deep).label"),
+                (11, "Holder.Outer.Deep.new().loud"),
+                (13, "far.id"),
+            ],
+        )
 
     def test_a_receiver_that_closes_a_bracket_opened_on_a_line_before_is_told_or_printed_whole(self) -> None:
         body = (
