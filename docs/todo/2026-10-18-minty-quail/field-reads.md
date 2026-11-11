@@ -27,6 +27,10 @@ each read, and its pull requests in order, the first of which run beside the pla
 - **field-read-check, "yes":** a script fails a change that adds a read of another class's plain
   field under `src/`, with today's reads listed once in a list that only shrinks. It is
   `tools/check_field_reads.py`, with the list in `tools/field_reads.txt`, run in CI's `gates` job.
+  Asked on the board whether the list may gain the lines of a read that only moved (into a new
+  file, or with a class lifted out of another), the player answered "A", that it may
+  (inbox #1350). Which moves count is the planning agent's proposal, written in the record
+  minty-quail-breezy-bison.
 
 **Every receiver gets a class the check can tell** (inbox #1268 in olive-ferret). Shown "The field-read check
 skips about two thirds of reads because it cannot tell the receiver's class", the player: "isn't
