@@ -1010,7 +1010,8 @@ func _test_a_swap_replaces_what_the_section_holds(t) -> void:
 		if roadblock != null and plan.instance() == roadblock:
 			actual.release(plan.get_instance_id())
 			actual.release(roadblock.get_instance_id())
-	t.check(actual.bodies == expected.bodies and actual.soft_sealed == expected.soft_sealed,
+	t.check(actual.todays_body_tiles() == expected.todays_body_tiles() \
+			and actual.todays_soft_sealed_tiles() == expected.todays_soft_sealed_tiles(),
 			"(content) the map keeps no body or shut tile of anything the section held")
 	_tear_down(player, director, city)
 
