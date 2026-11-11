@@ -1104,9 +1104,9 @@ func _test_a_signal_gives_her_time_to_cross(t: TestRunner) -> void:
 		for tick in int(Tuning.signal_cycle_seconds() / 0.01) + 1:
 			if signals.green_for(Vector2i(_city.map.main_road, 8), true):
 				break
-			signals.elapsed += 0.01
+			signals.advance(0.01)
 		for hop in 6:
-			signals.elapsed += travel
+			signals.advance(travel)
 			arrivals += 1
 			if signals.green_for(Vector2i(_city.map.main_road, 8 - hop - 1), true):
 				greens += 1
@@ -1280,7 +1280,7 @@ func _test_the_crowd_stays_in_the_field(t: TestRunner) -> void:
 	# is that way does.
 	# The furthest anybody may legitimately be: the far edge of the field, plus the depth of the
 	# band agents enter through, plus the tile of slack the boundary test allows.
-	var reach := field.radius + CrowdAgent.ENTRY_SPREAD + Tuning.TILE_SIZE
+	var reach := field.half_extent() + CrowdAgent.ENTRY_SPREAD + Tuning.TILE_SIZE
 	var stragglers := 0
 	var worst := 0.0
 	var ahead := 0
@@ -1288,7 +1288,7 @@ func _test_the_crowd_stays_in_the_field(t: TestRunner) -> void:
 		field.centre_on(start + Vector2(0.0, Tuning.RUN_SPEED * step))
 		_advance(1.0)
 		for agent in _city.crowd.agents():
-			var offset := agent.global_position - field.centre
+			var offset := agent.global_position - field.centre_point()
 			worst = maxf(worst, maxf(absf(offset.x), absf(offset.y)))
 			if absf(offset.x) > reach or absf(offset.y) > reach:
 				stragglers += 1
@@ -1310,7 +1310,7 @@ func _test_the_crowd_stays_in_the_field(t: TestRunner) -> void:
 func _agents_in_front_of(field: CrowdField) -> int:
 	var found := 0
 	for agent in _city.crowd.agents():
-		if agent.global_position.y > field.centre.y:
+		if agent.global_position.y > field.centre_point().y:
 			found += 1
 	return found
 
@@ -1340,8 +1340,8 @@ func _test_the_crowd_does_not_bunch_against_the_wall(t: TestRunner) -> void:
 	for at: Vector2 in [middle, corner, Vector2(Tuning.TILE_SIZE, middle.y),
 			Vector2(extent.x - Tuning.TILE_SIZE, middle.y)]:
 		field.centre_on(at)
-		var across := minf(extent.x, at.x + field.radius) - maxf(0.0, at.x - field.radius)
-		var down := minf(extent.y, at.y + field.radius) - maxf(0.0, at.y - field.radius)
+		var across := minf(extent.x, at.x + field.half_extent()) - maxf(0.0, at.x - field.half_extent())
+		var down := minf(extent.y, at.y + field.half_extent()) - maxf(0.0, at.y - field.half_extent())
 		worst = maxf(worst, absf(across * down / pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0) - 1.0))
 	t.check(worst < 0.02,
 			"the box holds the same city at the wall as in the middle (worst %.0f%% out)"

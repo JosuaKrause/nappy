@@ -141,7 +141,7 @@ func _test_the_sweep_matches_the_unfiltered_loop(t: TestRunner, crowd: Crowd, ma
 	var skipped := 0
 	var differed := 0
 	var reach := sources.silent_beyond()
-	var centre := crowd.field().centre
+	var centre := crowd.field().centre_point()
 	# Points among the crowd, and points a loud car's jolt alone reaches, beyond what an unstartled
 	# body is heard from.
 	var points: Array[Vector2] = []

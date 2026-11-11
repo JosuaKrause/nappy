@@ -1047,9 +1047,16 @@ func _test_a_line_at_a_door_stays_short(t: TestRunner, scene: Dictionary) -> voi
 			crossed = true
 		# Two waiting behind somebody inside: the second of them stands one spacing further back
 		# than the first, which is what makes a line a line rather than a heap.
-		if hut.inside != null and hut.waiting() >= 2:
-			var first: CrowdAgent = hut.queue[0]
-			var second: CrowdAgent = hut.queue[1]
+		if hut.committed() > hut.waiting() and hut.waiting() >= 2:
+			var first: CrowdAgent = null
+			var second: CrowdAgent = null
+			for walker: CrowdAgent in line:
+				if hut.place_of(walker) == 0:
+					first = walker
+				elif hut.place_of(walker) == 1:
+					second = walker
+			if first == null or second == null:
+				continue
 			if first.velocity().is_zero_approx() and second.velocity().is_zero_approx():
 				var gap := absf(_past_the_hut(second, hut)) - absf(_past_the_hut(first, hut))
 				if absf(gap - WalkerStrategy.WALKER_DOOR_QUEUE_SPACING) < 6.0:
