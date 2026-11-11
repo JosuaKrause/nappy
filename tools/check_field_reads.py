@@ -90,7 +90,7 @@ with no receiver (`if is_ready:`). A second read of a field a file already reads
 line, so a change that adds one to a listed reader file and field passes `--base`: review reads the diff for it.
 Tests are not read for reads (that is `tests-one-module.md`'s item). Whether a line still names only warnings its
 file trips is the engine's to show, not this check's: deleting a name the file still trips fails the boot, and a
-stale name left in is caught by nothing.
+stale name left on an opt-out line is found by `tools/typing_census.py --check`.
 
 **The list.** A header comment `# [ClassName] path` opens a class's group; a line under it is `<reader file> <field>`.
 A read not listed **fails**. A listed line with no read now **fails** as a `REMOVE` line, so the pull request that
