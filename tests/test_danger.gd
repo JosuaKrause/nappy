@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The danger vocabulary: what M22 put in place of the aura rings.
 ##
@@ -42,6 +41,7 @@ func run(t: TestRunner) -> void:
 	_atlas.release(&"events")
 
 const MapCache := preload("res://tests/city_map_cache.gd")
+const CrowdStreetRig := preload("res://tests/crowd_street_rig.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 const STEP := 1.0 / 60.0
@@ -444,7 +444,7 @@ func _a_street(t: TestRunner) -> Dictionary:
 
 const STREET_SEED := 4242
 ## The street rig (`tests/crowd_street_rig.gd`): places a car or a walker through the crowd's own entry.
-var _street_rig = preload("res://tests/crowd_street_rig.gd").new()
+var _street_rig := CrowdStreetRig.new()
 
 ## **The line this milestone cannot merge on the wrong side of.** *(2026-09-08, on the one
 ## measurement rather than an argument: "the answer has to be none at ordinary density, or the
@@ -669,7 +669,7 @@ func _test_the_badge_measures_the_things_own_speed(t: TestRunner) -> void:
 		engine.global_position -= Vector2(def.speed * delta, 0.0)
 		driven += delta
 		await t.get_tree().process_frame
-	t.check(edge.model.announcing().size() == 1, "a fire engine actually coming down the street does")
+	t.check(edge.announcing().size() == 1, "a fire engine actually coming down the street does")
 
 	edge.free()
 	standing.free()

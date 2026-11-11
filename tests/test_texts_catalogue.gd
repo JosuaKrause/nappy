@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `Texts` (`src/ui/texts.gd`) is the one place the game's on-screen words live, and this is what
 ## keeps them there: a quoted sentence anywhere else under `src/` fails the suite unless it is in
@@ -88,7 +87,7 @@ static func sentences_in(source: String) -> Array:
 	var found := []
 	var log_depth := 0
 	var number := 0
-	for line in source.split("\n"):
+	for line: String in source.split("\n"):
 		number += 1
 		var quote := ""
 		var current := ""
@@ -135,7 +134,7 @@ static func _log_opener_at(line: String, at: int) -> String:
 		if before == "_" or before == "." or before.to_lower() != before.to_upper() \
 				or before.is_valid_int():
 			return ""
-	for opener in ["print(", "push_warning(", "push_error(", "printerr(", "print_rich(",
+	for opener: String in ["print(", "push_warning(", "push_error(", "printerr(", "print_rich(",
 			"assert(", "_log.note(", "trace.note(", "_trace.note(", "_the_trace().note(",
 			"event.trace.note(", "_note("]:
 		if line.substr(at, opener.length()) == opener:
@@ -153,7 +152,7 @@ static func is_sentence(text: String) -> bool:
 	for i in words.size() - 1:
 		var run := 0
 		var longest := 0
-		for ch in words[i]:
+		for ch: String in words[i]:
 			if ch.to_lower() != ch.to_upper():
 				run += 1
 				longest = maxi(longest, run)
@@ -170,10 +169,10 @@ static func _scripts_under(directory: String) -> PackedStringArray:
 	var dir := DirAccess.open(directory)
 	if dir == null:
 		return scripts
-	for file in dir.get_files():
+	for file: String in dir.get_files():
 		if file.ends_with(".gd"):
 			scripts.append(directory.path_join(file))
-	for child in dir.get_directories():
+	for child: String in dir.get_directories():
 		scripts.append_array(_scripts_under(directory.path_join(child)))
 	return scripts
 
@@ -238,7 +237,7 @@ func _test_no_sentence_is_quoted_outside_the_catalogue(t: TestRunner) -> void:
 			% scripts.size())
 	var used_files := {}
 	var used_literals := {}
-	for path in scripts:
+	for path: String in scripts:
 		if path == "res://src/ui/texts.gd":
 			continue
 		var hits := sentences_in(FileAccess.get_file_as_string(path))
@@ -248,7 +247,7 @@ func _test_no_sentence_is_quoted_outside_the_catalogue(t: TestRunner) -> void:
 				used_files[covered] = true
 			continue
 		var allowed: Dictionary = _ALLOWED_LITERALS.get(path, {})
-		for hit in hits:
+		for hit: Array in hits:
 			if hit[1] in allowed:
 				used_literals["%s|%s" % [path, hit[1]]] = true
 				continue
@@ -265,5 +264,5 @@ func _test_no_sentence_is_quoted_outside_the_catalogue(t: TestRunner) -> void:
 func _test_the_catalogue_holds_what_the_screens_say(t: TestRunner) -> void:
 	t.check(Texts.DAY_BRIEF.size() == Tuning.RUN_LENGTH_DAYS,
 			"there is a brief for every day of the run")
-	for day in Tuning.RUN_LENGTH_DAYS:
+	for day: int in Tuning.RUN_LENGTH_DAYS:
 		t.check(Texts.DAY_BRIEF.has(day + 1), "day %d has a brief" % (day + 1))
