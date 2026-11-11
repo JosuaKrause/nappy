@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name CityDecals
 extends Node2D
 ## Loose litter and street-tree beds, drawn flat: no body, no field, no y-sort. Placed between
@@ -75,12 +74,12 @@ func _refresh_chunks() -> void:
 		var key := SceneryGround.key_for(Vector2i((entry.position / Tuning.TILE_SIZE).floor()))
 		if not _litter_chunks.has(key):
 			_litter_chunks[key] = []
-		_litter_chunks[key].append(entry)
+		(_litter_chunks[key] as Array).append(entry)
 	for entry in _street_tree_pits:
 		var key := SceneryGround.key_for(entry.tile)
 		if not _pit_chunks.has(key):
 			_pit_chunks[key] = []
-		_pit_chunks[key].append(entry)
+		(_pit_chunks[key] as Array).append(entry)
 	for layer: SceneryLayer in _resident.values():
 		layer.free()
 	_resident.clear()

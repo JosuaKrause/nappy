@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name ExcitementSources
 extends RefCounted
 ## **A set of things that charge the baby**, answered as one: a day's events (`EventSources`) or
@@ -28,8 +27,8 @@ func holds_her_alone(_at: Vector2) -> bool:
 ## Summed excitement per second from this set at a point.
 func total_at(at: Vector2) -> float:
 	var total := 0.0
-	for pair in sources_at(at):
-		total += pair[1]
+	for pair: Array in sources_at(at):
+		total += pair[1] as float
 	return total
 
 ## Every set's pairs at `at`, in the sets' order — **unless one of them holds her alone, when its

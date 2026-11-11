@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name ExcitementSource
 extends RefCounted
 ## **One thing in the world that charges the baby**: an event (`EventExcitement`) or a body in the
@@ -51,9 +50,9 @@ static func net_landed(landed: float, total_landed: float, decay: float) -> floa
 ## (`global_position`), and whether it is still there (`is_queued_for_deletion()`).
 var body: Node2D
 
-## How this source's rim is drawn, handed in by the body's view (`SourceRim`), or null for a source
-## nobody draws. Typed only as what it is to this layer, since the world names no view class.
-var rim: RefCounted = null
+## How this source's rim is drawn, handed in by the body that owns the picture (`SourceRim`), or null
+## for a source nobody draws.
+var rim: SourceRim = null
 
 ## Whether another source of the same kind is the one charging her in this one's place this frame,
 ## so this one is not projected (`expected_gross_at()` answers zero) and is not picked for a rim
@@ -62,7 +61,7 @@ var rim: RefCounted = null
 var outranked := false
 
 ## Gives the source the rim `ExcitementHalo` lights on its body.
-func use_rim(the_rim: RefCounted) -> void:
+func use_rim(the_rim: SourceRim) -> void:
 	rim = the_rim
 
 func _init(the_body: Node2D) -> void:
@@ -147,8 +146,8 @@ func landed() -> float:
 		return 0.0
 	_prune_landed_history()
 	var total := 0.0
-	for entry in _landed_history:
-		total += entry[1]
+	for entry: Array in _landed_history:
+		total += entry[1] as float
 	return total
 
 func _prune_landed_history() -> void:

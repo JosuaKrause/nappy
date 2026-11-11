@@ -61,7 +61,7 @@ class ToldRim extends SourceRim:
 
 ## Wraps the rim `instance` hands its source in a `ToldRim`, and answers it.
 static func told(instance: EventInstance) -> ToldRim:
-	var rim := ToldRim.new(instance.excitement.rim as SourceRim)
+	var rim := ToldRim.new(instance.excitement.rim)
 	instance.excitement.rim = rim
 	return rim
 

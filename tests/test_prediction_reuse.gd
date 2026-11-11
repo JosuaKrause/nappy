@@ -13,7 +13,7 @@ class CountedEvent extends EventInstance:
 
 	func _init() -> void:
 		super()
-		var rim: RefCounted = excitement.rim
+		var rim: SourceRim = excitement.rim
 		excitement = Source.new(self)
 		excitement.rim = rim
 
@@ -33,7 +33,7 @@ class CountedCrowd extends CrowdAgent:
 
 	func _init() -> void:
 		super()
-		var rim: RefCounted = excitement.rim
+		var rim: SourceRim = excitement.rim
 		excitement = Source.new(self)
 		excitement.rim = rim
 
@@ -49,7 +49,7 @@ class CountedCrowd extends CrowdAgent:
 class ReferenceEvent extends EventInstance:
 	func _init() -> void:
 		super()
-		var rim: RefCounted = excitement.rim
+		var rim: SourceRim = excitement.rim
 		excitement = Source.new(self)
 		excitement.rim = rim
 
@@ -62,7 +62,7 @@ class ReferenceEvent extends EventInstance:
 class ReferenceCrowd extends CrowdAgent:
 	func _init() -> void:
 		super()
-		var rim: RefCounted = excitement.rim
+		var rim: SourceRim = excitement.rim
 		excitement = Source.new(self)
 		excitement.rim = rim
 

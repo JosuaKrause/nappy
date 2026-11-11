@@ -573,20 +573,7 @@ src/events/event_excitement.gd inner_radius
 src/events/event_excitement.gd intensity
 src/events/event_excitement.gd outer_radius
 src/events/event_excitement.gd shape
-src/events/event_footprints.gd draws_body_shadow
-src/events/event_footprints.gd flock_size
 src/events/event_footprints.gd flock_spread
-src/events/event_footprints.gd hard_fail
-src/events/event_footprints.gd has_a_spread
-src/events/event_footprints.gd hides_in_its_hold
-src/events/event_footprints.gd intensity
-src/events/event_footprints.gd lies_across_its_street
-src/events/event_footprints.gd look
-src/events/event_footprints.gd obstructs_radius
-src/events/event_footprints.gd shape
-src/events/event_footprints.gd stands_along_its_street
-src/events/event_footprints.gd trails_a_lead
-src/events/event_footprints.gd vehicle
 src/events/event_footprints.gd warning_picture
 src/events/event_instance.gd counts_charges_as
 src/events/event_instance.gd duration
@@ -765,7 +752,6 @@ src/events/behaviours/event_behaviours.gd pursuit
 src/events/behaviours/event_behaviours.gd route
 src/events/behaviours/event_behaviours.gd unreachable
 src/events/event_excitement.gd age
-src/events/event_footprints.gd def
 src/events/event_manager.gd def
 src/events/event_manager.gd excitement
 src/events/event_manager.gd held_by_hand
@@ -978,7 +964,6 @@ src/events/event_def.gd kind
 src/events/event_excitement.gd half_extents
 src/events/event_excitement.gd half_length
 src/events/event_excitement.gd kind
-src/events/event_footprints.gd radius
 src/events/event_instance.gd radius
 src/events/views/event_look.gd half_length
 src/events/views/event_look.gd radius

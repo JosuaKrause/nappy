@@ -43,7 +43,8 @@ Each layer depends only on the ones below it; a lower layer never calls a higher
    sub-states. The map interface is the model's, the player's "let's use the improvement for B"
    (inbox #904 in freckled-moose): kept in the world, six model files would name a higher layer.
 3. **World:** one navigator, passability, line of sight, adding an entity on a draw layer, one draw
-   layer contract, and the scene nodes that draw the world's own ground and furniture.
+   layer contract, the scene nodes that draw the world's own ground and furniture, the ground's
+   picture builder, and the halo a body draws round itself with its rim.
 4. **Simulation:** actors and events composed from shared parts; they report what happens as domain
    events and never call the UI, the run log, GoatCounter or dev code.
 5. **Run flow:** a run is a sequence of day specs (fourteen days, the building, the city); one
@@ -51,7 +52,7 @@ Each layer depends only on the ones below it; a lower layer never calls a higher
 6. **Observers and the view, siblings at one level** (the player's "let's make A siblings",
    inbox #904 in freckled-moose): the observers are GoatCounter (`VisitCounter`), the run log (`Telemetry`), the
    save and the debug readouts; the view is the screen's own furniture, the HUD, the screens, the
-   badges, the halo and the controls. Both subscribe to domain events, nothing below calls them
+   badges, the halo's lighting and the controls. Both subscribe to domain events, nothing below calls them
    inline, and neither names the other.
 7. **The composition root:** the main scene, which builds every layer and hands each what it needs,
    and the developer's rigs that drive the game from outside.
@@ -125,9 +126,9 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    (minty-quail-16), where the player chose "let's eat the cost for now and think about optimizing
    later" (minty-dolphin #852): the step measures it again and says whether optimizing it is
    worth an entry of its own. It also reruns `tests/probes/placement_rows.gd` on main and on the
-   refactor's head, and turns the script that compares the two into a `tools/` entry point, since
-   it is then a manual sequence done a second time (woolly-finch 23): the record grassy-magpie
-   states its rule and carries the output of its first run. Before it does, both probes are settled
+   refactor's head and compares the two with `tools/compare-placement-rows.py`, which applies the
+   rule the record grassy-magpie states (that record carries the output of the hand-run script it
+   replaced, with that step's own list). Before it does, both probes are settled
    on `DayPlanner`'s planning: `placement_rows.gd` plans each day's closures, region wall and seals
    and hands the seals and the wall's bodies in as standing since placement step 3c, which moved
    main's own route-adjacent walls from 30.54 to 19.41 a city a day, and

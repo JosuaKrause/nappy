@@ -287,7 +287,7 @@ func _lit_and_traced(t, agent: CrowdAgent) -> TracingAtlas:
 	atlas.acquire(Crowd.ATLAS_GROUP)
 	agent.use_atlas(atlas)
 	t.add_child(agent)
-	agent.excitement.rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	agent.excitement.rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	atlas.watch(agent.excitement.rim.entity_halo())
 	return atlas
 
@@ -342,11 +342,11 @@ func _test_the_halo_redraws_the_same_body(t) -> void:
 	agent.free()
 	_put_away(atlas)
 
-## Whether `halo` draws the alpha its glow was told, `ExcitementHalo.MAX_ALPHA` here: the shader's
+## Whether `halo` draws the alpha its glow was told, `EntityHalo.MAX_ALPHA` here: the shader's
 ## own `halo_colour`, which stays transparent until the rim has eased at all.
 func _glow_has_arrived(halo: EntityHalo) -> bool:
 	var drawn: Variant = halo.get_instance_shader_parameter("halo_colour")
-	return drawn is Color and is_equal_approx((drawn as Color).a, ExcitementHalo.MAX_ALPHA)
+	return drawn is Color and is_equal_approx((drawn as Color).a, EntityHalo.MAX_ALPHA)
 
 ## **A steady glow is not a steady body, and the rim has to follow the body.** The rim is traced by
 ## re-running the owner's own `AgentLook.draw_body()` (pinned by the test above), and `_draw()` is retained —
@@ -362,7 +362,7 @@ func _test_the_rim_is_re_traced_under_a_steady_glow(t) -> void:
 	var look := ViewRig.car_look(agent)
 	# In the tree, so the halo's own `_process()` runs on real frames and the glow eases in.
 	t.add_child(agent)
-	agent.excitement.rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	agent.excitement.rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var halo: EntityHalo = agent.excitement.rim.entity_halo()
 	var started := Time.get_ticks_msec()
 	while not _glow_has_arrived(halo) and Time.get_ticks_msec() - started < 10_000:

@@ -35,7 +35,7 @@ func _test_the_rim_is_painted_before_the_scene(t) -> void:
 		var first := _first_slice(instance)
 		var sceneries := _sceneries_on(first)
 		t.check(not sceneries.is_empty(), "the crash has its scenery (vertical %s)" % vertical)
-		(instance.excitement.rim as SourceRim).set_strength(ExcitementHalo.MAX_ALPHA,
+		instance.excitement.rim.set_strength(EntityHalo.MAX_ALPHA,
 				Palette.HALO_STRONG)
 		var rim := instance.rim()
 		t.check(rim != null, "a pick builds the crash's rim (vertical %s)" % vertical)
@@ -62,7 +62,7 @@ func _test_the_rim_is_given_back_when_the_slices_go(t) -> void:
 	t.add_child(instance)
 	await t.get_tree().process_frame
 	instance.step(instance.def.telegraph_time + 0.01)
-	(instance.excitement.rim as SourceRim).set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	instance.excitement.rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var rim := instance.rim()
 	t.check(rim != null and rim.get_parent() is SpreadLook.Slice,
 			"a pick builds the crash's rim behind its first slice")

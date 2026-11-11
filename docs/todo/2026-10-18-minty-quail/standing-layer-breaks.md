@@ -27,10 +27,9 @@ review; a builder runs it again):
   nodes on a draw layer, which follows from the map interface being the model's (inbox #904 in freckled-moose).
 - **Dawn planning reading live-event geometry** (12 uses in the event scheduler and
   `walk_ground.gd`): the live event, its picture footprints and her class's constants.
-- **A body composing its halo** (15 uses), which the review reads as a mistake in the map, not in
-  the code.
-- **The rest**, small misplacements: lane constants, the dev rig named by the day director, the
-  task calendar computing on the map.
+- **The rest**, small misplacements: the dev rig named by the day director, the task calendar
+  computing on the map, the city edge's kinds, the props'
+  trees.
 
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
