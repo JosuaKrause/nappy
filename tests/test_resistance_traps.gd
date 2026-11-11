@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends "res://tests/resistance_rig.gd"
 ## The task riding on a look-alike, the guarded targets and the handover traps: a robber or guard set on her from off screen, announced before he can catch her.
 
@@ -560,7 +559,7 @@ func _robbers_on_the_street() -> int:
 ## test the director places against (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over the same view): the
 ## joystick's covered corners only ever take ground out of sight, so a point out of the whole view
 ## is out of both.
-func _is_really_on_screen(_t, her: Vector2, at: Vector2) -> bool:
+func _is_really_on_screen(_t: TestRunner, her: Vector2, at: Vector2) -> bool:
 	var bearing := at - her
 	var lead := Vector2.ZERO
 	if bearing.length() > 0.001:

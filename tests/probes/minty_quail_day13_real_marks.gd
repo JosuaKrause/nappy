@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## **Day 13's task roadblock, read from real chalk marks**: what the task's placement
 ## (`ResistanceDirector._place_the_roadblock_near()`) does when she reads the mark where a mark
@@ -197,7 +197,7 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	player.set_physics_process(false)
 	return player
 
-func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int, t = null) -> void:
+func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int, t: TestRunner = null) -> void:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:

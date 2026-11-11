@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Day 13's task roadblock, found or swapped in**, on the six probe seeds: how many roadblocks the
 ## day's plan stands at dawn, how many of them stand beside her routes (on a street no route runs
@@ -146,7 +145,7 @@ func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, see
 	player.set_physics_process(false)
 	return player
 
-func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int, t = null) -> void:
+func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int, t: TestRunner = null) -> void:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:

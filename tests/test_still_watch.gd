@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## `StillWatch`, the stillness heuristic behind `--quit-when-still`, driven the way `main` builds it:
 ## handed a city, her, and the day's clock through `setup()`, standing in a tree, and fed her
@@ -287,7 +286,7 @@ func _junction_box(map: CityMap, junction: Vector2i) -> Rect2:
 			Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH))
 
 func _test_facing_a_red_light_true_for_the_nearest_visible_junction_wherever_she_stands(
-		t: Object) -> void:
+		t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
@@ -300,7 +299,7 @@ func _test_facing_a_red_light_true_for_the_nearest_visible_junction_wherever_she
 	t.check(StillWatch.facing_a_red_light(map, signals, far_away, view),
 			"and so is its amber — the crossing arm stays red through the clearance period")
 
-func _test_facing_a_red_light_false_when_the_visible_junction_shows_green(t: Object) -> void:
+func _test_facing_a_red_light_false_when_the_visible_junction_shows_green(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = Tuning.signal_main_green_seconds() + Tuning.SIGNAL_AMBER_SECONDS + 0.1
@@ -312,7 +311,7 @@ func _test_facing_a_red_light_false_when_the_visible_junction_shows_green(t: Obj
 ## off "wherever she stands" instead (PLAYTEST-128.md statement 13), so a red light still holds it
 ## from the carriageway.
 func _test_facing_a_red_light_true_on_the_carriageway_now_that_her_tile_no_longer_matters(
-		t: Object) -> void:
+		t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
@@ -320,7 +319,7 @@ func _test_facing_a_red_light_true_on_the_carriageway_now_that_her_tile_no_longe
 	t.check(StillWatch.facing_a_red_light(map, signals, map.tile_to_world(_tile_in(_main_junction(map, 0), Vector2i(3, 3))), view),
 			"standing on the carriageway no longer ends the hold — only the light does")
 
-func _test_facing_a_red_light_false_with_no_signalled_junction_on_screen(t: Object) -> void:
+func _test_facing_a_red_light_false_with_no_signalled_junction_on_screen(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
@@ -329,7 +328,7 @@ func _test_facing_a_red_light_false_with_no_signalled_junction_on_screen(t: Obje
 	t.check(not StillWatch.facing_a_red_light(map, signals, far_away,
 			view), "no junction anywhere near what is on screen is never a red light")
 
-func _test_facing_a_red_light_false_at_an_unsignalled_junction_on_screen(t: Object) -> void:
+func _test_facing_a_red_light_false_at_an_unsignalled_junction_on_screen(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
@@ -338,7 +337,7 @@ func _test_facing_a_red_light_false_at_an_unsignalled_junction_on_screen(t: Obje
 	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(_tile_in(_main_junction(map, 0), Vector2i(1, 1))), view),
 			"an ordinary junction on screen has no light to wait at, whatever the phase clock reads")
 
-func _test_facing_a_red_light_false_when_the_red_junction_is_off_screen(t: Object) -> void:
+func _test_facing_a_red_light_false_when_the_red_junction_is_off_screen(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
@@ -349,7 +348,7 @@ func _test_facing_a_red_light_false_when_the_red_junction_is_off_screen(t: Objec
 
 ## `TrafficSignals` runs a green wave with a per-junction offset (`TrafficSignals._offset()`), so
 ## two junctions on screen can show different phases; the nearest one to her decides.
-func _test_the_nearest_of_two_disagreeing_visible_junctions_decides(t: Object) -> void:
+func _test_the_nearest_of_two_disagreeing_visible_junctions_decides(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
