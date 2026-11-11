@@ -22,8 +22,8 @@ typing pass need it again. A manual sequence done a second time becomes a script
   `./tools/check.sh`) or while `project.godot` has uncommitted changes; it sets the three warnings to
   warn and every other to off in `project.godot`, blanks each opt-out line (so line numbers stay
   put), runs `tools/typing_census.tscn` headless over the file list, and puts back, byte for byte
-  and only in the files it changed, each write going to a file beside the target and moved over it,
-  so an interrupt never leaves a file empty, `project.godot` and each first line, on every exit, an
+  and only in the files it changed, each write going to a file beside the target, named before it
+  is made, and moved over it, so an interrupt leaves no file empty and none added, `project.godot` and each first line, on every exit, an
   interrupt or a timeout; a file whose first line changed meanwhile is named and left as found.
 - **A census counts only from a run that finished**: the engine exits 0, its scene prints
   `CENSUS_DONE` with the count handed, and every path is answered once; otherwise every mode stops
@@ -31,7 +31,10 @@ typing pass need it again. A manual sequence done a second time becomes a script
   file is under `src/`, is an autoload, or is named by another listed file, since its dependents'
   counts cannot be trusted. A message of none of the three warnings stops the tool rather than
   miscount. It cannot see an opt-out line inside a string a suite writes at run time.
-- `tools/test_typing_census.py` (47 cases, each naming the mutation it fails, run by `tools/pycheck.sh`; seven drive the tool whole with a stand-in engine on a scratch project), the entry point in
+- `tools/test_typing_census.py` (51 cases, each naming the mutation it fails, run by
+  `tools/pycheck.sh`; nine drive the tool whole with a stand-in engine on a scratch project, and two
+  send real SIGINTs at seeded random moments to the tool's own handler in a child process, then
+  compare the whole scratch tree byte for byte), the entry point in
   `tools/test_cli_help.py`, the using-tools row, and the field-read check's blind-spots sentence:
   a stale name on an opt-out line is found by the census's `--check`.
 
@@ -42,5 +45,15 @@ telemetry typing pull request owns that file); three probes did not parse
 (`lazy_scenery_city.gd` overriding a stale signature, `m159_contribution_cost.gd` calling a method
 with too few arguments, `minty_quail_walk_field_parity.gd` calling a method it lacks), and this pull
 request fixes each in one line and runs each to its end, so `--write` is not refused on `main` and
-`--check` is red only for the telemetry line; `standalone_expression` is tripped on no line
+`--check` is red only for the telemetry line (the telemetry typing, #1326, has since taken that
+name out, so `--check` is green once `main` is merged in); `standalone_expression` is tripped on no line
 under `src/`, `tests/` or `tools/`.
+
+## The rethink after three reviews
+
+Every blocking finding of the three reviews was in the put-back under a real interrupt, each fix
+having been tested by an error raised at one chosen point while a real signal lands wherever a system
+call returns. The orchestrator kept editing the tree in place and made a real-signal case the gate,
+with running the census on a copy of the project as the fallback if that case found another hole; it
+found none. Reloading source in memory with the warnings set at run time was rejected: the one try
+crashed the engine (golden-elk).
