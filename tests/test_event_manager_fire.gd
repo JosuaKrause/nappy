@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## EventManager against a real generated City: the fire, and a walk down the day's own routes.
 ##
@@ -211,7 +210,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 			wrong.append("off the line of its street")
 		if from_the_kerb.dot(up_the_road) <= 0.0:
 			wrong.append("past the fire's kerb")
-		if from_the_kerb.dot(up_the_road) < (her_at[0] - stop).dot(up_the_road) - 0.5:
+		if from_the_kerb.dot(up_the_road) < ((her_at[0] as Vector2) - stop).dot(up_the_road) - 0.5:
 			wrong.append("between her and the fire")
 		if not Tile.is_road(_city.map.tile_type_at_world(at)):
 			wrong.append("off the carriageway")
