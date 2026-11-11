@@ -34,8 +34,9 @@ suite calls only its static `hits()`, so nothing was converted.
   `drawer` and `signals`) have no method the game calls. The row's `hunts.lets_out`, read on a cold row in `test_heat`, is not
   what `lets_out()` answers: that asks the heated copy's `hunting`, null on a cold row.
 - **The traffic lights' clock, `TrafficSignals.elapsed`, written** in `test_police_car`: `restart_cycle()`
-  and `advance()` do those writes and the crowd calls both, so the crowd's pass converts them
-  (the record minty-quail-tiny-elk names the same methods).
+  and `advance()` do those writes and the crowd calls both (the record minty-quail-tiny-elk names
+  the same methods); both of the crowd's passes have merged, so they wait for the suite's own
+  conversion to one module, or the sweep `typed-everywhere.md` proposes.
 - **Fields of inner classes**, which the field-read check does not list: the plan's
   (`EventScheduler.Planned`) `def` (`row()`), `position` (`placed_at()`), `live` (`instance()`, and
   `is_in_the_world()` for its null test), `mast_id` and `silenced` (none); a mast site's
