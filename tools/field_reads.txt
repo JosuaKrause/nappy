@@ -113,13 +113,6 @@ src/events/event_instance.gd ended
 src/events/event_instance.gd warned
 
 # [City] src/city/city.gd
-src/dev/dev_rig.gd events
-src/dev/dev_rig.gd map
-src/dev/dev_rig.gd trace
-src/dev/route_rig.gd events
-src/dev/route_rig.gd map
-src/dev/route_rig_planner.gd events
-src/dev/route_rig_planner.gd map
 src/dev/scene_recipe_draft.gd crowd
 src/dev/scene_recipe_draft.gd events
 src/dev/scene_recipe_draft.gd map
@@ -1265,7 +1258,6 @@ src/city/poster_walls.gd header
 src/city/poster_walls.gd posters
 src/day/day_controller.gd calendar
 src/dev/route_rig.gd resistance
-src/dev/route_rig_planner.gd header
 src/dev/scene_recipe_draft.gd calendar
 src/dev/scene_recipe_draft.gd header
 src/dev/scene_recipe_draft.gd posters

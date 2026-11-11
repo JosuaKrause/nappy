@@ -21,11 +21,12 @@ the crowd last (`standing-layer-breaks.md`). The player's answer was three pull 
 third pull request:
 
 - the event manager's own city: `EventManager.setup(city, …)` and `EventWorld.city`;
-- the smaller cases: the developer's rigs (`dev_rig.gd`, `route_rig_planner.gd`), `day_director.gd`,
-  `main.gd` and `day_planner.gd`, as 3c's row in #1166's "Files it touches" lists them (the
-  scenery's residency and ground, the blackout and the poster walls take what they read since the
-  record 2026-10-18-minty-quail-quiet-ibis, and the still watch, the debug readout, the frame
-  recorder and the frame trace since the record 2026-10-18-minty-quail-calm-wombat);
+- the smaller cases: `day_director.gd`, `main.gd` and `day_planner.gd`, as 3c's row in #1166's
+  "Files it touches" lists them (the scenery's residency and ground, the blackout and the poster
+  walls take what they read since the record 2026-10-18-minty-quail-quiet-ibis, the still watch, the
+  debug readout, the frame recorder and the frame trace since the record
+  2026-10-18-minty-quail-calm-wombat, and the developer's rig, the route rig and its planner since
+  the record 2026-10-18-minty-quail-plush-chipmunk);
 - `DayPlanner`'s fallback that grows a route tree when dawn grew none is deleted, since no game
   path reaches it. The rigs that start the event manager's day on a built city without `City.start_day()`
   (`tests/event_manager_rig.gd`, which the two event manager suites share, `tests/test_masts.gd`,

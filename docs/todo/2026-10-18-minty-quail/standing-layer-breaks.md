@@ -28,7 +28,7 @@ review; a builder runs it again):
   nodes on a draw layer, which follows from the map interface being the model's (inbox #904 in freckled-moose).
 - **Dawn planning reading live-event geometry** (12 uses in the event scheduler and
   `walk_ground.gd`): the live event, its picture footprints and her class's constants.
-- **The rest**, small misplacements: the dev rig named by the day director; the task calendar
+- **The rest**, small misplacements: the task calendar
   computing on the map; the city edge's kinds; the props' trees; the danger badge's class named by
   the run log (`RunSession`, `TelemetryObserver`); the save indicator reading `GameSave`; the
   texts' `HelpText` token; her class's constants and type tests where she is not handed in
@@ -68,8 +68,7 @@ review; a builder runs it again):
   uses in the run log (`RunSession`'s edge field and `watch()`'s edge parameter,
   `TelemetryObserver`'s edge field and `setup()`'s edge parameter) go in a pull request of their
   own, which hands the run log what its observer reads of the danger edge, the badges that are
-  announcing (the orchestrator's proposal); the `DevRig` uses go with the third hand-ins step's
-  smaller cases. The `player` group, and `city.gd`'s and `visible_view.gd`'s `Stroller`, go with who
+  announcing (the orchestrator's proposal). The `player` group, and `city.gd`'s and `visible_view.gd`'s `Stroller`, go with who
   builds the event manager and the crowd, which hands her in; `interior_scene.gd`'s with the
   building's pass; the `CityEdge` kinds, read by `main.gd`, the rigs and the run log, after the
   third hand-ins step; `Prop` as a data constant, in a pull request of its own; `GameSave` and
