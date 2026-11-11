@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The masts: fixed sites from `Tuning.MAST_FIRST_DAY`, a field like any other row's, a broadcast
 ## clock every mast reads rather than a clock of its own, and an id that survives silencing. See
@@ -68,7 +67,7 @@ func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t: TestRunner) ->
 			"no mast stands the day before Tuning.MAST_FIRST_DAY")
 
 	var by_day := {}
-	for day in [Tuning.MAST_FIRST_DAY, Tuning.MAST_FIRST_DAY + 2, Tuning.RUN_LENGTH_DAYS]:
+	for day: int in [Tuning.MAST_FIRST_DAY, Tuning.MAST_FIRST_DAY + 2, Tuning.RUN_LENGTH_DAYS]:
 		var by_id := {}
 		for plan in _mast_plans(day):
 			if plan.def.id != "loudspeaker":
@@ -78,10 +77,11 @@ func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t: TestRunner) ->
 				"day %d carries all %d masts (%d)" % [day, Tuning.MAST_COUNT, by_id.size()])
 		by_day[day] = by_id
 	var first: Dictionary = by_day[Tuning.MAST_FIRST_DAY]
-	for day in by_day:
+	for day: int in by_day:
 		var here: Dictionary = by_day[day]
-		for id in first:
-			t.check(here.has(id) and here[id].distance_to(first[id]) < 0.01,
+		for id: String in first:
+			var site: Vector2 = here.get(id, Vector2.INF)
+			t.check(here.has(id) and site.distance_to(first[id]) < 0.01,
 					"mast '%s' stands at the same place on day %d as on day %d"
 					% [id, day, Tuning.MAST_FIRST_DAY])
 
@@ -99,7 +99,7 @@ func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t: TestRunner) ->
 ## Checked over several seeds — the one guarantee here that a single lucky map cannot stand for.
 func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t: TestRunner) -> void:
 	var checked := 0
-	for seed_value in SITE_SEEDS:
+	for seed_value: int in SITE_SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var reach := EventCatalogue.by_id("loudspeaker").outer_radius
 		var doorstep := map.doorstep_world_position()

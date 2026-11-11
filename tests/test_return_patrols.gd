@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## M98, pressure in the empty acts — "Patrols for acts III and IV, built around encounter cost."
 ## `EventDirector.owe_the_return()`'s own shape: what it owes per act, the pacing it switches to,
@@ -305,7 +304,7 @@ func _test_sited_on_driveable_road_toward_her(t: TestRunner) -> void:
 	if path.size() != 2:
 		return
 
-	for point in [path[0], path[1]]:
+	for point: Vector2 in [path[0], path[1]]:
 		t.check(map.is_driveable_at(true, map.world_to_tile(point)),
 				"%s lies on a driveable road tile of her (vertical) street" % point)
 
