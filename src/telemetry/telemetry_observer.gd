@@ -368,8 +368,7 @@ func _tile_of(world_position: Vector2) -> Vector2i:
 func _source() -> EventManager:
 	return _events
 
-## The live instances, typed, from whichever source is being watched — see `DangerEdge._live()`
-## for why a duck-typed source is read through one function.
+## The live instances of the source being watched, none while there is no source.
 func _live() -> Array[EventInstance]:
 	var source := _source()
 	if not source:

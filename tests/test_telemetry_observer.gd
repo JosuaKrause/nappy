@@ -15,7 +15,8 @@ extends RefCounted
 ## narrower interface to hand a fake, and what it reads off them (a position, a velocity, the
 ## meters, the clock's reading) is state a case sets on the real node, as the game does. The
 ## event source it watches is a stand-in where a case needs one (`StandInSource`, holding one plain
-## `EventInstance` set up with a catalogue row), since the observer asks it only for `instances()` and its event sources, which answer nothing there.
+## `EventInstance` set up with a catalogue row), since the observer asks it only for
+## `instances()` and its event sources, which answer nothing there.
 ##
 ## **No case builds a real `City`**: the observer is handed the run and the clock (`setup()`), and
 ## per walk the map she walks, its events, her and the baby, and in a city the city's map, today's
