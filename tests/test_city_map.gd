@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A city map's copy (`CityMap.copy()`): that it is a city the generator's guarantees hold on, that
 ## it answers every question the map it was copied from answers, and that nothing either map is
@@ -58,7 +57,7 @@ func _test_a_copy_answers_what_the_map_answers(t: TestRunner, original: CityMap,
 	t.check(twin != original, "seed %d: the copy is another map" % seed_value)
 	_check_the_same(t, original, twin, "seed %d, as generated" % seed_value)
 	# And the same after a day's repaint, on each map: what the plans and layouts paint is the same.
-	for day in [8, Tuning.RUN_LENGTH_DAYS]:
+	for day: int in [8, Tuning.RUN_LENGTH_DAYS]:
 		var map := original.copy()
 		var copied := map.copy()
 		var state := CityState.new()
@@ -315,10 +314,9 @@ func _plain_members(object: Object, skipped: Array[String] = []) -> Dictionary:
 
 ## `value` with every object in it replaced by its members (`_plain_members()`), so two values
 ## compare equal exactly when they hold the same data, whichever objects hold it, and every array and
-## dictionary in it new, so no later write to what it was read from reaches it.
+## dictionary in it new, so no later write to what it was read from reaches it (a packed array is a
+## value in GDScript, so it is already its own).
 func _plain(value: Variant) -> Variant:
-	if typeof(value) >= TYPE_PACKED_BYTE_ARRAY and typeof(value) <= TYPE_PACKED_VECTOR4_ARRAY:
-		return value.duplicate()
 	if value is Object:
 		return _plain_members(value as Object)
 	if value is Array:

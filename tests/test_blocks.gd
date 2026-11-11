@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Block purposes and the arcs they travel.
 ##
@@ -199,7 +198,7 @@ func _test_the_same_seed_plans_the_same_arcs(t: TestRunner) -> void:
 ## rejection alone.
 func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 	var checked_any_pair := false
-	for seed_value in [BASE_SEED, BASE_SEED + 7, BASE_SEED + 14]:
+	for seed_value: int in [BASE_SEED, BASE_SEED + 7, BASE_SEED + 14]:
 		var map := CityGenerator.generate(seed_value)
 		var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 		t.add_child(city)
@@ -214,7 +213,8 @@ func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 		# blocks a tree happens to sit on — a four-block calm zone is one lot, and `_dress_block`'s
 		# own spacing check only ever compares trees it placed in the same call.
 		var by_lot := {}
-		for prop in city.props():
+		for node in city.props():
+			var prop := node as Prop
 			if prop.kind != Prop.Kind.TREE:
 				continue
 			var anchor: Vector2i = map.anchor_of(map.block_at(prop.position))
@@ -222,12 +222,12 @@ func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 			lot.append(prop.position)
 			by_lot[anchor] = lot
 
-		for anchor in by_lot:
+		for anchor: Vector2i in by_lot:
 			var trees: Array = by_lot[anchor]
 			for i in trees.size():
 				for j in range(i + 1, trees.size()):
 					checked_any_pair = true
-					var apart: float = trees[i].distance_to(trees[j])
+					var apart := (trees[i] as Vector2).distance_to(trees[j] as Vector2)
 					t.check(apart >= City.MIN_TREE_SPACING,
 							"seed %d lot %s: two trees %.1fpx apart, under the %.1fpx floor"
 							% [seed_value, anchor, apart, City.MIN_TREE_SPACING])
@@ -339,7 +339,7 @@ func _test_pits_keep_their_spacing_across_a_whole_run(t: TestRunner) -> void:
 			var row: Array = by_line.get(line, [])
 			row.append(tree.position.x if horizontal else tree.position.y)
 			by_line[line] = row
-		for line in by_line:
+		for line: Vector3i in by_line:
 			var row: Array = by_line[line]
 			row.sort()
 			for i in range(row.size() - 1):
@@ -378,7 +378,8 @@ func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t: TestRunner) -> 
 	t.add_child(city)
 	city.build(map)
 	var checked := 0
-	for prop in city.props():
+	for node in city.props():
+		var prop := node as Prop
 		if prop.kind != Prop.Kind.STREET_TREE:
 			continue
 		checked += 1
@@ -416,7 +417,8 @@ func _test_street_tree_beds_are_ground_decals(t: TestRunner) -> void:
 	decals.update_view(whole, whole)
 	await t.get_tree().process_frame
 	var tree_count := 0
-	for prop in city.props():
+	for node in city.props():
+		var prop := node as Prop
 		if prop.kind == Prop.Kind.STREET_TREE:
 			tree_count += 1
 	t.check(planted.size() > 0, "the rendering contract has a planted tree to inspect")

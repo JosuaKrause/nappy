@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The world's one answer to "can this mover stand here": the map's blocked record read through a
 ## `Mover` (`CityMap.passable()`, `CityMap.clear_line()`), a `Navigator` every mover moves by, and a
@@ -95,14 +94,14 @@ func _test_each_mover_is_stopped_by_its_own_layers(t: TestRunner) -> void:
 	var covered: Array[Vector2i] = [body]
 	map.obstruct_tiles(1, covered)
 	var on_foot := Mover.on_foot()
-	for tile in [building, post, closed, soft, body]:
+	for tile: Vector2i in [building, post, closed, soft, body]:
 		t.check(not map.passable(tile, on_foot), "a figure on foot is stopped at %s" % tile)
 	t.check(map.passable(open, on_foot) and map.passable(park, on_foot),
 			"and walks open sidewalk and park")
 	var car := Mover.vehicle()
 	t.check(map.passable(soft, car), "a car drives past a soft seal, which takes only the pavement")
 	t.check(not map.passable(park, car), "a car keeps to street ground")
-	for tile in [building, post, closed, body]:
+	for tile: Vector2i in [building, post, closed, body]:
 		t.check(not map.passable(tile, car), "a car is stopped at %s" % tile)
 	var lattice := Mover.lattice()
 	t.check(map.passable(closed, lattice) and map.passable(soft, lattice)
@@ -234,7 +233,7 @@ func _test_a_walk_goes_round_what_was_put_down(t: TestRunner) -> void:
 func _test_a_car_sees_her_off_street_ground(t: TestRunner) -> void:
 	var patrol := EventCatalogue.by_id("police_patrol")
 	t.check(patrol.vehicle != null, "the patrol is a car that drives")
-	for ground in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE, GameEnums.TileType.PARK,
+	for ground: GameEnums.TileType in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE, GameEnums.TileType.PARK,
 			GameEnums.TileType.SIDEWALK]:
 		var map := _yard(Vector2i(8, 8))
 		map.fill_rect(Rect2i(0, 1, 8, 1), GameEnums.TileType.ROAD)
@@ -256,7 +255,7 @@ func _test_a_cut_crossing_still_meets_her_line_on_time(t: TestRunner) -> void:
 	var cat := EventCatalogue.by_id("cat_dash")
 	var whole := float(Tuning.STREET_WIDTH) * TILE
 	var on_time := cat.telegraph_time + whole / cat.speed
-	for run in [whole, whole * 0.5, TILE]:
+	for run: float in [whole, whole * 0.5, TILE]:
 		var instance := EventInstance.new()
 		instance.skip_draw = true
 		var path := PackedVector2Array([Vector2(-run, 0.0), Vector2(run, 0.0)])

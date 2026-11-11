@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## City generation guarantees from docs/CITY.md.
 ##
@@ -80,7 +79,7 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 			var layout: BlockLayout = map.block_layouts[block]
 			var lot := CityMap.block_rect(block)
 			var holes: Array[Rect2i] = []
-			for hole in [layout.square, layout.alley, layout.passage_rect()]:
+			for hole: Rect2i in [layout.square, layout.alley, layout.passage_rect()]:
 				if BlockLayout.has(hole):
 					holes.append(hole)
 			if BlockLayout.has(layout.open_rect):
@@ -91,7 +90,7 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 				holes.append(map.home_rect)
 			var pieces: Array[Rect2i] = []
 			var joined := false
-			for rect in map.building_rects:
+			for rect: Rect2i in map.building_rects:
 				if lot.encloses(rect):
 					pieces.append(rect)
 				elif lot.intersects(rect):
@@ -128,13 +127,13 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 	for kind: String in seen:
 		t.check(seen[kind] > 0, "some generated block is a %s one (%d found)" % [kind, seen[kind]])
 
-func _area(rects: Array) -> int:
+func _area(rects: Array[Rect2i]) -> int:
 	var total := 0
-	for rect in rects:
+	for rect: Rect2i in rects:
 		total += rect.size.x * rect.size.y
 	return total
 
-func _overlaps(rects: Array) -> bool:
+func _overlaps(rects: Array[Rect2i]) -> bool:
 	for i in rects.size():
 		for j in range(i + 1, rects.size()):
 			if rects[i].intersects(rects[j]):
@@ -189,7 +188,7 @@ func _test_buildings_tile_the_blocks(t: TestRunner) -> void:
 		t.check(not _overlaps(map.building_rects), "seed %d: no two buildings overlap" % _seed(i))
 
 		var stray := 0
-		for rect in map.building_rects:
+		for rect: Rect2i in map.building_rects:
 			for tile in map.rect_tiles(rect):
 				if map.tile_at(tile) != GameEnums.TileType.BUILDING:
 					stray += 1
@@ -653,7 +652,7 @@ func _test_a_big_building_joins_two_blocks(t: TestRunner) -> void:
 		for pair: Rect2i in map.big_buildings:
 			t.check(pair.size == Vector2i(2, 1) or pair.size == Vector2i(1, 2),
 					"seed %d: the landmark %s is two neighbouring blocks" % [_seed(i), pair])
-			for block in [pair.position, pair.end - Vector2i.ONE]:
+			for block: Vector2i in [pair.position, pair.end - Vector2i.ONE]:
 				t.check(map.starting_purpose(block) == GameEnums.BlockPurpose.BIG_BUILDING,
 						"seed %d: block %s is a big building for the whole run" % [_seed(i), block])
 				var layout: BlockLayout = map.block_layouts.get(block)
@@ -783,7 +782,7 @@ func _test_a_precincts_end_is_a_t_junction(t: TestRunner) -> void:
 						"spur": Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH},
 				{"box": (span.w + 1) * CityMap.period(), "spur": 0},
 			]
-			for end in ends:
+			for end: Dictionary in ends:
 				var box_start: int = end["box"]
 				var spur := _along_across_rect(vertical, box_start + int(end["spur"]),
 						Tuning.SIDEWALK_WIDTH, across_lo, road_band)
@@ -953,8 +952,8 @@ func _test_no_two_calm_areas_are_in_each_others_ring(t: TestRunner) -> void:
 				for x in range(lot.position.x, lot.end.x):
 					owner[Vector2i(x, y)] = block
 		for member: Vector2i in owner:
-			for dy in [-1, 0, 1]:
-				for dx in [-1, 0, 1]:
+			for dy: int in [-1, 0, 1]:
+				for dx: int in [-1, 0, 1]:
 					var neighbour: Vector2i = member + Vector2i(dx, dy)
 					if not owner.has(neighbour) or owner[neighbour] == owner[member]:
 						continue
