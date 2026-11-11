@@ -576,10 +576,12 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
 				if not map.step_is_clear(before, now, asked):
 					bad.append("%s %s -> %s" % [def.id, before, now])
 			before = now
-			if instance.barrier_post and instance.barrier_post.where_the_far_guard_walks() != Vector2.INF:
+			if instance.barrier_post \
+					and instance.barrier_post.where_the_far_guard_walks() != Vector2.INF:
 				if guard_before != Vector2.INF \
 						and map.passable(map.world_to_tile(guard_before), asked) \
-						and not map.step_is_clear(guard_before, instance.barrier_post.where_the_far_guard_walks(), asked):
+						and not map.step_is_clear(guard_before,
+								instance.barrier_post.where_the_far_guard_walks(), asked):
 					bad.append("%s's far guard %s -> %s" % [def.id, guard_before,
 							instance.barrier_post.where_the_far_guard_walks()])
 				guard_before = instance.barrier_post.where_the_far_guard_walks()

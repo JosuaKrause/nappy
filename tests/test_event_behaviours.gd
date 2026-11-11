@@ -344,7 +344,8 @@ func _test_the_barrier_post_round_trips(t) -> void:
 	t.check(side != 0 and first.barrier_post.is_spent(), "his guard set off from his post and is spent")
 	var second := _round_trip(t, first, "barrier post", &"EventBarrierPost")
 	t.check(second.barrier_post.is_spent() and second.barrier_post.chaser_side() == side
-			and second.phase == EventInstance.Phase.SPENT and second.barrier_post.sides_still_posted().is_empty(),
+			and second.phase == EventInstance.Phase.SPENT
+			and second.barrier_post.sides_still_posted().is_empty(),
 			"it comes back as only the barrier, his post empty and the far guard gone")
 	first.free()
 	second.free()

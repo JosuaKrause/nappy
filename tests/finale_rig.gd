@@ -641,7 +641,8 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 	var paced := true
 	var last := set_off
 	var walked := 0
-	while guard.barrier_post.where_the_far_guard_walks() != Vector2.INF and walked < int(30.0 / step):
+	while guard.barrier_post.where_the_far_guard_walks() != Vector2.INF \
+			and walked < int(30.0 / step):
 		told.tell(her)
 		guard.step(step)
 		await t.get_tree().process_frame
@@ -650,11 +651,13 @@ func _test_the_far_guard_leaves_with_his_partner(t) -> void:
 		if now == Vector2.INF:
 			break
 		paced = paced and now.distance_to(last) <= def.chase_speed() * step + 0.01 \
-				and is_equal_approx(guard.barrier_post.how_far_the_far_guard_has_walked(), def.chase_speed() * step * walked)
+				and is_equal_approx(guard.barrier_post.how_far_the_far_guard_has_walked(),
+						def.chase_speed() * step * walked)
 		last = now
 	t.check(last.distance_to(her) > set_off.distance_to(her) and paced,
 			"he walks away from her at his partner's pace (%d frames)" % walked)
-	t.check(guard.barrier_post.where_the_far_guard_walks() == Vector2.INF and guard.barrier_post.sides_still_posted().is_empty(),
+	t.check(guard.barrier_post.where_the_far_guard_walks() == Vector2.INF
+			and guard.barrier_post.sides_still_posted().is_empty(),
 			"and he is gone, and nobody stands at the band")
 	t.check(last.distance_to(her) > Tuning.OUT_OF_SIGHT - def.chase_speed() * step,
 			"only once he is out of her sight (%.0fpx from her)" % last.distance_to(her))

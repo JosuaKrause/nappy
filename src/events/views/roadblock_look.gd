@@ -28,8 +28,8 @@ func drawn_heading() -> Vector2:
 		return EventFootprints.guard_post_heading(event.runs_vertically(), 1)
 	return super()
 
-## **A barrier with a guard standing at it, from the moment it is placed** (PLAYTEST-94, the
-## roadblock's guard). Nothing here appears and nothing disappears: the band and the man are
+## **A barrier with a guard standing at it, from the moment it is placed** (PLAYTEST-94 13).
+## Nothing here appears and nothing disappears: the band and the man are
 ## both drawn for the whole of the event's life, cold or hunting, and the only thing that changes
 ## is which of them is moving.
 ##
@@ -125,7 +125,8 @@ var _band: RoadblockBand
 
 ## **Once the guard on her side has left his post for good, the guard at the far post walks off
 ## too**, so the band stands unmanned and reads as the barrier it now is (inbox #771 in
-## minty-lemur). Every roadblock sends him, on a day as in the escape.
+## minty-lemur). Every roadblock sends him, on a day as in the escape (inbox #788 in
+## minty-lemur).
 ##
 ## The far guard walking away, drawn standing, facing where he goes, on the stride his partner
 ## walks on. Freed when he is gone or with the instance. It holds the look that draws it and the

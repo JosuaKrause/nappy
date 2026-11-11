@@ -50,8 +50,8 @@ func take_its_departure(departure: EventDeparture) -> void:
 func _its_departure() -> EventDeparture:
 	return _departure.get_ref()
 
-## Whether the barrier has been left behind — read by `RoadblockLook._draw_roadblock()` to know
-## whether to draw the band under its own feet or back at the post.
+## Whether the barrier has been left behind — read by `RoadblockLook.drawn_heading()` to know
+## whether a guard still stands at his band, facing out from his post.
 func has_left_its_body() -> bool:
 	return _body_left_at != Vector2.INF
 

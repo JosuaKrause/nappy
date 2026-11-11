@@ -35,12 +35,12 @@ var _heading := Vector2.ZERO
 ## How far he has walked, the stride his picture bobs on.
 var _walked := 0.0
 ## How long he has been walking.
-var walking_for := 0.0
+var _walking_for := 0.0
 ## Whether he is gone for good, or there was never a far post to leave.
 var _gone := false
 ## The way he walks, tile centres, each dropped as he reaches it; planned from where he stands
 ## whenever it is empty.
-var way := PackedVector2Array()
+var _way := PackedVector2Array()
 
 ## Handed, as the barrier post he stands at is made, the figure of its event, where she is, its row,
 ## and the ground and how he moves over it.
@@ -85,8 +85,8 @@ func send_off(side: int, band: Vector2) -> void:
 	if her != Vector2.INF and not her.is_equal_approx(_at):
 		_heading = (_at - her).normalized()
 	_walked = 0.0
-	walking_for = 0.0
-	way = PackedVector2Array()
+	_walking_for = 0.0
+	_way = PackedVector2Array()
 
 ## Gone with his partner, never sent off: a band streamed back in after its guard was spent
 ## (`EventBarrierPost.come_back_as_the_barrier()`).
@@ -102,13 +102,13 @@ func walk_off(delta: float, departure: EventDeparture) -> void:
 	var step: float = _row.chase_speed() * delta
 	var left := step
 	if her != Vector2.INF:
-		if way.is_empty():
-			way = departure.way_out_from(_at)
-		var walk: Navigator.Walked = _navigator.walk(_at, way, left, _mover)
+		if _way.is_empty():
+			_way = departure.way_out_from(_at)
+		var walk: Navigator.Walked = _navigator.walk(_at, _way, left, _mover)
 		if walk.heading != Vector2.ZERO:
 			_heading = walk.heading
 		_at = walk.at
-		way = PackedVector2Array() if walk.stopped else walk.points
+		_way = PackedVector2Array() if walk.stopped else walk.points
 		left = walk.left
 	if left > 0.0:
 		var away := _heading
@@ -121,8 +121,8 @@ func walk_off(delta: float, departure: EventDeparture) -> void:
 			_heading = moved.normalized()
 			_at += moved
 	_walked += step
-	walking_for += delta
+	_walking_for += delta
 	var out_of_sight := her != Vector2.INF and _at.distance_to(her) > Tuning.OUT_OF_SIGHT
-	if out_of_sight or (her == Vector2.INF and walking_for >= EventDeparture.LEAVING_GIVES_UP):
+	if out_of_sight or (her == Vector2.INF and _walking_for >= EventDeparture.LEAVING_GIVES_UP):
 		_at = Vector2.INF
 		_gone = true
