@@ -822,14 +822,11 @@ class Tree:
         self.name_of = {path: name for name, path in self.by_name.items()}
         # Every file under src/, a class or not, with its members; `classes` are those a receiver can name.
         self.files: dict[str, Klass] = {}
-        for path, bare in self.bare.items():
-            parent = EXTENDS.search(bare)
-            self.files[path] = Klass(
-                path, self.name_of.get(path, ""), self.by_name.get(parent.group(1)) if parent else None
-            )
+        for path in self.bare:
+            self.files[path] = Klass(path, self.name_of.get(path, ""), self.parent_of(path))
         self.classes = {path: klass for path, klass in self.files.items() if path in self.name_of}
         self.preloads: dict[str, dict[str, str]] = {
-            path: {name: (target if target in self.classes else UNTRACKED) for name, target in PRELOAD.findall(text)}
+            path: {name: self.script_kind(target) for name, target in PRELOAD.findall(text)}
             for path, text in src.items()
         }
         # Each inner class, under its file's path, INNER and its name, read from its block with one indent taken off.
@@ -863,6 +860,16 @@ class Tree:
                 self.collect_declared(path)
             for path in self.files:
                 self.collect_field_types(path)
+
+    def parent_of(self, path: str) -> str | None:
+        """The file of the class `path`'s file extends, where its `extends` line names a `class_name`."""
+        parent = EXTENDS.search(self.bare[path])
+        return self.by_name.get(parent.group(1)) if parent else None
+
+    def script_kind(self, target: str) -> str:
+        """The kind of the script at `target`, which a `const` preloads: its file where it is a class a receiver can
+        name, else not a class whose vars this check tracks."""
+        return target if target in self.classes else UNTRACKED
 
     def ancestors(self, path: str) -> list[str]:
         """The file of `path`'s class and of every class it extends, nearest first."""
