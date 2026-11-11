@@ -43,7 +43,7 @@ func _new_fixture(t: TestRunner, district: GameEnums.BlockPurpose, drawer: RoofD
 		(drawer as RecordingRoofDrawer).real = RoofDrawer.new(building.atlas)
 	building.position = Vector2(320.0, 320.0)
 	building.stand_on(Rect2i(), Vector2(256.0, 256.0), 0, district, 64.0)
-	building.roof_object_parent = entities
+	building.put_roof_objects_in(entities)
 	building.scenery_clock = clock
 	root.add_child(building)
 	return {"root": root, "entities": entities, "building": building}
