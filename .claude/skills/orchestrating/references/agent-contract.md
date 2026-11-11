@@ -131,6 +131,12 @@ tick does: each turn you end while waiting notifies the orchestrating session an
 the player's screen, so a wait that wakes every minute floods both with nothing to say. Batch
 what you can into one command, so one wait gives one notification.
 
+**CI's state is read through GraphQL, sparingly.** The read is `gh pr view <n> --json
+statusCheckRollup`, at most every ten minutes, in the one background wait above. `gh run watch` is
+never used, since it polls GitHub's REST API every few seconds and the account's hourly REST quota
+is shared by every session; a REST call is for reading a failed job's log once, never for a state
+or a wait.
+
 **Headless first.** Any game run carries a dev flag or `--no-save`, since worktrees share the
 player's save. **No agent opens the Godot editor** (inbox #1203 in gentle-owl, inbox #1242 in gentle-owl), a Godot MCP tool
 that launches it included; the game's own windows follow the rules here, and each one opens on the
@@ -185,3 +191,6 @@ that did not happen.
 
 - **That a report names the layer the work belongs to** ("Design") is the filer's proposal, made in
   **designing-classes** (plush-kestrel) and open to the player's correction.
+- **How CI's state is read** ("A long wait gives one notification"): GraphQL, at most every ten
+  minutes, and never `gh run watch`, is the orchestrator's rule after the account's REST quota ran
+  out (amber-swan), open to the player's correction.
