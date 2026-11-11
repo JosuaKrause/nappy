@@ -16,8 +16,8 @@ five that touch the game's code and tests after the refactor, the player answere
 rules review found and the orchestrator filed. They go first as tooling under inbox #1305.
 
 *Proposed, not asked for:* `upnext: true`, which an entry of work on how the project is worked on
-carries (the orchestrating skill), and `fable-only: true`, carried over from amber-ibis since these
-are items of the entry the player named as Fable's (inbox #1293, inbox #1299). The plainer
+carries (the orchestrating skill), and `fable-only: true`, carried over from amber-ibis, whose opening
+block carries it, since these are that entry's items (the label's rule, inbox #1293, inbox #1299). The plainer
 alternative is the band alone, with no line for either.
 
 **Items:** `citation-after-a-comma.md`, `tool-help-gaps.md`, `old-briefs.md`.
