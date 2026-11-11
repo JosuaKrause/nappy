@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The catalogue's own fairness contract: the physical and visual shape every row keeps regardless
 ## of where the scheduler places it -- the geometry a `spread` body draws at, that it fits the
@@ -93,7 +92,7 @@ func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> v
 			"finishing the instance leaves the classification true")
 	instance.free()
 
-	for deep in [false, true]:
+	for deep: bool in [false, true]:
 		var copied := EventCatalogue.by_id("construction").duplicate(deep) as EventDef
 		t.check(copied.has_a_spread, "Resource.duplicate(%s) keeps a spread's answer" % deep)
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
@@ -263,7 +262,7 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 				("'%s' is warned first and owed %.2fs, and %.2fs with a field half as wide again "
 				% [def.id, def.minimum_telegraph(), wider.minimum_telegraph()])
 				+ "and half as fast again: the flat %.2fs either way" % Tuning.OFFSCREEN_WARNING_MIN)
-	for id in ["cyclist", "fire_truck", "military_convoy", "charging_dog",
+	for id: String in ["cyclist", "fire_truck", "military_convoy", "charging_dog",
 			"robber_giving_chase", "van_guard_giving_chase"]:
 		t.check(ids.has(id), "'%s' is among the rows warned first (%s)" % [id, ", ".join(ids)])
 	t.check(is_equal_approx(column.telegraph_time, Tuning.WARNING_ALONE_MAX)
@@ -544,7 +543,7 @@ func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 ## `consumed` set forward, which is what makes a later day's pool different from an earlier one's.
 func _test_a_spread_never_lands_on_a_corner(t: TestRunner) -> void:
 	var checked := 0
-	for run_seed in [4242]:
+	for run_seed: int in [4242]:
 		var map := CityGenerator.generate(run_seed)
 		var consumed: Array[String] = []
 		for day in range(1, 15):
@@ -696,7 +695,7 @@ func _test_a_wide_scene_faces_its_street(t: TestRunner) -> void:
 	# The other two whole-scene rows carry the same guarantee — checked once each rather than
 	# re-running the segment arithmetic, since `wide_scene_texture`'s own match is what could
 	# regress silently if a future picture forgot its vertical sibling.
-	for look in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
+	for look: EventDef.Look in [EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN]:
 		var wide := EventPictures.wide_scene_texture(look, false)
 		var tall := EventPictures.wide_scene_texture(look, true)
 		t.check(not wide.is_empty() and not tall.is_empty() and wide != tall,
@@ -737,7 +736,7 @@ func _test_a_crash_is_solid_only_where_its_cars_are(t: TestRunner) -> void:
 			% [crash.solid_reach(), crash.obstructs_radius])
 
 	var carriageway := (float(Tuning.STREET_WIDTH) * 0.5 - Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
-	for vertical in [false, true]:
+	for vertical: bool in [false, true]:
 		var tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2) if vertical \
 				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 		var instance := EventInstance.new()
@@ -831,7 +830,7 @@ func _test_no_two_rows_draw_the_same_picture(t: TestRunner) -> void:
 				"'%s' has a picture of its own (else shared with '%s')"
 				% [def.id, owner_of.get(def.look, "")])
 		owner_of[def.look] = def.id
-	for id in invisible:
+	for id: String in invisible:
 		var def := EventCatalogue.by_id(id)
 		t.check(def != null and def.look == EventDef.Look.NONE,
 				"'%s' is still one of the invisible ones" % id)
