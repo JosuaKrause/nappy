@@ -122,7 +122,8 @@ const _STUCK_DISTANCE := 8.0
 ## `Tuning.WALK_SPEED` (92px/s) over a sixtieth of a second, about a pixel and a half.
 const _TELEPORT_DISTANCE := Tuning.TILE_SIZE * 1.0
 
-var _city: City
+var _map: CityMap
+var _events: EventManager
 var _player: Stroller
 var _baby: Baby
 var _resistance: ResistanceDirector
@@ -211,16 +212,18 @@ var trace := RunTrace.new()
 
 var _done := false
 
-func setup(city: City, player: Stroller, baby: Baby, resistance: ResistanceDirector,
-		day: DayController, targets: Array[String], run: RunState) -> void:
+func setup(map: CityMap, events: EventManager, streets: DayStreets, player: Stroller, baby: Baby,
+		resistance: ResistanceDirector, day: DayController, targets: Array[String],
+		run: RunState) -> void:
 	_run = run
-	_city = city
+	_map = map
+	_events = events
 	_player = player
 	_baby = baby
 	_resistance = resistance
 	_day = day
 	_targets = targets
-	_planner = RouteRigPlanner.new(city, player, resistance, day, run)
+	_planner = RouteRigPlanner.new(map, events, streets, trace, player, resistance, day, run)
 	_day.day_finished.connect(_on_day_finished)
 
 ## The day `spec` has been planned (`RunFlow.day_planned`, which `main` connects) — resets the
@@ -323,7 +326,7 @@ func _begin_leg(target_world: Vector2) -> void:
 	if (_current_word == "mark" or _current_word == "task") and _resistance:
 		_leg_step = _resistance.current_step()
 	var here_tile := _planner.standing_tile()
-	var target_tile := _city.map.world_to_tile(target_world)
+	var target_tile := _map.world_to_tile(target_world)
 	var path := _planner.plan(here_tile, target_tile)
 	if path.is_empty():
 		trace.note("route", "day %d: no path to '%s', skipping" % [_day_number, _current_word])
@@ -429,19 +432,19 @@ func _count_the_door() -> bool:
 	var here := _player.global_position
 	var door := Vector2i(-1, -1)
 	var nearest := INF
-	for instance: EventInstance in _city.events.instances():
+	for instance: EventInstance in _events.instances():
 		if instance.is_finished or instance.def.detain_seconds <= 0.0:
 			continue
 		var distance := here.distance_to(instance.global_position)
 		if distance < nearest:
 			nearest = distance
-			door = _city.map.world_to_tile(instance.global_position)
+			door = _map.world_to_tile(instance.global_position)
 	var holds: int = _door_holds.get(door, 0) + 1
 	_door_holds[door] = holds
 	if holds <= _DOOR_HOLDS_PER_LEG:
 		return false
 	_held = false
-	_caught_tile = _city.map.world_to_tile(here)
+	_caught_tile = _map.world_to_tile(here)
 	_caught_by = "the door at %s, holding her %d times" % [RunTrace.tile(door), holds]
 	_give_up_stuck()
 	return true
@@ -498,8 +501,8 @@ func _maybe_replan(delta: float) -> void:
 		clear.erase(tile)
 	for i in _waypoints.size():
 		var point: Vector2 = _waypoints[i]
-		var tile := _city.map.world_to_tile(point)
-		if not _city.map.is_open(tile) or _city.map.is_obstructed(tile):
+		var tile := _map.world_to_tile(point)
+		if not _map.is_open(tile) or _map.is_obstructed(tile):
 			_replan()
 			return
 		# The first remaining waypoint is wherever she already legally is (about to be popped this
@@ -533,7 +536,7 @@ func _retarget_if_moved() -> bool:
 	if now == Vector2.INF or now.distance_to(_current_target_world) <= _RETARGET_DISTANCE:
 		return false
 	_current_target_world = now
-	_current_target_tile = _city.map.world_to_tile(now)
+	_current_target_tile = _map.world_to_tile(now)
 	trace.note("route", "day %d: '%s' moved to %s, re-planning"
 			% [_day_number, _current_word, RunTrace.tile(_current_target_tile)])
 	_replan()
@@ -546,7 +549,7 @@ func _retarget_if_moved() -> bool:
 ## she touched it at is kept off instead (`ground_round_point()`). Nothing solid touching her is the crowd she is pressing
 ## into, or a hold (`Stroller.is_detained()`), neither of which a detour or a direction answers.
 func _note_what_caught_her() -> void:
-	_caught_tile = _city.map.world_to_tile(_player.global_position)
+	_caught_tile = _map.world_to_tile(_player.global_position)
 	_caught_by = ""
 	var away := Vector2.ZERO
 	for i in _player.get_slide_collision_count():
@@ -560,9 +563,9 @@ func _note_what_caught_her() -> void:
 			_leg_avoid.merge(_planner.ground_round_point(hit.get_position()))
 			if _caught_by == "":
 				# A pixel inside whatever she touched, since the contact point is on its surface.
-				var inside := _city.map.world_to_tile(hit.get_position() - hit.get_normal())
-				_caught_by = "a closure" if _city.map.is_closed(inside) \
-						else RunTrace.tile_type(_city.map.tile_at(inside))
+				var inside := _map.world_to_tile(hit.get_position() - hit.get_normal())
+				_caught_by = "a closure" if _map.is_closed(inside) \
+						else RunTrace.tile_type(_map.tile_at(inside))
 	_caught_away = away.normalized()
 	if _caught_by == "":
 		_caught_by = "a hold" if _player.is_detained() else "nothing solid (the crowd)"
@@ -751,7 +754,7 @@ func _check_settled() -> void:
 				% [_day_number, _elapsed()])
 		_advance_target()
 		return
-	if not Tile.is_calm(_city.map.tile_type_at_world(_settle_anchor)):
+	if not Tile.is_calm(_map.tile_type_at_world(_settle_anchor)):
 		# The ground she is pacing on has gone — see `RouteRigPlanner.resolve()`'s `calm`, which offers only ground still calm — so she looks again.
 		_settling = false
 		_settle_anchor = Vector2.INF

@@ -64,6 +64,13 @@ var _scene: AuthoredScene
 ## Where the director's own line about a planned walk goes in the run log, handed in by
 ## `use_trace()`; nowhere until then.
 var _trace := RunTrace.new()
+## Where the developer's flags start her on the boot's first walk from her doorstep: takes the run's
+## `--spawn` target and answers her start as a `Vector2`; unhanded, she starts where the world puts her. Handed in by
+## `use_the_flags()`.
+var _flags_start := Callable()
+## What the developer's flags do to the baby's bars once the day is running: takes the baby and the
+## run's `--meters` override; unhanded, the bars are untouched. Handed in by `use_the_flags()`.
+var _flags_meters := Callable()
 
 func _init(the_calendar: RunCalendar, the_facts: RunFacts, the_spend: AttemptSpendState,
 		the_config: RunConfig) -> void:
@@ -85,6 +92,13 @@ func use_the_scene(scene: AuthoredScene) -> void:
 ## Hands the director the trace its line about a planned walk is written to.
 func use_trace(trace: RunTrace) -> void:
 	_trace = trace
+
+## Hands the director what the developer's flags decide on the boot's first walk from her doorstep:
+## `start`, which takes the run's `--spawn` target and answers her start (a `Vector2`), and `meters`,
+## which takes the baby and the run's `--meters` override and seeds its bars. Neither is handed in an ordinary run, which starts her where the world puts her.
+func use_the_flags(start: Callable, meters: Callable) -> void:
+	_flags_start = start
+	_flags_meters = meters
 
 ## Hands the world the day is walked in, and the resistance and the day's clock. `events` is the
 ## events of whichever world she is in: the city's, or the escape's building's; they and the
@@ -248,8 +262,8 @@ func _put_her_down(world: DayWorld, today: int) -> void:
 				spec.seconds_on_the_clock())
 	var flags_decide := first_day and spec.start_point() == DaySpec.Start.DOORSTEP
 	var start_at := world.start_position()
-	if flags_decide:
-		start_at = DevRig.for_spawn_target(config.spawn_target, city, resistance, calendar.header)
+	if flags_decide and not _flags_start.is_null():
+		start_at = _flags_start.call(config.spawn_target)
 	events.stream_around(start_at)
 	if city:
 		_start_the_crowd(start_at, today)
@@ -267,8 +281,8 @@ func _put_her_down(world: DayWorld, today: int) -> void:
 	day.start(spec.seconds_on_the_clock())
 	# After the day is running, not before: the override can put the baby straight to
 	# sleep, and start() would have reset the phase that announcement just set.
-	if flags_decide:
-		DevRig.apply_meter_override(baby, config.meters_override)
+	if flags_decide and not _flags_meters.is_null():
+		_flags_meters.call(baby, config.meters_override)
 
 ## The console's line for a walk just started, `ms` after the start began: what was planned and, in a
 ## city, who is on its streets and what is calm and closed.

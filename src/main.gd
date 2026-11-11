@@ -525,7 +525,7 @@ func _ready() -> void:
 	_retire_the_boot_camera()
 
 	if config.overview_requested and _city:
-		DevRig.make_overview_camera(self, _city, get_viewport_rect().size)
+		DevRig.make_overview_camera(self, _city.camera_bounds(), get_viewport_rect().size)
 	if walks_a_day:
 		_dev_rig.setup_follow_camera(self, config.follow_target, config.zoom_override)
 	_add_trailer_rigs()
@@ -1120,7 +1120,8 @@ func _add_the_route_rig(resistance: ResistanceDirector) -> void:
 	add_child(_route_rig)
 	_pauses_with_the_game(_route_rig)
 	_route_rig.trace = _the_trace()
-	_route_rig.setup(_city, _player, _baby, resistance, _day, config.route_targets, _run)
+	_route_rig.setup(_city.map, _city.events, _city.streets(), _player, _baby, resistance, _day,
+			config.route_targets, _run)
 	_flow.day_planned.connect(_route_rig.start_day.unbind(1))
 	_route_rig.use_continue(_on_summary_continued)
 	_flow.brief_opened.connect(_route_rig.press_the_brief)
@@ -1834,10 +1835,17 @@ func _new_director() -> DayDirector:
 	director.use_worlds(_worlds)
 	director.use_the_scene(_flow.scene)
 	director.use_trace(_the_trace())
+	director.use_the_flags(_spawn_start, DevRig.apply_meter_override)
 	director.first_day = _first_day
 	director.escape_follows = _flow.escape_follows()
 	director.spec = _flow.spec
 	return director
+
+## Where the `--spawn` `target` starts her (`DevRig.for_spawn_target()`), asked by the day director on the boot's
+## first walk from her doorstep.
+func _spawn_start(target: String) -> Vector2:
+	return DevRig.for_spawn_target(target, _city.map, _city.events, _city.streets(),
+			_resistance, _run.header, _the_trace())
 
 ## `--recipe`: loads the scene recipe, lays its seed, day, escape part and parent on the run's
 ## configuration (`RunConfig.with_recipe()`), builds its playback (`SceneRecipeRuntime`) and
@@ -2238,7 +2246,7 @@ func _physics_process(delta: float) -> void:
 		_day.tick(delta)
 
 func _process(delta: float) -> void:
-	_dev_rig.update_follow_camera(_city)
+	_dev_rig.update_follow_camera(_city.events if _city else null)
 	# Re-asked every frame rather than only on `size_changed` — see `_apply_orientation()`'s own
 	# doc for why a signal alone can latch the wrong answer. The cost is one vector comparison.
 	# `get_window()` is null for a script-only instance a test drives straight through `_process()`

@@ -113,13 +113,6 @@ src/events/event_instance.gd ended
 src/events/event_instance.gd warned
 
 # [City] src/city/city.gd
-src/dev/dev_rig.gd events
-src/dev/dev_rig.gd map
-src/dev/dev_rig.gd trace
-src/dev/route_rig.gd events
-src/dev/route_rig.gd map
-src/dev/route_rig_planner.gd events
-src/dev/route_rig_planner.gd map
 src/dev/scene_recipe_draft.gd crowd
 src/dev/scene_recipe_draft.gd events
 src/dev/scene_recipe_draft.gd map
