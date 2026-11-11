@@ -35,4 +35,8 @@ The run log is line for line what it was (`tools/test.sh observers`), and what e
 her is the same on `main` at `651606332` and the head (`probes/excitement_fingerprint.gd`, its `XF`
 lines less `XF_COST`), and so is every event, crowd agent and meter on every tick
 (`probes/m159_tick_sweep_events_cost.gd`, its 72 `chain` values, run whole on both trees by the
-review, after the builder's two runs were cut short on a loaded machine).
+review, after the builder's two runs were cut short on a loaded machine). The review's whole runs,
+one at a time on each tree: the 72 `chain` values hash to
+`bf69e949b75fb076edc5d987237f0258569e0231800c0507d450f768307dd2d2` on both and are equal line for
+line, and the fingerprint's 19758 `XF` lines hash to
+`7510c1d0bf9b374a3efad318de294cf2751ba8288dfcc9cfd456325b9062d625` on both.
