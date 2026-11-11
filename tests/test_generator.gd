@@ -73,10 +73,10 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 	var seen := {"plain": 0, "alley": 0, "corner": 0, "home": 0, "court": 0}
 	for i in 40:
 		var map := _map(i)
-		for block: Vector2i in map.block_layouts:
+		for block: Vector2i in map.blocks_with_layouts():
 			if map.lot_blocks(block).size != Vector2i.ONE:
 				continue
-			var layout: BlockLayout = map.block_layouts[block]
+			var layout: BlockLayout = map.layout_of(block)
 			var lot := CityMap.block_rect(block)
 			var holes: Array[Rect2i] = []
 			for hole: Rect2i in [layout.square, layout.alley, layout.passage_rect()]:
@@ -86,11 +86,11 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 				if layout.open_rect == lot:
 					continue  # open ground, nothing built on it
 				holes.append(layout.open_rect)
-			if block == map.home_block:
-				holes.append(map.home_rect)
+			if block == map.home_block_coordinate():
+				holes.append(map.home_tile_rect())
 			var pieces: Array[Rect2i] = []
 			var joined := false
-			for rect: Rect2i in map.building_rects:
+			for rect: Rect2i in map.building_lots():
 				if lot.encloses(rect):
 					pieces.append(rect)
 				elif lot.intersects(rect):
@@ -118,7 +118,7 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 				seen.corner += 1
 				t.check(pieces.size() == 2, "%s: a corner square leaves an L of two (got %d)"
 						% [where, pieces.size()])
-			elif holes.size() == 1 and block == map.home_block:
+			elif holes.size() == 1 and block == map.home_block_coordinate():
 				seen.home += 1
 				t.check(pieces.size() == 3, "%s: the home's notch leaves three (got %d)"
 						% [where, pieces.size()])
@@ -172,8 +172,8 @@ func _test_determinism(t: TestRunner) -> void:
 		var first := CityGenerator.generate(_seed(i))
 		var second := CityGenerator.generate(_seed(i))
 		t.check(first.tiles == second.tiles, "seed %d regenerates the identical map" % _seed(i))
-		t.check(first.home_rect == second.home_rect, "seed %d puts the home back" % _seed(i))
-		t.check(first.calm_blocks == second.calm_blocks, "seed %d keeps its parks" % _seed(i))
+		t.check(first.home_tile_rect() == second.home_tile_rect(), "seed %d puts the home back" % _seed(i))
+		t.check(first.calm_blocks_now() == second.calm_blocks_now(), "seed %d keeps its parks" % _seed(i))
 
 	var a := CityGenerator.generate(_seed(1))
 	var b := CityGenerator.generate(_seed(2))
@@ -183,12 +183,12 @@ func _test_buildings_tile_the_blocks(t: TestRunner) -> void:
 	for i in 12:
 		var map := _map(i)
 		var building_tiles := map.tiles_of_type(GameEnums.TileType.BUILDING).size()
-		t.check(_area(map.building_rects) == building_tiles,
+		t.check(_area(map.building_lots()) == building_tiles,
 				"seed %d: building rects cover every BUILDING tile exactly once" % _seed(i))
-		t.check(not _overlaps(map.building_rects), "seed %d: no two buildings overlap" % _seed(i))
+		t.check(not _overlaps(map.building_lots()), "seed %d: no two buildings overlap" % _seed(i))
 
 		var stray := 0
-		for rect: Rect2i in map.building_rects:
+		for rect: Rect2i in map.building_lots():
 			for tile in map.rect_tiles(rect):
 				if map.tile_at(tile) != GameEnums.TileType.BUILDING:
 					stray += 1
@@ -197,10 +197,10 @@ func _test_buildings_tile_the_blocks(t: TestRunner) -> void:
 func _test_home_opens_onto_the_street(t: TestRunner) -> void:
 	for i in 12:
 		var map := _map(i)
-		for tile in map.rect_tiles(map.home_rect):
+		for tile in map.rect_tiles(map.home_tile_rect()):
 			t.check(map.tile_at(tile) == GameEnums.TileType.HOME,
 					"seed %d: the home rect is all HOME tiles" % _seed(i))
-		var doorstep := Vector2i(map.home_rect.position.x, map.home_rect.end.y)
+		var doorstep := Vector2i(map.home_tile_rect().position.x, map.home_tile_rect().end.y)
 		t.check(map.is_walkable(doorstep),
 				"seed %d: the tile outside the front door is walkable" % _seed(i))
 
@@ -232,9 +232,9 @@ func _test_a_precincts_own_ground_is_never_built_over(t: TestRunner) -> void:
 	for pair: Array in checked:
 		var map: CityMap = pair[0]
 		var seed_value: int = pair[1]
-		precincts_found += map.precinct_spans.size()
-		big_buildings_found += map.big_buildings.size()
-		for span in map.precinct_spans:
+		precincts_found += map.precinct_stretches().size()
+		big_buildings_found += map.big_building_pairs().size()
+		for span in map.precinct_stretches():
 			var vertical := span.x == 1
 			var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH
 			var hi := (span.w + 1) * CityMap.period()
@@ -259,8 +259,8 @@ func _test_no_alley_on_the_home_block(t: TestRunner) -> void:
 	var elsewhere := 0
 	for i in 60:
 		var map := _map(i)
-		var home_lot := map.lot_rect(map.home_block)
-		for alley in map.alley_rects:
+		var home_lot := map.lot_rect(map.home_block_coordinate())
+		for alley in map.alley_lots():
 			if home_lot.intersects(alley):
 				on_home_block += 1
 			else:
@@ -318,8 +318,8 @@ func _test_calm_zones_are_one_lot_of_one_thing(t: TestRunner) -> void:
 		var squares := 0
 		var open_zones := 0
 		var complexes := 0
-		for anchor: Vector2i in map.zone_rects:
-			var footprint: Rect2i = map.zone_rects[anchor]
+		for anchor: Vector2i in map.zone_anchors():
+			var footprint: Rect2i = map.zone_footprint(anchor)
 			t.check(Tuning.CALM_ZONE_SHAPES.has(footprint.size),
 					"seed %d: zone %s has a shape the city offers (%s)"
 					% [_seed(i), anchor, footprint.size])
@@ -332,7 +332,7 @@ func _test_calm_zones_are_one_lot_of_one_thing(t: TestRunner) -> void:
 					members += 1
 					t.check(map.anchor_of(block) == anchor,
 							"seed %d: block %s belongs to zone %s" % [_seed(i), block, anchor])
-					t.check((block == anchor) == map.block_plans.has(block),
+					t.check((block == anchor) == map.has_plan_for(block),
 							"seed %d: only the anchor of zone %s has an arc" % [_seed(i), anchor])
 			t.check(members == footprint.size.x * footprint.size.y,
 					"seed %d: zone %s covers %d blocks" % [_seed(i), anchor, members])
@@ -383,7 +383,7 @@ func _test_calm_zones_are_one_lot_of_one_thing(t: TestRunner) -> void:
 			# standing in for the property, which is a mistake this project can now name.
 			if map.is_hard_blocker(key) or key.z == 0:
 				continue
-			t.check(key.x != map.main_road,
+			t.check(key.x != map.main_road_corridor(),
 					"seed %d: no zone swallowed a stretch of the main road (%s did)"
 					% [_seed(i), key])
 
@@ -396,7 +396,7 @@ func _test_calm_zones_are_one_lot_of_one_thing(t: TestRunner) -> void:
 ## streets it took are **built over**, not painted with grass: absent from the lattice like a
 ## zone's, and solid ground, which is what tells the crowd and the telemetry map it is a wall.
 func _check_apartment_complex(t: TestRunner, map: CityMap, anchor: Vector2i, seed_value: int) -> void:
-	var layout: BlockLayout = map.block_layouts[anchor]
+	var layout: BlockLayout = map.layout_of(anchor)
 	t.check(layout.open_rect.size.x == CityGenerator.APARTMENT_COURT_TILES,
 			"seed %d: complex %s has a court %d tiles across, not %d"
 			% [seed_value, anchor, layout.open_rect.size.x, CityGenerator.APARTMENT_COURT_TILES])
@@ -415,18 +415,18 @@ func _check_apartment_complex(t: TestRunner, map: CityMap, anchor: Vector2i, see
 			"seed %d: complex %s is solid apart from its court and archway (%d walkable of %d)"
 			% [seed_value, anchor, walkable, inside])
 
-	var footprint: Rect2i = map.zone_rects[anchor]
+	var footprint: Rect2i = map.zone_footprint(anchor)
 	var span := footprint.size
 	var absorbed := span.x * (span.y - 1) + span.y * (span.x - 1)
 	var built := 0
 	for key: Vector3i in map.absent_segments:
-		if not CityMap.blocks_tile_rect(footprint).encloses(map.network.by_key(key).tile_rect()):
+		if not CityMap.blocks_tile_rect(footprint).encloses(map.street_network().by_key(key).tile_rect()):
 			continue
 		built += 1
 		t.check(map.is_hard_blocker(key),
 				"seed %d: the street %s the complex %s took is built over"
 				% [seed_value, key, anchor])
-		for tile in map.rect_tiles(map.network.by_key(key).tile_rect()):
+		for tile in map.rect_tiles(map.street_network().by_key(key).tile_rect()):
 			t.check(not map.is_walkable(tile) or layout.open_rect.has_point(tile)
 					or layout.passage_rect().has_point(tile),
 					"seed %d: %s inside complex %s is solid" % [seed_value, tile, anchor])
@@ -507,7 +507,7 @@ func _test_no_single_street_closure_isolates_the_parks(t: TestRunner) -> void:
 	for i in SEEDS_TO_STRESS:
 		var map := _map(i)
 		var parks := map.calm_tiles()
-		var doorstep := Vector2i(map.home_rect.position.x, map.home_rect.end.y)
+		var doorstep := Vector2i(map.home_tile_rect().position.x, map.home_tile_rect().end.y)
 		var worst := ""
 		for segment in _street_segments(map):
 			if segment.has_point(doorstep):
@@ -515,7 +515,7 @@ func _test_no_single_street_closure_isolates_the_parks(t: TestRunner) -> void:
 			var blocked := {}
 			for tile in map.rect_tiles(segment):
 				blocked[tile] = true
-			var reachable := map.walk_field(map.home_rect.position, blocked)
+			var reachable := map.walk_field(map.home_tile_rect().position, blocked)
 			var found := false
 			for park_tile in parks:
 				if map.reaches(reachable, park_tile):
@@ -561,7 +561,7 @@ func _test_a_dead_end_is_a_dead_end(t: TestRunner) -> void:
 		var map := _map(i)
 		var home := ClosurePlanner.home_street(map)
 		var calm := {}
-		for anchor in map.calm_blocks:
+		for anchor in map.calm_blocks_now():
 			var lot := map.lot_blocks(anchor)
 			for y in range(lot.position.y, lot.end.y):
 				for x in range(lot.position.x, lot.end.x):
@@ -574,7 +574,7 @@ func _test_a_dead_end_is_a_dead_end(t: TestRunner) -> void:
 		total += map.dead_ends.size()
 
 		for key: Vector3i in map.dead_ends:
-			var segment := map.network.by_key(key)
+			var segment := map.street_network().by_key(key)
 			t.check(map.absent_segments.has(key),
 					"seed %d: dead end %s is out of the lattice too" % [_seed(i), key])
 			t.check(key != home.key(),
@@ -643,19 +643,19 @@ func _test_a_big_building_joins_two_blocks(t: TestRunner) -> void:
 	var total := 0
 	for i in seeds:
 		var map := _map(i)
-		t.check(not map.big_buildings.is_empty(), "seed %d has a landmark in it" % _seed(i))
-		t.check(map.big_buildings.size() <= CityGenerator.MAX_BIG_BUILDINGS,
+		t.check(not map.big_building_pairs().is_empty(), "seed %d has a landmark in it" % _seed(i))
+		t.check(map.big_building_pairs().size() <= CityGenerator.MAX_BIG_BUILDINGS,
 				"seed %d has at most %d (%d)"
-				% [_seed(i), CityGenerator.MAX_BIG_BUILDINGS, map.big_buildings.size()])
-		total += map.big_buildings.size()
+				% [_seed(i), CityGenerator.MAX_BIG_BUILDINGS, map.big_building_pairs().size()])
+		total += map.big_building_pairs().size()
 
-		for pair: Rect2i in map.big_buildings:
+		for pair: Rect2i in map.big_building_pairs():
 			t.check(pair.size == Vector2i(2, 1) or pair.size == Vector2i(1, 2),
 					"seed %d: the landmark %s is two neighbouring blocks" % [_seed(i), pair])
 			for block: Vector2i in [pair.position, pair.end - Vector2i.ONE]:
 				t.check(map.starting_purpose(block) == GameEnums.BlockPurpose.BIG_BUILDING,
 						"seed %d: block %s is a big building for the whole run" % [_seed(i), block])
-				var layout: BlockLayout = map.block_layouts.get(block)
+				var layout: BlockLayout = map.layout_of(block)
 				t.check(layout != null and not BlockLayout.has(layout.open_rect),
 						"seed %d: and has nothing carved into it to repaint" % _seed(i))
 
@@ -667,10 +667,10 @@ func _test_a_big_building_joins_two_blocks(t: TestRunner) -> void:
 			# One street gone, and it is the one between them — derived here as the street both
 			# blocks' own rings have in common, rather than restated from the generator's rule.
 			var ring := {}
-			for segment in map.network.around_blocks(Rect2i(pair.position, Vector2i.ONE)):
+			for segment in map.street_network().around_blocks(Rect2i(pair.position, Vector2i.ONE)):
 				ring[segment.key()] = true
 			var between := Vector3i.ZERO
-			for segment in map.network.around_blocks(Rect2i(pair.end - Vector2i.ONE,
+			for segment in map.street_network().around_blocks(Rect2i(pair.end - Vector2i.ONE,
 					Vector2i.ONE)):
 				if ring.has(segment.key()):
 					between = segment.key()
@@ -684,7 +684,7 @@ func _test_a_big_building_joins_two_blocks(t: TestRunner) -> void:
 
 			# And nothing else round the pair was taken *by the landmark*. A dead end may still sit
 			# on one of them, which is legitimate city and is why the exception is named.
-			for segment in map.network.around_blocks(pair):
+			for segment in map.street_network().around_blocks(pair):
 				t.check(map.has_street(segment.key()) or map.dead_ends.has(segment.key()),
 						"seed %d: %s round the landmark %s is still a street"
 						% [_seed(i), segment.key(), pair])
@@ -714,10 +714,10 @@ func _test_a_missing_arm_has_no_crossing_on_it(t: TestRunner) -> void:
 	for i in seeds:
 		var map := _map(i)
 		var footprints: Array[Rect2i] = []
-		for anchor: Vector2i in map.zone_rects:
-			footprints.append(CityMap.blocks_tile_rect(map.zone_rects[anchor]))
-		for key: Vector3i in map.built_over:
-			footprints.append(map.built_over[key])
+		for anchor: Vector2i in map.zone_anchors():
+			footprints.append(CityMap.blocks_tile_rect(map.zone_footprint(anchor)))
+		for key: Vector3i in map.streets_built_over():
+			footprints.append(map.streets_built_over()[key])
 		for footprint in footprints:
 			for tile in map.rect_tiles(footprint.grow(Tuning.SIDEWALK_WIDTH)):
 				if footprint.has_point(tile) or not map.in_bounds(tile):
@@ -739,9 +739,9 @@ func _test_nothing_goes_into_a_precinct(t: TestRunner) -> void:
 	var seeds := 25
 	for i in seeds:
 		var map := _map(i)
-		t.check(not map.precinct_spans.is_empty(),
+		t.check(not map.precinct_stretches().is_empty(),
 				"seed %d: a city has at least one precinct" % _seed(i))
-		for span in map.precinct_spans:
+		for span in map.precinct_stretches():
 			var vertical := span.x == 1
 			var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH
 			var hi := (span.w + 1) * CityMap.period()
@@ -774,7 +774,7 @@ func _test_a_precincts_end_is_a_t_junction(t: TestRunner) -> void:
 	var road_band := Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH * 2
 	for i in seeds:
 		var map := _map(i)
-		for span in map.precinct_spans:
+		for span in map.precinct_stretches():
 			var vertical := span.x == 1
 			var across_lo := span.y * CityMap.period() + Tuning.SIDEWALK_WIDTH
 			var ends := [
@@ -814,7 +814,7 @@ func _test_bollards_stand_where_the_paving_begins(t: TestRunner) -> void:
 	for i in seeds:
 		var map := _map(i)
 		var positions := map.post_positions()
-		for span in map.precinct_spans:
+		for span in map.precinct_stretches():
 			var vertical := span.x == 1
 			var corridor: int = span.y
 			var lo := span.z * CityMap.period() + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
@@ -855,7 +855,7 @@ func _test_an_alley_is_exactly_one_cell_wide(t: TestRunner) -> void:
 	var checked := 0
 	for i in 40:
 		var map := _map(i)
-		for alley in map.alley_rects:
+		for alley in map.alley_lots():
 			checked += 1
 			var vertical := alley.size.x == Tuning.ALLEY_WIDTH_TILES
 			var offset_coordinate := alley.position.x if vertical else alley.position.y
@@ -868,8 +868,8 @@ func _test_an_alley_is_exactly_one_cell_wide(t: TestRunner) -> void:
 	var rolled := 0
 	for i in 40:
 		var map := _map(i)
-		for block: Vector2i in map.block_layouts:
-			var alley: Rect2i = (map.block_layouts[block] as BlockLayout).alley
+		for block: Vector2i in map.blocks_with_layouts():
+			var alley: Rect2i = (map.layout_of(block) as BlockLayout).alley
 			if not BlockLayout.has(alley):
 				continue
 			rolled += 1
@@ -900,7 +900,7 @@ func _seed(index: int) -> int:
 ## main road.** *(M52, built from M47's entry; playtest 16 finding 4: "this map shows multiple calm
 ## zones at the edge of the map which should be impossible".)*
 ##
-## Stated over `map.calm_blocks` and every block of every lot, for the same reason the ring test
+## Stated over `map.calm_blocks_now()` and every block of every lot, for the same reason the ring test
 ## below is: that list is what the telemetry map outlines, and the outlines in the outer column are
 ## what the player was looking at when they said it. A rule checked over the *placement* path would
 ## have agreed with the placement path — three of them place calm and it took one shared question
@@ -915,15 +915,15 @@ func _test_calm_is_never_at_the_edge_or_beside_the_spine(t: TestRunner) -> void:
 	var last := Tuning.CITY_BLOCKS - Vector2i.ONE
 	for i in 24:
 		var map := _map(i)
-		for anchor in map.calm_blocks:
+		for anchor in map.calm_blocks_now():
 			var lot := map.lot_blocks(anchor)
 			for block in _blocks_in(lot):
 				t.check(block.x > 0 and block.y > 0 and block.x < last.x and block.y < last.y,
 						"seed %d: calm area %s has a block at the map edge (%s)"
 						% [_seed(i), anchor, block])
-				t.check(block.x != map.main_road and block.x != map.main_road - 1,
+				t.check(block.x != map.main_road_corridor() and block.x != map.main_road_corridor() - 1,
 						"seed %d: calm area %s has a block beside the main road (%s, spine %d)"
-						% [_seed(i), anchor, block, map.main_road])
+						% [_seed(i), anchor, block, map.main_road_corridor()])
 
 ## **No two calm areas are anywhere in each other's eight-block ring, corners included, whatever
 ## kind of calm they are.** *(Playtest 14 finding 7, and the 2026-08-31 re-report off a telemetry
@@ -936,7 +936,7 @@ func _test_calm_is_never_at_the_edge_or_beside_the_spine(t: TestRunner) -> void:
 ## M49, which fixed the diagonal in the placement rule and left the guarantee checking the old
 ## shape. A test that calls validate() would have agreed with it about both.
 ##
-## So this walks the whole ring itself, over `map.calm_blocks` — the list the closure planner, the
+## So this walks the whole ring itself, over `map.calm_blocks_now()` — the list the closure planner, the
 ## park rules and the telemetry picture all use, which is the list the player is looking at.
 ##
 ## Measured before the fix: 10 cities in 40 had at least one pair, 12 side by side and 8 diagonal,
@@ -946,7 +946,7 @@ func _test_no_two_calm_areas_are_in_each_others_ring(t: TestRunner) -> void:
 	for i in 24:
 		var map := _map(i)
 		var owner := {}
-		for block in map.calm_blocks:
+		for block in map.calm_blocks_now():
 			var lot := map.lot_blocks(block)
 			for y in range(lot.position.y, lot.end.y):
 				for x in range(lot.position.x, lot.end.x):

@@ -64,7 +64,7 @@ static func _yard(size := Vector2i(12, 12)) -> CityMap:
 ## closes the ground the street's two barriers cut off from the doorstep.
 static func _yard_with_a_street_shut() -> CityMap:
 	var map := _yard(Vector2i.ONE * CityMap.period() * 2)
-	var street := map.network.by_key(Vector3i(0, 0, 1))
+	var street := map.street_network().by_key(Vector3i(0, 0, 1))
 	var wall := street.tile_rect()
 	map.fill_rect(Rect2i(Vector2i(Tuning.STREET_WIDTH, wall.position.y), Vector2i(1, wall.size.y)),
 			GameEnums.TileType.BUILDING)
@@ -233,8 +233,8 @@ func _test_a_walk_goes_round_what_was_put_down(t: TestRunner) -> void:
 func _test_a_car_sees_her_off_street_ground(t: TestRunner) -> void:
 	var patrol := EventCatalogue.by_id("police_patrol")
 	t.check(patrol.vehicle != null, "the patrol is a car that drives")
-	for ground: GameEnums.TileType in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE, GameEnums.TileType.PARK,
-			GameEnums.TileType.SIDEWALK]:
+	for ground: GameEnums.TileType in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE,
+			GameEnums.TileType.PARK, GameEnums.TileType.SIDEWALK]:
 		var map := _yard(Vector2i(8, 8))
 		map.fill_rect(Rect2i(0, 1, 8, 1), GameEnums.TileType.ROAD)
 		map.fill_rect(Rect2i(3, 3, 2, 2), ground)
@@ -346,7 +346,7 @@ func _in_a_day(t: TestRunner, check: Callable) -> void:
 	city.build(MapCache.of(SEED))
 	var state := CityState.new()
 	run_state.attempt_spend.city_state = state
-	state.begin_day(city.map.block_plans, WALK_DAY)
+	state.begin_day(city.map.plans_by_block(), WALK_DAY)
 	city.start_day(state, WALK_DAY, _rng("closures"))
 	city.events.start_day(DaySpec.for_day(WALK_DAY), _rng("events"), [], city.map.doorstep_world_position())
 	check.call(t, city)

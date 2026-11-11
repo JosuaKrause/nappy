@@ -61,9 +61,9 @@ func _test_a_copy_answers_what_the_map_answers(t: TestRunner, original: CityMap,
 		var map := original.copy()
 		var copied := map.copy()
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		var other := CityState.new()
-		other.begin_day(copied.block_plans, day)
+		other.begin_day(copied.plans_by_block(), day)
 		map.repaint(state)
 		copied.repaint(other)
 		_check_the_same(t, map, copied, "seed %d, repainted for day %d" % [seed_value, day])
@@ -75,7 +75,7 @@ func _test_a_copy_taken_during_a_day_carries_the_days_record(t: TestRunner, orig
 		seed_value: int) -> void:
 	var map := original.copy()
 	var street := _a_street_tile(map)
-	var segment := map.network.segment_containing(street)
+	var segment := map.street_network().segment_containing(street)
 	map.hold_segment(segment.key(), HeldStreets.Why.SEAL)
 	map.seal_soft_tile(street)
 	var body: Array[Vector2i] = [street + Vector2i.RIGHT]
@@ -84,15 +84,15 @@ func _test_a_copy_taken_during_a_day_carries_the_days_record(t: TestRunner, orig
 	map.set_closure_tree_pits(pits)
 	var fallen: Array[Vector2i] = [street + Vector2i.LEFT]
 	map.set_seal_tree_pits(fallen)
-	var spent: Array[Vector2i] = [map.calm_blocks[0]]
+	var spent: Array[Vector2i] = [map.calm_blocks_now()[0]]
 	map.set_spent_calm(spent)
 	var twin := map.copy()
 	_check_the_same(t, map, twin, "seed %d, during a day" % seed_value)
 	# The handover is carried too: both maps' next repaint shuts the same calm.
 	var state := CityState.new()
-	state.begin_day(map.block_plans, 2)
+	state.begin_day(map.plans_by_block(), 2)
 	var other := CityState.new()
-	other.begin_day(twin.block_plans, 2)
+	other.begin_day(twin.plans_by_block(), 2)
 	map.repaint(state)
 	twin.repaint(other)
 	_check_the_same(t, map, twin, "seed %d, the next repaint" % seed_value)
@@ -109,28 +109,28 @@ func _test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t: TestR
 		seed_value: int) -> void:
 	var day := 9
 	var map := original.copy()
-	var spent: Array[Vector2i] = [map.calm_blocks[0]]
+	var spent: Array[Vector2i] = [map.calm_blocks_now()[0]]
 	map.set_spent_calm(spent)
 	map.set_fenced_park_state(Vector2i(-1, -1), 0, Tuning.act_for_day(day))
 	var state := CityState.new()
-	state.begin_day(map.block_plans, day)
+	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	var street := _a_street_tile(map)
 	var closures: Array[RoadClosure] = [RoadClosure.new(RoadClosure.Kind.ROADWORKS,
-			map.network.segment_containing(street))]
+			map.street_network().segment_containing(street))]
 	map.close_streets(closures)
-	map.set_fenced_park_state(map.fenced_park, map.fenced_park_act, Tuning.act_for_day(day))
-	t.check(map.fenced_park.x >= 0 and map.is_closed(street),
+	map.set_fenced_park_state(map.fenced_park_block(), map.fenced_park_act, Tuning.act_for_day(day))
+	t.check(map.fenced_park_block().x >= 0 and map.is_closed(street),
 			"seed %d: the act III map has a fenced park and a closed street" % seed_value)
 	var twin := map.copy()
-	t.check(twin.fenced_park == map.fenced_park and twin.fenced_park_act == map.fenced_park_act,
+	t.check(twin.fenced_park_block() == map.fenced_park_block() and twin.fenced_park_act == map.fenced_park_act,
 			"seed %d: the copy has the same fenced park" % seed_value)
 	_check_the_same(t, map, twin, "seed %d, in act III" % seed_value)
 	# The handover is carried: both maps' next repaint keeps the same fence standing.
 	var next := CityState.new()
-	next.begin_day(map.block_plans, day + 1)
+	next.begin_day(map.plans_by_block(), day + 1)
 	var other := CityState.new()
-	other.begin_day(twin.block_plans, day + 1)
+	other.begin_day(twin.plans_by_block(), day + 1)
 	map.repaint(next)
 	twin.repaint(other)
 	_check_the_same(t, map, twin, "seed %d, the next repaint in act III" % seed_value)
@@ -172,27 +172,27 @@ func _test_what_one_map_is_handed_leaves_the_other_alone(t: TestRunner, original
 func _hand_a_day_to(map: CityMap) -> void:
 	var street := _a_street_tile(map)
 	map.set_tile(street + Vector2i.DOWN, GameEnums.TileType.BUILDING)
-	map.hold_segment(map.network.segment_containing(street).key(), HeldStreets.Why.SEAL)
+	map.hold_segment(map.street_network().segment_containing(street).key(), HeldStreets.Why.SEAL)
 	map.seal_soft_tile(street)
 	var body: Array[Vector2i] = [street + Vector2i.RIGHT]
 	map.obstruct_tiles(11, body)
 	var closures: Array[RoadClosure] = [RoadClosure.new(RoadClosure.Kind.ROADWORKS,
-			map.network.segment_containing(street))]
+			map.street_network().segment_containing(street))]
 	map.close_streets(closures)
 	var pits: Array[Vector2i] = [street]
 	map.set_seal_tree_pits(pits)
-	(map.block_plans[map.calm_blocks[0]] as BlockPlan).then(GameEnums.BlockPurpose.REQUISITIONED, 3,
+	(map.plans_by_block()[map.calm_blocks_now()[0]] as BlockPlan).then(GameEnums.BlockPurpose.REQUISITIONED, 3,
 			GameEnums.BlockCause.SCHEDULED)
-	var spent: Array[Vector2i] = [map.calm_blocks[0]]
+	var spent: Array[Vector2i] = [map.calm_blocks_now()[0]]
 	map.set_spent_calm(spent)
 	var state := CityState.new()
-	state.begin_day(map.block_plans, Tuning.RUN_LENGTH_DAYS)
+	state.begin_day(map.plans_by_block(), Tuning.RUN_LENGTH_DAYS)
 	map.repaint(state)
 
 ## The middle of the first segment's carriageway that is still a street on `map`, so a day's
 ## writes have a real street to land on.
 func _a_street_tile(map: CityMap) -> Vector2i:
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		if not map.has_street(segment.key()):
 			continue
 		var tile := segment.tile_rect().get_center()
@@ -254,7 +254,7 @@ func _answers(map: CityMap) -> Dictionary:
 	found["emptied tree pits"] = pits
 	found["blocked segments"] = map.blocked_segments()
 	var segments := []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		var key := segment.key()
 		segments.append([key, map.has_street(key), map.is_hard_blocker(key), map.is_held(segment),
 				RegionPlanner.ground_region_of(map, segment)])
@@ -273,10 +273,10 @@ func _answers(map: CityMap) -> Dictionary:
 	var arcs := []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var state := CityState.new()
-		state.begin_day(map.block_plans, day)
+		state.begin_day(map.plans_by_block(), day)
 		var purposes := []
-		for block: Vector2i in map.block_plans:
-			purposes.append([block, state.purpose_of(map.block_plans, block),
+		for block: Vector2i in map.blocks_with_plans():
+			purposes.append([block, state.purpose_of(map.plans_by_block(), block),
 					state.is_forced_open(block)])
 		purposes.sort()
 		arcs.append(purposes)
@@ -295,7 +295,7 @@ func _answers(map: CityMap) -> Dictionary:
 func _members(map: CityMap) -> Dictionary:
 	var found := _plain_members(map, _NOT_COMPARED)
 	var keys := []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		keys.append(segment.key())
 	found["network"] = keys
 	return found
@@ -313,10 +313,30 @@ func _plain_members(object: Object, skipped: Array[String] = []) -> Dictionary:
 	return found
 
 ## `value` with every object in it replaced by its members (`_plain_members()`), so two values
-## compare equal exactly when they hold the same data, whichever objects hold it, and every array and
-## dictionary in it new, so no later write to what it was read from reaches it (a packed array is a
-## value in GDScript, so it is already its own).
+## compare equal exactly when they hold the same data, whichever objects hold it, and every array,
+## dictionary and packed array in it new, so no later write to what it was read from reaches it. Godot
+## shares a packed array by reference, so each packed type is copied through its own typed name.
 func _plain(value: Variant) -> Variant:
+	if value is PackedByteArray:
+		return (value as PackedByteArray).duplicate()
+	if value is PackedInt32Array:
+		return (value as PackedInt32Array).duplicate()
+	if value is PackedInt64Array:
+		return (value as PackedInt64Array).duplicate()
+	if value is PackedFloat32Array:
+		return (value as PackedFloat32Array).duplicate()
+	if value is PackedFloat64Array:
+		return (value as PackedFloat64Array).duplicate()
+	if value is PackedStringArray:
+		return (value as PackedStringArray).duplicate()
+	if value is PackedVector2Array:
+		return (value as PackedVector2Array).duplicate()
+	if value is PackedVector3Array:
+		return (value as PackedVector3Array).duplicate()
+	if value is PackedVector4Array:
+		return (value as PackedVector4Array).duplicate()
+	if value is PackedColorArray:
+		return (value as PackedColorArray).duplicate()
 	if value is Object:
 		return _plain_members(value as Object)
 	if value is Array:
