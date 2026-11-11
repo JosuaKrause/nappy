@@ -925,7 +925,7 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t: TestRunner, scene: Dicti
 			% [waited_at, WalkerStrategy.WALKER_DOOR_STOP_DISTANCE])
 	t.check(came_out_at > 0.0,
 			"and it comes out on the far side of the door (%.1fpx)" % came_out_at)
-	t.check(hut.inside == null and hut.waiting() == 0,
+	t.check(hut.committed() == 0,
 			"the hut is free again once it has let somebody through")
 
 	# The cooldown: the same hut may not take it again until it has actually left the hut's area,
@@ -1047,7 +1047,7 @@ func _test_a_line_at_a_door_stays_short(t: TestRunner, scene: Dictionary) -> voi
 			crossed = true
 		# Two waiting behind somebody inside: the second of them stands one spacing further back
 		# than the first, which is what makes a line a line rather than a heap.
-		if hut.committed() > hut.waiting() and hut.waiting() >= 2:
+		if hut.inside != null:
 			var first: CrowdAgent = null
 			var second: CrowdAgent = null
 			for walker: CrowdAgent in line:
