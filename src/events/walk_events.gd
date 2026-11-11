@@ -22,7 +22,7 @@ extends RefCounted
 ## **The constructor derives nothing**, so a test hands a consumer a stand-in that overrides the
 ## questions below and answers what the test set (`tests/fake_walk_events.gd`).
 
-var _plans: Array[EventScheduler.Planned] = []
+var _plans: Array[EventPlan] = []
 var _calm: CalmAreas = null
 var _doors := PackedVector2Array()
 var _reach: DayReach = null
@@ -35,7 +35,7 @@ var _locations: DayLocations = null
 ## standing at `doors`, `reach`, where she can get to from home as it was planned (none for a
 ## walk that is not in the city), and `locations`, the day's locations as dawn laid them out (none
 ## on a day that laid none out).
-func take(plans: Array[EventScheduler.Planned], calm: CalmAreas = null,
+func take(plans: Array[EventPlan], calm: CalmAreas = null,
 		doors := PackedVector2Array(), reach: DayReach = null,
 		locations: DayLocations = null) -> void:
 	_plans = plans
@@ -45,7 +45,7 @@ func take(plans: Array[EventScheduler.Planned], calm: CalmAreas = null,
 	_locations = locations
 
 ## Adds one plan placed while she walks, after every plan already in the walk.
-func add(plan: EventScheduler.Planned) -> void:
+func add(plan: EventPlan) -> void:
 	_plans.append(plan)
 
 ## Forgets the walk.
@@ -61,21 +61,21 @@ func clear() -> void:
 ## The walk's plans, sited and unsited, spent and unspent, in the order they stream: the store
 ## itself rather than a copy, for the streaming's pass over every plan each tick. Read it; the walk
 ## is written through `add()` alone.
-func plans() -> Array[EventScheduler.Planned]:
+func plans() -> Array[EventPlan]:
 	return _plans
 
 ## Every plan of the walk but `besides`: what a placement is spaced and checked against. The plan
 ## being placed is never in it, since a row moved off a position it has not been seen at must not
 ## be spaced against its own old body. `null` leaves nothing out.
-func everything_but(besides: EventScheduler.Planned = null) -> Array[EventScheduler.Planned]:
-	var others: Array[EventScheduler.Planned] = []
+func everything_but(besides: EventPlan = null) -> Array[EventPlan]:
+	var others: Array[EventPlan] = []
 	for plan in _plans:
 		if plan != besides:
 			others.append(plan)
 	return others
 
 ## **Whether `point` stands clear of the walk's events** for a figure `her_reach` across: farther
-## from every placed, unspent plan than its clearance (`Planned.clearance()`: its body and her shape,
+## from every placed, unspent plan than its clearance (`EventPlan.clearance()`: its body and her shape,
 ## its field where it carries one, a hard fail's lethal reach), measured from where it stands now.
 ## A plan placed inside `besides` is not asked: the park cordon's own park, whose people are being
 ## walked out (`ParkCordon._clear_of_the_day()`).
@@ -111,8 +111,8 @@ func locations() -> DayLocations:
 ## **The walk's placed, unspent plans standing inside `area`** (world space), by where each was
 ## placed: what a section holds, which day 13's swap spends when it puts its roadblock across the
 ## section (`EventsAhead.swap_in_a_section()`).
-func placed_within(area: Rect2) -> Array[EventScheduler.Planned]:
-	var found: Array[EventScheduler.Planned] = []
+func placed_within(area: Rect2) -> Array[EventPlan]:
+	var found: Array[EventPlan] = []
 	for plan in _plans:
 		if plan.is_placed() and not plan.is_spent() and area.has_point(plan.placed_at()):
 			found.append(plan)

@@ -98,8 +98,8 @@ func _test_an_authored_door_stands_as_the_days(t: TestRunner, runtime: SceneReci
 			"the authored door is the day's street, with its gate and its bodies: %s" % [errors])
 	var same := authored.door_bodies.size() == bodies.size()
 	for i in mini(authored.door_bodies.size(), bodies.size()):
-		var mine: EventScheduler.Planned = authored.door_bodies[i]
-		var theirs: EventScheduler.Planned = bodies[i]
+		var mine: EventPlan = authored.door_bodies[i]
+		var theirs: EventPlan = bodies[i]
 		same = same and mine.position == theirs.position and mine.def.id == theirs.def.id \
 				and mine.facing == theirs.facing
 	t.check(same, "and each body stands where the day's does, as the same row")

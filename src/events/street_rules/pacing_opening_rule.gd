@@ -12,8 +12,8 @@ func _init(map: CityMap, corridor: Corridor) -> void:
 	_corridor = corridor
 
 ## Overrides StreetRule.allows.
-func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
-		_placed: Array[EventScheduler.Planned], around: Array[EventScheduler.Planned]) -> bool:
+func allows(candidate: EventPlan, _tile: Vector2i,
+		_placed: Array[EventPlan], around: Array[EventPlan]) -> bool:
 	return _leaves_a_pacing_beats_opening(candidate, _map, _corridor, around)
 
 ## **A pacing row leaves the line open for part of its beat.** *"Time pass — don't route around
@@ -34,8 +34,8 @@ func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 ## **It is scoped to the streets a pacing row actually stands on**, which is what keeps it from
 ## being a second, wider copy of the width rule. Two standing rows closing a street between them is
 ## a different shape with a different answer, and the milestone does not write a rule for it.
-static func _leaves_a_pacing_beats_opening(candidate: EventScheduler.Planned, map: CityMap, corridor: Corridor,
-		already: Array[EventScheduler.Planned]) -> bool:
+static func _leaves_a_pacing_beats_opening(candidate: EventPlan, map: CityMap, corridor: Corridor,
+		already: Array[EventPlan]) -> bool:
 	if not corridor or not candidate.counts_against_the_line():
 		return true
 	var reach := candidate.row().line_reach()
@@ -55,7 +55,7 @@ static func _leaves_a_pacing_beats_opening(candidate: EventScheduler.Planned, ma
 	for key: Vector3i in streets:
 		var segment: StreetNetwork.Segment = streets[key]
 		var rect := map.tile_rect_to_world(segment.tile_rect())
-		var standing: Array[EventScheduler.Planned] = [candidate]
+		var standing: Array[EventPlan] = [candidate]
 		for plan in already:
 			if plan == candidate or not plan.counts_against_the_line():
 				continue
@@ -75,5 +75,5 @@ static func _leaves_a_pacing_beats_opening(candidate: EventScheduler.Planned, ma
 ## the fact, which is what makes the probe's number the measurement of the rule rather than a
 ## second opinion about it.
 static func _closes_the_street(map: CityMap, segment: StreetNetwork.Segment,
-		rows: Array[EventScheduler.Planned]) -> bool:
+		rows: Array[EventPlan]) -> bool:
 	return RouteSidewalkRule.closes_the_run(map, segment.tile_rect(), segment.horizontal, rows)

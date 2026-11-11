@@ -30,22 +30,22 @@ class _Locations extends DayLocations:
 		return found
 
 	## Overrides DayLocations.assign_to.
-	func assign_to(location: Location, plan: EventScheduler.Planned) -> void:
+	func assign_to(location: Location, plan: EventPlan) -> void:
 		location.take(plan)
 
 ## The day's ground: which locations take nothing, and what it stood.
 class _Ground extends LocationGround:
 	var refused := {}
-	var stood: Array[EventScheduler.Planned] = []
+	var stood: Array[EventPlan] = []
 
 	## Overrides LocationGround.offer.
-	func offer(def: EventDef, location: Location) -> EventScheduler.Planned:
+	func offer(def: EventDef, location: Location) -> EventPlan:
 		if refused.has(location):
 			return null
-		return EventScheduler.Planned.new(def, location.centre())
+		return EventPlan.new(def, location.centre())
 
 	## Overrides LocationGround.stand.
-	func stand(plan: EventScheduler.Planned) -> void:
+	func stand(plan: EventPlan) -> void:
 		stood.append(plan)
 
 func run(t: TestRunner) -> void:

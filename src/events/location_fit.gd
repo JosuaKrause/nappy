@@ -46,7 +46,7 @@ func tiles(def: EventDef, location: Location) -> Array[Vector2i]:
 	return fits
 
 ## `def`'s candidate built at `tile`, its facing and path drawn on `rng`, or null where none fits.
-func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator) -> EventScheduler.Planned:
+func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator) -> EventPlan:
 	return EventScheduler.build_placement(def, _map, tile, rng)
 
 func _own_ground(def: EventDef) -> Dictionary:

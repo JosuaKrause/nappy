@@ -4,14 +4,14 @@ extends DayPlanner
 ## rows it wants in a walk, and starts the walk the one way every walk starts
 ## (`EventManager.start_day()`). Shared by `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`) and `tests/test_interior.gd`.
 
-var _placements: Array[EventScheduler.Planned] = []
+var _placements: Array[EventPlan] = []
 
-func _init(the_world: EventWorld, placements: Array[EventScheduler.Planned]) -> void:
+func _init(the_world: EventWorld, placements: Array[EventPlan]) -> void:
 	super(the_world)
 	_placements = placements
 
 ## Hands `events` a planner that plans `placements`, whatever the spec.
-static func hand_in(events: EventManager, placements: Array[EventScheduler.Planned]) -> void:
+static func hand_in(events: EventManager, placements: Array[EventPlan]) -> void:
 	events.planner = new(events.world, placements)
 
 ## Overrides DayPlanner.plan.

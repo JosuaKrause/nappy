@@ -632,8 +632,8 @@ class _FakeEvents extends EventManager:
 		return _the_walk
 
 	## Overrides EventManager.plans.
-	func plans() -> Array[EventScheduler.Planned]:
-		var none: Array[EventScheduler.Planned] = []
+	func plans() -> Array[EventPlan]:
+		var none: Array[EventPlan] = []
 		return none
 
 ## A resistance that notes its day being started.

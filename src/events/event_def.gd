@@ -444,7 +444,7 @@ func most_in_a_day() -> int:
 
 ## **A planned row that comes again**, on its plan's own clock (`EventManager`): seconds from one
 ## of its instances coming to the next coming, kept on the clock whatever the last one did. 0 for a
-## row that comes once. A plan may carry its own (`EventScheduler.Planned.repeat_every`), as each of
+## row that comes once. A plan may carry its own (`EventPlan.repeat_every`), as each of
 ## the basement's vents keeps its own period.
 @export var repeat_every := 0.0
 ## Seconds from one of a planned row's instances being done — finished, or leaving the end of its
@@ -1132,7 +1132,7 @@ func at_heat(level: int) -> EventDef:
 		hot.duration = Tuning.PURSUIT_TIME
 	# A hunt whose own catch ends the day (`HuntSpec.ends_the_day`, the roadblock's guard) makes the
 	# copy lethal: a pursuer is exempt from the rule that nothing else happens inside a lethal
-	# event's field (`Planned.keeps_its_field_clear()`).
+	# event's field (`EventPlan.keeps_its_field_clear()`).
 	if hunts.ends_the_day:
 		hot.hard_fail = true
 	return hot
@@ -1650,7 +1650,7 @@ func as_warned_first() -> EventDef:
 
 ## The field's own furthest reach from this row's centre: what every "how far" rule needs instead
 ## of `outer_radius` alone, since a segment's field is a capsule and a moving point's forward reach
-## outgrows its resting radius (`Planned.keeps_its_field_clear()`'s clearance, the streaming rect,
+## outgrows its resting radius (`EventPlan.keeps_its_field_clear()`'s clearance, the streaming rect,
 ## `ExcitementSource.expected_gross_at()`'s early-out).
 ##
 ## `half_length + outer_radius` for a segment its field is priced from (`datum()`); this does not
@@ -1834,8 +1834,8 @@ func silent_beyond() -> float:
 ## The same exemptions asked of the **def** alone, for the one caller that has no placement to ask
 ## about: `EventScheduler.role_for()` decides a role before any tile is chosen. Everything a
 ## placement adds is the caller's own question, asked by
-## `EventScheduler.Planned.counts_against_the_line()`: *is it actually standing anywhere*, and *is
-## it a region door* (`Planned.is_door()`), since what makes a door a door is `RegionPlanner`
+## `EventPlan.counts_against_the_line()`: *is it actually standing anywhere*, and *is
+## it a region door* (`EventPlan.is_door()`), since what makes a door a door is `RegionPlanner`
 ## standing it at one rather than any field on the def. No row the catalogue places is a door.
 ##
 ## **A row the day sites from her own walk is a sixth kind outside the line, and the only one
@@ -1888,7 +1888,7 @@ func reaches_the_far_lane() -> bool:
 ## The plain disc rather than `field_reach()`'s forward-stretched ellipse, which differs only for a
 ## mobile row and only ahead of it. A flock would need its own answer, since its intensity is shared
 ## between bodies and the closed form below reads it far too wide; `pigeon_flock` is `Role.SCENERY`
-## and `Planned.counts_against_the_line()` is done with it before this is asked.
+## and `EventPlan.counts_against_the_line()` is done with it before this is asked.
 func line_reach() -> float:
 	if hard_fail:
 		return maxf(outer_radius, obstructs_radius)

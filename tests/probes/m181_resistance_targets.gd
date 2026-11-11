@@ -58,9 +58,9 @@ func run(t: TestRunner) -> void:
 			var candidates := _candidates(city, day)
 			var region_plan := city.streets().region_plan()
 			var walled: Array[Rect2i] = region_plan.alley_walls if region_plan else []
-			var door_bodies: Array[EventScheduler.Planned] = \
+			var door_bodies: Array[EventPlan] = \
 					region_plan.door_bodies if region_plan else []
-			var blockers: Array[EventScheduler.Planned] = []
+			var blockers: Array[EventPlan] = []
 			for plan in city.events.plans():
 				if not plan.is_placed() or plan in door_bodies:
 					continue

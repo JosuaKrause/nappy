@@ -23,15 +23,15 @@ func _street() -> CityMap:
 	return map
 
 ## `id` standing across the sidewalk at tile column `x`.
-func _across(map: CityMap, x: int, id := "barricade") -> EventScheduler.Planned:
-	return EventScheduler.Planned.new(EventCatalogue.by_id(id),
+func _across(map: CityMap, x: int, id := "barricade") -> EventPlan:
+	return EventPlan.new(EventCatalogue.by_id(id),
 			map.tile_to_world(Vector2i(x, 5)) + Vector2(0, Tuning.TILE_SIZE * 0.5))
 
 func _test_a_body_across_the_street_shuts_the_way(t: TestRunner) -> void:
 	var map := _street()
-	var open := DayReach.of(map, [] as Array[EventScheduler.Planned])
+	var open := DayReach.of(map, [] as Array[EventPlan])
 	t.check(open.reaches(BEYOND), "with nothing standing, the far end of the street is reached")
-	var reach := DayReach.of(map, [_across(map, ACROSS)] as Array[EventScheduler.Planned])
+	var reach := DayReach.of(map, [_across(map, ACROSS)] as Array[EventPlan])
 	t.check(not reach.reaches(BEYOND), "a barricade across the street cuts off the ground beyond it")
 	t.check(reach.is_shut(Vector2i(ACROSS, 5)) and reach.shut().has(Vector2i(ACROSS, 5)),
 			"and the ground under it is shut")
@@ -40,16 +40,16 @@ func _test_a_body_across_the_street_shuts_the_way(t: TestRunner) -> void:
 func _test_a_door_body_shuts_nothing(t: TestRunner) -> void:
 	var map := _street()
 	var hut := _across(map, ACROSS, "checkpoint_hut")
-	t.check(not DayReach.of(map, [hut] as Array[EventScheduler.Planned]).reaches(BEYOND),
+	t.check(not DayReach.of(map, [hut] as Array[EventPlan]).reaches(BEYOND),
 			"a hut that is not a door's body stands in the way like any other body")
 	hut.stand_as_a_door()
-	t.check(DayReach.of(map, [hut] as Array[EventScheduler.Planned]).reaches(BEYOND),
+	t.check(DayReach.of(map, [hut] as Array[EventPlan]).reaches(BEYOND),
 			"and the same hut stood at a region door shuts nothing: a door is a crossing")
 
 func _test_a_plan_not_placed_shuts_nothing(t: TestRunner) -> void:
 	var map := _street()
-	var unplaced := EventScheduler.Planned.new(EventCatalogue.by_id("barricade"), Vector2.INF)
-	t.check(DayReach.of(map, [unplaced] as Array[EventScheduler.Planned]).reaches(BEYOND),
+	var unplaced := EventPlan.new(EventCatalogue.by_id("barricade"), Vector2.INF)
+	t.check(DayReach.of(map, [unplaced] as Array[EventPlan]).reaches(BEYOND),
 			"a row the day budgeted but has not sited stands nowhere")
 
 func _test_a_soft_seal_band_and_a_closure_are_shut(t: TestRunner) -> void:
@@ -58,11 +58,11 @@ func _test_a_soft_seal_band_and_a_closure_are_shut(t: TestRunner) -> void:
 	for y in range(5, 7):
 		band[Vector2i(ACROSS, y)] = true
 	map.soft_sealed_tiles = band
-	t.check(not DayReach.of(map, [] as Array[EventScheduler.Planned]).reaches(BEYOND),
+	t.check(not DayReach.of(map, [] as Array[EventPlan]).reaches(BEYOND),
 			"a soft seal's band across the sidewalk shuts it: the red arrow cannot walk it")
 	map.soft_sealed_tiles = {}
 	map.closed_tiles = band.duplicate()
-	t.check(not DayReach.of(map, [] as Array[EventScheduler.Planned]).reaches(BEYOND),
+	t.check(not DayReach.of(map, [] as Array[EventPlan]).reaches(BEYOND),
 			"and so does today's closure")
 
 ## **Close by is a walk inside a circle** (`DayReach.paths_over()`, the measure day 13's dawn and its

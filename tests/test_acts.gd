@@ -269,7 +269,7 @@ func _burnt_count(city: City) -> int:
 			burnt += 1
 	return burnt
 
-func _contains(planned: Array[EventScheduler.Planned], id: String) -> bool:
+func _contains(planned: Array[EventPlan], id: String) -> bool:
 	for plan in planned:
 		if plan.def.id == id:
 			return true
@@ -298,7 +298,7 @@ func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 	# is the plain plan whose route to a park nothing else checks.
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var consumed: Array[String] = []
-		var blockers: Array[EventScheduler.Planned] = []
+		var blockers: Array[EventPlan] = []
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
 				CalmAreas.of(_map), MastSites.compute(_map), consumed, run.attempt_spend.scars).placements():
 			if plan.obstructs():
@@ -309,7 +309,7 @@ func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 ## Whether the grid still finds a way from the home to some calm tile with today's closures and
 ## every blocker's own obstruction circle standing (`EventScheduler.blocked_by()`, the set
 ## `WalkSiting` builds the same way): what the scheduler keeps true of the day it plans.
-func _a_park_is_reachable(grid: ReachabilityGrid, blockers: Array[EventScheduler.Planned]) -> bool:
+func _a_park_is_reachable(grid: ReachabilityGrid, blockers: Array[EventPlan]) -> bool:
 	var blocked := EventScheduler.blocked_by(_map, blockers)
 	var reached := grid.flood([_map.home_rect.position], blocked)
 	for tile in _map.calm_tiles():

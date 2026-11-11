@@ -8,14 +8,14 @@ extends WalkEvents
 ## suite: the runner loads only `test_*.gd`.
 
 ## The plans `add()` was handed, in order.
-var added: Array[EventScheduler.Planned] = []
+var added: Array[EventPlan] = []
 
-var _fake_plans: Array[EventScheduler.Planned] = []
+var _fake_plans: Array[EventPlan] = []
 var _fake_calm: CalmAreas = null
 var _fake_doors := PackedVector2Array()
 
 ## Sets the walk's plans.
-func set_plans(plans: Array[EventScheduler.Planned]) -> FakeWalkEvents:
+func set_plans(plans: Array[EventPlan]) -> FakeWalkEvents:
 	_fake_plans = plans.duplicate()
 	return self
 
@@ -30,17 +30,17 @@ func set_doors(doors: PackedVector2Array) -> FakeWalkEvents:
 	return self
 
 ## Overrides WalkEvents.add.
-func add(plan: EventScheduler.Planned) -> void:
+func add(plan: EventPlan) -> void:
 	added.append(plan)
 	_fake_plans.append(plan)
 
 ## Overrides WalkEvents.plans.
-func plans() -> Array[EventScheduler.Planned]:
+func plans() -> Array[EventPlan]:
 	return _fake_plans
 
 ## Overrides WalkEvents.everything_but.
-func everything_but(besides: EventScheduler.Planned = null) -> Array[EventScheduler.Planned]:
-	var others: Array[EventScheduler.Planned] = []
+func everything_but(besides: EventPlan = null) -> Array[EventPlan]:
+	var others: Array[EventPlan] = []
 	for plan in _fake_plans:
 		if plan != besides:
 			others.append(plan)

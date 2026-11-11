@@ -40,13 +40,13 @@ static func plan_for(seed_value: int) -> Dictionary:
 			"placements": DayPlanner.plan_the_escape_city(map, walk, rng, _city_spec())}
 
 ## The roadblocks among `placements` on each open street of the walk `plan` that carries any,
-## `[segment, Array[Planned]]` pairs.
+## `[segment, Array[EventPlan]]` pairs.
 static func roadblock_streets(map: CityMap, plan: FinalePlanner.Plan,
-		placements: Array[EventScheduler.Planned]) -> Array:
+		placements: Array[EventPlan]) -> Array:
 	var found: Array = []
 	for segment in plan.open_streets:
 		var rect := map.tile_rect_to_world(segment.tile_rect())
-		var group: Array[EventScheduler.Planned] = []
+		var group: Array[EventPlan] = []
 		for placement in placements:
 			if placement.def.id == "roadblock" and rect.grow(1.0).has_point(placement.position):
 				group.append(placement)
@@ -57,7 +57,7 @@ static func roadblock_streets(map: CityMap, plan: FinalePlanner.Plan,
 ## The two ends of her line along the street, or empty when no offset across the street fits at
 ## every band.
 static func her_line(t: Node, map: CityMap, segment: StreetNetwork.Segment,
-		group: Array[EventScheduler.Planned]) -> PackedVector2Array:
+		group: Array[EventPlan]) -> PackedVector2Array:
 	var ground := WalkGround.new(map)
 	var along := Vector2.RIGHT if segment.horizontal else Vector2.DOWN
 	var across := Vector2(-along.y, along.x)
@@ -118,7 +118,7 @@ static func _she_fits(map: CityMap, at: Vector2) -> bool:
 ## A world of its own for events to stand in, and the manager that puts them there: the world
 ## node a city or a building is to its map (`WorldContext`, which the map is handed as its own), a
 ## run of its own and an `EventManager` over them, its physics off so nothing steps but the caller.
-## A `Planned` is handed to the manager's streaming (`EventStreaming.add()`, then `stream_in()`, as
+## A `EventPlan` is handed to the manager's streaming (`EventStreaming.add()`, then `stream_in()`, as
 ## the manager's `stream_around()` does when she comes near it), so the spawner makes the
 ## instance the way a day's is made: on the map, in the world's entity layer, with its look's nodes
 ## to attach on the next idle frame (`settle()`). `close()` frees the world, gives back the bodies
@@ -152,7 +152,7 @@ class Stage extends RefCounted:
 
 	## Puts `plan` in the world as the day's streaming does, and answers the instance, its
 	## own process off (a case that lets frames draw it turns it on).
-	func stand(plan: EventScheduler.Planned) -> EventInstance:
+	func stand(plan: EventPlan) -> EventInstance:
 		_stood.append([plan, plan.was_live, plan.live])
 		manager.streaming.add(plan)
 		manager.streaming.stream_in(plan)
@@ -174,7 +174,7 @@ class Stage extends RefCounted:
 			_map.release_obstruction(made.get_instance_id())
 		_stood.reverse()
 		for stood: Array in _stood:
-			var plan: EventScheduler.Planned = stood[0]
+			var plan: EventPlan = stood[0]
 			_map.release_obstruction(plan.get_instance_id())
 			if plan.live != null and is_instance_valid(plan.live):
 				_map.release_obstruction(plan.live.get_instance_id())
@@ -194,7 +194,7 @@ static func settle(t: Node) -> void:
 ## The street's roadblocks, live: `[stage, Array[EventInstance]]`. `Stage.close()` frees them and
 ## their bands. Each is handed `atlas` (the pages the spawner hands every event it makes) when a
 ## case lets real frames draw them.
-static func build(t: Node, map: WorldMap, group: Array[EventScheduler.Planned],
+static func build(t: Node, map: WorldMap, group: Array[EventPlan],
 		atlas: AtlasLibrary = null) -> Array:
 	var stage := Stage.new(t, map, atlas)
 	var made: Array[EventInstance] = []
@@ -260,7 +260,7 @@ static func _charging(instances: Array[EventInstance]) -> int:
 ## `caught`, `charged` (how many guards charged her), `strongest` (the most any of them charged a
 ## second at her on the way) and `at`, where she stopped. A charge begun when her line ends is followed
 ## on (`TAIL`).
-static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], from: Vector2,
+static func walk(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 		to: Vector2, meter: Meter, built: Array = []) -> Dictionary:
 	var made: Array = built if not built.is_empty() else build(t, map, group)
 	var instances: Array[EventInstance] = made[1]
@@ -310,7 +310,7 @@ const REACTION := 0.3
 ## back, until every charge has given up; then standing until each guard who charged has left his
 ## post for good (at most 30s); then `walk()` from there to `to`. Answers `{"lure": …, "after": …}`, each in
 ## `walk()`'s shape; `after` is empty when the lure itself was caught.
-static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], from: Vector2,
+static func lure(t: Node, map: CityMap, group: Array[EventPlan], from: Vector2,
 		to: Vector2, meter: Meter) -> Dictionary:
 	var made := build(t, map, group)
 	var instances: Array[EventInstance] = made[1]

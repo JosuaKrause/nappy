@@ -10,8 +10,8 @@ func _init(doors: PackedVector2Array) -> void:
 	_doors = doors
 
 ## Overrides StreetRule.allows.
-func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
-		_placed: Array[EventScheduler.Planned], _around: Array[EventScheduler.Planned]) -> bool:
+func allows(candidate: EventPlan, _tile: Vector2i,
+		_placed: Array[EventPlan], _around: Array[EventPlan]) -> bool:
 	return clear_of_the_doors(candidate.placed_at(), candidate.walks(), _doors,
 			candidate.row().field_reach())
 
@@ -23,7 +23,7 @@ func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 ## **The whole route, not the spot it starts at.** `path` is a mover's beat or its run, and a
 ## patrol that only *passes* a door through the gap is exactly what finished two of the attempts
 ## this rule comes from — so the distance is measured to the nearest point of the route, the same
-## way `EventScheduler.Planned.distance_from()` does, and a stationary row is that route's single point.
+## way `EventPlan.distance_from()` does, and a stationary row is that route's single point.
 ##
 ## **The field, not the body.** `reach` is the candidate's own `EventDef.field_reach()`, so what is
 ## refused is a field arriving inside the gap rather than only a body standing in it: an event
@@ -43,8 +43,8 @@ static func clear_of_the_doors(at: Vector2, path: PackedVector2Array,
 	return true
 
 ## Distance from `door` to the nearest part of a placement — its one position, or the nearest point
-## of the route it travels. `EventScheduler.Planned.distance_from()`'s own arithmetic, stated over the two raw
-## fields so the director can ask it about a path that has no `EventScheduler.Planned` yet.
+## of the route it travels. `EventPlan.distance_from()`'s own arithmetic, stated over the two raw
+## fields so the director can ask it about a path that has no `EventPlan` yet.
 static func _distance_to_route(door: Vector2, at: Vector2, path: PackedVector2Array) -> float:
 	if path.size() < 2:
 		return door.distance_to(at)

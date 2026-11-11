@@ -38,7 +38,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: 
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
 	city.events.start_day(DaySpec.for_day(day), rng, consumed)
-	var crews: Array[EventScheduler.Planned] = []
+	var crews: Array[EventPlan] = []
 	for plan in city.events.plans():
 		if plan.def.id == "poster_crew":
 			crews.append(plan)

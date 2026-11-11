@@ -1,7 +1,7 @@
 class_name RouteReachRule
 extends StreetRule
 ## **A body never cuts the day's routes off from home**: a candidate that obstructs (a body she
-## cannot pass, or a hard fail, `EventScheduler.Planned.obstructs()`) and stands on ground she can
+## cannot pass, or a hard fail, `EventPlan.obstructs()`) and stands on ground she can
 ## reach from home is asked whether, among everything that already obstructs, it leaves every tile
 ## a route runs along (`Corridor.carries_a_route()`) that home reached without it still reached,
 ## but those it stands on. A body off the routes is asked too: the last of a ring that seals home
@@ -42,8 +42,8 @@ func _init(map: CityMap, corridor: Corridor) -> void:
 	_corridor = corridor
 
 ## Overrides StreetRule.allows.
-func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
-		_placed: Array[EventScheduler.Planned], around: Array[EventScheduler.Planned]) -> bool:
+func allows(candidate: EventPlan, _tile: Vector2i,
+		_placed: Array[EventPlan], around: Array[EventPlan]) -> bool:
 	if _corridor == null or not candidate.obstructs():
 		return true
 	_catch_up(around, candidate)
@@ -59,9 +59,9 @@ func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 
 ## Brings the reach up to `around`'s bodies (but `candidate`): a body not shown yet is folded in,
 ## and a body shown that `around` no longer holds sends the reach back to a flood from home.
-func _catch_up(around: Array[EventScheduler.Planned], candidate: EventScheduler.Planned) -> void:
-	var bodies: Array[EventScheduler.Planned] = []
-	var fresh: Array[EventScheduler.Planned] = []
+func _catch_up(around: Array[EventPlan], candidate: EventPlan) -> void:
+	var bodies: Array[EventPlan] = []
+	var fresh: Array[EventPlan] = []
 	for plan in around:
 		if plan != candidate and plan.obstructs():
 			bodies.append(plan)
@@ -82,7 +82,7 @@ func _catch_up(around: Array[EventScheduler.Planned], candidate: EventScheduler.
 			_reached = _flood({})
 		_seen[body.get_instance_id()] = true
 
-func _rebuild(bodies: Array[EventScheduler.Planned]) -> void:
+func _rebuild(bodies: Array[EventPlan]) -> void:
 	if not _ready:
 		_size = _map.world_to_tile(_map.world_size())
 		_open.resize(_size.x * _size.y)
@@ -102,7 +102,7 @@ func _rebuild(bodies: Array[EventScheduler.Planned]) -> void:
 	_reached = _flood({})
 
 ## The tiles (by index) a body's disc covers.
-func _disc_of(plan: EventScheduler.Planned) -> Dictionary:
+func _disc_of(plan: EventPlan) -> Dictionary:
 	var tiles := {}
 	EventScheduler.block_a_disc(_map, tiles, plan.placed_at(), plan.blocking_radius())
 	var disc := {}

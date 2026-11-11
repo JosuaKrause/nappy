@@ -445,7 +445,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> void:
 	_clear()
 	var manager := _manager(t)
-	manager.start_recipe([] as Array[EventScheduler.Planned], DaySpec.for_day(DAY), DAY,
+	manager.start_recipe([] as Array[EventPlan], DaySpec.for_day(DAY), DAY,
 			Vector2.ZERO)
 	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
 	t.add_child(stroller)

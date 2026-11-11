@@ -473,7 +473,7 @@ static func neighbor_heading_home() -> EventDef:
 ## **Free because a one-block park otherwise has nowhere left to settle her.** `outer_radius`
 ## (150) reaches past half of a 256px park block, so a playground with any real cost denied
 ## nearly the whole lot rather than merely contesting its middle. `EventKind.AMBIENT` is exempt
-## from spoiling a park (`EventScheduler.Planned.spoils()` passes over every playground), so a park
+## from spoiling a park (`EventPlan.spoils()` passes over every playground), so a park
 ## is still contested on the days the scheduler spoils it, just never by its own swings.
 ##
 ## **The row stays rather than being deleted**: `tests/test_events.gd` looks it up by id and reads
@@ -2848,7 +2848,7 @@ static func _checkpoint_hut() -> EventDef:
 ## `intensity` 0 on radii that exist only because `validate()` wants a falloff band, `inner_radius`
 ## 84 and `outer_radius` 120, clear of `Tuning.required_telegraph_time()` at that core. Drawn raised
 ## or lowered from the shared `RegionPlanner.GateState` `Crowd` keeps current for the day's cars.
-## Placed with `Planned.facing` set along the street's own axis, which tells the drawing a
+## Placed with `EventPlan.facing` set along the street's own axis, which tells the drawing a
 ## north-south road from an east-west one and is the door's own line for the walk-under check.
 static func _checkpoint_gate() -> EventDef:
 	var def := EventDef.new()
@@ -3122,7 +3122,7 @@ static func _masked_pursuer() -> EventDef:
 ## **One vent is a gate; the corridor is several of them on their own clocks.** The count, the
 ## periods and how long a blow lasts are `BuildingPlan.FINALE_STEAM_PERIODS` and
 ## `FINALE_STEAM_BLOWS_FOR`; the building sites them on the basement's narrows (`BuildingPlan`),
-## each plan coming again on its own period (`EventScheduler.Planned.repeat_every`). What this row
+## each plan coming again on its own period (`EventPlan.repeat_every`). What this row
 ## owns is one blow: notice, body, field, over. Its plume billows over two frames
 ## (`EventPictures.STEAM_B`) for the whole blow.
 static func _basement_steam() -> EventDef:

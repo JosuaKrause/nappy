@@ -66,7 +66,7 @@ const _WALL_DEF_ID := "roadblock"
 
 ## The shared state of one checkpoint gate: its own ground point and whether the boom is up right
 ## now. Built once per street door in `_add_door_bodies`, held by the `checkpoint_gate` instance
-## through `EventScheduler.Planned.gate_state` (which is what it draws raised or lowered from) and
+## through `EventPlan.gate_state` (which is what it draws raised or lowered from) and
 ## by `Crowd` through `RegionPlan.gates` (which is what actually raises and lowers it — see
 ## `Crowd._stop_for_gates()`). A `RefCounted` rather than two separate copies, so the two systems
 ## can never disagree about whether a boom is up.
@@ -96,19 +96,19 @@ class RegionPlan extends RefCounted:
 	## Crossing alley rects the day's tree uses — a single guard at each of its two mouths, from
 	## `Tuning.REGION_WALL_FIRST_DAY`. See `door_bodies`.
 	var alley_doors: Array[Rect2i] = []
-	## The wall's own bodies, as `EventScheduler.Planned` — hard seals of the roadblock row, one
+	## The wall's own bodies, as `EventPlan` — hard seals of the roadblock row, one
 	## tile deep at a boundary segment's mouth or an alley's two mouths. Kept as its own list,
 	## appended to the day's plan (`EventManager.plans()`) by the caller, rather than merged
 	## anywhere: a caller that only wants to know where the wall runs never has to filter it back
 	## out of the day's whole plan.
-	var wall_bodies: Array[EventScheduler.Planned] = []
+	var wall_bodies: Array[EventPlan] = []
 	## The door structure's own bodies: two `checkpoint_hut`s and a `checkpoint_gate` at every
 	## street door's mouth, one `checkpoint_post` at each mouth of every alley door. Kept apart
 	## from `wall_bodies` for the same reason that list is kept apart from everything else — a
 	## caller that wants the wall alone never has to filter the doors back out, and vice versa.
-	var door_bodies: Array[EventScheduler.Planned] = []
+	var door_bodies: Array[EventPlan] = []
 	## One `GateState` per street door, in the same order as `doors` — `Crowd` reads this to know
-	## where today's gates are and to raise and lower them; the `checkpoint_gate` `Planned` at the
+	## where today's gates are and to raise and lower them; the `checkpoint_gate` `EventPlan` at the
 	## same crossing carries the identical object. Empty for an alley door, which has no gate.
 	var gates: Array[GateState] = []
 
@@ -669,7 +669,7 @@ static func plan_day(map: CityMap, spec: DaySpec, tree: RouteTree) -> RegionPlan
 ## back — with no change to `RoadblockLook._draw_roadblock()`, which already draws one guard per
 ## name in the array rather than assuming two.
 static func _alley_mouth_wall_body(map: CityMap, rect: Rect2i, vertical: bool,
-		at_start: bool) -> EventScheduler.Planned:
+		at_start: bool) -> EventPlan:
 	var body := SealPlanner.alley_mouth_wall(map, rect, vertical, at_start, _WALL_DEF_ID)
 	body.def.solid(GroundShape.point(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE / 2.0))
 	body.def.guard_sides = [_alley_mouth_street_side(at_start)] as Array[int]
@@ -693,7 +693,7 @@ static func _alley_mouth_street_side(at_start: bool) -> int:
 
 ## The along-street axis a door's own bodies share: `RIGHT` for a segment/alley that runs
 ## east-west (`horizontal`), `DOWN` for one that runs north-south. Carried on every door body's own
-## `Planned.facing`, which is what lets a stationary instance answer "which side of the crossing is
+## `EventPlan.facing`, which is what lets a stationary instance answer "which side of the crossing is
 ## she on" without a second lookup — see `EventManager`'s detention teleport.
 static func _along_axis(horizontal: bool) -> Vector2:
 	return Vector2.RIGHT if horizontal else Vector2.DOWN
@@ -729,7 +729,7 @@ static func _add_door_bodies(map: CityMap, segment: StreetNetwork.Segment, plan:
 	for i in positions.size():
 		var def_id := "checkpoint_gate" if i == road_index else "checkpoint_hut"
 		var def := SealPlanner.sealed_variant(EventCatalogue.by_id(def_id), true)
-		var body := EventScheduler.Planned.new(def, positions[i])
+		var body := EventPlan.new(def, positions[i])
 		body.facing = axis
 		if i == road_index:
 			body.gate_state = gate
@@ -745,7 +745,7 @@ static func _add_alley_door_bodies(map: CityMap, rect: Rect2i, plan: RegionPlan)
 	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("checkpoint_post"), true)
 	for at_start in [true, false]:
 		var mouth := SealPlanner.alley_mouth_rect(rect, vertical, at_start)
-		var body := EventScheduler.Planned.new(def, map.tile_rect_to_world(mouth).get_center())
+		var body := EventPlan.new(def, map.tile_rect_to_world(mouth).get_center())
 		body.facing = axis
 		body.stand_as_a_door()
 		plan.door_bodies.append(body)

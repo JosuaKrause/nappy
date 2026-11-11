@@ -849,7 +849,7 @@ func _select_structures(errors: Array[String]) -> void:
 			errors.append("setup.barriers: production barriers require an off-route street on an eligible day")
 			continue
 		selected.walls.append(segment)
-		# The wall's bodies say so, as the day's do (`Planned.stand_in_the_wall()`).
+		# The wall's bodies say so, as the day's do (`EventPlan.stand_in_the_wall()`).
 		var bodies := SealPlanner.place_hard_on(_city.map, segment, "roadblock", entry.end == "a")
 		for body in bodies:
 			body.stand_in_the_wall()
@@ -867,8 +867,8 @@ func _segment_inside_extent(segment: StreetNetwork.Segment) -> bool:
 	return not _city.map.recipe_bounds.has_area() \
 			or _city.map.recipe_bounds.encloses(segment.tile_rect())
 
-func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
-	var plans: Array[EventScheduler.Planned] = []
+func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
+	var plans: Array[EventPlan] = []
 	var map := _city.map
 	var trees := StreetTrees.footprint_tiles(map)
 	var lined := StreetTrees.segment_keys_with_trees(map)
@@ -900,9 +900,9 @@ func _authored_seals(errors: Array[String]) -> Array[EventScheduler.Planned]:
 	return plans
 
 func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
-		standing: Array[EventScheduler.Planned] = []) -> Array[EventScheduler.Planned]:
+		standing: Array[EventPlan] = []) -> Array[EventPlan]:
 	var setup: Dictionary = data.get("setup", {})
-	var plans: Array[EventScheduler.Planned] = []
+	var plans: Array[EventPlan] = []
 	var map := _city.map
 	var tree := _city.streets().route_tree()
 	var corridor: Corridor = Corridor.of(tree) if tree else null
@@ -947,7 +947,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		# (`EventCatalogue.heated()`), for the heated rungs no ordinary authored day reaches.
 		if entry.has("heat"):
 			def = EventCatalogue.heated(def, int(entry.heat))
-		var plan: EventScheduler.Planned
+		var plan: EventPlan
 		var why: Array[String] = []
 		if def.role == EventDef.Role.MAST:
 			plan = _mast_placement(def, at, plans)
@@ -963,7 +963,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 					or not DoorClearanceRule.clear_of_the_doors(at, route, doors, def.field_reach()):
 				errors.append("event %s fails its ordinary director siting" % entry.name)
 				continue
-			plan = EventScheduler.Planned.new(def, at, route)
+			plan = EventPlan.new(def, at, route)
 		else:
 			plan = EventScheduler.recipe_placement(def, _run.header.day, map, at,
 					int(entry.get("route_seed", 1)), plans, corridor, doors, calm, standing,
@@ -1020,7 +1020,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 ## `EventManager.queue_a_mast()`'s `WalkSiting` asks beyond those: the calm she has not used. The
 ## loudspeaker is a scripted row no catalogue roll places, so the ordinary placement refuses it.
 func _mast_placement(def: EventDef, at: Vector2,
-		prior: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
+		prior: Array[EventPlan]) -> EventPlan:
 	var map := _city.map
 	var tile := map.world_to_tile(at)
 	if _run.header.day < Tuning.MAST_FIRST_DAY \
@@ -1035,8 +1035,8 @@ func _mast_placement(def: EventDef, at: Vector2,
 ## streets, tree exclusion, spawn clearance and body spacing. No ordinary-day corridor or offscreen
 ## director stands in for it.
 func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
-		finale: FinalePlanner.Plan, prior: Array[EventScheduler.Planned],
-		route_seed: int) -> EventScheduler.Planned:
+		finale: FinalePlanner.Plan, prior: Array[EventPlan],
+		route_seed: int) -> EventPlan:
 	if not _walk_spec.bag_rows.has(def.id):
 		return null
 	def = _walk_spec.bag_rows[def.id]

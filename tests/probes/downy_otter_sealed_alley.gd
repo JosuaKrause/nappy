@@ -84,7 +84,7 @@ func _count(total: Array, city: City, director: ResistanceDirector, at: Vector2,
 	var _unused := director
 
 func _doors_shut(city: City) -> Array:
-	var blockers: Array[EventScheduler.Planned] = []
+	var blockers: Array[EventPlan] = []
 	for plan in city.events.plans():
 		if plan.is_placed() and (plan.def.obstructs_radius > 0.0 or plan.def.hard_fail):
 			blockers.append(plan)

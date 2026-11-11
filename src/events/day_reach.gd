@@ -10,7 +10,7 @@ extends RefCounted
 ## in the city (`EventManager._take()`) and the walk's events hold it (`WalkEvents.reach()`).
 ##
 ## **What is shut**: today's closures, the disc of every plan that blocks the way
-## (`EventScheduler.Planned.obstructs()`, as `EventScheduler.blocked_by()` paints it), and the soft
+## (`EventPlan.obstructs()`, as `EventScheduler.blocked_by()` paints it), and the soft
 ## seals' bands (`Mover.SOFT_SEALS`, the pavement a soft seal shuts to walkers), which the city's own
 ## guarantee does not ask: the red arrow reads a band as ground she cannot walk, so a place reached
 ## only through one is no place to send her. A region door's bodies shut nothing: she walks through
@@ -26,7 +26,7 @@ var _shut := {}
 var _reached := {}
 
 ## **The reach of `plans` on `map`**, read as `map` stands now: its closures and its soft seals.
-static func of(map: CityMap, plans: Array[EventScheduler.Planned]) -> DayReach:
+static func of(map: CityMap, plans: Array[EventPlan]) -> DayReach:
 	var reach := DayReach.new()
 	reach._grid = ReachabilityGrid.build(map)
 	reach._shut = shut_by(map, plans)
@@ -37,8 +37,8 @@ static func of(map: CityMap, plans: Array[EventScheduler.Planned]) -> DayReach:
 ## that blocks the way, today's closures and the soft seals' bands. What a reach is flooded over, for
 ## a caller that needs only the ground: dawn, placing day 13's roadblocks before the walk is planned
 ## (`EventScheduler._place_the_roadblocks()`).
-static func shut_by(map: CityMap, plans: Array[EventScheduler.Planned]) -> Dictionary:
-	var blockers: Array[EventScheduler.Planned] = []
+static func shut_by(map: CityMap, plans: Array[EventPlan]) -> Dictionary:
+	var blockers: Array[EventPlan] = []
 	for plan in plans:
 		if plan.obstructs():
 			blockers.append(plan)

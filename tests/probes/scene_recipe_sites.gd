@@ -33,9 +33,9 @@ func run(_t: TestRunner) -> void:
 			return a.distance_squared_to(Vector2i(65, 60)) < b.distance_squared_to(Vector2i(65, 60)))
 		var accepted := 0
 		var locations := DayLocations.lay_out(map, corridor)
-		var none: Array[EventScheduler.Planned] = []
+		var none: Array[EventPlan] = []
 		for tile in tiles:
-			var prior: Array[EventScheduler.Planned] = []
+			var prior: Array[EventPlan] = []
 			var at := map.tile_to_world(tile)
 			var plan := EventScheduler.recipe_placement(def, day, map, at, 1, prior, corridor, doors,
 					calm, none, locations)

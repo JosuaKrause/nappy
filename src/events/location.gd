@@ -31,7 +31,7 @@ var _view := PlacementView.View.OFF_THE_ROUTE
 ## False where a fixed part holds the ground for the day (`DayLocations.lay_out()`).
 var _available := true
 ## What a phase put here, or null while nothing has.
-var _plan: EventScheduler.Planned = null
+var _plan: EventPlan = null
 var _kind := Kind.SECTION
 ## Whether a draw has filled it, with an event or with nothing (`record()`).
 var _drawn := false
@@ -73,7 +73,7 @@ func is_taken() -> bool:
 
 ## Puts `plan` here for the day, as a phase assigns it: by `StreetLocations` on a street, by
 ## `DayLocations` on the ground beyond the streets.
-func take(plan: EventScheduler.Planned) -> void:
+func take(plan: EventPlan) -> void:
 	_plan = plan
 
 ## Whether `other` lies inside this location's section: the same street and the same section,
@@ -113,7 +113,7 @@ func is_drawn() -> bool:
 	return _drawn
 
 ## Records what the draw put here: `plan`, or nothing for the empty event.
-func record(plan: EventScheduler.Planned) -> void:
+func record(plan: EventPlan) -> void:
 	_drawn = true
 	if plan:
 		_plan = plan

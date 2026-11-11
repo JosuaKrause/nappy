@@ -106,7 +106,7 @@ func _test_an_assigned_section_is_taken_for_the_day(t: TestRunner) -> void:
 	var locations := DayLocations.lay_out(CityMap.new(), _views())
 	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
 	var middle := sections[1]
-	var roadblock := EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"), middle.centre())
+	var roadblock := EventPlan.new(EventCatalogue.by_id("roadblock"), middle.centre())
 	locations.assign(middle, roadblock)
 	var left := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
 	t.check(middle.is_taken() and not left.has(middle),
@@ -128,7 +128,7 @@ func _test_a_section_taken_takes_its_two_sidewalk_locations(t: TestRunner) -> vo
 		t.check(on_a_band and middle.tiles().intersects(sidewalk.tiles()) == (sidewalk.section() == 1),
 				"each sidewalk location lies on one sidewalk inside its own section (%s)"
 				% sidewalk.tiles())
-	street.take_section(middle, EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"),
+	street.take_section(middle, EventPlan.new(EventCatalogue.by_id("roadblock"),
 			middle.centre()))
 	var taken: Array[int] = []
 	for sidewalk in sidewalks:
@@ -165,7 +165,7 @@ func _test_the_nearest_section_along_her_paths(t: TestRunner) -> void:
 			always) == sections[2], "and so is one reached only from ground she may not touch it from")
 	t.check(locations.nearest_section_in(PlacementView.View.OFF_THE_ROUTE, paths, always, always)
 			== null, "a view her paths reach no section of offers none")
-	locations.assign(sections[1], EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"),
+	locations.assign(sections[1], EventPlan.new(EventCatalogue.by_id("roadblock"),
 			sections[1].centre()))
 	t.check(locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths, always, always)
 			== sections[2], "a section already taken is passed over")
@@ -233,7 +233,7 @@ func _test_a_carriageway_event_drawn_takes_its_section(t: TestRunner) -> void:
 	var locations := DayLocations.lay_out(CityMap.new(), _views())
 	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
 	var middle := sections[1]
-	locations.record(middle, EventScheduler.Planned.new(EventCatalogue.by_id("police_patrol"),
+	locations.record(middle, EventPlan.new(EventCatalogue.by_id("police_patrol"),
 			middle.centre()))
 	var sidewalks: Array[Location] = []
 	for location in locations.drawing_order(RandomNumberGenerator.new()):
@@ -249,7 +249,7 @@ func _test_a_carriageway_event_drawn_takes_its_section(t: TestRunner) -> void:
 	var first := sidewalks[0]
 	if first.section() == 1:
 		first = sidewalks[sidewalks.size() - 1]
-	locations.record(first, EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"),
+	locations.record(first, EventPlan.new(EventCatalogue.by_id("cafe_tables"),
 			first.centre()))
 	var others_taken := 0
 	for sidewalk in sidewalks:
@@ -278,7 +278,7 @@ func _test_a_sidewalk_holding_an_event_closes_its_section(t: TestRunner) -> void
 		else:
 			other = location
 	var cafe := EventCatalogue.by_id("cafe_tables")
-	locations.assign_to(held, EventScheduler.Planned.new(cafe, held.centre()))
+	locations.assign_to(held, EventPlan.new(cafe, held.centre()))
 	t.check(sections[0].is_drawn() and not sections[0].is_taken(),
 			"a section whose sidewalk is assigned a cafe is closed to a draw and holds nothing")
 	t.check(not sections[1].is_drawn() and not sections[2].is_drawn(),
@@ -339,7 +339,7 @@ func _test_a_fixed_part_holds_its_location(t: TestRunner) -> void:
 	var open_before := locations.open_locations().size()
 	var tile := square.position + Vector2i.ONE
 	var cell := locations.holding(tile, GameEnums.TileType.SQUARE)
-	var mast := EventScheduler.Planned.new(EventCatalogue.mast(), map.tile_to_world(tile))
+	var mast := EventPlan.new(EventCatalogue.mast(), map.tile_to_world(tile))
 	locations.hold_fixed_part(mast, tile, GameEnums.TileType.SQUARE)
 	t.check(cell.is_taken(), "the location holding a fixed part is taken for the day")
 	t.check(not cell in locations.open_locations()

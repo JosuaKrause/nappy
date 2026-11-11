@@ -52,14 +52,14 @@ var _ground: RoadblockGround
 var _uncovered := {}
 ## Section -> the route tiles its offer was close by when last asked (`_something_left_to_cover()`).
 var _covers := {}
-var _placed: Array[EventScheduler.Planned] = []
+var _placed: Array[EventPlan] = []
 
 func _init(locations: DayLocations, ground: RoadblockGround) -> void:
 	_locations = locations
 	_ground = ground
 
 ## **Places the day's roadblocks** on `rng`, and answers them in the order placed.
-func place(rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
+func place(rng: RandomNumberGenerator) -> Array[EventPlan]:
 	for tile in _ground.route_tiles():
 		_uncovered[tile] = true
 	var candidates := _locations.sections_in(PlacementView.View.ROUTE_ADJACENT)
@@ -77,7 +77,7 @@ func place(rng: RandomNumberGenerator) -> Array[EventScheduler.Planned]:
 		if pool.is_empty():
 			break
 		var drawn := _draw(pool, rng)
-		var plan: EventScheduler.Planned = offers[drawn]
+		var plan: EventPlan = offers[drawn]
 		for tile in _ground.covers(plan):
 			_uncovered.erase(tile)
 		_ground.stand(plan)
@@ -105,7 +105,7 @@ func _something_left_to_cover(candidates: Array[Location], offers: Dictionary) -
 			continue
 		if not offers.has(section):
 			offers[section] = _ground.offer(section)
-		var plan: EventScheduler.Planned = offers[section]
+		var plan: EventPlan = offers[section]
 		if plan == null:
 			continue
 		if _covers.has(section) and not _reaches_one_with_none(_covers[section]):

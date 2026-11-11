@@ -237,7 +237,7 @@ func _a_manager_with_a_live_event(t: TestRunner, at: Vector2) -> Dictionary:
 	var manager := EventManager.new()
 	manager.setup_world(map, run)
 	t.add_child(manager)
-	var plan := EventScheduler.Planned.new(EventCatalogue.by_id("alley_robbery"), at)
+	var plan := EventPlan.new(EventCatalogue.by_id("alley_robbery"), at)
 	manager.streaming.add(plan)
 	manager.stream_around(at)
 	var listed := map.moves.all()

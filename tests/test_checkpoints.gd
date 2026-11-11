@@ -229,8 +229,8 @@ func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 					< RegionPlanner.region_of_junction(map, segment.b)
 			var at_a: bool = map.boundary_wall_at_a.get(segment.key(), default_at_a)
 			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a))
-			var gate: EventScheduler.Planned = null
-			var huts: Array[EventScheduler.Planned] = []
+			var gate: EventPlan = null
+			var huts: Array[EventPlan] = []
 			for body in plan.door_bodies:
 				if not mouth.has_point(body.position):
 					continue
@@ -298,7 +298,7 @@ func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 ## boom for a `gate_state` of none) and stands in the tree until it has drawn; the picture it paints
 ## lands where the recording drawer says, and what the player sees of the boom is the opaque
 ## pixels of that picture along the cross axis, bar and posts together, so that is what is measured.
-func _drawn_boom_span(t: TestRunner, gate: EventScheduler.Planned) -> Vector2:
+func _drawn_boom_span(t: TestRunner, gate: EventPlan) -> Vector2:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(EventPictures.ATLAS_GROUP)
 	var drawer := RecordingEventDrawer.new(atlas)
@@ -488,7 +488,7 @@ func _test_nothing_the_day_places_reaches_into_a_doors_gap(t: TestRunner) -> voi
 ## One day's catalogue placements against `doors`, with a rig's empty run history — the same call
 ## `EventManager.start_day()` makes, minus the scars and settled calm a real run carries.
 func _planned_day(map: CityMap, day: int, tree: RouteTree,
-		doors: PackedVector2Array) -> Array[EventScheduler.Planned]:
+		doors: PackedVector2Array) -> Array[EventPlan]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("checkpoint-gap:%d:%d" % [map.seed_used, day])
 	var consumed: Array[String] = []
@@ -497,7 +497,7 @@ func _planned_day(map: CityMap, day: int, tree: RouteTree,
 	return EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map,
 			used_calm), MastSites.compute(map), consumed, scars, tree, 0, doors).placements()
 
-func _placed_count(plans: Array[EventScheduler.Planned]) -> int:
+func _placed_count(plans: Array[EventPlan]) -> int:
 	var total := 0
 	for plan in plans:
 		if plan.is_placed():
@@ -565,7 +565,7 @@ func _door_instance(manager: EventManager, id: String, at: Vector2, face: Vector
 func _planned_instance(manager: EventManager, def: EventDef, at: Vector2, face: Vector2,
 		gate_state: RegionPlanner.GateState = null, age := 0.0,
 		route := PackedVector2Array()) -> EventInstance:
-	var plan := EventScheduler.Planned.new(def, at, route)
+	var plan := EventPlan.new(def, at, route)
 	plan.facing = face
 	plan.gate_state = gate_state
 	plan.age = age
@@ -1192,7 +1192,7 @@ func _test_entering_a_hold_resets_the_cameras_interpolation_too(t: TestRunner) -
 ## The summed field of a day's plan at a point, with the boundary kit collapsed to its strongest —
 ## the same rule `EventSources.sources_at()` applies, read off plans rather than live
 ## instances so a whole day can be swept without streaming it in.
-func _planned_field_at(plans: Array[EventScheduler.Planned], at: Vector2) -> float:
+func _planned_field_at(plans: Array[EventPlan], at: Vector2) -> float:
 	var total := 0.0
 	var strongest := 0.0
 	for plan in plans:
@@ -1216,7 +1216,7 @@ func _planned_field_at(plans: Array[EventScheduler.Planned], at: Vector2) -> flo
 ## Walks her out of a door from `from` along `heading`, starting at the toll, and answers the
 ## highest the meter ever reaches before she is clear of the door's own gap. Decay at the worst
 ## ground in the city, so the answer is a ceiling rather than a measurement of one street.
-func _peak_walking_out(plans: Array[EventScheduler.Planned], from: Vector2,
+func _peak_walking_out(plans: Array[EventPlan], from: Vector2,
 		heading: Vector2) -> float:
 	var decay := Tuning.EXCITEMENT_DECAY_WALKING * City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER
 	var step := 4.0
@@ -1224,7 +1224,7 @@ func _peak_walking_out(plans: Array[EventScheduler.Planned], from: Vector2,
 	# Only what could possibly reach any point of this walk. A whole day is several hundred plans
 	# and the walk asks at forty-odd points; filtering once against the far end of the walk plus the
 	# row's own reach costs one distance check each and leaves a handful.
-	var near: Array[EventScheduler.Planned] = []
+	var near: Array[EventPlan] = []
 	for plan in plans:
 		if not plan.is_placed() or plan.def.intensity <= 0.0:
 			continue
@@ -1243,7 +1243,7 @@ func _peak_walking_out(plans: Array[EventScheduler.Planned], from: Vector2,
 ## The release points a door body has: `CheckpointController.CHECKPOINT_RELEASE_MARGIN` past its own solid edge
 ## on each side of the crossing, sampled across the pavement band because the release preserves
 ## whatever cross-street offset she walked in on.
-func _release_points(body: EventScheduler.Planned) -> Array[Vector2]:
+func _release_points(body: EventPlan) -> Array[Vector2]:
 	var axis: Vector2 = body.facing
 	var across := Vector2(-axis.y, axis.x)
 	var clearance := body.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
@@ -1325,17 +1325,17 @@ func _test_the_ground_she_is_let_out_onto_is_survivable(t: TestRunner) -> void:
 func _test_the_run_that_killed_her_five_times(t: TestRunner) -> void:
 	var axis := Vector2.RIGHT
 	var hut_at := Vector2(8000.0, 8000.0)
-	var hut := EventScheduler.Planned.new(EventCatalogue.by_id("checkpoint_hut"), hut_at)
+	var hut := EventPlan.new(EventCatalogue.by_id("checkpoint_hut"), hut_at)
 	hut.facing = axis
 	var clearance := hut.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	# Let out on the north side, the way the run was.
 	var released := hut_at + Vector2(0.0, -clearance)
 
-	var plans: Array[EventScheduler.Planned] = [hut]
+	var plans: Array[EventPlan] = [hut]
 	var wall := EventCatalogue.by_id("roadblock")
 	for distance: float in [57.0, 61.0, 112.0]:
-		plans.append(EventScheduler.Planned.new(wall,
+		plans.append(EventPlan.new(wall,
 				released + Vector2(-distance, 0.0)))
 
 	var patrol := EventCatalogue.by_id("police_patrol")

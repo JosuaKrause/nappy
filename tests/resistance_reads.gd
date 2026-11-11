@@ -68,8 +68,8 @@ static func mast_at(director: ResistanceDirector, events: EventManager) -> Strin
 ## first placement asked, does not shut its own tile.
 static func day_reachability(city: City, except_near: Array[Vector2] = []) -> Array:
 	var region_plan: RegionPlanner.RegionPlan = city.streets().region_plan()
-	var door_bodies: Array[EventScheduler.Planned] = region_plan.door_bodies if region_plan else []
-	var blockers: Array[EventScheduler.Planned] = []
+	var door_bodies: Array[EventPlan] = region_plan.door_bodies if region_plan else []
+	var blockers: Array[EventPlan] = []
 	for plan in city.events.plans():
 		if not plan.is_placed() or plan in door_bodies:
 			continue

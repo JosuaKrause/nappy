@@ -11,7 +11,7 @@ func _init(walk: WalkGround) -> void:
 	_walk = walk
 
 ## Overrides StreetRule.allows.
-func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
-		placed: Array[EventScheduler.Planned], _around: Array[EventScheduler.Planned]) -> bool:
+func allows(candidate: EventPlan, _tile: Vector2i,
+		placed: Array[EventPlan], _around: Array[EventPlan]) -> bool:
 	_walk.catch_up(placed)
 	return _walk.accepts(candidate)

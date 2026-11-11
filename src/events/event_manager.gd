@@ -26,7 +26,7 @@ extends Node
 ## spec chooses what plans it (`DayPlanner`) — a city's day, the escape's city on its two chains, the
 ## building's own placements (`BuildingPlan`). A world that is not the city has no city to plan a
 ## day over (`setup_world()`): no director sites anything ahead of her there, and a plan that comes
-## again (`EventScheduler.Planned.repeats()`) is brought back on its own clock.
+## again (`EventPlan.repeats()`) is brought back on its own clock.
 ##
 ## **Handed what it depends on, never fetching it**: the city, its map and navigator (`setup()`), or
 ## a world that is not the city (`setup_world()`); the run (`City.run`, or `use_run()`); the player
@@ -258,7 +258,7 @@ func _owe_the_return() -> void:
 ## director what it owes her walk (`EventsAhead.start_day()`) and records its bodies for
 ## the crowd; a walk planned whole before she sets off owes the director nothing
 ## (`EventsAhead.start_a_given_walk()`), and a plan of it that comes again
-## (`EventScheduler.Planned.repeats()`) comes on its own clock
+## (`EventPlan.repeats()`) comes on its own clock
 ## (`EventStreaming.bring_back_what_repeats()`). The streaming, the successors, the scars, the
 ## detentions and the hard fails are the same for all three: an explosion leaves its crater through
 ## the same `aftermath.on_finish` mechanism on the escape's streets as it would anywhere.
@@ -324,7 +324,7 @@ func walk() -> RouteSource:
 ## **The recipe's holds stay**: its builder holds what it placed (`SceneRecipeRuntime`), and nothing
 ## here rolls against them. Its plans are taken as a walk planned whole is (`start_day()`), with
 ## their bodies recorded as a day's are.
-func start_recipe(plans: Array[EventScheduler.Planned], spec: DaySpec, day: int,
+func start_recipe(plans: Array[EventPlan], spec: DaySpec, day: int,
 		focus: Vector2, calm: CalmAreas = null) -> void:
 	var plan := DayPlanner.Plan.new()
 	plan.placements = plans
@@ -672,7 +672,7 @@ func planned_count() -> int:
 	return streaming.planned_count()
 
 ## The day's plan, for the readouts and the telemetry. Not for anything that acts on it.
-func plans() -> Array[EventScheduler.Planned]:
+func plans() -> Array[EventPlan]:
 	return _walk_events.plans()
 
 ## Today's events by id, as the run log prints them. Counted rather than listed one per line: which
@@ -736,12 +736,12 @@ func move_extra(instance: EventInstance, at: Vector2) -> void:
 	spawner.move_extra(instance, at)
 
 ## One more mast for day 11's task (`EventsAhead.queue_a_mast()`).
-func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventScheduler.Planned:
+func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventPlan:
 	return ahead.queue_a_mast(offered, rng)
 
 ## Day 13's task roadblock `plan` across a section of the day's locations, whatever it held spent
 ## (`EventsAhead.swap_in_a_section()`).
-func swap_in_a_section(section: Location, plan: EventScheduler.Planned) -> EventInstance:
+func swap_in_a_section(section: Location, plan: EventPlan) -> EventInstance:
 	return ahead.swap_in_a_section(section, plan)
 
 ## Rigs her route's bag for a task (`EventsAhead.rig_her_route()`).
