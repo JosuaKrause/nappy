@@ -29,10 +29,12 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `74f825ce5`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `74f825ce5`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
 - **`AttemptSpendState`**: `scars` → no method.
 - **`City`**: `events` → no method; `map` → no method; `run` → no method; `spawn_siting` → no
@@ -42,7 +44,8 @@ method"; each write with every public method that assigns the field, and what it
 - **`EventDef`**: `aftermath` → no method; `aftermath.on_finish` → `leaves_behind()`; `first_day` →
   no method; `hard_fail` → `ends_the_day()`; `hard_fail`, written → no method; `id` → no method;
   `id`, written → no method; `inner_radius` → `core_within()`; `inner_radius`, written → no method;
-  `intensity` → `peak()`; `intensity`, written → no method; `kind` → no method; `look` →
+  `intensity` → `peak()` (a yes-or-no on the field alone: `has_a_field()`); `intensity`, written →
+  no method; `kind` → no method (a yes-or-no on the field alone: `is_ambient()`); `look` →
   `picture()`; `max_per_day` → `most_in_a_day()`; `mobile` → `moves()`; `on_her_way` → no method;
   `on_her_way`, written → no method; `outer_radius` → `heard_within()`; `outer_radius`, written → no
   method; `pavement_side` → no method; `pursuit` → no method; `spawn_mode` → no method; `speed` → no
@@ -58,10 +61,11 @@ method"; each write with every public method that assigns the field, and what it
 - **`EventManager`**: `ahead` → no method; `sources` → no method; `spawner` → no method;
   `stream_radius`, written → no method; `streaming` → no method; `warnings` → no method; `world` →
   no method; `world.visible` → `visible_view()`.
-- **`EventScheduler.Planned`**: `def` → `row()`; `def.id` → `row_id()`; `live` → `instance()`;
-  `live`, written → no method; `mast_id` → no method; `noticed_at` → no method; `path` → `walks()`;
-  `position` → `placed_at()`; `spent` → `is_spent()`; `was_live` → no method; `was_live`, written →
-  no method.
+- **`EventScheduler.Planned`**: `def` → `row()`; `def.id` → `row_id()`; `live` → `instance()` (a
+  yes-or-no on the field alone: `is_in_the_world()`); `live`, written → no method; `mast_id` → no
+  method; `noticed_at` → no method; `path` → `walks()` (a yes-or-no on the field alone:
+  `stands_still()`); `position` → `placed_at()` (a yes-or-no on the field alone: `is_placed()`);
+  `spent` → `is_spent()`; `was_live` → no method; `was_live`, written → no method.
 - **`EventScheduler.WalkSiting`**: `holds_the_home_streets`, written → no method; `mast_checks` → no
   method.
 - **`EventWorld`**: `day` → no method.

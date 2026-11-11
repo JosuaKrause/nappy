@@ -44,10 +44,12 @@ turns, give-way and traffic suites, is still to come.
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `d291155ed`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `d291155ed`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
 - **`CarTurn`**: `radius`, written → `tighten_to()` does `radius = tighter`.
 - **`City`**: `crowd` → no method; `events` → no method; `map` → no method; `signals` → no method.
@@ -57,11 +59,15 @@ method"; each write with every public method that assigns the field, and what it
   `street_network()`; `precinct_spans` → `precinct_stretches()`; `soft_sealed_tiles` → no method;
   `zone_rects` → no method.
 - **`Crowd`**: `skip_motion`, written → no method; `sources` → no method.
-- **`EventDef`**: `detain_seconds` → `detains_for()`; `obstructs_radius` → `obstructs_within()`;
-  `pavement_side` → no method; `shape` → `ground_shape()`; `speed` → no method.
+- **`EventDef`**: `detain_seconds` → `detains_for()` (a yes-or-no on the field alone:
+  `detains_her()`); `obstructs_radius` → `obstructs_within()` (a yes-or-no on the field alone:
+  `has_a_body()`); `pavement_side` → no method; `shape` → `ground_shape()`; `solid_parts` → no
+  method; `speed` → no method.
+- **`EventDef.SolidPart`**: `shape` → `ground_shape()`.
 - **`EventInstance`**: `skip_draw`, written → no method.
 - **`EventManager`**: `streaming` → no method; `world` → no method.
-- **`EventScheduler.Planned`**: `def` → `row()`; `position` → `placed_at()`.
+- **`EventScheduler.Planned`**: `def` → `row()`; `facing` → no method; `position` → `placed_at()` (a
+  yes-or-no on the field alone: `is_placed()`).
 - **`EventWorld`**: `map` → no method.
 - **`LaneMover`**: `kind`, written through `CrowdAgent` → `setup_at()` does `kind = agent_kind as
   Kind`, `setup()` does `kind = agent_kind`.
@@ -77,8 +83,9 @@ method"; each write with every public method that assigns the field, and what it
 - **`TrafficSignals`**: `elapsed` → no method; `elapsed`, written → `restart_cycle()` does `elapsed
   = 0.0`, `advance()` does `elapsed += delta`.
 - **`WalkerDoorHold`**: `inside` → no method.
-- **`WorldMap`**: `moves` through `CityMap` → no method; `size` through `CityMap` →
-  `size_in_tiles()`; `world`, written through `CityMap` → no method.
+- **`WorldMap`**: `moves` through `CityMap` → no method; `obstructed_tiles` through `CityMap` → no
+  method; `size` through `CityMap` → `size_in_tiles()`; `world`, written through `CityMap` → no
+  method.
 - Receiver's class not told: `tests/test_crowd_yields.gd:261` `rig.plan.live`.
 - Receiver's class not told: `tests/test_crowd_yields.gd:277` `rig.plan.live`.
 - Receiver's class not told: `tests/test_crowd_yields.gd:282` `rig.plan.live`.

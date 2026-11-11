@@ -55,10 +55,12 @@ pictures were typed (#1329) and the city's own parts were handed what they read
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `fb60c2b7d`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `fb60c2b7d`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
 - **`AttemptSpendState`**: `city_state`, written → no method; `scars` → no method; `scars`, written
   → `give_back()` does `scars = _dawn_scars.duplicate()`, `restore()` does `scars =
@@ -67,23 +69,24 @@ method"; each write with every public method that assigns the field, and what it
 - **`BlockPlan`**: `steps` → `steps_in_order()`, which returns a copy of it (the tool prints no
   method).
 - **`BlockPlan.Step`**: `purpose` → no method.
-- **`Building`**: `atlas`, written → `equip()` does `atlas = library`; `condition` → no method;
-  `condition`, written → no method; `covered_ground_cols` → no method; `covered_ground_cols`,
-  written → no method; `day` → no method; `day`, written → no method; `district` → no method;
-  `district`, written → `stand_on()` does `district = purpose`, `draw_as()` does `district =
-  purpose`; `door_world_x_range` → no method; `door_world_x_range`, written → no method; `footprint`
-  → no method; `footprint`, written → `stand_on()` does `footprint = size`; `front_drawer` → no
-  method; `front_drawer`, written → `equip()` does `front_drawer = fronts`; `height` → no method;
-  `height`, written → `stand_on()` does `height = wall_height`, `draw_as()` does `height =
-  wall_height`; `is_home_building` → `is_on_home_block()`; `lot` → `lot_rect()`;
-  `neighbor_window_col` → no method; `neighbor_window_col`, written → no method; `poster_art`,
-  written → no method; `posters` → no method; `power_station` → no method; `power_station`, written
-  → no method; `powered` → no method; `powered`, written → no method; `roof_drawer`, written →
-  `equip()` does `roof_drawer = roofs`; `roof_extension_rows` → no method; `roof_extension_rows`,
-  written → no method; `roof_extension_seamless`, written → no method; `scenery_clock`, written → no
-  method; `scenery_resident` → no method; `seamless_cover_cols`, written → no method; `shape` → no
-  method; `tint_variant` → no method; `variant` → `look_variant()`; `variant`, written →
-  `stand_on()` does `variant = with_variant`, `draw_as()` does `variant = with_variant`.
+- **`Building`**: `atlas`, written → `equip()` does `atlas = library`; `condition` → no method (a
+  yes-or-no on the field alone: `is_burnt()`); `condition`, written → no method;
+  `covered_ground_cols` → no method; `covered_ground_cols`, written → no method; `day` → no method;
+  `day`, written → no method; `district` → no method; `district`, written → `stand_on()` does
+  `district = purpose`, `draw_as()` does `district = purpose`; `door_world_x_range` → no method;
+  `door_world_x_range`, written → no method; `footprint` → no method; `footprint`, written →
+  `stand_on()` does `footprint = size`; `front_drawer` → no method; `front_drawer`, written →
+  `equip()` does `front_drawer = fronts`; `height` → no method; `height`, written → `stand_on()`
+  does `height = wall_height`, `draw_as()` does `height = wall_height`; `is_home_building` →
+  `is_on_home_block()`; `lot` → `lot_rect()`; `neighbor_window_col` → no method;
+  `neighbor_window_col`, written → no method; `poster_art`, written → no method; `posters` → no
+  method; `power_station` → no method; `power_station`, written → no method; `powered` → no method;
+  `powered`, written → no method; `roof_drawer`, written → `equip()` does `roof_drawer = roofs`;
+  `roof_extension_rows` → no method; `roof_extension_rows`, written → no method;
+  `roof_extension_seamless`, written → no method; `scenery_clock`, written → no method;
+  `scenery_resident` → no method; `seamless_cover_cols`, written → no method; `shape` → no method;
+  `tint_variant` → no method; `variant` → `look_variant()`; `variant`, written → `stand_on()` does
+  `variant = with_variant`, `draw_as()` does `variant = with_variant`.
 - **`Building.RoofObject`**: `rotor` → no method; `texture_key` → no method.
 - **`BuildingShadows`**: `falls_on`, written → no method; `streamed`, written → no method.
 - **`City`**: `atlas` → no method; `atlas`, written → `build()` does `atlas = AtlasLibrary.new()`;
@@ -104,9 +107,10 @@ method"; each write with every public method that assigns the field, and what it
   `source()`; `is_finished` → `is_gone()`; `is_leaving` → `is_on_its_way_out()`; `look` → no method;
   `path` → `walks()`.
 - **`EventManager`**: `warnings` → no method; `world` → no method.
-- **`EventScheduler.Planned`**: `def` → `row()`; `def.id` → `row_id()`; `live` → `instance()`;
-  `mast_id` → no method; `mast_id`, written → no method; `position` → `placed_at()`; `silenced` → no
-  method; `spent` → `is_spent()`.
+- **`EventScheduler.Planned`**: `def` → `row()`; `def.id` → `row_id()`; `live` → `instance()` (a
+  yes-or-no on the field alone: `is_in_the_world()`); `mast_id` → no method; `mast_id`, written → no
+  method; `position` → `placed_at()` (a yes-or-no on the field alone: `is_placed()`); `silenced` →
+  no method; `spent` → `is_spent()`.
 - **`FrameLedger`**: `keep`, written → `keep_this_frame()` does `keep = on`.
 - **`GroundShape`**: `half_length` → `spine_half_length()`; `radius` → `rounding_radius()`.
 - **`InteriorScene`**: `atlas`, written → no method.

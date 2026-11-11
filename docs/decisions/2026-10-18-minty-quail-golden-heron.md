@@ -49,10 +49,12 @@ did not reproduce the rise.
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `87dc6690c`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `87dc6690c`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
 - **`AttemptSpendState`**: `city_state`, written → no method.
 - **`BlockPlan.Step`**: `cause` → no method; `from_day` → no method; `purpose` → no method.
@@ -60,18 +62,23 @@ method"; each write with every public method that assigns the field, and what it
   `scenery` → no method.
 - **`CityDecals`**: `atlas`, written → `use_atlas()` does `atlas = library`; `drawer` → no method;
   `drawer`, written → `draw_through()` does `drawer = through`.
-- **`CityMap`**: `absent_segments` → no method; `dead_ends` → no method; `fenced_park_act` → no
-  method; `recipe_dawn_tiles` → no method; `stretch_active` → no method; `zone_anchor` → no method.
-- **`EventDef`**: `detain_seconds` → `detains_for()`; `flock_size` → no method; `id` → no method;
-  `mobile` → `moves()`; `outer_radius` → `heard_within()`; `path_mode`, written → no method;
-  `placement` → no method; `pursuit` → no method; `solid_when` → `solid_from()`; `speed` → no
-  method; `telegraph_time` → `telegraphs_for()`; `vehicle` → no method.
+- **`CityMap`**: `absent_segments` → `blocked_segments()` called with no argument, which returns a
+  copy of it (the tool prints no method); `dead_ends` → no method; `fenced_park_act` → no method;
+  `recipe_dawn_tiles` → no method (a yes-or-no on the field alone: `has_recipe_dawn_ground()`);
+  `stretch_active` → no method; `zone_anchor` → no method.
+- **`EventDef`**: `detain_seconds` → `detains_for()` (a yes-or-no on the field alone:
+  `detains_her()`); `flock_size` → no method (a yes-or-no on the field alone: `is_a_flock()`); `id`
+  → no method; `mobile` → `moves()`; `outer_radius` → `heard_within()`; `path_mode`, written → no
+  method; `placement` → no method; `pursuit` → no method; `solid_when` → `solid_from()` (a yes-or-no
+  on the field alone: `is_a_boom()`); `speed` → no method; `telegraph_time` → `telegraphs_for()`;
+  `vehicle` → no method (a yes-or-no on the field alone: `drives()`).
 - **`EventInstance`**: `barrier_post` → no method; `departure` → no method; `excitement` →
   `source()`; `is_finished` → `is_gone()`; `is_leaving` → `is_on_its_way_out()`; `skip_draw`,
   written → no method.
 - **`EventManager`**: `world` → no method.
 - **`EventScheduler.Planned`**: `def` → `row()`; `def.obstructs_radius` → `obstructs_within()`;
-  `facing` → no method; `path` → `walks()`; `position` → `placed_at()`.
+  `facing` → no method; `path` → `walks()` (a yes-or-no on the field alone: `stands_still()`);
+  `position` → `placed_at()` (a yes-or-no on the field alone: `is_placed()`).
 - **`Navigator.Walked`**: `at` → no method; `stopped` → no method.
 - **`Prop`**: `kind` → no method; `shape` → no method.
 - **`RunState`**: `attempt_spend` → no method.

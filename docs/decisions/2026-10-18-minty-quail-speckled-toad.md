@@ -30,10 +30,12 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `e888950c9`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `e888950c9`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
 - **`AttemptSpendState`**: `scars` → no method.
 - **`BuildingShadows`**: `skip_draw` → no method.
@@ -54,10 +56,11 @@ method"; each write with every public method that assigns the field, and what it
 - **`Crowd`**: `skip_agent_drawing` → no method; `skip_motion` → no method; `skip_motion`, written →
   no method.
 - **`CrowdAgent`**: `skip_draw` → no method.
-- **`DayController`**: `invincible`, written → no method; `phase` → no method; `spec` → no method;
-  `spec`, written → no method; `time_remaining` → `seconds_left()`.
+- **`DayController`**: `invincible`, written → no method; `phase` → no method (a yes-or-no on the
+  field alone: `is_running()`); `spec` → no method; `spec`, written → no method; `time_remaining` →
+  `seconds_left()`.
 - **`DaySpec`**: `length` → `seconds_on_the_clock()`.
-- **`EventDef`**: `kind` → no method.
+- **`EventDef`**: `kind` → no method (a yes-or-no on the field alone: `is_ambient()`).
 - **`EventInstance`**: `def` → `row()`; `def.id` → `row_id()`.
 - **`EventManager`**: `pelican_rig` → no method; `skip_drawing` → no method; `stream_radius`,
   written → no method.
@@ -72,10 +75,11 @@ method"; each write with every public method that assigns the field, and what it
   `invincible` → `is_invincible()`; `invincible`, written → no method; `is_rig` → no method;
   `layers_override` → no method; `meters_override` → no method; `no_focus_pause` → no method;
   `no_telemetry` → no method; `parent_override` → no method; `readout_requested` →
-  `asks_for_the_readout()`; `recipe_path` → no method; `recording` → no method; `route_targets` → no
-  method; `seed_override` → no method; `skip_crowd` → no method; `skip_events` → no method;
-  `skip_motion` → no method; `skip_shadows` → no method; `skip_words` → no method; `spawn_target` →
-  no method; `start_escape` → no method; `start_escape_at` → no method.
+  `asks_for_the_readout()`; `recipe_path` → no method (a yes-or-no on the field alone:
+  `warms_the_canvas_shaders()`); `recording` → no method; `route_targets` → no method;
+  `seed_override` → no method; `skip_crowd` → no method; `skip_events` → no method; `skip_motion` →
+  no method; `skip_shadows` → no method; `skip_words` → no method; `spawn_target` → no method;
+  `start_escape` → no method; `start_escape_at` → no method.
 - **`RunFacts`**: `escape_section` → no method; `escape_section`, written → `reset()` does
   `escape_section = 0`, `restore()` does `escape_section = int(data.get("…", 0))`.
 - **`RunHeader`**: `day` → no method; `day`, written → `reset()` does `day = 1`, `restore()` does

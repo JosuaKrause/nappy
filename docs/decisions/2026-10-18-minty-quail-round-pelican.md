@@ -34,10 +34,12 @@ suite calls only its static `hits()`, so nothing was converted.
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `2712a6184`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `2712a6184`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
 - **`AttemptSpendState`**: `scars` → no method.
 - **`City`**: `crowd` → no method; `events` → no method; `map` → no method; `run` → no method.
@@ -49,11 +51,13 @@ method"; each write with every public method that assigns the field, and what it
 - **`DangerEdge`**: `atlas`, written → no method.
 - **`EventDef`**: `duration` → no method; `first_day` → no method; `hard_fail` → `ends_the_day()`;
   `heat_response` → no method; `hunts` → no method; `id` → no method; `inner_radius` →
-  `core_within()`; `intensity` → `peak()`; `kind` → no method; `max_per_day` → `most_in_a_day()`;
-  `mobile` → `moves()`; `obstructs_radius` → `obstructs_within()`; `outer_radius` →
-  `heard_within()`; `paces`, written → no method; `pursuit` → no method; `shape` → `ground_shape()`;
-  `shape`, written → `solid()` does `shape = new_shape`; `speed` → no method; `telegraph_time` →
-  `telegraphs_for()`; `vehicle` → no method.
+  `core_within()`; `intensity` → `peak()` (a yes-or-no on the field alone: `has_a_field()`); `kind`
+  → no method (a yes-or-no on the field alone: `is_ambient()`); `max_per_day` → `most_in_a_day()`;
+  `mobile` → `moves()`; `obstructs_radius` → `obstructs_within()` (a yes-or-no on the field alone:
+  `has_a_body()`); `outer_radius` → `heard_within()`; `paces`, written → no method; `pursuit` → no
+  method; `shape` → `ground_shape()`; `shape`, written → `solid()` does `shape = new_shape`; `speed`
+  → no method; `telegraph_time` → `telegraphs_for()`; `vehicle` → no method (a yes-or-no on the
+  field alone: `drives()`).
 - **`EventInstance`**: `age` → no method (`EventInstance.Figure.age()` returns it on a view no
   public method hands out); `barrier_post` → no method; `car` → no method; `def` → `row()`; `drawer`
   → no method; `drawer`, written → no method; `excitement` → `source()`; `is_finished` →
@@ -64,12 +68,13 @@ method"; each write with every public method that assigns the field, and what it
 - **`EventManager`**: `atlas` → no method; `pelican_rig`, written → no method; `spawner` → no
   method; `stream_radius`, written → no method; `streaming` → no method; `trace`, written → no
   method; `world` → no method.
-- **`EventScheduler.Planned`**: `def` → `row()`; `def.id` → `row_id()`; `live` → `instance()`;
-  `mast_id` → no method; `position` → `placed_at()`; `silenced` → no method.
+- **`EventScheduler.Planned`**: `def` → `row()`; `def.id` → `row_id()`; `live` → `instance()` (a
+  yes-or-no on the field alone: `is_in_the_world()`); `mast_id` → no method; `position` →
+  `placed_at()` (a yes-or-no on the field alone: `is_placed()`); `silenced` → no method.
 - **`EventStreaming`**: `broadcast_clock` → no method.
 - **`EventWorld`**: `drawer`, written → no method.
-- **`GroundShape`**: `half_length` → `spine_half_length()`; `kind` → no method; `radius` →
-  `rounding_radius()`.
+- **`GroundShape`**: `half_length` → `spine_half_length()`; `kind` → no method (a yes-or-no on the
+  field alone: `is_rect()`, `is_segment()`); `radius` → `rounding_radius()`.
 - **`HuntSpec`**: `lets_out` → no method.
 - **`MastSites.Site`**: `foot` → no method; `id` → no method.
 - **`PelicanState`**: `draws` → no method; `draws`, written → `reset()` does `draws = 0`,

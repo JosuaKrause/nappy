@@ -38,10 +38,12 @@ as its suite is converted", after the baby and the stroller were handed their pa
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `9f34854cf`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `9f34854cf`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
 - **`Baby`**: `excitement`, written → `reset()` does `excitement = 0.0`; `last_incoming`, written →
   `reset()` does `last_incoming = 0.0`; `sleepiness`, written → `reset()` does `sleepiness =
@@ -50,11 +52,14 @@ method"; each write with every public method that assigns the field, and what it
   `scenery_ground` → no method.
 - **`CrowdAgent`**: `excitement` → `mood()`.
 - **`EventDef`**: `from_day_after`, written → no method; `id` → no method; `inner_radius` →
-  `core_within()`; `notice` → no method; `notice.within` → `notice_within()`; `outer_radius` →
-  `heard_within()`; `shape` → `ground_shape()`; `shape`, written → `solid()` does `shape =
-  new_shape`.
-- **`EventInstance`**: `def` → `row()`; `def.id` → `row_id()`; `excitement` → `source()`.
-- **`EventScheduler.Planned`**: `def` → `row()`; `def.id` → `row_id()`.
+  `core_within()`; `notice` → no method (a yes-or-no on the field alone: `waits_for_her()`);
+  `notice.within` → `notice_within()`; `outer_radius` → `heard_within()`; `shape` →
+  `ground_shape()`; `shape`, written → `solid()` does `shape = new_shape`.
+- **`EventInstance`**: `def` → `row()`; `def.id` → `row_id()`; `excitement` → `source()`;
+  `is_finished` → `is_gone()`; `is_leaving` → `is_on_its_way_out()`; `path` → `walks()`.
+- **`EventManager`**: `spawner.spawn()` → `spawn_extra()`.
+- **`EventScheduler.Planned`**: `def` → `row()`; `def.id` → `row_id()`; `position` → `placed_at()`
+  (a yes-or-no on the field alone: `is_placed()`).
 - **`LaneMover`**: `kind` through `CrowdAgent` → `lane().kind()` on its view.
 - **`MoveProposal`**: `from` → `stands_at()`; `open` → no method; `to` → `steps_to()`.
 - **`RunHeader`**: `day`, written → `reset()` does `day = 1`, `restore()` does `day =

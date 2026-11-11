@@ -23,10 +23,12 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `e30bd1666`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `e30bd1666`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
 - **`Aftermath`**: `on_sight` → no method.
 - **`CityMap`**: `alley_rects` → `alley_lots()`; `block_plans` → `plans_by_block()`; `calm_blocks` →
@@ -34,16 +36,19 @@ method"; each write with every public method that assigns the field, and what it
   `network` → `street_network()`.
 - **`DaySpec`**: `wall_row_share`, written → no method.
 - **`EventDef`**: `aftermath` → no method; `aftermath.on_finish` → `leaves_behind()`; `first_day` →
-  no method; `hard_fail` → `ends_the_day()`; `id` → no method; `kind` → no method; `max_per_day` →
-  `most_in_a_day()`; `mobile` → `moves()`; `obstructs_radius` → `obstructs_within()`; `on_her_way` →
-  no method; `on_her_way`, written → no method; `outer_radius` → `heard_within()`; `paces` → no
-  method; `path_mode` → no method; `pavement_side` → no method; `placement` → no method; `pursuit` →
-  no method; `role` → no method; `speed` → no method; `telegraph_time` → `telegraphs_for()`.
+  no method; `hard_fail` → `ends_the_day()`; `id` → no method; `kind` → no method (a yes-or-no on
+  the field alone: `is_ambient()`); `max_per_day` → `most_in_a_day()`; `mobile` → `moves()`;
+  `obstructs_radius` → `obstructs_within()` (a yes-or-no on the field alone: `has_a_body()`);
+  `on_her_way` → no method; `on_her_way`, written → no method; `outer_radius` → `heard_within()`;
+  `paces` → no method; `path_mode` → no method; `pavement_side` → no method; `placement` → no
+  method; `pursuit` → no method; `role` → no method; `speed` → no method; `telegraph_time` →
+  `telegraphs_for()`.
 - **`EventInstance`**: `excitement` → `source()`; `is_finished` → `is_gone()`; `is_leaving` →
   `is_on_its_way_out()`; `path` → `walks()`.
 - **`EventScheduler.Planned`**: `def` → `row()`; `def.hard_fail` → `ends_the_day()`; `def.id` →
-  `row_id()`; `path` → `walks()`; `position` → `placed_at()`; `role` → no method; `role`, written →
-  `give_role()` does `role = given`.
+  `row_id()`; `path` → `walks()` (a yes-or-no on the field alone: `stands_still()`); `position` →
+  `placed_at()` (a yes-or-no on the field alone: `is_placed()`); `role` → no method; `role`, written
+  → `give_role()` does `role = given`.
 - **`PendingWarning`**: `shown` → no method.
 - **`StreetNetwork.Segment`**: `a` → no method; `horizontal` → no method.
 - **`WorldMap`**: `size` through `CityMap` → `size_in_tiles()`.

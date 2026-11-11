@@ -34,10 +34,12 @@ The search covered `CheckpointController`, `RegionPlanner`, its `RegionPlan` and
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `e0eab0b0e`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `e0eab0b0e`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
 - **`Baby`**: `excitement` → `excitement_level()`.
 - **`City`**: `crowd` → no method; `events` → no method.
@@ -47,9 +49,11 @@ method"; each write with every public method that assigns the field, and what it
   `precinct_spans` → `precinct_stretches()`; `seed_used` → `city_seed()`.
 - **`ClosurePlanner.CalmArea`**: `access` → no method; `block` → no method; `rect` → no method.
 - **`EventDef`**: `barrier_structure` → `counts_as_one_barrier()`; `detain_seconds` →
-  `detains_for()`; `guard_sides` → no method; `hard_fail` → `ends_the_day()`; `intensity` →
-  `peak()`; `obstructs_radius` → `obstructs_within()`; `outer_radius` → `heard_within()`; `pursuit`
-  → no method; `shape` → `ground_shape()`; `telegraph_time` → `telegraphs_for()`.
+  `detains_for()` (a yes-or-no on the field alone: `detains_her()`); `guard_sides` → no method;
+  `hard_fail` → `ends_the_day()`; `intensity` → `peak()` (a yes-or-no on the field alone:
+  `has_a_field()`); `obstructs_radius` → `obstructs_within()` (a yes-or-no on the field alone:
+  `has_a_body()`); `outer_radius` → `heard_within()`; `pursuit` → no method; `shape` →
+  `ground_shape()`; `telegraph_time` → `telegraphs_for()`.
 - **`EventInstance`**: `atlas`, written → no method; `def` → `row()`; `def.detain_distance()` →
   `detain_distance()`; `def.id` → `row_id()`; `drawer`, written → no method; `excitement` →
   `source()`; `gate_state` → no method; `gate_state`, written → no method; `gave_up` →
@@ -59,9 +63,12 @@ method"; each write with every public method that assigns the field, and what it
 - **`EventScheduler.Planned`**: `age`, written → `arrive_aged()` does `age = seconds`; `def` →
   `row()`; `def.id` → `row_id()`; `def.obstructs_radius` → `obstructs_within()`; `facing` → no
   method; `facing`, written → no method; `gate_state` → no method; `gate_state`, written → no
-  method; `live` → `instance()`; `path` → `walks()`; `position` → `placed_at()`.
+  method; `live` → `instance()` (a yes-or-no on the field alone: `is_in_the_world()`); `path` →
+  `walks()` (a yes-or-no on the field alone: `stands_still()`); `position` → `placed_at()` (a
+  yes-or-no on the field alone: `is_placed()`).
 - **`EventWorld`**: `map` → no method.
-- **`GroundShape`**: `half_length` → `spine_half_length()`; `kind` → no method.
+- **`GroundShape`**: `half_length` → `spine_half_length()`; `kind` → no method (a yes-or-no on the
+  field alone: `is_rect()`, `is_segment()`).
 - **`LaneMover`**: `kind` through `CrowdAgent` → `lane().kind()` on its view.
 - **`RegionPlanner.GateState`**: `position` → no method; `position`, written → no method; `raised` →
   no method; `raised`, written → no method.
@@ -74,8 +81,8 @@ method"; each write with every public method that assigns the field, and what it
 - **`StreetNetwork.Segment`**: `a` → no method; `b` → no method; `horizontal` → no method.
 - **`Stroller`**: `facing`, written → `reset_at()` does `facing = look.normalized()`.
 - **`WorldContext`**: `excitement_sources`, written → no method.
-- **`WorldMap`**: `size` through `CityMap` → `size_in_tiles()`; `world` → no method; `world`,
-  written → no method.
+- **`WorldMap`**: `size` through `CityMap` → `size_in_tiles()`; `world` → no method (a yes-or-no on
+  the field alone: `has_world()`); `world`, written → no method.
 
 ## Verified
 

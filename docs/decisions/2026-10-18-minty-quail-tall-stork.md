@@ -27,10 +27,12 @@ takes them.
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `3e007ceab`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `3e007ceab`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
 - **`AtlasLibrary`**: `trace_note`, written → no method.
 - **`CityMap`**: `block_plans` → `plans_by_block()`; `built_over` → `streets_built_over()`;
@@ -45,15 +47,18 @@ method"; each write with every public method that assigns the field, and what it
   Texts.DAY_LOST_DUSK`; `spec` → no method; `time_remaining`, written → `start()` does
   `time_remaining = length`, `tick()` does `time_remaining -= delta`.
 - **`DaySpec`**: `exits` → `exit_points()`; `section` → `section_kind()`.
-- **`EventDef`**: `duration` → no method; `hard_fail` → `ends_the_day()`; `notice` → no method;
-  `outer_radius` → `heard_within()`; `pursuit` → no method; `telegraph_time` → `telegraphs_for()`.
+- **`EventDef`**: `duration` → no method; `hard_fail` → `ends_the_day()`; `notice` → no method (a
+  yes-or-no on the field alone: `waits_for_her()`); `outer_radius` → `heard_within()`; `pursuit` →
+  no method; `telegraph_time` → `telegraphs_for()`.
 - **`EventInstance`**: `age` → no method (`EventInstance.Figure.age()` returns it on a view no
   public method hands out); `came_under_a_warning`, written → no method; `def` → `row()`;
   `def.telegraph_time` → `telegraphs_for()`; `is_finished` → `is_gone()`; `is_leaving` →
   `is_on_its_way_out()`.
 - **`EventScheduler.Planned`**: `def` → `row()`; `def.hard_fail` → `ends_the_day()`; `def.id` →
-  `row_id()`; `live` → `instance()`; `live`, written → no method; `path` → `walks()`; `position` →
-  `placed_at()`; `role` → no method; `role`, written → `give_role()` does `role = given`.
+  `row_id()`; `live` → `instance()` (a yes-or-no on the field alone: `is_in_the_world()`); `live`,
+  written → no method; `path` → `walks()` (a yes-or-no on the field alone: `stands_still()`);
+  `position` → `placed_at()` (a yes-or-no on the field alone: `is_placed()`); `role` → no method;
+  `role`, written → `give_role()` does `role = given`.
 - **`NoticeSpec`**: `runs_within` → no method.
 - **`PursuitSpec`**: `warns_for` → no method.
 - **`ResistanceRunState`**: `completed_steps` → no method; `failed_steps` → no method; `progress` →

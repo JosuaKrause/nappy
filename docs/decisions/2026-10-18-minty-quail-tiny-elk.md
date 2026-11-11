@@ -41,15 +41,17 @@ The search covered the crowd's own classes: `CrowdAgent`, `LaneMover` and its `L
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `37333487b`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `37333487b`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
-- **`AgentLook`**: `view`, written through `CarLook`, `WalkerLook` → `sector()` does `view =
-  EightDirection.update(view, _agent.velocity(), IDLE_SPEED)`, `picture()` does `view =
-  EightDirection.update(view, moving, IDLE_SPEED)`, `sector()` does `view =
-  EightDirection.update(view, _heading_now(), IDLE_SPEED)`, `picture()` does `view =
+- **`AgentLook`**: `view`, written through `CarLook`, `WalkerLook` → `CarLook.sector()` does `view =
+  EightDirection.update(view, _agent.velocity(), IDLE_SPEED)`, `CarLook.picture()` does `view =
+  EightDirection.update(view, moving, IDLE_SPEED)`, `WalkerLook.sector()` does `view =
+  EightDirection.update(view, _heading_now(), IDLE_SPEED)`, `WalkerLook.picture()` does `view =
   EightDirection.update(view, heading_at(moving), IDLE_SPEED)`.
 - **`CarLook`**: `travelled` → no method; `travelled`, written → `advance()` does `travelled =
   wrapf(travelled + moving.length() * delta, 0.0, WheelBob.WAVELENGTH)`.
@@ -60,8 +62,15 @@ method"; each write with every public method that assigns the field, and what it
   `main_road` → `main_road_corridor()`; `network` → `street_network()`; `precinct_spans` →
   `precinct_stretches()`.
 - **`Crowd`**: `skip_motion`, written → no method; `sources` → no method.
-- **`EventDef`**: `detain_seconds` → `detains_for()`; `speed` → no method.
-- **`EventScheduler.Planned`**: `def` → `row()`; `position` → `placed_at()`.
+- **`DayPlanner.Plan`**: `is_a_day`, written → no method; `placements`, written → no method.
+- **`EventDef`**: `detain_seconds` → `detains_for()` (a yes-or-no on the field alone:
+  `detains_her()`); `speed` → no method; `telegraph_time` → `telegraphs_for()`.
+- **`EventInstance`**: `age` → no method (`EventInstance.Figure.age()` returns it on a view no
+  public method hands out); `is_parked` → no method (`EventInstance.Figure.has_parked()` returns it
+  on a view no public method hands out).
+- **`EventManager`**: `planner`, written → no method; `world` → no method.
+- **`EventScheduler.Planned`**: `def` → `row()`; `position` → `placed_at()` (a yes-or-no on the
+  field alone: `is_placed()`).
 - **`ExcitementSource`**: `rim` through `CrowdExcitement` → no method.
 - **`LaneMover`**: `kind`, written through `CrowdAgent` → `setup_at()` does `kind = agent_kind as
   Kind`, `setup()` does `kind = agent_kind`.

@@ -32,10 +32,12 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `62bf02e9a`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `62bf02e9a`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
 - **`AttemptSpendState`**: `city_state` → `block_arcs()`.
 - **`City`**: `crowd` → no method; `events` → no method; `map` → no method; `run` → no method.
@@ -48,23 +50,27 @@ method"; each write with every public method that assigns the field, and what it
   → `seconds_on_the_clock()`; `number` → `day_number()`; `owes_a_return`, written → no method;
   `section` → `section_kind()`; `title` → no method.
 - **`EventDef`**: `aftermath` → no method; `aftermath.on_finish` → `leaves_behind()`; `hard_fail` →
-  `ends_the_day()`; `id` → no method; `intensity` → `peak()`; `look` → `picture()`; `mobile` →
-  `moves()`; `obstructs_radius` → `obstructs_within()`; `outer_radius` → `heard_within()`; `pursuit`
-  → no method.
+  `ends_the_day()`; `id` → no method; `intensity` → `peak()` (a yes-or-no on the field alone:
+  `has_a_field()`); `look` → `picture()`; `mobile` → `moves()`; `obstructs_radius` →
+  `obstructs_within()` (a yes-or-no on the field alone: `has_a_body()`); `outer_radius` →
+  `heard_within()`; `pursuit` → no method.
 - **`EventInstance`**: `barrier_post` → no method; `def` → `row()`; `def.id` → `row_id()`;
   `excitement` → `source()`; `gave_up` → `has_given_up()`; `is_finished` → `is_gone()`; `is_leaving`
   → `is_on_its_way_out()`.
 - **`EventManager`**: `atlas`, written → no method; `spawner` → no method; `stream_radius`, written
   → no method; `streaming` → no method; `warnings` → no method; `world` → no method.
 - **`EventScheduler.Planned`**: `def` → `row()`; `def.hard_fail` → `ends_the_day()`; `def.id` →
-  `row_id()`; `def.obstructs_radius` → `obstructs_within()`; `live` → `instance()`; `live`, written
-  → no method; `position` → `placed_at()`; `was_live` → no method; `was_live`, written → no method.
+  `row_id()`; `def.obstructs_radius` → `obstructs_within()`; `live` → `instance()` (a yes-or-no on
+  the field alone: `is_in_the_world()`); `live`, written → no method; `position` → `placed_at()` (a
+  yes-or-no on the field alone: `is_placed()`); `was_live` → no method; `was_live`, written → no
+  method.
 - **`FinalePlanner.CalmArea`**: `centre` → no method; `tiles` → no method.
 - **`FinalePlanner.Chain`**: `cells` → no method; `complete` → no method; `exit_kind` → no method;
   `stops` → no method.
 - **`FinalePlanner.Plan`**: `chains` → no method; `open_cells` → no method; `open_streets` →
   `streets_on_the_walk()`.
-- **`GroundShape`**: `kind` → no method; `radius` → `rounding_radius()`.
+- **`GroundShape`**: `kind` → no method (a yes-or-no on the field alone: `is_rect()`,
+  `is_segment()`); `radius` → `rounding_radius()`.
 - **`HelpText`**: `line` → no method.
 - **`InteriorScene`**: `map` → no method.
 - **`PursuitSpec`**: `leaves_its_body` → no method; `warns_for` → no method.
@@ -81,8 +87,8 @@ method"; each write with every public method that assigns the field, and what it
 - **`Sitting`**: `atlas` → no method; `run` → no method.
 - **`StreetNetwork.Segment`**: `horizontal` → no method.
 - **`WalkGround.Solid`**: `axis` → no method; `centre` → no method; `shape` → no method.
-- **`WorldMap`**: `size` through `CityMap` → `size_in_tiles()`; `world` → no method; `world`,
-  written → no method.
+- **`WorldMap`**: `size` through `CityMap` → `size_in_tiles()`; `world` → no method (a yes-or-no on
+  the field alone: `has_world()`); `world`, written → no method.
 
 ## Verified
 

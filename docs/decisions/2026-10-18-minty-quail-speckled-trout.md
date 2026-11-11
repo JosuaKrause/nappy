@@ -26,31 +26,37 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 
 ## Fields read and written, by class
 
-Built with `tools/field_answers.py` at the pass's merge commit `a96456e32`, over the `.gd` files
-under `tests/` its pull request changed, and each method it names read in its class and the classes
-it extends. Each read is listed with the public method that returns exactly that field, or "no
-method"; each write with every public method that assigns the field, and what it assigns.
+Built with `tools/field_answers.py` at the pass's merge commit `a96456e32`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
 
 - **`AttemptSpendState`**: `scars` → no method.
-- **`Building`**: `condition` → no method; `covered_ground_cols` → no method; `footprint`, written →
-  `stand_on()` does `footprint = size`; `lot` → `lot_rect()`; `shape` → no method.
+- **`Building`**: `condition` → no method (a yes-or-no on the field alone: `is_burnt()`);
+  `covered_ground_cols` → no method; `footprint`, written → `stand_on()` does `footprint = size`;
+  `lot` → `lot_rect()`; `shape` → no method.
 - **`City`**: `map` → no method; `run` → no method.
 - **`CityMap`**: `block_plans` → `plans_by_block()`; `calm_blocks` → `calm_blocks_now()`;
   `home_block` → `home_block_coordinate()`; `home_rect` → `home_tile_rect()`; `network` →
   `street_network()`; `power_station` → `power_station_blocks()`; `seed_used` → `city_seed()`.
 - **`EventDef`**: `act_tag` → no method; `barrier_structure` → `counts_as_one_barrier()`;
   `core_intensity` → no method; `core_intensity`, written → no method; `core_radius` → no method;
-  `detain_seconds` → `detains_for()`; `draws_body_shadow` → `casts_a_shadow()`; `duration` → no
-  method; `first_day` → no method; `flock_size` → no method; `hard_fail` → `ends_the_day()`;
-  `has_a_spread` → no method; `id` → no method; `inner_radius` → `core_within()`; `inner_radius`,
-  written → no method; `intensity` → `peak()`; `intensity`, written → no method; `intensity_ramp` →
-  no method; `kind` → no method; `look` → `picture()`; `look`, written → no method; `max_per_day` →
-  `most_in_a_day()`; `mobile` → `moves()`; `obstructs_radius` → `obstructs_within()`; `on_her_way`,
-  written → no method; `outer_radius` → `heard_within()`; `outer_radius`, written → no method;
-  `pavement_side` → no method; `placement` → no method; `pulse_period` → `pulses_every()`; `pursuit`
-  → no method; `role` → no method; `shape` → `ground_shape()`; `shape`, written → `solid()` does
-  `shape = new_shape`; `solid_parts` → no method; `solid_parts`, written → no method; `spawn_mode` →
-  no method; `speed`, written → no method; `telegraph_time` → `telegraphs_for()`; `telegraph_time`,
+  `detain_seconds` → `detains_for()` (a yes-or-no on the field alone: `detains_her()`);
+  `draws_body_shadow` → `casts_a_shadow()`; `duration` → no method; `first_day` → no method;
+  `flock_size` → no method (a yes-or-no on the field alone: `is_a_flock()`); `hard_fail` →
+  `ends_the_day()`; `has_a_spread` → no method; `id` → no method; `inner_radius` → `core_within()`;
+  `inner_radius`, written → no method; `intensity` → `peak()` (a yes-or-no on the field alone:
+  `has_a_field()`); `intensity`, written → no method; `intensity_ramp` → no method; `kind` → no
+  method (a yes-or-no on the field alone: `is_ambient()`); `look` → `picture()`; `look`, written →
+  no method; `max_per_day` → `most_in_a_day()`; `mobile` → `moves()`; `obstructs_radius` →
+  `obstructs_within()` (a yes-or-no on the field alone: `has_a_body()`); `on_her_way`, written → no
+  method; `outer_radius` → `heard_within()`; `outer_radius`, written → no method; `pavement_side` →
+  no method; `placement` → no method; `pulse_period` → `pulses_every()`; `pursuit` → no method;
+  `role` → no method; `shape` → `ground_shape()`; `shape`, written → `solid()` does `shape =
+  new_shape`; `solid_parts` → no method; `solid_parts`, written → no method; `spawn_mode` → no
+  method; `speed`, written → no method; `telegraph_time` → `telegraphs_for()`; `telegraph_time`,
   written → no method; `telegraphs` → no method.
 - **`EventFlock.Bird`**: `at`, written → no method.
 - **`EventInstance`**: `atlas`, written → no method; `def` → `row()`; `drawer` → no method;
@@ -59,9 +65,10 @@ method"; each write with every public method that assigns the field, and what it
   `is_on_its_way_out()`.
 - **`EventScheduler.Planned`**: `def` → `row()`; `def.hard_fail` → `ends_the_day()`; `def.id` →
   `row_id()`; `def.obstructs_radius` → `obstructs_within()`; `facing` → no method; `position` →
-  `placed_at()`; `role` → no method; `role`, written → `give_role()` does `role = given`.
+  `placed_at()` (a yes-or-no on the field alone: `is_placed()`); `role` → no method; `role`, written
+  → `give_role()` does `role = given`.
 - **`GroundShape`**: `half_extents` → `rect_half_extents()`; `half_length` → `spine_half_length()`;
-  `kind` → no method.
+  `kind` → no method (a yes-or-no on the field alone: `is_rect()`, `is_segment()`).
 - **`LaneMover`**: `kind`, written through `CrowdAgent` → `setup_at()` does `kind = agent_kind as
   Kind`, `setup()` does `kind = agent_kind`; `strategy` through `CrowdAgent` → `lane().strategy()`
   on its view.
