@@ -34,6 +34,15 @@ orchestrator.
 - `and`, `see` and `also` are separators beside the comma and the semicolon; a bare name after
   `or`, `&` or free text, or followed by words, is not read (the builder's).
 
+## How the next change to the check is made
+
+- **A change that adds or splits a pattern moves that pattern's tests with it, in the same
+  commit**, so every rule keeps a test that fails without it (the rethink after the third review
+  on pull request #1359: a pattern split there left the bare-name pattern untested for a round).
+- **A number list at a piece's place has no flagged case**, nor did it before this change: a
+  wrong second number in `(brisk-heron 1, 14)` is caught, but cutting the list from the pattern
+  fails no test.
+
 ## Verified
 
 The whole-tree run over `CLAUDE.md` and every skill passes under the stricter check. `./tools/pycheck.sh` and `./tools/lint.sh` pass.
