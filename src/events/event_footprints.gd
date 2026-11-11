@@ -58,10 +58,9 @@ static func drawn_box_of(row: EventDef, spread_vertical: bool) -> Rect2:
 ## shadow (a disc of its shape's radius at its feet), the loose dog's trailing lead, the bob and the
 ## excitement halo's rim (`EntityHalo.HALO_MARGIN`). What a thing arriving from off screen is placed
 ## wholly outside the camera's view by (`SpawnSiting.just_out_of_sight()`), so nothing of it
-## shows on the frame it exists (inbox #598 in olive-hedgehog). And
-## for a row that can be marked — anything with a field or a lethal reach — the danger caret above
-## its feet at its tallest (`EventPictures.largest_mark_rect()`), which stands well above the
-## picture. Empty for a row that draws nothing of its own.
+## shows on the frame it exists (inbox #598 in olive-hedgehog). And for a row that can be marked —
+## anything with a field or a lethal reach — the danger caret above its feet at its tallest
+## (`EventPictures.largest_mark_rect()`), which stands well above the picture. Empty for a row that draws nothing of its own.
 static func footprint_of(row: EventDef) -> Rect2:
 	var box := Rect2()
 	var any := false
@@ -207,8 +206,8 @@ static func guard_side_toward(vertical: bool, toward: Vector2) -> int:
 	return -1 if across < 0.0 else 1
 
 ## **Where a posted roadblock guard's feet stand relative to the band's centre: beside it, never
-## over it** (PLAYTEST-135). The whole of his standing
-## picture is kept clear of the whole of the barrier's, `_GUARD_POST_CLEARANCE` apart, on `side`:
+## over it** (PLAYTEST-135 2). The whole of his standing picture is kept clear of the whole of the
+## barrier's, `_GUARD_POST_CLEARANCE` apart, on `side`:
 ##
 ## - **End-on** (`vertical`), the column is as wide as `roadblock_segment_vertical.svg`, so he stands
 ##   level with the band's centre, half the column's width and half his own out to the east or west.

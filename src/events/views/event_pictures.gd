@@ -349,9 +349,9 @@ const ROBBER_LUNGING_BY_VIEW_B := {
 	"front_diagonal": "events/robber_lunging_front_diagonal_b",
 	"back_diagonal": "events/robber_lunging_back_diagonal_b",
 }
-## His warning, between the wait and the lunge: both hands out of his coat, held low, walking at her
-## through his notice (inbox #748 in woolly-penguin). 26×44 against the waiting
-## picture's 22×44, the body moved with the canvas, so the swap keeps his feet where they were.
+## His warning, between the wait and the lunge: both hands out of his coat, held low, walking at
+## her through his notice (inbox #748 in woolly-penguin). 26×44 against the waiting picture's
+## 22×44, the body moved with the canvas, so the swap keeps his feet where they were.
 const ROBBER_ALERT_BY_VIEW := {
 	"front": "events/robber_alert_front",
 	"back": "events/robber_alert_back",
@@ -390,11 +390,11 @@ const POLICEMAN_LUNGING_BY_VIEW := {
 	"back_diagonal": "events/policeman_lunging_back_diagonal",
 }
 ## **A policeman who is about to charge stands square-on with one hand raised, palm out**, as the
-## guard's alert is drawn (`GUARD_ALERT_BY_VIEW`): the man an investigating patrol car or a hunting
-## van lets out, through day 8, for the second he stands beside her before he charges
-## (`PursuerLook._policeman_pictures()`). On the policeman's own canvases and bottom-centre anchor,
-## sharing his waiting picture's body. A guardsman about to charge holds up his hands, and an event
-## that does not spawn already charging always has a warning (inbox #764 in minty-lemur).
+## guard's alert is drawn (`GUARD_ALERT_BY_VIEW`): the man an investigating patrol car or a
+## hunting van lets out, through day 8, for the second he stands beside her before he charges
+## (`PursuerLook._policeman_pictures()`). On the policeman's own canvases and bottom-centre
+## anchor, sharing his waiting picture's body. A guardsman about to charge holds up his hands, and
+## an event that does not spawn already charging always has a warning (inbox #764 in minty-lemur).
 const POLICEMAN_ALERT_BY_VIEW := {
 	"front": "events/policeman_alert_front",
 	"back": "events/policeman_alert_back",
@@ -497,9 +497,9 @@ const DOG_BY_VIEW_B := {
 	"front_diagonal": "events/dog_front_diagonal_b",
 	"back_diagonal": "events/dog_back_diagonal_b",
 }
-## The normal dog's third picture per view — the dog walker's and the loose dog's, not the charging
-## dog's — so it walks step, rest, opposite step, rest (teal-marmot). What a c picture *is* depends on the view, and
-## `dog_picture()` is the one place that says so.
+## The normal dog's third picture per view — the dog walker's and the loose dog's, not the
+## charging dog's — so it walks step, rest, opposite step, rest (teal-marmot). What a c picture
+## *is* depends on the view, and `dog_picture()` is the one place that says so.
 const DOG_BY_VIEW_C := {
 	"front": "events/dog_front_c",
 	"back": "events/dog_back_c",
@@ -539,11 +539,12 @@ const CHARGING_DOG_BY_VIEW_B := {
 	"back_diagonal": "events/charging_dog_back_diagonal_b",
 }
 ## **The dog that waits for her has a stage of its own on each side of the gallop** (inbox #698 in
-## velvet-marten; inbox #722 in polite-toad): sitting, ears soft and tail on the ground, while it waits, and up on four stiff
-## legs with its hackles raised and its jaw shut on its teeth while it stands for its notice, the
-## open red jaw kept for the charge. Each is one still picture, since nobody walks but the robber, on
-## the gallop's own canvases and bottom-centre anchor, so the swap does not move the dog. Drawn from
-## the SVGs: the gallop keeps its comic transfers (inbox #748 in woolly-penguin).
+## velvet-marten; inbox #722 in polite-toad): sitting, ears soft and tail on the ground, while it
+## waits, and up on four stiff legs with its hackles raised and its jaw shut on its teeth while it
+## stands for its notice, the open red jaw kept for the charge. Each is one still picture, since
+## nobody walks but the robber, on the gallop's own canvases and bottom-centre anchor, so the swap
+## does not move the dog. Drawn from the SVGs: the gallop keeps its comic transfers (inbox #748 in
+## woolly-penguin).
 const CHARGING_DOG_RESTING_BY_VIEW := {
 	"front": "events/charging_dog_resting_front",
 	"back": "events/charging_dog_resting_back",
@@ -574,10 +575,10 @@ const CYCLIST_BY_VIEW_B := {
 	"front_diagonal": "events/cyclist_front_diagonal_b",
 	"back_diagonal": "events/cyclist_back_diagonal_b",
 }
-## The pelican that about one cyclist in four hundred is instead (minty-hedgehog 8), drawn from SVG
-## only: the same bike, path for path, on the same canvases, so it shares the cyclist's registration, wheel contact
-## and pedal frames and only the rider differs. Drawn when `is_pelican` is set; see
-## `EventSpawner.rolls_a_pelican()` for who decides that and when.
+## The pelican that about one cyclist in four hundred is instead (inbox #437 in minty-hedgehog),
+## drawn from SVG only: the same bike, path for path, on the same canvases, so it shares the
+## cyclist's registration, wheel contact and pedal frames and only the rider differs. Drawn when
+## `is_pelican` is set; see `EventSpawner.rolls_a_pelican()` for who decides that and when.
 const PELICAN_BY_VIEW := {
 	"front": "events/pelican_cyclist_front",
 	"back": "events/pelican_cyclist_back",
@@ -678,11 +679,12 @@ const RIOT_VAN_BY_VIEW := {
 	"back_diagonal": RIOT_VAN_BACK_DIAGONAL,
 }
 
-## **The vehicles that move roll on wheels that stay on the ground** (PLAYTEST-56). Each of these looks' five
-## views is drawn as its ordinary picture — the body — and a wheels picture on the same canvas and
-## anchor, which `EventLook._draw_eight_view()` draws back down by `EventLook.current_bob()` so the
-## lift `EventLook.draw()` gives the whole drawing reaches the body alone. The parked delivery and
-## ice-cream vans never move, so their pictures keep their wheels and sit still.
+## **The vehicles that move roll on wheels that stay on the ground** (PLAYTEST-56). Each of these
+## looks' five views is drawn as its ordinary picture — the body — and a wheels picture on the
+## same canvas and anchor, which `EventLook._draw_eight_view()` draws back down by
+## `EventLook.current_bob()` so the lift `EventLook.draw()` gives the whole drawing reaches the
+## body alone. The parked delivery and ice-cream vans never move, so their pictures keep their
+## wheels and sit still.
 const POLICE_CAR_WHEELS_BY_VIEW := {
 	"front": "events/police_car_front_wheels",
 	"back": "events/police_car_back_wheels",
@@ -777,12 +779,13 @@ const GUARD_LUNGING_BY_VIEW := {
 	"front_diagonal": "checkpoints/guard_lunging_front_diagonal",
 	"back_diagonal": "checkpoints/guard_lunging_back_diagonal",
 }
-## **A guard who has noticed her stands square-on with one hand raised, palm out** (inbox #748 in woolly-penguin), held still for his notice: the hunting roadblock's
-## guard at his post, the guardsman a vehicle lets out beside its door, the masked man at the foot
-## of the shaft (`PursuerLook._masked_pursuer_pictures()`), and — the front view — a checkpoint hut's
-## or post's guard while her crossing of its door's line warns her (`guard_warns_her`). Never the
-## van's guard a task sends or the guardsman a torn poster sends: both arrive already charging.
-## 22×44 front and back, 26×44 side and diagonals, bottom-centre anchored like the standing family.
+## **A guard who has noticed her stands square-on with one hand raised, palm out** (inbox #748 in
+## woolly-penguin), held still for his notice: the hunting roadblock's guard at his post, the
+## guardsman a vehicle lets out beside its door, the masked man at the foot of the shaft
+## (`PursuerLook._masked_pursuer_pictures()`), and — the front view — a checkpoint hut's or post's
+## guard while her crossing of its door's line warns her (`guard_warns_her`). Never the van's
+## guard a task sends or the guardsman a torn poster sends: both arrive already charging. 22×44
+## front and back, 26×44 side and diagonals, bottom-centre anchored like the standing family.
 const GUARD_ALERT_BY_VIEW := {
 	"front": "checkpoints/guard_alert_front",
 	"back": "checkpoints/guard_alert_back",
@@ -1045,18 +1048,12 @@ static func largest_mark_rect() -> Rect2:
 	var bottom := -(MARK_HEIGHT + 10.0) + MARK_WIDTH * 0.5 + 1.0
 	return Rect2(-MARK_WIDTH - 1.0, top, (MARK_WIDTH + 1.0) * 2.0, bottom - top)
 
-# **One page for the whole catalogue, held from boot.** *(PLAYTEST-108: "we can do one events page
-# for now".)* Every picture in this file — the checkpoint kit and the finale's crater included — is
-# a region of `ATLAS_GROUP`, and `EventManager` is what holds a reference on it while a day's
-# events exist; `main.RESIDENT_GROUPS` is what keeps it there for the life of the process, so no
-# event ever costs a read from disk in a played frame.
-#
-# **This replaces one runtime-packed group per `EventDef.Look`.** A picture two looks both draw —
-# the guard, the dog, the boom kit — was packed into each of their groups, because a family that
-# could be released had to be self-contained; on one page each picture is one region and the
-# duplicates are gone. A single group also means nothing here has to decide *when* a family
-# arrives: a baked page is there the moment it is acquired, so an instance never draws a source
-# picture "until its pack is collected".
+# **One page for the whole catalogue, held from boot** (PLAYTEST-108 3). Every picture in this
+# file, the checkpoint kit and the finale's crater included, is a region of `ATLAS_GROUP`, and
+# `EventManager` holds a reference on it while a day's events exist; `main.RESIDENT_GROUPS` keeps
+# it there for the life of the process, so no event ever costs a read from disk in a played frame.
+# A picture two looks both draw is one region, and nothing here decides when a family arrives: a
+# baked page is there the moment it is acquired.
 
 ## The one baked page everything in this file draws from.
 const ATLAS_GROUP := &"events"
@@ -1241,7 +1238,7 @@ static func _collect(sources: Dictionary, pictures: Array) -> void:
 
 static func _collect_views(sources: Dictionary, tables: Array) -> void:
 	for table: Dictionary in tables:
-		for view: Variant in table.keys():
+		for view: String in table.keys():
 			sources[str(table[view])] = true
 
 ## The five-view generalisation of `EventLook._draw_simple`, for a family that has the full
@@ -1330,9 +1327,8 @@ const POINTING_POSES: Array[String] = [
 
 ## The plain rank, or whichever of the eight `protester_point_*` poses points closest to
 ## `objective` from `from`. `Vector2.INF` is "nothing to point at" — a chalk-mark step or no step
-## at all — and draws the same plain `PROTESTER` the row always used. *(2026-09-11, the player:
-## "the mark is findable now -- I don't think we need pointing for that. but the other tasks are
-## not as easy and need pointing.")*
+## at all — and draws the plain `PROTESTER`: a chalk mark is findable without pointing, and the
+## other tasks need it (M65-a-protester-points-at-the-objective).
 ##
 ## The bearing is `RunTrace.compass()`'s own arithmetic — clockwise from north (`-y`), through
 ## east (`+x`) at 90° — rounded to the nearest of the eight 45° sectors the poses were drawn for.
