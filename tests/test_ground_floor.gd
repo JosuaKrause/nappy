@@ -74,9 +74,7 @@ func run(t: TestRunner) -> void:
 static func _new_building(t: TestRunner, district: int, footprint: Vector2, height: float, is_home := false,
 		position := Vector2.ZERO, covered: Array[bool] = []) -> Building:
 	var building := FrontReads.new_building()
-	building.district = district
-	building.footprint = footprint
-	building.height = height
+	building.stand_on(Rect2i(), footprint, 0, district as GameEnums.BlockPurpose, height)
 	building.position = position
 	building.stand_on_home_block(is_home)
 	building.covered_ground_cols = covered
@@ -844,9 +842,7 @@ func _test_setting_an_extension_late_rebuilds_the_roof_furniture(t: TestRunner) 
 	var footprint := Vector2(6 * Building.TILE, 7 * Building.TILE)
 	var at := Vector2(4321.0, 8765.0)
 	var early := Building.new()
-	early.district = GameEnums.BlockPurpose.INDUSTRIAL
-	early.footprint = footprint
-	early.height = 64.0
+	early.stand_on(Rect2i(), footprint, 0, GameEnums.BlockPurpose.INDUSTRIAL, 64.0)
 	early.position = at
 	early.roof_extension_rows = [0, 4, 4, 4, 4, 0]
 	t.add_child(early)

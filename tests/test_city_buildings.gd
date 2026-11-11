@@ -3,7 +3,8 @@ extends RefCounted
 ## **What a real `City` hands its buildings**: `City._spawn_buildings()`'s own wiring of
 ## `is_home_building`, `door_world_x_range` and `covered_ground_cols` off `CityMap.home_block`,
 ## `map.home_rect` and `map.is_walkable()`, and `City.assign_roof_extensions()`'s of the roof rows,
-## asked of whatever the generator actually builds across a spread of seeds. What a building does with
+## asked of whatever the generator actually builds across a spread of seeds, and that a dawn
+## (`City.start_day()`) leaves every building and its collision shape as they were. What a building does with
 ## those facts once it has them (which window, door, escape or roof unit it draws) is
 ## `tests/test_ground_floor.gd`'s, on buildings set up by hand.
 ##
@@ -40,7 +41,7 @@ func _test_a_dawn_replaces_no_building_and_no_collision(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(map)
-	var before: Array[Building] = city.buildings()
+	var before: Array[Building] = city.buildings().duplicate()
 	var shapes: Dictionary = {}
 	for building in before:
 		shapes[building] = _collision_shape_of(building)
@@ -52,7 +53,7 @@ func _test_a_dawn_replaces_no_building_and_no_collision(t: TestRunner) -> void:
 	var after: Array[Building] = city.buildings()
 	t.check(after == before, "a dawn leaves the city the same buildings, the same nodes")
 	var replaced := 0
-	for building in after:
+	for building in before:
 		if not is_instance_valid(building) or _collision_shape_of(building) != shapes.get(building):
 			replaced += 1
 	t.check(replaced == 0, "a dawn replaces no building's collision shape (%d replaced)" % replaced)
