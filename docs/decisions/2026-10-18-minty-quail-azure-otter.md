@@ -28,8 +28,8 @@ None is converted (search none).
 - **`EventDef`**: `look` → `picture()`; `hard_fail` → `ends_the_day()`; `telegraph_time` →
   `telegraphs_for()`; `obstructs_radius` → `obstructs_within()`; `outer_radius` → `heard_within()`;
   `pulse_period` → `pulses_every()`; `draws_body_shadow` → `casts_a_shadow()`; `shape` →
-  `ground_shape()`; `abduction`, `pursuit`, `notice` → no method (`waits_for_her()` answers
-  `notice != null`, not the read). Written: `shape` (`solid()` also sets `obstructs_radius` and drops
+  `ground_shape()`; `abduction`, `pursuit`, `notice`, `solid_parts` → no method (`waits_for_her()` answers
+  `notice != null`, not the read; `parts()` answers `solid_parts` only when it is not empty). Written: `shape` (`solid()` also sets `obstructs_radius` and drops
   the cached parts, so it is not the test's write), `solid_parts`, `hard_fail` → no method.
 - **`EventInstance`**: `def` → `row()`; `excitement` → `source()`; `is_finished` → `is_gone()`;
   `is_leaving` → `is_on_its_way_out()`; `flock.birds` → `birds()`, behind a guard; `abduction`,
