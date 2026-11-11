@@ -10,7 +10,10 @@ orchestrator.
 
 - **A numbered name is read wherever it stands inside a parenthesis**, after words too: a
   hyphenated name with a number or a `#N` list (`woolly-penguin #759`, `PLAYTEST-16 7`,
-  `(the rule is gentle-owl #1255)`). A name needs a letter, so a range or a date is never one.
+  `(the rule is gentle-owl #1255)`). After words it takes one number, one range or a `#N` list,
+  never a list of plain numbers, so a date, a decimal, a fraction or a count after a comma
+  (`(see PLAYTEST-16 7, 3 times)`) is not a statement number. A name needs a letter, so a range or
+  a date is never one. A name at a piece's start is cited once.
 - **A bare name is read only as a piece of a list**: it starts the part (or follows a leading
   `and`), or follows `, `, `, and `, `, see `, `, also ` or ` and `, and is followed by a comma, the
   part's end, or `and` with another piece. `(woolly-finch 35, woolly-finch 36)` checks both, and a
@@ -21,7 +24,8 @@ orchestrator.
 - **`inbox #N in name` lists needed no change**: their own pattern already read each one.
 - **Five citations the old check never read are now read**, and the tree passes; the one piece of
   prose newly flagged, a job name in the release reference, is written as code. A hyphenated word
-  standing alone after a separator is flagged, and is reworded or marked with a `lint-allow` comment.
+  standing alone after a separator, or followed by a number anywhere in a parenthesis
+  (`(a two-step 3 times)`), is flagged, and is reworded or marked with a `lint-allow` comment.
 - Unit cases, each naming the mutation it fails, and the docstring and the using-tools row say what
   is read and what a writer avoids.
 
