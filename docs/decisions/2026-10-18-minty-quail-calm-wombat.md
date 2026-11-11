@@ -17,10 +17,11 @@ answered, built on since it drops nothing the player asked for.
   from which it reads the route tree; the recorder takes the ground mode as a value read once at
   setup; the recorder and the trace take the events and the crowd.
 - **`main.gd` hands the parts** at the four places it set the tools up, through the getters it
-  already had, and `City.traffic_signals()` is the one method added, beside
-  `ground_mode_in_force()`.
-- **What counts as a city in the readout** is that its map is a `CityMap`, and its events and crowd
-  lines show when it was handed a crowd, which is null only in the escape's building.
+  already had. Two methods are added: `City.traffic_signals()`, beside `ground_mode_in_force()`, and
+  `CityMap.is_alley()`, beside `is_calm_zone()`, which holds the alley reading that `City.is_alley()`
+  and the readout both ask.
+- **What counts as a city in the readout** is one answer, that its map is a `CityMap`, asked for its
+  tile, calm and alley lines, its events and crowd lines and its capture context.
 - The still watch's and the debug layers' rigs hold a map and signals or a bare world, and build no
   `City`; `tools/field_reads.txt` lost its eleven `City` reads by these tools.
 
@@ -28,7 +29,7 @@ answered, built on since it drops nothing the player asked for.
 
 - **The third pull request is cut into several**, this one the four tools (the orchestrator's pick,
   hand-ins-third-cut); the plainer alternative is one large third pull request.
-- **The readout reads the alley off the map** it already keeps, and the route tree off the day's
+- **The readout asks the alley of the map** it already keeps, and the route tree of the day's
   streets, rather than taking either as a part of its own (the builder's).
 - **The recorder takes the ground mode once at setup** rather than asking for it each frame (the
   builder's).
