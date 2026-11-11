@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## One meeting with the escape's masked man, shared by the suites that walk her down the right shaft
 ## to meet him: `test_interior_masked_man.gd` and `test_interior_masked_man_badge.gd`.
@@ -43,7 +42,7 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 	var man: EventInstance = null
 	for instance in events.instances():
-		if instance.def.id == "masked_pursuer":
+		if instance.row_id() == "masked_pursuer":
 			man = instance
 	var origin: Vector2i = f.waypoint("stairwell_right") - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 	var door: Vector2i = (f.door("stairwell_right:landing_first") as InteriorMapPlan.Door).tile
@@ -132,7 +131,7 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 		# walk up to his warning is taken fast and the run itself at the engine's own rate, where a
 		# frame is shorter than a tick. It ends when his badge has done its job.
 		if badge and state["fast"] and (met["ran"] or man.global_position.distance_to(her)
-				<= man.def.notice.runs_within + BADGE_LEAD):
+				<= man.row().notice.runs_within + BADGE_LEAD):
 			state["fast"] = false
 			return true
 		return badge and badge_log.get("done", false)
@@ -191,7 +190,7 @@ func _count_the_badge(edge: DangerEdge, then: Dictionary, log: Dictionary) -> vo
 	log["unseen"] = int(log["unseen"]) + 1
 
 func _hold_keys(actions: Array, running: bool) -> void:
-	for a in ["move_left", "move_right", "move_up", "move_down", "run"]:
+	for a: String in ["move_left", "move_right", "move_up", "move_down", "run"]:
 		Input.action_release(a)
 	for a: String in actions:
 		Input.action_press(a)

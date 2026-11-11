@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## `InteriorMap` and `InteriorMapPlan` — the escape scene's one building-wide map, walkability, the
 ## alternating stairwells of the ten-column grammar, and the doors that teleport between its seven
@@ -101,7 +100,7 @@ func _test_the_stairwell_grammar_is_exact_in_both_shafts(t: TestRunner) -> void:
 	t.check(InteriorMap.STAIRWELL_ROWS == expected,
 			"the runtime grammar is the literal 22-row diagram plus one completed lobby approach")
 	var f := InteriorMap.build()
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		var part := "stairwell_%s" % side
 		var origin: Vector2i = f.waypoint(part) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for y in expected.size():
@@ -121,12 +120,12 @@ func _test_the_stairwell_grammar_is_exact_in_both_shafts(t: TestRunner) -> void:
 ## The walkable roles have TileSet sources because they are the surface; the three side roles also
 ## have sources but remain solid.
 func _test_stair_symbols_define_walkability_and_art(t: TestRunner) -> void:
-	for symbol in ["F", "t", "m", "T", "M"]:
+	for symbol: String in ["F", "t", "m", "T", "M"]:
 		var kind := _kind_painted_for(symbol)
 		t.check(InteriorTile.is_walkable(kind), "'%s' is walkable" % symbol)
 		t.check(InteriorTileSet.source_id_for(kind) >= 0, "'%s' has a live tile source" % symbol)
 	t.check(InteriorTile.is_walkable(InteriorTile.Kind.DOOR), "'D' is a walkable transition")
-	for symbol in ["b", "c", "C"]:
+	for symbol: String in ["b", "c", "C"]:
 		var kind := _kind_painted_for(symbol)
 		t.check(not InteriorTile.is_walkable(kind), "'%s' is not walkable" % symbol)
 		t.check(InteriorTileSet.source_id_for(kind) >= 0, "'%s' is still painted" % symbol)
@@ -192,7 +191,7 @@ func _test_the_exit_and_the_entrance_are_what_they_claim(t: TestRunner) -> void:
 ## nothing is ever placed there.
 func _test_the_ground_between_parts_is_not_walkable(t: TestRunner) -> void:
 	var f := InteriorMap.build()
-	for x in [30, 94, 158, 222, 286, 350]:
+	for x: int in [30, 94, 158, 222, 286, 350]:
 		var tile := Vector2i(x, 0)
 		t.check(not f.is_walkable(tile), "the gap tile %s between two parts is not walkable" % tile)
 
@@ -232,7 +231,7 @@ func _test_every_walkable_tile_is_reachable_from_her_door_through_the_doors(t: T
 ## enough that walking alone, with no door, cannot cross from one part to the next.
 func _test_no_two_parts_are_reachable_by_walking_alone(t: TestRunner) -> void:
 	var f := InteriorMap.build()
-	var components := {}
+	var components: Dictionary[String, Dictionary] = {}
 	for part in PARTS:
 		components[part] = _flood_fill(f, f.waypoint(part))
 	for part in PARTS:
@@ -247,7 +246,7 @@ func _test_no_two_parts_are_reachable_by_walking_alone(t: TestRunner) -> void:
 ## one walkable kind that is never a `tiles` entry of its own (see its own doc), so it is the one
 ## exclusion.
 func _test_the_tileset_carries_every_walkable_ground_kind(t: TestRunner) -> void:
-	for kind in InteriorTile.Kind.values():
+	for kind: InteriorTile.Kind in InteriorTile.Kind.values():
 		if kind == InteriorTile.Kind.PUDDLE or not InteriorTile.is_walkable(kind):
 			continue
 		t.check(InteriorTileSet.source_id_for(kind) >= 0, "walkable ground kind %d has a TileSet source" % kind)
@@ -281,7 +280,7 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: TestRunner) -> vo
 	scene.build()
 	var f := InteriorMap.build()
 	var blocked := {}
-	for body in scene.get_node("Collision").get_children():
+	for body: Node2D in scene.get_node("Collision").get_children():
 		blocked[scene.map.world_to_tile(body.position)] = true
 	for tile: Vector2i in f.floor_tiles():
 		if f.is_walkable(tile):
@@ -289,7 +288,7 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: TestRunner) -> vo
 		else:
 			t.check(blocked.has(tile), "painted non-walkable tile %s is blocked" % tile)
 	t.check(blocked.has(Vector2i(30, 0)), "a gap tile between two parts is blocked")
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		var part := "stairwell_%s" % side
 		var origin: Vector2i = f.waypoint(part) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for y in InteriorMap.STAIRWELL_ROWS.size():
@@ -476,7 +475,7 @@ func _test_a_sideways_press_on_a_flight_walks_its_slope(t: TestRunner) -> void:
 					"west role %d: left moves equally left and down" % kind)
 			t.check(right.x > 0 and right.y < 0,
 					"west role %d: right moves equally right and up" % kind)
-		for redirected in [right, left]:
+		for redirected: Vector2 in [right, left]:
 			t.check(is_equal_approx(absf(redirected.x), absf(redirected.y)),
 					"flight role %d gives equal horizontal and vertical components" % kind)
 			t.check(is_equal_approx(redirected.length(), 1.0),
@@ -538,7 +537,7 @@ func _steer(t: TestRunner, scene: InteriorScene, walkers: Array[Stroller], tiles
 	await PhysicsTicks.pass_ticks(t, 1)
 	var headings: Array[Vector2] = []
 	for walker in walkers:
-		headings.append(walker.steering)
+		headings.append(walker.steering_direction())
 	var press := walkers[0].input_she_moves_by()
 	for action: String in held:
 		Input.action_release(action)
@@ -559,7 +558,7 @@ func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Test
 	var tiles: Array[Vector2i] = []
 	var origins: Array[Vector2i] = []
 	var sides: Array[String] = []
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		var origin: Vector2i = f.waypoint("stairwell_%s" % side) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for tile: Vector2i in scene.map.stairwell_tiles("stairwell_%s" % side):
 			var kind: InteriorTile.Kind = f.floor_kind_at(tile)
@@ -759,7 +758,7 @@ func _test_the_basement_entry_is_a_straight_level_stair(t: TestRunner) -> void:
 ## itself, so a door that silently failed to move her would fail the very next line.
 func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) -> void:
 	var f := InteriorMap.build()
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		var part := "stairwell_%s" % side
 		var scene := InteriorScene.new()
 		t.add_child(scene)
@@ -792,7 +791,7 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) 
 			t.check(_shortest_path_length(f, from, to) > 0,
 					"%s has a continuous walk from %s to %s"
 					% [part, landing_ids[index], landing_ids[index + 1]])
-		for id in ["landing_third", "landing_second", "landing_first"]:
+		for id: String in ["landing_third", "landing_second", "landing_first"]:
 			var landing_tile: Vector2i = f.waypoint("%s:%s" % [part, id])
 			var mid_result := scene.map.transition_at(landing_tile)
 			t.check(mid_result.is_empty(), "%s: passing %s's `F` approach triggers nothing" % [part, id])
@@ -976,7 +975,7 @@ func _test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t: TestRunner)
 			"from her own door the right stairwell cannot be entered on the top floor at all")
 	t.check(reached.has(left_door),
 			"and the left one still can, so the way down starts on the fire's own side")
-	for id in ["hallway_second", "hallway_first"]:
+	for id: String in ["hallway_second", "hallway_first"]:
 		var seen := _flood_fill(f, f.waypoint(id))
 		t.check(seen.has(f.door("%s:right" % id).tile) and seen.has(f.door("%s:left" % id).tile),
 				"%s still walks between both of its stair doors, so crossing over is possible" % id)
@@ -1003,7 +1002,7 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: TestRunner) -> 
 
 	var fire: EventInstance = null
 	for instance in events.instances():
-		if instance.def.id == "burning_building":
+		if instance.row_id() == "burning_building":
 			fire = instance
 	t.check(fire != null, "the escape puts a fire in the building")
 	if fire:
@@ -1022,13 +1021,13 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: TestRunner) -> 
 		# The inner cell of a level approach in the burning shaft: the cell below the second or the
 		# first floor's landing, one cell further in than its door.
 		var approaches: Array[Vector2i] = []
-		for landing_id in ["landing_second", "landing_first"]:
+		for landing_id: String in ["landing_second", "landing_first"]:
 			var landing: Vector2i = scene.map.waypoint("stairwell_%s:%s" % [burning, landing_id])
 			if scene.map.is_walkable(landing + Vector2i.DOWN):
 				approaches.append(landing + Vector2i.DOWN)
 		t.check(approaches.has(scene.map.world_to_tile(fire.global_position)),
 				"the fire stands on the inner cell of a level approach in the %s shaft" % burning)
-		var reach := fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+		var reach := fire.row().obstructs_within() + Tuning.PLAYER_BODY_RADIUS
 		t.check(reach > 0.0, "and it is solid at all (%.0fpx)" % reach)
 		var shut := 0
 		for tile in _shaft_tiles(scene, "stairwell_%s" % burning):
@@ -1044,7 +1043,7 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: TestRunner) -> 
 		# having: the way past a fire is the other stairwell, and somebody is coming up it.
 		var man: EventInstance = null
 		for instance in events.instances():
-			if instance.def.id == "masked_pursuer":
+			if instance.row_id() == "masked_pursuer":
 				man = instance
 		t.check(man != null, "a masked man is on the stairs")
 		if man:
@@ -1065,7 +1064,7 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: TestRunner) -> 
 ## (the way she can also take). A fire on the first floor's approach would leave the second flight
 ## open and shut the last, which is the walk that lost the crossing.
 func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t: TestRunner) -> void:
-	for run_seed in [1, 2, 7, 99, 4242, 12345, 777, 31337, 5, 8675309]:
+	for run_seed: int in [1, 2, 7, 99, 4242, 12345, 777, 31337, 5, 8675309]:
 		var scene := InteriorScene.new()
 		t.add_child(scene)
 		var rng := RandomNumberGenerator.new()
@@ -1073,7 +1072,7 @@ func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t
 		var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 		var fire: EventInstance = null
 		for instance in events.instances():
-			if instance.def.id == "burning_building":
+			if instance.row_id() == "burning_building":
 				fire = instance
 		t.check(fire != null, "seed %d: the escape puts a fire in the building" % run_seed)
 		if fire == null:
@@ -1085,16 +1084,16 @@ func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t
 				"seed %d: the fire stands on the second floor's approach %s, at %s"
 				% [run_seed, second, scene.map.world_to_tile(fire.global_position)])
 		var f := InteriorMap.build()
-		var reach := fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+		var reach := fire.row().obstructs_within() + Tuning.PLAYER_BODY_RADIUS
 		var shut := {}
-		for tile in f.floor_tiles():
+		for tile: Vector2i in f.floor_tiles():
 			if scene.map.tile_to_world(tile).distance_to(fire.global_position) < reach:
 				shut[tile] = true
 		# Each flight is walked between the shaft's own doors, which is where a flight begins and ends
 		# and where a door arrival lands clear of the fire.
 		var landing := {}
-		for side in ["left", "right"]:
-			for floor_id in ["third", "second", "first", "lobby"]:
+		for side: String in ["left", "right"]:
+			for floor_id: String in ["third", "second", "first", "lobby"]:
 				landing["%s:%s" % [side, floor_id]] = f.door("stairwell_%s:landing_%s" % [side, floor_id]).tile
 		t.check(_walks_between(f, shut, landing["left:third"], landing["left:second"]),
 				"seed %d: left, from the third floor to the second, is open" % run_seed)
@@ -1159,13 +1158,13 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: TestRunne
 
 	var man: EventInstance = null
 	for instance in events.instances():
-		if instance.def.id == "masked_pursuer":
+		if instance.row_id() == "masked_pursuer":
 			man = instance
 	t.check(man != null, "a masked man is on the stairs")
 	if man:
 		var side := "right" if BuildingPlan.BURNING_SIDE == "left" else "left"
 		var part := "stairwell_%s" % side
-		var steps := man.path
+		var steps := man.walks()
 		t.check(steps.size() > 8,
 				"his line is the whole shaft rather than two points (%d)" % steps.size())
 		t.check(scene.map.world_to_tile(steps[0]) == f.waypoint("%s:landing_lobby" % part)
@@ -1205,11 +1204,11 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: TestRunne
 			for point in steps:
 				nearest_door = minf(nearest_door, at.distance_to(point))
 		t.check(doors == 4, "the shaft has its four doors to ask about (%d)" % doors)
-		t.check(nearest_door > man.def.inner_radius,
+		t.check(nearest_door > man.row().core_within(),
 				"and the nearest is %.0fpx off his line, clear of the %.0fpx that takes the baby"
-				% [nearest_door, man.def.inner_radius])
+				% [nearest_door, man.row().core_within()])
 		print("The masked man's line: %d cells, nearest door %.0fpx off it against a %.0fpx reach"
-				% [steps.size(), nearest_door, man.def.inner_radius])
+				% [steps.size(), nearest_door, man.row().core_within()])
 	events.free()
 	scene.free()
 
@@ -1238,7 +1237,7 @@ func _test_his_catch_ends_the_section_with_what_struck_her(t: TestRunner) -> voi
 	player.add_to_group("player")
 	events.use_player(player)
 	t.add_child(player)
-	player.global_position = man.path[4]
+	player.global_position = man.walks()[4]
 	var fired: Array[String] = []
 	var heard := func(reason: String) -> void:
 		fired.append(reason)
@@ -1278,10 +1277,10 @@ func _test_his_run_stops_at_the_building_walls(t: TestRunner) -> void:
 	var off_the_ground := 0
 	var leaving_frames := 0
 	var at := 0.0
-	while at < 15.0 and not man.is_finished:
+	while at < 15.0 and not man.is_gone():
 		events.world.where_she_is().tell(man.global_position + Vector2(40.0, -40.0))
 		man.step(STEP)
-		if man.is_leaving:
+		if man.is_on_its_way_out():
 			leaving_frames += 1
 		if not scene.map.is_walkable(scene.map.world_to_tile(man.global_position)):
 			off_the_ground += 1
@@ -1315,13 +1314,13 @@ func _test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t
 	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 	var fire: EventInstance = null
 	for instance in events.instances():
-		if instance.def.id == "burning_building":
+		if instance.row_id() == "burning_building":
 			fire = instance
 	t.check(fire != null, "the fire is in the building")
 	var shut := {}
 	var reach := 0.0
 	if fire:
-		reach = fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
+		reach = fire.row().obstructs_within() + Tuning.PLAYER_BODY_RADIUS
 		for tile: Vector2i in f.floor_tiles():
 			if f.is_walkable(tile) and scene.map.tile_to_world(tile).distance_to(fire.global_position) < reach:
 				shut[tile] = true
@@ -1413,7 +1412,7 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: TestRunn
 	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
 	var mouse: EventInstance = null
 	for instance in events.instances():
-		if instance.def.id == "alley_mouse":
+		if instance.row_id() == "alley_mouse":
 			mouse = instance
 	t.check(mouse != null, "the mouse is in the building")
 	if mouse:
@@ -1421,7 +1420,7 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: TestRunn
 				"and stands on the basement's own corridor")
 		# Its dash crosses the passage it stands in, wall to wall, and never leaves the floor: the
 		# building's map stops it at the walls as an alley's stop the city's mouse.
-		var dash := mouse.path
+		var dash := mouse.walks()
 		var on_the_floor := dash.size() >= 2
 		for point in dash:
 			on_the_floor = on_the_floor and scene.map.is_walkable(scene.map.world_to_tile(point))
@@ -1432,18 +1431,18 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: TestRunn
 	var vents := BuildingEvents.vents(events)
 	t.check(vents.size() == BuildingPlan.FINALE_STEAM_PERIODS.size(),
 			"the corridor has one vent per period in `Tuning` (%d)" % vents.size())
-	t.check(steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS > InteriorScene.TILE * 0.5,
+	t.check(steam.obstructs_within() + Tuning.PLAYER_BODY_RADIUS > InteriorScene.TILE * 0.5,
 			"a blowing vent holds her centre %.0fpx out against the %.0fpx half-width of a one-tile "
-			% [steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS, InteriorScene.TILE * 0.5]
+			% [steam.obstructs_within() + Tuning.PLAYER_BODY_RADIUS, InteriorScene.TILE * 0.5]
 			+ "passage, so there is no line past one")
 	var periods := {}
 	var spacing := INF
 	for i in vents.size():
 		var vent: EventScheduler.Planned = vents[i]
 		periods[vent.repeat_every] = true
-		var tile := scene.map.world_to_tile(vent.position)
+		var tile := scene.map.world_to_tile(vent.placed_at())
 		t.check(walk.has(tile), "vent %d stands on the walk she has to take (%s)" % [i, tile])
-		t.check(vent.position.is_equal_approx(scene.map.tile_to_world(tile)),
+		t.check(vent.placed_at().is_equal_approx(scene.map.tile_to_world(tile)),
 				"vent %d stands on its cell's own centre, where a one-tile passage is symmetric" % i)
 		var sideways := scene.map.is_walkable(tile + Vector2i.LEFT) \
 				or scene.map.is_walkable(tile + Vector2i.RIGHT)
@@ -1454,14 +1453,14 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: TestRunn
 		t.check(not _basement_reaches_the_exit_without(tile),
 				"vent %d stands on a cell the walk to the exit cannot go round" % i)
 		if i > 0:
-			spacing = minf(spacing, vent.position.distance_to((vents[i - 1] as EventScheduler.Planned).position))
+			spacing = minf(spacing, vent.placed_at().distance_to((vents[i - 1] as EventScheduler.Planned).placed_at()))
 	t.check(periods.size() == vents.size(),
 			"and no two vents share a period, so their gaps do not line up by themselves")
-	t.check(spacing > (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) * 2.0,
+	t.check(spacing > (steam.obstructs_within() + Tuning.PLAYER_BODY_RADIUS) * 2.0,
 			"consecutive vents leave a pocket she fits in (%.0fpx apart)" % spacing)
 	# The gap a vent leaves has to be long enough to cross its own reach with time over — the floor
 	# `BuildingPlan.FINALE_STEAM_PERIODS`' own doc derives, asked of the numbers rather than restated.
-	var crossing := (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) * 2.0 / Tuning.WALK_SPEED
+	var crossing := (steam.obstructs_within() + Tuning.PLAYER_BODY_RADIUS) * 2.0 / Tuning.WALK_SPEED
 	for period: float in BuildingPlan.FINALE_STEAM_PERIODS:
 		t.check(period - EventCatalogue.FINALE_STEAM_BLOWS_FOR >= crossing + 1.0,
 				("a %.1fs vent leaves %.2fs of open corridor against the %.2fs it takes to walk "
@@ -1518,11 +1517,11 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: TestRunne
 	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
 	var steam := EventCatalogue.by_id("basement_steam")
-	t.check(steam.telegraph_time
-			>= (steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) / Tuning.WALK_SPEED,
+	t.check(steam.telegraphs_for()
+			>= (steam.obstructs_within() + Tuning.PLAYER_BODY_RADIUS) / Tuning.WALK_SPEED,
 			"the notice (%.2fs) covers walking out from under the body (%.2fs)"
-			% [steam.telegraph_time,
-			(steam.obstructs_radius + Tuning.PLAYER_BODY_RADIUS) / Tuning.WALK_SPEED])
+			% [steam.telegraphs_for(),
+			(steam.obstructs_within() + Tuning.PLAYER_BODY_RADIUS) / Tuning.WALK_SPEED])
 
 	# Far enough away that nothing is ever withheld for her sake — that half is the next test.
 	var her := Node2D.new()
@@ -1535,7 +1534,7 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: TestRunne
 	var watch := func(tick: int) -> void:
 		var live := tick * tick_seconds
 		for instance in events.instances():
-			if instance.def.id != "basement_steam":
+			if instance.row_id() != "basement_steam":
 				continue
 			var id := instance.get_instance_id()
 			if not seen.has(id):
@@ -1545,7 +1544,7 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: TestRunne
 				(blows[instance.global_position] as Array[float]).append(live)
 				if instance.is_solid():
 					solid["before_the_notice"] += 1
-			if instance.is_solid() and instance.age < steam.telegraph_time:
+			if instance.is_solid() and instance.age < steam.telegraphs_for():
 				solid["before_the_notice"] += 1
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(WINDOW, SCALE), watch, SCALE)
 	t.check(solid["before_the_notice"] == 0,
@@ -1556,8 +1555,8 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: TestRunne
 	var off_period := 0
 	var beats := 0
 	for vent: EventScheduler.Planned in BuildingEvents.vents(events):
-		var times: Array = blows.get(vent.position, [])
-		t.check(times.size() >= 2, "vent at %s blew more than once (%d)" % [vent.position, times.size()])
+		var times: Array = blows.get(vent.placed_at(), [])
+		t.check(times.size() >= 2, "vent at %s blew more than once (%d)" % [vent.placed_at(), times.size()])
 		for i in range(1, times.size()):
 			beats += 1
 			# A blow is first seen on the tick it began in, so its time is off by less than one tick
@@ -1595,7 +1594,7 @@ func _test_a_vent_never_closes_around_her(t: TestRunner) -> void:
 		events.free()
 		scene.free()
 		return
-	var inside: Vector2 = (vents[0] as EventScheduler.Planned).position
+	var inside: Vector2 = (vents[0] as EventScheduler.Planned).placed_at()
 	# She stands where the first vent's footprint is; the manager tells every blow where she is.
 	var her := Node2D.new()
 	t.add_child(her)
@@ -1610,13 +1609,13 @@ func _test_a_vent_never_closes_around_her(t: TestRunner) -> void:
 		if watched["blowing"]:
 			return
 		for instance in events.instances():
-			if instance.def.id != "basement_steam" or instance.global_position != inside:
+			if instance.row_id() != "basement_steam" or instance.global_position != inside:
 				continue
 			watched["blow"] = instance
 			if instance.is_solid():
 				watched["solid"] += 1
-			watched["charged"] += instance.excitement.contribution_at(inside) * tick_seconds
-			watched["blowing"] = instance.age > steam.telegraph_time and not instance.is_finished
+			watched["charged"] += instance.source().contribution_at(inside) * tick_seconds
+			watched["blowing"] = instance.age > steam.telegraphs_for() and not instance.is_gone()
 		if watched["blowing"]:
 			# Stopped at the frame the contract is about.
 			events.set_physics_process(false)
@@ -1664,9 +1663,9 @@ func _test_no_pocket_between_two_vents_outlasts_the_noise(t: TestRunner) -> void
 		var b: EventScheduler.Planned = vents[i]
 		pairs += 1
 		var shut := _longest_both_shut(a, b, steam)
-		var half := a.position.distance_to(b.position) * 0.5
-		var rate := 2.0 * Field.falloff(half, steam.intensity, steam.inner_radius,
-				steam.outer_radius, steam.falloff_power)
+		var half := a.placed_at().distance_to(b.placed_at()) * 0.5
+		var rate := 2.0 * Field.falloff(half, steam.peak(), steam.core_within(),
+				steam.heard_within(), steam.falloff_power)
 		t.check(shut * rate < Tuning.METER_MAX,
 				("a pocket %.0fpx wide is shut at both ends for at most %.2fs at %.1f/s, "
 				% [half * 2.0, shut, rate])
@@ -1696,10 +1695,10 @@ func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: TestRunner) -> void:
 	t.add_child(blow)
 	var cost := 0.0
 	var elapsed := 0.0
-	while not blow.is_finished and elapsed < 20.0:
+	while not blow.is_gone() and elapsed < 20.0:
 		blow_where.tell(Vector2(STAND_AT, 0.0))
 		blow.step(STEP)
-		cost += blow.excitement.contribution_at(Vector2(STAND_AT, 0.0)) * STEP
+		cost += blow.source().contribution_at(Vector2(STAND_AT, 0.0)) * STEP
 		elapsed += STEP
 	print("One blow of steam, stood %.0fpx from the vent for %.2fs: %.1f points awake, %.1f asleep"
 			% [STAND_AT, elapsed, cost, cost * Baby.SLEEPING_SENSITIVITY])
@@ -1732,8 +1731,8 @@ func _is_shut(vent: EventScheduler.Planned, at: float, steam: EventDef) -> bool:
 	if since < 0.0:
 		return false
 	var phase := fmod(since, vent.repeat_every)
-	return phase >= steam.telegraph_time \
-			and phase < steam.telegraph_time + EventCatalogue.FINALE_STEAM_BLOWS_FOR
+	return phase >= steam.telegraphs_for() \
+			and phase < steam.telegraphs_for() + EventCatalogue.FINALE_STEAM_BLOWS_FOR
 
 ## *"Let's not replenish the meter in the basement it's a tense situation."* (inbox #765 in minty-lemur) The
 ## scene answers the baby's `decay_multiplier()` with `InteriorScene.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`
@@ -1797,13 +1796,13 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: TestRunner) -> void:
 	t.check(BuildingEvents.vents(events).size() == BuildingPlan.FINALE_STEAM_PERIODS.size(),
 			"the basement has its vents (%d)" % BuildingEvents.vents(events).size())
 	for vent: EventScheduler.Planned in BuildingEvents.vents(events):
-		var grate := _grate_at(grates, vent.position)
+		var grate := _grate_at(grates, vent.placed_at())
 		t.check(is_instance_valid(grate) and grate.is_inside_tree(),
-				"the vent at %s has a grate lying in the building" % vent.position)
+				"the vent at %s has a grate lying in the building" % vent.placed_at())
 		if not is_instance_valid(grate):
 			continue
-		t.check(grate.position == vent.position and grate.centered,
-				"the grate is centred on its vent's own point (%s, %s)" % [grate.position, vent.position])
+		t.check(grate.position == vent.placed_at() and grate.centered,
+				"the grate is centred on its vent's own point (%s, %s)" % [grate.position, vent.placed_at()])
 		t.check(grate.texture != null and Vector2i(grate.texture.get_size()) == grate_size,
 				"the grate is drawn with its own picture")
 		t.check(_drawn_z(grate) < _drawn_z(her),
@@ -1823,17 +1822,17 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: TestRunner) -> void:
 	var watch := func(_tick: int) -> void:
 		var blowing := {}
 		for instance in events.instances():
-			if instance.def.id != "basement_steam":
+			if instance.row_id() != "basement_steam":
 				continue
 			blowing[instance.global_position] = instance
 		for vent: EventScheduler.Planned in BuildingEvents.vents(events):
-			var grate := _grate_at(grates, vent.position)
+			var grate := _grate_at(grates, vent.placed_at())
 			if not is_instance_valid(grate) or not grate.is_inside_tree():
 				drawn["grates_missing"] += 1
 				continue
-			var blow: EventInstance = blowing.get(vent.position)
+			var blow: EventInstance = blowing.get(vent.placed_at())
 			var tally: Dictionary = blowing_frames if blow else quiet_frames
-			tally[vent.position] = int(tally.get(vent.position, 0)) + 1
+			tally[vent.placed_at()] = int(tally.get(vent.placed_at(), 0)) + 1
 			if not blow or seen.has(blow.get_instance_id()):
 				continue
 			seen[blow.get_instance_id()] = true
@@ -1843,9 +1842,9 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: TestRunner) -> void:
 	t.check(seen.size() > BuildingEvents.vents(events).size(),
 			"the vents blew over %.0fs (%d blows)" % [WINDOW, seen.size()])
 	for vent: EventScheduler.Planned in BuildingEvents.vents(events):
-		t.check(int(blowing_frames.get(vent.position, 0)) > 0 and int(quiet_frames.get(vent.position, 0)) > 0,
+		t.check(int(blowing_frames.get(vent.placed_at(), 0)) > 0 and int(quiet_frames.get(vent.placed_at(), 0)) > 0,
 				"the vent at %s was seen both blowing (%d frames) and between blows (%d)"
-				% [vent.position, int(blowing_frames.get(vent.position, 0)), int(quiet_frames.get(vent.position, 0))])
+				% [vent.placed_at(), int(blowing_frames.get(vent.placed_at(), 0)), int(quiet_frames.get(vent.placed_at(), 0))])
 	t.check(drawn["grates_missing"] == 0,
 			"no vent was ever without its grate (%d ticks were)" % drawn["grates_missing"])
 	t.check(drawn["under_its_grate"] == 0,
@@ -1965,13 +1964,13 @@ func _test_an_explosion_flashes_every_hallway_window(t: TestRunner) -> void:
 	# Every coming of a row from outside lights them, not only a repeat: a plan that comes once, in
 	# the world from its first frame, lights them as it is put there.
 	var once := EventScheduler.Planned.new(EventCatalogue.explosion_outside(),
-			scene.map.start_world_position())
-	once.repeat_every = 0.0
+			scene.start_world_position())
+	once.come_again_every(0.0)
 	GivenPlanner.hand_in(events, [once] as Array[EventScheduler.Planned])
 	var none: Array[String] = []
 	events.start_day(BuildingEvents.spec(), RandomNumberGenerator.new(), none,
-			scene.map.start_world_position())
-	t.check(once.live != null and _lit(scene, windows) == windows.size(),
+			scene.start_world_position())
+	t.check(once.is_in_the_world() and _lit(scene, windows) == windows.size(),
 			"a bang from outside that comes once lights every window as it comes")
 	events.free()
 	scene.free()
@@ -2153,9 +2152,9 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	var fire: EventInstance = null
 	var man: EventInstance = null
 	for instance in events.instances():
-		if instance.def.id == "burning_building":
+		if instance.row_id() == "burning_building":
 			fire = instance
-		elif instance.def.id == "masked_pursuer":
+		elif instance.row_id() == "masked_pursuer":
 			man = instance
 	t.check(fire != null and man != null, "the building has its fire and its masked man")
 	if not fire or not man:
@@ -2171,18 +2170,18 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	t.add_child(halo)
 	var sets: Array[ExcitementSources] = [events.sources]
 	halo.setup(sets, player, baby)
-	player.global_position = fire.global_position + Vector2(fire.def.inner_radius * 0.5, 0.0)
+	player.global_position = fire.global_position + Vector2(fire.row().core_within() * 0.5, 0.0)
 	# Past its notice, the way the explosion outside comes: a fire still telegraphing
 	# emits nothing, and a rim on it would be the cue marking a thing that costs her nothing.
-	fire.resume(fire.def.telegraph_time, 0.0, INF)
-	t.check(fire.excitement.contribution_at(player.global_position) > ExcitementHalo.CONTRIBUTION_FLOOR,
+	fire.resume(fire.telegraphs_for(), 0.0, INF)
+	t.check(fire.source().contribution_at(player.global_position) > ExcitementHalo.CONTRIBUTION_FLOOR,
 			"standing beside the fire, it reaches her")
-	fire.excitement.accumulate_landed(20.0)
+	fire.source().accumulate_landed(20.0)
 	# A drawn frame of the halo, as the game runs it.
 	await _frames(t, 3)
-	t.check(fire.excitement.rim.is_held() and not fire.rim().is_faded_out(),
+	t.check(fire.source().rim.is_held() and not fire.rim().is_faded_out(),
 			"the fire she is standing beside wears a rim, read from the building's events, no crowd")
-	t.check(not man.excitement.rim.is_held(),
+	t.check(not man.source().rim.is_held(),
 			"and the masked man on the other shaft, charging her nothing, holds no rim at all")
 
 	# **The badge.** Placed far off any screen and walked in towards her, so the only thing that
@@ -2195,7 +2194,7 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	edge.setup(events, player)
 	var far := Vector2(-40000.0, -40000.0)
 	player.global_position = far
-	man.global_position = far + Vector2(man.def.outer_radius + 400.0, 0.0)
+	man.global_position = far + Vector2(man.row().heard_within() + 400.0, 0.0)
 	await _frames(t, 3)
 	man.global_position -= Vector2(30.0, 0.0)
 	await _frames(t, 3)
@@ -2217,7 +2216,7 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	# finished is outlined at its inner and its outer radius (a flock at each bird's).
 	var unfinished := 0
 	for instance in events.instances():
-		if not instance.is_finished:
+		if not instance.is_gone():
 			var birds := instance.flock_offsets().size()
 			unfinished += 2 * maxi(birds, 1)
 	var outlined := layers.field_runs(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6)).size()
