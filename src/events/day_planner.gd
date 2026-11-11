@@ -89,12 +89,9 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# for the same reason — `SealPlanner` needs the same tree the catalogue's own placements were
 	# just stated against. A rig that starts the day with no dawn before it hands streets whose day
 	# it began itself.
-	var streets := world.streets()
-	var tree := streets.route_tree()
-	var region_plan := streets.region_plan()
-	if tree == null or region_plan == null:
-		push_error("PROBE-NULL-TREE day %d tree %s plan %s" % [day, tree, region_plan])
-		print_stack()
+	var streets: DayStreets = world.streets()
+	var tree: RouteTree = streets.route_tree()
+	var region_plan: RegionPlanner.RegionPlan = streets.region_plan()
 
 	# Held ground, before `EventScheduler.build_day` rolls a single candidate — see
 	# `CityMap.held`. Closures, the region's own wall and door segments, and the
