@@ -2914,8 +2914,8 @@ static func _checkpoint_post() -> EventDef:
 ##
 ## **He charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): his warning came before he was set
 ## on her. From the frame she crosses the door's line, the guard at the hut across the road from her
-## raises his hand (`EventInstance.is_its_guard_warning()` is then true), or an alley post's guard; back across before
-## `CheckpointController.CROSSING_WARNING` has run, nobody comes, and still across once it has, this
+## raises his hand (`EventInstance.is_its_guard_warning()` is then true), or an alley post's
+## guard; back across before `CheckpointController.CROSSING_WARNING` has run, nobody comes, and still across once it has, this
 ## man steps out of that hut or post and charges from his first frame (inbox #788 in minty-lemur).
 ## The answer is the warning, go back or go on running, which `tests/test_checkpoints.gd` walks.
 static func _door_guard() -> EventDef:

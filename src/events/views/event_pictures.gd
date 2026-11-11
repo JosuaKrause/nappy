@@ -783,8 +783,8 @@ const GUARD_LUNGING_BY_VIEW := {
 ## woolly-penguin), held still for his notice: the hunting roadblock's guard at his post, the
 ## guardsman a vehicle lets out beside its door, the masked man at the foot of the shaft
 ## (`PursuerLook._masked_pursuer_pictures()`), and — the front view — a checkpoint hut's or post's
-## guard while her crossing of its door's line warns her (`EventInstance.is_its_guard_warning()`). Never the van's
-## guard a task sends or the guardsman a torn poster sends: both arrive already charging. 22×44
+## guard while her crossing of its door's line warns her (`EventInstance.is_its_guard_warning()`).
+## Never the van's guard a task sends or the guardsman a torn poster sends: both arrive already charging. 22×44
 ## front and back, 26×44 side and diagonals, bottom-centre anchored like the standing family.
 const GUARD_ALERT_BY_VIEW := {
 	"front": "checkpoints/guard_alert_front",

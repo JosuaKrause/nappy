@@ -649,6 +649,16 @@ func _stood_pictures(t, instance: EventInstance) -> Array[String]:
 			found.append(entry.picture)
 	return found
 
+## The pictures `instance` is drawn with on its own canvas once drawn frames have passed, for a
+## look that paints them at an anchor (the checkpoint hut and its guard).
+func _painted_pictures(t: TestRunner, instance: EventInstance) -> Array[String]:
+	await DrawnEvent.frames(t)
+	var found: Array[String] = []
+	for entry in DrawnEvent.shown(instance):
+		if entry.canvas == instance and entry.kind == &"paint":
+			found.append(entry.picture)
+	return found
+
 ## Whether `pictures` are some, and only, of the views in `by_view` and `also_by_view` (a picture
 ## table's own frames, such as the stride frame beside the standing one).
 func _is_drawn_from(pictures: Array[String], by_view: Dictionary, also_by_view := {}) -> bool:
@@ -826,8 +836,8 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 
 func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t) -> void:
 	# The warning is the hut's guard's, drawn from her crossing of the door's line
-	# (`EventInstance.is_its_guard_warning()`, raised by `CheckpointController.warn_at_the_doors()`); the
-	# man set on her once it has run with her still across charges from his first frame
+	# (`EventInstance.is_its_guard_warning()`, raised by
+	# `CheckpointController.warn_at_the_doors()`); the man set on her once it has run with her still across charges from his first frame
 	# (`PursuitSpec.Start.CHARGES_AT_ONCE`).
 	var def := EventCatalogue.by_id("door_guard")
 	t.check(def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE) and is_zero_approx(def.telegraph_time),
@@ -842,12 +852,16 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t) -> v
 			and await _drawn_from(t, guard, [EventPictures.GUARD_LUNGING_BY_VIEW]),
 			"set on her, he lunges from his first frame")
 	guard.free()
-	var hut := EventInstance.new()
-	hut.setup(EventCatalogue.by_id("checkpoint_hut"), Vector2.ZERO)
+	var hut := _drawn_at_the_origin(t, EventCatalogue.by_id("checkpoint_hut"),
+			WhereSheIs.nowhere())
+	var alert: String = EventPictures.GUARD_ALERT_BY_VIEW["front"]
+	var resting := await _painted_pictures(t, hut)
+	t.check(resting.has(EventPictures.GUARD_STANDING) and not resting.has(alert),
+			"the hut's guard stands with his hands down until a crossing warns her")
 	hut.raise_its_guards_hand(true)
-	t.check(hut.is_its_guard_warning() and EventPictures.GUARD_ALERT_BY_VIEW["front"] \
-			in EventPictures.family_sources(EventDef.Look.CHECKPOINT_HUT),
-			"and the hut's guard has his raised hand to warn her with")
+	var warning := await _painted_pictures(t, hut)
+	t.check(warning.has(alert) and not warning.has(EventPictures.GUARD_STANDING),
+			"and draws his raised hand to warn her once it does")
 	hut.free()
 
 ## **The man a vehicle lets out raises his hand and stands still, then charges.** *(Inbox #764 in minty-lemur, the

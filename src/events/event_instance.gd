@@ -1096,9 +1096,11 @@ func is_taking_a_victim() -> bool:
 	return abduction != null and abduction.is_taking()
 
 ## How long the victim of the van's take has been walking to it, in seconds, while the take runs
-## (`EventAbduction.walked_for()`): what the van's look places and strides the victim by.
+## (`EventAbduction.walked_for()`): what the van's look places and strides the victim by. Nothing,
+## 0, for a row with no take and between takes, as an event without a part answers that part's
+## questions.
 func how_long_its_victim_has_walked() -> float:
-	return abduction.walked_for()
+	return abduction.walked_for() if is_taking_a_victim() else 0.0
 
 # ------------------------------------------------------------------ the flock ---
 
