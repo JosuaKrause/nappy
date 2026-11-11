@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The trailer's own logic (M204): the `--parent` flag, `ZoomOutCamera`'s move and `TrailerText`'s
 ## fade and tree shape, each driven the way the game drives it: a `RunConfig` parsed from the words
@@ -49,12 +48,21 @@ class Clock:
 	func read() -> float:
 		return now
 
+## A camera's pose: where its centre is and how far it is zoomed.
+class Pose:
+	var centre: Vector2
+	var zoom: float
+
+	func _init(at: Vector2, factor: float) -> void:
+		centre = at
+		zoom = factor
+
 const _VIEWPORT := Vector2(1280.0, 720.0)
 
 ## The camera a zoom-out over `bounds` has made current `at` seconds into a one-second move with no
 ## delay, started from her camera at `start` zoomed `start_zoom`; the nodes are freed before it
-## returns, so it answers the pose as `[position, zoom]`.
-func _pulled_back(t: TestRunner, start: Vector2, start_zoom: float, bounds: Rect2, at: float) -> Array:
+## returns, so it answers the pose.
+func _pulled_back(t: TestRunner, start: Vector2, start_zoom: float, bounds: Rect2, at: float) -> Pose:
 	var hers := Camera2D.new()
 	hers.position = start
 	hers.zoom = Vector2.ONE * start_zoom
@@ -70,7 +78,7 @@ func _pulled_back(t: TestRunner, start: Vector2, start_zoom: float, bounds: Rect
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
 	var camera := move.get_node("ZoomOutCamera") as Camera2D
-	var pose := [camera.position, camera.zoom.x]
+	var pose := Pose.new(camera.position, camera.zoom.x)
 	move.free()
 	hers.free()
 	return pose
@@ -79,11 +87,11 @@ func _pulled_back(t: TestRunner, start: Vector2, start_zoom: float, bounds: Rect
 ## since the other axis then shows more than `bounds` rather than cropping it.
 func _test_the_pull_back_fits_the_narrower_axis(t: TestRunner) -> void:
 	var wide := await _pulled_back(t, Vector2.ZERO, 2.0, Rect2(Vector2.ZERO, Vector2(2000.0, 1000.0)), 1.0)
-	t.check(is_equal_approx(wide[1], 1280.0 / 2000.0),
-			"the wider axis (2000 vs 1280) is the tighter fit (got %.6f)" % wide[1])
+	t.check(is_equal_approx(wide.zoom, 1280.0 / 2000.0),
+			"the wider axis (2000 vs 1280) is the tighter fit (got %.6f)" % wide.zoom)
 	var tall := await _pulled_back(t, Vector2.ZERO, 2.0, Rect2(Vector2.ZERO, Vector2(1000.0, 2000.0)), 1.0)
-	t.check(is_equal_approx(tall[1], 720.0 / 2000.0),
-			"and the taller axis wins when the bounds are tall instead (got %.6f)" % tall[1])
+	t.check(is_equal_approx(tall.zoom, 720.0 / 2000.0),
+			"and the taller axis wins when the bounds are tall instead (got %.6f)" % tall.zoom)
 
 ## "Equal steps of log(zoom) read as a constant pull back" — asserted directly: halfway through
 ## the move the zoom is the geometric mean of the start and end, not their arithmetic average.
@@ -92,19 +100,19 @@ func _test_the_zoom_is_interpolated_on_a_log_scale(t: TestRunner) -> void:
 	var bounds := Rect2(Vector2(100.0 - 1280.0, -720.0), Vector2(2560.0, 1440.0))
 	var pose := await _pulled_back(t, Vector2.ZERO, 2.0, bounds, 0.5)
 	var geometric_mean := sqrt(2.0 * 0.5)
-	t.check(is_equal_approx(pose[1], geometric_mean),
+	t.check(is_equal_approx(pose.zoom, geometric_mean),
 			"halfway is the geometric mean of 2.0 and 0.5 (got %.6f, want %.6f)"
-			% [pose[1], geometric_mean])
-	t.check(pose[1] != (2.0 + 0.5) / 2.0, "and not the arithmetic mean, which a linear lerp would give")
+			% [pose.zoom, geometric_mean])
+	t.check(pose.zoom != (2.0 + 0.5) / 2.0, "and not the arithmetic mean, which a linear lerp would give")
 
 ## "The centre then moves in step with how much wider the view has become" — with no zoom change
 ## the centre falls back to a plain lerp on the move's own weight.
 func _test_the_centre_is_a_plain_lerp_when_the_zoom_does_not_change(t: TestRunner) -> void:
 	var bounds := Rect2(Vector2(100.0, 200.0) - _VIEWPORT * 0.5, _VIEWPORT)
 	var pose := await _pulled_back(t, Vector2.ZERO, 1.0, bounds, 0.5)
-	t.check(pose[0].is_equal_approx(Vector2(50.0, 100.0)),
-			"with no zoom change the centre is a plain lerp on the move's weight (got %s)" % pose[0])
-	t.check(is_equal_approx(pose[1], 1.0), "and the zoom itself never moves")
+	t.check(pose.centre.is_equal_approx(Vector2(50.0, 100.0)),
+			"with no zoom change the centre is a plain lerp on the move's weight (got %s)" % pose.centre)
+	t.check(is_equal_approx(pose.zoom, 1.0), "and the zoom itself never moves")
 
 func _test_the_ends_are_exactly_the_start_and_end(t: TestRunner) -> void:
 	var start := Vector2(10.0, 20.0)
@@ -112,11 +120,11 @@ func _test_the_ends_are_exactly_the_start_and_end(t: TestRunner) -> void:
 	# Bounds that fit at 0.2, centred on `end`.
 	var bounds := Rect2(end - Vector2(6400.0, 3600.0) * 0.5, Vector2(6400.0, 3600.0))
 	var at_start := await _pulled_back(t, start, 2.0, bounds, 0.0)
-	t.check(at_start[0].is_equal_approx(start) and is_equal_approx(at_start[1], 2.0),
-			"the move's start is exactly her camera's pose (got %s)" % [at_start])
+	t.check(at_start.centre.is_equal_approx(start) and is_equal_approx(at_start.zoom, 2.0),
+			"the move's start is exactly her camera's pose (got %s)" % at_start.centre)
 	var at_end := await _pulled_back(t, start, 2.0, bounds, 1.0)
-	t.check(at_end[0].is_equal_approx(end) and is_equal_approx(at_end[1], 0.2),
-			"and its end is exactly the pose that frames the bounds (got %s)" % [at_end])
+	t.check(at_end.centre.is_equal_approx(end) and is_equal_approx(at_end.zoom, 0.2),
+			"and its end is exactly the pose that frames the bounds (got %s)" % at_end.centre)
 
 # --------------------------------------------------------------------- TrailerText ---
 

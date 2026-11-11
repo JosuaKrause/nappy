@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access")
 extends RefCounted
 ## M202, a rig's own presses reach the game: a rig's lock-out (`RigLock._input()`) marks every
 ## event handled while `locked_out`, which is exactly the state every `--press` run is in —
@@ -82,7 +81,8 @@ func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out
 			"the action form presses and releases, both reaching the unhandled phase (got %d)"
 			% catcher.seen.size())
 	for event in catcher.seen:
-		t.check(event is InputEventAction and event.action == &"pause",
+		var action := event as InputEventAction
+		t.check(action != null and action.action == &"pause",
 				"and each one is the pause action the rig actually pressed (got %s)" % event)
 	catcher.seen.clear()
 
@@ -93,7 +93,8 @@ func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out
 			"the key: form presses and releases too, both reaching the unhandled phase (got %d)"
 			% catcher.seen.size())
 	for event in catcher.seen:
-		t.check(event is InputEventKey and event.keycode == KEY_R,
+		var key := event as InputEventKey
+		t.check(key != null and key.keycode == KEY_R,
 				"and each one is the R key the rig actually tapped (got %s)" % event)
 
 	rig.free()
