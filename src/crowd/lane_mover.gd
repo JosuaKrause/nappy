@@ -260,7 +260,10 @@ class Lane:
 	## points, from where it stands or, when `from` is not `Vector2.INF`, from `from`.
 	func tile_ahead(vertical: bool, direction_along: float, distance: float,
 			from: Vector2) -> Vector2i:
-		return _of._tile_ahead(vertical, direction_along, distance, from)
+		var origin := _of.position if from == Vector2.INF else from
+		var offset := Vector2(0.0, direction_along * distance) if vertical \
+				else Vector2(direction_along * distance, 0.0)
+		return _of._map.world_to_tile(origin + offset)
 
 	## Whether the street segment `tile` is on is shut to it today, the way a hard blocker is.
 	func street_is_shut_at(tile: Vector2i) -> bool:
@@ -332,11 +335,15 @@ class Lane:
 	func limit_speed_to(limit: float) -> void:
 		_of._speed = minf(_of._speed, limit)
 
+	## It drives `distance` straight on down its lane, the way it points.
+	func drive_on(distance: float) -> void:
+		_of._set_along(_of._along() + distance * _of._direction)
+
 	## It drives `travel` of its straight run-up before a turn's arc begins and answers how much of
 	## `travel` is left: along its lane, steering across toward the lane's centre line.
 	func drive_the_run_up(travel: float, delta: float) -> float:
 		var straight := minf(travel, _of._turn_run_up)
-		_of._set_along(_of._along() + straight * _of._direction)
+		drive_on(straight)
 		_of._set_cross(move_toward(_of._cross(), _of._lane_centre, STEER_SPEED * delta))
 		_of._turn_run_up -= straight
 		return travel - straight
@@ -766,7 +773,8 @@ func step(delta: float) -> void:
 var _move := MoveProposal.new(true)
 
 ## **Puts its move where it stands, after something outside its step has moved it**: a car carried
-## along a turn (`CarStrategy._follow_the_turn()`), a walker pushed by her bump (`Crowd._bump()`).
+## along a turn (`CarStrategy._follow_the_turn()`), a walker pushed by her bump (`Crowd._bump()`), a
+## walker put into a checkpoint hut (`Lane.be_placed_at()`).
 ## Its own setters (`_set_along()`, `_set_cross()`) and a placement taken back already do, so outside
 ## a step its move is always where it stands.
 func place_its_move() -> void:
@@ -1055,13 +1063,6 @@ func _choose_lane(roll: float) -> void:
 ## pavement worth aiming at. See `CrowdLanes.SIDEWALK_LANE_SPREAD`.
 func _lane_centre_here() -> float:
 	return strategy.lane_centre_here()
-
-## The tile `distance` away along an axis, from this agent or from `from`.
-func _tile_ahead(vertical: bool, direction: float, distance: float, from: Vector2) -> Vector2i:
-	var origin := position if from == Vector2.INF else from
-	var offset := Vector2(0.0, direction * distance) if vertical \
-			else Vector2(direction * distance, 0.0)
-	return _map.world_to_tile(origin + offset)
 
 ## How far the way ahead is clear, in tiles, worked out **once per tile** rather than once per
 ## frame. `LOOKAHEAD_TILES + 1` means nothing within reach.

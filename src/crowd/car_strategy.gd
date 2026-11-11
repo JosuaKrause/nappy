@@ -810,7 +810,7 @@ func _follow_the_turn(delta: float) -> void:
 		return
 	var overshoot := turn.distance_travelled() - turn.length()
 	_land_the_turn()
-	_lane.be_placed_along(_lane.position_along() + overshoot * _lane.direction())
+	_lane.drive_on(overshoot)
 
 ## The end of a turn: the car takes up the axis, corridor, lane and direction it turned into.
 ##
