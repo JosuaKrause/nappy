@@ -47,8 +47,8 @@ func _init(map: CityMap, corridor: Corridor, ground: Dictionary, leave_alone: Ar
 ## cannot be left once she is on his sidewalk, so he is a wall and takes a wall's one rule with him,
 ## never on ground a route runs along (`_a_pacing_beat_walls_a_sidewalk()`). `placed`
 ## is what the walk has placed, `around` that with what stands for the day besides.
-func room(candidate: EventScheduler.Planned, role: GameEnums.BlockerRole, tile: Vector2i,
-		placed: Array[EventScheduler.Planned], around: Array[EventScheduler.Planned]) -> float:
+func room(candidate: EventPlan, role: GameEnums.BlockerRole, tile: Vector2i,
+		placed: Array[EventPlan], around: Array[EventPlan]) -> float:
 	candidate.give_role(role)
 	if _a_pacing_beat_walls_a_sidewalk(candidate, _map):
 		candidate.give_role(GameEnums.BlockerRole.WALL)
@@ -82,7 +82,7 @@ func room(candidate: EventScheduler.Planned, role: GameEnums.BlockerRole, tile: 
 ##
 ## A beat with neither leaves her the choice of walking through him or turning round, and that
 ## placement is the wall.
-static func _a_pacing_beat_walls_a_sidewalk(plan: EventScheduler.Planned, map: CityMap) -> bool:
+static func _a_pacing_beat_walls_a_sidewalk(plan: EventPlan, map: CityMap) -> bool:
 	if not plan.row().paces or not EventScheduler.leaves_no_line_along_a_sidewalk(plan.row()):
 		return false
 	return not _a_beat_reaches_a_way_out(plan, map)
@@ -90,7 +90,7 @@ static func _a_pacing_beat_walls_a_sidewalk(plan: EventScheduler.Planned, map: C
 ## Whether a beat's own run passes a junction box or a side route. Two waypoints and a straight run
 ## between them (`EventScheduler._along_street_path`), so the tiles are a step along one axis; a row with no beat
 ## laid at all answers no, which is the conservative side of a rule that only ever refuses ground.
-static func _a_beat_reaches_a_way_out(plan: EventScheduler.Planned, map: CityMap) -> bool:
+static func _a_beat_reaches_a_way_out(plan: EventPlan, map: CityMap) -> bool:
 	if plan.walks().size() < 2:
 		return false
 	var from := map.world_to_tile(plan.walks()[0])
@@ -155,7 +155,7 @@ static func _is_ground_off_the_street(map: CityMap, tile: Vector2i) -> bool:
 ## - `EventScheduler.EVENT_SPACING_SAME` — a second dog walker a few pixels from the first reads as a
 ##   duplicated sprite rather than a second incident. This one bends, because on a full map the
 ##   honest answer is the roomiest spot left rather than no event.
-static func room_around(candidate: EventScheduler.Planned, already: Array[EventScheduler.Planned]) -> float:
+static func room_around(candidate: EventPlan, already: Array[EventPlan]) -> float:
 	var room_same := INF
 	for plan in already:
 		if not plan.is_placed():

@@ -523,7 +523,7 @@ func _test_the_route_bag(t: TestRunner, map: CityMap, data: Dictionary) -> void:
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
-	var none: Array[EventScheduler.Planned] = []
+	var none: Array[EventPlan] = []
 	director.start_day(7, none, rng)
 	director.start_recipe_route(["cyclist", "cyclist"], ["cat_dash"], 3, 2.0, 0)
 	t.check(director.owed() == 3, "the route is owed what the recipe says")

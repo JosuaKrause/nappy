@@ -21,7 +21,7 @@ extends RefCounted
 const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
 const DAY := 5
-const NONE: Array[EventScheduler.Planned] = []
+const NONE: Array[EventPlan] = []
 
 var _map: CityMap
 var _tree: RouteTree
@@ -40,7 +40,7 @@ func run(t: TestRunner) -> void:
 	_test_a_ring_of_bodies_never_seals_home_off(t)
 
 ## `def` built at `tile`, given a counted role so it is asked about.
-func _at(id: String, tile: Vector2i) -> EventScheduler.Planned:
+func _at(id: String, tile: Vector2i) -> EventPlan:
 	var plan := EventScheduler.build_placement(EventCatalogue.by_id(id), _map, tile,
 			RandomNumberGenerator.new())
 	if plan:
@@ -98,7 +98,7 @@ func _test_a_body_closing_a_beats_opening_is_refused(t: TestRunner) -> void:
 		if man == null or man.path.size() < 2:
 			continue
 		man.role = GameEnums.BlockerRole.FRICTION
-		var around: Array[EventScheduler.Planned] = [man]
+		var around: Array[EventPlan] = [man]
 		var segment: StreetNetwork.Segment = entry[0]
 		var street := segment.tile_rect()
 		for y in range(street.position.y, street.end.y):
@@ -128,12 +128,12 @@ func _test_a_ring_of_bodies_never_seals_home_off(t: TestRunner) -> void:
 			if _corridor.carries_a_route(Vector2i(x, y)):
 				routes.append(Vector2i(x, y))
 	var reached_bare := grid.flood([home], _map.closed_tiles)
-	var kept: Array[EventScheduler.Planned] = []
-	var refused: Array[EventScheduler.Planned] = []
+	var kept: Array[EventPlan] = []
+	var refused: Array[EventPlan] = []
 	for radius: int in [3, 5, 7]:
 		for step: Vector2i in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
 				Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
-			var barricade := EventScheduler.Planned.new(EventCatalogue.by_id("barricade"),
+			var barricade := EventPlan.new(EventCatalogue.by_id("barricade"),
 					_map.tile_to_world(home + step * radius))
 			if rule.allows(barricade, home + step * radius, NONE, kept):
 				kept.append(barricade)

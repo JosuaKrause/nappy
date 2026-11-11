@@ -32,8 +32,8 @@ Three objects are meant by "an event" below, and each is named this way througho
 
 - **the row**: one kind of event as the catalogue declares it (`EventDef`, built by
   `EventCatalogue`): cafe tables, the alley robber, the patrol car;
-- **the plan**: one row placed for a day, with its position, path and facing (today the inner
-  class `EventScheduler.Planned`, about to be `EventPlan` in a file of its own);
+- **the plan**: one row placed for a day, with its position, path and facing (`EventPlan`, in a
+  file of its own);
 - **the live event**: the thing standing or moving in the world while she is near it
   (`EventInstance`, a `Node2D`).
 
@@ -687,9 +687,10 @@ counted where it only writes.
 | `came_under_a_warning` | the live event itself | `was_warned_of()` ok |
 | `look` | 2 in (two looks reading another's) | private; a slice, the roadblock's band and its far guard are each handed their look ok, so no game file outside `event_instance.gd` reads the field; it goes private when row 5's drawing suites are handed a look another way (about 114 test lines ask a live event's look what it shows; the reason it is public is a comment on the member) |
 
-### 4.3 The plan (`EventScheduler.Planned`, to be `EventPlan`)
+### 4.3 The plan (`EventPlan`)
 
-Reads by `rg`, since the check does not list it.
+The counts are uses found by `rg`; `tools/field_reads.txt` lists one line per reader file and
+field under `[EventPlan]`.
 
 | Field | Reads | Replaced by |
 |---|---|---|
@@ -705,7 +706,7 @@ Reads by `rg`, since the check does not list it.
 | `comes_in`, `wait_began`, `kept_live`, `was_live` | 6, 3, 3 and 5 (streaming) | streaming's own state per plan; `keep_in_the_world()` ok stays as the way to ask for it, and `come_first_in(seconds)` ok, by which the building's plan says when an event first comes, tells streaming rather than writing a field |
 | `repeat_every`, `repeat_after`, `at_her`, `arrives_aged` | 5 (streaming) | `repeats()` ok; `come_again_every(seconds)` ok, `come_where_she_stands()` ok, `arrive_aged(seconds)` ok as the building's plan is made; `comes_where_she_stands()`, `arrives_aged()` |
 | `gate_state` | 2 | `gate()`, set as the region's doors are made |
-| `permanent` | 1 (the plan's own `spoils()`) | `make_permanent()` for the writers; `is_permanent()`, which no game file asks, is deleted with the test's one clause when the plan becomes `EventPlan`, since `tools/check_test_only_members.py` sees it then |
+| `permanent` | 1 (the plan's own `spoils()`) | `make_permanent()` for the writers |
 | `_is_door`, `_in_the_wall`, `_is_a_seal` | private already | as they are |
 
 Other classes of the folder with listed lines, each converted in the pull request that owns its
@@ -724,10 +725,9 @@ last reader asks a method, and the row's parts, which make every field private a
 the readers. The interface is in use from the first pull request; the parts arrive behind it
 without a caller changing, which is the swap the player's rule is for.
 
-Two things come from other tracks and are not this design's: the Tools track's change that makes
+One thing comes from another track and is not this design's: the Tools track's change that makes
 the field-read check see every read (`field-reads.md`: untyped access as an error, a file-level
-ignore per file not yet converted), and the scheduler breakup's scripted rename of the plan record
-to `EventPlan`. Every pull request below types the receivers in the files it owns, deletes those
+ignore per file not yet converted). Every pull request below types the receivers in the files it owns, deletes those
 files' ignore lines and their lines in `tools/field_reads.txt`, answers the architecture
 questions, and is at test parity with the run log and GoatCounter's names unchanged.
 

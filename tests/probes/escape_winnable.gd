@@ -132,7 +132,7 @@ func _plan_seed(t: TestRunner, seed_value: int, mixes: Array[Dictionary]) -> Arr
 ## the same plan under a spec whose bag is that mix's, drawn on the stream the game's own
 ## bag is drawn on (`EventScheduler.street_bag_seed()`).
 func _plan(map: CityMap, own_run: RunState, walk: FinalePlanner.Plan, day: int,
-		mix: Dictionary) -> Array[EventScheduler.Planned]:
+		mix: Dictionary) -> Array[EventPlan]:
 	var rng := own_run.calendar.day_rng(day, "finale")
 	var spec := _city_spec()
 	if mix.has("counts"):
@@ -144,7 +144,7 @@ func _plan(map: CityMap, own_run: RunState, walk: FinalePlanner.Plan, day: int,
 ## `{streets, empty, dangers, rows}`: the open streets, those standing none of the four rows, how
 ## many of the four rows stand on them in all, and how many of each.
 func _street_counts(map: CityMap, plan: FinalePlanner.Plan,
-		placements: Array[EventScheduler.Planned]) -> Dictionary:
+		placements: Array[EventPlan]) -> Dictionary:
 	var empty := 0
 	var dangers := 0
 	var rows := {}

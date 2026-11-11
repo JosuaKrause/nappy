@@ -14,7 +14,7 @@ extends RefCounted
 ## - **the barricade** day 13's column leaves, at every third point mid-street down both lanes of
 ##   the main road, where the column stops;
 ## - **the roadblock**, at every seventh tile of its own ground;
-## - **every body the day's plan obstructs with** (`Planned.obstructs()`), by row. A region door's
+## - **every body the day's plan obstructs with** (`EventPlan.obstructs()`), by row. A region door's
 ##   bodies are not in the record at all, so they are counted apart.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")

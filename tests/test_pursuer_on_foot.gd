@@ -53,7 +53,7 @@ func _city_with_her(t: TestRunner, day: int, seed_value := SEED, on_map: CityMap
 	city.build(map)
 	# The manager is told which day it is by a walk with nothing planned in it (`start_recipe()`): the
 	# checks plant what they watch themselves, and no day's seals or doors come with it.
-	var no_plans: Array[EventScheduler.Planned] = []
+	var no_plans: Array[EventPlan] = []
 	city.events.start_recipe(no_plans, DaySpec.for_day(day), day, Vector2.ZERO)
 	var her := CharacterBody2D.new()
 	her.add_to_group("player")
@@ -227,7 +227,7 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 				% sent.global_position.distance_to(her.global_position))
 		t.check(sent.came_under_a_warning and not sent.is_telegraphing() and not sent.is_waiting(),
 				"already chasing from his first frame, with no closing in")
-		t.check(not city.events.plans().any(func(plan: EventScheduler.Planned) -> bool:
+		t.check(not city.events.plans().any(func(plan: EventPlan) -> bool:
 				return plan.live == sent), "and outside the day's plan")
 	_done(city, her)
 

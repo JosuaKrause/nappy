@@ -118,18 +118,18 @@ class WatchedDayParts extends RefCounted:
 ## instance live where the case put it. The base fake answers nothing else, and the real manager's
 ## streaming, which makes a plan live, is `tests/test_event_manager.gd`'s.
 class StandInEvents extends FakeEventManager:
-	var placed: Array[EventScheduler.Planned] = []
+	var placed: Array[EventPlan] = []
 
 	## A plan of `row` placed at `at`, its instance live there.
-	func place(row: String, at: Vector2) -> EventScheduler.Planned:
-		var plan := EventScheduler.Planned.new(EventCatalogue.by_id(row), at)
+	func place(row: String, at: Vector2) -> EventPlan:
+		var plan := EventPlan.new(EventCatalogue.by_id(row), at)
 		plan.live = EventInstance.new()
 		plan.live.setup(plan.def, at)
 		placed.append(plan)
 		return plan
 
 	## Overrides EventManager.plans.
-	func plans() -> Array[EventScheduler.Planned]:
+	func plans() -> Array[EventPlan]:
 		return placed
 
 ## The recording log the case in hand writes into, made by `_fresh_log()` so no case reads another's

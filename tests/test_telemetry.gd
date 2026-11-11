@@ -546,26 +546,26 @@ func _test_the_map_picture_marks_what_the_day_placed(t: TestRunner) -> void:
 ## one, a routed one and one the day budgeted and never sited, on clear street tiles of `map`. Plain
 ## data: the picture asks of a plan only where it is, its path, its role and whether its row
 ## ends the day, so no day is planned.
-func _what_a_day_placed(map: CityMap) -> Array[EventScheduler.Planned]:
+func _what_a_day_placed(map: CityMap) -> Array[EventPlan]:
 	var lethal := _a_row(true)
 	var costly := _a_row(false)
 	var along := CityMap.period() * 3 + 2
-	var plans: Array[EventScheduler.Planned] = []
+	var plans: Array[EventPlan] = []
 	for i in 4:
 		var role: GameEnums.BlockerRole = [GameEnums.BlockerRole.WALL,
 				GameEnums.BlockerRole.FRICTION, GameEnums.BlockerRole.SET_PIECE,
 				GameEnums.BlockerRole.NONE][i]
-		var plan := EventScheduler.Planned.new(lethal if i % 2 == 0 else costly,
+		var plan := EventPlan.new(lethal if i % 2 == 0 else costly,
 				map.tile_to_world(Vector2i(along, 20 + i * 12)))
 		plan.role = role
 		plans.append(plan)
 	# A routed one: a band between two points, both on the same street.
-	var routed := EventScheduler.Planned.new(costly, map.tile_to_world(Vector2i(along, 80)),
+	var routed := EventPlan.new(costly, map.tile_to_world(Vector2i(along, 80)),
 			PackedVector2Array([map.tile_to_world(Vector2i(along, 80)),
 			map.tile_to_world(Vector2i(along, 100))]))
 	routed.role = GameEnums.BlockerRole.FRICTION
 	plans.append(routed)
-	var unsited := EventScheduler.Planned.new(costly, Vector2.INF)
+	var unsited := EventPlan.new(costly, Vector2.INF)
 	unsited.role = GameEnums.BlockerRole.SET_PIECE
 	plans.append(unsited)
 	return plans
@@ -587,12 +587,12 @@ func _a_row(lethal: bool) -> EventDef:
 ## not `TelemetryObserver.watch_met_events`, which has its own test. A plan the day never sited
 ## draws nothing.
 func _check_a_glyph_says_what_it_is(t: TestRunner, map: CityMap,
-		plans: Array[EventScheduler.Planned]) -> void:
-	var lethal: EventScheduler.Planned = plans[0]
-	var costly: EventScheduler.Planned = plans[1]
+		plans: Array[EventPlan]) -> void:
+	var lethal: EventPlan = plans[0]
+	var costly: EventPlan = plans[1]
 	var corner := Vector2i(1, 1)
-	for plan: EventScheduler.Planned in [costly, lethal]:
-		var only: Array[EventScheduler.Planned] = [plan]
+	for plan: EventPlan in [costly, lethal]:
+		var only: Array[EventPlan] = [plan]
 		var image := TelemetryMap.render(map, [], null, only)
 		var at := map.world_to_tile(plan.position)
 		var colour := _mark_of(plan.role)
@@ -612,11 +612,11 @@ func _check_a_glyph_says_what_it_is(t: TestRunner, map: CityMap,
 				"while one she reached does, in the middle of the same mark")
 		t.check(_tile_colour(met_image, at + Vector2i(1, 0)) == colour,
 				"and the pip does not change the glyph around it")
-	var unsited: EventScheduler.Planned = plans[plans.size() - 1]
-	var none: Array[EventScheduler.Planned] = [unsited]
+	var unsited: EventPlan = plans[plans.size() - 1]
+	var none: Array[EventPlan] = [unsited]
 	t.check(TelemetryMap.render(map, [], null, none).get_data()
 			== TelemetryMap.render(map).get_data(), "and a plan the day never sited draws nothing")
-	var routed: Array[EventScheduler.Planned] = [plans[plans.size() - 2]]
+	var routed: Array[EventPlan] = [plans[plans.size() - 2]]
 	t.check(TelemetryMap.render(map, [], null, routed).get_data()
 			!= TelemetryMap.render(map).get_data(), "a routed plan is drawn as the band it covers")
 

@@ -155,7 +155,7 @@ var _doors := PackedVector2Array()
 ## which is day 3's fire, and the poster crews from day 4 — read off the same plan list `_owed` is,
 ## in `start_day()`; and the places a marble from her route's bag names, added the moment the marble
 ## is drawn (`_place_on_her_route()`). Emptied as each one is put in the world.
-var _on_her_way: Array[EventScheduler.Planned] = []
+var _on_her_way: Array[EventPlan] = []
 ## The day's placement context, for siting one of those against the same ground, corridor, doors and
 ## protected calm every dawn placement was stated against. Null on a day with nothing to site, and
 ## on any rig that starts the director without one.
@@ -194,7 +194,7 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ##
 ## `heat` is the shape the route bag's rows are put in (`EventCatalogue.heated()`), the same
 ## `RunState.resistance.progress` the day's own placements were planned at.
-func start_day(day: int, plans: Array[EventScheduler.Planned],
+func start_day(day: int, plans: Array[EventPlan],
 		rng: RandomNumberGenerator, siting: EventScheduler.WalkSiting = null,
 		heat: int = 0) -> void:
 	_owed.clear()
@@ -224,7 +224,7 @@ func start_day(day: int, plans: Array[EventScheduler.Planned],
 	var lesson: EventDef = null
 	for plan in plans:
 		# A door body is read off the same list, so "where do today's doors stand" is answered once,
-		# by the plan (`Planned.is_door()`), rather than by a second wire from the region planner to
+		# by the plan (`EventPlan.is_door()`), rather than by a second wire from the region planner to
 		# here. The huts and posts are the bodies that inspect her and the boom is the one that does
 		# not; all three keep their clear ground.
 		if plan.is_door() and plan.is_placed():
@@ -564,13 +564,13 @@ func _place_on_her_route(def: EventDef) -> void:
 	if not _siting:
 		return
 	_met_today[def.id] = int(_met_today.get(def.id, 0)) + 1
-	var waiting := EventScheduler.Planned.new(def, Vector2.INF)
+	var waiting := EventPlan.new(def, Vector2.INF)
 	_on_her_way.append(waiting)
 	_placed_from_the_route[waiting] = true
 
 ## Whether `plan` is a place a marble from her route's bag put on her way (`_place_on_her_route()`),
 ## which joins the day's plan when it is first sited rather than at dawn.
-func is_from_her_route(plan: EventScheduler.Planned) -> bool:
+func is_from_her_route(plan: EventPlan) -> bool:
 	return _placed_from_the_route.has(plan)
 
 # ------------------------------------------------- the place that is on her way ---
@@ -651,7 +651,7 @@ const ON_HER_WAY_LOOK := 1.0
 ## **It may move until it is real, and never after.** A plan that has been streamed in once has
 ## recorded its scar and moved its block along its arc (`EventSpawner.create`), so the city already
 ## remembers it burning there; moving it then would mean repairing a fact, which is the one thing
-## this repository does not do to a guarantee. `Planned.was_live` is that line, and it is drawn at
+## this repository does not do to a guarantee. `EventPlan.was_live` is that line, and it is drawn at
 ## the streaming radius rather than at the screen edge — which is 900px out against a view half
 ## diagonal of about 367, so in practice it stops moving a good six seconds of walking before she
 ## could ever have seen it.
@@ -662,8 +662,8 @@ const ON_HER_WAY_LOOK := 1.0
 ## frontage, for the fire and the crews), or a candidate stands in a door's clear ground — this answers with nothing and asks again a second later, from
 ## wherever she has got to. A day she walks into a corner is a day it waits.
 func site_what_is_on_her_way(delta: float, at: Vector2,
-		velocity: Vector2) -> Array[EventScheduler.Planned]:
-	var moved: Array[EventScheduler.Planned] = []
+		velocity: Vector2) -> Array[EventPlan]:
+	var moved: Array[EventPlan] = []
 	_forget_what_is_real()
 	var speed := velocity.length()
 	# The same clock `due()` runs on and for the same reason: a direction is something she is
@@ -720,7 +720,7 @@ func site_what_is_on_her_way(delta: float, at: Vector2,
 ## another is sited ahead of her and not yet in the world. All of them at once would put the day's
 ## crews on the one stretch of street the band covers; one at a time, each is met on its own and
 ## the next is sited as the last comes into reach, so they are spread along the day's walk.
-func _waits_its_turn(plan: EventScheduler.Planned) -> bool:
+func _waits_its_turn(plan: EventPlan) -> bool:
 	if plan.def.kind == GameEnums.EventKind.ONE_SHOT:
 		return false
 	for other in _on_her_way:
@@ -731,7 +731,7 @@ func _waits_its_turn(plan: EventScheduler.Planned) -> bool:
 ## Drops from the list anything that is already real or already spent, so the loop above only ever
 ## considers a plan that can still legally be moved.
 func _forget_what_is_real() -> void:
-	var still_ours: Array[EventScheduler.Planned] = []
+	var still_ours: Array[EventPlan] = []
 	for plan in _on_her_way:
 		if plan.was_live or plan.spent:
 			_behind_her.erase(plan)
@@ -753,7 +753,7 @@ func _forget_what_is_real() -> void:
 ## **Being momentarily off the tree is not a change of direction.** `WalkSiting.still_ahead_of()`
 ## answers true when it cannot tell — she has cut through a park, taken an alley, or stepped over a
 ## thinned seal — because the alternative is re-siting the fire every time she leaves the sidewalk.
-func _is_no_longer_on_her_way(plan: EventScheduler.Planned, at: Vector2, heading: Vector2,
+func _is_no_longer_on_her_way(plan: EventPlan, at: Vector2, heading: Vector2,
 		elapsed: float) -> bool:
 	var toward := plan.position - at
 	var still_ahead := toward.length_squared() < 1.0 \

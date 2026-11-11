@@ -309,7 +309,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t: TestRunner) -> void
 	var corner := TouchCover.joystick().left.get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
 	var view := Rect2(at - corner * 0.5 - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	for joystick: bool in [true, false]:
-		var plan := EventScheduler.Planned.new(def, at)
+		var plan := EventPlan.new(def, at)
 		var instance := EventInstance.new()
 		instance.setup(def, at)
 		_city.add_child(instance)
@@ -329,7 +329,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t: TestRunner) -> void
 		instance.free()
 	EventBus.event_sighted.disconnect(on_sighted)
 
-func _fire_plan() -> EventScheduler.Planned:
+func _fire_plan() -> EventPlan:
 	for plan in _city.events.plans():
 		if plan.def.id == "burning_building":
 			return plan

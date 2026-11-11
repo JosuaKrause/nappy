@@ -25,9 +25,9 @@ func _row(radius: float) -> EventDef:
 ## A day's wall and doors as data: one wall body, two door bodies and one walled alley.
 func _a_walled_plan() -> RegionPlanner.RegionPlan:
 	var plan := RegionPlanner.RegionPlan.new()
-	plan.wall_bodies.append(EventScheduler.Planned.new(_row(40.0), Vector2(10.5, 3.5) * TILE))
-	plan.door_bodies.append(EventScheduler.Planned.new(_row(18.0), Vector2(20.5, 9.5) * TILE))
-	plan.door_bodies.append(EventScheduler.Planned.new(_row(24.0), Vector2(22.5, 9.5) * TILE))
+	plan.wall_bodies.append(EventPlan.new(_row(40.0), Vector2(10.5, 3.5) * TILE))
+	plan.door_bodies.append(EventPlan.new(_row(18.0), Vector2(20.5, 9.5) * TILE))
+	plan.door_bodies.append(EventPlan.new(_row(24.0), Vector2(22.5, 9.5) * TILE))
 	plan.alley_walls.append(Rect2i(30, 12, 1, 4))
 	return plan
 

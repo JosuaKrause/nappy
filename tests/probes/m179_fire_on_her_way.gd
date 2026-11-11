@@ -86,7 +86,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [seed_value, day])
 	city.events.start_day(DaySpec.for_day(day), rng, consumed)
-	var plan: EventScheduler.Planned = null
+	var plan: EventPlan = null
 	for candidate in city.events.plans():
 		if candidate.def.id == "burning_building":
 			plan = candidate
@@ -143,7 +143,7 @@ func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) ->
 ## Walks `route` end to end, stepping the manager every frame and recording when the fire was sited
 ## and when it first came on screen. Stops early once it has been seen: everything after that is
 ## measured by `_what_the_pair_costs()` from where she is standing.
-func _follow(city: City, rig: Stroller, route: PackedVector2Array, plan: EventScheduler.Planned,
+func _follow(city: City, rig: Stroller, route: PackedVector2Array, plan: EventPlan,
 		state: Dictionary) -> void:
 	for i in range(1, route.size()):
 		var toward := route[i] - rig.global_position
@@ -189,7 +189,7 @@ func _follow(city: City, rig: Stroller, route: PackedVector2Array, plan: EventSc
 ## exactly where.
 const SETTLE_SECONDS := 14.0
 
-func _what_the_pair_costs(city: City, rig: Stroller, plan: EventScheduler.Planned) -> void:
+func _what_the_pair_costs(city: City, rig: Stroller, plan: EventPlan) -> void:
 	rig.velocity = Vector2.ZERO
 	for i in int(round(SETTLE_SECONDS / STEP)):
 		# The manager's tick steps every instance, so the engine leaves the top of its street and
@@ -220,14 +220,14 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventScheduler.Planne
 
 ## The first point out along `direction` from the fire that is outside both fields — where a walk
 ## past the pair starts and ends.
-func _clear_of_the_pair(plan: EventScheduler.Planned, engine: EventDef, engine_at: Vector2,
+func _clear_of_the_pair(plan: EventPlan, engine: EventDef, engine_at: Vector2,
 		direction: Vector2) -> Vector2:
 	var reach: float = plan.def.outer_radius
 	if engine and engine_at != Vector2.INF:
 		reach = maxf(reach, engine_at.distance_to(plan.position) + engine.outer_radius)
 	return plan.position + direction * (reach + Tuning.TILE_SIZE)
 
-func _the_way_round(city: City, from: Vector2, to: Vector2, plan: EventScheduler.Planned,
+func _the_way_round(city: City, from: Vector2, to: Vector2, plan: EventPlan,
 		engine: EventDef, engine_at: Vector2) -> float:
 	var grid := ReachabilityGrid.build(city.map)
 	var start := grid.node_at(city.map.world_to_tile(from))

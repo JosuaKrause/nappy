@@ -73,7 +73,7 @@ func _test_day_3_is_still_sited_on_her_heading(t: TestRunner) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
 	var def := EventCatalogue.by_id("charging_dog")
-	var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(def, Vector2.INF)]
+	var plans: Array[EventPlan] = [EventPlan.new(def, Vector2.INF)]
 	director.start_day(Tuning.RUN_TAUGHT_DAY, plans, rng)
 
 	var at := CrowdLanes.arterial_pavement(map)
@@ -129,7 +129,7 @@ func _test_day_4_is_never_owed_to_the_director(t: TestRunner) -> void:
 		var with_plan := EventDirector.new(map)
 		var rng_a := RandomNumberGenerator.new()
 		rng_a.seed = seed
-		var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(def, Vector2.INF)]
+		var plans: Array[EventPlan] = [EventPlan.new(def, Vector2.INF)]
 		with_plan.start_day(Tuning.RUN_TAUGHT_DAY + 1, plans, rng_a)
 
 		var without_plan := EventDirector.new(map)
@@ -247,7 +247,7 @@ func _test_the_sprinkle_never_runs_on_the_teaching_day(t: TestRunner) -> void:
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed
-		var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(def, Vector2.INF)]
+		var plans: Array[EventPlan] = [EventPlan.new(def, Vector2.INF)]
 		director.start_day(Tuning.RUN_TAUGHT_DAY, plans, rng)
 		t.check(director.owed() == 1,
 				("seed %d: the teaching day owes exactly its one guaranteed dog, never a second " +
@@ -284,7 +284,7 @@ func _test_only_the_teaching_days_first_dog_is_the_lesson(t: TestRunner) -> void
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
-	var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(dog, Vector2.INF)]
+	var plans: Array[EventPlan] = [EventPlan.new(dog, Vector2.INF)]
 	director.start_day(Tuning.RUN_TAUGHT_DAY, plans, rng)
 	var at := CrowdLanes.arterial_pavement(map)
 	at.y = map.world_size().y * 0.5
@@ -313,7 +313,7 @@ func _test_no_other_day_hands_out_the_lesson(t: TestRunner) -> void:
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
-	var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(dog, Vector2.INF)]
+	var plans: Array[EventPlan] = [EventPlan.new(dog, Vector2.INF)]
 	director.start_day(day, plans, rng)
 	var at := CrowdLanes.arterial_pavement(map)
 	at.y = map.world_size().y * 0.5

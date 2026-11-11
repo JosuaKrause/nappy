@@ -80,7 +80,7 @@ const NO_ROLE_MARK := Color("8c93a1")
 const CORRIDOR_ALPHA := 0.55
 
 ## The single tile put through the middle of an event she **met** — came within the field she can
-## actually feel (`EventScheduler.Planned.field_reaches()`) — which is what tells a placement that
+## actually feel (`EventPlan.field_reaches()`) — which is what tells a placement that
 ## cost her something from one that merely stood there.
 ##
 ## **It is a mark added rather than strength taken away, and the first version was the other way
@@ -89,7 +89,7 @@ const CORRIDOR_ALPHA := 0.55
 ## place, and it is the placement no trace can report — so the picture would have whispered exactly
 ## the thing it exists to shout. Drawn instead, every mark stays at full strength and the ones she
 ## met carry a white pip. `TelemetryObserver._watch_met_events` decides "met" against the field
-## rather than against `EventScheduler.Planned.was_live`, which only says the plan was once
+## rather than against `EventPlan.was_live`, which only says the plan was once
 ## loaded into the world at `Tuning.EVENT_STREAM_RADIUS` — more than twice the reach of a typical
 ## row, so it would mark a great deal of decoration as if it had cost her something.
 const MET_MARK := Color("ffffff")
@@ -155,7 +155,7 @@ const BUILDING_GROUND := Color("211f26")
 ## to have cost her anything. Both are optional and empty by default — on the dawn map there is no
 ## walk yet, and a picture that invented one would be worse than a picture with none.
 static func render(map: CityMap, closures: Array[RoadClosure] = [],
-		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
+		tree: RouteTree = null, plans: Array[EventPlan] = [],
 		trail: Array[Vector3] = [], met: Dictionary = {}) -> Image:
 	var image := Image.create_empty(map.size_in_tiles().x * SCALE, map.size_in_tiles().y * SCALE, false, Image.FORMAT_RGB8)
 	for y in map.size_in_tiles().y:
@@ -251,7 +251,7 @@ static func _mark_the_corridor(image: Image, tree: RouteTree) -> void:
 ## the plan itself. Empty on the dawn map, so nothing carries a pip there, which is correct: there
 ## is no walk yet to have met anything.
 static func _mark_the_events(image: Image, map: CityMap,
-		plans: Array[EventScheduler.Planned], met: Dictionary = {}) -> void:
+		plans: Array[EventPlan], met: Dictionary = {}) -> void:
 	for plan in plans:
 		if not plan.is_placed():
 			continue

@@ -206,7 +206,7 @@ var skip_draw := false
 var _where := WhereSheIs.nowhere()
 
 ## The shared boom state a `checkpoint_gate` draws raised or lowered from — `RegionPlanner.
-## GateState`, set by `EventStreaming.stream_in` from `Planned.gate_state`. `null` for every look
+## GateState`, set by `EventStreaming.stream_in` from `EventPlan.gate_state`. `null` for every look
 ## but `CHECKPOINT_GATE`, and read as lowered while it is: a gate that has not been wired to
 ## `Crowd` yet (or a data-level rig with no crowd at all) draws exactly the safe default.
 var gate_state: RegionPlanner.GateState = null
@@ -1068,7 +1068,7 @@ func move_to(at: Vector2) -> void:
 	queue_redraw()
 
 ## **Every behaviour's own state**, keyed by its class, as plain values a plan carries while this
-## event is out of the world (`EventStreaming.stream_out()`, `EventScheduler.Planned.behaviours`).
+## event is out of the world (`EventStreaming.stream_out()`, `EventPlan.behaviours`).
 func save_behaviours() -> Dictionary:
 	var out := {}
 	for behaviour in _behaviours:

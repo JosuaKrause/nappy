@@ -146,8 +146,8 @@ func _role_and_depth_sweep() -> void:
 ## Whether home still reaches some calm tile with every body the day returned standing
 ## (`EventScheduler.blocked_by()`), re-checked from the outside against the day `build_day` returned.
 func _some_calm_is_reachable(map: CityMap, grid: ReachabilityGrid, planned: Array) -> bool:
-	var blockers: Array[EventScheduler.Planned] = []
-	for plan: EventScheduler.Planned in planned:
+	var blockers: Array[EventPlan] = []
+	for plan: EventPlan in planned:
 		if plan.obstructs():
 			blockers.append(plan)
 	var blocked := EventScheduler.blocked_by(map, blockers)

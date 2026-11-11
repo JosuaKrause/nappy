@@ -91,7 +91,7 @@ func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	city.free()
 	return printed
 
-func _print(walk: String, map: WorldMap, plans: Array[EventScheduler.Planned]) -> int:
+func _print(walk: String, map: WorldMap, plans: Array[EventPlan]) -> int:
 	print("FP_WALK %s | %d placements" % [walk, plans.size()])
 	for i in plans.size():
 		var plan := plans[i]

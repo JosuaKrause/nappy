@@ -86,7 +86,7 @@ class ForgetfulVerdicts extends EventScheduler.Verdicts:
 	func forget() -> void:
 		candidates.clear()
 
-func _same(a: EventScheduler.Planned, b: EventScheduler.Planned) -> bool:
+func _same(a: EventPlan, b: EventPlan) -> bool:
 	if a == null or b == null:
 		return a == b
 	return a.position == b.position and a.path == b.path and a.facing == b.facing \
@@ -158,7 +158,7 @@ func _test_one_offer_per_look(t: TestRunner) -> void:
 			fire = plan.def
 	var copies := 4
 	for _i in copies - 1:
-		plans.append(EventScheduler.Planned.new(fire, Vector2.INF))
+		plans.append(EventPlan.new(fire, Vector2.INF))
 	var owed := 0
 	for plan in plans:
 		if plan.def.on_her_way != null and not plan.is_placed():
@@ -235,7 +235,7 @@ func _test_one_offer_per_look(t: TestRunner) -> void:
 func _ask_copies(siting: EventScheduler.WalkSiting, verdicts: CountingVerdicts, def: EventDef,
 		at: Vector2, heading: Vector2, near: float, far: float, copies: int,
 		in_a_look: bool) -> Array:
-	var placed: Array[EventScheduler.Planned] = []
+	var placed: Array[EventPlan] = []
 	var states: Array[int] = []
 	var judged := verdicts.judged
 	var from := verdicts.asked.size()
@@ -296,8 +296,8 @@ func _test_a_look_shares_its_verdicts(t: TestRunner) -> void:
 			"outside a look, each copy judges it again (%d)" % separate[2])
 	var same := true
 	for copy in copies:
-		var a: EventScheduler.Planned = shared[0][copy]
-		var b: EventScheduler.Planned = separate[0][copy]
+		var a: EventPlan = shared[0][copy]
+		var b: EventPlan = separate[0][copy]
 		same = same and _same(a, b) and shared[1][copy] == separate[1][copy]
 	t.check(same, "a look's shared verdicts answer what separate asks answer, streams included")
 
@@ -357,7 +357,7 @@ func _test_a_dropped_verdict_is_judged_again(t: TestRunner) -> void:
 		var first := siting.ahead_of(crew, _stream(), null, spot, heading,
 				near, far)
 		var standing := already.duplicate()
-		standing.append(EventScheduler.Planned.new(crew, first.position))
+		standing.append(EventPlan.new(crew, first.position))
 		walk.set_plans(standing)
 		stands[dropped] = first.position
 		if dropped:
@@ -365,15 +365,15 @@ func _test_a_dropped_verdict_is_judged_again(t: TestRunner) -> void:
 		answers[dropped] = siting.ahead_of(crew, _stream(), null, spot,
 				heading, near, far)
 		siting.end_look()
-	var after_the_drop: EventScheduler.Planned = answers[true]
-	var kept: EventScheduler.Planned = answers[false]
+	var after_the_drop: EventPlan = answers[true]
+	var kept: EventPlan = answers[false]
 	t.check(after_the_drop == null or after_the_drop.position != stands[true],
 			"with the verdicts dropped, a copy is not put where a crew now stands")
 	t.check(kept != null and kept.position == stands[false],
 			"kept, the verdicts would have put it there (the check above is not vacuous)")
 
 ## A stand-in for the walk holding `plans`, planned against `map`'s calm areas, none of them used.
-func _walk(map: CityMap, plans: Array[EventScheduler.Planned]) -> FakeWalkEvents:
+func _walk(map: CityMap, plans: Array[EventPlan]) -> FakeWalkEvents:
 	return FakeWalkEvents.new().set_plans(plans).set_calm(CalmAreas.of(map))
 
 ## A fresh copy of one stream, the same every time: a copy asked from it rolls what the last did.
@@ -391,8 +391,8 @@ class SpySiting extends EventScheduler.WalkSiting:
 	## The `Vector2(near, far)` band of every ask the director made.
 	var bands: Array[Vector2] = []
 	## Overrides EventScheduler.WalkSiting.ahead_of.
-	func ahead_of(def: EventDef, rng: RandomNumberGenerator, besides: EventScheduler.Planned,
-			at: Vector2, heading: Vector2, near: float, far: float) -> EventScheduler.Planned:
+	func ahead_of(def: EventDef, rng: RandomNumberGenerator, besides: EventPlan,
+			at: Vector2, heading: Vector2, near: float, far: float) -> EventPlan:
 		var placed := besides != null and besides.is_placed()
 		bands.append(Vector2(near, far))
 		var sited := super.ahead_of(def, rng, besides, at, heading, near, far)
@@ -429,7 +429,7 @@ func _test_the_director_drops_the_verdicts(t: TestRunner) -> void:
 		if plan.def.id == "burning_building":
 			fire = plan.def
 	for _i in 3:
-		plans.append(EventScheduler.Planned.new(fire, Vector2.INF))
+		plans.append(EventPlan.new(fire, Vector2.INF))
 	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), _walk(map, plans),
 			EventScheduler.Verdicts.new())
 	var director := EventDirector.new(map)

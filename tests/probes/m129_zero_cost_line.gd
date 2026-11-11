@@ -65,7 +65,7 @@ extends RefCounted
 ##   guarantee is stated over — see `EventDef.has_a_line_to_avoid()`'s own doc.
 ## - **Rows with no tile are excluded**: `AHEAD_OF_PLAYER` and `TOWARD_PLAYER` queue rows are sited
 ##   by `EventDirector` out of where the player turns out to walk, so they have no position at plan
-##   time (`Planned.is_placed()` is false) and no route can be measured against them. They are
+##   time (`EventPlan.is_placed()` is false) and no route can be measured against them. They are
 ##   outside this guarantee by construction, and the milestone says so.
 ## - **The top of the beat is the full disc.** A pulse is an intensity envelope
 ##   (`intensity × (0.25 + 0.75 × pulse(t))`, `docs/EVENTS.md`) and moves no radius, so the top of a
@@ -370,7 +370,7 @@ func _used_by(map: CityMap, day: int) -> Array[Vector2i]:
 ## Everything the day stands on the streets, assembled exactly as `EventManager.start_day` does:
 ## the region's wall and doors, the closures, the held ground, the seals, the catalogue's own fill,
 ## and the wall's and doors' bodies.
-func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventScheduler.Planned]:
+func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventPlan]:
 	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 			_rng(map, day, "closures"), tree, region_plan)
@@ -416,7 +416,7 @@ func _place_the_day(map: CityMap, day: int, tree: RouteTree) -> Array[EventSched
 	var doors := PackedVector2Array()
 	for body in region_plan.door_bodies:
 		doors.append(body.position)
-	var standing: Array[EventScheduler.Planned] = []
+	var standing: Array[EventPlan] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
 	var plans := EventScheduler.build_day(DaySpec.for_day(day), _rng(map, day, "events"), map,
@@ -456,9 +456,9 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 ## a pursuer (`alley_robbery`, `charging_dog`, `door_guard`) follows her rather than sitting on a
 ## tile; and a mobile row that does not pace is passed by crossing, waiting and crossing back,
 ## never by routing around it.
-func _rows_of(plans: Array[EventScheduler.Planned]) -> Array:
+func _rows_of(plans: Array[EventPlan]) -> Array:
 	var rows: Array = []
-	for plan: EventScheduler.Planned in plans:
+	for plan: EventPlan in plans:
 		if not plan.is_placed() or plan.mast_id != "":
 			continue
 		var def := plan.def
@@ -483,7 +483,7 @@ func _rows_of(plans: Array[EventScheduler.Planned]) -> Array:
 
 ## The points a moving row occupies over its own route, at `BEAT_SAMPLE_PX` spacing. One point for
 ## anything that stands still.
-func _samples_along(plan: EventScheduler.Planned) -> PackedVector2Array:
+func _samples_along(plan: EventPlan) -> PackedVector2Array:
 	var points := PackedVector2Array([plan.position])
 	if plan.path.size() < 2:
 		return points

@@ -79,7 +79,7 @@ func drawing_order(rng: RandomNumberGenerator) -> Array[Location]:
 
 ## Puts `plan`, an event that spans the street, on `section` for the day, and takes the section's
 ## two sidewalk locations with it, so no draw happens for any of the three.
-func take_section(section: Location, plan: EventScheduler.Planned) -> void:
+func take_section(section: Location, plan: EventPlan) -> void:
 	section.take(plan)
 	for sidewalk in _sidewalks:
 		if sidewalk.shares_a_section_with(section):

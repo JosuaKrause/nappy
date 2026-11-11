@@ -36,7 +36,7 @@ func _map() -> CityMap:
 
 ## The plans a real dawn on `RETURN_DAY` buys on the suite's map, built once by the first walking
 ## check that asks and only read by every director started over them.
-var _plans: Array[EventScheduler.Planned] = []
+var _plans: Array[EventPlan] = []
 
 ## A director over `map` on day 1 with nothing planned, its day stream seeded 17, handed the forced
 ## row `forced` first when one is given (`--force`, which `start_day()` takes up).
@@ -46,7 +46,7 @@ func _director(map: CityMap, forced := "") -> EventDirector:
 	rng.seed = 17
 	if forced != "":
 		director.force(forced, 5.0)
-	var no_plans: Array[EventScheduler.Planned] = []
+	var no_plans: Array[EventPlan] = []
 	director.start_day(1, no_plans, rng)
 	return director
 

@@ -32,7 +32,7 @@ func run(t: TestRunner) -> void:
 		map.repaint(state)
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
-		var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
+		var planned: Array[EventPlan] = EventScheduler.build_day(
 				DaySpec.for_day(day), plan_rng, map, CalmAreas.of(map), MastSites.compute(map), [], [],
 						RouteTree.for_day(map, day), 0).placements()
 		var bought_a_dog := false

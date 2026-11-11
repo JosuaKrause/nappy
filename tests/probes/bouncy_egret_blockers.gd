@@ -18,7 +18,7 @@ extends RefCounted
 ## - **seal bodies** and **alley mouths**: the bodies the seal pass places, and how many of them stand
 ##   in a through-alley's mouth;
 ## - **closures**: `ClosurePlanner.plan_day`'s street closures, the fenced park's own fence left out;
-## - **walls** and **friction**: placed catalogue rows by `Planned.role`, from
+## - **walls** and **friction**: placed catalogue rows by `EventPlan.role`, from
 ##   `EventScheduler.build_day` run against the seals and the region wall the way
 ##   `EventManager.start_day` runs it.
 ##
@@ -109,7 +109,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 		if segment:
 			sealed[segment.key()] = true
 
-	var standing: Array[EventScheduler.Planned] = []
+	var standing: Array[EventPlan] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
 	var doors := PackedVector2Array()

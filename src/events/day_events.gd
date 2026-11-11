@@ -10,7 +10,7 @@ extends RefCounted
 ## once, when the row arrives, and every question answers from the plan as it stands.
 ##
 ## **A calm area is spoiled for the day** when a row's field reaches its calm ground
-## (`EventScheduler.Planned.spoils()`): a park she can see is noisy and walk away from. That is a fact
+## (`EventPlan.spoils()`): a park she can see is noisy and walk away from. That is a fact
 ## of the day's plan rather than of the city, because it changes with every day and as one day is
 ## planned, and the city's own `SPOILED` ground, which its arcs paint, is another thing.
 ##
@@ -24,9 +24,9 @@ extends RefCounted
 ## questions and the writes below and answers what the test set, with no city built.
 
 var _calm: CalmAreas
-var _rows: Array[EventScheduler.Planned] = []
-var _standing: Array[EventScheduler.Planned] = []
-## Calm block -> the rows spoiling it (`Array[EventScheduler.Planned]`), in plan order.
+var _rows: Array[EventPlan] = []
+var _standing: Array[EventPlan] = []
+## Calm block -> the rows spoiling it (`Array[EventPlan]`), in plan order.
 var _spoilers := {}
 var _pursuits := 0
 ## The day's locations, where a phase laid them out (`use_locations()`), or null.
@@ -36,39 +36,39 @@ var _locations: DayLocations = null
 ## seals and the region wall's own bodies, or the escape city's seals on its walk. They stand for the
 ## whole plan and are not its rows: none of them spoils a calm area, since they are the streets'
 ## rather than the day's noise.
-static func over(calm: CalmAreas, standing: Array[EventScheduler.Planned] = []) -> DayEvents:
+static func over(calm: CalmAreas, standing: Array[EventPlan] = []) -> DayEvents:
 	var events := DayEvents.new()
 	events._calm = calm
 	events._standing = standing.duplicate()
 	for block in calm.blocks():
-		events._spoilers[block] = [] as Array[EventScheduler.Planned]
+		events._spoilers[block] = [] as Array[EventPlan]
 	return events
 
 # ------------------------------------------------------------------- writes ---
 
 ## Adds `row` after every row already planned.
-func add(row: EventScheduler.Planned) -> void:
+func add(row: EventPlan) -> void:
 	_rows.append(row)
 	_learn(row)
 
 ## Adds each of `rows`, in order.
-func add_all(rows: Array[EventScheduler.Planned]) -> void:
+func add_all(rows: Array[EventPlan]) -> void:
 	for row in rows:
 		add(row)
 
 ## Learns the facts `row`, the plan's last row, adds: each calm area it spoils keeps it after the
 ## rows already spoiling it, so a fact's rows are in plan order.
-func _learn(row: EventScheduler.Planned) -> void:
+func _learn(row: EventPlan) -> void:
 	for block: Vector2i in _spoilers:
 		if row.spoils(_calm.ground_of(block)):
-			(_spoilers[block] as Array[EventScheduler.Planned]).append(row)
+			(_spoilers[block] as Array[EventPlan]).append(row)
 	if row.def.pursuit != null:
 		_pursuits += 1
 
 # ---------------------------------------------------------------- questions ---
 
 ## Every row, in the order placed: what the walk streams, and what a placement is spaced against.
-func placements() -> Array[EventScheduler.Planned]:
+func placements() -> Array[EventPlan]:
 	return _rows.duplicate()
 
 ## How many rows there are.
@@ -76,13 +76,13 @@ func size() -> int:
 	return _rows.size()
 
 ## The bodies handed in as standing for the whole plan (`over()`).
-func standing() -> Array[EventScheduler.Planned]:
+func standing() -> Array[EventPlan]:
 	return _standing.duplicate()
 
 ## The rows whose field reaches `block`'s calm ground, in plan order. A playground, a scar the run
-## left and a row not yet placed never count (`EventScheduler.Planned.spoils()`).
-func spoilers_of(block: Vector2i) -> Array[EventScheduler.Planned]:
-	var found: Array[EventScheduler.Planned] = []
+## left and a row not yet placed never count (`EventPlan.spoils()`).
+func spoilers_of(block: Vector2i) -> Array[EventPlan]:
+	var found: Array[EventPlan] = []
 	found.assign(_spoilers.get(block, []))
 	return found
 

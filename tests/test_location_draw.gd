@@ -27,7 +27,7 @@ class _Locations extends DayLocations:
 		return order
 
 	## Overrides DayLocations.record.
-	func record(location: Location, plan: EventScheduler.Planned) -> void:
+	func record(location: Location, plan: EventPlan) -> void:
 		recorded[location] = plan
 		location.record(plan)
 
@@ -36,20 +36,20 @@ class _Ground extends LocationGround:
 	var refused: Array = []
 	## Location -> its weight for every row.
 	var weights := {}
-	var stood: Array[EventScheduler.Planned] = []
+	var stood: Array[EventPlan] = []
 
 	## Overrides LocationGround.offer.
-	func offer(def: EventDef, location: Location) -> EventScheduler.Planned:
+	func offer(def: EventDef, location: Location) -> EventPlan:
 		if refused.has([def.id, location]):
 			return null
-		return EventScheduler.Planned.new(def, location.centre())
+		return EventPlan.new(def, location.centre())
 
 	## Overrides LocationGround.scale.
 	func scale(_def: EventDef, location: Location) -> float:
 		return float(weights.get(location, 1.0))
 
 	## Overrides LocationGround.stand.
-	func stand(plan: EventScheduler.Planned) -> void:
+	func stand(plan: EventPlan) -> void:
 		stood.append(plan)
 
 static func _location(x: int, available := true) -> Location:
@@ -70,7 +70,7 @@ static func _rng() -> RandomNumberGenerator:
 
 ## The draw over `locations`, a bag of `fill` for the route view, `rows` the marbles' rows.
 static func _drawn(locations: _Locations, fill: Dictionary, rows: Dictionary, ground: _Ground,
-		caps := {}, seed_value := 1) -> Array[EventScheduler.Planned]:
+		caps := {}, seed_value := 1) -> Array[EventPlan]:
 	var bags := {ON: ViewBag.new(fill, seed_value)}
 	return LocationDraw.new(locations, bags, rows, ground, caps).draw_all(_rng())
 
@@ -94,7 +94,7 @@ func _test_each_open_location_is_drawn_once(t: TestRunner) -> void:
 
 func _test_a_taken_unavailable_or_drawn_location_is_left_alone(t: TestRunner) -> void:
 	var taken := _location(0)
-	taken.take(EventScheduler.Planned.new(_row("roadblock"), taken.centre()))
+	taken.take(EventPlan.new(_row("roadblock"), taken.centre()))
 	var closed := _location(1, false)
 	var drawn := _location(2)
 	drawn.record(null)
@@ -117,7 +117,7 @@ func _test_a_row_the_ground_refuses_is_never_drawn_there(t: TestRunner) -> void:
 		_drawn(locations, {"cafe_tables": 1, "dog_walker": 1},
 				{"cafe_tables": _row("cafe_tables"), "dog_walker": _row("dog_walker")}, ground, {},
 				seed_value)
-		var at: EventScheduler.Planned = locations.recorded[refusing]
+		var at: EventPlan = locations.recorded[refusing]
 		never = never and at != null and at.row_id() == "dog_walker"
 	t.check(never, "a location whose ground refuses the cafe draws the dog walker instead, every time")
 
@@ -170,7 +170,7 @@ func _test_a_row_handed_to_her_walk_is_drawn_unplaced(t: TestRunner) -> void:
 	var ground := _Ground.new()
 	var placed := _drawn(locations, {"poster_crew": 1}, {"poster_crew": _row("poster_crew")},
 			ground)
-	var recorded: EventScheduler.Planned = locations.recorded.get(location)
+	var recorded: EventPlan = locations.recorded.get(location)
 	t.check(placed.size() == 1 and placed[0].row_id() == "poster_crew" \
 			and not placed[0].is_placed(), "a drawn crew is answered with no position")
 	t.check(recorded == placed[0] and ground.stood == placed,

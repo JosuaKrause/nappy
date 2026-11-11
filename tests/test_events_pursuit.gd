@@ -149,7 +149,7 @@ func _test_a_sent_pursuer_counts_running_before_he_is_visible(t: TestRunner) -> 
 		pursuer.free()
 
 ## The multiset of event ids in a plan: what the day is *made of*, with the geometry thrown away.
-func _kinds_in(plans: Array[EventScheduler.Planned]) -> Dictionary:
+func _kinds_in(plans: Array[EventPlan]) -> Dictionary:
 	var counts := {}
 	for plan in plans:
 		counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1

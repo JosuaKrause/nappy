@@ -285,8 +285,8 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t: TestRunner
 	var stroller := _chat_stroller(t)
 	manager.use_player(stroller)
 	stroller.global_position = at
-	var plan := EventScheduler.Planned.new(def, at, path)
-	manager.start_recipe([plan] as Array[EventScheduler.Planned], DaySpec.for_day(1), 1, at)
+	var plan := EventPlan.new(def, at, path)
+	manager.start_recipe([plan] as Array[EventPlan], DaySpec.for_day(1), 1, at)
 	await PhysicsTicks.pass_ticks(t, 1)
 	var mother := plan.live
 	t.check(mother != null, "she is streamed in where the day planned her")

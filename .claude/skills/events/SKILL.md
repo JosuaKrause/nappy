@@ -124,7 +124,7 @@ row the rule is unenforced.
 
 Two exemptions, both about a field with no fixed place to keep clear: a **wall** placement, which
 is off the day's routes by construction, and a **pursuer**, which follows her.
-`EventScheduler.Planned.keeps_its_field_clear()` names both, and `tests/test_events_costs.gd` holds
+`EventPlan.keeps_its_field_clear()` names both, and `tests/test_events_costs.gd` holds
 who is exempt. The reasoning is `docs/EVENTS.md`, "The contract is per event, and the player
 experiences the sum".
 

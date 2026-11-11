@@ -250,7 +250,7 @@ func _lose_the_escape(t: TestRunner, recipe: SceneRecipeRuntime, reloads: Array[
 ## back to where she started. Whether she did.
 func _go_out_and_back(t: TestRunner, main: Node, map: CityMap, label: String) -> bool:
 	var player := Boot.player(main)
-	for plan: EventScheduler.Planned in Boot.city(main).events.plans():
+	for plan: EventPlan in Boot.city(main).events.plans():
 		if not map.recipe_bounds.has_point(map.world_to_tile(plan.position)):
 			t.check(false, "%s: bounded region installs event bodies outside authored ground" % label)
 			return false

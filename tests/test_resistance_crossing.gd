@@ -422,8 +422,8 @@ func _named_door(director: ResistanceDirector) -> Array:
 		var area := _city.map.tile_rect_to_world(segment.tile_rect())
 		if not area.has_point(house):
 			continue
-		var boom: EventScheduler.Planned = null
-		var first_house: EventScheduler.Planned = null
+		var boom: EventPlan = null
+		var first_house: EventPlan = null
 		for body in region_plan.door_bodies:
 			if not area.has_point(body.position):
 				continue

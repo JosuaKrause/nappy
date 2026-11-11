@@ -36,7 +36,7 @@ class _Locations extends DayLocations:
 		return open
 
 	## Overrides DayLocations.assign.
-	func assign(section: Location, plan: EventScheduler.Planned) -> void:
+	func assign(section: Location, plan: EventPlan) -> void:
 		section.take(plan)
 
 ## The day's ground: the route tiles, which sections are offered a roadblock, which route tiles a
@@ -51,7 +51,7 @@ class _Ground extends RoadblockGround:
 	## Section -> the section whose roadblock standing refuses it afterwards.
 	var refused_once := {}
 	var radius := 0.0
-	var stood: Array[EventScheduler.Planned] = []
+	var stood: Array[EventPlan] = []
 	var _of := {}
 
 	## Overrides RoadblockGround.route_tiles.
@@ -59,19 +59,19 @@ class _Ground extends RoadblockGround:
 		return tiles
 
 	## Overrides RoadblockGround.offer.
-	func offer(section: Location) -> EventScheduler.Planned:
+	func offer(section: Location) -> EventPlan:
 		if refused.has(section):
 			return null
 		if refused_once.has(section):
 			for plan in stood:
 				if _of[plan] == refused_once[section]:
 					return null
-		var plan := EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"), section.centre())
+		var plan := EventPlan.new(EventCatalogue.by_id("roadblock"), section.centre())
 		_of[plan] = section
 		return plan
 
 	## Overrides RoadblockGround.covers.
-	func covers(plan: EventScheduler.Planned) -> Array[Vector2i]:
+	func covers(plan: EventPlan) -> Array[Vector2i]:
 		return close_by.get(_of[plan], [] as Array[Vector2i])
 
 	## Overrides RoadblockGround.reoffer_within.
@@ -79,11 +79,11 @@ class _Ground extends RoadblockGround:
 		return radius
 
 	## Overrides RoadblockGround.stand.
-	func stand(plan: EventScheduler.Planned) -> void:
+	func stand(plan: EventPlan) -> void:
 		stood.append(plan)
 
 	## The section `plan` was offered for.
-	func section_of(plan: EventScheduler.Planned) -> Location:
+	func section_of(plan: EventPlan) -> Location:
 		return _of[plan]
 
 ## Where a block of 8 tiles splits into its three sections, 3, 2 and 3 tiles along the street, as

@@ -8,7 +8,7 @@ extends EventLook
 func _draw_figure(canvas: CanvasItem) -> void:
 	match _row.picture():
 		EventDef.Look.DELIVERY_VAN:
-			# Always sited facing east — `AT_THE_KERB` never overrides `EventScheduler.Planned.
+			# Always sited facing east — `AT_THE_KERB` never overrides `EventPlan.
 			# facing`'s own default — and `delivery_van.svg` faces west, so `side_faces_west`
 			# mirrors it (see `docs/evidence/svg-vehicles-2026-09-10/README.md`).
 			_draw_eight_view(EventPictures.DELIVERY_VAN_BY_VIEW, event.facing_now(), canvas, true)
@@ -87,7 +87,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 ## field — safely, because both headings are always exactly east or west by construction while they
 ## can ever be drawn together. `is_taking_a_victim()` is only ever true while the van `is_waiting()`
 ## (`EventAbduction` abandons it the instant a `HUNTS`-heated copy starts hunting), and idling the
-## van's own `EventInstance.facing_now()` is `Planned.facing`'s untouched default, always due east —
+## van's own `EventInstance.facing_now()` is `EventPlan.facing`'s untouched default, always due east —
 ## so the van's own `select_view(event.facing_now())` call below, after the victim's, only ever
 ## asks for exactly the sector the victim's own call left it on (both facing the same way) or its
 ## exact opposite (180° apart, always past `EightDirection`'s hold), never anything a stale hold

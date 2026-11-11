@@ -25,7 +25,7 @@ extends RefCounted
 ## past dawn.
 class Plan extends RefCounted:
 	## Everything the walk places, in the order it is handed to the streaming.
-	var placements: Array[EventScheduler.Planned] = []
+	var placements: Array[EventPlan] = []
 	## The walk the placements are stated against (`RouteSource`): the day's route tree, the
 	## escape's two chains (`FinalePlanner.Plan`), or null in the building.
 	var walk: RouteSource = null
@@ -156,7 +156,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# fully blocked street").
 	var seals := SealPlanner.plan_day(city_map, spec, tree,
 			world.run.calendar.day_rng(day, "seals"), boundary, city_map.held_streets())
-	# Each says it is a seal, one of the city's fixed parts (`Planned.is_a_fixed_part()`), which day
+	# Each says it is a seal, one of the city's fixed parts (`EventPlan.is_a_fixed_part()`), which day
 	# 13's swap never takes.
 	for seal in seals:
 		seal.stand_as_a_seal()
@@ -171,10 +171,10 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 		doors.append(body.position)
 	# What obstructs the day whatever the catalogue does: the seals just planned and the region
 	# wall's own bodies, which the day's rules read with what it places (`StreetInvalidation`).
-	var standing: Array[EventScheduler.Planned] = []
+	var standing: Array[EventPlan] = []
 	standing.append_array(seals)
 	standing.append_array(region_plan.wall_bodies)
-	# The wall's own bodies say so, as a door's do (`Planned.stand_as_a_door()`): day 13's task never
+	# The wall's own bodies say so, as a door's do (`EventPlan.stand_as_a_door()`): day 13's task never
 	# takes one for a roadblock the day placed, nor swaps one out.
 	for body in region_plan.wall_bodies:
 		body.stand_in_the_wall()
@@ -256,8 +256,8 @@ func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
 static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 		rng: RandomNumberGenerator, spec: DaySpec,
 		populate_events := true,
-		trace: RunTrace = null) -> Array[EventScheduler.Planned]:
-	var placements: Array[EventScheduler.Planned] = []
+		trace: RunTrace = null) -> Array[EventPlan]:
+	var placements: Array[EventPlan] = []
 	var seals := SealPlanner.plan_day(map, spec, walk, rng)
 	for seal in seals:
 		seal.stand_as_a_seal()

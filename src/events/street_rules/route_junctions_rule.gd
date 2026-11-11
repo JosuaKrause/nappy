@@ -16,8 +16,8 @@ func _init(map: CityMap, corridor: Corridor, ground: Dictionary) -> void:
 	_ground = ground
 
 ## Overrides StreetRule.allows.
-func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
-		_placed: Array[EventScheduler.Planned], around: Array[EventScheduler.Planned]) -> bool:
+func allows(candidate: EventPlan, _tile: Vector2i,
+		_placed: Array[EventPlan], around: Array[EventPlan]) -> bool:
 	return _leaves_the_route_junctions_open(candidate, _map, _corridor, _ground,
 			around)
 
@@ -35,8 +35,8 @@ func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 ## only ever asked *does this row alone take the box* would accept both of them. Stating it
 ## cumulatively is still *checked before accepted*: each row in turn is asked whether the day it is
 ## joining still has a line through every crossing, so a closed one never exists even briefly.
-static func _leaves_the_route_junctions_open(candidate: EventScheduler.Planned, map: CityMap,
-		corridor: Corridor, ground: Dictionary, already: Array[EventScheduler.Planned]) -> bool:
+static func _leaves_the_route_junctions_open(candidate: EventPlan, map: CityMap,
+		corridor: Corridor, ground: Dictionary, already: Array[EventPlan]) -> bool:
 	if not corridor or not candidate.counts_against_the_line():
 		return true
 	var reach := candidate.row().line_reach()
@@ -73,11 +73,11 @@ static func _route_junctions(map: CityMap, ground: Dictionary, corridor: Corrido
 ## street at either side — a park cut, an alley mouth — there are no arms and the box only has to
 ## have somewhere free left in it.
 static func _a_crossing_stays_open(map: CityMap, corridor: Corridor, entry: Array,
-		candidate: EventScheduler.Planned, already: Array[EventScheduler.Planned]) -> bool:
+		candidate: EventPlan, already: Array[EventPlan]) -> bool:
 	var junction: Vector2i = entry[0]
 	var centre: Vector2 = entry[1]
 	var box_reach: float = entry[2]
-	var standing: Array[EventScheduler.Planned] = [candidate]
+	var standing: Array[EventPlan] = [candidate]
 	for plan in already:
 		if plan == candidate or not plan.counts_against_the_line():
 			continue

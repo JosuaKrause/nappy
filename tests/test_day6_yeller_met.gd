@@ -93,7 +93,7 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 			events.ahead.site_what_is_on_her_way(STEP)
 			var sited_now := false
 			if seen["man"] == null and seen["read"]:
-				for plan: EventScheduler.Planned in events.plans():
+				for plan: EventPlan in events.plans():
 					if plan.def.id == ROW and not (seen["standing"] as Array).has(plan):
 						seen["man"] = plan
 						seen["outcome"] = _first_siting(plan, player,
@@ -137,7 +137,7 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 
 ## "kept" when one of the world's men shouting stands where `man` was sited (within a tile, the
 ## band middle a pacing body is laid on), or what is wrong.
-func _in_the_world(events: EventManager, man: EventScheduler.Planned) -> String:
+func _in_the_world(events: EventManager, man: EventPlan) -> String:
 	var nearest := INF
 	for instance in events.instances():
 		if instance.def.id == ROW:
@@ -150,7 +150,7 @@ func _in_the_world(events: EventManager, man: EventScheduler.Planned) -> String:
 
 ## Whether the man's first siting keeps the guarantee: "kept", or what it broke. `handed` is how
 ## many events her route had been handed since the mark was read when he was sited.
-func _first_siting(man: EventScheduler.Planned, player: Stroller, handed: int) -> String:
+func _first_siting(man: EventPlan, player: Stroller, handed: int) -> String:
 	if handed > ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT:
 		return "sited after %d events" % handed
 	var offset := man.position - player.global_position

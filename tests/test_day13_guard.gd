@@ -867,7 +867,7 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t: TestRunner, seed_
 	# A found one she touches from ground her paths reach within the widest ring, a tile and a half
 	# from its body at most; a section the swap takes is the nearest along her paths, however far.
 	var widest: float = ResistanceDirector.ROADBLOCK_WIDER_REACH.back()
-	var touch := EventScheduler.Planned.new(roadblock.def, Vector2.ZERO).blocking_radius() \
+	var touch := EventPlan.new(roadblock.def, Vector2.ZERO).blocking_radius() \
 			+ Tuning.TILE_SIZE * 2.0
 	t.check(swapped or away <= widest + touch,
 			"seed %d: a found one is close by, %.0fpx from where she read the mark (within %.0fpx)"
@@ -960,7 +960,7 @@ func _test_a_swap_replaces_what_the_section_holds(t: TestRunner) -> void:
 	var walk := city.events.walk_events()
 	var def := EventCatalogue.by_id("roadblock").for_day(DAY)
 	var chosen: Location = null
-	var held: Array[EventScheduler.Planned] = []
+	var held: Array[EventPlan] = []
 	# Well clear of her screen, the section and anything standing in it.
 	var seen := _view.grow(Tuning.TILE_SIZE * 4.0)
 	for section in walk.locations().sections_in(PlacementView.View.ROUTE_ADJACENT):
@@ -989,7 +989,7 @@ func _test_a_swap_replaces_what_the_section_holds(t: TestRunner) -> void:
 	var locations := walk.locations()
 	for section in locations.sections_in(PlacementView.View.ROUTE_ADJACENT):
 		if section != chosen:
-			locations.assign(section, EventScheduler.Planned.new(def, section.centre()))
+			locations.assign(section, EventPlan.new(def, section.centre()))
 	# A body is recorded under its plan and, while it is in the world, under its instance too.
 	var expected := map.blocked.copy()
 	for plan in held:

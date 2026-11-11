@@ -34,7 +34,7 @@ func run(t: TestRunner) -> void:
 ## she was travelling on the frame something happened.
 var _last_heading := Vector2.RIGHT
 
-func _walk_the_director(director: EventDirector, plans: Array[EventScheduler.Planned],
+func _walk_the_director(director: EventDirector, plans: Array[EventPlan],
 		at: Vector2, route: PackedVector2Array, seconds: float, until := Callable()) -> Vector2:
 	var left := seconds
 	for i in range(_nearest_on(route, at), route.size()):
@@ -103,7 +103,7 @@ func _fire_route(day: int, outward := true) -> PackedVector2Array:
 ## Day 3's plan, built fresh rather than taken from `_planned()`. These tests site the fire, which
 ## writes a position into the plan — and the memoized copy is shared with every other check in this
 ## suite on the understanding that nothing writes to it.
-func _fire_day_plans() -> Array[EventScheduler.Planned]:
+func _fire_day_plans() -> Array[EventPlan]:
 	var consumed: Array[String] = []
 	return EventScheduler.build_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY),
 			_rng(Tuning.RUN_TAUGHT_DAY), _map(), CalmAreas.of(_map()), MastSites.compute(_map()),
@@ -119,7 +119,7 @@ var _fire_walk := FakeWalkEvents.new()
 
 ## The day-3 fire, and the whole rig it needs: the day's own plan, a placement context built the way
 ## `EventManager.start_day` builds one, and a director started on both.
-func _fire_director(day: int, plans: Array[EventScheduler.Planned]) -> EventDirector:
+func _fire_director(day: int, plans: Array[EventPlan]) -> EventDirector:
 	var director := EventDirector.new(_map())
 	_fire_walk.set_plans(plans)
 	director.start_day(day, plans, _rng(day), _fire_siting(day))
@@ -132,7 +132,7 @@ func _fire_siting(day: int) -> EventScheduler.WalkSiting:
 				RouteTree.for_day(_map(), day), _fire_walk, EventScheduler.Verdicts.new())
 	return _shared_fire_siting
 
-func _fire_in(plans: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
+func _fire_in(plans: Array[EventPlan]) -> EventPlan:
 	for plan in plans:
 		if plan.def.id == "burning_building":
 			return plan
@@ -164,9 +164,9 @@ func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 99
-	var plans: Array[EventScheduler.Planned] = [
-		EventScheduler.Planned.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
-		EventScheduler.Planned.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
+	var plans: Array[EventPlan] = [
+		EventPlan.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
+		EventPlan.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
 	]
 	director.start_day(1, plans, rng)
 	t.check(director.owed() == 2, "the day's budget is what the director gets to spend")
@@ -236,7 +236,7 @@ func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 ## The third of those is the one with teeth. `EventStreaming.stream_in` records the scar and moves the
 ## block along its arc the first time a plan enters the world, so the city already remembers this
 ## fire burning *there* — and a rule that moved it afterwards would be repairing a fact rather than
-## checking one before accepting it. `Planned.was_live` is where the line is drawn, and it is drawn
+## checking one before accepting it. `EventPlan.was_live` is where the line is drawn, and it is drawn
 ## at the streaming radius rather than at the screen edge, which is six seconds of walking earlier.
 func _test_the_fire_follows_her_walk_until_it_is_real(t: TestRunner) -> void:
 	var map := _map()
@@ -446,7 +446,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = 7
-		var plans: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(def, Vector2.INF)]
+		var plans: Array[EventPlan] = [EventPlan.new(def, Vector2.INF)]
 		director.start_day(def.first_day, plans, rng)
 
 		# Somewhere on a street, walking north — the same rig `_test_the_director_puts_it_in_front_
