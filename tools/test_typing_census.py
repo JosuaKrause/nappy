@@ -466,8 +466,8 @@ class RealSignals(unittest.TestCase):
             code, out, err = self.child(phase, delay)
             landed += code == 128 + signal.SIGINT and "END" not in out
             if "END" in out:
-                # The phase ran to its end before the signal: it is shorter than the measured length (a measuring
-                # child that ran slow), so the next delays are drawn from what this trial took.
+                # The phase ran to its end before the signal. The length is the shortest phase seen so far, so a
+                # slow measurement is corrected by the first faster trial that runs to its end.
                 length = min(length, float(out.split()[-1]))
             after = self.snapshot()
             if after != self.original or "left as it is" in err:
