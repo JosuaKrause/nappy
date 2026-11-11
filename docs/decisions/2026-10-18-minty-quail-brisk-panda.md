@@ -21,7 +21,8 @@ the typing plan of 2026-11-11 into file-disjoint passes.
   `event-interface.md` row 4a's.
 - **`main.gd` has no class name**, so a rig reaches it through a preloaded script; giving it one is a
   change under `src/` this pass does not make, noted for the root's pass.
-- **`RoadblockRig.build()` still returns an untyped `Array`**, which its own file's pass types.
+- **`RoadblockRig.build()`, in this pass's own `escape_roadblock_rig.gd`, still returns an untyped
+  `Array`**, so each caller casts the stage it closes; typing that return is left open.
 
 ## Verified
 
