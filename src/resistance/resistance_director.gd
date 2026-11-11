@@ -1724,7 +1724,7 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 ##    closeby we swap one off screen route adjacent event with a roadblock", "it replaces the content
 ##    of the section with the roadblock"). Two things narrow it. Nothing of the section, neither what
 ##    it holds nor the roadblock to come, may be in her view, which is the design's "off screen". And
-##    a section holding one of the city's fixed parts is passed over (`Planned.is_a_fixed_part()`):
+##    a section holding one of the city's fixed parts is passed over (`EventPlan.is_a_fixed_part()`):
 ##    the region wall, the doors, the seals, the masts and the ambient rows, which the player gave
 ##    phases of their own, the orchestrator's reading. Nothing else does: not how far it is, not
 ##    whether what it holds stands still or has noticed her, and not a placement rule asked again.
@@ -1780,8 +1780,8 @@ const ROADBLOCK_WIDER_REACH: Array[float] = [
 ## `is_in_the_wall()`), with ground she can touch it from among `paths` (`tile -> its distance from
 ## her`) closer than `reach` and reachable from home. Null when none is.
 func _a_roadblock_the_day_placed(id: String, paths: Dictionary,
-		reach: float) -> EventScheduler.Planned:
-	var nearest: EventScheduler.Planned = null
+		reach: float) -> EventPlan:
+	var nearest: EventPlan = null
 	var nearest_distance := INF
 	for plan in _walk.plans():
 		if plan.row_id() != id or not plan.is_placed() or plan.is_spent() or plan.is_door() \
@@ -1800,7 +1800,7 @@ func _a_roadblock_the_day_placed(id: String, paths: Dictionary,
 ## search walked, first, then her paths over the whole city where those reach none. Of those, the
 ## first where the roadblock `def` stands across it (`EventScheduler.across_the_section()`: off the
 ## main road, on its carriageway), with neither it nor anything the section holds in her view
-## (`_drawing_shows()`), and holding none of the city's fixed parts (`Planned.is_a_fixed_part()`).
+## (`_drawing_shows()`), and holding none of the city's fixed parts (`EventPlan.is_a_fixed_part()`).
 ## Each roadblock checked is built on a fresh stream, never the director's, since a stationary one
 ## draws nothing.
 ## Answers the section and the roadblock checked across it (`SectionToSwap`), the very plan whose
@@ -1839,9 +1839,9 @@ func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> Section
 ## the two answers one search found, kept together so the roadblock placed is the one checked.
 class SectionToSwap extends RefCounted:
 	var _section: Location
-	var _roadblock: EventScheduler.Planned
+	var _roadblock: EventPlan
 
-	func _init(section: Location, roadblock: EventScheduler.Planned) -> void:
+	func _init(section: Location, roadblock: EventPlan) -> void:
 		_section = section
 		_roadblock = roadblock
 
@@ -1850,13 +1850,13 @@ class SectionToSwap extends RefCounted:
 		return _section
 
 	## The roadblock checked across it, out of her view.
-	func roadblock() -> EventScheduler.Planned:
+	func roadblock() -> EventPlan:
 		return _roadblock
 
 ## How far along her paths (`paths`, `tile -> its distance from her`) the nearest ground she can touch
 ## `plan` from is — within a tile and a half of its body, reachable from home — or `INF` when none is
 ## closer than `reach`.
-func _touched_within(plan: EventScheduler.Planned, paths: Dictionary, reach: float) -> float:
+func _touched_within(plan: EventPlan, paths: Dictionary, reach: float) -> float:
 	var touch := plan.blocking_radius() + Tuning.TILE_SIZE * 1.5
 	var centre := _map.world_to_tile(plan.placed_at())
 	var span := ceili(touch / Tuning.TILE_SIZE)
@@ -1937,7 +1937,7 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 		if not segment.tile_rect().has_point(tile):
 			continue
 		var area := _map.tile_rect_to_world(segment.tile_rect())
-		var houses: Array[EventScheduler.Planned] = []
+		var houses: Array[EventPlan] = []
 		for body in region_plan.door_bodies:
 			if not area.has_point(body.position):
 				continue
@@ -1948,7 +1948,7 @@ func _a_gatehouse_of_the_door_at(tile: Vector2i, rng: RandomNumberGenerator) -> 
 				houses.append(body)
 		if houses.is_empty():
 			return _map.tile_to_world(tile)
-		houses.sort_custom(func(a: EventScheduler.Planned, b: EventScheduler.Planned) -> bool:
+		houses.sort_custom(func(a: EventPlan, b: EventPlan) -> bool:
 			return a.position.x < b.position.x \
 					or (a.position.x == b.position.x and a.position.y < b.position.y))
 		# A door with no boom today: its line is one of its own gatehouses' — this door's own
@@ -2050,7 +2050,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 	if not _events:
 		return Vector2.INF
 	var ground := _spawn_siting.ask_of_ground()
-	var offered: Array[EventScheduler.Planned] = []
+	var offered: Array[EventPlan] = []
 	var beside: Array[Vector2i] = []
 	for plan in _events.plans():
 		if plan.mast_id == "" or plan.def.role != EventDef.Role.MAST or plan.silenced \
@@ -2072,7 +2072,7 @@ func _place_at_a_mast(rng: RandomNumberGenerator, mark := Vector2.INF) -> Vector
 		return Vector2.INF
 	if mark != Vector2.INF:
 		_follow_the_paths_to_the_edge(_where_she_read_it(mark))
-		var near_plans: Array[EventScheduler.Planned] = []
+		var near_plans: Array[EventPlan] = []
 		var near_beside: Array[Vector2i] = []
 		var nearest := 0
 		for i in offered.size():
@@ -3279,7 +3279,7 @@ func _arrow_candidates(step: ResistanceSteps.Step) -> Array[Dictionary]:
 ## and every other. Live means the same offer `_place_at_a_mast()` makes: a placed, unsilenced mast
 ## off the home block whose foot has legal, unobstructed ground beside it that is reachable from
 ## home, so the arrow never moves the task onto a mast she cannot touch.
-func _mast_answers(plan: EventScheduler.Planned, ground: SpawnSiting.Ask) -> bool:
+func _mast_answers(plan: EventPlan, ground: SpawnSiting.Ask) -> bool:
 	if plan.mast_id == "" or plan.def.role != EventDef.Role.MAST or plan.silenced \
 			or not plan.is_placed():
 		return false

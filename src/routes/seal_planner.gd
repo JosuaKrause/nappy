@@ -200,7 +200,7 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 ## boundary — one in `GATEHOUSE_DAY_SEAL_SHARE` of them on a day the region wall stands
 ## (`DaySpec.region_wall_stands()`) — thinned by a small fraction, plus the mouths of any
 ## through-alley the walk does not reach (`RouteSource.reaches_the_alley()`). Returned as
-## `EventScheduler.Planned` so the caller (`DayPlanner`, for a day and for the escape's city) can
+## `EventPlan` so the caller (`DayPlanner`, for a day and for the escape's city) can
 ## simply append them to the walk's plan.
 ##
 ## **A day and the escape's city are this one path with the spec's settings**, since the walk is
@@ -249,12 +249,12 @@ static func _candidate(id: String, strength: int, def_ids: Array[String]) -> Can
 ## blocked street"). Left null for a caller — a test, a rig — that only wants the placements.
 static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 		rng: RandomNumberGenerator, skip: Dictionary = {},
-		held: HeldStreets = null) -> Array[EventScheduler.Planned]:
+		held: HeldStreets = null) -> Array[EventPlan]:
 	# The walker-facing half of a soft seal — see `CityMap.soft_sealed_tiles` — is this function's
 	# own output and nobody else's, so it is cleared and rebuilt here exactly the way `planned`
 	# itself is, rather than trusting a caller to clear it first.
 	map.clear_day_soft_seals()
-	var planned: Array[EventScheduler.Planned] = []
+	var planned: Array[EventPlan] = []
 	if not route:
 		map.set_seal_tree_pits([] as Array[Vector2i])
 		return planned
@@ -448,10 +448,10 @@ class SitedSeal extends RefCounted:
 	var segment: StreetNetwork.Segment
 	var candidate: Candidate
 	var along := -1
-	var bodies: Array[EventScheduler.Planned] = []
+	var bodies: Array[EventPlan] = []
 
 	func _init(the_segment: StreetNetwork.Segment, the_candidate: Candidate, at: int,
-			placed: Array[EventScheduler.Planned]) -> void:
+			placed: Array[EventPlan]) -> void:
 		segment = the_segment
 		candidate = the_candidate
 		along = at
@@ -530,7 +530,7 @@ static func _crosses_a_tree(segment: StreetNetwork.Segment, along: int,
 	return false
 
 static func _place(map: CityMap, segment: StreetNetwork.Segment,
-		candidate: Candidate, along: int) -> Array[EventScheduler.Planned]:
+		candidate: Candidate, along: int) -> Array[EventPlan]:
 	if candidate.strength == Strength.HARD:
 		return _place_hard(map, segment, candidate.def_ids[0], along)
 	return _place_soft(map, segment, candidate.def_ids, along)
@@ -539,11 +539,11 @@ static func _place(map: CityMap, segment: StreetNetwork.Segment,
 ## on either side of it. See `_hard_positions` for how many copies that takes and why the count
 ## is a function of the row's own `obstructs_radius` rather than a fixed number.
 static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
-		def_id: String, along: int = -1) -> Array[EventScheduler.Planned]:
+		def_id: String, along: int = -1) -> Array[EventPlan]:
 	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
-	var planned: Array[EventScheduler.Planned] = []
+	var planned: Array[EventPlan] = []
 	for at in _hard_positions(map, segment, def, along):
-		planned.append(EventScheduler.Planned.new(def, at))
+		planned.append(EventPlan.new(def, at))
 	return planned
 
 ## The public entry point to a **mouth** placement, for a caller outside the candidate list above.
@@ -572,7 +572,7 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 ## `solid_parts`, with `guard_sides` emptied — `_draw_roadblock()` never has to guess a body's
 ## position back out of where it happens to stand.
 static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: String,
-		at_a: bool) -> Array[EventScheduler.Planned]:
+		at_a: bool) -> Array[EventPlan]:
 	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
 	# Overrides the row's own shape too, not only its `obstructs_radius`: `EventDef.validate()`
 	# requires the two to agree, and a point of `Tuning.TILE_SIZE` is what a body this narrow
@@ -582,10 +582,10 @@ static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: 
 			segment.horizontal, def.obstructs_radius)
 	var road_def := _no_wall_guards(def) if positions.size() == 3 else null
 	var road_index := positions.size() / 2
-	var planned: Array[EventScheduler.Planned] = []
+	var planned: Array[EventPlan] = []
 	for i in positions.size():
 		var body_def := road_def if (road_def and i == road_index) else def
-		planned.append(EventScheduler.Planned.new(body_def, positions[i]))
+		planned.append(EventPlan.new(body_def, positions[i]))
 	return planned
 
 ## `def` with its posted guards removed on both sides — the region wall's own road body, standing
@@ -606,15 +606,15 @@ static func _no_wall_guards(def: EventDef) -> EventDef:
 ## (`EventFootprints._centred_on_the_pavement_band`) puts it regardless of which of the pavement's
 ## two lanes this names.
 static func _place_soft(map: CityMap, segment: StreetNetwork.Segment,
-		def_ids: Array[String], along: int = -1) -> Array[EventScheduler.Planned]:
+		def_ids: Array[String], along: int = -1) -> Array[EventPlan]:
 	var tiles := _cross_section_tiles(segment, along)
 	var side_a := tiles[Tuning.SIDEWALK_WIDTH - 1]
 	var side_b := tiles[Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH]
 	var def_a := sealed_variant(EventCatalogue.by_id(def_ids[0]), false)
 	var def_b := sealed_variant(EventCatalogue.by_id(def_ids[1]), false)
-	var planned: Array[EventScheduler.Planned] = []
-	planned.append(EventScheduler.Planned.new(def_a, map.tile_to_world(side_a)))
-	planned.append(EventScheduler.Planned.new(def_b, map.tile_to_world(side_b)))
+	var planned: Array[EventPlan] = []
+	planned.append(EventPlan.new(def_a, map.tile_to_world(side_a)))
+	planned.append(EventPlan.new(def_b, map.tile_to_world(side_b)))
 	return planned
 
 ## The final pass: drop one body of `SEAL_THINNING_FRACTION` of the day's soft pairs, so a
@@ -642,8 +642,8 @@ static func _place_soft(map: CityMap, segment: StreetNetwork.Segment,
 ## ground, never takes it away. A pass that only ever removes obstruction is the one case `CLAUDE.md`
 ## names as safe.
 static func _thin_soft_pairs(map: CityMap, pairs: Array, rng: RandomNumberGenerator) \
-		-> Array[EventScheduler.Planned]:
-	var kept: Array[EventScheduler.Planned] = []
+		-> Array[EventPlan]:
+	var kept: Array[EventPlan] = []
 	for sited: SitedSeal in pairs:
 		# Shut at the along tile `seal_street()` chose for this pair, so the tiles marked shut to
 		# walkers are the ones the bodies actually stand on rather than the street's own midpoint.
@@ -803,8 +803,8 @@ static func positions_across(world: Rect2, horizontal: bool, radius_in: float) -
 ## since walling every one of them, every day, is what made an alley read as closed off wholesale
 ## rather than as the occasional exception the design wants.
 static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
-		rng: RandomNumberGenerator, skip: Dictionary = {}) -> Array[EventScheduler.Planned]:
-	var planned: Array[EventScheduler.Planned] = []
+		rng: RandomNumberGenerator, skip: Dictionary = {}) -> Array[EventPlan]:
+	var planned: Array[EventPlan] = []
 	var day := spec.day_number()
 	var def_id := _alley_mouth_def(pictures_for(spec), day)
 	if def_id == "":
@@ -842,7 +842,7 @@ static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
 
 ## The one-tile-deep rect at one end of a through-alley — the mouth a barrier, hard or soft, always
 ## stands at. Public because `RegionPlanner`'s own crossing-alley wall and `tests/test_regions.gd`'s
-## flood check both need the rect itself rather than only the `Planned` `_alley_mouth_plan` builds
+## flood check both need the rect itself rather than only the `EventPlan` `_alley_mouth_plan` builds
 ## from it.
 static func alley_mouth_rect(rect: Rect2i, vertical: bool, at_start: bool) -> Rect2i:
 	if vertical:
@@ -852,15 +852,15 @@ static func alley_mouth_rect(rect: Rect2i, vertical: bool, at_start: bool) -> Re
 	return Rect2i(Vector2i(x, rect.position.y), Vector2i(1, rect.size.y))
 
 static func _alley_mouth_plan(map: CityMap, rect: Rect2i, vertical: bool, at_start: bool,
-		def: EventDef) -> EventScheduler.Planned:
+		def: EventDef) -> EventPlan:
 	var mouth := alley_mouth_rect(rect, vertical, at_start)
-	return EventScheduler.Planned.new(def, map.tile_rect_to_world(mouth).get_center())
+	return EventPlan.new(def, map.tile_rect_to_world(mouth).get_center())
 
 ## The public entry point to the same alley-mouth placement, for `RegionPlanner`'s own crossing-
 ## alley wall — one body per mouth, from the roadblock row rather than from this file's own
 ## candidate list, the same relationship `place_hard_on` has to `_place_hard`.
 static func alley_mouth_wall(map: CityMap, rect: Rect2i, vertical: bool, at_start: bool,
-		def_id: String) -> EventScheduler.Planned:
+		def_id: String) -> EventPlan:
 	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
 	return _alley_mouth_plan(map, rect, vertical, at_start, def)
 

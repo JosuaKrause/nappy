@@ -1438,7 +1438,7 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: TestRunn
 	var periods := {}
 	var spacing := INF
 	for i in vents.size():
-		var vent: EventScheduler.Planned = vents[i]
+		var vent: EventPlan = vents[i]
 		periods[vent.repeat_every] = true
 		var tile := scene.map.world_to_tile(vent.placed_at())
 		t.check(walk.has(tile), "vent %d stands on the walk she has to take (%s)" % [i, tile])
@@ -1453,7 +1453,7 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: TestRunn
 		t.check(not _basement_reaches_the_exit_without(tile),
 				"vent %d stands on a cell the walk to the exit cannot go round" % i)
 		if i > 0:
-			spacing = minf(spacing, vent.placed_at().distance_to((vents[i - 1] as EventScheduler.Planned).placed_at()))
+			spacing = minf(spacing, vent.placed_at().distance_to((vents[i - 1] as EventPlan).placed_at()))
 	t.check(periods.size() == vents.size(),
 			"and no two vents share a period, so their gaps do not line up by themselves")
 	t.check(spacing > (steam.obstructs_within() + Tuning.PLAYER_BODY_RADIUS) * 2.0,
@@ -1554,7 +1554,7 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: TestRunne
 			% [WINDOW, blows.size()])
 	var off_period := 0
 	var beats := 0
-	for vent: EventScheduler.Planned in BuildingEvents.vents(events):
+	for vent: EventPlan in BuildingEvents.vents(events):
 		var times: Array = blows.get(vent.placed_at(), [])
 		t.check(times.size() >= 2, "vent at %s blew more than once (%d)" % [vent.placed_at(), times.size()])
 		for i in range(1, times.size()):
@@ -1594,7 +1594,7 @@ func _test_a_vent_never_closes_around_her(t: TestRunner) -> void:
 		events.free()
 		scene.free()
 		return
-	var inside: Vector2 = (vents[0] as EventScheduler.Planned).placed_at()
+	var inside: Vector2 = (vents[0] as EventPlan).placed_at()
 	# She stands where the first vent's footprint is; the manager tells every blow where she is.
 	var her := Node2D.new()
 	t.add_child(her)
@@ -1659,8 +1659,8 @@ func _test_no_pocket_between_two_vents_outlasts_the_noise(t: TestRunner) -> void
 	var vents := BuildingEvents.vents(events)
 	var pairs := 0
 	for i in range(1, vents.size()):
-		var a: EventScheduler.Planned = vents[i - 1]
-		var b: EventScheduler.Planned = vents[i]
+		var a: EventPlan = vents[i - 1]
+		var b: EventPlan = vents[i]
 		pairs += 1
 		var shut := _longest_both_shut(a, b, steam)
 		var half := a.placed_at().distance_to(b.placed_at()) * 0.5
@@ -1709,7 +1709,7 @@ func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: TestRunner) -> void:
 ## The longest run of seconds during which both vents are solid at once, over the whole sequence's
 ## own clock. Sampled rather than solved: the two windows are periodic with different periods and
 ## the overlap pattern does not repeat inside the clock, so the honest answer is to walk it.
-func _longest_both_shut(a: EventScheduler.Planned, b: EventScheduler.Planned, steam: EventDef) -> float:
+func _longest_both_shut(a: EventPlan, b: EventPlan, steam: EventDef) -> float:
 	const STEP := 1.0 / 60.0
 	var longest := 0.0
 	var run := 0.0
@@ -1726,7 +1726,7 @@ func _longest_both_shut(a: EventScheduler.Planned, b: EventScheduler.Planned, st
 ## Whether one vent's body is down at `at` seconds into the section. A vent's cycle is its notice,
 ## then `EventCatalogue.FINALE_STEAM_BLOWS_FOR` of blowing, then nothing until its own period comes round;
 ## `until_the_next_blow` is how far into the first cycle it starts.
-func _is_shut(vent: EventScheduler.Planned, at: float, steam: EventDef) -> bool:
+func _is_shut(vent: EventPlan, at: float, steam: EventDef) -> bool:
 	var since := at - (vent.comes_in - vent.repeat_every)
 	if since < 0.0:
 		return false
@@ -1795,7 +1795,7 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: TestRunner) -> void:
 	events.use_player(her)
 	t.check(BuildingEvents.vents(events).size() == BuildingPlan.FINALE_STEAM_PERIODS.size(),
 			"the basement has its vents (%d)" % BuildingEvents.vents(events).size())
-	for vent: EventScheduler.Planned in BuildingEvents.vents(events):
+	for vent: EventPlan in BuildingEvents.vents(events):
 		var grate := _grate_at(grates, vent.placed_at())
 		t.check(is_instance_valid(grate) and grate.is_inside_tree(),
 				"the vent at %s has a grate lying in the building" % vent.placed_at())
@@ -1825,7 +1825,7 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: TestRunner) -> void:
 			if instance.row_id() != "basement_steam":
 				continue
 			blowing[instance.global_position] = instance
-		for vent: EventScheduler.Planned in BuildingEvents.vents(events):
+		for vent: EventPlan in BuildingEvents.vents(events):
 			var grate := _grate_at(grates, vent.placed_at())
 			if not is_instance_valid(grate) or not grate.is_inside_tree():
 				drawn["grates_missing"] += 1
@@ -1841,7 +1841,7 @@ func _test_every_vent_has_its_grate_blowing_or_not(t: TestRunner) -> void:
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(WINDOW, SCALE), watch, SCALE)
 	t.check(seen.size() > BuildingEvents.vents(events).size(),
 			"the vents blew over %.0fs (%d blows)" % [WINDOW, seen.size()])
-	for vent: EventScheduler.Planned in BuildingEvents.vents(events):
+	for vent: EventPlan in BuildingEvents.vents(events):
 		t.check(int(blowing_frames.get(vent.placed_at(), 0)) > 0 and int(quiet_frames.get(vent.placed_at(), 0)) > 0,
 				"the vent at %s was seen both blowing (%d frames) and between blows (%d)"
 				% [vent.placed_at(), int(blowing_frames.get(vent.placed_at(), 0)), int(quiet_frames.get(vent.placed_at(), 0))])
@@ -1963,10 +1963,10 @@ func _test_an_explosion_flashes_every_hallway_window(t: TestRunner) -> void:
 	t.check(_lit(scene, windows) == 0, "all of them, with none left lit (%d)" % _lit(scene, windows))
 	# Every coming of a row from outside lights them, not only a repeat: a plan that comes once, in
 	# the world from its first frame, lights them as it is put there.
-	var once := EventScheduler.Planned.new(EventCatalogue.explosion_outside(),
+	var once := EventPlan.new(EventCatalogue.explosion_outside(),
 			scene.start_world_position())
 	once.come_again_every(0.0)
-	GivenPlanner.hand_in(events, [once] as Array[EventScheduler.Planned])
+	GivenPlanner.hand_in(events, [once] as Array[EventPlan])
 	var none: Array[String] = []
 	events.start_day(BuildingEvents.spec(), RandomNumberGenerator.new(), none,
 			scene.start_world_position())

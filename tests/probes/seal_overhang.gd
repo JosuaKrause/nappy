@@ -45,7 +45,7 @@ func run(t: TestRunner) -> void:
 	t.check(true, "a probe asserts nothing")
 
 static func _count(rows: Dictionary, map: CityMap, ground: WalkGround,
-		plan: EventScheduler.Planned) -> void:
+		plan: EventPlan) -> void:
 	var row: Array = rows.get(plan.def.id, [0, 0, 0.0, 0, 0.0])
 	row[0] += 1
 	var body := Reach.body_overhang(map, ground, plan)

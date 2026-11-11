@@ -114,7 +114,7 @@ func _cost_to_run_through(def: EventDef) -> float:
 			+ Tuning.EXCITEMENT_DECAY_WALKING
 	return (mean - Baby.EXCITEMENT_DECAY_RUNNING + Baby.EXCITEMENT_FROM_RUNNING) * seconds
 
-func _signature(planned: Array[EventScheduler.Planned]) -> String:
+func _signature(planned: Array[EventPlan]) -> String:
 	var parts: Array[String] = []
 	for plan in planned:
 		parts.append("%s@%.1f,%.1f" % [plan.def.id, plan.position.x, plan.position.y])
@@ -373,8 +373,8 @@ func _test_two_of_a_kind_are_not_the_same_incident(t: TestRunner) -> void:
 		var crowded := 0
 		for i in planned.size():
 			for j in range(i + 1, planned.size()):
-				var a: EventScheduler.Planned = planned[i]
-				var b: EventScheduler.Planned = planned[j]
+				var a: EventPlan = planned[i]
+				var b: EventPlan = planned[j]
 				if not a.is_placed() or not b.is_placed():
 					continue
 				if a.def.kind == GameEnums.EventKind.AMBIENT:
@@ -407,7 +407,7 @@ func _test_two_of_a_kind_are_not_the_same_incident(t: TestRunner) -> void:
 func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 	var pursuer := EventCatalogue.by_id("alley_robbery")
 	t.check(pursuer.hard_fail and pursuer.pursuit != null, "alley_robbery is lethal and pursues")
-	var off_wall := EventScheduler.Planned.new(pursuer, Vector2.ZERO)
+	var off_wall := EventPlan.new(pursuer, Vector2.ZERO)
 	off_wall.role = GameEnums.BlockerRole.FRICTION
 	t.check(not off_wall.keeps_its_field_clear(),
 			"a lethal pursuer keeps nothing clear even when it is not classified a wall")
@@ -417,13 +417,13 @@ func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 	var stationary := EventCatalogue.by_id("reversing_lorry")
 	t.check(stationary.hard_fail and stationary.pursuit == null,
 			"reversing_lorry is lethal and does not pursue, the contrast this needs")
-	var off_wall_stationary := EventScheduler.Planned.new(stationary, Vector2.ZERO)
+	var off_wall_stationary := EventPlan.new(stationary, Vector2.ZERO)
 	off_wall_stationary.role = GameEnums.BlockerRole.FRICTION
 	t.check(off_wall_stationary.keeps_its_field_clear(),
 			"and a lethal row that does not pursue keeps its field clear off the WALL role too")
 
 	# And the exemption the other way: the same row classified a wall is the one the rule lets off.
-	var walled := EventScheduler.Planned.new(stationary, Vector2.ZERO)
+	var walled := EventPlan.new(stationary, Vector2.ZERO)
 	walled.role = GameEnums.BlockerRole.WALL
 	t.check(not walled.keeps_its_field_clear(),
 			"while a lethal wall is the exemption the rule makes, and keeps nothing clear")

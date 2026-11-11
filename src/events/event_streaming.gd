@@ -6,7 +6,7 @@ extends RefCounted
 ## `EventInstance` only when the player comes within `stream_radius` of it (`stream_in()`), and goes
 ## again when she leaves (`stream_out()`), carrying what it was in the middle of — except a plan a
 ## task rides, which `keep_live()` puts in the world at once and keeps there. A plan that comes
-## again (`EventScheduler.Planned.repeats()`) is brought back on its own clock
+## again (`EventPlan.repeats()`) is brought back on its own clock
 ## (`bring_back_what_repeats()`), and a finished one is spent for the day (`retire_finished()`).
 ##
 ## The gameplay half of that is bigger than the frames it saves. Loading the day upfront gives days
@@ -21,7 +21,7 @@ extends RefCounted
 var world: EventWorld
 ## What makes an instance of a plan, and what a finished one leaves behind.
 var _spawner: EventSpawner
-## The walk's plans, sited and unsited, spent and unspent. See `EventScheduler.Planned`.
+## The walk's plans, sited and unsited, spent and unspent. See `EventPlan`.
 var _walk: WalkEvents
 
 func _init(the_world: EventWorld, spawner: EventSpawner, walk: WalkEvents) -> void:
@@ -31,7 +31,7 @@ func _init(the_world: EventWorld, spawner: EventSpawner, walk: WalkEvents) -> vo
 
 ## Adds one plan placed after dawn to the walk's, its body recorded where it stands, so it streams
 ## in like any planned row.
-func add(plan: EventScheduler.Planned) -> void:
+func add(plan: EventPlan) -> void:
 	_walk.add(plan)
 	_spawner.record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
 
@@ -39,7 +39,7 @@ func add(plan: EventScheduler.Planned) -> void:
 ## `EventsAhead.swap_in_a_section()`): each of `olds` spent, its body given back and taken out of the
 ## world if it is in it, and `new` added with its body recorded, put in the world now and kept there
 ## for the rest of the day, since a task's contact rides it. Answers `new`'s live instance.
-func swap_section(olds: Array[EventScheduler.Planned], new: EventScheduler.Planned) -> EventInstance:
+func swap_section(olds: Array[EventPlan], new: EventPlan) -> EventInstance:
 	for old in olds:
 		old.spend()
 		world.map.release_obstruction(old.get_instance_id())
@@ -59,10 +59,10 @@ func clear() -> void:
 	_repeating.clear()
 	broadcast_clock = 0.0
 
-## The plans of the walk that come again (`EventScheduler.Planned.repeats()`), found once when a
+## The plans of the walk that come again (`EventPlan.repeats()`), found once when a
 ## walk starts so the per-frame pass over them (`bring_back_what_repeats()`) asks nothing of the
 ## rest.
-var _repeating: Array[EventScheduler.Planned] = []
+var _repeating: Array[EventPlan] = []
 ## Elapsed seconds since this day started, advanced every physics frame regardless of whether
 ## anybody is near a mast. **The city's own broadcast clock** — every mast reads it, not its own
 ## age, at the moment it streams in (`stream_in()`), which is what makes six masts met minutes
@@ -90,7 +90,7 @@ var stream_radius := Tuning.EVENT_STREAM_RADIUS
 ##
 ## **Asked of every plan on every physics tick**, several hundred of them, most of which stand at
 ## one point: so a point plan's distance is worked out here rather than through
-## `Planned.is_placed()` and `Planned.distance_from()`, which answer the same number by the same
+## `EventPlan.is_placed()` and `EventPlan.distance_from()`, which answer the same number by the same
 ## expression, and only a route goes to `distance_from()`.
 func stream_around(at: Vector2) -> void:
 	var stream_out_beyond := stream_radius + Tuning.EVENT_STREAM_HYSTERESIS
@@ -127,7 +127,7 @@ func keep_live(id: String, at: Vector2) -> EventInstance:
 		return plan.live
 	return null
 
-func stream_in(plan: EventScheduler.Planned) -> void:
+func stream_in(plan: EventPlan) -> void:
 	var first_time := not plan.was_live
 	# The scar is recorded the first time the event is put in the world and never again: walking
 	# back past a burnt-out shell must not re-report the fire that made it.
@@ -172,7 +172,7 @@ func stream_in(plan: EventScheduler.Planned) -> void:
 
 ## **Whether `instance` is near enough to `at` for her to be watching it** — within
 ## `Tuning.OUT_OF_SIGHT`, the distance beyond which nothing can be seen. A plan is streamed out by
-## how far she is from its *route* (`EventScheduler.Planned.distance_from()`), but an instance that
+## how far she is from its *route* (`EventPlan.distance_from()`), but an instance that
 ## is leaving carries on past the route's end, and a car she follows out of its street is a long way
 ## from the route while she is a few paces behind it. Streaming that one out would delete it in
 ## front of her (*nothing vanishes while you are looking at it*, "Going away" in `docs/EVENTS.md`),
@@ -182,7 +182,7 @@ func _could_be_watched(instance: EventInstance, at: Vector2) -> bool:
 	return is_instance_valid(instance) \
 			and instance.global_position.distance_to(at) <= Tuning.OUT_OF_SIGHT
 
-func stream_out(plan: EventScheduler.Planned) -> void:
+func stream_out(plan: EventPlan) -> void:
 	plan.age = plan.live.age
 	plan.travelled = plan.live.path_travelled()
 	plan.noticed_at = plan.live.noticed_at()
@@ -249,7 +249,7 @@ func mast_foot(mast_id: String) -> Vector2:
 	return Vector2.INF
 
 ## Silences one mast by id, for the rest of the day — a mast still stands once silenced, with no
-## arcs and no field, so this sets `Planned.silenced` and its live instance's own mirror rather
+## arcs and no field, so this sets `EventPlan.silenced` and its live instance's own mirror rather
 ## than finishing it: `EventInstance._finish()` is for something that leaves, and a mast never
 ## does. Returns whether a mast with that id was found. Matches every plan whose `mast_id` is this
 ## one — a mast's ordinary broadcast and, on `EventScheduler.CURFEW_ANNOUNCE_DAY`, its curfew announcement
@@ -340,7 +340,7 @@ func _mark_plan_spent(instance: EventInstance) -> void:
 			return
 
 # ------------------------------------------------------------- what comes again ---
-# A plan that repeats (`EventScheduler.Planned.repeats()`) is not spent when its instance is done:
+# A plan that repeats (`EventPlan.repeats()`) is not spent when its instance is done:
 # it waits and comes again, a fresh instance every time, so each comes, warns and runs exactly as
 # the first did. The building's vents blow on their own periods, the masked man comes up the shaft
 # again once the last has run out of the top, and the explosions outside come on theirs.
@@ -386,7 +386,7 @@ func find_what_repeats() -> void:
 ## leaving one walks on out of sight on its own, retired when it is finished — the plan's own body
 ## is given back, it will start over from where every instance of it starts, and a wait on its last
 ## one (`repeat_after`) begins now.
-func _done_for_now(plan: EventScheduler.Planned) -> void:
+func _done_for_now(plan: EventPlan) -> void:
 	plan.live = null
 	world.map.release_obstruction(plan.get_instance_id())
 	plan.age = plan.arrives_aged

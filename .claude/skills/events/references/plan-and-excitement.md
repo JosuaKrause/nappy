@@ -15,8 +15,8 @@ of the *plan*. `EventScheduler.build_day()` plans the entire map at dawn. What s
   streaming is a way of dropping events on people. `tests/test_event_manager.gd` asserts it.
 - **A spent plan stays spent, and a running one resumes.** Streaming may take a running event away
   and give it back; it may never rewind one that has finished, and the bookkeeping an event does
-  once — a scar, a block arc — happens on its first instantiation and never again. `Planned.age` and
-  `Planned.travelled` carry it over, and `Planned.behaviours` each behaviour's own state. It
+  once — a scar, a block arc — happens on its first instantiation and never again. `EventPlan.age` and
+  `EventPlan.travelled` carry it over, and `EventPlan.behaviours` each behaviour's own state. It
   **resumes** rather than catching up on lost time.
 
 **Do not move a guarantee out of `build_day` and into the streaming.** If something has to be true

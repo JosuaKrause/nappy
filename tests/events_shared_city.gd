@@ -55,7 +55,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 ## `used` set as a further argument, so their plans are a different question.
 var _plans := {}
 
-func _planned(day: int) -> Array[EventScheduler.Planned]:
+func _planned(day: int) -> Array[EventPlan]:
 	return _day_events(day).placements()
 
 ## The shared map's plan for `day` as the scheduler answers it (`DayEvents`), memoized the same

@@ -808,7 +808,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 
 	# A live mast, the way day 5 onwards leaves one — planned for real, at one of
 	# `MastSites.compute()`'s own sites, rather than a `spawn_extra` stand-in: silencing reads
-	# `Planned.mast_id`, which only a real plan carries.
+	# `EventPlan.mast_id`, which only a real plan carries.
 	var site := MastSites.compute(_city.map)[0]
 	# The real day order, `City.start_day()` first: it is what holds today's region plan and
 	# closures, which the walk is planned and the day's reach (`DayReach`) worked out over, and
@@ -820,7 +820,7 @@ func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	_city.events.stream_radius = INF
 	_city.events.start_day(DaySpec.for_day(Tuning.RUN_LENGTH_DAYS),
 			_rng(Tuning.RUN_LENGTH_DAYS, "events"), [], site.foot)
-	var mast_plan: EventScheduler.Planned = null
+	var mast_plan: EventPlan = null
 	for plan in _city.events.plans():
 		if plan.mast_id == site.id and plan.def.id == "loudspeaker":
 			mast_plan = plan

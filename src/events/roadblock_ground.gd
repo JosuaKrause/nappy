@@ -16,12 +16,12 @@ func route_tiles() -> Array[Vector2i]:
 
 ## The roadblock `section` would take, stood where it fits inside the section, or null where it
 ## fits nowhere in it or the day's rules leave it invalid there given what already stands.
-func offer(_section: Location) -> EventScheduler.Planned:
+func offer(_section: Location) -> EventPlan:
 	assert(false, "RoadblockGround.offer() is overridden by every implementation")
 	return null
 
 ## The route tiles `plan` would be close by, given what already stands.
-func covers(_plan: EventScheduler.Planned) -> Array[Vector2i]:
+func covers(_plan: EventPlan) -> Array[Vector2i]:
 	assert(false, "RoadblockGround.covers() is overridden by every implementation")
 	return []
 
@@ -32,5 +32,5 @@ func reoffer_within() -> float:
 	return 0.0
 
 ## Stands `plan` in the day, so what is offered and covered after it is asked with it standing.
-func stand(_plan: EventScheduler.Planned) -> void:
+func stand(_plan: EventPlan) -> void:
 	assert(false, "RoadblockGround.stand() is overridden by every implementation")

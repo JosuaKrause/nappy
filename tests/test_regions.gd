@@ -63,7 +63,7 @@ func _alley_wall_mouths(plan: RegionPlanner.RegionPlan) -> Dictionary[Rect2i, Ar
 
 ## Whether `body` stands in the mouth `SealPlanner.alley_mouth_rect()` gives an alley's end: the
 ## check that `_alley_wall_mouths()` read the right plan entries back for that alley and end.
-func _stands_in_the_mouth(map: CityMap, body: EventScheduler.Planned, rect: Rect2i,
+func _stands_in_the_mouth(map: CityMap, body: EventPlan, rect: Rect2i,
 		at_start: bool) -> bool:
 	var mouth := SealPlanner.alley_mouth_rect(rect, rect.size.x < rect.size.y, at_start)
 	return map.tile_rect_to_world(mouth).grow(1.0).has_point(body.position)
@@ -501,7 +501,7 @@ func _test_wall_bodies_never_cover_an_alley_mouth(t: TestRunner) -> void:
 			# which come last (`_alley_wall_mouths()`).
 			var street_walls := plan.wall_bodies.slice(0,
 					plan.wall_bodies.size() - plan.alley_walls.size() * 2)
-			for body: EventScheduler.Planned in street_walls:
+			for body: EventPlan in street_walls:
 				checked += 1
 				for tile: Vector2i in alley_mouth_tiles:
 					var distance := map.tile_to_world(tile).distance_to(body.position)
@@ -527,7 +527,7 @@ func _test_wall_crossing_posts_four_guards(t: TestRunner) -> void:
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			# The street walls' bodies come first in the plan, `SealPlanner.place_hard_on()`'s run for
 			# each wall in `plan.walls` order, then the alley mouths' (`_alley_wall_mouths()`).
-			var street_walls: Array[EventScheduler.Planned] = []
+			var street_walls: Array[EventPlan] = []
 			street_walls.assign(plan.wall_bodies.slice(0,
 					plan.wall_bodies.size() - plan.alley_walls.size() * 2))
 			var per_wall := street_walls.size() / maxi(1, plan.walls.size())
@@ -535,7 +535,7 @@ func _test_wall_crossing_posts_four_guards(t: TestRunner) -> void:
 					"seed %d day %d: every wall stands the same run of bodies (%d in all)"
 					% [map.seed_used, day, street_walls.size()])
 			for wall in plan.walls.size():
-				var bodies: Array[EventScheduler.Planned] = []
+				var bodies: Array[EventPlan] = []
 				bodies.assign(street_walls.slice(wall * per_wall, (wall + 1) * per_wall))
 				checked += 1
 				t.check(bodies.size() == 3, "seed %d day %d: a wall crossing stands three bodies (%d)"
@@ -586,7 +586,7 @@ func _test_alley_wall_bodies_post_one_guard_each(t: TestRunner) -> void:
 				var high: float = world.end.y if vertical else world.end.x
 				for at_start: bool in [true, false]:
 					checked += 1
-					var body: EventScheduler.Planned = mouths[rect][0 if at_start else 1]
+					var body: EventPlan = mouths[rect][0 if at_start else 1]
 					t.check(_stands_in_the_mouth(map, body, rect, at_start),
 							"seed %d day %d: the plan's mouth body for alley %s stands in its mouth"
 							% [map.seed_used, day, rect])
@@ -633,7 +633,7 @@ func _test_alley_wall_bodies_fit_their_own_mouth(t: TestRunner) -> void:
 				var high: float = world.end.x if vertical else world.end.y
 				for at_start: bool in [true, false]:
 					checked += 1
-					var body: EventScheduler.Planned = mouths[rect][0 if at_start else 1]
+					var body: EventPlan = mouths[rect][0 if at_start else 1]
 					var centre: float = body.position.x if vertical else body.position.y
 					var half := body.def.obstructs_radius
 					t.check(centre - half >= low - 0.01 and centre + half <= high + 0.01,

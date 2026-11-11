@@ -213,6 +213,8 @@ src/
 	event_catalogue.gd    every event, defined in code
 	event_scheduler.gd    builds a day's event set from seed + the day's spec: the day's locations drawn from
 	                      a bag per view, or the escape city's streets from its marble bag
+	event_plan.gd         one placed event's row, position, role and path: what the manager needs to
+	                      spawn one instance
 	day_events.gd         the day's planned rows read through one object: what each spoils, a
 	                      pursuit; kept in step as the plan is built, never saved
 	calm_areas.gd         the day's calm areas as dawn sees them: their ground, which she used

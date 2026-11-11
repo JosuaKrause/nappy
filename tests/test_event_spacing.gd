@@ -7,10 +7,10 @@ func run(t: TestRunner) -> void:
 	_test_one_point_paths_are_stationary(t)
 	_test_stationary_fast_paths_match_the_symmetric_oracle_in_both_orders(t)
 
-func _plan(at: Vector2, path := PackedVector2Array()) -> EventScheduler.Planned:
-	return EventScheduler.Planned.new(EventCatalogue.by_id("busker"), at, path)
+func _plan(at: Vector2, path := PackedVector2Array()) -> EventPlan:
+	return EventPlan.new(EventCatalogue.by_id("busker"), at, path)
 
-func _symmetric_gap(a: EventScheduler.Planned, b: EventScheduler.Planned) -> float:
+func _symmetric_gap(a: EventPlan, b: EventPlan) -> float:
 	var gap := INF
 	for point in a.ends():
 		gap = minf(gap, b.distance_from(point))
@@ -40,7 +40,7 @@ func _test_one_point_paths_are_stationary(t: TestRunner) -> void:
 			"a one-point path uses the plan position, as ends and distance_from do", 0.0001)
 
 func _test_stationary_fast_paths_match_the_symmetric_oracle_in_both_orders(t: TestRunner) -> void:
-	var plans: Array[EventScheduler.Planned] = [
+	var plans: Array[EventPlan] = [
 		_plan(Vector2(2.0, 3.0)),
 		_plan(Vector2(0.0, 5.0)),
 		_plan(Vector2(2.0, 3.0), PackedVector2Array([Vector2(100.0, 100.0)])),

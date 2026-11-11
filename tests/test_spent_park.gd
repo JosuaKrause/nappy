@@ -498,7 +498,7 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t: TestRunner) -> v
 	t.check(offered > 0, "the sweep had used, open areas to spoil (%d)" % offered)
 	print("  spent parks: %d of %d used-and-open areas were spoiled with events" % [spoiled, offered])
 
-## Whether a plan that spoils `block`'s lot (`Planned.spoils()`: not a playground, not a scar) stands
+## Whether a plan that spoils `block`'s lot (`EventPlan.spoils()`: not a playground, not a scar) stands
 ## inside it as the day's plan ends: what shuts a used area is the events placed in it (PLAYTEST-140
 ## 8), not a field reaching in from outside.
 func _a_body_stands_inside(map: CityMap, events: DayEvents, calm: CalmAreas, block: Vector2i) -> bool:

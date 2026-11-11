@@ -17,7 +17,7 @@ extends RefCounted
 ##    it. Its own count and how much of the park's open ground it actually denies.
 ## 2. **The full day's plan** — `EventScheduler.build_day` with the same park as `used_calm`,
 ##    filtered to whatever reaches the park the way the day asks whether a row spoils one
-##    (`EventScheduler.Planned.reaches()`). This is what a player actually
+##    (`EventPlan.reaches()`). This is what a player actually
 ##    meets, which can be *more* than the roll alone placed: the visited park is not protected
 ##    from the day's ordinary fill the way an unvisited one is (`CalmAreas.unused_ground()` only
 ##    lists calm areas she has not used).
@@ -115,14 +115,14 @@ func _reproduce_zero_density_visits() -> void:
 
 				# 2. The full day, exactly as `build_day` plans it with this park as `used_calm`,
 				# filtered to whatever actually reaches the park — the day's own question of a
-				# spoiler (`EventScheduler.Planned.reaches()`).
+				# spoiler (`EventPlan.reaches()`).
 				var rng2 := RandomNumberGenerator.new()
 				rng2.seed = hash("m97:full:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
-				var full_planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
+				var full_planned: Array[EventPlan] = EventScheduler.build_day(
 						DaySpec.for_day(day), rng2, map, CalmAreas.of(map, [block] as Array[Vector2i]), MastSites.compute(map),
 						[], [], tree, 0).placements()
-				var full_in_lot: Array[EventScheduler.Planned] = []
-				for plan: EventScheduler.Planned in full_planned:
+				var full_in_lot: Array[EventPlan] = []
+				for plan: EventPlan in full_planned:
 					if plan.def.kind == GameEnums.EventKind.AMBIENT or plan.permanent \
 							or not plan.is_placed():
 						continue
@@ -138,7 +138,7 @@ func _reproduce_zero_density_visits() -> void:
 							% [i, day, block, rc, rd * 100.0])
 				elif fd < 0.34 and low_examples.size() < MAX_EXAMPLES:
 					var ids: Array[String] = []
-					for plan: EventScheduler.Planned in full_in_lot:
+					for plan: EventPlan in full_in_lot:
 						ids.append(plan.def.id)
 					low_examples.append("  seed=%d day=%d block=%s: %s in the park she used yesterday, %s — denied %.0f%% of open ground (roll alone: %d placed, denied %.0f%%)"
 							% [i, day, block, ", ".join(ids), RunTrace.tile(block), fd * 100.0, rc, rd * 100.0])
@@ -196,7 +196,7 @@ func _reproduce_zero_density_visits() -> void:
 ## (`_things_to_put_in_a_park` excludes `mobile`), so a point-to-position distance is exact rather
 ## than an approximation of a route.
 func _tiles_denied_fraction(map: CityMap, open_tiles: Array[Vector2i],
-		plans: Array[EventScheduler.Planned]) -> float:
+		plans: Array[EventPlan]) -> float:
 	if open_tiles.is_empty():
 		return 1.0
 	if plans.is_empty():
@@ -205,7 +205,7 @@ func _tiles_denied_fraction(map: CityMap, open_tiles: Array[Vector2i],
 	for tile in open_tiles:
 		var world := map.tile_to_world(tile)
 		var is_denied := false
-		for plan: EventScheduler.Planned in plans:
+		for plan: EventPlan in plans:
 			if not plan.is_placed():
 				continue
 			if world.distance_to(plan.position) <= EventScheduler._denial_radius(plan.def):

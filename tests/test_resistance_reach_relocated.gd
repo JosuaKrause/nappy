@@ -33,7 +33,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 		var site_near := false
 		var reach := ResistanceReads.day_reachability(_city)
 		# The task's mast, by the public link: the contact stands on its foot.
-		var added_plan: EventScheduler.Planned = null
+		var added_plan: EventPlan = null
 		for plan in _city.events.plans():
 			if plan.def.id == "loudspeaker" and plan.mast_id.begins_with("added-") \
 					and _city.events.mast_foot(plan.mast_id).distance_to(

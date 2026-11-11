@@ -66,8 +66,8 @@ static func _where_a_mast_may_stand(city: City) -> Array:
 	var siting: EventScheduler.WalkSiting = events.ahead._siting
 	var def: EventDef = events.ahead._director.route_row(EventCatalogue.mast().id)
 	var map: CityMap = city.map
-	var plans: Array[EventScheduler.Planned] = events.plans()
-	var none: Array[EventScheduler.Planned] = []
+	var plans: Array[EventPlan] = events.plans()
+	var none: Array[EventPlan] = []
 	var rng := RandomNumberGenerator.new()
 	var counts := {}
 	var passing: Array[Vector2i] = []

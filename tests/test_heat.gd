@@ -715,7 +715,7 @@ func _test_a_hot_day_places_more_patrols(t: TestRunner) -> void:
 			"over %d seeds a fully heated day places more patrols than a cold one (%d against %d)"
 			% [seeds.size(), hots, colds])
 
-func _count_patrols(planned: Array[EventScheduler.Planned]) -> int:
+func _count_patrols(planned: Array[EventPlan]) -> int:
 	var count := 0
 	for plan in planned:
 		if plan.def.id == "police_patrol":

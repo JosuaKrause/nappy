@@ -54,8 +54,8 @@ func _test_streaming_carries_a_plan_out_and_back_on_its_own(t: TestRunner) -> vo
 	var streaming := manager.streaming
 	var def := EventCatalogue.by_id("alley_robbery")
 	var at := Vector2(5000.0, 5000.0)
-	var plan := EventScheduler.Planned.new(def, at)
-	var plans: Array[EventScheduler.Planned] = [plan]
+	var plan := EventPlan.new(def, at)
+	var plans: Array[EventPlan] = [plan]
 	manager.walk_events().take(plans)
 	streaming.stream_around(at)
 	t.check(plan.live != null and manager.instances().has(plan.live),
@@ -137,8 +137,8 @@ func _test_a_scar_is_recorded_once_however_often_it_streams_in(t: TestRunner) ->
 	t.check(def.aftermath.scar != "", "the fire leaves a scar")
 	t.check(manager.world.run.attempt_spend.scars.is_empty(), "and the run starts with none")
 	var at := Vector2(6000.0, 6000.0)
-	var plan := EventScheduler.Planned.new(def, at)
-	var plans: Array[EventScheduler.Planned] = [plan]
+	var plan := EventPlan.new(def, at)
+	var plans: Array[EventPlan] = [plan]
 	manager.walk_events().take(plans)
 	var far := at + Vector2(Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 			+ Tuning.OUT_OF_SIGHT + 100.0, 0.0)
@@ -172,7 +172,7 @@ func _test_a_door_says_what_it_does_to_her_and_moves_nobody(t: TestRunner) -> vo
 	var doors := CheckpointController.new(manager.world, spawn, EventBus, EventCatalogue.door_guard())
 	# A post is a plan the day's streaming brings in once she is near (`EventStreaming.add()`).
 	var post_at := Vector2(3000.0, 3000.0)
-	var post_plan := EventScheduler.Planned.new(EventCatalogue.by_id("checkpoint_post"), post_at)
+	var post_plan := EventPlan.new(EventCatalogue.by_id("checkpoint_post"), post_at)
 	manager.streaming.add(post_plan)
 	manager.streaming.stream_around(post_at)
 	var hut := post_plan.live
@@ -216,8 +216,8 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t: TestRunner) -> voi
 	t.add_child(manager)
 	var def := EventCatalogue.by_id("alley_robbery")
 	var at := Vector2(5000.0, 5000.0)
-	var plan := EventScheduler.Planned.new(def, at)
-	manager.walk_events().take([plan] as Array[EventScheduler.Planned])
+	var plan := EventPlan.new(def, at)
+	manager.walk_events().take([plan] as Array[EventPlan])
 	var her := _her(t)
 	# Off the robber's own heading and beyond his notice, so he stands as he was sited, and the side
 	# a man would get out of him on is hers once he knows where she is (`door_for_its_officer()`).

@@ -3,15 +3,15 @@ extends RefCounted
 ## A candidate closer than the gap and its own reach is refused, one past it allowed, and a day with
 ## no doors refuses nothing. Candidates built by hand; no map.
 
-const PLACED: Array[EventScheduler.Planned] = []
+const PLACED: Array[EventPlan] = []
 
 func run(t: TestRunner) -> void:
 	var cafe := EventCatalogue.by_id("cafe_tables")
 	var door := Vector2(2000, 2000)
 	var rule := DoorClearanceRule.new(PackedVector2Array([door]))
 	var limit := Tuning.CHECKPOINT_EVENT_GAP + cafe.field_reach()
-	var near := EventScheduler.Planned.new(cafe, door + Vector2(limit - 16.0, 0.0))
-	var far := EventScheduler.Planned.new(cafe, door + Vector2(limit + 16.0, 0.0))
+	var near := EventPlan.new(cafe, door + Vector2(limit - 16.0, 0.0))
+	var far := EventPlan.new(cafe, door + Vector2(limit + 16.0, 0.0))
 	t.check(not rule.allows(near, Vector2i.ZERO, PLACED, PLACED),
 			"a cafe whose field comes inside the door's clear ground is refused")
 	t.check(rule.allows(far, Vector2i.ZERO, PLACED, PLACED), "one past the gap is allowed")

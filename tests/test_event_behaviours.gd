@@ -301,7 +301,7 @@ func _test_the_manager_streams_a_behaviours_state(t: TestRunner) -> void:
 	var run := RunState.new()
 	manager.setup_world(map, run)
 	t.add_child(manager)
-	var plan := EventScheduler.Planned.new(def, at)
+	var plan := EventPlan.new(def, at)
 	manager.streaming.add(plan)
 	manager.stream_around(at)
 	var robber := plan.live

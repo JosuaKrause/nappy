@@ -24,8 +24,8 @@ func _calm() -> FakeCalmAreas:
 			.set_area(COURT, COURT_GROUND) \
 			.set_area(PARK, PARK_GROUND)
 
-func _row(id: String, at: Vector2) -> EventScheduler.Planned:
-	return EventScheduler.Planned.new(EventCatalogue.by_id(id), at)
+func _row(id: String, at: Vector2) -> EventPlan:
+	return EventPlan.new(EventCatalogue.by_id(id), at)
 
 ## Just above the court's top edge by `gap` pixels, on its middle.
 func _above_the_court(gap: float) -> Vector2:
@@ -38,14 +38,14 @@ func _test_a_row_spoils_the_ground_its_field_reaches(t: TestRunner) -> void:
 	var far := _row("dog_walker", _above_the_court(reach + 10.0))
 	events.add(near)
 	events.add(far)
-	t.check(events.is_spoiled(COURT) and events.spoilers_of(COURT) == ([near] as Array[EventScheduler.Planned]),
+	t.check(events.is_spoiled(COURT) and events.spoilers_of(COURT) == ([near] as Array[EventPlan]),
 			"a row whose field reaches the court spoils it, and one just past its reach does not")
 	t.check(not events.is_spoiled(PARK), "and the park it reaches neither of them")
 	var inside := _row("busker", PARK_GROUND.get_center())
 	events.add(inside)
-	t.check(events.spoilers_of(PARK) == ([inside] as Array[EventScheduler.Planned]),
+	t.check(events.spoilers_of(PARK) == ([inside] as Array[EventPlan]),
 			"a row standing on the park spoils the park")
-	t.check(events.placements() == ([near, far, inside] as Array[EventScheduler.Planned])
+	t.check(events.placements() == ([near, far, inside] as Array[EventPlan])
 			and events.size() == 3, "and every row is in the plan, in the order placed")
 
 func _test_a_playground_a_scar_and_a_row_not_yet_placed_spoil_nothing(t: TestRunner) -> void:
@@ -54,12 +54,12 @@ func _test_a_playground_a_scar_and_a_row_not_yet_placed_spoil_nothing(t: TestRun
 	var scar := _row("burnt_shell", COURT_GROUND.get_center())
 	scar.permanent = true
 	var unplaced := _row("dog_walker", Vector2.INF)
-	events.add_all([playground, scar, unplaced] as Array[EventScheduler.Planned])
+	events.add_all([playground, scar, unplaced] as Array[EventPlan])
 	t.check(not events.is_spoiled(COURT),
 			"a playground, a scar the run left and a row not yet placed leave the court clean")
 	var today := _row("burnt_shell", COURT_GROUND.get_center())
 	events.add(today)
-	t.check(events.spoilers_of(COURT) == ([today] as Array[EventScheduler.Planned]),
+	t.check(events.spoilers_of(COURT) == ([today] as Array[EventPlan]),
 			"while the same row placed today, not the run's, spoils it")
 
 func _test_a_pursuit_is_counted_while_it_is_planned(t: TestRunner) -> void:
@@ -72,7 +72,7 @@ func _test_a_pursuit_is_counted_while_it_is_planned(t: TestRunner) -> void:
 
 func _test_the_standing_bodies_are_not_the_plans_rows(t: TestRunner) -> void:
 	var seal := _row("barricade", PARK_GROUND.get_center())
-	var standing: Array[EventScheduler.Planned] = [seal]
+	var standing: Array[EventPlan] = [seal]
 	var events := DayEvents.over(_calm(), standing)
 	t.check(events.standing() == standing, "a seal handed in stands for the plan")
 	t.check(events.placements().is_empty() and not events.is_spoiled(PARK),

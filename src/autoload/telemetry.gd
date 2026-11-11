@@ -408,7 +408,7 @@ func start_burst(context: String) -> bool:
 ## wrong. `_attempt_suffix()` names the attempt every time, including the first, so a filename is
 ## never ambiguous about which attempt it came from and there is only one shape to read.
 func write_map(map: CityMap, day: int, closures: Array[RoadClosure] = [],
-		tree: RouteTree = null, plans: Array[EventScheduler.Planned] = [],
+		tree: RouteTree = null, plans: Array[EventPlan] = [],
 		at_dusk := false, trail: Array[Vector3] = [], met: Dictionary = {}) -> void:
 	if not _log or _log.file_path() == "":
 		return
