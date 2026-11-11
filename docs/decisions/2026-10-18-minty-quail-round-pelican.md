@@ -27,11 +27,20 @@ suite calls only its static `hits()`, so nothing was converted.
   row's `hard_fail` (`ends_the_day()`), `inner_radius` (`core_within()`), `outer_radius`
   (`heard_within()`), `intensity` (`peak()`), `max_per_day` (`most_in_a_day()`), `mobile`
   (`moves()`), `obstructs_radius` (`obstructs_within()`), `shape` (`ground_shape()`),
-  `telegraph_time` (`telegraphs_for()`) and `hunts` (`lets_out()`); a ground shape's `half_length`
+  `telegraph_time` (`telegraphs_for()`); a ground shape's `half_length`
   (`spine_half_length()`), `radius` (`rounding_radius()`) and `kind` (`is_segment()`). The rest
   (among them `City`'s `crowd`, `events` and `run`, the event manager's fields, the run's parts,
-  `TrafficSignals.elapsed`, and the live event's `age`, `car`, `look`, `is_parked`, `barrier_post`,
-  `drawer` and `signals`) have no method the game calls.
+  the row's `hunts`, and the live event's `age`, `car`, `look`, `is_parked`, `barrier_post`,
+  `drawer` and `signals`) have no method the game calls. The row's `hunts.lets_out`, read on a cold row in `test_heat`, is not
+  what `lets_out()` answers: that asks the heated copy's `hunting`, null on a cold row.
+- **The traffic lights' clock, `TrafficSignals.elapsed`, written** in `test_police_car`: `restart_cycle()`
+  and `advance()` do those writes and the crowd calls both, so the crowd's pass converts them
+  (the record minty-quail-tiny-elk names the same methods).
+- **Fields of inner classes**, which the field-read check does not list: the plan's
+  (`EventScheduler.Planned`) `def` (`row()`), `position` (`placed_at()`), `live` (`instance()`, and
+  `is_in_the_world()` for its null test), `mast_id` and `silenced` (none); a mast site's
+  (`MastSites.Site`) `id` and `foot` (none); a calm area's (`ClosurePlanner.CalmArea`) `access`
+  (none).
 - **`test_fire_truck_body.gd` still calls the private `EventSpawner._where_the_summoned_row_stops()`**,
   the open breach `tests-public-seams.md` lists.
 
