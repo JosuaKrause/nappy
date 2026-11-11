@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The pursuer on foot: the one a torn poster's pursuit marble sends at her at once from off screen,
 ## a policeman through day 8 and a guardsman from day 9.
@@ -280,7 +279,7 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t: TestRunner) -> 
 ## the same one at another moment.
 func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> void:
 	var days: Array[Dictionary] = []
-	for sends in [false, true]:
+	for sends: bool in [false, true]:
 		var rig := _city_with_her(t, 6)
 		var city: City = rig[0]
 		var her: CharacterBody2D = rig[1]
@@ -709,7 +708,7 @@ func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 		if car.is_finished or car.is_leaving or (his_man_is_back and out_of_reach):
 			break
 	var finished := officer != null and (not is_instance_valid(officer) or officer.is_finished)
-	for instance in events.instances().duplicate():
+	for instance: EventInstance in events.instances().duplicate():
 		events.retire(instance)
 	events.streaming.retire_finished()
 	return landed if finished else -1.0

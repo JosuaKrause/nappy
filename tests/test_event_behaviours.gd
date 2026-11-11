@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The behaviours an event is composed of (`EventBehaviours.compose()`): that each one's own state
 ## survives a stream-out — saved off one instance (`save_behaviours()`), put
@@ -335,7 +334,8 @@ func _test_the_barrier_post_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
-	t.check(first.save_behaviours().get(&"EventBarrierPost", {}).is_empty(),
+	var carried: Dictionary = first.save_behaviours().get(&"EventBarrierPost", {})
+	t.check(carried.is_empty(),
 			"both guards at their posts, there is nothing to carry")
 	first_where.tell(Vector2(0.0, 120.0))
 	first.barrier_post.leave_the_body()
