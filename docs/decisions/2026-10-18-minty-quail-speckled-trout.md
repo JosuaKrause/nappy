@@ -19,24 +19,17 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 - **Search: none.** The row's, the live event's and the plan's fields are `event-interface.md` row
   4a's scripted rewrite, so this pass converts no read.
 - **Other modules' fields stay for their passes.** The pull request's description lists them by
-  class, inner classes included. Those a method returns as read: the row's `pulses_every`,
-  `telegraph_time` (`telegraphs_for()`), `casts_a_shadow`, `obstructs_radius` (`obstructs_within()`),
-  `inner_radius` (`core_within()`), `intensity` (`peak()`), `look` (`picture()`), `shape`
-  (`ground_shape()`), `detain_seconds` (`detains_for()`), `max_per_day` (`most_in_a_day()`),
-  `mobile` (`moves()`), the barrier count (`counts_as_one_barrier()`) and `hard_fail`
-  (`ends_the_day()`); the live event's `is_finished` (`is_gone()`), `is_leaving`
-  (`is_on_its_way_out()`), `def` (`row()`) and `excitement` (`source()`); the plan's `def` (`row()`)
-  and `position` (`placed_at()`); the map's home, block, network, seed and block plans (each through
-  its method), a building's `lot` (`lot_rect()`), a ground shape's half extents and half length, and
-  the world map's `size` (`size_in_tiles()`). Answered only in part, by a method that derives
-  something else: the row's spawn mode and first day (`spawn_mode_on(day)`, `available_on(day)`),
-  its flock and parts, the map's power station (`has_power_station()`), the spend state's scars.
-  No method: the row's `id`, `kind`, `duration`, `intensity_ramp`, `act_tag`, `placement`,
-  `has_a_spread`, `telegraphs`, `core_intensity` and `role`; the live event's `flock`, `atlas` and
-  `drawer`; the plan's `facing` and `role` (read and written); `City`'s `map` and `run`, the run's
-  `header` and `attempt_spend`, the header's `day`; a lane mover's `kind` and `strategy`; a road
-  closure's `segment`; a building's `condition`, `covered_ground_cols`, `footprint` and `shape`; a
-  bird's `at` (written); a segment's `horizontal`.
+  class, inner classes included (the plan record, a region plan, a seal candidate), writes marked,
+  each with the method the game calls where one exists and each method's body checked to return
+  that field: among them the row's `telegraphs_for()`, `obstructs_within()`, `heard_within()`,
+  `core_within()`, `peak()`, `picture()`, `ground_shape()`, `detains_for()`, `most_in_a_day()`,
+  `moves()`, `counts_as_one_barrier()` and `ends_the_day()`; the live event's `is_gone()`,
+  `is_on_its_way_out()`, `row()` and `source()`; the plan record's `row()`, `placed_at()` and
+  `give_role()` (its role written); the map's `calm_blocks_now()`, `size_in_tiles()` and the home,
+  block, network, seed and block plans' methods; a building's `lot_rect()` and `is_burnt()`; and a
+  lane mover's `lane().strategy()`. Answered only in part, by a method that derives something else:
+  the row's spawn mode, first day and kind (`spawn_mode_on(day)`, `available_on(day)`,
+  `is_ambient()`).
 
 ## Verified
 
