@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## M171, "the ground": `assets/ground_tileset.tres` carries no picture of its own any more, and
 ## `GroundLayers` builds every ground tile out of the baked `ground` page.
@@ -265,7 +264,7 @@ func _test_the_ground_is_one_composed_sheet(t: TestRunner) -> void:
 	t.check(reshaped.is_empty(), "composing keeps every source's authored cell geometry (%s)"
 			% ", ".join(reshaped.slice(0, 5)))
 	var twins := 0
-	for source_id in GroundTiles.ROUTE_KERB_SOURCES:
+	for source_id: int in GroundTiles.ROUTE_KERB_SOURCES:
 		var twin_id := GroundTiles.route_twin_of(source_id)
 		if twin_id >= 0 and composed.has_source(twin_id):
 			twins += 1
@@ -296,7 +295,7 @@ func _test_every_tile_is_the_page_the_manifest_asked_for(t: TestRunner) -> void:
 	if composed == null:
 		return
 	var twin_ids: Dictionary = {}
-	for source_id in GroundTiles.ROUTE_KERB_SOURCES:
+	for source_id: int in GroundTiles.ROUTE_KERB_SOURCES:
 		twin_ids[GroundTiles.route_twin_of(source_id)] = true
 	var wrong: Array[String] = []
 	var miscounted: Array[String] = []
@@ -379,7 +378,7 @@ func _expected_cells(page: Image, manifest: Dictionary, source_id: int, name: St
 		if pool.size() != GroundLayers.DAMAGE_VARIANTS:
 			return []
 		var cells: Array = []
-		for stencil in pool:
+		for stencil: String in pool:
 			var overlay := _component(page, manifest, str(stencil))
 			if overlay == null:
 				return []
@@ -387,7 +386,7 @@ func _expected_cells(page: Image, manifest: Dictionary, source_id: int, name: St
 		return cells
 	var source_layers: Dictionary = manifest.get("source_layers", {})
 	var overlays: Array[Image] = []
-	for record_value in source_layers.get(str(source_id), []):
+	for record_value: Variant in source_layers.get(str(source_id), []):
 		if not record_value is Dictionary:
 			return []
 		var record: Dictionary = record_value
@@ -436,20 +435,20 @@ func _region(page: Image, name: StringName) -> Image:
 ## Alpha-composited here with `Image`'s own call rather than by the ground compositor,
 ## so this stays a reference and not a second reading of the code under test.
 func _over(base: Image, overlays: Array[Image]) -> Image:
-	var result := base.duplicate()
+	var result: Image = base.duplicate()
 	for overlay in overlays:
 		result.blend_rect(overlay, Rect2i(Vector2i.ZERO, overlay.get_size()), Vector2i.ZERO)
 	return result
 
 func _turned(image: Image, degrees: int) -> Image:
-	var result := image.duplicate()
+	var result: Image = image.duplicate()
 	match posmod(degrees, 360):
 		90:
-			result.rotate_90(false)
+			result.rotate_90(CLOCKWISE)
 		180:
 			result.rotate_180()
 		270:
-			result.rotate_90(true)
+			result.rotate_90(COUNTERCLOCKWISE)
 	return result
 
 ## One cell's own pixels, read the way the engine reads them: `get_tile_texture_region()` builds

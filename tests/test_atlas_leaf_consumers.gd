@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## M171, "The unatlased leaf consumers": buildings, the street kit (the city edge, closure
 ## markers, traffic lights), the UI (`ModeButton`, `TouchControls`, `SaveIndicator`) and the
@@ -41,7 +40,7 @@ func run(t: TestRunner) -> void:
 func _check_regions(t: TestRunner, names: Array, group: StringName, label: String) -> void:
 	var missing: Array[String] = []
 	var misfiled: Array[String] = []
-	for entry in names:
+	for entry: Variant in names:
 		var name := entry as StringName
 		if not AtlasTable.baked().has_region(name):
 			missing.append(String(name))
@@ -186,7 +185,7 @@ func _test_each_street_kit_consumer_holds_its_own_reference(t: TestRunner) -> vo
 			node.use_atlas(atlas)
 			return node,
 	}
-	for label in makers:
+	for label: String in makers:
 		_check_holds_its_own(t, makers[label], &"street_kit", label)
 
 ## One consumer alone on a fresh library and run log: it is seen to hold `group` on entering the
@@ -230,7 +229,7 @@ func _test_every_ui_region_is_baked_on_its_group(t: TestRunner) -> void:
 			names.append(name)
 	_check_regions(t, names, &"ui", "the UI")
 	var atlas := AtlasLibrary.new()
-	for symbol in ModeButton.Symbol.values():
+	for symbol: ModeButton.Symbol in ModeButton.Symbol.values():
 		var button := ModeButton.new()
 		button.use_atlas(atlas)
 		button.symbol = symbol
@@ -293,7 +292,7 @@ func _test_each_ui_consumer_holds_its_own_reference(t: TestRunner) -> void:
 			node.use_atlas(atlas)
 			return node,
 	}
-	for label in makers:
+	for label: String in makers:
 		_check_holds_its_own(t, makers[label], &"ui", label)
 
 # ------------------------------------------------------------------ interior ---

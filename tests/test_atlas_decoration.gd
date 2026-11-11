@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The "decoration" `AtlasLibrary` group — props, litter and city decals. `tests/test_atlas_library.gd`
 ## already covers the atlas contract every group shares (every member baked, no two regions
@@ -24,7 +23,7 @@ func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 		[Prop.Kind.SACK, Prop.SACK, 0.35],
 		[Prop.Kind.SACK_PILE, Prop.SACK_PILE, 0.3],
 	]
-	for case in point_cases:
+	for case: Array in point_cases:
 		var kind: Prop.Kind = case[0]
 		var region: StringName = case[1]
 		var fraction: float = case[2]

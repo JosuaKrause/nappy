@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What a `Building`'s front shows, read off the pictures it was drawn with.
 ##
@@ -14,6 +13,8 @@ extends RefCounted
 ## then `look()` at it.
 
 const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
+## This script, to name the type `look()` answers.
+const Reads := preload("res://tests/front_reads.gd")
 
 const TILE := Building.TILE
 
@@ -38,8 +39,8 @@ static func watch(building: Building) -> void:
 	building.queue_redraw()
 
 ## The reads of `building`'s front as it was last drawn.
-static func look(building: Building):
-	var reads = load("res://tests/front_reads.gd").new()
+static func look(building: Building) -> Reads:
+	var reads := Reads.new()
 	reads.building = building
 	reads.drawer = building.front_drawer as RecordingFrontDrawer
 	reads.refresh()

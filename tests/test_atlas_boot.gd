@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What a booted game holds of the atlas, and never reloads (PLAYTEST-109: *"don't unload anything
 ## that might be needed in one day and in the next"*): a boot holds the run's own parent page and
@@ -61,7 +60,7 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t: TestRunner) -> void:
 	var seat := Seat.new(t)
 	var atlas := seat.sitting.atlas
 	var pages := PageLog.new(atlas)
-	for male in [false, true]:
+	for male: bool in [false, true]:
 		# Handed the watch's log: a boot points the sitting's library at the log it writes.
 		var booted := await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED), "--parent",
 				"father" if male else "mother"], pages.boot_log(), false, MapCache.source())
@@ -75,7 +74,7 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t: TestRunner) -> void:
 				% theirs + "she standing in it")
 		booted.free_all()
 		var theirs_read := pages.loads(theirs)
-		for day in [1, 2, 3]:
+		for day: int in [1, 2, 3]:
 			var city := _city(t, atlas)
 			city.crowd.start_day(day, _rng("parent-%s-%d" % [male, day]))
 			var rig := _rig(t, male, atlas)
@@ -276,8 +275,8 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t: TestRunner) -> void:
 ## The real `main.tscn` handed the suite's scratch save, a reload that only counts, the `home`
 ## its sitting is parked in and taken from, and the suite's `run_log`, put in the tree with the two
 ## frames its `_ready()` awaits let pass.
-func _boot_in(t: TestRunner, home: Node, save: GameSave, reloads: Array[int], run_log: Telemetry) -> Node2D:
-	var main: Node2D = MAIN_SCENE.instantiate()
+func _boot_in(t: TestRunner, home: Node, save: GameSave, reloads: Array[int], run_log: Telemetry) -> MAIN_SCRIPT:
+	var main: MAIN_SCRIPT = MAIN_SCENE.instantiate()
 	main.configure(RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry", "--seed",
 			str(SEED)]), "", true))
 	main.use_save(save)
@@ -289,12 +288,12 @@ func _boot_in(t: TestRunner, home: Node, save: GameSave, reloads: Array[int], ru
 	await t.get_tree().process_frame
 	return main
 
-func _shut(t: TestRunner, main: Node2D) -> void:
+func _shut(t: TestRunner, main: MAIN_SCRIPT) -> void:
 	t.get_tree().paused = false
 	main.free()
 
 ## A press on the title's tap button, pushed through the viewport where the layout draws it.
-func _press_tap(t: TestRunner, main: Node2D) -> void:
+func _press_tap(t: TestRunner, main: MAIN_SCRIPT) -> void:
 	var title := _one(main, "TitleScreen")
 	await UI.frames(t)
 	UI.push(title, UI.touch_at(UI.centre(UI.button(title, "Tap")), true))
