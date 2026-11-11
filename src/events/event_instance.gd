@@ -2,7 +2,8 @@ class_name EventInstance
 extends Node2D
 ## One live event in the world: its lifetime, its telegraph phase and its excitement field. What
 ## it does is its behaviours' (`src/events/behaviours/`); how it looks is its look's
-## (`src/events/views/`), which reads its public state and draws it.
+## (`src/events/views/`), which is handed its row and its drawer, asks it and reads some of its
+## public state, and draws it.
 ##
 ## The excitement model is entirely a *query*, asked of the source it composes (`excitement`, an
 ## `EventExcitement`) over the field it states here (`field_at()`). Nothing pushes a value at the
@@ -295,7 +296,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	var start := EventFootprints.stands_at(_map, definition, route[0] if route.size() > 0 else at)
 	position = start
 	_heading = face
-	look = EventLooks.for_row(self)
+	look = EventLooks.for_row(self, definition, drawer, skip_draw)
 	look.face(face)
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
@@ -546,9 +547,10 @@ var timing := FrameTiming.new()
 ## The drawer it is handed is built over the same pages; one it makes for itself is built over these.
 var atlas: AtlasLibrary
 ## What its look paints its pictures through (`EventDrawer`), handed in by whoever makes it
-## (`EventSpawner.create()`, its manager's own, built over the same atlas). An instance nobody handed
-## one (a suite's, a developer's rig) draws through one of its own over `atlas`, made the first time
-## its look asks, so a rig that hands the atlas after it enters the tree still draws from it.
+## (`EventSpawner.create()`, its manager's own, built over the same atlas), before `setup()` hands
+## it to the look, which holds it from then on. An instance nobody handed one (a suite's, a
+## developer's rig) draws through one of its own over `atlas`, made as `setup()` hands it on, so a
+## rig hands the atlas before `setup()`.
 var drawer: EventDrawer:
 	get:
 		if drawer == null:
@@ -1748,12 +1750,14 @@ func rim() -> EntityHalo:
 
 # ------------------------------------------------------------------ the look ---
 
-## How this instance looks (`EventLooks.for_row()`): it draws the instance from its public state,
+## How this instance looks (`EventLooks.for_row()`, handed its row and its drawer in `setup()`): it
+## draws the instance from what it asks it and, in the family looks, from some of its public state,
 ## decides when it is drawn again, and holds the drawing nodes a long picture is drawn in.
 var look: EventLook
 
 ## What a protest points its placards at, handed in by whoever knows (`EventManager.points_at`,
-## from the resistance's `_pointable_objective()`); unset, it points at nothing.
+## from the resistance's `_pointable_objective()`) after `setup()`; unset, it points at nothing.
+## Asked as `where_its_placards_point()`.
 var points_at := Callable()
 
 func _draw() -> void:
@@ -2177,3 +2181,20 @@ func raise_its_guards_hand(on: bool) -> void:
 ## Whether its guard has his hand raised at her (`raise_its_guards_hand()`).
 func is_its_guard_warning() -> bool:
 	return guard_warns_her
+
+## Whether it is a mast that has been reached and silenced (`silenced`): it still stands, with no
+## arcs and no field.
+func is_silenced() -> bool:
+	return silenced
+
+## Where a protest points its placards: what it was handed to ask (`points_at`), or `Vector2.INF`,
+## nothing to point at, when it was handed nothing.
+func where_its_placards_point() -> Vector2:
+	if not points_at.is_valid():
+		return Vector2.INF
+	return points_at.call()
+
+## The route it walks, in world space; empty, or one point, for one that stands (`path`), as a
+## plan's `walks()` answers.
+func walks() -> PackedVector2Array:
+	return path

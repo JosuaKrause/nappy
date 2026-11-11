@@ -7,8 +7,6 @@
 
 # [AbductionSpec] src/events/abduction_spec.gd
 src/events/behaviours/event_abduction.gd taken_over
-src/events/views/event_look.gd standing_offset
-src/events/views/event_look.gd taken_over
 src/events/views/event_vehicle_look.gd standing_offset
 src/events/views/event_vehicle_look.gd taken_over
 
@@ -650,19 +648,6 @@ src/events/street_invalidation.gd paces
 src/events/street_rules/pacing_opening_rule.gd paces
 src/events/street_rules/route_sidewalk_rule.gd paces
 src/events/views/checkpoint_look.gd look
-src/events/views/event_look.gd abduction
-src/events/views/event_look.gd draws_body_shadow
-src/events/views/event_look.gd intensity
-src/events/views/event_look.gd look
-src/events/views/event_look.gd mobile
-src/events/views/event_look.gd obstructs_radius
-src/events/views/event_look.gd pulse_period
-src/events/views/event_look.gd pursuit
-src/events/views/event_look.gd shape
-src/events/views/event_look.gd speed
-src/events/views/event_look.gd telegraph_time
-src/events/views/event_look.gd vehicle
-src/events/views/event_looks.gd look
 src/events/views/event_vehicle_look.gd abduction
 src/events/views/event_vehicle_look.gd look
 src/events/views/event_vehicle_look.gd obstructs_radius
@@ -785,21 +770,7 @@ src/events/events_ahead.gd is_leaving
 src/events/views/checkpoint_look.gd def
 src/events/views/checkpoint_look.gd gate_state
 src/events/views/checkpoint_look.gd guard_warns_her
-src/events/views/event_look.gd abduction
 src/events/views/event_look.gd age
-src/events/views/event_look.gd barrier_post
-src/events/views/event_look.gd def
-src/events/views/event_look.gd drawer
-src/events/views/event_look.gd excitement
-src/events/views/event_look.gd gate_state
-src/events/views/event_look.gd guard_warns_her
-src/events/views/event_look.gd is_finished
-src/events/views/event_look.gd is_leaving
-src/events/views/event_look.gd path
-src/events/views/event_look.gd points_at
-src/events/views/event_look.gd silenced
-src/events/views/event_look.gd skip_draw
-src/events/views/event_looks.gd def
 src/events/views/event_vehicle_look.gd abduction
 src/events/views/event_vehicle_look.gd def
 src/events/views/event_vehicle_look.gd drawer
@@ -969,8 +940,6 @@ src/events/event_excitement.gd half_extents
 src/events/event_excitement.gd half_length
 src/events/event_excitement.gd kind
 src/events/event_instance.gd radius
-src/events/views/event_look.gd half_length
-src/events/views/event_look.gd radius
 src/events/walk_ground.gd half_length
 src/events/walk_ground.gd kind
 src/events/walk_ground.gd radius

@@ -593,6 +593,7 @@ func _test_masked_man_is_drawn_standing_until_he_goes(t) -> void:
 	var def := EventCatalogue.by_id("masked_pursuer")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
+	instance.drawer = RecordingEventDrawer.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
 			instance_where)
 	t.check(instance.is_waiting()
@@ -725,6 +726,7 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
+	instance.drawer = RecordingEventDrawer.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
 			instance_where)
 	_hold(instance, instance_where, Vector2(def.notice_within() + 40.0, 0.0), 0.5)
@@ -765,6 +767,7 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 	# waiting, and warns again when she comes back in.
 	var walker_where := WhereSheIs.nowhere()
 	var walker := EventInstance.new()
+	walker.drawer = RecordingEventDrawer.new()
 	walker.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
 			walker_where)
 	_hold(walker, walker_where, her, 0.5)
@@ -784,6 +787,7 @@ func _test_the_robber_waits_walks_alert_and_lunges(t) -> void:
 	# The sent robber arrives chasing, with no notice to be alert through.
 	var sent_where := WhereSheIs.nowhere()
 	var sent := EventInstance.new()
+	sent.drawer = RecordingEventDrawer.new()
 	sent.setup(EventCatalogue.by_id("robber_giving_chase"), Vector2.ZERO, PackedVector2Array(),
 			Vector2.RIGHT, null, null, sent_where)
 	_hold(sent, sent_where, Vector2(300.0, 0.0), STEP)
@@ -830,6 +834,7 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t) -> v
 			"the door guard owes no notice of his own")
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
+	guard.drawer = RecordingEventDrawer.new()
 	guard.setup(def, Vector2(32.0, 80.0), PackedVector2Array(), Vector2.RIGHT, null, null,
 			guard_where)
 	_hold(guard, guard_where, Vector2(1.0, 0.0), STEP)
@@ -866,6 +871,7 @@ func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t) -> void:
 					if def.look == EventDef.Look.POLICEMAN_GIVING_CHASE else EventPictures.GUARD_ALERT_BY_VIEW
 			var man_where := WhereSheIs.nowhere()
 			var man := EventInstance.new()
+			man.drawer = RecordingEventDrawer.new()
 			man.setup(def, Vector2(32.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null,
 					man_where)
 			var her := Vector2(0.0, 0.0)
@@ -883,13 +889,13 @@ func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t) -> void:
 					"then he charges")
 			man.free()
 
-## Whether `instance`, drawn in a real frame through a recording drawer, stands a picture of one of
-## `families` (the `EventPictures` view maps, each view to a picture): the instance is in the tree,
-## asked to redraw, and what its look asked the drawer for in that draw is read off the drawer, as
+## Whether `instance`, drawn in a real frame through the recording drawer it was handed before
+## `setup()`, as its manager's spawner hands the real one, stands a picture of one of `families`
+## (the `EventPictures` view maps, each view to a picture): the instance is in the tree, asked to
+## redraw, and what its look asked the drawer for in that draw is read off the drawer, as
 ## `tests/drawn_event.gd` does, without reading the choice out of the look.
 func _drawn_from(t, instance: EventInstance, families: Array) -> bool:
-	var drawer := RecordingEventDrawer.new()
-	instance.drawer = drawer
+	var drawer := instance.drawer as RecordingEventDrawer
 	if not instance.is_inside_tree():
 		t.add_child(instance)
 	instance.queue_redraw()
@@ -912,6 +918,7 @@ func _test_no_guard_who_arrives_charging_takes_the_alert(t) -> void:
 				"'%s' arrives charging and does not stand for a notice" % id)
 		var instance_where := WhereSheIs.nowhere()
 		var instance := EventInstance.new()
+		instance.drawer = RecordingEventDrawer.new()
 		instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,
 				instance_where)
 		var alert := false
