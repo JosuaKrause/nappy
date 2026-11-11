@@ -171,7 +171,8 @@ func _test_determinism(t: TestRunner) -> void:
 	for i in 5:
 		var first := CityGenerator.generate(_seed(i))
 		var second := CityGenerator.generate(_seed(i))
-		t.check(first.walk_tiles() == second.walk_tiles(), "seed %d regenerates the identical map" % _seed(i))
+		t.check(first.walk_tiles() == second.walk_tiles(),
+				"seed %d regenerates the identical map" % _seed(i))
 		t.check(first.home_tile_rect() == second.home_tile_rect(), "seed %d puts the home back" % _seed(i))
 		t.check(first.calm_blocks_now() == second.calm_blocks_now(), "seed %d keeps its parks" % _seed(i))
 
