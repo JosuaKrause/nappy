@@ -5,7 +5,7 @@ this should kick in earlier since it's about resuming agents, no?", "yes, 400k a
 "no turn count", "no turn counters is fine I think -- context is a better measure"
 (merry-badger #1298). The hook itself the player approved in the session that reviewed the week's
 usage: "hook yes, usage report script yes, and the ungraded agent list", with "no rule changes --
-that worked well. it's fine if it goes a bit over now and then" (inbox #1291).
+that worked well. it's fine if it goes a bit over now and then" (inbox #1291 in grassy-trout).
 
 **Why a hook.** The orchestrating skill already said that an agent stays on one task and that no
 agent grows huge (inbox #874 in minty-dolphin), and each single resume was still decided by "a warm
@@ -49,7 +49,7 @@ refusals in 9 days, 19 of them long follow-ups; at 300k, 132 refusals; at 500k, 
 of context a fresh agent breaks even at about 31 turns on Opus and 24 on Sonnet, against a 75th
 percentile of 15 turns for a delta review, 25 for fixes, 24 for a merge, 15 for a stop and 44 for
 new work. They are cost only: what a warm agent knows of its pull request is not in them, and the
-player does not act on cost alone (inbox #1291).
+player does not act on cost alone (inbox #1291 in grassy-trout).
 
 ## Tried and replaced
 
@@ -126,6 +126,6 @@ and "also never switch a model with the full context. when switching a model do 
   Fable), and they stand in the skill only as that proposal.
 - The change of model is a clause and not a rule of its own. Asked which of the evening's rules are
   permanent, the player said of it "should become a rule -- is it even relevant? can claude switch
-  models mid-agent-session?" (inbox #1303). The orchestrator's answer: a sub-agent's model is set
+  models mid-agent-session?" (inbox #1303 in grassy-trout). The orchestrator's answer: a sub-agent's model is set
   when it is spawned and a resume carries no choice of one, so a change of model is always a new
   agent, and the words decide only that the new agent is briefed afresh.
