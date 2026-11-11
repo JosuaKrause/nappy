@@ -186,11 +186,13 @@ FILES: dict[str, str] = {
     "src/world/proposed_moves.gd": "model",
     "src/world/separation_pass.gd": "model",
     "src/world/world_map.gd": "model",
-    # run: the day's director, its end, the screens' flow and an authored scene's ask are flow.
+    # run: the day's director, the screens' flow and an authored scene's ask are flow.
     "src/run/authored_scene.gd": "flow",
     "src/run/day_director.gd": "flow",
-    "src/run/day_end.gd": "model",
     "src/run/run_flow.gd": "flow",
+    # visuals: the art's pages are data; the ground's picture builder names the model's tile choice and is
+    # called only by the scene nodes that draw the world's ground, so it stands with them.
+    "src/visuals/ground_layers.gd": "world",
     # ui: the texts are data; the frame graph is a developer's readout; the halo's rim is the drawing
     # a body composes of itself, so it stands in the world beside the excitement source that holds it.
     "src/ui/entity_halo.gd": "world",
@@ -382,13 +384,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "EventSpawner",
         "placement rules live on the spawner the city reaches into",
         ("src/city/city.gd",),
-    ),
-    Exception_(
-        "names",
-        "GroundTiles",
-        "the ground's picture builder reads which tile a cell gets",
-        ("src/visuals/ground_layers.gd",),
-        more=(("src/visuals/ground_layers.gd", 4),),
     ),
     Exception_(
         "names",

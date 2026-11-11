@@ -181,7 +181,7 @@ func _print_the_sources(walk: String, tick: int, events: EventManager, crowd: Cr
 		printed += _print_one(walk, tick, "E%d:%s" % [i, instance.logged_name()], [
 				source.contribution_at(her), source.expected_gross_at(her),
 				source.expected_impact_at(her), source.landed()],
-				source.will_be_lethal(her), caret, (source.rim as SourceRim).is_held())
+				source.will_be_lethal(her), caret, source.rim.is_held())
 	if crowd:
 		var agents := crowd.agents()
 		for i in agents.size():
@@ -191,7 +191,7 @@ func _print_the_sources(walk: String, tick: int, events: EventManager, crowd: Cr
 					source.contribution_at(her), source.expected_gross_at(her),
 					source.expected_impact_at(her), source.landed()],
 					source.will_be_lethal(her), source.caret_strength(),
-					(source.rim as SourceRim).is_held())
+					source.rim.is_held())
 	return printed
 
 func _print_one(walk: String, tick: int, label: String, values: Array, lethal: bool, caret: int,

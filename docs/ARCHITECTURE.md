@@ -433,7 +433,7 @@ src/
 	source_rim.gd         one source's rim as the halo lights it (`SourceRim`): built on its first
 	                      glow, given back once faded; an event's adds its band
 	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo (on
-	                      the world's layer: the drawing a body composes of itself)
+	                      the world's layer, beside the excitement source that holds its rim)
 	title_screen.gd       the screen a run opens on and goes back to; asks which control scheme
 	day_summary.gd        the screen between days, and the one at the end of a run; renders a
 	                      `SummaryModel`
