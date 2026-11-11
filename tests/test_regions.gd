@@ -192,8 +192,8 @@ func _test_assignment_is_deterministic(t: TestRunner) -> void:
 # ----------------------------------------------------------------------- the atoms ---
 
 ## The keys of the streets the wall stands on (`RegionPlanner.boundary_segments()`), as a set.
-func _wall_street_keys(map: CityMap) -> Dictionary:
-	var keys := {}
+func _wall_street_keys(map: CityMap) -> Dictionary[Vector3i, bool]:
+	var keys: Dictionary[Vector3i, bool] = {}
 	for segment in RegionPlanner.boundary_segments(map):
 		keys[segment.key()] = true
 	return keys

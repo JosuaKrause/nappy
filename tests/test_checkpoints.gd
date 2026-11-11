@@ -89,8 +89,8 @@ func _repaint_for(map: CityMap, day: int) -> void:
 
 ## Every (map, day) pair worth sampling: `Tuning.REGION_WALL_FIRST_DAY` through the end of the run,
 ## on every seed this suite generated.
-func _sampled_days() -> Array:
-	var found: Array = []
+func _sampled_days() -> Array[Array]:
+	var found: Array[Array] = []
 	for map in _maps:
 		for day in range(Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS + 1):
 			found.append([map, day])
@@ -900,7 +900,7 @@ func _test_a_boundarys_structures_charge_as_one(t: TestRunner) -> void:
 				"and it is the one that was the maximum, which is what its own landed() will "
 				+ "carry and what the halo's colour is traced from", 0.01)
 
-	var candidates: Array = []
+	var candidates: Array[EventExcitement] = []
 	for structure in kit:
 		candidates.append(structure.excitement)
 	var picked := await HaloRig.lit_among(t, candidates, there)
