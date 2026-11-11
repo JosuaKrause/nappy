@@ -1048,7 +1048,7 @@ static func largest_mark_rect() -> Rect2:
 	var bottom := -(MARK_HEIGHT + 10.0) + MARK_WIDTH * 0.5 + 1.0
 	return Rect2(-MARK_WIDTH - 1.0, top, (MARK_WIDTH + 1.0) * 2.0, bottom - top)
 
-# **One page for the whole catalogue, held from boot** (PLAYTEST-108 3). Every picture in this
+# **One page for the whole catalogue, held from boot** (PLAYTEST-108 9). Every picture in this
 # file, the checkpoint kit and the finale's crater included, is a region of `ATLAS_GROUP`, and
 # `EventManager` holds a reference on it while a day's events exist; `main.RESIDENT_GROUPS` keeps
 # it there for the life of the process, so no event ever costs a read from disk in a played frame.

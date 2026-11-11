@@ -60,7 +60,8 @@ static func drawn_box_of(row: EventDef, spread_vertical: bool) -> Rect2:
 ## wholly outside the camera's view by (`SpawnSiting.just_out_of_sight()`), so nothing of it
 ## shows on the frame it exists (inbox #598 in olive-hedgehog). And for a row that can be marked —
 ## anything with a field or a lethal reach — the danger caret above its feet at its tallest
-## (`EventPictures.largest_mark_rect()`), which stands well above the picture. Empty for a row that draws nothing of its own.
+## (`EventPictures.largest_mark_rect()`), which stands well above the picture.
+## Empty for a row that draws nothing of its own.
 static func footprint_of(row: EventDef) -> Rect2:
 	var box := Rect2()
 	var any := false
