@@ -19,9 +19,12 @@ run refuses to start on a tree where it is already modified. Only a `.gd` file t
 touched for the run: its first line is replaced by an empty one (so the line numbers do not move), and afterwards
 that empty line is replaced by the original first line, byte for byte (line endings kept). An edit saved to a
 script during the run stays: only the first line is put back, and a file whose first line somebody else changed is
-named on stderr and left as it is found. SIGINT, SIGTERM, SIGHUP and SIGQUIT restore as well, ending with a
-message; a SIGKILL cannot, and `git checkout project.godot` and `git diff --stat` show what is left. `--write`
-rewrites a first line after the restore.
+named on stderr, with the line not put back, and left as it is found. Every write goes to a file beside the
+target and is moved over it (`os.replace`), so an interrupt never leaves a file empty or half written: a file
+holds its old text or its new text. SIGINT, SIGTERM, SIGHUP and SIGQUIT restore as well, ending with a message
+(a second signal during the restore is ignored, and the restore is safe to enter twice); a SIGKILL cannot, and
+`git checkout project.godot` and `git diff --stat` show what is left. `--write` rewrites a first line after the
+restore.
 
 **A census is taken only from a run that finished and loaded everything it can trust.** The engine must exit 0 and
 print `CENSUS_DONE` with the count of files it was handed and one `CENSUS_LOADED` or `CENSUS_FAILED` for each;
@@ -29,8 +32,11 @@ otherwise every mode stops with an error and changes no file. It needs the impor
 `./tools/check.sh`) and refuses to start without it, since without it no `class_name` resolves and most files
 fail. A file that fails to load (a syntax error) is named, and `--check` fails for it. A failed file also changes
 what the files that depend on it are counted to trip, so `--write` refuses, naming the failed files, when one
-is under `src/` or another file names it (by path, by `class_name` or as an autoload); a failed file nothing names
-(a probe that does not parse) is left out and does not stop `--write`.
+is under `src/` or another file names it (by `res://` path, by `class_name` or as an autoload); a failed file
+nothing names (a probe that does not parse) is left out and does not stop `--write`. `--check` says the same
+refusal in place of the per-file lines, which would be skewed. A file named by a path relative to the naming
+file (`preload("sibling.gd")`) or by `uid://` is not seen as named; no script under `src/`, `tests/` or `tools/`
+names one that way.
 
 **Another warning.** A warning's name given as an argument (`standalone_expression`) is counted the same way in a
 run of its own, per folder with a count, and per line with `--lines`; no file is touched for it.
@@ -51,6 +57,7 @@ import argparse
 import atexit
 import os
 import re
+import shutil
 import signal
 import subprocess
 import sys
@@ -156,7 +163,7 @@ def check_file(path: str, first_line: str, trips: set[str]) -> list[str]:
             bad.append(f"{path}: names {w}, which it does not trip")
         if w in trips and w not in named:
             bad.append(f"{path}: trips {w}, which its line does not name")
-    if named != [w for w in TYPING if w in set(named)] or len(named) != len(set(named)):
+    if named != [w for w in TYPING if w in set(named)]:
         bad.append(f"{path}: its line is not in the one form")
     return bad
 
@@ -238,6 +245,19 @@ def settings_text(original: str, levels: dict[str, int]) -> str:
     return "".join(out)
 
 
+def atomic_write(path: Path, data: bytes) -> None:
+    """Writes `data` beside `path` and moves it over, so `path` holds its old bytes or the new ones, never none."""
+    fd, name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".census", dir=path.parent)
+    temp = Path(name)
+    try:
+        with os.fdopen(fd, "wb") as f:
+            f.write(data)
+        shutil.copymode(path, temp)
+        temp.replace(path)
+    finally:
+        temp.unlink(missing_ok=True)
+
+
 class Tree:
     """The files read and the state to put back."""
 
@@ -267,18 +287,25 @@ class Tree:
     def restore(self) -> None:
         """Puts back `project.godot` and the first lines taken out, and only those, byte for byte.
 
-        A file whose first line is no longer the empty one put there is named on stderr and left as found.
+        Safe to enter twice: an entry leaves `first_lines` once its line is back, and a file already holding
+        its line is not named. A file whose first line is no longer the empty one put there is named on stderr
+        with the line not put back, and left as found.
         """
         if self.original_project is not None:
-            self.project.write_bytes(self.original_project)
+            atomic_write(self.project, self.original_project)
             self.original_project = None
-        for path, head in self.first_lines.items():
+        for path, head in list(self.first_lines.items()):
             current = path.read_bytes() if path.exists() else b""
             if current.startswith(b"\n"):
-                path.write_bytes(head + current[1:])
-            else:
-                print(f"tools/typing_census.py: {path} was changed during the run; left as it is", file=sys.stderr)
-        self.first_lines = {}
+                atomic_write(path, head + current[1:])
+            elif not current.startswith(head):
+                shown = path.relative_to(self.root) if path.is_relative_to(self.root) else path
+                print(
+                    f"tools/typing_census.py: {shown} was changed during the run; left as it is "
+                    f"(its first line was {head.decode('utf-8').rstrip()})",
+                    file=sys.stderr,
+                )
+            self.first_lines.pop(path, None)
 
     def take_lines_out(self, files: Sequence[Path]) -> None:
         for path in files:
@@ -286,33 +313,35 @@ class Tree:
             text = raw.decode("utf-8")
             if without_line(text) == text:
                 continue
-            head, _ = split_first_line(text)
-            self.first_lines[path] = head.encode("utf-8")
-            path.write_bytes(b"\n" + raw[len(head.encode("utf-8")) :])
+            head = split_first_line(text)[0].encode("utf-8")
+            self.first_lines[path] = head
+            atomic_write(path, b"\n" + raw[len(head) :])
 
 
-def installed_warnings() -> list[str]:
+def installed_warnings(root: Path, godot: str) -> list[str]:
     """Every warning name the project's settings file lists, read from the engine's own setting names."""
     r = subprocess.run(
-        [GODOT, "--headless", "--path", str(ROOT), "--script", "res://tools/typing_census_names.gd"],
+        [godot, "--headless", "--path", str(root), "--script", "res://tools/typing_census_names.gd"],
         capture_output=True,
         text=True,
     )
     return [ln.removeprefix("CENSUS_WARNING ") for ln in r.stdout.splitlines() if ln.startswith("CENSUS_WARNING ")]
 
 
-def run_census(tree: Tree, paths: list[str], levels: dict[str, int], all_names: list[str]) -> tuple[str, float]:
+def run_census(
+    tree: Tree, godot: str, paths: list[str], levels: dict[str, int], all_names: list[str]
+) -> tuple[str, float]:
     """The engine's output of one census run; a run that is not one raises `CensusError`."""
     assert tree.original_project is not None
     full = dict.fromkeys(all_names, 0) | levels
-    tree.project.write_bytes(settings_text(tree.original_project.decode("utf-8"), full).encode("utf-8"))
+    atomic_write(tree.project, settings_text(tree.original_project.decode("utf-8"), full).encode("utf-8"))
     with tempfile.TemporaryDirectory() as tmp:
         listing = Path(tmp) / "list.txt"
         listing.write_text("".join(f"res://{p}\n" for p in paths))
         start = time.monotonic()
         try:
             r = subprocess.run(
-                [GODOT, "--headless", "-d", "--path", str(tree.root), SCENE, "--", str(listing)],
+                [godot, "--headless", "-d", "--path", str(tree.root), SCENE, "--", str(listing)],
                 capture_output=True,
                 text=True,
                 stdin=subprocess.DEVNULL,
@@ -367,20 +396,20 @@ def folder_of(path: str) -> str:
     return "/".join(parts[:2]) if parts[0] == "tests" and len(parts) > 2 else parts[0]
 
 
-def main(argv: list[str]) -> int:
+def main(argv: list[str], root: Path = ROOT, godot: str = GODOT) -> int:
     args = parse(argv)
-    if not Path(GODOT).exists():
-        print(f"godot not found at {GODOT} (override with GODOT=...)", file=sys.stderr)
+    if not Path(godot).exists():
+        print(f"godot not found at {godot} (override with GODOT=...)", file=sys.stderr)
         return 127
-    if not (ROOT / ".godot" / "global_script_class_cache.cfg").exists():
+    if not (root / ".godot" / "global_script_class_cache.cfg").exists():
         print("tools/typing_census.py: no import cache (.godot/); run ./tools/check.sh first", file=sys.stderr)
         return 1
-    tree = Tree(ROOT)
+    tree = Tree(root)
     problem = tree.refuse_if_dirty()
     if problem is not None:
         print(f"tools/typing_census.py: {problem}", file=sys.stderr)
         return 1
-    names = installed_warnings()
+    names = installed_warnings(root, godot)
     if not names:
         print("tools/typing_census.py: could not list the engine's warning names", file=sys.stderr)
         return 1
@@ -389,25 +418,37 @@ def main(argv: list[str]) -> int:
         print(f"tools/typing_census.py: not another warning of the engine's: {', '.join(unknown)}", file=sys.stderr)
         return 2
 
+    signals = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT)
+
     def _on_signal(signum: int, _frame: FrameType | None) -> None:
+        for sig in signals:
+            signal.signal(sig, signal.SIG_IGN)
         tree.restore()
         print(f"tools/typing_census.py: interrupted (signal {signum}); the tree is put back", file=sys.stderr)
         sys.exit(128 + signum)
 
-    for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT):
-        signal.signal(sig, _on_signal)
+    previous = {sig: signal.signal(sig, _on_signal) for sig in signals}
     atexit.register(tree.restore)
+    try:
+        return census(args, tree, godot, names)
+    finally:
+        tree.restore()
+        atexit.unregister(tree.restore)
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
 
+
+def census(args: argparse.Namespace, tree: Tree, godot: str, names: list[str]) -> int:
+    """Takes the census and answers the mode; the tree is put back by the caller on every way out."""
     files = tree.gd_files()
-    paths = [str(f.relative_to(ROOT)) for f in files]
+    paths = [str(f.relative_to(tree.root)) for f in files]
     tree.original_project = tree.project.read_bytes()
     tripped: dict[str, set[str]] = {p: set() for p in paths}
     lines: dict[str, set[tuple[int, str]]] = {w: set() for w in (*TYPING, *args.warnings)}
-    failed: list[str] = []
     elapsed_total = 0.0
     try:
         tree.take_lines_out(files)
-        out, elapsed = run_census(tree, paths, dict.fromkeys(TYPING, 1), names)
+        out, elapsed = run_census(tree, godot, paths, dict.fromkeys(TYPING, 1), names)
         elapsed_total += elapsed
         hits, failed = parse_output(out)
         for h in hits:
@@ -422,7 +463,7 @@ def main(argv: list[str]) -> int:
                 tripped[h.path].add(warning)
                 lines[warning].add((h.line, h.path))
         for extra in args.warnings:
-            out, elapsed = run_census(tree, paths, {extra: 1}, names)
+            out, elapsed = run_census(tree, godot, paths, {extra: 1}, names)
             elapsed_total += elapsed
             extra_hits, _ = parse_output(out)
             lines[extra] = {(h.line, h.path) for h in extra_hits if h.path in tripped}
@@ -433,24 +474,25 @@ def main(argv: list[str]) -> int:
         tree.restore()
 
     texts = {path: f.read_bytes().decode("utf-8") for f, path in zip(files, paths, strict=True)}
+    report(tripped, lines, args, failed, elapsed_total)
+    untrusted = untrusted_failures(failed, texts, tree.project.read_bytes().decode("utf-8"))
+    if untrusted and (args.write or args.check):
+        mode = "--write refused, no file changed" if args.write else "--check cannot compare the lines"
+        print(
+            f"tools/typing_census.py: {mode}: a file others depend on failed to load "
+            f"({', '.join(untrusted)}), so what the rest trip is not the census of a tree that loads",
+            file=sys.stderr,
+        )
+        return 1
     bad: list[str] = []
     for path in paths:
         if path not in failed:
             bad.extend(check_file(path, split_first_line(texts[path])[0], tripped[path]))
-    report(tripped, lines, args, failed, elapsed_total)
     if args.write:
-        untrusted = untrusted_failures(failed, texts, tree.project.read_bytes().decode("utf-8"))
-        if untrusted:
-            print(
-                "tools/typing_census.py: --write refused, no file changed: a file others depend on failed to load "
-                f"({', '.join(untrusted)}), so what the rest trip is not the census of a tree that loads",
-                file=sys.stderr,
-            )
-            return 1
         for f, path in zip(files, paths, strict=True):
             new = texts[path] if path in failed else with_line(texts[path], tripped[path])
             if new != texts[path]:
-                f.write_bytes(new.encode("utf-8"))
+                atomic_write(f, new.encode("utf-8"))
                 print(f"rewrote {path}")
         for b in (x for x in bad if "no opt-out line" in x):
             print("NO LINE " + b)
