@@ -35,16 +35,15 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
    events;
 3. atlas and scenery: `test_scenery_residency` observes a whole city though `SceneryGround` and
    `SceneryResidency` are handed only what they read (minty-quail-quiet-ibis), so the suite is
-   converted to hand them their parts, and with it `City.scenery_ground` and
-   `City.scenery_ground_source` stop being read by suites and leave the list's kept group;
+   converted to hand them their parts, which ends that suite's own reads of `City.scenery_ground`
+   and `City.scenery_ground_source`;
    `test_events_scenery` waits for the events;
 4. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
    and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
    what it reads from the city (its map, streets, events and poster walls) instead of the whole
    `City`, so a stand-in can be handed in; `test_recipe_crowd`'s `Crowd.recipe_coverage` check moves
    to a crowd suite;
-5. the night group: `test_blackout` hands `Blackout` its parts with a fake event manager
-   (minty-quail-quiet-ibis); `test_heat` reads the event
+5. the night group: `test_heat` reads the event
    instance's vars (`age`, `is_leaving`, `is_finished`, `barrier_post`) until they have methods, and
    it and `test_dark_spine` hold the scheduler's and the crowd's answers in a day-planning case each,
    to move to those modules' suites; `test_power_station`'s yard-layer frame-record case belongs in

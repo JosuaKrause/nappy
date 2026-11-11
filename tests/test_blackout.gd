@@ -23,8 +23,9 @@ const STATION_DOOR := Rect2i(Vector2i(93, 42), Vector2i(2, 1))
 ## How many windows' worth of buildings the blackout is handed.
 const BUILDINGS := 3
 
-## The run the test now running stands in: `_begin()` makes it afresh at the top of every test and
-## `_end()` frees what it made at its bottom, so no test reads what an earlier one left.
+## The run's resistance the test now running hands the blackout: `_begin()` makes it afresh at the top
+## of every test and `_end()` frees what it made at its bottom, so no test reads what an earlier one
+## left.
 var _resistance: ResistanceRunState
 var _map: CityMap
 var _signals: TrafficSignals

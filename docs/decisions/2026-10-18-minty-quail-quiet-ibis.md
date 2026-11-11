@@ -25,9 +25,12 @@ and this is the city's own parts.
 `tools/test_only_members.txt` gains `City.scenery_ground` and `City.scenery_ground_source` in its
 `[kept]` group: once the parts are handed them, only suites and probes read them outside
 `city.gd` (`scenery_ground` in six suites and five probes; `scenery_ground_source` is also called by
-`SceneryGround` through a callable the check cannot follow). Both go with the scenery suites' own
-conversion (`tests-one-module.md`, entry 3). The builder's choice, which the orchestrator kept; the plainer alternative is
-both made internal and their suites and probes rewritten.
+`SceneryGround` through a callable the check cannot follow). The residency suite's own reads go
+with the scenery suites' conversion (`tests-one-module.md`, entry 3); `City.scenery_ground` stays
+for the five other suites and the five probes that read the ground off a real city, and
+`City.scenery_ground_source` stays because the game reads it where the check cannot see. The
+builder's choice, which the orchestrator kept; the plainer alternative is both made internal and
+their suites and probes rewritten.
 
 ## Parity
 
