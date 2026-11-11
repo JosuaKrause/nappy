@@ -20,8 +20,8 @@ goes was the hand-ins' builder's proposal and the orchestrator's, open to the pl
 - **A road closure says its own words** (`RoadClosure.summary_words()`, such as "roadworks
   v(8,6)"), so the streets' line reads no field of a closure; `tools/field_reads.txt` lost two lines
   and gained none.
-- The day director's fake city lost its two summary overrides, and the streets' and the map's
-  suites check the "none" line directly.
+- The day director's fake city lost its two summary overrides; the streets' and the map's suites
+  check the "none" line directly, and the event manager's checks its line before a day and after.
 
 ## Choices open to overturn
 
@@ -36,11 +36,9 @@ goes was the hand-ins' builder's proposal and the orchestrator's, open to the pl
 - **The danger edge's uses in the run log's session** (its edge field and `watch()`'s edge
   parameter), listed layer breaks, are a pull request of their own, which `standing-layer-breaks.md`
   names; this pass rewrites the session only for the summary lines.
-- **No direct check of the events' line**: its suites belong to a typing pass in flight, and the
-  recorded run log already shows the line.
 
 ## Verified
 
-The day director, day streets, city map, telemetry, observer, burst capture, day loop and closure
+The event manager, day director, day streets, city map, telemetry, observer, burst capture, day loop and closure
 suites pass; `./tools/check.sh`, the layer check, the field-read check and the test-only members
 check pass.
