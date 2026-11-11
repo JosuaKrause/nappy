@@ -156,6 +156,14 @@ only the deploy target can enter is a branch nobody has seen.
 **`--script` skips autoloads.** The test suite runs as a **scene**
 (`godot --headless --path . res://tests/tests.tscn`) because every test needs `Tuning`.
 
+**An engine question is asked with a script saved to a file, through the repository's own
+runners** (`tools/test.sh`, a probe under `tests/probes/`, `tools/check.sh`), **never by reloading a
+GDScript from source held in memory, nor by changing `debug/gdscript/warnings/*` through
+`ProjectSettings` at run time.** On 4.7.2 that combination under `-d` crashes the engine with
+signal 11 (golden-elk), and a crash can put macOS's crash dialog in front of the player; which part
+of the combination is necessary is not known. The three warnings "Types" lists are already errors
+through `project.godot`, so a script has no reason to set them.
+
 **An autoload name cannot also be a `class_name`.** That is why shared enums live in
 `src/game_enums.gd` rather than on an autoload.
 
