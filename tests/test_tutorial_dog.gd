@@ -99,12 +99,13 @@ func _test_day_4_is_a_map_placement(t: TestRunner) -> void:
 	for run_seed: int in [4242, 2102613802, 90210]:
 		var map := MapCache.of(run_seed)
 		var consumed: Array[String] = []
+		var masts := MastSites.compute(map)
 		for day in range(Tuning.RUN_TAUGHT_DAY + 1, 15):
 			var tree := RouteTree.for_day(map, day)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
 			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,
-					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
+					CalmAreas.of(map), masts, consumed, [], tree).placements():
 				if plan.def.id != "charging_dog":
 					continue
 				checked += 1

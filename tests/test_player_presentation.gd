@@ -62,7 +62,8 @@ func _test_each_family_stays_in_its_own_poses(t: TestRunner) -> void:
 					t.check(source == path, "every pose/state/facing stays in its selected family")
 					t.check(rig.pose(1.0).mirrored == EightDirection.is_mirrored(direction),
 							"both presentations retain the same west-facing mirrors")
-					t.check(rig.pose(1.0).view == direction and _mother_texture(library, rig, frame) != null,
+					t.check(rig.pose(1.0).view == direction
+							and _mother_texture(library, rig, frame) != null,
 							"the facing settles the view and the family resolves a picture for it")
 			t.check(rig.pose(1.0).mother_sources[0].begins_with("rig/father_") == male,
 					"standing aside, continuing, resetting and resolving either state never reroll")

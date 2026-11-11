@@ -1,9 +1,11 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The pushing and carrying rigs share a distance-driven contact/passing gait.
 
+## The library her pages are acquired on, handed to every rig through `Stroller.use_atlas()`.
+var _library := AtlasLibrary.new()
+
 func run(t: TestRunner) -> void:
-	for carrying in [false, true]:
+	for carrying: bool in [false, true]:
 		var rig := _rig(t, carrying)
 		var samples := await _walk(t, rig, 80)
 		_test_the_cycle_visits_contact_passing_contact_passing(t, carrying, samples)
@@ -17,6 +19,7 @@ func run(t: TestRunner) -> void:
 ## nobody hands her one) and her own `_physics_process()` runs.
 func _rig(t: TestRunner, carrying: bool) -> Stroller:
 	var rig := Stroller.new()
+	rig.use_atlas(_library)
 	rig.carrying = carrying
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -101,7 +104,7 @@ func _pose_families(carrying: bool) -> Array[Array]:
 	]
 
 func _test_each_state_has_three_distinct_poses_per_view(t: TestRunner) -> void:
-	for carrying in [false, true]:
+	for carrying: bool in [false, true]:
 		for family in _pose_families(carrying):
 			t.check(family.size() == 3,
 					"each %s view exposes A, C, and B" % _state_name(carrying))
@@ -128,7 +131,7 @@ func _direction_textures(carrying: bool, frame: int) -> Array[String]:
 	]
 
 func _test_every_view_resolves_every_pose_in_both_states(t: TestRunner) -> void:
-	for carrying in [false, true]:
+	for carrying: bool in [false, true]:
 		var rig := _rig(t, carrying)
 		for direction in range(8):
 			rig.reset_at(Vector2.ZERO, Vector2.from_angle(direction * PI / 4.0))
@@ -137,8 +140,8 @@ func _test_every_view_resolves_every_pose_in_both_states(t: TestRunner) -> void:
 			for frame in range(3):
 				var expected := _direction_textures(carrying, frame)
 				t.check(pose.mother_sources[frame] == expected[direction]
-						and rig.atlas.region(StringName(pose.mother_sources[frame]))
-						== rig.atlas.region(StringName(expected[direction])),
+						and _library.region(StringName(pose.mother_sources[frame]))
+						== _library.region(StringName(expected[direction])),
 						"direction %d resolves %s pose %d"
 						% [direction, _state_name(carrying), frame])
 		rig.free()

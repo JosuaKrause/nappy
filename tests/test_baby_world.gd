@@ -25,7 +25,7 @@ const STREET_NOISE := 6.0
 
 ## Answers as the escape's building does (no decay beyond the base, nothing charging her) or, handed
 ## `decay` and `noise`, as a street does. The rig for the two questions the suite asks of her
-## (`decay_rate()` and `last_incoming`), the same questions `main`'s wiring changes the answer to.
+## (`decay_rate()` and `last_frame_incoming()`), the same questions `main`'s wiring changes the answer to.
 class FakeWorld extends WorldContext:
 	var decay := 1.0
 	var noise := 0.0
@@ -98,7 +98,7 @@ func _test_a_baby_answers_from_the_world_she_was_last_handed(t: TestRunner) -> v
 
 ## One physics tick, on which the baby's own frame runs her meter and writes what it was fed.
 func _let_her_tick(t: TestRunner, baby: Baby) -> void:
-	baby.excitement = 0.0
+	baby.reset()
 	# What the meter was fed is written by her own tick, so a tick that did not run reads nothing.
 	baby.last_incoming = -1.0
 	await PhysicsTicks.pass_ticks(t, 1)

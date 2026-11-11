@@ -222,7 +222,8 @@ func _test_a_street_day_never_settles_and_a_park_day_does(t: TestRunner) -> void
 	_build(t)
 	_walk()
 	await _simulate_fast(Tuning.day_length(1))
-	t.check(_baby.condition() == GameEnums.BabyState.AWAKE and _baby.sleepiness_level() < Tuning.METER_MAX,
+	t.check(_baby.condition() == GameEnums.BabyState.AWAKE
+			and _baby.sleepiness_level() < Tuning.METER_MAX,
 			"a whole day of undisturbed street walking still does not settle her")
 	_teardown()
 
@@ -370,13 +371,14 @@ func _test_falls_asleep(t: TestRunner) -> void:
 	_walk()
 	await _simulate(1.0)
 	_bus.return_phase_started.disconnect(handler)
-	t.check(_baby.condition() == GameEnums.BabyState.ASLEEP, "a full sleepiness meter puts the baby to sleep")
+	t.check(_baby.condition() == GameEnums.BabyState.ASLEEP,
+			"a full sleepiness meter puts the baby to sleep")
 	t.check(announced[0], "falling asleep starts the return phase")
 	_teardown()
 
 func _test_sleeping_baby_is_less_sensitive(t: TestRunner) -> void:
 	_build(t)
-	_baby.state = GameEnums.BabyState.ASLEEP
+	_baby.force_sleep()  # asleep the way the game puts her there, her sleepiness meter full
 	_world.noise = 20.0
 	_walk()
 	await _simulate(ONE_FRAME)
@@ -386,13 +388,13 @@ func _test_sleeping_baby_is_less_sensitive(t: TestRunner) -> void:
 
 func _test_wakes_up_with_penalty(t: TestRunner) -> void:
 	_build(t)
-	_baby.state = GameEnums.BabyState.ASLEEP
-	_baby.sleepiness = Tuning.METER_MAX
+	_baby.force_sleep()
 	_baby.excitement = Tuning.EXCITEMENT_WAKE_THRESHOLD - 2.0
 	_world.noise = 40.0
 	_walk()
 	await _simulate(0.5)
-	t.check(_baby.condition() == GameEnums.BabyState.AWAKE, "loud enough noise wakes a sleeping baby")
+	t.check(_baby.condition() == GameEnums.BabyState.AWAKE,
+			"loud enough noise wakes a sleeping baby")
 	t.close_to(_baby.sleepiness_level(), Baby.WAKE_SLEEPINESS_PENALTY,
 			"waking costs the sleepiness penalty")
 	_teardown()
@@ -403,7 +405,8 @@ func _test_full_excitement_cries(t: TestRunner) -> void:
 	_world.noise = 60.0
 	_walk()
 	await _simulate(0.5)
-	t.check(_baby.condition() == GameEnums.BabyState.CRYING, "a full excitement meter loses the day")
+	t.check(_baby.condition() == GameEnums.BabyState.CRYING,
+			"a full excitement meter loses the day")
 	# Crying is terminal for the day: nothing moves after it.
 	var frozen := _baby.excitement_level()
 	_stand()
