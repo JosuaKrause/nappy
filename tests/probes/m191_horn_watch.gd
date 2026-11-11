@@ -79,6 +79,7 @@ func _measure_cost(t) -> void:
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
 	city.crowd.start_day(1, RandomNumberGenerator.new())
+	city.crowd.use_bus(EventBus)
 	var live_cars := 0
 	var sample: CrowdAgent = null
 	for agent in city.crowd.agents():

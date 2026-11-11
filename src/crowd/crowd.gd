@@ -173,7 +173,7 @@ var _navigator: Navigator
 ## (it has no body, `CityMap.post_tiles()`).
 var _pushed := Mover.of(Mover.GROUND | Mover.TODAY)
 ## Whom the crowd makes way for, bumps and strikes: handed in by whoever puts her into the city's world
-## (`use_player()`, `main._put_her_in()`), none until then and in a rig that has none.
+## (`use_player()`, `main._hand_the_crowd_her()`), none until then and in a rig that has none.
 var _player: Stroller
 ## The signals the crowd reports on (`EventBus`'s script), preloaded so the bus it is handed has a
 ## type to be held as.
@@ -272,7 +272,7 @@ func setup(world: WorldContext, map: CityMap, signals: TrafficSignals, streets: 
 			Rect2i(Vector2i.ZERO, map.size_in_tiles())).get_center())
 
 ## Hands the crowd the player it makes way for. Called whenever she is put into the city's world
-## (`main._put_her_in()`); null takes her away.
+## (`main._hand_the_crowd_her()`); null takes her away.
 func use_player(player: Stroller) -> void:
 	_player = player
 
@@ -558,7 +558,7 @@ func _populate_uniform_walkers(count: int, rng: RandomNumberGenerator) -> void:
 # density is not an occasional glitch, it is what the road looks like.
 #
 # The decision is one pass over the crowd here rather than a probe per car, for the same reason
-# the crowd finds who stands ahead of a car here (`LaneMover.Lane.find_a_pedestrian_at()`): the
+# the crowd finds who stands ahead of a car here (`LaneMover.Lane.see_a_pedestrian_at()`): the
 # agents are already being walked once a frame, and a per-car search would be the same work done
 # fifty times over.
 
@@ -1240,9 +1240,9 @@ func _meet_the_player() -> void:
 		# contract" (`DECISIONS.md`, M191, the horn watches as far as the contract needs).
 		var distance := agent.global_position.distance_to(here)
 		if distance <= Tuning.CAR_ZEBRA_SIGHT:
-			its_lane.find_a_pedestrian_at(here)
+			its_lane.see_a_pedestrian_at(here)
 		else:
-			its_lane.find_no_pedestrian()
+			its_lane.see_no_pedestrian()
 		if not on_the_road:
 			continue
 		if distance <= Tuning.CAR_ZEBRA_SIGHT and _strike(agent, here):

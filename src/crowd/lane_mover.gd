@@ -367,11 +367,11 @@ class Lane:
 
 	## The crowd found somebody standing at `at`, near enough to its road to watch
 	## (`Crowd._meet_the_player()`).
-	func find_a_pedestrian_at(at: Vector2) -> void:
+	func see_a_pedestrian_at(at: Vector2) -> void:
 		_of.pedestrian_ahead = at
 
 	## The crowd found nobody near enough to its road to watch.
-	func find_no_pedestrian() -> void:
+	func see_no_pedestrian() -> void:
 		_of.pedestrian_ahead = Vector2.INF
 
 ## Stepped on the physics tick, inside the crowd's own (`step()`), so it is drawn interpolated

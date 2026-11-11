@@ -91,6 +91,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	crowd.start_day(day, rng, start)
 	crowd.set_gates(city.streets().region_plan().gates)
 	crowd._player = rig
+	crowd.use_bus(EventBus)
 	# Thirty-two zero bytes rather than an empty array, which `HashingContext.update()` refuses.
 	var chain := PackedByteArray()
 	chain.resize(32)

@@ -18,7 +18,7 @@ reason.
 **The groups, as the review found them** (counts are `check_layers.py --list`'s on the day of the
 review; a builder runs it again):
 
-- **The signal bus** (34 uses in 10 files): the simulation reports on the global `EventBus`
+- **The signal bus** (37 uses in 11 files): the simulation reports on the global `EventBus`
   autoload, where this entry's README has a component handed its event sink. The observers are
   already handed the bus; only the emitters fetch it. The crowd is handed it (`Crowd.use_bus()`,
   the record 2026-10-18-minty-quail-minty-osprey).
