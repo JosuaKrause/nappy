@@ -616,10 +616,10 @@ counted where it only writes.
 | `repeat_every`, `repeat_after` | 2 in | row `comes_again_every()` ok, `comes_again_after()`, asked once as a plan is made; plan `repeats()` ok |
 | `shape` | 11 in, 3 out (the route rig, the happenings, `SealPlanner`) | row `ground_shape()` ok; the field part's `datum()`; a draft for the copies; the live body and the look are handed the body part |
 | `solid_parts`, `_default_parts` | 1 in, 2 out (both copying it into a variant) | row `body_pieces()` ok; a draft copies parts, so the hand copy goes |
-| `obstructs_radius` | 10 in, 2 out (the route rig, `SealPlanner`) | row `obstructs_within()` ok, `closes_ground()`, `has_a_body()` ok, `solid_reach()` ok; the looks ask `drawn_width()` |
+| `obstructs_radius` | 10 in, 2 out (the route rig, `SealPlanner`) | row `obstructs_within()` ok, `closes_ground()`, `has_a_body()` ok, `solid_reach()` ok; the looks ask `drawn_width()` (the row's, asked by the footprints ok) |
 | `solid_when` | 4 in, 1 out (the route rig), the resistance untyped | row `is_a_boom()` ok, `stands_as_a_fixed_body()`; the body part's `solid_from()` for the live body (the row's until the body part exists ok); live `is_solid()` ok |
 | `stands_as`, `when_it_stops` | 2 in each (the live event filling its move) | the body part's `is_walked_round()`, `parks()`, asked by the live body (the row's until the body part exists ok) |
-| `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()`; the body part's `lies()` (one choice of four) for the footprints |
+| `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()`; the body part's `lies()` (one choice of four) for the footprints (the row's `lies()`, an `EventDef.Lie`, until the body part exists, ok) |
 | `vehicle` (`VehicleSpec.field_from_its_centre`) | 8 in, 2 out (the scene recipes, the park cordon); 3 lines of the spec | row `drives()` ok; the field part's `datum()` |
 | `intensity` | 7 in | row `has_a_field()` ok; the field part's `peak()` and `peak_through()` for the live event and the looks (the row's `peak()` and `peak_through()` until the field part exists ok) |
 | `inner_radius` | 6 in, 2 out (the resistance's contact point and director) | row `core_within()`; live `core_reaches(point)`; the flock and the looks are handed the field's spec |
@@ -646,9 +646,9 @@ counted where it only writes.
 | `paces` | 4 in, 1 out (the happenings), the resistance untyped | row `paces_a_beat()`; live `beat()` |
 | `path_mode`, `path_length_tiles` | 3 and 2 in | the route part's `kind()`, `tiles()`, asked by the plan builder |
 | `stops_where_it_arrives` | 3 in, 1 out (the scene recipes) | row `parks_where_it_arrives()`; live `has_parked()` |
-| `flock_size`, `flock_spread` | 5 and 4 in | row `is_a_flock()`; `EventFlock` is handed `FlockSpec` |
+| `flock_size`, `flock_spread` | 5 and 4 in | row `is_a_flock()` ok; `EventFlock` is handed `FlockSpec` |
 | `look` | 13 in (every look) | row `picture()` ok; each look is handed its `LookSpec` |
-| `warning_picture`, `draws_body_shadow`, `trails_a_lead`, `hides_in_its_hold`, `may_be_a_pelican` | 2 or 3 in each (the footprints, the looks, the spawner) | methods of `LookSpec`, asked by the looks, the footprints and the spawner only |
+| `warning_picture`, `draws_body_shadow`, `trails_a_lead`, `hides_in_its_hold`, `may_be_a_pelican` | 2 or 3 in each (the footprints, the looks, the spawner) | methods of `LookSpec`, asked by the looks, the footprints and the spawner only (meanwhile the row's `casts_a_shadow()`, `drags_a_lead()` and `vanishes_into_its_hold()` ok, asked by the footprints; `warning_picture` still a listed read) |
 | `guard_sides` | 2 in, 1 out (`SealPlanner`), `RegionPlanner` writing | `LookSpec.guard_sides()`; a draft for the wall's copies |
 | `abduction` (`AbductionSpec`: `taken_over`, `standing_offset`) | 5 in; 5 lines of the spec | the abduction behaviour and the van's look are handed the spec; its two methods |
 | `aftermath` (`Aftermath`: `scar`, `on_finish`, `on_sight`) | 4 in, 2 out (the scene recipes, `SealPlanner`); 10 lines of the spec | row `scar_id()`, `leaves_behind()` (asked by the live event ok), `calls_in()`, `has_an_aftermath()`; a draft's `without_its_aftermath()` |
@@ -820,9 +820,13 @@ configuration alone moves between rounds, as that record found):
 - `tools/test.sh probes/calm_pelican_fields_layer_cost.gd`: the fields layer.
 - `tools/test.sh probes/m159_crowd_tick_cost.gd`: the control; its chain over every agent's
   position is identical.
+- `tools/test.sh probes/look_fingerprint.gd`: what every row's look draws, the catalogue's rows,
+  their full-heat and last-day copies and the rows the game stands from them; its `LK` lines are
+  identical or a step of 2b is not done. It cannot see what a look draws straight on the canvas,
+  nor a term of a look's picture key taken out alone (the record minty-quail-polite-newt).
 
 **The bar.** The design's: in a step that changes no behaviour, the fingerprint and the chain are
-identical, always. On the times, the player's answer (section 7, point 5) is read as: they are
+identical, always, and in a step of 2b the looks' `LK` lines too. On the times, the player's answer (section 7, point 5) is read as: they are
 measured and reported in the pull request and listed for the end remeasure, and no step is held or
 tuned for them.
 

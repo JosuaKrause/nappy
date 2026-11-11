@@ -368,8 +368,9 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 ## cars are and lit where the picture leaves a way through.
 ##
 ## A row that casts none (`EventDef.casts_a_shadow()`; the doc of `draws_body_shadow` names which)
-## is left out entirely, its body and its picture untouched: this is the one function that puts a shadow patch down, so
-## refusing here is the whole of "no shadow" rather than a special case at each call site.
+## is left out entirely, its body and its picture untouched: this is the one function that puts a
+## shadow patch down, so refusing here is the whole of "no shadow" rather than a special case at
+## each call site.
 func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
 	if not _row.casts_a_shadow():
 		return
@@ -548,12 +549,12 @@ func _draw_simple(picture: String, canvas: CanvasItem,
 ## bottom row is the car's nearest ground contact. The body is its `shape`, a capsule centred on the
 ## node and laid along the heading (`EventDef.vehicle`), so its southern reach is its spine's half
 ## length (`GroundShape.spine_half_length()`) times `|heading.y|` plus its rounding
-## (`GroundShape.rounding_radius()`) — the patrol car's 12px driving east or west, 21 north or south — plus the
-## view's own canvas margin (`EventPictures.canvas_margins()`), and the picture sits over the body
-## she walks into rather than standing in front of it. Read off the live heading rather than the
-## quantised view, the crowd car's reason: the body turns continuously as a car rounds a corner, and
-## a picture anchored on the view would jump at every sector boundary. The caret over it is lowered
-## by the same amount (`_picture_drop_now()`).
+## (`GroundShape.rounding_radius()`) — the patrol car's 12px driving east or west, 21 north or
+## south — plus the view's own canvas margin (`EventPictures.canvas_margins()`), and the picture
+## sits over the body she walks into rather than standing in front of it. Read off the live
+## heading rather than the quantised view, the crowd car's reason: the body turns continuously as a
+## car rounds a corner, and a picture anchored on the view would jump at every sector boundary. The
+## caret over it is lowered by the same amount (`_picture_drop_now()`).
 func body_anchor(view: String) -> Vector2:
 	var shape := _row.ground_shape()
 	var south := shape.spine_half_length() * absf(event.solid_axis().y) + shape.rounding_radius()

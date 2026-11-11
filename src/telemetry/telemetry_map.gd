@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name TelemetryMap
 extends RefCounted
 ## A picture of the whole tile grid, written beside the run log.
@@ -205,7 +204,7 @@ static func _mark_the_spine(image: Image, map: CityMap) -> void:
 	if map.main_road_corridor() < 0:
 		return
 	var corridor := map.main_road_corridor() * CityMap.period()
-	for offset in [0, Tuning.STREET_WIDTH - 1]:
+	for offset: int in [0, Tuning.STREET_WIDTH - 1]:
 		_fill_tiles(image, Rect2i(Vector2i(corridor + offset, 0), Vector2i(1, map.size_in_tiles().y)),
 				SPINE_MARK)
 
@@ -358,7 +357,7 @@ static func _mark_the_calm(image: Image, map: CityMap) -> void:
 ## street without covering it.
 static func _mark_the_closures(image: Image, closures: Array[RoadClosure]) -> void:
 	for closure in closures:
-		for at_a in [true, false]:
+		for at_a: bool in [true, false]:
 			_fill_tiles(image, closure.segment.mouth_rect(at_a), CLOSURE_MARK)
 
 ## The home, filled at exactly its own size.

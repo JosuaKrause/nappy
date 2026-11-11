@@ -49,6 +49,11 @@ from, and on the code commit `b8c008e55`, each probe gives one hash: what every 
 meter on every tick (`probes/m159_tick_sweep_events_cost.gd`, the `chain` values), and what every
 row's look draws (`probes/look_fingerprint.gd`, its `LK` lines), run with the probe file from its
 own pull request at `943ed9d8b` and again at `77b1cbaee`, the same file in both trees each time.
+The excitement fingerprint was measured again on `c2c9b2014`, which gave the piece its
+`ground_shape()` (hash `7510c1d0…`, the reviewer's run on the head). The look probe on `main` is a
+later file than the one those hashes are of, since it has two rows more (the policeman a patrol
+car lets out, as a stop and as a hunt), so a later family pull request takes a fresh base hash from
+`main`'s probe.
 What a look draws straight on the canvas no probe sees: `_draw_body_shadow()` changed only where it
 asks (`casts_a_shadow()`, `body_pieces()`, and each piece's `ground_shape()`).
 

@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name RunTrace
 extends RefCounted
 ## The one sink game logic writes its own account of a decision into, for the run log to keep:
@@ -55,10 +54,12 @@ static func compass(direction: Vector2) -> String:
 	return "%d°" % degrees
 
 static func purpose(which: GameEnums.BlockPurpose) -> String:
-	return GameEnums.BlockPurpose.keys()[which].to_lower()
+	var name: String = GameEnums.BlockPurpose.keys()[which]
+	return name.to_lower()
 
 ## The ground somebody is standing on. Where she chose to stop is most of what a stand means:
 ## a kerb is somebody waiting for a gap in the traffic, a pavement in the middle of a block is
 ## somebody waiting for a meter.
 static func tile_type(which: GameEnums.TileType) -> String:
-	return GameEnums.TileType.keys()[which].to_lower()
+	var name: String = GameEnums.TileType.keys()[which]
+	return name.to_lower()

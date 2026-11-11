@@ -755,6 +755,20 @@ enum HeatResponse {
 ## fit *inside* its lethal radius with her own body to spare.
 @export var obstructs_radius := 0.0
 
+## **How a row's body and its picture lie on the street it stands on**, the one choice the three
+## flags `has_a_spread`, `stands_along_its_street` and `lies_across_its_street` make between them
+## (`lies()`); no row sets two.
+enum Lie {
+	## As it faces: no flag.
+	AS_IT_FACES,
+	## Drawn as a spread across its street (`has_a_spread`).
+	SPREAD,
+	## Along its street without being drawn as a spread (`stands_along_its_street`).
+	ALONG,
+	## Across its street (`lies_across_its_street`).
+	ACROSS,
+}
+
 ## **When the row's body is solid to her.** Almost every body is a place, solid from its first frame
 ## for the whole of its life; two rows are solid only part of the time, and a row is one or the
 ## other, never both.
@@ -1948,6 +1962,34 @@ func leaves_behind() -> String:
 ## The picture it is drawn as, which is the silhouette its badge carries (`EventPictures.icon_for()`).
 func picture() -> Look:
 	return look
+
+## How wide its body's picture is drawn along its run, in px: twice the radius of its body
+## (`obstructs_radius`).
+func drawn_width() -> float:
+	return obstructs_radius * 2.0
+
+## How it lies on its street (`has_a_spread`, then `stands_along_its_street`, then
+## `lies_across_its_street`): as a spread across it, along it, across it, or as it faces.
+func lies() -> Lie:
+	if has_a_spread:
+		return Lie.SPREAD
+	if stands_along_its_street:
+		return Lie.ALONG
+	if lies_across_its_street:
+		return Lie.ACROSS
+	return Lie.AS_IT_FACES
+
+## Whether it is a flock of bodies wheeling over one place (`flock_size`).
+func is_a_flock() -> bool:
+	return flock_size > 0
+
+## Whether it drags a slack lead behind it (`trails_a_lead`): the loose dog.
+func drags_a_lead() -> bool:
+	return trails_a_lead
+
+## Whether its own hold hides the whole of it (`hides_in_its_hold`): one guard at an alley mouth.
+func vanishes_into_its_hold() -> bool:
+	return hides_in_its_hold
 
 ## Whether it holds her when she comes to it (`detain_seconds`): a chatting mother's conversation,
 ## a door's hut or post. What the crowd's walkers are held at.
