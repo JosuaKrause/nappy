@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The two halves of `EventScheduler.role_for`: a lethal event is a wall and a wall never stands
 ## on ground a route runs along, and friction is aimed at the route as a weight rather than a rule.
@@ -111,7 +110,7 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 	# by street, because the same street is a gap on one day and ordinary ground on another.
 	var gaps := {}
 	var gaps_walled := {}
-	for day in [1, 5, 8, 11, 14]:
+	for day: int in [1, 5, 8, 11, 14]:
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
@@ -256,7 +255,7 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 ## (`ONE_SHOT`) is excluded from it since a set piece is never asked the friction-or-wall question.
 func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 	var checked := 0
-	for day in [8, 14]:
+	for day: int in [8, 14]:
 		var map := _repainted_city(day)
 		var corridor := Corridor.of(RouteTree.for_day(map, day))
 		for def in EventCatalogue.all():
@@ -278,7 +277,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 	var narrow_and_placed := 0
 	var her_clearance := 2.0 * Tuning.PLAYER_BODY_RADIUS
 	var cities := {}
-	for day in [8, 10, 14]:
+	for day: int in [8, 10, 14]:
 		cities[day] = _repainted_city(day)
 	for def in EventCatalogue.all():
 		if not def.placement.has(GameEnums.TileType.SIDEWALK) or def.paces or def.mobile:
@@ -438,7 +437,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 	var refused := 0
 	for i in 3:
 		var map := MapCache.of(4242 + i * 97)
-		for day in [4, 9, 14]:
+		for day: int in [4, 9, 14]:
 			var state := CityState.new()
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)
@@ -529,7 +528,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t: TestRunner) -> voi
 	var first := ""
 	for map_seed: int in [4242, 90210, 1234567, 88]:
 		var map := MapCache.of(map_seed)
-		for day in [1, 3, 5, 8, 11, 14]:
+		for day: int in [1, 3, 5, 8, 11, 14]:
 			var state := CityState.new()
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)
@@ -641,7 +640,7 @@ func _test_a_routes_junctions_stay_clear(t: TestRunner) -> void:
 	var in_reach := 0
 	var closed := 0
 	var first := ""
-	for day in [1, 5, 9, 14]:
+	for day: int in [1, 5, 9, 14]:
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
@@ -736,7 +735,7 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 	while head < queue.size():
 		var at: Vector2i = queue[head]
 		head += 1
-		for step in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+		for step: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
 			var next: Vector2i = at + step
 			if free.has(next) and not reached.has(next):
 				reached[next] = true
@@ -780,7 +779,7 @@ func _test_nothing_takes_the_routes_own_sidewalk(t: TestRunner) -> void:
 	var bands_with_a_row := 0
 	var closed := 0
 	var first := ""
-	for day in [1, 5, 9, 14]:
+	for day: int in [1, 5, 9, 14]:
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
@@ -865,7 +864,7 @@ func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 	# the sample turns up a handful of paced route streets rather than dozens — which is why the
 	# guard below is a floor with room under it rather than a measurement to keep in step. What it
 	# is for is only that the check ran against real ground at all.
-	for day in [1, 5, 8, 11, 14]:
+	for day: int in [1, 5, 8, 11, 14]:
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day)
 		map.repaint(state)
@@ -952,7 +951,7 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 		head += 1
 		if (at.x if horizontal else at.y) == last:
 			return true
-		for step in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+		for step: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
 			var next: Vector2i = at + step
 			if free.has(next) and not seen.has(next):
 				seen[next] = true
@@ -977,7 +976,7 @@ func _test_a_flock_is_scenery(t: TestRunner) -> void:
 	var off_corridor := 0
 	var map := MapCache.of(4242)
 	var consumed: Array[String] = []
-	for day in [1, 4, 8, 11, 14]:
+	for day: int in [1, 4, 8, 11, 14]:
 		var tree := RouteTree.for_day(map, day)
 		var corridor := Corridor.of(tree)
 		var rng := RandomNumberGenerator.new()
