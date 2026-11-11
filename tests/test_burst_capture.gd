@@ -35,7 +35,7 @@ class Rig:
 		t.add_child(layer)
 		layer.add_child(label)
 		var config := RunConfig.parse(PackedStringArray(), "", debug_build)
-		session.setup(run_log, config, EventBus, RunFlow.new(), run)
+		session.setup(run_log, config, EventBus, RunFlow.new(), run, CityState.new())
 		readout.setup(config, label, layer, run.header, session, Callable())
 		t.add_child(readout)
 

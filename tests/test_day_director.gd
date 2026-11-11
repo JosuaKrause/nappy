@@ -558,14 +558,6 @@ class _FakeCity extends City:
 		tinted = route
 		_asked.append("tint")
 
-	## Overrides City.calm_summary.
-	func calm_summary() -> String:
-		return ""
-
-	## Overrides City.closure_summary.
-	func closure_summary() -> String:
-		return ""
-
 ## A map that notes whether the act's spent calm was handed to it, and whose one home tile is at
 ## `home`, every other point a road.
 class _FakeMap extends CityMap:

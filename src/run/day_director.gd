@@ -277,7 +277,8 @@ func _print_the_start(ms: int) -> void:
 		print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %d crowd, %.0fs "
 				% [spec.day_number(), ms, calendar.current_act(), events.planned_count(),
 				events.active_count(), events.owed_ahead(), city.crowd.agent_count(), day.time_total]
-				+ "| calm: %s | closed: %s" % [city.calm_summary(), city.closure_summary()])
+				+ "| calm: %s | closed: %s" % [city.map.calm_summary(spend.block_arcs()),
+				city.streets().closure_summary()])
 	else:
 		print("[Main] day %d started in %d ms (act %d): %d events (%d live, %d ahead), %.0fs"
 				% [spec.day_number(), ms, calendar.current_act(), events.planned_count(),

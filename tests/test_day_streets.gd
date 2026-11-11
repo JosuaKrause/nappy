@@ -43,6 +43,7 @@ func _test_before_any_day_there_are_no_streets(t: TestRunner) -> void:
 	t.check(streets.route_tree() == null and streets.region_plan() == null,
 			"before any day, there is no tree and no region plan")
 	t.check(streets.closures().is_empty(), "and no street is closed")
+	t.check(streets.closure_summary() == "none", "so its summary says none")
 	t.check(streets.siting_region() == null, "and a siting reads no region")
 
 ## A dawn replaces all three of the day's answers; a rig's or a scene recipe's authored plan

@@ -15,7 +15,7 @@ happenings, day 12's park cordon, the crowd and the run log's observer are built
 hand-ins-third-cut, built on the orchestrator's pick since it drops nothing the player asked for:*
 one pull request cannot hold it, so cut it: the event manager's own city and the day planner's
 fallback below go before the dawn's context rewrites `build_day()`'s call (`scheduler-breakup.md`),
-the smaller cases and the summary lines when they are ready, and who builds the event manager and
+the smaller cases when they are ready, and who builds the event manager and
 the crowd last (`standing-layer-breaks.md`). The player's answer was three pull requests
 ("yes three prs is fine", inbox #1173 in gray-dolphin), so the plainer alternative is one large
 third pull request:
@@ -28,12 +28,7 @@ third pull request:
   recorder and the frame trace since the record 2026-10-18-minty-quail-calm-wombat);
 - `DayPlanner`'s fallback that grows a route tree when dawn grew none is deleted, since no game
   path reaches it. The rigs that drive the event manager without `City.start_day()`
-  (`tests/test_event_manager.gd`, `tests/test_balance.gd`) hand it a `DayStreets` instead;
-- *proposed by the hand-ins' builder (where `calm_summary()` goes, by the orchestrator), open to the player's correction:* the city's three summary
-  lines move off `City`, so the run log's session (`RunSession`, where it hears
-  `RunFlow.day_planned`) takes the parts too. `closure_summary()` moves
-  onto `DayStreets` and `event_summary()` onto the event manager. `calm_summary()` reads the map
-  with the run's city state, so it moves onto `CityMap`, asked with the city state handed in.
+  (`tests/test_event_manager.gd`, `tests/test_balance.gd`) hand it a `DayStreets` instead.
 
 **Which map a test uses** is writing-tests' rule (inbox #1172 in gray-dolphin): the shared writer's map is for a test
 of one interaction or edge case, never for a booted day or a measurement.

@@ -333,7 +333,7 @@ func _ready() -> void:
 	_session = RunSession.new()
 	_session.name = "RunSession"
 	add_child(_session)
-	_session.setup(_run_log, config, EventBus, _flow, _run)
+	_session.setup(_run_log, config, EventBus, _flow, _run, _run.attempt_spend.block_arcs())
 	_run.use_trace(_session.trace)
 	_save.trace = _session.trace
 	_sitting.atlas.trace_note = _session.trace.note

@@ -675,6 +675,21 @@ func planned_count() -> int:
 func plans() -> Array[EventScheduler.Planned]:
 	return _walk_events.plans()
 
+## Today's events by id, as the run log prints them. Counted rather than listed one per line: which
+## of the catalogue's kinds are out is what makes a day, and where each instance stands is only
+## interesting for the ones she actually walked into, which the `near` lines cover at the moment it
+## matters. The *plan*, not what is live: what is live is a fact about where she is standing this
+## frame. `none` when nothing is planned.
+func event_summary() -> String:
+	var counts := {}
+	for plan in plans():
+		counts[plan.row_id()] = int(counts.get(plan.row_id(), 0)) + 1
+	var parts: Array[String] = []
+	for id: String in counts:
+		parts.append("%s x%d" % [id, counts[id]] if counts[id] > 1 else id)
+	parts.sort()
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
 ## **The walk's events, read through one object** (`WalkEvents`): what the resistance and every
 ## placement made while she walks are handed.
 func walk_events() -> WalkEvents:
