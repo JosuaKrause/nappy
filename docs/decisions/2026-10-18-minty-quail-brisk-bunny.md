@@ -22,8 +22,8 @@ pictures were typed (#1329) and the city's own parts were handed what they read
   lines for them in `tools/test_only_members.txt` are rewritten to the readers left.
 - **The dawn half of the check that dawn and relocation do not replace a building's lasting
   collision moved to `test_city_buildings`**, which builds a real city: after `City.start_day()`
-  every building is the same node with the same collision shape. It was seen to fail with a
-  temporary `start_day()` that swapped one building's shape. The relocation half stays in the
+  the city holds the same buildings, each the same node with the same collision shape. It was seen
+  to fail with a temporary `start_day()` that swapped one building's shape. The relocation half stays in the
   residency suite.
 - **The suites ask the game's methods where it has one**: the shadows' drawer is handed through
   `draw_through()`, a building's posters through `hand_over_posters()`, the ground floor's home
@@ -44,10 +44,14 @@ pictures were typed (#1329) and the city's own parts were handed what they read
   `posters`, read once to see that a poster pasted while unloaded survives the rebuild (a building
   is handed its posters by `hand_over_posters()`, and nothing answers them). No method was added
   for a test.
-- **`test_ground_floor`'s fixture writes stay**: a building's `variant` in the sweep over every
-  variant, and its `district`, `footprint`, `height`, `position`, `covered_ground_cols`,
-  `door_world_x_range` and `power_station`. `stand_on()` and `draw_as()` set several of these at
-  once, so asking them would change each fixture.
+- **`test_ground_floor` builds its fixture through `stand_on()`**, as `City._spawn_buildings()`
+  does, for its district, footprint and height. Writes that stay: a building's `variant` in the
+  sweep over every variant; `roof_extension_rows`, `roof_extension_seamless` and
+  `seamless_cover_cols`, which the city writes as fields itself; and `position`,
+  `covered_ground_cols`, `door_world_x_range` and `power_station`, which no method sets.
+- **Reads of `Building.shape` and `district`** (`test_scenery_residency`, `ground_floor_checks.gd`)
+  stay: no method answers them.
+- **Other modules' fields** were not searched and stay for their passes.
 
 ## Verified
 
