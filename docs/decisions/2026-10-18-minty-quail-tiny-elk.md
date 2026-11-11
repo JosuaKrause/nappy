@@ -31,18 +31,59 @@ The search covered the crowd's own classes: `CrowdAgent`, `LaneMover` and its `L
 - **`CarTurn.radius`, read**: no method answers it.
 - **`AgentLook.view`, written**: the look sets it itself, and no method sets a chosen view.
 - **`CarLook.travelled`, read and written**: no method answers or sets a chosen distance.
-- **Other modules' fields stay for their passes**, with the game's method named where one exists:
-  the map's `main_road` (`main_road_corridor()`), `network` (`street_network()`), `size`
-  (`size_in_tiles()`) and `moves` (none); the world's `ExcitementSource.rim` (none);
-  `MoveProposal`'s `radius` (`use_body_radius()`) and `stood_round` (none); the events' `is_parked`
-  and `age` (`EventInstance.Figure`'s `has_parked()` and `age()`); `EventManager`'s `planner` and
-  `world` and a day plan's `placements` and `is_a_day` in `given_planner.gd` (none); and `City`'s
-  `crowd`, `map`, `signals` and `atlas`.
+- **Other modules' fields stay for their passes**, listed by class, each with the game's method or
+  "no method", under "Fields read and written, by class" below.
 - **Suites with a crowd half whose subject is another module's are not taken** and keep their
   opt-out lines: `test_danger` and `test_wall_shield` (which `tests-one-module.md` entry 6 splits
   with the events), `test_drawn_view` and `test_prediction_reuse`. `test_wall_shield`, for
   one, reads a crowd agent's `excitement` where the game asks `mood()`, which its pass converts.
 - **Probes on crowd subjects keep their opt-out lines**; they are not suites.
+
+## Fields read and written, by class
+
+Built with `tools/field_answers.py` at the pass's merge commit `37333487b`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
+
+- **`AgentLook`**: `view`, written through `CarLook`, `WalkerLook` → `CarLook.sector()` does `view =
+  EightDirection.update(view, _agent.velocity(), IDLE_SPEED)`, `CarLook.picture()` does `view =
+  EightDirection.update(view, moving, IDLE_SPEED)`, `WalkerLook.sector()` does `view =
+  EightDirection.update(view, _heading_now(), IDLE_SPEED)`, `WalkerLook.picture()` does `view =
+  EightDirection.update(view, heading_at(moving), IDLE_SPEED)`.
+- **`CarLook`**: `travelled` → no method; `travelled`, written → `advance()` does `travelled =
+  wrapf(travelled + moving.length() * delta, 0.0, WheelBob.WAVELENGTH)`.
+- **`CarTurn`**: `radius` → no method.
+- **`City`**: `crowd` → no method; `events` → no method; `map` → no method; `signals` → no method.
+- **`CityMap`**: `block_plans` → `plans_by_block()`; `boundary_wall_at_a` → no method; `built_over`
+  → `streets_built_over()`; `calm_blocks` → `calm_blocks_now()`; `dead_ends` → no method;
+  `main_road` → `main_road_corridor()`; `network` → `street_network()`; `precinct_spans` →
+  `precinct_stretches()`.
+- **`Crowd`**: `skip_motion`, written → no method; `sources` → no method.
+- **`DayPlanner.Plan`**: `is_a_day`, written → no method; `placements`, written → no method.
+- **`EventDef`**: `detain_seconds` → `detains_for()` (a yes-or-no on the field alone:
+  `detains_her()`); `speed` → no method; `telegraph_time` → `telegraphs_for()`.
+- **`EventInstance`**: `age` → no method (`EventInstance.Figure.age()` returns it on a view no
+  public method hands out); `is_parked` → no method (`EventInstance.Figure.has_parked()` returns it
+  on a view no public method hands out).
+- **`EventManager`**: `planner`, written → no method; `world` → no method.
+- **`EventScheduler.Planned`**: `def` → `row()`; `position` → `placed_at()` (a yes-or-no on the
+  field alone: `is_placed()`).
+- **`ExcitementSource`**: `rim` through `CrowdExcitement` → no method.
+- **`LaneMover`**: `kind`, written through `CrowdAgent` → `setup_at()` does `kind = agent_kind as
+  Kind`, `setup()` does `kind = agent_kind`.
+- **`MoveProposal`**: `radius`, written → `use_body_radius()` does `radius = reach`; `stood_round`,
+  written → no method.
+- **`RegionPlanner.GateState`**: `position` → no method; `position`, written → no method.
+- **`RegionPlanner.RegionPlan`**: `door_bodies` → no method; `doors` → no method; `gates` → no
+  method.
+- **`StreetNetwork.Segment`**: `a` → no method; `b` → no method; `horizontal` → no method.
+- **`TrafficSignals`**: `elapsed` → no method; `powered`, written through
+  `tests/test_traffic_light.gd.GreenSignals` → no method.
+- **`WorldMap`**: `moves` through `CityMap` → no method; `size` through `CityMap` →
+  `size_in_tiles()`.
 
 ## Verified
 

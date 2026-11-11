@@ -29,15 +29,18 @@ goes as its suite is converted", after the city map and its generator were typed
 `tools/check_field_reads.py` reads only `src/`, so it does not list these. The search covered the
 city map's own classes; other modules' fields were listed, not converted.
 
-- **`CityMap.dead_ends`, `absent_segments` and `zone_anchor`** (`test_generator`, `test_blocks`),
-  **`map.blocked`** (`test_world_passability`), **`fenced_park_act`, `stretch_active` and
-  `recipe_dawn_tiles` compared whole between the map and its twin** (`test_city_map`), and
-  **`Prop.kind` and `Prop.shape`** (`test_blocks`): no method the game calls answers them.
-- **Other modules' fields stay for their passes.** In `test_world_passability`, the events'
-  `is_finished`, `excitement`, `telegraph_time`, `outer_radius` and `mobile` and a plan's `def`,
-  `position` and `path` have the game's `is_gone()`, `source()`, `telegraphs_for()`,
-  `heard_within()`, `moves()`, `row()`, `placed_at()` and `walks()`; `is_leaving`, `departure`,
-  `barrier_post`, `skip_draw`, a plan's `facing` and `RunState.attempt_spend` have no plain getter.
+- **`CityMap.dead_ends` and `zone_anchor`** (`test_generator`, `test_blocks`), **`map.blocked`**
+  (`test_world_passability`), **`fenced_park_act`, `stretch_active` and `recipe_dawn_tiles` compared
+  whole between the map and its twin** (`test_city_map`), and **`Prop.kind` and `Prop.shape`**
+  (`test_blocks`): no method the game calls answers them. **`CityMap.absent_segments`**
+  (`test_generator`) is answered with a copy by `blocked_segments()` called with no argument, as the
+  list below says; `tools/field_answers.py` prints no method for it.
+- **Other modules' fields stay for their passes**, listed whole under "Fields read and written, by
+  class" below. In `test_world_passability`, the events' `is_finished`, `is_leaving`, `excitement`,
+  `telegraph_time`, `outer_radius` and `mobile` and a plan's `def`, `position` and `path` have the
+  game's `is_gone()`, `is_on_its_way_out()`, `source()`, `telegraphs_for()`, `heard_within()`,
+  `moves()`, `row()`, `placed_at()` and `walks()`; `departure`, `barrier_post`, `skip_draw`, a plan's
+  `facing` and `RunState.attempt_spend` have no plain getter.
   `City`'s fields there and in `test_blocks` (`scenery`, `atlas`) are the city scene's;
   `CityDecals`' `atlas` and `drawer` (`test_blocks`) are the decals'; a recipe's `data` and the
   built city's `map` (`test_city_map`) are the scene recipes'.
@@ -45,6 +48,46 @@ city map's own classes; other modules' fields were listed, not converted.
 `test_generator`'s CI time rose from about 80 s to about 106 s with the change. No method the
 suite now calls in a loop copies what it answers, and back-to-back local runs on a loaded machine
 did not reproduce the rise.
+
+## Fields read and written, by class
+
+Built with `tools/field_answers.py` at the pass's merge commit `87dc6690c`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
+
+- **`AttemptSpendState`**: `city_state`, written → no method.
+- **`BlockPlan.Step`**: `cause` → no method; `from_day` → no method; `purpose` → no method.
+- **`City`**: `atlas` → no method; `events` → no method; `map` → no method; `navigator` → no method;
+  `scenery` → no method.
+- **`CityDecals`**: `atlas`, written → `use_atlas()` does `atlas = library`; `drawer` → no method;
+  `drawer`, written → `draw_through()` does `drawer = through`.
+- **`CityMap`**: `absent_segments` → `blocked_segments()` called with no argument, which returns a
+  copy of it (the tool prints no method); `dead_ends` → no method; `fenced_park_act` → no method;
+  `recipe_dawn_tiles` → no method (a yes-or-no on the field alone: `has_recipe_dawn_ground()`);
+  `stretch_active` → no method; `zone_anchor` → no method.
+- **`EventDef`**: `detain_seconds` → `detains_for()` (a yes-or-no on the field alone:
+  `detains_her()`); `flock_size` → no method (a yes-or-no on the field alone: `is_a_flock()`); `id`
+  → no method; `mobile` → `moves()`; `outer_radius` → `heard_within()`; `path_mode`, written → no
+  method; `placement` → no method; `pursuit` → no method; `solid_when` → `solid_from()` (a yes-or-no
+  on the field alone: `is_a_boom()`); `speed` → no method; `telegraph_time` → `telegraphs_for()`;
+  `vehicle` → no method (a yes-or-no on the field alone: `drives()`).
+- **`EventInstance`**: `barrier_post` → no method; `departure` → no method; `excitement` →
+  `source()`; `is_finished` → `is_gone()`; `is_leaving` → `is_on_its_way_out()`; `skip_draw`,
+  written → no method.
+- **`EventManager`**: `world` → no method.
+- **`EventScheduler.Planned`**: `def` → `row()`; `def.obstructs_radius` → `obstructs_within()`;
+  `facing` → no method; `path` → `walks()` (a yes-or-no on the field alone: `stands_still()`);
+  `position` → `placed_at()` (a yes-or-no on the field alone: `is_placed()`).
+- **`Navigator.Walked`**: `at` → no method; `stopped` → no method.
+- **`Prop`**: `kind` → no method; `shape` → no method.
+- **`RunState`**: `attempt_spend` → no method.
+- **`StreetNetwork.Segment`**: `horizontal` → no method.
+- **`StreetTrees.Planted`**: `position` → no method; `segment_key` → no method; `tile` → no method.
+- **`StreetTrees.Run`**: `horizontal` → no method; `length` → no method.
+- **`WorldMap`**: `blocked` through `CityMap` → no method.
 
 ## Verified
 

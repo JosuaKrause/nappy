@@ -42,6 +42,55 @@ turns, give-way and traffic suites, is still to come.
   `Crowd.recipe_coverage` check is in another module's suite, and the events' answers in the crowd's
   suites move with the events.
 
+## Fields read and written, by class
+
+Built with `tools/field_answers.py` at the pass's merge commit `d291155ed`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
+
+- **`CarTurn`**: `radius`, written → `tighten_to()` does `radius = tighter`.
+- **`City`**: `crowd` → no method; `events` → no method; `map` → no method; `signals` → no method.
+- **`CityMap`**: `block_plans` → `plans_by_block()`; `boundary_wall_at_a` → no method; `built_over`
+  → `streets_built_over()`; `calm_blocks` → `calm_blocks_now()`; `dead_ends` → no method;
+  `home_block` → `home_block_coordinate()`; `main_road` → `main_road_corridor()`; `network` →
+  `street_network()`; `precinct_spans` → `precinct_stretches()`; `soft_sealed_tiles` → no method;
+  `zone_rects` → no method.
+- **`Crowd`**: `skip_motion`, written → no method; `sources` → no method.
+- **`EventDef`**: `detain_seconds` → `detains_for()` (a yes-or-no on the field alone:
+  `detains_her()`); `obstructs_radius` → `obstructs_within()` (a yes-or-no on the field alone:
+  `has_a_body()`); `pavement_side` → no method; `shape` → `ground_shape()`; `solid_parts` → no
+  method; `speed` → no method.
+- **`EventDef.SolidPart`**: `shape` → `ground_shape()`.
+- **`EventInstance`**: `skip_draw`, written → no method.
+- **`EventManager`**: `streaming` → no method; `world` → no method.
+- **`EventScheduler.Planned`**: `def` → `row()`; `facing` → no method; `position` → `placed_at()` (a
+  yes-or-no on the field alone: `is_placed()`).
+- **`EventWorld`**: `map` → no method.
+- **`LaneMover`**: `kind`, written through `CrowdAgent` → `setup_at()` does `kind = agent_kind as
+  Kind`, `setup()` does `kind = agent_kind`.
+- **`MoveProposal`**: `from` → `stands_at()`; `parked` → no method; `parked`, written → no method;
+  `radius` → `body_radius()`; `radius`, written → `use_body_radius()` does `radius = reach`;
+  `stood_round` → `stood_round_a_body()`; `stood_round`, written → no method.
+- **`RegionPlanner.GateState`**: `position` → no method; `position`, written → no method; `raised` →
+  no method.
+- **`RegionPlanner.RegionPlan`**: `door_bodies` → no method; `doors` → no method; `gates` → no
+  method; `walls` → no method.
+- **`SeparationPass.Keeper`**: `move` → no method; `step` → no method; `ticks_still` → no method.
+- **`StreetNetwork.Segment`**: `a` → no method; `b` → no method; `horizontal` → no method.
+- **`TrafficSignals`**: `elapsed` → no method; `elapsed`, written → `restart_cycle()` does `elapsed
+  = 0.0`, `advance()` does `elapsed += delta`.
+- **`WalkerDoorHold`**: `inside` → no method.
+- **`WorldMap`**: `moves` through `CityMap` → no method; `obstructed_tiles` through `CityMap` → no
+  method; `size` through `CityMap` → `size_in_tiles()`; `world`, written through `CityMap` → no
+  method.
+- Receiver's class not told: `tests/test_crowd_yields.gd:261` `rig.plan.live`.
+- Receiver's class not told: `tests/test_crowd_yields.gd:277` `rig.plan.live`.
+- Receiver's class not told: `tests/test_crowd_yields.gd:282` `rig.plan.live`.
+- Receiver's class not told: `tests/test_crowd_yields.gd:304` `rig.plan.live`.
+
 ## Verified
 
 The crowd's suites pass, `tools/typing_census.py --check` holds, and no game file changed, so the
