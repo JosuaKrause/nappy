@@ -14,12 +14,14 @@ refactor as tooling when the player answered "split it" (inbox #1348 in grassy-t
   worktree's `.env`, the host, a saved read compared with the previous file by hand), the layer,
   override, test-only-member, field-read and citation checks, the inbox tool, the CI checks, the
   ground-frames measure, the trailer's selected modes, the queue's `--check` errors, the lint pass's
-  name clash, the name drawer's heading, the browser check, the sound synthesizer and the Reddit
-  reader's credentials. Two rows whose help already held the rest are shortened to their purpose.
+  name clash, the name drawer's heading, the browser check, the sound synthesizer, the trailer's
+  score synthesizer and the Reddit reader's credentials. Two rows whose help already held the rest are shortened to their purpose.
 - **The six picture and video writers** (`remove-checkerboard.py`, `split-scenes.py`,
   `bake-atlases.sh`, `record.sh`, `clip.sh`, `trailer.sh`) print, after success and on stderr, the
-  one-line pointer to their skill that `shot.sh`, `reference.sh` and `synthesize-sfx.py` print. No
-  other behaviour changes.
+  one-line pointer to their skill that `shot.sh`, `reference.sh` and `synthesize-sfx.py` print, and
+  only when they succeed; the pointer for a recording, a clip and the trailer says what
+  session-captures says of them, that they stay out of the repository unless a pull request needs a
+  short clip to show motion. No other behaviour changes.
 
 ## Choices open to overturn
 
