@@ -7,14 +7,22 @@ review's findings, filed by the orchestrator, built as tooling first (inbox #130
 
 ## What was built
 
-- **A class nested inside an inner class, named through its outer class**, in a call, a cast or a
-  type, from its own file or another, gets the tool's "not told" line instead of being taken for an
-  engine value. The tool reads which classes each inner class declares inside itself, so a field or
-  enum of the same name is not mistaken for one.
+- **A class nested inside an inner class**, at any depth, named through its outer class or bare, in
+  a call, a cast or a type, from its own file or another, through a preloaded outer class or a
+  subclass of the declaring class, gets the tool's "not told" line instead of being taken for an
+  engine value. The tool reads which classes each inner class declares inside itself and inside the
+  classes it extends, so a field or enum of the same name is not mistaken for one.
 - **A number's truthiness is no longer a null test**: a guard that tests the whole returned chain by
   its truth alone counts as a null guard only when the other value is `null`; with any other value
-  the method is printed apart, behind its guard, with its whole return, as a stand-in already is. A
-  guard on a prefix of the chain still counts, since a field is read off that prefix.
+  the method is printed apart, behind its guard, with its whole return, as a stand-in already is.
+- **A truth test of a prefix of the chain counts as a null guard only where the prefix is a receiver
+  of a class under `src/`**: an array, a vector or a number there can be present and still false, so
+  `names.size() if names else 5` is printed behind its guard.
+- **A guard whose other value reads a lowercase name** (an engine property, a member or a global
+  function: `barrier_post.body_position() if barrier_post else global_position`) is printed behind
+  its guard rather than taken for the chain; a literal or a constant there leaves the method an
+  answer. `EventInstance.body_position()` is the one method under `src/` this changes, and no file
+  reads its chain.
 - **The four rules of the guards and views that no case held** each have one: every part of a guard
   joined by `and` tests the returned chain; a view is looked for only where the class has no answer
   of its own; a private method hands no view out; a guarded chain is not looked for where a method
@@ -30,10 +38,15 @@ review's findings, filed by the orchestrator, built as tooling first (inbox #130
   `return count if count else 0` is printed apart though it returns the same value for an `int`: the
   tool cannot tell a number field from an object field, and this is the smaller rule to state (the
   builder's).
+- **The two guard rules as the orchestrator ruled them on the review**, and two readings of them:
+  any lowercase name at the head of the other value is taken for an engine value, since the tool
+  keeps no list of engine properties, so a global function call there is printed behind the guard
+  too; and "a class under `src/`" is read literally, so a prefix of a class under `tests/` is printed
+  behind its guard (the builder's).
 
 ## Verified
 
 The tool's `--json` over every tracked `.gd` file under `src/`, `tests/` and `tools/` is byte for
-byte the same before and after. Each rule, removed on a scratch copy, fails its named case; the
+byte the same before and after, on `main` with the plan record's rename merged too. Each rule, removed on a scratch copy, fails its named case; the
 table is in pull request #1369's description. `./tools/pycheck.sh` and `./tools/lint.sh` pass, and
 `tools/field_reads.txt` is unchanged.
