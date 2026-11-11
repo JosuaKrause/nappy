@@ -15,18 +15,29 @@ assignment to it, or to an element of it (`thing.list[0] = x`), is listed as wri
 after it is a method call and is not listed.
 
 **The answer to a read** is a public method (no underscore) of the receiver's class or a class it extends that
-returns that field and nothing else: its body is `return field`, or that behind a null guard (`return field if field
-else 0`, or `if field == null:` returning a value that names no member of the class, then `return field`). Where the
-field is a property whose getter is one `return`, a method returning the same expression answers it too (`is_gone()`
-for `is_finished`, both `phase == Phase.DONE`). A method that returns a value worked out from the field, or from
-another field, is not an answer. A yes-or-no method (`-> bool`, no parameters) whose one `return` names that field
-and no other member of its class is printed after the answers as asking of it alone, with what it returns
-(`is_in_the_world()` returns `live != null`), for the builder to hold against the read.
+returns that field and nothing else: its body is `return field`, or that behind a null guard. A null guard tests
+only that the returned chain, or a prefix of it, is there: `return field if field else 0` (also `!= null`,
+`is_instance_valid()`, those joined by `and`), or `if field == null:` (also `not field`, those joined by `or`)
+returning another value first. A test of anything else (`if field > 0`), a guard the wrong way round, and a method
+that returns its own parameter of the field's name are no answer. Where the field is a property whose getter is one
+`return`, a method returning the same expression answers it too (`is_gone()` for `is_finished`, both `phase ==
+Phase.DONE`). A method that returns a value worked out from the field, or from another field, is not an answer.
+
+**Printed apart from the answers, for the builder to hold against the read**, each with what it returns:
+`behind a guard`, a method whose null guard stands a member of the class in for the field (`birds()` returns
+`flock.birds if flock else _NO_BIRDS`); `on its view`, a method of an inner class of the same file that holds a
+reference to the class and returns the field through it, looked for where the class itself has no answer
+(`lane().strategy()`, where `Lane.strategy()` returns `_of.strategy` and `lane()` hands the view out; a view no
+public method hands out is named with its class); `of it
+alone`, a yes-or-no method (`-> bool`, no parameters) whose one `return` names that field and no other member
+(`is_in_the_world()` returns `live != null`). `no method` is printed only where there is no answer, no guarded
+return and no view's method.
 
 **A chain.** Where the read ends a chain of fields (`plan.def.id`) and a method of an earlier class in the chain
 returns that chain (`row_id()`, whose body is `return def.id`), the read is listed once, under that earlier class,
-as `def.id` with that method, and not under the last class. The longest chain a method answers wins, and the fields
-before the last are listed as reads of their own as well. Two more shapes count as that chain: a method that returns
+as `def.id` with that method, and not under the last class. The longest chain a method answers wins, a chain never
+starts in the file's own classes, and the fields before the last are listed as reads of their own as well. Two more
+shapes count as that chain: a method that returns
 another method's answer is read through (`telegraphs_for()` returning `def.telegraphs_for()` answers
 `def.telegraph_time`), and a read followed by a call the class hands on is listed as `map.start()` where the class's
 own method returns `map.start()` with its parameters passed on in order.
@@ -43,23 +54,32 @@ handed on) is not counted, so `(0 calls)` with nothing untold is a method no cal
 **A receiver whose class cannot be told** is printed on a line of its own, with the file, the line and the
 expression, where the name is a `var` some class under `src/` declares. Nothing is guessed for it.
 
+**A file that still ignores `unsafe_property_access`** (its opt-out line names that warning) is named on a line of
+its own. The engine lets such a file read a property off a receiver it types as an engine class (`child.step` on a
+`Node` from `get_children()`), and this list takes a receiver typed as an engine class for the engine's own, so
+such a read is not seen. The list is whole only for a file that no longer ignores that warning: type the file, then
+run this.
+
 **How the receiver's class is told.** By the reader of `tools/check_field_reads.py` (its `--help` says how), over
 every `.gd` file outside `docs/`, and further where a test needs it and that check does not: a script with no
 `class_name` is the class its file declares where a `const` preloads it or an `extends "res://..."` line names it;
 an inner class is told through its outer class (`EventScheduler.Planned.new()`) and under a name that starts with an
 underscore; `self` and `super` are told in a file with no `class_name`; a value awaited from a call is what the call
-returns; the variable of a `for` whose head spans lines is typed from what it iterates; a dot that opens a
-continuation line reads its receiver from the lines before; and a bare lowercase name that nothing declares is
-unknown, not an engine property.
+returns; the variable of a `for` whose head spans lines is typed from what it iterates; a receiver that runs over
+several lines (a dot that opens a continuation line, a bracket opened on a line before) is read from the lines
+before; and a bare lowercase name that nothing declares, or a class nested inside an inner class, is unknown, not an
+engine value.
 
 **Blind spots, stated.** That reader's, less the ones above: a chain through an engine property typed `Variant` is
 told as an engine value, so a read behind it is not seen; `self` inside an inner class, an inherited member an inner
-class reads by its bare name, and a parameter of a function whose parameter list closes at the margin are not told,
-so a read through one is printed as not told. A field reached by `get()`, `set()` or a string is not seen. The
-answer is read from the method's text: a method that returns the field through a local, or after any other
-statement, is not an answer, and a method is not matched to a property's getter where either `return` holds a
-string, whose contents are not read. Whether a method answers the read as the suite uses it (a copy where the suite
-changes the field, a method that also does something else) is the builder's to read in the class.
+class reads by its bare name, a class nested inside an inner class, and a parameter of a function whose parameter
+list closes at the margin are not told, so a read through one is printed as not told. A field reached by `get()`,
+`set()` or a string is not seen. The answer is read from the method's text: a method that returns the field through
+a local, or after any other statement, is not an answer, and a method is not matched to a property's getter where
+either `return` holds a string, whose contents are not read. A view is looked for only among the inner classes of
+the class's own file; a method of a class in another file that reads the field back is not looked for. Whether a
+method answers the read as the suite uses it (a copy where the suite changes the field, a method that also does
+something else) is the builder's to read in the class.
 """
 
 from __future__ import annotations
@@ -92,9 +112,15 @@ NEXT_CALL = re.compile(r"[ \t]*\.[ \t]*([A-Za-z_]\w*)[ \t]*\(")
 CLAUSE = re.compile(r"^(?:if|elif|else|for|while)\b")
 BRIEF_FILES = re.compile(r"\*\*Your files[^\n]*(?:\n(?!\s*\n)[^\n]*)*")
 BRIEF_PATH = re.compile(r"`([^`\s]+\.gd)`")
+NESTED_CLASS = re.compile(r"^[ \t]+class[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
+UNSAFE_PROPERTY = "unsafe_property_access"
 RETURN = "return "
-# The words a null guard may use beside the names of what it guards.
-GUARD_WORDS = frozenset({"null", "not", "and", "is_instance_valid"})
+# A null test of a chain, as a guard writes it: that it is there, or that it is not.
+PRESENT = re.compile(r"^(?:is_instance_valid\(\s*(?P<valid>.+?)\s*\)|(?P<compared>.+?)\s*!=\s*null|(?P<bare>.+))$")
+ABSENT = re.compile(
+    r"^(?:(?:not\s+|!\s*)is_instance_valid\(\s*(?P<valid>.+?)\s*\)|(?P<compared>.+?)\s*==\s*null"
+    r"|(?:not\s+|!\s*)(?P<bare>.+))$"
+)
 DEPTH = 8
 # How many lines before a continuation line are joined to find the receiver of the dot that opens it.
 JOINED = 6
@@ -128,7 +154,8 @@ class Scripts(reads.Tree):
 
     def first_class(self, word: str, own: str, declared: Mapping[str, str], inner: bool) -> str | None:
         """Overrides `Tree.first_class`: `self` and `super` in a file with no `class_name`, an inner class under any
-        name, and a bare lowercase name nothing declares, which is unknown."""
+        name, and a bare lowercase name nothing declares or a class nested inside an inner class, which are
+        unknown."""
         outer = own.split(INNER)[0]
         if word in ("self", "super") and not inner:
             return own if word == "self" else (self.files[own].parent or reads.UNTRACKED)
@@ -141,7 +168,19 @@ class Scripts(reads.Tree):
             or self.member_field_type(own, word)[0]
             or word in self.preloads.get(outer, {})
         )
-        return None if kind == reads.UNTRACKED and not known and not word[0].isupper() else kind
+        if kind != reads.UNTRACKED or known:
+            return kind
+        return None if not word[0].isupper() or word in self.nested_classes(outer) else kind
+
+    def annotation(self, text: str, path: str) -> str | None:
+        """Overrides `Tree.annotation`: a class nested inside an inner class is unknown, not an engine class."""
+        kind = super().annotation(text, path)
+        nested = kind == reads.UNTRACKED and text.strip() in self.nested_classes(path.split(INNER)[0])
+        return None if nested else kind
+
+    def nested_classes(self, path: str) -> set[str]:
+        """The names of the classes a file declares inside its inner classes, which the reader does not follow."""
+        return set(NESTED_CLASS.findall(self.bare.get(path, "")))
 
     def step(self, current: str | None, step: str, word: str) -> str | None:
         """Overrides `Tree.step`: an inner class named through its outer class."""
@@ -202,6 +241,15 @@ class Method:
     params: tuple[str, ...]
     returns: str
     body: tuple[tuple[int, str], ...]
+
+
+@dataclass(frozen=True)
+class Returned:
+    """What a method's body returns: the expression, and, where a null guard stands a member of the class in for it
+    (`flock.birds if flock else _NO_BIRDS`), the whole return as one expression, to print."""
+
+    value: str
+    behind: str = ""
 
 
 def logical_lines(text: str) -> list[tuple[int, str]]:
@@ -360,17 +408,49 @@ def call_arguments(chain: str) -> list[str]:
 
 
 def receiver_of(lines: list[str], index: int, start: int) -> str:
-    """The receiver of the `.name` whose dot is at `start` of line `index`. Where the dot opens a continuation line,
-    the receiver stands on the lines before, which are joined to it, up to `JOINED` of them."""
-    receiver = reads.receiver_text(lines[index], start)
-    if receiver or lines[index][:start].strip():
-        return receiver or ""
-    text = ""
+    """The receiver of the `.name` whose dot is at `start` of line `index`. Where the line does not hold it whole (the
+    dot opens a continuation line, or the receiver closes a bracket opened on a line before), the lines before are
+    joined to it, up to `JOINED` of them."""
+    text = lines[index][:start]
+    receiver = reads.receiver_text(text, len(text))
     for back in range(index - 1, max(index - 1 - JOINED, -1), -1):
+        if receiver:
+            break
         text = lines[back].rstrip().removesuffix("\\").rstrip() + text
         receiver = reads.receiver_text(text, len(text)) if text.strip() else None
-        if receiver:
-            return receiver
+    return receiver or ""
+
+
+def untold_text(lines: list[str], index: int, start: int, name: str) -> str:
+    """How a read is printed where not even its receiver's text can be found (it closes a bracket opened too far
+    back): the line's own text up to the name, and the line before it where the dot opens the line."""
+    before = lines[index][:start].strip()
+    back = index - 1
+    while not before and back >= 0:
+        before = lines[back].strip()
+        back -= 1
+    return re.sub(r"\s+", " ", f"{before}.{name}")
+
+
+def chain_prefixes(chain: str) -> set[str] | None:
+    """A postfix chain and each of its prefixes that ends before a dot, spaces taken out (`a.b().c`: `a`, `a.b()`,
+    itself), a leading `self.` dropped; None where the text is no chain of names and calls."""
+    parsed = reads.postfix(chain)
+    if parsed is None or parsed[0][0] not in ("name", "call"):
+        return None
+    text = re.sub(r"\s+", "", chain).removeprefix("self.")
+    flat = reads.top_level(text)
+    return {text[:at] for at, char in enumerate(flat) if char == "."} | {text}
+
+
+def null_test(test: str, chains: set[str]) -> str:
+    """What a guard's test says of one of `chains`: `present` (the bare chain, `!= null`, `is_instance_valid()`,
+    joined by `and`), `absent` (`not`, `== null`, joined by `or`), or nothing where it tests anything else."""
+    for word, shape, verdict in ((" and ", PRESENT, "present"), (" or ", ABSENT, "absent")):
+        tested = [shape.match(part.strip()) for part in re.sub(r"\s+", " ", test).split(word)]
+        names = [next((v for v in m.groupdict().values() if v), "") if m else "" for m in tested]
+        if all(re.sub(r"\s+", "", name).removeprefix("self.") in chains for name in names):
+            return verdict
     return ""
 
 
@@ -414,6 +494,7 @@ class Answers:
         self._getters: dict[str, dict[str, str]] = {}
         self._values: dict[tuple[str, str], Value | None] = {}
         self._returning: dict[str, dict[Value, list[str]]] = {}
+        self._guarded: dict[str, dict[Value, list[tuple[str, str]]]] = {}
 
     def blocks(self, key: str) -> list[str]:
         if key not in self._blocks:
@@ -436,13 +517,15 @@ class Answers:
         files = self.tree.files
         return {name for a in self.tree.ancestors(key) for name in (*files[a].fields, *files[a].methods)}
 
-    def returned(self, key: str, method: Method) -> str | None:
-        """The expression a method's body returns, where the body is that `return` alone or behind a null guard: a
-        guard names only what the returned expression names, and what it returns instead names no member."""
+    def returned(self, key: str, method: Method) -> Returned | None:
+        """What a method's body returns, where the body is one `return` alone or behind a null guard: `value if test
+        else other`, where the test says a prefix of the returned chain is there, or `if test:` returning another
+        value first, where the test says it is not. Any other test (a comparison, the guard the wrong way round) is
+        no guard. Where the other value names a member of the class, the method stands that member in."""
         lines = [(indent, line) for indent, line in method.body if line != "pass"]
         texts = [line for _, line in lines]
         value: str | None = None
-        guards: list[tuple[str, str]] = []
+        guards: list[tuple[str, str, str]] = []
         if len(texts) == 1 and texts[0].startswith(RETURN):
             value = texts[0][len(RETURN) :]
         elif len(texts) in (2, 3) and texts[0].startswith("if ") and texts[-1].startswith(RETURN):
@@ -455,30 +538,39 @@ class Answers:
             if not early.startswith(RETURN):
                 return None
             value = texts[-1][len(RETURN) :]
-            guards.append((test[len("if ") :], early[len(RETURN) :]))
+            guards.append(("absent", test[len("if ") :], early[len(RETURN) :]))
         if value is None:
             return None
         flat = reads.top_level(value)
         condition = re.search(r"\sif\s", flat)
         otherwise = re.search(r"\selse\s", flat)
         if condition and otherwise and condition.start() < otherwise.start():
-            guards.append((value[condition.end() : otherwise.start()], value[otherwise.end() :]))
+            guards.append(("present", value[condition.end() : otherwise.start()], value[otherwise.end() :]))
             value = value[: condition.start()]
-        guarded = names_in(value) | GUARD_WORDS
-        members = self.members(key)
-        if any(not names_in(test) <= guarded or names_in(instead) & members for test, instead in guards):
+        value = value.strip()
+        if not guards:
+            return Returned(value)
+        chains = chain_prefixes(value)
+        if chains is None or any(null_test(test, chains) != wanted for wanted, test, _ in guards):
             return None
-        return value.strip()
+        members = self.members(key)
+        if not any(names_in(other) & members for _, _, other in guards):
+            return Returned(value)
+        behind = value
+        for wanted, test, other in reversed(guards):
+            behind = f"{behind} if {test} else {other}" if wanted == "present" else f"{other} if {test} else {behind}"
+        return Returned(value, shown(behind))
 
     def method_value(self, key: str, name: str, depth: int = 0) -> Value | None:
-        """What method `name`, declared by class `key`, comes down to; None where its body is more than a return."""
+        """What method `name`, declared by class `key`, comes down to; None where its body is more than a return, or
+        stands a member in behind its guard (`guarded_value`)."""
         memo = (key, name)
         if memo not in self._values:
             self._values[memo] = None
             method = self.methods(key).get(name)
-            expression = self.returned(key, method) if method else None
-            if method and expression:
-                self._values[memo] = self.value(key, expression, method.params, depth)
+            returned = self.returned(key, method) if method else None
+            if method and returned and not returned.behind:
+                self._values[memo] = self.value(key, returned.value, method.params, depth)
         return self._values[memo]
 
     def field_value(self, key: str, name: str, depth: int = 0) -> Value | None:
@@ -502,11 +594,14 @@ class Answers:
     def chain_value(self, key: str, text: str, params: tuple[str, ...], depth: int) -> Value | None:
         """The value of a postfix chain that starts at a member of class `key` and walks fields, methods with no
         argument that come down to fields, and at its end a call handed the method's own parameters in order. A lone
-        call of the class's own method with no argument comes down to what that method does."""
+        call of the class's own method with no argument comes down to what that method does. A chain that starts at
+        one of the method's parameters is that parameter, whatever field shares its name."""
         parsed = reads.postfix(text)
         if parsed is None or parsed[0][0] not in ("name", "call"):
             return None
         (head, word), steps = parsed
+        if head == "name" and word in params:
+            return None
         items = [("field" if head == "name" else "call", word), *steps]
         if items[0] == ("field", "self"):
             items = items[1:]
@@ -557,6 +652,38 @@ class Answers:
             out.extend((ancestor, name) for name in self._returning[ancestor].get(value, []))
         return out
 
+    def behind_a_guard(self, key: str, value: Value) -> list[tuple[str, str, str]]:
+        """The public methods of class `key` and the classes it extends that return `value` behind a null guard
+        which stands a member of the class in for it: each with its class and the whole return."""
+        out: list[tuple[str, str, str]] = []
+        for ancestor in self.tree.ancestors(key):
+            if ancestor not in self._guarded:
+                found: dict[Value, list[tuple[str, str]]] = {}
+                for method in self.methods(ancestor).values():
+                    returned = None if method.name.startswith("_") else self.returned(ancestor, method)
+                    came_to = self.value(ancestor, returned.value, method.params, 0) if returned else None
+                    if returned and returned.behind and came_to:
+                        found.setdefault(came_to, []).append((method.name, returned.behind))
+                self._guarded[ancestor] = found
+            out.extend((ancestor, name, whole) for name, whole in self._guarded[ancestor].get(value, []))
+        return out
+
+    def on_views(self, owner: str, name: str) -> list[tuple[str, str, str]]:
+        """The public methods that return field `name` of class `owner` from a view of it: an inner class of the
+        same file that holds a reference to the class and reads the field back through it (`Lane.strategy()`
+        returning `_of.strategy`). Each with the view's class and the public method of `owner` that hands the view
+        out, empty where none does."""
+        direct = self.field_value(owner, name)
+        files = self.tree.files
+        out: list[tuple[str, str, str]] = []
+        for view in sorted(k for k in files if k.startswith(owner.split(INNER)[0] + INNER) and k != owner):
+            hands_out = sorted(m for m, kind in files[owner].returns.items() if kind == view and m[:1] != "_")
+            for back, kind in files[view].fields.items():
+                if direct and kind in files and owner in self.tree.ancestors(kind):
+                    methods = self.returning(view, (("field", view, back), *direct))
+                    out.extend((klass, method, hands_out[0] if hands_out else "") for klass, method in methods)
+        return out
+
     def asking(self, key: str, owner: str, name: str) -> list[tuple[str, str, str]]:
         """The public yes-or-no methods (`-> bool`, no parameters) of class `key` and the classes it extends whose
         one `return` is an expression naming field `name` and no other member, and reading no member of the field's
@@ -573,12 +700,12 @@ class Answers:
             for method in self.methods(ancestor).values():
                 if method.name.startswith("_") or method.params or method.returns != "bool":
                     continue
-                expression = self.returned(ancestor, method)
-                if expression is None or names_in(expression) & members != {name}:
+                returned = self.returned(ancestor, method)
+                if returned is None or returned.behind or names_in(returned.value) & members != {name}:
                     continue
-                if (through and through.search(expression)) or self.method_value(ancestor, method.name) == direct:
+                if (through and through.search(returned.value)) or self.method_value(ancestor, method.name) == direct:
                     continue
-                out.append((ancestor, method.name, shown(expression)))
+                out.append((ancestor, method.name, shown(returned.value)))
         return out
 
     def assigning(self, key: str, name: str) -> list[tuple[str, str, str]]:
@@ -620,8 +747,9 @@ class Calls:
 
 @dataclass(frozen=True)
 class Answer:
-    """A method that answers a read or does a write: the class that declares it, its name, and what its body does
-    where that is not returning the field itself (the expression it returns, or the statement that assigns)."""
+    """A method that answers a read or does a write, or is printed apart from the answers: the class that declares
+    it, its name, and what goes with it (the expression it returns where that is not the field itself, the statement
+    that assigns, or for a view's method the public method that hands the view out)."""
 
     klass: str
     method: str
@@ -640,7 +768,14 @@ class Entry:
     sites: list[tuple[str, int]] = field(default_factory=list)
     receivers: list[str] = field(default_factory=list)
     answers: list[Answer] = field(default_factory=list)
+    guarded: list[Answer] = field(default_factory=list)
+    views: list[Answer] = field(default_factory=list)
     asking: list[Answer] = field(default_factory=list)
+
+    def apart(self) -> list[Answer]:
+        """The methods printed apart from the answers, for the builder to judge: behind a guard that stands a member
+        in, on the class's own view, and asking a yes-or-no question of the field alone."""
+        return [*self.guarded, *self.views, *self.asking]
 
     def through(self) -> list[str]:
         """The receivers' classes other than the one this entry is listed under: the classes that extend it and
@@ -650,12 +785,14 @@ class Entry:
 
 @dataclass(frozen=True)
 class Report:
-    """What the files read and write, every entry answered and every answering method's calls counted."""
+    """What the files read and write, every entry answered and every answering method's calls counted; and which
+    of the files still ignore `unsafe_property_access`, where a read can stand that this list does not see."""
 
     files: list[str]
     entries: list[Entry]
     unknown: list[Unknown]
     calls: dict[tuple[str, str], Calls]
+    untyped: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -711,6 +848,11 @@ class Collector:
             found.receivers.append(receiver)
         return found
 
+    def is_own(self, klass: str, path: str) -> bool:
+        """Whether `klass` is the file's own class, one of its inner classes, an ancestor or a descendant: a class
+        whose fields the file may read, and whose methods are no answer to list for it."""
+        return klass.split(INNER)[0] == path or self.tree.related(klass, path)
+
     def read_file(self, path: str) -> None:
         tree = self.tree
         bare = tree.bare[path]
@@ -734,13 +876,14 @@ class Collector:
                         kinds.append(tree.step(kinds[-1], step, word))
                 klass = kinds[-1]
                 if klass is None:
-                    expression = re.sub(r"\s+", " ", f"{receiver.strip() or '...'}.{name}")
+                    told = re.sub(r"\s+", " ", f"{receiver.strip()}.{name}")
+                    expression = told if receiver.strip() else untold_text(lines, index, match.start(), name)
                     self.unknown.setdefault((path, index + 1, expression), Unknown(path, index + 1, expression))
                     continue
                 owner = tree.field_owner(klass, name)
                 if owner is None or not owner.startswith(SRC):
                     continue
-                if owner.split(INNER)[0] == path or tree.related(klass, path):
+                if self.is_own(owner, path) or tree.related(klass, path):
                     continue
                 rest = line[match.end() :]
                 if assigned(rest):
@@ -748,12 +891,16 @@ class Collector:
                     merge(found.answers, [Answer(*setter) for setter in self.answers.assigning(klass, name)])
                 else:
                     links = links_of(tree, self.answers, receiver, parsed[1] if parsed else [], kinds)
+                    own = [n for n, link in enumerate(links) if self.is_own(link.klass, path)]
+                    links = links[own[-1] + 1 :] if own else links
                     found = self.read(klass, owner, name, links, rest)
                 if (path, index + 1) not in found.sites:
                     found.sites.append((path, index + 1))
 
     def read(self, klass: str, owner: str, name: str, links: list[Link], rest: str) -> Entry:
-        """The entry a read belongs to: the longest chain a method answers, else the field itself."""
+        """The entry a read belongs to: the longest chain a method answers; else the field itself where a method
+        answers it; else the longest chain a method returns behind a guard that stands a member in; else the field
+        itself, with what is printed apart."""
         answers = self.answers
         direct = answers.field_value(owner, name)
         tails: list[tuple[Value, str]] = []
@@ -762,19 +909,26 @@ class Collector:
             tails.append(handed)
         if direct:
             tails.append((direct, ""))
-        for tail, suffix in tails:
-            for start in range(len(links) + (1 if suffix else 0)):
-                value = tuple(piece for link in links[start:] for piece in link.value) + tail
-                head = links[start].klass if start < len(links) else klass
-                methods = answers.returning(head, value)
-                if methods:
-                    label = ".".join([*(link.label for link in links[start:]), name]) + suffix
-                    found = self.entry(value[0][1], label, "read", owner, name, head)
-                    merge(found.answers, [Answer(*method) for method in methods])
-                    return found
+        plain = [Answer(*method) for method in answers.returning(klass, direct)] if direct else []
+        for guarded in (False, True):
+            for tail, suffix in tails:
+                for start in range(len(links) + (1 if suffix else 0)):
+                    value = tuple(piece for link in links[start:] for piece in link.value) + tail
+                    head = links[start].klass if start < len(links) else klass
+                    methods = answers.behind_a_guard(head, value) if guarded else answers.returning(head, value)
+                    if methods:
+                        label = ".".join([*(link.label for link in links[start:]), name]) + suffix
+                        found = self.entry(value[0][1], label, "read", owner, name, head)
+                        merge(found.guarded if guarded else found.answers, [Answer(*method) for method in methods])
+                        return found
+            if plain:
+                break
         found = self.entry(owner, name, "read", owner, name, klass)
+        merge(found.answers, plain)
         if direct:
-            merge(found.answers, [Answer(*method) for method in answers.returning(klass, direct)])
+            merge(found.guarded, [Answer(*method) for method in answers.behind_a_guard(klass, direct)])
+        if not found.answers:
+            merge(found.views, [Answer(*method) for method in answers.on_views(owner, name)])
         merge(found.asking, [Answer(*method) for method in answers.asking(klass, owner, name)])
         return found
 
@@ -853,9 +1007,17 @@ def report_of(tree: Scripts, files: list[str]) -> Report:
     entries = sorted(collector.entries.values(), key=lambda e: (tree.display(e.klass), e.label, e.access != "read"))
     for entry in entries:
         entry.sites.sort()
-    wanted = {(a.klass, a.method) for e in entries for a in (*e.answers, *e.asking)}
+    wanted = {(a.klass, a.method) for e in entries for a in (*e.answers, *e.apart())}
     unknown = sorted(collector.unknown.values(), key=lambda u: (u.file, u.line, u.expression))
-    return Report(files, entries, unknown, call_sites(tree, wanted))
+    untyped = [path for path in files if ignores_unsafe_property(tree.src[path])]
+    return Report(files, entries, unknown, call_sites(tree, wanted), untyped)
+
+
+def ignores_unsafe_property(text: str) -> bool:
+    """Whether a file's opt-out line still names `unsafe_property_access`: the engine then lets a property be read
+    off a receiver typed as an engine class, which this list takes for the engine's own."""
+    opt_out = reads.opt_out_of(text)
+    return opt_out is not None and UNSAFE_PROPERTY in opt_out.warnings
 
 
 def sites_text(sites: list[tuple[str, int]], counts: bool) -> str:
@@ -879,12 +1041,27 @@ def calls_text(calls: Calls) -> str:
 
 
 def answers_text(tree: Scripts, entry: Entry, calls: dict[tuple[str, str], Calls]) -> str:
+    """An entry's answers, then what is printed apart from them. `no method` stands only where nothing at all is
+    printed for the builder to read: no answer, no guarded return and no view's method."""
+
+    def counted(answer: Answer) -> str:
+        return calls_text(calls[(answer.klass, answer.method)])
+
     def named(answer: Answer, verb: str) -> str:
         via = "" if answer.klass in tree.ancestors(entry.klass) else f"{tree.display(answer.klass)}."
         does = f" {verb} `{answer.does}`" if answer.does else ""
-        return f"`{via}{answer.method}()`{does} {calls_text(calls[(answer.klass, answer.method)])}"
+        return f"`{via}{answer.method}()`{does} {counted(answer)}"
 
-    text = ", ".join(named(answer, "does") for answer in entry.answers) or "no method"
+    def on_view(answer: Answer) -> str:
+        if answer.does:
+            return f"`{answer.does}().{answer.method}()` {counted(answer)}"
+        return f"`{tree.display(answer.klass)}.{answer.method}()` {counted(answer)}, a view no public method hands out"
+
+    parts = [", ".join(named(answer, "does") for answer in entry.answers)]
+    parts.append("behind a guard, " + ", ".join(named(answer, "returns") for answer in entry.guarded))
+    parts.append("on its view, " + ", ".join(on_view(answer) for answer in entry.views))
+    parts = [part for part, any_of in zip(parts, (entry.answers, entry.guarded, entry.views), strict=True) if any_of]
+    text = "; ".join(parts) or "no method"
     asking = ", ".join(named(answer, "returns") for answer in entry.asking)
     return text + (f"; of it alone, {asking}" if asking else "")
 
@@ -898,8 +1075,14 @@ def through_text(tree: Scripts, entry: Entry) -> str:
 def markdown(tree: Scripts, report: Report, counts: bool = False) -> str:
     """The list as a builder pastes it: a line of what it is, one line per class, one per receiver not told."""
     named = ", ".join(f"`{path}`" for path in report.files)
+    untyped = [
+        f"- `{path}` still ignores `{UNSAFE_PROPERTY}`: a read through a receiver it types as an engine class is not"
+        " seen here, so this list is whole only once the file is typed"
+        for path in report.untyped
+    ]
     if not report.entries and not report.unknown:
-        return f"No field of a class under `src/` is read or written through a receiver of that class in {named}.\n"
+        nothing = f"No field of a class under `src/` is read or written through a receiver of that class in {named}."
+        return "\n".join([nothing, *([""] if untyped else []), *untyped]) + "\n"
     out = [
         f"Fields of classes under `src/` that {named} read or write through a receiver of that class, each with the"
         " method of the class that answers it (`tools/field_answers.py`). `(N calls)` counts a method's calls under"
@@ -918,7 +1101,7 @@ def markdown(tree: Scripts, report: Report, counts: bool = False) -> str:
         ]
         out.append(f"- `{tree.display(klass)}`: {'; '.join(parts)}")
     out.extend(f"- Receiver's class not told: `{u.file}:{u.line}` `{u.expression}`" for u in report.unknown)
-    return "\n".join(out) + "\n"
+    return "\n".join([*out, *untyped]) + "\n"
 
 
 def as_json(tree: Scripts, report: Report) -> str:
@@ -951,11 +1134,18 @@ def as_json(tree: Scripts, report: Report) -> str:
                 "receivers": sorted(tree.display(receiver) for receiver in entry.receivers),
                 "sites": [{"file": path, "line": line} for path, line in entry.sites],
                 "methods": [method(a) for a in entry.answers],
+                "behind_a_guard": [method(a) for a in entry.guarded],
+                "on_its_view": [method(a) for a in entry.views],
                 "asking_of_it_alone": [method(a) for a in entry.asking],
             }
         )
     unknown = [{"file": u.file, "line": u.line, "expression": u.expression} for u in report.unknown]
-    whole = {"files": report.files, "classes": [group for group, _ in classes.values()], "unknown": unknown}
+    whole = {
+        "files": report.files,
+        "classes": [group for group, _ in classes.values()],
+        "unknown": unknown,
+        "ignoring_unsafe_property_access": report.untyped,
+    }
     return json.dumps(whole, indent=2, ensure_ascii=False) + "\n"
 
 

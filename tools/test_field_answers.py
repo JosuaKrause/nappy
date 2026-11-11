@@ -197,6 +197,118 @@ class AnswerTests(unittest.TestCase):
         got = found("func f(row: Row) -> void:\n\tprint(row.tail)\n", {"src/row.gd": row})
         self.assertEqual(got, {("row", "tail", "read"): ["tail_or_none"]})
 
+    def test_a_guard_that_is_no_null_test_or_stands_the_wrong_way_round_is_no_answer(self) -> None:
+        row = ROW + "func capped() -> float:\n\treturn loud if loud > 0.0 else 1.0\n"
+        row += "func none() -> Tail:\n\treturn tail if tail == null else null\n"
+        row += "func turned() -> Tail:\n\tif tail != null:\n\t\treturn null\n\treturn tail\n"
+        row += "func either() -> Tail:\n\treturn tail if tail or id else null\n"
+        got = found("func f(row: Row) -> void:\n\tprint(row.tail, row.loud)\n", {"src/row.gd": row})
+        self.assertEqual(got, {("row", "tail", "read"): ["tail_or_none"], ("row", "loud", "read"): ["heard"]})
+
+    def test_each_form_of_a_null_test_is_a_guard(self) -> None:
+        row = ROW + "func a() -> Tail:\n\treturn tail if tail != null else null\n"
+        row += "func b() -> Tail:\n\treturn tail if is_instance_valid(tail) else null\n"
+        row += "func c() -> Tail:\n\treturn tail if tail and is_instance_valid(tail) else null\n"
+        row += "func d() -> Tail:\n\tif not tail:\n\t\treturn null\n\treturn tail\n"
+        row += "func e() -> Tail:\n\tif tail == null or not is_instance_valid(tail): return null\n\treturn tail\n"
+        row += "func g() -> int:\n\treturn hunting.lets_out if self.hunting != null else 0\n"
+        got = found("func f(row: Row) -> void:\n\tprint(row.tail, row.hunting.lets_out)\n", {"src/row.gd": row})
+        self.assertEqual(got[("row", "tail", "read")], ["tail_or_none", "a", "b", "c", "d", "e"])
+        self.assertEqual(got[("row", "hunting.lets_out", "read")], ["lets_out", "g"])
+
+    def test_a_method_that_returns_its_own_parameter_of_the_fields_name_is_no_answer(self) -> None:
+        row = ROW + "func echo(loud: float) -> float:\n\treturn loud\n"
+        got = found("func f(row: Row) -> void:\n\tprint(row.loud)\n", {"src/row.gd": row})
+        self.assertEqual(got, {("row", "loud", "read"): ["heard"]})
+
+    def test_a_guard_that_stands_a_member_in_is_printed_apart_with_what_it_returns(self) -> None:
+        flock = "class_name Flock\nextends RefCounted\nvar birds: Array = []\n"
+        live = LIVE + "var flock: Flock\nstatic var _NONE: Array = []\n"
+        live += "func birds() -> Array:\n\treturn flock.birds if flock else _NONE\n"
+        body = "func f(live: Live) -> void:\n\tprint(live.flock.birds)\n"
+        files = {**SRC, "src/flock.gd": flock, "src/live.gd": live, SUITE: HEAD + body}
+        tree = answers.Scripts(files, {})
+        made = answers.report_of(tree, [SUITE])
+        chain = next(e for e in made.entries if e.label == "flock.birds")
+        self.assertEqual((chain.klass, chain.answers), ("src/live.gd", []))
+        self.assertEqual([(a.method, a.does) for a in chain.guarded], [("birds", "flock.birds if flock else _NONE")])
+        self.assertEqual([e.label for e in made.entries], ["flock", "flock.birds"])
+        text = answers.markdown(tree, made)
+        self.assertIn(
+            f"`flock.birds` read (`{SUITE}`:3): behind a guard, `birds()` returns"
+            " `flock.birds if flock else _NONE` (0 calls)\n",
+            text,
+        )
+        data = json.loads(answers.as_json(tree, made))
+        fields = {f["field"]: f for f in data["classes"][0]["fields"]}
+        self.assertEqual([m["method"] for m in fields["flock.birds"]["behind_a_guard"]], ["birds"])
+
+    def test_an_early_return_of_a_member_is_printed_as_the_same_guard(self) -> None:
+        row = ROW + "func tail_or_hunts() -> Variant:\n\tif tail == null:\n\t\treturn hunts\n\treturn tail\n"
+        made = report("func f(row: Row) -> void:\n\tprint(row.tail)\n", {"src/row.gd": row})
+        self.assertEqual([a.method for a in made.entries[0].answers], ["tail_or_none"])
+        self.assertEqual(
+            [(a.method, a.does) for a in made.entries[0].guarded],
+            [("tail_or_hunts", "hunts if tail == null else tail")],
+        )
+
+    def test_a_method_on_the_classs_own_view_is_printed_apart_with_the_method_that_hands_the_view_out(self) -> None:
+        mover = "class_name Mover\nextends RefCounted\nvar strategy := 0\nvar parked: bool:\n\tget:\n"
+        mover += "\t\treturn strategy == 2\nvar _view := View.new(self)\nvar _figure := Figure.new(self)\n"
+        mover += "func view() -> View:\n\treturn _view\n"
+        mover += "class View:\n\textends RefCounted\n\tvar _of: Mover\n\tfunc _init(mover: Mover) -> void:\n"
+        mover += "\t\t_of = mover\n\tfunc strategy() -> int:\n\t\treturn _of.strategy\n"
+        mover += "class Figure:\n\tvar _of: Mover\n\tfunc _init(mover: Mover) -> void:\n\t\t_of = mover\n"
+        mover += (
+            "\tfunc has_parked() -> bool:\n\t\treturn _of.parked\n\tfunc other() -> int:\n\t\treturn _of.strategy + 1\n"
+        )
+        body = "func f(mover: Mover) -> void:\n\tprint(mover.strategy, mover.parked)\n"
+        tree = answers.Scripts({**SRC, "src/mover.gd": mover, SUITE: HEAD + body}, {})
+        made = answers.report_of(tree, [SUITE])
+        by_label = {e.label: e for e in made.entries}
+        self.assertEqual(by_label["strategy"].answers, [])
+        self.assertEqual(
+            [(a.klass, a.method, a.does) for a in by_label["strategy"].views],
+            [("src/mover.gd::View", "strategy", "view")],
+        )
+        self.assertEqual(
+            [(a.klass, a.method, a.does) for a in by_label["parked"].views],
+            [("src/mover.gd::Figure", "has_parked", "")],
+        )
+        self.assertEqual(
+            answers.markdown(tree, made).splitlines()[2],
+            f"- `Mover`: `parked` read (`{SUITE}`:3): on its view, `Mover.Figure.has_parked()` (0 calls), a view no"
+            f" public method hands out; `strategy` read (`{SUITE}`:3): on its view, `view().strategy()` (0 calls)",
+        )
+
+    def test_a_yes_or_no_method_that_names_another_member_too_is_not_asking_of_the_field_alone(self) -> None:
+        planner = PLANNER.replace(
+            "\tfunc give_role(",
+            "\tfunc is_live_lead() -> bool:\n\t\treturn live != null and role > 0\n\tfunc give_role(",
+        )
+        made = report("func f(plan: Planner.Plan) -> void:\n\tprint(plan.live)\n", {"src/planner.gd": planner})
+        self.assertEqual([a.method for a in made.entries[0].asking], ["is_in_the_world"])
+
+    def test_a_return_after_another_statement_is_no_answer(self) -> None:
+        part = PART + "func next_count() -> int:\n\tcount += 1\n\treturn count\n"
+        got = found("func f(part: Part) -> void:\n\tprint(part.count)\n", {"src/part.gd": part})
+        self.assertEqual(got, {("part", "count", "read"): ["tally"]})
+
+    def test_the_longest_chain_a_method_answers_wins(self) -> None:
+        live = LIVE + "func leaves() -> String:\n\treturn def.leaves()\n"
+        got = found("func f(live: Live) -> void:\n\tprint(live.def.tail.on_finish)\n", {"src/live.gd": live})
+        self.assertEqual(got[("live", "def.tail.on_finish", "read")], ["leaves"])
+        self.assertNotIn(("row", "tail.on_finish", "read"), got)
+        short = found("func f(live: Live) -> void:\n\tprint(live.def.tail.on_finish)\n")
+        self.assertEqual(short[("row", "tail.on_finish", "read")], ["leaves"])
+
+    def test_an_inherited_field_that_is_written_is_listed_under_the_class_that_declares_it(self) -> None:
+        part = PART + "func _wind_back() -> void:\n\tcount = -1\n"
+        made = report("func f(part: SubPart) -> void:\n\tpart.count = 3\n", {"src/part.gd": part})
+        (entry,) = made.entries
+        self.assertEqual((entry.klass, entry.access, entry.through()), ("src/part.gd", "written", ["src/sub_part.gd"]))
+        self.assertEqual([a.method for a in entry.answers], ["reset"])
+
     def test_a_method_that_returns_a_value_derived_from_another_field_is_refused(self) -> None:
         got = found("func f(row: Row) -> void:\n\tprint(row.hunts.lets_out)\n")
         self.assertEqual(got, {("row", "hunts", "read"): [], ("hunt", "lets_out", "read"): []})
@@ -339,9 +451,42 @@ class ReceiverTests(unittest.TestCase):
         self.assertEqual(found(body), {("row", "loud", "read"): ["heard"]})
 
     def test_a_files_own_fields_and_its_inner_classes_are_not_listed(self) -> None:
-        tree = answers.Scripts(SRC, {})
-        made = answers.report_of(tree, ["src/planner.gd", "src/live.gd"])
+        own = "var one: Plan\nvar twin: Planner\nfunc g() -> void:\n"
+        own += "\tprint(one.spot, self.plans, twin.plans, one.def.id)\n"
+        tree = answers.Scripts({**SRC, "src/planner.gd": PLANNER + own}, {})
+        made = answers.report_of(tree, ["src/planner.gd"])
         self.assertEqual([(e.klass, e.label) for e in made.entries], [("src/row.gd", "id")])
+        self.assertEqual(made.unknown, [])
+
+    def test_a_class_outside_src_is_never_listed(self) -> None:
+        rig = "class_name Rig\nextends RefCounted\nvar row: Row\nvar spare := 0\nclass Stage:\n\tvar count := 0\n"
+        body = "func f(rig: Rig, stage: Rig.Stage) -> void:\n\tprint(rig.spare, stage.count, rig.row.loud)\n"
+        self.assertEqual(found(body, {"tests/rig.gd": rig}), {("row", "loud", "read"): ["heard"]})
+
+    def test_a_class_nested_inside_an_inner_class_is_not_told(self) -> None:
+        body = "class Outer:\n\tvar inside := Deep.new()\n\tvar typed: Deep\n\tfunc f() -> void:\n"
+        body += "\t\tinside.loud = 2.0\n\t\tprint(typed.id)\n\tclass Deep extends Row:\n\t\tvar more := 0\n"
+        made = report(body)
+        self.assertEqual(made.entries, [])
+        self.assertEqual([(u.line, u.expression) for u in made.unknown], [(6, "inside.loud"), (7, "typed.id")])
+
+    def test_a_receiver_that_closes_a_bracket_opened_on_a_line_before_is_told_or_printed_whole(self) -> None:
+        body = (
+            "func f(plans: Array[Planner.Plan], x) -> void:\n\tprint(Planner.new().first(\n\t\t\tplans.size()).spot)\n"
+        )
+        body += "\tprint([x,\n\t\t\tx].loud)\n"
+        made = report(body)
+        self.assertEqual([(e.label, e.sites) for e in made.entries], [("spot", [(SUITE, 4)])])
+        self.assertEqual([(u.line, u.expression) for u in made.unknown], [(6, "[x, x].loud")])
+
+    def test_a_receiver_that_cannot_be_found_is_printed_as_the_lines_own_text(self) -> None:
+        body = "func f(x) -> void:\n\tprint(x.first(\n" + "".join(f"\t\t\t{n},\n" for n in range(7))
+        body += (
+            "\t\t\t7).spot)\n\tprint(x.first(\n"
+            + "".join(f"\t\t\t{n},\n" for n in range(7))
+            + "\t\t\t7)\n\t\t\t.spot)\n"
+        )
+        self.assertEqual(unknown(body), [(11, "7).spot"), (21, "7).spot")])
 
 
 class CallSiteTests(unittest.TestCase):
@@ -384,6 +529,23 @@ class OutputTests(unittest.TestCase):
     def test_counts_prints_how_many_lines_not_which(self) -> None:
         text = answers.markdown(self.tree, self.report, counts=True)
         self.assertIn(f"`def` read (`{SUITE}` on 1 line): `row()`", text)
+
+    def test_a_file_that_still_ignores_unsafe_property_access_is_named(self) -> None:
+        line = '@warning_ignore_start("untyped_declaration", "unsafe_property_access")\n'
+        other = '@warning_ignore_start("untyped_declaration", "unsafe_method_access")\n'
+        body = "func f(node: Node2D, row: Row) -> void:\n\tprint(node.loud, row.id)\n"
+        files = {**SRC, SUITE: line + HEAD + body, "tests/test_other.gd": other + HEAD + body}
+        tree = answers.Scripts(files, {})
+        made = answers.report_of(tree, [SUITE, "tests/test_other.gd"])
+        self.assertEqual(made.untyped, [SUITE])
+        self.assertEqual(
+            answers.markdown(tree, made).splitlines()[-1],
+            f"- `{SUITE}` still ignores `unsafe_property_access`: a read through a receiver it types as an engine"
+            " class is not seen here, so this list is whole only once the file is typed",
+        )
+        self.assertEqual(json.loads(answers.as_json(tree, made))["ignoring_unsafe_property_access"], [SUITE])
+        empty = answers.Scripts({**SRC, SUITE: line + HEAD}, {})
+        self.assertIn("still ignores", answers.markdown(empty, answers.report_of(empty, [SUITE])))
 
     def test_nothing_read_says_so(self) -> None:
         tree = answers.Scripts({**SRC, SUITE: HEAD}, {})
