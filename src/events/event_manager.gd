@@ -28,8 +28,9 @@ extends Node
 ## day over (`setup_world()`): no director sites anything ahead of her there, and a plan that comes
 ## again (`EventPlan.repeats()`) is brought back on its own clock.
 ##
-## **Handed what it depends on, never fetching it**: the city, its map and navigator (`setup()`), or
-## a world that is not the city (`setup_world()`); the run (`City.run`, or `use_run()`); the player
+## **Handed what it depends on, never fetching it**: the city's map, today's streets, the lights,
+## the run, the navigator and the poster walls (`setup()`), or a world that is not the city
+## (`setup_world()`); the run alone for a rig that sets up neither (`use_run()`); the player
 ## (`use_player()`); the walk's spec (`use_the_spec()`).
 ##
 ## Lookup is a linear scan. Only what is inside `EVENT_STREAM_RADIUS` is live, a few dozen at most
@@ -79,13 +80,13 @@ var skip_drawing := false:
 		skip_drawing = value
 		world.skip_drawing = value
 ## Where the manager and every instance it creates charge their time to the frame record, handed in
-## before `setup()` by whoever builds it (`City`, `main`); the null sink until then.
+## before `setup()` by whoever builds it (the city, `main`); the null sink until then.
 var timing := FrameTiming.new():
 	set(value):
 		timing = value
 		world.timing = value
 ## The baked atlas pages this manager holds the events' group on and every instance it creates
-## draws from (`AtlasLibrary`), handed in before it enters the tree by whoever builds it (`City`,
+## draws from (`AtlasLibrary`), handed in before it enters the tree by whoever builds it (the city,
 ## `main`); a manager nobody handed one (a suite's) makes its own when it first enters the tree.
 ## Each atlas comes with the one drawer every instance made here paints through (`EventDrawer`,
 ## `EventWorld.drawer`).
@@ -166,32 +167,35 @@ func _notification(what: int) -> void:
 		warnings.clear()
 		ahead.clear()
 
-## Hands the manager its city, the map it places on and the navigator its figures move by — the
-## city's own (`City.navigator`), or the map's own (`WorldMap.navigator()`) for a rig that hands
-## none — the city's run (`City.run`), and where something sent at her may start: the city's
-## (`City.spawn_siting`), or, for a rig that hands none, one over `map` against this manager's own
-## view and the city's region.
-func setup(city: City, map: CityMap, navigator: Navigator = null,
-		spawn_siting: SpawnSiting = null) -> void:
-	world.city = city
+## **Hands the manager the city's parts its events read**: the map it places on; today's streets
+## (`DayStreets`), the city's own, which a day is planned against and a siting reads its region off;
+## the lights a car that drives stops at (`TrafficSignals`); the run its events belong to; the
+## navigator its figures move by, or the map's own (`WorldMap.navigator()`) for a rig that hands
+## none; where something sent at her may start, or, for a rig that hands none, one over `map`
+## against this manager's own view and the streets' region; and the poster walls a crew pastes on.
+## A rig that builds no city hands what it has and null for the rest: a day it starts is planned
+## against the streets it hands, so it hands streets whose day it began (`DayStreets.begin_day()`).
+##
+## The map is already drawn in its world (`WorldMap.world`): the caller sets it first.
+func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = null,
+		run: RunState = null, navigator: Navigator = null, spawn_siting: SpawnSiting = null,
+		poster_walls: PosterWalls = null) -> void:
 	world.map = map
 	world.city_map = map
 	world.work_out_mast_sites(map)
-	# A map a rig hands in on its own is drawn in the city it hands with it.
-	if city and not map.has_world():
-		map.world = city
-	if city:
-		world.signals = city.signals
-		world.run = city.run
+	world.use_streets(streets)
+	world.use_poster_walls(poster_walls)
+	world.signals = signals
+	world.run = run
 	world.use_navigator(navigator if navigator else map.navigator())
 	var director := EventDirector.new(map, world.navigator())
 	ahead.use_director(director, spawn_siting if spawn_siting
 			else SpawnSiting.new(map, world.navigator(), visible_view,
-					city.streets().siting_region if city else Callable()))
-	# **Connected once however often this is called.** `City.build()` calls `setup()` and a rig
-	# that wants its own map calls it again on the same manager, which Godot answers with an
-	# `ERROR: Signal ... is already connected` — an error line in a headless run is a failed
-	# `check.sh`, and a second connection would fire the same forward twice besides.
+					streets.siting_region if streets else Callable()))
+	# **Connected once however often this is called.** A second call on the same manager would
+	# connect it again, which Godot answers with an `ERROR: Signal ... is already connected` — an
+	# error line in a headless run is a failed `check.sh`, and a second connection would fire the
+	# same forward twice besides.
 	if not EventBus.return_phase_started.is_connected(_owe_the_return):
 		EventBus.return_phase_started.connect(_owe_the_return)
 
@@ -200,15 +204,16 @@ func setup(city: City, map: CityMap, navigator: Navigator = null,
 ## siting anything ahead of her, no lights. What runs there is the building's own plan
 ## (`start_day()` with the building's spec).
 func setup_world(map: WorldMap, run: RunState) -> void:
-	world.city = null
 	world.city_map = null
+	world.use_streets(null)
+	world.use_poster_walls(null)
 	ahead.drop_director()
 	world.signals = null
 	world.map = map
 	world.use_navigator(map.navigator())
 	world.run = run
 
-## Hands the manager the run its events belong to, for a rig that builds no city.
+## Hands the manager the run its events belong to, for a rig that never calls `setup()`.
 func use_run(run: RunState) -> void:
 	world.run = run
 

@@ -1663,7 +1663,6 @@ func _test_a_burst_leaves_a_crater_as_wide_as_its_own_picture(t: TestRunner) -> 
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
 	city.build(MapCache.of(SEEDS[0]))
-	city.events.setup(city, city.map)
 	city.events.stream_radius = INF
 	var road := city.map.tiles_of_type(GameEnums.TileType.ROAD)[0]
 	var plans: Array[EventPlan] = [
@@ -1992,7 +1991,6 @@ func _test_the_escape_owes_no_return_leg(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
 	city.build(MapCache.of(SEEDS[0]))
-	city.events.setup(city, city.map)
 	city.run.header.day = an_act_iv_day
 	GivenPlanner.hand_in(city.events, [] as Array[EventPlan])
 	var none: Array[String] = []
@@ -2013,13 +2011,13 @@ func _test_a_day_owes_its_return_only_as_its_spec_says(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
 	t.add_child(city)
 	city.build(MapCache.of(SEEDS[0]))
-	city.events.setup(city, city.map)
 	city.run.header.day = an_act_iv_day
 	var owed := {}
 	for owes: bool in [true, false]:
 		var spec := DaySpec.for_day(an_act_iv_day, Tuning.DAY_LENGTH_SECONDS)
 		spec.owes_a_return = owes
 		var consumed: Array[String] = []
+		RigStreets.begin(city.streets(), city.map, spec)
 		city.events.start_day(spec, city.run.calendar.day_rng(an_act_iv_day), consumed)
 		var before := city.events.owed_ahead()
 		EventBus.return_phase_started.emit()

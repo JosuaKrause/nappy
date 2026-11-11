@@ -76,7 +76,9 @@ func _ride_a_recorded_scar(t: TestRunner, site: Vector2i, label: String) -> void
 	run.attempt_spend.scars = [{"id": "burnt_shell", "position": scar_at, "since_day": 3}]
 	# `_place_scars()` plans a `burnt_shell` at `scar_at` for the day; it is in the world only
 	# if `scar_at` is inside the streaming radius of the doorstep.
-	_city.events.start_day(DaySpec.for_day(8), _rng(8, "events"), [], doorstep)
+	var spec := DaySpec.for_day(8)
+	RigStreets.begin(_city.streets(), _city.map, spec)
+	_city.events.start_day(spec, _rng(8, "events"), [], doorstep)
 
 	var director := _director(t)
 	director.start_day(8, _rng(8, "resistance"), 300.0)

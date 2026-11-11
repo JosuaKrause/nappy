@@ -286,7 +286,9 @@ func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> v
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d" % [SEED, 6])
 		var consumed: Array[String] = []
-		city.events.start_day(DaySpec.for_day(6), rng, consumed, her.global_position)
+		var spec := DaySpec.for_day(6)
+		RigStreets.begin(city.streets(), city.map, spec)
+		city.events.start_day(spec, rng, consumed, her.global_position)
 		var owed_at_dawn := city.events.ahead.owed_ahead()
 		var plans := city.events.plans().size()
 		var state := rng.state

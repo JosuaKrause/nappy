@@ -354,7 +354,9 @@ func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
 	var consumed: Array[String] = []
-	city.events.start_day(DaySpec.for_day(1), rng, consumed)
+	var spec := DaySpec.for_day(1)
+	RigStreets.begin(city.streets(), city.map, spec)
+	city.events.start_day(spec, rng, consumed)
 	var start := CrowdLanes.arterial_pavement(city.map)
 	start.y = city.map.world_size().y * 0.5
 	her.global_position = start

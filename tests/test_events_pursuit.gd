@@ -93,7 +93,7 @@ func _test_a_failed_lesson_retry_leaves_the_director_running(t: TestRunner) -> v
 	# An empty city map: the director owes its retry the same way with nothing on the ground.
 	var map := CityMap.new()
 	var manager := EventManager.new()
-	manager.setup(null, map)
+	manager.setup(map)
 	var told: Array[String] = []
 	manager.trace = RunTrace.recording(told)
 	var board := _CountingBoard.new(manager.world)
@@ -556,15 +556,14 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 		if PendingWarning.down_her_line(map, def, her, Vector2.UP) != Vector2.INF:
 			break
 		her.y += Tuning.TILE_SIZE
-	# Handed the city map, drawn in a node of its own, and a run (`EventManager.setup()` with no city,
-	# `use_run()`), as a rig that builds no city hands them.
+	# Handed the city map, drawn in a node of its own, and a run (`EventManager.setup()` with no
+	# streets, lights or poster walls), as a rig that builds no city hands them.
 	var holder := WorldContext.new()
 	t.add_child(holder)
 	map.world = holder
 	var run := RunState.new()
 	var manager := EventManager.new()
-	manager.setup(null, map)
-	manager.use_run(run)
+	manager.setup(map, null, null, run)
 	var player := Node2D.new()
 	t.add_child(player)
 	player.global_position = her

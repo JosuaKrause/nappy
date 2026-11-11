@@ -82,9 +82,10 @@ func start_day(day: int, tree: RouteTree) -> void:
 				_siting = EventScheduler.WalkSiting.new(day, world.city_map, tree, _walk,
 						EventScheduler.Verdicts.new())
 				_siting.holds_the_home_streets = holds_the_home_streets
-				# Where a crew may paste: only the city's buildings know their blank walls.
-				if world.city and world.city.poster_walls():
-					_siting.fronts = world.city.poster_walls().fronts()
+				# Where a crew may paste: only the city's buildings know their blank walls, and
+				# the walls paste every dawn, so the fronts are asked for today's, here.
+				if world.poster_walls():
+					_siting.fronts = world.poster_walls().fronts()
 			# The first attempt's one-time scans, done here rather than mid-walk. See `prepare()`.
 			_siting.prepare(plan.def)
 	_director.start_day(day, _walk.plans(), world.run.calendar.day_rng(day, "ahead"), _siting,
@@ -416,8 +417,8 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 				else RouteTree.for_day(world.city_map, world.day), _walk,
 				EventScheduler.Verdicts.new())
 		_siting.holds_the_home_streets = holds_the_home_streets
-		if world.city and world.city.poster_walls():
-			_siting.fronts = world.city.poster_walls().fronts()
+		if world.poster_walls():
+			_siting.fronts = world.poster_walls().fronts()
 	var rigged := _director.rig_her_route(ids, size, world.run.resistance.progress, _siting)
 	for id in ids:
 		var row := _director.route_row(id)
