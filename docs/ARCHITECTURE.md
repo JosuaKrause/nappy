@@ -762,7 +762,7 @@ pause and summary screens use it
 for both hover and press after converting presented coordinates to design coordinates.
 The joystick dead zone and Run's half do not use this multiplier.
 The pause button shows only during a running day. `PauseScreen` and `DaySummary` also handle
-background presses through `TouchInput.is_press()`, so a press away from restart continues;
+background presses (a finger, or a left click on a device with no touch hardware), so a press away from restart continues;
 `TitleScreen` requires a press on one of its three mode buttons.
 
 A press or a drag computes a heading — `(target - origin)`, normalised — and presses it through
