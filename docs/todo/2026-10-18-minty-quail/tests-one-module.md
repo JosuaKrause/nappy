@@ -54,9 +54,11 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
 6. the crowd: a crowd suite takes `test_recipe_crowd`'s `Crowd.recipe_coverage` check (entry 4);
    the events' answers still held in the crowd's suites move with the events (entry 7):
    `test_crowd_yields`' four checks of the event instance and manager (stands as, parked, the list
-   of moves, placement), the events half of `test_danger` (about twenty tests of events, the baby,
-   the badge and the screen edge) and of `test_wall_shield`, and
-   `test_crowd_bodies_on_a_real_day`'s check that a crash's cars stand on recorded ground;
+   of moves, placement) and `test_crowd_bodies_on_a_real_day`'s check that a crash's cars stand on
+   recorded ground. `test_danger` (the danger vocabulary) and `test_wall_shield`
+   (`CityMap.wall_between()`) are not the crowd's suites though each holds a crowd half; their
+   events half (in `test_danger`, about twenty tests of events, the baby, the badge and the screen
+   edge) moves with the events too;
 7. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
    `protest`, the day 6, 7 and 13 suites) and the resistance (`resistance_*`, `spent_park`,
    `park_cordon`, `burnt_door`);
