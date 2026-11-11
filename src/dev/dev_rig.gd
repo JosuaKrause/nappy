@@ -1,8 +1,9 @@
 class_name DevRig
 extends RefCounted
-## Everything that acts on a developer flag by reading the live city: the half of the dev-flag
-## surface that needs the live `City`, `ResistanceDirector` or `Baby` turns a flag's value — handed
-## in by `main` from the run's configuration — into camera positions and meters. `DevFlags` does
+## Everything that acts on a developer flag by reading the live city's parts: the half of the
+## dev-flag surface that needs the live map, events, streets, `ResistanceDirector` or `Baby` turns a
+## flag's value — handed in by `main` from the run's configuration — into camera positions and
+## meters. `DevFlags` does
 ## the parsing; nothing here reads a flag itself.
 ##
 ## A `RefCounted`, not a `Node`. The only state that has to survive between calls is the follow
@@ -10,7 +11,7 @@ extends RefCounted
 ## the tree: the camera is a real `Camera2D`, parented on whichever node the caller passes in (`main`
 ## for an ordinary run, a test's own rig node for a suite), and this object just keeps the
 ## reference. Every other method is `static`, since it has nothing to remember between calls and
-## nothing to gain from an instance — a lookup against a `City` built on a fixed seed answers the
+## nothing to gain from an instance — a lookup against a city built on a fixed seed answers the
 ## same way whoever asks it, which is what makes it headless-testable without booting `main`.
 
 ## The follow camera, once `setup_follow_camera()` has built one — `null` until `--follow` asks
@@ -50,11 +51,12 @@ func _setup_follow(parent: Node, follow_id: String) -> void:
 	# so physics interpolation would draw it a tick behind whatever it is chasing.
 	_follow_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 
-## Called once a frame; a no-op until `setup_follow_camera()` has actually built a camera.
-func update_follow_camera(city: City) -> void:
-	if not _follow_camera:
+## Called once a frame with the city's events (null in a world with no city); a no-op until
+## `setup_follow_camera()` has actually built a camera.
+func update_follow_camera(events: EventManager) -> void:
+	if not _follow_camera or not events:
 		return
-	for instance in city.events.instances():
+	for instance in events.instances():
 		if instance.def.id == _follow_id:
 			_follow_camera.position = instance.global_position
 			return
@@ -65,32 +67,33 @@ func update_follow_camera(city: City) -> void:
 ## `power_station`, `signal`, `edge[:s|e|w]`, `precinct`, `corner[:nw|ne|sw|se]`, `contact`,
 ## `door[:n]` and `event[:id]`; "" is the doorstep, and anything else warns and starts her there —
 ## this is the one list, one branch per target. `header` is the run's, whose day a warning names.
-static func for_spawn_target(target: String, city: City, resistance: ResistanceDirector,
-		header: RunHeader) -> Vector2:
+static func for_spawn_target(target: String, map: CityMap, events: EventManager,
+		streets: DayStreets, resistance: ResistanceDirector, header: RunHeader,
+		trace: RunTrace) -> Vector2:
 	if target == "":
-		return city.map.doorstep_world_position()
+		return map.doorstep_world_position()
 
 	# `event` takes the first non-ambient event; `event:<id>` targets a specific one.
 	if target.begins_with("event"):
-		return first_event_position(city, target.get_slice(":", 1))
+		return first_event_position(events, map, trace, target.get_slice(":", 1))
 	# The busiest pavement in the city, for looking at the crowd's noise floor without
 	# walking there. The arterial is where the floor is highest, so it is where the
 	# question "can a day be won on an ordinary street" is actually answered.
 	if target == "arterial":
-		return _nearest_walkable(city.map, CrowdLanes.arterial_pavement(city.map))
+		return _nearest_walkable(map, CrowdLanes.arterial_pavement(map))
 	# A closed street, from the junction outside its barrier — the place the closure is
 	# supposed to be readable from, which is the thing worth looking at.
 	# `closure:<n>` picks one of the day's closures, since only one of them is a street
 	# running the way you wanted to look at.
 	if target.begins_with("closure"):
-		var closures := city.streets().closures()
+		var closures := streets.closures()
 		if closures.is_empty():
 			push_warning("no streets are closed on day %d" % header.day)
-			return city.map.home_world_position()
+			return map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, closures.size() - 1)
-		var mouth: Vector2 = closures[which].mouth_centres(city.map)[0]
-		var junction := closures[which].cause_centre(city.map)
-		return _nearest_walkable(city.map, mouth + (mouth - junction).normalized() * 64.0)
+		var mouth: Vector2 = closures[which].mouth_centres(map)[0]
+		var junction := closures[which].cause_centre(map)
+		return _nearest_walkable(map, mouth + (mouth - junction).normalized() * 64.0)
 	# The north-west corner of a multi-block calm zone, a couple of tiles outside it, which puts
 	# both of the things a zone has to get right in one frame: the T-junction where the absorbed
 	# street stops, and the calm behind it.
@@ -99,23 +102,23 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 	# has a **shape** and the square is always placed first, so `keys()[0]` is always the square
 	# and no other shape can be looked at without the index.
 	if target.begins_with("zone"):
-		if city.map.zone_rects.is_empty():
+		if map.zone_rects.is_empty():
 			push_warning("this city has no multi-block calm zone")
-			return city.map.home_world_position()
-		var keys := city.map.zone_rects.keys()
+			return map.home_world_position()
+		var keys := map.zone_rects.keys()
 		var which := clampi(int(target.get_slice(":", 1)), 0, keys.size() - 1)
 		var anchor: Vector2i = keys[which]
-		var corner := CityMap.blocks_tile_rect(city.map.zone_rects[anchor]).position
-		return _nearest_walkable(city.map, city.map.tile_to_world(corner - Vector2i.ONE * 2))
+		var corner := CityMap.blocks_tile_rect(map.zone_rects[anchor]).position
+		return _nearest_walkable(map, map.tile_to_world(corner - Vector2i.ONE * 2))
 	# A big building, stood on the street running along the joined side of it, level with the
 	# street it was built over. The whole claim of a landmark is that it reads as **one mass**
 	# rather than as two blocks with the road missing between them, and this flag is the only way
 	# to point a camera at one.
 	if target == "landmark":
-		if city.map.big_buildings.is_empty():
+		if map.big_buildings.is_empty():
 			push_warning("this city has no big building")
-			return city.map.home_world_position()
-		var pair: Rect2i = city.map.big_buildings[0]
+			return map.home_world_position()
+		var pair: Rect2i = map.big_buildings[0]
 		var mass := CityMap.blocks_tile_rect(pair)
 		# Off the **long** side, which is the one the joined seam runs the width of: a mass two
 		# blocks wide is looked at from the north, a mass two blocks deep from the west. Two tiles
@@ -128,53 +131,53 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		var beside := Vector2i(mass.get_center().x - Tuning.STREET_WIDTH, mass.position.y - 2) \
 				if pair.size.x == 2 \
 				else Vector2i(mass.position.x - 2, mass.get_center().y - Tuning.STREET_WIDTH)
-		return _nearest_walkable(city.map, city.map.tile_to_world(beside))
+		return _nearest_walkable(map, map.tile_to_world(beside))
 	# The power station's front door, stood on its own pavement a door's width east of it so the
 	# door is in frame beside her rather than behind the pram. The door is on the station's south
 	# face, which is the one the camera sees, so this is also where its picture is judged from.
 	if target == "power_station":
-		if not city.map.has_power_station():
+		if not map.has_power_station():
 			push_warning("this city has no power station")
-			return city.map.home_world_position()
-		var door := city.map.power_station_door_position()
-		return _nearest_walkable(city.map,
+			return map.home_world_position()
+		var door := map.power_station_door_position()
+		return _nearest_walkable(map,
 				door + Vector2.RIGHT * CityMap.POWER_STATION_DOOR_TILES * Tuning.TILE_SIZE)
 	# A signalled junction on the spine, stood a little back down the side street, so that the
 	# main road, its lights and one of its zebras are all in the same frame. The lights
 	# are the only cue in the game whose whole content is *when*, so they cannot be judged from a
 	# still of one — take several seconds apart, or use `--walk` and watch the cycle.
 	if target == "signal":
-		var spine := city.map.main_road
+		var spine := map.main_road
 		var down := clampi(Tuning.CITY_BLOCKS.y / 2, 1, Tuning.CITY_BLOCKS.y - 1)
 		# On the side street's own pavement, a couple of tiles east of the junction: the block
 		# east of corridor `spine` is block `spine`, and offset 1 of a corridor is footway.
 		var corner := Vector2i(CityMap.block_rect(Vector2i(spine, 0)).position.x + 2,
 				down * CityMap.period() + 1)
-		return _nearest_walkable(city.map, city.map.tile_to_world(corner))
+		return _nearest_walkable(map, map.tile_to_world(corner))
 	# The mouth of the tunnel the main road leaves by, from a few tiles down the spine. `edge:s`
 	# is the bridge at the other end and `edge:e` / `edge:w` the road simply running out.
 	if target.begins_with("edge"):
 		var side := target.get_slice(":", 1)
-		var spine_x := city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH / 2
+		var spine_x := map.main_road * CityMap.period() + Tuning.STREET_WIDTH / 2
 		var spine_y := CrowdLanes.arterial_index(Tuning.CITY_BLOCKS.y) * CityMap.period() \
 				+ Tuning.STREET_WIDTH / 2
 		# Beside the carriageway, not on it: the exits are lethal, which is the point of them.
 		var at := Vector2i(spine_x - 2, 1)
 		match side:
-			"s": at = Vector2i(spine_x - 2, city.map.size.y - 2)
-			"e": at = Vector2i(city.map.size.x - 2, spine_y - 2)
+			"s": at = Vector2i(spine_x - 2, map.size.y - 2)
+			"e": at = Vector2i(map.size.x - 2, spine_y - 2)
 			"w": at = Vector2i(1, spine_y - 2)
-		return _nearest_walkable(city.map, city.map.tile_to_world(at))
+		return _nearest_walkable(map, map.tile_to_world(at))
 	# The middle of a pedestrianised street, which is the other end of the same trade: paving
 	# frontage to frontage, no kerb, no asphalt and nothing on it that can kill you.
 	if target == "precinct":
-		if city.map.precinct_spans.is_empty():
+		if map.precinct_spans.is_empty():
 			push_warning("this city has no precinct")
-			return city.map.home_world_position()
-		var span: Vector4i = city.map.precinct_spans[0]
+			return map.home_world_position()
+		var span: Vector4i = map.precinct_spans[0]
 		var across := span.y * CityMap.period() + Tuning.STREET_WIDTH / 2
 		var along := (span.z + span.w) / 2 * CityMap.period() + Tuning.STREET_WIDTH
-		return _nearest_walkable(city.map, city.map.tile_to_world(
+		return _nearest_walkable(map, map.tile_to_world(
 				Vector2i(across, along) if span.x == 1 else Vector2i(along, across)))
 	# A corner of the map, stood a couple of tiles inside it, so that two of the border's four
 	# bands and the join between them are in the same frame — the seam is where the mountain and
@@ -190,13 +193,13 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		# and `_nearest_walkable` will happily leave her standing on it — a shot taken from there
 		# is a shot of the day ending, which is the trap the `landmark` target has too.
 		var near := Tuning.SIDEWALK_WIDTH - 1
-		var far := city.map.size - Vector2i.ONE * Tuning.SIDEWALK_WIDTH
+		var far := map.size - Vector2i.ONE * Tuning.SIDEWALK_WIDTH
 		var at := Vector2i(near, near)
 		match which:
 			"ne": at = Vector2i(far.x, near)
 			"sw": at = Vector2i(near, far.y)
 			"se": at = far
-		return _nearest_walkable(city.map, city.map.tile_to_world(at))
+		return _nearest_walkable(map, map.tile_to_world(at))
 	if target == "contact":
 		# A pickup's mark may not stay where this puts the camera: if she then walks away from
 		# it without it ever being seen, the re-placement rule in `ResistanceDirector` moves it
@@ -205,7 +208,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		var contact := resistance.contact_position()
 		if contact == Vector2.INF:
 			push_warning("no resistance contact on day %d" % header.day)
-			return city.map.home_world_position()
+			return map.home_world_position()
 		# Off to one side, so the chalk mark is not hidden under the pram.
 		return contact + Vector2(70.0, 30.0)
 	# A region-wall checkpoint's own hut, stood back a few tiles on the approach side so a
@@ -216,7 +219,7 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 	# skipped: the hut is the picture, standing on the pavement rather than the carriageway.
 	if target.begins_with("door"):
 		var huts: Array[EventPlan] = []
-		var plan := city.streets().region_plan()
+		var plan := streets.region_plan()
 		if plan:
 			for body in plan.door_bodies:
 				if body.def.id == "checkpoint_hut":
@@ -224,10 +227,10 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 		if huts.is_empty():
 			push_warning("no region-wall checkpoint on day %d (doors start on day %d)"
 					% [header.day, Tuning.REGION_WALL_FIRST_DAY])
-			return city.map.home_world_position()
+			return map.home_world_position()
 		var which := clampi(int(target.get_slice(":", 1)), 0, huts.size() - 1)
 		var hut: EventPlan = huts[which]
-		return _nearest_walkable(city.map, hut.position - hut.facing * Tuning.TILE_SIZE * 4.0)
+		return _nearest_walkable(map, hut.position - hut.facing * Tuning.TILE_SIZE * 4.0)
 
 	var wanted: int = {
 		"park": GameEnums.TileType.PARK,
@@ -237,14 +240,14 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 	}.get(target, -1)
 	if wanted == -1:
 		push_warning("unknown --spawn target '%s'" % target)
-		return city.map.home_world_position()
+		return map.home_world_position()
 
-	for y in city.map.size.y:
-		for x in city.map.size.x:
-			if city.map.tile_at(Vector2i(x, y)) == wanted:
-				return city.map.tile_to_world(Vector2i(x, y))
+	for y in map.size.y:
+		for x in map.size.x:
+			if map.tile_at(Vector2i(x, y)) == wanted:
+				return map.tile_to_world(Vector2i(x, y))
 	push_warning("no %s tile in this city" % target)
-	return city.map.home_world_position()
+	return map.home_world_position()
 
 ## Just outside a planned event, on the nearest walkable tile — an offset straight down its
 ## radius lands inside a block as often as not.
@@ -256,8 +259,8 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ## `loose_dog`, `charging_dog` on `Tuning.RUN_TAUGHT_DAY`, and day 3's `burning_building`, which
 ## the day plans and sites from her walk (`EventDef.on_her_way`) — so `event:<id>` cannot
 ## find one. Rather than silently starting her on the doorstep as if nothing were wrong, this
-## **refuses by name**: the row and the reason are written to the run log through the city's trace
-## (`city.trace.note("spawn", …)`) and raised with `push_warning`, so both the log a capture is
+## **refuses by name**: the row and the reason are written to the run log through the run's trace
+## (`trace.note("spawn", …)`) and raised with `push_warning`, so both the log a capture is
 ## judged from and the terminal that launched it show the same failure — `push_warning` rather
 ## than `push_error` because a test that feeds this bad input on purpose has to reach a code path
 ## that reports it by return value rather than failing the run, the same reporting weight the
@@ -269,9 +272,10 @@ static func for_spawn_target(target: String, city: City, resistance: ResistanceD
 ## whichever is larger of `outer_radius` and `EventDef.notice`, plus a tile's width of clearance,
 ## so a rig can photograph the silence before it notices her rather than always finding it already
 ## noticing.
-static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
+static func first_event_position(events: EventManager, map: CityMap, trace: RunTrace,
+		wanted_id: String = "") -> Vector2:
 	var waits_for_her_walk := false
-	for plan in city.events.plans():
+	for plan in events.plans():
 		if not plan.is_placed():
 			waits_for_her_walk = waits_for_her_walk or plan.def.id == wanted_id
 			continue
@@ -283,19 +287,19 @@ static func first_event_position(city: City, wanted_id: String = "") -> Vector2:
 		if plan.def.notice_within() > 0.0:
 			var reach := maxf(plan.def.outer_radius, plan.def.notice_within())
 			var clearance := reach + Tuning.TILE_SIZE
-			var stand_off := pavement_offset(city.map, plan.position, clearance, 1.0)
-			return _nearest_walkable(city.map, plan.position + stand_off, plan.position, reach)
-		var offset := pavement_offset(city.map, plan.position, plan.def.outer_radius)
-		return _nearest_walkable(city.map, plan.position + offset)
+			var stand_off := pavement_offset(map, plan.position, clearance, 1.0)
+			return _nearest_walkable(map, plan.position + stand_off, plan.position, reach)
+		var offset := pavement_offset(map, plan.position, plan.def.outer_radius)
+		return _nearest_walkable(map, plan.position + offset)
 	if waits_for_her_walk:
 		var reason := (("'%s' is planned today with no position: it is sited from her walk, so "
 				% wanted_id) + "there is nowhere to stand at dawn. Use --follow %s once it exists"
 				% wanted_id)
-		city.trace.note("spawn", reason)
+		trace.note("spawn", reason)
 		push_warning(reason)
 	else:
 		push_warning("no non-ambient events planned today")
-	return city.map.home_world_position()
+	return map.home_world_position()
 
 ## The step from a found event's position to somewhere just off it, **across the street it stands
 ## on** rather than along local Y unconditionally. A fixed `Vector2(0.0, radius * scale)` is a step
@@ -338,12 +342,11 @@ static func _nearest_walkable(map: CityMap, near: Vector2, outside_of := Vector2
 ## scale (a walled-off quarter, parks bunched together) is visible. `parent` is whatever node the
 ## camera should live under, and `viewport_size` is `get_viewport_rect().size` — passed in rather
 ## than read here so this stays callable from a rig with no viewport of its own.
-static func make_overview_camera(parent: Node, city: City, viewport_size: Vector2) -> void:
+static func make_overview_camera(parent: Node, bounds: Rect2, viewport_size: Vector2) -> void:
 	var camera := Camera2D.new()
 	# The frontages outside the map are in frame too: the ring is what makes the boundary a
 	# street with two sides, and an overview that framed the walkable tiles alone would be a
 	# picture of a grid stopping at a wall rather than of a city.
-	var bounds := city.camera_bounds()
 	camera.position = bounds.get_center()
 	camera.zoom = Vector2.ONE * minf(viewport_size.x / bounds.size.x, viewport_size.y / bounds.size.y)
 	# Physics interpolation is on project-wide (docs/DECISIONS.md, M141, "the physics tick at

@@ -36,9 +36,32 @@ The search covered `InteriorScene`, `InteriorMap`, `InteriorMapPlan` and `Interi
   notice's `runs_within` (`runs_its_own_line()` answers only whether it is set); the plan record's
   `repeat_every` and `comes_in`, read (`repeats()` is a bool); the event manager's `sources`,
   `world` and `atlas`; her `carrying`, written; the danger edge's `atlas`, written; and an
-  excitement source's `rim`.
+  excitement source's `rim`. Every field the suites read or write is listed by class under "Fields
+  read and written, by class" below.
 - **The plan record is typed under `EventScheduler.Planned`**; the placement track's scripted rename
   to `EventPlan` reruns over it.
+
+## Fields read and written, by class
+
+Built with `tools/field_answers.py` at the pass's merge commit `bdf1f92dc`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
+
+- **`DangerEdge`**: `atlas`, written → no method.
+- **`EventDef`**: `falloff_power` → no method; `notice` → no method (a yes-or-no on the field alone:
+  `waits_for_her()`).
+- **`EventInstance`**: `age` → no method (`EventInstance.Figure.age()` returns it on a view no
+  public method hands out).
+- **`EventManager`**: `atlas` → no method; `sources` → no method; `world` → no method.
+- **`EventScheduler.Planned`**: `comes_in` → no method; `repeat_every` → no method.
+- **`ExcitementSource`**: `rim` through `EventExcitement` → no method.
+- **`InteriorMapPlan.Door`**: `id` → no method; `target_door` → no method; `tile` → no method.
+- **`InteriorScene`**: `atlas` → no method; `atlas`, written → no method; `map` → no method.
+- **`NoticeSpec`**: `runs_within` → no method.
+- **`Stroller`**: `carrying`, written → no method.
 
 ## Verified
 

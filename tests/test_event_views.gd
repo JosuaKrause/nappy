@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## M108, eight-direction entity graphics: binding live event people, animals, riders and vehicles
 ## to `EightDirection`. `tests/test_walker_views.gd` already pins the selector itself and the crowd
@@ -209,9 +208,9 @@ func _test_cafe_sitters_face_their_own_tables(t: TestRunner) -> void:
 		true: [[Vector2.DOWN, "front", false], [Vector2.UP, "back", false]],
 	}
 	var sitters := {}
-	for picture in EventPictures.CAFE_SITTER_BY_VIEW.values():
+	for picture: String in EventPictures.CAFE_SITTER_BY_VIEW.values():
 		sitters[picture] = true
-	for picture in EventPictures.CAFE_SITTER_BY_VIEW_B.values():
+	for picture: String in EventPictures.CAFE_SITTER_BY_VIEW_B.values():
 		sitters[picture] = true
 	for spread_vertical: bool in [false, true]:
 		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("cafe_tables"),
@@ -250,9 +249,10 @@ func _test_cafe_sitters_face_their_own_tables(t: TestRunner) -> void:
 			t.check((expectation[0] as Vector2).dot(toward) > 0.0,
 					"%s points toward its table (the table %s from the chair)" % [what, toward])
 			var view: String = expectation[1]
-			t.check(sitter.picture == EventPictures.CAFE_SITTER_BY_VIEW[view]
-					or sitter.picture == EventPictures.CAFE_SITTER_BY_VIEW_B[view],
-					"%s uses the %s view (drew %s)" % [what, view, sitter.picture.get_file()])
+			var sitter_picture: String = sitter.picture
+			t.check(sitter_picture == EventPictures.CAFE_SITTER_BY_VIEW[view]
+					or sitter_picture == EventPictures.CAFE_SITTER_BY_VIEW_B[view],
+					"%s uses the %s view (drew %s)" % [what, view, sitter_picture.get_file()])
 			t.check(sitter.mirrored == expectation[2],
 					"%s mirrors only its west-facing side view" % what)
 		instance.free()
@@ -334,11 +334,12 @@ func _test_roadblock_guard_stands_clear_of_the_band(t: TestRunner) -> void:
 			var heading := EventFootprints.guard_post_heading(vertical, side)
 			var sector := EightDirection.nearest(heading)
 			var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[sector]
+			var guard_picture: String = on_his_side[0].picture
 			t.check(heading.dot(feet) > 0.0
-					and on_his_side[0].picture == EventPictures.GUARD_STANDING_BY_VIEW[view]
+					and guard_picture == EventPictures.GUARD_STANDING_BY_VIEW[view]
 					and on_his_side[0].mirrored == EightDirection.is_mirrored(sector),
 					"%s, side %d: facing out from it (%s, drawn %s%s)" % [axis, side, heading,
-						on_his_side[0].picture.get_file(), " mirrored" if on_his_side[0].mirrored else ""])
+						guard_picture.get_file(), " mirrored" if on_his_side[0].mirrored else ""])
 		instance.free()
 	# The one who gives chase is the one on her side, across the band; level with its line, south.
 	t.check(EventFootprints.guard_side_toward(false, Vector2(30.0, -200.0)) == -1
@@ -434,7 +435,7 @@ func _test_roadwork_barrier_follows_alley_axis(t: TestRunner) -> void:
 # ------------------------------------------------------------------- the tables ---
 
 func _test_family_dictionaries_are_complete(t: TestRunner) -> void:
-	for name in FAMILY_DICTS:
+	for name: String in FAMILY_DICTS:
 		var by_view: Dictionary = FAMILY_DICTS[name]
 		for view in EXPECTED_VIEW:
 			t.check(by_view.has(view) and by_view[view] != null,
@@ -446,7 +447,7 @@ func _test_family_dictionaries_are_complete(t: TestRunner) -> void:
 func _test_people_views_are_five_distinct_pictures(t: TestRunner) -> void:
 	var people := FAMILY_DICTS.keys().filter(func(name: String) -> bool:
 		return not ANIMAL_SIDE_REUSE.has(name) and not VEHICLE_SIDE_REUSE.has(name))
-	for name in people:
+	for name: String in people:
 		var by_view: Dictionary = FAMILY_DICTS[name]
 		var textures := by_view.values()
 		for i in textures.size():
@@ -459,7 +460,7 @@ func _test_people_views_are_five_distinct_pictures(t: TestRunner) -> void:
 ## copy-paste of, say, `DELIVERY_VAN_FRONT` under the `DELIVERY_VAN_BACK` key would not pass
 ## unnoticed either.
 func _test_vehicle_views_are_five_distinct_pictures(t: TestRunner) -> void:
-	for name in VEHICLE_SIDE_REUSE:
+	for name: String in VEHICLE_SIDE_REUSE:
 		var by_view: Dictionary = FAMILY_DICTS[name]
 		var textures := by_view.values()
 		for i in textures.size():
@@ -485,7 +486,7 @@ func _test_state_pairs_stay_visually_distinct(t: TestRunner) -> void:
 		["guard_standing", "guard_alert"], ["guard_alert", "guard_lunging"],
 		["policeman_waiting", "policeman_alert"], ["policeman_alert", "policeman_lunging"],
 	]
-	for pair in pairs:
+	for pair: Array in pairs:
 		var a: Dictionary = FAMILY_DICTS[pair[0]]
 		var b: Dictionary = FAMILY_DICTS[pair[1]]
 		for view in EXPECTED_VIEW:
@@ -988,7 +989,7 @@ const VEHICLE_MIRROR_BY_SECTOR := {
 ## applied — checked against `VEHICLE_MIRROR_BY_SECTOR`'s own literal transcription of
 ## `facings.csv` rather than against the formula under test.
 func _test_vehicle_views_match_facings_csv_per_sector(t: TestRunner) -> void:
-	for name in VEHICLE_SIDE_REUSE:
+	for name: String in VEHICLE_SIDE_REUSE:
 		var side_faces_west: bool = VEHICLE_SIDE_FACES_WEST[name]
 		var expected_mirror: Array = VEHICLE_MIRROR_BY_SECTOR[name]
 		var instance := EventInstance.new()
@@ -1015,7 +1016,7 @@ func _test_vehicle_views_match_facings_csv_per_sector(t: TestRunner) -> void:
 ## eight-view table must still draw exactly the `"side"` view for a fresh siting, the one view
 ## either row has ever shown.
 func _test_kerb_parked_vans_keep_their_axis_chosen_view(t: TestRunner) -> void:
-	for name in ["delivery_van", "ice_cream_van"]:
+	for name: String in ["delivery_van", "ice_cream_van"]:
 		var instance := EventInstance.new()
 		instance.setup(EventCatalogue.by_id(name), Vector2.ZERO)
 		t.check(instance.look.select_view(Vector2.ZERO) == "side",
@@ -1028,7 +1029,7 @@ func _test_kerb_parked_vans_keep_their_axis_chosen_view(t: TestRunner) -> void:
 ## table must not change that.
 func _test_reversing_lorry_only_ever_faces_the_side_view(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("reversing_lorry")
-	for face in [Vector2.RIGHT, Vector2.LEFT]:
+	for face: Vector2 in [Vector2.RIGHT, Vector2.LEFT]:
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO, PackedVector2Array(), face)
 		t.check(instance.look.select_view(Vector2.ZERO) == "side",
@@ -1052,9 +1053,9 @@ func _test_vehicle_views_are_grounded_at_the_canvas_bottom(t: TestRunner) -> voi
 	t.check(page != null, "the baked events page reads back as an image")
 	if page == null:
 		return
-	for name in VEHICLE_SIDE_REUSE:
+	for name: String in VEHICLE_SIDE_REUSE:
 		var by_view: Dictionary = FAMILY_DICTS[name]
-		for view in ["front", "back", "front_diagonal", "back_diagonal"]:
+		for view: String in ["front", "back", "front_diagonal", "back_diagonal"]:
 			var picture: String = by_view[view]
 			var image := page.get_region(AtlasTable.baked().region_rect(StringName(picture)))
 			var bounds := image.get_used_rect()
@@ -1120,7 +1121,7 @@ func _test_every_moving_vehicle_has_wheels_on_its_own_canvas(t: TestRunner) -> v
 	for wheels: String in EventPictures.WHEELS_BEHIND_THE_BODY:
 		t.check(named.has(wheels), "%s, drawn under its body, is one of the wheels tables' own"
 				% wheels)
-	for parked in [EventDef.Look.DELIVERY_VAN, EventDef.Look.ICE_CREAM_VAN]:
+	for parked: EventDef.Look in [EventDef.Look.DELIVERY_VAN, EventDef.Look.ICE_CREAM_VAN]:
 		t.check(not EventPictures.WHEELS_BY_LOOK.has(parked),
 				"a parked van (look %d) keeps its wheels in its one picture" % parked)
 
