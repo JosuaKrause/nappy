@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `RegionPlanner`: the lattice's junctions partition into `Tuning.REGION_COUNT` regions at
 ## generation, and from `Tuning.REGION_WALL_FIRST_DAY` a day's `RouteTree` turns the permanent
@@ -269,7 +268,7 @@ func _test_flood_matches_the_partition(t: TestRunner) -> void:
 		listed.assign(plan.alley_doors + plan.alley_walls)
 		for rect in listed:
 			var vertical := rect.size.x < rect.size.y
-			for at_start in [true, false]:
+			for at_start: bool in [true, false]:
 				for tile in _alley_mouth_tiles(map, rect, vertical, at_start):
 					blocked[tile] = true
 
@@ -440,7 +439,7 @@ func _test_the_day_plan_shape(t: TestRunner) -> void:
 func _test_crossing_alleys_are_consistent(t: TestRunner) -> void:
 	var crossing_alleys := 0
 	for map in _maps:
-		for day in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
+		for day: int in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
@@ -479,12 +478,12 @@ func _test_wall_bodies_never_cover_an_alley_mouth(t: TestRunner) -> void:
 			if map.tile_at(rect.position) != GameEnums.TileType.ALLEY:
 				continue
 			var vertical := rect.size.x < rect.size.y
-			for at_start in [true, false]:
+			for at_start: bool in [true, false]:
 				for tile in _alley_mouth_tiles(map, rect, vertical, at_start):
 					alley_mouth_tiles[tile] = true
 		if alley_mouth_tiles.is_empty():
 			continue
-		for day in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
+		for day: int in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
@@ -512,7 +511,7 @@ func _test_wall_bodies_never_cover_an_alley_mouth(t: TestRunner) -> void:
 func _test_wall_crossing_posts_four_guards(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
-		for day in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
+		for day: int in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
@@ -559,7 +558,7 @@ func _test_wall_crossing_posts_four_guards(t: TestRunner) -> void:
 func _test_alley_wall_bodies_post_one_guard_each(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
-		for day in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
+		for day: int in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
@@ -575,7 +574,7 @@ func _test_alley_wall_bodies_post_one_guard_each(t: TestRunner) -> void:
 				# opposite axis from the one `_test_alley_wall_bodies_fit_their_own_mouth` checks.
 				var low: float = world.position.y if vertical else world.position.x
 				var high: float = world.end.y if vertical else world.end.x
-				for at_start in [true, false]:
+				for at_start: bool in [true, false]:
 					checked += 1
 					var body: EventScheduler.Planned = mouths[rect][0 if at_start else 1]
 					t.check(_stands_in_the_mouth(map, body, rect, at_start),
@@ -612,7 +611,7 @@ func _test_alley_wall_bodies_post_one_guard_each(t: TestRunner) -> void:
 func _test_alley_wall_bodies_fit_their_own_mouth(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
-		for day in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
+		for day: int in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
@@ -622,7 +621,7 @@ func _test_alley_wall_bodies_fit_their_own_mouth(t: TestRunner) -> void:
 				var world := map.tile_rect_to_world(rect)
 				var low: float = world.position.x if vertical else world.position.y
 				var high: float = world.end.x if vertical else world.end.y
-				for at_start in [true, false]:
+				for at_start: bool in [true, false]:
 					checked += 1
 					var body: EventScheduler.Planned = mouths[rect][0 if at_start else 1]
 					var centre: float = body.position.x if vertical else body.position.y
@@ -693,7 +692,7 @@ func _test_winnability_holds_with_the_wall_standing(t: TestRunner) -> void:
 					% [map.seed_used, day])
 
 			var blocked_no_road := blocked.duplicate()
-			for tile in _main_road_tiles(map):
+			for tile: Vector2i in _main_road_tiles(map):
 				blocked_no_road[tile] = true
 			var reached_no_road := grid.flood([map.home_rect.position], blocked_no_road)
 			without_main_road_days += 1

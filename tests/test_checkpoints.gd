@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## The region door's own structure: `checkpoint_hut`/`checkpoint_gate`/`checkpoint_post`, placed by
 ## `RegionPlanner._add_door_bodies`/`_add_alley_door_bodies`, detained and released by
@@ -19,6 +18,8 @@ extends RefCounted
 
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const HaloRig := preload("res://tests/halo_rig.gd")
+const StrollerSpy := preload("res://tests/stroller_interpolation_spy.gd")
+const CameraSpy := preload("res://tests/camera_interpolation_spy.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0
 const SEEDS := 4
@@ -123,7 +124,7 @@ func _test_every_door_has_its_three_bodies(t: TestRunner) -> void:
 	var total_huts := 0
 	var total_gates := 0
 	var total_posts := 0
-	for pair in _sampled_days():
+	for pair: Array in _sampled_days():
 		var map: CityMap = pair[0]
 		var day: int = pair[1]
 		var plan := _plan_for(map, day)
@@ -165,7 +166,7 @@ func _test_every_door_has_its_three_bodies(t: TestRunner) -> void:
 ## `obstructs_radius` circle never reaches a *different* boundary crossing's ground either.
 func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 	var checked := 0
-	for pair in _sampled_days():
+	for pair: Array in _sampled_days():
 		var map: CityMap = pair[0]
 		var day: int = pair[1]
 		var plan := _plan_for(map, day)
@@ -219,7 +220,7 @@ func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 	var checked := 0
 	var spans := {}
-	for pair in _sampled_days():
+	for pair: Array in _sampled_days():
 		var map: CityMap = pair[0]
 		var day: int = pair[1]
 		var plan := _plan_for(map, day)
@@ -346,7 +347,7 @@ func _drawn_boom_span(t: TestRunner, gate: EventScheduler.Planned) -> Vector2:
 ## the full `REGION_WALL_FIRST_DAY..RUN_LENGTH_DAYS` range, because *that* axis is real — a
 ## scripted-availability window is a fact about the day, not the map.
 func _test_the_three_rows_validate_and_are_never_rolled(t: TestRunner) -> void:
-	for id in ["checkpoint_hut", "checkpoint_gate", "checkpoint_post"]:
+	for id: String in ["checkpoint_hut", "checkpoint_gate", "checkpoint_post"]:
 		t.check(EventCatalogue.by_id(id) != null, "'%s' is in the catalogue" % id)
 
 	var map := _maps[0]
@@ -669,7 +670,7 @@ const _TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 const UIScreens := preload("res://tests/ui_screens.gd")
 
 func _release_move_actions() -> void:
-	for action in [&"move_left", &"move_right", &"move_up", &"move_down", &"run"]:
+	for action: StringName in [&"move_left", &"move_right", &"move_up", &"move_down", &"run"]:
 		Input.action_release(action)
 
 ## **An input held through a hold's release keeps steering her; one lifted during it leaves her
@@ -684,8 +685,8 @@ func _release_move_actions() -> void:
 func _test_she_stands_still_when_a_hold_lets_her_out(t: TestRunner) -> void:
 	var axis := Vector2.RIGHT
 	var centre := Vector2(4000.0, 4000.0)
-	for held_through in [true, false]:
-		for way in ["a key", "a tap's finger", "a joystick drag's finger"]:
+	for held_through: bool in [true, false]:
+		for way: String in ["a key", "a tap's finger", "a joystick drag's finger"]:
 			var label := "%s %s" % [way, "held through the hold" if held_through
 					else "lifted during the hold"]
 			_release_move_actions()
@@ -890,8 +891,8 @@ func _test_a_boundarys_structures_charge_as_one(t: TestRunner) -> void:
 			"the whole boundary kit charges the strongest of it and not the sum (%.1f/s against a "
 			% manager.sources.total_at(there) + "sum of %.1f/s)" % summed, 0.01)
 
-	var landed_on: Array = []
-	for pair in manager.sources.sources_at(there):
+	var landed_on: Array[ExcitementSource] = []
+	for pair: Array in manager.sources.sources_at(there):
 		landed_on.append(pair[0])
 	t.check(landed_on.size() == 1, "one source reaches the bar, not five (%d)" % landed_on.size())
 	if landed_on.size() == 1:
@@ -1048,7 +1049,8 @@ func _test_the_release_resets_interpolation_after_showing_her_again(t: TestRunne
 	# swapping a running node's script does not replay `NOTIFICATION_READY`.
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var stroller: Stroller = scene.instantiate()
-	stroller.set_script(load("res://tests/stroller_interpolation_spy.gd"))
+	stroller.set_script(StrollerSpy)
+	var spy := stroller as StrollerSpy
 	t.add_child(stroller)
 	t.check(stroller.get_node_or_null("Camera2D") != null,
 			"the spy script still ran the scene's own `_ready()`, camera included")
@@ -1061,20 +1063,20 @@ func _test_the_release_resets_interpolation_after_showing_her_again(t: TestRunne
 	stroller.global_position = centre + axis * 60.0 + Vector2(0.0, 16.0)
 	# Entering the tree sends its own reset — there is no prior tick yet for a brand-new node to
 	# interpolate from — which is not the release this test is about.
-	stroller.reset_seen_while_hidden = false
-	stroller.reset_seen_while_visible = false
+	spy.reset_seen_while_hidden = false
+	spy.reset_seen_while_visible = false
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(hut.is_chatting() and not stroller.visible, "she goes in for the hold")
-	t.check(not stroller.reset_seen_while_hidden and not stroller.reset_seen_while_visible,
+	t.check(not spy.reset_seen_while_hidden and not spy.reset_seen_while_visible,
 			"and going in resets nothing of hers — only the camera's own focus moves — so there is "
 			+ "nothing yet for the release below to be the first of")
 
 	await _pass_the_hold(t, EventCatalogue.CHECKPOINT_DETAIN_SECONDS)
 	t.check(not hut.is_chatting() and stroller.visible, "the hold ends and she is shown again")
-	t.check(not stroller.reset_seen_while_hidden,
+	t.check(not spy.reset_seen_while_hidden,
 			"`_reset_interpolation_if_shown()` guards `teleport_to()`'s own call, so no reset is "
 			+ "even attempted while she is still hidden — nothing here for Godot to discard")
-	t.check(stroller.reset_seen_while_visible,
+	t.check(spy.reset_seen_while_visible,
 			"and a reset reaches her once `visible` is already true — the one that actually lands, "
 			+ "which `show_after_inspection()` is what has to make")
 
@@ -1094,7 +1096,8 @@ func _test_a_day_boundary_mid_hold_resets_interpolation_after_showing_her_again(
 	var manager := _manager(t)
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var stroller: Stroller = scene.instantiate()
-	stroller.set_script(load("res://tests/stroller_interpolation_spy.gd"))
+	stroller.set_script(StrollerSpy)
+	var spy := stroller as StrollerSpy
 	t.add_child(stroller)
 	manager.use_player(stroller)
 
@@ -1103,17 +1106,17 @@ func _test_a_day_boundary_mid_hold_resets_interpolation_after_showing_her_again(
 	var hut := _door_instance(manager, "checkpoint_hut", centre, axis)
 
 	stroller.global_position = centre + axis * 60.0 + Vector2(0.0, 16.0)
-	stroller.reset_seen_while_hidden = false
-	stroller.reset_seen_while_visible = false
+	spy.reset_seen_while_hidden = false
+	spy.reset_seen_while_visible = false
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(hut.is_chatting() and not stroller.visible,
 			"she goes in for the hold, same as the release test above")
-	stroller.reset_seen_while_visible = false
+	spy.reset_seen_while_visible = false
 
 	# The day ends mid-hold: `reset_at()` is what a fresh day calls, hold or no hold.
 	stroller.reset_at(Vector2(9000.0, 9000.0))
 	t.check(stroller.visible, "reset_at() always shows her again, mid-hold or not")
-	t.check(stroller.reset_seen_while_visible,
+	t.check(spy.reset_seen_while_visible,
 			"and a reset reaches her once `visible` is already true — `reset_at()`'s own call, "
 			+ "moved after its `visible = true` the same way `show_after_inspection()`'s was")
 
@@ -1139,7 +1142,8 @@ func _test_entering_a_hold_resets_the_cameras_interpolation_too(t: TestRunner) -
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var stroller: Stroller = scene.instantiate()
 	var camera := stroller.get_node("Camera2D") as Camera2D
-	camera.set_script(load("res://tests/camera_interpolation_spy.gd"))
+	camera.set_script(CameraSpy)
+	var spy := camera as CameraSpy
 	t.add_child(stroller)
 	manager.use_player(stroller)
 
@@ -1150,11 +1154,11 @@ func _test_entering_a_hold_resets_the_cameras_interpolation_too(t: TestRunner) -
 	stroller.global_position = centre + axis * 60.0 + Vector2(0.0, 16.0)
 	# `add_child()` and `make_current()` both send their own reset before the hold is what this
 	# test is about.
-	camera.reset_seen_while_visible_in_tree = false
-	camera.reset_seen_while_hidden_in_tree = false
+	spy.reset_seen_while_visible_in_tree = false
+	spy.reset_seen_while_hidden_in_tree = false
 	await PhysicsTicks.pass_ticks(t, 1)
 	t.check(hut.is_chatting() and not stroller.visible, "she goes in for the hold")
-	t.check(camera.reset_seen_while_visible_in_tree,
+	t.check(spy.reset_seen_while_visible_in_tree,
 			"and the camera's own reset, forced through `_force_reset_camera_interpolation()`, "
 			+ "still lands while `is_visible_in_tree()` reads true for the one call it needs to")
 
@@ -1245,8 +1249,8 @@ func _release_points(body: EventScheduler.Planned) -> Array[Vector2]:
 	var clearance := body.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	var points: Array[Vector2] = []
-	for side in [-1.0, 1.0]:
-		for lane in [-1.0, -0.5, 0.0, 0.5, 1.0]:
+	for side: float in [-1.0, 1.0]:
+		for lane: float in [-1.0, -0.5, 0.0, 0.5, 1.0]:
 			points.append(body.position + axis * side * clearance
 					+ across * lane * float(Tuning.TILE_SIZE))
 	return points
@@ -1330,7 +1334,7 @@ func _test_the_run_that_killed_her_five_times(t: TestRunner) -> void:
 
 	var plans: Array[EventScheduler.Planned] = [hut]
 	var wall := EventCatalogue.by_id("roadblock")
-	for distance in [57.0, 61.0, 112.0]:
+	for distance: float in [57.0, 61.0, 112.0]:
 		plans.append(EventScheduler.Planned.new(wall,
 				released + Vector2(-distance, 0.0)))
 
