@@ -25,6 +25,9 @@ var _config: RunConfig
 ## The run this boot plays, handed in by `setup()`: whose seed each walk's header names, and what the
 ## observer is handed for the blocks a calm arrival names.
 var _run: RunState
+## The run's block arcs, handed in by `setup()` (the same object for the run's whole life): what the
+## `calm:` plan line says each calm block is for.
+var _arcs: CityState
 ## The trace handed to game logic: every line it is given goes into the run log, or nowhere while
 ## no log is open.
 var trace := RunTrace.new()
@@ -45,11 +48,13 @@ var _world: DayWorld
 var _restarted := false
 
 ## Hands the session the run log, the run's configuration, the bus whose day ends it writes down,
-## the run flow whose walks it heads and watches, and the run it is the log of.
-func setup(run_log: Telemetry, config: RunConfig, bus: Node, flow: RunFlow, run: RunState) -> void:
+## the run flow whose walks it heads and watches, the run it is the log of, and the run's block arcs.
+func setup(run_log: Telemetry, config: RunConfig, bus: Node, flow: RunFlow, run: RunState,
+		arcs: CityState) -> void:
 	_log = run_log
 	_config = config
 	_run = run
+	_arcs = arcs
 	trace = RunTrace.new(run_log.note)
 	flow.world_stood.connect(_on_world_stood)
 	flow.day_planned.connect(_on_day_planned)
@@ -170,9 +175,9 @@ static func _section_name(spec: DaySpec) -> String:
 func _on_day_planned(spec: DaySpec, world: DayWorld) -> void:
 	var city := world.city()
 	if city and spec.closes_the_streets():
-		_log.note("plan", "closed: %s" % city.closure_summary())
-		_log.note("plan", "calm: %s" % city.calm_summary())
-		_log.note("plan", "events: %s" % city.event_summary())
+		_log.note("plan", "closed: %s" % city.streets().closure_summary())
+		_log.note("plan", "calm: %s" % city.map.calm_summary(_arcs))
+		_log.note("plan", "events: %s" % world.events().event_summary())
 	if city:
 		_log.write_map(city.map, spec.day_number(), city.streets().closures(),
 				city.streets().route_tree(), world.events().plans())

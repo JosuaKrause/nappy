@@ -63,6 +63,15 @@ func region_plan() -> RegionPlanner.RegionPlan:
 func closures() -> Array[RoadClosure]:
 	return _closures
 
+## Which streets are shut today and what shut them, as the run log and the console print it. Worth
+## printing rather than counting, because "the route was awful today" and "the closure landed on the
+## one street that mattered" look identical from a count. `none` when no street is shut.
+func closure_summary() -> String:
+	var parts: Array[String] = []
+	for closure in _closures:
+		parts.append(closure.summary_words())
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
 ## Today's region as a siting reads it (`SpawnSiting.Region`): the crossing alleys the wall closes,
 ## and each body of the wall and of the district doors as a disc, its centre and its
 ## `obstructs_radius`; null before a day has grown a region plan.

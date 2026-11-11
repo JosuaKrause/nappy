@@ -397,7 +397,6 @@ src/events/event_manager.gd day
 src/events/event_instance.gd steps_each_tick
 
 # [EventDef] src/events/event_def.gd
-src/city/city.gd id
 src/dev/auto_screenshot.gd pursuit
 src/dev/debug_layers.gd hard_fail
 src/dev/debug_layers.gd inner_radius
@@ -1026,7 +1025,6 @@ src/main.gd locked_out
 
 # [RoadClosure] src/routes/road_closure.gd
 src/city/city.gd kind
-src/city/city.gd segment
 src/city/city_map.gd segment
 src/city/recipe_city_builder.gd segment
 src/events/day_planner.gd segment

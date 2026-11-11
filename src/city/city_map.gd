@@ -566,6 +566,21 @@ func power_station_door_tiles() -> Rect2i:
 func plans_by_block() -> Dictionary:
 	return block_plans
 
+## What calm ground today has, by kind, as the run log and the console print it: `arcs` (the run's
+## block arcs) says what each calm block is for. Cheap, and the thing most worth knowing about a day
+## now that a day can only be won on calm ground. `none` when no block is calm.
+func calm_summary(arcs: CityState) -> String:
+	var counts := {}
+	for block in calm_blocks_now():
+		var purpose := arcs.purpose_of(plans_by_block(), block)
+		var kind := String(GameEnums.BlockPurpose.keys()[purpose]).to_lower()
+		counts[kind] = int(counts.get(kind, 0)) + 1
+	var parts: Array[String] = []
+	for kind: String in counts:
+		parts.append("%d %s" % [counts[kind], kind])
+	parts.sort()
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
 ## Whether `block` anchors a lot and so has an arc (`block_plans`).
 func has_plan_for(block: Vector2i) -> bool:
 	return block_plans.has(block)
