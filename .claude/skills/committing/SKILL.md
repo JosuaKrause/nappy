@@ -124,7 +124,7 @@ The three stay apart because of how the guard reads the second: **a write's word
 like a call** —
 in an echo, a commit message, a body, a heredoc — **except in three shapes whose text it can tell
 apart for certain** (plaid-tapir 4), each as wide as that certainty reaches so that a command which
-only writes text naming the GitHub CLI is not refused (inbox #1292):
+only writes text naming the GitHub CLI is not refused (inbox #1292 in grassy-trout):
 
 - `cat > FILE <<'EOF'` (or `cat <<'EOF' > FILE`, `>>`), whose body is text: the delimiter quoted,
   or bare over a body with no `$`, backtick or backslash; the file a plain path or one behind a

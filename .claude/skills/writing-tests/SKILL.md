@@ -89,7 +89,7 @@ func run(t: TestRunner) -> void:
 ```
 
 The runner, `tests/run_tests.gd`, is `class_name TestRunner`, so that the header is one line and
-a suite preloads nothing to name it (inbox #1282). `t.check()`, `t.close_to()` and
+a suite preloads nothing to name it (inbox #1282 in grassy-trout). `t.check()`, `t.close_to()` and
 the runner's own `Node` calls (`t.add_child()`, `t.get_tree()`) are then typed calls. A bare
 `func run(t)` does not parse in a file without the opt-out line: the parameter is an untyped
 declaration and `t.check()` an unsafe method access, and the suite is a `LOAD FAIL`. **A suite
@@ -202,4 +202,4 @@ words, and hold until the player corrects them. The citation is the player's wor
   curly-rabbit).
 - **A hand-in stays public, in a kept group** (minty-lemur #794; inbox #1095 in curly-rabbit).
 - **The runner's class name, `TestRunner`**, is the builder's choice; the player's words ask for
-  a class name so that the header is one line, and name none (inbox #1282).
+  a class name so that the header is one line, and name none (inbox #1282 in grassy-trout).

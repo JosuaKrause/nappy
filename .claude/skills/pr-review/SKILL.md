@@ -290,8 +290,8 @@ proposes it:
   writes it with no orchestrator, that a builder's rethink is checked, and where it goes ("Three
   verdicts of *not ready* mean the approach is rethought"; woolly-penguin #759).
 - **A queue update merges ahead of work on how the project is worked on** ("A queue update is
-  reviewed for faithfulness and merged first"): both are to go first (woolly-finch 35; inbox
-  #1305), and the order between them is the filer's, since a brief for either is written from the
+  reviewed for faithfulness and merged first"): both are to go first (woolly-finch 35;
+  inbox #1305 in grassy-trout), and the order between them is the filer's, since a brief for either is written from the
   queue.
 - **The first five questions of a queue update's review**, the reviewer's reading of faithfulness
   (bouncy-heron 4), the filer's proposal (leafy-finch).

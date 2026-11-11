@@ -41,7 +41,7 @@ is built only when an added line is neither listed nor paired by a rename.
 Whether the list may gain a moved read's lines was put to the player on the board
 (moved-reads-list), since their "yes" was to a list that only shrinks (inbox #1182 in
 gray-dolphin). Shown both ways, a moved read passing with its lines added, or every pull request
-that moves code converting the reads it moves, the player took the first (inbox #1350). Which moves
+that moves code converting the reads it moves, the player took the first (inbox #1350 in grassy-trout). Which moves
 count as a move (a reader file renamed, code moved into a new file with no more uses, an inner
 class lifted out) stays the planning agent's proposal.
 
