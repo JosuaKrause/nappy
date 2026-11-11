@@ -11,8 +11,8 @@ the typing plan of 2026-11-11 into file-disjoint passes.
   `test_interior`, `test_interior_masked_man` and the rig `masked_man_meeting.gd`, which keeps every
   function's name, argument order and answer (`test_interior_masked_man_badge`, which also loads it,
   passes). Loop variables over literals and enum values are typed (`InteriorTile.Kind` among them),
-  a loop over `get_children()` is typed `Node2D`, and a dictionary of components is
-  `Dictionary[String, Dictionary]`. No line under `src/` changed.
+  a loop over `get_children()` is typed `Node2D`, a loop over a floor's `floor_tiles()` takes its
+  element's type, and a dictionary of components is `Dictionary[String, Dictionary]`. No line under `src/` changed.
 - **Reads converted to the methods the game calls**: the scene's start position through
   `InteriorScene.start_world_position()` rather than through its map; and, of other modules, the
   live event's `row()`, `row_id()`, `walks()`, `is_gone()`, `is_on_its_way_out()`, `source()`; the
@@ -31,8 +31,12 @@ The search covered `InteriorScene`, `InteriorMap`, `InteriorMapPlan` and `Interi
   id, the list of ids and the transition at a tile, and no method gives a door's tile or its
   counterpart; the interior scene reads the same fields.
 - **`InteriorMap` and `InteriorTile`**: the suites read no public field of them.
-- **Other modules' fields no method answers stay for their passes.** Pull request #1352's
-  description lists them by class, each with its reason.
+- **Other modules' fields no method answers stay for their passes**, each checked against its
+  class and its base class: the live event's `age`; the row's `falloff_power` and `notice`; a
+  notice's `runs_within` (`runs_its_own_line()` answers only whether it is set); the plan record's
+  `repeat_every` and `comes_in`, read (`repeats()` is a bool); the event manager's `sources`,
+  `world` and `atlas`; her `carrying`, written; the danger edge's `atlas`, written; and an
+  excitement source's `rim`.
 - **The plan record is typed under `EventScheduler.Planned`**; the placement track's scripted rename
   to `EventPlan` reruns over it.
 
