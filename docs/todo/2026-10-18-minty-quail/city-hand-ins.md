@@ -11,11 +11,12 @@ build a city. `DayStreets`, `CityFronts` and the hand-ins for the resistance dir
 happenings, day 12's park cordon, the crowd and the run log's observer are built; the design is in
 #1166's description, under "The step's design".
 
-**What is left, the third pull request.** *Proposed, not asked for, and to go to the player before
-it is built:* one pull request cannot hold it, so cut it, the event manager's own city and the day
-planner's fallback below first, before the dawn's context rewrites `build_day()`'s call
-(`scheduler-breakup.md`), then the smaller cases, then the summary lines, and who builds the event
-manager and the crowd last (`standing-layer-breaks.md`). The player's answer was three pull requests
+**What is left, the third pull request.** *Proposed, not asked for, and on the board as
+hand-ins-third-cut, built on the orchestrator's pick since it drops nothing the player asked for:*
+one pull request cannot hold it, so cut it: the event manager's own city and the day planner's
+fallback below go before the dawn's context rewrites `build_day()`'s call (`scheduler-breakup.md`),
+the smaller cases and the summary lines when they are ready, and who builds the event manager and
+the crowd last (`standing-layer-breaks.md`). The player's answer was three pull requests
 ("yes three prs is fine", inbox #1173 in gray-dolphin), so the plainer alternative is one large
 third pull request:
 

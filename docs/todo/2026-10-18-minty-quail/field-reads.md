@@ -56,13 +56,10 @@ Left, each its own design question:
   `ResistanceRunState`, `RunFacts`, `SettledState`): the parts reached through methods and each
   part's fields behind methods; the vars are renamed, and the files the third hand-ins pull
   request touches and the tests read them, so it waits for that pull request.
-- **The city's own classes** have their readers converted except three groups, each with a home:
+- **The city's own classes** have their readers converted except two groups, each with a home:
   - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
     (`RecipeCityContext`) are the scene recipes' city. The scene recipes are placed by location (`placement-by-construction.md`, "What is built"), so they wait
     for nothing there; what is left is a design for the map capturing and restoring itself.
-  - `City.events` and `City.crowd`, read by the frame recorder and trace, go with
-    the third hand-ins pull request (`city-hand-ins.md`), which hands those readers their parts. An
-    accessor on `City` would add uses of `EventManager` and `Crowd` to breaks `tools/layer_map.py` lists.
   - A field only a test still reads (`CityMap.home_rect`, `home_block`, `courtyard_rects`,
     `Building.scenery_clock`, `door_world_x_range`, `power_station`, `station_door_col`,
     `station_yard_cols`, `BuildingShadows.streamed`, `falls_on`, `PosterState.pasted_through`) keeps its

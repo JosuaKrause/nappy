@@ -3,8 +3,10 @@
 **The ask.** No class takes a whole `City` when it reads only parts of it, so no test of it has to
 build a city ("the city should never be built for tests that don't test the actual city",
 inbox #1156 in gray-dolphin; "no test should build a real object that it doesn't test", inbox #1159 in
-gray-dolphin): the smaller cases of `city-hand-ins.md`'s third pull request, in the cut the
-board question hand-ins-third-cut proposes (several pull requests; built on that pick).
+gray-dolphin): the smaller cases of `city-hand-ins.md`'s third pull request. The player's recorded
+answer on its size was three pull requests ("yes three prs is fine", inbox #1173 in gray-dolphin); cutting
+the third into several is the orchestrator's pick, on the board as hand-ins-third-cut and not yet
+answered, built on since it drops nothing the player asked for.
 
 ## What was built
 
@@ -24,6 +26,8 @@ board question hand-ins-third-cut proposes (several pull requests; built on that
 
 ## Choices open to overturn
 
+- **The third pull request is cut into several**, this one the four tools (the orchestrator's pick,
+  hand-ins-third-cut); the plainer alternative is one large third pull request.
 - **The readout reads the alley off the map** it already keeps, and the route tree off the day's
   streets, rather than taking either as a part of its own (the builder's).
 - **The recorder takes the ground mode once at setup** rather than asking for it each frame (the
