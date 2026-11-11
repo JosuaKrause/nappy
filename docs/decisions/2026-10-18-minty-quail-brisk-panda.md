@@ -18,22 +18,21 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 
 ## Left, each with its reason
 
-- **Search: none.** `FinalePlanner`'s own API is static functions, and its plan, chain and calm
-  area records, read by field here, have no methods; the events' fields are `event-interface.md`
-  row 4a's.
+- **Search: none.** No class was this pass's to search: the plan records' and the events' fields
+  stay for the pass or step that owns them (the events' are `event-interface.md` row 4a's).
 - **`main.gd` has no class name**, so a rig reaches it through a preloaded script; giving it one is a
   change under `src/` this pass does not make, noted for the root's pass.
 - **`RoadblockRig.build()`, in this pass's own `escape_roadblock_rig.gd`, still returns an untyped
   `Array`**, so each caller reads the stage into a typed local; typing that return is left open.
 - **Other modules' fields stay for their passes.** The pull request's description lists them by
   class, inner classes included (the finale plan and its chains, a calm area, the plan record, a
-  walk solid, a roadblock stage), each with the method the game calls where one exists and each
+  walk solid, a roadblock stage, a street segment), each with the method the game calls where one exists and each
   method's body checked to return that field: among them the plan's `streets_on_the_walk()`; the
   map's `street_network()`, `main_road_corridor()`, `home_block_coordinate()`, `size_in_tiles()` and
   `plans_by_block()`; the day spec's `section_kind()`, `day_number()`, `exit_points()` and
   `seconds_on_the_clock()`; the day controller's `seconds_left()`; a ground shape's
   `rounding_radius()`; the attempt's `block_arcs()`; the day end's `continues_into_the_escape()`;
-  the plan record's `row()`, `row_id()`, `placed_at()` and `instance()`; the live event's `row()`, `source()`,
+  the plan record's `row()`, `row_id()`, `placed_at()` and `instance()`; the live event's `row()`, `row_id()`, `source()`,
   `is_on_its_way_out()`, `is_gone()` and `has_given_up()`; and the row's `ends_the_day()`, `peak()`,
   `obstructs_within()`, `heard_within()`, `picture()`, `moves()` and `leaves_behind()`.
 
