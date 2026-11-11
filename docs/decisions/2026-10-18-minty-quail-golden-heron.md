@@ -12,11 +12,27 @@ goes as its suite is converted", after the city map and its generator were typed
 - **`test_blocks` reads each node of `City.props()` as a `Prop`**, since the method answers
   `Array[Node2D]`; an `Array[Prop]` answer would make the cast unneeded, which is the city scene's
   pass to decide.
-- **`test_city_map`'s `_plain` drops its branch for a packed array**, which is already a value.
+- **`test_city_map`'s `_plain` copies each packed array through its own typed name**
+  (`(value as PackedByteArray).duplicate()` and the other packed types). Godot shares a packed array
+  by reference, so without the copy the check that a map's copy shares nothing with the original
+  could not fail: with `CityMap.copy()` sharing its `tiles`, `tools/test.sh city_map` fails seven
+  checks, and none with the copy.
+- **Every read of a `CityMap` field that a method the game calls answers goes through that
+  method**: `plans_by_block()`, `city_seed()`, `street_network()`, `size()`, `calm_blocks_now()`,
+  `home_tile_rect()` and the others. No method was added for a test.
 
-## Reads left
+## Reads left, each with its reason
 
-None: no line of these suites is in `tools/field_reads.txt` or `tools/test_only_members.txt`.
+`tools/check_field_reads.py` reads only `src/`, so it does not list these; they were found by
+reading the suites.
+
+- **`CityMap.dead_ends`, `absent_segments`, `zone_anchor`, `tiles`, `fenced_park_act`,
+  `stretch_active` and `recipe_dawn_tiles`** have no method the game calls. `test_city_map`'s
+  member comparison reads every member by name on purpose, as its header says, and compares `tiles`
+  whole between two generations.
+- **`BlockLayout.open_rect`, `square` and `alley`, `BlockPlan.steps`, `Prop.kind` and
+  `Prop.shape`** have no method.
+- **`City`'s fields in `test_world_passability`** belong to the city scene's pass.
 
 ## Verified
 
