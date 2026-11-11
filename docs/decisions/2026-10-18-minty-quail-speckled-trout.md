@@ -19,17 +19,18 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 - **Search: none.** The row's, the live event's and the plan's fields are `event-interface.md` row
   4a's scripted rewrite, so this pass converts no read.
 - **Other modules' fields stay for their passes.** The pull request's description lists them by
-  class, inner classes included (the plan record, a region plan, a seal candidate), writes marked,
-  each with the method the game calls where one exists and each method's body checked to return
-  that field: among them the row's `telegraphs_for()`, `obstructs_within()`, `heard_within()`,
-  `core_within()`, `peak()`, `picture()`, `ground_shape()`, `detains_for()`, `most_in_a_day()`,
-  `moves()`, `counts_as_one_barrier()` and `ends_the_day()`; the live event's `is_gone()`,
-  `is_on_its_way_out()`, `row()` and `source()`; the plan record's `row()`, `placed_at()` and
-  `give_role()` (its role written); the map's `calm_blocks_now()`, `size_in_tiles()` and the home,
-  block, network, seed and block plans' methods; a building's `lot_rect()` and `is_burnt()`; and a
-  lane mover's `lane().strategy()`. Answered only in part, by a method that derives something else:
-  the row's spawn mode, first day and kind (`spawn_mode_on(day)`, `available_on(day)`,
-  `is_ambient()`).
+  class, inner classes included (among them the plan record, a region plan and a seal candidate),
+  writes marked, each with the method the game calls where one exists and each method's body
+  checked to return that field: among them the row's `telegraphs_for()`, `obstructs_within()`,
+  `heard_within()`, `core_within()`, `peak()`, `picture()`, `ground_shape()`, `detains_for()`,
+  `most_in_a_day()`, `moves()`, `counts_as_one_barrier()` and `ends_the_day()`; the live event's
+  `is_gone()`, `is_on_its_way_out()`, `row()` and `source()`; the plan record's `row()`,
+  `placed_at()` and `give_role()` (its role written); the map's `calm_blocks_now()`,
+  `size_in_tiles()` and the home, block, network, seed and block plans' methods; a building's
+  `lot_rect()`; and a lane mover's `lane().strategy()`. Answered only in part or by a derived
+  value, among them: the row's spawn mode, first day, kind, flock size and parts
+  (`spawn_mode_on(day)`, `available_on(day)`, `is_ambient()`, `is_a_flock()`, `parts()`), a
+  building's condition (`is_burnt()`) and the map's power station (`has_power_station()`).
 
 ## Verified
 
