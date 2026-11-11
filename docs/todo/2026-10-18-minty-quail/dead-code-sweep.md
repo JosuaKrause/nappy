@@ -11,7 +11,9 @@ request.
 
 *Proposed, not asked for:* the method. Start from `tools/check_test_only_members.py`'s no-reader group
 (members nothing under `src/` reads) and the members only their own file uses, then the catalogue
-rows and the branches no catalogue row reaches. Each deletion says in its pull request what reached
+rows and the branches no catalogue row reaches. A name in a comment is not a use: the survey is
+run with comments stripped, since a first survey that counted them missed four members
+(minty-quail-misty-ferret). Each deletion says in its pull request what reached
 the code last, or that nothing ever did.
 
 **Where the rest is** (the survey with `check_test_only_members.py` and a scan for members named
