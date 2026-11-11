@@ -19,15 +19,17 @@ turns, give-way and traffic suites, is still to come.
   `find_no_junction_to_hold_at()`, a hut `stands_at()`, an arc `travel_on()` and a field
   `centre_on()`, where each was written or read by field. A field answers `half_extent()` and
   `centre_point()`, a car's ground shape `spine_half_length()` and `rounding_radius()`, the traffic
-  lights are moved on by `advance()`, and a door hut's line is read through `place_of()`,
-  `committed()` and `waiting()`. `tools/check_field_reads.py` does not
+  lights are moved on by `advance()`, and a door hut's line is read through `place_of()` and
+  `committed()`. `tools/check_field_reads.py` does not
   read tests, so the reads were found by search.
 
 ## Left, each with its reason
 
 - `crowd.sources`: `city.gd` and `run_session.gd` read the field too, and no method answers it.
 - `crowd.skip_motion`, written: the configuration seam `city.gd` writes.
-- A checkpoint hut's `inside`, compared with a walker: no method says who is inside.
+- A checkpoint hut's `inside`, compared with a walker or with nothing: no method the game calls says
+  who is inside, or whether anyone is. `WalkerDoorHold.waiting()` answers the line's length, but no
+  game code calls it, so no test reads through it and it is left for the crowd's own source.
 - The traffic lights' `elapsed`, read once to save it and written to set a departure time and to
   restore it: `advance()` only adds and `restart_cycle()` only zeroes, so no method sets a chosen
   time.
