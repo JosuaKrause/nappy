@@ -6,9 +6,10 @@ extends RefCounted
 
 ## The look that draws `event`, a live one of `row`: the family `row`'s picture belongs to, handed
 ## the event, the row, the drawer it paints through and whether nothing of it is drawn
-## (`skip_draw`, `--skip events`), none of which changes under it.
+## (`skip_draw`, `--skip events`), none of which changes under it, and the roadblock's the barrier
+## post its guards stand at (`barrier_post`, none for a row with no post).
 static func for_row(event: EventInstance, row: EventDef, drawer: EventDrawer,
-		skip_draw: bool) -> EventLook:
+		skip_draw: bool, barrier_post: EventBarrierPost) -> EventLook:
 	match row.picture():
 		EventDef.Look.CAT, EventDef.Look.MOUSE, EventDef.Look.YELLER, EventDef.Look.NEIGHBOR, \
 				EventDef.Look.DOG_WALKER, EventDef.Look.BUSKER, EventDef.Look.LOOSE_DOG, \
@@ -35,7 +36,7 @@ static func for_row(event: EventInstance, row: EventDef, drawer: EventDrawer,
 		EventDef.Look.CAFE, EventDef.Look.PROTEST, EventDef.Look.FIREFIGHT:
 			return RankLook.new(event, row, drawer, skip_draw)
 		EventDef.Look.ROADBLOCK:
-			return RoadblockLook.new(event, row, drawer, skip_draw)
+			return RoadblockLook.new(event, row, drawer, skip_draw, barrier_post)
 		EventDef.Look.BURNING_BUILDING:
 			return FireLook.new(event, row, drawer, skip_draw)
 		EventDef.Look.CHECKPOINT_HUT, EventDef.Look.CHECKPOINT_GATE, EventDef.Look.CHECKPOINT_POST:

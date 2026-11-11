@@ -11,8 +11,9 @@ extends RefCounted
 ## chases nothing and costs nothing: the band is silent from the same frame.
 ##
 ## What is here is his walk; he is drawn by the roadblock's look (`RoadblockLook`), on a node of his
-## own in the world's entity layer, from `at`, `heading` and `walked`. Not carried across a
-## stream-out: a band streamed back in after its guard was spent comes back with neither
+## own in the world's entity layer, from what its barrier post asks him (`where_he_walks()`,
+## `which_way_he_walks()`, `how_far_he_has_walked()`). Not carried across a stream-out: a band
+## streamed back in after its guard was spent comes back with neither
 ## (`EventBarrierPost.come_back_as_the_barrier()`).
 
 ## The figure of the event whose band he guards (`EventInstance.Figure`), asked which way its band
@@ -28,11 +29,11 @@ var _navigator: Navigator
 var _mover: Mover
 ## Where his feet are while he walks away, in world space; `Vector2.INF` while he stands at his
 ## post, and once he is gone.
-var at := Vector2.INF
+var _at := Vector2.INF
 ## Which way he faces as he walks.
-var heading := Vector2.ZERO
+var _heading := Vector2.ZERO
 ## How far he has walked, the stride his picture bobs on.
-var walked := 0.0
+var _walked := 0.0
 ## How long he has been walking.
 var walking_for := 0.0
 ## Whether he is gone for good, or there was never a far post to leave.
@@ -54,7 +55,20 @@ func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, map: 
 
 ## Whether he has left his post, walking or gone.
 func has_left() -> bool:
-	return at != Vector2.INF or _gone
+	return _at != Vector2.INF or _gone
+
+## Where his feet are while he walks away, in world space; `Vector2.INF` while he stands at his
+## post, and once he is gone.
+func where_he_walks() -> Vector2:
+	return _at
+
+## Which way he faces as he walks.
+func which_way_he_walks() -> Vector2:
+	return _heading
+
+## How far he has walked, the stride his picture bobs on.
+func how_far_he_has_walked() -> float:
+	return _walked
 
 ## Sends him off from his post on `side` of the band standing at `band`, or marks him gone where
 ## there is no far post (`side` 0).
@@ -65,12 +79,12 @@ func send_off(side: int, band: Vector2) -> void:
 		_gone = true
 		return
 	var vertical: bool = _figure.runs_vertically()
-	at = band + EventFootprints.guard_post_offset(vertical, side)
-	heading = EventFootprints.guard_post_heading(vertical, side)
+	_at = band + EventFootprints.guard_post_offset(vertical, side)
+	_heading = EventFootprints.guard_post_heading(vertical, side)
 	var her: Vector2 = _where.at()
-	if her != Vector2.INF and not her.is_equal_approx(at):
-		heading = (at - her).normalized()
-	walked = 0.0
+	if her != Vector2.INF and not her.is_equal_approx(_at):
+		_heading = (_at - her).normalized()
+	_walked = 0.0
 	walking_for = 0.0
 	way = PackedVector2Array()
 
@@ -82,33 +96,33 @@ func went_with_his_partner() -> void:
 ## One frame of his walk away, by the way his partner walks off (`departure`), and his end once she
 ## could not be watching.
 func walk_off(delta: float, departure: EventDeparture) -> void:
-	if at == Vector2.INF:
+	if _at == Vector2.INF:
 		return
 	var her: Vector2 = _where.at()
 	var step: float = _row.chase_speed() * delta
 	var left := step
 	if her != Vector2.INF:
 		if way.is_empty():
-			way = departure.way_out_from(at)
-		var walk: Navigator.Walked = _navigator.walk(at, way, left, _mover)
+			way = departure.way_out_from(_at)
+		var walk: Navigator.Walked = _navigator.walk(_at, way, left, _mover)
 		if walk.heading != Vector2.ZERO:
-			heading = walk.heading
-		at = walk.at
+			_heading = walk.heading
+		_at = walk.at
 		way = PackedVector2Array() if walk.stopped else walk.points
 		left = walk.left
 	if left > 0.0:
-		var away := heading
-		if her != Vector2.INF and not her.is_equal_approx(at):
-			away = (at - her).normalized()
-		var moved: Vector2 = _navigator.step(at, away * left, _mover)
-		if departure.avoids().has_point(_map.world_to_tile(at + moved)):
+		var away := _heading
+		if her != Vector2.INF and not her.is_equal_approx(_at):
+			away = (_at - her).normalized()
+		var moved: Vector2 = _navigator.step(_at, away * left, _mover)
+		if departure.avoids().has_point(_map.world_to_tile(_at + moved)):
 			moved = Vector2.ZERO
 		if not moved.is_zero_approx():
-			heading = moved.normalized()
-			at += moved
-	walked += step
+			_heading = moved.normalized()
+			_at += moved
+	_walked += step
 	walking_for += delta
-	var out_of_sight := her != Vector2.INF and at.distance_to(her) > Tuning.OUT_OF_SIGHT
+	var out_of_sight := her != Vector2.INF and _at.distance_to(her) > Tuning.OUT_OF_SIGHT
 	if out_of_sight or (her == Vector2.INF and walking_for >= EventDeparture.LEAVING_GIVES_UP):
-		at = Vector2.INF
+		_at = Vector2.INF
 		_gone = true

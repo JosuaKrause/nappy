@@ -1,10 +1,10 @@
 class_name EventBarrierPost
 extends EventBehaviour
 ## **A barrier its guards stand at, and walk out of** (`PursuitSpec.leaves_its_body`): the roadblock,
-## cold or hunting. **Two guards, one on each side of the band** *(2026-09-25: "have one guard on
-## each side?")*, and which of them set off: `0` while both hold their posts, then the side of the
-## one on her side — the only one who gives chase, "since the other one will be blocked" by his own
-## barrier. The event is the chaser from then on; the other stays at his post beside the band until
+## cold or hunting. **Two guards, one on each side of the band** (PLAYTEST-135 3), and which of them
+## set off: `0` while both hold their posts, then the side of the one on her side — the only one who
+## gives chase, the other being blocked by his own barrier.
+## The event is the chaser from then on; the other stays at his post beside the band until
 ## his partner starts to walk away, when he leaves too (`RoadblockFarGuard`).
 ##
 ## **The barrier he walks out of stays where it was built** (`body_position()`): the man who leaves
@@ -22,7 +22,7 @@ var _body_left_at := Vector2.INF
 ## Which side's guard set off; `0` while both stand at their posts.
 var _chaser_side := 0
 ## The guard at the far post.
-var far: RoadblockFarGuard
+var _far: RoadblockFarGuard
 ## Its row: the shape of its band and the sides its guards stand on.
 var _row: EventDef
 ## The departure its guard walks off by (`EventDeparture`), which this ends once he is gone and
@@ -39,7 +39,7 @@ func _init(figure: EventInstance.Figure, where: WhereSheIs, row: EventDef, map: 
 	_figure = figure
 	_where = where
 	_row = row
-	far = RoadblockFarGuard.new(figure, where, row, map, navigator, mover)
+	_far = RoadblockFarGuard.new(figure, where, row, map, navigator, mover)
 
 ## Handed the departure its guard walks off by, as its event is set up: it is made after this, since
 ## it is handed this too (`EventBehaviours.compose()`).
@@ -139,17 +139,41 @@ func send_the_far_guard_off() -> void:
 		if side != _chaser_side:
 			far_side = side
 			break
-	far.send_off(far_side, body_position())
+	_far.send_off(far_side, body_position())
 
 ## One frame of the far guard's walk away (`RoadblockFarGuard.walk_off()`), by the way his partner
 ## walks off.
 func walk_the_far_guard_off(delta: float) -> void:
-	far.walk_off(delta, _its_departure())
+	_far.walk_off(delta, _its_departure())
 
-## **The guard is gone for good** *(Playtest: "the guarded barriers disappear after shaking off the
-## pursuer. that doesn't make sense.")*: a chase that ended sent him away, and once he is out of
-## the picture the event goes back to being the barrier, its body and its picture where they were
-## built and the post he left empty. Nothing appears and nothing disappears.
+## Where the far guard's feet are while he walks away, in world space; `Vector2.INF` while he stands
+## at his post, and once he is gone.
+func where_the_far_guard_walks() -> Vector2:
+	return _far.where_he_walks()
+
+## Which way the far guard faces as he walks.
+func which_way_the_far_guard_walks() -> Vector2:
+	return _far.which_way_he_walks()
+
+## How far the far guard has walked, the stride his picture bobs on.
+func how_far_the_far_guard_has_walked() -> float:
+	return _far.how_far_he_has_walked()
+
+## The sides of the band a guard still stands posted at: every side its row names but the side of
+## the one who set off, and none once the guard at the far post has left. What its look posts a man
+## at each time it draws the band.
+func sides_still_posted() -> Array[int]:
+	var sides: Array[int] = []
+	if _far.has_left():
+		return sides
+	for side: int in _row.guard_sides:
+		if side != _chaser_side:
+			sides.append(side)
+	return sides
+
+## **The guard is gone for good** (azure-puffin #664): a chase that ended sent him away, and once he
+## is out of the picture the event goes back to being the barrier, its body and its picture where
+## they were built and the post he left empty. Nothing appears and nothing disappears.
 func stand_as_the_barrier() -> void:
 	_figure.be_only_its_barrier()
 	_its_departure().reset()
@@ -166,7 +190,7 @@ func come_back_as_the_barrier(side: int) -> void:
 	# The walk off he was on when it streamed out is over with him, as `stand_as_the_barrier()`'s.
 	_its_departure().reset()
 	_chaser_side = side
-	far.went_with_his_partner()
+	_far.went_with_his_partner()
 	_body_left_at = _figure.place()
 	_figure.charge_ended()
 	keep_the_body()

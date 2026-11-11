@@ -296,7 +296,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	var start := EventFootprints.stands_at(_map, definition, route[0] if route.size() > 0 else at)
 	position = start
 	_heading = face
-	look = EventLooks.for_row(self, definition, drawer, skip_draw)
+	look = EventLooks.for_row(self, definition, drawer, skip_draw, barrier_post)
 	look.face(face)
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
@@ -2211,3 +2211,7 @@ func where_its_placards_point() -> Vector2:
 ## plan's `walks()` answers.
 func walks() -> PackedVector2Array:
 	return path
+
+## Whether its guard is gone for good and it is only its barrier (`Phase.SPENT`), solid and silent.
+func is_only_its_barrier() -> bool:
+	return phase == Phase.SPENT

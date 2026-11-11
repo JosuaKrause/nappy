@@ -391,9 +391,6 @@ src/events/event_director.gd after_day
 # [EncounterWatch] src/events/encounter_watch.gd
 src/events/event_manager.gd day
 
-# [EventBarrierPost] src/events/behaviours/event_barrier_post.gd
-src/events/views/roadblock_look.gd far
-
 # [EventBehaviour] src/events/behaviours/event_behaviour.gd
 src/events/event_instance.gd steps_each_tick
 
@@ -626,8 +623,6 @@ src/events/street_invalidation.gd paces
 src/events/street_rules/pacing_opening_rule.gd paces
 src/events/street_rules/route_sidewalk_rule.gd paces
 src/events/views/event_vehicle_look.gd abduction
-src/events/views/roadblock_look.gd guard_sides
-src/events/views/roadblock_look.gd look
 src/events/walk_ground.gd aftermath
 src/events/walk_ground.gd hard_fail
 src/events/walk_ground.gd mobile
@@ -732,13 +727,6 @@ src/events/events_ahead.gd is_leaving
 src/events/views/event_look.gd age
 src/events/views/fire_look.gd age
 src/events/views/rank_look.gd age
-src/events/views/roadblock_look.gd barrier_post
-src/events/views/roadblock_look.gd def
-src/events/views/roadblock_look.gd is_finished
-src/events/views/roadblock_look.gd is_leaving
-src/events/views/roadblock_look.gd look
-src/events/views/roadblock_look.gd phase
-src/events/views/roadblock_look.gd skip_draw
 src/events/warning_board.gd barrier_post
 src/events/warning_board.gd car
 src/events/warning_board.gd def
@@ -1044,11 +1032,6 @@ src/resistance/park_cordon.gd segment
 src/telemetry/telemetry_map.gd segment
 src/telemetry/telemetry_observer.gd kind
 src/telemetry/telemetry_observer.gd segment
-
-# [RoadblockFarGuard] src/events/behaviours/roadblock_far_guard.gd
-src/events/views/roadblock_look.gd at
-src/events/views/roadblock_look.gd heading
-src/events/views/roadblock_look.gd walked
 
 # [RouteRig] src/dev/route_rig.gd
 src/main.gd trace
