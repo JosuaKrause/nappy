@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Exact projection parity under same-frame writes, with counters on actual sampled work.
 
@@ -15,7 +14,7 @@ class CountedEvent extends EventInstance:
 		super()
 		var rim: SourceRim = excitement.rim
 		excitement = Source.new(self)
-		excitement.rim = rim
+		excitement.use_rim(rim)
 
 	class Source extends EventExcitement:
 		var sampling_runs := 0
@@ -35,7 +34,7 @@ class CountedCrowd extends CrowdAgent:
 		super()
 		var rim: SourceRim = excitement.rim
 		excitement = Source.new(self)
-		excitement.rim = rim
+		excitement.use_rim(rim)
 
 	class Source extends CrowdExcitement:
 		var sampling_runs := 0
@@ -51,7 +50,7 @@ class ReferenceEvent extends EventInstance:
 		super()
 		var rim: SourceRim = excitement.rim
 		excitement = Source.new(self)
-		excitement.rim = rim
+		excitement.use_rim(rim)
 
 	class Source extends EventExcitement:
 		## Overrides ExcitementSource.expected_gross_at.
@@ -64,7 +63,7 @@ class ReferenceCrowd extends CrowdAgent:
 		super()
 		var rim: SourceRim = excitement.rim
 		excitement = Source.new(self)
-		excitement.rim = rim
+		excitement.use_rim(rim)
 
 	class Source extends CrowdExcitement:
 		## Overrides ExcitementSource.expected_gross_at.
@@ -93,17 +92,17 @@ func _copy_definition(original: EventDef) -> EventDef:
 
 func _event_parity(t: TestRunner, source: CountedEvent, at: Vector2, label: String) -> void:
 	var expected := Reference.event_gross(source, at)
-	t.check(_same_bits(source.excitement.expected_gross_at(at), expected), label + " matches reference")
+	t.check(_same_bits(source.source().expected_gross_at(at), expected), label + " matches reference")
 	var runs := source.sampling_runs
-	t.check(_same_bits(source.excitement.expected_gross_at(at), expected), label + " repeats exactly")
+	t.check(_same_bits(source.source().expected_gross_at(at), expected), label + " repeats exactly")
 	if source.birds().is_empty():
 		t.check(source.sampling_runs == runs, label + " repeats without sampling")
 
 func _crowd_parity(t: TestRunner, source: CountedCrowd, at: Vector2, label: String) -> void:
 	var expected := Reference.crowd_gross(source, at)
-	t.check(_same_bits(source.excitement.expected_gross_at(at), expected), label + " matches reference")
+	t.check(_same_bits(source.mood().expected_gross_at(at), expected), label + " matches reference")
 	var runs := source.sampling_runs
-	t.check(_same_bits(source.excitement.expected_gross_at(at), expected), label + " repeats exactly")
+	t.check(_same_bits(source.mood().expected_gross_at(at), expected), label + " repeats exactly")
 	t.check(source.sampling_runs == runs, label + " repeats without sampling")
 
 func _test_catalogue_and_mutations(t: TestRunner) -> void:
@@ -124,12 +123,12 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		for phase: float in [0.0, 0.7, 4.0, 9.0]:
 			source.age = phase
 			for at: Vector2 in [Vector2(-170.0, 30.0), Vector2(20.0, 30.0), Vector2(1000.0, 0.0)]:
-				source.excitement.set_player_at(at, Vector2(92.0, 0.0), 6.0, 0.8)
+				source.source().set_player_at(at, Vector2(92.0, 0.0), 6.0, 0.8)
 				_event_parity(t, source, at, definition.id + " phase/position")
-				if source.excitement.expected_gross_at(at) > 0.0:
+				if source.source().expected_gross_at(at) > 0.0:
 					positive += 1
 		var at := Vector2(-170.0, 30.0)
-		source.excitement.set_player_at(at, Vector2(92.0, 0.0))
+		source.source().set_player_at(at, Vector2(92.0, 0.0))
 		# All writes happen without advancing age or the engine frame.
 		source.position += Vector2(9.0, 4.0)
 		_event_parity(t, source, at, definition.id + " source movement")
@@ -145,9 +144,9 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		source.transition(EventInstance.Phase.PARKED)
 		_event_parity(t, source, at, definition.id + " parked")
 		source.transition(EventInstance.Phase.ACTIVE)
-		source.excitement.player_velocity = Vector2(43.0, 71.0)
+		source.source().set_player_at(at, Vector2(43.0, 71.0))
 		_event_parity(t, source, at, definition.id + " player velocity")
-		source.excitement.player_sensitivity = 0.35
+		source.source().set_player_at(at, Vector2(43.0, 71.0), 0.0, 0.35)
 		_event_parity(t, source, at, definition.id + " sensitivity")
 		source.silenced = true
 		_event_parity(t, source, at, definition.id + " silence")
@@ -159,9 +158,9 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		_event_parity(t, source, at, definition.id + " sleep")
 		if source.hold:
 			source.hold.stop()
-		source.excitement.outranked = true
+		source.source().outranked = true
 		_event_parity(t, source, at, definition.id + " outranked")
-		source.excitement.outranked = false
+		source.source().outranked = false
 		for field: String in ["intensity", "inner_radius", "outer_radius", "core_intensity",
 				"core_radius", "falloff_power", "pulse_period", "speed"]:
 			source.def.set(field, float(source.def.get(field)) + 3.0)
@@ -211,30 +210,31 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 		source._speed = 60.0
 		var at := Vector2(-160.0, 12.0)
 		_crowd_parity(t, source, at, "crowd before player")
-		source.excitement.set_player_at(at, Vector2(92.0, 0.0))
+		source.mood().set_player_at(at, Vector2(92.0, 0.0))
 		_crowd_parity(t, source, at, "crowd player")
 		for field: String in ["_speed", "_direction", "_turn_back_hold"]:
 			source.set(field, float(source.get(field)) + 1.25)
 			_crowd_parity(t, source, at, "crowd external " + field)
 		for field: String in ["_jolt", "_jolt_for", "_jolt_intensity", "_jolt_inner", "_jolt_outer"]:
-			source.excitement.set(field, float(source.excitement.get(field)) + 1.25)
+			source.mood().set(field, float(source.mood().get(field)) + 1.25)
 			_crowd_parity(t, source, at, "crowd external " + field)
 		# A yield and a door hold are a walker's, kept by its strategy; a car has neither.
 		var walking := kind == CrowdAgent.Kind.WALKER
 		if walking:
-			source.strategy._yield_left += 1.25
+			(source.strategy as WalkerStrategy)._yield_left += 1.25
 			_crowd_parity(t, source, at, "crowd external _yield_left")
-		source.excitement.startle(80.0, 2.0, 30.0, 170.0)
+		source.mood().startle(80.0, 2.0, 30.0, 170.0)
 		_crowd_parity(t, source, at, "crowd new horn/bump")
 		source.position += Vector2(33.0, 8.0)
 		_crowd_parity(t, source, at, "crowd external displacement")
 		source._vertical = not source._vertical
 		_crowd_parity(t, source, at, "crowd heading")
 		if walking:
-			source.strategy._yield_left = 0.0
-			source.strategy._door_state = WalkerStrategy.DoorState.INSPECTION
+			var walker := source.strategy as WalkerStrategy
+			walker._yield_left = 0.0
+			walker._door_state = WalkerStrategy.DoorState.INSPECTION
 			_crowd_parity(t, source, at, "crowd door hold")
-			source.strategy._door_state = WalkerStrategy.DoorState.WALKING
+			walker._door_state = WalkerStrategy.DoorState.WALKING
 			_crowd_parity(t, source, at, "crowd door release")
 		var turn := CarTurn.new()
 		turn.radius = 16.0
@@ -244,9 +244,9 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 			turn.travelled = distance
 			_crowd_parity(t, source, at, "crowd changing turn tangent")
 		source.drop_the_turn()
-		source.excitement.player_velocity = Vector2(0.0, 92.0)
+		source.mood().set_player_at(at, Vector2(0.0, 92.0))
 		_crowd_parity(t, source, at, "crowd player velocity")
-		source.excitement.player_sensitivity = 0.22
+		source.mood().set_player_at(at, Vector2(0.0, 92.0), 0.0, 0.22)
 		_crowd_parity(t, source, at, "crowd sensitivity")
 		_crowd_parity(t, source, at + Vector2(20.0, 0.0), "crowd query position")
 		source.kind = CrowdAgent.Kind.CAR if kind == CrowdAgent.Kind.WALKER else CrowdAgent.Kind.WALKER
@@ -259,23 +259,30 @@ func _test_live_net_and_skipped_work(t: TestRunner) -> void:
 	var crowd := CountedCrowd.new()
 	crowd._speed = 0.0
 	var at := Vector2(-170.0, 0.0)
-	for source in [event, crowd]:
-		source.excitement.set_player_at(at, Vector2(92.0, 0.0))
-		var gross: float = source.excitement.expected_gross_at(at)
-		t.check(gross > 0.0 and source.sampling_runs == 1, "initial projection really samples")
-		source.excitement.set_expected_total_gross(gross * 2.0)
-		source.excitement.player_decay_rate = 1.0
-		var net: float = source.excitement.expected_impact_at(at)
-		t.check(_same_bits(net, maxf(gross - 2.5, 0.0)), "total/decay affect net immediately")
-		source.excitement.player_sensitivity = 0.5
-		t.check(_same_bits(source.excitement.expected_gross_at(at), gross * 0.5), "sensitivity stays live")
-		t.check(source.sampling_runs == 1, "total/decay/sensitivity reuse only the integral")
-		# Below approximate-comparison tolerance, but a distinct representable Vector2 value.
-		source.excitement.player_velocity += Vector2(0.00001, 0.0)
-		source.excitement.expected_gross_at(at)
-		t.check(source.sampling_runs == 2, "even a tiny changed trajectory samples without a tick")
+	_check_live_net_and_skipped_work(t, event.source(), func() -> int: return event.sampling_runs, at)
+	_check_live_net_and_skipped_work(t, crowd.mood(), func() -> int: return crowd.sampling_runs, at)
 	event.free()
 	crowd.free()
+
+## One source's projection stays live under what she does and reuses its integral: `sampling_runs`
+## answers how many samplings the source has really run.
+func _check_live_net_and_skipped_work(t: TestRunner, source: ExcitementSource, sampling_runs: Callable,
+		at: Vector2) -> void:
+	var walking := Vector2(92.0, 0.0)
+	source.set_player_at(at, walking)
+	var gross: float = source.expected_gross_at(at)
+	t.check(gross > 0.0 and int(sampling_runs.call()) == 1, "initial projection really samples")
+	source.set_expected_total_gross(gross * 2.0)
+	source.set_player_at(at, walking, 1.0)
+	var net: float = source.expected_impact_at(at)
+	t.check(_same_bits(net, maxf(gross - 2.5, 0.0)), "total/decay affect net immediately")
+	source.set_player_at(at, walking, 1.0, 0.5)
+	t.check(_same_bits(source.expected_gross_at(at), gross * 0.5), "sensitivity stays live")
+	t.check(int(sampling_runs.call()) == 1, "total/decay/sensitivity reuse only the integral")
+	# Below approximate-comparison tolerance, but a distinct representable Vector2 value.
+	source.set_player_at(at, walking + Vector2(0.00001, 0.0), 1.0, 0.5)
+	source.expected_gross_at(at)
+	t.check(int(sampling_runs.call()) == 2, "even a tiny changed trajectory samples without a tick")
 
 func _test_consumer_order(t: TestRunner) -> void:
 	var cached_where := WhereSheIs.nowhere()
@@ -293,36 +300,38 @@ func _test_consumer_order(t: TestRunner) -> void:
 	for source: CrowdAgent in [car, reference_car]:
 		source.kind = CrowdAgent.Kind.CAR
 		source._speed = 80.0
+	var sources: Array[ExcitementSource] = [cached.source(), reference.source(), car.mood(),
+			reference_car.mood()]
 	# Same source callback -> halo gross/total -> drawing order as production. The reference
 	# sources use the baseline gross function even when called from existing caret methods.
 	for step in 20:
 		var at := Vector2(210.0 - float(step) * 4.0, 20.0)
 		cached.age += 0.1
 		reference.age = cached.age
-		car.excitement.advance(0.1)
-		reference_car.excitement.advance(0.1)
+		car.mood().advance(0.1)
+		reference_car.mood().advance(0.1)
 		cached_where.tell(at)
 		reference_where.tell(at)
-		t.check(cached.excitement.caret_strength() == reference.excitement.caret_strength(), "pre-halo event mark parity")
-		t.check(car.excitement.caret_strength() == reference_car.excitement.caret_strength(), "pre-halo car mark parity")
-		for source in [cached, reference, car, reference_car]:
-			source.excitement.set_player_at(at, Vector2(-92.0, 0.0), 6.0, 0.8)
-		var total := cached.excitement.expected_gross_at(at) + car.excitement.expected_gross_at(at)
-		var reference_total := reference.excitement.expected_gross_at(at) + reference_car.excitement.expected_gross_at(at)
+		t.check(cached.source().caret_strength() == reference.source().caret_strength(), "pre-halo event mark parity")
+		t.check(car.mood().caret_strength() == reference_car.mood().caret_strength(), "pre-halo car mark parity")
+		for source in sources:
+			source.set_player_at(at, Vector2(-92.0, 0.0), 6.0, 0.8)
+		var total := cached.source().expected_gross_at(at) + car.mood().expected_gross_at(at)
+		var reference_total := reference.source().expected_gross_at(at) + reference_car.mood().expected_gross_at(at)
 		t.check(_same_bits(total, reference_total), "halo total parity")
-		for source in [cached, reference, car, reference_car]:
-			source.excitement.set_expected_total_gross(total)
-		t.check(_same_bits(cached.excitement.expected_impact_at(at), reference.excitement.expected_impact_at(at)), "event net parity")
-		t.check(_same_bits(car.excitement.expected_impact_at(at), reference_car.excitement.expected_impact_at(at)), "car net parity")
+		for source in sources:
+			source.set_expected_total_gross(total)
+		t.check(_same_bits(cached.source().expected_impact_at(at), reference.source().expected_impact_at(at)), "event net parity")
+		t.check(_same_bits(car.mood().expected_impact_at(at), reference_car.mood().expected_impact_at(at)), "car net parity")
 		# The picture key's one term that reads the prediction is the caret's strength; every other
 		# term reads state the two instances share by construction.
-		t.check(cached.excitement.caret_strength() == reference.excitement.caret_strength(),
+		t.check(cached.source().caret_strength() == reference.source().caret_strength(),
 				"event mark parity after the halo's total")
-		t.check(car.excitement.caret_strength() == reference_car.excitement.caret_strength(), "draw car mark parity")
-		t.check(cached.excitement.will_be_lethal(at) == reference.excitement.will_be_lethal(at), "event lethal prediction parity")
-		t.check(car.excitement.will_be_lethal(at) == reference_car.excitement.will_be_lethal(at), "car lethal prediction parity")
-	for source in [cached, reference, car, reference_car]:
-		source.free()
+		t.check(car.mood().caret_strength() == reference_car.mood().caret_strength(), "draw car mark parity")
+		t.check(cached.source().will_be_lethal(at) == reference.source().will_be_lethal(at), "event lethal prediction parity")
+		t.check(car.mood().will_be_lethal(at) == reference_car.mood().will_be_lethal(at), "car lethal prediction parity")
+	for body: Node in [cached, reference, car, reference_car]:
+		body.free()
 
 ## `[colour, alpha]` the halo last told a source's rim, or a transparent colour and zero when it
 ## holds no rim: an event builds its rim only once `ExcitementHalo` picks it and gives it back once
@@ -360,7 +369,7 @@ func _test_halo_and_removal(t: TestRunner) -> void:
 		manager.add_child(source)
 		source.set_process(false)
 		manager.world.instances.append(source)
-		source.excitement.accumulate_landed(20.0)
+		source.source().accumulate_landed(20.0)
 		sources.append(source)
 		rims.append(HaloRig.told(source))
 		var halo := ExcitementHalo.new()
@@ -378,15 +387,15 @@ func _test_halo_and_removal(t: TestRunner) -> void:
 			await t.get_tree().process_frame
 			if rims[0].told > told and rims[1].told == rims[0].told:
 				break
-		t.check(_same_bits(sources[0].excitement.player_expected_total_gross,
-				sources[1].excitement.player_expected_total_gross), "real halo publishes identical totals")
+		t.check(_same_bits(sources[0].source().player_expected_total_gross,
+				sources[1].source().player_expected_total_gross), "real halo publishes identical totals")
 		t.check(rims[0].is_held() == rims[1].is_held(),
 				"real halo builds a rim for both sources or for neither")
 		t.check(_rim_target(rims[0])[0] == _rim_target(rims[1])[0],
 				"real halo selection/color agrees with baseline source")
 		t.check(_same_bits(_rim_target(rims[0])[1], _rim_target(rims[1])[1]),
 				"real halo strength agrees with baseline source")
-		t.check(sources[0].excitement.caret_strength() == sources[1].excitement.caret_strength(),
+		t.check(sources[0].source().caret_strength() == sources[1].source().caret_strength(),
 				"post-halo caret agrees with baseline source")
 		if tick == 0:
 			t.check(_rim_target(rims[0])[1] > 0.0,

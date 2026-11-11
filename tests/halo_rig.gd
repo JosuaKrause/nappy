@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What the halo suites share for reading rims on real frames: a clock of the frame time the rims
 ## were handed, and the rim a body hands its source, wrapped so a test reads what `ExcitementHalo`
@@ -61,8 +60,8 @@ class ToldRim extends SourceRim:
 
 ## Wraps the rim `instance` hands its source in a `ToldRim`, and answers it.
 static func told(instance: EventInstance) -> ToldRim:
-	var rim := ToldRim.new(instance.excitement.rim)
-	instance.excitement.rim = rim
+	var rim := ToldRim.new(instance.source().rim)
+	instance.source().use_rim(rim)
 	return rim
 
 ## A meter whose decay over the window is a number the test sets (none by default, so a source's
@@ -94,13 +93,13 @@ class ListSet extends ExcitementSources:
 ## the caller frees the bodies.
 static func lit_among(t: TestRunner, sources: Array, at: Vector2) -> Array:
 	var set := ListSet.new()
-	for source in sources:
+	for source: ExcitementSource in sources:
 		var body: Node = source.body
-		source.rim = ToldRim.new(SourceRim.new(func() -> EntityHalo:
+		source.use_rim(ToldRim.new(SourceRim.new(func() -> EntityHalo:
 				var halo := EntityHalo.new(func(_canvas: CanvasItem) -> void: pass,
 						func() -> float: return 0.0)
 				body.add_child(halo)
-				return halo))
+				return halo)))
 		set.sources.append(source)
 	var player := Node2D.new()
 	t.add_child(player)
@@ -113,7 +112,7 @@ static func lit_among(t: TestRunner, sources: Array, at: Vector2) -> Array:
 	for _frame in 3:
 		await t.get_tree().process_frame
 	var lit: Array = []
-	for source in sources:
+	for source: ExcitementSource in sources:
 		if (source.rim as ToldRim).strength > 0.0:
 			lit.append(source)
 	halo.free()
