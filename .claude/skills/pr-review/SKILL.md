@@ -222,7 +222,8 @@ rows for a review go by what the pull request carries, apart from the one case t
 itself: a queue update's review is Sonnet's (bouncy-heron 8; "A queue update is reviewed for
 faithfulness and merged first"). The one other model this skill names, Haiku under "Three verdicts
 of *not ready* mean the approach is rethought", is the player's example of a builder and not of a
-reviewer.
+reviewer. A reviewer waits for CI and reads it as **committing** says ("CI's state is read through
+GraphQL"), at most every ten minutes.
 
 ## A queue update is reviewed for faithfulness and merged first
 
