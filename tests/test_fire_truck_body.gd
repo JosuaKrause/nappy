@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The fire truck is a solid body, lethal only in front of it while it drives and harmless once it
 ## has parked at the fire.
@@ -14,7 +14,7 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 const WALK := 2.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_row_is_a_car_with_the_engines_body(t)
 	_test_the_body_is_solid_while_it_drives_and_lethal_only_ahead(t)
 	_test_in_front_of_it_the_warning_comes_first(t)
@@ -42,7 +42,7 @@ func _engine(t: TestRunner, route: PackedVector2Array, where: WhereSheIs) -> Eve
 	engine.set_process(false)
 	return engine
 
-func _her(t, at: Vector2, facing: Vector2) -> Stroller:
+func _her(t: TestRunner, at: Vector2, facing: Vector2) -> Stroller:
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	t.add_child(player)
@@ -86,7 +86,7 @@ func _what_stops(player: Stroller, heading: Vector2) -> Object:
 
 # ----------------------------------------------------------------- the row ---
 
-func _test_the_row_is_a_car_with_the_engines_body(t) -> void:
+func _test_the_row_is_a_car_with_the_engines_body(t: TestRunner) -> void:
 	var def := _truck()
 	t.check(def.vehicle != null, "fire_truck drives: solid in every state, lethal in front while driving")
 	t.check(def.shape != null and def.shape.kind == GroundShape.Kind.SEGMENT,
@@ -97,7 +97,7 @@ func _test_the_row_is_a_car_with_the_engines_body(t) -> void:
 # ------------------------------------------------------------------ driving ---
 
 ## Walked at side-on, a parked or driving truck stops her at its flank; lethal only ahead.
-func _test_the_body_is_solid_while_it_drives_and_lethal_only_ahead(t) -> void:
+func _test_the_body_is_solid_while_it_drives_and_lethal_only_ahead(t: TestRunner) -> void:
 	var engine_where := WhereSheIs.nowhere()
 	var engine := _engine(t, PackedVector2Array([Vector2(-300.0, 0.0), Vector2(900.0, 0.0)]),
 			engine_where)
@@ -120,7 +120,7 @@ func _test_the_body_is_solid_while_it_drives_and_lethal_only_ahead(t) -> void:
 ## In its lane, on the carriageway, a car's warning comes `CAR_HORN_TIME` of its travel before the
 ## strike, at least as long as walking off the carriageway takes, and the strike fires before the
 ## body would ever stop against her.
-func _test_in_front_of_it_the_warning_comes_first(t) -> void:
+func _test_in_front_of_it_the_warning_comes_first(t: TestRunner) -> void:
 	for facing in [Vector2.LEFT, Vector2.UP]:
 		var engine_where := WhereSheIs.nowhere()
 		var engine := _engine(t,
@@ -159,7 +159,7 @@ func _test_in_front_of_it_the_warning_comes_first(t) -> void:
 ## stood): it waits there while she is in its lane within its warning, and nothing strikes her.
 ## Once she is further along its lane than its warning reaches, it drives on, and the strike comes
 ## after the full warning.
-func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
+func _test_where_it_is_created_she_is_warned_in_full(t: TestRunner) -> void:
 	var def := _truck()
 	var warning_reach := (EventCarDriving.PATROL_STRIKE_LEAD + Tuning.CAR_HORN_TIME) * def.speed \
 			+ def.shape.half_length + def.shape.radius + Tuning.PLAYER_BODY_RADIUS
@@ -218,7 +218,7 @@ func _test_where_it_is_created_she_is_warned_in_full(t) -> void:
 ## reach 1.7s of its travel past the touch, but the engine's route ends at the kerb it parks at
 ## (`stops_where_it_arrives`): past it, in its lane, she gets no mark and no doubled caret, is never
 ## struck by an engine that parks short of her, and does not hold it off screen.
-func _test_nothing_reaches_past_its_kerb(t) -> void:
+func _test_nothing_reaches_past_its_kerb(t: TestRunner) -> void:
 	# 120px past the kerb, the truck already driving: no warning that cannot come true.
 	var engine_where := WhereSheIs.nowhere()
 	var engine := _engine(t, PackedVector2Array([Vector2(-600.0, 0.0), Vector2.ZERO]),
@@ -289,7 +289,7 @@ func _test_nothing_reaches_past_its_kerb(t) -> void:
 	engine.free()
 
 ## Behind it and beside it, driving, nothing strikes her.
-func _test_behind_and_beside_it_nothing_strikes(t) -> void:
+func _test_behind_and_beside_it_nothing_strikes(t: TestRunner) -> void:
 	var engine_where := WhereSheIs.nowhere()
 	var engine := _engine(t, PackedVector2Array([Vector2(40.0, 0.0), Vector2(1200.0, 0.0)]),
 			engine_where)
@@ -324,7 +324,7 @@ func _test_behind_and_beside_it_nothing_strikes(t) -> void:
 
 ## Once it has stopped at the fire it is a body she walks round and nothing that can end the day,
 ## from in front of it, behind it or beside it.
-func _test_parked_it_is_solid_and_harmless(t) -> void:
+func _test_parked_it_is_solid_and_harmless(t: TestRunner) -> void:
 	var engine_where := WhereSheIs.nowhere()
 	var engine := _engine(t, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(0.0, 0.0)]),
 			engine_where)
@@ -360,7 +360,7 @@ func _test_parked_it_is_solid_and_harmless(t) -> void:
 ## (`VehicleSpec.field_from_its_centre`): along its street it reaches as far as abeam, so the 340px
 ## the fire's siting check closes about its kerb is the whole of it and a pass costs what
 ## `docs/COSTS.md` says.
-func _test_parked_its_field_is_a_points(t) -> void:
+func _test_parked_its_field_is_a_points(t: TestRunner) -> void:
 	var def := _truck()
 	t.check(def.vehicle.field_from_its_centre, "fire_truck's field is priced from its centre")
 	var moving := def.outer_radius * Field.scale(Field.eccentricity(def.speed))
@@ -398,7 +398,7 @@ func _test_parked_its_field_is_a_points(t) -> void:
 ## it. The same check run with a body the street's whole width finds the street closed, which is
 ## what shows it can fail; the lattice leaves every calm area its routes past most single closed
 ## streets, so the count of routes lost is reported for it rather than required.
-func _test_a_parked_body_closes_no_street(t) -> void:
+func _test_a_parked_body_closes_no_street(t: TestRunner) -> void:
 	var map := CityGenerator.generate(4242)
 	var kerbs := _kerbs(map)
 	t.check(kerbs.size() >= 20, "enough kerbs were tried (%d)" % kerbs.size())
@@ -521,7 +521,7 @@ func _passes(map: CityMap, at: Vector2, along: Vector2, body: GroundShape,
 
 # ----------------------------------------------------------------- picture ---
 
-func _test_its_picture_stands_over_its_body(t) -> void:
+func _test_its_picture_stands_over_its_body(t: TestRunner) -> void:
 	var engine_where := WhereSheIs.nowhere()
 	var engine := _engine(t, PackedVector2Array([Vector2.ZERO, Vector2(0.0, 600.0)]),
 			engine_where)

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## Day 6's second man shouting is one she meets *(olive-koala, statement 2: "the yeller is
 ## guaranteed to encounter a yeller in the next three events")*. Reading the mark rigs her route's
@@ -41,7 +41,7 @@ const MORE_LEGS := 6
 ## width `WalkSiting.ahead_on_her_street()` looks across.
 const HER_STREET_HALF_WIDTH := 5.0 * Tuning.TILE_SIZE
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var outcomes: Array[String] = []
 	var kept := 0
 	for seed_value in SEEDS:
@@ -55,7 +55,7 @@ func run(t) -> void:
 			% [ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT, outcomes])
 
 ## "kept", "no mark", "never sited", or what about his first siting broke the guarantee.
-func _walk(t, seed_value: int) -> String:
+func _walk(t: TestRunner, seed_value: int) -> String:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))

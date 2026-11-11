@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends "res://tests/events_shared_city.gd"
 ## What a street actually costs her: running is the answer to exactly the one kind of thing that
 ## follows her and nothing else, nothing is cheaper to walk through than around it, the pavement
@@ -14,7 +14,7 @@ extends "res://tests/events_shared_city.gd"
 
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_running_is_the_answer_to_exactly_one_kind_of_thing(t)
 	_test_the_cyclist_costs_what_he_did(t)
 	_test_nothing_chases_her_before_the_run_is_taught(t)
@@ -133,7 +133,7 @@ func _quietest_calm_block(events: DayEvents, calm: CalmAreas) -> Vector2i:
 			best = block
 	return best
 
-func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
+func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t: TestRunner) -> void:
 	var pursuers := 0
 	var running_is_cheaper := 0
 	for def in EventCatalogue.all():
@@ -176,7 +176,7 @@ func _test_running_is_the_answer_to_exactly_one_kind_of_thing(t) -> void:
 const CYCLIST_FULL_PASS_COST := 16.0
 const CYCLIST_FULL_PASS_COST_TOLERANCE := 0.1
 
-func _test_the_cyclist_costs_what_he_did(t) -> void:
+func _test_the_cyclist_costs_what_he_did(t: TestRunner) -> void:
 	var found := false
 	for def in EventCatalogue.all():
 		if def.id != "cyclist":
@@ -193,7 +193,7 @@ func _test_the_cyclist_costs_what_he_did(t) -> void:
 ##
 ## The two halves of that are a gate and a promise, and both are properties of the catalogue
 ## rather than of any one day's rolls, so they are checked here rather than left to a playtest.
-func _test_nothing_chases_her_before_the_run_is_taught(t) -> void:
+func _test_nothing_chases_her_before_the_run_is_taught(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_TAUGHT_DAY):
 		for def in EventCatalogue.available_on(day):
 			t.check(def.pursuit == null,
@@ -205,7 +205,7 @@ func _test_nothing_chases_her_before_the_run_is_taught(t) -> void:
 
 ## The measured failure playtest 02 found and M19 fixes: at intensity 7 the dog walker cost
 ## −0.1 points to walk straight through, so the correct play was to plough into it.
-func _test_nothing_is_cheaper_to_walk_through_than_around(t) -> void:
+func _test_nothing_is_cheaper_to_walk_through_than_around(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		if def.intensity <= 0.0 or def.id in _SCENERY:
 			continue
@@ -229,7 +229,7 @@ func _test_nothing_is_cheaper_to_walk_through_than_around(t) -> void:
 ## Playtest 02, finding 3: *"there should be things that force me to cross the street."*
 ## Day one included — decision 9 says the beginning is challenging too, and until M19 the
 ## first event that was physically in the way arrived on day 2.
-func _test_the_pavement_can_be_blocked_from_day_one(t) -> void:
+func _test_the_pavement_can_be_blocked_from_day_one(t: TestRunner) -> void:
 	var blockers: Array[EventDef] = []
 	for def in EventCatalogue.available_on(1):
 		if def.obstructs_radius > 0.0 and def.placement.has(GameEnums.TileType.SIDEWALK):
@@ -250,7 +250,7 @@ func _test_the_pavement_can_be_blocked_from_day_one(t) -> void:
 ##
 ## Checked against what a day actually *places*, the bags' draws with their empty marbles and the
 ## caps, not against any one number, since a share the catalogue cannot fill is not density.
-func _test_a_day_has_enough_in_it_to_meet(t) -> void:
+func _test_a_day_has_enough_in_it_to_meet(t: TestRunner) -> void:
 	var blocks := Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y
 	for day in [1, 3, 7, 14]:
 		var planned := _planned(day)
@@ -291,7 +291,7 @@ func _test_a_day_has_enough_in_it_to_meet(t) -> void:
 ## Deliberately not asserted: that day 1 is safe *forever*. If a later milestone wants a lethal
 ## thing on day 1 that is a decision somebody takes, and this test is where they will find out
 ## they are taking it.
-func _test_danger_arrives_before_act_three(t) -> void:
+func _test_danger_arrives_before_act_three(t: TestRunner) -> void:
 	var lethal_on := {}
 	for day in range(1, 15):
 		var count := 0
@@ -326,7 +326,7 @@ func _test_danger_arrives_before_act_three(t) -> void:
 ## The caps have to leave room for the density, or the budget is decoration. Stated over the
 ## day-1 pool because that is where it was actually wrong: three dog walkers and three cafés
 ## on a forty-nine-block city, of which only the ~23% near her is ever instantiated.
-func _test_the_caps_can_spend_the_budget(t) -> void:
+func _test_the_caps_can_spend_the_budget(t: TestRunner) -> void:
 	var blocks := Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y
 	var ceiling := 0
 	for def in EventCatalogue.available_on(1):
@@ -344,7 +344,7 @@ func _test_the_caps_can_spend_the_budget(t) -> void:
 ## to the day-1 pool takes a share of it, and a single total across a few seeds is a tight enough
 ## sample to fail on noise. Their weights went up to compensate — dog walkers and café frontages
 ## are what an ordinary street is mostly made of.
-func _test_the_named_decisions_arrive(t) -> void:
+func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 	var map := _map()
 	for city_seed in [4242, 77, 1301]:
 		var seeded := CityGenerator.generate(city_seed)
@@ -367,7 +367,7 @@ func _test_the_named_decisions_arrive(t) -> void:
 ## What `max_per_day` was quietly doing before M28, now doing it on purpose. The fallback in
 ## `_roomiest_of_several` can still put two of a kind closer than `EVENT_SPACING_SAME` on a
 ## full map, so this is stated as "almost never" plus a hard floor that nothing may cross.
-func _test_two_of_a_kind_are_not_the_same_incident(t) -> void:
+func _test_two_of_a_kind_are_not_the_same_incident(t: TestRunner) -> void:
 	for day in [1, 8, 14]:
 		var planned := _planned(day)
 		var same_pairs := 0
@@ -405,7 +405,7 @@ func _test_two_of_a_kind_are_not_the_same_incident(t) -> void:
 ## pursues. Forcing the role off `WALL` here is what tells the two reasons apart, and it is why
 ## a third pursuer — one a future `EventScheduler.role_for()` change routes through `SET_PIECE` or `FRICTION`
 ## instead — inherits the exemption without anybody adding a case for it.
-func _test_a_pursuer_keeps_no_field_clear(t) -> void:
+func _test_a_pursuer_keeps_no_field_clear(t: TestRunner) -> void:
 	var pursuer := EventCatalogue.by_id("alley_robbery")
 	t.check(pursuer.hard_fail and pursuer.pursuit != null, "alley_robbery is lethal and pursues")
 	var off_wall := EventScheduler.Planned.new(pursuer, Vector2.ZERO)
@@ -436,7 +436,7 @@ func _test_a_pursuer_keeps_no_field_clear(t) -> void:
 ## Three things are checked, and the third is the one that makes it fair rather than punishing:
 ## the park she used gets something in it, the day still guarantees a *different* usable one,
 ## and what gets put there can never take the day or the ground away.
-func _test_the_city_remembers_where_she_went(t) -> void:
+func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 	var map := _map()
 	t.check(map.calm_blocks.size() >= 2,
 			"the map has calm ground to choose between (%d blocks)" % map.calm_blocks.size())

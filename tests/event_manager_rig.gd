@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The rig the two event manager suites share (`tests/test_event_manager.gd` and
 ## `tests/test_event_manager_fire.gd`): a real generated city in a run of its own, the day's
@@ -24,7 +23,7 @@ const WALK_SCALE := 6.0
 ## events are the same whether or not the day is streamed. A test that streams sets the radius it
 ## needs (`Tuning.EVENT_STREAM_RADIUS`); streaming itself is checked in
 ## `test_event_manager.gd`'s `_test_an_event_waits_until_she_is_near_it`.
-static func build_city(t) -> City:
+static func build_city(t: TestRunner) -> City:
 	var city := RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(MapCache.of(SEED))
@@ -44,7 +43,7 @@ static func start(city: City, day: int) -> void:
 
 ## A player the manager can find, out of the physics loop (its own physics is off) and moved by
 ## hand or by a walking node. A camera is under it, as the manager looks through her camera.
-static func walker(t, city: City, at: Vector2) -> Stroller:
+static func walker(t: TestRunner, city: City, at: Vector2) -> Stroller:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

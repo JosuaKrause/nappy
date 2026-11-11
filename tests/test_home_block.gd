@@ -41,7 +41,7 @@ const WIDE_SWEEP_SEEDS := 60
 ## own real-city sweep, which is the expensive part of this suite.
 const CITY_SWEEP_SEEDS := 6
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_home_block_lot_geometry_is_already_seed_independent(t)
 	await _test_every_home_block_building_is_the_same_across_two_seeds(t)
 	_test_the_home_block_lot_is_deep_enough_for_four_wall_rows_on_a_spread_of_seeds(t)
@@ -51,7 +51,7 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------- fixtures ---
 
-static func _city_for(t, seed_value: int) -> City:
+static func _city_for(t: TestRunner, seed_value: int) -> City:
 	var map := CityGenerator.generate(seed_value)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	t.add_child(city)
@@ -119,7 +119,7 @@ static func _roof_units_in(city: City) -> int:
 
 ## Whether the helper above can see a roof unit at all: some building that is not the home block's
 ## carries one, and every unit in the city stands on exactly one lot.
-func _check_the_units_are_seen(t, city: City, label: String) -> void:
+func _check_the_units_are_seen(t: TestRunner, city: City, label: String) -> void:
 	var seen := 0
 	var with_units := 0
 	for building: Building in city.buildings():
@@ -136,7 +136,7 @@ func _check_the_units_are_seen(t, city: City, label: String) -> void:
 ## The premise the rest of this suite leans on: the home block's own three lots — the door's own
 ## and the two flanking the notch — are the same rects on every seed, because `CityGenerator`
 ## derives them from `Tuning` constants and the fixed middle block alone.
-func _test_the_home_block_lot_geometry_is_already_seed_independent(t) -> void:
+func _test_the_home_block_lot_geometry_is_already_seed_independent(t: TestRunner) -> void:
 	var short := CityGenerator.generate(SHORT_SEED)
 	var other := CityGenerator.generate(OTHER_SEED)
 	var short_rects := _home_block_rects(short)
@@ -152,7 +152,7 @@ func _test_the_home_block_lot_geometry_is_already_seed_independent(t) -> void:
 ## empty — see the class doc) on two seeds with nothing else in common, including the one
 ## PLAYTEST-134 found short. The buildings are matched up by lot, since the lots themselves are
 ## already identical across seeds.
-func _test_every_home_block_building_is_the_same_across_two_seeds(t) -> void:
+func _test_every_home_block_building_is_the_same_across_two_seeds(t: TestRunner) -> void:
 	var short := _city_for(t, SHORT_SEED)
 	var other := _city_for(t, OTHER_SEED)
 	var short_by_lot := _home_buildings_by_lot(short)
@@ -194,7 +194,7 @@ func _test_every_home_block_building_is_the_same_across_two_seeds(t) -> void:
 ## full `City` scene sixty times over. Never found short: see
 ## `_test_the_home_block_lot_geometry_is_already_seed_independent` for why not — the door
 ## building's own lot does not move.
-func _test_the_home_block_lot_is_deep_enough_for_four_wall_rows_on_a_spread_of_seeds(t) -> void:
+func _test_the_home_block_lot_is_deep_enough_for_four_wall_rows_on_a_spread_of_seeds(t: TestRunner) -> void:
 	var checked := 0
 	for i in WIDE_SWEEP_SEEDS:
 		var seed_value := 1000 + i * 8191
@@ -208,7 +208,7 @@ func _test_the_home_block_lot_is_deep_enough_for_four_wall_rows_on_a_spread_of_s
 
 ## The same guarantee end to end through a real `City` and `Building.wall_tiles()`, on a smaller
 ## spread since this one pays for a full city build each time.
-func _test_her_building_has_at_least_four_wall_rows_on_a_spread_of_seeds(t) -> void:
+func _test_her_building_has_at_least_four_wall_rows_on_a_spread_of_seeds(t: TestRunner) -> void:
 	var checked := 0
 	for i in CITY_SWEEP_SEEDS:
 		var seed_value := 500_000 + i * 104_729
@@ -231,7 +231,7 @@ func _test_her_building_has_at_least_four_wall_rows_on_a_spread_of_seeds(t) -> v
 ## Proof that a non-home building still rolls with the seed: matched by lot across two seeds, at
 ## least one still differs in colour variant or floor count — if this ever reads zero, the fix
 ## has stopped being a home-block-only fix.
-func _test_non_home_buildings_still_roll_the_seed(t) -> void:
+func _test_non_home_buildings_still_roll_the_seed(t: TestRunner) -> void:
 	var short := _city_for(t, SHORT_SEED)
 	var other := _city_for(t, OTHER_SEED)
 	var short_by_lot := {}
@@ -277,7 +277,7 @@ func _test_non_home_buildings_still_roll_the_seed(t) -> void:
 ## for (`City.MAX_HEIGHT_FRACTION` of its depth, and always at least a tile of roof unless the lot is
 ## one tile deep); and the heights of a city are not all one value, so the roll is not a constant.
 ## Which stream the roll comes from is the game's own business, so it is not copied here.
-func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t) -> void:
+func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t: TestRunner) -> void:
 	for seed_value in [SHORT_SEED, OTHER_SEED]:
 		var city := _city_for(t, seed_value)
 		var again := _city_for(t, seed_value)

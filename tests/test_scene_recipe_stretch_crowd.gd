@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## **Every stretch scene, played through: nothing in its crowd appears or vanishes where she can see
 ## it, and she sees the event its rigged bag sends** *(the player's rule, PR #597; polite-dolphin,
@@ -12,7 +12,7 @@ extends RefCounted
 ## across the whole game's composition** (the runtime's watch, the crowd, the director's bag), so it is combined
 ## by design and has no module to split to.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var played := 0
 	for filename in DirAccess.get_files_at("res://scene-recipes"):
 		if not filename.ends_with(".json"):
@@ -63,7 +63,7 @@ func run(t) -> void:
 ## made under, by the crowd's rule and by the real view (`_out_of_the_real_view()`), nor off the
 ## authored street. The end in view is what dropping the in-view ends keeps out, and the near lanes
 ## are what checking the final placement keeps out.
-func _force_recycles(t, path: String, data: Dictionary, label: String) -> void:
+func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: String) -> void:
 	var loaded := SceneRecipeRuntime.load_recipe(path, PackedStringArray())
 	if not loaded.errors.is_empty():
 		t.check(false, "%s loads for forced crowd entries" % label)

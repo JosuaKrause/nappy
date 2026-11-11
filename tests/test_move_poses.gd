@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
+@warning_ignore_start("unsafe_property_access")
 extends RefCounted
 ## **Outside a step, every mover's move stands where the mover does** (`MoveProposal`), so the list a
 ## pass over every mover reads (`WorldMap.moves`, which holds no mover, only their moves) never shows
@@ -68,7 +68,7 @@ const SHOWN := 8
 
 var _bumps := 0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	var bumped := func(_at: Vector2) -> void: _bumps += 1
 	EventBus.crowd_bumped.connect(bumped)
@@ -78,7 +78,7 @@ func run(t) -> void:
 
 ## A booted `Main` standing in day 12 on `seed_value`, a normal run under `--invincible`, reached
 ## with `--seed` and `--day`, walked from the title's joystick button, with the mark read.
-func _day_twelve(t, seat: Seat, seed_value: int) -> Boot.Booted:
+func _day_twelve(t: TestRunner, seat: Seat, seed_value: int) -> Boot.Booted:
 	var words := ["--invincible", "--seed", str(seed_value), "--day", str(ResistanceSteps.swing_day())]
 	# The boot and the title take as many physics ticks as the wall clock gives them frames, so the
 	# game runs them at a scale so small that a tick's delta moves nothing a pixel can show (never 0:
@@ -98,7 +98,7 @@ func _day_twelve(t, seat: Seat, seed_value: int) -> Boot.Booted:
 	Engine.time_scale = clock
 	return booted
 
-func _walk_the_day(t, seed_value: int) -> void:
+func _walk_the_day(t: TestRunner, seed_value: int) -> void:
 	var seat := Seat.new(t)
 	var booted: Boot.Booted = await _day_twelve(t, seat, seed_value)
 	var main := booted.main
@@ -142,7 +142,7 @@ func _walk_the_day(t, seed_value: int) -> void:
 
 ## What happens to her before the physics tick `tick` runs: the walk toward the swing, stood against
 ## a walker now and then, and the swing touched when the tick comes.
-func _before_the_tick(t, main: Node2D, seed_value: int, tick: int, swing_tick: int,
+func _before_the_tick(t: TestRunner, main: Node2D, seed_value: int, tick: int, swing_tick: int,
 		swing: Vector2, step: float, counts: Dictionary, seen: Dictionary, last: Dictionary) -> void:
 	var player := Boot.player(main)
 	if tick == swing_tick:
@@ -174,7 +174,7 @@ func _stand_against_a_walker(main: Node2D) -> void:
 	if nearest != null:
 		player.global_position = nearest.global_position + Vector2(Crowd.BUMP_RADIUS * 0.5, 0.0)
 
-func _check_the_tick(t, main: Node2D, seed_value: int, tick: int, counts: Dictionary,
+func _check_the_tick(t: TestRunner, main: Node2D, seed_value: int, tick: int, counts: Dictionary,
 		seen: Dictionary, last: Dictionary) -> void:
 	var city := Boot.city(main)
 	# What each mover stands at, by what it is.
@@ -205,7 +205,7 @@ func _check_the_tick(t, main: Node2D, seed_value: int, tick: int, counts: Dictio
 
 ## Every mover's pose has a move on the list standing there and closed, and every move on the list
 ## is some mover's: a move left behind, or one still open, would show a body where nobody is.
-func _check_the_moves(t, seed_value: int, tick: int, poses: Array[Array],
+func _check_the_moves(t: TestRunner, seed_value: int, tick: int, poses: Array[Array],
 		listed: Array[MoveProposal], counts: Dictionary) -> void:
 	var standing := {}
 	var open := 0
@@ -231,7 +231,7 @@ func _check_the_moves(t, seed_value: int, tick: int, poses: Array[Array],
 		_count_one_wrong(t, seed_value, tick, "a listed move", "it is open or between two poses",
 				counts)
 
-func _count_one_wrong(t, seed_value: int, tick: int, what: String, why: String,
+func _count_one_wrong(t: TestRunner, seed_value: int, tick: int, what: String, why: String,
 		counts: Dictionary) -> void:
 	counts["wrong"] += 1
 	var kinds: Dictionary = counts["by_kind"]

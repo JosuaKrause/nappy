@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `TouchControls`' own geometry: that the pause button shows only where and when it should, that
 ## a finger on it presses the same real `pause` action a keyboard does, and that a press anywhere
@@ -23,7 +23,7 @@ const UIScreens := preload("res://tests/ui_screens.gd")
 ## The hand-held clock the double-tap window is measured on, handed to `TouchControls.use_clock()`.
 var _clock := UIScreens.FakeClock.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var was_paused: bool = t.get_tree().paused
 	await _test_process_mode_stays_always(t)
 	await _test_the_button_shows_on_every_device_with_a_day_running(t)
@@ -78,7 +78,7 @@ func run(t) -> void:
 ## A `TouchControls` in the tree with the double-tap clock handed in (`_clock`, a clock the test
 ## moves by hand) and, unless `settle` is false, two frames let pass so its own `_process()` has run
 ## and it shows. `settle` false is the node before its first frame: not yet drawn.
-func _controls(t, settle := true) -> TouchControls:
+func _controls(t: TestRunner, settle := true) -> TouchControls:
 	_clock = UIScreens.FakeClock.new()
 	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
 	controls.use_clock(_clock.read)
@@ -96,7 +96,7 @@ class PauseProbe extends Node:
 				and (event as InputEventAction).action == &"pause":
 			events.append(event)
 
-func _probe(t) -> PauseProbe:
+func _probe(t: TestRunner) -> PauseProbe:
 	var probe := PauseProbe.new()
 	t.add_child(probe)
 	return probe
@@ -191,13 +191,13 @@ func _held_any_move() -> bool:
 ## stops running the instant the tree pauses, which is one frame too late to let go of whatever
 ## direction was pressed when the pause landed — see `_release_all()`. `_ready()` sets this
 ## explicitly rather than trusting it stays true across a rewrite.
-func _test_process_mode_stays_always(t) -> void:
+func _test_process_mode_stays_always(t: TestRunner) -> void:
 	var controls := await _controls(t)
 	t.check(controls.process_mode == Node.PROCESS_MODE_ALWAYS,
 			"the merged controls still process through a pause, the same as the stick did")
 	controls.free()
 
-func _rig_at(t, position: Vector2) -> Node2D:
+func _rig_at(t: TestRunner, position: Vector2) -> Node2D:
 	var rig := Node2D.new()
 	rig.global_position = position
 	rig.add_to_group("player")
@@ -210,7 +210,7 @@ func _rig_at(t, position: Vector2) -> Node2D:
 ## the title, the pause and the between-days summary all set and none of the three has anything for
 ## a press to reach — but a keyboard-and-mouse desktop sees it exactly as a phone does, since there
 ## is one control scheme now rather than one chosen by device.
-func _test_the_button_shows_on_every_device_with_a_day_running(t) -> void:
+func _test_the_button_shows_on_every_device_with_a_day_running(t: TestRunner) -> void:
 	var controls := await _controls(t)
 
 	controls.use_touch(false)
@@ -236,7 +236,7 @@ func _test_the_button_shows_on_every_device_with_a_day_running(t) -> void:
 ## polled state and be heard by nothing, the same trap `AutoScreenshot._tap()`'s own comment names
 ## for `--press`. Heard here by a node in the tree, the way `main` hears it: a press and a lift on
 ## the button, the buffered input flushed, and what reaches the tree is the event.
-func _test_the_pause_button_sends_a_real_action_event(t) -> void:
+func _test_the_pause_button_sends_a_real_action_event(t: TestRunner) -> void:
 	var controls := await _controls(t)
 	var probe := _probe(t)
 	_finger(controls, 0, TouchControls.PAUSE_CENTRE, true)
@@ -255,7 +255,7 @@ func _test_the_pause_button_sends_a_real_action_event(t) -> void:
 ## for free.** The button waits for the matching release, and only counts one still over the
 ## button — pressed once a day at most, a false fire costs more than a missed one. Asked of the
 ## real press and lift, and of whether a `pause` action reaches the tree (`_release_fires()`).
-func _test_the_pause_button_fires_on_release_inside_and_not_outside(t) -> void:
+func _test_the_pause_button_fires_on_release_inside_and_not_outside(t: TestRunner) -> void:
 	var controls := await _controls(t)
 	var probe := _probe(t)
 	t.check(_release_fires(controls, probe, TouchControls.PAUSE_CENTRE),
@@ -273,7 +273,7 @@ func _test_the_pause_button_fires_on_release_inside_and_not_outside(t) -> void:
 ## that fires pause asks the same geometry, so it is pinned alongside the press. Run's whole half
 ## catches a press, so what is pinned is that both the drawn disc and 1.05 times its radius lie on
 ## that half whichever side steers.
-func _test_every_catch_is_at_least_five_percent_past_its_drawing_and_never_smaller_than_it_was(t) -> void:
+func _test_every_catch_is_at_least_five_percent_past_its_drawing_and_never_smaller_than_it_was(t: TestRunner) -> void:
 	var controls := await _controls(t)
 	var probe := _probe(t)
 	var drawn := TouchControls.PAUSE_RADIUS
@@ -310,7 +310,7 @@ func _test_every_catch_is_at_least_five_percent_past_its_drawing_and_never_small
 ## resolves.** Seen through what a second finger does: while one holds the button, a press on the
 ## button from another is no longer the button's and becomes a direction like any other; only the
 ## holding finger's lift can fire it; and once it lifts, fired or not, the button catches again.
-func _test_the_pause_button_tracks_its_own_touch_index(t) -> void:
+func _test_the_pause_button_tracks_its_own_touch_index(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 	var probe := _probe(t)
@@ -346,7 +346,7 @@ func _test_the_pause_button_tracks_its_own_touch_index(t) -> void:
 ## has a way to be told the tree is about to pause mid-gesture — the summary just sets it — so it
 ## is this node's own job to let go of everything the instant a pause lands, on every device, not
 ## only where the button is drawn.
-func _test_hiding_the_controls_releases_a_held_direction(t) -> void:
+func _test_hiding_the_controls_releases_a_held_direction(t: TestRunner) -> void:
 	var controls := await _controls(t)
 	controls.use_touch(false)
 	var rig := _rig_at(t, Vector2.ZERO)
@@ -363,7 +363,7 @@ func _test_hiding_the_controls_releases_a_held_direction(t) -> void:
 	controls.free()
 	rig.free()
 
-func _test_a_tap_presses_the_components_of_its_heading(t) -> void:
+func _test_a_tap_presses_the_components_of_its_heading(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 
@@ -383,7 +383,7 @@ func _test_a_tap_presses_the_components_of_its_heading(t) -> void:
 ## The degenerate case of a click: one on the very pixel of her feet (`TAP_STOP_RADIUS`'s circle is
 ## centred above them, so it does not catch it) has no heading to compute, and stops her rather than
 ## doing nothing.
-func _test_a_click_on_the_very_pixel_of_her_feet_stops_rather_than_pressing(t) -> void:
+func _test_a_click_on_the_very_pixel_of_her_feet_stops_rather_than_pressing(t: TestRunner) -> void:
 	# Leftover state from the previous test's own double press, not this one's concern to leave held.
 	_release_actions()
 	var rig := _rig_at(t, Vector2(50.0, 50.0))
@@ -413,7 +413,7 @@ func _test_a_click_on_the_very_pixel_of_her_feet_stops_rather_than_pressing(t) -
 ## **Also the regression test for playtest 35 finding 1**: the circle is centred `TAP_STOP_CENTRE_LIFT`
 ## (23px) above her feet, not on them, so a click straight below her feet does not stop her and a
 ## click on her shoulders does.
-func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
+func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(200.0, 200.0))
 	var controls := await _controls(t)
 	controls.set_mode(ControlsMode.Mode.TAP)
@@ -465,7 +465,7 @@ func _test_a_mouse_click_within_the_stop_radius_of_her_stops_her(t) -> void:
 
 ## **There is no arrival any more.** A direction pressed once stays held, unrenewed, however long
 ## `_process()` is asked to run — the whole of what "she walks it until the next press" means.
-func _test_a_direction_stays_locked_in_with_nothing_held_down(t) -> void:
+func _test_a_direction_stays_locked_in_with_nothing_held_down(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 
@@ -486,7 +486,7 @@ func _test_a_direction_stays_locked_in_with_nothing_held_down(t) -> void:
 ## `HomeArrow` already read forwards. Constructed from the viewport's own real
 ## `get_canvas_transform()` rather than an assumed identity, so this would still catch a camera
 ## offset or a rotation the way a hard-coded expectation would not.
-func _test_a_tap_maps_its_screen_position_through_the_viewports_canvas_transform(t) -> void:
+func _test_a_tap_maps_its_screen_position_through_the_viewports_canvas_transform(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 	var viewport := controls.get_viewport()
@@ -509,7 +509,7 @@ func _test_a_tap_maps_its_screen_position_through_the_viewports_canvas_transform
 ## The double-tap windows again, now through the real entry point rather than the pure function
 ## directly -- a close tap soon after runs, and either window failing on its own falls back to a
 ## fresh single tap.
-func _test_a_close_quick_second_tap_runs_and_a_far_or_late_one_does_not(t) -> void:
+func _test_a_close_quick_second_tap_runs_and_a_far_or_late_one_does_not(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 	var transform: Transform2D = controls.get_viewport().get_canvas_transform()
@@ -537,7 +537,7 @@ func _test_a_close_quick_second_tap_runs_and_a_far_or_late_one_does_not(t) -> vo
 
 ## Paused for any reason -- Esc, the day ending, the title -- a tap does nothing, the same as every
 ## one of those screens already leaving the controls drawing nothing.
-func _test_a_tap_during_a_pause_does_nothing(t) -> void:
+func _test_a_tap_during_a_pause_does_nothing(t: TestRunner) -> void:
 	# Leftover state from the previous test's own tap, not this one's concern to leave held.
 	_release_actions()
 	var rig := _rig_at(t, Vector2.ZERO)
@@ -555,7 +555,7 @@ func _test_a_tap_during_a_pause_does_nothing(t) -> void:
 
 ## A direction left pressed into whatever comes next is the same leak `_release_all()` already
 ## guards its own controls against on every kind of hiding.
-func _test_a_pause_force_releases_a_held_direction(t) -> void:
+func _test_a_pause_force_releases_a_held_direction(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 
@@ -591,7 +591,7 @@ func _test_a_pause_force_releases_a_held_direction(t) -> void:
 ## rebuilding it the way a restart does, unlike a fresh title screen's own `_rig`, which starts
 ## null and cannot be steered by a drag until a first ordinary press resolves it. Compare
 ## `_test_a_tap_during_a_pause_does_nothing`, the plain press-while-paused case this builds on.
-func _test_a_press_while_paused_is_never_the_first_heading(t) -> void:
+func _test_a_press_while_paused_is_never_the_first_heading(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 	controls.use_touch(true)
@@ -624,7 +624,7 @@ func _test_a_press_while_paused_is_never_the_first_heading(t) -> void:
 ## `_on_tap()` exactly the way a finger's own `InputEventScreenTouch` does. This suite's own process
 ## is always a debug build, the same as every other dev-only path in this project, so the gate
 ## itself is not what this checks; only that a click is read at all.
-func _test_a_mouse_click_stands_in_for_a_tap(t) -> void:
+func _test_a_mouse_click_stands_in_for_a_tap(t: TestRunner) -> void:
 	# Leftover pause from the previous test's own pause check, not this one's concern.
 	t.get_tree().paused = false
 	var rig := _rig_at(t, Vector2.ZERO)
@@ -653,7 +653,7 @@ func _test_a_mouse_click_stands_in_for_a_tap(t) -> void:
 ## same place and the same instant -- close enough on both windows to read as its own double tap.
 ## This is the bug a first version of `--tap` actually hit: a lone `--tap` on a screenshot rig run
 ## with `--touch` came back running, not walking.
-func _test_a_touch_devices_own_emulated_click_is_ignored(t) -> void:
+func _test_a_touch_devices_own_emulated_click_is_ignored(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 	controls.use_touch(true)
@@ -675,7 +675,7 @@ func _test_a_touch_devices_own_emulated_click_is_ignored(t) -> void:
 ## **The cost the no-UI decision was protecting, now paid deliberately.** *(2026-09-06: "and then
 ## it also needs the pause button in the top right".)* A touch press that lands on the button,
 ## while it is showing, must not also lock in a direction toward the corner.
-func _test_a_press_on_the_pause_button_is_not_also_a_direction(t) -> void:
+func _test_a_press_on_the_pause_button_is_not_also_a_direction(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 	var probe := _probe(t)
@@ -696,7 +696,7 @@ func _test_a_press_on_the_pause_button_is_not_also_a_direction(t) -> void:
 ## is drawn on every device now, so a desktop mouse click has to be checked against it exactly as a
 ## finger's press already was — see `_on_pointer()`'s own doc for why the mouse path was folded
 ## into the same function that already tracked a touch index.
-func _test_a_mouse_click_on_the_pause_button_is_not_also_a_direction(t) -> void:
+func _test_a_mouse_click_on_the_pause_button_is_not_also_a_direction(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 	controls.use_touch(false)
@@ -721,7 +721,7 @@ func _test_a_mouse_click_on_the_pause_button_is_not_also_a_direction(t) -> void:
 ## **Only while the button is actually drawn.** `visible` is the gate, not the device — a press in
 ## the same corner while the button is hidden (paused, or before the first `_process()` call) is an
 ## ordinary direction press, not a dead zone nobody can walk into.
-func _test_the_corner_is_an_ordinary_direction_press_where_the_button_is_not_drawn(t) -> void:
+func _test_the_corner_is_an_ordinary_direction_press_where_the_button_is_not_drawn(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t, false) # before its first frame: not drawn yet
 	controls.use_touch(false)
@@ -741,7 +741,7 @@ func _test_the_corner_is_an_ordinary_direction_press_where_the_button_is_not_dra
 ## With the stick deleted, a press's heading is the only vector any press can produce, and it is
 ## always normalised — so this asks the real entry point, a click across a full circle of targets,
 ## whether the actions it ends up pressing ever combine to less than a unit vector.
-func _test_no_input_path_presses_a_vector_shorter_than_one(t) -> void:
+func _test_no_input_path_presses_a_vector_shorter_than_one(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 
@@ -763,7 +763,7 @@ func _test_no_input_path_presses_a_vector_shorter_than_one(t) -> void:
 ## `Stroller` reads the same four actions through `Input.get_vector()`, which sums over whoever is
 ## pressing them — so without the reset, a key held after a click would add to the click rather
 ## than replace it. The resulting vector has to be the key's alone.
-func _test_a_keyboard_press_resets_a_clicked_heading(t) -> void:
+func _test_a_keyboard_press_resets_a_clicked_heading(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 	controls.use_touch(false)
@@ -798,7 +798,7 @@ func _test_a_keyboard_press_resets_a_clicked_heading(t) -> void:
 ## the run button; although I wouldn't go all the way".)* The steering half reaches two thirds of
 ## the way to Run's focus, mirrored for either side, and stops short of Run's own disc. Asked of real
 ## presses: a finger landing half a pixel past the edge holds Run, one short of it does not.
-func _test_the_steering_half_reaches_two_thirds_toward_run(t) -> void:
+func _test_the_steering_half_reaches_two_thirds_toward_run(t: TestRunner) -> void:
 	var left := TouchControls.FOCUS_LEFT
 	var right := TouchControls.FOCUS_RIGHT
 	t.check(left.x + (right.x - left.x) * TouchControls.STEERING_REACH + TouchControls.RING_RADIUS
@@ -829,7 +829,7 @@ func _test_the_steering_half_reaches_two_thirds_toward_run(t) -> void:
 ## *(2026-10-10, the player: "decrease the deadzone of the joystick (which makes the player stop)
 ## smaller/tighter".)* A finger landing in it stops her; just outside it, still inside the ring, it
 ## steers; and Run's focus has no dead zone, a press there being Run's and leaving her walking.
-func _test_the_dead_zone_is_tighter_than_the_ring_and_only_on_steering(t) -> void:
+func _test_the_dead_zone_is_tighter_than_the_ring_and_only_on_steering(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := await _controls(t)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
@@ -877,7 +877,7 @@ func _test_the_dead_zone_is_tighter_than_the_ring_and_only_on_steering(t) -> voi
 ## as its width. A finger landing in the half of it on the steering side stops her; the half beyond
 ## the edge is Run's, so a fresh finger there holds Run, and only a steering drag that wanders in is
 ## stopped by it; just past the band's width, either way, it steers on.
-func _test_the_stop_band_sits_on_the_steering_edge(t) -> void:
+func _test_the_stop_band_sits_on_the_steering_edge(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := await _controls(t)
 	for side: ControlsMode.Side in [ControlsMode.Side.LEFT, ControlsMode.Side.RIGHT]:
@@ -926,7 +926,7 @@ func _test_the_stop_band_sits_on_the_steering_edge(t) -> void:
 ## everything that asks what she can see): nothing under the tap scheme, where the whole view counts,
 ## and under the joystick each corner's painted ring or Run disc and never its invisible catch,
 ## whichever side the title chose to steer.
-func _test_the_screen_cover_follows_the_scheme_in_force(t) -> void:
+func _test_the_screen_cover_follows_the_scheme_in_force(t: TestRunner) -> void:
 	var controls := await _controls(t)
 	controls.set_mode(ControlsMode.Mode.TAP)
 	t.check(not controls.covering.in_force, "the tap scheme covers nothing: the whole view counts")
@@ -954,7 +954,7 @@ func _test_the_screen_cover_follows_the_scheme_in_force(t) -> void:
 ## of the steering focus walks west, and above it walks north, no matter where she is standing —
 ## the direction does not depend on where she is. Either side steers the same way once the title
 ## has chosen it.
-func _test_a_touch_aims_from_the_steering_focus_not_from_her(t) -> void:
+func _test_a_touch_aims_from_the_steering_focus_not_from_her(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0)) # far from either focus, on purpose
 	var controls := await _controls(t)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK, ControlsMode.Side.LEFT)
@@ -982,7 +982,7 @@ func _test_a_touch_aims_from_the_steering_focus_not_from_her(t) -> void:
 ## always. when using hands and when using the keyboard".)* One ring steers now, so "both sides" is
 ## that ring: `_draw_focus_circles()` reads `current_heading()` for its knob, so a press through the
 ## steering focus has to move it the same way `Input.is_action_pressed()` shows the press moved.
-func _test_current_heading_matches_a_press_through_the_steering_focus(t) -> void:
+func _test_current_heading_matches_a_press_through_the_steering_focus(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0)) # far from either focus, on purpose
 	var controls := await _controls(t)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK, ControlsMode.Side.LEFT)
@@ -1010,7 +1010,7 @@ func _test_current_heading_matches_a_press_through_the_steering_focus(t) -> void
 ## happens, disagreeing with what she is actually doing. A bare `Stroller.new()` is enough:
 ## `detain()` and `is_detained()` touch only `_detained_for`, no `@onready` node this rig — never
 ## added to the tree — would have nothing to resolve.
-func _test_current_heading_reads_zero_while_detained(t) -> void:
+func _test_current_heading_reads_zero_while_detained(t: TestRunner) -> void:
 	var stroller := Stroller.new()
 	# A clean slate rather than trusting whatever the previous test left pressed: this test
 	# presses `move_right` directly, on its own, rather than through a click (which
@@ -1032,7 +1032,7 @@ func _test_current_heading_reads_zero_while_detained(t) -> void:
 	Input.action_release(&"move_right")
 	stroller.free()
 
-func _test_a_press_at_a_focus_centre_stops_her_on_touch(t) -> void:
+func _test_a_press_at_a_focus_centre_stops_her_on_touch(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2.ZERO)
 	var controls := await _controls(t)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
@@ -1056,7 +1056,7 @@ func _test_a_press_at_a_focus_centre_stops_her_on_touch(t) -> void:
 ## stop since it's the same area and if a movement accidentally goes over the player it might
 ## become surprising to see her stop".)* A press near her own world position, off the dead zone and
 ## off the band, walks away from the steering focus instead of stopping.
-func _test_a_touch_near_her_own_position_no_longer_stops_her(t) -> void:
+func _test_a_touch_near_her_own_position_no_longer_stops_her(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(300.0, 300.0))
 	var controls := await _controls(t)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
@@ -1088,7 +1088,7 @@ func _test_a_touch_near_her_own_position_no_longer_stops_her(t) -> void:
 ## `_input()` rather than `_on_tap()` directly, so this also exercises the hardware routing a mouse
 ## click takes on a non-touch device (`_touch = false`) — the two are independent, and both are set
 ## explicitly here so the test does not lean on either one's default.
-func _test_a_mouse_click_still_aims_from_her_not_a_focus(t) -> void:
+func _test_a_mouse_click_still_aims_from_her_not_a_focus(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := await _controls(t)
 	controls.use_touch(false)
@@ -1108,7 +1108,7 @@ func _test_a_mouse_click_still_aims_from_her_not_a_focus(t) -> void:
 ## for a single press, now asked of the drag that replaces the stick, since a drag is the other new
 ## path that could in principle press a partial vector and does not. *(2026-09-07: "dragging the
 ## finger doesn't work anymore but should".)*
-func _test_a_touch_drag_updates_the_heading_and_still_presses_a_unit_vector(t) -> void:
+func _test_a_touch_drag_updates_the_heading_and_still_presses_a_unit_vector(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0)) # far from either focus, on purpose
 	var controls := await _controls(t)
 	controls.use_touch(true)
@@ -1145,7 +1145,7 @@ func _test_a_touch_drag_updates_the_heading_and_still_presses_a_unit_vector(t) -
 ## to be deleted was "a stop does not start a drag," not the stop itself. *(Playtest 34 finding 8:
 ## "when I start dragging from the center of the joystick nothing happens it should behave the same
 ## as if I move to the center and back stop while I'm in the center and move when I'm back.")*
-func _test_a_press_at_a_focus_centre_starts_a_drag_that_can_leave_and_return(t) -> void:
+func _test_a_press_at_a_focus_centre_starts_a_drag_that_can_leave_and_return(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := await _controls(t)
 	controls.use_touch(true)
@@ -1171,7 +1171,7 @@ func _test_a_press_at_a_focus_centre_starts_a_drag_that_can_leave_and_return(t) 
 ## **`Mode.TAP`'s one door gets the same live crossing `Mode.JOYSTICK`'s two get** — the general
 ## reading of finding 8's "crossing the boundary either way changes it live" applied to the door
 ## `_near_her()` answers rather than only to a focus.
-func _test_a_tap_mode_drag_stops_and_resumes_crossing_her_own_stop_radius(t) -> void:
+func _test_a_tap_mode_drag_stops_and_resumes_crossing_her_own_stop_radius(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(300.0, 300.0))
 	var controls := await _controls(t)
 	controls.use_touch(false)
@@ -1198,7 +1198,7 @@ func _test_a_tap_mode_drag_stops_and_resumes_crossing_her_own_stop_radius(t) -> 
 ## **A double tap that then drags holds `run` the same way a double tap already does.**
 ## *(2026-09-07: "A double press that then drags holds run the same way a double press already
 ## does".)*
-func _test_a_double_tap_that_then_drags_keeps_running(t) -> void:
+func _test_a_double_tap_that_then_drags_keeps_running(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := await _controls(t)
 	controls.use_touch(true)
@@ -1220,7 +1220,7 @@ func _test_a_double_tap_that_then_drags_keeps_running(t) -> void:
 ## **`Mode.TAP`'s own half of the drag.** *(2026-09-07: "although dragging a mouse should reaim as
 ## well".)* Its origin is her own position, not a focus — the one place the two modes keep
 ## disagreeing — read live on every motion event.
-func _test_a_mouse_drag_reaims_from_her_own_position(t) -> void:
+func _test_a_mouse_drag_reaims_from_her_own_position(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(300.0, 300.0))
 	var controls := await _controls(t)
 	controls.use_touch(false)
@@ -1245,7 +1245,7 @@ func _test_a_mouse_drag_reaims_from_her_own_position(t) -> void:
 
 ## A mouse simply moving, with no button held, is not a drag — `button_mask` is what tells the two
 ## apart, and every ordinary mouse movement in the game carries no mask at all.
-func _test_a_mouse_motion_without_the_button_held_does_nothing(t) -> void:
+func _test_a_mouse_motion_without_the_button_held_does_nothing(t: TestRunner) -> void:
 	# Leftover state from the previous test's own drag, not this one's concern to leave held.
 	_release_actions()
 	var rig := _rig_at(t, Vector2.ZERO)
@@ -1265,7 +1265,7 @@ func _test_a_mouse_motion_without_the_button_held_does_nothing(t) -> void:
 ## A press in the band at the steering half's edge stops her in `Mode.JOYSTICK`, the other door
 ## into `_stop()` beside the dead zone. *(2026-09-07: "there should be a narrow band in the middle of
 ## the screen ... that stops the player".)*
-func _test_a_tap_in_the_stop_band_stops_her_on_touch(t) -> void:
+func _test_a_tap_in_the_stop_band_stops_her_on_touch(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := await _controls(t)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
@@ -1287,7 +1287,7 @@ func _test_a_tap_in_the_stop_band_stops_her_on_touch(t) -> void:
 ## again from the same focus.** The sides never swap in play *(2026-10-10, the player: "we don't
 ## allow switching joystick and run key")*, so the pointer keeps the role its press gave it: it
 ## neither takes Run nor moves the ring.
-func _test_a_drag_past_the_band_keeps_steering_from_the_same_side(t) -> void:
+func _test_a_drag_past_the_band_keeps_steering_from_the_same_side(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := await _controls(t)
 	controls.use_touch(true)
@@ -1319,7 +1319,7 @@ func _test_a_drag_past_the_band_keeps_steering_from_the_same_side(t) -> void:
 ## and the right side permanently run button (permanently for the sitting). vice versa on the right
 ## side.")* Before any press Run is already on screen, a key picks no side, and a press anywhere
 ## on Run's half — on the disc or well off it, in either presentation — holds Run and never steers.
-func _test_a_press_on_runs_side_never_steers(t) -> void:
+func _test_a_press_on_runs_side_never_steers(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	for side: ControlsMode.Side in [ControlsMode.Side.LEFT, ControlsMode.Side.RIGHT]:
 		var steering := TouchControls.FOCUS_RIGHT if side == ControlsMode.Side.RIGHT \
@@ -1367,7 +1367,7 @@ func _test_a_press_on_runs_side_never_steers(t) -> void:
 ## stops her.** *(2026-10-10, the player: "make sure swiping over it but landing outside of it
 ## correctly keeps the player moving in the direction of the final position".)* A fast swipe can
 ## lift with its last motion event inside the dead zone, so the release's own position decides.
-func _test_a_swipe_through_the_dead_zone_lands_on_its_release(t) -> void:
+func _test_a_swipe_through_the_dead_zone_lands_on_its_release(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := await _controls(t)
 	controls.use_touch(true)
@@ -1396,7 +1396,7 @@ func _test_a_swipe_through_the_dead_zone_lands_on_its_release(t) -> void:
 	_release_actions()
 
 ## Pause's catch is its old 46px, past the 5% rim (27.3px); the dead zone does not grow at all.
-func _test_round_button_margins_and_unchanged_dead_zones(t) -> void:
+func _test_round_button_margins_and_unchanged_dead_zones(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var probe := _probe(t)
 	for rotate in [false, true]:
@@ -1435,7 +1435,7 @@ func _test_round_button_margins_and_unchanged_dead_zones(t) -> void:
 	rig.free()
 
 ## A run pointer never steers and a steering pointer never takes Run, however they travel.
-func _test_pointer_roles_hold_wherever_the_pointers_travel(t) -> void:
+func _test_pointer_roles_hold_wherever_the_pointers_travel(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := await _controls(t)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
@@ -1486,7 +1486,7 @@ func _test_pointer_roles_hold_wherever_the_pointers_travel(t) -> void:
 	rig.free()
 	_release_actions()
 
-func _test_a_run_button_does_not_cancel_a_double_press_latch(t) -> void:
+func _test_a_run_button_does_not_cancel_a_double_press_latch(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := await _controls(t)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
@@ -1504,7 +1504,7 @@ func _test_a_run_button_does_not_cancel_a_double_press_latch(t) -> void:
 
 ## Pause preserves the sides and locked heading, but never revives a pointer hold; a change of
 ## scheme or side lets go of everything.
-func _test_pause_hide_and_mode_changes_release_holds(t) -> void:
+func _test_pause_hide_and_mode_changes_release_holds(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var controls := await _controls(t)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)

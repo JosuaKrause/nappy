@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The emission model: the meter arithmetic a live `EventInstance` charges as she moves past it --
 ## telegraph damping, the pulse envelope, a two-part field's core against its outer radius, that
@@ -12,7 +12,7 @@ extends RefCounted
 
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_telegraph_damps_emission(t)
 	_test_pulse_envelope(t)
 	_test_the_leaf_blowers_core_is_in_the_meter(t)
@@ -37,7 +37,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		instance.step(STEP)
 
-func _test_telegraph_damps_emission(t) -> void:
+func _test_telegraph_damps_emission(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cat_dash")
 	var instance := _instance(t, def)
 
@@ -55,7 +55,7 @@ func _test_telegraph_damps_emission(t) -> void:
 			"inside the inner radius the full intensity applies", 0.05)
 	instance.free()
 
-func _test_pulse_envelope(t) -> void:
+func _test_pulse_envelope(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("homeless_yeller")
 	t.check(def.pulse_period > 0.0, "the yeller pulses rather than holding")
 	var instance := _instance(t, def)
@@ -81,7 +81,7 @@ func _test_pulse_envelope(t) -> void:
 ## Both are asked through a real `EventInstance`, at the peak each catalogues, so what is compared is
 ## the query the baby makes. 32px is inside the leaf blower's core and 100px is well outside it,
 ## where the two rows are the same numbers and have to answer the same rate.
-func _test_the_leaf_blowers_core_is_in_the_meter(t) -> void:
+func _test_the_leaf_blowers_core_is_in_the_meter(t: TestRunner) -> void:
 	var leaf := EventCatalogue.by_id("leaf_blower")
 	var busker := EventCatalogue.by_id("busker")
 	t.check(leaf.core_intensity > 0.0 and leaf.core_radius > 0.0,
@@ -141,7 +141,7 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t) -> void:
 ## their pass after the telegraph because that is when she meets them. A row `EventDirector` sites
 ## down her own line is met inside its telegraph instead and is a different claim, made where its
 ## own siting is decided rather than folded in here.
-func _test_the_rows_she_walks_up_to_pass_positively_awake(t) -> void:
+func _test_the_rows_she_walks_up_to_pass_positively_awake(t: TestRunner) -> void:
 	for id in ["homeless_yeller", "dog_walker"]:
 		var def := EventCatalogue.by_id(id)
 		for offset in [0.0, 20.0, 40.0]:
@@ -160,7 +160,7 @@ func _test_the_rows_she_walks_up_to_pass_positively_awake(t) -> void:
 ## still telegraphing at `EventInstance.TELEGRAPH_INTENSITY_FRACTION` — is asked of the game's own warning
 ## and creation, on a real city: `tests/test_event_manager.gd`,
 ## `_test_a_row_warned_down_her_line_arrives_at_its_own_intensity`.
-func _test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t) -> void:
+func _test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t: TestRunner) -> void:
 	var dog := EventCatalogue.by_id("loose_dog")
 	var walker := EventCatalogue.by_id("dog_walker")
 	for offset in [0.0, 20.0, 40.0]:
@@ -171,7 +171,7 @@ func _test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t) -> void:
 				("a loose dog's pass at %.0fpx costs %.2f awake, above the %.2f a dog walker's "
 				+ "does") % [offset, loose, leashed])
 
-func _test_duration_and_finish(t) -> void:
+func _test_duration_and_finish(t: TestRunner) -> void:
 	# An event that was a *place* is simply over. Nothing to leave, and nowhere to go.
 	var def := EventCatalogue.by_id("abduction")
 	t.check(def.departure_speed() <= 0.0, "the van that was parked there does not drive off")
@@ -191,7 +191,7 @@ func _test_duration_and_finish(t) -> void:
 ## on its way out is **over**. It emits nothing, it cannot end the day, and it carries no cue — or a
 ## cat that has finished its run would trail its whole field behind it for as long as it took to get
 ## off screen, which is a worse bug than the one being fixed.
-func _test_an_event_leaves_rather_than_vanishing(t) -> void:
+func _test_an_event_leaves_rather_than_vanishing(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	t.check(def.departure_speed() > 0.0, "a flock has somewhere to go")
 	var instance_where := WhereSheIs.nowhere()
@@ -229,7 +229,7 @@ func _test_an_event_leaves_rather_than_vanishing(t) -> void:
 ## body lying either way, and at a peak no row carries. A row that adds a radius to its field and
 ## not to `silent_beyond()` fails here rather than going quiet a tile early. Flocks are left out,
 ## since a flock's birds are not at its node and the instance does not ask it of them.
-func _test_no_field_reaches_past_silent_beyond(t) -> void:
+func _test_no_field_reaches_past_silent_beyond(t: TestRunner) -> void:
 	var heard_inside := 0
 	var heard_past := 0
 	var rows := 0
@@ -262,7 +262,7 @@ func _test_no_field_reaches_past_silent_beyond(t) -> void:
 ## just past `silent_beyond()`, for every non-flock row and for two made-up bodies long and wide
 ## enough that only the body's own reach in the bound keeps their far end heard. The node stands
 ## off the origin, so a bound measured from anywhere but the node the field is centred on fails.
-func _test_contribution_skips_only_silence(t) -> void:
+func _test_contribution_skips_only_silence(t: TestRunner) -> void:
 	var rows: Array[EventDef] = []
 	for def: EventDef in EventCatalogue.all():
 		if def.flock_size <= 0:
@@ -310,7 +310,7 @@ func _test_contribution_skips_only_silence(t) -> void:
 ## A flock's birds charge from away from the instance's node, so `contribution_at()` does not skip
 ## them by the node's distance: a bird put far past `silent_beyond()` is still heard where it is.
 ## (A roadblock's band, which a guard walking away leaves behind, has no field to hear.)
-func _test_flocks_are_not_skipped(t) -> void:
+func _test_flocks_are_not_skipped(t: TestRunner) -> void:
 	var flock := EventInstance.new()
 	flock.setup(EventCatalogue.by_id("pigeon_flock"), Vector2.ZERO)
 	flock.flock.build()

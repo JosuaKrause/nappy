@@ -5,7 +5,7 @@ extends RefCounted
 
 const Rig := preload("res://tests/crowd_closures_rig.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var rig = Rig.new()
 	var scenarios: Array[int] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 	rig.run_scenarios(t, scenarios)

@@ -23,11 +23,11 @@ extends RefCounted
 const Rig := preload("res://tests/escape_roadblock_rig.gd")
 const SEEDS: Array[int] = [4242, 1, 77, 9001, 23, 5, 31337, 2024]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for awake in [false, true]:
 		_measure(t, awake)
 
-func _measure(t, awake: bool) -> void:
+func _measure(t: TestRunner, awake: bool) -> void:
 	var start := Tuning.EXCITEMENT_WAKE_THRESHOLD if awake else 0.0
 	var tag := "awake %2.0f" % start if awake else "asleep 0"
 	var tally := {"posted": [], "lure": [], "after": []}

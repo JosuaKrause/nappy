@@ -18,7 +18,7 @@ class Source extends Node:
 	func pending_warnings() -> Array[PendingWarning]:
 		return warnings
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var factory: Object = load("res://tests/probes/m207_warning_lead.gd").new()
 	var encounters: Array[Dictionary] = factory.encounters()
 	# The engine can use either road axis; the column's actual main-road lane is vertical.

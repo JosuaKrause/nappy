@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## What `main` does with the save: the focus loss that writes nothing, the dawn a resumed boot writes,
 ## the title and the resume gate that lead to the day brief or the ending, the day engaged writing the
@@ -52,7 +52,7 @@ const _SEED := 4242
 ## The save under test, at a scratch path, handed to every boot.
 var _save := GameSave.new(_SCRATCH_PATH)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_save.clear_when_a_run_ends()
 	_begin()
 
@@ -129,7 +129,7 @@ class Parked:
 	var timeline := SaveIndicator.Showing.new()
 	var indicator: SaveIndicator
 
-	func _init(t) -> void:
+	func _init(t: TestRunner) -> void:
 		t.add_child(home)
 		sitting.name = Sitting.NODE_NAME
 		sitting.run = RunState.new()
@@ -170,7 +170,7 @@ func _one(root: Node, type_name: String) -> Node:
 ## in and taken from and the `run_log` it writes (`main.use_run_log()`), put in the tree, with real
 ## frames let pass until its boot has finished (`Boot.until_booted()`): the run, the day, her and
 ## the title are built.
-func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save := true,
+func _boot(t: TestRunner, config: RunConfig, calls: Calls, home: Node = null, hand_the_save := true,
 		run_log: Telemetry = null) -> Node2D:
 	var main: Node2D = MAIN_SCENE.instantiate()
 	if hand_the_save:
@@ -187,7 +187,7 @@ func _boot(t, config: RunConfig, calls: Calls, home: Node = null, hand_the_save 
 	await Boot.until_booted(t, main)
 	return main
 
-func _shut(t, main: Node2D) -> void:
+func _shut(t: TestRunner, main: Node2D) -> void:
 	t.get_tree().paused = false
 	main.free()
 
@@ -209,7 +209,7 @@ func _note_of(main: Node2D) -> Label:
 ## so a stray write here would come back as a file; a windowed run saves, so the check can fail.
 ## `main._quit()` makes the same change on its one remaining line, but it also quits the tree; the
 ## quit is handed to a counter here, and the pause screen's quit button is the other half.
-func _test_focus_loss_never_charges_a_nerve_and_writes_nothing(t) -> void:
+func _test_focus_loss_never_charges_a_nerve_and_writes_nothing(t: TestRunner) -> void:
 	_begin()
 	var calls := Calls.new()
 	var run := RunState.new()
@@ -258,7 +258,7 @@ func _test_focus_loss_never_charges_a_nerve_and_writes_nothing(t) -> void:
 ## the title's start (with no resume) reaches to write immediately. Asserted directly: dismissing a
 ## fresh day 1's title, with nothing else run at all, already leaves the save on disk saying the
 ## day is under way.
-func _test_a_fresh_boot_writes_nothing_until_the_title_is_dismissed(t) -> void:
+func _test_a_fresh_boot_writes_nothing_until_the_title_is_dismissed(t: TestRunner) -> void:
 	_begin()
 	var main := await _boot(t, _windowed(), Calls.new())
 	t.check(Boot.title(main).is_open()
@@ -284,7 +284,7 @@ func _test_a_fresh_boot_writes_nothing_until_the_title_is_dismissed(t) -> void:
 ## written into the run being abandoned: a recording log (`tests/recording_log.gd`) stands in for
 ## the run's, and is the log the restart closes. **And it stamps the sitting** the reloaded boot's title
 ## measures its restart guard against (`Sitting.restarted_at_msec`), since that title is a fresh one.
-func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
+func _test_a_restart_clears_the_save_in_the_log_it_abandons(t: TestRunner) -> void:
 	_begin()
 	# The restart parks the sitting, with the symbol showing its deletion under it, in its home.
 	var home := Node.new()
@@ -328,7 +328,7 @@ func _test_a_restart_clears_the_save_in_the_log_it_abandons(t) -> void:
 ## reload (dropping a pending web flush) and restart the ids at 1, so a carried symbol's newest id
 ## would outrank the next boot's write. The home holds a sitting with a save at a scratch path, as an
 ## earlier boot leaves it, so the boot never reaches the player's file.
-func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
+func _test_the_save_outlives_a_reload_under_the_sitting(t: TestRunner) -> void:
 	_begin()
 	var home := Node.new()
 	t.add_child(home)
@@ -394,7 +394,7 @@ func _test_the_save_outlives_a_reload_under_the_sitting(t) -> void:
 ## is rewritten and no symbol is drawn. A game closed with its day under way is the case the next
 ## test covers, which does write. A write announces itself on the bus, so what the boot makes of
 ## the file is what the bus carries.
-func _test_a_game_closed_between_days_writes_nothing_at_opening(t) -> void:
+func _test_a_game_closed_between_days_writes_nothing_at_opening(t: TestRunner) -> void:
 	_begin()
 	var closed := RunState.new()
 	closed.start_run(348)
@@ -425,7 +425,7 @@ func _test_a_game_closed_between_days_writes_nothing_at_opening(t) -> void:
 ## nerve count is already the run's own by the time this lands — and it is what the
 ## write carries to disk, with `day_under_way: false`, before the title or the day brief behind it
 ## is ever shown.
-func _test_resumed_boot_with_a_charged_nerve_writes_the_reduced_nerve_count(t) -> void:
+func _test_resumed_boot_with_a_charged_nerve_writes_the_reduced_nerve_count(t: TestRunner) -> void:
 	_begin()
 	var run := RunState.new()
 	run.start_run(347)
@@ -456,7 +456,7 @@ func _test_resumed_boot_with_a_charged_nerve_writes_the_reduced_nerve_count(t) -
 ## way. Also the "second open of a nothing-played-yet save costs nothing" case: nothing here writes
 ## between the title closing and the day brief's own continue, so a kill anywhere in between finds
 ## exactly what the screen is already showing.
-func _test_title_leads_to_the_day_brief_with_nothing_charged(t) -> void:
+func _test_title_leads_to_the_day_brief_with_nothing_charged(t: TestRunner) -> void:
 	_begin()
 	var run := RunState.new()
 	run.start_run(234)
@@ -484,7 +484,7 @@ func _test_title_leads_to_the_day_brief_with_nothing_charged(t) -> void:
 	_save.clear()
 
 ## The same path with a nerve charged: the day brief carries `Texts.RESUMED_DAY_LOST`.
-func _test_title_leads_to_the_day_brief_with_a_charged_nerve(t) -> void:
+func _test_title_leads_to_the_day_brief_with_a_charged_nerve(t: TestRunner) -> void:
 	_begin()
 	var run := RunState.new()
 	run.start_run(235)
@@ -508,7 +508,7 @@ func _test_title_leads_to_the_day_brief_with_a_charged_nerve(t) -> void:
 ## **The symbol exists before the charge**, because the charge can end the run and the run's end
 ## deletes the save, a change the symbol shows: the booted game's own symbol is showing after the
 ## boot only if it was raised before the charge, since one raised after hears nothing of it.
-func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
+func _test_title_leads_to_the_ending_on_the_last_nerve(t: TestRunner) -> void:
 	_begin()
 	var closed := RunState.new()
 	closed.start_run(236)
@@ -553,7 +553,7 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t) -> void:
 ## The first boot plays a run of the test's own, from a sitting parked in the home before it boots
 ## (`Boot.home_playing()`); that the reload parks a sitting the boot built itself is the held
 ## restart's test above, through the same `main._reload_the_scene()`.
-func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
+func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t: TestRunner) -> void:
 	_begin()
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
@@ -619,7 +619,7 @@ func _test_the_hand_over_to_the_escape_carries_a_pending_save_over(t) -> void:
 ## The whole path through `main`'s write: a run the save refuses — here the headless
 ## runner — leaves the symbol dark rather than struck. The same write straight through
 ## `_save.write()` is `tests/test_save.gd`'s `_test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once()`.
-func _test_main_draws_nothing_for_a_refused_run(t) -> void:
+func _test_main_draws_nothing_for_a_refused_run(t: TestRunner) -> void:
 	_begin()
 	var parked := Parked.new(t)
 	var main := await _boot(t, _headless(), Calls.new(), parked.home)
@@ -637,7 +637,7 @@ func _test_main_draws_nothing_for_a_refused_run(t) -> void:
 ## symbol hears it without `main` relaying it, and begins exactly once for one save: `main` adds
 ## nothing to what the bus carried. The `_save.write()` half, with its refused cases, is
 ## `tests/test_save.gd`'s `_test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once()`.
-func _test_a_desktop_save_is_shown_at_once_and_begun_once(t) -> void:
+func _test_a_desktop_save_is_shown_at_once_and_begun_once(t: TestRunner) -> void:
 	_begin()
 	var parked := Parked.new(t)
 	var main := await _boot(t, _windowed(), Calls.new(), parked.home)

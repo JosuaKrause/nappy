@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The police car is a solid body she walks round in every patrol state, and it ends the day only
 ## in front of it while it drives.
@@ -14,7 +14,7 @@ const RecordingLog := preload("res://tests/recording_log.gd")
 const STEP := 1.0 / 60.0
 const WALK := 2.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_her_walk_into_a_standing_car_stops_at_its_side(t)
 	_test_the_body_is_its_drawn_ground_contact_along_its_heading(t)
 	_test_a_driving_car_beside_her_is_solid_and_not_lethal(t)
@@ -54,7 +54,7 @@ func _already_driving(car: EventInstance) -> void:
 
 ## Her real rig, facing `facing`, with the pram body on her circumference as `_physics_process()`
 ## puts it.
-func _her(t, at: Vector2, facing: Vector2) -> Stroller:
+func _her(t: TestRunner, at: Vector2, facing: Vector2) -> Stroller:
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
 	var player: Stroller = packed.instantiate()
 	t.add_child(player)
@@ -101,7 +101,7 @@ func _gap(car: EventInstance) -> float:
 
 ## **The reproduction**: walked at side-on, a standing patrol car stops her at its flank — with no
 ## body she walked straight through it and out of the far side.
-func _test_her_walk_into_a_standing_car_stops_at_its_side(t) -> void:
+func _test_her_walk_into_a_standing_car_stops_at_its_side(t: TestRunner) -> void:
 	var car_where := WhereSheIs.nowhere()
 	var car := _car(t, _patrol(), PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)]), null,
 			car_where)
@@ -130,7 +130,7 @@ func _body_shape(car: EventInstance) -> CollisionShape2D:
 
 ## The body is the car's drawn ground contact — the side view's 42px bumper to bumper and the end
 ## view's 24px flank to flank — and it turns with the car.
-func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t) -> void:
+func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t: TestRunner) -> void:
 	var shape := _patrol().shape
 	t.check(is_equal_approx(shape.reach() * 2.0, 42.0) and is_equal_approx(shape.radius * 2.0, 24.0),
 			"the body is 42px long and 24px wide (%.0f by %.0f)" % [shape.reach() * 2.0,
@@ -166,7 +166,7 @@ func _test_the_body_is_its_drawn_ground_contact_along_its_heading(t) -> void:
 
 ## Beside a car driving past, she is never struck, the car never comes into her, and walking into
 ## its flank stops her against it.
-func _test_a_driving_car_beside_her_is_solid_and_not_lethal(t) -> void:
+func _test_a_driving_car_beside_her_is_solid_and_not_lethal(t: TestRunner) -> void:
 	var car_where := WhereSheIs.nowhere()
 	var car := _car(t, _patrol(),
 			PackedVector2Array([Vector2(-200.0, 0.0), Vector2(400.0, 0.0)]), null, car_where)
@@ -193,7 +193,7 @@ func _test_a_driving_car_beside_her_is_solid_and_not_lethal(t) -> void:
 
 ## Behind a car driving away from her, nothing strikes her; she follows it and walks into its rear,
 ## which stops her.
-func _test_a_driving_car_ahead_of_her_is_solid_and_not_lethal(t) -> void:
+func _test_a_driving_car_ahead_of_her_is_solid_and_not_lethal(t: TestRunner) -> void:
 	var car_where := WhereSheIs.nowhere()
 	var car := _car(t, _patrol(), PackedVector2Array([Vector2(40.0, 0.0), Vector2(800.0, 0.0)]),
 			null, car_where)
@@ -214,7 +214,7 @@ func _test_a_driving_car_ahead_of_her_is_solid_and_not_lethal(t) -> void:
 ## In its lane in front of it, on the carriageway, a driving car warns her `CAR_HORN_TIME` of its
 ## travel before it strikes — longer than walking off the carriageway takes — and then strikes her
 ## before its body would ever stop against her.
-func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t) -> void:
+func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t: TestRunner) -> void:
 	for facing in [Vector2.LEFT, Vector2.UP, Vector2.RIGHT]:
 		var car_where := WhereSheIs.nowhere()
 		var route := PackedVector2Array([Vector2(-300.0, 0.0), Vector2(600.0, 0.0)])
@@ -249,7 +249,7 @@ func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t) -> void:
 
 ## A car that is not driving its route strikes nobody in front of it: leaving once it is over, and
 ## the investigating car, which stops where it notices her and stands for the man it lets out.
-func _test_a_car_that_is_not_driving_strikes_nobody(t) -> void:
+func _test_a_car_that_is_not_driving_strikes_nobody(t: TestRunner) -> void:
 	# Its route runs out short of her, and it leaves the way it was going: at her.
 	var leaving_where := WhereSheIs.nowhere()
 	var leaving_route := PackedVector2Array([Vector2(-300.0, 0.0), Vector2(-100.0, 0.0)])
@@ -291,7 +291,7 @@ func _test_a_car_that_is_not_driving_strikes_nobody(t) -> void:
 
 ## Off the carriageway nothing strikes her: a pram poking over the kerb into its lane is a car that
 ## stops for her. On the carriageway beside the same kerb, it strikes.
-func _test_off_the_carriageway_it_stops_for_her_pram(t) -> void:
+func _test_off_the_carriageway_it_stops_for_her_pram(t: TestRunner) -> void:
 	var map: CityMap = CityGenerator.generate(4242)
 	var kerb := _a_kerb(map)
 	t.check(kerb.size() == 3, "found a carriageway lane beside a sidewalk")
@@ -372,7 +372,7 @@ func _a_kerb(map: CityMap) -> Array:
 ## **She is never inside it.** Stood anywhere round a car's route — beside it, behind it, in front
 ## of it, at a corner it turns — and facing any way, the car's body never overlaps her or her pram
 ## on any frame before it strikes her, so a car can stop against her but never push into her.
-func _test_the_car_never_drives_into_her(t) -> void:
+func _test_the_car_never_drives_into_her(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2(-160.0, 0.0), Vector2(0.0, 0.0), Vector2(0.0, 160.0)])
 	var worst := INF
 	var held := 0
@@ -405,7 +405,7 @@ func _test_the_car_never_drives_into_her(t) -> void:
 ## street at her where she stands backed against a building, it notices her, stops in its lane —
 ## on the road every frame — and comes no nearer, and she walks away along the wall. It goes where
 ## its route goes and no further; a route drawn across a sidewalk would take it there.
-func _test_an_investigating_car_never_leaves_the_carriageway(t) -> void:
+func _test_an_investigating_car_never_leaves_the_carriageway(t: TestRunner) -> void:
 	var map: CityMap = CityGenerator.generate(4242)
 	var wall := _a_wall(map)
 	t.check(wall.size() == 2, "found a sidewalk against a building")
@@ -480,7 +480,7 @@ func _a_wall(map: CityMap) -> Array:
 ## the distances a review measured a strike after 0.02 to 1.37s of warning: a turn that would put
 ## her in front of it within its warning is refused, and it stands for her instead. Far enough
 ## behind, it turns and comes back at her with its whole warning.
-func _test_the_raids_car_never_reverses_onto_her(t) -> void:
+func _test_the_raids_car_never_reverses_onto_her(t: TestRunner) -> void:
 	var raid: EventDef = _patrol().duplicate()
 	raid.shape = _patrol().shape
 	raid.paces = true
@@ -545,7 +545,7 @@ func _test_the_raids_car_never_reverses_onto_her(t) -> void:
 ## given up and walked back in, it goes on standing while she is in its way — never pulling away
 ## into her, never striking her — and once she has stepped out of its lane it drives on the way it
 ## was going, past her, facing the same way every frame, and is gone only once out of her sight.
-func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t) -> void:
+func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
 	var car_where := WhereSheIs.nowhere()
 	var car := _car(t, hot, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(600.0, 0.0)]),
@@ -611,7 +611,7 @@ func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t) -> void:
 
 ## On a street whose traffic gives way, it stops short of the zebra she is on, never warns her and
 ## never strikes her there, and drives over once she has crossed.
-func _test_it_gives_way_at_a_zebra_she_waits_at(t) -> void:
+func _test_it_gives_way_at_a_zebra_she_waits_at(t: TestRunner) -> void:
 	var map: CityMap = CityGenerator.generate(4242)
 	var zebra := _a_zebra(map)
 	t.check(zebra != Vector2.INF, "found a zebra on an east-west carriageway off the main road")
@@ -658,7 +658,7 @@ func _a_zebra(map: CityMap) -> Vector2:
 	return Vector2.INF
 
 ## Driving east at the main road, it stops short of the junction on a red light and goes on green.
-func _test_it_stops_at_a_red_light(t) -> void:
+func _test_it_stops_at_a_red_light(t: TestRunner) -> void:
 	var map: CityMap = CityGenerator.generate(4242)
 	var signals := TrafficSignals.new(map)
 	var lane_y := -1
@@ -706,7 +706,7 @@ func _test_it_stops_at_a_red_light(t) -> void:
 ## traffic would otherwise drive through it; driving east and driving west; with her on either tile
 ## of that zebra, in its lane or out beside it on the sidewalk (0, 64 and 96px out), which is
 ## further than the zebra's own 200px sight circle reaches from the box's entry line.
-func _test_a_far_zebra_holds_it_out_of_the_box(t) -> void:
+func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 	var map: CityMap = CityGenerator.generate(4242)
 	var lane_y := -1
 	for y in range(1, map.size.y - 1):
@@ -784,7 +784,7 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t) -> void:
 ## observer is handed what `main` hands it (the run, the city, her, the baby, the day's clock); the
 ## patrol drives a carriageway lane of a city in a run of its own, the mark is raised over her head
 ## as the game raises it (`Stroller.warn()`), and real frames let the observer write the cue.
-func _test_the_log_names_the_patrol_for_its_mark(t) -> void:
+func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
 	var city := RunCity.with_own_run(preload("res://scenes/world/city.tscn"), 4242)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
@@ -833,7 +833,7 @@ func _test_the_log_names_the_patrol_for_its_mark(t) -> void:
 ## Raises the mark over her head, lets a frame pass for the observer to see it go up, takes it down
 ## and lets another pass for it to write the cue in `run_log`; returns the cue line the log gained,
 ## or "".
-func _the_mark_cue(t, player: Stroller, run_log: RecordingLog) -> String:
+func _the_mark_cue(t: TestRunner, player: Stroller, run_log: RecordingLog) -> String:
 	var before := run_log.lines.size()
 	player.warn(Stroller.Alert.SOON, 5.0)
 	await t.get_tree().process_frame

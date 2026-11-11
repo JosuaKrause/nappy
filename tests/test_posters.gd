@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The posters on the walls: where a sheet may go, how the walls fill day by day, the pasting-over
 ## rule, what a save and a lost day do to them.
@@ -42,7 +42,7 @@ var _her: Stroller
 var _walls: PosterWalls
 var _seen := {"torn": 0, "pursuit": 0}
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t)
 	_test_a_prepared_art_applies_the_mask_then_the_overlay_to_the_page_it_is_given(t)
@@ -64,7 +64,7 @@ func run(t) -> void:
 ## A real city on `seed_value`'s map in the tree, over a run of its own on day `day`, and a real
 ## `Stroller` in it that the events are handed, as `main` hands them (`EventManager.use_player()`).
 ## The day is started with every dawn already pasted, so the walls hold what a test puts on them.
-func _open(t, seed_value: int, day := DAY) -> void:
+func _open(t: TestRunner, seed_value: int, day := DAY) -> void:
 	_map = MapCache.of(seed_value)
 	_city = RunCity.with_own_run(CITY_SCENE, seed_value)
 	_run = _city.run
@@ -101,12 +101,12 @@ func _steer(heading: Vector2) -> void:
 		Input.action_press(&"move_down" if heading.y > 0.0 else &"move_up", minf(1.0, absf(heading.y)))
 
 ## Lets `seconds` of game time pass on real ticks.
-func _wait(t, seconds: float) -> void:
+func _wait(t: TestRunner, seconds: float) -> void:
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(seconds, SCALE), Callable(), SCALE)
 
 ## Lets ticks pass one at a time until `done` answers true, at most `seconds` of game time; answers
 ## whether it did.
-func _wait_until(t, done: Callable, seconds: float) -> bool:
+func _wait_until(t: TestRunner, done: Callable, seconds: float) -> bool:
 	for i in PhysicsTicks.ticks_for(seconds, SCALE):
 		if done.call():
 			return true
@@ -175,7 +175,7 @@ func _torn_in(run: Array[Vector2i]) -> int:
 
 # ---------------------------------------------------------------- the tears ---
 
-func _test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t) -> void:
+func _test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t: TestRunner) -> void:
 	# What a prepared art answers for each torn poster, checked pixel by pixel against the baked
 	# pictures it is made of. Three kinds of pixel are told apart, each required to turn up so the
 	# test cannot pass over a picture that has none: where the overlay is clear and the mask is not
@@ -233,7 +233,7 @@ func _test_a_tear_is_the_poster_through_the_mask_then_the_overlay(t) -> void:
 ## and its right half keeps a quarter of it, and the overlay is clear in the top rows, half
 ## transparent black in the next and opaque blue in the last. A mask the art ignored, or an overlay it
 ## did not blend, gives a different picture at the pixels each row names.
-func _test_a_prepared_art_applies_the_mask_then_the_overlay_to_the_page_it_is_given(t) -> void:
+func _test_a_prepared_art_applies_the_mask_then_the_overlay_to_the_page_it_is_given(t: TestRunner) -> void:
 	var real := AtlasLibrary.new()
 	real.acquire(PosterArt.ATLAS_GROUP)
 	var table := AtlasTable.baked()
@@ -295,7 +295,7 @@ class _PageAtlas extends AtlasLibrary:
 ## compose their own, a prepared one composes nothing the second time, and a city built with one
 ## hands that very one to its walls and every front they dress, so what `main` keeps across days
 ## is what the fronts draw through.
-func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t) -> void:
+func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(PosterArt.ATLAS_GROUP)
 	var art := PosterArt.new()
@@ -329,7 +329,7 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t) -> void:
 
 ## The wanted notice is the one-X copy until the neighbor has been taken — day 10 behind her and
 ## its warning not among the steps she completed — and the two-X copy after, intact or torn.
-func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t) -> void:
+func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(PosterArt.ATLAS_GROUP)
 	var run := RunState.new()
@@ -354,7 +354,7 @@ func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t) -> void:
 ## sheets through `PosterArt.texture_for()` with that flag. So a taken neighbor in the run is a
 ## crossed notice on the wall, intact at dawn and torn after a tear, and a warned one is the plain
 ## notice. The tear is made by a push, on real ticks.
-func _test_the_wall_draws_the_crossed_notice_from_the_run(t) -> void:
+func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(PosterArt.ATLAS_GROUP)
 	var day := ResistanceHappenings.NEIGHBOR_DAY + 2
@@ -401,7 +401,7 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t) -> void:
 
 # ----------------------------------------------------------------- the state ---
 
-func _test_the_state_survives_a_round_trip_and_a_lost_day(t) -> void:
+func _test_the_state_survives_a_round_trip_and_a_lost_day(t: TestRunner) -> void:
 	var state := PosterState.new()
 	state.paste(Vector2i(3, 4), PosterArt.Kind.RULES, false, 1)
 	state.paste(Vector2i(3, 4), PosterArt.Kind.LEADER, true, -1)
@@ -428,7 +428,7 @@ func _test_the_state_survives_a_round_trip_and_a_lost_day(t) -> void:
 
 # ----------------------------------------------------------------- the walls ---
 
-func _test_the_walls_fill_the_way_the_run_asks(t) -> void:
+func _test_the_walls_fill_the_way_the_run_asks(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var map := MapCache.of(seed_value)
 		var city := RunCity.with_own_run(CITY_SCENE, seed_value)
@@ -495,7 +495,7 @@ const FIRST_DAY_ROUTE_FLOOR := 2
 const LAST_DAY_VIEW_FLOOR := 0.78
 const LAST_DAY_ROUTE_FLOOR := 10
 
-func _check_the_density_floor(t, city: City, map: CityMap, seed_value: int, day: int,
+func _check_the_density_floor(t: TestRunner, city: City, map: CityMap, seed_value: int, day: int,
 		view_floor: float, route_floor: int) -> void:
 	var walked: Dictionary = POSTER_VIEW.walk(city, map)
 	var cells := int(walked["cells"])
@@ -512,7 +512,7 @@ func _check_the_density_floor(t, city: City, map: CityMap, seed_value: int, day:
 ## Every front tile is in front of a blank ground-floor cell of a building off her home block, and
 ## the cell is a real column of that building — so a sheet is never on a window, a door, a fire
 ## escape's column, a storefront or a portico.
-func _check_every_front_is_blank_wall(t, city: City, map: CityMap, seed_value: int) -> void:
+func _check_every_front_is_blank_wall(t: TestRunner, city: City, map: CityMap, seed_value: int) -> void:
 	var blank := {}
 	for building in city.buildings():
 		for rect in building.blank_ground_floor_cells():
@@ -529,7 +529,7 @@ func _check_every_front_is_blank_wall(t, city: City, map: CityMap, seed_value: i
 			% [seed_value, ", ".join(wrong.slice(0, 5))])
 
 ## A lost day gives the walls back and the retry's dawn pastes them again, identically.
-func _check_a_retry_pastes_the_same_dawn(t, city: City, state: CityState, day: int,
+func _check_a_retry_pastes_the_same_dawn(t: TestRunner, city: City, state: CityState, day: int,
 		seed_value: int) -> void:
 	var run := city.run
 	var first := run.posters.to_data()
@@ -544,7 +544,7 @@ func _check_a_retry_pastes_the_same_dawn(t, city: City, state: CityState, day: i
 ## The pre-bag's one marble is the run's first tear and it is safe; every bag after it holds exactly
 ## one pursuit in ten, whatever order the draws come out in; the same seed draws the same marbles;
 ## and a bag brought forward by `skip()` draws on exactly as the one that was drawn from.
-func _test_the_marble_bag_is_exact_and_reproducible(t) -> void:
+func _test_the_marble_bag_is_exact_and_reproducible(t: TestRunner) -> void:
 	var bags := 20
 	var a := MarbleBag.new(PosterWalls.TEAR_PRE_BAG, PosterWalls.TEAR_BAG, 4242)
 	var first: Array[bool] = []
@@ -584,7 +584,7 @@ func _test_the_marble_bag_is_exact_and_reproducible(t) -> void:
 ## nothing in the joystick scheme over several of `PosterWalls.PASTE_EVERY`, and pastes in the tap
 ## scheme with the same view. The walls work the crews on the ticks they have a player to watch for,
 ## so a real `Stroller` stands in the city.
-func _test_a_crew_under_a_covered_corner_does_not_paste(t) -> void:
+func _test_a_crew_under_a_covered_corner_does_not_paste(t: TestRunner) -> void:
 	await _open(t, SEEDS[0])
 	var tiles: Array = _walls.fronts().keys()
 	tiles.sort()
@@ -622,7 +622,7 @@ func _test_a_crew_under_a_covered_corner_does_not_paste(t) -> void:
 
 ## A push tears nothing that is not a push: walking along the wall, even drifting into it, along a
 ## wall of intact sheets. Her heading has to point into the wall (`PosterWalls.PRESS_INTO`).
-func _test_a_push_tears_and_walking_past_does_not(t) -> void:
+func _test_a_push_tears_and_walking_past_does_not(t: TestRunner) -> void:
 	await _open(t, SEEDS[0])
 	var tiles: Array = _walls.fronts().keys()
 	t.check(tiles.size() > 25, "there are fronts to push against (%d)" % tiles.size())
@@ -669,7 +669,7 @@ func _test_a_push_tears_and_walking_past_does_not(t) -> void:
 
 ## A heading into the wall from back on the sidewalk is a walk toward it, not a push: a bollard
 ## across the front tile holds her past `PosterWalls.PRESS_REACH` of the face, pressing north.
-func _test_a_push_held_off_the_wall_does_not_tear(t) -> void:
+func _test_a_push_held_off_the_wall_does_not_tear(t: TestRunner) -> void:
 	await _open(t, SEEDS[0])
 	var tile: Vector2i = _longest_run(1)[0]
 	var rect := _map.tile_rect_to_world(Rect2i(tile, Vector2i.ONE))
@@ -698,7 +698,7 @@ func _test_a_push_held_off_the_wall_does_not_tear(t) -> void:
 ## run's first tear sends nobody, two whole bags send exactly two pursuers, every tear and every
 ## pursuer tells the counter once, a lost day gives the tears back so the retry draws the same
 ## marbles again, and a marble drawn while a pursuer is on his way sends nobody more.
-func _test_the_tears_draw_the_marbles(t) -> void:
+func _test_the_tears_draw_the_marbles(t: TestRunner) -> void:
 	await _open(t, SEEDS[0])
 	var tiles: Array = _walls.fronts().keys()
 	tiles.sort()
@@ -735,7 +735,7 @@ func _test_the_tears_draw_the_marbles(t) -> void:
 ## Pushes `count` fresh sheets down one at a time, her held north against each wall, and answers for
 ## each whether its tear sent a pursuer. A pursuer sent is let go once he is in the world, so the
 ## next marble is asked about on its own.
-func _tear_one_sheet_each(t, tiles: Array, count: int) -> Array[bool]:
+func _tear_one_sheet_each(t: TestRunner, tiles: Array, count: int) -> Array[bool]:
 	var sent: Array[bool] = []
 	for i in count:
 		var tile: Vector2i = tiles[i]
@@ -750,7 +750,7 @@ func _tear_one_sheet_each(t, tiles: Array, count: int) -> Array[bool]:
 
 ## Waits for the pursuer a tear sent to be in the world, takes him out of it, and lets a tick pass.
 ## `expected` says one was sent, so that he must come into the world within the wait.
-func _let_the_pursuer_go(t, expected := false) -> void:
+func _let_the_pursuer_go(t: TestRunner, expected := false) -> void:
 	var def := EventCatalogue.on_foot_on(DaySpec.for_day(_city.events.world.day))
 	var found: Array[EventInstance] = []
 	await _wait_until(t, func() -> bool:
@@ -770,7 +770,7 @@ func _let_the_pursuer_go(t, expected := false) -> void:
 ## rule skipped a sheet in two at this speed: each tear left the next cell's count to start from
 ## zero). Letting go re-arms the wait; walking past without a push tears nothing; and each sheet
 ## torn draws its own marble.
-func _test_a_held_push_tears_every_sheet_she_slides_past(t) -> void:
+func _test_a_held_push_tears_every_sheet_she_slides_past(t: TestRunner) -> void:
 	await _open(t, SEEDS[0])
 	var run := _longest_run(6)
 	t.check(run.size() >= 3, "there is a wall of at least three cells to slide along (%d)" % run.size())
@@ -842,7 +842,7 @@ func _test_a_held_push_tears_every_sheet_she_slides_past(t) -> void:
 ## cells of the same wall that carry no sheet. A push held across it tears the sheet beyond at once;
 ## turning out of the wall in the doorway, or walking off the front, ends the slide so that the next
 ## push waits for the time again.
-func _test_a_door_in_the_wall_does_not_end_the_slide(t) -> void:
+func _test_a_door_in_the_wall_does_not_end_the_slide(t: TestRunner) -> void:
 	await _open(t, SEEDS[0])
 	var fronts := _walls.fronts()
 	var run: Array[Vector2i] = []

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The day director alone: the one start every walk goes through (`DayDirector.start()`) and the one
 ## place a day ends (`finish_day()`).
@@ -23,7 +22,7 @@ var _ended: Array = []
 ## A fresh run for every rig, handed to the director in place of the autoload.
 var _run: RunState
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_timeout_costs_a_nerve_and_names_no_cause(t)
 	_test_a_crying_day_is_named_by_what_landed_the_most(t)
 	_test_a_day_lost_to_the_pelican_names_the_pelican(t)
@@ -46,7 +45,7 @@ func _on_day_ended(day: int, result: int, cause: String, elapsed: float) -> void
 	_ended.append([day, result, cause, elapsed])
 
 ## The director over a bare world, on a run of its own freshly started on `SEED`.
-func _rig(t, spec := DaySpec.new()) -> Dictionary:
+func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	_run = RunState.new()
 	_run.start_run(SEED)
 	var clock := DayController.new()
@@ -75,7 +74,7 @@ func _put_away(rig: Dictionary) -> void:
 	for node: Node in rig["nodes"]:
 		node.free()
 
-func _test_a_timeout_costs_a_nerve_and_names_no_cause(t) -> void:
+func _test_a_timeout_costs_a_nerve_and_names_no_cause(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	var end := director.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
@@ -88,7 +87,7 @@ func _test_a_timeout_costs_a_nerve_and_names_no_cause(t) -> void:
 			and not end.goes_back, "the nerve is spent and the run goes on")
 	_put_away(rig)
 
-func _test_a_crying_day_is_named_by_what_landed_the_most(t) -> void:
+func _test_a_crying_day_is_named_by_what_landed_the_most(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	t.check(director.landed_by_group().is_empty(), "the bare world landed nothing")
@@ -98,7 +97,7 @@ func _test_a_crying_day_is_named_by_what_landed_the_most(t) -> void:
 
 ## The pelican's share of the meter is its own group, never added to the cyclists' *(inbox #527 in
 ## azure-tapir)*, so a crying day it landed the most on is lost to the pelican.
-func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
+func _test_a_day_lost_to_the_pelican_names_the_pelican(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	var def := EventCatalogue.by_id("cyclist")
@@ -117,7 +116,7 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 	director.events.clear()
 	_put_away(rig)
 
-func _test_a_hard_fail_is_named_by_its_reason(t) -> void:
+func _test_a_hard_fail_is_named_by_its_reason(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	director.day.hard_fail_reason = "charging_dog"
@@ -125,7 +124,7 @@ func _test_a_hard_fail_is_named_by_its_reason(t) -> void:
 			"a hard fail is named by the row that struck her")
 	_put_away(rig)
 
-func _test_a_won_day_moves_the_calendar_on(t) -> void:
+func _test_a_won_day_moves_the_calendar_on(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	var end := director.finish_day(GameEnums.DayResult.WON)
@@ -136,7 +135,7 @@ func _test_a_won_day_moves_the_calendar_on(t) -> void:
 
 ## `finish_day()` requires only the clock and the run: a won day walked home with a player but no
 ## city (nothing to light the unmet fire in) still ends.
-func _test_a_won_day_with_a_player_and_no_city_ends(t) -> void:
+func _test_a_won_day_with_a_player_and_no_city_ends(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	var player := Stroller.new()
@@ -146,7 +145,7 @@ func _test_a_won_day_with_a_player_and_no_city_ends(t) -> void:
 	player.free()
 	_put_away(rig)
 
-func _test_a_won_last_day_with_every_task_done_hands_over(t) -> void:
+func _test_a_won_last_day_with_every_task_done_hands_over(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	_run.header.day = Tuning.RUN_LENGTH_DAYS
@@ -161,7 +160,7 @@ func _test_a_won_last_day_with_every_task_done_hands_over(t) -> void:
 			"and the calendar is left where it was for the escape to decide")
 	_put_away(rig)
 
-func _test_a_scene_recipe_never_hands_over(t) -> void:
+func _test_a_scene_recipe_never_hands_over(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	_run.header.day = Tuning.RUN_LENGTH_DAYS
@@ -172,7 +171,7 @@ func _test_a_scene_recipe_never_hands_over(t) -> void:
 	t.check(not end.hands_over_to_the_escape, "a scene recipe's won last day never hands over")
 	_put_away(rig)
 
-func _test_a_section_is_ended_but_not_settled(t) -> void:
+func _test_a_section_is_ended_but_not_settled(t: TestRunner) -> void:
 	var spec := DaySpec.new()
 	spec.section = DaySpec.Section.BUILDING
 	spec.number = 15
@@ -214,7 +213,7 @@ func _start(director: DayDirector, spec: DaySpec) -> Array[String]:
 ## the main scene's answers it: at her front door on the city's map on a walk home, at the two ways
 ## out (`EXITS`) on a walk out of the city. `scene` is an authored scene to play, or null. Returns the
 ## director and the parts a check reads.
-func _start_rig(t, spec: DaySpec, in_building := false, scene: AuthoredScene = null) -> Dictionary:
+func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: AuthoredScene = null) -> Dictionary:
 	_run = RunState.new()
 	_run.start_run(SEED)
 	_asked.clear()
@@ -277,7 +276,7 @@ func _asked_any(prefixes: Array[String]) -> bool:
 ## planned round her start on the run's own stream and one-shots, the resistance's day, the events
 ## streamed round her, the day's crowd, her put down facing the street with the baby awake, and the
 ## clock running. The dawn is photographed before any of it.
-func _test_a_day_starts_in_its_order(t) -> void:
+func _test_a_day_starts_in_its_order(t: TestRunner) -> void:
 	var spec := DaySpec.for_day(1, 210.0)
 	var rig := _start_rig(t, spec)
 	var director: DayDirector = rig["director"]
@@ -310,7 +309,7 @@ func _test_a_day_starts_in_its_order(t) -> void:
 ## its streets, the baby asleep, its events planned on the escape's stream with none of the run's
 ## one-shots, and its handed-in walk tinted and written to the run log; announced begun and stood
 ## the way a day is.
-func _test_the_city_section_starts_on_its_settings(t) -> void:
+func _test_the_city_section_starts_on_its_settings(t: TestRunner) -> void:
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, 180.0)
 	var rig := _start_rig(t, spec)
 	var director: DayDirector = rig["director"]
@@ -338,7 +337,7 @@ func _test_the_city_section_starts_on_its_settings(t) -> void:
 ## The escape's building is a world with no city: nothing is dressed, no crowd is started, its events
 ## are planned on the building's own seed, and she is put down where the building says, facing its
 ## way, with the baby asleep.
-func _test_the_building_section_starts_with_no_city(t) -> void:
+func _test_the_building_section_starts_with_no_city(t: TestRunner) -> void:
 	var spec := DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
 	var rig := _start_rig(t, spec, true)
 	var director: DayDirector = rig["director"]
@@ -362,7 +361,7 @@ func _test_the_building_section_starts_with_no_city(t) -> void:
 ## dressed with the recipe's own closures, the clock already running as the scene installs over it,
 ## no plan, no resistance's day and nobody put down by the director. It is announced begun and stood
 ## as every walk is. What the install could not stand is handed back.
-func _test_an_authored_scene_installs_in_place_of_the_plan(t) -> void:
+func _test_an_authored_scene_installs_in_place_of_the_plan(t: TestRunner) -> void:
 	var spec := DaySpec.for_day(1, 210.0)
 	var scene := _FakeScene.new(_asked)
 	scene.problems.assign(["setup.player.at must be open ground"])
@@ -388,7 +387,7 @@ func _test_an_authored_scene_installs_in_place_of_the_plan(t) -> void:
 ## the stream the plan is drawn on (`events_stream()`), the act's spent calm handed over
 ## (`shuts_the_spent_calm()`) and the night held (`runs_the_daylight_down()`). Where she starts
 ## (`start_point()`) is `_test_the_start_flags_decide_only_a_walk_from_her_doorstep`'s.
-func _test_each_start_setting_does_what_it_says(t) -> void:
+func _test_each_start_setting_does_what_it_says(t: TestRunner) -> void:
 	var day := _started_on(t, DaySpec.for_day(1, 210.0))
 	var section := _started_on(t, DaySpec.for_section(DaySpec.Section.CITY, 210.0))
 	var said := {
@@ -418,7 +417,7 @@ func _says(spec: DaySpec, setting: String) -> bool:
 	return answer
 
 ## What one start on `spec` did that each start setting decides, keyed by the setting's method.
-func _started_on(t, spec: DaySpec) -> Dictionary:
+func _started_on(t: TestRunner, spec: DaySpec) -> Dictionary:
 	var rig := _start_rig(t, spec)
 	var director: DayDirector = rig["director"]
 	_run.resistance.carrying_package = true
@@ -440,7 +439,7 @@ func _started_on(t, spec: DaySpec) -> Dictionary:
 
 ## `--spawn` decides where she starts on the boot's first walk from her doorstep, and on no walk that
 ## starts anywhere else.
-func _test_the_start_flags_decide_only_a_walk_from_her_doorstep(t) -> void:
+func _test_the_start_flags_decide_only_a_walk_from_her_doorstep(t: TestRunner) -> void:
 	for spec: DaySpec in [DaySpec.for_day(1, 210.0),
 			DaySpec.for_section(DaySpec.Section.CITY, 210.0)]:
 		var rig := _start_rig(t, spec)
@@ -463,7 +462,7 @@ func _test_the_start_flags_decide_only_a_walk_from_her_doorstep(t) -> void:
 ## spec holds (`DaySpec.exit_points()`, read by the day's clock), and the world it stands in is what
 ## knows where they are (`DayWorld.exits()`): the start hands them on, so the clock ends the section
 ## won by the tunnel once she stands at the tunnel the world named, and not before.
-func _test_the_start_hands_on_the_ways_out_of_the_world(t) -> void:
+func _test_the_start_hands_on_the_ways_out_of_the_world(t: TestRunner) -> void:
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, 180.0)
 	var rig := _start_rig(t, spec)
 	var director: DayDirector = rig["director"]
@@ -484,7 +483,7 @@ func _test_the_start_hands_on_the_ways_out_of_the_world(t) -> void:
 ## with the baby asleep, checked by the day's clock on the map the door is on (`DayWorld.home_map()`):
 ## with the clock set up as the main scene sets it up, handed only the run, the start hands it her and
 ## that map, so the baby falling asleep with her on the door wins the day.
-func _test_the_start_hands_the_clock_her_and_her_front_door(t) -> void:
+func _test_the_start_hands_the_clock_her_and_her_front_door(t: TestRunner) -> void:
 	var spec := DaySpec.for_day(1, 210.0)
 	var rig := _start_rig(t, spec)
 	var director: DayDirector = rig["director"]

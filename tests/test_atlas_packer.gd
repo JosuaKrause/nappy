@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `AtlasLibrary.plan()`'s own contract, on synthetic sizes rather than the tree's own pictures:
 ## `test_atlas_library.gd` holds the fill floor and aspect ceiling the real pages must clear, and
@@ -8,7 +8,7 @@ extends RefCounted
 ## sorted by height, where a row beside a tall picture still leaves the room beside it empty.
 ## *"a greedy approach is fine but don't let obvious empty space go wasted."*
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_deterministic(t)
 	_test_small_members_land_beside_a_tall_one_not_below_it(t)
 	_test_no_two_padded_regions_overlap(t)
@@ -21,7 +21,7 @@ func run(t) -> void:
 ## placement leaves is a pure function of the placements before it, and the sort that decides
 ## placement order breaks every tie by the caller's own array position rather than by anything
 ## that could differ between two runs of the same tree.
-func _test_deterministic(t) -> void:
+func _test_deterministic(t: TestRunner) -> void:
 	var sizes := _sample_sizes()
 	var first := AtlasLibrary.plan(sizes)
 	var second := AtlasLibrary.plan(sizes)
@@ -41,7 +41,7 @@ func _test_deterministic(t) -> void:
 ## anything. The free-rectangle packer keeps that room as a free rectangle the moment the tall
 ## one is placed, so every small member lands inside it: to the tall member's right and no lower
 ## than its own bottom edge.
-func _test_small_members_land_beside_a_tall_one_not_below_it(t) -> void:
+func _test_small_members_land_beside_a_tall_one_not_below_it(t: TestRunner) -> void:
 	var sizes: Array[Vector2i] = [Vector2i(40, 300)]
 	for i in 12:
 		sizes.append(Vector2i(30, 30))
@@ -65,7 +65,7 @@ func _test_small_members_land_beside_a_tall_one_not_below_it(t) -> void:
 ## claim `test_atlas_library.gd`'s own overlap check makes about the real pages, proved here
 ## against sizes chosen to stress the packer rather than to be plausible art: a wide member, a
 ## tall one, several near-square ones and a sliver, none of them multiples of each other.
-func _test_no_two_padded_regions_overlap(t) -> void:
+func _test_no_two_padded_regions_overlap(t: TestRunner) -> void:
 	var sizes: Array[Vector2i] = [
 		Vector2i(200, 18), Vector2i(19, 210), Vector2i(64, 61), Vector2i(63, 64),
 		Vector2i(5, 90), Vector2i(90, 5), Vector2i(33, 33), Vector2i(17, 17),
@@ -91,7 +91,7 @@ func _test_no_two_padded_regions_overlap(t) -> void:
 
 ## The square-root target is a floor, not a suggestion: a lone wide member is never asked to
 ## share a page narrower than itself.
-func _test_never_narrower_than_the_widest_member(t) -> void:
+func _test_never_narrower_than_the_widest_member(t: TestRunner) -> void:
 	var sizes: Array[Vector2i] = [Vector2i(500, 10), Vector2i(4, 4), Vector2i(6, 3)]
 	var layout := AtlasLibrary.plan(sizes)
 	t.check(layout["fits"], "a small group with one wide member fits")
@@ -102,14 +102,14 @@ func _test_never_narrower_than_the_widest_member(t) -> void:
 ## A member whose own bordered size cannot fit on any page — wider or taller than
 ## `AtlasLibrary.MAX_ATLAS_SIDE` leaves room for — is named by its own index rather than folded
 ## into a page-sized failure, since the bake reads that index back to the member's own path.
-func _test_an_oversize_member_is_named_rather_than_the_page(t) -> void:
+func _test_an_oversize_member_is_named_rather_than_the_page(t: TestRunner) -> void:
 	var sizes: Array[Vector2i] = [Vector2i(10, 10), Vector2i(AtlasLibrary.MAX_ATLAS_SIDE, 10)]
 	var layout := AtlasLibrary.plan(sizes)
 	t.check(not layout["fits"], "an oversize member fails to fit")
 	t.check(int(layout.get("overflow", -1)) == 1, "the oversize member's own index is named (%d)"
 			% int(layout.get("overflow", -1)))
 
-func _test_empty_input(t) -> void:
+func _test_empty_input(t: TestRunner) -> void:
 	var layout := AtlasLibrary.plan([])
 	t.check(layout["fits"], "an empty group trivially fits")
 	t.check((layout["regions"] as Array).is_empty(), "an empty group places nothing")
@@ -126,7 +126,7 @@ func _test_empty_input(t) -> void:
 ## and shorter than the two members' combined height. `_candidate_widths()`'s running sum of the
 ## widest members' own widths is what finds the side-by-side width here, not the even sweep — the
 ## two are exactly as wide together as the case needs and nothing in between.
-func _test_two_big_members_that_only_fit_side_by_side_above_the_square_root(t) -> void:
+func _test_two_big_members_that_only_fit_side_by_side_above_the_square_root(t: TestRunner) -> void:
 	var bigger := Vector2i(150, 200)
 	var smaller := Vector2i(100, 180)
 	var sizes: Array[Vector2i] = [bigger, smaller]

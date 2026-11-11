@@ -26,7 +26,7 @@ const TURNS := [
 ## turn coming at its row ("walk-run"); once he runs she
 ## makes for the first floor's door. Answers whether he ran, the outcome ("through", "caught" or
 ## "neither") and how near he came.
-func meet(t: Node, walk: Array, pace: String, badge := false,
+func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 		interpolated := false) -> Dictionary:
 	# The game's own 30Hz ticks, taken eight times as often as the engine would (`pass_ticks_faster()`),
 	# a tick's step the same.

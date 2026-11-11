@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for the walk's mix (`docs/EVENTS.md`, "The density, and why it is caps and
 ## bags"): **what each day puts in the world as she walks, row by row, by view and by kind of
@@ -33,7 +33,7 @@ const TICK := 1.0 / 30.0
 const CAPPED := ["abduction", "alley_mouse", "charging_dog", "chatting_mother", "pigeon_flock",
 		"roadblock"]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for day in range(1, 15):
 		var by_view := {}
 		var by_kind := {}

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The last night's blackout: once the sabotage is done and she is far enough from the power
 ## station, every lit window, every traffic light and every loudspeaker mast goes off in one frame.
@@ -39,7 +38,7 @@ var _her: Node2D
 var _went_dark := 0
 var _went_quiet := 0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_nothing_goes_dark_without_the_sabotage(t)
 	await _test_nothing_goes_dark_beside_the_station(t)
 	await _test_everything_goes_dark_at_once(t)
@@ -49,7 +48,7 @@ func run(t) -> void:
 
 ## A blackout over a city on the last day with the sabotage not yet done, handed its parts the way
 ## `City.build()` hands them, and in the tree.
-func _begin(t, from_the_start := false) -> void:
+func _begin(t: TestRunner, from_the_start := false) -> void:
 	_resistance = ResistanceRunState.new()
 	_resistance.sabotage_done = false
 	_map = CityMap.new()
@@ -99,13 +98,13 @@ func _do_the_sabotage() -> void:
 	_resistance.sabotage_done = true
 
 ## The city after the sabotage is done and she has walked far enough south of the station.
-func _go_dark(t) -> void:
+func _go_dark(t: TestRunner) -> void:
 	_do_the_sabotage()
 	await _she_stands_at(t, _south_of_the_station(Blackout.BLACKOUT_DISTANCE + 4.0))
 
 ## She stands at `point` for two physics ticks, which is how often the blackout looks at where she is:
 ## a node in the `player` group, which is where the blackout finds her.
-func _she_stands_at(t, point: Vector2) -> void:
+func _she_stands_at(t: TestRunner, point: Vector2) -> void:
 	if not is_instance_valid(_her):
 		_her = Node2D.new()
 		_her.add_to_group("player")
@@ -132,7 +131,7 @@ func _south_of_the_station(distance: float) -> Vector2:
 
 # ---------------------------------------------------------------------- tests ---
 
-func _test_nothing_goes_dark_without_the_sabotage(t) -> void:
+func _test_nothing_goes_dark_without_the_sabotage(t: TestRunner) -> void:
 	_begin(t)
 	await _she_stands_at(t, _south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
 	t.check(not _is_dark() and _went_dark == 0, "far from the station with no sabotage, the city is lit")
@@ -141,7 +140,7 @@ func _test_nothing_goes_dark_without_the_sabotage(t) -> void:
 	_end()
 
 ## The station must be off screen before it goes, so the moment is the city going dark round her.
-func _test_nothing_goes_dark_beside_the_station(t) -> void:
+func _test_nothing_goes_dark_beside_the_station(t: TestRunner) -> void:
 	_begin(t)
 	_do_the_sabotage()
 	await _she_stands_at(t, _map.power_station_door_position())
@@ -150,7 +149,7 @@ func _test_nothing_goes_dark_beside_the_station(t) -> void:
 	t.check(not _is_dark() and _went_dark == 0, "nor just short of the distance")
 	_end()
 
-func _test_everything_goes_dark_at_once(t) -> void:
+func _test_everything_goes_dark_at_once(t: TestRunner) -> void:
 	_begin(t)
 	t.check(_powered_buildings() == BUILDINGS, "there were lit buildings to put out (%d)"
 			% _powered_buildings())
@@ -166,7 +165,7 @@ func _test_everything_goes_dark_at_once(t) -> void:
 	t.check(_went_quiet == 1, "the city went quiet once (%d)" % _went_quiet)
 	_end()
 
-func _test_it_stays_dark_walking_back(t) -> void:
+func _test_it_stays_dark_walking_back(t: TestRunner) -> void:
 	_begin(t)
 	await _go_dark(t)
 	await _she_stands_at(t, _map.power_station_door_position())
@@ -175,7 +174,7 @@ func _test_it_stays_dark_walking_back(t) -> void:
 	_end()
 
 ## A lost day 14 gives the sabotage back at dawn, and with it the power: the retry is the same day.
-func _test_a_retry_gives_the_power_back(t) -> void:
+func _test_a_retry_gives_the_power_back(t: TestRunner) -> void:
 	_begin(t)
 	await _go_dark(t)
 	t.check(_is_dark(), "the power was off before the retry")
@@ -188,7 +187,7 @@ func _test_a_retry_gives_the_power_back(t) -> void:
 
 ## The escape is the same night, so a blackout built for it — its `DaySpec` dark from the start — is
 ## dark before her first frame, with nobody to watch and no sabotage.
-func _test_the_escape_is_dark_from_its_first_frame(t) -> void:
+func _test_the_escape_is_dark_from_its_first_frame(t: TestRunner) -> void:
 	_begin(t, true)
 	t.check(_went_dark == 1, "the escape's city is dark from the moment it is built (%d)" % _went_dark)
 	t.check(not _signals.powered and _powered_buildings() == 0, "its lights and windows with it")

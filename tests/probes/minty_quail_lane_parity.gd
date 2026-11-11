@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Whether two revisions of the crowd step identically, and what each one's step costs: the walk,
 ## seeds, days and chain of `m159_crowd_tick_cost.gd` (every agent's position and speed after every
@@ -22,7 +21,7 @@ const CHASE_FROM := 90
 const WARMUP := 150
 const WINDOW := 600
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var reps := int(OS.get_environment("LANE_PARITY_REPS")) if OS.has_environment("LANE_PARITY_REPS") else 1
 	var rig := Stroller.new()
 	var camera := Camera2D.new()

@@ -17,7 +17,7 @@ const SITE_SEEDS := [4242, 1, 90210, 778812345]
 var _map: CityMap
 var _city: City
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_map = CityGenerator.generate(SEED)
 	_test_no_row_is_city_wide(t)
 	_test_masts_appear_from_day_5_at_the_same_sites_every_day(t)
@@ -51,7 +51,7 @@ func _mast_plans(day: int) -> Array[EventScheduler.Planned]:
 ## The property itself is gone, checked the one way that cannot fail to compile against a field
 ## that no longer exists: `Object.get()` is the dynamic accessor, and it answers `null` for a
 ## property nobody declared rather than raising the parse error a static `def.city_wide` would.
-func _test_no_row_is_city_wide(t) -> void:
+func _test_no_row_is_city_wide(t: TestRunner) -> void:
 	t.check(EventDef.new().get("city_wide") == null,
 			"EventDef carries no city_wide field any more")
 	var loudspeaker := EventCatalogue.by_id("loudspeaker")
@@ -63,7 +63,7 @@ func _test_no_row_is_city_wide(t) -> void:
 
 # ------------------------------------------------------------------- sites ---
 
-func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t) -> void:
+func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t: TestRunner) -> void:
 	t.check(_mast_plans(Tuning.MAST_FIRST_DAY - 1).is_empty(),
 			"no mast stands the day before Tuning.MAST_FIRST_DAY")
 
@@ -97,7 +97,7 @@ func _test_masts_appear_from_day_5_at_the_same_sites_every_day(t) -> void:
 				"site %d is the same site both times" % i)
 
 ## Checked over several seeds — the one guarantee here that a single lucky map cannot stand for.
-func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t) -> void:
+func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t: TestRunner) -> void:
 	var checked := 0
 	for seed_value in SITE_SEEDS:
 		var map := CityGenerator.generate(seed_value)
@@ -137,7 +137,7 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t) -> void:
 
 # ------------------------------------------------------------------- field ---
 
-func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t) -> void:
+func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("loudspeaker")
 	t.check(is_zero_approx(def.emission_at_distance(def.outer_radius + 1.0)),
 			"the field is zero just past its own outer radius")
@@ -152,7 +152,7 @@ func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t) -> voi
 
 # -------------------------------------------------------------- the broadcast ---
 
-func _build_city(t) -> void:
+func _build_city(t: TestRunner) -> void:
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
 	_city.build(_map)
@@ -188,7 +188,7 @@ func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventSchedule
 ## masts speak at once". `age` is set from `EventStreaming.broadcast_clock` at the moment each one
 ## streams in (`EventStreaming.stream_in()`'s own doc), not from zero, so a mast met later in the day is not a
 ## mast that is "younger" — it is telling the same time as every other one.
-func _test_they_all_speak_together(t) -> void:
+func _test_they_all_speak_together(t: TestRunner) -> void:
 	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
 	var sites := _sites()
 	t.check(sites.size() >= 2, "there are at least two masts to compare")
@@ -221,7 +221,7 @@ func _test_they_all_speak_together(t) -> void:
 		t.check(not is_equal_approx(plan_a.live.age, plan_b.live.age),
 				"they were not both stamped the instant they happened to stream in")
 
-func _test_mast_foot_answers_a_stable_id(t) -> void:
+func _test_mast_foot_answers_a_stable_id(t: TestRunner) -> void:
 	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
 	var site := _sites()[0]
 	t.check(_city.events.mast_foot(site.id).distance_to(site.foot) < 0.01,
@@ -231,7 +231,7 @@ func _test_mast_foot_answers_a_stable_id(t) -> void:
 
 # -------------------------------------------------------------- silencing ---
 
-func _test_silencing_one_mast_works_for_the_rest_of_the_day(t) -> void:
+func _test_silencing_one_mast_works_for_the_rest_of_the_day(t: TestRunner) -> void:
 	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
 	var target := _sites()[0]
 	_city.events.stream_around(target.foot)
@@ -262,7 +262,7 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t) -> void:
 		t.check(plan.live.silenced, "still silenced — for the rest of the day")
 		t.check(is_zero_approx(plan.live.current_intensity()), "still no field")
 
-func _test_silencing_every_mast_works_for_the_rest_of_the_day(t) -> void:
+func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> void:
 	_city.events.start_day(DaySpec.for_day(EventScheduler.CURFEW_ANNOUNCE_DAY), _rng(EventScheduler.CURFEW_ANNOUNCE_DAY), [])
 	for site in _sites():
 		_city.events.stream_around(site.foot)
@@ -299,7 +299,7 @@ func _test_silencing_every_mast_works_for_the_rest_of_the_day(t) -> void:
 ## day she touches a mast the director records a scar at its foot (`RunState.add_scar()`), and the
 ## next day's plan stands the same pole with its lamp out while every other site speaks. Played on
 ## one city, two days running through the manager, the way the run plans them.
-func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t) -> void:
+func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t: TestRunner) -> void:
 	var first := Tuning.MAST_FIRST_DAY
 	var run := _city.run
 	run.header.day = first

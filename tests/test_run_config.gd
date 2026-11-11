@@ -29,7 +29,7 @@ const FORCED_INTERVAL := 2.0
 const FORCED_SCALE := 3.0
 const FORCED_WITHIN := 6.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_release_build_reads_no_command_line_flag(t)
 	_test_a_debug_build_reads_them(t)
 	_test_a_release_page_opens_the_bundle_only_with_debug(t)
@@ -59,7 +59,7 @@ static func _words(words: Array) -> PackedStringArray:
 ## A release build answers no command-line flag at all, whatever is typed: a public build cannot be
 ## told to jump to a day or stop its clock. `--no-telemetry` is the player's own opt-out and is the
 ## one word read there.
-func _test_a_release_build_reads_no_command_line_flag(t) -> void:
+func _test_a_release_build_reads_no_command_line_flag(t: TestRunner) -> void:
 	var words := _words(["--day", "5", "--seed", "7", "--invincible", "--layers", "1",
 			"--route", "home", "--no-telemetry"])
 	var release := RunConfig.parse(words, "", false)
@@ -69,7 +69,7 @@ func _test_a_release_build_reads_no_command_line_flag(t) -> void:
 			"a release build reads none of the developer flags")
 	t.check(release.no_telemetry, "but does read the player's own --no-telemetry")
 
-func _test_a_debug_build_reads_them(t) -> void:
+func _test_a_debug_build_reads_them(t: TestRunner) -> void:
 	var debug := RunConfig.parse(_words(["--day", "99", "--seed", "7", "--invincible",
 			"--layers", "1,3", "--ground-mode", "3", "--day-length", "40"]), "", true)
 	t.check(debug.day_override == Tuning.RUN_LENGTH_DAYS, "--day is clamped into the run")
@@ -80,7 +80,7 @@ func _test_a_debug_build_reads_them(t) -> void:
 
 ## The release-safe bundle answers to a release page only once it asked `?debug=1`; using one of its
 ## parameters is what keeps that page off the save.
-func _test_a_release_page_opens_the_bundle_only_with_debug(t) -> void:
+func _test_a_release_page_opens_the_bundle_only_with_debug(t: TestRunner) -> void:
 	var none := PackedStringArray()
 	var unasked := RunConfig.parse(none, "?day=9&invincible=1", false)
 	t.check(unasked.day_override == 1 and not unasked.invincible and not unasked.is_live_debug()
@@ -99,7 +99,7 @@ func _test_a_release_page_opens_the_bundle_only_with_debug(t) -> void:
 ## A write to a resolved config is refused with a warning and leaves the value as it was, whichever
 ## field it names, including the ones that hold the gate itself; the arrays are read-only, so no
 ## reader's edit of one can reach another reader.
-func _test_a_resolved_config_cannot_change(t) -> void:
+func _test_a_resolved_config_cannot_change(t: TestRunner) -> void:
 	var config := RunConfig.parse(_words(["--layers", "1", "--route", "home", "--skip", "events",
 			"--debug"]), "", true)
 	t.check(config.layers_override.is_read_only() and config.route_targets.is_read_only()
@@ -130,7 +130,7 @@ func _test_a_resolved_config_cannot_change(t) -> void:
 
 ## A recipe is one whole authored setup: its seed, day, escape part and parent stand in for the
 ## flags' own, on a new config, while the one it came from stays what it was.
-func _test_a_recipe_stands_in_for_the_run_flags(t) -> void:
+func _test_a_recipe_stands_in_for_the_run_flags(t: TestRunner) -> void:
 	var base := RunConfig.parse(_words(["--recipe", "scene.json", "--seed", "3", "--day", "2"]),
 			"", true)
 	var recipe := {"seed": 9, "kind": "escape", "setup": {"day": 7, "parent": "father",
@@ -148,7 +148,7 @@ func _test_a_recipe_stands_in_for_the_run_flags(t) -> void:
 
 ## A day's length is decided in one place and handed on as a number: `--day-length` for every day
 ## and every escape section when given, else each one's own.
-func _test_the_day_and_the_section_lengths(t) -> void:
+func _test_the_day_and_the_section_lengths(t: TestRunner) -> void:
 	var plain := RunConfig.parse(PackedStringArray(), "", true)
 	for day in [1, Tuning.RUN_LENGTH_DAYS]:
 		t.check(is_equal_approx(plain.day_length_for(day), Tuning.day_length(day)),
@@ -164,7 +164,7 @@ func _test_the_day_and_the_section_lengths(t) -> void:
 
 ## One rig list: every flag on it makes the run a rig, `--tap` included, as do a movie recording
 ## and a scripted recipe; a plain debug run with other flags is a person's.
-func _test_every_rig_flag_makes_a_rig(t) -> void:
+func _test_every_rig_flag_makes_a_rig(t: TestRunner) -> void:
 	for words: Array in [["--screenshot", "x.png"], ["--walk", "1e"], ["--flee"],
 			["--press", "pause", "1"], ["--tap", "1", "1"], ["--route", "home"]]:
 		t.check(RunConfig.parse(_words(words), "", true).is_rig, "%s is a rig" % [words])
@@ -177,7 +177,7 @@ func _test_every_rig_flag_makes_a_rig(t) -> void:
 	t.check(not RunConfig.parse(_words(["--walk", "1e"]), "", false).is_rig,
 			"and nothing is a rig on a release build")
 
-func _test_the_title_is_skipped_by_a_rig_or_a_recipe(t) -> void:
+func _test_the_title_is_skipped_by_a_rig_or_a_recipe(t: TestRunner) -> void:
 	t.check(not RunConfig.parse(PackedStringArray(), "", true).skips_the_title(),
 			"a plain run opens on the title")
 	t.check(RunConfig.parse(_words(["--screenshot", "x.png"]), "", true).skips_the_title(),
@@ -205,7 +205,7 @@ class LoudWorld extends WorldContext:
 ## Whether `baby`'s excitement rises over a few physics ticks against a `LoudWorld`, her meter
 ## ticking whether or not the title holds the game paused, and her own world handed back after:
 ## what `Baby.freeze_excitement()`, which `main` tells her on an invincible run, stops.
-func _her_excitement_rises(t, baby: Baby) -> bool:
+func _her_excitement_rises(t: TestRunner, baby: Baby) -> bool:
 	var own := baby.world()
 	var loud := LoudWorld.new()
 	t.add_child(loud)
@@ -223,7 +223,7 @@ func _her_excitement_rises(t, baby: Baby) -> bool:
 
 ## `main` is the one place the configuration is read: the baby and the city it builds are handed
 ## plain values, and neither reads a flag of its own.
-func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
+func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 	for invincible: bool in [false, true]:
 		var words := _words(["--skip", "shadows,motion", "--debug", "--ground-mode", "1",
 				"--blackout", "--pelican", "--force", "cyclist", "3"])
@@ -269,7 +269,7 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 		home.free()
 
 ## What the city is handed reaches the part it belongs to, and the crowd's agents get theirs.
-func _test_the_city_hands_each_value_to_its_part(t) -> void:
+func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	city.ground_mode = SceneryGround.Mode.STEPPED
 	city.scenery_frame_locked = true
@@ -335,7 +335,7 @@ func _test_the_city_hands_each_value_to_its_part(t) -> void:
 ## ticks with her walking down the street by hand, the way the loose dog's suite does, and read
 ## off the instances the manager puts in the world: a day's own first row would not come in that
 ## time, and a flag the director never took up would send no cyclist on day 1.
-func _test_the_forced_row_is_handed_to_the_director(t) -> void:
+func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	city.forced_row = "cyclist"
@@ -380,7 +380,7 @@ func _test_the_forced_row_is_handed_to_the_director(t) -> void:
 
 ## The escape's clock is a day's: a section's spec carries the section length it is handed, and the
 ## day's clock runs it and stands still when it is handed `invincible`.
-func _test_the_escape_clock_takes_its_length_and_invincible(t) -> void:
+func _test_the_escape_clock_takes_its_length_and_invincible(t: TestRunner) -> void:
 	var spec := DaySpec.for_section(DaySpec.Section.BUILDING, 25.0)
 	var clock := DayController.new()
 	clock.invincible = true
@@ -398,7 +398,7 @@ func _test_the_escape_clock_takes_its_length_and_invincible(t) -> void:
 ## `QuitOption.available()` read nothing off the command line, and `main` hands the answers to the
 ## five screens it builds: the HUD, the day summary, the touch controls, the pause and the title.
 ## The screens are read the way a player meets the answers, on two real boots (`_the_screens_answer()`).
-func _test_touch_and_web_are_the_runs_answers(t) -> void:
+func _test_touch_and_web_are_the_runs_answers(t: TestRunner) -> void:
 	var words := _words(["--touch", "--web"])
 	var debug := RunConfig.parse(words, "", true)
 	var release := RunConfig.parse(words, "", false)
@@ -422,7 +422,7 @@ func _test_touch_and_web_are_the_runs_answers(t) -> void:
 ## `Q` is not a key; on the platform this process has, a click is a press and `Q` quits. The quit is
 ## the one `main` is handed (`use_quit()`) in place of leaving the test runner. The HUD is read off
 ## where its meters stand, which is the touch layout's alone.
-func _the_screens_answer(t, flagged: bool) -> void:
+func _the_screens_answer(t: TestRunner, flagged: bool) -> void:
 	var label := "on --touch --web" if flagged else "with neither flag"
 	var quits := [0]
 	var run := RunState.new()
@@ -513,7 +513,7 @@ static func _a_walking_key_is_held() -> bool:
 
 ## Lifts what a press on the controls left held, the way a player does: the release of the press,
 ## then the keys themselves, since a heading held by a click stands until something stops it.
-func _let_go_of_the_walking_keys(t, controls: TouchControls, at: Vector2) -> void:
+func _let_go_of_the_walking_keys(t: TestRunner, controls: TouchControls, at: Vector2) -> void:
 	UI.push(controls, UI.touch_at(at, false))
 	for action: StringName in [&"move_left", &"move_right", &"move_up", &"move_down"]:
 		Input.action_release(action)

@@ -1,8 +1,8 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends "res://tests/resistance_rig.gd"
 ## M188: every mark and contact stands on ground she can reach, and a queued mast is never generated inside a lethal field.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_queued_mast_is_never_generated_inside_a_lethal_field(t)
 	_test_place_at_sites_a_row_only_where_the_days_spacing_leaves_room(t)
 	await _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t)
@@ -18,7 +18,7 @@ func run(t) -> void:
 ## inside a lethal event's field"). Offered sidewalk well clear of it, the mast is generated, joins
 ## the day's plan under an added id, and has room by the same rule. A mast put down where the
 ## director pointed, as before, fails the first half.
-func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
+func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var read := _read_the_mark_on(t, 11, SEED)
 	var director: ResistanceDirector = read[0]
@@ -66,7 +66,7 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t) -> void:
 ## `EVENT_SPACING_ANY`) it answers null, and with the tile free of every other plan it answers the
 ## placement. The mast row stands for any catalogue row here; the spacing asks the candidate and the
 ## plans standing, not which row it is.
-func _test_place_at_sites_a_row_only_where_the_days_spacing_leaves_room(t) -> void:
+func _test_place_at_sites_a_row_only_where_the_days_spacing_leaves_room(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var map := _city.map
 	var def := EventCatalogue.mast()
@@ -141,7 +141,7 @@ const REACHABILITY_SWEEP_SEEDS: Array[int] = [4242, 90210, 1234567]
 ## seed 1234567 (a mark on good ground the day's whole obstruction seals off from home, item 3) are
 ## all within this sweep's own days and seeds, so the general loop below checks them along with
 ## everything else rather than as a separate case.
-func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> void:
+func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t: TestRunner) -> void:
 	var checked := 0
 	for seed_value in REACHABILITY_SWEEP_SEEDS:
 		var run := _build_city_in_a_new_run(t, seed_value)
@@ -216,7 +216,7 @@ func _test_every_mark_and_contact_stands_on_walkable_unobstructed_ground(t) -> v
 ## the tile the draw actually landed on — so a body on some other tile of the pool leaves the mark
 ## where the draw put it. Proven through a real director's dawn: day 6's mark falls on a tile; the
 ## same dawn on an identical city with a body recorded on a different mark tile puts it on the same.
-func _test_the_draw_only_replaces_the_candidate_the_new_check_rejects(t) -> void:
+func _test_the_draw_only_replaces_the_candidate_the_new_check_rejects(t: TestRunner) -> void:
 	var fell_on := _dawn_mark_tile(t, 6, null)
 	t.check(fell_on != Vector2i(-1, -1), "day 6's mark falls on a tile at dawn")
 	var elsewhere: Array[Vector2i] = []
@@ -237,7 +237,7 @@ func _test_the_draw_only_replaces_the_candidate_the_new_check_rejects(t) -> void
 ## with no body on it, so an `open` that did not refuse the occupied tile lets the first tile stand
 ## and fails here. `open`'s reachability half is caught by the sweep above, not here: the director's
 ## reach grid comes from the scheduler's plans, not the map the body is recorded on.
-func _test_the_director_hands_the_draw_its_own_predicates(t) -> void:
+func _test_the_director_hands_the_draw_its_own_predicates(t: TestRunner) -> void:
 	var fell_on := _dawn_mark_tile(t, 6, null)
 	t.check(fell_on != Vector2i(-1, -1), "day 6's mark falls on a tile at dawn")
 	var occupied: Array[Vector2i] = [fell_on]
@@ -250,7 +250,7 @@ func _test_the_director_hands_the_draw_its_own_predicates(t) -> void:
 
 ## The tile day `day`'s mark falls on at dawn, on a city and run built for it, with `bodies` (when
 ## given) recorded on the map before the director dawns. (-1, -1) when it has no mark.
-func _dawn_mark_tile(t, day: int, bodies) -> Vector2i:
+func _dawn_mark_tile(t: TestRunner, day: int, bodies) -> Vector2i:
 	var run := _build_city_in_a_new_run(t)
 	run.resistance.completed_steps = _completed_through(2 * (day - 6))
 	var state := CityState.new()

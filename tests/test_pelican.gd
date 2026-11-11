@@ -45,7 +45,7 @@ var _map: CityMap
 ## no run but its own. `_new_run()` puts it back to a fresh bag of a seed's own.
 var _run: RunState
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_run = RunState.new()
 	_run.start_run(1)
@@ -80,7 +80,7 @@ func _day_rng() -> RandomNumberGenerator:
 ## The run's bag holds 399 cyclists and 1 pelican, so 400 cyclists in a run are exactly one pelican
 ## and 800 are exactly two; and over many runs of about a run's cyclists the share of runs with a
 ## pelican is the cyclists drawn over 400.
-func _test_a_run_meets_at_most_one_pelican_and_about_one_cyclist_in_400_is_it(t) -> void:
+func _test_a_run_meets_at_most_one_pelican_and_about_one_cyclist_in_400_is_it(t: TestRunner) -> void:
 	_new_run(1)
 	var all := _rolls_for(1, [EventCatalogue.by_id("cyclist")], 800)
 	var first := all.slice(0, 400)
@@ -105,7 +105,7 @@ func _test_a_run_meets_at_most_one_pelican_and_about_one_cyclist_in_400_is_it(t)
 
 ## Two managers on the same run roll the same riders, one draw per cyclist in the order they are
 ## created, whatever the day; another run rolls others.
-func _test_the_seed_decides_which_cyclist_is_the_pelican(t) -> void:
+func _test_the_seed_decides_which_cyclist_is_the_pelican(t: TestRunner) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var first := _rolls_for(5, [cyclist], 400)
 	var again := _rolls_for(5, [cyclist], 400)
@@ -118,7 +118,7 @@ func _test_the_seed_decides_which_cyclist_is_the_pelican(t) -> void:
 ## The bag is rebuilt when the run's seed or the count it was left at disagrees with it, and only
 ## then: one manager kept across a new run, and across a count a lost day put back, draws what a
 ## fresh manager would.
-func _test_the_bag_follows_the_run_and_the_count(t) -> void:
+func _test_the_bag_follows_the_run_and_the_count(t: TestRunner) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var manager := EventManager.new()
 	manager.use_run(_run)
@@ -150,7 +150,7 @@ func _test_the_bag_follows_the_run_and_the_count(t) -> void:
 ## `--pelican`, as the run hands it on: the configuration reads the flag, and the manager it reaches
 ## (`PelicanRig.ALWAYS`, which the city sets from it) makes every cyclist the pelican while a loose
 ## dog still is not, and the bag draws what it would have.
-func _test_the_dev_flag_makes_every_cyclist_a_pelican(t) -> void:
+func _test_the_dev_flag_makes_every_cyclist_a_pelican(t: TestRunner) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var plain := _rolls_for(5, [cyclist], 40)
 	t.check(RunConfig.parse(PackedStringArray(["--pelican"]), "", true).pelican,
@@ -166,7 +166,7 @@ func _test_the_dev_flag_makes_every_cyclist_a_pelican(t) -> void:
 
 ## A row that is not a cyclist is never the pelican and draws nothing from the bag, so the loose
 ## dogs sent between two cyclists do not move which of them it is.
-func _test_only_a_cyclist_draws_from_the_bag(t) -> void:
+func _test_only_a_cyclist_draws_from_the_bag(t: TestRunner) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	var dog := EventCatalogue.by_id("loose_dog")
 	var cyclists_only := _rolls_for(5, [cyclist], 400)
@@ -187,7 +187,7 @@ func _test_only_a_cyclist_draws_from_the_bag(t) -> void:
 ## *(inbox #575: "save it in the standard save file to reset the bag to the beginning of the day on
 ## a lost day".)* A lost day gives the count back to the day's dawn and a save written mid-day reads
 ## it back, and a manager that meets either draws the cyclists, and the pelican, the day first drew.
-func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t) -> void:
+func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t: TestRunner) -> void:
 	var cyclist := EventCatalogue.by_id("cyclist")
 	# Some run whose pelican is among the day's cyclists, so the comparison compares one.
 	# The day is draws 7 to 26, so the window searched is that one.
@@ -255,7 +255,7 @@ func _rolls(def: EventDef, count: int, run_seed: int) -> Array[bool]:
 ## A rider created as the pelican, through the path every cyclist takes (`spawn_warned()`, handed
 ## the roll its warning made), is drawn as the pelican on its first frame and late in its ride; one
 ## created as the kid stays the kid.
-func _test_a_pelican_rides_as_one_throughout(t) -> void:
+func _test_a_pelican_rides_as_one_throughout(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	var events := _events
 	var pelican := events.spawn_warned(def, _ride(), true)
@@ -285,7 +285,7 @@ func _test_a_pelican_rides_as_one_throughout(t) -> void:
 
 ## The same ride, rolled both ways: the same row, the same field and the same lethal reach at every
 ## point around it, the same speed. Only the pictures it is drawn with differ.
-func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t) -> void:
+func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	var events := _events
 	var pelican := events.spawn_warned(def, _ride(), true)
@@ -323,7 +323,7 @@ func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t) -> void:
 ## The pictures `instance` is drawn with on its own canvas once drawn frames have passed: what its
 ## look asked its drawer to stand. The city's events are drawn through a recording drawer
 ## (`_record_the_drawing()`).
-func _drawn_from(t, instance: EventInstance) -> Array[String]:
+func _drawn_from(t: TestRunner, instance: EventInstance) -> Array[String]:
 	await DrawnEvent.frames(t)
 	var found: Array[String] = []
 	for entry in DrawnEvent.shown(instance):
@@ -353,7 +353,7 @@ func _ride() -> PackedVector2Array:
 ## - **its lethal reach covering her is told once**, ahead of the hard fail, and names the day's
 ##   loss `pelican` (`EventManager.what_struck_her()`), where a kid's names `cyclist`;
 ## - **the observer's own lines call it `pelican`**: on screen, struck, and nearest.
-func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t) -> void:
+func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	var events := _events
 	var map := _map

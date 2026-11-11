@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for "measure the empty feeling before and after". Not a suite: it prints
 ## numbers rather than asserting relationships, so it lives here under `tests/probes/`, where the
@@ -19,7 +19,7 @@ const SEEDS := 8
 const BASE_SEED := 90210
 const SAMPLE_DAYS := [1, 5, 8, 11, 14]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_roles_of_the_named_rows()
 	_role_and_depth_sweep()
 	_closure_access_vs_rim_sweep()

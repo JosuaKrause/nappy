@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the escape's roadblocks (inbox #771 in minty-lemur): how many the finale's plan stands,
 ## and how near the nearest two stand, on any two streets. Not a suite: it prints rather than
@@ -16,7 +15,7 @@ const SEEDS := 40
 ## The seed the run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	var total := 0

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## A scene recipe's `setup.task`: what the schema accepts, and what the director does with a pinned
 ## mark and a pinned neighbor — stands the mark unread, places the task with its own placement when
@@ -25,7 +25,7 @@ const MARK := Vector2i(92, 68)
 ## The seed `_recipe()` gives a scene, which a recipe boot starts its run on.
 const RECIPE_SEED := 11
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_schema_names_a_mark_on_the_days_that_have_one(t)
 	_test_the_task_observations_ask_about_the_task(t)
 	_test_an_authored_mast_carries_its_own_id(t)
@@ -48,10 +48,10 @@ func _recipe(day: int, task: Variant, observations := []) -> Dictionary:
 ## Where each recipe is written and loaded, and what loading it answers.
 var _errors := RecipeErrors.new()
 
-func _refused(t, recipe: Dictionary, words: String) -> bool:
+func _refused(t: TestRunner, recipe: Dictionary, words: String) -> bool:
 	return _errors.refused(t, recipe, words)
 
-func _test_the_schema_names_a_mark_on_the_days_that_have_one(t) -> void:
+func _test_the_schema_names_a_mark_on_the_days_that_have_one(t: TestRunner) -> void:
 	t.check(_refused(t, _recipe(3, {}), "offers no resistance task"),
 			"a day before the first mark has no task to start")
 	t.check(_refused(t, _recipe(7, {}), "starts at a chalk mark"),
@@ -69,7 +69,7 @@ func _test_the_schema_names_a_mark_on_the_days_that_have_one(t) -> void:
 	t.check(_refused(t, _recipe(7, {"mark": [2960, 2224], "target": [0, 0]}), "setup.task.target"),
 			"an unknown task field is refused")
 
-func _test_the_task_observations_ask_about_the_task(t) -> void:
+func _test_the_task_observations_ask_about_the_task(t: TestRunner) -> void:
 	var on_the_task := [{"tick": 1, "subject": "task", "condition": "offered"},
 			{"tick": 1, "subject": "mark", "condition": "done"},
 			{"tick": 1, "subject": "rider", "condition": "beyond", "at": [0, 0], "distance": 576},
@@ -99,7 +99,7 @@ func _test_the_task_observations_ask_about_the_task(t) -> void:
 ## and a director, in a run of its own on that day (the recipes' seed, as a recipe boot starts its
 ## run), which the city and the director are handed. A fresh map each time, since a day's bodies and
 ## holds are recorded on it. `_free_day()` frees the city and the director.
-func _day(t, day: int) -> Array:
+func _day(t: TestRunner, day: int) -> Array:
 	var built := RecipeCityBuilder.build({"version": 1, "name": "task", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
 	t.check(built.errors.is_empty(), "the context city builds: %s" % [built.errors])
@@ -133,7 +133,7 @@ func _free_day(made: Array) -> void:
 	(made[0] as City).free()
 	(made[1] as ResistanceDirector).free()
 
-func _test_a_pinned_mark_is_read_and_its_task_placed_near_it(t) -> void:
+func _test_a_pinned_mark_is_read_and_its_task_placed_near_it(t: TestRunner) -> void:
 	var made := _day(t, 7)
 	var city: City = made[0]
 	var director: ResistanceDirector = made[1]
@@ -172,7 +172,7 @@ func _test_a_pinned_mark_is_read_and_its_task_placed_near_it(t) -> void:
 ## street's edge and a touch reaches 36px: her centre 14px inside the alley (her body wholly past the
 ## edge) touches it, standing on the pavement at the mouth, body wholly outside, does not, nor does
 ## the centre on the street's edge.
-func _test_a_mark_is_touched_only_from_inside_its_alley(t) -> void:
+func _test_a_mark_is_touched_only_from_inside_its_alley(t: TestRunner) -> void:
 	var made := _day(t, 7)
 	var city: City = made[0]
 	var director: ResistanceDirector = made[1]
@@ -199,7 +199,7 @@ func _test_a_mark_is_touched_only_from_inside_its_alley(t) -> void:
 ## mouth, the spot a mark on the mouth would have had, worked out from the map (`AlleyMarks`), so he
 ## stands as far from the mark as he would from a mark on the mouth. The mark is pinned and its guard,
 ## stood with it at dawn, read off the street.
-func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t) -> void:
+func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t: TestRunner) -> void:
 	var made := _day(t, 7)
 	var city: City = made[0]
 	var director: ResistanceDirector = made[1]
@@ -229,7 +229,7 @@ func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t) -> void:
 			"one tile further in")
 	_free_day(made)
 
-func _test_a_mark_off_the_tile_in_from_a_mouth_is_refused_not_moved(t) -> void:
+func _test_a_mark_off_the_tile_in_from_a_mouth_is_refused_not_moved(t: TestRunner) -> void:
 	var made := _day(t, 7)
 	var city: City = made[0]
 	var director: ResistanceDirector = made[1]
@@ -250,7 +250,7 @@ func _test_a_mark_off_the_tile_in_from_a_mouth_is_refused_not_moved(t) -> void:
 			"and so is one on the mouth's own tile: %s" % [errors])
 	_free_day(made)
 
-func _test_a_neighbor_start_the_day_could_not_draw_is_refused(t) -> void:
+func _test_a_neighbor_start_the_day_could_not_draw_is_refused(t: TestRunner) -> void:
 	var made := _day(t, 10)
 	var city: City = made[0]
 	var director: ResistanceDirector = made[1]
@@ -275,7 +275,7 @@ func _test_a_neighbor_start_the_day_could_not_draw_is_refused(t) -> void:
 ## *(Inbox #486: "Now just add a new mast close by".)* A recipe installs no mast it does not name, so
 ## day 11 meets a city with no live mast at all — which is still no mast near her, and one is put up
 ## where her path first reaches the circle round her.
-func _test_day_eleven_puts_up_a_mast_where_no_mast_stands_at_all(t) -> void:
+func _test_day_eleven_puts_up_a_mast_where_no_mast_stands_at_all(t: TestRunner) -> void:
 	var made := _day(t, 11)
 	var city: City = made[0]
 	var director: ResistanceDirector = made[1]
@@ -297,7 +297,7 @@ func _test_day_eleven_puts_up_a_mast_where_no_mast_stands_at_all(t) -> void:
 ## A scene recipe gives an authored loudspeaker a `mast_id`, the identity day 11's task and its red
 ## arrow answer to, so a scene can stand two masts and show the arrow move between them
 ## (`scene-recipes/task-11-two-masts.json`). Only a loudspeaker is a mast, and one id names one mast.
-func _test_an_authored_mast_carries_its_own_id(t) -> void:
+func _test_an_authored_mast_carries_its_own_id(t: TestRunner) -> void:
 	var mast := func(name: String, row: String, id: Variant) -> Dictionary:
 		var entry := {"name": name, "row": row, "at": [3440, 1936]}
 		if id != null:
@@ -323,7 +323,7 @@ func _test_an_authored_mast_carries_its_own_id(t) -> void:
 ## and clear of the day's doors. (107, 60) is where day 11's own mast stands on the context city.
 ## Each site is installed as a recipe installs it (`install()`), into the day's city in a run of its
 ## own, and read off what the install says: a refused site is an install error naming the mast.
-func _test_an_authored_mast_stands_only_where_the_days_masts_may(t) -> void:
+func _test_an_authored_mast_stands_only_where_the_days_masts_may(t: TestRunner) -> void:
 	var at := Vector2(3440, 1936)
 	var made := _day(t, 11)
 	var city: City = made[0]
@@ -372,7 +372,7 @@ func _a_site_only_a_door_rules_out(map: CityMap) -> Vector2:
 
 ## Whether a recipe's loudspeaker at `at` installs on the day `made` (`_day()`) stands, through the
 ## runtime's own `install()` with her at the alley mouth: false when the install refuses the mast.
-func _mast_installs(t, made: Array, at: Vector2) -> bool:
+func _mast_installs(t: TestRunner, made: Array, at: Vector2) -> bool:
 	var city: City = made[0]
 	var own_run: RunState = made[2]
 	var player: Stroller = STROLLER_SCENE.instantiate()

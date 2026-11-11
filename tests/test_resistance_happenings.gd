@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `ResistanceHappenings`, what the resistance's story puts in the street besides the task, checked
 ## with no city: the happenings are handed a stand-in for the day's events (`FakeEventManager`) and
@@ -16,13 +15,13 @@ const SEED := 4242
 const RUN_SEED := 2
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_raid_seals_her_street_door(t)
 
 ## Her street door: ordinary at day 10's start, sealed the moment the raid actually arrives, out
 ## of her sight (PLAYTEST-131), and the scar it leaves is what every later day and a reloaded save
 ## read it from (`City._sync_home_door()`).
-func _test_the_raid_seals_her_street_door(t) -> void:
+func _test_the_raid_seals_her_street_door(t: TestRunner) -> void:
 	var map := CityGenerator.generate(SEED)
 	var run_state := RunState.new()
 	run_state.start_run(RUN_SEED)

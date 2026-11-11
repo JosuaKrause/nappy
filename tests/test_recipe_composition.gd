@@ -9,7 +9,7 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const LANE_KEYS := preload("res://tests/lane_key_search.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
 	var built := RecipeCityBuilder.build(recipe)
 	t.check(built.errors.is_empty(), "opposite-curb tree recipe constructs: %s" % [built.errors])

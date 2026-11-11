@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **Day 12's cordon officers, placed and walked, printed one line per sample**, so a change to the
 ## rules the cordon asks can be shown to put them exactly where they stood before. Not a suite: it
@@ -23,7 +23,7 @@ const SAMPLE_EVERY := 15
 ## The seed each sample's run starts from: fixed, so the probe measures the same runs on every machine. Each sample plays a run of its own.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var seeds: Array[int] = []
 	for seed_value in range(SEEDS_FROM, SEEDS_TO + 1):
 		seeds.append(seed_value)
@@ -35,7 +35,7 @@ func run(t) -> void:
 	print("CP_TOTAL %d lines" % printed)
 	t.check(printed > 0, "there were officers to print (%d)" % printed)
 
-func _a_seed(t, seed_value: int, walks: bool) -> int:
+func _a_seed(t: TestRunner, seed_value: int, walks: bool) -> int:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))

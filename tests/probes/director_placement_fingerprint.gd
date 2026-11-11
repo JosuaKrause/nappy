@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **Every placement entry point of the resistance and the events' director half, printed one line
 ## each**, so a change to the rules they ask can be shown to pick exactly what they picked before:
@@ -42,7 +42,7 @@ const RUN_SEED := 2
 
 var _lines: Array[String] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	# The director tells the observers of the tasks it offers and ends (`EventBus`), as in a run.
 	var printed := 0
 	for seed_value in SEEDS:
@@ -55,7 +55,7 @@ func run(t) -> void:
 	print("DP_TOTAL %d lines" % printed)
 	t.check(printed > 0, "there were placements to print (%d)" % printed)
 
-func _a_day(t, city: City, seed_value: int, day: int) -> int:
+func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 	var finale := day == Tuning.RUN_LENGTH_DAYS
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():

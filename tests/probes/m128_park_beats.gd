@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What `playground` and `busker` actually cost on real, generated parks, printed rather than
 ## asserted. Not a suite: it lives under `tests/probes/`, where the runner never discovers it,
@@ -28,7 +28,7 @@ const OLD_BUSKER_OUTER := 190.0
 const _SIDEWALK_SEARCH_STEP := 8.0
 const _SIDEWALK_SEARCH_MAX := 400.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_busker_never_fills_the_day(t)
 	_busker_denial_and_inner_floor(t)
 	_busker_street_side(t)
@@ -62,7 +62,7 @@ const _SWEEP_TOP := 19.5  # The floor `_busker_denial_and_inner_floor` found; ne
 ## exactly as asked. The instance is stepped past its own `telegraph_time` before she "arrives",
 ## since a busker that has been playing all morning has no telegraph left by the time anyone
 ## walks up to him.
-func _busker_never_fills_the_day(t) -> void:
+func _busker_never_fills_the_day(t: TestRunner) -> void:
 	var found := _find_one_block_park()
 	if found.is_empty():
 		print("\n== no one-block PARK found across seeds %s; skipped ==" % [SEEDS])
@@ -121,7 +121,7 @@ func _find_one_block_park() -> Dictionary:
 
 ## One busker, alone, standing trial at `intensity` for up to `_SLEEP_CAP_SECONDS`. Returns the
 ## second the sleep meter filled, or `-1.0` if it never did.
-func _time_to_full_sleep(t, city: City, busker_at: Vector2, standing_at: Vector2,
+func _time_to_full_sleep(t: TestRunner, city: City, busker_at: Vector2, standing_at: Vector2,
 		real: EventDef, intensity: float) -> float:
 	# A fresh `EventDef`, not the catalogue's own, so the sweep never has to mutate and restore the
 	# live row — only `intensity` varies; everything else is read off the real def so the two can
@@ -204,7 +204,7 @@ func _pulse_mean_multiplier() -> float:
 
 ## `EventScheduler._denial_radius` reads live off `EventCatalogue`, so "after" is asked of the
 ## real def; "before" is the same formula asked of the M117 numbers, kept as constants above.
-func _busker_denial_and_inner_floor(t) -> void:
+func _busker_denial_and_inner_floor(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("busker")
 	var before_denial := _denial_radius(OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER)
 	var after_denial := EventScheduler._denial_radius(def)
@@ -252,7 +252,7 @@ func _denial_radius(intensity: float, inner: float, outer: float) -> float:
 ## distance its field has to clear to be felt from the street, rather than a distance assumed
 ## from the lot's nominal size. `emission_at()` is the peak, undamped reading (the top of the
 ## beat), which is the worst case a passer-by meets.
-func _busker_street_side(t) -> void:
+func _busker_street_side(t: TestRunner) -> void:
 	print("\n== busker contribution on the pavement beside its lot, top of the beat ==")
 	print("  %-8s %10s %10s %10s %10s" % ["seed", "to street", "before", "after", "ratio"])
 	# A plain `EventDef`, not the catalogue's own — `emission_at()` only reads `intensity`,
@@ -316,7 +316,7 @@ func _distance_to_sidewalk(map: CityMap, from: Vector2) -> float:
 ## puts the ambient source, and so the worst point in the park for it. `_walk_until_asleep` is
 ## `tests/test_balance.gd`'s own rig, duplicated here rather than shared because a probe under
 ## `tests/probes/` is not discovered by anything that could import it as a dependency.
-func _playground_settles(t) -> void:
+func _playground_settles(t: TestRunner) -> void:
 	print("\n== a one-block park with a playground in it: can she settle at its own centre? ==")
 	var step := 1.0 / 60.0
 	for city_seed in SEEDS:

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The meter rules from docs/MECHANICS.md.
 ##
@@ -46,7 +46,7 @@ var _stroller: Stroller
 var _baby: Baby
 var _bus: _BUS
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_falloff(t)
 	_test_telegraph_contract(t)
 	await _test_walking_fills_sleepiness(t)
@@ -72,7 +72,7 @@ func run(t) -> void:
 
 # ------------------------------------------------------------- pure numbers ---
 
-func _test_falloff(t) -> void:
+func _test_falloff(t: TestRunner) -> void:
 	t.close_to(Field.falloff(0.0, 10.0, 40.0, 150.0), 10.0, "falloff at centre is full")
 	t.close_to(Field.falloff(40.0, 10.0, 40.0, 150.0), 10.0, "falloff at inner edge is full")
 	t.close_to(Field.falloff(150.0, 10.0, 40.0, 150.0), 0.0, "falloff at outer edge is zero")
@@ -91,7 +91,7 @@ func _test_falloff(t) -> void:
 		t.check(value <= previous + 0.0001, "falloff never rises with distance (d=%d)" % d)
 		previous = value
 
-func _test_telegraph_contract(t) -> void:
+func _test_telegraph_contract(t: TestRunner) -> void:
 	# A player walking away the instant an event appears must clear the outer radius.
 	var required := Tuning.required_telegraph_time(40.0, 150.0, false)
 	t.close_to(required, 110.0 / Tuning.WALK_SPEED, "telegraph time covers the escape distance")
@@ -102,7 +102,7 @@ func _test_telegraph_contract(t) -> void:
 
 # ------------------------------------------------------------------ the rig ---
 
-func _build(t) -> void:
+func _build(t: TestRunner) -> void:
 	_world = FakeWorld.new()
 	t.add_child(_world)
 	_stroller = Stroller.new()
@@ -155,7 +155,7 @@ func _stand() -> void:
 
 # ------------------------------------------------------------- sleepiness ---
 
-func _test_walking_fills_sleepiness(t) -> void:
+func _test_walking_fills_sleepiness(t: TestRunner) -> void:
 	_build(t)
 	_walk()
 	await _simulate(10.0)
@@ -167,7 +167,7 @@ func _test_walking_fills_sleepiness(t) -> void:
 ## The guarantee has to be arithmetic rather than a hope about how loud the streets are — a
 ## quiet back street never freezes the meter, so nothing else stops a player walking in
 ## circles all day.
-func _test_a_day_cannot_be_won_on_street_gain_alone(t) -> void:
+func _test_a_day_cannot_be_won_on_street_gain_alone(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var whole_day := Tuning.SLEEPINESS_GAIN_WALKING * Tuning.day_length(day)
 		t.check(whole_day < Tuning.METER_MAX,
@@ -179,7 +179,7 @@ func _test_a_day_cannot_be_won_on_street_gain_alone(t) -> void:
 
 ## The other half of the pitch: calm ground has to finish a day comfortably, not barely.
 ## Measured against the *short* day, because the curfew one is the strict case.
-func _test_one_calm_stretch_wins_a_day(t) -> void:
+func _test_one_calm_stretch_wins_a_day(t: TestRunner) -> void:
 	var stretch := Tuning.METER_MAX / Tuning.sleepiness_gain_calm()
 	var short_day := Tuning.day_length(Tuning.RUN_LENGTH_DAYS)
 	t.check(stretch < short_day * 0.6,
@@ -196,7 +196,7 @@ func _test_one_calm_stretch_wins_a_day(t) -> void:
 ## the difficulty is supposed to be the walk. Both halves matter: a floor under 30s would
 ## mean the day is over before it starts, and a floor over the grace would mean dusk is the
 ## real opponent again, which is what M18 was undoing.
-func _test_a_day_is_a_minute_of_play_with_a_grace_of_three(t) -> void:
+func _test_a_day_is_a_minute_of_play_with_a_grace_of_three(t: TestRunner) -> void:
 	var leg := CityGenerator.MIN_HOME_TO_PARK_TILES * float(Tuning.TILE_SIZE) / Tuning.WALK_SPEED
 	var banked := Tuning.SLEEPINESS_GAIN_WALKING * leg
 	var stretch := (Tuning.METER_MAX - banked) / Tuning.sleepiness_gain_calm()
@@ -210,7 +210,7 @@ func _test_a_day_is_a_minute_of_play_with_a_grace_of_three(t) -> void:
 				"day %d's %.0fs of dusk is a grace, not the target (floor %.0fs)"
 				% [day, Tuning.day_length(day), shortest])
 
-func _test_standing_still_is_worse_than_walking_but_affordable(t) -> void:
+func _test_standing_still_is_worse_than_walking_but_affordable(t: TestRunner) -> void:
 	t.check(Baby.SLEEPINESS_DRAIN_IDLE > Tuning.SLEEPINESS_GAIN_WALKING,
 			"standing still loses ground rather than merely failing to gain it")
 	t.check(Baby.SLEEPINESS_DRAIN_IDLE < Tuning.sleepiness_gain_calm(),
@@ -219,7 +219,7 @@ func _test_standing_still_is_worse_than_walking_but_affordable(t) -> void:
 ## The claim end to end, on a fake world where nothing is happening at all. Even with no
 ## events and no crowd — the friendliest possible day — the street cannot finish it and one
 ## calm stretch can, with time left over to walk home.
-func _test_a_street_day_never_settles_and_a_park_day_does(t) -> void:
+func _test_a_street_day_never_settles_and_a_park_day_does(t: TestRunner) -> void:
 	_build(t)
 	_walk()
 	await _simulate_fast(Tuning.day_length(1))
@@ -244,7 +244,7 @@ func _test_a_street_day_never_settles_and_a_park_day_does(t) -> void:
 			% [elapsed, short_day])
 	_teardown()
 
-func _test_calm_zone_speeds_sleep(t) -> void:
+func _test_calm_zone_speeds_sleep(t: TestRunner) -> void:
 	_build(t)
 	_world.calm = true
 	_walk()
@@ -254,7 +254,7 @@ func _test_calm_zone_speeds_sleep(t) -> void:
 			"a calm zone multiplies the sleepiness gain", 0.1)
 	_teardown()
 
-func _test_idle_drains_sleepiness(t) -> void:
+func _test_idle_drains_sleepiness(t: TestRunner) -> void:
 	_build(t)
 	_baby.sleepiness = 50.0
 	_stand()
@@ -263,7 +263,7 @@ func _test_idle_drains_sleepiness(t) -> void:
 			"standing still drains sleepiness", 0.1)
 	_teardown()
 
-func _test_running_blocks_sleep_and_excites(t) -> void:
+func _test_running_blocks_sleep_and_excites(t: TestRunner) -> void:
 	_build(t)
 	_baby.sleepiness = 50.0
 	_sprint()
@@ -274,7 +274,7 @@ func _test_running_blocks_sleep_and_excites(t) -> void:
 			"a full sprint raises excitement at the net rate", 0.15)
 	_teardown()
 
-func _test_calm_threshold_freezes_sleepiness(t) -> void:
+func _test_calm_threshold_freezes_sleepiness(t: TestRunner) -> void:
 	_build(t)
 	_baby.sleepiness = 40.0
 	_baby.excitement = Tuning.EXCITEMENT_CALM_THRESHOLD + 5.0
@@ -297,7 +297,7 @@ func _test_calm_threshold_freezes_sleepiness(t) -> void:
 ##
 ## Asserted as a **relationship** rather than as the three numbers, because the ordering is the
 ## design and the values are not.
-func _test_only_motion_settles_her(t) -> void:
+func _test_only_motion_settles_her(t: TestRunner) -> void:
 	t.check(Baby.EXCITEMENT_DECAY_IDLE <= 0.0,
 			"standing still does not settle her at all")
 	t.check(Tuning.EXCITEMENT_DECAY_WALKING > Baby.EXCITEMENT_DECAY_RUNNING,
@@ -336,7 +336,7 @@ func _test_only_motion_settles_her(t) -> void:
 			"walking the same quiet spot is what brings it down", 0.1)
 	_teardown()
 
-func _test_alley_trickle(t) -> void:
+func _test_alley_trickle(t: TestRunner) -> void:
 	_build(t)
 	_world.alley = true
 	_walk()
@@ -360,7 +360,7 @@ func _test_alley_trickle(t) -> void:
 
 # ------------------------------------------------------------------ states ---
 
-func _test_falls_asleep(t) -> void:
+func _test_falls_asleep(t: TestRunner) -> void:
 	_build(t)
 	var announced := [false]
 	var handler := func() -> void: announced[0] = true
@@ -375,7 +375,7 @@ func _test_falls_asleep(t) -> void:
 	t.check(announced[0], "falling asleep starts the return phase")
 	_teardown()
 
-func _test_sleeping_baby_is_less_sensitive(t) -> void:
+func _test_sleeping_baby_is_less_sensitive(t: TestRunner) -> void:
 	_build(t)
 	_baby.state = GameEnums.BabyState.ASLEEP
 	_world.noise = 20.0
@@ -385,7 +385,7 @@ func _test_sleeping_baby_is_less_sensitive(t) -> void:
 			"incoming excitement is damped while the baby sleeps")
 	_teardown()
 
-func _test_wakes_up_with_penalty(t) -> void:
+func _test_wakes_up_with_penalty(t: TestRunner) -> void:
 	_build(t)
 	_baby.state = GameEnums.BabyState.ASLEEP
 	_baby.sleepiness = Tuning.METER_MAX
@@ -398,7 +398,7 @@ func _test_wakes_up_with_penalty(t) -> void:
 			"waking costs the sleepiness penalty")
 	_teardown()
 
-func _test_full_excitement_cries(t) -> void:
+func _test_full_excitement_cries(t: TestRunner) -> void:
 	_build(t)
 	_baby.excitement = Tuning.METER_MAX - 1.0
 	_world.noise = 60.0
@@ -429,7 +429,7 @@ func _test_full_excitement_cries(t) -> void:
 ## rule was built for: what is left over for `Baby.EXCITEMENT_OVERFLOW_TO_CRY` to catch is only
 ## the part of the jolt that landed *after* the bar was already clamped, which a jolt this short
 ## barely has any of.
-func _test_one_bump_no_longer_ends_the_day(t) -> void:
+func _test_one_bump_no_longer_ends_the_day(t: TestRunner) -> void:
 	var from_89 := await _one_bump_from(t, 89.0)
 	t.check(not from_89["crying"], "one contact from 89 does not end the day")
 
@@ -440,7 +440,7 @@ func _test_one_bump_no_longer_ends_the_day(t) -> void:
 ## The other half of the same rule: a source that keeps emitting once she is already at the cap
 ## does end the day, because the mass it leaves behind keeps accruing rather than being spent
 ## reaching 100 the way one short bump's is.
-func _test_a_sustained_source_at_the_top_cries(t) -> void:
+func _test_a_sustained_source_at_the_top_cries(t: TestRunner) -> void:
 	_build(t)
 	_baby.excitement = Tuning.METER_MAX
 	# Comfortably net-positive while walking, so the whole window's worth clears the threshold.
@@ -453,7 +453,7 @@ func _test_a_sustained_source_at_the_top_cries(t) -> void:
 
 ## The rule is a mass **and** a window, not either alone: a loud source cut off early, and a
 ## source too quiet to clear the mass however long it runs, both leave the day still going.
-func _test_the_overflow_mass_needs_both_size_and_time(t) -> void:
+func _test_the_overflow_mass_needs_both_size_and_time(t: TestRunner) -> void:
 	_build(t)
 	_baby.excitement = Tuning.METER_MAX
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0  # net +10/s, well above the threshold
@@ -479,7 +479,7 @@ func _test_the_overflow_mass_needs_both_size_and_time(t) -> void:
 ## through the day: a quiet source leaves a mass just under the threshold behind and no day ends;
 ## then a short loud push at the cap ends it while that mass is still inside the window, and does
 ## not once the window has turned over, the same push alone being too small to.
-func _test_the_overflow_mass_drains_with_the_window(t) -> void:
+func _test_the_overflow_mass_drains_with_the_window(t: TestRunner) -> void:
 	for waited in [ONE_FRAME, Baby.EXCITEMENT_OVERFLOW_WINDOW + 1.0]:
 		_build(t)
 		_baby.excitement = Tuning.METER_MAX
@@ -504,7 +504,7 @@ func _test_the_overflow_mass_drains_with_the_window(t) -> void:
 
 ## The meter, and whether the day ended crying, after one whole
 ## contact starting from `at` and walking ordinary ground.
-func _one_bump_from(t, at: float) -> Dictionary:
+func _one_bump_from(t: TestRunner, at: float) -> Dictionary:
 	_build(t)
 	var agent := CrowdAgent.new()
 	agent.global_position = _stroller.global_position

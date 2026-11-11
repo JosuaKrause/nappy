@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Reproducible crowd-query workload, not a whole-game frame or a phone benchmark.
 ## Run explicitly with tools/test.sh probes/m159_contribution_cost.gd; raw timings print at end.
@@ -10,7 +10,7 @@ const ORACLE := preload("res://tests/test_crowd_contributions.gd")
 const STEP := 1.0 / 30.0
 const BATCH := 32
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))

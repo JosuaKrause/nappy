@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## First-horn distance and time per car speed, before and after M191: the crowd used to watch a
 ## car for its horn and its strike over the same reach, `Tuning.CAR_ZEBRA_SIGHT` (200px), so a
@@ -27,7 +26,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RUN_SEED := 2
 const _HORN_CALLS := 200000
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("\n== M191 — first horn distance and time, per car speed ==")
 	var old_watch := Tuning.CAR_ZEBRA_SIGHT
 	var new_watch := Crowd.CAR_HORN_SIGHT
@@ -74,7 +73,7 @@ func run(t) -> void:
 ## widening the horn's own comparison from `<= CAR_ZEBRA_SIGHT` to `<= CAR_HORN_SIGHT` adds no new
 ## query, only a wider band of cars for which `_horn()` itself now runs. So the added cost per
 ## frame is bounded by (live cars) × (one `_horn()` call), measured directly rather than guessed.
-func _measure_cost(t) -> void:
+func _measure_cost(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))

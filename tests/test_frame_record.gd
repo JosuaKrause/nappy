@@ -20,7 +20,7 @@ const SPENT_US := 2000
 ## The folder the other recorders of this suite are handed, saved or on leaving the tree.
 const _SCRATCH_RECORDERS := "user://test_frame_record_scratch_recorders"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_frame_adds_up(t)
 	_test_slow_frames_are_marked(t)
 	_test_frames_outside_play_are_timed_but_not_kept(t)
@@ -40,7 +40,7 @@ func run(t) -> void:
 
 ## One frame driven through every phase, with a timed system nested inside another: the inner
 ## one is charged to itself alone, and the ten buckets sum to the frame's length exactly.
-func _test_a_frame_adds_up(t) -> void:
+func _test_a_frame_adds_up(t: TestRunner) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	ledger.physics_step(1000)
 	var outer := ledger.enter(FrameRecord.CROWD, 1100)
@@ -80,7 +80,7 @@ func _test_a_frame_adds_up(t) -> void:
 			"the frame counts its physics steps, its timed entry points and its draw")
 	t.check(row[FrameLedger.SLOW] == 0, "a frame inside its budget is not slow")
 
-func _test_slow_frames_are_marked(t) -> void:
+func _test_slow_frames_are_marked(t: TestRunner) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	_drive(ledger, 0, 16000, FrameRecord.CROWD, 2000)
 	_drive(ledger, 16000, 40000, FrameRecord.SCENERY, 20000)
@@ -94,7 +94,7 @@ func _test_slow_frames_are_marked(t) -> void:
 	t.check(ledger.report().slow_frames_ever == 1 and ledger.readout_line().begins_with("slow 40.0/"),
 			"the last slow frame is kept for the readout")
 
-func _test_frames_outside_play_are_timed_but_not_kept(t) -> void:
+func _test_frames_outside_play_are_timed_but_not_kept(t: TestRunner) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	ledger.process_start(0)
 	ledger.keep_this_frame(false)
@@ -110,7 +110,7 @@ func _test_frames_outside_play_are_timed_but_not_kept(t) -> void:
 
 ## A headless run has no post-draw callback: the span after process is all `draw`, and the row
 ## says it drew nothing.
-func _test_a_headless_frame_draws_nothing(t) -> void:
+func _test_a_headless_frame_draws_nothing(t: TestRunner) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	ledger.process_start(0)
 	ledger.keep_this_frame()
@@ -125,7 +125,7 @@ func _test_a_headless_frame_draws_nothing(t) -> void:
 ## `draw` ends at the renderer's pre-draw callback and `render` runs to its post-draw one, so the
 ## two together are what `draw` was before the split; the game's own `_draw()` calls are counted by
 ## kind through the static switch, only while it is on, and a counter starts every frame at 0.
-func _test_draw_splits_at_the_renderers_pre_draw(t) -> void:
+func _test_draw_splits_at_the_renderers_pre_draw(t: TestRunner) -> void:
 	var record := FrameRecord.new()
 	var ledger := FrameLedger.new(8, 16667)
 	record.start(ledger)
@@ -154,7 +154,7 @@ func _test_draw_splits_at_the_renderers_pre_draw(t) -> void:
 			and second[FrameLedger.FIRST_BUCKET + FrameRecord.RENDER] == 0,
 			"the next frame starts at zero, and a frame with no renderer has no render")
 
-func _test_the_ring_keeps_the_latest_frames(t) -> void:
+func _test_the_ring_keeps_the_latest_frames(t: TestRunner) -> void:
 	var ledger := FrameLedger.new(2, 16667)
 	_drive(ledger, 0, 10000, FrameRecord.CROWD, 1000)
 	_drive(ledger, 10000, 11000, FrameRecord.CROWD, 1000)
@@ -171,7 +171,7 @@ func _test_the_ring_keeps_the_latest_frames(t) -> void:
 			and rows[0][FrameLedger.START] == 10000 and rows[1][FrameLedger.START] == 21000,
 			"a full ring keeps the latest frames, oldest first, and counts what it overwrote")
 
-func _test_the_readout_line(t) -> void:
+func _test_the_readout_line(t: TestRunner) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	t.check(ledger.readout_line().contains("none yet"), "no slow frame yet says so")
 	ledger.process_start(0)
@@ -228,7 +228,7 @@ func _test_the_readout_line(t) -> void:
 			"a line too wide for three costs keeps the largest ones that fit (%s)" % squeezed)
 	rig.free_all()
 
-func _test_the_report_round_trips(t) -> void:
+func _test_the_report_round_trips(t: TestRunner) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	_drive(ledger, 0, 16000, FrameRecord.CROWD, 2000)
 	_drive(ledger, 16000, 40000, FrameRecord.SCENERY, 20000)
@@ -242,7 +242,7 @@ func _test_the_report_round_trips(t) -> void:
 
 ## The path the game's entry points take: `enter()` charges the ledger `start()` installed, and
 ## `leave()` goes back to what was running.
-func _test_the_record_charges_its_ledger(t) -> void:
+func _test_the_record_charges_its_ledger(t: TestRunner) -> void:
 	var record := FrameRecord.new()
 	var ledger := FrameLedger.new(8, 16667)
 	record.start(ledger)
@@ -290,7 +290,7 @@ func _test_the_record_charges_its_ledger(t) -> void:
 ## The recorder counts the nodes' own `_draw()` calls by listening to their `draw` signal: a node of
 ## a counted class is connected as it enters the tree, whichever class it is, and only a running
 ## record counts; a node that is not one of those (a label) is not connected.
-func _test_draws_are_counted_by_listening(t) -> void:
+func _test_draws_are_counted_by_listening(t: TestRunner) -> void:
 	var record := FrameRecord.new()
 	var ledger := FrameLedger.new(2)
 	record.start(ledger)
@@ -350,7 +350,7 @@ func _test_draws_are_counted_by_listening(t) -> void:
 
 ## The flag and its page word, read the way the game reads them: off the configuration
 ## `RunConfig.parse()` builds from the command line, the page's query and the build.
-func _test_the_flag_and_its_page_word(t) -> void:
+func _test_the_flag_and_its_page_word(t: TestRunner) -> void:
 	t.check(_debug_build(["--frame-record"]).frame_record_requested,
 			"the command line's --frame-record starts the record")
 	t.check(_page("?debug=1&framerecord=1").frame_record_requested,
@@ -373,7 +373,7 @@ func _debug_build(words: Array) -> RunConfig:
 
 ## The scenery queue's deferred window: what its update left to the engine's flush is charged to
 ## `scenery` and counted apart, and the frame still adds up.
-func _test_the_deferred_scenery_window(t) -> void:
+func _test_the_deferred_scenery_window(t: TestRunner) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	ledger.process_start(0)
 	var outer := ledger.enter(FrameRecord.SCENERY, 100)
@@ -396,7 +396,7 @@ func _test_the_deferred_scenery_window(t) -> void:
 
 ## A slow frame whose callbacks fit in one budget was held up outside them; and the summary splits
 ## the slow frames by whether the scenery queue ran a job in them.
-func _test_slow_frames_outside_callbacks_and_with_scenery(t) -> void:
+func _test_slow_frames_outside_callbacks_and_with_scenery(t: TestRunner) -> void:
 	var ledger := FrameLedger.new(8, 16667)
 	ledger.process_start(0)
 	ledger.keep_this_frame()
@@ -426,7 +426,7 @@ func _test_slow_frames_outside_callbacks_and_with_scenery(t) -> void:
 ## still redraws and the record it ran under is not touched again. Its step times nothing of its
 ## own: the manager's physics tick that runs it is timed. Each event draws on real frames, one at
 ## a time (`_one_drawn_frame()`).
-func _test_a_timed_body_runs_once(t) -> void:
+func _test_a_timed_body_runs_once(t: TestRunner) -> void:
 	var record := FrameRecord.new()
 	var def := EventCatalogue.by_id("protest")
 	var untimed_event := _event(t, def)
@@ -481,7 +481,7 @@ func _test_a_timed_body_runs_once(t) -> void:
 
 ## Lets `event` draw on exactly one real frame: its process callback is on from the start of one
 ## frame to the start of the next.
-func _one_drawn_frame(t, event: EventInstance) -> void:
+func _one_drawn_frame(t: TestRunner, event: EventInstance) -> void:
 	await t.get_tree().process_frame
 	event.set_process(true)
 	await t.get_tree().process_frame
@@ -506,7 +506,7 @@ class _BucketLook extends EventLook:
 
 ## A live event standing alone, its process callback off until the test lets it draw, as
 ## `tests/test_acts.gd` builds one.
-func _event(t, def: EventDef) -> EventInstance:
+func _event(t: TestRunner, def: EventDef) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	t.add_child(instance)
@@ -534,7 +534,7 @@ func _drive(ledger: FrameLedger, start: int, length: int, bucket: int, spent: in
 
 
 ## The readout says the window and what is drawn, each line within the readout's width.
-func _test_the_readout_says_the_view(t) -> void:
+func _test_the_readout_says_the_view(t: TestRunner) -> void:
 	var lines := FrameRecorder.view_lines()
 	t.check(lines.size() == 2 and lines[0].begins_with("window") and lines[1].begins_with("drawn"),
 			"the readout says the window and what is drawn")
@@ -549,7 +549,7 @@ func _fits_the_readout(line: String) -> bool:
 ## The record's environment carries the pixels the page draws, as the file a phone hands over, and
 ## what the timer costs on the device: the smallest step its clock takes and what a timing pair
 ## costs. Read off the file a save writes.
-func _test_the_environment_carries_the_view_and_the_clock(t) -> void:
+func _test_the_environment_carries_the_view_and_the_clock(t: TestRunner) -> void:
 	var rig := _rig(t, FrameRecord.new())
 	rig.recorder.save()
 	var environment: Dictionary = JSON.parse_string(
@@ -566,7 +566,7 @@ func _test_the_environment_carries_the_view_and_the_clock(t) -> void:
 ## A recorder in the tree on `record`, set up as `main` sets one up with no world to count, and its
 ## sitting's records handed a scratch folder so that a save, or leaving the tree, writes there and not
 ## under the player's own records. `free_all()` frees it all and removes the file.
-func _rig(t, record: FrameRecord) -> _Rig:
+func _rig(t: TestRunner, record: FrameRecord) -> _Rig:
 	var rig := _Rig.new()
 	rig.sitting = Sitting.new()
 	rig.sitting.use_frame_timing(record)

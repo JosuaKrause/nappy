@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for M174, "the man shouting costs nothing to walk beside": the net rate the
 ## bar rises while walking beside a row, inside its own `inner_radius`, averaged over its own
@@ -41,7 +41,7 @@ const _SCENERY := ["burnt_shell", "poster_crew", "poster_crew_square"]
 ## "Two short lists hold every row that is allowed to be free."
 const _DETAINERS := ["chatting_mother", "checkpoint_hut", "checkpoint_post"]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("\n== walk-beside net rate, at inner_radius, averaged over the pulse ==")
 	print("decay compared: old 3.5/s (pre-M117, computed here, no code change), today %.1f/s"
 			% Tuning.EXCITEMENT_DECAY_WALKING)

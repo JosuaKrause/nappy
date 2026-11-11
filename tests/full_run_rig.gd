@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Fourteen days end to end, through the real City, EventManager and ResistanceDirector, each day
 ## started by the real DayDirector.
@@ -26,7 +26,7 @@ const TICK_FACTOR := 4
 
 ## Plays the run of `seed_value` (the parts of this suite are one seed each, so none runs two minutes
 ## serial).
-func run(t, seed_value: int) -> void:
+func run(t: TestRunner, seed_value: int) -> void:
 	await PhysicsTicks.settle(t)
 	await _play_a_run(t, seed_value)
 
@@ -34,7 +34,7 @@ func run(t, seed_value: int) -> void:
 ## is started the way the game starts one, through `DayDirector.start()` handed the pieces `main`
 ## hands it (the city standing with her and the baby in it, `StandingCity`, the resistance and the
 ## day's clock), and played on real physics ticks.
-func _play_a_run(t, seed_value: int) -> void:
+func _play_a_run(t: TestRunner, seed_value: int) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	var run := city.run
 	t.add_child(city)

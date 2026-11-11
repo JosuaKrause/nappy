@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Inbox #777 in minty-lemur: once she has walked out of the escape building, nothing of the building stands in
 ## the city's street.
@@ -33,7 +32,7 @@ const DAY := 1
 ## Where the player stood, a tile below the strip.
 const WHERE_SHE_STOOD := Vector2i(74, 27)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var seat := Seat.new(t, func(fresh: RunState) -> void:
 			fresh.start_run(SEED)
 			fresh.header.day = DAY
@@ -66,7 +65,7 @@ func run(t) -> void:
 
 ## The player's own moment: on the sidewalk at 74,27, with the street open ahead of her, a step
 ## north is not stopped.
-func _test_she_can_walk_north_from_where_the_player_stood(t, main: Node2D) -> void:
+func _test_she_can_walk_north_from_where_the_player_stood(t: TestRunner, main: Node2D) -> void:
 	var player := Boot.player(main)
 	var city := Boot.city(main)
 	player.global_position = city.map.tile_to_world(WHERE_SHE_STOOD)
@@ -82,7 +81,7 @@ func _test_she_can_walk_north_from_where_the_player_stood(t, main: Node2D) -> vo
 ## The same thing asked of the whole walk: on every walkable tile of the two chains' open cells, her
 ## body overlaps no collision body that is not the city's own — the city's buildings, its boundary
 ## and every event's body all live under `City`, so anything else there is a wall nobody drew.
-func _test_nothing_but_the_city_stands_on_the_escape_streets(t, main: Node2D) -> void:
+func _test_nothing_but_the_city_stands_on_the_escape_streets(t: TestRunner, main: Node2D) -> void:
 	var city := Boot.city(main)
 	var player := Boot.player(main)
 	var plan := FinalePlanner.route(city.map)
@@ -123,7 +122,7 @@ func _test_nothing_but_the_city_stands_on_the_escape_streets(t, main: Node2D) ->
 ## canvas from the world origin, so its walls and doors stand on the city's top streets: drawn,
 ## they would show over the city's ground and buildings there. Every picture under the building
 ## but its fade, which `InteriorScene.clear_fade()` still lifts over the street, is hidden.
-func _test_nothing_of_the_building_is_drawn_in_the_city(t, main: Node2D) -> void:
+func _test_nothing_of_the_building_is_drawn_in_the_city(t: TestRunner, main: Node2D) -> void:
 	var interior := Boot.interior(main)
 	var fade := interior.get_node("FadeLayer")
 	var asked := 0

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## What the `TelemetryObserver` notes of a walk, read off a recording run log
 ## (`tests/recording_log.gd`) and not off a file: the escape's sections, a stuck walk, the trail
@@ -166,7 +166,7 @@ class StandInSource extends FakeEventManager:
 	func instances() -> Array[EventInstance]:
 		return live
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_the_escape_is_in_the_run_log_as_a_day_is(t)
 	_test_a_retried_section_restarts_the_clock(t)
 	await _test_a_stuck_player_is_logged_once(t)
@@ -190,7 +190,7 @@ func _fresh_log() -> void:
 ## A retried section's clock starts at zero, and it gets there through the log's
 ## `restart_section_clock()`, which clears the automatic-snapshot schedule the real log keeps
 ## (`tests/test_telemetry.gd` asserts what that call does to the schedule).
-func _test_a_retried_section_restarts_the_clock(t) -> void:
+func _test_a_retried_section_restarts_the_clock(t: TestRunner) -> void:
 	_fresh_log()
 	var player := Stroller.new()
 	var baby := Baby.new()
@@ -232,7 +232,7 @@ func _on_a_sidewalk(map: CityMap) -> Vector2:
 ## the day's own `day_finished()`, the same section again, then the city entered and left by the
 ## tunnel. What a day writes that a section has nothing to say about — the corridor, the chalk
 ## mark — must stay silent rather than crash.
-func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
+func _test_the_escape_is_in_the_run_log_as_a_day_is(t: TestRunner) -> void:
 	var start := Vector2(100.0, 100.0)
 	var man := EventInstance.new()
 	man.setup(EventCatalogue.by_id("masked_pursuer"), start + Vector2(0.0, -200.0))
@@ -322,7 +322,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 ## the player, the baby, the day's clock and the world — and every test lets real frames pass.
 ## `CityMap.new()` is a real map with nothing generated onto it — `world_to_tile` is arithmetic on
 ## `Tuning.TILE_SIZE` and asks the generator for nothing.
-func _blocked_rig(t) -> Rig:
+func _blocked_rig(t: TestRunner) -> Rig:
 	_fresh_log()
 	return Rig.new(t, _log, CityMap.new())
 
@@ -343,7 +343,7 @@ func _blocked_lines() -> Array[String]:
 
 ## Held for a couple of seconds against a wall that never gives: one line, not one a frame, and
 ## it is not written until the hold has actually run past `BLOCKED_HOLD_TIME`.
-func _test_a_stuck_player_is_logged_once(t) -> void:
+func _test_a_stuck_player_is_logged_once(t: TestRunner) -> void:
 	var rig := _blocked_rig(t)
 	_log.begin_run(0)
 	_log.begin_day(1, 1, 1, 1, 180.0)
@@ -362,7 +362,7 @@ func _test_a_stuck_player_is_logged_once(t) -> void:
 ## The same held key, but she is actually covering ground — her position advances every frame by
 ## more than `TelemetryObserver.BLOCKED_DRIFT` before the hold ever reaches
 ## `TelemetryObserver.BLOCKED_HOLD_TIME`. A run this ordinary must never read as stuck.
-func _test_a_free_walk_is_never_logged_as_blocked(t) -> void:
+func _test_a_free_walk_is_never_logged_as_blocked(t: TestRunner) -> void:
 	var rig := _blocked_rig(t)
 	_log.begin_run(0)
 	_log.begin_day(1, 1, 1, 1, 180.0)
@@ -381,7 +381,7 @@ func _test_a_free_walk_is_never_logged_as_blocked(t) -> void:
 ## `Stroller.is_idle()`, which the observer's idling watch reads, is the legitimate stand-still,
 ## and a different condition from this one on purpose: idling asks nothing about input at all, so a player who
 ## simply lets go of every key must never be told she is blocked.
-func _test_idling_with_no_input_is_never_logged_as_blocked(t) -> void:
+func _test_idling_with_no_input_is_never_logged_as_blocked(t: TestRunner) -> void:
 	var rig := _blocked_rig(t)
 	_log.begin_run(0)
 	_log.begin_day(1, 1, 1, 1, 180.0)
@@ -400,7 +400,7 @@ func _test_idling_with_no_input_is_never_logged_as_blocked(t) -> void:
 ## itself down twice: once as `chat`, by `EventManager`, and once as `blocked`, by the observer, for
 ## the same held key. And the gate has to let go the instant the capture ends, or a real stall
 ## picked up right after one hides behind a stale anchor.
-func _test_a_capture_is_never_logged_as_blocked(t) -> void:
+func _test_a_capture_is_never_logged_as_blocked(t: TestRunner) -> void:
 	var rig := _blocked_rig(t)
 	_log.begin_run(0)
 	_log.begin_day(1, 1, 1, 1, 180.0)
@@ -427,14 +427,14 @@ func _test_a_capture_is_never_logged_as_blocked(t) -> void:
 
 ## An observer on a running day clock with the player standing where a test places her. The trail
 ## is the observer's own record of the frames that passed, so the frames are real ones.
-func _trail_rig(t) -> Rig:
+func _trail_rig(t: TestRunner) -> Rig:
 	_fresh_log()
 	return Rig.new(t, _log)
 
 ## Distance sampling, not frame sampling: many small steps inside one tile must leave the trail
 ## alone, and the first step to cross a tile of distance — however many frames it took — must add
 ## exactly one point.
-func _test_the_trail_is_sampled_by_distance_not_by_frame(t) -> void:
+func _test_the_trail_is_sampled_by_distance_not_by_frame(t: TestRunner) -> void:
 	var rig := _trail_rig(t)
 	_log.begin_run(0)
 	_log.begin_day(1, 1, 1, 1, 180.0)
@@ -464,7 +464,7 @@ func _test_the_trail_is_sampled_by_distance_not_by_frame(t) -> void:
 ## The third component of a sample is `Stroller.run_excess_ratio()` at the moment it was taken —
 ## 0.0 at a walk, above 0.0 the instant she is running faster than a walk — so the dusk map can
 ## colour a run stretch differently from a walked one without a second trail to keep in step.
-func _test_the_trail_carries_whether_she_was_running(t) -> void:
+func _test_the_trail_carries_whether_she_was_running(t: TestRunner) -> void:
 	var rig := _trail_rig(t)
 	_log.begin_run(0)
 	_log.begin_day(1, 1, 1, 1, 180.0)
@@ -486,7 +486,7 @@ func _test_the_trail_carries_whether_she_was_running(t) -> void:
 ## `start()` resets everything else about yesterday, and the trail is no exception: a rewound
 ## day was not walked, so the picture of it must start from nothing rather than carrying the
 ## abandoned attempt's trail into the retry.
-func _test_a_lost_day_restarts_the_trail(t) -> void:
+func _test_a_lost_day_restarts_the_trail(t: TestRunner) -> void:
 	var day := WatchedDayParts.new(StreetMap.full())
 	_fresh_log()
 	var rig := Rig.new(t, _log, null, day)
@@ -515,7 +515,7 @@ func _test_a_lost_day_restarts_the_trail(t) -> void:
 ## than twice the reach (`def.outer_radius`, typically 150px) of a row that has not telegraphed
 ## anything yet. "Met" has to be the narrower, honest question — did the field that actually costs
 ## her something ever reach her — or a day that met eight of forty events would read as forty.
-func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -> void:
+func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t: TestRunner) -> void:
 	var day := WatchedDayParts.new(StreetMap.full())
 	var at := _on_a_sidewalk(day.map)
 	# A plan live where it was placed, as streaming leaves one that has not telegraphed: in the
@@ -554,7 +554,7 @@ func _test_met_means_entering_the_outer_radius_not_merely_being_streamed_in(t) -
 ## would have if the drive had never happened — the only way that can hold is if nothing either
 ## watcher did changed `map`, the one input the next day's plan reads here (the plan is made from
 ## a fresh random stream, so what the check pins is the map).
-func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
+func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t: TestRunner) -> void:
 	var map := CityMapCache.of(CITY_SEED)
 	var day := WatchedDayParts.new(map)
 	var at := map.doorstep_world_position()
@@ -594,7 +594,7 @@ func _test_the_trail_and_the_met_events_scan_do_not_touch_gameplay(t) -> void:
 ## frame's length and, for the spike line, her tile and the live events (none), so a `frame` line
 ## reaches the run log once a second of frames has passed. The engine's time scale makes that
 ## second a handful of frames, and is put back after.
-func _test_the_observer_watches_its_frames_on_real_frames(t) -> void:
+func _test_the_observer_watches_its_frames_on_real_frames(t: TestRunner) -> void:
 	_fresh_log()
 	var rig := Rig.new(t, _log, CityMap.new(), null, true)
 	rig.player.global_position = Vector2(100.0, 100.0)

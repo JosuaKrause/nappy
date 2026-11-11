@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The heat: what completing resistance tasks does to the city, and the contracts that keep the
 ## escalation from being a difficulty dial nobody checked.
@@ -32,7 +32,7 @@ const MapCache := preload("res://tests/city_map_cache.gd")
 
 var _map: CityMap
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_map = MapCache.of(SEED)
 	_test_every_shape_of_every_row_is_fair(t)
 	_test_a_row_that_answers_to_nothing_is_untouched(t)
@@ -67,7 +67,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 ## so a break here shows up twice — as a failed check and as the boot error `tools/check.sh` fails
 ## on. That is deliberate: this is the one property whose absence is invisible in play until the
 ## day somebody dies to an unfair event they could not have seen coming.
-func _test_every_shape_of_every_row_is_fair(t) -> void:
+func _test_every_shape_of_every_row_is_fair(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(def, level)
@@ -79,7 +79,7 @@ func _test_every_shape_of_every_row_is_fair(t) -> void:
 ## promise. Nor does the man it lets out end the day: his catch is a stop (inbox #669 in coral-lark, "it needs to
 ## give a substantial cost but not lethal directly"). (The patrol that carries it strikes as a car
 ## does at every heat, `EventDef.vehicle`, which is not a rung — `tests/test_police_car.gd`.)
-func _test_the_ladder_has_a_top(t) -> void:
+func _test_the_ladder_has_a_top(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		if def.heat_response != EventDef.HeatResponse.PRESSES:
 			continue
@@ -98,7 +98,7 @@ func _test_the_ladder_has_a_top(t) -> void:
 ## inside its notice and their catch ending the day. Checked over the response rather than over the one row that carries it, the same
 ## shape `_test_the_ladder_has_a_top` uses, so a second `HUNTS` row added later inherits the promise
 ## without anybody having to remember to extend this loop.
-func _test_a_hunts_row_wakes_up_at_its_own_threshold(t) -> void:
+func _test_a_hunts_row_wakes_up_at_its_own_threshold(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
 		if def.heat_response != EventDef.HeatResponse.HUNTS:
@@ -156,7 +156,7 @@ func _cold_raid() -> EventDef:
 ## read `HEAT_HUNTS_SPEED` back off the row it was just assigned to could only ever say somebody
 ## changed that constant. What the hot row has to *satisfy* is checked instead — `validate()`
 ## here, and the stand-off/trigger/field ordering in the generic `HUNTS` loop above.
-func _test_the_raid_hunts_past_its_own_threshold(t) -> void:
+func _test_the_raid_hunts_past_its_own_threshold(t: TestRunner) -> void:
 	var cold := _cold_raid()
 	t.check(cold.heat_response == EventDef.HeatResponse.HUNTS,
 			"the raid answers to the resistance, on the hunting rung")
@@ -188,7 +188,7 @@ func _cold_roadblock() -> EventDef:
 ## heat sets what a row does and never when it is allowed to. The pursuit numbers themselves are
 ## left to `validate()` and to the generic loop's ordering check, for the reason given on the
 ## raid above.
-func _test_the_roadblock_hunts_past_its_own_threshold(t) -> void:
+func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 	var cold := _cold_roadblock()
 	t.check(cold.heat_response == EventDef.HeatResponse.HUNTS,
 			"the roadblock answers to the resistance, the lethal way")
@@ -228,7 +228,7 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t) -> void:
 ## A row that answers to nothing is the *same object* at every level, not merely an equal one.
 ## Identity rather than equality because the cost of getting this wrong is not a wrong number, it
 ## is a duplicate `Resource` per candidate placement per day.
-func _test_a_row_that_answers_to_nothing_is_untouched(t) -> void:
+func _test_a_row_that_answers_to_nothing_is_untouched(t: TestRunner) -> void:
 	var untouched := 0
 	for def in EventCatalogue.all():
 		if def.heat_response != EventDef.HeatResponse.NONE:
@@ -240,7 +240,7 @@ func _test_a_row_that_answers_to_nothing_is_untouched(t) -> void:
 					% [def.id, level])
 	t.check(untouched > 0, "most of the catalogue answers to nothing")
 
-func _test_heat_is_derived_once_and_kept(t) -> void:
+func _test_heat_is_derived_once_and_kept(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		# Cold is always the row itself, whatever the row answers to: level zero is *no* heat
 		# rather than a little of it.
@@ -262,7 +262,7 @@ func _test_heat_is_derived_once_and_kept(t) -> void:
 
 ## A planned day is a function of its arguments and heat is one of them: same seed, same day, same
 ## heat, same city. This is what lets a rig plan a hot day without a run having happened.
-func _test_a_day_is_a_function_of_its_heat(t) -> void:
+func _test_a_day_is_a_function_of_its_heat(t: TestRunner) -> void:
 	var day := 9
 	var consumed: Array[String] = []
 	var first := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
@@ -291,7 +291,7 @@ func _cold_patrol() -> EventDef:
 
 ## More of them, and louder, and monotonically so across every level the resistance can reach —
 ## not just cold vs. full heat, which would pass even if the ladder dipped in the middle.
-func _test_the_patrol_presses_more_and_louder(t) -> void:
+func _test_the_patrol_presses_more_and_louder(t: TestRunner) -> void:
 	var cold := _cold_patrol()
 	t.check(cold.heat_response == EventDef.HeatResponse.PRESSES,
 			"the patrol answers to the resistance, the way that never hunts")
@@ -323,7 +323,7 @@ func _test_the_patrol_presses_more_and_louder(t) -> void:
 ## police car should not leave the street"): the man it lets out is. It notices her only inside its
 ## own field, and further out than the man's own stand-off, so he usually gets out with room to
 ## hold his ground.
-func _test_the_patrol_investigates_past_the_threshold(t) -> void:
+func _test_the_patrol_investigates_past_the_threshold(t: TestRunner) -> void:
 	var cold := _cold_patrol()
 	for level in EventCatalogue.heat_levels():
 		var hot := EventCatalogue.heated(cold, level)
@@ -345,7 +345,7 @@ func _test_the_patrol_investigates_past_the_threshold(t) -> void:
 ## `is_waiting()` stays true — the whole character of "mobile, unhurried, along a corridor" the
 ## row's own docstring claims, which a pursuer that merely stood still waiting would have thrown
 ## away the moment it started answering to heat.
-func _test_it_patrols_while_it_waits(t) -> void:
+func _test_it_patrols_while_it_waits(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	t.check(hot.investigates() and hot.mobile, "the fully heated patrol is a mobile investigator")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
@@ -372,7 +372,7 @@ func _test_it_patrols_while_it_waits(t) -> void:
 ## row that reaches the end of a route it does not pace" rule every other mobile event already
 ## follows, arrived at through a different door. A short path so the test does not need the ninety
 ## seconds a scheduler-built 40-tile one would take to run out.
-func _test_a_patrol_that_never_notices_drives_off_its_route(t) -> void:
+func _test_a_patrol_that_never_notices_drives_off_its_route(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(300.0, 0.0)])
 	var instance_where := WhereSheIs.nowhere()
@@ -396,7 +396,7 @@ func _test_a_patrol_that_never_notices_drives_off_its_route(t) -> void:
 ## and owes the man it lets out — it never moves toward her; it stands while he is out, still while
 ## he walks back after giving up, and once he is back in it drives on along its route the way it was
 ## going, never turned round.
-func _test_the_patrol_stops_once_it_notices(t) -> void:
+func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 	var instance_where := WhereSheIs.nowhere()
@@ -464,7 +464,7 @@ func _test_the_patrol_stops_once_it_notices(t) -> void:
 ##   when he is on her, not when he is two and a half tiles away.
 ## - **The barrier catches nobody.** Standing right against it, at the distance the old lethal
 ##   radius would have fired from, ends nothing while the man is elsewhere.
-func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) -> void:
+func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: TestRunner) -> void:
 	var reach: float = EventCatalogue.by_id("masked_pursuer").inner_radius
 	var cold := _cold_roadblock()
 	var post := Vector2(400.0, 0.0)
@@ -558,7 +558,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t) 
 ## noticed her. He warns for his row's `PursuitSpec.warns_for` with nothing lethal in it and
 ## charges when it has run, she still inside his radius *(inbox #788 in minty-lemur: one radius,
 ## a warning inside it)*, not on the frame he notices her. Both street axes, both sides.
-func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
+func _test_only_the_guard_on_her_side_sets_off_from_his_post(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_cold_roadblock(), Tuning.RESISTANCE_GOAL)
 	t.check(hot.pursuit.warns_for >= Tuning.OFFSCREEN_WARNING_MIN,
 			"the hunting guard warns for %.1fs before he charges" % hot.pursuit.warns_for)
@@ -604,7 +604,7 @@ func _test_only_the_guard_on_her_side_sets_off_from_his_post(t) -> void:
 ## where it left off rather than rewinding — checked here because a heated patrol is the first
 ## `mobile` row that is also a `EventDef.pursuit` one, and `resume()`'s own "if def.mobile and
 ## path.size() > 1: route.advance(0.0)" line does not know or care whether the def pursues.
-func _test_a_streamed_patrol_resumes_where_it_left_off(t) -> void:
+func _test_a_streamed_patrol_resumes_where_it_left_off(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 
@@ -644,7 +644,7 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t) -> void:
 ## streamed out mid-chase, since a stationary pursuer's field never moves far enough from where
 ## the day planted it — see `_test_every_waiting_row_resumes_the_notice` for the same restore
 ## checked against that row rather than only the patrol that surfaced the gap.
-func _test_a_streamed_patrol_mid_chase(t) -> void:
+func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 
@@ -695,7 +695,7 @@ func _test_a_streamed_patrol_mid_chase(t) -> void:
 ## from bags of different marbles, so on one seed the hot day can draw a patrol fewer by the luck of
 ## its draws, which is no broken relationship. More over the seeds is the contract the population
 ## multiplier promises.
-func _test_a_hot_day_places_more_patrols(t) -> void:
+func _test_a_hot_day_places_more_patrols(t: TestRunner) -> void:
 	var day := 9
 	var seeds := [8817, 4242, 2102613802, 90210, 37, 38, 39, 12345]
 	var colds := 0
@@ -726,7 +726,7 @@ func _count_patrols(planned: Array[EventScheduler.Planned]) -> int:
 ## `resume()`'s restored notice is not particular to the heated patrol that surfaced the gap —
 ## `alley_robbery` carries the identical `EventDef.notice` shape cold, with no heat level needed to
 ## reach it, and this is the same restore checked against that row instead.
-func _test_every_waiting_row_resumes_the_notice(t) -> void:
+func _test_every_waiting_row_resumes_the_notice(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	t.check(def.notice_within() > 0.0, "'alley_robbery' is a waiting pursuer, cold")
 

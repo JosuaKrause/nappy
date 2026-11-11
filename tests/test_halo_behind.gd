@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## A rim sits behind the pictures it outlines.
 ##
@@ -12,11 +11,11 @@ extends RefCounted
 
 const EastWestStreet = preload("res://tests/east_west_street.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_the_rim_is_painted_before_the_scene(t)
 	await _test_the_rim_is_given_back_when_the_slices_go(t)
 
-func _test_the_rim_is_painted_before_the_scene(t) -> void:
+func _test_the_rim_is_painted_before_the_scene(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	for vertical: bool in [false, true]:
@@ -53,7 +52,7 @@ func _test_the_rim_is_painted_before_the_scene(t) -> void:
 ## The rim stands behind the first slice, so when the look lets go of its slices the instance gives
 ## the rim back on the spot (`SpreadLook.letting_go_of_the_slices`) rather than leaving it to be
 ## freed with its slice while the instance still holds it.
-func _test_the_rim_is_given_back_when_the_slices_go(t) -> void:
+func _test_the_rim_is_given_back_when_the_slices_go(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	var instance := EventInstance.new()

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `UnusedCalmRule`: no field reaches the calm ground she has not used. A candidate whose field
 ## reaches a calm area's rect is refused, one standing clear of it is allowed, and a rule handed no
@@ -6,7 +5,7 @@ extends RefCounted
 
 const PLACED: Array[EventScheduler.Planned] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var cafe := EventCatalogue.by_id("cafe_tables")
 	var calm := Rect2(Vector2(1000, 1000), Vector2(256, 256))
 	var rule := UnusedCalmRule.new([calm] as Array[Rect2])

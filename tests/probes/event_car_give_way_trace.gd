@@ -18,7 +18,7 @@ const SEEDS: Array[int] = [4242, 478156010]
 const TICKS := 600
 const LEAVES_AT := 300
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var defs: Array[EventDef] = []
 	for def in EventCatalogue.all():
 		for level in EventCatalogue.heat_levels():
@@ -182,7 +182,7 @@ func _zebras_either_side_v(map: CityMap, column: int, c: int) -> bool:
 			and map.tile_at(Vector2i(column, c * period + Tuning.STREET_WIDTH + 4)) \
 					== GameEnums.TileType.ROAD
 
-func _drive(t, map: CityMap, def: EventDef, rig: Dictionary) -> Dictionary:
+func _drive(t: TestRunner, map: CityMap, def: EventDef, rig: Dictionary) -> Dictionary:
 	var route: PackedVector2Array = rig["route"]
 	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()

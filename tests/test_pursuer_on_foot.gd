@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The pursuer on foot: the one a torn poster's pursuit marble sends at her at once from off screen,
 ## a policeman through day 8 and a guardsman from day 9.
@@ -20,7 +20,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t)
 	_test_neither_is_ever_the_schedulers(t)
 	_test_day_8_is_a_policeman_and_day_9_a_guardsman(t)
@@ -47,7 +47,7 @@ func run(t) -> void:
 ## events told it is `day`, and a stand-in for her at a sidewalk beside a building, returned as
 ## `[city, her]`, on `on_map` when one is given. She is a body the events can read a velocity off (`EventsAhead.place_what_is_owed_ahead()`
 ## asks for a `CharacterBody2D`), standing still unless a check gives her one.
-func _city_with_her(t, day: int, seed_value := SEED, on_map: CityMap = null) -> Array:
+func _city_with_her(t: TestRunner, day: int, seed_value := SEED, on_map: CityMap = null) -> Array:
 	var map := on_map if on_map else MapCache.of(seed_value)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	t.add_child(city)
@@ -130,7 +130,7 @@ func _run_the_warning(city: City, her: Node2D) -> void:
 ## Every number of each is the task robber's (`robber_giving_chase`): his field, his 130px/s, his
 ## 26px catch and 116px lunge, the dog's half-second badge, no telegraph, the 30s cap — and his
 ## `hard_fail`. Only the picture and the id are their own.
-func _test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t) -> void:
+func _test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t: TestRunner) -> void:
 	var robber := EventCatalogue.by_id("robber_giving_chase")
 	for id: String in ["policeman_giving_chase", "guardsman_giving_chase"]:
 		var def := EventCatalogue.by_id(id)
@@ -156,7 +156,7 @@ func _test_the_two_rows_are_the_task_robbers_chase_in_a_uniform(t) -> void:
 
 ## Never placed by the scheduler and never in the day's queue: no day of the run, at any heat,
 ## offers either to the roll, its stream or its budget.
-func _test_neither_is_ever_the_schedulers(t) -> void:
+func _test_neither_is_ever_the_schedulers(t: TestRunner) -> void:
 	for id: String in ["policeman_giving_chase", "guardsman_giving_chase"]:
 		var offered := false
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -169,7 +169,7 @@ func _test_neither_is_ever_the_schedulers(t) -> void:
 
 ## "policemen get switched to guardman on day 9": through day 8 a policeman, from day 9 the guard,
 ## as the row and as what a pursuit marble actually sends.
-func _test_day_8_is_a_policeman_and_day_9_a_guardsman(t) -> void:
+func _test_day_8_is_a_policeman_and_day_9_a_guardsman(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var expected := "guardsman_giving_chase" if day >= 9 else "policeman_giving_chase"
 		t.check(EventCatalogue.on_foot_on(DaySpec.for_day(day)).id == expected,
@@ -194,7 +194,7 @@ func _test_day_8_is_a_policeman_and_day_9_a_guardsman(t) -> void:
 ## with her standing still at the wall — no wait for a heading or a street — and nothing in the
 ## world; once its half second is up he is created wholly out of her sight, with a clear run at her,
 ## chasing from his first frame, and the counter is told once.
-func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t) -> void:
+func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t: TestRunner) -> void:
 	var rig := _city_with_her(t, 6)
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
@@ -234,7 +234,7 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t)
 
 ## One at a time: a second pursuit marble while his badge is up, or while he is after her, sends
 ## nobody more and tells the counter nothing; once he has given up, the next marble sends the next.
-func _test_a_second_marble_while_he_is_after_her_sends_nobody(t) -> void:
+func _test_a_second_marble_while_he_is_after_her_sends_nobody(t: TestRunner) -> void:
 	var rig := _city_with_her(t, 6)
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
@@ -278,7 +278,7 @@ func _test_a_second_marble_while_he_is_after_her_sends_nobody(t) -> void:
 ## another at the same place, and leave the same number owed and the same plan, and the day's stream
 ## stands where it stood. A queue, a clock or a bag he had moved would hand her another event, or
 ## the same one at another moment.
-func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t) -> void:
+func _test_a_tear_and_its_pursuer_move_nothing_the_day_draws(t: TestRunner) -> void:
 	var days: Array[Dictionary] = []
 	for sends in [false, true]:
 		var rig := _city_with_her(t, 6)
@@ -341,7 +341,7 @@ func _what_the_walk_hands_her(city: City, her: CharacterBody2D, seconds: float) 
 ## Walking straight away from him, from just out of sight above her, he catches her well within
 ## `Tuning.PURSUIT_TIME`, never giving up; running away as he is created, he gives up within a
 ## second. A bare instance, created as `EventManager.spawn_warned()` creates him.
-func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t) -> void:
+func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t: TestRunner) -> void:
 	for id: String in ["policeman_giving_chase", "guardsman_giving_chase"]:
 		var def := EventCatalogue.by_id(id)
 		for running: bool in [false, true]:
@@ -375,7 +375,7 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t) -
 			pursuer.free()
 
 ## His catch ends the day, and the day says who it was.
-func _test_his_catch_ends_the_day_with_its_own_line(t) -> void:
+func _test_his_catch_ends_the_day_with_its_own_line(t: TestRunner) -> void:
 	for id: String in ["policeman_giving_chase", "guardsman_giving_chase"]:
 		var line: String = Texts.HARD_FAIL_TEXT.get(id, "")
 		t.check(line != "", "'%s' has its own loss line" % id)
@@ -389,7 +389,7 @@ func _test_his_catch_ends_the_day_with_its_own_line(t) -> void:
 ## `validate()` holds him to. **His catch is a stop, never the end of the
 ## day** *(inbox #669 in coral-lark: "it needs to give a substantial cost but not lethal directly")*: standing
 ## beside him she is reached only after his notice, and stopped rather than struck.
-func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
+func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t: TestRunner) -> void:
 	for day: int in [8, 9]:
 		var out := EventCatalogue.out_of_the_car(DaySpec.for_day(day))
 		var own := EventCatalogue.on_foot_on(DaySpec.for_day(day))
@@ -437,7 +437,7 @@ func _test_the_man_out_of_the_car_owes_the_pursuit_contract(t) -> void:
 ## beside him through the stop she takes the whole of it, and walking straight away the moment he
 ## reaches her takes little of it off — it is a moment, not a place; after the stop he charges
 ## nothing, walking back.
-func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t) -> void:
+func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t: TestRunner) -> void:
 	var stop := EventCatalogue.OFFICER_STOP_EXCITEMENT
 	var contact := Crowd.BUMP_INTENSITY * Crowd.BUMP_DURATION * 0.5
 	t.check(stop > Tuning.CHAT_EXCITEMENT and stop > 3.0 * contact,
@@ -479,7 +479,7 @@ func _test_his_stop_costs_her_and_never_ends_a_calm_day_by_itself(t) -> void:
 ## **Inside a district door's hold he waits for her**: the door's toll is all that reaches her
 ## there, so a stop would land nothing. Beside her through the whole hold he does not stop her; the
 ## frame she is let out, he does.
-func _test_he_waits_outside_a_hold_to_stop_her(t) -> void:
+func _test_he_waits_outside_a_hold_to_stop_her(t: TestRunner) -> void:
 	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(8))
 	var man_where := WhereSheIs.nowhere()
 	var man := EventInstance.new()
@@ -531,7 +531,7 @@ func _tick(events: EventManager) -> void:
 ## is out; standing still, she is reached after his notice and stopped, and the day does not end;
 ## he walks back along the way he came to the door he got out of and is gone there; and the car
 ## drives on along its route the way it was going — never turned round on the spot in her view.
-func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t) -> void:
+func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: TestRunner) -> void:
 	for day: int in [8, 9]:
 		var rig := _city_with_her(t, day)
 		var city: City = rig[0]
@@ -628,7 +628,7 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t) ->
 ## beside each at several places, the worst must stay under `Tuning.METER_MAX` by
 ## `ENCOUNTER_MARGIN` — the cap never reached, let alone the push past it that ends the day — and
 ## every encounter must cost more than his stop alone.
-func _test_the_whole_encounter_from_calm_never_ends_the_day(t) -> void:
+func _test_the_whole_encounter_from_calm_never_ends_the_day(t: TestRunner) -> void:
 	t.check(is_zero_approx(Baby.EXCITEMENT_DECAY_IDLE), "standing still, nothing decays")
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
 	var worst := 0.0
@@ -721,7 +721,7 @@ func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 ## no part of its body — spine and width — is on a junction's tiles, the crossing street's
 ## corridor with its zebras; and some of those cars saw her from inside a box and drove on out of
 ## it first, so the rule is exercised and not only never met.
-func _test_an_investigating_car_never_stops_in_a_junction_box(t) -> void:
+func _test_an_investigating_car_never_stops_in_a_junction_box(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
 	var stops := 0
 	var in_a_box := 0
@@ -765,7 +765,7 @@ func _beside(map: CityMap, at: Vector2, along: Vector2) -> Vector2:
 ## Drives a fresh heated patrol down `route` on `map` with her standing at `her` until it stops for
 ## her: `[car, saw her from inside a box]`, or empty when it reaches the end of its route without
 ## stopping. The car is left for the caller to free.
-func _drive_until_it_stops(t, hot: EventDef, route: PackedVector2Array, map: CityMap,
+func _drive_until_it_stops(t: TestRunner, hot: EventDef, route: PackedVector2Array, map: CityMap,
 		her: Vector2) -> Array:
 	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
@@ -813,7 +813,7 @@ func _body_on_a_junction(map: CityMap, car: EventInstance) -> bool:
 ## and for the unmarked van "Same as the police")*: the night raid's and the unmarked van's hunting
 ## copies no longer pursue her themselves — they investigate, keeping their cold `hard_fail` — and
 ## let two men out, whose catch ends the day ("Ends the day (M56)"); cold each is what it always was.
-func _test_the_hunting_vans_hunt_on_foot(t) -> void:
+func _test_the_hunting_vans_hunt_on_foot(t: TestRunner) -> void:
 	for id: String in ["night_raid", "abduction"]:
 		var cold := EventCatalogue.by_id(id)
 		for level in EventCatalogue.heat_levels():
@@ -834,7 +834,7 @@ func _test_the_hunting_vans_hunt_on_foot(t) -> void:
 ## chasing the player behave like running people"; inbox #664: "I was chased by police cars still
 ## which is just silly")*: no row drawn as a vehicle (`EventPictures.WHEELS_BY_LOOK`) and no car
 ## that drives pursues her at any heat.
-func _test_no_vehicle_pursues_her(t) -> void:
+func _test_no_vehicle_pursues_her(t: TestRunner) -> void:
 	var vehicles := 0
 	for def in EventCatalogue.all():
 		if not (def.vehicle != null or EventPictures.WHEELS_BY_LOOK.has(def.look)):
@@ -848,7 +848,7 @@ func _test_no_vehicle_pursues_her(t) -> void:
 ## **A hunting van waits for its men**: its `duration` runs from its notice, but it does not leave
 ## the kerb past `telegraph_time + duration` while a man it let out is still out; once he is back
 ## in, it leaves.
-func _test_a_hunting_van_waits_for_its_men(t) -> void:
+func _test_a_hunting_van_waits_for_its_men(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"), Tuning.RESISTANCE_GOAL)
 	t.check(hot.duration > 0.0, "the hunting van has a duration of its own (%.0fs)" % hot.duration)
 	var van_where := WhereSheIs.nowhere()
@@ -892,7 +892,7 @@ func _test_a_hunting_van_waits_for_its_men(t) -> void:
 ## van's copy at the kerb with her along the sidewalk from it: once she is within its reach along a
 ## clear line, two guardsmen get out at its door with no badge, and the van never moves; standing
 ## still she is caught by one of them, and the day ends in his name.
-func _test_a_hunting_van_stops_and_lets_men_out(t) -> void:
+func _test_a_hunting_van_stops_and_lets_men_out(t: TestRunner) -> void:
 	for id: String in ["night_raid", "abduction"]:
 		var rig := _city_with_her(t, 10)
 		var city: City = rig[0]
@@ -943,7 +943,7 @@ func _test_a_hunting_van_stops_and_lets_men_out(t) -> void:
 
 ## **It notices her only along a clear line**, as every notice does: within its reach but with a
 ## building between them, the car drives on rather than stopping.
-func _test_the_car_does_not_notice_her_through_a_building(t) -> void:
+func _test_the_car_does_not_notice_her_through_a_building(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
 	var found := _a_hidden_spot(map, hot.notice_within())

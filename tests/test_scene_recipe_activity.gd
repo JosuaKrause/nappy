@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Real Main installs only authored subjects while keeping production crowd simulation.
 ##
@@ -138,7 +138,7 @@ func fail(message: String) -> void:
 	get_tree().quit(1)
 """
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var stem := "user://recipe_activity_%d" % OS.get_process_id()
 	var script := FileAccess.open(stem + ".gd", FileAccess.WRITE)
 	script.store_string(PROBE)

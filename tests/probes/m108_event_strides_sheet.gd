@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Evidence rig for M108's "every living thing that moves has a stride" item, event-family half:
 ## renders every family's five authored views with frame a beside frame b, straight from the SVG
@@ -33,7 +33,7 @@ const UNSUFFIXED_SIDE_FAMILIES: Array[String] = [
 	"dog", "cat_running", "charging_dog", "cyclist", "mouse",
 ]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	var rows := []
 	for family in NAMED_SIDE_FAMILIES + UNSUFFIXED_SIDE_FAMILIES:

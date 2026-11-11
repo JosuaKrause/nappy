@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Contribution parity covers the elliptical boundary, transient jolts and externally moved bodies.
 ##
@@ -15,7 +15,7 @@ const STOPPED := -1.0
 
 var _rig = RIG.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
 	var crowd := _rig.a_crowd(t, map)
 	var street: Vector2i = _rig.a_straight_run(map, Tuning.BLOCK_SIZE)
@@ -28,7 +28,7 @@ func run(t) -> void:
 
 ## One walker and one car of the crowd, each at both ends of its kind's pace, a walker also giving
 ## way (hurrying and waiting), a car also stopped by a crash, a jolt of each radius running or not, and a car on a curved heading.
-func _test_the_contribution_matches_the_unfiltered_kernel(t, crowd: Crowd, map: CityMap,
+func _test_the_contribution_matches_the_unfiltered_kernel(t: TestRunner, crowd: Crowd, map: CityMap,
 		street: Vector2i) -> void:
 	# The crowd's set the bodies are heard in, which their jolts widen as a crowd's own bodies do.
 	var heard_in := crowd.sources
@@ -111,7 +111,7 @@ func _test_the_contribution_matches_the_unfiltered_kernel(t, crowd: Crowd, map: 
 
 ## Last, since the crowd's set only ever grows (`CrowdSources.widen_to()`) and the sweep above is
 ## asked of the reach the tests before it made.
-func _test_a_wide_jolt_widens_what_the_sweep_asks(t, crowd: Crowd) -> void:
+func _test_a_wide_jolt_widens_what_the_sweep_asks(t: TestRunner, crowd: Crowd) -> void:
 	var body: CrowdAgent = crowd.agents()[0]
 	body.excitement.startle(30.0, 1.0, 45.0, 2000.0)
 	t.check(crowd.sources.silent_beyond() >= 2000.0 / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX),
@@ -125,7 +125,7 @@ func _rng() -> RandomNumberGenerator:
 ## `CrowdSources.sources_at()` against an unfiltered loop over the same agents: the same agents, in
 ## the same order, with the same contributions, at points among a day's crowd of walkers and cars near
 ## and far — a horn-startled car among them, heard from further than any unstartled body reaches.
-func _test_the_sweep_matches_the_unfiltered_loop(t, crowd: Crowd, map: CityMap) -> void:
+func _test_the_sweep_matches_the_unfiltered_loop(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
 	crowd.start_day(1, _rng())
 	var agents := crowd.agents()
 	var loud: CrowdAgent = null

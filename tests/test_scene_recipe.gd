@@ -8,7 +8,7 @@ func _recipe() -> Dictionary:
 			"extent": {"scope": "full"}, "city": {"context_seed": 1917501},
 			"anchors": {"start": "doorstep"}, "setup": {}, "playback": {}}
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_fixture(t)
 	_test_malformed_file(t)
 	var input := _recipe()
@@ -80,7 +80,7 @@ func run(t) -> void:
 		t.check(not local.is_street(Vector2i(-100, -100)), "fallback ground never claims to be a generated street")
 	_test_examples(t)
 
-func _test_station_pins(t) -> void:
+func _test_station_pins(t: TestRunner) -> void:
 	var input := _recipe()
 	input.city.power_station = {"blocks": [8, 1, 2, 1], "door_block": [9, 1]}
 	var accepted := RecipeCityBuilder.build(input)
@@ -98,7 +98,7 @@ func _test_station_pins(t) -> void:
 		t.check(accepted.map.power_station == Rect2i(2, 1, 2, 1),
 				"explicit station footprint survives candidate ranking")
 
-func _test_fixture(t) -> void:
+func _test_fixture(t: TestRunner) -> void:
 	var input := _recipe()
 	input.city.lots = [
 		{"blocks": [1, 1, 2, 1], "purpose": "park"},
@@ -115,7 +115,7 @@ func _test_fixture(t) -> void:
 		input.expected_violations.append("city.guarantee:extra")
 		t.check(not RecipeCityBuilder.build(input).errors.is_empty(), "extra expected failures cannot silently disappear")
 
-func _test_malformed_file(t) -> void:
+func _test_malformed_file(t: TestRunner) -> void:
 	var path := "user://scene-recipe-malformed-test.json"
 	var file := FileAccess.open(path, FileAccess.WRITE)
 	file.store_string("{\"version\":")
@@ -124,7 +124,7 @@ func _test_malformed_file(t) -> void:
 	DirAccess.remove_absolute(path)
 	t.check(not SceneRecipe.load_file(path).errors.is_empty(), "missing file returns a diagnostic without engine errors")
 
-func _test_closures(t, map: CityMap) -> void:
+func _test_closures(t: TestRunner, map: CityMap) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 23
 	var planned := ClosurePlanner.plan_day(map, DaySpec.for_day(1), rng)
@@ -142,7 +142,7 @@ func _test_closures(t, map: CityMap) -> void:
 	input.city.closures[0] = {"segment": [5, 6, 0], "kind": "roadworks"}
 	t.check(not RecipeCityBuilder.build(input).errors.is_empty(), "the home closure exclusion still rejects an exact recipe pin")
 
-func _test_examples(t) -> void:
+func _test_examples(t: TestRunner) -> void:
 	for side in ["hall", "yard"]:
 		var loaded := SceneRecipe.load_file("res://scene-recipes/power-station-%s.json" % side)
 		t.check(loaded.errors.is_empty(), "%s example parses" % side)

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## Measurement probe for calm-pelican's day-13 guard (the-arrow-and-the-day-13-guard): walked from
 ## the mark to each of the nearest live roadblocks, **does the task's waiting guard stand over the
@@ -52,7 +52,7 @@ const ARRIVED := 160.0
 ## The seed of each city's own run: the one the test runner starts the live run on.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var totals := {"walks": 0, "guarding": 0, "near": 0, "elsewhere": 0, "none": 0, "moves": 0,
 			"noticed": 0, "on_his_tile": 0, "no_way": 0, "placed": 0, "placed_without_a_way": 0}
 	var elsewhere: Array[String] = []
@@ -97,7 +97,7 @@ func run(t) -> void:
 
 ## A day 13 on `seed_value` with the mark read from where it stands: `{city, director, player,
 ## step, mark}`, or empty when the day offers no roadblock task.
-func _read_the_mark(t, seed_value: int) -> Dictionary:
+func _read_the_mark(t: TestRunner, seed_value: int) -> Dictionary:
 	var city := RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(seed_value))
@@ -321,7 +321,7 @@ static func _settle_the_arrow(director: ResistanceDirector) -> void:
 static func _choose_again(director: ResistanceDirector) -> void:
 	director.tick(ResistanceDirector.ARROW_RETARGET_SECONDS)
 
-func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int) -> Stroller:
+func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, seed_value: int) -> Stroller:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:

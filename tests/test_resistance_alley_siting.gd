@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## Where a mark and its guard stand in an alley: avoided alleys, the guard's place, walled alleys and the doorstep.
 ##
@@ -13,7 +13,7 @@ extends "res://tests/resistance_rig.gd"
 ## relocations and the dawn draws are a few. Where a mark's alley ends and where its guard should
 ## stand are worked out from the map alone (`AlleyMarks`).
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t)
 	_test_the_guard_moves_with_the_mark_into_its_new_alley(t)
@@ -33,7 +33,7 @@ func run(t) -> void:
 ## The dawn placement (`start_day()`) skips an alley the run's
 ## `completed_resistance_alley_tiles` already names, as long as some other alley is reachable —
 ## which a full generated city always has plenty of for a pickup's placement.
-func _test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t) -> void:
+func _test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var first := _director(t)
 	first.start_day(6, _rng(6, "resistance"), 300.0)
@@ -57,7 +57,7 @@ func _test_a_fresh_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 ## with nothing used — a mark she walks onto with nothing used moves onto it (`_relocate_round()`) —
 ## and has another such tile within `NOTICE_RADIUS` of it, more than `NOTICE_RADIUS` from the day's
 ## mark, and the tick that follows moves the mark off her tile.
-func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t) -> void:
+func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var scout := _director(t)
 	scout.start_day(6, _rng(6, "resistance"), 300.0)
@@ -113,7 +113,7 @@ func _test_a_relocated_mark_avoids_an_alley_a_completed_step_used(t) -> void:
 ## a relocated mark's fresh guard follows the same rule as the dawn draw, standing at the far
 ## mouth of whichever alley the mark relocated to, or as near it as the alley allows, rather than
 ## in a band around the mark itself.
-func _test_the_guard_moves_with_the_mark_into_its_new_alley(t) -> void:
+func _test_the_guard_moves_with_the_mark_into_its_new_alley(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director(t)
 	director.start_day(6, _rng(6, "resistance"), 300.0)
@@ -152,7 +152,7 @@ func _test_the_guard_moves_with_the_mark_into_its_new_alley(t) -> void:
 ## within his notice as he takes his step, and sleeps again when she has stood out of it and he
 ## has taken another (`EventInstance.warns_by_radius()`), the way the event manager runs him: she
 ## stands 60px from him along the line to the mark, in his alley with a clear line to him.
-func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t) -> void:
+func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director(t)
 	director.start_day(6, _rng(6, "resistance"), 300.0)
@@ -203,7 +203,7 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t) -> void:
 ## instead, the refusal and the search after it that this rule is about. Each mark and its guard
 ## are also held off the doorstep's lethal reach, the spawn kill
 ## `_test_no_alley_robbery_stands_near_the_doorstep()` asks of the dawn, here over every mark tile.
-func _test_the_guard_never_lands_inside_a_building(t) -> void:
+func _test_the_guard_never_lands_inside_a_building(t: TestRunner) -> void:
 	var robbery := EventCatalogue.mark_guard()
 	var doorstep_reach := 2.0 * robbery.inner_radius + ContactPoint.REACH
 	var checked := 0
@@ -248,7 +248,7 @@ func _test_the_guard_never_lands_inside_a_building(t) -> void:
 ## director looks for his spot (`ResistanceDirector.TRAP_DRAW_LIMIT` draws, or the alley's axis), and
 ## a relocation onto it from outside its mouth moves the mark there with no robber in the street,
 ## and says so in the run's trace.
-func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
+func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	run.resistance.completed_steps = _completed_through(2)
 	_look_at(Rect2())
@@ -304,7 +304,7 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t) -> void:
 ## beside ground that is neither alley nor courtyard — and never on the mouth itself. The dawn draws
 ## are few because each starts a day, which builds the day's reachability afresh; the relocations,
 ## a tick each, are where the sweep is wide.
-func _test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t) -> void:
+func _test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t: TestRunner) -> void:
 	var drawn := 0
 	var drawn_at_a_mouth := 0
 	var moved := 0
@@ -361,7 +361,7 @@ func _test_a_mark_only_ever_stands_one_tile_in_from_an_alley_mouth(t) -> void:
 ## mark binds on none of them (two-thirds in is far past it); the oracle keeps the floor for a point
 ## no mark stands on. Before, he stood at the far end tile or up to three tiles in from it, at least
 ## 176px from the mark where the alley allowed.
-func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t) -> void:
+func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
@@ -411,7 +411,7 @@ func _test_the_chalk_mark_guard_stands_two_thirds_through_its_alley(t) -> void:
 ## pixels short of the mark and back out, past a still robber where the street has him, and is never
 ## within his catch of him. Whether he wakes on the way is counted and not held: in a one-block alley
 ## reading the mark may wake him, and that is the player's choice.
-func _test_reading_a_mark_never_lands_her_in_his_catch(t) -> void:
+func _test_reading_a_mark_never_lands_her_in_his_catch(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var checked := 0
 	var asleep := 0
@@ -456,7 +456,7 @@ func _test_reading_a_mark_never_lands_her_in_his_catch(t) -> void:
 ## apartment complex's court, wider than `CityGenerator.COURTYARD_SIZE_TILES`. The dawn draw reaches a passage
 ## too: with every through-alley mark tile used by a completed step, the day's mark is drawn in one,
 ## and its guard, stood at dawn with nothing about her refusing him, is at that courtyard's inner end.
-func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t) -> void:
+func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var passages := 0
 	var guarded := 0
@@ -518,7 +518,7 @@ func _test_a_courtyard_marks_guard_stands_at_the_courtyards_inner_end(t) -> void
 
 ## That the guard at `guard_at` of the mark at `mark` (on `tile`, in a courtyard's passage) stands at
 ## the courtyard's inner end and no touch of the mark lands her in his catch.
-func _check_the_courtyard_guard(t, robbery: EventDef, map: CityMap, tile: Vector2i, mark: Vector2,
+func _check_the_courtyard_guard(t: TestRunner, robbery: EventDef, map: CityMap, tile: Vector2i, mark: Vector2,
 		guard_at: Vector2, what: String) -> void:
 	var court := AlleyMarks.courtyard_of(map, tile)
 	t.check(court.has_area(), "%s leads into a courtyard" % what)
@@ -581,7 +581,7 @@ const GUARD_DOORSTEP_DAYS: Array[int] = [6, 8, 10, 12]
 ## every city — "impossible by construction" is a property of the construction, not of any one
 ## city's shape — so it is a rule sweep, not a layout sweep, and its schedules keep the full day
 ## range (4..14, every day the catalogue's robbery can appear) while halving the seeds.
-func _test_no_alley_robbery_stands_near_the_doorstep(t) -> void:
+func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 	var reach: float = robbery.inner_radius + min_distance
@@ -641,7 +641,7 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t) -> void:
 ## landing nowhere lethal. Built through the real pipeline — `City.start_day`, then
 ## `EventManager.start_day`, then `ResistanceDirector.start_day` — rather than the data-level
 ## sweep above, so the M78 relocation actually runs the way it does in a played day.
-func _test_playtest_55_seed_has_no_spawn_kill(t) -> void:
+func _test_playtest_55_seed_has_no_spawn_kill(t: TestRunner) -> void:
 	var seed_value := 291862120
 	var day := 7
 	_build_city_in_a_new_run(t, seed_value)
@@ -709,7 +709,7 @@ func _test_playtest_55_seed_has_no_spawn_kill(t) -> void:
 ## not), `is_held_at()` (about a `StreetNetwork` segment, which an alley is never on) and
 ## `is_on_home_block()`. None of the three ever looks at a region wall, which is the whole of the
 ## escape. `CityMap.is_in_walled_alley()` is the fourth check that closes it.
-func _test_a_walled_alley_escapes_no_other_check(t) -> void:
+func _test_a_walled_alley_escapes_no_other_check(t: TestRunner) -> void:
 	var seed_value := 2199579682
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(seed_value)
@@ -741,7 +741,7 @@ func _test_a_walled_alley_escapes_no_other_check(t) -> void:
 ## stream, every pickup drawing from the one pool of mark tiles) and of a relocation with her
 ## standing on each tile of each walled alley (`_relocate_round()`), the alley nearest her being
 ## the one the wall shuts: the mark and the guard it stands are read off the street.
-func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
+func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t: TestRunner) -> void:
 	var seed_value := 2199579682
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var run := _build_city_in_a_new_run(t, seed_value)
@@ -797,7 +797,7 @@ func _test_a_walled_alley_never_gets_the_chalk_mark_or_its_guard(t) -> void:
 
 ## That a mark at `at` and its guard (`guard`, null when unguarded) stand outside every one of
 ## `walled_alleys`.
-func _check_off_the_walled_alleys(t, map: CityMap, walled_alleys: Array[Rect2i], at: Vector2,
+func _check_off_the_walled_alleys(t: TestRunner, map: CityMap, walled_alleys: Array[Rect2i], at: Vector2,
 		guard: EventInstance, what: String) -> void:
 	t.check(not map.is_in_walled_alley(map.world_to_tile(at), walled_alleys),
 			"%s: the mark is not inside a walled alley" % what)

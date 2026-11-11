@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What she meets on her route is drawn from a marble bag, and the bag is a queue of bags.
 ##
@@ -21,7 +21,7 @@ const STEP := 0.1
 ## How many times a route mast is sited again from where she was, each by a stream of its own.
 const MAST_SITINGS := 40
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t)
 	_test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t)
 	_test_a_rig_bigger_than_the_ordinary_set_gets_its_size(t)
@@ -37,7 +37,7 @@ func run(t) -> void:
 
 ## A special bag put in front is drawn whole first, and the bag it interrupted then hands out exactly
 ## the marbles it had left — together with what it had already handed out, its whole set once.
-func _test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t) -> void:
+func _test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t: TestRunner) -> void:
 	var ordinary := ["a", "a", "b", "b", "b"]
 	var bag := MarbleBag.new([], ordinary, 7)
 	var first: Array = [bag.draw(), bag.draw()]
@@ -58,7 +58,7 @@ func _test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t) -> void:
 ## marbles the active bag held plus the ensured one, nothing made and nothing lost. Asked of a bag
 ## part drawn and of one not yet filled, over several seeds, so where the rig's marbles come from
 ## is drawn rather than fixed.
-func _test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t) -> void:
+func _test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t: TestRunner) -> void:
 	var ordinary := MarbleBag.in_proportion({"cat": 2.5, "cyclist": 1.5, "dog": 3.0}, 2.0)
 	var x := ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT
 	for seed_value: int in [1, 2, 3, 4, 5]:
@@ -87,7 +87,7 @@ func _test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t) -> void:
 ## set, and one more ordinary bag is filled at the back when that runs out (`MarbleBag._take()`), the
 ## same one more a queue that was not empty gets. Asked of an ordinary set of two, so a rig of four
 ## needs three marbles taken: two from the first fill and one from the second.
-func _test_a_rig_bigger_than_the_ordinary_set_gets_its_size(t) -> void:
+func _test_a_rig_bigger_than_the_ordinary_set_gets_its_size(t: TestRunner) -> void:
 	var ordinary := ["a", "b"]
 	for seed_value: int in [1, 2, 3]:
 		var empty := MarbleBag.new([], ordinary, seed_value)
@@ -110,7 +110,7 @@ func _test_a_rig_bigger_than_the_ordinary_set_gets_its_size(t) -> void:
 ## Asking which marble comes next does not change it: a bag peeked at before every draw draws what
 ## the same bag drawn straight would, and a bag put in front after a peek leaves the peeked marble in
 ## the bag it was in.
-func _test_a_marble_peeked_at_is_the_marble_drawn(t) -> void:
+func _test_a_marble_peeked_at_is_the_marble_drawn(t: TestRunner) -> void:
 	var ordinary := MarbleBag.in_proportion({"a": 1.0, "b": 2.0, "c": 3.0}, 2.0)
 	var straight := MarbleBag.new([], ordinary, 99)
 	var peeked := MarbleBag.new([], ordinary, 99)
@@ -132,7 +132,7 @@ func _test_a_marble_peeked_at_is_the_marble_drawn(t) -> void:
 ## it and it goes straight back into the outer bag, and an inner bag of n marbles gives exactly n
 ## events and is then never drawn again — not by this outer bag and not by any later fill. A bag
 ## marble left last in its bag drains its inner bag and stops. Peeking names what a draw gives.
-func _test_an_inner_bag_of_n_gives_n_events_and_is_gone(t) -> void:
+func _test_an_inner_bag_of_n_gives_n_events_and_is_gone(t: TestRunner) -> void:
 	var others := ["cat", "cat", "dog", "dog", "dog"]
 	var inner_marbles := ["robber", "van", "van"]
 	var peeked_right := true
@@ -178,7 +178,7 @@ func _test_an_inner_bag_of_n_gives_n_events_and_is_gone(t) -> void:
 ## the guaranteed event"), so a bag marble it reaches gives a draw from its inner bag and stays where
 ## it is. The rigged bag then holds only plain marbles and the ensured one comes within x draws,
 ## every time, and the inner bag still gives exactly its n marbles.
-func _test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t) -> void:
+func _test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t: TestRunner) -> void:
 	var x := 2
 	var late := 0
 	var reached_the_bag_marble := 0
@@ -222,7 +222,7 @@ func _test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t) -> void:
 ## the bag holds it — `EventDirector.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight — whatever
 ## order they come in. A roll at the same weights misses that on most days (the probe
 ## `tests/probes/olive_badger_route_mix.gd` measures how far), so three seeds holding it is the bag.
-func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
+func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner) -> void:
 	var day := 5
 	for seed_value: int in [4242, 90210, 1234567]:
 		var map := CityGenerator.generate(seed_value)
@@ -275,7 +275,7 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t) -> void:
 ## after it still holds every dog marble it was filled with. *(inbox #561 in coral-bunny: "keep it first" · inbox
 ## #566 in feathery-stork: "but the first dog is a rigged bag with only one entry that is separate from anything that
 ## comes after" · "the lesson is not paid for".)*
-func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t) -> void:
+func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	for seed_value: int in [4242, 90210]:
 		var map := CityGenerator.generate(seed_value)
@@ -326,7 +326,7 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t) -> void:
 ## one of that many events handed out on it, and the place is put ahead of her past the streaming
 ## band on ground the route runs along, reachable from where she is, and in the world when she walks
 ## to it.
-func _test_after_the_mark_the_task_row_is_put_on_her_route(t) -> void:
+func _test_after_the_mark_the_task_row_is_put_on_her_route(t: TestRunner) -> void:
 	_a_mark_puts_a_place_on_her_route(t, 6, "homeless_yeller", ResistanceSteps.TASK_CONTACT_WITHIN_THE_NEXT)
 	_a_mark_puts_a_place_on_her_route(t, 11, "loudspeaker", ResistanceSteps.MAST_WITHIN_THE_NEXT)
 
@@ -350,7 +350,7 @@ class RefusingSiting extends EventScheduler.WalkSiting:
 ## while the refused siting is asked once a look (`EventDirector.ON_HER_WAY_LOOK`) rather than on
 ## every frame. Holding the head of the queue until it found a site, the mast would stop every event
 ## behind it.
-func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
+func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 	var day := 11
 	var map := CityGenerator.generate(SEED)
 	var state := CityState.new()
@@ -399,7 +399,7 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t) -> void:
 			"the refused siting is asked on the look's cadence, %d times in %.0fs of walking"
 			% [siting.asked, walked])
 
-func _a_mark_puts_a_place_on_her_route(t, day: int, row: String, size: int) -> void:
+func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, size: int) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))

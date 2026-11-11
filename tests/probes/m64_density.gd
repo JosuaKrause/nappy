@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for "the city feels way empty now", read as the player meant it: **nothing on
 ## the street she is walking down.** Not a suite: it prints rather than asserting, so it lives here
@@ -17,7 +17,7 @@ extends RefCounted
 const SEEDS := 8
 const SAMPLE_DAYS := [1, 5, 8, 11, 14]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_events_per_street_by_band()
 	t.check(true, "zz_m64_density probe ran")
 

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 class_name M174Pass
 extends RefCounted
 ## Measurement probe for M174, item 3, "the pass": the net points a real pass lands, walking at
@@ -68,7 +68,7 @@ const PHASE_SAMPLES := 8
 ## not one of these three) plus a margin for how far either body moves during the crossing.
 const LEAD := 500.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_row("homeless_yeller")
 	_row("loose_dog")
 	_row("dog_walker")

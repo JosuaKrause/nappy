@@ -24,7 +24,7 @@ const SEEDS: Array[int] = [4242, 90210, 1234567, 2295276695, 291862120, 314159, 
 		31337, 8675309, 11, 22, 33, 44, 55, 66, 77, 88, 99, 101, 202, 303, 404, 505, 606, 707, 808,
 		909, 1001, 2002]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var suite: Variant = load("res://tests/test_resistance_arrow.gd").new()
 	var seeds: Array[int] = SEEDS
 	if OS.get_environment("PROBE_SEEDS") != "":

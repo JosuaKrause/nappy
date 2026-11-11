@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for calm-pelican's day-13 roadblock (the-arrow-and-the-day-13-guard): with the
 ## task's own roadblock placed the way the day places one, near where she read the mark
@@ -40,11 +40,11 @@ class FallbackDirector extends ResistanceDirector:
 	func _place_the_roadblock_near(_mark: Vector2) -> EventInstance:
 		return null
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for fallback in [true, false]:
 		_measure(t, fallback)
 
-func _measure(t, fallback: bool) -> void:
+func _measure(t: TestRunner, fallback: bool) -> void:
 	var label := "before (edge spawn)" if fallback else "after (placed under the day's rules)"
 	var placed_by_rules := 0
 	var tasks := 0
@@ -119,7 +119,7 @@ func _measure(t, fallback: bool) -> void:
 			distances.back() if not distances.is_empty() else 0.0, live_counts,
 			_mean(reading), _worst(reading)])
 
-func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int) -> Stroller:
+func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, seed_value: int) -> Stroller:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:

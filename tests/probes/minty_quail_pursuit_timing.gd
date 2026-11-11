@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **When every pursuer catches her or gives up, and when every departure ends, tick by tick**, so a
 ## change to how a mover's step is proposed, checked and committed (minty-quail shared-components
@@ -53,7 +53,7 @@ var _trace: Array[String] = []
 ## Whether she is running in the run under way: every instance is told so each tick.
 var _running := false
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for seed_value in _listed("PROBE_SEEDS", SEEDS):
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
@@ -73,7 +73,7 @@ func _listed(name: String, fallback: Array[int]) -> Array[int]:
 		listed.append(int(part))
 	return listed
 
-func _a_day(t, city: City, seed_value: int, day: int) -> void:
+func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.index <= 2 * (day - 6):

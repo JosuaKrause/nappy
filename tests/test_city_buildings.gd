@@ -23,7 +23,7 @@ const RUN_SEED := 2
 const SWEEP_SEEDS := 5
 const BASE_SEED := 61_400
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t)
 	await _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t)
 	await _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t)
@@ -37,7 +37,7 @@ func run(t) -> void:
 ## stands its units only on its interior, and two roofs of seed 61400 are pinned to the layout
 ## `main` rolls for them (cell, then the unit's picture), which a pool built in any other order
 ## breaks.
-func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t) -> void:
+func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t: TestRunner) -> void:
 	var main_layouts := {
 		Vector2i(6, 6): [[Vector2i(5, 2), Building.WATER_TANK], [Vector2i(2, 2), Building.SERVICE_BULKHEAD],
 				[Vector2i(2, 1), Building.SERVICE_BULKHEAD]],
@@ -89,7 +89,7 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t) -
 ## only runs once per seed. **No column anywhere is left with neither a facade nor a covering
 ## roof:** every covered column's south tile belongs to a lot whose roof reaches it, so a front
 ## facing the map's own edge, where no lot stands, keeps its facade.
-func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t) -> void:
+func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roof(t: TestRunner) -> void:
 	var checked := 0
 	var edge_fronts := 0
 	for i in SWEEP_SEEDS:
@@ -141,7 +141,7 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 ## facade and the station draws no roof there; over its hall the wall is covered and the hall's roof
 ## is drawn as many rows taller as the wall is high. Seeds 823576 (a wall over the yard) and 966118
 ## (a wall over the hall) are cities that have each.
-func _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t) -> void:
+func _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t: TestRunner) -> void:
 	var over_yard := 0
 	var over_hall := 0
 	for seed_value in [823576, 966118]:
@@ -198,7 +198,7 @@ func _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t) -> v
 ## of its own carries on above the extension. Each seam is asked what it *draws*
 ## on both sides: no lip on either side of a seamless one, a lip on
 ## both sides of an ordinary one — and both pieces of a courtyard seam carry the same roof tint.
-func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_not(t) -> void:
+func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_not(t: TestRunner) -> void:
 	var checked_courtyard := 0
 	var checked_ordinary := 0
 	for i in SWEEP_SEEDS:
@@ -269,7 +269,7 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 ## rule every roof keeps, asked of the extension too, where a taller column steps down beside a
 ## shorter one. The power station's hall is left out: its own yard edge is a lip the ordinary
 ## interior bound was never measured against.
-func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t) -> void:
+func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t: TestRunner) -> void:
 	var checked := 0
 	var on_extension := 0
 	var on_shallow_extension := 0
@@ -304,7 +304,7 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t) -> void:
 ## `City._spawn_buildings()`'s own wiring of `is_home_building`, `door_world_x_range` and
 ## `covered_ground_cols` off `CityMap.home_block`, `map.home_rect` and `map.is_walkable()`,
 ## rather than a fixture set directly.
-func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
+func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunner) -> void:
 	var checked_non_home := 0
 	var checked_home := 0
 	var checked_home_multistory := 0
@@ -415,7 +415,7 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t) -> void:
 ## draws (a portico dropped for a covered column frees the other one it straddled) — the same two contracts
 ## `_test_the_accessor_returns_ground_floor_non_window_non_entrance_cells` pins on fixtures, asked
 ## again of whatever the generator actually builds.
-func _check_accessor_invariant(t, building: Building, front, seed_used: int) -> void:
+func _check_accessor_invariant(t: TestRunner, building: Building, front, seed_used: int) -> void:
 	var entrance_cols: Array[int] = []
 	if front.portico_drawn():
 		entrance_cols = front.portico_cols()
@@ -435,7 +435,7 @@ func _check_accessor_invariant(t, building: Building, front, seed_used: int) -> 
 
 ## Hands every building of `city` a drawer that records, has it drawn, and answers each building's
 ## reads of its front once two frames have passed.
-func _watch_the_fronts(t, city: City) -> Dictionary:
+func _watch_the_fronts(t: TestRunner, city: City) -> Dictionary:
 	for building in city.buildings():
 		FrontReads.watch(building)
 	await UI.frames(t, 2)

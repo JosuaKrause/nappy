@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The trailer's own logic (M204): the `--parent` flag, `ZoomOutCamera`'s move and `TrailerText`'s
 ## fade and tree shape, each driven the way the game drives it: a `RunConfig` parsed from the words
@@ -8,7 +8,7 @@ extends RefCounted
 ## exercised end to end by `tools/trailer.sh`'s own render rather than by this suite, the same as
 ## every other command-line-only dev flag (`--seed`, `--zoom`, `--route`, ...).
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_parent_accepts_mother_and_father(t)
 	_test_parent_refuses_an_unknown_word(t)
 	await _test_the_pull_back_fits_the_narrower_axis(t)
@@ -27,14 +27,14 @@ func run(t) -> void:
 func _parent(word: String) -> String:
 	return RunConfig.parse(PackedStringArray(["--parent", word]), "", true).parent_override
 
-func _test_parent_accepts_mother_and_father(t) -> void:
+func _test_parent_accepts_mother_and_father(t: TestRunner) -> void:
 	t.check(_parent("mother") == "mother", "'mother' is read back unchanged")
 	t.check(_parent("father") == "father", "'father' is read back unchanged")
 
 ## `--parent`'s own reasoning: "a shot of the wrong parent that said nothing about it would be the
 ## one failure the shot list exists to rule out" — so an unknown word is refused rather than
 ## silently taken as one parent or the other, the same way an unknown `--skip` word is refused.
-func _test_parent_refuses_an_unknown_word(t) -> void:
+func _test_parent_refuses_an_unknown_word(t: TestRunner) -> void:
 	t.check(_parent("dad") == "", "an unrecognised word is refused, not guessed at")
 	t.check(_parent("") == "", "the empty word is refused the same way")
 	t.check(_parent("Mother") == "",
@@ -54,7 +54,7 @@ const _VIEWPORT := Vector2(1280.0, 720.0)
 ## The camera a zoom-out over `bounds` has made current `at` seconds into a one-second move with no
 ## delay, started from her camera at `start` zoomed `start_zoom`; the nodes are freed before it
 ## returns, so it answers the pose as `[position, zoom]`.
-func _pulled_back(t, start: Vector2, start_zoom: float, bounds: Rect2, at: float) -> Array:
+func _pulled_back(t: TestRunner, start: Vector2, start_zoom: float, bounds: Rect2, at: float) -> Array:
 	var hers := Camera2D.new()
 	hers.position = start
 	hers.zoom = Vector2.ONE * start_zoom
@@ -77,7 +77,7 @@ func _pulled_back(t, start: Vector2, start_zoom: float, bounds: Rect2, at: float
 
 ## The move ends on the zoom that fits all of the bounds: whichever axis is the tighter fit wins,
 ## since the other axis then shows more than `bounds` rather than cropping it.
-func _test_the_pull_back_fits_the_narrower_axis(t) -> void:
+func _test_the_pull_back_fits_the_narrower_axis(t: TestRunner) -> void:
 	var wide := await _pulled_back(t, Vector2.ZERO, 2.0, Rect2(Vector2.ZERO, Vector2(2000.0, 1000.0)), 1.0)
 	t.check(is_equal_approx(wide[1], 1280.0 / 2000.0),
 			"the wider axis (2000 vs 1280) is the tighter fit (got %.6f)" % wide[1])
@@ -87,7 +87,7 @@ func _test_the_pull_back_fits_the_narrower_axis(t) -> void:
 
 ## "Equal steps of log(zoom) read as a constant pull back" — asserted directly: halfway through
 ## the move the zoom is the geometric mean of the start and end, not their arithmetic average.
-func _test_the_zoom_is_interpolated_on_a_log_scale(t) -> void:
+func _test_the_zoom_is_interpolated_on_a_log_scale(t: TestRunner) -> void:
 	# Bounds that fit at 0.5, centred on (100, 0).
 	var bounds := Rect2(Vector2(100.0 - 1280.0, -720.0), Vector2(2560.0, 1440.0))
 	var pose := await _pulled_back(t, Vector2.ZERO, 2.0, bounds, 0.5)
@@ -99,14 +99,14 @@ func _test_the_zoom_is_interpolated_on_a_log_scale(t) -> void:
 
 ## "The centre then moves in step with how much wider the view has become" — with no zoom change
 ## the centre falls back to a plain lerp on the move's own weight.
-func _test_the_centre_is_a_plain_lerp_when_the_zoom_does_not_change(t) -> void:
+func _test_the_centre_is_a_plain_lerp_when_the_zoom_does_not_change(t: TestRunner) -> void:
 	var bounds := Rect2(Vector2(100.0, 200.0) - _VIEWPORT * 0.5, _VIEWPORT)
 	var pose := await _pulled_back(t, Vector2.ZERO, 1.0, bounds, 0.5)
 	t.check(pose[0].is_equal_approx(Vector2(50.0, 100.0)),
 			"with no zoom change the centre is a plain lerp on the move's weight (got %s)" % pose[0])
 	t.check(is_equal_approx(pose[1], 1.0), "and the zoom itself never moves")
 
-func _test_the_ends_are_exactly_the_start_and_end(t) -> void:
+func _test_the_ends_are_exactly_the_start_and_end(t: TestRunner) -> void:
 	var start := Vector2(10.0, 20.0)
 	var end := Vector2(500.0, -80.0)
 	# Bounds that fit at 0.2, centred on `end`.
@@ -122,10 +122,10 @@ func _test_the_ends_are_exactly_the_start_and_end(t) -> void:
 
 ## Neither flag given builds nothing at all, the same as `main.gd`'s own `_add_trailer_rigs()`
 ## expects so an ordinary run adds no node for either flag.
-func _test_trailer_text_builds_nothing_for_two_empty_strings(t) -> void:
+func _test_trailer_text_builds_nothing_for_two_empty_strings(t: TestRunner) -> void:
 	t.check(TrailerText.build("", "") == null, "no caption and no title card builds no node")
 
-func _test_trailer_text_builds_only_a_caption(t) -> void:
+func _test_trailer_text_builds_only_a_caption(t: TestRunner) -> void:
 	var node := TrailerText.build("Every walk is a choice.", "")
 	t.check(node != null, "a caption alone still builds a node")
 	var root: Control = node.get_node("Root")
@@ -134,7 +134,7 @@ func _test_trailer_text_builds_only_a_caption(t) -> void:
 	t.check(root.get_node_or_null("Scrim") == null, "nor its scrim")
 	node.free()
 
-func _test_trailer_text_builds_only_a_title_card(t) -> void:
+func _test_trailer_text_builds_only_a_title_card(t: TestRunner) -> void:
 	var node := TrailerText.build("", "Nappy")
 	t.check(node != null, "a title card alone still builds a node")
 	var root: Control = node.get_node("Root")
@@ -143,7 +143,7 @@ func _test_trailer_text_builds_only_a_title_card(t) -> void:
 	t.check(root.get_node_or_null("Caption") == null, "no caption label was built")
 	node.free()
 
-func _test_trailer_text_builds_both(t) -> void:
+func _test_trailer_text_builds_both(t: TestRunner) -> void:
 	var node := TrailerText.build("On foot.", "Nappy")
 	t.check(node != null, "both flags together still build one node")
 	var root: Control = node.get_node("Root")
@@ -168,7 +168,7 @@ class Watcher extends Node:
 ## "Both fade in over FADE_SECONDS once DELAY_SECONDS of the shot has passed and then hold" —
 ## asserted on real frames: at every frame the text's alpha is nothing until the delay, a linear
 ## rise over the fade, and full after it.
-func _test_trailer_text_fades_in_after_the_delay_then_holds(t) -> void:
+func _test_trailer_text_fades_in_after_the_delay_then_holds(t: TestRunner) -> void:
 	var node := TrailerText.build("On foot.", "")
 	t.add_child(node)
 	var watcher := Watcher.new()

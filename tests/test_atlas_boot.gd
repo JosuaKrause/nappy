@@ -41,7 +41,7 @@ const SEED := 4242
 ## A save of the suite's own, handed to every boot, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_atlas_boot_scratch.json"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	await _test_a_boot_holds_one_parent_and_never_the_other(t)
 	await _test_two_days_never_reload_a_page(t)
@@ -57,7 +57,7 @@ func run(t) -> void:
 ## Between days the run's own parent is back to the boot's single reference: the second boot's drop
 ## of the first run's parent is one `stop_holding()`, and it lets the page go only if nothing the
 ## days built still holds a reference; the second run's own is given back the same way at the end.
-func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
+func _test_a_boot_holds_one_parent_and_never_the_other(t: TestRunner) -> void:
 	var seat := Seat.new(t)
 	var atlas := seat.sitting.atlas
 	var pages := PageLog.new(atlas)
@@ -97,7 +97,7 @@ func _test_a_boot_holds_one_parent_and_never_the_other(t) -> void:
 ## *"don't unload anything that might be needed in one day and in the next."* The check is the
 ## page **object**, not the reference count: a count that dips to nought and comes back would
 ## look identical from the outside and would have cost a blocking read from disk in between.
-func _test_two_days_never_reload_a_page(t) -> void:
+func _test_two_days_never_reload_a_page(t: TestRunner) -> void:
 	var seat := Seat.new(t)
 	var atlas := seat.sitting.atlas
 	var pages := PageLog.new(atlas)
@@ -150,7 +150,7 @@ func _test_two_days_never_reload_a_page(t) -> void:
 ## `test_park_cordon.gd`, `test_resistance_arrow.gd` and `test_atlas_stroller_crowd.gd` read the same
 ## off the library each is handed. And the pages the boot took for the process are the sitting's
 ## library's: they still answer on it once everything the boot built is gone.
-func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
+func _test_a_boot_hands_its_one_library_to_everything_it_draws(t: TestRunner) -> void:
 	for section: int in [DaySpec.Section.NONE, DaySpec.Section.BUILDING]:
 		var seat := Seat.new(t, func(run: RunState) -> void:
 				run.start_run(SEED)
@@ -206,7 +206,7 @@ func _test_a_boot_hands_its_one_library_to_everything_it_draws(t) -> void:
 ## and day 14's hand-over into the escape's boot, all three taking the one sitting parked in a home
 ## of the test's own (`main.use_sitting_home()`, standing for the tree's root), and no page may be
 ## loaded in the unmanaged anywhere in it.
-func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
+func _test_no_boot_loads_a_page_on_a_library_of_its_own(t: TestRunner) -> void:
 	var seat := Seat.new(t)
 	var run := seat.run
 	var home := seat.home
@@ -276,7 +276,7 @@ func _test_no_boot_loads_a_page_on_a_library_of_its_own(t) -> void:
 ## The real `main.tscn` handed the suite's scratch save, a reload that only counts, the `home`
 ## its sitting is parked in and taken from, and the suite's `run_log`, put in the tree with the two
 ## frames its `_ready()` awaits let pass.
-func _boot_in(t, home: Node, save: GameSave, reloads: Array[int], run_log: Telemetry) -> Node2D:
+func _boot_in(t: TestRunner, home: Node, save: GameSave, reloads: Array[int], run_log: Telemetry) -> Node2D:
 	var main: Node2D = MAIN_SCENE.instantiate()
 	main.configure(RunConfig.parse(PackedStringArray(["--no-save", "--no-telemetry", "--seed",
 			str(SEED)]), "", true))
@@ -289,12 +289,12 @@ func _boot_in(t, home: Node, save: GameSave, reloads: Array[int], run_log: Telem
 	await t.get_tree().process_frame
 	return main
 
-func _shut(t, main: Node2D) -> void:
+func _shut(t: TestRunner, main: Node2D) -> void:
 	t.get_tree().paused = false
 	main.free()
 
 ## A press on the title's tap button, pushed through the viewport where the layout draws it.
-func _press_tap(t, main: Node2D) -> void:
+func _press_tap(t: TestRunner, main: Node2D) -> void:
 	var title := _one(main, "TitleScreen")
 	await UI.frames(t)
 	UI.push(title, UI.touch_at(UI.centre(UI.button(title, "Tap")), true))
@@ -327,7 +327,7 @@ func _rng(tag: String) -> RandomNumberGenerator:
 	rng.seed = hash("test_atlas_boot:%s" % tag)
 	return rng
 
-func _city(t, atlas: AtlasLibrary) -> City:
+func _city(t: TestRunner, atlas: AtlasLibrary) -> City:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	city.atlas = atlas
 	t.add_child(city)
@@ -337,7 +337,7 @@ func _city(t, atlas: AtlasLibrary) -> City:
 ## A hand-built rig, the shape `tests/test_stroller.gd` uses: a `Camera2D` named for the lookup
 ## `_ready()` does, and physics off so nothing moves; handed `atlas` as `main._make_player()` hands
 ## the sitting's.
-func _rig(t, male: bool, atlas: AtlasLibrary) -> Stroller:
+func _rig(t: TestRunner, male: bool, atlas: AtlasLibrary) -> Stroller:
 	var rig := Stroller.new()
 	rig.use_atlas(atlas)
 	rig.draw_as_father(male)

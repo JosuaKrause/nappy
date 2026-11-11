@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## A used calm area is shut by the events placed in it, as before, and no route of the day goes
 ## through it. One used area, at most once a run and no earlier than act III, is fenced instead.
@@ -19,7 +19,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
 var _maps: Array[CityMap] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 37))
 	_test_a_used_area_is_taken_off_the_tree_and_stays_open(t)
@@ -120,7 +120,7 @@ func _force_a_fence(map: CityMap, day: int, used: Array[Vector2i]) -> void:
 
 ## The physical fence lasts one act; the fact this run chose one lasts across the boundary.
 ## Used areas in the later act still come off the route tree without another physical fence.
-func _test_the_one_fence_is_remembered_after_its_act(t) -> void:
+func _test_the_one_fence_is_remembered_after_its_act(t: TestRunner) -> void:
 	var map := _maps[0]
 	var fenced := Vector2i(-1, -1)
 	var fenced_act := 0
@@ -152,7 +152,7 @@ func _test_the_one_fence_is_remembered_after_its_act(t) -> void:
 ## walkable and calm — open unless it is `fenced_park`, closed only if it is — and the day's tree
 ## neither grows a branch to it nor runs through it. Also counts how often a used area is refused —
 ## printed, since it is a measurement.
-func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t) -> void:
+func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t: TestRunner) -> void:
 	var offered := 0
 	var shut := 0
 	var fenced_days := 0
@@ -220,7 +220,7 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t) -> void:
 ## the pavement beside it or past its own corner. `City._spawn_barrier()` stands a line
 ## `ParkClosure.barrier_width()` wide and `CLOSURE_BARRIER_DEPTH` deep at every `mouth_centres()`
 ## point — this is that geometry, asked of the plan rather than of a scene.
-func _test_the_fenced_park_closes_every_entrance(t) -> void:
+func _test_the_fenced_park_closes_every_entrance(t: TestRunner) -> void:
 	var checked := 0
 	var half_depth := Tuning.CLOSURE_BARRIER_DEPTH * 0.5
 	for map in _maps:
@@ -278,7 +278,7 @@ func _test_the_fenced_park_closes_every_entrance(t) -> void:
 ## there and only one, and an end that turns no corner ends on a post of its own on its own ground.
 ## Asked of every calm area of every map, whether or not the sweep ever fences it, since which one
 ## is fenced is a matter of the day and the corners are a matter of the ground.
-func _test_the_fence_turns_each_corner_on_one_post(t) -> void:
+func _test_the_fence_turns_each_corner_on_one_post(t: TestRunner) -> void:
 	var corners := 0
 	var open_ends := 0
 	for map in _maps:
@@ -352,7 +352,7 @@ func _edge_tiles(rect: Rect2i, out: Vector2i) -> Array[Vector2i]:
 ## The guarantees hold with the one fenced park closed and the day's street closures down: at least
 ## `MIN_CALM_AREAS_REACHABLE` open calm areas reachable from the doorstep, and nothing that was
 ## reachable before the fencing cut off by it but its own ground.
-func _test_the_guarantees_hold_with_the_fenced_park(t) -> void:
+func _test_the_guarantees_hold_with_the_fenced_park(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		for day in [9, 12, 13, 14]:
@@ -404,7 +404,7 @@ func _test_the_guarantees_hold_with_the_fenced_park(t) -> void:
 ## A calm area she has not used is untouched: still calm, none of its ground touched by the
 ## shutting or the fencing, and the tree still grows it a branch wherever the tree with nothing
 ## shut did.
-func _test_a_never_used_park_is_unaffected(t) -> void:
+func _test_a_never_used_park_is_unaffected(t: TestRunner) -> void:
 	var compared := 0
 	for map in _maps:
 		for day in _days():
@@ -445,7 +445,7 @@ func _test_a_never_used_park_is_unaffected(t) -> void:
 ## the day still has a clean open calm area, which dawn keeps clean before any spoiler is placed
 ## (`EventScheduler._calm_kept_clean`) — and places nothing inside `CityMap.fenced_park`, whose fence is the whole of
 ## what it shows.
-func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t) -> void:
+func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t: TestRunner) -> void:
 	var offered := 0
 	var spoiled := 0
 	for map in _maps:
@@ -514,7 +514,7 @@ func _a_body_stands_inside(map: CityMap, events: DayEvents, calm: CalmAreas, blo
 ## (`EventScheduler._things_to_put_in_a_park()`). The city is the one where that happened: seed
 ## 61823 on day 14, with the four-tile courtyard at block (3, 2) used yesterday, whose one spoiler
 ## was the sidewalk `poster_crew`.
-func _test_a_used_courtyard_keeps_what_was_put_in_it(t) -> void:
+func _test_a_used_courtyard_keeps_what_was_put_in_it(t: TestRunner) -> void:
 	var map := CityGenerator.generate(61823)
 	var day := 14
 	var block := Vector2i(3, 2)
@@ -544,7 +544,7 @@ func _test_a_used_courtyard_keeps_what_was_put_in_it(t) -> void:
 ## construction before the spoilers are placed (`EventScheduler._calm_kept_clean()`), and the plan
 ## has some counted calm area nothing reaches. Days 5, 9 and 14, the used order the one an act
 ## would have.
-func _test_with_every_area_used_one_stays_clean(t) -> void:
+func _test_with_every_area_used_one_stays_clean(t: TestRunner) -> void:
 	var asked := 0
 	for map in _maps:
 		for day in [5, 9, 14]:
@@ -574,7 +574,7 @@ func _test_with_every_area_used_one_stays_clean(t) -> void:
 ## With every calm area handed over as used, the tree takes as many off as it may and no more: at
 ## least `MIN_CALM_AREAS_REACHABLE` of them are never excluded, and only the one fenced park, if any,
 ## actually leaves `calm_blocks`.
-func _test_shutting_is_refused_rather_than_breaking_a_guarantee(t) -> void:
+func _test_shutting_is_refused_rather_than_breaking_a_guarantee(t: TestRunner) -> void:
 	for map in _maps:
 		for day in [1, 5, 9, 12, 14]:
 			var calm := _calm_on(map, day)
@@ -591,7 +591,7 @@ func _test_shutting_is_refused_rather_than_breaking_a_guarantee(t) -> void:
 
 ## Day 12's park is where the day's task is, so it is never taken off the tree or fenced on its day,
 ## even when she used it.
-func _test_the_swing_park_is_never_shut_or_fenced_on_its_day(t) -> void:
+func _test_the_swing_park_is_never_shut_or_fenced_on_its_day(t: TestRunner) -> void:
 	var day := ResistanceSteps.swing_day()
 	t.check(day > 0, "the calendar has a swing day")
 	if day <= 0:
@@ -606,7 +606,7 @@ func _test_the_swing_park_is_never_shut_or_fenced_on_its_day(t) -> void:
 
 ## The same handover shuts and fences the same areas, and a repaint with no handover shuts and
 ## fences nothing — the escape's own repaint, and every rig that never hands one over.
-func _test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t) -> void:
+func _test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t: TestRunner) -> void:
 	for map in _maps.slice(0, 3):
 		var cmap: CityMap = map
 		for day in [3, 7, 11]:
@@ -649,7 +649,7 @@ func _solid_at(node: Node2D, point: Vector2) -> bool:
 ## The real `City` stands one static body behind every fence line, where `ParkClosure` says: the
 ## one fenced park has a body across every way in, the same body a closed street's mouth has. The
 ## bodies are asked of the physics world, which is what stops her.
-func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
+func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(BASE_SEED)
 	var city: City = RunCity.in_run(CITY_SCENE, run)
@@ -708,7 +708,7 @@ func _test_the_city_stands_a_barrier_body_along_the_fenced_park(t) -> void:
 ## `start_recipe_day()` stands): the park's own runs and a short archway besides. End-on terminal
 ## panels share the post's exact anchor: subpixel drift can reverse their draw order. The mounted
 ## sign has its own midpoint support on either axis.
-func _test_the_fence_pieces_stand_in_draw_order(t, fenced: Array[RoadClosure]) -> void:
+func _test_the_fence_pieces_stand_in_draw_order(t: TestRunner, fenced: Array[RoadClosure]) -> void:
 	var run := RunState.new()
 	run.start_run(BASE_SEED)
 	var city: City = RunCity.in_run(CITY_SCENE, run)

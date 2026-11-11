@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## A run's checkpoints and its two modes — see docs/MECHANICS.md, "Nerves" and "Saving and
 ## resuming". A normal run that spends its last nerve goes back to the latest checkpoint it has
@@ -49,7 +49,7 @@ const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 ## The save under test, at a scratch path.
 var _save := GameSave.new(_scratch_path)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 
 	_test_going_back_restores_every_field_the_save_carries(t)
 	_test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t)
@@ -111,7 +111,7 @@ static func _windowed() -> RunConfig:
 ## the save fails here until it is changed too — and once that going back gave it back. A field the
 ## restore left out keeps its changed value and fails the second check; a field the save never
 ## carries at all is `tests/test_save.gd`'s `_test_round_trip_field_list_matches_the_property_list`.
-func _test_going_back_restores_every_field_the_save_carries(t) -> void:
+func _test_going_back_restores_every_field_the_save_carries(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	for d in range(1, 4):
@@ -232,7 +232,7 @@ func _fake_block_plan() -> BlockPlan:
 
 ## The checkpoint is the first dawn of its day and nothing later: a retry of day 4, a run sent back
 ## to day 4, and days 5 to 7 all keep day 4's; only day 8 replaces it.
-func _test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t) -> void:
+func _test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	t.check(run.calendar.checkpoint_day() == 1, "a fresh run's checkpoint is day 1")
@@ -257,7 +257,7 @@ func _test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t) -> void:
 
 ## Before day 4, the last nerve goes back to day 1 of the same city — the same seed, and the same
 ## parent pushing the pram — rather than a new run.
-func _test_checkpoint_zero_is_day_one_of_the_same_city(t) -> void:
+func _test_checkpoint_zero_is_day_one_of_the_same_city(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	run.header.player_is_male = not run.header.player_is_male
@@ -283,7 +283,7 @@ func _test_checkpoint_zero_is_day_one_of_the_same_city(t) -> void:
 ## time exactly as it was, and a new game from the title is the one thing that starts it at zero.
 ## The go-back paths to checkpoint zero and to a later checkpoint fail on the code before the fix
 ## (zero reset it, a later one took the dawn's); the retry and the save passed before and pin it.
-func _test_the_play_time_only_grows_across_every_way_back(t) -> void:
+func _test_the_play_time_only_grows_across_every_way_back(t: TestRunner) -> void:
 	var run := RunState.new()
 	# Back to checkpoint zero, from day 3.
 	run.start_run(_SEED)
@@ -341,7 +341,7 @@ func _test_the_play_time_only_grows_across_every_way_back(t) -> void:
 ## of the tree's root (`main.use_sitting_home()`), with the sitting that holds the run parked in
 ## it: the continue leaves that sitting there, carrying the run and the title's answer, and the
 ## next boot takes it from there.
-func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpoint(t) -> void:
+func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpoint(t: TestRunner) -> void:
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var reloads := []
@@ -408,7 +408,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	playing.free_all()
 	home.free()
 
-func _test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t) -> void:
+func _test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	run.calendar.choose_mode(true)
@@ -424,7 +424,7 @@ func _test_a_hard_run_keeps_no_checkpoint_and_ends_on_its_last_nerve(t) -> void:
 
 ## A `--day 8` boot keeps day 8's dawn behind the title before the mode is chosen; choosing hard
 ## mode on that title drops it.
-func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t) -> void:
+func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	run.header.day = 8
@@ -441,7 +441,7 @@ func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t) -> void:
 ## fewer star and the section's own words, its continue is the section again behind its brief, and
 ## the last nerve is the bad ending, with no continue, rather than the section again — shown after
 ## the outcome screen, as a lost day's is.
-func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
+func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	run.calendar.choose_mode(true)
@@ -483,7 +483,7 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t) -> void:
 ## escape boots the real `main.tscn` on the building, and the service door's own `exit_requested`
 ## — the signal the building emits when she walks out of it — brings the city's brief up with the
 ## nerves it had, none given back.
-func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
+func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	run.calendar.choose_mode(true)
@@ -512,7 +512,7 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t) -> void:
 
 ## *(gentle-osprey: the lost-day screen says e.g. "Back to day 8" with five stars and keeps the
 ## ordinary continue button.)*
-func _test_the_lost_day_screen_says_where_she_goes_back_to(t) -> void:
+func _test_the_lost_day_screen_says_where_she_goes_back_to(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	run.header.day = 8
@@ -533,7 +533,7 @@ func _test_the_lost_day_screen_says_where_she_goes_back_to(t) -> void:
 
 ## A title of the real scene, handed `run` and the platform's touch answer the way `main` hands
 ## them before the screen enters the tree (`use_run()`, `use_platform()`), under `t`.
-func _title_for(t, run: RunState, touch := false) -> TitleScreen:
+func _title_for(t: TestRunner, run: RunState, touch := false) -> TitleScreen:
 	var title: TitleScreen = TITLE.instantiate()
 	title.use_run(run)
 	title.use_platform(touch, QuitOption.available())
@@ -552,7 +552,7 @@ static func _the_catch_owed(title: TitleScreen) -> Rect2:
 	var drawn := box.get_global_transform() * Rect2(Vector2.ZERO, box.size)
 	return ButtonGeometry.margin_rect(drawn).merge(drawn.grow(_HARD_MODE_FLOOR_REACH))
 
-func _test_the_checkbox_shows_only_for_a_new_game(t) -> void:
+func _test_the_checkbox_shows_only_for_a_new_game(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	var title := _title_for(t, run)
@@ -587,7 +587,7 @@ func _test_the_checkbox_shows_only_for_a_new_game(t) -> void:
 ## (`_windowed()`), reading the run the test wrote there or finding none, so what is checked is the
 ## boot's own decision; the title's own `open()` answers the two openings no boot here reaches (the
 ## title again after an ending, the epilogue's), on the booted title.
-func _test_which_titles_show_the_checkbox_today(t) -> void:
+func _test_which_titles_show_the_checkbox_today(t: TestRunner) -> void:
 	# [what the save holds: null for nothing, else whether its day was under way, and whether it
 	#  was closed in the building; the box shown; the name of the case]
 	var cases := [
@@ -628,7 +628,7 @@ func _test_which_titles_show_the_checkbox_today(t) -> void:
 ## The box answers a touch, a click and `H`, and none of them starts the run; the three buttons
 ## still do. Each press is pushed through the viewport, the GUI pass and then the title's own
 ## handler, as a real one arrives.
-func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
+func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	var title := _title_for(t, run, false)
@@ -684,7 +684,7 @@ func _test_a_press_on_the_checkbox_flips_it_and_never_starts_the_run(t) -> void:
 ## drawn rect and just inside two corners of its catch: *"the whole bounding box should trigger"*
 ## (inbox #746 in woolly-penguin). Each tap must flip the box exactly once. The window is sized to the device for
 ## the span, since real dispatch maps a window position through the stretch.
-func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t) -> void:
+func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
 	var original_window_size: Vector2i = t.get_window().size
@@ -752,7 +752,7 @@ func _test_a_real_tap_on_the_checkbox_reaches_it_on_a_phone_and_a_desktop(t) -> 
 ## that keeps the default would silently swallow every press over it, as the bottom scrim once did
 ## over the Hard Mode box; this names it. A container's default, `MOUSE_FILTER_PASS`, hands the press
 ## on and is fine.
-func _test_no_control_on_the_title_stops_a_press(t) -> void:
+func _test_no_control_on_the_title_stops_a_press(t: TestRunner) -> void:
 	var run := RunState.new()
 	var title := _title_for(t, run)
 	title.open(false, true)
@@ -769,7 +769,7 @@ func _test_no_control_on_the_title_stops_a_press(t) -> void:
 ## A tap at `presented`, a point in the viewport's own (stretched, possibly rotated) box, sent as a
 ## real device sends it: from a phone a screen touch, which the engine also turns into an emulated
 ## click; from a desktop a left click. Press and release, so no touch is left held for the next.
-func _tap_through_the_engine(t, presented: Vector2, touch: bool) -> void:
+func _tap_through_the_engine(t: TestRunner, presented: Vector2, touch: bool) -> void:
 	var on_the_window: Vector2 = t.get_viewport().get_final_transform() * presented
 	for pressed: bool in [true, false]:
 		var event: InputEvent
@@ -793,7 +793,7 @@ func _tap_through_the_engine(t, presented: Vector2, touch: bool) -> void:
 ## counter the mode only for the new game. Two real boots of `main.tscn` under a windowed release
 ## configuration handed a scratch save: one resuming a hard run the test wrote there, between
 ## days, and one with nothing to resume, whose box is pressed through the viewport before Tap.
-func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t) -> void:
+func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t: TestRunner) -> void:
 	var modes := []
 	var listen := func(hard: bool, day: int) -> void: modes.append([hard, day])
 	EventBus.run_mode_chosen.connect(listen)

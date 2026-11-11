@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M179, "the fire is on her way, guaranteed" — how long a walk takes to be
 ## handed the fire, how long after that she sees it, and what the fire and the engine parked at it
@@ -37,7 +36,7 @@ const PAST_THE_FORK := 6
 ## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("seed   walk        sited at   lead px   seen after   total    widened  waited on")
 	var met := 0
 	var walks := 0
@@ -79,7 +78,7 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------ the walks ---
 
-func _walk_one(t, city: City, seed_value: int, walk_name: String) -> Dictionary:
+func _walk_one(t: TestRunner, city: City, seed_value: int, walk_name: String) -> Dictionary:
 	var day := Tuning.RUN_TAUGHT_DAY
 	# Every walk on this city's run starts from the scars it began with.
 	var scars := city.run.attempt_spend.scars.duplicate()
@@ -382,7 +381,7 @@ func _as_world(city: City, route: Array, outward: bool) -> PackedVector2Array:
 
 # ------------------------------------------------------------------- the rig ---
 
-func _walker(t, at: Vector2) -> Stroller:
+func _walker(t: TestRunner, at: Vector2) -> Stroller:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

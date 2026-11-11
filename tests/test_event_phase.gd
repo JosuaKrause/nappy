@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The event's stored phase and the one warning clock: `EventInstance.Phase` changed only by
 ## `transition()`, every row's telegraph and every waiting row's notice moving through it, a notice
@@ -7,7 +6,7 @@ extends RefCounted
 
 const STEP := 0.1
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_warning_starts_holds_and_runs_out(t)
 	_test_a_warning_ticks_into_its_action_or_is_called_off(t)
 	_test_a_row_with_no_wait_is_in_its_telegraph_then_active(t)
@@ -21,7 +20,7 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------- the clock ---
 
-func _test_a_warning_starts_holds_and_runs_out(t) -> void:
+func _test_a_warning_starts_holds_and_runs_out(t: TestRunner) -> void:
 	var warning := Warning.new()
 	t.check(not warning.is_running() and warning.elapsed(5.0) == 0.0,
 			"a warning not started is not running and has run for nothing")
@@ -38,7 +37,7 @@ func _test_a_warning_starts_holds_and_runs_out(t) -> void:
 	warning.stop()
 	t.check(not warning.is_running() and warning.started_at() == INF, "stopped, it is not running")
 
-func _test_a_warning_ticks_into_its_action_or_is_called_off(t) -> void:
+func _test_a_warning_ticks_into_its_action_or_is_called_off(t: TestRunner) -> void:
 	var ran := [0]
 	var off := [false]
 	var warning := Warning.new()
@@ -57,7 +56,7 @@ func _test_a_warning_ticks_into_its_action_or_is_called_off(t) -> void:
 
 # ------------------------------------------------------------------- the phase ---
 
-func _test_a_row_with_no_wait_is_in_its_telegraph_then_active(t) -> void:
+func _test_a_row_with_no_wait_is_in_its_telegraph_then_active(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
@@ -75,7 +74,7 @@ func _test_a_row_with_no_wait_is_in_its_telegraph_then_active(t) -> void:
 			"and is active once its telegraph has run")
 	instance.free()
 
-func _test_a_waiting_row_notices_warns_and_waits_again(t) -> void:
+func _test_a_waiting_row_notices_warns_and_waits_again(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
@@ -105,7 +104,7 @@ func _test_a_waiting_row_notices_warns_and_waits_again(t) -> void:
 	t.close_to(frames * STEP, def.pursuit.warns_for, "after its own warning", 2.0 * STEP)
 	instance.free()
 
-func _test_a_departure_and_a_finish_are_phases(t) -> void:
+func _test_a_departure_and_a_finish_are_phases(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("dog_walker")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
@@ -134,7 +133,7 @@ func _test_a_departure_and_a_finish_are_phases(t) -> void:
 ## `Tuning.PURSUIT_SHAKEN_OFF` shakes it off and it trots away while its telegraph is still running.
 ## It goes on answering `is_telegraphing()` until its clock runs out, as everything that reads it —
 ## the alert over her head, `event_activated`, its pictures — has always seen it.
-func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t) -> void:
+func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	var dog_where := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
@@ -174,7 +173,7 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 ## every tick (`_hold_the_notice_clock()`): a second of standing there has run none of his notice, and
 ## the second he waited is in the start the stream-out carries. A walk out of the stand-off cannot
 ## show the notice running afterwards, since he lunges the moment she is at the full stand-off.
-func _test_a_held_notice_comes_back_as_far_run(t) -> void:
+func _test_a_held_notice_comes_back_as_far_run(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
@@ -201,7 +200,7 @@ func _test_a_held_notice_comes_back_as_far_run(t) -> void:
 
 ## `at_heat()` gives a hunting copy its own `PursuitSpec`, never the cold row's own hunt's (`EventDef.hunts`),
 ## so the copy's speed is not written onto the row every other copy is made from.
-func _test_a_hunting_copy_does_not_share_its_rows_pursuit(t) -> void:
+func _test_a_hunting_copy_does_not_share_its_rows_pursuit(t: TestRunner) -> void:
 	var cold := EventCatalogue.by_id("roadblock")
 	var hot := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
 	t.check(cold.pursuit == null and cold.hunts.pursuit != null, "the cold roadblock does not pursue")
@@ -217,7 +216,7 @@ func _test_a_hunting_copy_does_not_share_its_rows_pursuit(t) -> void:
 
 ## A warning up before its thing exists points where the thing will come from, moving only with
 ## her, and counts down the row's own warning, on the clock above.
-func _test_a_badge_up_alone_points_and_counts_down(t) -> void:
+func _test_a_badge_up_alone_points_and_counts_down(t: TestRunner) -> void:
 	var def := EventSpawner.as_warned(EventCatalogue.by_id("cyclist"))
 	var arrived := [0]
 	var where := func(her: Vector2) -> Vector2: return her + Vector2(600.0, 0.0)
@@ -243,7 +242,7 @@ func _test_a_badge_up_alone_points_and_counts_down(t) -> void:
 ## A live event made where it stands came under no warning, one that does not drive closes on
 ## nothing, and its field reaches exactly where its row's field is heard: the reach the run log's
 ## lines ask (`field_reaches()`) agrees with the field the meter is charged from.
-func _test_a_live_event_answers_for_its_row(t) -> void:
+func _test_a_live_event_answers_for_its_row(t: TestRunner) -> void:
 	for id: String in ["alley_robbery", "police_patrol", "cafe_tables", "cyclist"]:
 		var def := EventCatalogue.by_id(id)
 		var instance := EventInstance.new()

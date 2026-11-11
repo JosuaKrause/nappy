@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## merry-elk: how many posters she passes within view along the routes she actually walks, per day.
 ##
@@ -25,7 +25,7 @@ const POSTER_VIEW := preload("res://tests/fixtures/poster_view.gd")
 const ACCIDENT_SHARE := 0.10
 const PURSUIT_PER_TEAR := 0.1
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var rows := {}
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)

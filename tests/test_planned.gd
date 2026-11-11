@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `EventScheduler.Planned`, one placed event: what it says about itself to whoever reads the day,
 ## checked here once on rows built by hand, with no city generated and no day planned. A region
@@ -6,7 +5,7 @@ extends RefCounted
 ## body stood as a door (`Planned.stand_as_a_door()`); the region wall's own body is the
 ## `roadblock` the wall stands, which is not a door.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_door_body_is_never_against_the_line(t)
 	_test_a_door_body_never_blocks_the_way(t)
 	_test_the_wall_s_body_says_so(t)
@@ -25,7 +24,7 @@ func _door(id: String) -> EventScheduler.Planned:
 	body.stand_as_a_door()
 	return body
 
-func _test_a_door_body_is_never_against_the_line(t) -> void:
+func _test_a_door_body_is_never_against_the_line(t: TestRunner) -> void:
 	for id: String in ["checkpoint_hut", "checkpoint_gate", "checkpoint_post"]:
 		var door := _door(id)
 		t.check(door.is_door(), "a %s the region planner stands at a door is a door" % id)
@@ -38,7 +37,7 @@ func _test_a_door_body_is_never_against_the_line(t) -> void:
 	t.check(not unplaced.counts_against_the_line(),
 			"a row not yet placed stands nowhere, so it counts against nothing")
 
-func _test_a_door_body_never_blocks_the_way(t) -> void:
+func _test_a_door_body_never_blocks_the_way(t: TestRunner) -> void:
 	for id: String in ["checkpoint_hut", "checkpoint_gate", "checkpoint_post"]:
 		t.check(not _door(id).obstructs(),
 				"a %s stood at a door is a crossing she walks through, not a block" % id)
@@ -46,7 +45,7 @@ func _test_a_door_body_never_blocks_the_way(t) -> void:
 	t.check(not EventScheduler.Planned.new(EventCatalogue.by_id("roadblock"), Vector2.INF).obstructs(),
 			"and a row not yet placed blocks nothing")
 
-func _test_the_wall_s_body_says_so(t) -> void:
+func _test_the_wall_s_body_says_so(t: TestRunner) -> void:
 	var wall := _sealed("roadblock")
 	t.check(not wall.is_in_the_wall(), "a body is not the wall's until it is stood in it")
 	wall.stand_in_the_wall()
@@ -58,7 +57,7 @@ func _test_the_wall_s_body_says_so(t) -> void:
 			PackedVector2Array([Vector2(320, 320), Vector2(640, 320)]))
 	t.check(not moving.stands_still(), "while a plan with a route moves")
 
-func _test_what_stands_clear_of_it(t) -> void:
+func _test_what_stands_clear_of_it(t: TestRunner) -> void:
 	var her := 14.0
 	var nothing := EventScheduler.Planned.new(EventDef.new(), Vector2(320, 320))
 	t.check(nothing.clearance(her) == 0.0, "an event with no body and no hard fail asks no clearance")
@@ -83,7 +82,7 @@ func _test_what_stands_clear_of_it(t) -> void:
 ## inbox #1185 in gentle-owl): the region wall's body, a door's, a seal, a loudspeaker mast and an ambient row,
 ## whose sections day 13's swap never takes; the day's cafe tables, a barricade it rolled rather than
 ## sealed with, and the burnt shell a fire left, which the player called a regular event, are not.
-func _test_which_plans_are_fixed_parts(t) -> void:
+func _test_which_plans_are_fixed_parts(t: TestRunner) -> void:
 	var tables := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
 	t.check(not tables.is_a_fixed_part(), "the day's cafe tables are the day's own")
 	t.check(not _sealed("barricade").is_a_fixed_part(),
@@ -109,7 +108,7 @@ func _test_which_plans_are_fixed_parts(t) -> void:
 ## gatehouses"): `Crowd` builds a walker's door hold at each door body that `detains_her()`, so of a
 ## door's bodies the hut on each sidewalk and the alley door's post hold a walker, and the boom over
 ## the road holds nobody, since what stops at it is the cars.
-func _test_a_walker_is_held_at_the_hut_and_never_at_the_boom(t) -> void:
+func _test_a_walker_is_held_at_the_hut_and_never_at_the_boom(t: TestRunner) -> void:
 	t.check(_door("checkpoint_hut").detains_her() and _door("checkpoint_post").detains_her(),
 			"a door's hut and an alley door's post hold a walker")
 	t.check(not _door("checkpoint_gate").detains_her(), "the boom over the road holds nobody")
@@ -117,7 +116,7 @@ func _test_a_walker_is_held_at_the_hut_and_never_at_the_boom(t) -> void:
 ## **Whether its field reaches a point** (`field_reaches()`), from where it stands now: where it was
 ## placed while it is not in the world, and **measured from its centre**, out to where its row is
 ## heard.
-func _test_what_its_field_reaches(t) -> void:
+func _test_what_its_field_reaches(t: TestRunner) -> void:
 	var row := EventCatalogue.by_id("alley_robbery")
 	var plan := EventScheduler.Planned.new(row, Vector2(320, 320))
 	t.check(plan.field_reaches(Vector2(320, 320) + Vector2(row.heard_within() - 1.0, 0.0)),

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What the title, pause and summary suites share to drive those screens the way a player does**:
 ## events pushed through the viewport, real frames let pass, controls found by the names the scene
@@ -37,7 +36,7 @@ static func push(screen: Node, event: InputEvent) -> void:
 
 ## Lets `count` frames pass. A `process_frame` resumes before the nodes' own `_process` of the frame
 ## it names, so two are what one full frame of processing takes.
-static func frames(t, count := 2) -> void:
+static func frames(t: TestRunner, count := 2) -> void:
 	for i in count:
 		await t.get_tree().process_frame
 

@@ -22,7 +22,7 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 const DrawnEvent := preload("res://tests/drawn_event.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_standing_seal_holds_one_key_for_its_whole_life(t)
 	await _test_the_gate_stores_the_key_it_compared(t)
 	_test_a_striding_event_moves_its_key(t)
@@ -55,7 +55,7 @@ func run(t) -> void:
 ## (`_draw_cat`, `_draw_roadblock`, `_draw_masked_pursuer`, and the mark's own flash), because a
 ## term a picture does not read costs exactly one redraw in an instance's whole life and a term a
 ## picture *does* read and the key does not is a frozen picture.
-func _test_a_standing_seal_holds_one_key_for_its_whole_life(t) -> void:
+func _test_a_standing_seal_holds_one_key_for_its_whole_life(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("barricade"), Vector2.ZERO)
 	instance.step(STEP)
@@ -74,7 +74,7 @@ func _test_a_standing_seal_holds_one_key_for_its_whole_life(t) -> void:
 ## Runs `instance` forward until its telegraph is over, so a test about something else is not also
 ## reading the one-off key change that crossing carries. Bounded, and says so if the crossing never
 ## happened, because a loop that silently ran out would leave the test asserting nothing.
-func _past_the_telegraph(t, instance: EventInstance, what: String) -> void:
+func _past_the_telegraph(t: TestRunner, instance: EventInstance, what: String) -> void:
 	for i in 2000:
 		if not instance.is_telegraphing():
 			return
@@ -83,7 +83,7 @@ func _past_the_telegraph(t, instance: EventInstance, what: String) -> void:
 
 ## The gate stores whatever it compared, every drawn frame, whether or not it asked for a draw —
 ## which is what lets the *transition out of* a never-settling state still register as a change.
-func _test_the_gate_stores_the_key_it_compared(t) -> void:
+func _test_the_gate_stores_the_key_it_compared(t: TestRunner) -> void:
 	var fresh := EventInstance.new()
 	fresh.setup(EventCatalogue.by_id("loose_dog"), Vector2.ZERO)
 	t.check(_asks(fresh),
@@ -111,7 +111,7 @@ func _test_the_gate_stores_the_key_it_compared(t) -> void:
 ## `dog_walker` at 32px/s crosses into its mid-stride frame and back within a few seconds of walking
 ## (`tests/test_event_strides.gd` pins the alternation itself). Every one of those flips has to
 ## reach the screen, so every one of them has to move the key.
-func _test_a_striding_event_moves_its_key(t) -> void:
+func _test_a_striding_event_moves_its_key(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
@@ -136,7 +136,7 @@ func _test_a_striding_event_moves_its_key(t) -> void:
 ## stride — that is correct rather than a miss, and it is the reason the win is the scenery rather
 ## than the traffic. Asserted over a tick where the stride frame did *not* change, so the only
 ## thing left that could have moved the key is the lift.
-func _test_a_bobbing_event_moves_its_key(t) -> void:
+func _test_a_bobbing_event_moves_its_key(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
@@ -171,7 +171,7 @@ func _test_a_bobbing_event_moves_its_key(t) -> void:
 ## same, to the eighth of a pixel the key reads it. The engine's own count of times it drew the event
 ## (its `draw` signal) is what is counted, and the pictures the dog was told to stand are read off
 ## the recording drawer.
-func _test_the_normal_dogs_opposite_step_moves_its_key(t) -> void:
+func _test_the_normal_dogs_opposite_step_moves_its_key(t: TestRunner) -> void:
 	var to_the_top_of_the_bob := PI / EventPictures.BOB_PER_PX * 0.5
 	var half_a_turn := PI / EventInstance.GAIT_RATE
 	for id in ["dog_walker", "loose_dog", "charging_dog"]:
@@ -220,7 +220,7 @@ func _the_dog_drawn(instance: EventInstance) -> Array[String]:
 
 ## The crouch *is* the telegraph (`_draw_cat` swaps the whole family at `is_telegraphing()`), so the
 ## tick the dash starts has to move the key even though nothing about the cat has moved yet.
-func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t) -> void:
+func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cat_dash")
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
@@ -251,7 +251,7 @@ func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t) -> void:
 ## a swell its telegraph holds constant, so the flash is the only thing that can move its key across
 ## a beat; the engine's own count of draws (`draw`) is what is counted, one tick and one frame at a
 ## time. The same cyclist with nobody to aim at carries no caret, and is drawn on none of them.
-func _test_the_marks_flash_is_in_the_key(t) -> void:
+func _test_the_marks_flash_is_in_the_key(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	var marked: EventInstance = await DrawnEvent.stand(t, def, false)
 	var unmarked: EventInstance = await DrawnEvent.stand(t, def, false)
@@ -290,7 +290,7 @@ func _test_the_marks_flash_is_in_the_key(t) -> void:
 ## ends the day on contact (a copy of its row with `hard_fail` set) is amber when she is far off and
 ## closing on it, doubled red with her on it, and nothing with her away and still, and each change
 ## of her state is drawn on the next frame.
-func _test_the_caret_strength_is_in_the_key(t) -> void:
+func _test_the_caret_strength_is_in_the_key(t: TestRunner) -> void:
 	var def := _copy_of(EventCatalogue.by_id("loose_dog"))
 	def.hard_fail = true
 	var instance: EventInstance = await DrawnEvent.stand(t, def, false)
@@ -325,7 +325,7 @@ func _test_the_caret_strength_is_in_the_key(t) -> void:
 ## against wherever she was last frame, or against `Vector2.INF` before anything had said where
 ## she was at all: a lethal cyclist
 ## ridden straight at her read as carrying no caret.
-func _test_asking_for_the_key_does_not_freeze_the_caret(t) -> void:
+func _test_asking_for_the_key_does_not_freeze_the_caret(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	t.check(def != null and def.hard_fail, "cyclist is a hard-fail row")
 	if not def:
@@ -348,7 +348,7 @@ func _test_asking_for_the_key_does_not_freeze_the_caret(t) -> void:
 ## The busker never moves an inch and never covers any ground, so his strum is driven by
 ## `idle_is_stepping(BUSKER_STRUM_PERIOD)` rather than by the gait — the one animation in the game a
 ## distance-driven key would have silenced outright.
-func _test_the_buskers_strum_moves_the_key_without_him_moving(t) -> void:
+func _test_the_buskers_strum_moves_the_key_without_him_moving(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("busker"), Vector2.ZERO)
 	_past_the_telegraph(t, instance, "the busker")
@@ -372,7 +372,7 @@ func _test_the_buskers_strum_moves_the_key_without_him_moving(t) -> void:
 
 ## The same for the café frontage's lean, on its own slower timer — the whole row leans together,
 ## so one instance's key carries it for every sitter.
-func _test_the_cafe_sitters_lean_moves_the_key(t) -> void:
+func _test_the_cafe_sitters_lean_moves_the_key(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("cafe_tables"), Vector2.ZERO)
 	_past_the_telegraph(t, instance, "the café frontage")
@@ -395,7 +395,7 @@ func _test_the_cafe_sitters_lean_moves_the_key(t) -> void:
 ## The crash's smoke, the burst main's fountain and the basement vent's steam alternate two frames
 ## off `idle_is_stepping()` while standing perfectly still. The cloud-only steam moves its owner's
 ## key; the other two scenes keep theirs stable because their small detail layers own each swap.
-func _test_separated_details_keep_the_owner_key_stable(t) -> void:
+func _test_separated_details_keep_the_owner_key_stable(t: TestRunner) -> void:
 	var periods := {
 		"car_accident": EventPictures.CAR_ACCIDENT_SMOKE_PERIOD,
 		"burst_water_main": EventPictures.BURST_MAIN_SPLASH_PERIOD,
@@ -446,7 +446,7 @@ func _test_separated_details_keep_the_owner_key_stable(t) -> void:
 ## rather than from the alley he was sited facing, so he turns to watch her while standing perfectly
 ## still. Nothing else in the game changes its picture with neither a step nor a clock behind it,
 ## and a key reading `_heading` alone would have frozen him facing his siting for ever.
-func _test_a_waiting_robber_turning_to_face_her_moves_the_key(t) -> void:
+func _test_a_waiting_robber_turning_to_face_her_moves_the_key(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("alley_robbery"), Vector2.ZERO, PackedVector2Array(),
@@ -465,7 +465,7 @@ func _test_a_waiting_robber_turning_to_face_her_moves_the_key(t) -> void:
 
 ## Her conversation freezes `_process()` — no distance, no gait — and the posture swap is the only
 ## telegraph that mechanic has, so it must move the key from inside the frozen branch.
-func _test_a_chatting_mother_moves_her_key_while_frozen(t) -> void:
+func _test_a_chatting_mother_moves_her_key_while_frozen(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("chatting_mother"), Vector2.ZERO, route, Vector2.RIGHT)
@@ -482,7 +482,7 @@ func _test_a_chatting_mother_moves_her_key_while_frozen(t) -> void:
 ## A boom gate's whole picture is one bit somebody else owns — `RegionPlanner.GateState.raised`,
 ## advanced by `Crowd` — and the gate never moves, never strides and never telegraphs, so that bit
 ## is the only thing between a raised boom and a lowered one reaching the screen.
-func _test_a_raised_boom_moves_the_gates_key(t) -> void:
+func _test_a_raised_boom_moves_the_gates_key(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("checkpoint_gate"), Vector2.ZERO, PackedVector2Array(),
 			Vector2.DOWN)
@@ -498,7 +498,7 @@ func _test_a_raised_boom_moves_the_gates_key(t) -> void:
 ## An event that is over leaves rather than vanishing, and it bobs on the way out
 ## (`current_bob()`'s own `is_leaving` branch) — so the departure is drawn rather than held on the
 ## last frame the event was still an event.
-func _test_a_leaving_event_moves_its_key(t) -> void:
+func _test_a_leaving_event_moves_its_key(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("loose_dog"), Vector2.ZERO, PackedVector2Array(),
@@ -516,7 +516,7 @@ func _test_a_leaving_event_moves_its_key(t) -> void:
 
 ## Four pictures are continuous functions of the clock rather than a frame chosen from a set, and
 ## the gate steps aside for all four rather than pretending a key could name them.
-func _test_the_flock_and_the_drawn_flames_are_never_gated(t) -> void:
+func _test_the_flock_and_the_drawn_flames_are_never_gated(t: TestRunner) -> void:
 	var flock := EventInstance.new()
 	flock.setup(EventCatalogue.by_id("pigeon_flock"), Vector2.ZERO)
 	# `_ready()` is what builds the birds in a real scene; a bare rig has to ask for them.
@@ -543,7 +543,7 @@ func _test_the_flock_and_the_drawn_flames_are_never_gated(t) -> void:
 ## The van's victim slides to the van over `AbductionSpec.taken_over` seconds, so it is never gated while
 ## the take runs — and the *end* of the take is a change the key itself has to carry, or the last
 ## frame of the walk would stay on the screen with nobody in it.
-func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t) -> void:
+func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t: TestRunner) -> void:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("abduction"), Vector2.ZERO, PackedVector2Array(),
@@ -566,7 +566,7 @@ func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t) -> void:
 ## The key is a pure query on state `_process()` has already settled, so asking twice inside one
 ## tick always answers the same way — the same contract `gait_is_stepping()` owes the halo, which
 ## re-runs `draw_body()` a dozen times per frame of its own.
-func _test_the_key_is_stable_within_a_tick(t) -> void:
+func _test_the_key_is_stable_within_a_tick(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
@@ -585,7 +585,7 @@ func _test_the_key_is_stable_within_a_tick(t) -> void:
 ## the cycle runs on the city's broadcast clock (`mast_is_telegraphing_now()`) long after the
 ## once-at-creation `is_telegraphing()` has gone false, and silencing flips a flag without moving
 ## anything. A key without them keeps the arcs on a mast day 11's task has just silenced.
-func _test_a_masts_lamp_and_its_silence_move_its_key(t) -> void:
+func _test_a_masts_lamp_and_its_silence_move_its_key(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("loudspeaker")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)

@@ -55,7 +55,7 @@ class Manoeuvre extends RefCounted:
 	## The widest the actual travel direction and the reported heading ever disagreed, in radians.
 	var worst_drift := 0.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_turn_constants_hold_their_relationships(t)
 	# Each scenario stands in a city of its own, built over a run of its own, so none leans on what
 	# an earlier one left closed, held or driving.
@@ -89,7 +89,7 @@ func run(t) -> void:
 
 ## The two constants a turn introduces, stated as the relationships that make them right rather
 ## than as the values — see `Tuning.CAR_TURN_SPEED`.
-func _test_the_turn_constants_hold_their_relationships(t) -> void:
+func _test_the_turn_constants_hold_their_relationships(t: TestRunner) -> void:
 	var lateral := Tuning.CAR_TURN_SPEED * Tuning.CAR_TURN_SPEED / CarTurn.CAR_TURN_RADIUS_MIN
 	t.check(lateral <= CarStrategy.CAR_BRAKE,
 			"a car is never asked to corner harder than it can brake (%.0f against %.0f px/s²)"
@@ -128,13 +128,13 @@ func _test_the_turn_constants_hold_their_relationships(t) -> void:
 ## asked about rather than one of two it might have rolled. What is checked is the same four things
 ## every time: the path never jumped, the body never left the carriageway, it landed on the lane it
 ## was turning into and pointing along it, and it got there.
-func _test_a_car_turns_into_each_arm_from_every_approach(t) -> void:
+func _test_a_car_turns_into_each_arm_from_every_approach(t: TestRunner) -> void:
 	for vertical in [true, false]:
 		for direction in [1.0, -1.0]:
 			for turning in [1.0, -1.0]:
 				_one_arm(t, vertical, direction, turning)
 
-func _one_arm(t, vertical: bool, direction: float, turning: float) -> void:
+func _one_arm(t: TestRunner, vertical: bool, direction: float, turning: float) -> void:
 	_clear_the_holds()
 	_hold(_ahead_of(vertical, direction))
 	_hold(_arm(not vertical, -turning))
@@ -164,7 +164,7 @@ func _one_arm(t, vertical: bool, direction: float, turning: float) -> void:
 ## The about-face, from all four approaches, where the junction is boxed in on three sides. The
 ## crossing street's own carriageway is the room a half turn needs, so this one is taken in the
 ## middle of the box and stays on the road for the whole of it.
-func _test_a_car_turns_round_when_every_arm_is_shut(t) -> void:
+func _test_a_car_turns_round_when_every_arm_is_shut(t: TestRunner) -> void:
 	for vertical in [true, false]:
 		for direction in [1.0, -1.0]:
 			_clear_the_holds()
@@ -190,7 +190,7 @@ func _test_a_car_turns_round_when_every_arm_is_shut(t) -> void:
 ## — a half turn between two lanes 32px apart is a 16px arc and the body's corners reach 40px from
 ## the centre of it — so the road check here is the looser one. Nothing else is relaxed: the barrier
 ## itself is still refused, which is what "never drive through a barrier" means.
-func _test_a_car_turns_round_in_the_street_short_of_a_barrier(t) -> void:
+func _test_a_car_turns_round_in_the_street_short_of_a_barrier(t: TestRunner) -> void:
 	_clear_the_holds()
 	_bar_the_junction_band()
 	var car := _place_a_car(true, 1.0)
@@ -214,7 +214,7 @@ func _test_a_car_turns_round_in_the_street_short_of_a_barrier(t) -> void:
 ## exactly where the arc would put this one down. Held there by the rig rather than by any rule: a
 ## real car would be driving, and what is being asked is what the planner does while the spot is
 ## taken.
-func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
+func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t: TestRunner) -> void:
 	_clear_the_holds()
 	_bar_the_junction_band()
 	var car := _place_a_car(true, 1.0)
@@ -274,7 +274,7 @@ func _test_a_car_waits_for_the_lane_its_half_turn_lands_in(t) -> void:
 ## So the last resort is refused where it cannot help, and the car does what any body with nowhere
 ## to go does — it stands, and leaves once nobody can see it go. The rig keeps the camera on it, so
 ## what is measured here is the standing rather than the leaving.
-func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t) -> void:
+func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t: TestRunner) -> void:
 	_clear_the_holds()
 	var band := _junction.y * CityMap.period()
 	var here := floori((float(band * Tuning.TILE_SIZE) - 4.0 * float(Tuning.TILE_SIZE))
@@ -327,7 +327,7 @@ func _test_a_car_with_no_road_either_way_stands_rather_than_flickering(t) -> voi
 ## The rig is two cars heading away from a barred junction, the follower a little past the barrier
 ## and the leader a fraction of a car's length in front of it. The first frame is the resolve; every
 ## frame after it may move the follower no further than it could drive in one.
-func _test_a_car_against_a_barrier_is_not_shunted_later(t) -> void:
+func _test_a_car_against_a_barrier_is_not_shunted_later(t: TestRunner) -> void:
 	_clear_the_holds()
 	_bar_the_junction_band()
 	var past_the_barrier := float((_junction.y * CityMap.period() + Tuning.STREET_WIDTH)
@@ -380,7 +380,7 @@ func _bar_the_junction_band() -> void:
 ## The probe that picks an arm fires a single point seven tiles out and looks straight past a short
 ## plug — harmless when a car could reverse its heading wherever it stood, and a car parked in a
 ## cul-de-sac for the rest of the day now. What refuses it is the room the *exit* has to leave in.
-func _test_a_plugged_arm_is_refused_rather_than_driven_into(t) -> void:
+func _test_a_plugged_arm_is_refused_rather_than_driven_into(t: TestRunner) -> void:
 	_clear_the_holds()
 	_hold(_ahead_of(true, 1.0))
 	_hold(_arm(false, -1.0))
@@ -405,7 +405,7 @@ func _test_a_plugged_arm_is_refused_rather_than_driven_into(t) -> void:
 ## `LaneMover.heading()` is what everything downstream of a car reads — the strike box, the horn, the shadow
 ## and, once it is bound, the picture. So it has to be the direction the car is **actually** going,
 ## not the axis it belongs to, on every frame of a turn.
-func _test_the_heading_is_the_direction_it_is_actually_travelling(t) -> void:
+func _test_the_heading_is_the_direction_it_is_actually_travelling(t: TestRunner) -> void:
 	_clear_the_holds()
 	_hold(_ahead_of(true, 1.0))
 	_hold(_arm(false, -1.0))
@@ -421,7 +421,7 @@ func _test_the_heading_is_the_direction_it_is_actually_travelling(t) -> void:
 ## A turning car is still in the queue it came from, and the queue behind it still keeps a car's
 ## length. Nothing may be teleported to make that true: the separation pass refuses to slide a car
 ## that is on an arc, so what gives is the follower.
-func _test_a_queue_keeps_its_distance_behind_a_turning_car(t) -> void:
+func _test_a_queue_keeps_its_distance_behind_a_turning_car(t: TestRunner) -> void:
 	_clear_the_holds()
 	_hold(_ahead_of(true, 1.0))
 	_hold(_arm(false, -1.0))
@@ -479,7 +479,7 @@ func _test_a_queue_keeps_its_distance_behind_a_turning_car(t) -> void:
 ## about-face — there is nowhere to stand a queue behind a half turn's landing. The code path is one
 ## and the same either way: `CarStrategy._land_the_turn()` merges, and `Crowd._keep_room_for_the_turning()` reads
 ## `LaneMover.turn_lane_key()` without caring which manoeuvre produced it.
-func _test_a_turn_merges_into_a_lane_without_resetting_it(t) -> void:
+func _test_a_turn_merges_into_a_lane_without_resetting_it(t: TestRunner) -> void:
 	_clear_the_holds()
 	_hold(_ahead_of(true, 1.0))
 	var turner := _place_a_car(true, 1.0)
@@ -594,7 +594,7 @@ func _queue_order(queue: Array[CrowdAgent]) -> Array:
 
 ## Two cars at one box, one turning across the other's path. The box is rationed, so the turn holds
 ## the whole of it until its tail is clear — and what the crossing car does is wait, not arrive.
-func _test_two_cars_arriving_together_do_not_share_the_box(t) -> void:
+func _test_two_cars_arriving_together_do_not_share_the_box(t: TestRunner) -> void:
 	_clear_the_holds()
 	_hold(_ahead_of(true, 1.0))
 	_hold(_arm(false, -1.0))
@@ -621,7 +621,7 @@ func _test_two_cars_arriving_together_do_not_share_the_box(t) -> void:
 
 ## The zebra is honoured on the way into a turn. A car brakes for somebody at the crossing, and the
 ## turn it has planned does not let it through early.
-func _test_a_turning_car_still_gives_way_at_a_zebra(t) -> void:
+func _test_a_turning_car_still_gives_way_at_a_zebra(t: TestRunner) -> void:
 	_clear_the_holds()
 	_hold(_ahead_of(true, 1.0))
 	_hold(_arm(false, -1.0))
@@ -646,7 +646,7 @@ func _test_a_turning_car_still_gives_way_at_a_zebra(t) -> void:
 
 ## A signal decides the box where there is one, and a planned turn does not argue with it. The car
 ## may not be inside the junction while its own arm is red.
-func _test_a_red_light_still_holds_a_car_that_is_turning(t) -> void:
+func _test_a_red_light_still_holds_a_car_that_is_turning(t: TestRunner) -> void:
 	var signals := _city.signals
 	var box := Vector2i(_city.map.main_road, _junction.y)
 	t.check(signals != null and signals.is_signalled(box),
@@ -686,7 +686,7 @@ func _test_a_red_light_still_holds_a_car_that_is_turning(t) -> void:
 
 ## Out of bounds is a wall to everybody but a car on the spine, so a car heading for the edge turns
 ## at the last junction — the boundary case of the same rule a barrier exercises.
-func _test_a_car_turns_at_the_last_junction_before_the_boundary(t) -> void:
+func _test_a_car_turns_at_the_last_junction_before_the_boundary(t: TestRunner) -> void:
 	_clear_the_holds()
 	# The outermost street that is an ordinary one, the map's corner: its last junction has one arm to
 	# turn into, or an about-face. A spine is kept by its lights and a precinct has no carriageway for
@@ -711,7 +711,7 @@ func _test_a_car_turns_at_the_last_junction_before_the_boundary(t) -> void:
 # -------------------------------------------------------------------- the rig ---
 
 ## Every check a path owes, in one place: no jump, no snap, and no wheel off the carriageway.
-func _check_the_path(t, watched: Manoeuvre, name: String) -> void:
+func _check_the_path(t: TestRunner, watched: Manoeuvre, name: String) -> void:
 	t.check(watched.worst_step <= Tuning.CAR_SPEED.y * STEP + 0.01,
 			"%s: no frame of it moves the car further than its own top speed allows (%.2fpx)"
 			% [name, watched.worst_step])

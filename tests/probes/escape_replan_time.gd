@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for what the escape's plan costs on a restart of the city section, which
 ## replans on the same city (`DayDirector.start()`): per seed, the escape plan's
@@ -13,7 +12,7 @@ const RESTARTS := 3
 ## The seed the run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	var firsts: Array[int] = []

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A suite that quits the tree, held outside suite discovery like `engine_error.gd` and run only
 ## by name:
@@ -12,7 +11,7 @@ extends RefCounted
 
 const SENTINEL := "M-quit sentinel: quits_the_tree.gd is running and is about to quit the tree"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print(SENTINEL)
 	t.check(true, "the fixture's own assertion passes before it quits the tree")
 	t.get_tree().quit()

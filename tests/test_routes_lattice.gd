@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The lattice itself, checked by construction before anything closes it: 7x7 blocks is 8x8
 ## junctions, 56 streets each way; a calm zone takes its own streets out of the lattice; every tile
@@ -17,7 +16,7 @@ const BASE_SEED := 5150
 
 var _maps: Array[CityMap] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 13))
 	_test_the_lattice_is_the_lattice(t)
@@ -30,7 +29,7 @@ func run(t) -> void:
 
 
 ## Every street the lattice still has is ground the player can walk down.
-func _test_the_lattice_is_the_lattice(t) -> void:
+func _test_the_lattice_is_the_lattice(t: TestRunner) -> void:
 	var map := _maps[0]
 	for segment in map.network.segments():
 		var rect := segment.tile_rect()
@@ -64,7 +63,7 @@ func _test_the_lattice_is_the_lattice(t) -> void:
 ## checked in `tests/test_generator.gd` instead.** Its absorbed streets are absent from the lattice
 ## exactly like a zone's and they are *built over*, which is the one sentence in this test that
 ## reverses: a zone is walked through, and a complex is walked round.
-func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t) -> void:
+func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t: TestRunner) -> void:
 	var zones := 0
 	for map in _maps:
 		for anchor: Vector2i in map.zone_rects:
@@ -117,7 +116,7 @@ func _test_a_calm_zone_takes_its_streets_out_of_the_lattice(t) -> void:
 
 ## A junction belongs to no street on purpose: it is where the choice is made, so closing a
 ## street may never seal the corner it starts from.
-func _test_a_tile_knows_which_street_it_is_on(t) -> void:
+func _test_a_tile_knows_which_street_it_is_on(t: TestRunner) -> void:
 	var map := _maps[0]
 	for segment in map.network.segments():
 		for tile in map.rect_tiles(segment.tile_rect()):
@@ -139,7 +138,7 @@ func _test_a_tile_knows_which_street_it_is_on(t) -> void:
 ## run, so what it may never do is make calm unreachable, and how many ways round it there are is
 ## the city's business. `tests/test_route_tree.gd` is where the second route is measured; the
 ## count below is what it came out as, kept as a floor rather than as the promise.
-func _test_an_open_city_can_reach_everywhere_calm(t) -> void:
+func _test_an_open_city_can_reach_everywhere_calm(t: TestRunner) -> void:
 	var with_a_choice := 0
 	var total := 0
 	for map in _maps:
@@ -164,7 +163,7 @@ func _test_an_open_city_can_reach_everywhere_calm(t) -> void:
 ## but is not a street any lattice search may use. Stopping there rather than walking through it is
 ## exactly the bug the milestone's own `_access_streets` had, arrived at by a different route: the
 ## found "street" is absent, `route_count` never reaches it, and the area reads as unreachable.
-func _test_access_segments_are_never_absent(t) -> void:
+func _test_access_segments_are_never_absent(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		for area in ClosurePlanner.calm_areas(map):
@@ -191,7 +190,7 @@ func _test_access_segments_are_never_absent(t) -> void:
 ## The area's own access streets are excluded, and that exclusion is the doorway exemption rather
 ## than a convenience: a courtyard has one archway onto one street, so shutting that street does
 ## put it out of reach. `_test_a_doorway_is_not_a_route` below is the other half of this.
-func _test_no_single_street_cuts_off_all_the_calm(t) -> void:
+func _test_no_single_street_cuts_off_all_the_calm(t: TestRunner) -> void:
 	var map := _maps[0]
 	var home := ClosurePlanner.home_street(map)
 	var areas := ClosurePlanner.calm_areas(map)
@@ -221,7 +220,7 @@ func _test_no_single_street_cuts_off_all_the_calm(t) -> void:
 ##
 ## A courtyard is the case that matters. If this ever stops finding one, the test has stopped
 ## checking anything and wants pointing at whatever replaced hidden calm.
-func _test_a_doorway_is_not_a_route(t) -> void:
+func _test_a_doorway_is_not_a_route(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		var home := ClosurePlanner.home_street(map)

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What is sited after dawn keeps the walk's own home-street rule** (`DaySpec.holds_the_home_streets`),
 ## not always a day's: the placement context the events build after dawn
@@ -14,11 +13,11 @@ extends RefCounted
 
 const DAY := 1
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_director_reads_the_rule_off_the_walks_spec(t)
 	_test_every_place_that_builds_a_siting_copies_the_rule(t)
 
-func _test_the_director_reads_the_rule_off_the_walks_spec(t) -> void:
+func _test_the_director_reads_the_rule_off_the_walks_spec(t: TestRunner) -> void:
 	var manager := EventManager.new()
 	manager.use_the_spec(DaySpec.for_day(DAY))
 	t.check(manager.ahead.holds_the_home_streets, "a day's spec holds the home's streets after dawn")
@@ -33,7 +32,7 @@ func _test_the_director_reads_the_rule_off_the_walks_spec(t) -> void:
 ## the call), which no siting's answers show either: a store shared between sitings would let one
 ## asked during the other's look read verdicts judged for the other's plans and place wrongly, so
 ## it too is read off the source.
-func _test_every_place_that_builds_a_siting_copies_the_rule(t) -> void:
+func _test_every_place_that_builds_a_siting_copies_the_rule(t: TestRunner) -> void:
 	var lines := FileAccess.get_file_as_string("res://src/events/events_ahead.gd").split("\n")
 	var builds := 0
 	var copied := 0

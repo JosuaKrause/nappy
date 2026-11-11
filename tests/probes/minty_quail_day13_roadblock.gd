@@ -22,7 +22,7 @@ const SPOTS := 10
 ## The seed of each city's own run: the one the test runner starts the live run on.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var outcomes := {}
 	var distances: Array[float] = []
 	var asked := 0
@@ -133,7 +133,7 @@ func _route_tiles(city: City) -> Array[Vector2i]:
 				found.append(tile)
 	return found
 
-func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int) -> Stroller:
+func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, seed_value: int) -> Stroller:
 	_restart_the_day(city, director, seed_value, t)
 	var player := Stroller.new()
 	var camera := Camera2D.new()

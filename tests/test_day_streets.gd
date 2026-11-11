@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Today's streets as dawn left them** (`DayStreets`), with no city: what each of its two writes
 ## replaces and what it leaves, and the one fact it derives, the region a siting reads off the
@@ -12,7 +11,7 @@ extends RefCounted
 
 const TILE := float(Tuning.TILE_SIZE)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_before_any_day_there_are_no_streets(t)
 	_test_each_write_replaces_what_it_says(t)
 	_test_the_siting_region_is_built_once_for_a_plan(t)
@@ -39,7 +38,7 @@ func _closures_on(junction: Vector2i) -> Array[RoadClosure]:
 
 ## The escape's city never begins a day, and a city's first dawn has not yet run: no tree, no plan,
 ## no closures and no region for a siting to read.
-func _test_before_any_day_there_are_no_streets(t) -> void:
+func _test_before_any_day_there_are_no_streets(t: TestRunner) -> void:
 	var streets := DayStreets.new()
 	t.check(streets.route_tree() == null and streets.region_plan() == null,
 			"before any day, there is no tree and no region plan")
@@ -48,7 +47,7 @@ func _test_before_any_day_there_are_no_streets(t) -> void:
 
 ## A dawn replaces all three of the day's answers; a rig's or a scene recipe's authored plan
 ## replaces the plan alone, and the next dawn replaces that plan as well.
-func _test_each_write_replaces_what_it_says(t) -> void:
+func _test_each_write_replaces_what_it_says(t: TestRunner) -> void:
 	var streets := DayStreets.new()
 	var first_tree := RouteTree.new()
 	var first_plan := _a_walled_plan()
@@ -73,7 +72,7 @@ func _test_each_write_replaces_what_it_says(t) -> void:
 ## it for every candidate tile, so building the wall's and the doors' discs afresh on each ask was
 ## most of that cost. The same plan gives the same region; another plan gives another region, built
 ## from that plan.
-func _test_the_siting_region_is_built_once_for_a_plan(t) -> void:
+func _test_the_siting_region_is_built_once_for_a_plan(t: TestRunner) -> void:
 	var streets := DayStreets.new()
 	var walled := _a_walled_plan()
 	var no_closures: Array[RoadClosure] = []

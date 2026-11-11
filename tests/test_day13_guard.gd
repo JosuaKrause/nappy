@@ -71,7 +71,7 @@ var _city: City
 ## (`tests/probes/calm_pelican_day13_guard_walk.gd`), so a day the probes measured is built again.
 var _streams := "day13-guard:"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_guard_follows_her_to_the_roadblock_she_approaches(t)
 	_test_set_on_her_inside_his_stand_off_he_holds(t)
 	_test_the_guards_side_is_decided_once_from_her_approach(t, true)
@@ -92,7 +92,7 @@ func run(t) -> void:
 	_test_with_none_close_by_a_section_is_taken(t)
 	_test_a_swap_replaces_what_the_section_holds(t)
 
-func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
+func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t: TestRunner) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -195,7 +195,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t) -> void:
 ## trigger range of her, and left there on the arrow's next choice, since he guards the roadblock it
 ## points at. With `before` given, he is `before` himself, moved with everything he was in the middle
 ## of (`EventManager.move_extra()`).
-func _check_he_guards(t, director: ResistanceDirector, roadblock: EventInstance, player: Stroller,
+func _check_he_guards(t: TestRunner, director: ResistanceDirector, roadblock: EventInstance, player: Stroller,
 		before: EventInstance, what: String) -> void:
 	var guard: EventInstance = _task_guard()
 	if before != null:
@@ -258,7 +258,7 @@ func _guard_in_view(feet: Vector2) -> bool:
 ## taken roadblock by roadblock in turn, so each is approached while he stands over another and the
 ## arrow's turn moves him; a place whose arrow turns to a roadblock he already guards moves nobody.
 ## No reachability is asked, by the director or here: the side is the rule.
-func _test_the_guard_stands_on_the_far_side_from_her(t, seed_value: int) -> void:
+func _test_the_guard_stands_on_the_far_side_from_her(t: TestRunner, seed_value: int) -> void:
 	var city := _build_city(t, seed_value)
 	var director := _start_the_day(t, city, seed_value)
 	var player := _rig_player(t, director, director.contact_position())
@@ -315,7 +315,7 @@ func _test_the_guard_stands_on_the_far_side_from_her(t, seed_value: int) -> void
 ## to the far side from where she stands now, which is the move the decided side holds back. Seen,
 ## the roadblock then comes into her view again from the second side, and he still stays: the side
 ## is decided once, not each time she sees it.
-func _test_the_guards_side_is_decided_once_from_her_approach(t, seen: bool) -> void:
+func _test_the_guards_side_is_decided_once_from_her_approach(t: TestRunner, seen: bool) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -379,7 +379,7 @@ func _test_the_guards_side_is_decided_once_from_her_approach(t, seen: bool) -> v
 ## (`EventManager.stream_around()`), a new instance of the same plan, and she stands on its other
 ## side: through the arrow's choices the guard stays on the side away from where she first came (he
 ## may still be moved within it, from the ring past the band into the band).
-func _test_a_roadblock_streamed_out_and_in_keeps_its_side(t) -> void:
+func _test_a_roadblock_streamed_out_and_in_keeps_its_side(t: TestRunner) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -491,7 +491,7 @@ static func _open(map: CityMap, tile: Vector2i) -> bool:
 ## stands there he neither lunges nor can end her day, however long; when she walks away he lunges
 ## only once she is back at the full stand-off. Without the hold he would lunge from 60px on his
 ## first tick.
-func _test_set_on_her_inside_his_stand_off_he_holds(t) -> void:
+func _test_set_on_her_inside_his_stand_off_he_holds(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
@@ -547,7 +547,7 @@ const ARROW_TURN_CHOICES := 24
 ## live roadblock while the guard is held at the task's own by her view on him; without, he has
 ## already noticed her at the task's own before she touches it, and is warning her by sight in her
 ## view: the task's own second of warning replaces his.
-func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: bool) -> void:
+func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t: TestRunner, parked: bool) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -639,7 +639,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, parked: boo
 ## is taken out of the world unseen and sent as a task's robber is
 ## (`ResistanceDirector._send_at_her()`): the screen-edge badge alone for `Tuning.WARNING_ALONE_MAX`,
 ## then he arrives charging (`EventCatalogue.task_guard_sent()`).
-func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
+func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t: TestRunner) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -675,7 +675,7 @@ func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t) -> void:
 ## player: "as long as he starts pursuing when you hit the task it's fine")*. She comes inside his
 ## radius and outside his stand-off along a clear line, so he warns; the task is done; she walks
 ## straight away from him, and he still charges.
-func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
+func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t: TestRunner) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -730,7 +730,7 @@ func _test_a_guard_warning_her_when_the_task_is_done_still_charges(t) -> void:
 ## man on foot), never comes within his stand-off of her, and which she
 ## could walk to from him — and he reaches her stand-off within the time his walk to her takes
 ## at his speed, his notice and a margin on top.
-func _test_the_guard_walks_round_a_building_to_her(t) -> void:
+func _test_the_guard_walks_round_a_building_to_her(t: TestRunner) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -832,7 +832,7 @@ static func _beside(map: CityMap, body: Vector2, reach: float) -> Vector2:
 ## **Day 13's own roadblock is one the day placed, close by** (inbox #1185 in gentle-owl), or one of the day's
 ## events swapped for one out of her sight. She reads the mark where it stands, with the 640x360
 ## view round her answering what is on screen.
-func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) -> void:
+func _test_the_roadblock_is_placed_under_the_rules_close_by(t: TestRunner, seed_value: int) -> void:
 	var city := _build_city(t, seed_value)
 	var director := _start_the_day(t, city, seed_value)
 	var player := _rig_player(t, director, director.contact_position())
@@ -903,7 +903,7 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t, seed_value: int) 
 ## `SWAP_VIEW_HALF_EXTENT` each way, so the nearest sections along her paths are in it.
 const SWAP_VIEW_HALF_EXTENT := Vector2(900.0, 900.0)
 
-func _test_with_none_close_by_a_section_is_taken(t) -> void:
+func _test_with_none_close_by_a_section_is_taken(t: TestRunner) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -947,7 +947,7 @@ func _test_with_none_close_by_a_section_is_taken(t) -> void:
 ## section the task takes, however far. Everything it held is spent, and the map's record of what
 ## stands is the record from before with the held plans' bodies given back and the roadblock's own
 ## body laid: no tile left shut or obstructed by anything that is gone.
-func _test_a_swap_replaces_what_the_section_holds(t) -> void:
+func _test_a_swap_replaces_what_the_section_holds(t: TestRunner) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
 	var player := _rig_player(t, director, director.contact_position())
@@ -1126,13 +1126,13 @@ func _task_guard() -> EventInstance:
 
 ## The city of `seed_value` in a run of its own (`RunCity.with_own_run()`, held by the city), so
 ## the steps done and the alleys used are this test's and gone with it.
-func _build_city(t, seed_value: int) -> City:
+func _build_city(t: TestRunner, seed_value: int) -> City:
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(seed_value))
 	return _city
 
-func _start_the_day(t, city: City, seed_value: int) -> ResistanceDirector:
+func _start_the_day(t: TestRunner, city: City, seed_value: int) -> ResistanceDirector:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:
@@ -1158,7 +1158,7 @@ func _start_the_day(t, city: City, seed_value: int) -> ResistanceDirector:
 ## A Stroller at `at`, in the tree, its physics stepped by nobody, handed to `director` and the
 ## test city's events as `main` hands her (`ResistanceDirector.use_player()`,
 ## `EventManager.use_player()`).
-func _rig_player(t, director: ResistanceDirector, at: Vector2) -> Stroller:
+func _rig_player(t: TestRunner, director: ResistanceDirector, at: Vector2) -> Stroller:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

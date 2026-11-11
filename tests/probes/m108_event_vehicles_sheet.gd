@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Evidence rig for M108's "bind vehicle views" item: renders every bound event-vehicle and the
 ## police car at all eight `EightDirection` sectors from the actual runtime selection —
@@ -22,7 +21,7 @@ const OUT_DIR := "res://docs/evidence/m108-event-vehicles-2026-09-11"
 const CELL := 68
 const GROUND := Color("c9c3b3")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 
 	_render_sheet("vehicles-native.png", "vehicles-3x.png", [

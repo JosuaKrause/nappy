@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for olive-badger, what she meets on her route is drawn from a marble bag. Not a
 ## suite: it prints rather than asserting, so it lives under `tests/probes/`, where the runner never
@@ -31,7 +30,7 @@ const STEP := 0.2
 ## Seconds of walking home, act III and act IV — the return legs `EventDirector.RETURN_PATROLS_PER_ACT` names.
 const RETURN_LEG := {3: 33.0, 4: 47.0}
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_measure()
 	_measure_the_return()
 	t.check(true, "zz_olive_badger_route_mix probe ran")

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **One source of each kind against a world that is only what this suite hands it**: the shared
 ## part every source keeps once (`ExcitementSource` — the ledger, the first landing, the netting),
@@ -6,7 +6,7 @@ extends RefCounted
 ## rules that are only its own, and the door rule the world states once
 ## (`ExcitementSources.all_at()`).
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_ledger_is_a_sliding_sum_on_the_source_clock(t)
 	_test_the_first_landing_is_told_once(t)
 	_test_the_nets_sum_to_the_bar_rise(t)
@@ -47,7 +47,7 @@ func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventD
 	def.telegraph_time = 0.0
 	return def
 
-func _test_the_ledger_is_a_sliding_sum_on_the_source_clock(t) -> void:
+func _test_the_ledger_is_a_sliding_sum_on_the_source_clock(t: TestRunner) -> void:
 	var body := Node2D.new()
 	var source := Clocked.new(body)
 	source.accumulate_landed(10.0)
@@ -62,7 +62,7 @@ func _test_the_ledger_is_a_sliding_sum_on_the_source_clock(t) -> void:
 	t.close_to(source.landed_ever, 15.0, "nothing lands for a share of zero", 0.0001)
 	body.free()
 
-func _test_the_first_landing_is_told_once(t) -> void:
+func _test_the_first_landing_is_told_once(t: TestRunner) -> void:
 	var body := Node2D.new()
 	var source := ExcitementSource.new(body)
 	var told := [0]
@@ -76,7 +76,7 @@ func _test_the_first_landing_is_told_once(t) -> void:
 
 ## The relationship the halo's colours rest on: each source's net, summed, is the bar's own rise
 ## while the decay is under what landed, and every net is zero together once it is not.
-func _test_the_nets_sum_to_the_bar_rise(t) -> void:
+func _test_the_nets_sum_to_the_bar_rise(t: TestRunner) -> void:
 	var landed := [12.0, 5.0, 3.0]
 	var total := 20.0
 	for decay in [4.0, 19.0]:
@@ -90,7 +90,7 @@ func _test_the_nets_sum_to_the_bar_rise(t) -> void:
 		none += ExcitementSource.net_landed(points, total, 25.0)
 	t.check(none == 0.0, "a decay past everything landed leaves every net at zero")
 
-func _test_an_event_caches_its_rate_on_its_age(t) -> void:
+func _test_an_event_caches_its_rate_on_its_age(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(_def("cached", 20.0), Vector2.ZERO)
 	var source := instance.excitement
@@ -108,7 +108,7 @@ func _test_an_event_caches_its_rate_on_its_age(t) -> void:
 			"and a point past its reach is charged nothing")
 	instance.free()
 
-func _test_an_event_caret_reads_where_its_instance_says_she_is(t) -> void:
+func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
@@ -128,7 +128,7 @@ func _test_an_event_caret_reads_where_its_instance_says_she_is(t) -> void:
 			"the halo's word on where she is, once a drawn frame, is where it measures from too")
 	instance.free()
 
-func _test_an_outranked_source_projects_nothing(t) -> void:
+func _test_an_outranked_source_projects_nothing(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	var def := _def("moving", 30.0)
 	def.mobile = true
@@ -141,7 +141,7 @@ func _test_an_outranked_source_projects_nothing(t) -> void:
 			"a source outranked by another projects nothing (%.2f before)" % gross)
 	instance.free()
 
-func _test_a_crowd_body_is_never_cached(t) -> void:
+func _test_a_crowd_body_is_never_cached(t: TestRunner) -> void:
 	var walker := CrowdAgent.new()
 	walker.kind = CrowdAgent.Kind.WALKER
 	var at := Vector2(Tuning.PEDESTRIAN_INNER_RADIUS * 0.5, 0.0)
@@ -155,7 +155,7 @@ func _test_a_crowd_body_is_never_cached(t) -> void:
 			"and a startle shows on the same frame it happens")
 	walker.free()
 
-func _test_a_crowd_body_jolt_widens_its_set(t) -> void:
+func _test_a_crowd_body_jolt_widens_its_set(t: TestRunner) -> void:
 	var crowd := Crowd.new()
 	var narrow := crowd.sources.silent_beyond()
 	var car := CrowdAgent.new()
@@ -168,7 +168,7 @@ func _test_a_crowd_body_jolt_widens_its_set(t) -> void:
 	car.free()
 	crowd.free()
 
-func _test_a_held_door_is_the_whole_answer(t) -> void:
+func _test_a_held_door_is_the_whole_answer(t: TestRunner) -> void:
 	var world := WorldContext.new()
 	var door_body := Node2D.new()
 	var street_body := Node2D.new()

@@ -5,7 +5,7 @@ extends RefCounted
 
 const Rig := preload("res://tests/routes_closures_rig.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var rig = Rig.new()
 	rig.prepare(6, 6)
 	rig.case_every_planned_day_keeps_the_invariant(t)

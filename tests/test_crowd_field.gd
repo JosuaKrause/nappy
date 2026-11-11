@@ -5,6 +5,6 @@ extends RefCounted
 
 const Rig := preload("res://tests/crowd_rig.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var rig = Rig.new()
 	await rig.run_part(t, "field")

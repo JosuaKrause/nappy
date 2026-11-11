@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What a frame cost, as the readout shows it and as the run log writes it down.
 ##
@@ -19,7 +19,7 @@ extends RefCounted
 ## samples — `readout_lines()` labels that reading `worst` and nothing here holds a rolling arithmetic
 ## mean or max any more.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_log_line_names_every_cost(t)
 	_test_the_log_line_carries_the_worst_frame_it_was_given(t)
 	_test_the_readout_names_what_the_log_names(t)
@@ -32,7 +32,7 @@ func run(t) -> void:
 ## which is the whole reason the other five are on the line.
 const _COSTS := ["fps", "draws", "objects", "primitives", "process", "physics"]
 
-func _test_the_log_line_names_every_cost(t) -> void:
+func _test_the_log_line_names_every_cost(t: TestRunner) -> void:
 	var line := FrameCost.line(0.0)
 	for cost in _COSTS:
 		t.check(cost in line, "the frame entry names %s (%s)" % [cost, line])
@@ -40,7 +40,7 @@ func _test_the_log_line_names_every_cost(t) -> void:
 ## Milliseconds, from the seconds the caller measures its interval in. A hitch is what "a bit
 ## laggy" means, so the conversion being right is the difference between a line that reports a
 ## 22ms frame and one that reports a 0.0ms frame on the same stutter.
-func _test_the_log_line_carries_the_worst_frame_it_was_given(t) -> void:
+func _test_the_log_line_carries_the_worst_frame_it_was_given(t: TestRunner) -> void:
 	t.check("worst frame 22.4ms" in FrameCost.line(0.0224),
 			"a 22.4ms frame is written in milliseconds, not seconds")
 	t.check("worst frame 0.0ms" in FrameCost.line(0.0),
@@ -55,7 +55,7 @@ func _test_the_log_line_carries_the_worst_frame_it_was_given(t) -> void:
 ## `process`/`physics` lines, not a seventh cost, and `line()` keeps writing the same reading with
 ## no label — see `_test_the_readout_gains_a_labelled_column_the_log_does_not()` below for the
 ## asymmetry this test would otherwise miss.
-func _test_the_readout_names_what_the_log_names(t) -> void:
+func _test_the_readout_names_what_the_log_names(t: TestRunner) -> void:
 	var readout := "\n".join(FrameCost.readout_lines())
 	var line := FrameCost.line(0.0)
 	for cost in _COSTS:
@@ -73,7 +73,7 @@ func _test_the_readout_names_what_the_log_names(t) -> void:
 ## either, since it already writes once a second, at the interval the reading covers. Checked
 ## against `process`/`physics` by name rather than a bare `"worst" in ...`, since `line()` already
 ## carries the unrelated word in `worst frame` for the run log's own worst-single-frame field.
-func _test_the_readout_gains_a_labelled_column_the_log_does_not(t) -> void:
+func _test_the_readout_gains_a_labelled_column_the_log_does_not(t: TestRunner) -> void:
 	var readout := "\n".join(FrameCost.readout_lines())
 	var line := FrameCost.line(0.0)
 	for cost in ["process", "physics"]:
@@ -85,7 +85,7 @@ func _test_the_readout_gains_a_labelled_column_the_log_does_not(t) -> void:
 ## The log is read top to bottom with no tool, down the kind column — so a `frame` entry has to
 ## land in the same three columns every other entry does. `TelemetryLog` in memory rather than on
 ## disk, which is what lets this run with no user directory behind it.
-func _test_the_entry_keeps_the_log_readable_down_a_column(t) -> void:
+func _test_the_entry_keeps_the_log_readable_down_a_column(t: TestRunner) -> void:
 	var log := TelemetryLog.new()
 	log.note(12.0, "frame", FrameCost.line(0.0166))
 	t.check(log.lines.size() == 1, "one entry, one line")
@@ -96,5 +96,5 @@ func _test_the_entry_keeps_the_log_readable_down_a_column(t) -> void:
 
 ## The line is written whatever the counters read: they are zero headless, and zero is a perfectly
 ## good number to format.
-func _test_the_counters_survive_a_headless_frame(t) -> void:
+func _test_the_counters_survive_a_headless_frame(t: TestRunner) -> void:
 	t.check(not FrameCost.line(0.0).is_empty(), "the line is written whatever they read")

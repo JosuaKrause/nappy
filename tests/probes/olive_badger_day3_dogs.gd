@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for olive-badger: how many charging dogs she meets on day 3, now that the
 ## lesson is a rigged bag of one in front of the route's bag and the ordinary bag holds
@@ -18,7 +17,7 @@ const BASE_SEED := 772041
 const STEP := 0.2
 const DOG := "charging_dog"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	var cap := EventCatalogue.by_id(DOG).max_per_day
 	var dogs_sum := 0

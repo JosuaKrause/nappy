@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The baby is handed the world she stands in, and is handed it again when the world changes.
 ##
@@ -42,11 +41,11 @@ class FakeWorld extends WorldContext:
 	func excitement_sources_at(_world_position: Vector2) -> Array:
 		return [[_noise, noise]] if noise > 0.0 else []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_baby_with_no_world_is_neutral(t)
 	await _test_a_baby_answers_from_the_world_she_was_last_handed(t)
 
-func _test_a_baby_with_no_world_is_neutral(t) -> void:
+func _test_a_baby_with_no_world_is_neutral(t: TestRunner) -> void:
 	var baby := Baby.new()
 	t.check(baby.world() == null, "a baby never placed in a world holds none")
 	t.check(baby.decay_rate() == 0.0, "a baby never placed in a world has no decay rate")
@@ -55,7 +54,7 @@ func _test_a_baby_with_no_world_is_neutral(t) -> void:
 ## Handed the building, she reads the building; handed the street, the same baby reads the street
 ## and no longer the building; handed none, she is neutral again. Each answer is the one the
 ## world handed her gives: the decay of the ground under her, and what the bodies there charge her.
-func _test_a_baby_answers_from_the_world_she_was_last_handed(t) -> void:
+func _test_a_baby_answers_from_the_world_she_was_last_handed(t: TestRunner) -> void:
 	var building := FakeWorld.new()
 	var street := FakeWorld.new()
 	street.decay = STREET_DECAY
@@ -98,7 +97,7 @@ func _test_a_baby_answers_from_the_world_she_was_last_handed(t) -> void:
 	street.free()
 
 ## One physics tick, on which the baby's own frame runs her meter and writes what it was fed.
-func _let_her_tick(t, baby: Baby) -> void:
+func _let_her_tick(t: TestRunner, baby: Baby) -> void:
 	baby.excitement = 0.0
 	# What the meter was fed is written by her own tick, so a tick that did not run reads nothing.
 	baby.last_incoming = -1.0

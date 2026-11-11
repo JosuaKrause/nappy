@@ -31,7 +31,7 @@ const BASE_SEED := 550209
 const STEP := 0.2
 const TRACKED_IDS := ["cyclist", "loose_dog"]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_measure_caps()
 	t.check(true, "zz_m99_caps probe ran")
 

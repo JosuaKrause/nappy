@@ -16,7 +16,7 @@ const GroundCells := preload("res://tests/ground_cells.gd")
 ## The seed of the run the city is handed (`RunCity.with_own_run()`).
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t)
 
 
@@ -26,7 +26,7 @@ func run(t) -> void:
 ## already answer independently, so this test recomputes the expected set from those rather than trusting the
 ## paint to have used its own inputs correctly, and checks `_ground`'s cells directly since there
 ## is no second layer to read back.
-func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
+func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner) -> void:
 	var kerb_sources := GroundTiles.ROUTE_KERB_SOURCES
 
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
@@ -196,7 +196,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t) -> void:
 
 ## Samples every map cell from its real resident TileMapLayer. Small destination views keep
 ## other neighborhoods free to unload; the reverse pass proves reconstruction after eviction.
-func _visit_every_neighborhood(t, city: City, reverse := false) -> Dictionary:
+func _visit_every_neighborhood(t: TestRunner, city: City, reverse := false) -> Dictionary:
 	var keys := city.scenery_ground.keys_in(city.map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, city.map.size)))
 	if reverse:

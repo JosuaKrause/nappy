@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `GiveWay`, the street rules a crowd car and an event car both give way by: the box ahead, the red
 ## light, the zebra she waits at and the exemption for the main road. The two drivers' own tests
@@ -7,7 +6,7 @@ extends RefCounted
 
 const TILE := float(Tuning.TILE_SIZE)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var map: CityMap = CityGenerator.generate(4242)
 	_test_the_box_ahead(t, map)
 	_test_the_stop_line_is_a_setback_short(t)
@@ -16,7 +15,7 @@ func run(t) -> void:
 	_test_the_zebra_she_waits_at(t, map)
 	_test_a_zebra_past_the_box(t, map)
 
-func _test_the_box_ahead(t, map: CityMap) -> void:
+func _test_the_box_ahead(t: TestRunner, map: CityMap) -> void:
 	var period := CityMap.period()
 	var low := float(2 * period) * TILE
 	# In the block band before box 2, going up the axis: that box. Going down: the one behind.
@@ -32,10 +31,10 @@ func _test_the_box_ahead(t, map: CityMap) -> void:
 	t.check(GiveWay.junction_at(2, 5, true) == Vector2i(5, 2) and GiveWay.junction_at(2, 5, false)
 			== Vector2i(2, 5), "a junction is keyed (column, row) whichever way it is driven")
 
-func _test_the_stop_line_is_a_setback_short(t) -> void:
+func _test_the_stop_line_is_a_setback_short(t: TestRunner) -> void:
 	t.check(GiveWay.stop_line(1.0) < 0.0, "one inside the setback is a negative room")
 
-func _test_a_light_is_red_only_where_it_is_signalled_and_not_green(t, map: CityMap) -> void:
+func _test_a_light_is_red_only_where_it_is_signalled_and_not_green(t: TestRunner, map: CityMap) -> void:
 	t.check(not GiveWay.is_red(null, Vector2i.ZERO, true), "no signals, no red")
 	var signals := TrafficSignals.new(map)
 	var junction := Vector2i(map.main_road, 1)
@@ -48,7 +47,7 @@ func _test_a_light_is_red_only_where_it_is_signalled_and_not_green(t, map: CityM
 			and not GiveWay.is_red(signals, junction, vertical_green),
 			"red is the arm that is not green")
 
-func _test_the_main_road_does_not_give_way(t, map: CityMap) -> void:
+func _test_the_main_road_does_not_give_way(t: TestRunner, map: CityMap) -> void:
 	var ordinary := _a_zebra(map)
 	t.check(ordinary != Vector2.INF, "found a zebra off the main road")
 	if ordinary == Vector2.INF:
@@ -66,7 +65,7 @@ func _test_the_main_road_does_not_give_way(t, map: CityMap) -> void:
 			"a column of the main road is the main road")
 	t.check(not GiveWay.owes_her_way(map, true, at, at), "the main road does not give way")
 
-func _test_the_zebra_she_waits_at(t, map: CityMap) -> void:
+func _test_the_zebra_she_waits_at(t: TestRunner, map: CityMap) -> void:
 	var zebra := _a_zebra(map)
 	if zebra == Vector2.INF:
 		return
@@ -84,7 +83,7 @@ func _test_the_zebra_she_waits_at(t, map: CityMap) -> void:
 	t.check(GiveWay.zebra_edge_ahead(map, zebra + Vector2(160.0, 0.0), false, -1.0, zebra) > edge,
 			"going west the near edge is the run's far side, further along than going east's")
 
-func _test_a_zebra_past_the_box(t, map: CityMap) -> void:
+func _test_a_zebra_past_the_box(t: TestRunner, map: CityMap) -> void:
 	t.check(GiveWay.lies_past_the_box(300.0, 100.0, 1.0) and not GiveWay.lies_past_the_box(100.4, 100.0, 1.0),
 			"further than half a pixel past the box's near edge")
 	t.check(GiveWay.lies_past_the_box(100.0, 300.0, -1.0), "and the same going down the axis")

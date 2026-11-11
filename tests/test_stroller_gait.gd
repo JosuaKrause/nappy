@@ -1,8 +1,8 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The pushing and carrying rigs share a distance-driven contact/passing gait.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for carrying in [false, true]:
 		var rig := _rig(t, carrying)
 		var samples := await _walk(t, rig, 80)
@@ -15,7 +15,7 @@ func run(t) -> void:
 
 ## A rig in the tree, so her own `_enter_tree()` acquires her page (on a library of her own, since
 ## nobody hands her one) and her own `_physics_process()` runs.
-func _rig(t, carrying: bool) -> Stroller:
+func _rig(t: TestRunner, carrying: bool) -> Stroller:
 	var rig := Stroller.new()
 	rig.carrying = carrying
 	var camera := Camera2D.new()
@@ -30,7 +30,7 @@ func _state_name(carrying: bool) -> String:
 
 ## One sample per real physics frame of her walking east with the move key held: the pose she is
 ## drawn in, how far the frame carried her, and the gait phase before it.
-func _walk(t, rig: Stroller, frames: int) -> Array[Dictionary]:
+func _walk(t: TestRunner, rig: Stroller, frames: int) -> Array[Dictionary]:
 	var samples: Array[Dictionary] = []
 	Input.action_press("move_right")
 	for _i in frames:
@@ -46,7 +46,7 @@ func _walk(t, rig: Stroller, frames: int) -> Array[Dictionary]:
 	Input.action_release("move_right")
 	return samples
 
-func _test_the_cycle_visits_contact_passing_contact_passing(t, carrying: bool, samples: Array[Dictionary]) -> void:
+func _test_the_cycle_visits_contact_passing_contact_passing(t: TestRunner, carrying: bool, samples: Array[Dictionary]) -> void:
 	var frames: Array[int] = []
 	for sample in samples:
 		var frame: int = sample.pose.gait_frame
@@ -55,7 +55,7 @@ func _test_the_cycle_visits_contact_passing_contact_passing(t, carrying: bool, s
 	t.check(frames.size() >= 8 and frames.slice(0, 8) == [0, 1, 2, 1, 0, 1, 2, 1],
 			"two %s cycles are A, C, B, C, A, C, B, C (%s)" % [_state_name(carrying), frames])
 
-func _test_the_gait_follows_distance_and_changes_frame_on_quarter_boundaries(t, carrying: bool, samples: Array[Dictionary]) -> void:
+func _test_the_gait_follows_distance_and_changes_frame_on_quarter_boundaries(t: TestRunner, carrying: bool, samples: Array[Dictionary]) -> void:
 	var wrapped := true
 	var by_distance := true
 	var by_quarter := true
@@ -73,7 +73,7 @@ func _test_the_gait_follows_distance_and_changes_frame_on_quarter_boundaries(t, 
 	t.check(by_quarter, "the %s frame changes exactly on a quarter boundary of the phase"
 			% _state_name(carrying))
 
-func _test_idle_holds_the_passing_pose_from_every_phase(t, carrying: bool, samples: Array[Dictionary]) -> void:
+func _test_idle_holds_the_passing_pose_from_every_phase(t: TestRunner, carrying: bool, samples: Array[Dictionary]) -> void:
 	var quarters := {}
 	var held := true
 	for sample in samples:
@@ -100,7 +100,7 @@ func _pose_families(carrying: bool) -> Array[Array]:
 		Stroller.MOTHER_BACK,
 	]
 
-func _test_each_state_has_three_distinct_poses_per_view(t) -> void:
+func _test_each_state_has_three_distinct_poses_per_view(t: TestRunner) -> void:
 	for carrying in [false, true]:
 		for family in _pose_families(carrying):
 			t.check(family.size() == 3,
@@ -127,7 +127,7 @@ func _direction_textures(carrying: bool, frame: int) -> Array[String]:
 		back_diagonal[frame],
 	]
 
-func _test_every_view_resolves_every_pose_in_both_states(t) -> void:
+func _test_every_view_resolves_every_pose_in_both_states(t: TestRunner) -> void:
 	for carrying in [false, true]:
 		var rig := _rig(t, carrying)
 		for direction in range(8):

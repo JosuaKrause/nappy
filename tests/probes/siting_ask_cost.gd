@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What one `SpawnSiting.ask_of_ground()` costs at each day the region wall stands on, the call
 ## `ResistanceDirector._nearest_alley_within()` makes for every candidate tile of a relocation, and
@@ -14,7 +13,7 @@ const DAYS: Array[int] = [Tuning.REGION_WALL_FIRST_DAY, 10, 14]
 const CALLS := 4000
 const ROUNDS := 5
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(CITY_SEED))

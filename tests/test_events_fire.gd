@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends "res://tests/events_shared_city.gd"
 ## Day 3's fire: budgeted at dawn with no position and sited by `EventDirector` from the walk she
 ## turns out to take -- *"the fire should come first and be on your way guaranteed (a dynamic event
@@ -14,7 +14,7 @@ extends "res://tests/events_shared_city.gd"
 
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_director_puts_it_in_front_of_her(t)
 	_test_the_fire_follows_her_walk_until_it_is_real(t)
 	_test_a_corner_is_not_a_change_of_mind(t)
@@ -139,7 +139,7 @@ func _fire_in(plans: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
 			return plan
 	return null
 
-func _instance(t, def: EventDef, at := Vector2.ZERO,
+func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array()) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, path)
@@ -160,7 +160,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 ## own outer radius*, or an event with no telegraph phase is being dropped on top of her. And
 ## the clock has to run on walking, not on wall time, or a player who stops in a park to let the
 ## meter recover comes back to the pavement owing four cats.
-func _test_the_director_puts_it_in_front_of_her(t) -> void:
+func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 	var map := _map()
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
@@ -239,7 +239,7 @@ func _test_the_director_puts_it_in_front_of_her(t) -> void:
 ## fire burning *there* — and a rule that moved it afterwards would be repairing a fact rather than
 ## checking one before accepting it. `Planned.was_live` is where the line is drawn, and it is drawn
 ## at the streaming radius rather than at the screen edge, which is six seconds of walking earlier.
-func _test_the_fire_follows_her_walk_until_it_is_real(t) -> void:
+func _test_the_fire_follows_her_walk_until_it_is_real(t: TestRunner) -> void:
 	var map := _map()
 	var day := Tuning.RUN_TAUGHT_DAY
 	var plans := _fire_day_plans()
@@ -296,7 +296,7 @@ func _test_the_fire_follows_her_walk_until_it_is_real(t) -> void:
 ##
 ## **The walk has to actually turn**, or the check passes by walking in a straight line and proves
 ## nothing; the corner it took is measured and asserted alongside.
-func _test_a_corner_is_not_a_change_of_mind(t) -> void:
+func _test_a_corner_is_not_a_change_of_mind(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	var plans := _fire_day_plans()
 	var fire := _fire_in(plans)
@@ -337,7 +337,7 @@ func _test_a_corner_is_not_a_change_of_mind(t) -> void:
 ## **answers zero for its travel**, which is what the screen-edge badge reads as a closing speed.
 ## And the distance it has covered **stops growing**, because the gait is driven by distance and a
 ## parked engine would otherwise bob at the kerb for ever.
-func _test_the_engine_parks_at_the_fire(t) -> void:
+func _test_the_engine_parks_at_the_fire(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("fire_truck")
 	t.check(def != null and def.stops_where_it_arrives,
 			"the fire engine is the row that stops where it arrives")
@@ -370,7 +370,7 @@ func _test_the_engine_parks_at_the_fire(t) -> void:
 ## the day owes her walk is budgeted like any other one-shot — one plan, tagged as its own group.
 ## The only other rows left for the walk to site are the poster crews, drawn at a location like any
 ## recurring row and handed over with no position (`LocationDraw.draw_all()`).
-func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
+func _test_the_fire_is_the_days_only_unsited_place(t: TestRunner) -> void:
 	var owed := 0
 	var crews := 0
 	for day in range(1, 15):
@@ -399,7 +399,7 @@ func _test_the_fire_is_the_days_only_unsited_place(t) -> void:
 ## stands its crews placed. A location's draw hands a crew on as it draws it
 ## (`LocationDraw.draw_all()`), so the rows drawn after it are spaced without it and the two days
 ## need not match beyond the crews.
-func _test_a_crew_drawn_is_handed_to_her_walk(t) -> void:
+func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 	var map := CityGenerator.generate(4242)
 	var crew := EventCatalogue.by_id("poster_crew")
 	var crew_way := crew.on_her_way
@@ -440,7 +440,7 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t) -> void:
 ##
 ## Driven through `EventDirector` exactly as `EventManager` drives it in play, on a real generated
 ## map, walking continuously the way `due()` requires before it will ever site anything.
-func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
+func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 	for id in ["cat_dash", "cyclist", "loose_dog"]:
 		var def := EventCatalogue.by_id(id)
 		var map := _map()
@@ -499,7 +499,7 @@ func _test_a_rig_meets_the_three_things_that_arrive(t) -> void:
 				% [id, closest, def.outer_radius])
 		instance.free()
 
-func _test_hard_fail_only_when_active(t) -> void:
+func _test_hard_fail_only_when_active(t: TestRunner) -> void:
 	var def := EventDef.new()
 	def.id = "test_hard_fail"
 	def.stands_as = EventDef.StandsAs.SOMETHING

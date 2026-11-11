@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The world's one answer to "can this mover stand here": the map's blocked record read through a
 ## `Mover` (`CityMap.passable()`, `CityMap.clear_line()`), a `Navigator` every mover moves by, and a
@@ -22,7 +22,7 @@ const SEED := 4242
 const WALK_DAY := 9
 const TILE := float(Tuning.TILE_SIZE)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_each_mover_is_stopped_by_its_own_layers(t)
 	_test_is_walkable_is_the_lattice(t)
 	_test_a_line_stops_at_a_body_and_sees_out_of_its_own(t)
@@ -47,7 +47,7 @@ func run(t) -> void:
 ## `test_navigator_fallbacks.gd`. A director handed only the map is checked here by what it does (it
 ## sites a crossing round a body standing across it), which does not pin that it shares the map's one
 ## navigator: a director that builds its own `Navigator.new(map)` passes.
-func _test_every_mover_on_a_map_shares_its_one_navigator(t, city: City) -> void:
+func _test_every_mover_on_a_map_shares_its_one_navigator(t: TestRunner, city: City) -> void:
 	t.check(city.map.navigator() == city.navigator
 			and city.events.world.navigator() == city.navigator,
 			"the city and its events move by the map's one navigator")
@@ -78,7 +78,7 @@ static func _centre(tile: Vector2i) -> Vector2:
 
 ## One tile of each solid in a row, and a park beside them: what each mover is stopped by is the
 ## layers it names, and nothing else.
-func _test_each_mover_is_stopped_by_its_own_layers(t) -> void:
+func _test_each_mover_is_stopped_by_its_own_layers(t: TestRunner) -> void:
 	var map := _yard_with_a_street_shut()
 	var building := Vector2i(1, 1)
 	var post := Vector2i(2, 1)
@@ -115,7 +115,7 @@ func _test_each_mover_is_stopped_by_its_own_layers(t) -> void:
 
 ## `CityMap.is_walkable()` is `passable()` for the lattice, spelt out for speed: they answer the same
 ## over a whole generated city.
-func _test_is_walkable_is_the_lattice(t) -> void:
+func _test_is_walkable_is_the_lattice(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
 	var disagree := 0
 	for y in map.size.y:
@@ -127,7 +127,7 @@ func _test_is_walkable_is_the_lattice(t) -> void:
 
 ## A line through a body is no clear line for a figure on foot; one from inside a band it stands in
 ## sees out; and a body over her own tile does not hide her.
-func _test_a_line_stops_at_a_body_and_sees_out_of_its_own(t) -> void:
+func _test_a_line_stops_at_a_body_and_sees_out_of_its_own(t: TestRunner) -> void:
 	var map := _yard()
 	var band: Array[Vector2i] = [Vector2i(5, 5), Vector2i(6, 5)]
 	map.obstruct_tiles(1, band)
@@ -145,7 +145,7 @@ func _test_a_line_stops_at_a_body_and_sees_out_of_its_own(t) -> void:
 
 ## A wall a tile thick, and a step three tiles long across it, as a long frame gives a chaser: the
 ## tile it lands on is open, so only a swept step refuses it.
-func _test_a_step_is_swept_so_a_long_frame_cannot_tunnel(t) -> void:
+func _test_a_step_is_swept_so_a_long_frame_cannot_tunnel(t: TestRunner) -> void:
 	var map := _yard()
 	map.fill_rect(Rect2i(5, 0, 1, 12), GameEnums.TileType.BUILDING)
 	var from := _centre(Vector2i(4, 5))
@@ -163,7 +163,7 @@ func _test_a_step_is_swept_so_a_long_frame_cannot_tunnel(t) -> void:
 
 ## A step keeps its body's reach clear in the way it is going: a man 9px wide stops short of a wall
 ## a point mover would walk up to.
-func _test_a_step_keeps_the_body_clear(t) -> void:
+func _test_a_step_keeps_the_body_clear(t: TestRunner) -> void:
 	var map := _yard()
 	map.fill_rect(Rect2i(5, 0, 1, 12), GameEnums.TileType.BUILDING)
 	var navigator := Navigator.new(map)
@@ -178,7 +178,7 @@ func _test_a_step_keeps_the_body_clear(t) -> void:
 
 ## A figure standing on a day's solid — put there before the solid was — walks off it; one on open
 ## ground does not walk onto it.
-func _test_a_mover_on_blocked_ground_may_walk_off_it(t) -> void:
+func _test_a_mover_on_blocked_ground_may_walk_off_it(t: TestRunner) -> void:
 	var map := _yard()
 	var band: Array[Vector2i] = [Vector2i(5, 5), Vector2i(6, 5)]
 	map.obstruct_tiles(1, band)
@@ -195,7 +195,7 @@ func _test_a_mover_on_blocked_ground_may_walk_off_it(t) -> void:
 
 ## A route is cut at the farthest point a mover reaches down it, never past a solid, and refused
 ## where its first point is not ground the mover may stand on.
-func _test_a_route_is_cut_where_a_solid_stands(t) -> void:
+func _test_a_route_is_cut_where_a_solid_stands(t: TestRunner) -> void:
 	var map := _yard()
 	var body: Array[Vector2i] = [Vector2i(6, 5)]
 	map.obstruct_tiles(1, body)
@@ -210,7 +210,7 @@ func _test_a_route_is_cut_where_a_solid_stands(t) -> void:
 
 ## A walk down points goes round a body put across it since: stopped whole, it asks for a way round
 ## to its next point and the way round never enters the body.
-func _test_a_walk_goes_round_what_was_put_down(t) -> void:
+func _test_a_walk_goes_round_what_was_put_down(t: TestRunner) -> void:
 	var map := _yard()
 	var wall: Array[Vector2i] = [Vector2i(6, 4), Vector2i(6, 5), Vector2i(6, 6)]
 	map.obstruct_tiles(1, wall)
@@ -231,7 +231,7 @@ func _test_a_walk_goes_round_what_was_put_down(t) -> void:
 ## A car drives on street ground only, and sees her wherever she stands: an investigating patrol
 ## notices her one tile into an alley, a square or a park as it does on the sidewalk, along a line
 ## its own driving would never take.
-func _test_a_car_sees_her_off_street_ground(t) -> void:
+func _test_a_car_sees_her_off_street_ground(t: TestRunner) -> void:
 	var patrol := EventCatalogue.by_id("police_patrol")
 	t.check(patrol.vehicle != null, "the patrol is a car that drives")
 	for ground in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE, GameEnums.TileType.PARK,
@@ -252,7 +252,7 @@ func _test_a_car_sees_her_off_street_ground(t) -> void:
 
 ## A cat whose run a solid cut short crouches longer by the run it lost, so it reaches the middle of
 ## its crossing when a whole run would have: when she, walked up by its lead, gets there.
-func _test_a_cut_crossing_still_meets_her_line_on_time(t) -> void:
+func _test_a_cut_crossing_still_meets_her_line_on_time(t: TestRunner) -> void:
 	var cat := EventCatalogue.by_id("cat_dash")
 	var whole := float(Tuning.STREET_WIDTH) * TILE
 	var on_time := cat.telegraph_time + whole / cat.speed
@@ -294,7 +294,7 @@ func _sited_ahead_of(director: EventDirector, her: Vector2, heading: Vector2) ->
 ## across the way it would run on one side: a director handed only the map (`EventDirector.new(map)`)
 ## moves by the map's navigator, so the run it sites never goes through the body, and on a map with
 ## nothing standing there the same director sites the whole run.
-func _test_a_director_handed_only_the_map_sites_round_what_stands_there(t) -> void:
+func _test_a_director_handed_only_the_map_sites_round_what_stands_there(t: TestRunner) -> void:
 	var cat := EventCatalogue.by_id("cat_dash")
 	var mover := EventInstance.mover_for(cat)
 	var her := _centre(Vector2i(5, 20))
@@ -339,7 +339,7 @@ func _test_a_director_handed_only_the_map_sites_round_what_stands_there(t) -> vo
 
 ## Seed 4242's day 9, its closures, seals and bodies put down, in a city and a run of its own, handed
 ## to `check` and freed after, so no check leans on what another left standing.
-func _in_a_day(t, check: Callable) -> void:
+func _in_a_day(t: TestRunner, check: Callable) -> void:
 	var run_state := RunState.new()
 	run_state.start_run(SEED)
 	var city: City = RunCity.in_run(CITY_SCENE, run_state)
@@ -361,7 +361,7 @@ static func _rng(stream: String) -> RandomNumberGenerator:
 ## Every planned body's record is the tiles of the footprint its instance builds its physics body
 ## from: the instance's own pieces, where it stands and the way it lies, rasterised, are the plan's
 ## recorded tiles.
-func _test_a_body_and_its_record_are_one_footprint(t, city: City) -> void:
+func _test_a_body_and_its_record_are_one_footprint(t: TestRunner, city: City) -> void:
 	var map := city.map
 	var compared := 0
 	var differ := 0
@@ -395,7 +395,7 @@ func _test_a_body_and_its_record_are_one_footprint(t, city: City) -> void:
 ## A closure's barrier line stands on ground the closure took, so every mover is stopped by the same
 ## line that stops her. Read off the solid the city put in the world at each mouth: its collision box,
 ## laid down the tiles it covers, is on closed ground.
-func _test_a_closure_barrier_stands_on_closed_ground(t, city: City) -> void:
+func _test_a_closure_barrier_stands_on_closed_ground(t: TestRunner, city: City) -> void:
 	var map := city.map
 	var lines := 0
 	var stood := 0
@@ -426,7 +426,7 @@ func _barrier_body_at(city: City, at: Vector2) -> StaticBody2D:
 ## The cat's crossing, sited ahead of her as she walks, starts and ends on ground a cat may stand on
 ## and runs clear between, never out of or into a lot; so does the scheduler's own crossing from any
 ## road tile a cat may stand on.
-func _test_the_cat_crossing_never_ends_in_a_lot(t, city: City) -> void:
+func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> void:
 	var map := city.map
 	var cat := EventCatalogue.by_id("cat_dash")
 	var mover := EventInstance.mover_for(cat)
@@ -490,7 +490,7 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t, city: City) -> void:
 
 ## A dog that loses interest facing a building leaves round it: every frame of its departure is on
 ## ground it may stand on, and it gets away from her.
-func _test_a_departure_leaves_round_a_building(t, city: City) -> void:
+func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> void:
 	var map := city.map
 	var dog := EventCatalogue.by_id("loose_dog")
 	var start := Vector2.INF
@@ -533,7 +533,7 @@ func _test_a_departure_leaves_round_a_building(t, city: City) -> void:
 ## building, from her street — and her standing north of it across the same, for
 ## six seconds of its event and four of its departure. No step it takes, nor any step of a far
 ## guard it sends off, enters ground its mover may not.
-func _test_every_row_that_moves_stays_off_blocked_ground(t, city: City) -> void:
+func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: City) -> void:
 	var map := city.map
 	var walked := 0
 	var steps := 0
