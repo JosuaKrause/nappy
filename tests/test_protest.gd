@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Protester pointing (M65): which of the eight `protester_point_*` poses a protest rank draws,
 ## and when it stays the plain `protester.svg` instead. See `docs/EVENTS.md`, the `protest` row,
@@ -48,7 +47,7 @@ func _test_bearing_sectors_pick_the_matching_pose(t: TestRunner) -> void:
 		[270.0, EventPictures.PROTESTER_POINT_W, "west"],
 		[315.0, EventPictures.PROTESTER_POINT_NW, "north-west"],
 	]
-	for sector in sectors:
+	for sector: Array in sectors:
 		var objective: Vector2 = from + _at_bearing(sector[0], 200.0)
 		t.check(EventPictures.protester_texture(from, objective) == sector[1],
 				"bearing %.0f° points %s" % [sector[0], sector[2]])
@@ -57,7 +56,7 @@ func _test_bearing_sectors_pick_the_matching_pose(t: TestRunner) -> void:
 ## the pose is picked by nearest, not by an exact match.
 func _test_a_bearing_off_centre_still_rounds_to_its_sector(t: TestRunner) -> void:
 	var from := Vector2.ZERO
-	for offset in [-20.0, 20.0]:
+	for offset: float in [-20.0, 20.0]:
 		var objective := from + _at_bearing(90.0 + offset, 150.0)
 		t.check(EventPictures.protester_texture(from, objective) == EventPictures.PROTESTER_POINT_E,
 				"%.0f° off east still rounds to the east pose" % offset)

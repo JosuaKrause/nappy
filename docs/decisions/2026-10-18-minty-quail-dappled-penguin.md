@@ -21,31 +21,62 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 - **Search: none.** No class was this pass's to search: the row's, the live event's, the plan's and
   a pursuit's fields are `event-interface.md` row 4a's scripted rewrite, so no read was converted.
 - **Other modules' fields stay for their passes**, by class, each checked against its class and the
-  classes it extends, inner, record and behaviour classes included. Answered by a method the game
-  calls that returns the field: the row's `hard_fail` (`ends_the_day()`), `inner_radius`
-  (`core_within()`), `outer_radius` (`heard_within()`), `intensity` (`peak()`), `look`
-  (`picture()`), `shape` (`ground_shape()`), `telegraph_time` (`telegraphs_for()`) and
-  `detain_seconds` (`detains_for()`); a pursuit's `stands` (`stands_for_its_notice()`); the live
-  event's `def` (`row()`), `excitement` (`source()`), `gave_up` (`has_given_up()`),
-  `came_under_a_warning`, read (`was_warned_of()`), `path` (`walks()`), `is_finished` (`is_gone()`)
-  and `is_leaving` (`is_on_its_way_out()`); a flock's `birds` (the live event's `birds()`); the
-  event manager's `ahead`, read for what is owed ahead (`owed_ahead()`); the plan record's `def`
-  (`row()`, and its id `row_id()`), `path` (`walks()`), `live` (`instance()`, typed `Node2D`) and
-  `spent` (`is_spent()`); a pending warning's `place` (`points_at()`) and `def` (`row()`); a ground
-  shape's `radius` (`rounding_radius()`); the map's `size` (`size_in_tiles()`) and `block_plans`
-  (`plans_by_block()`); and the baby's `excitement` (`excitement_level()`) and `sleepiness`
-  (`sleepiness_level()`). No method: the row's `id`, `duration`, `offscreen_notice`, `vehicle`,
-  `warned_first`, `flock_size`, `speed`, `spawn_mode`, `notice` and `abduction`, and its `pursuit`,
-  read and written; a pursuit's `walk_speed`, `warns_for` and `stop_excitement`, and its
-  `lunge_reach`, written; a notice's `within` and `runs_within`; an abduction's `taken_over`; the
-  live event's `phase`, `look`, `pursuit`, `departure`, `route`, `car`, `barrier_post`,
-  `investigation`, `on_foot`, `flock` and `unreachable`, its `age`, read and written, and its
-  `came_under_a_warning`, `trace` and `signals`, written; a pursuit behaviour's `outrun_for`; an
-  officer's `trail`; the event manager's `world`, `streaming`, `spawner`, `warnings` and `sources`,
-  its `ahead`, read to place what is owed ahead, and its `trace` and `atlas`, written; the event
-  world's `map`; the plan record's `behaviours`; a visible view's `view`; the danger edge's `atlas`,
-  written; the city's `events` and `map`; the map's `world`, read and written; and the world
-  context's `excitement_sources`, written.
+  classes it extends, inner, record and behaviour classes included, and listed under "Fields read
+  and written, by class" below.
+
+## Fields read and written, by class
+
+Built with `tools/field_answers.py` at the pass's merge commit `61f8e426c`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
+
+- **`AbductionSpec`**: `taken_over` → no method.
+- **`Baby`**: `excitement` → `excitement_level()`; `sleepiness` → `sleepiness_level()`.
+- **`City`**: `events` → no method; `map` → no method.
+- **`CityMap`**: `block_plans` → `plans_by_block()`.
+- **`DangerEdge`**: `atlas`, written → no method.
+- **`EventDef`**: `abduction` → no method; `detain_seconds` → `detains_for()` (a yes-or-no on the
+  field alone: `detains_her()`); `duration` → no method; `flock_size` → no method (a yes-or-no on
+  the field alone: `is_a_flock()`); `hard_fail` → `ends_the_day()`; `id` → no method; `inner_radius`
+  → `core_within()`; `intensity` → `peak()` (a yes-or-no on the field alone: `has_a_field()`);
+  `look` → `picture()`; `notice` → no method (a yes-or-no on the field alone: `waits_for_her()`);
+  `notice.within` → `notice_within()`; `offscreen_notice` → no method; `outer_radius` →
+  `heard_within()`; `pursuit` → no method; `pursuit`, written → no method; `shape` →
+  `ground_shape()`; `spawn_mode` → no method; `speed` → no method; `telegraph_time` →
+  `telegraphs_for()`; `vehicle` → no method (a yes-or-no on the field alone: `drives()`);
+  `warned_first` → no method.
+- **`EventInstance`**: `age` → no method (`EventInstance.Figure.age()` returns it on a view no
+  public method hands out); `age`, written → `resume()` does `age = from_age`; `barrier_post` → no
+  method; `came_under_a_warning` → `was_warned_of()`; `came_under_a_warning`, written → no method;
+  `car` → no method; `def` → `row()`; `def.id` → `row_id()`; `departure` → no method; `excitement` →
+  `source()`; `flock` → no method; `flock.birds` → `birds()` behind a guard (`flock.birds if flock
+  else _NO_BIRDS`); `flock.offsets()` → `flock_offsets()`; `flock.velocities()` →
+  `flock_velocities()`; `gave_up` → `has_given_up()`; `investigation` → no method; `is_finished` →
+  `is_gone()`; `is_leaving` → `is_on_its_way_out()`; `look` → no method; `on_foot` → no method;
+  `path` → `walks()`; `phase` → no method (a yes-or-no on the field alone: `is_gone()`,
+  `is_on_its_way_out()`, `is_only_its_barrier()`); `pursuit` → no method; `route` → no method;
+  `signals`, written → no method; `trace`, written → no method; `unreachable` → no method.
+- **`EventManager`**: `ahead` → no method; `ahead.owed_ahead()` → `owed_ahead()`; `atlas`, written →
+  no method; `sources` → no method; `spawner` → no method; `streaming` → no method; `trace`, written
+  → no method; `warnings` → no method; `world` → no method.
+- **`EventOfficer`**: `trail` → no method (a yes-or-no on the field alone: `walks_back()`).
+- **`EventPursuit`**: `outrun_for` → no method.
+- **`EventScheduler.Planned`**: `behaviours` → no method; `def` → `row()`; `def.id` → `row_id()`;
+  `live` → `instance()` (a yes-or-no on the field alone: `is_in_the_world()`); `path` → `walks()` (a
+  yes-or-no on the field alone: `stands_still()`); `spent` → `is_spent()`.
+- **`EventWorld`**: `map` → no method.
+- **`GroundShape`**: `radius` → `rounding_radius()`.
+- **`NoticeSpec`**: `runs_within` → no method.
+- **`PendingWarning`**: `def` → `row()`; `place` → `points_at()`.
+- **`PursuitSpec`**: `lunge_reach`, written → no method; `stands` → `stands_for_its_notice()`;
+  `stop_excitement` → no method; `walk_speed` → no method; `warns_for` → no method.
+- **`VisibleView`**: `view` → no method.
+- **`WorldContext`**: `excitement_sources`, written → no method.
+- **`WorldMap`**: `size` through `CityMap` → `size_in_tiles()`; `world` → no method (a yes-or-no on
+  the field alone: `has_world()`); `world`, written through `CityMap` → no method.
 
 ## Verified
 
