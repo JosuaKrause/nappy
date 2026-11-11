@@ -31,9 +31,9 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 ## Fields read and written, by class
 
 Built with `tools/field_answers.py` at the pass's merge commit `e888950c9`, over the `.gd` files
-under `tests/` its pull request changed, and each method read in its class and the classes it
-extends: each read with the public method that returns exactly that field, or "no method"; each
-write with every public method that assigns the field, and what it assigns.
+under `tests/` its pull request changed, and each method it names read in its class and the classes
+it extends. Each read is listed with the public method that returns exactly that field, or "no
+method"; each write with every public method that assigns the field, and what it assigns.
 
 - **`AttemptSpendState`**: `scars` → no method.
 - **`BuildingShadows`**: `skip_draw` → no method.

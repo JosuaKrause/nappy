@@ -39,9 +39,9 @@ as its suite is converted", after the baby and the stroller were handed their pa
 ## Fields read and written, by class
 
 Built with `tools/field_answers.py` at the pass's merge commit `9f34854cf`, over the `.gd` files
-under `tests/` its pull request changed, and each method read in its class and the classes it
-extends: each read with the public method that returns exactly that field, or "no method"; each
-write with every public method that assigns the field, and what it assigns.
+under `tests/` its pull request changed, and each method it names read in its class and the classes
+it extends. Each read is listed with the public method that returns exactly that field, or "no
+method"; each write with every public method that assigns the field, and what it assigns.
 
 - **`Baby`**: `excitement`, written → `reset()` does `excitement = 0.0`; `last_incoming`, written →
   `reset()` does `last_incoming = 0.0`; `sleepiness`, written → `reset()` does `sleepiness =

@@ -50,9 +50,9 @@ did not reproduce the rise.
 ## Fields read and written, by class
 
 Built with `tools/field_answers.py` at the pass's merge commit `87dc6690c`, over the `.gd` files
-under `tests/` its pull request changed, and each method read in its class and the classes it
-extends: each read with the public method that returns exactly that field, or "no method"; each
-write with every public method that assigns the field, and what it assigns.
+under `tests/` its pull request changed, and each method it names read in its class and the classes
+it extends. Each read is listed with the public method that returns exactly that field, or "no
+method"; each write with every public method that assigns the field, and what it assigns.
 
 - **`AttemptSpendState`**: `city_state`, written → no method.
 - **`BlockPlan.Step`**: `cause` → no method; `from_day` → no method; `purpose` → no method.

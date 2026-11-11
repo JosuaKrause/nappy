@@ -45,9 +45,9 @@ turns, give-way and traffic suites, is still to come.
 ## Fields read and written, by class
 
 Built with `tools/field_answers.py` at the pass's merge commit `d291155ed`, over the `.gd` files
-under `tests/` its pull request changed, and each method read in its class and the classes it
-extends: each read with the public method that returns exactly that field, or "no method"; each
-write with every public method that assigns the field, and what it assigns.
+under `tests/` its pull request changed, and each method it names read in its class and the classes
+it extends. Each read is listed with the public method that returns exactly that field, or "no
+method"; each write with every public method that assigns the field, and what it assigns.
 
 - **`CarTurn`**: `radius`, written → `tighten_to()` does `radius = tighter`.
 - **`City`**: `crowd` → no method; `events` → no method; `map` → no method; `signals` → no method.

@@ -56,9 +56,9 @@ pictures were typed (#1329) and the city's own parts were handed what they read
 ## Fields read and written, by class
 
 Built with `tools/field_answers.py` at the pass's merge commit `fb60c2b7d`, over the `.gd` files
-under `tests/` its pull request changed, and each method read in its class and the classes it
-extends: each read with the public method that returns exactly that field, or "no method"; each
-write with every public method that assigns the field, and what it assigns.
+under `tests/` its pull request changed, and each method it names read in its class and the classes
+it extends. Each read is listed with the public method that returns exactly that field, or "no
+method"; each write with every public method that assigns the field, and what it assigns.
 
 - **`AttemptSpendState`**: `city_state`, written → no method; `scars` → no method; `scars`, written
   → `give_back()` does `scars = _dawn_scars.duplicate()`, `restore()` does `scars =
