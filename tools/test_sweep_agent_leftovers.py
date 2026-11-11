@@ -268,9 +268,9 @@ class SweepTests(unittest.TestCase):
         self.assertIn("briefs: 3 removed, 3 kept (3 no merged pull request of its own)", result.stdout)
 
     def test_a_brief_spawned_east_of_utc_is_removed_after_a_merge_the_day_before_in_utc(self) -> None:
-        # Spawned at 01:00 local time in UTC+1, the brief carries the local date; its pull request
-        # merged half an hour later is still on the day before in UTC, and only the local day
-        # keeps the two together. West of UTC the local day is never the later one.
+        # Spawned just after midnight local time in UTC+1, the brief carries the local date; its
+        # pull request merged at 00:30 local time is still on the day before in UTC (23:30), and
+        # only the local day keeps the two together. West of UTC the local day is never the later one.
         berlin = self.brief("feature/in-berlin", merged=False, spawned="2026-01-02")
         self.pr("feature/in-berlin", merged_at="2026-01-01T23:30:00Z")
         result = self.sweep("--apply", TZ="Europe/Berlin")
