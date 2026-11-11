@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The crowd gives way to the movers that keep their course** (inbox #884 in plaid-raven): a
 ## walker steps aside or is pushed, and a crowd car stands, while the event figure keeps its course.
@@ -21,7 +20,7 @@ const RIG := preload("res://tests/test_crowd_bodies.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
-var _rig = RIG.new()
+var _rig: RIG = RIG.new()
 
 func run(t: TestRunner) -> void:
 	_test_a_row_hands_what_it_stands_as_to_its_move(t)
@@ -78,7 +77,7 @@ func _walk_at_a_standing_figure(crowd: Crowd, map: CityMap, stood_round: bool,
 		closest = minf(closest, walker.position.distance_to(at))
 		deepest = maxf(deepest, walker.position.y)
 	map.moves.leave(figure)
-	return {"closest": closest, "touching": walker.shape.reach() + figure.radius,
+	return {"closest": closest, "touching": walker.lane().shape().reach() + figure.radius,
 			"past": deepest > at.y + float(Tuning.TILE_SIZE)}
 
 ## A vehicle's move, a patrol car's size (the reach of `police_patrol`'s body), standing at `at`
@@ -146,10 +145,10 @@ func _drive_at_a_vehicle(crowd: Crowd, map: CityMap, corridor: int, car_along: f
 ## Whether a crowd car's capsule overlaps a figure's body: its centre nearer the car's spine than
 ## the two radii.
 func _overlaps(car: CrowdAgent, figure: MoveProposal) -> bool:
-	var spine := car.heading() * car.shape.half_length
+	var spine := car.heading() * car.lane().shape().spine_half_length()
 	var nearest := Geometry2D.get_closest_point_to_segment(figure.from, car.position - spine,
 			car.position + spine)
-	return nearest.distance_to(figure.from) < car.shape.radius + figure.radius - 0.5
+	return nearest.distance_to(figure.from) < car.lane().shape().rounding_radius() + figure.radius - 0.5
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -188,7 +187,8 @@ func _test_a_row_hands_what_it_stands_as_to_its_move(t: TestRunner) -> void:
 		if move != null:
 			t.check(move.stood_round == expected[id],
 					"%s's move says a walker goes round it while it stands: %s" % [id, expected[id]])
-		rig["instance"].free()
+		var instance: EventInstance = rig["instance"]
+		instance.free()
 
 ## **Each row's `when_it_stops` reaches its move as whether it has parked** (`EventInstance`, inbox #909 in freckled-moose):
 ## a stall, which never moves, has parked from the start; the fire engine has not while it
@@ -200,7 +200,8 @@ func _test_a_row_hands_whether_it_has_parked_to_its_move(t: TestRunner) -> void:
 	var stall_move: MoveProposal = stall["move"]
 	t.check(stall_move != null and stall_move.parked,
 			"a stall, which never moves, has parked from the start")
-	stall["instance"].free()
+	var stall_instance: EventInstance = stall["instance"]
+	stall_instance.free()
 	var engine := _a_row_on_a_map(t, "fire_truck")
 	var engine_move: MoveProposal = engine["move"]
 	var engine_instance: EventInstance = engine["instance"]
@@ -244,8 +245,10 @@ func _a_manager_with_a_live_event(t: TestRunner, at: Vector2) -> Dictionary:
 			"move": listed[0] if listed.size() == 1 else null}
 
 func _free_the_manager(rig: Dictionary) -> void:
-	rig.manager.free()
-	rig.world.free()
+	var manager: EventManager = rig["manager"]
+	var world: WorldContext = rig["world"]
+	manager.free()
+	world.free()
 
 ## **An event that goes leaves the list of moves at once** (minty-quail-34), not at the end of the
 ## frame when its node leaves the tree: a finished one, one streamed out, and every one `clear()`

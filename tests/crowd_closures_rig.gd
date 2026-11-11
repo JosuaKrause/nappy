@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **The cases behind `test_crowd_closures_a.gd`, `_b.gd` and `_c.gd`; not a suite itself.** Each
 ## part runs the scenarios and the door-day cases it owns, so no suite runs two minutes serial; the
@@ -27,7 +26,7 @@ const STEP := 1.0 / 60.0
 const RIG := preload("res://tests/test_crowd_bodies.gd")
 
 var _city: City
-var _rig = RIG.new()
+var _rig: RIG = RIG.new()
 
 ## The scenarios in the order the one suite ran them; each stands in a city of its own, built over
 ## a run of its own, so none leans on the closures, seals and days an earlier one left behind.
@@ -90,7 +89,7 @@ func _across(segment: StreetNetwork.Segment, def: EventDef) -> Array[Vector2]:
 ## One stride of `agent` in seconds at the fastest its kind goes: its strategy's stride length
 ## over the top of its kind's speed range.
 func _stride_seconds(agent: CrowdAgent) -> float:
-	return agent.strategy.stride_length() / maxf(agent.strategy.speed_range().y, 1.0)
+	return agent.lane().strategy().stride_length() / maxf(agent.lane().strategy().speed_range().y, 1.0)
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -168,7 +167,7 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t: TestRunner) -> void:
 				in_the_bodies += 1
 			if not rect.has_point(tile):
 				continue
-			if agent.kind == CrowdAgent.Kind.CAR:
+			if agent.lane().kind() == CrowdAgent.Kind.CAR:
 				cars_on_the_street += 1
 			else:
 				walkers_on_the_street += 1
@@ -230,9 +229,9 @@ func _test_nobody_is_placed_in_a_sealed_junction(t: TestRunner) -> void:
 		arm_rects.append(arm.tile_rect())
 	for agent: CrowdAgent in _city.crowd.agents():
 		var tile := _city.map.world_to_tile(agent.position)
-		if agent.kind == CrowdAgent.Kind.CAR and rect.has_point(tile):
+		if agent.lane().kind() == CrowdAgent.Kind.CAR and rect.has_point(tile):
 			cars_inside += 1
-		elif agent.kind == CrowdAgent.Kind.WALKER and _on_any_rect(arm_rects, tile):
+		elif agent.lane().kind() == CrowdAgent.Kind.WALKER and _on_any_rect(arm_rects, tile):
 			walkers_sealed_in += 1
 	t.check(cars_inside == 0, "no car is placed inside it on the morning (%d were)" % cars_inside)
 	# Placement treats sealed-in ground like any other street: "they should be able to spawn inside
@@ -250,7 +249,7 @@ func _test_nobody_is_placed_in_a_sealed_junction(t: TestRunner) -> void:
 		for agent: CrowdAgent in _city.crowd.agents():
 			if not rect.has_point(_city.map.world_to_tile(agent.position)):
 				continue
-			if agent.kind == CrowdAgent.Kind.CAR:
+			if agent.lane().kind() == CrowdAgent.Kind.CAR:
 				car_frames += 1
 				continue
 			var id := agent.get_instance_id()
@@ -300,7 +299,7 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t: TestRunner) -> void:
 	# that the count holds, which a body pacing the box from one seal to the other would pass too.
 	var standing_at := {}
 	for agent: CrowdAgent in _city.crowd.agents():
-		if agent.kind == CrowdAgent.Kind.CAR \
+		if agent.lane().kind() == CrowdAgent.Kind.CAR \
 				and rect.has_point(_city.map.world_to_tile(agent.position)):
 			standing_at[agent.get_instance_id()] = agent.position
 	var lowest := watched
@@ -374,7 +373,7 @@ func _test_a_walker_turns_into_a_street_sealed_further_along(t: TestRunner) -> v
 		_city.crowd.set_focus(at)
 		_city.crowd.step(STEP)
 		for agent: CrowdAgent in _city.crowd.agents():
-			if agent.kind != CrowdAgent.Kind.WALKER:
+			if agent.lane().kind() != CrowdAgent.Kind.WALKER:
 				continue
 			var id := agent.get_instance_id()
 			if not arm_rect.has_point(_city.map.world_to_tile(agent.position)):
@@ -555,7 +554,7 @@ func _test_no_car_in_sight_ever_moves_further_than_it_drove(t: TestRunner) -> vo
 	for frame in int(round(30.0 / STEP)):
 		before.clear()
 		for agent: CrowdAgent in _city.crowd.agents():
-			if agent.kind == CrowdAgent.Kind.CAR:
+			if agent.lane().kind() == CrowdAgent.Kind.CAR:
 				before[agent.get_instance_id()] = [agent.position, agent.is_turning()]
 		_city.crowd.set_focus(at)
 		_city.crowd.step(STEP)
@@ -613,7 +612,7 @@ func _on_any_rect(rects: Array[Rect2i], tile: Vector2i) -> bool:
 func _inside(rect: Rect2i, kind := -1) -> int:
 	var count := 0
 	for agent: CrowdAgent in _city.crowd.agents():
-		if kind >= 0 and agent.kind != kind:
+		if kind >= 0 and agent.lane().kind() != kind:
 			continue
 		if rect.has_point(_city.map.world_to_tile(agent.position)):
 			count += 1
@@ -724,7 +723,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void
 			var tile := map.world_to_tile(agent.position)
 			if mouth.has_point(tile):
 				frames_inside += 1
-			elif agent.kind == CrowdAgent.Kind.WALKER and wall_rect.has_point(tile):
+			elif agent.lane().kind() == CrowdAgent.Kind.WALKER and wall_rect.has_point(tile):
 				walkers_on_the_segment += 1
 	# The **mouth** rather than the whole segment: the wall's bodies stand one tile deep across the
 	# street there, and the rest of the segment is ordinary pavement a walker may now walk right up
@@ -754,14 +753,14 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void
 		city.free()
 		return
 	map.hold_segment(door_segment.key(), HeldStreets.Why.DOOR)
-	t.check(not walker.strategy.cannot_go_on(vertical, door_tile),
+	t.check(not walker.lane().strategy().cannot_go_on(vertical, door_tile),
 			"a walker is not turned away from today's region door")
-	t.check(not car.strategy.cannot_go_on(vertical, door_tile),
+	t.check(not car.lane().strategy().cannot_go_on(vertical, door_tile),
 			"and neither is a car — it brakes and queues for the gate instead of diverting")
 	# And the carve-out is the walker's own rather than the day's: one whose answer at a door is to
 	# turn back sees the same tile as wall, which is the whole of turning back — the machinery that
 	# turns it at the last junction is the one a wall already uses.
-	t.check(turner.strategy.cannot_go_on(vertical, door_tile),
+	t.check(turner.lane().strategy().cannot_go_on(vertical, door_tile),
 			"a walker that turns back at doors reads today's door as wall")
 	city.free()
 
@@ -822,8 +821,8 @@ func _open_a_door_day(t: TestRunner) -> Dictionary:
 		var probe := _walker_approaching(scene, body.position, 160.0,
 				WalkerStrategy.DoorAnswer.PASSES)
 		city.crowd.step(STEP)
-		if probe.door_ahead != null:
-			huts.append(probe.door_ahead)
+		if probe.lane().door_ahead() != null:
+			huts.append(probe.lane().door_ahead())
 		city.crowd.clear()
 	t.check(huts.size() == 2, "the door stands a hut on each of its two sidewalks (%d)"
 			% huts.size())
@@ -860,7 +859,7 @@ func _walker_approaching(scene: Dictionary, hut_at: Vector2, back: float,
 ## How far past a hut a walker has got, along its own line of travel: negative while it is still
 ## coming, positive once it is through.
 func _past_the_hut(agent: CrowdAgent, hut: WalkerDoorHold) -> float:
-	return (agent.global_position - hut.position).dot(agent.heading())
+	return (agent.global_position - hut.stands_at()).dot(agent.heading())
 
 ## M110, the last item: a walker held at a door goes through the player's four states in order —
 ## *("walking -> waiting -> inspection -> emerging on the other side (with cooldown to not go back
@@ -872,7 +871,7 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t: TestRunner, scene: Dicti
 	var city: City = scene["city"]
 	city.crowd.clear()
 	var hut: WalkerDoorHold = scene["huts"][0]
-	var walker := _walker_approaching(scene, hut.position, 160.0, WalkerStrategy.DoorAnswer.HELD)
+	var walker := _walker_approaching(scene, hut.stands_at(), 160.0, WalkerStrategy.DoorAnswer.HELD)
 	# The way it points as it starts, kept for the whole crossing: "past the hut" is measured
 	# along that axis, because the walker's own heading flips the moment it turns round — and a
 	# walker that came out and then walked back would read as one that never came out at all.
@@ -906,9 +905,9 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t: TestRunner, scene: Dicti
 		if phase == DoorPhase.WAITING:
 			waited_at = minf(waited_at, -_past_the_hut(walker, hut))
 		if been_inside and not inspecting and came_out_at == -INF \
-				and walker.global_position.distance_to(hut.position) \
+				and walker.global_position.distance_to(hut.stands_at()) \
 				> WalkerStrategy.WALKER_DOOR_COOLDOWN_RADIUS:
-			came_out_at = (walker.global_position - hut.position).dot(approach)
+			came_out_at = (walker.global_position - hut.stands_at()).dot(approach)
 		if phase != seen[seen.size() - 1]:
 			seen.append(phase)
 	t.check(seen == [DoorPhase.WALKING, DoorPhase.WAITING, DoorPhase.INSPECTION, DoorPhase.OUT],
@@ -926,7 +925,7 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t: TestRunner, scene: Dicti
 			% [waited_at, WalkerStrategy.WALKER_DOOR_STOP_DISTANCE])
 	t.check(came_out_at > 0.0,
 			"and it comes out on the far side of the door (%.1fpx)" % came_out_at)
-	t.check(hut.inside == null and hut.waiting() == 0,
+	t.check(hut.committed() == 0,
 			"the hut is free again once it has let somebody through")
 
 	# The cooldown: the same hut may not take it again until it has actually left the hut's area,
@@ -947,7 +946,7 @@ func _test_a_walker_is_held_at_a_door_in_four_states(t: TestRunner, scene: Dicti
 			% outside_the_area)
 
 	# And the answer the player asked to keep: a small fraction walk through as they always did.
-	var passing := _walker_approaching(scene, hut.position, 160.0,
+	var passing := _walker_approaching(scene, hut.stands_at(), 160.0,
 			WalkerStrategy.DoorAnswer.PASSES)
 	var stopped := 0
 	for frame in int(round(5.0 / STEP)):
@@ -971,8 +970,8 @@ func _times_the_hut_takes_a_walker_turned_round_beyond_it(scene: Dictionary, hut
 	var map: CityMap = scene["map"]
 	var vertical: bool = scene["vertical"]
 	city.crowd.clear()
-	var hut_across: float = hut.position.x if vertical else hut.position.y
-	var hut_along: float = hut.position.y if vertical else hut.position.x
+	var hut_across: float = hut.stands_at().x if vertical else hut.stands_at().y
+	var hut_along: float = hut.stands_at().y if vertical else hut.stands_at().x
 	var corridor := CrowdLanes.corridor_at(hut_across)
 	var first := 0 if CrowdLanes.nearest_sidewalk(corridor, hut_across) < 2 else 2
 	var direction := 1.0 if scene["at_a"] else -1.0
@@ -983,7 +982,7 @@ func _times_the_hut_takes_a_walker_turned_round_beyond_it(scene: Dictionary, hut
 		body.append(Vector2i(across_tile, body_along) if vertical else Vector2i(body_along, across_tile))
 	var owner := 987654
 	map.obstruct_tiles(owner, body)
-	var walker := _walker_approaching(scene, hut.position, 100.0, WalkerStrategy.DoorAnswer.HELD, true)
+	var walker := _walker_approaching(scene, hut.stands_at(), 100.0, WalkerStrategy.DoorAnswer.HELD, true)
 	var takes := 0
 	var was_inside := false
 	for frame in int(round(14.0 / STEP)):
@@ -1023,10 +1022,10 @@ func _test_a_line_at_a_door_stays_short(t: TestRunner, scene: Dictionary) -> voi
 	# One at the hut, `WALKER_DOOR_QUEUE_MAX` behind it, and one more than the door will take.
 	var line: Array[CrowdAgent] = []
 	for i in WalkerStrategy.WALKER_DOOR_QUEUE_MAX + 2:
-		line.append(_walker_approaching(scene, hut.position, 60.0 + 40.0 * float(i),
+		line.append(_walker_approaching(scene, hut.stands_at(), 60.0 + 40.0 * float(i),
 				WalkerStrategy.DoorAnswer.HELD))
 	var turned_away: CrowdAgent = line[line.size() - 1]
-	var away_at_the_start := turned_away.global_position.distance_to(hut.position)
+	var away_at_the_start := turned_away.global_position.distance_to(hut.stands_at())
 	# Measured against the way it was **originally** pointing, because turning away reverses its
 	# heading: "how far past the door" read off the current heading flips sign the moment it turns
 	# round, and a walker that correctly went home would read as one that sailed through.
@@ -1044,13 +1043,20 @@ func _test_a_line_at_a_door_stays_short(t: TestRunner, scene: Dictionary) -> voi
 			ever_joined = true
 		if turned_away.heading().dot(approach) < 0.5:
 			ever_turned = true
-		if (turned_away.global_position - hut.position).dot(approach) > 0.0:
+		if (turned_away.global_position - hut.stands_at()).dot(approach) > 0.0:
 			crossed = true
 		# Two waiting behind somebody inside: the second of them stands one spacing further back
 		# than the first, which is what makes a line a line rather than a heap.
-		if hut.inside != null and hut.waiting() >= 2:
-			var first: CrowdAgent = hut.queue[0]
-			var second: CrowdAgent = hut.queue[1]
+		if hut.inside != null:
+			var first: CrowdAgent = null
+			var second: CrowdAgent = null
+			for walker: CrowdAgent in line:
+				if hut.place_of(walker) == 0:
+					first = walker
+				elif hut.place_of(walker) == 1:
+					second = walker
+			if first == null or second == null:
+				continue
 			if first.velocity().is_zero_approx() and second.velocity().is_zero_approx():
 				var gap := absf(_past_the_hut(second, hut)) - absf(_past_the_hut(first, hut))
 				if absf(gap - WalkerStrategy.WALKER_DOOR_QUEUE_SPACING) < 6.0:
@@ -1063,7 +1069,7 @@ func _test_a_line_at_a_door_stays_short(t: TestRunner, scene: Dictionary) -> voi
 	t.check(not ever_joined, "the walker the door has no room for never joins the line")
 	t.check(ever_turned, "it decides against that door rather than walking up to the queue")
 	t.check(not crossed, "and it never reaches the door, let alone crosses it")
-	t.check(turned_away.global_position.distance_to(hut.position) > away_at_the_start,
+	t.check(turned_away.global_position.distance_to(hut.stands_at()) > away_at_the_start,
 			"it is walking away from the door by the end")
 	t.check(spacing_seen > 0,
 			"a second walker waits behind the first at a walker's spacing (%d frames)"
@@ -1102,7 +1108,7 @@ func _test_a_car_still_stops_for_the_boom(t: TestRunner, scene: Dictionary) -> v
 		if gate.raised:
 			ever_raised = true
 			continue
-		if car.speed() < Tuning.CAR_STOPPED_SPEED and car.gate_hold < INF:
+		if car.speed() < Tuning.CAR_STOPPED_SPEED and car.lane().gate_hold() < INF:
 			came_to_a_stop = true
 		if not ever_raised and (car.global_position - gate.position).dot(car.heading()) > 0.0:
 			crossed_before_it_raised = true
@@ -1163,14 +1169,14 @@ func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t: TestRunner) -> vo
 	var vertical := not both_sealed.horizontal
 
 	for tile in _sidewalk_side_tiles(both_sealed, true) + _sidewalk_side_tiles(both_sealed, false):
-		t.check(walker.strategy.cannot_go_on(vertical, tile),
+		t.check(walker.lane().strategy().cannot_go_on(vertical, tile),
 				"a walker turns away from a fully soft-sealed pavement tile %s" % tile)
-		t.check(not car.strategy.cannot_go_on(vertical, tile),
+		t.check(not car.lane().strategy().cannot_go_on(vertical, tile),
 				("and a car still drives straight through the same tile %s — the carriageway is " +
 				"never sealed") % tile)
 
 	for tile in thinned_open:
-		t.check(not walker.strategy.cannot_go_on(not thinned.horizontal, tile),
+		t.check(not walker.lane().strategy().cannot_go_on(not thinned.horizontal, tile),
 				"the thinned pair's open pavement stays open to a walker at %s" % tile)
 
 	_city.crowd.clear()
@@ -1259,7 +1265,7 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> voi
 			var segment := map.network.segment_containing(map.world_to_tile(agent.position))
 			if segment == null or not home_keys.has(segment.key()):
 				continue
-			if agent.kind == CrowdAgent.Kind.WALKER:
+			if agent.lane().kind() == CrowdAgent.Kind.WALKER:
 				walkers_seen += 1
 			else:
 				cars_seen += 1
@@ -1291,7 +1297,7 @@ func _test_only_cars_go_over_the_bridge(t: TestRunner) -> void:
 		_city.crowd.step(STEP)
 		for agent in _city.crowd.agents():
 			var overrun: float = agent.position.y - limit
-			if agent.kind == CrowdAgent.Kind.WALKER:
+			if agent.lane().kind() == CrowdAgent.Kind.WALKER:
 				worst_walker = maxf(worst_walker, overrun)
 			else:
 				worst_car = maxf(worst_car, overrun)
@@ -1329,7 +1335,7 @@ func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t: TestRunner) -> void:
 		_city.crowd.set_focus(at)
 		_city.crowd.step(STEP)
 		for agent in _city.crowd.agents():
-			if agent.kind != CrowdAgent.Kind.CAR:
+			if agent.lane().kind() != CrowdAgent.Kind.CAR:
 				continue
 			if footprint.has_point(_city.map.world_to_tile(agent.position)):
 				cars_inside += 1
@@ -1393,7 +1399,7 @@ func _test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t: TestRunner) -> 
 			for agent in _city.crowd.agents():
 				if _city.map.in_bounds(_city.map.world_to_tile(agent.position)):
 					continue
-				if agent.kind == CrowdAgent.Kind.WALKER:
+				if agent.lane().kind() == CrowdAgent.Kind.WALKER:
 					walkers_out += 1
 				elif agent.position.x < spine_lo or agent.position.x >= spine_hi:
 					off_spine_cars_out += 1
@@ -1436,7 +1442,7 @@ func _test_spine_cars_are_put_out_of_sight(t: TestRunner) -> void:
 		"bridge": Vector2((spine_lo + spine_hi) * 0.5, size.y - Tuning.TILE_SIZE),
 	}
 	var i := 0
-	for name in ends:
+	for name: String in ends:
 		var at: Vector2 = ends[name]
 		_city.crowd.start_day(1, _rng(60 + i), at)
 		i += 1
@@ -1448,7 +1454,7 @@ func _test_spine_cars_are_put_out_of_sight(t: TestRunner) -> void:
 			_city.crowd.set_focus(at)
 			_city.crowd.step(STEP)
 			for agent in _city.crowd.agents():
-				if agent.kind != CrowdAgent.Kind.CAR or not _city.map.is_main_road(
+				if agent.lane().kind() != CrowdAgent.Kind.CAR or not _city.map.is_main_road(
 						true, CrowdLanes.corridor_at(agent.position.x)):
 					continue
 				if not landings.landed(agent):
@@ -1482,7 +1488,7 @@ func _test_cars_do_not_drive_on_across_the_mountain(t: TestRunner) -> void:
 		"bridge": Vector2((spine_lo + spine_hi) * 0.5, size.y - Tuning.TILE_SIZE),
 	}
 	var i := 0
-	for name in ends:
+	for name: String in ends:
 		var at: Vector2 = ends[name]
 		_city.crowd.start_day(1, _rng(40 + i), at)
 		i += 1
@@ -1494,7 +1500,7 @@ func _test_cars_do_not_drive_on_across_the_mountain(t: TestRunner) -> void:
 			_city.crowd.set_focus(at)
 			_city.crowd.step(STEP)
 			for agent in _city.crowd.agents():
-				if agent.kind != CrowdAgent.Kind.CAR:
+				if agent.lane().kind() != CrowdAgent.Kind.CAR:
 					continue
 				furthest_north = maxf(furthest_north, -agent.position.y)
 				if agent.heading().y < 0.0:
@@ -1531,7 +1537,7 @@ func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t: TestRunner) -> void
 		"bridge": Vector2((spine_lo + spine_hi) * 0.5, size.y - Tuning.TILE_SIZE),
 	}
 	var i := 0
-	for name in ends:
+	for name: String in ends:
 		var at: Vector2 = ends[name]
 		_city.crowd.start_day(1, _rng(20 + i), at)
 		i += 1
@@ -1541,7 +1547,7 @@ func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t: TestRunner) -> void
 			_city.crowd.set_focus(at)
 			_city.crowd.step(STEP)
 			for agent in _city.crowd.agents():
-				if agent.kind != CrowdAgent.Kind.CAR:
+				if agent.lane().kind() != CrowdAgent.Kind.CAR:
 					continue
 				if _city.map.in_bounds(_city.map.world_to_tile(agent.position)):
 					continue
@@ -1581,7 +1587,7 @@ func _test_nobody_enters_across_a_plain_edge(t: TestRunner) -> void:
 		"east": Vector2(size.x - Tuning.TILE_SIZE, size.y * 0.5),
 	}
 	var i := 0
-	for name in edges:
+	for name: String in edges:
 		var at: Vector2 = edges[name]
 		_city.crowd.start_day(1, _rng(30 + i), at)
 		i += 1
@@ -1629,7 +1635,7 @@ func _test_the_entry_roll_is_kept_inside_its_own_room(t: TestRunner) -> void:
 		_city.crowd.set_focus(at)
 		_city.crowd.step(STEP)
 		for agent in _city.crowd.agents():
-			if not landings.landed(agent) or agent.kind != CrowdAgent.Kind.WALKER:
+			if not landings.landed(agent) or agent.lane().kind() != CrowdAgent.Kind.WALKER:
 				continue
 			landed_walkers += 1
 			if agent.travelling_vertically() or agent.heading().x <= 0.0:
@@ -1693,13 +1699,14 @@ func _test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t: TestRu
 					or agent.heading().y <= 0.0:
 				continue
 			# The spine's own tunnel exception (M94), not the guarantee this test holds.
-			if agent.kind == CrowdAgent.Kind.CAR and _city.map.is_main_road(
+			var agent_kind := agent.lane().kind()
+			if agent_kind == CrowdAgent.Kind.CAR and _city.map.is_main_road(
 					true, CrowdLanes.corridor_at(agent.position.x)):
 				continue
-			samples[agent.kind] += 1
-			worst[agent.kind] = minf(worst[agent.kind],
+			samples[agent_kind] += 1
+			worst[agent_kind] = minf(worst[agent_kind],
 					agent.position.y - _entry_clearance(agent))
-	for kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
+	for kind: CrowdAgent.Kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 		var label := "car" if kind == CrowdAgent.Kind.CAR else "walker"
 		t.check(samples[kind] > 5,
 				"%s: enough landings come into this axis to say anything (%d)"
@@ -1711,7 +1718,7 @@ func _test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t: TestRu
 ## How far past an agent's coordinate along its axis its picture reaches: the figure its look gives
 ## the agent (`AgentLook.entry_clearance()`, which `CrowdAgent` asks when it places a body).
 func _entry_clearance(agent: CrowdAgent) -> float:
-	var look: AgentLook = CarLook.new(agent) if agent.kind == CrowdAgent.Kind.CAR \
+	var look: AgentLook = CarLook.new(agent) if agent.lane().kind() == CrowdAgent.Kind.CAR \
 			else WalkerLook.new(agent)
 	return look.entry_clearance(agent.travelling_vertically())
 
