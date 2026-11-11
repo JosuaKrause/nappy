@@ -2,7 +2,7 @@ priority: now
 upnext: true
 fable-only: true
 
-# mossy-rabbit — The rules review's three tool fixes: a citation after a comma, the tools' help, old briefs swept · filed 2026-11-11
+# mossy-rabbit — The rules review's tool fixes: the tools' help · filed 2026-11-11
 
 **Where this comes from.** These three items were filed in amber-ibis (what the rules review found
 outside the rule files: three rules no test holds, two suites that do not exist, and small tool
@@ -20,4 +20,4 @@ carries (the orchestrating skill), and `fable-only: true`, carried over from amb
 block carries it, since these are that entry's items (the label's rule, inbox #1293 in grassy-trout, inbox #1299 in grassy-trout). The plainer
 alternative is the band alone, with no line for either.
 
-**Items:** `citation-after-a-comma.md`, `tool-help-gaps.md`.
+**Items:** `tool-help-gaps.md`.
