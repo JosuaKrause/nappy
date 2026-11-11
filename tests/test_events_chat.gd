@@ -81,9 +81,10 @@ func _free_manager(manager: EventManager) -> void:
 ## inside a `free()` before any line prints.
 func _free_the_cast(manager: EventManager, mother: EventInstance, stroller: Stroller) -> void:
 	_free_manager(manager)
-	for node: Node in [mother, stroller]:
-		if is_instance_valid(node):
-			node.free()
+	if is_instance_valid(mother):
+		mother.free()
+	if is_instance_valid(stroller):
+		stroller.free()
 
 ## A bare `Stroller`, in the tree so `_ready()` has run, its `@onready` camera lookup resolves and
 ## her own physics runs (the lock is run down on her tick).
