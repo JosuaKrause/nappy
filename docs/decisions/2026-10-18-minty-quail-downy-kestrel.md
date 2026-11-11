@@ -7,29 +7,31 @@ until its suite is converted.
 
 ## What was built
 
-- **Every function handed the runner takes `t: TestRunner`**, 2975 lines in 350 files, about 2956 by
-  a script and 19 by hand. Where such a function had no return type and returns no value it gained
-  `-> void`. No line under `src/` changed.
+- **Every function handed the runner takes `t: TestRunner`**, 2987 lines in 352 files, 19 of them by
+  hand and the rest by a script. No line under `src/` changed.
 - **Each test file's opt-out line names only what the file still trips**, by
-  `tools/typing_census.py --write`: 131 test files lost the line, and 235 still carry one.
+  `tools/typing_census.py --write`: 136 test files lost the line, and 230 still carry one.
 - **A function is taken to hold the runner by what it does with `t`**: it calls `t.check(` or
   `t.close_to(`, or the Node calls the runner exposes, or hands a bare `t` on to a function already
   known to take it. What the pattern cannot tell the script prints, and those were done by hand.
 
 ## What a later branch owes
 
-The script and the census commands are in the pull request's description. It is idempotent, and a
-branch that merges this and edits a suite reruns both.
+The script and the census commands are in the description of #1339. The script is idempotent, and a
+branch that merges this and edits a suite reruns both. It prints only a function that needs work by
+hand.
 
-**A helper that only anchors on a node is typed `t: Node`, not `TestRunner`.** The script first typed
-the helpers of `tests/physics_ticks.gd` as the runner. The census then failed two suites, because
-`test_meters` hands them a `Baby` and `test_scene_recipe_stretch_crowd` a `Crowd`. A rerun's load
-failures show any more of these.
+**A parameter is `TestRunner` wherever every caller hands the runner, and `Node` where one hands
+anything else.** The script first typed the helpers of `tests/physics_ticks.gd` as the runner. The
+census then failed two suites, because `test_meters` hands them a `Baby` and
+`test_scene_recipe_stretch_crowd` a `Crowd`. A rerun's load failures show any more of these where
+the caller's argument has a static type; an untyped argument fails when the suite runs.
 
 ## Left as they were
 
-Functions already typed `t: Node` that anchor on any node, which the script lists each run;
-`_see` in `tests/test_ground_floor.gd`, which returns a value and has no return type; and the two
+Functions already typed `t: Node` that anchor on any node;
+`_see` in `tests/test_ground_floor.gd`, which returns a value and has no return type;
+`_is_really_on_screen` in `test_resistance_traps.gd`, typed though nothing calls it; and the two
 suites whose `PROBE` constants hold a script's source as a string.
 
 ## Verified

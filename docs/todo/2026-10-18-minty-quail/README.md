@@ -112,8 +112,7 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      `event-interface.md`. The plainer alternative is to leave them to `field-reads.md`'s
      one-pull-request-per-area sentence.
    - **Tools:** `baseline-measurements.md`'s further readings, and `typed-everywhere.md`: code is
-     typed wherever the language can type it, the tests included (its scripted rewrite of the
-     suites' runner is the orchestrator's proposal, marked so there).
+     typed wherever the language can type it, the tests included.
      `method-without-parentheses.md`, a typed receiver's method named without its parentheses
      being reported, is the orchestrator's proposal and waits for no other item.
    - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a
