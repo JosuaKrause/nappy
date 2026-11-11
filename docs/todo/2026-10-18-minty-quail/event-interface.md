@@ -32,8 +32,8 @@ Three objects are meant by "an event" below, and each is named this way througho
 
 - **the row**: one kind of event as the catalogue declares it (`EventDef`, built by
   `EventCatalogue`): cafe tables, the alley robber, the patrol car;
-- **the plan**: one row placed for a day, with its position, path and facing (today the inner
-  class `EventScheduler.Planned`, about to be `EventPlan` in a file of its own);
+- **the plan**: one row placed for a day, with its position, path and facing (`EventPlan`, in a
+  file of its own);
 - **the live event**: the thing standing or moving in the world while she is near it
   (`EventInstance`, a `Node2D`).
 
@@ -687,9 +687,9 @@ counted where it only writes.
 | `came_under_a_warning` | the live event itself | `was_warned_of()` ok |
 | `look` | 2 in (two looks reading another's) | private; a slice, the roadblock's band and its far guard are each handed their look ok, so no game file outside `event_instance.gd` reads the field; it goes private when row 5's drawing suites are handed a look another way (about 114 test lines ask a live event's look what it shows; the reason it is public is a comment on the member) |
 
-### 4.3 The plan (`EventScheduler.Planned`, to be `EventPlan`)
+### 4.3 The plan (`EventPlan`)
 
-Reads by `rg`, since the check does not list it.
+Reads as `tools/field_reads.txt` lists them under `[EventPlan]`.
 
 | Field | Reads | Replaced by |
 |---|---|---|

@@ -30,7 +30,7 @@ from the rule alone:
   tested through a fake handed in or through what the game exposes (the drawn arrow, the plans, the
   world) and then removed; one stays only where both conditions hold, and its builder writes down
   why and what about the module makes it so.
-- **A hand-built checkpoint's facing and gate state go through a plan** (`Planned` with `facing`
+- **A hand-built checkpoint's facing and gate state go through a plan** (`EventPlan` with `facing`
   and `gate_state`, handed to `EventStreaming.add()`), not a new `spawn_extra()` parameter that only
   tests would pass.
 
@@ -39,7 +39,7 @@ scar through `RunState.add_scar()`, a completed step through `RunState.complete_
 with the step's own `grants_progress`, a day's give-back through `ResistanceRunState.give_back()`,
 a map's tile state through `close_streets()`, `seal_soft_tile()`, `clear_day_soft_seals()` and
 `obstruct_tiles()` with `release_obstruction()`, events through `EventManager.spawn_extra()`,
-`spawn_warned()` or a `Planned` handed to `EventStreaming.add()`, and an `EventWorld` through
+`spawn_warned()` or an `EventPlan` handed to `EventStreaming.add()`, and an `EventWorld` through
 `setup_world()`, `setup()`, `use_run()` and `use_player()`. What stays is fixture state on public
 fields no game writer reaches alone:
 
