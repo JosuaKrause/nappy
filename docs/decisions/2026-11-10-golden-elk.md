@@ -8,8 +8,9 @@ script extended `SceneTree`, set the three warnings `debug/gdscript/warnings/unt
 `unsafe_property_access` and `unsafe_method_access` through `ProjectSettings.set_setting()` at run
 time, then set a `GDScript`'s `source_code` from a string and called `reload()`. The engine stopped
 at a debugger break and died 0.3 s after launch with "handle_crash: Program crashed with signal
-11". macOS wrote a crash report (EXC_BAD_ACCESS at 0xe8, then SIGABRT), which the player saw as a
-crash dialog.
+11". macOS wrote a crash report (EXC_BAD_ACCESS at 0xe8, then SIGABRT), which the player
+reported seeing in
+the session.
 
 **What is known, and what is not.** Reloading a GDScript from in-memory source at run time, under
 `-d`, after changing those warning settings at run time, crashed the engine. Which of the three
