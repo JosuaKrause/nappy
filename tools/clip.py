@@ -216,6 +216,10 @@ def convert(
     return output
 
 
+# No edit hook sees a video being written, so the tool that writes one names its rules.
+CLIP_RULES = "The rules for a clip kept as evidence: .claude/skills/session-captures/SKILL.md"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("burst_directory", nargs="?", type=Path)
@@ -235,12 +239,14 @@ def main(argv: list[str] | None = None) -> int:
                 except (ClipError, OSError) as exc:
                     failures += 1
                     print(f"clip: {folder}: {exc}", file=sys.stderr)
+            print(CLIP_RULES, file=sys.stderr)
             return 1 if failures else 0
         output = convert(args.burst_directory, args.output, explicit=True)
     except (ClipError, OSError) as exc:
         print(f"clip: {exc}", file=sys.stderr)
         return 1
     print(output)
+    print(CLIP_RULES, file=sys.stderr)
     return 0
 
 

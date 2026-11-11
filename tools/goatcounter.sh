@@ -33,7 +33,11 @@ usage: tools/goatcounter.sh [--help|-h] [--days N] [--start DATE] [--end DATE]
                              [--raw | --encounters | --report | --check]
 
 Prints the nappy- GoatCounter event counts as a per-day funnel for a date range, reading the API
-key from GOATCOUNTER_TOKEN (never accepted as a flag). The site read is the game's own,
+key from GOATCOUNTER_TOKEN (never accepted as a flag). The key is a read-only one from the
+GoatCounter site's own Settings, API page. It comes from the environment or, when that is not set, a
+git-ignored .env file at the repository root; from a linked worktree the main checkout's .env is read
+after the worktree's own. A cloud session also needs the host nappy.goatcounter.com allowed and the
+token set as an environment secret. The site read is the game's own,
 nappy.goatcounter.com, which counts the page visit (sent as nappy.josuakrause.com/, stored as /nappy.josuakrause.com) with sessions, so
 its count is visitors, and every event without them, so an event's count is attempts: every time
 it was sent. --site reads another; josuakrause.goatcounter.com holds only the visits and events
@@ -51,7 +55,8 @@ table of attempts, wins, win rate, losses (crying / hard fail / timeout); every 
 It describes and flags nothing: the reading is written by hand each time, from the report as a whole, with no
 focus carried over from the previous read. A day under 20 attempts is marked low-sample (a note on how far its
 numbers can be trusted; nothing is left out). A read worth keeping is saved as docs/stats/<end date>-goatcounter.md
-from --report --markdown with that reading under it. With --by-release it prints each release's per-day win rates
+from --report --markdown with that reading under it, which is compared by hand against the previous file
+in that folder. With --by-release it prints each release's per-day win rates
 and causes; with --json the same data; --markdown (with --report, not --json) prints it as Markdown to save as a stats file. A 404 from the hits endpoint is retried like a 429, and says so on stderr.
 --check proves the key works with
 GET /api/v0/stats/total (needs only "Read statistics", the one permission every read-only key

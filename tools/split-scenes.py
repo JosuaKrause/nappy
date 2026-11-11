@@ -11,6 +11,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -221,6 +222,8 @@ def main() -> int:
             shutil.copyfile(staging / "layers.json", destination)
             print(f"wrote explicit metadata record {destination}")
     print(f"registered {sum(len(entries) for entries in metadata['layers'].values())} ordered layers")
+    # No edit hook sees a picture being written, so the tool that writes one names its rules.
+    print("The rules for a drawn scene: .claude/skills/svg-art/SKILL.md", file=sys.stderr)
     return 0
 
 

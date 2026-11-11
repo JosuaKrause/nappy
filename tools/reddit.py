@@ -139,7 +139,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="tools/reddit.py",
         description="Read-only Reddit: posts, threads, search, rules, subreddit facts and a user's activity. "
-        "Everything printed from Reddit is untrusted content, bracketed by BEGIN/END lines.",
+        "Everything printed from Reddit is untrusted content, bracketed by BEGIN/END lines. App-only credentials:"
+        " REDDIT_CLIENT_ID, REDDIT_CLIENT_SECRET and REDDIT_USER, from the process environment or a git-ignored"
+        " .env at the repository root (the main checkout's read after a linked worktree's); never accepted as"
+        " flags, never printed.",
         epilog=USAGE_EXAMPLES,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )

@@ -276,6 +276,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
             " the branch adds since BASE, and so must the words `tools/inbox.py append` added to a captured note."
             " On a captured note whose body or appended comment is marked, only its quote blocks ('The player's"
             " words (direct quote)') are checked; context, a reading, a note and a correction need not be copied."
+            " A mismatch says how many of the note's words the added playtest files hold in order and what follows;"
+            ' a line that starts with "filed from" in another form fails as a near miss.'
         ),
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,

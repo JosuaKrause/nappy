@@ -180,7 +180,9 @@ def parse(argv: list[str]) -> argparse.Namespace:
         description=(
             "The queue update's mechanical checks, against the branch's changes since BASE and the pull"
             " request's description as it stands now: no existing playtest file changed; every deleted queue"
-            " file accounted for by a record on BASE, a `Dropped:` line quoting a playtest verbatim, or a move;"
+            ' file accounted for by a record on BASE, a `Dropped: <path> — "<words>"` line naming the file or its'
+            " entry's folder and quoting a playtest verbatim,"
+            " or the same content added elsewhere (a move);"
             " every deleted review item named by a playtest. Prints tools/queue.sh's line for every entry"
             " touched, to the job summary in CI."
         ),

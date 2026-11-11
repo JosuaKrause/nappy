@@ -8,6 +8,7 @@ mathematically lossless removal of an arbitrary checkerboard or background.
 from __future__ import annotations
 
 import argparse
+import sys
 from collections import deque
 from pathlib import Path
 
@@ -112,6 +113,8 @@ def main() -> int:
     parser.add_argument("destination", type=Path)
     args = parser.parse_args()
     extract(args.source, args.destination)
+    # No edit hook sees a picture being written, so the tool that writes one names its rules.
+    print("The rules for an illustrated PNG: .claude/skills/illustrated-png/SKILL.md", file=sys.stderr)
     return 0
 
 

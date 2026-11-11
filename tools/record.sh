@@ -268,4 +268,6 @@ if [[ "$after" != "$TREE_BEFORE" ]]; then
     status=1
 fi
 echo "wrote ${OUTPUT#"$PROJECT_DIR"/}" >&2
+# No edit hook sees a recording being written, so the tool that writes one names its rules.
+echo "The rules for a recording kept as evidence: .claude/skills/session-captures/SKILL.md" >&2
 exit "$status"
