@@ -22,7 +22,8 @@ typing pass need it again. A manual sequence done a second time becomes a script
   `./tools/check.sh`) or while `project.godot` has uncommitted changes; it sets the three warnings to
   warn and every other to off in `project.godot`, blanks each opt-out line (so line numbers stay
   put), runs `tools/typing_census.tscn` headless over the file list, and puts back, byte for byte
-  and only in the files it changed, `project.godot` and each first line, on every exit, an
+  and only in the files it changed, each write going to a file beside the target and moved over it,
+  so an interrupt never leaves a file empty, `project.godot` and each first line, on every exit, an
   interrupt or a timeout; a file whose first line changed meanwhile is named and left as found.
 - **A census counts only from a run that finished**: the engine exits 0, its scene prints
   `CENSUS_DONE` with the count handed, and every path is answered once; otherwise every mode stops
@@ -30,15 +31,16 @@ typing pass need it again. A manual sequence done a second time becomes a script
   file is under `src/`, is an autoload, or is named by another listed file, since its dependents'
   counts cannot be trusted. A message of none of the three warnings stops the tool rather than
   miscount. It cannot see an opt-out line inside a string a suite writes at run time.
-- `tools/test_typing_census.py` (34 cases, each naming the mutation it fails, run by `tools/pycheck.sh`), the entry point in
+- `tools/test_typing_census.py` (47 cases, each naming the mutation it fails, run by `tools/pycheck.sh`; seven drive the tool whole with a stand-in engine on a scratch project), the entry point in
   `tools/test_cli_help.py`, the using-tools row, and the field-read check's blind-spots sentence:
   a stale name on an opt-out line is found by the census's `--check`.
 
 ## What it found on `main` at the time
 
 `src/telemetry/telemetry_observer.gd` names `untyped_declaration`, which it does not trip (the
-telemetry typing pull request owns that file); three probes do not parse (`m159_contribution_cost`,
-`minty_quail_walk_field_parity`, `lazy_scenery_city`), which no queue item owns yet, so `--check`
-fails on `main` until they do and `--write` refuses while `lazy_scenery_measure.gd` preloads the
-third; `standalone_expression` is tripped on no line
+telemetry typing pull request owns that file); three probes did not parse
+(`lazy_scenery_city.gd` overriding a stale signature, `m159_contribution_cost.gd` calling a method
+with too few arguments, `minty_quail_walk_field_parity.gd` calling a method it lacks), and this pull
+request fixes each in one line and runs each to its end, so `--write` is not refused on `main` and
+`--check` is red only for the telemetry line; `standalone_expression` is tripped on no line
 under `src/`, `tests/` or `tools/`.
