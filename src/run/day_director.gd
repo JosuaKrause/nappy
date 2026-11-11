@@ -65,8 +65,8 @@ var _scene: AuthoredScene
 ## `use_trace()`; nowhere until then.
 var _trace := RunTrace.new()
 ## Where the developer's flags start her on the boot's first walk from her doorstep: takes the run's
-## `--spawn` target and answers her start as a `Vector2`; unhanded, she starts where the world puts her. Handed in by
-## `use_the_flags()`.
+## `--spawn` target and answers her start as a `Vector2`; unhanded, she starts where the world puts
+## her. Handed in by `use_the_flags()`.
 var _flags_start := Callable()
 ## What the developer's flags do to the baby's bars once the day is running: takes the baby and the
 ## run's `--meters` override; unhanded, the bars are untouched. Handed in by `use_the_flags()`.
@@ -95,7 +95,9 @@ func use_trace(trace: RunTrace) -> void:
 
 ## Hands the director what the developer's flags decide on the boot's first walk from her doorstep:
 ## `start`, which takes the run's `--spawn` target and answers her start (a `Vector2`), and `meters`,
-## which takes the baby and the run's `--meters` override and seeds its bars. Neither is handed in an ordinary run, which starts her where the world puts her.
+## which takes the baby and the run's `--meters` override and seeds its bars. `main` hands both on
+## every boot; a director handed neither (a suite's) starts her where the world puts her and leaves
+## the bars alone.
 func use_the_flags(start: Callable, meters: Callable) -> void:
 	_flags_start = start
 	_flags_meters = meters

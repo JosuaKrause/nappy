@@ -61,15 +61,11 @@ const _LINE_OF_SIGHT_STEP := 8.0
 
 var _map: CityMap
 var _events: EventManager
-## Today's streets, for the closures and doors a `spawn:<name>` word names.
-var _streets: DayStreets
-## Where a `spawn:<name>` word that cannot be placed writes why.
-var _trace: RunTrace
+## Answers where a `spawn:<name>` word's name starts her: takes the name, answers a `Vector2`.
+var _spawn_start: Callable
 var _player: Stroller
 var _resistance: ResistanceDirector
 var _day: DayController
-## The run whose header `spawn:<name>` hands `DevRig.for_spawn_target()`.
-var _run: RunState
 
 ## Every `ROAD` tile in the map, built once — the lattice itself never changes within a run, only
 ## which blocks are calm and which streets are closed today, neither of which moves a `ROAD` tile.
@@ -77,21 +73,18 @@ var _run: RunState
 ## and genuinely different every day) left to copy.
 var _road_tiles: Dictionary = {}
 
-## The rig's planner over the city's `map`, its `events`, today's `streets` and the run's `trace`,
-## for her (`player`), today's resistance (`resistance`, null in the escape, which has no
-## subquest), the day's clock (`day`, whose spec names the escape city's exits)
-## and the run (`run`).
-func _init(map: CityMap, events: EventManager, streets: DayStreets, trace: RunTrace,
-		player: Stroller, resistance: ResistanceDirector, day: DayController,
-		run: RunState) -> void:
+## The rig's planner over the city's `map` and its `events`, for her (`player`), today's
+## resistance (`resistance`, null in the escape, which has no subquest) and the day's clock (`day`,
+## whose spec names the escape city's exits). `spawn_start` answers where a `spawn:<name>` word's
+## name is: it takes the name and answers a `Vector2`.
+func _init(map: CityMap, events: EventManager, spawn_start: Callable, player: Stroller,
+		resistance: ResistanceDirector, day: DayController) -> void:
 	_map = map
 	_events = events
-	_streets = streets
-	_trace = trace
+	_spawn_start = spawn_start
 	_player = player
 	_resistance = resistance
 	_day = day
-	_run = run
 	for y in _map.size.y:
 		for x in _map.size.x:
 			var tile := Vector2i(x, y)
@@ -134,8 +127,7 @@ func resolve(word: String) -> Vector2:
 			return _day.spec.exits.get(CityEdge.Kind.BRIDGE, Vector2.INF)
 		_:
 			if word.begins_with("spawn:"):
-				return DevRig.for_spawn_target(word.get_slice(":", 1), _map, _events, _streets,
-						_resistance, _run.header, _trace)
+				return _spawn_start.call(word.get_slice(":", 1))
 			push_warning("--route: unknown target '%s'" % word)
 			return Vector2.INF
 

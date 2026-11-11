@@ -212,7 +212,7 @@ var trace := RunTrace.new()
 
 var _done := false
 
-func setup(map: CityMap, events: EventManager, streets: DayStreets, player: Stroller, baby: Baby,
+func setup(map: CityMap, events: EventManager, spawn_start: Callable, player: Stroller, baby: Baby,
 		resistance: ResistanceDirector, day: DayController, targets: Array[String],
 		run: RunState) -> void:
 	_run = run
@@ -223,7 +223,7 @@ func setup(map: CityMap, events: EventManager, streets: DayStreets, player: Stro
 	_resistance = resistance
 	_day = day
 	_targets = targets
-	_planner = RouteRigPlanner.new(map, events, streets, trace, player, resistance, day, run)
+	_planner = RouteRigPlanner.new(map, events, spawn_start, player, resistance, day)
 	_day.day_finished.connect(_on_day_finished)
 
 ## The day `spec` has been planned (`RunFlow.day_planned`, which `main` connects) — resets the

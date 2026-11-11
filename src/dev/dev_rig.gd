@@ -1,8 +1,9 @@
 class_name DevRig
 extends RefCounted
 ## Everything that acts on a developer flag by reading the live city's parts: the half of the
-## dev-flag surface that needs the live map, events, streets, `ResistanceDirector` or `Baby` turns a flag's value — handed
-## in by `main` from the run's configuration — into camera positions and meters. `DevFlags` does
+## dev-flag surface that needs the live map, events, streets, `ResistanceDirector` or `Baby` turns a
+## flag's value — handed in by `main` from the run's configuration — into camera positions and
+## meters. `DevFlags` does
 ## the parsing; nothing here reads a flag itself.
 ##
 ## A `RefCounted`, not a `Node`. The only state that has to survive between calls is the follow

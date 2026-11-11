@@ -1120,7 +1120,7 @@ func _add_the_route_rig(resistance: ResistanceDirector) -> void:
 	add_child(_route_rig)
 	_pauses_with_the_game(_route_rig)
 	_route_rig.trace = _the_trace()
-	_route_rig.setup(_city.map, _city.events, _city.streets(), _player, _baby, resistance, _day,
+	_route_rig.setup(_city.map, _city.events, _spawn_start, _player, _baby, resistance, _day,
 			config.route_targets, _run)
 	_flow.day_planned.connect(_route_rig.start_day.unbind(1))
 	_route_rig.use_continue(_on_summary_continued)
@@ -1841,8 +1841,8 @@ func _new_director() -> DayDirector:
 	director.spec = _flow.spec
 	return director
 
-## Where the `--spawn` `target` starts her (`DevRig.for_spawn_target()`), asked by the day director on the boot's
-## first walk from her doorstep.
+## Where the `--spawn` `target` starts her (`DevRig.for_spawn_target()`), asked by the day director
+## on the boot's first walk from her doorstep and by the route rig for a `spawn:<name>` word.
 func _spawn_start(target: String) -> Vector2:
 	return DevRig.for_spawn_target(target, _city.map, _city.events, _city.streets(),
 			_resistance, _run.header, _the_trace())

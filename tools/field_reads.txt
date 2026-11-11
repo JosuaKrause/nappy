@@ -1258,7 +1258,6 @@ src/city/poster_walls.gd header
 src/city/poster_walls.gd posters
 src/day/day_controller.gd calendar
 src/dev/route_rig.gd resistance
-src/dev/route_rig_planner.gd header
 src/dev/scene_recipe_draft.gd calendar
 src/dev/scene_recipe_draft.gd header
 src/dev/scene_recipe_draft.gd posters

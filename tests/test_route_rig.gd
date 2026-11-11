@@ -69,7 +69,7 @@ func run(t: TestRunner) -> void:
 	_test_resolve_target_mark_is_todays_contact(t)
 	_test_resolve_target_task_is_unavailable_before_the_mark_is_touched(t)
 	_test_resolve_target_home_is_the_home_rects_centre(t)
-	_test_resolve_target_spawn_reaches_devrig(t)
+	_test_resolve_target_spawn_hands_its_name_to_the_spawn_lookup(t)
 	_test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t)
 	_test_resolve_target_unknown_word_warns_and_answers_inf(t)
 	_test_task_target_resolves_for_the_neighbor_task_on_day_10(t)
@@ -176,14 +176,17 @@ func _free_day() -> void:
 
 ## The planner the rig builds in its `setup()`, over the suite's day 6 and her.
 func _planner(resistance: ResistanceDirector = _resistance) -> RouteRigPlanner:
-	return RouteRigPlanner.new(_city.map, _city.events, _city.streets(), _city.trace, _stroller,
-			resistance, _clock, _run)
+	return RouteRigPlanner.new(_city.map, _city.events, _no_spawn, _stroller, resistance, _clock)
+
+## A spawn lookup that places nothing, for a planner whose checks never resolve a `spawn:` word.
+func _no_spawn(_name: String) -> Vector2:
+	return Vector2.INF
 
 ## A fixture's planner, the same shape.
 func _fixture_planner(fixture: Dictionary) -> RouteRigPlanner:
 	var city: City = fixture["city"]
-	return RouteRigPlanner.new(city.map, city.events, city.streets(), city.trace,
-			fixture["stroller"], fixture["resistance"], _clock, fixture["run"])
+	return RouteRigPlanner.new(city.map, city.events, _no_spawn, fixture["stroller"],
+			fixture["resistance"], _clock)
 
 func _release() -> void:
 	TouchControls.set_axis(&"move_left", &"move_right", 0.0)
@@ -239,7 +242,7 @@ func _started_rig(t: TestRunner, city: City, stroller: Stroller, resistance: Res
 	_rig_city = city
 	_city_trace = city.events.trace
 	city.events.trace = trace
-	rig.setup(city.map, city.events, city.streets(), stroller, baby, resistance, day, targets, run)
+	rig.setup(city.map, city.events, _no_spawn, stroller, baby, resistance, day, targets, run)
 	rig.start_day(day.spec)
 	return rig
 
@@ -760,13 +763,18 @@ func _test_resolve_target_home_is_the_home_rects_centre(t: TestRunner) -> void:
 	t.check(_planner().resolve("home") == _city.map.home_world_position(),
 			"'home' resolves to CityMap.home_world_position()")
 
-## `spawn:<name>` is handed straight to `DevRig.for_spawn_target()`, the same lookup `--spawn`
-## itself uses — `park` is one `tests/test_dev_rig.gd` already exercises directly.
-func _test_resolve_target_spawn_reaches_devrig(t: TestRunner) -> void:
-	var at := _planner().resolve("spawn:park")
-	t.check(at == DevRig.for_spawn_target("park", _city.map, _city.events, _city.streets(),
-			_resistance, _run.header, _city.trace),
-			"'spawn:park' resolves exactly as DevRig.for_spawn_target('park', ...) does")
+## `spawn:<name>` is handed to the spawn lookup the planner was built with (`main` hands the one
+## `--spawn` itself uses, which `tests/test_dev_rig.gd` exercises directly): the name after the colon
+## goes in, and what it answers is the word's place.
+func _test_resolve_target_spawn_hands_its_name_to_the_spawn_lookup(t: TestRunner) -> void:
+	var asked: Array[String] = []
+	var planner := RouteRigPlanner.new(_city.map, _city.events,
+			func(name: String) -> Vector2:
+				asked.append(name)
+				return Vector2(7.0, 9.0),
+			_stroller, _resistance, _clock)
+	t.check(planner.resolve("spawn:park") == Vector2(7.0, 9.0) and asked == ["park"],
+			"'spawn:park' asks the spawn lookup for 'park' and answers what it does (%s)" % [asked])
 
 ## `tunnel` and `bridge` are the escape city's two ways out, read off the day's spec
 ## (`DaySpec.exits`, which the day's start hands a `CITY_EDGE` section from the world it stood); a
@@ -775,8 +783,8 @@ func _test_resolve_target_spawn_reaches_devrig(t: TestRunner) -> void:
 func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t: TestRunner) -> void:
 	var clock := DayController.new()
 	t.add_child(clock)
-	var planner := RouteRigPlanner.new(_city.map, _city.events, _city.streets(), _city.trace, _stroller,
-			_resistance, clock, _run)
+	var planner := RouteRigPlanner.new(_city.map, _city.events, _no_spawn, _stroller, _resistance,
+			clock)
 	t.check(planner.resolve("tunnel") == Vector2.INF and planner.resolve("bridge") \
 			== Vector2.INF, "a day has no tunnel or bridge to walk to")
 	var tunnel := _city.map.tile_to_world(FinalePlanner.exit_tile(_city.map, CityEdge.Kind.TUNNEL))
@@ -785,8 +793,7 @@ func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t: TestR
 	clock.spec.exits = {CityEdge.Kind.TUNNEL: tunnel, CityEdge.Kind.BRIDGE: bridge}
 	t.check(planner.resolve("tunnel") == tunnel, "'tunnel' resolves to the spec's tunnel")
 	t.check(planner.resolve("bridge") == bridge, "'bridge' resolves to the spec's bridge")
-	var escape := RouteRigPlanner.new(_city.map, _city.events, _city.streets(), _city.trace, _stroller,
-			null, clock, _run)
+	var escape := RouteRigPlanner.new(_city.map, _city.events, _no_spawn, _stroller, null, clock)
 	t.check(escape.resolve("mark") == Vector2.INF and escape.resolve("task") \
 			== Vector2.INF, "with no resistance director, 'mark' and 'task' are unavailable")
 	clock.free()
