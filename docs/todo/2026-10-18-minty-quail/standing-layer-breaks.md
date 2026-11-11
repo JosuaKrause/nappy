@@ -18,9 +18,10 @@ reason.
 **The groups, as the review found them** (counts are `check_layers.py --list`'s on the day of the
 review; a builder runs it again):
 
-- **The signal bus** (37 uses in 11 files): the simulation reports on the global `EventBus`
+- **The signal bus** (34 uses in 10 files): the simulation reports on the global `EventBus`
   autoload, where this entry's README has a component handed its event sink. The observers are
-  already handed the bus; only the emitters fetch it.
+  already handed the bus; only the emitters fetch it. The crowd is handed it (`Crowd.use_bus()`,
+  the record 2026-10-18-minty-quail-minty-osprey).
 - **The city scene as builder** (12 uses in `src/city/city.gd`): it builds the event manager, the
   crowd, the blackout and the poster walls, and relays dev flags to them through its own fields.
 - **The map interface's world half** (5 uses in `world_map.gd`): it hands out the navigator and adds
