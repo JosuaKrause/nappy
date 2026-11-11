@@ -16,20 +16,26 @@ method credited that returns a derived value. A manual sequence done a second ti
   a commit without a checkout. Its `--help` says what it sees and what it does not.
 - **One rule decides an answer**: a public method's body and a read are each brought down to the
   value they stand for (a field, a chain of fields, a call handed on, or an expression), and equal
-  values answer each other. A null-guarded return, a chain (`plan.def.id` and `row_id()`), a
-  read-through, a handed-on call and a property whose getter equals a method all answer; a derived
-  value does not.
+  values answer each other. A null-guarded return (only a null test of the returned chain), a chain
+  (`plan.def.id` and `row_id()`), a read-through, a handed-on call and a property whose getter
+  equals a method all answer; a derived value, a comparison standing as a guard and a returned
+  parameter do not.
 - **An inherited field** is listed under the class that declares it, names the receiver's class, and
   is answered from the receiver's class and all its bases (the map's `size` through `CityMap`,
   answered by `WorldMap.size_in_tiles()`).
 - **A write** lists every public method that assigns the field, with the statement, for the builder
   to judge. **A call count** is by the receiver's class, game calls under `src/` outside the
   declaring file. **A receiver whose class it cannot tell** gets a line of its own, never a guess.
+- **A file that still ignores `unsafe_property_access` is named**, since a read through an
+  engine-typed receiver is invisible there and the list is whole only once the file is typed.
 - **The field-read check's reader is reused**, by import and a subclass, through two override points
   added to `tools/check_field_reads.py` whose behaviour and list are unchanged.
 
 ## Choices open to overturn
 
+- **A method whose null guard stands a member in (`birds()`), and a method on the class's own view
+  (`lane().strategy()`, a figure's `has_parked()`), are printed apart from the answers** with what
+  they return, never as answers (the builder's, after the review).
 - **A yes-or-no method on the field alone** (`is_in_the_world()` for `live != null`) is printed
   apart from the answers, never as one (the builder's).
 - **Private methods are never answers**, and tests' calls are never counted (the builder's).
@@ -37,6 +43,9 @@ method credited that returns a derived value. A manual sequence done a second ti
 
 ## Left, each with its reason
 
+- **Views are looked for only among the inner classes of the class's own file**, and a class
+  declared inside an inner class is told as unknown rather than resolved; both are stated in
+  `--help`.
 - **The field-read check's own reader keeps the blind spots this tool fills** (scripts with no
   class name behind a preload, another file's inner class, a dot that opens a continuation line):
   moving them into the check would grow `tools/field_reads.txt`, a decision of its own.
