@@ -245,6 +245,13 @@ func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: Autho
 	director.use_the_scene(scene)
 	var lines: Array[String] = []
 	director.use_trace(RunTrace.recording(lines))
+	# What `main._new_director()` hands: where the developer's flags start her, and what they do to
+	# the bars. Here a start on the city map's doorstep, as `--spawn` with no target answers, and no
+	# change to the bars.
+	director.use_the_flags(
+			func(_target: String) -> Vector2:
+				return city.map.doorstep_world_position() if city else Vector2.INF,
+			func(_the_baby: Baby, _override: Vector2) -> void: pass)
 	var nodes: Array[Node] = [clock, events, player, baby, resistance]
 	if city:
 		nodes.append_array([city, city.crowd])
