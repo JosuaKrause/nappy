@@ -131,7 +131,7 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 		# walk up to his warning is taken fast and the run itself at the engine's own rate, where a
 		# frame is shorter than a tick. It ends when his badge has done its job.
 		if badge and state["fast"] and (met["ran"] or man.global_position.distance_to(her)
-				<= man.def.notice.runs_within + BADGE_LEAD):
+				<= man.row().notice.runs_within + BADGE_LEAD):
 			state["fast"] = false
 			return true
 		return badge and badge_log.get("done", false)
