@@ -33,6 +33,16 @@ engine hold a file to that.
   for:* the fields of a module whose pass has merged are converted in the other suites by one sweep
   after the last typing pass, from the reads its record lists with their methods; the plainer
   alternative is to leave them to each suite's later conversion to one module.
+- *Proposed, not asked for (the orchestrator's, after the reviews of the first typing passes):*
+  **a pass's list of other modules' fields is built with `tools/field_answers.py`**
+  (`uv run python tools/field_answers.py --brief <the pass's brief> --counts`) once its files are
+  typed, and each method the tool names as an answer, or prints apart, is read in its class, the
+  classes it extends included, before the list says it answers. **The pass's record carries the
+  whole list in its own text**, by class, each field with the game's method or "no method", since
+  the sweep above reads the records and a pull request's description is not in the repository. The
+  plainer alternative is a list matched by hand, which came back *not ready* on most of the first
+  passes: inner classes, getters and an inherited getter missed, and a method credited for a value it
+  only derives.
 - **The files under `src/` are typed in the module passes** (`field-reads.md`).
 - **A probe that names a member no class has parses only behind its opt-out line** and fails when
   it runs. `tests/probes/bouncy_egret_day11_mast.gd` reads `siting.scenery_ground` off
