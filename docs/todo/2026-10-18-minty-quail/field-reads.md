@@ -27,6 +27,10 @@ each read, and its pull requests in order, the first of which run beside the pla
 - **field-read-check, "yes":** a script fails a change that adds a read of another class's plain
   field under `src/`, with today's reads listed once in a list that only shrinks. It is
   `tools/check_field_reads.py`, with the list in `tools/field_reads.txt`, run in CI's `gates` job.
+  Asked on the board whether the list may gain the lines of a read that only moved (into a new
+  file, or with a class lifted out of another), the player answered "A", that it may
+  (inbox #1350). Which moves count is the planning agent's proposal, written in the record
+  minty-quail-breezy-bison.
 
 **Every receiver gets a class the check can tell** (inbox #1268 in olive-ferret). Shown "The field-read check
 skips about two thirds of reads because it cannot tell the receiver's class", the player: "isn't
@@ -54,9 +58,8 @@ Left, each its own design question:
   request touches and the tests read them, so it waits for that pull request.
 - **The city's own classes** have their readers converted except three groups, each with a home:
   - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
-    (`RecipeCityContext`) are the scene recipes' city. They go with or after `placement-by-construction.md`'s bullet on the
-    scene recipes assigning locations, which rewrites the scene recipes, so no work is done twice (inbox #1185 in gentle-owl); a design for the map
-    capturing and restoring itself waits for it.
+    (`RecipeCityContext`) are the scene recipes' city. The scene recipes are placed by location (`placement-by-construction.md`, "What is built"), so they wait
+    for nothing there; what is left is a design for the map capturing and restoring itself.
   - `City.events` and `City.crowd`, read by the frame recorder and trace, go with
     the third hand-ins pull request (`city-hand-ins.md`), which hands those readers their parts. An
     accessor on `City` would add uses of `EventManager` and `Crowd` to breaks `tools/layer_map.py` lists.
