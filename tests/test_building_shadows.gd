@@ -23,7 +23,7 @@ func run(t: TestRunner) -> void:
 func _drawn_over(t: TestRunner, rects: Array[Rect2i]) -> Dictionary:
 	var drawer := RecordingShadowDrawer.new()
 	var shadows := BuildingShadows.new()
-	shadows.drawer = drawer
+	shadows.draw_through(drawer)
 	shadows.set_buildings(rects)
 	t.add_child(shadows)
 	await t.get_tree().process_frame
@@ -42,8 +42,8 @@ func _drawn_over(t: TestRunner, rects: Array[Rect2i]) -> Dictionary:
 
 ## Streamed shadows, each chunk's tiles worked out from the footprints near it alone, shade what the
 ## whole city's union shades, across every chunk seam. What each chunk shades is read off a
-## recording drawer handed through the member the city hands its own through
-## (`BuildingShadows.drawer`), once every chunk of the city is prepared (`update_view()`, which the
+## recording drawer handed through the call the city hands its own through
+## (`BuildingShadows.draw_through()`), once every chunk of the city is prepared (`update_view()`, which the
 ## residency calls) and drawn.
 ##
 ## Which tiles a shadow may fall on is asked through `BuildingShadows.falls_on`, the filter the city
@@ -64,7 +64,7 @@ func _test_resident_geometry_matches_the_complete_union(t: TestRunner) -> void:
 	var drawer := RecordingShadowDrawer.new()
 	var asked := [0]
 	var shadows := BuildingShadows.new()
-	shadows.drawer = drawer
+	shadows.draw_through(drawer)
 	shadows.falls_on = func(_tile: Vector2i) -> bool:
 		asked[0] += 1
 		return true

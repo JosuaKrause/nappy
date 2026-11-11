@@ -78,7 +78,7 @@ static func _new_building(t: TestRunner, district: int, footprint: Vector2, heig
 	building.footprint = footprint
 	building.height = height
 	building.position = position
-	building.is_home_building = is_home
+	building.stand_on_home_block(is_home)
 	building.covered_ground_cols = covered
 	t.add_child(building)
 	return building
@@ -127,7 +127,7 @@ func _test_commercial_storefronts_remain_and_the_odd_column_is_blank(t: TestRunn
 func _test_her_own_building_keeps_ground_floor_windows(t: TestRunner) -> void:
 	var building := _new_building(t, GameEnums.BlockPurpose.RESIDENTIAL, Vector2(96.0, 96.0), 64.0, true)
 	var front: FrontReads = await _see(t, building)
-	t.check(building.is_home_building, "the fixture is flagged as her own building")
+	t.check(building.is_on_home_block(), "the fixture is flagged as her own building")
 	t.check(building.wall_tiles() >= 2, "the fixture is genuinely multi-story")
 	t.check(building.door_world_x_range == Vector2.INF,
 			"a building nobody told about a door keeps the empty Vector2.INF sentinel")
@@ -162,7 +162,7 @@ func _test_a_one_row_facade_is_unchanged(t: TestRunner) -> void:
 		t.check(building.wall_tiles() == 1, "the fixture is genuinely one row tall (%d)" % building.wall_tiles())
 		t.check(front.window_at(0, 0) != &"",
 				"a one-row facade is not multi-story, so it keeps its window regardless of the home flag (home=%s)"
-				% building.is_home_building)
+				% building.is_on_home_block())
 		building.free()
 
 # ---------------------------------------------------------------- the accessor ---
@@ -255,9 +255,9 @@ func _test_upper_floor_rolls_are_unchanged_for_a_fixed_seed(t: TestRunner) -> vo
 	await UI.frames(t, 2)
 	for building in buildings:
 		var front: FrontReads = FrontReads.look(building)
-		var is_home := building.is_home_building
+		var is_home := building.is_on_home_block()
 		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("%d:%d:%d" % [building.variant, int(building.global_position.x), int(building.global_position.y)])
+		rng.seed = hash("%d:%d:%d" % [building.look_variant(), int(building.global_position.x), int(building.global_position.y)])
 		var expected_lit: Array[bool] = []
 		for i in building.columns() * building.wall_tiles():
 			expected_lit.append(rng.randf() < Building.LIT_WINDOW_CHANCE)
@@ -303,7 +303,7 @@ func _test_the_home_flag_changes_no_front_roll(t: TestRunner) -> void:
 	var plain_front: FrontReads = FrontReads.look(plain)
 	var home_front: FrontReads = FrontReads.look(home)
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("front:%d:%d:%d" % [plain.variant, int(plain.global_position.x), int(plain.global_position.y)])
+	rng.seed = hash("front:%d:%d:%d" % [plain.look_variant(), int(plain.global_position.x), int(plain.global_position.y)])
 	var expected_cols: Array[int] = []
 	if plain.wall_tiles() >= 2 and rng.randf() < Building.FIRE_ESCAPE_SHARE:
 		var cols := plain.columns()
@@ -549,7 +549,7 @@ func _test_a_two_story_front_rolls_its_escape_and_carries_none(t: TestRunner) ->
 		var at := Vector2(3000.0 + i * 96.0, 1000.0 + i * 64.0)
 		t.check(building.wall_tiles() == 2, "fixture %d is two stories (%d)" % [i, building.wall_tiles()])
 		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("front:%d:%d:%d" % [building.variant, int(at.x), int(at.y)])
+		rng.seed = hash("front:%d:%d:%d" % [building.look_variant(), int(at.x), int(at.y)])
 		if rng.randf() < Building.FIRE_ESCAPE_SHARE:
 			rolled += 1
 			rng.randi_range(1, building.columns() - 2)
@@ -619,7 +619,7 @@ func _test_the_front_rolls_replay_their_own_streams(t: TestRunner) -> void:
 		var front: FrontReads = FrontReads.look(building)
 		var at := Vector2(1000.0 + i * 96.0, 2000.0 + i * 64.0)
 		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("front:%d:%d:%d" % [building.variant, int(at.x), int(at.y)])
+		rng.seed = hash("front:%d:%d:%d" % [building.look_variant(), int(at.x), int(at.y)])
 		var expected_col := -1
 		if rng.randf() < Building.FIRE_ESCAPE_SHARE:
 			expected_col = rng.randi_range(1, building.columns() - 2)
@@ -633,7 +633,7 @@ func _test_the_front_rolls_replay_their_own_streams(t: TestRunner) -> void:
 	t.check(escapes_seen > 0, "the replay met a fire escape (%d)" % escapes_seen)
 
 	var shop_rng := RandomNumberGenerator.new()
-	shop_rng.seed = hash("front:%d:%d:%d" % [shop.variant, int(shop_at.x), int(shop_at.y)])
+	shop_rng.seed = hash("front:%d:%d:%d" % [shop.look_variant(), int(shop_at.x), int(shop_at.y)])
 	var bag: Array[int] = []
 	var previous := -1
 	var variants: Array[int] = []
@@ -1035,7 +1035,7 @@ func _test_a_covered_fire_escape_column_is_dropped_but_the_roll_is_unchanged(t: 
 		var plain := plains[i]
 		var at := Vector2(i * 61.0, i * 83.0)
 		var rng := RandomNumberGenerator.new()
-		rng.seed = hash("front:%d:%d:%d" % [plain.variant, int(at.x), int(at.y)])
+		rng.seed = hash("front:%d:%d:%d" % [plain.look_variant(), int(at.x), int(at.y)])
 		var expected_col := -1
 		if plain.wall_tiles() >= 2 and rng.randf() < Building.FIRE_ESCAPE_SHARE:
 			var roll_cols := plain.columns()

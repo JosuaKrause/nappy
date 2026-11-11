@@ -15,7 +15,7 @@ extends RefCounted
 ## draw nothing), every building is registered with it, and the suite reads the parts it made. What
 ## each consumer does with its own residency (a roof's units, a water surface's clock) is its own
 ## suite's (`tests/test_scenery_animation.gd`, `tests/test_ground_floor.gd`); what the city does
-## with a dawn is `tests/test_city_*.gd`'s.
+## with a dawn is `tests/test_city_buildings.gd`'s.
 ##
 ## **Its maps come from the cache of generated cities** (`tests/city_map_cache.gd`): each seed's
 ## map is generated once in the test process and every case is handed a copy of its own, the same
@@ -143,7 +143,7 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	var map := scene.map
 	var home := _view(map.doorstep_world_position())
 	var initial := GroundCells.used_cells(scene.ground).size()
-	t.check(initial > 0 and initial < map.size.x * map.size.y / 8,
+	t.check(initial > 0 and initial < map.size_in_tiles().x * map.size_in_tiles().y / 8,
 			"boot prepares a nonempty neighborhood, not the entire map")
 	_check_coverage(t, scene, home)
 	var unloaded := 0
@@ -206,7 +206,7 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	building.condition = Building.Condition.BOARDED
 	building.powered = false
 	building.neighbor_window_col = 2
-	building.posters = {1: {"kind": 1, "tear": 0, "under": -1, "under_tear": 0, "side": 1}}
+	building.hand_over_posters({1: {"kind": 1, "tear": 0, "under": -1, "under_tear": 0, "side": 1}}, false)
 	seed(91234)
 	var expected_rng := randi()
 	seed(91234)
@@ -286,8 +286,8 @@ func _test_roof_phase(t: TestRunner, seed_value: int) -> void:
 func _check_roof_ownership(t: TestRunner, scene: Scene) -> void:
 	var owned := {}
 	var count := 0
-	# The layer the city hands every building to stand its roof art in.
-	var entities: Node2D = scene.buildings[0].roof_object_parent
+	# The layer the scene hands every building to stand its roof art in.
+	var entities := scene.entities
 	for building in scene.buildings:
 		if not building.scenery_resident:
 			t.check(_objects_of(building).is_empty() and _rotors_of(building).is_empty(),
@@ -582,12 +582,12 @@ func _test_pending(t: TestRunner, seed_value: int) -> void:
 	var scene := _scene_for(t, seed_value)
 	_use_mode(scene, SceneryGround.Mode.STEPPED)
 	var ground := scene.ground
-	var key := SceneryGround.key_for(scene.map.size - Vector2i(8, 8))
+	var key := SceneryGround.key_for(scene.map.size_in_tiles() - Vector2i(8, 8))
 	if ground.chunks.has(key):
 		ground.release(key)
 	var used := GroundCells.used_cells(ground).size()
 	t.check(not ground.prepare_step(key), "one step leaves a ground region unfinished")
-	var layer: TileMapLayer = ground.pending[key].layer
+	var layer: TileMapLayer = _unfinished_layer(ground, key)
 	var identity := layer.get_instance_id()
 	t.check(not ground.chunks.has(key) and GroundCells.used_cells(ground).size() == used,
 			"unfinished ground is excluded from every resident-cell query")
@@ -607,12 +607,12 @@ func _test_pending(t: TestRunner, seed_value: int) -> void:
 	_check_chunk(t, scene, key)
 	ground.release(key)
 	ground.prepare_step(key)
-	layer = ground.pending[key].layer
+	layer = _unfinished_layer(ground, key)
 	ground.repaint()
 	t.check(ground.pending.is_empty() and not is_instance_valid(layer),
 			"route-tint repaint discards pending jobs with old ground inputs")
 	ground.prepare_step(key)
-	layer = ground.pending[key].layer
+	layer = _unfinished_layer(ground, key)
 	scene.scenery.update(scene.home_view(), true)
 	t.check(not ground.pending.has(key) and not is_instance_valid(layer),
 			"out-of-range movement cancels and frees unfinished regions")
@@ -628,17 +628,17 @@ func _test_pending(t: TestRunner, seed_value: int) -> void:
 	scene.scenery.update(view)
 	t.check(ground.pending.has(key), "ordinary approach starts a stepped job")
 	if ground.pending.has(key):
-		var progress: int = ground.pending[key].step
+		var progress: int = _step_of(ground, key)
 		var pending_id: int = _unfinished_layer(ground, key).get_instance_id()
 		scene.scenery.update(view)
-		t.check(ground.pending[key].step == progress,
+		t.check(_step_of(ground, key) == progress,
 				"repeated updates in one process frame cannot drain the ground job")
 		var away := view
 		# Put this candidate between the load and retention boundaries, while preserving size.
 		away.position.x = SceneryGround.bounds(key).end.x + SceneryResidency.LOAD_MARGIN + 1
 		scene.scenery.view = away
 		scene.scenery.update(away)
-		t.check(ground.pending.has(key) and ground.pending[key].step == progress \
+		t.check(ground.pending.has(key) and _step_of(ground, key) == progress \
 				and _unfinished_layer(ground, key).get_instance_id() == pending_id,
 				"unfinished regions pause with the same allocation inside the retention ring")
 		scene.scenery.view = view
@@ -653,7 +653,7 @@ func _test_pending(t: TestRunner, seed_value: int) -> void:
 	_check_chunk(t, scene, key)
 	ground.release(key)
 	ground.prepare_step(key)
-	layer = ground.pending[key].layer
+	layer = _unfinished_layer(ground, key)
 	ground.configure(scene.map, scene.source_at, ground.tile_set)
 	t.check(ground.pending.is_empty() and not is_instance_valid(layer),
 			"day/reset configuration discards every unfinished allocation")
@@ -668,6 +668,11 @@ func _resident_layer(ground: SceneryGround, key: Vector2i) -> TileMapLayer:
 func _unfinished_layer(ground: SceneryGround, key: Vector2i) -> TileMapLayer:
 	var job: Dictionary = ground.pending[key]
 	return job.layer
+
+## How many steps the ground has taken of the unfinished region `key`.
+func _step_of(ground: SceneryGround, key: Vector2i) -> int:
+	var job: Dictionary = ground.pending[key]
+	return job.step
 
 ## The instance id of each resident ground region's layer, by region key: what the ground has
 ## actually allocated, so a region freed and laid again shows a different id.
@@ -696,7 +701,7 @@ func _check_chunk(t: TestRunner, scene: Scene, key: Vector2i) -> void:
 						"completed region matches the current independent source lookup")
 				if source >= 0:
 					t.check(GroundCells.atlas_coords(scene.ground, tile) == GroundLayers.atlas_coords_for(
-							source, scene.map.seed_used, tile, scene.ground.tile_set),
+							source, scene.map.city_seed(), tile, scene.ground.tile_set),
 							"completed region preserves seeded atlas selection")
 
 func _check_coverage(t: TestRunner, scene: Scene, view: Rect2) -> void:

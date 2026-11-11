@@ -30,6 +30,40 @@ func run(t: TestRunner) -> void:
 	await _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_not(t)
 	await _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t)
 	await _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t)
+	_test_a_dawn_replaces_no_building_and_no_collision(t)
+
+## A dawn re-dresses the city's ground and closures and rebuilds no building: every building the
+## city holds after `start_day()` is the same node with the same physics shape it had before, the
+## persistent collision her route is walked against.
+func _test_a_dawn_replaces_no_building_and_no_collision(t: TestRunner) -> void:
+	var map := MapCache.of(4242)
+	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
+	t.add_child(city)
+	city.build(map)
+	var before: Array[Building] = city.buildings()
+	var shapes: Dictionary = {}
+	for building in before:
+		shapes[building] = _collision_shape_of(building)
+	t.check(not before.is_empty() and not shapes.values().has(null),
+			"every building holds a collision shape before the dawn (%d buildings)" % before.size())
+	var state := CityState.new()
+	state.begin_day(map.block_plans, 8)
+	city.start_day(state, 8, city.run.calendar.day_rng(8, "closures"))
+	var after: Array[Building] = city.buildings()
+	t.check(after == before, "a dawn leaves the city the same buildings, the same nodes")
+	var replaced := 0
+	for building in after:
+		if not is_instance_valid(building) or _collision_shape_of(building) != shapes.get(building):
+			replaced += 1
+	t.check(replaced == 0, "a dawn replaces no building's collision shape (%d replaced)" % replaced)
+	city.free()
+
+## The physics shape the building keeps for its complete collision, found among its children.
+func _collision_shape_of(building: Building) -> Shape2D:
+	for child in building.get_children():
+		if child is CollisionShape2D:
+			return (child as CollisionShape2D).shape
+	return null
 
 ## A roof with nothing to cover lands its units on exactly the cells `main` rolls for it: its pool
 ## is the interior in row-major order, the order the shuffle has always permuted, so an extension
