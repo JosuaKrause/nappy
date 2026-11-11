@@ -131,7 +131,7 @@ var _stood := {}
 ## The ground of `map`, with `standing` put down on it, for the walk `route` hands in: its streets and
 ## its ends. A walk of no route (`RouteSource` itself, or none) has neither, and is what a caller
 ## that only asks where a body stands (`solids_of()`) builds.
-func _init(map: CityMap, standing: Array[EventScheduler.Planned] = [],
+func _init(map: CityMap, standing: Array[EventPlan] = [],
 		route: RouteSource = null) -> void:
 	_map = map
 	_columns = ceili(float(map.size.x * Tuning.TILE_SIZE) / STEP) + 1
@@ -154,7 +154,7 @@ func _init(map: CityMap, standing: Array[EventScheduler.Planned] = [],
 ## sidewalk open, and the ground round it still joins up the way it did without it, past its body
 ## and its standing lethal reach (`held_by()`). A candidate with nothing that stands for the whole
 ## walk is accepted as it is.
-func accepts(candidate: EventScheduler.Planned) -> bool:
+func accepts(candidate: EventPlan) -> bool:
 	var own := held_by(candidate)
 	if own.is_empty():
 		return true
@@ -162,13 +162,13 @@ func accepts(candidate: EventScheduler.Planned) -> bool:
 
 ## Puts down every placement of `plans` not put down yet, in order: what a judge asks before a
 ## candidate, so the walk stands everything already accepted whoever accepted it.
-func catch_up(plans: Array[EventScheduler.Planned]) -> void:
+func catch_up(plans: Array[EventPlan]) -> void:
 	for plan in plans:
 		if not _stood.has(plan.get_instance_id()):
 			stand(plan)
 
 ## Puts a placement's pieces down for every later question.
-func stand(plan: EventScheduler.Planned) -> void:
+func stand(plan: EventPlan) -> void:
 	_stood[plan.get_instance_id()] = true
 	for solid in held_by(plan):
 		var reach := solid.shape.reach()
@@ -186,7 +186,7 @@ func stand(plan: EventScheduler.Planned) -> void:
 ## its body stands, whose edge is where her centre is taken (`EventDef.lethal_reach()`, measured from
 ## the instance to her centre, as `EventInstance` measures it). A reach no wider than her own body
 ## holds nothing her body does not already.
-func held_by(plan: EventScheduler.Planned) -> Array[Solid]:
+func held_by(plan: EventPlan) -> Array[Solid]:
 	var found := solids_of(plan)
 	var def := plan.def
 	if def.mobile or not def.hard_fail or def.pursuit != null:
@@ -200,7 +200,7 @@ func held_by(plan: EventScheduler.Planned) -> Array[Solid]:
 ## Where a placement stands once it is built: the first point of its path when it has one,
 ## recentred on the pavement band when it has a body `pavement_side` does not pin — the reading
 ## `EventInstance.setup()` makes.
-func _stands_at(plan: EventScheduler.Planned) -> Vector2:
+func _stands_at(plan: EventPlan) -> Vector2:
 	return EventFootprints.stands_at(_map, plan.def,
 			plan.path[0] if plan.path.size() > 0 else plan.position)
 
@@ -209,7 +209,7 @@ func _stands_at(plan: EventScheduler.Planned) -> Vector2:
 ## reading `EventInstance.setup()` makes of a stationary body: the first point of its path when
 ## it has one, recentred on the pavement band unless `pavement_side` pins it, its pieces laid
 ## by `EventInstance._spread_is_vertical()` and its spine along `EventFootprints.body_axis()`.
-func solids_of(plan: EventScheduler.Planned) -> Array[Solid]:
+func solids_of(plan: EventPlan) -> Array[Solid]:
 	var found: Array[Solid] = []
 	var defs: Array[EventDef] = [plan.def]
 	if plan.def.aftermath.on_finish != "":

@@ -82,7 +82,7 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 	player.set_physics_process(false)
 	city.events.use_player(player)
 	t.check(path.size() >= 2 and city.events.world.has_player(), "a route to walk and her on it")
-	var placed: Array[EventScheduler.Planned] = []
+	var placed: Array[EventPlan] = []
 	var drawn_within := false
 	var her_at_siting := Vector2.INF
 	var where_sited := Vector2.INF
@@ -118,7 +118,7 @@ func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 				handed += 1
 				if handed == size:
 					drawn_within = _a_place_from_her_route(city.events, standing) != null
-			for plan: EventScheduler.Planned in city.events.plans().slice(plans_before):
+			for plan: EventPlan in city.events.plans().slice(plans_before):
 				if plan.def.id == ROW and not standing.has(plan):
 					placed.append(plan)
 					her_at_siting = player.global_position
@@ -324,8 +324,8 @@ static func _walkable_from(map: CityMap, from: Vector2) -> Dictionary:
 ## The van a marble from her route's bag handed to her walk to site, sited or not; null when none
 ## has been.
 func _a_place_from_her_route(events: EventManager,
-		standing: Array[EventScheduler.Planned]) -> EventScheduler.Planned:
-	for plan: EventScheduler.Planned in events.plans():
+		standing: Array[EventPlan]) -> EventPlan:
+	for plan: EventPlan in events.plans():
 		if plan.def.id == ROW and not standing.has(plan):
 			return plan
 	return null

@@ -92,7 +92,7 @@ func walk(arrival: float, delay: float, asleep: bool) -> Dictionary:
 func _held_by(pos: Vector2, candidate: Vector2) -> int:
 	var vents := BuildingEvents.vents(_events)
 	for i in vents.size():
-		var vent: EventScheduler.Planned = vents[i]
+		var vent: EventPlan = vents[i]
 		var there := candidate.distance_to(vent.position)
 		if there >= HELD_OUT or there >= pos.distance_to(vent.position):
 			continue
@@ -102,7 +102,7 @@ func _held_by(pos: Vector2, candidate: Vector2) -> int:
 	return -1
 
 ## The blow standing at a vent right now, or null between blows.
-func _blow_at(vent: EventScheduler.Planned) -> EventInstance:
+func _blow_at(vent: EventPlan) -> EventInstance:
 	for instance in _events.instances():
 		if instance.def.id == "basement_steam" and not instance.is_finished \
 				and instance.global_position.distance_to(vent.position) < 1.0:

@@ -498,7 +498,7 @@ const _CAUGHT_CLEARANCE := Tuning.PLAYER_BODY_RADIUS + Tuning.TILE_SIZE * 0.5
 ## at dawn.
 func body_clear_tiles() -> Dictionary:
 	var near := {}
-	for plan: EventScheduler.Planned in _city.events.plans():
+	for plan: EventPlan in _city.events.plans():
 		if plan.live == null and plan.is_placed() and not plan.spent and _is_planned_body(plan.def):
 			near.merge(_planned_body_tiles(plan))
 	for instance: EventInstance in _city.events.instances():
@@ -510,7 +510,7 @@ func body_clear_tiles() -> Dictionary:
 ## Cleared in `start_day()`.
 var _planned_clear := {}
 
-func _planned_body_tiles(plan: EventScheduler.Planned) -> Dictionary:
+func _planned_body_tiles(plan: EventPlan) -> Dictionary:
 	if _planned_clear.has(plan):
 		return _planned_clear[plan]
 	var parts := _planned_parts(plan)
@@ -520,7 +520,7 @@ func _planned_body_tiles(plan: EventScheduler.Planned) -> Dictionary:
 
 ## A placed plan's solid pieces as its instance will stand — `[centres, shapes, axis]`, the
 ## `EventInstance.solid_part_centres()`, `solid_part_shapes()` and `solid_axis()` it will have.
-func _planned_parts(plan: EventScheduler.Planned) -> Array:
+func _planned_parts(plan: EventPlan) -> Array:
 	var at := _planned_position(plan)
 	var vertical := EventInstance._spread_is_vertical(_city.map, at)
 	var centres := PackedVector2Array()
@@ -534,7 +534,7 @@ func _planned_parts(plan: EventScheduler.Planned) -> Array:
 ## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
 ## first point of its path or its position, moved to the middle of the sidewalk band for a
 ## stationary solid row that `pavement_side` does not pin to an edge.
-func _planned_position(plan: EventScheduler.Planned) -> Vector2:
+func _planned_position(plan: EventPlan) -> Vector2:
 	return EventFootprints.stands_at(_city.map, plan.def,
 			plan.path[0] if plan.path.size() > 0 else plan.position)
 
@@ -578,7 +578,7 @@ func door_tiles() -> Dictionary:
 	var here := _player.global_position
 	var near := {}
 	var lines := {}
-	for plan: EventScheduler.Planned in _city.events.plans():
+	for plan: EventPlan in _city.events.plans():
 		if not plan.is_placed() or plan.spent or not plan.def.redetains:
 			continue
 		var door := _planned_position(plan)
@@ -615,7 +615,7 @@ var _latched_doors := {}
 func latch_the_doors_round_her() -> void:
 	_latched_doors = {}
 	var here := _player.global_position
-	for plan: EventScheduler.Planned in _city.events.plans():
+	for plan: EventPlan in _city.events.plans():
 		if not plan.is_placed() or plan.spent or not plan.def.redetains:
 			continue
 		var door := plan.live.global_position if plan.live != null else _planned_position(plan)
@@ -632,7 +632,7 @@ func latch_the_doors_round_her() -> void:
 ## let go.
 func _latched_door_bodies() -> Dictionary:
 	var under := {}
-	for plan: EventScheduler.Planned in _latched_doors:
+	for plan: EventPlan in _latched_doors:
 		var door := plan.live.global_position if plan.live != null else _planned_position(plan)
 		under.merge(_tiles_near_point(door, plan.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS))
 	return under
@@ -653,10 +653,10 @@ func _gate_ground() -> Dictionary:
 		return _gate_ground_tiles
 	_gate_ground_ready = true
 	_gate_ground_tiles = {}
-	var doors: Array[EventScheduler.Planned] = []
-	# Every door body (`Planned.is_door()`: the huts, the posts and the boom), since the ground
+	var doors: Array[EventPlan] = []
+	# Every door body (`EventPlan.is_door()`: the huts, the posts and the boom), since the ground
 	# kept off is the ground nearer the boom than any of the others.
-	for plan: EventScheduler.Planned in _city.events.plans():
+	for plan: EventPlan in _city.events.plans():
 		if plan.is_placed() and not plan.is_spent() and plan.is_door():
 			doors.append(plan)
 	for gate in doors:
@@ -1196,7 +1196,7 @@ func _body_pieces_near(point: Vector2, radius: float) -> Array:
 		if _is_standing_body(instance):
 			_add_pieces_near(pieces, instance.solid_part_centres(), instance.solid_part_shapes(),
 					instance.solid_axis(), point, radius)
-	for planned: EventScheduler.Planned in _city.events.plans():
+	for planned: EventPlan in _city.events.plans():
 		if planned.live != null or not planned.is_placed() or planned.spent \
 				or not _is_planned_body(planned.def):
 			continue
@@ -1254,7 +1254,7 @@ func unstick_order(away: Vector2, reach: float) -> Array[Vector2]:
 ## Whether `point` lies inside the circle a door body takes her in from
 ## (`EventDef.detain_distance()` of a hut or a post, the `redetains` rows).
 func _into_a_door(point: Vector2) -> bool:
-	for planned: EventScheduler.Planned in _city.events.plans():
+	for planned: EventPlan in _city.events.plans():
 		if not planned.is_placed() or planned.spent or not planned.def.redetains:
 			continue
 		var door := planned.live.global_position if planned.live != null \

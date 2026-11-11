@@ -43,7 +43,7 @@ func _measure_sprinkle_rate() -> void:
 			var tree := RouteTree.for_day(map, day)
 			var plan_rng := RandomNumberGenerator.new()
 			plan_rng.seed = hash("m96:plan:%d:%d" % [map.seed_used, day])
-			var planned: Array[EventScheduler.Planned] = EventScheduler.build_day(
+			var planned: Array[EventPlan] = EventScheduler.build_day(
 					DaySpec.for_day(day), plan_rng, map, CalmAreas.of(map), MastSites.compute(map), [], [], tree,
 							0).placements()
 

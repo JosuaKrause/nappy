@@ -10,8 +10,8 @@ func _init(map: CityMap) -> void:
 	_map = map
 
 ## Overrides StreetRule.allows.
-func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
-		placed: Array[EventScheduler.Planned], _around: Array[EventScheduler.Planned]) -> bool:
+func allows(candidate: EventPlan, _tile: Vector2i,
+		placed: Array[EventPlan], _around: Array[EventPlan]) -> bool:
 	return _keeps_its_notice_to_itself(_map, candidate, placed)
 
 ## **One waiting guard at a time** (`DaySpec.one_notice_at_a_time`). A candidate that waits to
@@ -39,8 +39,8 @@ func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 ## keeps one guard from standing behind another's drawing: the near guard of a band two tiles up
 ## the street stands between the two bands, where the nearer band and the guard posted on its far
 ## side are drawn over him.
-static func _keeps_its_notice_to_itself(map: CityMap, candidate: EventScheduler.Planned,
-		already: Array[EventScheduler.Planned]) -> bool:
+static func _keeps_its_notice_to_itself(map: CityMap, candidate: EventPlan,
+		already: Array[EventPlan]) -> bool:
 	var reach := candidate.row().notice_within()
 	if reach <= 0.0:
 		return true

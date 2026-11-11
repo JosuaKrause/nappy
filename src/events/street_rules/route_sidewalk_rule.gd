@@ -13,8 +13,8 @@ func _init(map: CityMap, corridor: Corridor) -> void:
 	_corridor = corridor
 
 ## Overrides StreetRule.allows.
-func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
-		_placed: Array[EventScheduler.Planned], around: Array[EventScheduler.Planned]) -> bool:
+func allows(candidate: EventPlan, _tile: Vector2i,
+		_placed: Array[EventPlan], around: Array[EventPlan]) -> bool:
 	return _leaves_the_routes_sidewalk_open(candidate, _map, _corridor, around)
 
 ## **Nothing takes the sidewalk a route is walked along.** *"All obstacles should be routable around
@@ -65,8 +65,8 @@ func allows(candidate: EventScheduler.Planned, _tile: Vector2i,
 ## body legally rolled onto that cell can still physically close the lane the width rule is
 ## checking. `closes_a_walked_sidewalk_band` is the physical reading asked here for exactly that
 ## gap, over the same `standing` list.
-static func _leaves_the_routes_sidewalk_open(candidate: EventScheduler.Planned, map: CityMap, corridor: Corridor,
-		already: Array[EventScheduler.Planned]) -> bool:
+static func _leaves_the_routes_sidewalk_open(candidate: EventPlan, map: CityMap, corridor: Corridor,
+		already: Array[EventPlan]) -> bool:
 	if not corridor or candidate.row().paces or not candidate.counts_against_the_line():
 		return true
 	var reach := _cumulative_lane_reach_of(candidate.row())
@@ -74,7 +74,7 @@ static func _leaves_the_routes_sidewalk_open(candidate: EventScheduler.Planned, 
 		var world: Rect2 = entry[2]
 		if not candidate.reach_touches(world, reach):
 			continue
-		var standing: Array[EventScheduler.Planned] = [candidate]
+		var standing: Array[EventPlan] = [candidate]
 		for plan in already:
 			if plan == candidate or plan.row().paces or not plan.counts_against_the_line():
 				continue
@@ -102,7 +102,7 @@ static func _cumulative_lane_reach_of(def: EventDef) -> float:
 ## `rows` reduced to `[position.x, position.y, obstructs_radius]` triples, the shape
 ## `closes_a_walked_sidewalk_band` asks for — a row with no body contributes nothing to a physical
 ## reading, however loud it is.
-static func _physical_bodies_of(rows: Array[EventScheduler.Planned]) -> Array:
+static func _physical_bodies_of(rows: Array[EventPlan]) -> Array:
 	var found: Array = []
 	for plan in rows:
 		if plan.row().obstructs_within() > 0.0:
@@ -113,7 +113,7 @@ static func _physical_bodies_of(rows: Array[EventScheduler.Planned]) -> Array:
 ## ask it of one sidewalk band and the pacing rule of the whole street. `horizontal` is the
 ## direction the walk has to get from one end of `rect` to the other along.
 static func closes_the_run(map: CityMap, rect: Rect2i, horizontal: bool,
-		rows: Array[EventScheduler.Planned]) -> bool:
+		rows: Array[EventPlan]) -> bool:
 	var free := {}
 	for y in range(rect.position.y, rect.end.y):
 		for x in range(rect.position.x, rect.end.x):
@@ -176,7 +176,7 @@ const HER_LANE_CLEARANCE := 2.0 * Tuning.PLAYER_BODY_RADIUS
 ## `tests/probes/m129_walked_sidewalk_walls.gd` and `tests/test_events.gd`'s
 ## `_test_no_body_closes_a_walked_sidewalk` both ask, moved here rather than kept as two copies, so
 ## the probe's printed number and the suite's asserted one can never quietly disagree about what
-## *closed* means. `bodies` is `[position.x, position.y, radius]` per body rather than a `EventScheduler.Planned`,
+## *closed* means. `bodies` is `[position.x, position.y, radius]` per body rather than a `EventPlan`,
 ## because a suite sampling seals and region bodies alongside catalogue rows has no single class to
 ## hand this that all three already share.
 ##

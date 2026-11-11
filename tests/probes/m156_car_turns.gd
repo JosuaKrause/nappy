@@ -175,7 +175,7 @@ static func _distance_to(tiles: Array, tile: Vector2i) -> float:
 ## Every placed plan's own solid footprint, one entry per body, measured with today's holds lifted
 ## so that a hard seal and a region wall report the ground they actually stand on rather than the
 ## empty list `CityMap.obstructed_tiles` keeps for them. The holds go straight back.
-func _bodies(map: CityMap, plans: Array[EventScheduler.Planned]) -> Array:
+func _bodies(map: CityMap, plans: Array[EventPlan]) -> Array:
 	var keys: Array = map.held_streets().keys()
 	map.clear_day_holds()
 	var found: Array = []

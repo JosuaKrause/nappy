@@ -32,7 +32,7 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner)
 				and map.tile_to_world(tile).distance_to(map.doorstep_world_position()) > 600.0:
 			lorry_tile = tile
 			break
-	var lorry := EventScheduler.Planned.new(lorry_def, map.tile_to_world(lorry_tile))
+	var lorry := EventPlan.new(lorry_def, map.tile_to_world(lorry_tile))
 	lorry.role = GameEnums.BlockerRole.FRICTION
 	# Planned after dawn, the way the day adds a plan it places late: it streams in like any
 	# planned row and its body is recorded where it stands.
@@ -79,13 +79,13 @@ func _test_place_at_sites_a_row_only_where_the_days_spacing_leaves_room(t: TestR
 			break
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
-	var none: Array[EventScheduler.Planned] = []
+	var none: Array[EventPlan] = []
 	var first := EventScheduler.place_at(def, map, tile, rng, none)
 	t.check(first != null and first.is_placed(),
 			"with no plan standing, `place_at()` sites the row on a free sidewalk tile")
 	if not first:
 		return
-	var crowded: Array[EventScheduler.Planned] = [first]
+	var crowded: Array[EventPlan] = [first]
 	t.check(EventScheduler.place_at(def, map, tile, rng, crowded) == null,
 			"on the tile a placed plan already holds, `place_at()` answers null")
 	var far := Vector2i(-1, -1)

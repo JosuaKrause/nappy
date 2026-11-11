@@ -7,7 +7,7 @@ extends RefCounted
 ##     grep '^SC' out.txt
 ##
 ## Per seed, day 13, started the way `DayDirector.start()` starts one. A body blocks when
-## `Planned.obstructs()` says so; the region wall's and the doors' bodies are never candidates.
+## `EventPlan.obstructs()` says so; the region wall's and the doors' bodies are never candidates.
 ## **Off the routes** is a body whose tile no route runs along (`Corridor.carries_a_route()`);
 ## **route-adjacent** is one standing on a street segment no route runs along, one of whose two
 ## junction boxes a route crosses; **deep** is every other body off the routes.
@@ -32,7 +32,7 @@ func run(t: TestRunner) -> void:
 			for body in region.door_bodies:
 				fixed[body] = true
 		var counts := {"on": 0, "adjacent": 0, "deep": 0, "spine": 0}
-		var adjacent: Array[EventScheduler.Planned] = []
+		var adjacent: Array[EventPlan] = []
 		var ids := {}
 		for plan in city.events.plans():
 			if fixed.has(plan) or not plan.obstructs():
@@ -52,8 +52,8 @@ func run(t: TestRunner) -> void:
 		var route := _route_tiles(map, corridor)
 		for id: String in ["barricade", "roadblock"]:
 			var beat := EventCatalogue.by_id(id)
-			var width := EventScheduler.Planned.new(beat, Vector2.ZERO).blocking_radius()
-			var fits: Array[EventScheduler.Planned] = []
+			var width := EventPlan.new(beat, Vector2.ZERO).blocking_radius()
+			var fits: Array[EventPlan] = []
 			var spine := 0
 			for plan in adjacent:
 				var tile := map.world_to_tile(plan.position)
@@ -86,12 +86,12 @@ func run(t: TestRunner) -> void:
 		city.free()
 	for id: String in ["barricade", "roadblock"]:
 		var def := EventCatalogue.by_id(id)
-		var plan := EventScheduler.Planned.new(def, Vector2.ZERO)
+		var plan := EventPlan.new(def, Vector2.ZERO)
 		print("SC_BEAT %s | blocking radius %.1f | obstructs %.1f | hard fail %s"
 				% [id, plan.blocking_radius(), def.obstructs_radius, def.hard_fail])
 	t.check(asked > 0, "there were places to ask from (%d)" % asked)
 
-func _where(map: CityMap, corridor: Corridor, plan: EventScheduler.Planned) -> String:
+func _where(map: CityMap, corridor: Corridor, plan: EventPlan) -> String:
 	var tile := map.world_to_tile(plan.position)
 	if corridor.carries_a_route(tile):
 		return "on"
@@ -191,7 +191,7 @@ func _bodies(city: City, seed_value: int) -> void:
 
 ## **Whether a barricade standing as a scar closes the main road in the dawn reading**: at every
 ## third lane point mid-street on the main road (where the column stops), the barricade's own disc
-## (`Planned.blocking_radius()`, as `EventScheduler.blocked_by()` paints it) laid over today's
+## (`EventPlan.blocking_radius()`, as `EventScheduler.blocked_by()` paints it) laid over today's
 ## closures, and the street alone flooded on the reachability grid from a sidewalk tile a block-end
 ## short of it to one a block-end past it. Counted: the stops whose disc leaves the street through.
 func _scar_discs(city: City, seed_value: int) -> void:
@@ -210,8 +210,8 @@ func _scar_discs(city: City, seed_value: int) -> void:
 			if segment == null or segment.horizontal or not map.is_driveable_at(true, tile):
 				continue
 			var rect := segment.tile_rect()
-			var scar := EventScheduler.Planned.new(def, Vector2(lane_x, map.tile_to_world(tile).y))
-			var blocked := EventScheduler.blocked_by(map, [scar] as Array[EventScheduler.Planned])
+			var scar := EventPlan.new(def, Vector2(lane_x, map.tile_to_world(tile).y))
+			var blocked := EventScheduler.blocked_by(map, [scar] as Array[EventPlan])
 			# Only the street itself counts: everything off its rect is shut.
 			for yy in range(rect.position.y - 1, rect.end.y + 1):
 				for xx in range(rect.position.x - 2, rect.end.x + 2):

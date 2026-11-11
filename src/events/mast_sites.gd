@@ -23,7 +23,7 @@ const MAST_HOME_STREET_MARGIN := 1.0
 
 ## One chosen site: a stable id a later slice can name — M181's day-11 task silences a mast by
 ## reaching its foot, the way she touches a chalk mark — and the ground point everything about the
-## mast is measured from: `EventScheduler.Planned.position`, the field's own centre, and the point
+## mast is measured from: `EventPlan.position`, the field's own centre, and the point
 ## that later task's touch radius would read.
 class Site extends RefCounted:
 	var id := ""

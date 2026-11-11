@@ -107,7 +107,7 @@ class Walk extends RefCounted:
 	var row := ""
 	var read_at := Vector2.INF
 	var walked := 0.0
-	var van: EventScheduler.Planned = null
+	var van: EventPlan = null
 	var drawn_at := -1.0
 	var sited_at := -1.0
 	var her_at_siting := Vector2.INF
@@ -148,7 +148,7 @@ class Walk extends RefCounted:
 		events.ahead.place_what_is_owed_ahead(STEP)
 		events.stream_around(player.global_position)
 		if van == null:
-			for plan: EventScheduler.Planned in events.ahead._director._placed_from_the_route:
+			for plan: EventPlan in events.ahead._director._placed_from_the_route:
 				if plan.def.id == row:
 					van = plan
 					drawn_at = walked

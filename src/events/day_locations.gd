@@ -52,7 +52,7 @@ func drawing_order(rng: RandomNumberGenerator) -> Array[Location]:
 ## **Records the draw's `plan` at `location`**, or nothing there for the empty event. An event drawn
 ## into a section (it spans the street or drives its carriageway) takes the section's sidewalk
 ## locations with it, as a roadblock assigned there does.
-func record(location: Location, plan: EventScheduler.Planned) -> void:
+func record(location: Location, plan: EventPlan) -> void:
 	if plan and location.kind() == Location.Kind.SECTION and location.segment():
 		(_streets[location.segment().key()] as StreetLocations).take_section(location, plan)
 	location.record(plan)
@@ -91,7 +91,7 @@ func holding(tile: Vector2i, type: int) -> Location:
 ## design's fixed parts' phases: "a wall makes its location unavailable throughout"; a mast's
 ## location holds its mast on a day with one). `type` is the ground under it. A part standing where
 ## no location is records nothing.
-func hold_fixed_part(plan: EventScheduler.Planned, tile: Vector2i, type: int) -> void:
+func hold_fixed_part(plan: EventPlan, tile: Vector2i, type: int) -> void:
 	var location := holding(tile, type)
 	if location:
 		assign_to(location, plan)
@@ -99,7 +99,7 @@ func hold_fixed_part(plan: EventScheduler.Planned, tile: Vector2i, type: int) ->
 ## Assigns `plan`, which a dawn phase placed in `location`, for the day, so no draw happens there:
 ## a section takes its two sidewalk locations with it, and a sidewalk closes its section to a draw
 ## (`StreetLocations.close_the_section_of()`).
-func assign_to(location: Location, plan: EventScheduler.Planned) -> void:
+func assign_to(location: Location, plan: EventPlan) -> void:
 	if location.kind() == Location.Kind.SECTION and location.segment():
 		(_streets[location.segment().key()] as StreetLocations).take_section(location, plan)
 	else:
@@ -200,7 +200,7 @@ func sections_in(view: int) -> Array[Location]:
 
 ## Assigns `plan`, an event that spans the street (`EventDef.spans_the_street()`), to `section` for
 ## the day: the section and its two sidewalk locations are taken, so no draw happens for them.
-func assign(section: Location, plan: EventScheduler.Planned) -> void:
+func assign(section: Location, plan: EventPlan) -> void:
 	assert(plan.row().spans_the_street(),
 			"DayLocations.assign(): only an event that spans the street takes a section")
 	(_streets[section.segment().key()] as StreetLocations).take_section(section, plan)

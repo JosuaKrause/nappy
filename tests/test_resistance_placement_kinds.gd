@@ -775,7 +775,7 @@ func _test_the_mast_task_favors_the_near_mast(t: TestRunner) -> void:
 	if found.is_empty():
 		return
 	var mark: Vector2 = found[0]
-	var plans: Array[EventScheduler.Planned] = [found[1], found[2]]
+	var plans: Array[EventPlan] = [found[1], found[2]]
 	plans[0].mast_id = "near"
 	plans[1].mast_id = "far"
 	_city.events.start_recipe(plans, DaySpec.for_day(11), 11, mark)
@@ -840,12 +840,12 @@ func _two_masts_round_a_mark(map: CityMap) -> Array:
 					far.append(site)
 		for a in near:
 			var first := EventScheduler.place_at(EventCatalogue.mast(), map, a,
-					RandomNumberGenerator.new(), [] as Array[EventScheduler.Planned])
+					RandomNumberGenerator.new(), [] as Array[EventPlan])
 			if first == null:
 				continue
 			for b in far:
 				var second := EventScheduler.place_at(EventCatalogue.mast(), map, b,
-						RandomNumberGenerator.new(), [first] as Array[EventScheduler.Planned])
+						RandomNumberGenerator.new(), [first] as Array[EventPlan])
 				if second != null:
 					return [mark, first, second]
 	return []

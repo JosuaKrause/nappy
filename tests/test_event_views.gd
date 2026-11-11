@@ -1011,7 +1011,7 @@ func _test_vehicle_views_match_facings_csv_per_sector(t: TestRunner) -> void:
 		instance.free()
 
 ## `delivery_van` and `ice_cream_van` are always sited facing east — `AT_THE_KERB` never sets
-## `EventScheduler.Planned.facing` away from its own default — so binding them onto the shared
+## `EventPlan.facing` away from its own default — so binding them onto the shared
 ## eight-view table must still draw exactly the `"side"` view for a fresh siting, the one view
 ## either row has ever shown.
 func _test_kerb_parked_vans_keep_their_axis_chosen_view(t: TestRunner) -> void:

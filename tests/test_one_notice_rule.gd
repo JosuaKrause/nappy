@@ -4,17 +4,17 @@ extends RefCounted
 ## that apart is allowed; a row that notices nobody is allowed anywhere. On a bare map: where a
 ## flock stands is where it was built.
 
-const NONE: Array[EventScheduler.Planned] = []
+const NONE: Array[EventPlan] = []
 
 func run(t: TestRunner) -> void:
 	var map := CityMap.new()
 	var flock := EventCatalogue.by_id("pigeon_flock")
 	var reach := flock.notice_within()
-	var placed: Array[EventScheduler.Planned] = [EventScheduler.Planned.new(flock, Vector2(800, 800))]
+	var placed: Array[EventPlan] = [EventPlan.new(flock, Vector2(800, 800))]
 	var rule := OneNoticeRule.new(map)
-	var overlapping := EventScheduler.Planned.new(flock, Vector2(800 + reach, 800))
-	var apart := EventScheduler.Planned.new(flock, Vector2(800 + 2.0 * reach + 32.0, 800))
-	var cafe := EventScheduler.Planned.new(EventCatalogue.by_id("cafe_tables"), Vector2(800 + reach, 800))
+	var overlapping := EventPlan.new(flock, Vector2(800 + reach, 800))
+	var apart := EventPlan.new(flock, Vector2(800 + 2.0 * reach + 32.0, 800))
+	var cafe := EventPlan.new(EventCatalogue.by_id("cafe_tables"), Vector2(800 + reach, 800))
 	t.check(reach > 0.0, "the flock notices her from a distance (%.0fpx)" % reach)
 	t.check(not rule.allows(overlapping, Vector2i.ZERO, placed, placed),
 			"a flock whose notice overlaps another's is refused")

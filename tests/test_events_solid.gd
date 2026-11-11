@@ -180,9 +180,9 @@ func _test_nothing_stands_on_the_doorstep_street(t: TestRunner) -> void:
 	t.check(placed > 14, "and the days it was checked over still place events (%d)" % placed)
 
 ## `plan` as `[position.x, position.y, obstructs_radius]`, appended to `bodies` — or not, for the
-## same two exemptions the rule and its own probe make: a region door's body (`Planned.is_door()`)
+## same two exemptions the rule and its own probe make: a region door's body (`EventPlan.is_door()`)
 ## costs by design, and a `Role.SCENERY` row has no ground to keep clear of.
-func _add_a_physical_body(bodies: Array, plan: EventScheduler.Planned) -> void:
+func _add_a_physical_body(bodies: Array, plan: EventPlan) -> void:
 	if not plan.is_placed() or plan.def.obstructs_radius <= 0.0:
 		return
 	if plan.def.role == EventDef.Role.SCENERY or plan.is_door():

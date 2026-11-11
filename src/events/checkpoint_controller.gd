@@ -652,7 +652,7 @@ static func _where_she_crossed(at: Vector2, axis: Vector2, reach: float, was: Ve
 
 ## Which compass direction `along` (a signed distance down `axis`) points at — `axis` is always
 ## `Vector2.RIGHT` (an east-west street) or `Vector2.DOWN` (north-south, since Y grows downward on
-## screen), the two values `RegionPlanner._along_axis` ever hands a door body's `Planned.facing`.
+## screen), the two values `RegionPlanner._along_axis` ever hands a door body's `EventPlan.facing`.
 static func _compass_of(axis: Vector2, along: float) -> String:
 	if absf(axis.x) > absf(axis.y):
 		return "east" if along > 0.0 else "west"

@@ -114,7 +114,7 @@ func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 	for start in 2:
 		Rig.start(_city, 4)
 		events.use_player(rig)
-		var placed: Array[EventScheduler.Planned] = []
+		var placed: Array[EventPlan] = []
 		for plan in events.plans():
 			if plan.is_placed():
 				placed.append(plan)
@@ -131,7 +131,7 @@ func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 	rig.free()
 
 ## Each of `plans` as its row and the place it was put, in order.
-static func _where_they_stand(plans: Array[EventScheduler.Planned]) -> String:
+static func _where_they_stand(plans: Array[EventPlan]) -> String:
 	var parts: Array[String] = []
 	for plan in plans:
 		parts.append("%s@%s" % [plan.row_id(), plan.placed_at()])
@@ -241,7 +241,7 @@ func _test_an_event_waits_until_she_is_near_it(t: TestRunner) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
 
-	var plan: EventScheduler.Planned = null
+	var plan: EventPlan = null
 	for candidate in _city.events.plans():
 		# Not mobile: a route means the reach is measured to the nearest point of it, which is a
 		# different check.
@@ -287,7 +287,7 @@ func _widest_field() -> float:
 func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
-	var plan: EventScheduler.Planned = null
+	var plan: EventPlan = null
 	# One that leaves nothing behind and, walked up to, runs out on its own (a dog walker's street
 	# ends; a parked van never does).
 	for candidate in _city.events.plans():
@@ -323,7 +323,7 @@ func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
-	var plan: EventScheduler.Planned = null
+	var plan: EventPlan = null
 	for candidate in _city.events.plans():
 		if candidate.is_placed() and candidate.def.mobile and candidate.path.size() > 1 \
 				and not candidate.def.still_while_telegraphing:
@@ -426,7 +426,7 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t: TestRu
 ## M100, small, real, and nobody's: the wiring half of "a pursuer streamed out mid-chase comes
 ## back having forgotten it." `tests/test_heat.gd` already drives `EventInstance.resume()` directly
 ## and pins that its `from_noticed_at` argument restores the notice; the gap that shipped anyway
-## was one level up — `EventScheduler.Planned` had no field to hold the notice, so
+## was one level up — `EventPlan` had no field to hold the notice, so
 ## `EventStreaming.stream_in()` always called `resume()` with the default `INF` and a
 ## `EventDef.notice` row streamed out mid-chase came back `is_waiting()`, standing where the day
 ## planted it. This drives the same encounter through
@@ -435,11 +435,11 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t: TestRu
 ## class doc above).
 ##
 ## `alley_robbery` rather than a scheduled plan: it carries `EventDef.notice` cold, with no heat
-## level or a particular day's roll needed to reach it, and a `Planned` built by hand is
+## level or a particular day's roll needed to reach it, and a `EventPlan` built by hand is
 ## deterministic where waiting for the scheduler to place one on some day would not be.
 func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
-	var plan := EventScheduler.Planned.new(def, Vector2(500.0, 500.0))
+	var plan := EventPlan.new(def, Vector2(500.0, 500.0))
 
 	_city.events.streaming.stream_in(plan)
 	t.check(plan.live != null, "the hand-built plan streams in like any other")
@@ -494,7 +494,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 		# Nothing planned and nothing sited ahead of her, then the one row owed her from a route bag
 		# holding nothing else, as a scene's recipe hands it (`EventManager.start_recipe_route()`),
 		# due as soon as she is walking.
-		var nothing: Array[EventScheduler.Planned] = []
+		var nothing: Array[EventPlan] = []
 		events.start_recipe(nothing, DaySpec.for_day(Tuning.RUN_TAUGHT_DAY + 2),
 				Tuning.RUN_TAUGHT_DAY + 2, Vector2.ZERO)
 		var owed := events.start_recipe_route([def.id], [def.id], 1, 0.0)

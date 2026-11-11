@@ -19,7 +19,7 @@ const ReachStage := preload("res://tests/escape_roadblock_rig.gd").Stage
 
 ## The deepest any solid piece of `plan` reaches into a building tile, in px; 0 when none does.
 static func body_overhang(map: CityMap, ground: WalkGround,
-		plan: EventScheduler.Planned) -> float:
+		plan: EventPlan) -> float:
 	var worst := 0.0
 	for solid in ground.solids_of(plan):
 		var rounding := solid.shape.radius if solid.shape.kind != GroundShape.Kind.RECT else 0.0
@@ -27,7 +27,7 @@ static func body_overhang(map: CityMap, ground: WalkGround,
 	return worst
 
 ## How far the ground `plan`'s picture is drawn over reaches into a building tile, in px.
-static func drawing_overhang(map: CityMap, plan: EventScheduler.Planned) -> float:
+static func drawing_overhang(map: CityMap, plan: EventPlan) -> float:
 	var def := plan.def
 	var box := EventFootprints.box_of(def)
 	if not box.has_area():

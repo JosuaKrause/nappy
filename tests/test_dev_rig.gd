@@ -147,7 +147,7 @@ func _test_a_queue_fed_row_refuses_by_name(t: TestRunner) -> void:
 ## `outer_radius * 0.6` = 100.8px offset was under both) — so the old offset stood her inside the
 ## trigger. The fixed offset has to clear the larger of the two plus a tile's margin.
 func _test_a_waiting_row_stands_outside_its_trigger(t: TestRunner) -> void:
-	var found: EventScheduler.Planned = null
+	var found: EventPlan = null
 	for plan in _city.events.plans():
 		if plan.def.id == "pigeon_flock" and plan.is_placed():
 			found = plan
@@ -221,7 +221,7 @@ func _test_door_target_lands_on_the_approach_side_of_a_hut(t: TestRunner) -> voi
 	var consumed: Array[String] = []
 	city.events.start_day(DaySpec.for_day(day), _rng("checkpoint-events"), consumed)
 
-	var huts: Array[EventScheduler.Planned] = []
+	var huts: Array[EventPlan] = []
 	for body in city.streets().region_plan().door_bodies:
 		if body.def.id == "checkpoint_hut":
 			huts.append(body)

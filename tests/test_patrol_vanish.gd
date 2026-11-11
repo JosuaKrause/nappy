@@ -35,7 +35,7 @@ func _rig(t: TestRunner, day: int) -> Array:
 	city.build(map)
 	# The manager is told which day it is by a walk with nothing planned in it (`start_recipe()`): the
 	# checks plant what they watch themselves.
-	var no_plans: Array[EventScheduler.Planned] = []
+	var no_plans: Array[EventPlan] = []
 	city.events.start_recipe(no_plans, DaySpec.for_day(day), day, Vector2.ZERO)
 	var her := _Her.new()
 	t.add_child(her)
@@ -102,7 +102,7 @@ func _lane_rig(t: TestRunner, def: EventDef) -> Array:
 	t.check(spot.size() == 3, "found a stretch of carriageway between two junction boxes")
 	var route := PackedVector2Array([spot[0], spot[1]])
 	her.global_position = spot[2]
-	var plan := EventScheduler.Planned.new(def, route[0], route)
+	var plan := EventPlan.new(def, route[0], route)
 	city.events.streaming.add(plan)
 	city.events.use_player(her)
 	return [city, her, plan, route]
@@ -126,7 +126,7 @@ func _test_a_car_that_runs_out_of_route_leaves_out_of_her_sight(t: TestRunner) -
 	var rig := _lane_rig(t, EventCatalogue.by_id("police_patrol"))
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
-	var plan: EventScheduler.Planned = rig[2]
+	var plan: EventPlan = rig[2]
 	var car: EventInstance = null
 	var seen_at_the_end := false
 	var ticks := 0
@@ -148,7 +148,7 @@ func _test_an_investigating_car_leaves_out_of_her_sight(t: TestRunner) -> void:
 	var rig := _lane_rig(t, hot)
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
-	var plan: EventScheduler.Planned = rig[2]
+	var plan: EventPlan = rig[2]
 	var car: EventInstance = null
 	var officer: EventInstance = null
 	var let_out := false
@@ -179,7 +179,7 @@ func _test_an_investigating_car_whose_man_is_shaken_off_leaves_out_of_her_sight(
 	var rig := _lane_rig(t, hot)
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
-	var plan: EventScheduler.Planned = rig[2]
+	var plan: EventPlan = rig[2]
 	var car: EventInstance = null
 	var officer: EventInstance = null
 	var let_out := false
@@ -205,7 +205,7 @@ func _test_an_investigating_car_whose_man_is_shaken_off_leaves_out_of_her_sight(
 	_done(city, her)
 
 ## **The vanishing the player reported.** A plan is streamed out by how far she is from its *route*
-## (`Planned.distance_from()`), and a car that has run out of route carries on past its end, so a car
+## (`EventPlan.distance_from()`), and a car that has run out of route carries on past its end, so a car
 ## she follows out of its street is far from the route while she is a few paces behind it. At 1160px
 ## from the route (the streaming radius and its hysteresis) it was deleted in front of her. She
 ## follows it 120px behind for far longer than that, and it must still be in the world; stopping,
@@ -214,7 +214,7 @@ func _test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t: TestRunner
 	var rig := _lane_rig(t, EventCatalogue.by_id("police_patrol"))
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
-	var plan: EventScheduler.Planned = rig[2]
+	var plan: EventPlan = rig[2]
 	var route: PackedVector2Array = rig[3]
 	var reach := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_STREAM_HYSTERESIS
 	var car: EventInstance = null
@@ -245,7 +245,7 @@ func _test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t: TestRunner
 
 
 ## A car that is leaving and is streamed out beyond her sight is over, and its plan says so
-## (`Planned.spent`): a departure that has ended is not run again. She is *teleported* away and back
+## (`EventPlan.spent`): a departure that has ended is not run again. She is *teleported* away and back
 ## here, which is not how she moves; walking, the plan streams in only 900px from its route's end, and
 ## the car is rebuilt out of her view and finishes at once. So this holds the bookkeeping, and the
 ## second half walks her back and holds that nothing is ever inside her view.
@@ -253,7 +253,7 @@ func _test_a_leaving_car_streamed_out_does_not_come_back(t: TestRunner) -> void:
 	var rig := _lane_rig(t, EventCatalogue.by_id("police_patrol"))
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
-	var plan: EventScheduler.Planned = rig[2]
+	var plan: EventPlan = rig[2]
 	var home := her.global_position
 	var ticks := 0
 	while ticks < PhysicsTicks.ticks_for(30.0, SPEED) and (plan.live == null or not plan.live.is_leaving):

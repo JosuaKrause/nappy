@@ -72,7 +72,7 @@ func run(t: TestRunner) -> void:
 			var doors := PackedVector2Array()
 			for body in region_plan.door_bodies:
 				doors.append(body.position)
-			var standing: Array[EventScheduler.Planned] = []
+			var standing: Array[EventPlan] = []
 			standing.append_array(seals)
 			standing.append_array(region_plan.wall_bodies)
 			for body in region_plan.wall_bodies:

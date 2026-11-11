@@ -278,7 +278,7 @@ func _test_a_cut_crossing_still_meets_her_line_on_time(t: TestRunner) -> void:
 func _a_director_owing_the_cat(map: CityMap) -> EventDirector:
 	var director := EventDirector.new(map)
 	director.force("cat_dash", 5.0)
-	var no_plans: Array[EventScheduler.Planned] = []
+	var no_plans: Array[EventPlan] = []
 	director.start_day(1, no_plans, _rng("director"))
 	return director
 
@@ -469,7 +469,7 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> vo
 			% in_its_field)
 	var ends := 0
 	var in_a_lot := 0
-	var none: Array[EventScheduler.Planned] = []
+	var none: Array[EventPlan] = []
 	# No catalogue row is planned as a crossing (`EventDef.PathMode.CROSS_STREET`: the cat is sited by
 	# the director), so the row is the cat with the scheduler's crossing path laid for it.
 	var scheduled := cat.duplicate() as EventDef

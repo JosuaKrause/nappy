@@ -13,6 +13,6 @@ const NEIGHBOUR_STEPS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2
 ## Whether `candidate`, built at `tile`, may stand: `placed` is what the walk has placed so far, and
 ## `around` that with what stands for the day besides (the seals, the region wall's own bodies),
 ## which a rule about reaching across ground asks as well. True here: a rule that refuses says so.
-func allows(_candidate: EventScheduler.Planned, _tile: Vector2i,
-		_placed: Array[EventScheduler.Planned], _around: Array[EventScheduler.Planned]) -> bool:
+func allows(_candidate: EventPlan, _tile: Vector2i,
+		_placed: Array[EventPlan], _around: Array[EventPlan]) -> bool:
 	return true

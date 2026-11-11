@@ -318,7 +318,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 
 	var ambient := EventScheduler._place_ambient(day, map, 0)
 	events.add_all(ambient)
-	for plan: EventScheduler.Planned in ambient:
+	for plan: EventPlan in ambient:
 		provenance[plan.get_instance_id()] = Source.OTHER
 
 	var locations := DayLocations.lay_out(map, corridor)
@@ -352,18 +352,18 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 
 	var planned := events.placements()
 
-	for plan: EventScheduler.Planned in seals:
+	for plan: EventPlan in seals:
 		provenance[plan.get_instance_id()] = Source.SEAL
 	planned.append_array(seals)
-	for plan: EventScheduler.Planned in region_plan.wall_bodies:
+	for plan: EventPlan in region_plan.wall_bodies:
 		provenance[plan.get_instance_id()] = Source.REGION
 	planned.append_array(region_plan.wall_bodies)
-	for plan: EventScheduler.Planned in region_plan.door_bodies:
+	for plan: EventPlan in region_plan.door_bodies:
 		provenance[plan.get_instance_id()] = Source.REGION
 	planned.append_array(region_plan.door_bodies)
 
 	var bodies: Array = []   # Array[Body]
-	for plan: EventScheduler.Planned in planned:
+	for plan: EventPlan in planned:
 		if not plan.is_placed():
 			continue
 		var def := plan.def
@@ -381,8 +381,8 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 
 	return {"bodies": bodies, "corridor": corridor}
 
-## Tags every `Planned` appended to `planned` since index `before` with `source`.
-func _tag_new(planned: Array[EventScheduler.Planned], provenance: Dictionary, before: int,
+## Tags every `EventPlan` appended to `planned` since index `before` with `source`.
+func _tag_new(planned: Array[EventPlan], provenance: Dictionary, before: int,
 		source: int) -> void:
 	for i in range(before, planned.size()):
 		provenance[planned[i].get_instance_id()] = source
@@ -410,7 +410,7 @@ func _stands_on_a_route_streets_far_sidewalk(map: CityMap, corridor: Corridor,
 	return false
 
 ## Every body whose physical reach could plausibly cover part of this band — the cheap filter
-## before the tile work, the same shape as `Planned.reach_touches()`.
+## before the tile work, the same shape as `EventPlan.reach_touches()`.
 func _bodies_touching(world: Rect2, bodies: Array) -> Array:
 	var found: Array = []   # Array[Body]
 	for body: Body in bodies:

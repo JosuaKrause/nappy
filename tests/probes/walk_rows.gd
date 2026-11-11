@@ -88,7 +88,7 @@ func run(t: TestRunner) -> void:
 			var doors := PackedVector2Array()
 			for body in region_plan.door_bodies:
 				doors.append(body.position)
-			var standing: Array[EventScheduler.Planned] = []
+			var standing: Array[EventPlan] = []
 			standing.append_array(seals)
 			standing.append_array(region_plan.wall_bodies)
 			for body in region_plan.wall_bodies:
@@ -103,7 +103,7 @@ func run(t: TestRunner) -> void:
 					consumed, [], tree, 0, doors, standing, null,
 					EventCatalogue.by_id(guarded) if guarded != "" else null)
 			print("WP %d %d %d" % [day, i, Time.get_ticks_usec() - planned_from])
-			var plans: Array[EventScheduler.Planned] = events.placements()
+			var plans: Array[EventPlan] = events.placements()
 			plans.append_array(seals)
 			plans.append_array(region_plan.wall_bodies)
 			var walk := WalkEvents.new()
@@ -157,7 +157,7 @@ func run(t: TestRunner) -> void:
 									if walked > out_length * 0.5 and walked <= out_length:
 										capped_late_out += 1
 					toward = path[k] - at
-			for plan: EventScheduler.Planned in counted:
+			for plan: EventPlan in counted:
 				placed += 1
 				var tile := map.world_to_tile(plan.placed_at())
 				var segment := map.network.segment_containing(tile)

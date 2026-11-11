@@ -8,7 +8,7 @@ extends RefCounted
 
 ## The event `def` would be at `location`, stood on a tile of the location it fits on, or null where
 ## it fits nowhere there or the day's rules leave it invalid given what already stands.
-func offer(_def: EventDef, _location: Location) -> EventScheduler.Planned:
+func offer(_def: EventDef, _location: Location) -> EventPlan:
 	assert(false, "LocationGround.offer() is overridden by every implementation")
 	return null
 
@@ -19,5 +19,5 @@ func scale(_def: EventDef, _location: Location) -> float:
 	return 1.0
 
 ## Stands `plan` in the day, so what is offered after it is asked with it standing.
-func stand(_plan: EventScheduler.Planned) -> void:
+func stand(_plan: EventPlan) -> void:
 	assert(false, "LocationGround.stand() is overridden by every implementation")

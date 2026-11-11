@@ -82,7 +82,7 @@ func _measure(t: TestRunner, fallback: bool) -> void:
 			_tear_down(player, director, city)
 			continue
 		tasks += 1
-		var newest: EventScheduler.Planned = city.events.plans().back()
+		var newest: EventPlan = city.events.plans().back()
 		var by_rules: bool = city.events.plans().size() > plans_before and newest.live == own
 		if by_rules:
 			placed_by_rules += 1

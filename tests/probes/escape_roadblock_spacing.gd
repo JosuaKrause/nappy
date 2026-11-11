@@ -30,7 +30,7 @@ func run(t: TestRunner) -> void:
 		rng.seed = seed_value
 		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
 				_city_spec())
-		var bands: Array[EventScheduler.Planned] = []
+		var bands: Array[EventPlan] = []
 		for placement in placements:
 			if placement.def.id == "roadblock":
 				bands.append(placement)
