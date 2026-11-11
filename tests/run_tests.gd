@@ -110,7 +110,7 @@ func _ready() -> void:
 	var chosen := _discover(filters)
 	var orders: Array = []
 	for pass_number in range(1, repeat + 1):
-		var order := chosen.duplicate()
+		var order: Array[String] = chosen.duplicate()
 		var pass_seed := _pass_seed(shuffle_seed, pass_number)
 		if shuffled:
 			_shuffle(order, pass_seed)
@@ -254,12 +254,12 @@ func _pass_seed(shuffle_seed: int, pass_number: int) -> int:
 ## Fisher-Yates over `items` in place, drawn from a generator seeded with `seed_value`: the same
 ## seed and the same list give the same order on any machine (the generator is Godot's PCG, not
 ## the global one, which nothing else may disturb).
-func _shuffle(items: Array, seed_value: int) -> void:
+func _shuffle(items: Array[String], seed_value: int) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	for i in range(items.size() - 1, 0, -1):
 		var j := rng.randi_range(0, i)
-		var held: Variant = items[i]
+		var held := items[i]
 		items[i] = items[j]
 		items[j] = held
 
