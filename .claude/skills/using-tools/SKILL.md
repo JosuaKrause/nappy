@@ -97,7 +97,7 @@ anything it does not understand, one place the flag list lives), not what each i
 | `tools/telemetry.sh` | Prints, follows, lists or prunes the run logs under `user://`. | To read back what the last run actually did. | telemetry |
 | `tools/test.sh` | Runs the headless test suite: named suites in one process, or everything in shards; `--shuffle` and `--repeat` reorder and repeat. | Before committing, on the suites the change touches; to replay a failed CI shard. | verify |
 | `tools/trailer.sh` | Renders the trailer from the checked-in `tools/trailer/shots.json`, its score auditions, or one shot; `--check` compares two renders. | To render or re-check the trailer after the shot list or a rig flag changes. | its `--help` |
-| `tools/trailer/synthesize_score.py` | Synthesizes one resolved trailer score as a deterministic 48 kHz stereo PCM16 WAV; it never plays it. | Internally, from `tools/trailer.sh --auditions`; by hand to reproduce one score. | sound-effects |
+| `tools/trailer/synthesize_score.py` | Synthesizes one resolved trailer score. | Internally, from `tools/trailer.sh --auditions`; by hand to reproduce one score. | sound-effects |
 | `tools/update-pr.sh` | Merges `origin/main` into a pull request's branch, runs the lint and the boot check on the result, commits and pushes; `--dry-run` reports what would conflict. It never merges the pull request. | When a branch conflicts with `main` or needs `main`'s changes; a branch merely behind merges as it is. Wrapped as the pull request's own identity, except `--dry-run`. | merging-main |
 
 ## What the rows do not say

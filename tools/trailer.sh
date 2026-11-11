@@ -86,8 +86,8 @@ soon as each shot is encoded. Output goes to TRAILER_OUT (default: build/trailer
 
 The three --selected modes refuse when the delivery final-score.json names already exists in
 TRAILER_OUT (choose a new output filename or a fresh TRAILER_OUT: a review movie is never
-overwritten), and keep the completed synthesized score PCM under TRAILER_OUT/experiments/ for decoded-audio
-verification.
+overwritten), and keep the whole mix rendered to PCM before the AAC encode (selected-mix.wav, under
+TRAILER_OUT/experiments/<output>/source/) for decoded-audio verification.
 
 Environment:
   TRAILER_SHOTS    use another shot-list JSON (default: tools/trailer/shots.json)
@@ -1748,6 +1748,6 @@ esac
 assert_tree_untouched || status=1
 if [[ "$status" -eq 0 && "$MODE" != validate && "$MODE" != check* ]]; then
     # No edit hook sees a video being written, so the tool that writes one names its rules.
-    echo "The rules for a recording kept as evidence: .claude/skills/session-captures/SKILL.md" >&2
+    echo "A recording, clip or trailer stays out of the repository unless a pull request needs a short clip to show motion: .claude/skills/session-captures/SKILL.md" >&2
 fi
 exit "$status"

@@ -19,7 +19,7 @@
 # page), either exported in the environment or in a .env file at the repository root
 # (GOATCOUNTER_TOKEN=...) -- never pass it as a flag, which would land in shell history and process
 # listings. See tools/goatcounter.py for the .env format and the API details, and
-# .claude/skills/using-tools/SKILL.md for what a cloud session needs allowed to reach it.
+# --help for what a cloud session needs allowed to reach it.
 #
 # --help/-h and rejection of anything this does not recognise happen here, before uv is needed --
 # see .claude/skills/cli-tools.
