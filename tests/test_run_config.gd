@@ -191,6 +191,36 @@ func _test_the_title_is_skipped_by_a_rig_or_a_recipe(t) -> void:
 	t.check(RunConfig.parse(_words(["--recipe", "x.json", "--title"]), "", true).skips_the_title(),
 			"and a recipe, which is one authored day, always does")
 
+## A world as loud everywhere as a live row standing on her, for asking whether a baby's meter can
+## rise at all: one source of `NOISE` points a second, standing on the world itself.
+class LoudWorld extends WorldContext:
+	const NOISE := 50.0
+
+	var _noise := ExcitementSource.new(self)
+
+	## Overrides WorldContext.excitement_sources_at.
+	func excitement_sources_at(_world_position: Vector2) -> Array:
+		return [[_noise, NOISE]]
+
+## Whether `baby`'s excitement rises over a few physics ticks against a `LoudWorld`, her meter
+## ticking whether or not the title holds the game paused, and her own world handed back after:
+## what `Baby.freeze_excitement()`, which `main` tells her on an invincible run, stops.
+func _her_excitement_rises(t, baby: Baby) -> bool:
+	var own := baby.world()
+	var loud := LoudWorld.new()
+	t.add_child(loud)
+	var mode := baby.process_mode
+	baby.process_mode = Node.PROCESS_MODE_ALWAYS
+	baby.set_world(loud)
+	var before := baby.excitement_level()
+	for _tick in 3:
+		await t.get_tree().physics_frame
+	var rose := baby.excitement_level() > before
+	baby.set_world(own)
+	baby.process_mode = mode
+	loud.free()
+	return rose
+
 ## `main` is the one place the configuration is read: the baby and the city it builds are handed
 ## plain values, and neither reads a flag of its own.
 func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
@@ -222,7 +252,10 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t) -> void:
 				func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
 		t.get_tree().node_added.disconnect(catch)
 		var baby := Boot.baby(booted.main)
-		t.check(baby != null and baby.excitement_frozen == invincible,
+		var rises := false
+		if baby:
+			rises = await _her_excitement_rises(t, baby)
+		t.check(baby != null and rises != invincible,
 				"the baby's meter is frozen exactly when the run is invincible (%s)" % invincible)
 		var f: Dictionary = entered.get("flags", {})
 		t.check(not f.is_empty() and f["ground_mode"] == SceneryGround.Mode.ALL

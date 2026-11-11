@@ -38,7 +38,7 @@ func _test_each_parent_has_a_page_of_their_own(t) -> void:
 	for male: bool in [false, true]:
 		var page := Stroller.parent_atlas(male)
 		var rig := Stroller.new()
-		rig.is_male = male
+		rig.draw_as_father(male)
 		var camera := Camera2D.new()
 		camera.name = "Camera2D"
 		rig.add_child(camera)

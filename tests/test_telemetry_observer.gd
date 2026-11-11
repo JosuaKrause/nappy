@@ -69,6 +69,7 @@ class Rig extends RefCounted:
 	func _init(parent: Node, run_log: Telemetry, map: WorldMap = null, day: WatchedDayParts = null,
 			spikes := false) -> void:
 		observer = TelemetryObserver.new(run_log)
+		baby.use_bus(EventBus)
 		tree = parent.get_tree()
 		if day == null and map == null:
 			_own_day = WatchedDayParts.new(StreetMap.full())
@@ -193,6 +194,7 @@ func _test_a_retried_section_restarts_the_clock(t) -> void:
 	_fresh_log()
 	var player := Stroller.new()
 	var baby := Baby.new()
+	baby.use_bus(EventBus)
 	var clock := DayController.new()
 	var observer := TelemetryObserver.new(_log)
 	observer.setup(null, clock, null, false)
@@ -240,6 +242,7 @@ func _test_the_escape_is_in_the_run_log_as_a_day_is(t) -> void:
 	player.global_position = start
 	player.facing = Vector2.UP
 	var baby := Baby.new()
+	baby.use_bus(EventBus)
 	var clock := DayController.new()
 	_fresh_log()
 	# The run the escape's city stands in, handed to the observer as the session hands it the boot's.

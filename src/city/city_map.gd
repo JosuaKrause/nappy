@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name CityMap
 extends WorldMap
 ## The generated city as data: a tile grid plus the derived features the renderer, the
@@ -255,9 +254,9 @@ var seed_used := 0
 ## Held on the map's blocked record (`blocked`), the one every mover asks through `passable()`.
 var closed_tiles: Dictionary:
 	get:
-		return blocked.closed
+		return blocked.todays_closed_tiles()
 	set(value):
-		blocked.closed = value
+		blocked.replace_closed_tiles(value)
 
 ## The calm areas taken off today's route tree, as the blocks that anchor them — the ones she has
 ## already used this act (`set_spent_calm()`) that `ClosurePlanner.calm_to_shut()` found could be
@@ -408,9 +407,9 @@ func is_in_walled_alley(tile: Vector2i, walled_alleys: Array[Rect2i]) -> bool:
 ## refills it fresh on every call, the same as the holds are cleared and refilled once a day.
 var soft_sealed_tiles: Dictionary:
 	get:
-		return blocked.soft_sealed
+		return blocked.todays_soft_sealed_tiles()
 	set(value):
-		blocked.soft_sealed = value
+		blocked.replace_soft_sealed_tiles(value)
 
 ## Clears today's soft seals. See `soft_sealed_tiles`.
 func clear_day_soft_seals() -> void:
@@ -951,7 +950,7 @@ func fill_rect(rect: Rect2i, type: GameEnums.TileType) -> void:
 ##
 ## Overrides WorldMap.is_walkable.
 func is_walkable(tile: Vector2i) -> bool:
-	return Tile.is_walkable(tile_at(tile)) and not blocked.posts.has(tile)
+	return Tile.is_walkable(tile_at(tile)) and not blocked.blocks(tile, Mover.POSTS)
 
 ## The tiles a precinct's posts stand on (`post_positions()`), the carriageway band at each
 ## mouth's two tiles at the row. The row shuts that band to her body *(2026-10-10, the player:
@@ -963,15 +962,17 @@ func is_walkable(tile: Vector2i) -> bool:
 ## type stays `PEDESTRIAN`, so the ground, the street kinds and the crowd (which has no body) read
 ## it as paving. Built by `index_posts()`, which whatever fills `precinct_spans` (the generator, a
 ## recipe's saved context) calls once the spans are final; `is_walkable()` is the hottest question
-## the map answers, so the set is a record and not worked out per call.
+## the map answers, so the posts are a record and not worked out per call; this answers a copy of
+## it, which nobody writes into.
 func post_tiles() -> Dictionary:
-	return blocked.posts
+	return blocked.tiles_of(Mover.POSTS)
 
 ## Records the post tiles from `precinct_spans`. Call it again whenever the spans change.
 func index_posts() -> void:
-	blocked.posts = {}
+	var tiles: Array[Vector2i] = []
 	for at in post_positions():
-		blocked.posts[world_to_tile(at)] = true
+		tiles.append(world_to_tile(at))
+	blocked.lay_posts(tiles)
 
 ## Where each of a precinct's posts stands, in world space: a row of them across the carriageway
 ## band at each end of every precinct span, `BOLLARD_SPACING` apart and centred in the band. What
@@ -1020,7 +1021,7 @@ func walkable_lut() -> PackedByteArray:
 func _ground_lets(tile: Vector2i, layers: int) -> bool:
 	if layers & Mover.GROUND != 0 and not Tile.is_walkable(tile_at(tile)):
 		return false
-	if layers & Mover.POSTS != 0 and blocked.posts.has(tile):
+	if blocked.blocks(tile, layers & Mover.POSTS):
 		return false
 	return layers & Mover.STREETS == 0 or is_street(tile)
 
@@ -1250,7 +1251,7 @@ func close_streets(closures: Array[RoadClosure]) -> void:
 		return
 	var barrier_tiles := _fenced_tiles.duplicate()
 	for closure in streets:
-		for at_a in [true, false]:
+		for at_a: bool in [true, false]:
 			for tile in rect_tiles(closure.segment.mouth_rect(at_a)):
 				barrier_tiles[tile] = true
 	var grid := ReachabilityGrid.build(self)
@@ -1521,8 +1522,7 @@ func walk_field_from(sources: Array, blocked: Dictionary = {}) -> PackedInt32Arr
 	var queue := PackedInt32Array()
 	queue.resize(cells)
 	var tail := 0
-	for source in sources:
-		var tile: Vector2i = source
+	for tile: Vector2i in sources:
 		if not in_bounds(tile) or _WALKABLE[tiles[tile.y * width + tile.x]] == 0:
 			continue
 		var index := tile.y * width + tile.x
@@ -1589,7 +1589,7 @@ func _count_walkable() -> int:
 ## on (`post_tiles()`): what a sweep from the home (`walk_field()`) can reach at most.
 func count_standable() -> int:
 	var total := _count_walkable()
-	for tile: Vector2i in blocked.posts:
+	for tile: Vector2i in blocked.tiles_of(Mover.POSTS):
 		if in_bounds(tile):
 			total -= _WALKABLE[tiles[tile.y * size.x + tile.x]]
 	return total
@@ -1620,12 +1620,12 @@ func perimeter_tiles(block: Vector2i) -> Array[Vector2i]:
 	var lot := lot_rect(block)
 	var found: Array[Vector2i] = []
 	for x in range(lot.position.x - 1, lot.end.x + 1):
-		for y in [lot.position.y - 1, lot.end.y]:
+		for y: int in [lot.position.y - 1, lot.end.y]:
 			var tile := Vector2i(x, y)
 			if is_walkable(tile):
 				found.append(tile)
 	for y in range(lot.position.y, lot.end.y):
-		for x in [lot.position.x - 1, lot.end.x]:
+		for x: int in [lot.position.x - 1, lot.end.x]:
 			var tile := Vector2i(x, y)
 			if is_walkable(tile):
 				found.append(tile)

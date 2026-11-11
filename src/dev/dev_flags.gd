@@ -612,8 +612,8 @@ static func _layers_from_query(query: String) -> String:
 ## clock stands still and nothing adds to the excitement meter, though decay may still run it down
 ## — so a capture waiting for a moment gets quiet held time rather than a flashing alarm and a
 ## darkening day (2026-09-11, the player: "when invincible the timer should never go down and
-## excitement should never go up"). `DayController.invincible` and `Baby.excitement_frozen` are the
-## two values the run hands it to.
+## excitement should never go up"). `DayController.invincible` and `Baby.freeze_excitement()` are
+## the two places the run hands it to.
 func invincible() -> bool:
 	if _invincible_from_args(active_args()):
 		return true

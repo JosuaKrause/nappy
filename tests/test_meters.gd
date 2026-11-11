@@ -38,9 +38,13 @@ class FakeWorld extends WorldContext:
 	func excitement_sources_at(_world_position: Vector2) -> Array:
 		return [[_noise, noise]] if noise > 0.0 else []
 
+## A bus of the game's own kind for the baby to report on, with nobody else listening to it.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+
 var _world: FakeWorld
 var _stroller: Stroller
 var _baby: Baby
+var _bus: _BUS
 
 func run(t) -> void:
 	_test_falloff(t)
@@ -112,10 +116,13 @@ func _build(t) -> void:
 	_baby = Baby.new()
 	_stroller.add_child(_baby)
 	_baby.set_world(_world)
+	_bus = _BUS.new()
+	_baby.use_bus(_bus)
 
 func _teardown() -> void:
 	_stroller.free()
 	_world.free()
+	_bus.free()
 
 ## Lets whole physics frames pass with the baby in the tree: its own `_physics_process()` runs her
 ## meters, one fixed step per frame (the project's own physics rate, `Engine.physics_ticks_per_second`).
@@ -357,13 +364,13 @@ func _test_falls_asleep(t) -> void:
 	_build(t)
 	var announced := [false]
 	var handler := func() -> void: announced[0] = true
-	EventBus.return_phase_started.connect(handler)
+	_bus.return_phase_started.connect(handler)
 	# Half a second of walking away from asleep, expressed as a rate rather than a number,
 	# so re-pitching the fill cannot silently stop this test reaching the threshold.
 	_baby.sleepiness = Tuning.METER_MAX - Tuning.SLEEPINESS_GAIN_WALKING * 0.5
 	_walk()
 	await _simulate(1.0)
-	EventBus.return_phase_started.disconnect(handler)
+	_bus.return_phase_started.disconnect(handler)
 	t.check(_baby.state == GameEnums.BabyState.ASLEEP, "a full sleepiness meter puts the baby to sleep")
 	t.check(announced[0], "falling asleep starts the return phase")
 	_teardown()

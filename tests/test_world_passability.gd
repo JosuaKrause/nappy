@@ -89,7 +89,7 @@ func _test_each_mover_is_stopped_by_its_own_layers(t) -> void:
 	var park := Vector2i(7, 1)
 	map.set_tile(building, GameEnums.TileType.BUILDING)
 	map.set_tile(park, GameEnums.TileType.PARK)
-	map.blocked.posts[post] = true
+	map.blocked.lay_posts([post] as Array[Vector2i])
 	t.check(map.is_closed(closed), "fixture: the shut street holds the closed tile")
 	map.seal_soft_tile(soft)
 	var covered: Array[Vector2i] = [body]

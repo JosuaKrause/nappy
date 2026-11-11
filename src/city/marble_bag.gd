@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name MarbleBag
 extends RefCounted
 ## A random outcome drawn from a bag of marbles rather than rolled. *(PLAYTEST-125: "you randomly
@@ -102,7 +101,7 @@ static func in_proportion(weights: Dictionary, marbles_per_weight: float,
 ## nothing to draw.
 func peek() -> Variant:
 	var marble: Variant = _peek_the_marble()
-	return marble.peek() if marble is MarbleBag else marble
+	return (marble as MarbleBag).peek() if marble is MarbleBag else marble
 
 ## Draws one marble and removes it from the bag, filling a new ordinary bag first if every bag is
 ## empty; a bag marble is drawn from in turn and its draw is the answer. Null when there is nothing
@@ -214,7 +213,7 @@ func _take(count: int, keep_out: Array) -> Array:
 		var open: Array[int] = []
 		for i in bag.size():
 			# A bag marble is open when what its inner bag gives next is.
-			var next: Variant = bag[i].peek() if bag[i] is MarbleBag else bag[i]
+			var next: Variant = (bag[i] as MarbleBag).peek() if bag[i] is MarbleBag else bag[i]
 			if not keep_out.has(next):
 				open.append(i)
 		if open.is_empty():

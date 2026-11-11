@@ -5,7 +5,7 @@ extends Node
 ## **Everything, in one frame, once she is far enough away.** *(The player, 2026-09-20: "just wait
 ## until a certain distance away -- then everything is off at once. the player wouldn't be able to
 ## see a rolling blackout anyway"; "yes all lights should go out".)* Once the sabotage is done
-## (`_city.run.resistance.sabotage_done`) and she is `BLACKOUT_DISTANCE` from the power station, one
+## (`ResistanceRunState.sabotage_done`) and she is `BLACKOUT_DISTANCE` from the power station, one
 ## call to `_go_dark()` puts out every lit window and the station's own hall (`Building.powered`),
 ## every traffic light (`TrafficSignals.powered`), and every loudspeaker mast
 ## (`EventManager.silence_all_masts()`), because the masts have no power of their own. The
@@ -38,7 +38,11 @@ const BLACKOUT_DISTANCE := 512.0
 ## True from the frame the city went dark.
 var _is_dark := false
 
-var _city: City
+## What it switches and watches, handed in by `setup()`: the signals, the events whose masts it
+## silences and the resistance's progress whose `sabotage_done` it watches.
+var _signals: TrafficSignals
+var _events: EventManager
+var _resistance: ResistanceRunState
 var _buildings: Array[Building] = []
 ## The station's lot in world space, which the distance is measured from, or an empty rect on a
 ## city with no station — where "far enough from it" is true everywhere.
@@ -52,11 +56,14 @@ var dark_from_the_start := false
 
 ## Called once by `City.build()`, after the buildings, the signals and the events exist. A city
 ## built for the escape goes dark here, before its first frame is drawn.
-func setup(city: City, buildings: Array[Building]) -> void:
-	_city = city
+func setup(map: CityMap, buildings: Array[Building], signals: TrafficSignals,
+		events: EventManager, resistance: ResistanceRunState) -> void:
 	_buildings = buildings
-	if city.map.has_power_station():
-		_station = city.map.tile_rect_to_world(CityMap.blocks_tile_rect(city.map.power_station))
+	_signals = signals
+	_events = events
+	_resistance = resistance
+	if map.has_power_station():
+		_station = map.tile_rect_to_world(CityMap.blocks_tile_rect(map.power_station))
 	if dark_from_the_start:
 		_go_dark()
 
@@ -98,9 +105,8 @@ func _go_dark() -> void:
 	EventBus.city_gone_dark.emit()
 	for building in _buildings:
 		building.powered = false
-	if _city.signals:
-		_city.signals.powered = false
-	if _city.events and _city.events.silence_all_masts() > 0:
+	_signals.powered = false
+	if _events.silence_all_masts() > 0:
 		EventBus.city_went_quiet.emit()
 
 ## Power back on — only ever a retried day, whose dawn gave the sabotage back. The masts need
@@ -109,8 +115,7 @@ func restore() -> void:
 	_is_dark = false
 	for building in _buildings:
 		building.powered = true
-	if _city.signals:
-		_city.signals.powered = true
+	_signals.powered = true
 
 func _sabotaged() -> bool:
-	return _city.run.resistance.sabotage_done or forced
+	return _resistance.sabotage_done or forced

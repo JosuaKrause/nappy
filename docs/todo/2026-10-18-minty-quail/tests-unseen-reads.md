@@ -55,8 +55,7 @@ fields no game writer reaches alone:
   and `test_excitement_source.gd` hands a world its excitement sources, the hand-in `main.gd` and
   `City` make.
 - `RouteTree.grow()` stays public for `test_power_station.gd`: the station day's corridor without
-  its spur is one no day's own corridor gives. `test_blackout.gd` reads `_city.events.plans()`, which
-  is public.
+  its spur is one no day's own corridor gives.
 
 ## 3. Public members only tests call (zero-reader list)
 
