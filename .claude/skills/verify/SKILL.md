@@ -135,10 +135,10 @@ request never runs.
 ## What each one cannot see
 
 **A time a test reports is read from CI's run of the pull request, never from a local one, bar
-the optimization case below** (inbox #1307): a suite's duration, a case's own time, a check that
+the optimization case below** (inbox #1307 in grassy-trout): a suite's duration, a case's own time, a check that
 holds how fast something ran. CI is where a time matters, and a local run's time is information,
 which a report or a review does not list as a failure. **The rule is about tests, which are what
-CI measures** (inbox #1307): while an optimization of a test's time (a suite's duration, the speed
+CI measures** (inbox #1307 in grassy-trout): while an optimization of a test's time (a suite's duration, the speed
 of the test run itself) is being written, its versions are compared locally and in quick
 succession, since CI's cycle is too slow for that, and the proof that it works is CI's timings,
 which are more reliable than a local machine's; a builder reads them from the shard logs of the
@@ -249,5 +249,5 @@ explain, and before changing the runner or its fixtures.
 
 - **That a check of how fast something ran asserts its bound only where `CI=true` and prints its
   time otherwise, that a new one does the same, and that each script does it through one helper**
-  ("What each one cannot see") are the filer's proposal, open to the player's correction (inbox
-  #1307); the plainer alternative is the rule alone, with local failures still reported.
+  ("What each one cannot see") are the filer's proposal, open to the player's correction
+  (inbox #1307 in grassy-trout); the plainer alternative is the rule alone, with local failures still reported.

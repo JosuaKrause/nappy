@@ -12,10 +12,10 @@ The rules the orchestrating session must not miss, one line each; the sections b
 - **A design question that blocks goes to the player first**, before any agent.
 - **The work keeps moving until none is left**: every startable item is briefed and spawned, which
   while the player has put one entry first means that entry's items (inbox #1210 in gentle-owl)
-  and the work that goes first (inbox #1305), and a running agent is looked at at least every 45 minutes.
+  and the work that goes first (inbox #1305 in grassy-trout), and a running agent is looked at at least every 45 minutes.
 - **Work on how the project is worked on goes first**: a change to a skill, `CLAUDE.md`, a rule, a
   hook, a general project script or anything else of that kind is started, reviewed and merged
-  ahead of everything else but a queue update (inbox #1305); a wait the player set on an entry
+  ahead of everything else but a queue update (inbox #1305 in grassy-trout); a wait the player set on an entry
   holds until they move it.
 - **The queue is read from `origin/main`, after a fetch, before a brief is written.**
 - **The model is the table's.**
@@ -51,8 +51,8 @@ A stronger model than a row's takes a milestone whose geometry or contracts warr
 | Task kind | Model |
 |---|---|
 | A task that needs planning or complex reasoning | Fable is considered (inbox #1264 in olive-ferret) |
-| A pull request labelled `fable-only`, a label put only on work the player names; the label also comes from the entry the pull request builds, whose opening block says `fable-only: true` (`docs/TODO.md`) | Fable designs its code and reviews it; writing the code may go to another model (inbox #1293, inbox #1299) |
-| The review of anything Fable designed | Fable (inbox #1299) |
+| A pull request labelled `fable-only`, a label put only on work the player names; the label also comes from the entry the pull request builds, whose opening block says `fable-only: true` (`docs/TODO.md`) | Fable designs its code and reviews it; writing the code may go to another model (inbox #1293 in grassy-trout, inbox #1299 in grassy-trout) |
+| The review of anything Fable designed | Fable (inbox #1299 in grassy-trout) |
 | Drawing: making or revising artwork, SVG, PNG or a review sheet | Opus (PLAYTEST-123 8) |
 | Waiting on a merge or a check, polling | no agent: a timer or a script in a background shell, which costs no tokens (inbox #1070 in gentle-walrus, inbox #1072 in gentle-walrus) |
 | Merging | the orchestrating session, with no agent spawned for it; an agent or a monitor may run a merge the session hands it (**committing**, "Merging") |
@@ -252,7 +252,7 @@ before spawning:
   pull request still to review or land is a task to advance, so the session stays open while one
   is left. A task that waits only on the player, a blocking board question or a review item, does
   not keep the session open, since nothing this side can advance it.
-- **Work on how the project is worked on goes first, at the highest priority** (inbox #1305): a
+- **Work on how the project is worked on goes first, at the highest priority** (inbox #1305 in grassy-trout): a
   change to a skill, `CLAUDE.md`, a rule, a hook, a general project script, or anything else of
   that kind. Those are the tools every other change is written with, so the sooner one lands, the
   sooner all the work after it is done under it. Such work is startable at once, ahead of the
@@ -293,11 +293,11 @@ before spawning:
 - **An agent stays on one task, and no agent grows huge** (inbox #874 in minty-dolphin). An agent re-reads its
   whole context on every turn, so the cost of a long-lived one grows with every step it is kept
   for; a fresh agent instead rebuilds its context from scratch, so too many fresh agents cost too.
-  **A hook holds this at the resume** (inbox #1291): `.claude/hooks/resume-guard.py` refuses, once,
+  **A hook holds this at the resume** (inbox #1291 in grassy-trout): `.claude/hooks/resume-guard.py` refuses, once,
   a `SendMessage` to a sub-agent whose context is past the size `references/writing-a-brief.md`
   gives for a resume, or whose context the harness has compacted on its own, naming which. That
   size is above the limit a task is scoped to, since an agent may go a bit over now and then
-  (inbox #1291), and it comes earlier than the reassessment of an agent, since it is about resuming;
+  (inbox #1291 in grassy-trout), and it comes earlier than the reassessment of an agent, since it is about resuming;
   neither it nor the limit counts turns (inbox #1298 in merry-badger). **The refusal asks one question: is the
   message a follow-up on the agent's own pull request, or new work** (inbox #1298 in merry-badger)? A follow-up (a
   delta review, review or CI fixes, a merge of `main`, an instruction to stop or wrap up) is sent
@@ -400,7 +400,7 @@ to the player's correction:
 - **That a task waiting only on the player does not keep the session open** ("What the
   orchestrator keeps"; the rule it qualifies is inbox #1196 in gentle-owl).
 - **What going first comes to for work on how the project is worked on** ("What the orchestrator
-  keeps"; the rule is inbox #1305): that it is startable ahead of an entry the player has put
+  keeps"; the rule is inbox #1305 in grassy-trout): that it is startable ahead of an entry the player has put
   first (the fence it passes is inbox #1210 in gentle-owl, whose reason, work done twice on code
   about to change, is about the game's code; such work that does edit a file the entry put first
   is rewriting, a comment in it or a skill's account of it, is sequenced with that entry's work
@@ -416,7 +416,7 @@ to the player's correction:
   is not a tick under the contract's one-notification rule (the rule is gentle-owl #1255).
 - **How the resume hook remembers and words its refusal** ("What the orchestrator keeps"): the
   filer's design. The player's are the hook itself, refusing the resume of an agent that has
-  compacted automatically or grown too large (inbox #1291), the size it refuses at, that nothing
+  compacted automatically or grown too large (inbox #1291 in grassy-trout), the size it refuses at, that nothing
   counts turns, and the question the refusal asks, with a follow-up sent again and new work given
   to a fresh agent (inbox #1298 in merry-badger). Proposed: that a refusal is remembered for one sender, one target
   and one message text, so that only the very same message passes when sent again; which jobs the
@@ -424,7 +424,7 @@ to the player's correction:
   the number.
 - **How the player's other words on agent size bear on the refusal** ("What the orchestrator
   keeps"): the orchestrator's reading. Read as: the room to go a bit over now and then
-  (inbox #1291) is the distance between the limit a task is scoped to and the size a resume is
+  (inbox #1291 in grassy-trout) is the distance between the limit a task is scoped to and the size a resume is
   refused at, and a resend to an agent near 500k tokens waits for its reassessment (inbox #1298 in merry-badger).
 - **What the reassessment of a sub-agent at about 500k tokens adds to the player's words** ("What
   the orchestrator keeps"). The player's are the number, the three questions, that there are
@@ -441,5 +441,5 @@ to the player's correction:
   Fable.
 - **That the change of model is a clause of the reassessment and not a rule of its own** ("What
   the orchestrator keeps"): the orchestrator's answer to the player's question whether it is
-  relevant at all (inbox #1303). A resume cannot change an agent's model, so the words decide only
+  relevant at all (inbox #1303 in grassy-trout). A resume cannot change an agent's model, so the words decide only
   that the new model's agent is briefed afresh and is not handed the old one's context.

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What she meets on her route is drawn from a marble bag, and the bag is a queue of bags.
 ##
@@ -489,8 +488,8 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 		city.events.ahead.place_what_is_owed_ahead(STEP)
 		if city.events.owed_ahead() < owed_before:
 			handed += 1
-		for plan in city.events.plans().slice(plans_before):
-			if (plan as EventScheduler.Planned).def.id == row:
+		for plan: EventScheduler.Planned in city.events.plans().slice(plans_before):
+			if plan.def.id == row:
 				placed.append(plan)
 				her_at_siting = player.global_position
 				heading_at_siting = player.velocity.normalized()

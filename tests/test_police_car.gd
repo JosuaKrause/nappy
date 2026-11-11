@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The police car is a solid body she walks round in every patrol state, and it ends the day only
 ## in front of it while it drives.
@@ -106,7 +105,7 @@ func _test_her_walk_into_a_standing_car_stops_at_its_side(t: TestRunner) -> void
 	var car := _car(t, _patrol(), PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)]), null,
 			car_where)
 	var shape := car.def.shape
-	for approach in [Vector2.DOWN, Vector2.UP]:
+	for approach: Vector2 in [Vector2.DOWN, Vector2.UP]:
 		var start: Vector2 = -approach * 80.0
 		var player := _her(t, start, approach)
 		var walked := _walk(player, approach, 160.0)
@@ -215,7 +214,7 @@ func _test_a_driving_car_ahead_of_her_is_solid_and_not_lethal(t: TestRunner) -> 
 ## travel before it strikes — longer than walking off the carriageway takes — and then strikes her
 ## before its body would ever stop against her.
 func _test_in_front_of_a_driving_car_is_lethal_after_its_warning(t: TestRunner) -> void:
-	for facing in [Vector2.LEFT, Vector2.UP, Vector2.RIGHT]:
+	for facing: Vector2 in [Vector2.LEFT, Vector2.UP, Vector2.RIGHT]:
 		var car_where := WhereSheIs.nowhere()
 		var route := PackedVector2Array([Vector2(-300.0, 0.0), Vector2(600.0, 0.0)])
 		var car := _car(t, _patrol(), route, null, car_where)
@@ -382,7 +381,7 @@ func _test_the_car_never_drives_into_her(t: TestRunner) -> void:
 			var at := Vector2(float(x), float(y))
 			if at.length() < 30.0:
 				continue
-			for facing in [Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT, Vector2.UP]:
+			for facing: Vector2 in [Vector2.RIGHT, Vector2.DOWN, Vector2.LEFT, Vector2.UP]:
 				cases += 1
 				var car_where := WhereSheIs.nowhere()
 				var car := _car(t, _patrol(), route, null, car_where)
@@ -443,7 +442,7 @@ func _test_an_investigating_car_never_leaves_the_carriageway(t: TestRunner) -> v
 			"it stopped once close to her (%.0fpx)" % stopped_at.distance_to(at))
 	t.check(moved_after < 0.01, "and never came over to her (%.2fpx)" % moved_after)
 	var freest := 0.0
-	for way in [inward.orthogonal(), -inward.orthogonal()]:
+	for way: Vector2 in [inward.orthogonal(), -inward.orthogonal()]:
 		player.global_position = at
 		var walked := 0.0
 		while walked < 64.0:
@@ -485,7 +484,7 @@ func _test_the_raids_car_never_reverses_onto_her(t: TestRunner) -> void:
 	raid.shape = _patrol().shape
 	raid.paces = true
 	var beat := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
-	for behind in [41.0, 49.0, 61.0, 101.0, 141.0]:
+	for behind: float in [41.0, 49.0, 61.0, 101.0, 141.0]:
 		var car_where := WhereSheIs.nowhere()
 		var car := _car(t, raid, beat, null, car_where)
 		var player := _her(t, Vector2(0.0, 80.0), Vector2.UP)
@@ -720,7 +719,7 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 		return
 	var period := CityMap.period()
 	var zebras := func(c: int) -> bool:
-		for x in [c * period, c * period + 1, c * period + Tuning.STREET_WIDTH - 2,
+		for x: int in [c * period, c * period + 1, c * period + Tuning.STREET_WIDTH - 2,
 				c * period + Tuning.STREET_WIDTH - 1]:
 			if map.tile_at(Vector2i(x, lane_y)) != GameEnums.TileType.CROSSING:
 				return false
@@ -742,19 +741,19 @@ func _test_a_far_zebra_holds_it_out_of_the_box(t: TestRunner) -> void:
 	var tile := float(Tuning.TILE_SIZE)
 	var worst := -INF
 	var cases := 0
-	for c in [ordinary, map.main_road]:
+	for c: int in [ordinary, map.main_road]:
 		if c < 0:
 			continue
 		var what := "the main road" if c == map.main_road else "an ordinary junction"
 		var low: float = float(c * period) * tile
-		for direction in [1.0, -1.0]:
+		for direction: float in [1.0, -1.0]:
 			var near: float = low if direction > 0.0 else low + float(Tuning.STREET_WIDTH) * tile
 			var first: int = c * period + (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
 					if direction > 0.0 else 0)
 			var start: Vector2 = Vector2(near - direction * 220.0, lane)
 			var route := PackedVector2Array([start, start + Vector2(direction * 820.0, 0.0)])
 			for k in Tuning.SIDEWALK_WIDTH:
-				for out in [0.0, 64.0, 96.0]:
+				for out: float in [0.0, 64.0, 96.0]:
 					var her: Vector2 = Vector2((float(first + k) + 0.5) * tile, lane - out)
 					var car_where := WhereSheIs.nowhere()
 					var car := _car(t, _patrol(), route, map, car_where)
