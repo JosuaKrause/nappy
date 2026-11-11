@@ -721,12 +721,12 @@ func _test_neither_guard_walks_off_over_a_building(t: TestRunner) -> void:
 				caught = RoadblockRig.tick(told, made[1], her, true)
 				frames += 1
 			if caught or not guard.is_leaving:
-				(made[0] as RoadblockRig.Stage).close()
+				stage.close()
 				continue
 			walks += 1
 			if _watch_them_walk_off(t, map, told, made[1], her, where):
 				far_walks += 1
-			(made[0] as RoadblockRig.Stage).close()
+			stage.close()
 	t.check(walks > 0 and far_walks > 0,
 			"there were guards walking off to watch (%d, %d with the far guard)" % [walks, far_walks])
 	# The reviewed case: she stands at (70,50), west of the band on the open sidewalk, when the guard
@@ -757,7 +757,7 @@ func _test_neither_guard_walks_off_over_a_building(t: TestRunner) -> void:
 	t.check(_watch_them_walk_off(t, map, told, made[1], her,
 			"the band at (73,50), with her at (70,50)"),
 			"and the band at (73,50), with her at (70,50), sent its far guard off")
-	(made[0] as RoadblockRig.Stage).close()
+	stage.close()
 
 ## Steps `instances` (one band, its guard on her side already walking away) with her standing at
 ## `her` until both guards are gone, and checks every frame either guard walks that he stands on a
@@ -1042,7 +1042,7 @@ func _test_an_escape_guard_warns_on_the_screen_and_on_top(t: TestRunner) -> void
 								"%s: his hand went up before he charged" % where)
 						t.check(_is_drawn_on(guard, DrawLayer.Layer.ENTITIES),
 								"%s: once he charges he sorts with the street again" % where)
-				(made[0] as RoadblockRig.Stage).close()
+				stage.close()
 	t.check(warned > 0 and outside > 0,
 			"there were warnings to watch (%d, %d on open ground)" % [warned, outside])
 	t.check(charges > 0, "and charges to ask about (%d)" % charges)
