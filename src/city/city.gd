@@ -516,7 +516,7 @@ func _ground_decay_multiplier(world_position: Vector2) -> float:
 
 ## Overrides WorldContext.is_alley.
 func is_alley(world_position: Vector2) -> bool:
-	return Tile.is_alley(map.tile_type_at_world(world_position)) if map else false
+	return map.is_alley(world_position) if map else false
 
 # ------------------------------------------------------------------ spawning ---
 
@@ -1181,6 +1181,10 @@ func buildings() -> Array[Building]:
 ## The posters on the fronts — see `PosterWalls`.
 func poster_walls() -> PosterWalls:
 	return _posters
+
+## The lights on the spine (`TrafficSignals`), for whoever reads which junction shows red.
+func traffic_signals() -> TrafficSignals:
+	return signals
 
 ## Which way the ground is scheduled this run (`ground_mode`, the `--ground-mode` flag).
 func ground_mode_in_force() -> SceneryGround.Mode:

@@ -1284,6 +1284,11 @@ func tile_type_at_world(world_position: Vector2) -> GameEnums.TileType:
 func is_calm_zone(world_position: Vector2) -> bool:
 	return Tile.is_calm(tile_type_at_world(world_position))
 
+## Whether `world_position` is on an alley tile, for the baby's decay (`City.is_alley()`) and the
+## debug readout, which want the yes or no.
+func is_alley(world_position: Vector2) -> bool:
+	return Tile.is_alley(tile_type_at_world(world_position))
+
 ## The home's first tile (`home_rect`'s corner): where a flood from home starts.
 func home_tile() -> Vector2i:
 	return home_rect.position

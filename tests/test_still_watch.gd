@@ -1,12 +1,12 @@
 extends RefCounted
 ## `StillWatch`, the stillness heuristic behind `--quit-when-still`, driven the way `main` builds it:
-## handed a city, her, and the day's clock through `setup()`, standing in a tree, and fed her
-## position tick by tick on real physics frames (the tick her position changes on). Armed only once
-## she has moved, frozen rather than reset while the day is not running, and reset — not frozen —
-## every tick she is held (a detention, a wait at a red light). What it does when it fires is
-## observed as the game sees it: a picture is asked for by adding an `AutoScreenshot` beneath it, and
-## the suite switches that child's frames off the moment it arrives, since a headless run can take no
-## picture and would quit the process.
+## handed the city's map and lights, her, and the day's clock through `setup()`, standing in a tree,
+## and fed her position tick by tick on real physics frames (the tick her position changes on).
+## Armed only once she has moved, frozen rather than reset while the day is not running, and reset
+## — not frozen — every tick she is held (a detention, a wait at a red light). What it does when it
+## fires is observed as the game sees it: a picture is asked for by adding an `AutoScreenshot`
+## beneath it, and the suite switches that child's frames off the moment it arrives, since a
+## headless run can take no picture and would quit the process.
 ##
 ## The geometry and signal half of `held` — `StillWatch.facing_a_red_light()` — is also driven alone
 ## below, over a bare `CityMap` and `TrafficSignals`.
@@ -55,11 +55,12 @@ func run(t: TestRunner) -> void:
 	_test_facing_a_red_light_false_when_the_red_junction_is_off_screen(t)
 	_test_the_nearest_of_two_disagreeing_visible_junctions_decides(t)
 
-## A `StillWatch` built as `main` builds it, in a screen of its own: her, the day's clock, a city
-## and a viewport whose view the suite places.
+## A `StillWatch` built as `main` builds it, in a screen of its own: her, the day's clock, a map with
+## its lights and a viewport whose view the suite places.
 class Rig:
 	var viewport := SubViewport.new()
-	var city: City
+	var map: CityMap
+	var signals: TrafficSignals
 	var player := Stroller.new()
 	var day := DayController.new()
 	var watch := StillWatch.new()
@@ -68,14 +69,13 @@ class Rig:
 	## The tick the watch asked for its picture on, or -1 while it has not.
 	var triggered_at := -1
 
-	func _init(t: TestRunner, hold_seconds: float, map: CityMap, picture_dir: String) -> void:
+	func _init(t: TestRunner, hold_seconds: float, city_map: CityMap, picture_dir: String) -> void:
 		viewport.size = Vector2i(64, 64)
 		t.add_child(viewport)
 		# A screen far from every junction, until a test places one on it.
 		viewport.canvas_transform = Transform2D(0.0, Vector2(-100000.0, -100000.0))
-		city = City.new()
-		city.map = map
-		city.signals = TrafficSignals.new(map)
+		map = city_map
+		signals = TrafficSignals.new(city_map)
 		# Her camera is switched off, so the screen stays where the suite puts it.
 		var camera := Camera2D.new()
 		camera.name = "Camera2D"
@@ -86,9 +86,9 @@ class Rig:
 		viewport.add_child(day)
 		day.set_process(false)
 		day.setup(run)
-		day.use_the_walk(map, player)
+		day.use_the_walk(city_map, player)
 		day.start(1000.0)
-		watch.setup(city, player, day, hold_seconds, picture_dir)
+		watch.setup(map, signals, null, null, player, day, hold_seconds, picture_dir)
 		watch.child_entered_tree.connect(_the_picture_was_asked_for)
 		viewport.add_child(watch)
 
@@ -101,7 +101,6 @@ class Rig:
 
 	func free_all() -> void:
 		viewport.free()
-		city.free()
 
 ## Lets `count` physics ticks pass with her standing at `at` for each. The coroutine resumes as a
 ## tick begins and before the nodes' own physics step of it, so the position set here is the one the
@@ -240,18 +239,18 @@ func _test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t: Tes
 ## once the light is green for her, the hold fires.
 func _test_a_red_light_on_screen_holds_the_watch_and_a_green_one_does_not(t: TestRunner) -> void:
 	var rig := await _rig(t)
-	var box := _junction_box(rig.city.map, _main_junction(rig.city.map, 0))
+	var box := _junction_box(rig.map, _main_junction(rig.map, 0))
 	rig.viewport.canvas_transform = Transform2D(0.0, -box.position + Vector2(8, 8))
 	var here := box.get_center()
 	var green := Tuning.signal_main_green_seconds() + Tuning.SIGNAL_AMBER_SECONDS + 0.1
 	# She walks up to the junction with the light green for her, which arms the watch.
-	rig.city.signals.elapsed = green
+	rig.signals.elapsed = green
 	await _stand(t, rig, here + Vector2(-20, 0), 2)
 	await _stand(t, rig, here, 1)
-	rig.city.signals.elapsed = 0.0
+	rig.signals.elapsed = 0.0
 	await _stand(t, rig, here, _HOLD_TICKS * 3)
 	t.check(rig.triggered_at < 0, "three holds in front of a red light never fire")
-	rig.city.signals.elapsed = green
+	rig.signals.elapsed = green
 	await _stand(t, rig, here, _HOLD_TICKS + _MARGIN)
 	t.check(rig.triggered_at >= 0, "and once the light is green for her the hold fires")
 	rig.free_all()
