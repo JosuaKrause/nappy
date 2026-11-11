@@ -1096,7 +1096,8 @@ func _test_a_signal_gives_her_time_to_cross(t: TestRunner) -> void:
 	var greens := 0
 	var arrivals := 0
 	for departure in 12:
-		signals.elapsed = float(departure) / 12.0 * Tuning.signal_cycle_seconds()
+		signals.restart_cycle()
+		signals.advance(float(departure) / 12.0 * Tuning.signal_cycle_seconds())
 		# Start where the wave has just turned green for this junction, which is what a car that
 		# has already joined the platoon has done. Bounded rather than `while green_for(...)`,
 		# because a suite that spins prints nothing at all and reads as a hang rather than a
@@ -1110,7 +1111,8 @@ func _test_a_signal_gives_her_time_to_cross(t: TestRunner) -> void:
 			arrivals += 1
 			if signals.green_for(Vector2i(_city.map.main_road, 8 - hop - 1), true):
 				greens += 1
-	signals.elapsed = was
+	signals.restart_cycle()
+	signals.advance(was)
 	t.check(greens == arrivals,
 			"a car in the platoon never meets a red going the way the wave runs (%d of %d)"
 			% [greens, arrivals])

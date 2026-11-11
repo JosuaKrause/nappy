@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The eight-sector heading selector (`EightDirection`) as the crowd car's own caller.
 ##
@@ -52,7 +51,7 @@ func _test_body_and_trim_can_never_disagree(t: TestRunner) -> void:
 	var body_views := CarLook.BODY_BY_VIEW.keys()
 	var trim_views := CarLook.TRIM_BY_VIEW.keys()
 	t.check(body_views.size() == trim_views.size(), "the car family has as many trim views as body views")
-	for view in body_views:
+	for view: String in body_views:
 		t.check(CarLook.TRIM_BY_VIEW.has(view),
 				"every body view %s has a matching trim view" % view)
 		var body_region := StringName(CarLook.BODY_BY_VIEW[view])
@@ -71,7 +70,7 @@ func _test_cardinal_headings_select_the_expected_view(t: TestRunner) -> void:
 	# [lane heading] per sector, cardinal ones only (0 E, 2 S, 4 W, 6 N) — the diagonals are never a
 	# lane axis and are covered by the turn test below instead.
 	var cardinal := {0: Vector2.RIGHT, 2: Vector2.DOWN, 4: Vector2.LEFT, 6: Vector2.UP}
-	for sector in cardinal.keys():
+	for sector: int in cardinal.keys():
 		var agent := _car(t, cardinal[sector])
 		if agent == null:
 			continue
@@ -95,7 +94,7 @@ func _arc_turned(degrees: float, direction := 1.0, turning := 1.0) -> CarTurn:
 	var lane := CrowdLanes.road_lane(false, direction)
 	var turn := CarTurn.into_an_arm(false, direction, 0, CrowdLanes.lane_centre(0, lane), 0,
 			CrowdLanes.ROAD_OFFSETS[0], turning, Vector2i.ZERO)
-	turn.travelled = turn.radius * deg_to_rad(degrees)
+	turn.travel_on(turn.radius * deg_to_rad(degrees))
 	return turn
 
 ## A turn whose tangent is exactly `sector`'s own 45-degree-multiple centre: halfway round a quarter
@@ -117,7 +116,7 @@ func _test_a_turn_sweeps_through_the_diagonal_views(t: TestRunner) -> void:
 	if agent == null:
 		return
 	var look := ViewRig.car_look(agent)
-	for sector in [1, 3, 5, 7]:
+	for sector: int in [1, 3, 5, 7]:
 		agent.take_the_turn(_turn_facing(sector), 0.0)
 		look.view = (sector + 4) % 8
 		var heading := agent.heading()
@@ -236,7 +235,7 @@ func _test_the_registration_is_continuous_across_a_sector_boundary(t: TestRunner
 	for boundary in range(8):
 		var angle := 22.5 + 45.0 * float(boundary)
 		var ground := []
-		for side in [-step, step]:
+		for side: float in [-step, step]:
 			var heading := Vector2.from_angle(deg_to_rad(angle + side))
 			var sector := EightDirection.nearest(heading)
 			var view: String = CarLook.VIEW_BY_SECTOR[sector]
@@ -287,8 +286,8 @@ func _lit_and_traced(t: TestRunner, agent: CrowdAgent) -> TracingAtlas:
 	atlas.acquire(Crowd.ATLAS_GROUP)
 	agent.use_atlas(atlas)
 	t.add_child(agent)
-	agent.excitement.rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
-	atlas.watch(agent.excitement.rim.entity_halo())
+	agent.mood().rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	atlas.watch(agent.mood().rim.entity_halo())
 	return atlas
 
 ## The copies the halo traced in a whole draw pass begun after this call: the second pass from now,
@@ -325,13 +324,13 @@ func _test_the_halo_redraws_the_same_body(t: TestRunner) -> void:
 		CarLook.region_of(CarLook.WHEELS_BY_VIEW[view]): 0,
 	}
 	var other := 0
-	for copy in copies:
+	for copy: Array in copies:
 		if body.has(copy[0]):
 			body[copy[0]] += 1
 		else:
 			other += 1
 	var every_offset := true
-	for region in body:
+	for region: StringName in body:
 		every_offset = every_offset and body[region] == EntityHalo.HALO_OFFSETS
 	t.check(not copies.is_empty() and other == 0 and every_offset,
 			("the halo redraws exactly this car's own %s body, trim and wheels at each of the %d "
@@ -362,8 +361,8 @@ func _test_the_rim_is_re_traced_under_a_steady_glow(t: TestRunner) -> void:
 	var look := ViewRig.car_look(agent)
 	# In the tree, so the halo's own `_process()` runs on real frames and the glow eases in.
 	t.add_child(agent)
-	agent.excitement.rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
-	var halo: EntityHalo = agent.excitement.rim.entity_halo()
+	agent.mood().rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	var halo: EntityHalo = agent.mood().rim.entity_halo()
 	var started := Time.get_ticks_msec()
 	while not _glow_has_arrived(halo) and Time.get_ticks_msec() - started < 10_000:
 		await t.get_tree().process_frame
@@ -401,7 +400,7 @@ func _drawn_picture(view: String, heading: Vector2) -> Rect2:
 	var anchor := CarLook.body_anchor(view, heading)
 	var drawn := Rect2()
 	var merged := false
-	for path in [CarLook.BODY_BY_VIEW[view], CarLook.TRIM_BY_VIEW[view],
+	for path: String in [CarLook.BODY_BY_VIEW[view], CarLook.TRIM_BY_VIEW[view],
 			CarLook.WHEELS_BY_VIEW[view]]:
 		var extent := Vector2(AtlasTable.baked().native_size(StringName(path)))
 		var layer := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
@@ -554,7 +553,7 @@ func _test_the_redraw_gate_carries_the_live_anchor(t: TestRunner) -> void:
 func _test_wheels_share_the_body_canvas(t: TestRunner) -> void:
 	t.check(CarLook.WHEELS_BY_VIEW.keys().size() == CarLook.BODY_BY_VIEW.keys().size(),
 			"every body view has a wheels view and nothing else does")
-	for view in CarLook.BODY_BY_VIEW.keys():
+	for view: String in CarLook.BODY_BY_VIEW.keys():
 		t.check(CarLook.WHEELS_BY_VIEW.has(view), "the %s view has wheels" % view)
 		var wheels := StringName(CarLook.WHEELS_BY_VIEW[view])
 		var body := StringName(CarLook.BODY_BY_VIEW[view])
@@ -665,7 +664,7 @@ func _check_the_copies_ride(t: TestRunner, copies: Array, bob: float, when: Stri
 	var ring := EntityHalo.trace_offsets(bob)
 	var offsets := {}
 	var off_the_ring := 0
-	for copy in copies:
+	for copy: Array in copies:
 		var on_the_ring := false
 		for i in ring.size():
 			if (copy[1] as Vector2).is_equal_approx(ring[i]):

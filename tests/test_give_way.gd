@@ -38,9 +38,9 @@ func _test_a_light_is_red_only_where_it_is_signalled_and_not_green(t: TestRunner
 	t.check(not GiveWay.is_red(null, Vector2i.ZERO, true), "no signals, no red")
 	var signals := TrafficSignals.new(map)
 	var junction := Vector2i(map.main_road, 1)
-	signals.elapsed = 0.0
+	signals.restart_cycle()
 	while not signals.green_for(junction, true):
-		signals.elapsed += 0.25
+		signals.advance(0.25)
 	t.check(signals.is_signalled(junction), "the main road's junctions are signalled")
 	var vertical_green := signals.green_for(junction, true)
 	t.check(GiveWay.is_red(signals, junction, not vertical_green) \
