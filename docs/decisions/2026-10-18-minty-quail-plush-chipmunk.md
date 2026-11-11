@@ -14,18 +14,22 @@ listed layer break "a day's start asks the dev rig where a --spawn target is"
   map, the events, the day's streets, the resistance, the run's header and the trace,
   `first_event_position()` the events, the map and the trace, and `make_overview_camera()` the
   camera's bounds. They stay static functions with their parts as arguments.
-- **The route rig and its planner** keep the map, the events and the day's streets in underscore
-  fields, and the rig hands the planner the trace it already holds. No `City` is named in the three
-  files of `src/dev/`.
+- **The route rig and its planner** keep the map and the events in underscore fields, and are
+  handed the spawn lookup `main` builds (a callable taking a spawn word's name) in place of the
+  streets, the trace and the run they only passed on to the developer's rig; the planner names no
+  `DevRig`. No `City` is named in the three files of `src/dev/`.
 - **The day director names no `DevRig`**: `use_the_flags()` is handed two callables by
   `main._new_director()`, one answering where the `--spawn` flag starts her and one applying the
   `--meters` override to the baby. `_put_her_down()` keeps its own condition (the first day, a start
   from her doorstep) and asks them; with none handed she starts at the world's start and the bars
   are untouched. A doorstep start still answers the doorstep. The listed break leaves
   `tools/layer_map.py`.
-- **`tools/field_reads.txt` loses seven lines** under `[City]` (the developer's rig's `events`, `map`
-  and `trace`; the route rig's and its planner's `events` and `map`) and gains none.
-- **The day director's suite** hands its rig the two callables, as the game does.
+- **`tools/field_reads.txt` loses eight lines**, seven under `[City]` (the developer's rig's `events`,
+  `map` and `trace`; the route rig's and its planner's `events` and `map`) and the planner's read of
+  the run's `header`, and gains none.
+- **The day director's suite** hands its rig the two callables, as the game does, and holds that the
+  meters callable is asked once, on the walk from her doorstep with the day running, and on no other
+  walk.
 
 ## Choices open to overturn
 
@@ -33,11 +37,14 @@ listed layer break "a day's start asks the dev rig where a --spawn target is"
   for the same two parts and to hand it on (the planner's).
 - **The callables take the flag's values as arguments** (the target, the override) rather than
   reading the run's config themselves, so `main` gains no read of a config field (the builder's).
-- **`ParkCordon.is_closed()` takes a `[kept]` line in `tools/test_only_members.txt`.** Typing the
-  route rig's read of the map resolved it to `CityMap.is_closed()`, and showed that only tests ask
-  the cordon whether it has closed. The `[own file only]` group only shrinks, so the line says so,
-  and the typing pass of the resistance's steps and day 12's cordon decides whether its suites go
-  through what the closed cordon does outward (the orchestrator's).
+- **The route rig and its planner are handed the spawn lookup** rather than the parts it reads
+  (the reviewer's).
+- **`ParkCordon.is_closed()` takes a `[kept]` line in `tools/test_only_members.txt`**: nothing
+  outside the cordon confirms the moment it closes but the tapers leaving and a run-log line, and in
+  the game only the cordon's own `tick()` asks it. Typing the route rig's read of the map showed it:
+  the test-only-member check had counted that chained call (`_city.map.is_closed()`) as the
+  cordon's reader. Moving its suites to the closed cordon's outward signs would redesign them (the
+  orchestrator's).
 
 ## Left, each with its reason
 
