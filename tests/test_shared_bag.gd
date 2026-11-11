@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## A shared marble bag *(pebbly-ibis, inbox #575 in feathery-lynx)*: a bag with marbles of its own
 ## that stands as a marble in regular bags, any number of times, and is one bag wherever it stands.
@@ -49,7 +48,7 @@ func _test_a_shared_bag_in_more_than_one_regular_bag_is_one_bag(t: TestRunner) -
 			"a draw of either regular bag draws the one shared bag (%d taken, %d left)"
 			% [got.size(), shared.left()])
 	var seen := {}
-	for marble in got:
+	for marble: Variant in got:
 		seen[marble] = true
 	t.check(seen.size() == got.size(),
 			"so no marble comes out of it twice before it is empty: %s" % [got])
@@ -102,7 +101,7 @@ func _test_a_rig_taking_from_a_bag_holding_a_shared_marble_draws_it_and_spends_i
 			"a rig of 4 holds its ensured marble")
 	var front := regular.bag_in_front()
 	var from_shared := 0
-	for marble in front:
+	for marble: Variant in front:
 		if str(marble).begins_with("s"):
 			from_shared += 1
 	t.check(shared.drawn == from_shared and not front.any(func(m: Variant) -> bool: return m is MarbleBag),

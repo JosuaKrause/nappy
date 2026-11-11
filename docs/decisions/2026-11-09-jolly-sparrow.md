@@ -16,11 +16,11 @@ directly") was an instruction for one work item, the rules review's four pull re
 day, not a standing rule: "this is specifically talking about the changes we made today -- not in
 general -- \"rule/skill/claude changes\" was one task item", and of the table, "Fable is considered
 -- this is the only rule I mentioned today -- everything else you filed as rule was me giving an
-instruction for a single work item", then "that and the github label", "and we can do a third rule that if fable designed something fable needs to review" and "all the other stuff has to go" (inbox #1299). Read as a
+instruction for a single work item", then "that and the github label", "and we can do a third rule that if fable designed something fable needs to review" and "all the other stuff has to go" (inbox #1299 in grassy-trout). Read as a
 general rule, the rule-file row sent tool pull requests touching one catalogue line or a hook's
 comments to Fable.
 
 **What the table says now.** The planning row stays; a row for the `fable-only` GitHub label joins
 it (on a pull request the player names, Fable designs its code and reviews it, and writing the code
-may go to another model, inbox #1293); and a third: anything Fable designed is reviewed by Fable
-(inbox #1299).
+may go to another model, inbox #1293 in grassy-trout); and a third: anything Fable designed is reviewed by Fable
+(inbox #1299 in grassy-trout).

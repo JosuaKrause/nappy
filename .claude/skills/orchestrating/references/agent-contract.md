@@ -118,7 +118,7 @@ is done, push and open the PR, and CI's run is the full run (inbox #870 in minty
 goes red on your PR, reproduce the failing suites locally (the `REPLAY` line in a failed shard's log
 runs its suites in the order they ran) and fix them.
 A test's time (a suite's duration, a timed case's bound) is read from CI's run, so a report does not
-list a local miss of one as a failure (inbox #1307). A green suite says nothing about whether a run
+list a local miss of one as a failure (inbox #1307 in grassy-trout). A green suite says nothing about whether a run
 behaves or a picture looks right: **verify** says what each check cannot see, and is read whole
 before a capture, an experiment or a new test.
 

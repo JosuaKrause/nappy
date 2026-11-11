@@ -29,7 +29,7 @@ each read, and its pull requests in order, the first of which run beside the pla
   `tools/check_field_reads.py`, with the list in `tools/field_reads.txt`, run in CI's `gates` job.
   Asked on the board whether the list may gain the lines of a read that only moved (into a new
   file, or with a class lifted out of another), the player answered "A", that it may
-  (inbox #1350). Which moves count is the planning agent's proposal, written in the record
+  (inbox #1350 in grassy-trout). Which moves count is the planning agent's proposal, written in the record
   minty-quail-breezy-bison.
 
 **Every receiver gets a class the check can tell** (inbox #1268 in olive-ferret). Shown "The field-read check

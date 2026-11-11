@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends "res://tests/events_shared_city.gd"
 ## Day 3's fire: budgeted at dawn with no position and sited by `EventDirector` from the walk she
 ## turns out to take -- *"the fire should come first and be on your way guaranteed (a dynamic event
@@ -222,7 +221,7 @@ func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 	# The fairness half. It starts at one end of that run, and both ends are further from her
 	# than the field it will emit — so she is outside it the whole time it is telegraphing, and
 	# the reaction window is real rather than nominal.
-	for end in [path[0], path[1]]:
+	for end: Vector2 in [path[0], path[1]]:
 		t.check(at.distance_to(end) > def.outer_radius,
 				"she is outside its reach (%.0fpx) when it appears (%.0fpx away)"
 				% [def.outer_radius, at.distance_to(end)])
@@ -403,7 +402,7 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 	var map := CityGenerator.generate(4242)
 	var crew := EventCatalogue.by_id("poster_crew")
 	var crew_way := crew.on_her_way
-	for day in [4, 8, 12]:
+	for day: int in [4, 8, 12]:
 		var tree := RouteTree.for_day(map, day)
 		var handed := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
 				CalmAreas.of(map), MastSites.compute(map), [], [], tree).placements()
@@ -441,7 +440,7 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 ## Driven through `EventDirector` exactly as `EventManager` drives it in play, on a real generated
 ## map, walking continuously the way `due()` requires before it will ever site anything.
 func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
-	for id in ["cat_dash", "cyclist", "loose_dog"]:
+	for id: String in ["cat_dash", "cyclist", "loose_dog"]:
 		var def := EventCatalogue.by_id(id)
 		var map := _map()
 		var director := EventDirector.new(map)
