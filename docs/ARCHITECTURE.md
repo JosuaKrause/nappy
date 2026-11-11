@@ -481,7 +481,8 @@ src/
 	                       moment she holds still again, reusing AutoScreenshot's own capture
 	dev_flags.gd          the parser behind RunConfig, and the flag manifest the shell tools read
 	dev_rig.gd            the flag-acting half: --spawn/--follow/--overview/--meters against the
-	                       live City, handed the values, testable without booting main
+	                       city's map, events and streets, handed the values, testable without
+	                       booting main
 	route_rig.gd          --route: walks her to a named target (mark/task/calm/home/tunnel/
 	                       bridge/spawn:<name>) along a real, kerb-preferring path, through the
 	                       ordinary input path; presses an escape brief's continue as a key would

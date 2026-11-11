@@ -245,6 +245,14 @@ func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: Autho
 	director.use_the_scene(scene)
 	var lines: Array[String] = []
 	director.use_trace(RunTrace.recording(lines))
+	# What `main._new_director()` hands: where the developer's flags start her, and what they do to
+	# the bars. Here a start on the city map's doorstep, as `--spawn` with no target answers, and no
+	# change to the bars.
+	# The meters callable notes itself with whether the day's clock is already running.
+	director.use_the_flags(
+			func(_target: String) -> Vector2: return city.map.doorstep_world_position(),
+			func(_the_baby: Baby, _override: Vector2) -> void:
+				_asked.append("meters %s" % (clock.time_total > 0.0)))
 	var nodes: Array[Node] = [clock, events, player, baby, resistance]
 	if city:
 		nodes.append_array([city, city.crowd])
@@ -449,14 +457,23 @@ func _test_the_start_flags_decide_only_a_walk_from_her_doorstep(t: TestRunner) -
 		var player: _FakeStroller = rig["player"]
 		var city: _FakeCity = rig["city"]
 		var doorstep := city.map.doorstep_world_position()
+		var meters := _asked.filter(func(line: String) -> bool: return line.begins_with("meters"))
 		if spec.start_point() == DaySpec.Start.DOORSTEP:
+			t.check(meters == ["meters true"], "the bars' override is asked once, with the day "
+					+ "running, on a walk from her doorstep (%s)" % [meters])
 			t.check(player.put_at == doorstep, "the flag's spawn, its doorstep with no target, "
 					+ "decides a walk from her doorstep (%s)" % [player.put_at])
 		else:
+			t.check(meters.is_empty(), "and no walk that starts anywhere else asks it")
 			t.check(player.put_at == Vector2(100.0, 200.0),
 					"and a walk from anywhere else starts where its world puts her (%s)"
 					% [player.put_at])
 		_put_the_start_away(rig)
+	var later := _start_rig(t, DaySpec.for_day(1, 210.0))
+	(later["director"] as DayDirector).start(later["spec"])
+	t.check(not _asked.any(func(line: String) -> bool: return line.begins_with("meters")),
+			"and a walk that is not the boot's first never asks the bars' override")
+	_put_the_start_away(later)
 
 ## **The ways out the world answers are the walk's.** The escape's city is won only at a way out the
 ## spec holds (`DaySpec.exit_points()`, read by the day's clock), and the world it stands in is what

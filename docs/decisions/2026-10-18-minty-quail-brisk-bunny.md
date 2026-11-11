@@ -53,6 +53,127 @@ pictures were typed (#1329) and the city's own parts were handed what they read
   stay: no method answers them.
 - **Other modules' fields** were not searched and stay for their passes.
 
+## Fields read and written, by class
+
+Built with `tools/field_answers.py` at the pass's merge commit `fb60c2b7d`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
+
+- **`AttemptSpendState`**: `city_state`, written → no method; `scars` → no method; `scars`, written
+  → `give_back()` does `scars = _dawn_scars.duplicate()`, `restore()` does `scars =
+  _scars_from_data(data["…"])`.
+- **`BlockLayout`**: `playground` → `playground_rect()`.
+- **`BlockPlan`**: `steps` → `steps_in_order()`, which returns a copy of it (the tool prints no
+  method).
+- **`BlockPlan.Step`**: `purpose` → no method.
+- **`Building`**: `atlas`, written → `equip()` does `atlas = library`; `condition` → no method (a
+  yes-or-no on the field alone: `is_burnt()`); `condition`, written → no method;
+  `covered_ground_cols` → no method; `covered_ground_cols`, written → no method; `day` → no method;
+  `day`, written → no method; `district` → no method; `district`, written → `stand_on()` does
+  `district = purpose`, `draw_as()` does `district = purpose`; `door_world_x_range` → no method;
+  `door_world_x_range`, written → no method; `footprint` → no method; `footprint`, written →
+  `stand_on()` does `footprint = size`; `front_drawer` → no method; `front_drawer`, written →
+  `equip()` does `front_drawer = fronts`; `height` → no method; `height`, written → `stand_on()`
+  does `height = wall_height`, `draw_as()` does `height = wall_height`; `is_home_building` →
+  `is_on_home_block()`; `lot` → `lot_rect()`; `neighbor_window_col` → no method;
+  `neighbor_window_col`, written → no method; `poster_art`, written → no method; `posters` → no
+  method; `power_station` → no method; `power_station`, written → no method; `powered` → no method;
+  `powered`, written → no method; `roof_drawer`, written → `equip()` does `roof_drawer = roofs`;
+  `roof_extension_rows` → no method; `roof_extension_rows`, written → no method;
+  `roof_extension_seamless`, written → no method; `scenery_clock`, written → no method;
+  `scenery_resident` → no method; `seamless_cover_cols`, written → no method; `shape` → no method;
+  `tint_variant` → no method; `variant` → `look_variant()`; `variant`, written → `stand_on()` does
+  `variant = with_variant`, `draw_as()` does `variant = with_variant`.
+- **`Building.RoofObject`**: `rotor` → no method; `texture_key` → no method.
+- **`BuildingShadows`**: `falls_on`, written → no method; `streamed`, written → no method.
+- **`City`**: `atlas` → no method; `atlas`, written → `build()` does `atlas = AtlasLibrary.new()`;
+  `crowd` → no method; `events` → no method; `map` → no method; `run` → no method; `run`, written →
+  no method; `spawn_siting` → no method.
+- **`CityEdge`**: `atlas`, written → `dress()` does `atlas = library`.
+- **`CityMap`**: `block_layouts` → no method; `block_plans` → `plans_by_block()`; `building_rects` →
+  `building_lots()`; `calm_blocks` → `calm_blocks_now()`; `home_block` → `home_block_coordinate()`;
+  `main_road` → `main_road_corridor()`; `network` → `street_network()`; `playgrounds` →
+  `playground_rects()`; `seed_used` → `city_seed()`.
+- **`ClosureMarker`**: `atlas`, written through `ParkFenceMarker` → no method.
+- **`ContactPoint`**: `is_done` → `is_finished()`.
+- **`EventDef`**: `aftermath` → no method; `aftermath.on_finish` → `leaves_behind()`; `id` → no
+  method; `mobile` → `moves()`; `pursuit` → no method; `redetains` → `detains_again()`; `shape` →
+  `ground_shape()`; `speed` → no method; `telegraph_time` → `telegraphs_for()`.
+- **`EventInstance`**: `atlas`, written → no method; `def` → `row()`; `def.id` → `row_id()`;
+  `def.telegraph_time` → `telegraphs_for()`; `drawer`, written → no method; `excitement` →
+  `source()`; `is_finished` → `is_gone()`; `is_leaving` → `is_on_its_way_out()`; `look` → no method;
+  `path` → `walks()`.
+- **`EventManager`**: `warnings` → no method; `world` → no method.
+- **`EventScheduler.Planned`**: `def` → `row()`; `def.id` → `row_id()`; `live` → `instance()` (a
+  yes-or-no on the field alone: `is_in_the_world()`); `mast_id` → no method; `mast_id`, written → no
+  method; `position` → `placed_at()` (a yes-or-no on the field alone: `is_placed()`); `silenced` →
+  no method; `spent` → `is_spent()`.
+- **`FrameLedger`**: `keep`, written → `keep_this_frame()` does `keep = on`.
+- **`GroundShape`**: `half_length` → `spine_half_length()`; `radius` → `rounding_radius()`.
+- **`InteriorScene`**: `atlas`, written → no method.
+- **`ModeButton`**: `symbol`, written → no method.
+- **`PendingWarning`**: `def` → `row()`; `left` → `seconds_left()`; `place` → `points_at()`; `shown`
+  → no method.
+- **`Prop`**: `kind`, written → `dress()` does `kind = as_kind`; `scale_factor`, written → `dress()`
+  does `scale_factor = scaled`; `shape` → no method; `variant`, written → `dress()` does `variant =
+  with_variant`.
+- **`RegionPlanner.RegionPlan`**: `door_bodies` → no method; `doors` → no method.
+- **`ResistanceHappenings`**: `column` → no method.
+- **`ResistanceRunState`**: `completed_steps` → no method; `failed_steps` → no method; `progress`,
+  written → `reset()` does `progress = 0`, `give_back()` does `progress = _dawn_progress`,
+  `restore()` does `progress = int(data["…"])`; `sabotage_done`, written → `reset()` does
+  `sabotage_done = false`, `give_back()` does `sabotage_done = _dawn_sabotage_done`, `restore()`
+  does `sabotage_done = bool(data["…"])`.
+- **`ResistanceSteps.Step`**: `applies_package_weight` → no method; `applies_package_weight`,
+  written → no method; `at_a_front_door` → no method; `at_a_front_door`, written → no method;
+  `brief` → no method; `brief`, written → no method; `completes_at_inner_radius` → no method;
+  `completes_at_inner_radius`, written → no method; `day` → no method; `day`, written → no method;
+  `deadline_fraction` → no method; `deadline_fraction`, written → no method; `grants_progress` → no
+  method; `grants_progress`, written → no method; `header` → no method; `header`, written → no
+  method; `index` → no method; `index`, written → no method; `is_a_guarded_band` → no method;
+  `is_a_guarded_band`, written → no method; `is_one_place` → no method; `is_one_place`, written → no
+  method; `is_pickup` → no method; `is_pickup`, written → no method; `lingers_after_handover` → no
+  method; `lingers_after_handover`, written → no method; `needs_goal` → no method; `needs_goal`,
+  written → no method; `placement` → no method; `placement`, written → no method; `rigs_within` → no
+  method; `rigs_within`, written → no method; `target_kind` → no method; `target_kind`, written → no
+  method; `task_event_id` → no method; `task_event_id`, written → no method; `title` → no method;
+  `title`, written → no method; `trap_noun` → no method; `trap_noun`, written → no method;
+  `trap_row` → no method; `trap_row`, written → no method.
+- **`RunFacts`**: `completed_resistance_alley_tiles`, written → no method; `escape_section` → no
+  method; `escape_section`, written → `reset()` does `escape_section = 0`, `restore()` does
+  `escape_section = int(data.get("…", 0))`.
+- **`RunHeader`**: `day`, written → `reset()` does `day = 1`, `restore()` does `day =
+  int(data["…"])`; `player_is_male` → no method.
+- **`RunState`**: `attempt_spend` → no method; `calendar` → no method; `facts` → no method; `header`
+  → no method; `resistance` → no method.
+- **`SaveIndicator`**: `atlas`, written → no method.
+- **`SceneryGround`**: `atlas`, written → no method; `chunks` → no method; `elapsed` → no method;
+  `mode`, written → no method; `pending` → no method; `tile_set` → no method.
+- **`SceneryLayer`**: `frame_b` → no method; `frame_b`, written → `show_frame_b()` does `frame_b =
+  shown`.
+- **`SceneryResidency`**: `budget_usec`, written → no method; `timing`, written → no method; `view`,
+  written → `update()` does `view = next_view`.
+- **`SceneryWater`**: `atlas` → no method; `atlas`, written → no method; `cells` → no method;
+  `cells`, written → no method; `elapsed` → no method.
+- **`Sitting`**: `atlas` → no method; `atlas`, written → no method; `run` → no method.
+- **`Stroller`**: `carrying`, written → no method.
+- **`Stroller.Pose`**: `mother_sources` → no method; `pram_source` → no method.
+- **`TouchControls`**: `atlas`, written → no method.
+- **`TrafficLight`**: `atlas`, written → `mount()` does `atlas = library`.
+- **`WorldMap`**: `size` through `CityMap` → `size_in_tiles()`.
+- Receiver's class not told: `tests/test_atlas_leaf_consumers.gd:173` `node.atlas`.
+- Receiver's class not told: `tests/test_atlas_leaf_consumers.gd:177` `node.atlas`.
+- Receiver's class not told: `tests/test_atlas_leaf_consumers.gd:181` `node.atlas`.
+- Receiver's class not told: `tests/test_atlas_leaf_consumers.gd:284` `node.atlas`.
+- Receiver's class not told: `tests/test_atlas_leaf_consumers.gd:288` `node.atlas`.
+- Receiver's class not told: `tests/test_building_shadows.gd:37` `entry.canvas.name`.
+- Receiver's class not told: `tests/test_home_block.gd:73` `a.position`.
+- Receiver's class not told: `tests/test_home_block.gd:73` `b.position`.
+- `tests/test_resistance_placement_kinds.gd` still ignores `unsafe_property_access`.
+
 ## Verified
 
 The suites taken and those that touch the changed rigs pass, `tools/typing_census.py --check`

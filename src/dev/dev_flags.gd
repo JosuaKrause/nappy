@@ -318,7 +318,7 @@ static func _day_from_query(query: String) -> int:
 			return clampi(int(pair[1]), 1, Tuning.RUN_LENGTH_DAYS)
 	return -1
 
-## `--spawn <target>`, the raw word, or "". What a target means reads the live `City`, so that
+## `--spawn <target>`, the raw word, or "". What a target means reads the live city's parts, so that
 ## lookup is `DevRig.for_spawn_target()`'s.
 func spawn_target() -> String:
 	return _word_after("--spawn")
@@ -328,7 +328,7 @@ func follow_target() -> String:
 	return _word_after("--follow")
 
 ## `--route mark,task,calm,home`, the ordered target words `RouteRig` walks to in turn, split on
-## commas with nothing else validated: the live `City` decides what a word means, so an unknown one
+## commas with nothing else validated: the live city decides what a word means, so an unknown one
 ## is `RouteRig`'s own warning. `[]` for an absent flag or an empty value: no rig. In the escape the
 ## building is walked by `BuildingWalker` (it presses the building's brief and walks her to the
 ## service exit), and the city by the rig, built with the city section, which presses that section's

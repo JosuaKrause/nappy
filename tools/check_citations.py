@@ -227,6 +227,11 @@ def main(argv: list[str] | None = None) -> int:
             " `inbox #N in name` names a playtest with that `## #N`. Given files, checks those of them"
             " that are CLAUDE.md or under .claude/skills/ and ignores the rest."
             " Prints file:line: label per hit and exits 1 if there is one."
+            " A name with a number is read wherever it stands in a parenthesis, a bare name after a comma, `see`,"
+            " `also` or `and` (`(PLAYTEST-16 7, see polite-marten)`), so a hyphenated word alone there that is no"
+            " file, or a hyphenated word followed by a number anywhere (`(a two-step 3 times)`), is flagged too:"
+            " reword it or mark the line `<!-- lint-allow -->`. Two bare names joined by `and` are prose."
+            " Runs under the host's `python3`."
         ),
         epilog="example: tools/check_citations.py CLAUDE.md .claude/skills/pr-review/SKILL.md",
     )

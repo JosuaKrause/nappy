@@ -79,7 +79,9 @@ building one of its items carries the GitHub label `fable-only`) ends its line i
 
   --band B   print only band B's entries, in the order the whole queue gives them
   --check    print nothing but the band lines' errors, as `<file>:<line>: <label>`, and exit
-             non-zero if there is one (tools/lint.sh runs this)
+             non-zero if there is one (tools/lint.sh runs this). The errors: no `priority:` line, a band
+             outside the set, a bad or second `upnext:` or `fable-only:` line, an `after:` naming no
+             entry or closing a cycle, a band line below the opening block
 
   tools/queue.sh
   tools/queue.sh --band now

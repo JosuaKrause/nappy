@@ -109,7 +109,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
         description=(
             'Fails unless the telemetry kinds written under src/ (a .note("kind", ...) call on any receiver,'
             ' a bare note("kind", ...) call and a _note(trace, "kind", ...) helper) and the rows'
-            " of docs/TELEMETRY.md's entry-kinds table are the same set. Takes no arguments."
+            " of docs/TELEMETRY.md's entry-kinds table are the same set. Reads both as text, so it needs"
+            " no Godot. Takes no arguments."
         ),
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,

@@ -25,35 +25,81 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 
 - **Search: none.** No class was this pass's to search, so no read was converted.
 - **Other modules' fields stay for their passes**, by class, each checked against its class and the
-  classes it extends. Answered by a method the game calls that returns the field: the run
-  configuration's `debug_build` (`is_debug_build()`), `readout_requested`
-  (`asks_for_the_readout()`), `invincible` (`is_invincible()`) and `active_args`
-  (`dev_flag_words()`); the city's `ground_mode`, read (`ground_mode_in_force()`); the map's `size`
-  (`size_in_tiles()`, inherited from `WorldMap`), `calm_blocks` (`calm_blocks_now()`), `main_road`
-  (`main_road_corridor()`), `fenced_park` (`fenced_park_block()`) and `power_station`
-  (`power_station_blocks()`); the live event's `def` (`row()`) and its row's id (`row_id()`); the
-  day controller's `time_remaining` (`seconds_left()`); the traffic signals' `powered`
-  (`is_powered()`); and the day spec's `length` (`seconds_on_the_clock()`). No method: the run
-  configuration's `seed_override`, `day_override`, `layers_override`, `route_targets`, `skip_words`,
-  `skip_events`, `skip_crowd`, `skip_shadows`, `skip_motion`, `ground_mode`, `controls_word`,
-  `meters_override`, `ending_override`, `spawn_target`, `start_escape`, `start_escape_at`,
-  `parent_override`, `recipe_path`, `blackout_requested`, `no_focus_pause`, `is_rig`, `recording`
-  and `no_telemetry`, and its `invincible` and `debug_build` written; the city's `map`, `events`,
-  `crowd`, `scenery`, `scenery_ground`, `run`, `spawn_siting` and `signals`, its `ground_mode`
-  written, and the switches a test reads and sets on it (`scenery_frame_locked`, its four `skip_*`
-  switches, `blackout_forced`, `all_cyclists_pelicans`, `forced_row`, `forced_interval`); the map's
-  `shut_calm` and `stretch_active`; the event manager's `stream_radius`, `skip_drawing` and
-  `pelican_rig`; the crowd's `skip_motion` and `skip_agent_drawing`; the row's `kind`; the day
-  controller's `phase`, `spec` and `invincible`; the still watch's `trace`; the run state's
-  `header`, `facts`, `resistance`, `settled`, `attempt_spend` and `calendar`, and through them the
-  header's `day`, `nerves`, `ending`, `run_seed`, `player_is_male` and `play_ticks`, the facts'
-  `escape_section`, the resistance state's `progress` and `sabotage_done`, the settled state's
-  `settled_in` and the attempt's `scars`; the sitting's `controls_word` and `run` (`take_the_run()`
-  makes a run when none is held, so it answers only in part); a pose's `mother_sources` and a
-  resistance step's `index` (inner classes); a crowd member's `skip_draw`, the scenery residency's
-  `frame_locked`, the scenery ground's `mode`, the building shadows' `skip_draw` and the save
-  indicator's `atlas`.
+  classes it extends, and listed under "Fields read and written, by class" below.
 - **`main.gd` has no class name**; giving it one is a change under `src/` for the root's pass.
+
+## Fields read and written, by class
+
+Built with `tools/field_answers.py` at the pass's merge commit `e888950c9`, over the pass's files
+(the `.gd` files under `tests/` its pull request changed, and any that "What was built" names as
+already free of an opt-out line), and each method it names read in its class and the classes it
+extends. Each read is listed with the public method that returns exactly that field, or "no method",
+and with a yes-or-no method the tool prints beside it, a hint for a null test; each write with every
+public method that assigns the field, and what it assigns.
+
+- **`AttemptSpendState`**: `scars` → no method.
+- **`BuildingShadows`**: `skip_draw` → no method.
+- **`City`**: `all_cyclists_pelicans` → no method; `all_cyclists_pelicans`, written → no method;
+  `blackout_forced` → no method; `blackout_forced`, written → no method; `crowd` → no method;
+  `events` → no method; `forced_interval` → no method; `forced_interval`, written → no method;
+  `forced_row` → no method; `forced_row`, written → no method; `ground_mode` →
+  `ground_mode_in_force()`; `ground_mode`, written → no method; `map` → no method; `run` → no
+  method; `scenery` → no method; `scenery_frame_locked` → no method; `scenery_frame_locked`, written
+  → no method; `scenery_ground` → no method; `signals` → `traffic_signals()`; `skip_crowd_drawing` →
+  no method; `skip_crowd_drawing`, written → no method; `skip_crowd_motion` → no method;
+  `skip_crowd_motion`, written → no method; `skip_event_drawing` → no method; `skip_event_drawing`,
+  written → no method; `skip_shadows` → no method; `skip_shadows`, written → no method;
+  `spawn_siting` → no method.
+- **`CityMap`**: `calm_blocks` → `calm_blocks_now()`; `fenced_park` → `fenced_park_block()`;
+  `main_road` → `main_road_corridor()`; `power_station` → `power_station_blocks()`; `shut_calm` → no
+  method; `stretch_active` → no method.
+- **`Crowd`**: `skip_agent_drawing` → no method; `skip_motion` → no method; `skip_motion`, written →
+  no method.
+- **`CrowdAgent`**: `skip_draw` → no method.
+- **`DayController`**: `invincible`, written → no method; `phase` → no method (a yes-or-no on the
+  field alone: `is_running()`); `spec` → no method; `spec`, written → no method; `time_remaining` →
+  `seconds_left()`.
+- **`DaySpec`**: `length` → `seconds_on_the_clock()`.
+- **`EventDef`**: `kind` → no method (a yes-or-no on the field alone: `is_ambient()`).
+- **`EventInstance`**: `def` → `row()`; `def.id` → `row_id()`.
+- **`EventManager`**: `pelican_rig` → no method; `skip_drawing` → no method; `stream_radius`,
+  written → no method.
+- **`ResistanceRunState`**: `progress`, written → `reset()` does `progress = 0`, `give_back()` does
+  `progress = _dawn_progress`, `restore()` does `progress = int(data["…"])`; `sabotage_done`,
+  written → `reset()` does `sabotage_done = false`, `give_back()` does `sabotage_done =
+  _dawn_sabotage_done`, `restore()` does `sabotage_done = bool(data["…"])`.
+- **`ResistanceSteps.Step`**: `index` → no method.
+- **`RunConfig`**: `active_args` → `dev_flag_words()`; `blackout_requested` → no method;
+  `controls_word` → no method; `day_override` → no method; `debug_build` → `is_debug_build()`;
+  `debug_build`, written → no method; `ending_override` → no method; `ground_mode` → no method;
+  `invincible` → `is_invincible()`; `invincible`, written → no method; `is_rig` → no method;
+  `layers_override` → no method; `meters_override` → no method; `no_focus_pause` → no method;
+  `no_telemetry` → no method; `parent_override` → no method; `readout_requested` →
+  `asks_for_the_readout()`; `recipe_path` → no method (a yes-or-no on the field alone:
+  `warms_the_canvas_shaders()`); `recording` → no method; `route_targets` → no method;
+  `seed_override` → no method; `skip_crowd` → no method; `skip_events` → no method; `skip_motion` →
+  no method; `skip_shadows` → no method; `skip_words` → no method; `spawn_target` → no method;
+  `start_escape` → no method; `start_escape_at` → no method.
+- **`RunFacts`**: `escape_section` → no method; `escape_section`, written → `reset()` does
+  `escape_section = 0`, `restore()` does `escape_section = int(data.get("…", 0))`.
+- **`RunHeader`**: `day` → no method; `day`, written → `reset()` does `day = 1`, `restore()` does
+  `day = int(data["…"])`; `ending` → no method; `nerves` → no method; `nerves`, written → `reset()`
+  does `nerves = Tuning.STARTING_NERVES`, `restore()` does `nerves = int(data["…"])`; `play_ticks` →
+  no method; `play_ticks`, written → `reset()` does `play_ticks = 0`, `restore()` does `play_ticks =
+  roundi(float(data["…"]) * Engine.physics_ticks_per_second)`; `player_is_male` → no method;
+  `run_seed` → no method; `run_seed`, written → `restore()` does `run_seed = int(data["…"])`.
+- **`RunState`**: `attempt_spend` → no method; `calendar` → no method; `facts` → no method; `header`
+  → no method; `resistance` → no method; `settled` → no method.
+- **`SaveIndicator`**: `atlas` → no method.
+- **`SceneryGround`**: `mode` → no method.
+- **`SceneryResidency`**: `frame_locked` → no method.
+- **`SettledState`**: `settled_in` → no method.
+- **`Sitting`**: `controls_word` → no method; `run` → no method; `run`, written → `take_the_run()`
+  does `run = RunState.new()`.
+- **`StillWatch`**: `trace` → no method.
+- **`Stroller.Pose`**: `mother_sources` → no method.
+- **`TrafficSignals`**: `powered` → `is_powered()`.
+- **`WorldMap`**: `size` through `CityMap` → `size_in_tiles()`.
 
 ## Verified
 

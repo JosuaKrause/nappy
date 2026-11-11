@@ -59,12 +59,13 @@ const _STEPS: Array[Vector2i] = [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vec
 ## `Tuning.TILE_SIZE`, fine enough that a cut cannot skip clean over a one-tile obstruction.
 const _LINE_OF_SIGHT_STEP := 8.0
 
-var _city: City
+var _map: CityMap
+var _events: EventManager
+## Answers where a `spawn:<name>` word's name starts her: takes the name, answers a `Vector2`.
+var _spawn_start: Callable
 var _player: Stroller
 var _resistance: ResistanceDirector
 var _day: DayController
-## The run whose header `spawn:<name>` hands `DevRig.for_spawn_target()`.
-var _run: RunState
 
 ## Every `ROAD` tile in the map, built once — the lattice itself never changes within a run, only
 ## which blocks are calm and which streets are closed today, neither of which moves a `ROAD` tile.
@@ -72,20 +73,22 @@ var _run: RunState
 ## and genuinely different every day) left to copy.
 var _road_tiles: Dictionary = {}
 
-## The rig's planner over `city`, for her (`player`), today's resistance (`resistance`, null in the
-## escape, which has no subquest), the day's clock (`day`, whose spec names the escape city's exits)
-## and the run (`run`).
-func _init(city: City, player: Stroller, resistance: ResistanceDirector, day: DayController,
-		run: RunState) -> void:
-	_city = city
+## The rig's planner over the city's `map` and its `events`, for her (`player`), today's
+## resistance (`resistance`, null in the escape, which has no subquest) and the day's clock (`day`,
+## whose spec names the escape city's exits). `spawn_start` answers where a `spawn:<name>` word's
+## name is: it takes the name and answers a `Vector2`.
+func _init(map: CityMap, events: EventManager, spawn_start: Callable, player: Stroller,
+		resistance: ResistanceDirector, day: DayController) -> void:
+	_map = map
+	_events = events
+	_spawn_start = spawn_start
 	_player = player
 	_resistance = resistance
 	_day = day
-	_run = run
-	for y in _city.map.size.y:
-		for x in _city.map.size.x:
+	for y in _map.size.y:
+		for x in _map.size.x:
 			var tile := Vector2i(x, y)
-			if _city.map.tile_at(tile) == GameEnums.TileType.ROAD:
+			if _map.tile_at(tile) == GameEnums.TileType.ROAD:
 				_road_tiles[tile] = true
 
 ## Forgets every answer worked out for the day before, for the day just built — the rig asks it
@@ -117,15 +120,14 @@ func resolve(word: String) -> Vector2:
 		"calm:home":
 			return _nearest_calm(true)
 		"home":
-			return _city.map.home_world_position()
+			return _map.home_world_position()
 		"tunnel":
 			return _day.spec.exits.get(CityEdge.Kind.TUNNEL, Vector2.INF)
 		"bridge":
 			return _day.spec.exits.get(CityEdge.Kind.BRIDGE, Vector2.INF)
 		_:
 			if word.begins_with("spawn:"):
-				return DevRig.for_spawn_target(word.get_slice(":", 1), _city, _resistance,
-						_run.header)
+				return _spawn_start.call(word.get_slice(":", 1))
 			push_warning("--route: unknown target '%s'" % word)
 			return Vector2.INF
 
@@ -145,8 +147,8 @@ func _task_target() -> Vector2:
 		return Vector2.INF
 	if step.is_one_place:
 		var at := _resistance.contact_position()
-		var tile := _city.map.world_to_tile(at) if at != Vector2.INF else Vector2i.ZERO
-		if at != Vector2.INF and (not _city.map.is_walkable(tile) or _city.map.is_obstructed(tile)):
+		var tile := _map.world_to_tile(at) if at != Vector2.INF else Vector2i.ZERO
+		if at != Vector2.INF and (not _map.is_walkable(tile) or _map.is_obstructed(tile)):
 			return _reachable_point_near(at)
 		return at
 	return _nearest_live_instance(step.task_event_id)
@@ -166,7 +168,7 @@ func _nearest_live_instance(event_id: String) -> Vector2:
 		_task_instance = null
 	if _task_instance == null:
 		var best_distance := INF
-		for instance: EventInstance in _city.events.instances():
+		for instance: EventInstance in _events.instances():
 			if instance.def.id != event_id or instance.is_finished:
 				continue
 			var distance := _player.global_position.distance_squared_to(instance.global_position)
@@ -209,7 +211,7 @@ const _NEAREST_OPEN_SEARCH_RADIUS := 6
 ## would press her against the body for its last few pixels. Where the clearance leaves nothing
 ## inside `_NEAREST_OPEN_SEARCH_RADIUS`, the nearest open, unrecorded tile answers instead.
 func _reachable_point_near(centre: Vector2) -> Vector2:
-	var centre_tile := _city.map.world_to_tile(centre)
+	var centre_tile := _map.world_to_tile(centre)
 	var clear := body_clear_tiles()
 	if _stands_open(centre_tile, clear):
 		return centre
@@ -218,7 +220,7 @@ func _reachable_point_near(centre: Vector2) -> Vector2:
 			for offset in _ring_nearest_first(radius):
 				var tile := centre_tile + offset
 				if _stands_open(tile, keep_clear):
-					return _city.map.tile_to_world(tile)
+					return _map.tile_to_world(tile)
 	return centre
 
 ## The tiles of the square ring `radius` out from a tile, as offsets, **nearest first**: the four
@@ -247,7 +249,7 @@ static func _ring_nearest_first(radius: int) -> Array[Vector2i]:
 	return nearest_first
 
 func _stands_open(tile: Vector2i, keep_clear: Dictionary) -> bool:
-	return _city.map.is_open(tile) and not _city.map.is_obstructed(tile) and not keep_clear.has(tile)
+	return _map.is_open(tile) and not _map.is_obstructed(tile) and not keep_clear.has(tile)
 
 ## The nearest calm tile by walking distance, sidewalks, hazard-free ground and ground clear of
 ## every body preferred exactly as `plan()` prefers them — see `_blocked_for_phase()` and
@@ -265,8 +267,8 @@ func _stands_open(tile: Vector2i, keep_clear: Dictionary) -> bool:
 ## `calm`** — nearest to her — since nothing in the calendar but this one day and seed needed the
 ## other reading; `calm:home` is here for a caller (a probe, a future measurement) that wants it.
 func _nearest_calm(toward_home: bool = false) -> Vector2:
-	var here := _city.map.world_to_tile(_player.global_position)
-	var home := _city.map.world_to_tile(_city.map.home_world_position())
+	var here := _map.world_to_tile(_player.global_position)
+	var home := _map.world_to_tile(_map.home_world_position())
 	var hazards := _hazard_tiles()
 	var guarded := hazards.duplicate()
 	guarded.merge(body_clear_tiles())
@@ -275,16 +277,16 @@ func _nearest_calm(toward_home: bool = false) -> Vector2:
 			_blocked_for_phase(false)]
 	for blocked in phases:
 		blocked.erase(here)
-		var field := _city.map.walk_field(here, blocked)
+		var field := _map.walk_field(here, blocked)
 		var best: Vector2i
 		if toward_home:
 			var home_blocked: Dictionary = blocked.duplicate()
 			home_blocked.erase(home)
-			best = _nearest_in_field_toward_home(field, _city.map.walk_field(home, home_blocked))
+			best = _nearest_in_field_toward_home(field, _map.walk_field(home, home_blocked))
 		else:
 			best = _nearest_in_field(field)
 		if best != Vector2i(-1, -1):
-			return _city.map.tile_to_world(best)
+			return _map.tile_to_world(best)
 	return Vector2.INF
 
 ## `CityMap.calm_tiles()` less the ground of any lot the day has stopped counting as calm, which is
@@ -296,7 +298,7 @@ func _nearest_calm(toward_home: bool = false) -> Vector2:
 ## the day's second calm area, which the day keeps reachable for exactly this. On every other day
 ## no lot's calm ground outlives its purpose, so this is the tiles unchanged.
 func _calm_tiles_left() -> Array[Vector2i]:
-	var map := _city.map
+	var map := _map
 	var calm := {}
 	for block: Vector2i in map.calm_blocks:
 		calm[block] = true
@@ -317,7 +319,7 @@ func _nearest_in_field(field: PackedInt32Array) -> Vector2i:
 	var best := Vector2i(-1, -1)
 	var best_distance := -1
 	for tile in _calm_tiles_left():
-		var distance := _city.map.distance_at(field, tile)
+		var distance := _map.distance_at(field, tile)
 		if distance < 0:
 			continue
 		if best_distance == -1 or distance < best_distance:
@@ -333,10 +335,10 @@ func _nearest_in_field_toward_home(field: PackedInt32Array, home_field: PackedIn
 	var best := Vector2i(-1, -1)
 	var best_total := -1
 	for tile in _calm_tiles_left():
-		var distance := _city.map.distance_at(field, tile)
+		var distance := _map.distance_at(field, tile)
 		if distance < 0:
 			continue
-		var home_distance := _city.map.distance_at(home_field, tile)
+		var home_distance := _map.distance_at(home_field, tile)
 		if home_distance < 0:
 			continue
 		var total := distance + home_distance
@@ -377,11 +379,11 @@ func _blocked_for_phase(sidewalk_only: bool, avoid: Dictionary = {},
 	if sidewalk_only:
 		for tile: Vector2i in _road_tiles:
 			blocked[tile] = true
-	for tile: Vector2i in _city.map.closed_tiles:
+	for tile: Vector2i in _map.closed_tiles:
 		blocked[tile] = true
-	for tile: Vector2i in _city.map.soft_sealed_tiles:
+	for tile: Vector2i in _map.soft_sealed_tiles:
 		blocked[tile] = true
-	for tile: Vector2i in _city.map.obstructed_tiles:
+	for tile: Vector2i in _map.obstructed_tiles:
 		blocked[tile] = true
 	for tile: Vector2i in _gate_ground():
 		blocked[tile] = true
@@ -430,7 +432,7 @@ func _is_stationary_hazard(instance: EventInstance) -> bool:
 ## backs off the instant the excitement meter spikes; this is what the same caution reads as for a
 ## rig with no meter to watch. The rig asks it of every waypoint still ahead at each re-plan check.
 func is_hazardous(point: Vector2) -> bool:
-	for instance: EventInstance in _city.events.instances():
+	for instance: EventInstance in _events.instances():
 		if not _is_stationary_hazard(instance):
 			continue
 		if point.distance_to(instance.global_position) <= instance.def.lethal_reach() + _HAZARD_MARGIN:
@@ -444,11 +446,11 @@ func is_hazardous(point: Vector2) -> bool:
 ## with a two-or-three-tile reach.
 func _hazard_tiles() -> Dictionary:
 	var blocked := {}
-	for instance: EventInstance in _city.events.instances():
+	for instance: EventInstance in _events.instances():
 		if not _is_stationary_hazard(instance):
 			continue
 		var reach := instance.def.lethal_reach() + _HAZARD_MARGIN
-		var centre := _city.map.world_to_tile(instance.global_position)
+		var centre := _map.world_to_tile(instance.global_position)
 		var radius_tiles := ceili(reach / Tuning.TILE_SIZE) + 1
 		for dy in range(-radius_tiles, radius_tiles + 1):
 			for dx in range(-radius_tiles, radius_tiles + 1):
@@ -462,7 +464,7 @@ func _hazard_tiles() -> Dictionary:
 ## `_hazard_tiles()` needs: not whether the tile's *centre* is far enough from a hazard, but
 ## whether *any ground on the tile* is close enough to end the day.
 func _tile_nearest_distance(tile: Vector2i, point: Vector2) -> float:
-	var centre := _city.map.tile_to_world(tile)
+	var centre := _map.tile_to_world(tile)
 	var half := Tuning.TILE_SIZE / 2.0
 	var dx := maxf(absf(point.x - centre.x) - half, 0.0)
 	var dy := maxf(absf(point.y - centre.y) - half, 0.0)
@@ -498,10 +500,10 @@ const _CAUGHT_CLEARANCE := Tuning.PLAYER_BODY_RADIUS + Tuning.TILE_SIZE * 0.5
 ## at dawn.
 func body_clear_tiles() -> Dictionary:
 	var near := {}
-	for plan: EventPlan in _city.events.plans():
+	for plan: EventPlan in _events.plans():
 		if plan.live == null and plan.is_placed() and not plan.spent and _is_planned_body(plan.def):
 			near.merge(_planned_body_tiles(plan))
-	for instance: EventInstance in _city.events.instances():
+	for instance: EventInstance in _events.instances():
 		if _is_standing_body(instance):
 			near.merge(_tiles_near_body(instance, _BODY_CLEARANCE))
 	return near
@@ -522,20 +524,20 @@ func _planned_body_tiles(plan: EventPlan) -> Dictionary:
 ## `EventInstance.solid_part_centres()`, `solid_part_shapes()` and `solid_axis()` it will have.
 func _planned_parts(plan: EventPlan) -> Array:
 	var at := _planned_position(plan)
-	var vertical := EventInstance._spread_is_vertical(_city.map, at)
+	var vertical := EventInstance._spread_is_vertical(_map, at)
 	var centres := PackedVector2Array()
 	var shapes: Array[GroundShape] = []
 	for piece in plan.def.parts():
 		var offset := piece.offset_for(vertical)
 		centres.append(at + (Vector2(0.0, offset) if vertical else Vector2(offset, 0.0)))
 		shapes.append(piece.shape)
-	return [centres, shapes, EventFootprints.body_axis(_city.map, plan.def, at, plan.facing)]
+	return [centres, shapes, EventFootprints.body_axis(_map, plan.def, at, plan.facing)]
 
 ## Where a plan's instance will stand once it is built — `EventInstance.setup()`'s own reading: the
 ## first point of its path or its position, moved to the middle of the sidewalk band for a
 ## stationary solid row that `pavement_side` does not pin to an edge.
 func _planned_position(plan: EventPlan) -> Vector2:
-	return EventFootprints.stands_at(_city.map, plan.def,
+	return EventFootprints.stands_at(_map, plan.def,
 			plan.path[0] if plan.path.size() > 0 else plan.position)
 
 ## The planned rows `CityMap.obstructed_tiles` records a body for
@@ -578,7 +580,7 @@ func door_tiles() -> Dictionary:
 	var here := _player.global_position
 	var near := {}
 	var lines := {}
-	for plan: EventPlan in _city.events.plans():
+	for plan: EventPlan in _events.plans():
 		if not plan.is_placed() or plan.spent or not plan.def.redetains:
 			continue
 		var door := _planned_position(plan)
@@ -615,7 +617,7 @@ var _latched_doors := {}
 func latch_the_doors_round_her() -> void:
 	_latched_doors = {}
 	var here := _player.global_position
-	for plan: EventPlan in _city.events.plans():
+	for plan: EventPlan in _events.plans():
 		if not plan.is_placed() or plan.spent or not plan.def.redetains:
 			continue
 		var door := plan.live.global_position if plan.live != null else _planned_position(plan)
@@ -656,7 +658,7 @@ func _gate_ground() -> Dictionary:
 	var doors: Array[EventPlan] = []
 	# Every door body (`EventPlan.is_door()`: the huts, the posts and the boom), since the ground
 	# kept off is the ground nearer the boom than any of the others.
-	for plan: EventPlan in _city.events.plans():
+	for plan: EventPlan in _events.plans():
 		if plan.is_placed() and not plan.is_spent() and plan.is_door():
 			doors.append(plan)
 	for gate in doors:
@@ -664,12 +666,12 @@ func _gate_ground() -> Dictionary:
 			continue
 		var at := _planned_position(gate)
 		var reach := gate.def.solid_reach() + Tuning.PLAYER_BODY_RADIUS + ARRIVE_RADIUS
-		var centre_tile := _city.map.world_to_tile(at)
+		var centre_tile := _map.world_to_tile(at)
 		var span := ceili(reach / Tuning.TILE_SIZE) + 1
 		for dy in range(-span, span + 1):
 			for dx in range(-span, span + 1):
 				var tile := centre_tile + Vector2i(dx, dy)
-				var point := _city.map.tile_to_world(tile)
+				var point := _map.tile_to_world(tile)
 				var distance := point.distance_to(at)
 				if distance > reach:
 					continue
@@ -690,12 +692,12 @@ var _gate_ground_ready := false
 func _add_door_reach(door: Vector2, facing: Vector2, reach: float, near: Dictionary,
 		lines: Dictionary) -> void:
 	var axis := facing.normalized()
-	var centre_tile := _city.map.world_to_tile(door)
+	var centre_tile := _map.world_to_tile(door)
 	var span := ceili(reach / Tuning.TILE_SIZE) + 1
 	for dy in range(-span, span + 1):
 		for dx in range(-span, span + 1):
 			var tile := centre_tile + Vector2i(dx, dy)
-			var offset := _city.map.tile_to_world(tile) - door
+			var offset := _map.tile_to_world(tile) - door
 			if offset.length() > reach:
 				continue
 			# At most half a tile, not under it: a door body stands in the middle of its two-lane
@@ -740,12 +742,12 @@ func _tiles_near_pieces(centres: PackedVector2Array, shapes: Array[GroundShape],
 	for k in centres.size():
 		var shape := shapes[k]
 		var angle := axis.angle() if shape.half_length > 0.0 else 0.0
-		var centre_tile := _city.map.world_to_tile(centres[k])
+		var centre_tile := _map.world_to_tile(centres[k])
 		var span := ceili((shape.reach() + margin) / Tuning.TILE_SIZE) + 1
 		for dy in range(-span, span + 1):
 			for dx in range(-span, span + 1):
 				var tile := centre_tile + Vector2i(dx, dy)
-				var local := (_city.map.tile_to_world(tile) - centres[k]).rotated(-angle)
+				var local := (_map.tile_to_world(tile) - centres[k]).rotated(-angle)
 				if shape.distance_to_spine(local) - shape.radius < margin:
 					near[tile] = true
 	return near
@@ -753,12 +755,12 @@ func _tiles_near_pieces(centres: PackedVector2Array, shapes: Array[GroundShape],
 ## The tiles whose centre lies within `margin` of `point`.
 func _tiles_near_point(point: Vector2, margin: float) -> Dictionary:
 	var near := {}
-	var centre_tile := _city.map.world_to_tile(point)
+	var centre_tile := _map.world_to_tile(point)
 	var span := ceili(margin / Tuning.TILE_SIZE) + 1
 	for dy in range(-span, span + 1):
 		for dx in range(-span, span + 1):
 			var tile := centre_tile + Vector2i(dx, dy)
-			if _city.map.tile_to_world(tile).distance_to(point) < margin:
+			if _map.tile_to_world(tile).distance_to(point) < margin:
 				near[tile] = true
 	return near
 
@@ -822,7 +824,7 @@ func plan(from_tile: Vector2i, to_tile: Vector2i, avoid: Dictionary = {}) -> Arr
 ## target on it is aimed beside for exactly the reasons a plan would never step on it.
 func _standable_near(tile: Vector2i) -> Vector2i:
 	var blocked := _blocked_for_phase(false)
-	if _city.map.is_walkable(tile) and not blocked.has(tile):
+	if _map.is_walkable(tile) and not blocked.has(tile):
 		return tile
 	for radius in range(1, 3):
 		var best := Vector2i(-1, -1)
@@ -833,7 +835,7 @@ func _standable_near(tile: Vector2i) -> Vector2i:
 					continue
 				var near := tile + Vector2i(dx, dy)
 				var distance := Vector2(dx, dy).length()
-				if _city.map.is_walkable(near) and not blocked.has(near) and distance < best_distance:
+				if _map.is_walkable(near) and not blocked.has(near) and distance < best_distance:
 					best = near
 					best_distance = distance
 		if best != Vector2i(-1, -1):
@@ -850,12 +852,12 @@ var _post_cache := {}
 var _post_cache_map: CityMap
 
 func _post_tiles() -> Dictionary:
-	if _post_cache_map == _city.map:
+	if _post_cache_map == _map:
 		return _post_cache
-	_post_cache_map = _city.map
+	_post_cache_map = _map
 	_post_cache = {}
 	var reach := _BODY_CLEARANCE + Prop.bollard_shape().radius
-	for at in _city.map.post_positions():
+	for at in _map.post_positions():
 		_post_cache.merge(_tiles_near_point(at, reach))
 	return _post_cache
 
@@ -914,7 +916,7 @@ func _cheapest(from_tile: Vector2i, to_tile: Vector2i, keep_off: Dictionary = {}
 	var extra := costs.duplicate()
 	extra.erase(to_tile)
 	var field := _weighted_field(from_tile, blocked, extra)
-	if _city.map.distance_at(field, to_tile) < 0:
+	if _map.distance_at(field, to_tile) < 0:
 		return []
 	var reversed: Array[Vector2i] = [to_tile]
 	var current := to_tile
@@ -936,7 +938,7 @@ func _cheapest(from_tile: Vector2i, to_tile: Vector2i, keep_off: Dictionary = {}
 ## than that holds every distance still to be settled. The four neighbour steps are written out,
 ## as `walk_field()`'s are, for its reason.
 func _weighted_field(from: Vector2i, blocked: Dictionary, extra: Dictionary) -> PackedInt32Array:
-	var map := _city.map
+	var map := _map
 	var width := map.size.x
 	var cells := width * map.size.y
 	var field := PackedInt32Array()
@@ -1004,7 +1006,7 @@ var _steps := PackedInt32Array()
 
 func _walkable_cells() -> PackedByteArray:
 	if _walkable.is_empty():
-		var map := _city.map
+		var map := _map
 		_walkable.resize(map.size.x * map.size.y)
 		for y in map.size.y:
 			for x in map.size.x:
@@ -1013,7 +1015,7 @@ func _walkable_cells() -> PackedByteArray:
 
 func _base_steps() -> PackedInt32Array:
 	if _steps.is_empty():
-		var map := _city.map
+		var map := _map
 		_steps.resize(map.size.x * map.size.y)
 		_steps.fill(1)
 		for tile: Vector2i in _road_tiles:
@@ -1022,10 +1024,10 @@ func _base_steps() -> PackedInt32Array:
 
 func _smaller_neighbour(field: PackedInt32Array, tile: Vector2i) -> Vector2i:
 	var best := tile
-	var best_distance := _city.map.distance_at(field, tile)
+	var best_distance := _map.distance_at(field, tile)
 	for step in _STEPS:
 		var neighbour := tile + step
-		var distance := _city.map.distance_at(field, neighbour)
+		var distance := _map.distance_at(field, neighbour)
 		if distance >= 0 and distance < best_distance:
 			best = neighbour
 			best_distance = distance
@@ -1080,8 +1082,8 @@ const _LINE_OF_SIGHT_CLEARANCE := 24.0
 func _line_of_sight(a: Vector2i, b: Vector2i) -> bool:
 	if a.x != b.x and a.y != b.y:
 		return false
-	var start := _city.map.tile_to_world(a)
-	var stop := _city.map.tile_to_world(b)
+	var start := _map.tile_to_world(a)
+	var stop := _map.tile_to_world(b)
 	var offset := stop - start
 	if offset.length() < 0.001:
 		return true
@@ -1090,10 +1092,10 @@ func _line_of_sight(a: Vector2i, b: Vector2i) -> bool:
 	for i in steps + 1:
 		var centre := start.lerp(stop, float(i) / float(steps))
 		for point in [centre, centre + perpendicular, centre - perpendicular]:
-			var tile := _city.map.world_to_tile(point)
-			if not _city.map.is_open(tile) or _city.map.is_obstructed(tile):
+			var tile := _map.world_to_tile(point)
+			if not _map.is_open(tile) or _map.is_obstructed(tile):
 				return false
-			if _city.map.tile_at(tile) == GameEnums.TileType.ROAD:
+			if _map.tile_at(tile) == GameEnums.TileType.ROAD:
 				return false
 			if is_hazardous(point):
 				return false
@@ -1110,8 +1112,8 @@ func _line_of_sight(a: Vector2i, b: Vector2i) -> bool:
 ## plan starting there walked her straight back in, and the door took her across again.
 func standing_tile() -> Vector2i:
 	var here := _player.global_position
-	var tile := _city.map.world_to_tile(here)
-	if _city.map.is_open(tile):
+	var tile := _map.world_to_tile(here)
+	if _map.is_open(tile):
 		return tile
 	var doors := door_tiles()
 	var best := tile
@@ -1120,8 +1122,8 @@ func standing_tile() -> Vector2i:
 		for dy in range(-2, 3):
 			for dx in range(-2, 3):
 				var near := tile + Vector2i(dx, dy)
-				var distance := _city.map.tile_to_world(near).distance_to(here)
-				if _city.map.is_open(near) and not keep_off.has(near) and distance < best_distance:
+				var distance := _map.tile_to_world(near).distance_to(here)
+				if _map.is_open(near) and not keep_off.has(near) and distance < best_distance:
 					best = near
 					best_distance = distance
 		if best_distance < INF:
@@ -1138,7 +1140,7 @@ func to_world(path: Array[Vector2i]) -> Array[Vector2]:
 		# Not the tile she stands on: she is already on it, and walking to another point of it
 		# first takes her back and forth across a pinch the stall checks then never see her stuck in.
 		world.append(_roomiest_point(tile) if k > 0 and _plan_accepted.has(tile)
-				else _city.map.tile_to_world(tile))
+				else _map.tile_to_world(tile))
 	return world
 
 ## How far off a tile's centre `_roomiest_point()` looks, in each axis — short of half a tile, so
@@ -1154,7 +1156,7 @@ const _NUDGE_STEP := 2.5
 ## Asked only of a tile the plan crosses in a body's clearance; everywhere else a tile's centre is
 ## already at least `_BODY_CLEARANCE` from every body.
 func _roomiest_point(tile: Vector2i) -> Vector2:
-	var centre := _city.map.tile_to_world(tile)
+	var centre := _map.tile_to_world(tile)
 	var pieces := _body_pieces_near(centre, Tuning.TILE_SIZE * 3.0)
 	if pieces.is_empty():
 		return centre
@@ -1162,7 +1164,7 @@ func _roomiest_point(tile: Vector2i) -> Vector2:
 	for dy in range(-1, 2):
 		for dx in range(-1, 2):
 			var near := tile + Vector2i(dx, dy)
-			if near != tile and not _city.map.is_open(near):
+			if near != tile and not _map.is_open(near):
 				walls.append(near)
 	var best := centre
 	var best_room := _room_at(centre, pieces, walls)
@@ -1192,11 +1194,11 @@ func _room_at(point: Vector2, pieces: Array, walls: Array[Vector2i]) -> float:
 ## measured the same way.
 func _body_pieces_near(point: Vector2, radius: float) -> Array:
 	var pieces: Array = []
-	for instance: EventInstance in _city.events.instances():
+	for instance: EventInstance in _events.instances():
 		if _is_standing_body(instance):
 			_add_pieces_near(pieces, instance.solid_part_centres(), instance.solid_part_shapes(),
 					instance.solid_axis(), point, radius)
-	for planned: EventPlan in _city.events.plans():
+	for planned: EventPlan in _events.plans():
 		if planned.live != null or not planned.is_placed() or planned.spent \
 				or not _is_planned_body(planned.def):
 			continue
@@ -1254,7 +1256,7 @@ func unstick_order(away: Vector2, reach: float) -> Array[Vector2]:
 ## Whether `point` lies inside the circle a door body takes her in from
 ## (`EventDef.detain_distance()` of a hut or a post, the `redetains` rows).
 func _into_a_door(point: Vector2) -> bool:
-	for planned: EventPlan in _city.events.plans():
+	for planned: EventPlan in _events.plans():
 		if not planned.is_placed() or planned.spent or not planned.def.redetains:
 			continue
 		var door := planned.live.global_position if planned.live != null \

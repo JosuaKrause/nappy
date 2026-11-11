@@ -327,13 +327,6 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     ),
     Exception_(
         "names",
-        "DevRig",
-        "a day's start asks the dev rig where a --spawn target is",
-        ("src/run/day_director.gd",),
-        more=(("src/run/day_director.gd", 2),),
-    ),
-    Exception_(
-        "names",
         "DrawLayer",
         "the map interface adds a node to its world on a draw layer, the world's half of it",
         ("src/world/world_map.gd",),

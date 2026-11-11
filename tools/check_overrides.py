@@ -341,7 +341,9 @@ def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(
         description=(
             "Fail when an override of a project class lacks its `## Overrides Class.method.` doc line,"
-            " or a line is false."
+            " or a line is false. The line names the nearest project ancestor declaring the method; a malformed"
+            " `Overrides` line and an `extends` it cannot resolve fail too; engine virtuals no project class"
+            " declares and `_init` take no line. Runs under the host's `python3`."
         ),
         epilog="example: uv run python tools/check_overrides.py --rev origin/main",
     )

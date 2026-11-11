@@ -1688,7 +1688,11 @@ def parse(argv: list[str]) -> argparse.Namespace:
     mode.add_argument(
         "--write",
         action="store_true",
-        help="rewrite tools/field_reads.txt from the tree, sorted; resolves a merge conflict in it",
+        help=(
+            "rewrite tools/field_reads.txt from the tree, sorted; resolves a `REMOVE` line or a merge conflict in"
+            " it. It is never the answer to a read reported as not listed (ask the class through a method) or to"
+            " an unknown receiver (read it through a typed name)"
+        ),
     )
     args = parser.parse_args(argv)
     if args.write and (args.rev or args.base):

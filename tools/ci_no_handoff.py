@@ -53,7 +53,8 @@ def parse(argv: list[str]) -> argparse.Namespace:
         prog="tools/ci_no_handoff.py",
         description=(
             "Fails if the branch adds, since it left BASE, a file whose name starts with `handoff` (any case),"
-            " such as HANDOFF.md or handoff-notes.md. A handoff file may be pushed while a pull request is being"
+            " such as HANDOFF.md or handoff-notes.md; a rename's new name is included and the word elsewhere in a"
+            " name passes. A handoff file may be pushed while a pull request is being"
             " made; it is removed before it merges."
         ),
         epilog=EPILOG,
