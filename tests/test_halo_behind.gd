@@ -74,12 +74,13 @@ func _test_the_rim_is_given_back_when_the_slices_go(t) -> void:
 	atlas.release(&"events")
 
 ## The first slice `instance`'s picture is drawn in, found where the look stood it: beside the
-## instance in its parent (`EventInstance.add_beside_it()`), the one whose index is 0.
+## instance in its parent (`EventInstance.add_beside_it()`), the first of its look's
+## (`SpreadLook.slices()`).
 static func _first_slice(instance: EventInstance) -> SpreadLook.Slice:
-	for child in instance.get_parent().get_children():
-		if child is SpreadLook.Slice and child.instance == instance and child.index == 0:
-			return child
-	return null
+	var slices := (instance.look as SpreadLook).slices()
+	if slices.is_empty() or slices[0].get_parent() != instance.get_parent():
+		return null
+	return slices[0]
 
 ## The visible scene's layers standing on `slice` (`EventScenery`), in tree order.
 static func _sceneries_on(slice: SpreadLook.Slice) -> Array[EventScenery]:

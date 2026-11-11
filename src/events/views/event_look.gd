@@ -701,6 +701,12 @@ func _shows_its_nodes(_reach: Rect2) -> bool:
 func _update_scenery() -> void:
 	pass
 
+## Whether anything of the event is shown: it is drawn at all (not `--skip events`), it is not
+## gone, and its own hold does not hide it. What a drawing node of its own (a slice, the scenery
+## behind one) is shown by.
+func _shows_anything() -> bool:
+	return not (_skip_draw or event.is_gone() or EventFootprints.hidden_by_its_hold(event))
+
 ## A picture that reaches past the event's footprint, such as a street fire's burning front.
 func _front_box() -> Rect2:
 	return Rect2()

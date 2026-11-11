@@ -119,9 +119,10 @@ func _rank_drawn(t, protest: EventInstance) -> Array[String]:
 	for i in 3:
 		await t.get_tree().process_frame
 	var pictures: Array[String] = []
+	var slices := (protest.look as SpreadLook).slices()
 	for entry in drawer.shown():
 		var slice := entry.canvas as SpreadLook.Slice
-		var its_own: bool = entry.canvas == protest or (slice != null and slice.instance == protest)
+		var its_own: bool = entry.canvas == protest or (slice != null and slices.has(slice))
 		if entry.kind == &"stand" and its_own:
 			pictures.append(entry.picture)
 	return pictures

@@ -249,14 +249,13 @@ static func _ground_in(world: WorldContext, vertical: bool) -> WorldMap:
 	return ground
 
 ## The slices `instance`'s picture is drawn in, found where the look stood them, beside it in the
-## world's entity layer, in their own order (`SpreadLook.Slice.index`, far end first).
+## world's entity layer, in their own order (`SpreadLook.slices()`, far end first).
 static func _slices_of(instance: EventInstance) -> Array[SpreadLook.Slice]:
 	var found: Array[SpreadLook.Slice] = []
-	for child in instance.get_parent().get_children():
-		if child is SpreadLook.Slice and child.instance == instance:
-			found.append(child)
-	found.sort_custom(func(a: SpreadLook.Slice, b: SpreadLook.Slice) -> bool:
-		return a.index < b.index)
+	var beside := instance.get_parent().get_children()
+	for slice in (instance.look as SpreadLook).slices():
+		if beside.has(slice):
+			found.append(slice)
 	return found
 
 static func _slices_in(layer: Node) -> int:

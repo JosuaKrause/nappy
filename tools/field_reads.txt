@@ -643,14 +643,8 @@ src/events/views/fire_look.gd look
 src/events/views/fire_look.gd obstructs_radius
 src/events/views/flock_look.gd look
 src/events/views/pursuer_look.gd look
-src/events/views/rank_look.gd intensity
-src/events/views/rank_look.gd look
-src/events/views/rank_look.gd obstructs_radius
 src/events/views/roadblock_look.gd guard_sides
 src/events/views/roadblock_look.gd look
-src/events/views/spread_look.gd look
-src/events/views/spread_look.gd obstructs_radius
-src/events/views/spread_look.gd shape
 src/events/walk_ground.gd aftermath
 src/events/walk_ground.gd hard_fail
 src/events/walk_ground.gd mobile
@@ -772,8 +766,6 @@ src/events/views/pursuer_look.gd def
 src/events/views/pursuer_look.gd drawer
 src/events/views/pursuer_look.gd is_leaving
 src/events/views/rank_look.gd age
-src/events/views/rank_look.gd def
-src/events/views/rank_look.gd drawer
 src/events/views/roadblock_look.gd barrier_post
 src/events/views/roadblock_look.gd def
 src/events/views/roadblock_look.gd is_finished
@@ -781,11 +773,6 @@ src/events/views/roadblock_look.gd is_leaving
 src/events/views/roadblock_look.gd look
 src/events/views/roadblock_look.gd phase
 src/events/views/roadblock_look.gd skip_draw
-src/events/views/spread_look.gd def
-src/events/views/spread_look.gd drawer
-src/events/views/spread_look.gd is_finished
-src/events/views/spread_look.gd look
-src/events/views/spread_look.gd skip_draw
 src/events/warning_board.gd barrier_post
 src/events/warning_board.gd car
 src/events/warning_board.gd def
@@ -819,10 +806,6 @@ src/resistance/resistance_director.gd points_at
 
 # [EventPursuit] src/events/behaviours/event_pursuit.gd
 src/dev/scene_recipe_runtime.gd outrun_for
-
-# [EventScenery] src/events/event_scenery.gd
-src/events/views/event_drawer.gd atlas
-src/events/views/event_drawer.gd drawer
 
 # [EventSpawner] src/events/event_spawner.gd
 src/events/event_manager.gd pelican_rig
@@ -1304,10 +1287,6 @@ src/city/city.gd tile_set
 src/city/scenery_residency.gd chunks
 src/city/scenery_residency.gd mode
 src/city/scenery_residency.gd pending
-
-# [SceneryLayer] src/city/scenery_layer.gd
-src/events/event_scenery.gd drawer
-src/events/event_scenery.gd frame_b
 
 # [SceneryResidency] src/city/scenery_residency.gd
 src/city/city.gd frame_locked
