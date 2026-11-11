@@ -20,11 +20,12 @@ touched for the run: its first line is replaced by an empty one (so the line num
 that empty line is replaced by the original first line, byte for byte (line endings kept). An edit saved to a
 script during the run stays: only the first line is put back, and a file whose first line somebody else changed is
 named on stderr, with the line not put back, and left as it is found. Every write goes to a file beside the
-target and is moved over it (`os.replace`), so an interrupt never leaves a file empty or half written: a file
-holds its old text or its new text. SIGINT, SIGTERM, SIGHUP and SIGQUIT restore as well, ending with a message
-(a second signal during the restore is ignored, and the restore is safe to enter twice); a SIGKILL cannot, and
-`git checkout project.godot` and `git diff --stat` show what is left. `--write` rewrites a first line after the
-restore.
+target, named before it is made, and is moved over it (`os.replace`), so an interrupt never leaves a file empty or
+half written and leaves no file beside one: a file holds its old text or its new text. SIGINT, SIGTERM, SIGHUP and
+SIGQUIT restore as well, ending with a message (a second signal during the restore is ignored, and the restore is
+safe to enter twice); a SIGKILL cannot, and `git checkout project.godot` and `git status` show what is left (a file
+beside a script is named `.<script>.<pid>.<n>.census`). `--write` rewrites the first lines after the restore, so
+an interrupt during it leaves each file with its old line or its new one.
 
 **A census is taken only from a run that finished and loaded everything it can trust.** The engine must exit 0 and
 print `CENSUS_DONE` with the count of files it was handed and one `CENSUS_LOADED` or `CENSUS_FAILED` for each;
@@ -55,6 +56,7 @@ from __future__ import annotations
 
 import argparse
 import atexit
+import itertools
 import os
 import re
 import shutil
@@ -64,7 +66,8 @@ import sys
 import tempfile
 import time
 from collections import Counter
-from collections.abc import Iterable, Sequence
+from collections.abc import Iterable, Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 from types import FrameType
@@ -92,6 +95,10 @@ LOADED = re.compile(r"CENSUS_LOADED (res://\S+)")
 DONE = re.compile(r"CENSUS_DONE (\d+)")
 SETTING = re.compile(r"^gdscript/warnings/([a-z_]+)=")
 CLASS_NAME = re.compile(r"^class_name\s+(\w+)", re.MULTILINE)
+# The signals that put the tree back and end the run; SIGKILL cannot be caught.
+SIGNALS = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT)
+# Numbers the files `atomic_write` writes beside their targets, one per call.
+_WRITES = itertools.count()
 
 
 class CensusError(Exception):
@@ -246,12 +253,22 @@ def settings_text(original: str, levels: dict[str, int]) -> str:
 
 
 def atomic_write(path: Path, data: bytes) -> None:
-    """Writes `data` beside `path` and moves it over, so `path` holds its old bytes or the new ones, never none."""
-    fd, name = tempfile.mkstemp(prefix=f".{path.name}.", suffix=".census", dir=path.parent)
-    temp = Path(name)
+    """Writes `data` beside `path` and moves it over, so `path` holds its old bytes or the new ones, never none.
+
+    The file beside is named before it is made and made inside the `try`, so the `finally` removes it whatever
+    interrupts the write; a name made by the call that creates the file (`tempfile.mkstemp`) is not known yet when
+    a signal handled during that call ends the write, and the file stays behind. The name is new on every call,
+    since a restore run by the signal handler writes again while the write it interrupted is still open.
+    """
+    temp = path.with_name(f".{path.name}.{os.getpid()}.{next(_WRITES)}.census")
     try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(data)
+        fd = os.open(temp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        try:
+            view = memoryview(data)
+            while view:
+                view = view[os.write(fd, view) :]
+        finally:
+            os.close(fd)
         shutil.copymode(path, temp)
         temp.replace(path)
     finally:
@@ -418,19 +435,32 @@ def main(argv: list[str], root: Path = ROOT, godot: str = GODOT) -> int:
         print(f"tools/typing_census.py: not another warning of the engine's: {', '.join(unknown)}", file=sys.stderr)
         return 2
 
-    signals = (signal.SIGINT, signal.SIGTERM, signal.SIGHUP, signal.SIGQUIT)
+    with put_back_on_every_exit(tree):
+        return census(args, tree, godot, names)
+
+
+@contextmanager
+def put_back_on_every_exit(tree: Tree) -> Iterator[None]:
+    """Puts the tree back when the block ends, at exit, and on each of `SIGNALS`, which then ends the process.
+
+    The handler ignores every further signal before it restores, so a second Ctrl-C cannot cut the restore short.
+    """
 
     def _on_signal(signum: int, _frame: FrameType | None) -> None:
-        for sig in signals:
+        for sig in SIGNALS:
             signal.signal(sig, signal.SIG_IGN)
         tree.restore()
-        print(f"tools/typing_census.py: interrupted (signal {signum}); the tree is put back", file=sys.stderr)
+        print(
+            f"tools/typing_census.py: interrupted (signal {signum}); project.godot and the opt-out lines taken out "
+            "for the run are put back",
+            file=sys.stderr,
+        )
         sys.exit(128 + signum)
 
-    previous = {sig: signal.signal(sig, _on_signal) for sig in signals}
+    previous = {sig: signal.signal(sig, _on_signal) for sig in SIGNALS}
     atexit.register(tree.restore)
     try:
-        return census(args, tree, godot, names)
+        yield
     finally:
         tree.restore()
         atexit.unregister(tree.restore)

@@ -1,15 +1,20 @@
 #!/usr/bin/env python3
 """Unit tests for `tools/typing_census.py`: what can be tested without the engine (the parsing of the debugger's
 lines, the telling of a message to its warning, the rewriting of an opt-out line, the settings text, what `--check`
-finds, whether a run finished, which failed files stop `--write`, and the restore of the tree on a temporary one).
+finds, whether a run finished, which failed files stop `--write`, the restore of the tree on a temporary one, and
+real SIGINTs sent at random moments of taking the lines out and of the restore, in a child process).
 Each case names the change to `tools/typing_census.py` it would fail."""
 
 from __future__ import annotations
 
 import json
+import os
+import random
+import signal
 import subprocess
 import sys
 import tempfile
+import time
 import unittest
 from collections.abc import Sequence
 from contextlib import redirect_stderr, redirect_stdout
@@ -306,20 +311,32 @@ class Restoring(unittest.TestCase):
         self.assertEqual((tmp / "a.gd").read_bytes(), text)
 
     def test_an_interrupt_inside_the_restore_leaves_every_file_whole(self) -> None:
-        # Fails if the restore writes in place: an interrupt in its write leaves a file empty. The interrupt here
-        # is raised after the temporary file is written and before it is moved over.
+        # Fails if either of the restore's two writes is made in place (`write_bytes` on project.godot or on the
+        # file): each write must reach `os.replace`, so the patch lets project.godot's through and interrupts the
+        # file's after its temporary file is written and before it is moved over, and an in-place write of either
+        # leaves the interrupt unraised. A truncating in-place write left a file empty on a real interrupt.
         text = SOME.encode() + b"x\n"
         tree, tmp = self.tree({"a.gd": text, "project.godot": b"[debug]\n"})
         tree.original_project = b"[debug]\n"
         tree.take_lines_out([tmp / "a.gd"])
         (tmp / "project.godot").write_bytes(b"changed")
+        real_replace = os.replace
+        targets: list[str] = []
+
+        def replace_once_then_interrupt(src: Path, dst: Path) -> None:
+            targets.append(Path(dst).name)
+            if len(targets) > 1:
+                raise KeyboardInterrupt
+            real_replace(src, dst)
+
         with (
-            mock.patch("os.replace", side_effect=KeyboardInterrupt),
+            mock.patch("os.replace", side_effect=replace_once_then_interrupt),
             self.assertRaises(KeyboardInterrupt),
         ):
             tree.restore()
-        for name in ("a.gd", "project.godot"):
-            self.assertTrue((tmp / name).read_bytes(), name)
+        self.assertEqual(targets, ["project.godot", "a.gd"])
+        self.assertEqual((tmp / "project.godot").read_bytes(), b"[debug]\n")
+        self.assertEqual((tmp / "a.gd").read_bytes(), b"\nx\n")
         self.assertEqual(sorted(p.name for p in tmp.iterdir()), ["a.gd", "project.godot"])
         tree.restore()
         self.assertEqual((tmp / "a.gd").read_bytes(), text)
@@ -346,6 +363,121 @@ class Restoring(unittest.TestCase):
         for name, data in files.items():
             self.assertEqual((tmp / name).read_bytes(), data)
         self.assertEqual(tree.first_lines, {})
+
+
+# The child the real-signal cases interrupt: the tool's own handlers (`put_back_on_every_exit`) around the phase
+# named, on the scratch tree named. It prints START right before the phase and END with its length after it.
+CHILD = """
+import sys, time
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import typing_census as census
+tree = census.Tree(Path(sys.argv[2]))
+phase = sys.argv[3]
+files = tree.gd_files()
+tree.original_project = tree.project.read_bytes()
+with census.put_back_on_every_exit(tree):
+    if phase == "restore":
+        census.atomic_write(tree.project, b"[debug]\\ngdscript/warnings/untyped_declaration=1\\n")
+        tree.take_lines_out(files)
+    print("START", flush=True)
+    start = time.perf_counter()
+    if phase == "take":
+        census.atomic_write(tree.project, b"[debug]\\ngdscript/warnings/untyped_declaration=1\\n")
+        tree.take_lines_out(files)
+    else:
+        tree.restore()
+    print(f"END {time.perf_counter() - start}", flush=True)
+"""
+
+
+class RealSignals(unittest.TestCase):
+    """A real SIGINT at a random moment of taking the lines out, and of the restore, in a child process.
+
+    A case that raises from one patched call holds only that point, while a real signal is handled wherever the
+    interpreter next checks for one, inside any call. So these send the signal itself, with `os.kill`, after a
+    delay drawn from a seeded generator within the phase's measured length, and after every trial compare the whole
+    scratch tree with what it was: every file byte for byte with its mode, and no file added or removed.
+    """
+
+    SEED = 1321
+    # Per phase. A temporary file made by `tempfile.mkstemp` and left behind by a signal handled inside it was the
+    # last hole: about one interrupt in five during either phase found it, so 40 that land miss it about once in
+    # 7500 runs.
+    TRIALS = 50
+    FILES = 120
+
+    def setUp(self) -> None:
+        scratch = tempfile.TemporaryDirectory()
+        self.addCleanup(scratch.cleanup)
+        self.root = Path(scratch.name) / "project"
+        for i in range(self.FILES):
+            folder = ("src", "src/city", "tests", "tests/probes", "tools")[i % 5]
+            body = f"extends Node\nvar x{i} = {i}\n".encode()
+            text = (FULL.encode(), SOME.encode(), b"", FULL.replace("\n", "\r\n").encode())[i % 4] + body
+            path = self.root / folder / f"f{i}.gd"
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(text)
+            path.chmod(0o755 if i % 7 == 0 else 0o644)
+        (self.root / "project.godot").write_bytes(b"[debug]\ngdscript/warnings/untyped_declaration=2\n")
+        self.original = self.snapshot()
+
+    def snapshot(self) -> dict[str, tuple[bytes, int] | None]:
+        return {
+            str(p.relative_to(self.root)): (p.read_bytes(), p.stat().st_mode & 0o7777) if p.is_file() else None
+            for p in sorted(self.root.rglob("*"))
+        }
+
+    def child(self, phase: str, delay: float | None) -> tuple[int, str, str]:
+        tools = str(Path(__file__).resolve().parent)
+        with subprocess.Popen(
+            [sys.executable, "-c", CHILD, tools, str(self.root), phase],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        ) as proc:
+            assert proc.stdout is not None
+            # Read before anything is asserted: reading the child's stderr waits for it to end.
+            first = proc.stdout.readline()
+            if first == "START\n" and delay is not None:
+                time.sleep(delay)
+                os.kill(proc.pid, signal.SIGINT)
+            out, err = proc.communicate(timeout=60)
+        self.assertEqual(first, "START\n", err)
+        return proc.returncode, out, err
+
+    def interrupt(self, phase: str) -> None:
+        code, out, _ = self.child(phase, None)
+        self.assertEqual(code, 0)
+        length = float(out.split()[-1])
+        self.assertEqual(self.snapshot(), self.original)
+        rng = random.Random(f"{self.SEED}-{phase}")
+        landed = 0
+        for trial in range(self.TRIALS):
+            # The phase repeats one write per file, so its first four fifths hold every window and a delay drawn
+            # there lands inside it even when a trial runs a little faster than the measuring one.
+            delay = rng.uniform(0.0, 0.8 * length)
+            code, out, err = self.child(phase, delay)
+            landed += code == 128 + signal.SIGINT and "END" not in out
+            after = self.snapshot()
+            if after != self.original or "left as it is" in err:
+                added = sorted(set(after) - set(self.original))
+                changed = sorted(p for p in self.original if after.get(p) != self.original[p])
+                self.fail(
+                    f"{phase}, trial {trial}, SIGINT {delay * 1000:.2f} ms into a {length * 1000:.1f} ms phase: "
+                    f"added {added}, changed or removed {changed}; stderr {err!r}"
+                )
+        self.assertGreaterEqual(landed, self.TRIALS // 2, f"only {landed} signals landed inside the {phase} phase")
+
+    def test_a_signal_while_the_lines_are_taken_out_leaves_the_tree_as_it_was(self) -> None:
+        # Fails if a signal handled inside a write can leave the file beside behind (atomic_write naming it through
+        # tempfile.mkstemp, about one trial in five), empty a script (a write in place), or leave a line out.
+        self.interrupt("take")
+
+    def test_a_signal_during_the_restore_leaves_the_tree_as_it_was(self) -> None:
+        # Fails as the case above does, for the restore's writes, and if a handler's restore that runs while the
+        # interrupted one is half done names or skips a file.
+        self.interrupt("restore")
 
 
 ENGINE = """#!{python}
@@ -379,6 +511,7 @@ def warning(kind: str, path: str, line: int) -> str:
     text = {
         "u": 'The variable "x" has no static type.',
         "p": 'The property "a" is not present on the inferred type "Node" (but may be present on a subtype).',
+        "m": 'The method "go()" is not present on the inferred type "Node".',
     }[kind]
     return f"WARNING: {text}\n     at: GDScript::reload (res://{path}:{line})\n"
 
@@ -461,12 +594,51 @@ class Running(unittest.TestCase):
         self.assertEqual(self.snapshot(), before)
 
     def test_a_check_fails_for_a_file_that_failed_to_load(self) -> None:
-        # Fails if `--check` returns 0 for a failed file that nothing names: its line was never compared.
+        # Fails if `--check` returns 0 for a failed file that nothing names (`return 1 if bad else 0`): its line
+        # was never compared. Every file that loaded trips exactly what its line names, so the failed file is the
+        # only reason the check can fail.
         self.make()
-        warns = warning("u", "src/a.gd", 2) + warning("p", "src/a.gd", 2)
+        warns = "".join(warning(k, f, 2) for k in "upm" for f in ("src/a.gd", "tests/b.gd"))
         code, out, _ = self.go(["--check"], warns, failed=["tests/p.gd"])
-        self.assertIn("FAIL tests/p.gd: failed to load", out)
+        self.assertEqual(
+            [ln for ln in out.splitlines() if ln.startswith("FAIL")],
+            ["FAIL tests/p.gd: failed to load, so its line cannot be checked"],
+        )
         self.assertEqual(code, 1)
+
+    def test_the_settings_for_the_run_are_written_beside_and_moved_over(self) -> None:
+        # Fails if run_census writes the run's settings into project.godot in place (`write_bytes`) rather than
+        # through atomic_write: an interrupt during that write would leave project.godot empty.
+        self.make()
+        written = self.record_writes()
+        self.go(["--check"], warning("u", "src/a.gd", 2))
+        settings = [d for p, d in written if p == "project.godot" and b"gdscript/warnings/untyped_declaration=1" in d]
+        self.assertEqual(len(settings), 1)
+
+    def test_a_rewritten_line_is_written_beside_and_moved_over(self) -> None:
+        # Fails if `--write` rewrites a line in place (`write_bytes`) rather than through atomic_write: an interrupt
+        # during the rewrite would leave the script empty.
+        self.make()
+        written = self.record_writes()
+        code, _, _ = self.go(["--write"], warning("u", "tests/b.gd", 2) + warning("u", "src/a.gd", 2))
+        self.assertEqual(code, 0)
+        new = b'@warning_ignore_start("untyped_declaration")\n' + BODY.encode()
+        self.assertIn(("tests/b.gd", new), written)
+        self.assertEqual((self.root / "tests/b.gd").read_bytes(), new)
+
+    def record_writes(self) -> list[tuple[str, bytes]]:
+        """Every write through atomic_write while the case runs, as (path relative to the project, bytes)."""
+        written: list[tuple[str, bytes]] = []
+        inner = census.atomic_write
+
+        def recording(path: Path, data: bytes) -> None:
+            written.append((str(path.relative_to(self.root)), data))
+            inner(path, data)
+
+        patch = mock.patch.object(census, "atomic_write", recording)
+        patch.start()
+        self.addCleanup(patch.stop)
+        return written
 
     def test_a_failed_file_is_neither_rewritten_nor_compared(self) -> None:
         # Fails if a failed file counts as tripping nothing: `--write` would delete its line, and `--check` would
