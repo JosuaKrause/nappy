@@ -405,8 +405,9 @@ class RealSignals(unittest.TestCase):
     # last hole: about one interrupt in five during either phase found it, so 40 that land miss it about once in
     # 7500 runs.
     TRIALS = 50
-    # The trials are drawn until TRIALS // 2 have landed, and at most this many are: how many land depends on how
-    # fast the machine ran each trial against the one that measured the phase, so a busy runner needs more draws.
+    # At least TRIALS are always drawn; past that, drawing goes on only while fewer than TRIALS // 2 have landed, and
+    # stops at MAX_TRIALS. A measuring child that ran slow makes every delay too long, and the first trial that ends
+    # before its signal corrects the length (see `interrupt`).
     MAX_TRIALS = 4 * TRIALS
     FILES = 120
 
@@ -458,12 +459,16 @@ class RealSignals(unittest.TestCase):
         landed = 0
         wanted = self.TRIALS // 2
         trial = 0
-        while landed < wanted and trial < self.MAX_TRIALS:
+        while trial < self.TRIALS or (landed < wanted and trial < self.MAX_TRIALS):
             # The phase repeats one write per file, so its first four fifths hold every window and a delay drawn
             # there lands inside it even when a trial runs a little faster than the measuring one.
             delay = rng.uniform(0.0, 0.8 * length)
             code, out, err = self.child(phase, delay)
             landed += code == 128 + signal.SIGINT and "END" not in out
+            if "END" in out:
+                # The phase ran to its end before the signal: it is shorter than the measured length (a measuring
+                # child that ran slow), so the next delays are drawn from what this trial took.
+                length = min(length, float(out.split()[-1]))
             after = self.snapshot()
             if after != self.original or "left as it is" in err:
                 added = sorted(set(after) - set(self.original))
