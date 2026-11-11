@@ -13,7 +13,7 @@ not exist.
   - `Tuning.TELEGRAPH_TIME_DEFAULT`: nothing ever read it.
   - `RunState.city_rng()`: nothing ever called it; the city is generated from `header.run_seed`.
   - `RunState.restore_snapshot()`: the save, until it restored through the registry's own
-    `restore_state()` (#853).
+    `restore_state()` (#919), and the tests, until #1096.
 - The comments and the `docs/ARCHITECTURE.md` sentence that named them say what is true: the
   three screens read touch and mouse apart, with the mouse branch gated on `not _touch`.
 - **The calm areas' floor gets its check back.** `Tuning.calm_areas_needed()`'s comment said
