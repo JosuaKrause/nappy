@@ -405,6 +405,9 @@ class RealSignals(unittest.TestCase):
     # last hole: about one interrupt in five during either phase found it, so 40 that land miss it about once in
     # 7500 runs.
     TRIALS = 50
+    # The trials are drawn until TRIALS // 2 have landed, and at most this many are: how many land depends on how
+    # fast the machine ran each trial against the one that measured the phase, so a busy runner needs more draws.
+    MAX_TRIALS = 4 * TRIALS
     FILES = 120
 
     def setUp(self) -> None:
@@ -453,7 +456,9 @@ class RealSignals(unittest.TestCase):
         self.assertEqual(self.snapshot(), self.original)
         rng = random.Random(f"{self.SEED}-{phase}")
         landed = 0
-        for trial in range(self.TRIALS):
+        wanted = self.TRIALS // 2
+        trial = 0
+        while landed < wanted and trial < self.MAX_TRIALS:
             # The phase repeats one write per file, so its first four fifths hold every window and a delay drawn
             # there lands inside it even when a trial runs a little faster than the measuring one.
             delay = rng.uniform(0.0, 0.8 * length)
@@ -467,7 +472,8 @@ class RealSignals(unittest.TestCase):
                     f"{phase}, trial {trial}, SIGINT {delay * 1000:.2f} ms into a {length * 1000:.1f} ms phase: "
                     f"added {added}, changed or removed {changed}; stderr {err!r}"
                 )
-        self.assertGreaterEqual(landed, self.TRIALS // 2, f"only {landed} signals landed inside the {phase} phase")
+            trial += 1
+        self.assertGreaterEqual(landed, wanted, f"only {landed} signals landed in {trial} trials of the {phase} phase")
 
     def test_a_signal_while_the_lines_are_taken_out_leaves_the_tree_as_it_was(self) -> None:
         # Fails if a signal handled inside a write can leave the file beside behind (atomic_write naming it through
