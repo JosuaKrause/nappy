@@ -566,6 +566,21 @@ func power_station_door_tiles() -> Rect2i:
 func plans_by_block() -> Dictionary:
 	return block_plans
 
+## What calm ground today has, by kind, as the run log and the console print it: `arcs` (the run's
+## block arcs) says what each calm block is for. Cheap, and the thing most worth knowing about a day
+## now that a day can only be won on calm ground. `none` when no block is calm.
+func calm_summary(arcs: CityState) -> String:
+	var counts := {}
+	for block in calm_blocks_now():
+		var purpose := arcs.purpose_of(plans_by_block(), block)
+		var kind := String(GameEnums.BlockPurpose.keys()[purpose]).to_lower()
+		counts[kind] = int(counts.get(kind, 0)) + 1
+	var parts: Array[String] = []
+	for kind: String in counts:
+		parts.append("%d %s" % [counts[kind], kind])
+	parts.sort()
+	return ", ".join(parts) if not parts.is_empty() else "none"
+
 ## Whether `block` anchors a lot and so has an arc (`block_plans`).
 func has_plan_for(block: Vector2i) -> bool:
 	return block_plans.has(block)
@@ -1283,6 +1298,11 @@ func tile_type_at_world(world_position: Vector2) -> GameEnums.TileType:
 ## is a rate to it rather than a kind of place.
 func is_calm_zone(world_position: Vector2) -> bool:
 	return Tile.is_calm(tile_type_at_world(world_position))
+
+## Whether `world_position` is on an alley tile, for the baby's decay (`City.is_alley()`) and the
+## debug readout, which want the yes or no.
+func is_alley(world_position: Vector2) -> bool:
+	return Tile.is_alley(tile_type_at_world(world_position))
 
 ## The home's first tile (`home_rect`'s corner): where a flood from home starts.
 func home_tile() -> Vector2i:

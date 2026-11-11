@@ -71,6 +71,7 @@ run uv run python tools/test_compare_placement_rows.py
 run uv run python tools/test_cli_help.py
 run uv run python tools/test_experiment_preflight.py
 run uv run python tools/test_prune_merged.py
+run uv run python tools/test_sweep_agent_leftovers.py
 run uv run python tools/test_disk_headroom.py
 run uv run python tools/test_migrate_queue.py
 run uv run python tools/test_convert_queue_edits.py

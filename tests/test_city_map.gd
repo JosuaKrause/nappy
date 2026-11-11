@@ -45,6 +45,13 @@ func run(t: TestRunner) -> void:
 		_test_what_one_map_is_handed_leaves_the_other_alone(t, original, seed_value)
 		_test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t, original, seed_value)
 	_test_a_copy_of_an_authored_scene_map_carries_its_recipe(t)
+	_test_a_map_with_no_calm_ground_says_none(t)
+
+## A map no day has marked calm ground on has nothing to count, so its summary says none.
+func _test_a_map_with_no_calm_ground_says_none(t: TestRunner) -> void:
+	var map := CityMap.new(Vector2i(8, 8))
+	t.check(map.calm_blocks_now().is_empty() and map.calm_summary(CityState.new()) == "none",
+			"a map with no calm blocks summarizes its calm ground as none")
 
 ## The copy of a generated city is one `CityGenerator.validate()` passes, every guarantee of it: the
 ## calm blocks, the home, the routes to the parks.

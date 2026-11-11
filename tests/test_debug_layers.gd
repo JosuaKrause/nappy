@@ -172,7 +172,7 @@ class Rig:
 	var label := Label.new()
 	var layer := CanvasLayer.new()
 	var player := Stroller.new()
-	var city := City.new()
+	var world := Node2D.new()
 	var run := RunState.new()
 
 	func _init(t: TestRunner, config: RunConfig) -> void:
@@ -181,7 +181,7 @@ class Rig:
 		readout.setup(config, label, layer, run.header, null, Callable())
 		readout.watch(player, null, null)
 		t.add_child(readout)
-		readout.show_the_world(city.events, city.crowd, city, city.map, city)
+		readout.show_the_world(null, null, world, null, null)
 
 	## The layer node the readout built, or null where it built none.
 	func layers() -> DebugLayers:
@@ -191,7 +191,7 @@ class Rig:
 		readout.free()
 		layer.free()
 		player.free()
-		city.free()
+		world.free()
 
 func _config(words: Array, debug_build: bool, query := "") -> RunConfig:
 	return RunConfig.parse(PackedStringArray(words), query, debug_build)
@@ -251,7 +251,7 @@ func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
 ## off, and what it turned on is the one thing that changed.
 func _test_the_layer_keys_resolve_to_their_own_layer(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], true))
-	rig.readout.draw_routes(rig.city.map)
+	rig.readout.draw_routes(null)
 	var routes := rig.readout.get_node("RouteLines") as RouteLines
 	var layers := rig.layers()
 	rig.readout.close_the_title()

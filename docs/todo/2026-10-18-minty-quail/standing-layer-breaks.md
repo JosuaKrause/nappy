@@ -65,15 +65,17 @@ review; a builder runs it again):
 - *Proposed, not asked for, the plainer alternative being to decide each when the closing pull
   request lists what is left:* **the rest** ends as follows. `DrawnView` goes on the world layer in
   the map, beside `VisibleView`: it names only the engine, as the halo's rim did. The `DangerEdge`
-  uses go when the third hand-ins step's summary lines rewrite `RunSession`, and the `DevRig` uses
-  with that step's smaller cases. The `player` group, and `city.gd`'s and `visible_view.gd`'s
-  `Stroller`, go with who builds the event manager and the crowd, which hands her in;
-  `interior_scene.gd`'s with the building's pass; the `CityEdge` kinds, read by `main.gd`, the rigs
-  and the run log, after the third hand-ins step; `Prop` as a data constant, in a pull request of
-  its own; `GameSave` and `HelpText` in the view's pass; `ResistanceHappenings` with a run's parts
-  (`field-reads.md`); the calendar's map and `SpawnSiting` with rows 3c and 4b of
-  `event-interface.md`; and the scheduler's `City.BURNT_FRONTAGE_SCAR` with its breakup
-  (`scheduler-breakup.md`).
+  uses in the run log (`RunSession`'s edge field and `watch()`'s edge parameter,
+  `TelemetryObserver`'s edge field and `setup()`'s edge parameter) go in a pull request of their
+  own, which hands the run log what its observer reads of the danger edge, the badges that are
+  announcing (the orchestrator's proposal); the `DevRig` uses go with the third hand-ins step's
+  smaller cases. The `player` group, and `city.gd`'s and `visible_view.gd`'s `Stroller`, go with who
+  builds the event manager and the crowd, which hands her in; `interior_scene.gd`'s with the
+  building's pass; the `CityEdge` kinds, read by `main.gd`, the rigs and the run log, after the
+  third hand-ins step; `Prop` as a data constant, in a pull request of its own; `GameSave` and
+  `HelpText` in the view's pass; `ResistanceHappenings` with a run's parts (`field-reads.md`); the
+  calendar's map and `SpawnSiting` with rows 3c and 4b of `event-interface.md`; and the scheduler's
+  `City.BURNT_FRONTAGE_SCAR` with its breakup (`scheduler-breakup.md`).
 - `src/events/` holds data, model and simulation files side by side, so a new file there takes the
   most permissive of the three by default: the folder is split by layer, or the map names a
   default for it that a new file has to opt out of.

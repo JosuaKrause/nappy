@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The escape's masked man and her body on the stairwell flights, on real physics ticks: the 45-degree
 ## walk of every flight, the lines onto the second flight that are caught and the ones that get
@@ -66,7 +65,7 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: TestRunner) -> void:
 			"the walks use the enabled real 14px player circle")
 	t.check((player.get_node("PramCollisionShape2D") as CollisionShape2D).disabled,
 			"and the pram body is off while she carries the baby")
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		var origin: Vector2i = f.waypoint("stairwell_%s" % side) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for walk: Array in _STAIR_WALKS:
 			var start: Vector2i = origin + (walk[0] as Vector2i)
@@ -76,7 +75,7 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: TestRunner) -> void:
 			var label := "%s shaft from %s, %s" % [side, walk[0], action]
 			t.check(f.floor_kind_at(start) == InteriorTile.Kind.STAIRWELL_FLOOR,
 					"%s: starts on a landing tile" % label)
-			for a in ["move_left", "move_right", "move_up", "move_down"]:
+			for a: String in ["move_left", "move_right", "move_up", "move_down"]:
 				Input.action_release(a)
 			Input.action_press(action)
 			player.global_position = scene.map.tile_to_world(start)
@@ -235,7 +234,7 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 	var after_the_tick := func(ticks: int) -> bool:
 		var at := (ticks - 1) * STEP
 		for instance in events.instances():
-			if instance.def.id != "masked_pursuer":
+			if instance.row_id() != "masked_pursuer":
 				continue
 			var id := instance.get_instance_id()
 			if not known.has(id):
@@ -245,7 +244,7 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 				warned_at.append(INF)
 			# One his row's repeat made on this tick, ahead of the step, has taken his first step
 			# from the foot of his line.
-			var before: Vector2 = stood.get(id, instance.path[0])
+			var before: Vector2 = stood.get(id, instance.walks()[0])
 			var was_leaving: bool = was_leaving_by_id.get(id, false)
 			var which: int = known[id]
 			if warned_at[which] == INF and not instance.is_waiting():
@@ -255,13 +254,13 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 					moved_while_telegraphing += 1
 				if first_step_age[which] < 0.0:
 					first_step_age[which] = instance.age - warned_at[which]
-			if instance.is_leaving and not was_leaving:
+			if instance.is_on_its_way_out() and not was_leaving:
 				left.append(at)
 		stood.clear()
 		was_leaving_by_id.clear()
 		for instance in events.instances():
 			stood[instance.get_instance_id()] = instance.global_position
-			was_leaving_by_id[instance.get_instance_id()] = instance.is_leaving
+			was_leaving_by_id[instance.get_instance_id()] = instance.is_on_its_way_out()
 		# Ends once the run has shown what the checks below ask for with room to spare (they need
 		# three men, two who ran and one gap): five men come, four have left the top and four have
 		# taken their first step. The whole section holds thirteen, and a longer watch only repeats

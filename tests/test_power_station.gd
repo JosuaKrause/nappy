@@ -426,8 +426,8 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t: TestRun
 	var run := RunState.new()
 	var recorder := FrameRecorder.new()
 	t.add_child(recorder)
-	recorder.setup(func() -> bool: return false, null, null, null, run, sitting,
-			_SCRATCH_RECORDS)
+	recorder.setup(func() -> bool: return false, null, null, SceneryGround.Mode.ONE, null, null,
+			run, sitting, _SCRATCH_RECORDS)
 	var station := Building.new()
 	station.district = GameEnums.BlockPurpose.INDUSTRIAL
 	station.footprint = Vector2(96.0, 256.0)

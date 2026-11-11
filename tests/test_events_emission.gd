@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The emission model: the meter arithmetic a live `EventInstance` charges as she moves past it --
 ## telegraph damping, the pulse envelope, a two-part field's core against its outer radius, that
@@ -142,9 +141,9 @@ func _test_the_leaf_blowers_core_is_in_the_meter(t: TestRunner) -> void:
 ## down her own line is met inside its telegraph instead and is a different claim, made where its
 ## own siting is decided rather than folded in here.
 func _test_the_rows_she_walks_up_to_pass_positively_awake(t: TestRunner) -> void:
-	for id in ["homeless_yeller", "dog_walker"]:
+	for id: String in ["homeless_yeller", "dog_walker"]:
 		var def := EventCatalogue.by_id(id)
-		for offset in [0.0, 20.0, 40.0]:
+		for offset: float in [0.0, 20.0, 40.0]:
 			var net := M174Pass.pass_net_averaged(def, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 			t.check(net > 0.0,
 					"%s: a pass at %.0fpx of an ordinary sidewalk nets %.2f/s awake, above zero"
@@ -163,7 +162,7 @@ func _test_the_rows_she_walks_up_to_pass_positively_awake(t: TestRunner) -> void
 func _test_the_loose_dog_costs_more_to_pass_than_the_dog_walker(t: TestRunner) -> void:
 	var dog := EventCatalogue.by_id("loose_dog")
 	var walker := EventCatalogue.by_id("dog_walker")
-	for offset in [0.0, 20.0, 40.0]:
+	for offset: float in [0.0, 20.0, 40.0]:
 		var loose := M174Pass.pass_net_averaged(dog, offset, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 		var leashed := M174Pass.pass_net_averaged(walker, offset, Tuning.EXCITEMENT_DECAY_WALKING,
 				1.0)

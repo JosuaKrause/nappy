@@ -572,8 +572,8 @@ func _rig(t: TestRunner, record: FrameRecord) -> _Rig:
 	rig.sitting.use_frame_timing(record)
 	rig.recorder = FrameRecorder.new()
 	t.add_child(rig.recorder)
-	rig.recorder.setup(func() -> bool: return false, null, null, null, RunState.new(), rig.sitting,
-			_SCRATCH_RECORDERS)
+	rig.recorder.setup(func() -> bool: return false, null, null, SceneryGround.Mode.ONE, null, null,
+			RunState.new(), rig.sitting, _SCRATCH_RECORDERS)
 	return rig
 
 class _Rig extends RefCounted:

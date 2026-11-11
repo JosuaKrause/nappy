@@ -93,7 +93,8 @@ var _player: Stroller
 var _baby: Baby
 var _day: DayController
 var _spec := DaySpec.new()
-var _city: City
+## The day's streets, null where the world is no city.
+var _streets: DayStreets
 var _map: WorldMap
 var _events: EventManager
 var _crowd: Crowd
@@ -131,15 +132,15 @@ func watch(player: Stroller, baby: Baby, day: DayController) -> void:
 	_day = day
 
 ## The world she is walking: its events, its crowd (null in the escape's building), the node whose
-## subtree holds the bodies the bounding boxes trace, its map, and the city when it is one. Called
-## once per world, so walking out of the service door points the overlays at the city with whatever
-## `1`–`3` had switched on still on.
+## subtree holds the bodies the bounding boxes trace, its map, and the day's streets when it is a
+## city. Called once per world, so walking out of the service door points the overlays at the city
+## with whatever `1`–`3` had switched on still on.
 func show_the_world(events: EventManager, crowd: Crowd, world: Node2D, map: WorldMap,
-		city: City) -> void:
+		streets: DayStreets) -> void:
 	_events = events
 	_crowd = crowd
 	_map = map
-	_city = city
+	_streets = streets
 	if not _gate():
 		return
 	if _debug_layers:
@@ -171,8 +172,8 @@ func draw_routes(map: CityMap) -> void:
 ## The day `spec` has been planned: its routes are the tree the city grew for it. A day that closes
 ## no streets — the escape's sections — grows none, and its lines stay as they are.
 func use_the_plan(spec: DaySpec) -> void:
-	if _route_lines and _city and spec.closes_streets:
-		_route_lines.refresh(_city.streets().route_tree())
+	if _route_lines and _streets and spec.closes_streets:
+		_route_lines.refresh(_streets.route_tree())
 
 ## The day being walked: its number and its words name the readout's day line.
 func use_the_day(spec: DaySpec) -> void:
@@ -305,17 +306,22 @@ func _readout_due(delta: float) -> bool:
 	_readout_wait = READOUT_INTERVAL
 	return true
 
+## Whether the world she is walking is a city: its map is the city's, not the escape building's.
+func _in_a_city() -> bool:
+	return _map is CityMap
+
 ## Her ground: the city's tile and whether it is calm or an alley, or the building's tile, which has
 ## neither.
 func _where_she_is_lines() -> Array:
 	var here := _player.global_position
-	if _city:
-		var tile := _city.map.world_to_tile(here)
+	if _in_a_city():
+		var city_map := _map as CityMap
+		var tile := city_map.world_to_tile(here)
 		return [
-			"tile  %d, %d  (%s)" % [tile.x, tile.y, _tile_name(_city.map.tile_at(tile))],
+			"tile  %d, %d  (%s)" % [tile.x, tile.y, _tile_name(city_map.tile_at(tile))],
 			"calm  %s    alley  %s" % [
-				"yes" if _city.map.is_calm_zone(here) else "no",
-				"yes" if _city.is_alley(here) else "no"],
+				"yes" if city_map.is_calm_zone(here) else "no",
+				"yes" if city_map.is_alley(here) else "no"],
 		]
 	if _map:
 		var tile := _map.world_to_tile(here)
@@ -325,12 +331,12 @@ func _where_she_is_lines() -> Array:
 ## What is out: the city's events, live against planned, what the director still owes ahead of her
 ## and the crowd — or, in the escape's building, its events alone.
 func _what_is_out_lines() -> Array:
-	if _city:
+	if _in_a_city():
 		return [
 			"events      %6d live of %d" % [
-				_city.events.active_count(), _city.events.planned_count()],
-			"ahead owed  %6d" % _city.events.owed_ahead(),
-			"crowd       %6d" % _city.crowd.agent_count(),
+				_events.active_count(), _events.planned_count()],
+			"ahead owed  %6d" % _events.owed_ahead(),
+			"crowd       %6d" % _crowd.agent_count(),
 		]
 	return ["events      %6d live" % (_events.instances().size() if _events else 0)]
 
@@ -442,8 +448,8 @@ func _toggle_debug_layer(layer: int) -> void:
 ## pressed on is the one where the world is least finished.
 func _capture_context() -> String:
 	var where := Vector2i.ZERO
-	if _city and _player:
-		where = _city.map.world_to_tile(_player.global_position)
+	if _in_a_city() and _player:
+		where = _map.world_to_tile(_player.global_position)
 	var meters := "no baby yet"
 	if _baby:
 		meters = "exc %d, sleep %d" % [roundi(_baby.excitement), roundi(_baby.sleepiness)]

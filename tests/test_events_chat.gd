@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The one row whose whole mechanic is time under compulsion rather than a field: entering
 ## `detain_radius` locks the player's own movement input, and what she is charged while it holds
@@ -80,11 +79,12 @@ func _free_manager(manager: EventManager) -> void:
 ## act on a mother who is still mid-conversation (or a hold a failed check never let start), then
 ## the mother and her. A check that failed then reports as a FAIL, rather than the engine aborting
 ## inside a `free()` before any line prints.
-func _free_the_cast(manager: EventManager, mother, stroller) -> void:
+func _free_the_cast(manager: EventManager, mother: EventInstance, stroller: Stroller) -> void:
 	_free_manager(manager)
-	for node: Variant in [mother, stroller]:
-		if is_instance_valid(node):
-			node.free()
+	if is_instance_valid(mother):
+		mother.free()
+	if is_instance_valid(stroller):
+		stroller.free()
 
 ## A bare `Stroller`, in the tree so `_ready()` has run, its `@onready` camera lookup resolves and
 ## her own physics runs (the lock is run down on her tick).
@@ -141,7 +141,7 @@ func _test_a_conversation_prices_by_the_babys_state(t: TestRunner) -> void:
 	var at := Vector2(3000.0, 3000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
 
-	for awake in [true, false]:
+	for awake: bool in [true, false]:
 		# A bare world handed the hand-built manager: the same answer `City` gives for real
 		# (`WorldContext.excitement_sources_at()`), with no generated city to pull in.
 		var world := WorldContext.new()
