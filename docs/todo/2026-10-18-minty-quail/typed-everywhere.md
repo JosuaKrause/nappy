@@ -28,7 +28,8 @@ engine hold a file to that.
 
 - **What is untyped in a test goes as its suite is converted** to public seams and to one module
   (`tests-public-seams.md`, `tests-one-module.md`): the pull request that converts a suite types it
-  and deletes its file-level ignore.
+  and deletes its file-level ignore. A module's typing pass may come first, typing its suites and
+  deleting their lines, while their reads of other modules' fields wait for those modules' passes.
 - **The files under `src/` are typed in the module passes** (`field-reads.md`).
 - **A probe that names a member no class has parses only behind its opt-out line** and fails when
   it runs. `tests/probes/bouncy_egret_day11_mast.gd` reads `siting.scenery_ground` off

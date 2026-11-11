@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The capture keys, and the animation burst's lifecycle and manifest.
 ##
@@ -192,7 +191,7 @@ class Bench:
 			recorder.cancel("probe over")
 			refused = false
 		else:
-			refused = lines.back().contains("another burst is active")
+			refused = lines[-1].contains("another burst is active")
 		lines.resize(before)
 		return refused
 
@@ -230,7 +229,7 @@ func _test_overlapping_requests_refuse_before_a_capture_wait(t: TestRunner) -> v
 	var bench := Bench.new("overlap")
 	var first := bench.start("first")
 	t.check(first != "" and not bench.recorder.start(bench.root, "overlap test")
-				and bench.lines.back().contains("burst refused: another burst is active"),
+				and bench.lines[-1].contains("burst refused: another burst is active"),
 			"a second request is refused before it can replace the active recorder")
 	bench.draw()
 	var manifest := bench.manifest(first)
@@ -365,12 +364,12 @@ func _test_metadata_write_failure_stops_without_claiming_success(t: TestRunner) 
 	_block_the_manifest(bench.start("blocked on a frame"))
 	bench.draw()
 	t.check(not bench.busy()
-				and bench.lines.back().contains("burst abandoned: metadata write failed"),
+				and bench.lines[-1].contains("burst abandoned: metadata write failed"),
 			"a manifest path occupied by a directory reports its write failure")
 	_block_the_manifest(bench.start("blocked at the deadline"))
 	bench.clock.advance(BurstRecorder.DURATION_SECONDS)
 	t.check(not bench.busy(), "a metadata failure always terminates the recorder")
-	t.check(bench.lines.back().contains("burst abandoned")
+	t.check(bench.lines[-1].contains("burst abandoned")
 				and _count(bench.lines, "burst complete") == 0,
 			"a failed final write is never logged as a successful burst")
 	bench.close()

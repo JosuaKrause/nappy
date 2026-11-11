@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## `VisitCounter`'s own pure halves — the gate's truth table and the event-name builders — plus a
 ## check that answering every signal it connects to touches nothing the run it counts owns, the same
@@ -19,7 +18,7 @@ class RecordingCounter extends VisitCounter:
 	var sent: Array[String] = []
 
 	## The bus of its own this counter listens to.
-	var bus: Node = EVENT_BUS_SCRIPT.new()
+	var bus: EVENT_BUS_SCRIPT = EVENT_BUS_SCRIPT.new()
 	## The run flow of its own whose walks it counts, as `main` hands it each boot's.
 	var flow := RunFlow.new()
 
@@ -155,7 +154,7 @@ func _test_loss_cause_names_every_day_result(t: TestRunner) -> void:
 		[GameEnums.DayResult.LOST_TIMEOUT, "lost-timeout", "the timeout loss"],
 		[GameEnums.DayResult.LOST_HARD_FAIL, "lost-hard-fail",
 				"a two-word cause stays entirely hyphenated"]]
-	for row in named:
+	for row: Array in named:
 		counter.sent.clear()
 		counter.bus.day_ended.emit(3, row[0], "", 0.0)
 		t.check(counter.sent == ["nappy-day-3-" + row[1]], row[2])
@@ -289,7 +288,7 @@ func _test_is_pickup_step(t: TestRunner) -> void:
 		[2, "task-done", "index 2 is the perform step the mark unlocks"],
 		[17, "task-done", "the finale's own step is not a pickup either"],
 		[999, "task-done", "an index the resistance does not know reads as a task, the safer default"]]
-	for row in cases:
+	for row: Array in cases:
 		counter.sent.clear()
 		counter.bus.resistance_step_completed.emit(row[0])
 		t.check(counter.sent == ["nappy-day-%d-%s" % [day, row[1]]], row[2])
@@ -303,7 +302,7 @@ func _test_is_pickup_step(t: TestRunner) -> void:
 ## log, adapted for a listener with no per-frame watch of its own.
 func _test_listening_touches_no_gameplay_state(t: TestRunner) -> void:
 	var counter := VisitCounter.new()
-	var bus: Node = EVENT_BUS_SCRIPT.new()
+	var bus: EVENT_BUS_SCRIPT = EVENT_BUS_SCRIPT.new()
 	var flow := RunFlow.new()
 	var run := RunState.new()
 	run.start_run(1)
@@ -578,7 +577,7 @@ func _test_pending_events_queue_until_present_and_flush_in_order(t: TestRunner) 
 ## holds ahead of itself, and the recorder sees the probe alone.
 func _test_send_event_never_queues_when_it_may_never_send(t: TestRunner) -> void:
 	var counter := VisitCounter.new()
-	var bus: Node = EVENT_BUS_SCRIPT.new()
+	var bus: EVENT_BUS_SCRIPT = EVENT_BUS_SCRIPT.new()
 	var scripts: Array[String] = []
 	var outbox := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))
 	var run := RunState.new()
@@ -958,7 +957,7 @@ func _test_the_pelican_is_its_own_entry(t: TestRunner) -> void:
 	counter.bus.pelican_excited_her.emit(null)
 	counter.bus.pelican_struck_her.emit(null)
 	var expected: Array[String] = []
-	for moment in ["spawned", "seen", "excited", "hit"]:
+	for moment: String in ["spawned", "seen", "excited", "hit"]:
 		expected.append("nappy-day-%d-pelican-%s" % [day, moment])
 	t.check(counter.sent == expected,
 			"the pelican's four moments are four events of its own (%s)" % [counter.sent])
@@ -1044,14 +1043,16 @@ func _test_every_event_opts_out_of_sessions(t: TestRunner) -> void:
 	for i in counter.sent.size():
 		var name := counter.sent[i]
 		var call := scripts[i]
-		var options: Variant = null
+		var parsed: Variant = null
 		if call.begins_with(prefix) and call.ends_with(suffix):
-			options = JSON.parse_string(call.substr(prefix.length(),
+			parsed = JSON.parse_string(call.substr(prefix.length(),
 					call.length() - prefix.length() - suffix.length()))
-		t.check(options is Dictionary and options.get("no_session") == true
+		var options: Dictionary = parsed if parsed is Dictionary else {}
+		var is_options := parsed is Dictionary
+		t.check(is_options and options.get("no_session") == true
 				and options.get("event") == true and options.get("path") == name,
 			"%s is an event under its own path that opts out of sessions" % name)
-		t.check(options is Dictionary and options.get("title") == name and options.size() == 4,
+		t.check(is_options and options.get("title") == name and options.size() == 4,
 			"%s: the script line hands count() exactly those options" % name)
 	_done(counter)
 
