@@ -22,20 +22,69 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 - **`test_event_manager.gd` keeps its real City**, for the reason its header states.
 - **Other modules' fields stay for their passes.** The pull request's description lists them by
   class, inner classes included (the plan record, a resistance step, a route branch, the walk's
-  sitings), each method's body checked to return the field read. Those the game answers through a
-  method: the live event's `def` (`row()`), `is_finished` (`is_gone()`), `is_leaving`
-  (`is_on_its_way_out()`) and `excitement` (`source()`); the plan's `def` (`row()`), `position`
-  (`placed_at()`), `path` (`walks()`), `live` (`instance()`) and `spent` (`is_spent()`); the row's
-  `max_per_day` (`most_in_a_day()`), `mobile` (`moves()`), `hard_fail` (`ends_the_day()`),
-  `still_while_telegraphing` (`holds_still()`), `telegraph_time` (`telegraphs_for()`),
-  `outer_radius` (`heard_within()`), `inner_radius` (`core_within()`), `intensity` (`peak()`),
-  `aftermath.on_finish` (`leaves_behind()`) and `look` (`picture()`); a pending warning's `def`
-  (`row()`), `place` (`points_at()`) and `left` (`seconds_left()`); a marble bag's `drawn`
-  (`draws_made()`). The rest (among them `City`'s and the event manager's fields, the run's
-  resistance and spend states, the row's `stands_as`, `when_it_stops`, `spawn_mode` and
-  `on_her_way`, which methods answer only in part) have no method that returns them.
+  sitings), each method's body checked to return the field read. The whole list, by class, is
+  under "Fields read and written, by class" below.
 - **The plan record is typed under `EventScheduler.Planned`**; the placement track's scripted rename
   to `EventPlan` reruns over it.
+
+## Fields read and written, by class
+
+Built with `tools/field_answers.py` at the pass's merge commit `74f825ce5`, over the `.gd` files
+under `tests/` its pull request changed, and each method read in its class and the classes it
+extends: each read with the public method that returns exactly that field, or "no method"; each
+write with every public method that assigns the field, and what it assigns.
+
+- **`AttemptSpendState`**: `scars` → no method.
+- **`City`**: `events` → no method; `map` → no method; `run` → no method; `spawn_siting` → no
+  method.
+- **`CityMap`**: `block_plans` → `plans_by_block()`; `soft_sealed_tiles` → no method.
+- **`DaySpec`**: `holds_the_home_streets` → no method.
+- **`EventDef`**: `aftermath` → no method; `aftermath.on_finish` → `leaves_behind()`; `first_day` →
+  no method; `hard_fail` → `ends_the_day()`; `hard_fail`, written → no method; `id` → no method;
+  `id`, written → no method; `inner_radius` → `core_within()`; `inner_radius`, written → no method;
+  `intensity` → `peak()`; `intensity`, written → no method; `kind` → no method; `look` →
+  `picture()`; `max_per_day` → `most_in_a_day()`; `mobile` → `moves()`; `on_her_way` → no method;
+  `on_her_way`, written → no method; `outer_radius` → `heard_within()`; `outer_radius`, written → no
+  method; `pavement_side` → no method; `pursuit` → no method; `spawn_mode` → no method; `speed` → no
+  method; `stands_as`, written → no method; `still_while_telegraphing` → `holds_still()`;
+  `stops_where_it_arrives` → no method; `telegraph_time` → `telegraphs_for()`; `telegraph_time`,
+  written → no method; `telegraphs` → no method; `when_it_stops`, written → no method.
+- **`EventInstance`**: `age` → no method (`EventInstance.Figure.age()` returns it on a view no
+  public method hands out); `age`, written → `resume()` does `age = from_age`; `def` → `row()`;
+  `def.hard_fail` → `ends_the_day()`; `def.id` → `row_id()`; `excitement` → `source()`;
+  `is_finished` → `is_gone()`; `is_leaving` → `is_on_its_way_out()`; `is_parked` → no method
+  (`EventInstance.Figure.has_parked()` returns it on a view no public method hands out); `path` →
+  `walks()`.
+- **`EventManager`**: `ahead` → no method; `sources` → no method; `spawner` → no method;
+  `stream_radius`, written → no method; `streaming` → no method; `warnings` → no method; `world` →
+  no method; `world.visible` → `visible_view()`.
+- **`EventScheduler.Planned`**: `def` → `row()`; `def.id` → `row_id()`; `live` → `instance()`;
+  `live`, written → no method; `mast_id` → no method; `noticed_at` → no method; `path` → `walks()`;
+  `position` → `placed_at()`; `spent` → `is_spent()`; `was_live` → no method; `was_live`, written →
+  no method.
+- **`EventScheduler.WalkSiting`**: `holds_the_home_streets`, written → no method; `mast_checks` → no
+  method.
+- **`EventWorld`**: `day` → no method.
+- **`EventsAhead`**: `holds_the_home_streets` → no method.
+- **`MarbleBag`**: `drawn` → `draws_made()`.
+- **`OnHerWay`**: `at_a_front` → no method.
+- **`PendingWarning`**: `def` → `row()`; `left` → `seconds_left()`; `offset` → no method; `place` →
+  `points_at()`; `shown` → no method; `withdrawn` → no method.
+- **`ResistanceDirector`**: `trace`, written → no method.
+- **`ResistanceRunState`**: `completed_steps`, written → `give_back()` does `completed_steps =
+  _dawn_completed_steps.duplicate()`, `restore()` does `completed_steps = _to_int_array(data["…"])`;
+  `failed_steps`, written → `give_back()` does `failed_steps = _dawn_failed_steps.duplicate()`,
+  `restore()` does `failed_steps = _to_int_array(data["…"])`; `progress`, written → `reset()` does
+  `progress = 0`, `give_back()` does `progress = _dawn_progress`, `restore()` does `progress =
+  int(data["…"])`.
+- **`ResistanceSteps.Step`**: `day` → no method; `grants_progress` → no method; `index` → no method;
+  `is_pickup` → no method.
+- **`RouteTree`**: `branches` → no method.
+- **`RouteTree.Branch`**: `routes` → no method.
+- **`RunState`**: `attempt_spend` → no method; `resistance` → no method.
+- **`ScreenCover`**: `left` → `left_corner()`.
+- **`WorldMap`**: `obstructed_tiles` through `CityMap` → no method; `size` through `CityMap` →
+  `size_in_tiles()`.
 
 ## Verified
 
