@@ -100,17 +100,22 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    - **Placement:** `placement-by-construction.md`'s
      steps with `scheduler-breakup.md` interleaved. Nothing else changes where events go until it
      is done (inbox #1185 in gentle-owl).
-   - **Run flow:** `one-start-for-every-spec.md`'s start, then its signals and run log, then who
-     builds the events and the crowd together with `city-hand-ins.md`'s third pull request.
-   - **The modules that do not wait for the events:** telemetry; the player and the baby; the atlas
-     and the scenery; the crowd; the city map. The city scene and the run's parts follow the third
-     hand-ins pull request.
-   - **Tools:** `baseline-measurements.md`, the field-read check made to see every read
-     (`field-reads.md`), and then `typed-everywhere.md`: code is typed wherever the language can
-     type it, the tests included (its scripted rewrite of the suites' runner is the orchestrator's
-     proposal, marked so there). `method-without-parentheses.md`, a typed receiver's method named
-     without its parentheses being reported, is the orchestrator's proposal and waits for no
-     other item.
+   - **Run flow:** who builds the events and the crowd (`one-start-for-every-spec.md`), together
+     with `city-hand-ins.md`'s third pull request.
+   - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
+     crowd; the city map. The city scene and the run's parts follow the third hand-ins pull
+     request. *Proposed, not asked for:* three more passes, each what is left of a folder with
+     files still under the opt-out line: **the view** (`src/ui/`), whose reads through the run's
+     parts wait with those parts and the rest for nothing; **the building** (`src/interior/`,
+     `src/finale/`), whose one read of `WorldMap.world` goes with the map interface's world half
+     (`standing-layer-breaks.md`); and **the developer's rigs** (`src/dev/`), row 3c of
+     `event-interface.md`. The plainer alternative is to leave them to `field-reads.md`'s
+     one-pull-request-per-area sentence.
+   - **Tools:** `baseline-measurements.md`'s further readings, and `typed-everywhere.md`: code is
+     typed wherever the language can type it, the tests included (its scripted rewrite of the
+     suites' runner is the orchestrator's proposal, marked so there).
+     `method-without-parentheses.md`, a typed receiver's method named without its parentheses
+     being reported, is the orchestrator's proposal and waits for no other item.
    - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a
      pursuit and the rest as parts an event has, and every caller asking through methods). Its
      first steps, the callers outside the events folder and the live event's own behaviours and
@@ -128,7 +133,9 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    worth an entry of its own. It also reruns `tests/probes/placement_rows.gd` on main and on the
    refactor's head and compares the two with `tools/compare-placement-rows.py`, which applies the
    rule the record grassy-magpie states (that record carries the output of the hand-run script it
-   replaced, with that step's own list). Before it does, both probes are settled
+   replaced, with that step's own list). Before it does, the tool is made to refuse a log line of
+   a day outside 1 to 14, which it reads today though `placement_rows.gd` cannot print one, and both
+   probes are settled
    on `DayPlanner`'s planning: `placement_rows.gd` plans each day's closures, region wall and seals
    and hands the seals and the wall's bodies in as standing since placement step 3c, which moved
    main's own route-adjacent walls from 30.54 to 19.41 a city a day, and

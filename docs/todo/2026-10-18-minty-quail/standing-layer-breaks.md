@@ -28,25 +28,52 @@ review; a builder runs it again):
   nodes on a draw layer, which follows from the map interface being the model's (inbox #904 in freckled-moose).
 - **Dawn planning reading live-event geometry** (12 uses in the event scheduler and
   `walk_ground.gd`): the live event, its picture footprints and her class's constants.
-- **The rest**, small misplacements: the dev rig named by the day director, the task calendar
-  computing on the map, the city edge's kinds, the props'
-  trees.
+- **The rest**, small misplacements: the dev rig named by the day director; the task calendar
+  computing on the map; the city edge's kinds; the props' trees; the danger badge's class named by
+  the run log (`RunSession`, `TelemetryObserver`); the save indicator reading `GameSave`; the
+  texts' `HelpText` token; her class's constants and type tests where she is not handed in
+  (`city.gd`, `interior_scene.gd`, `visible_view.gd`); the run reading `ResistanceHappenings`' day
+  of the neighbor's raid; the row's check against `SpawnSiting`'s least distance; `DrawnView`,
+  named by two looks; the scheduler naming `City.BURNT_FRONTAGE_SCAR`; and the `player` group the
+  blackout and the poster walls find her through.
 
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
 
-- The bus is handed to the emitters that still fetch it, which is mechanical. That each copies the
+- The bus reaches each emitter that still fetches it from whoever builds that emitter, so the order
+  is the builders': `main` hands it to the resistance director and to the event manager (as it hands
+  it to the crowd through `City.crowd`, until the city scene stops building them), the manager
+  hands it on to its encounter watch, its spawner, `EventsAhead` and, through the spawner, each
+  live event; the happenings hand it to the park cordon; the blackout and the poster walls take it
+  from whoever comes to build them (below). That each copies the
   baby's shape is the orchestrator's reading, open to the player's overturn: the bus script preloaded
   as the field's type, `use_bus()`, and one teller per signal that does nothing without a bus
   (minty-quail-fluffy-yak). The two classes already handed it, `ChargeRecord` and
   `CheckpointController`, take it in their constructor and emit with no guard.
-- Who builds the event manager and the crowd is decided in the third hand-ins pull request
-  (`city-hand-ins.md`), which already rewrites `EventManager.setup(city, …)` and the readers of
-  `City.events` and `City.crowd`, so the building and the city get their event manager the same way
-  (`one-start-for-every-spec.md`).
+- *Proposed, not asked for, the plainer alternative being that the builder of the third hand-ins
+  pull request decides these:* who builds the event manager and the crowd gets a planning pass of
+  its own, by Fable, reading `city.gd` and `main.gd` whole, once the third hand-ins step's other pull requests have taken the
+  readers under `src/` away (`city-hand-ins.md`), so the building and the city get their event
+  manager the same way (`one-start-for-every-spec.md`). Undecided until then: where the factory
+  lives and what it is called; whether the blackout and the poster walls, which `City.build()` also
+  builds, come with it; how the developer settings `main.gd` writes into `City`'s fields reach the
+  parts; and what the tests ask in place of `city.events` and `city.crowd`.
 - The map interface's world half is split off or declared a permanent exception in
   designing-classes.
-- Dawn planning's reads go with the event scheduler's breakup (`scheduler-breakup.md`).
+- Dawn planning's reads move with the event scheduler's breakup (`scheduler-breakup.md`), each
+  listed break following its file, and are settled by row 3a of `event-interface.md`.
+- *Proposed, not asked for, the plainer alternative being to decide each when the closing pull
+  request lists what is left:* **the rest** ends as follows. `DrawnView` goes on the world layer in
+  the map, beside `VisibleView`: it names only the engine, as the halo's rim did. The `DangerEdge`
+  uses go when the third hand-ins step's summary lines rewrite `RunSession`, and the `DevRig` uses
+  with that step's smaller cases. The `player` group, and `city.gd`'s and `visible_view.gd`'s
+  `Stroller`, go with who builds the event manager and the crowd, which hands her in;
+  `interior_scene.gd`'s with the building's pass; the `CityEdge` kinds, read by `main.gd`, the rigs
+  and the run log, after the third hand-ins step; `Prop` as a data constant, in a pull request of
+  its own; `GameSave` and `HelpText` in the view's pass; `ResistanceHappenings` with a run's parts
+  (`field-reads.md`); the calendar's map and `SpawnSiting` with rows 3c and 4b of
+  `event-interface.md`; and the scheduler's `City.BURNT_FRONTAGE_SCAR` with its breakup
+  (`scheduler-breakup.md`).
 - `src/events/` holds data, model and simulation files side by side, so a new file there takes the
   most permissive of the three by default: the folder is split by layer, or the map names a
   default for it that a new file has to opt out of.
