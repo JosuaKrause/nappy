@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## What the `TelemetryObserver` notes of a walk, read off a recording run log
 ## (`tests/recording_log.gd`) and not off a file: the escape's sections, a stuck walk, the trail
@@ -207,9 +206,9 @@ func _test_a_retried_section_restarts_the_clock(t: TestRunner) -> void:
 			"a retry puts the clock back through restart_section_clock(), which restarts the "
 			+ "snapshot schedule with it, and not through set_clock(0.0) (%d calls)" % _log.restarts)
 	t.check(_log.clock() == 0.0, "a retry's clock starts over at zero, as it always did")
-	t.check(_log.lines.back().begins_with("0.0 start restarted"),
+	t.check(_log.lines[-1].begins_with("0.0 start restarted"),
 			"and the start line says it began again, timed from its own start (got '%s')"
-			% _log.lines.back())
+			% _log.lines[-1])
 	observer.free()
 	clock.free()
 	baby.free()

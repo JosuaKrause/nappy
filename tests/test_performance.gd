@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What a frame cost, as the readout shows it and as the run log writes it down.
 ##
@@ -34,7 +33,7 @@ const _COSTS := ["fps", "draws", "objects", "primitives", "process", "physics"]
 
 func _test_the_log_line_names_every_cost(t: TestRunner) -> void:
 	var line := FrameCost.line(0.0)
-	for cost in _COSTS:
+	for cost: String in _COSTS:
 		t.check(cost in line, "the frame entry names %s (%s)" % [cost, line])
 
 ## Milliseconds, from the seconds the caller measures its interval in. A hitch is what "a bit
@@ -58,11 +57,11 @@ func _test_the_log_line_carries_the_worst_frame_it_was_given(t: TestRunner) -> v
 func _test_the_readout_names_what_the_log_names(t: TestRunner) -> void:
 	var readout := "\n".join(FrameCost.readout_lines())
 	var line := FrameCost.line(0.0)
-	for cost in _COSTS:
+	for cost: String in _COSTS:
 		t.check(cost in readout, "the readout names %s" % cost)
 	t.check(FrameCost.readout_lines().size() == _COSTS.size(),
 			"and carries a line per cost and nothing else (%d)" % FrameCost.readout_lines().size())
-	for cost in _COSTS:
+	for cost: String in _COSTS:
 		t.check((cost in readout) == (cost in line),
 				"%s is on both the readout and the log line, or on neither" % cost)
 
@@ -76,7 +75,7 @@ func _test_the_readout_names_what_the_log_names(t: TestRunner) -> void:
 func _test_the_readout_gains_a_labelled_column_the_log_does_not(t: TestRunner) -> void:
 	var readout := "\n".join(FrameCost.readout_lines())
 	var line := FrameCost.line(0.0)
-	for cost in ["process", "physics"]:
+	for cost: String in ["process", "physics"]:
 		t.check("%s     worst" % cost in readout,
 				"the readout's %s line carries a worst label (%s)" % [cost, readout])
 		t.check(not ("%s     worst" % cost in line) and not ("worst %s" % cost in line),

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What the observers record of a scripted run, end to end through the real `main.tscn`: the names
 ## the page's counter sends (`VisitCounter`, GoatCounter) and the notes the run log is handed.
@@ -32,6 +31,7 @@ extends RefCounted
 ## city (`tests/city_map_cache.gd`).
 
 const Boot := preload("res://tests/booted_main.gd")
+const Main := preload("res://src/main.gd")
 const MapCache := preload("res://tests/city_map_cache.gd")
 const RecordingLog := preload("res://tests/recording_log.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
@@ -95,7 +95,7 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t: TestRunner) -> Arr
 	_seat(counter, home)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE,
 			Boot.config(["--seed", str(SEED), "--no-title"]),
-			func(m: Node) -> void:
+			func(m: Main) -> void:
 				m.use_sitting_home(home)
 				m.use_run_log(run_log),
 			false, MapCache.source())
@@ -194,7 +194,7 @@ func _test_the_escape_handed_over_lost_and_left(t: TestRunner) -> Array[String]:
 	_seat(counter, home)
 	var config := RunConfig.parse(PackedStringArray(["--no-save"]), "", true)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, config,
-			func(m: Node) -> void:
+			func(m: Main) -> void:
 				m.use_sitting_home(home)
 				m.use_run_log(run_log))
 	var main := booted.main
@@ -241,7 +241,7 @@ func _test_the_escape_handed_over_lost_and_left(t: TestRunner) -> Array[String]:
 ## outcome screen of the day it follows.
 static func _words_on(summary: Node) -> String:
 	var words := ""
-	for label_name in ["Heading", "Title", "Note", "Body", "Brief"]:
+	for label_name: String in ["Heading", "Title", "Note", "Body", "Brief"]:
 		var label := summary.find_child(label_name, true, false) as Label
 		if label and label.visible:
 			words += "%s: %s\n" % [label_name, label.text]

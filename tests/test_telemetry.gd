@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The run log: its format, and the promise that having it on changes nothing.
 ##
@@ -463,7 +462,7 @@ func _test_the_map_picture_draws_the_corridor(t: TestRunner) -> void:
 		on_the_tree[cell] = true
 
 	var missed := 0
-	for cell in on_the_tree:
+	for cell: Vector2i in on_the_tree:
 		var tile: Vector2i = cell * ReachabilityGrid.CELL
 		var before := plain.get_pixel(tile.x * TelemetryMap.SCALE, tile.y * TelemetryMap.SCALE)
 		var after := drawn.get_pixel(tile.x * TelemetryMap.SCALE, tile.y * TelemetryMap.SCALE)
@@ -592,7 +591,7 @@ func _check_a_glyph_says_what_it_is(t: TestRunner, map: CityMap,
 	var lethal: EventScheduler.Planned = plans[0]
 	var costly: EventScheduler.Planned = plans[1]
 	var corner := Vector2i(1, 1)
-	for plan in [costly, lethal]:
+	for plan: EventScheduler.Planned in [costly, lethal]:
 		var only: Array[EventScheduler.Planned] = [plan]
 		var image := TelemetryMap.render(map, [], null, only)
 		var at := map.world_to_tile(plan.position)
@@ -652,7 +651,7 @@ func _test_the_map_picture_draws_the_trail_and_distinguishes_running(t: TestRunn
 func _test_every_routed_event_is_a_straight_line(t: TestRunner) -> void:
 	var map := CityMapCache.of(4242)
 	var consumed: Array[String] = []
-	for day in [1, 3, 7, 14]:
+	for day: int in [1, 3, 7, 14]:
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
 				CalmAreas.of(map), MastSites.compute(map), consumed).placements():
 			if plan.path.size() < 2:
@@ -707,7 +706,7 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t: TestRunner) -> void:
 		_log.snapshot_now("press %d" % i)
 	t.check(log.recorded_lines().size() - before == TelemetryShots.PER_DAY * 2 + 1,
 			"every press writes its line, well past the heuristic's own daily cap")
-	t.check(log.recorded_lines().back().contains("shot"),
+	t.check(log.recorded_lines()[-1].contains("shot"),
 			"and the line is a shot entry")
 	_log.end_run()
 	t.check(not _log.is_active(), "and the suite is left dormant again")
@@ -808,7 +807,7 @@ func _delete_recursive(path: String) -> void:
 		for file in dir.get_files():
 			DirAccess.remove_absolute("%s/%s" % [path, file])
 	DirAccess.remove_absolute(path)
-	for ancestor in [path.get_base_dir()]:
+	for ancestor: String in [path.get_base_dir()]:
 		var above := DirAccess.open(ancestor)
 		if above and above.get_files().is_empty() and above.get_directories().is_empty():
 			DirAccess.remove_absolute(ancestor)
@@ -1174,11 +1173,11 @@ func _test_the_day_header_notes_the_invincible_flag_once_per_day(t: TestRunner) 
 
 	_log.configure(RunConfig.parse(PackedStringArray(["--invincible"]), "", true))
 	_log.begin_day(1, 1, 4242, 4242, 144.0)
-	var on_lines := _log.current_log().recorded_lines().duplicate()
+	var on_lines: Array[String] = _log.current_log().recorded_lines().duplicate()
 
 	_log.configure(RunConfig.parse(PackedStringArray(), "", true))
 	_log.begin_day(2, 1, 4242, 4242, 144.0)
-	var off_lines := _log.current_log().recorded_lines().duplicate()
+	var off_lines: Array[String] = _log.current_log().recorded_lines().duplicate()
 
 	_log.configure(null)
 	_log.end_run()
@@ -1213,7 +1212,7 @@ func _test_a_headless_burst_is_refused_without_a_capture_wait(t: TestRunner) -> 
 ## scratch folder, `tests/test_burst_capture.gd`) through `use_bursts()`, the way `main` hands the
 ## log it makes the game's own, which is on the viewport and draws nothing here.
 func _test_a_day_or_a_run_ending_cuts_the_active_burst_short(t: TestRunner) -> void:
-	var bench = BurstSuite.Bench.new("day-and-run")
+	var bench := BurstSuite.Bench.new("day-and-run")
 	var scratch := "user://telemetry-test-bursts-%d" % Time.get_ticks_usec()
 	_use_a_log_over(scratch)
 	_log.use_bursts(bench.recorder)
