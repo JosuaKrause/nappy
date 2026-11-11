@@ -83,6 +83,11 @@ Left, each its own design question:
   `SceneryLayer.frame_b` is used only by suites (`test_roof_entities`, `test_scenery_residency`,
   `test_scenery_animation`) and a windowed probe, and `SceneryLayer.drawer` only by its own file;
   `tools/check_test_only_members.py` misses `frame_b` because the name is also a local elsewhere.
+- **The flock's look reads a bird's fields.** `_draw_birds()` in `src/events/views/flock_look.gd`
+  reads `at`, `lift`, `heading` and `phase` off `EventFlock.Bird`, an inner class
+  `tools/check_field_reads.py` does not see, and four suites read the same fields. `Bird` gets its
+  methods and those suites ask them in one pull request, since row 4a of `event-interface.md`
+  changes no line under `src/`.
 - **The lines the placement rewrite and the third hand-ins pull request touch** (`src/events/`,
   `src/routes/`, `src/dev/`, `scene_recipe*`, `day_director.gd`, `main.gd`, `day_planner.gd`,
   `run_session.gd`, the event manager and `EventWorld`, scenery residency and ground, the blackout,
