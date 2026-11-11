@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 class_name VisitCounter
 extends Node
 ## Sends anonymous GoatCounter events for how far a run gets — see docs/TELEMETRY.md, "The page
@@ -91,12 +90,17 @@ extends Node
 ## walks begin there. A suite that boots `main` gets the counter of the sitting it hands, freed with
 ## it.
 
+## The game's event bus, named by its script so its signals are typed here.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+
 ## Connects every handler below to `bus`'s signals. `main` hands it the game's `EventBus`; a
 ## test hands in a bus of its own, so what it emits reaches this counter alone, and frees the
 ## counter to let go of it.
-func listen(bus: Node) -> void:
-	for pair in _handlers(bus):
-		pair[0].connect(pair[1])
+func listen(bus: _BUS) -> void:
+	for pair: Array in _handlers(bus):
+		var emitted: Signal = pair[0]
+		var handler: Callable = pair[1]
+		emitted.connect(handler)
 
 ## Connects the counter to `flow`, the run flow of the boot that is playing (`RunFlow`): each walk it
 ## begins is counted as its day's `began`, and names what is counted while it is walked. `main` hands
@@ -105,7 +109,7 @@ func listen_to_the_flow(flow: RunFlow) -> void:
 	flow.day_started.connect(_on_day_started)
 
 ## Each signal of `bus` the counter answers, with the handler that answers it.
-func _handlers(bus: Node) -> Array:
+func _handlers(bus: _BUS) -> Array:
 	return [
 		[bus.run_begun, _on_run_begun],
 		[bus.day_ended, _on_day_ended],

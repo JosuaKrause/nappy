@@ -22,7 +22,7 @@ const LOOSE_LEAD_REACH := 26.0
 ## instance exists, and without the run a spread covers, which only an instance's own street decides.
 ## Empty for a row that draws nothing of its own.
 static func box_of(row: EventDef) -> Rect2:
-	var icon := EventPictures.icon_for(row.look)
+	var icon := EventPictures.icon_for(row.picture())
 	if icon.is_empty():
 		return Rect2()
 	var size := EventPictures.native_size(icon)
@@ -41,12 +41,13 @@ static func drawn_box_of(row: EventDef, spread_vertical: bool) -> Rect2:
 		return Rect2()
 	var size := box.size
 	box = _with_the_drop(row, box)
-	var half := maxf(11.0, row.obstructs_radius)
-	if row.has_a_spread and spread_vertical:
+	var half := maxf(11.0, row.drawn_width() * 0.5)
+	var lies := row.lies()
+	if lies == EventDef.Lie.SPREAD and spread_vertical:
 		box = box.merge(Rect2(-size.x * 0.5, -half, size.x, half * 2.0))
-	elif row.has_a_spread or row.stands_along_its_street:
+	elif lies == EventDef.Lie.SPREAD or lies == EventDef.Lie.ALONG:
 		box = box.merge(Rect2(-half, -size.y, half * 2.0, size.y))
-	if row.flock_size > 0:
+	if row.is_a_flock():
 		box = box.grow(row.flock_spread)
 	return box
 
@@ -57,14 +58,14 @@ static func drawn_box_of(row: EventDef, spread_vertical: bool) -> Rect2:
 ## shadow (a disc of its shape's radius at its feet), the loose dog's trailing lead, the bob and the
 ## excitement halo's rim (`EntityHalo.HALO_MARGIN`). What a thing arriving from off screen is placed
 ## wholly outside the camera's view by (`SpawnSiting.just_out_of_sight()`), so nothing of it
-## shows on the frame it exists *(amendment 6 of M226, the player: "I don't want any pop in")*. And
-## for a row that can be marked — anything with a field or a lethal reach — the danger caret above
-## its feet at its tallest (`EventPictures.largest_mark_rect()`), which stands well above the
-## picture. Empty for a row that draws nothing of its own.
+## shows on the frame it exists (inbox #598 in olive-hedgehog). And for a row that can be marked —
+## anything with a field or a lethal reach — the danger caret above its feet at its tallest
+## (`EventPictures.largest_mark_rect()`), which stands well above the picture.
+## Empty for a row that draws nothing of its own.
 static func footprint_of(row: EventDef) -> Rect2:
 	var box := Rect2()
 	var any := false
-	for picture in EventPictures.family_sources(row.look):
+	for picture in EventPictures.family_sources(row.picture()):
 		var size := EventPictures.native_size(picture)
 		if size.x <= 0.0 or size.y <= 0.0:
 			continue
@@ -74,13 +75,13 @@ static func footprint_of(row: EventDef) -> Rect2:
 	if not any:
 		return box_of(row)
 	box = _with_the_drop(row, box)
-	if row.draws_body_shadow and row.shape != null:
-		var r := row.obstructs_radius if row.obstructs_radius > 0.0 else row.shape.radius
+	if row.casts_a_shadow() and row.ground_shape() != null:
+		var r := row.obstructs_within() if row.has_a_body() else row.ground_shape().rounding_radius()
 		box = box.merge(Rect2(-r, -r, r * 2.0, r * 2.0))
-	if row.trails_a_lead:
+	if row.drags_a_lead():
 		box = box.merge(Rect2(-LOOSE_LEAD_REACH, -8.0, LOOSE_LEAD_REACH * 2.0, 8.0))
 	box = box.grow(EventPictures.BOB_HEIGHT + EntityHalo.HALO_MARGIN)
-	if row.intensity > 0.0 or row.hard_fail:
+	if row.has_a_field() or row.ends_the_day():
 		box = box.merge(_with_the_drop(row,
 				EventPictures.largest_mark_rect().grow_individual(0.0, EventPictures.BOB_HEIGHT,
 						0.0, 0.0)))
@@ -90,13 +91,13 @@ static func footprint_of(row: EventDef) -> Rect2:
 ## straight down the screen, and its look's largest canvas margin (`EventLook.body_anchor()`); zero
 ## for every other row, whose pictures stand on the node. `footprint_of()` and `drawn_box_of()` add it.
 static func _picture_drop_of(row: EventDef) -> float:
-	if not EventPictures.is_anchored_over_its_body(row.look) or row.shape == null:
+	if not EventPictures.is_anchored_over_its_body(row.picture()) or row.ground_shape() == null:
 		return 0.0
-	var margins := EventPictures.canvas_margins(row.look)
+	var margins := EventPictures.canvas_margins(row.picture())
 	var margin := 0.0
 	for view: String in margins:
 		margin = maxf(margin, float(margins[view]))
-	return row.shape.reach() + margin
+	return row.ground_shape().reach() + margin
 
 ## `box` and the same box lowered by `_picture_drop_of(row)`, together: every place between the
 ## two a picture can stand as its heading turns.
@@ -131,9 +132,9 @@ static func solid_footprint_of(row: EventDef, axis: Vector2, spread_vertical: bo
 static func solid_axis_of(row: EventDef, heading: Vector2, spread_vertical: bool,
 		side_on: bool) -> Vector2:
 	# A car's body lies along the way it is driving, and turns with it (`EventCarDriving.turn_the_body()`).
-	if row.vehicle != null:
+	if row.drives():
 		return heading.normalized() if not heading.is_zero_approx() else Vector2.RIGHT
-	if row.has_a_spread or row.stands_along_its_street:
+	if row.lies() == EventDef.Lie.SPREAD or row.lies() == EventDef.Lie.ALONG:
 		return Vector2.DOWN if spread_vertical else Vector2.RIGHT
 	return Vector2.RIGHT if side_on else Vector2.DOWN
 
@@ -152,7 +153,7 @@ static func stands_side_on(row: EventDef, map: WorldMap, at: Vector2, face: Vect
 	var on_an_east_west_street := offsets.y >= 0
 	if on_a_north_south_street != on_an_east_west_street:
 		var parallel_side := on_an_east_west_street
-		return not parallel_side if row.lies_across_its_street else parallel_side
+		return not parallel_side if row.lies() == EventDef.Lie.ACROSS else parallel_side
 	return absf(face.x) >= absf(face.y)
 
 ## **Where a body stands once it is built at `at`**, the one reading every place that needs it asks:
@@ -206,8 +207,8 @@ static func guard_side_toward(vertical: bool, toward: Vector2) -> int:
 	return -1 if across < 0.0 else 1
 
 ## **Where a posted roadblock guard's feet stand relative to the band's centre: beside it, never
-## over it.** *(2026-09-25: "also the guards are on top of the barrier?")* The whole of his standing
-## picture is kept clear of the whole of the barrier's, `_GUARD_POST_CLEARANCE` apart, on `side`:
+## over it** (PLAYTEST-135 2). The whole of his standing picture is kept clear of the whole of the
+## barrier's, `_GUARD_POST_CLEARANCE` apart, on `side`:
 ##
 ## - **End-on** (`vertical`), the column is as wide as `roadblock_segment_vertical.svg`, so he stands
 ##   level with the band's centre, half the column's width and half his own out to the east or west.
@@ -273,16 +274,14 @@ static var _warning_guard := Vector2.ZERO
 
 ## Whether a checkpoint's own hold suppresses *every* drawing of `event`, halo included.
 ##
-## **True only where the guard is the whole of what this row draws** (`EventDef.hides_in_its_hold`):
-## `checkpoint_post` is one
-## man at an alley mouth and nothing else, so when he goes in there is nothing left to draw; a hut
-## is a building and a gate is a boom across a road, and *(PLAYTEST-57: "the checkpoint house
-## disappears ... all this is incorrect".)* A structure that blinks out while she is inside it
-## reads as the door having been removed rather than as her having gone through it, which is the
-## opposite of what the hold is for.
+## **True only where the guard is the whole of what this row draws**
+## (`EventDef.vanishes_into_its_hold()`): `checkpoint_post` is one man at an alley mouth and nothing
+## else, so when he goes in there is nothing left to draw. A hut is a building and a gate is a boom
+## across a road, and a structure that blinks out while she is inside it reads as the door having
+## been removed rather than as her having gone through it (PLAYTEST-57).
 ##
 ## Read by `EventLook.draw()`, by `EventLook.draw_body()` (the halo's own re-draw entry point — see
 ## that function's doc for why the halo needs its own guard rather than inheriting
 ## `EventLook.draw()`'s), and by a test, so the three can never drift apart from each other.
 static func hidden_by_its_hold(event: EventInstance) -> bool:
-	return event.def.hides_in_its_hold and event.is_its_guard_inside()
+	return event.row().vanishes_into_its_hold() and event.is_its_guard_inside()

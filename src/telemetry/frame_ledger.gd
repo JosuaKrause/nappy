@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name FrameLedger
 extends RefCounted
 ## Every frame's time by system, for the last few minutes of play, in preallocated storage — the
@@ -273,7 +272,7 @@ static func work_usec(row: PackedInt64Array) -> int:
 ## Whether any scenery job ran in a row's frame, guard preparations included.
 static func scenery_ran(row: PackedInt64Array) -> bool:
 	var jobs := 0
-	for counter in [JOBS_GROUND, JOBS_BUILDING, JOBS_PROP, JOBS_SHADOW, JOBS_DECAL,
+	for counter: int in [JOBS_GROUND, JOBS_BUILDING, JOBS_PROP, JOBS_SHADOW, JOBS_DECAL,
 			GUARD_PREPARATIONS]:
 		jobs += row[FIRST_COUNTER + counter]
 	return jobs > 0
@@ -297,7 +296,7 @@ func readout_line(fits: Callable = Callable()) -> String:
 		if slow_cause(_last_slow) == OUTSIDE_CALLBACKS:
 			_readout = head + "  outside callbacks"
 		else:
-			for n in [3, 2, 1]:
+			for n: int in [3, 2, 1]:
 				var parts: Array[String] = []
 				for cost: Array in _top_costs(_last_slow, n):
 					parts.append("%s %.1f" % [SHORT_NAMES[cost[0]], cost[1] / 1000.0])

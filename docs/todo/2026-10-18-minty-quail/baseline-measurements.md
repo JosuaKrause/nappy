@@ -18,8 +18,3 @@ orchestrator's, proposed and open to the player's correction.*
   further column, with the same commands and seeds, and the machine's load noted before each run.
 - **Nothing is judged here.** A number that moved is listed for the end remeasure; no step waits on
   a reading.
-
-The script that compares the placement rows of two trees (the record grassy-magpie states its rule;
-it has been run by hand at every placement step, and a copy sits in the first reading's evidence
-folder) becomes a `tools/` entry point in this item, since it is a manual sequence done more than
-twice (woolly-finch 23), with its row in the using-tools catalogue.
