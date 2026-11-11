@@ -658,7 +658,7 @@ func _test_the_badge_measures_the_things_own_speed(t: TestRunner) -> void:
 		standing.global_position += Vector2(Tuning.WALK_SPEED * delta, 0.0)
 		walked += delta
 		await t.get_tree().process_frame
-		announced_while_walking = announced_while_walking or edge.model.has_badges()
+		announced_while_walking = announced_while_walking or not edge.announcing().is_empty()
 	t.check(not announced_while_walking,
 			"walking towards something lethal does not announce it at the edge of the screen")
 
