@@ -33,9 +33,12 @@ The search covered `CheckpointController`, `RegionPlanner`, its `RegionPlan` and
   that field: among them the row's `obstructs_within()`, `peak()`, `heard_within()`,
   `telegraphs_for()`, `detains_for()`, `ends_the_day()`, `counts_as_one_barrier()` and
   `ground_shape()`; the live event's `row()`, `is_gone()`, `is_on_its_way_out()`, `has_given_up()`
-  and `source()`; the map's `city_seed()`, `plans_by_block()`, `street_network()`,
+  and `source()`; the plan record's `row()`, `placed_at()`, `walks()` and `instance()`; a ground
+  shape's `is_segment()`; the map's `city_seed()`, `plans_by_block()`, `street_network()`,
   `main_road_corridor()`, `precinct_stretches()`, `alley_lots()`, `closed_tile_set()`,
-  `home_tile_rect()` and `size_in_tiles()`; and the baby's `excitement_level()`.
+  `home_tile_rect()` and `size_in_tiles()`; and the baby's `excitement_level()`. Among those with
+  no method: the plan record's `facing`, `gate_state` and `age`, and her `facing`, which
+  `test_checkpoints` writes to turn her.
 
 ## Verified
 
