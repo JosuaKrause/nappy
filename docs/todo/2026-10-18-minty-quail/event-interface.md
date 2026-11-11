@@ -817,9 +817,13 @@ configuration alone moves between rounds, as that record found):
 - `tools/test.sh probes/calm_pelican_fields_layer_cost.gd`: the fields layer.
 - `tools/test.sh probes/m159_crowd_tick_cost.gd`: the control; its chain over every agent's
   position is identical.
+- `tools/test.sh probes/look_fingerprint.gd`: what every row's look draws, the catalogue's rows,
+  their full-heat and last-day copies and the rows the game stands from them; its `LK` lines are
+  identical or a step of 2b is not done. It cannot see what a look draws straight on the canvas,
+  nor a term of a look's picture key taken out alone (the record minty-quail-polite-newt).
 
 **The bar.** The design's: in a step that changes no behaviour, the fingerprint and the chain are
-identical, always. On the times, the player's answer (section 7, point 5) is read as: they are
+identical, always, and in a step of 2b the looks' `LK` lines too. On the times, the player's answer (section 7, point 5) is read as: they are
 measured and reported in the pull request and listed for the end remeasure, and no step is held or
 tuned for them.
 
