@@ -52,7 +52,7 @@ when none is handed in goes with the one in the day planner (`city-hand-ins.md`)
   pull request regenerates `tools/field_reads.txt` with `--write`. `--base` passes each added
   line of a class lifted out of a file whole, and of the moves below, code reading listed fields
   moved into a new file with no more uses, and fails a read that is new: a read that only moved
-  may add its line to the list (inbox #1350), and review reads a lifting diff for the cases the
+  may add its line to the list (inbox #1350 in grassy-trout), and review reads a lifting diff for the cases the
   check cannot count (minty-quail-breezy-bison).
 - **`PlanBuilder`**, a pure move, beside placement's route ground rule.
 - **`RowGround`**, after both: it is a seam, no pure move, since the object with its own per-day

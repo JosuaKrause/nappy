@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## Day 6's second man shouting is one she meets *(olive-koala, statement 2: "the yeller is
 ## guaranteed to encounter a yeller in the next three events")*. Reading the mark rigs her route's
@@ -95,7 +94,7 @@ func _walk(t: TestRunner, seed_value: int) -> String:
 			var sited_now := false
 			if seen["man"] == null and seen["read"]:
 				for plan: EventScheduler.Planned in events.plans():
-					if plan.def.id == ROW and not seen["standing"].has(plan):
+					if plan.def.id == ROW and not (seen["standing"] as Array).has(plan):
 						seen["man"] = plan
 						seen["outcome"] = _first_siting(plan, player,
 								int(seen["owed"]) - events.owed_ahead())

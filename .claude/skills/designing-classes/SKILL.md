@@ -105,7 +105,7 @@ yes-or-no field's name, `EventDef.investigates()`, with no read of it left witho
 **Two lists hold "Fields are not API" while `src/` is converted, and neither grows except by what only moved.** Much of `src/` still
 reads fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that
 adds a read of another class's field, today's being listed in `tools/field_reads.txt`, unless the
-read only moved (inbox #1350; its reader file renamed, code moved into a new file with no more uses of that
+read only moved (inbox #1350 in grassy-trout; its reader file renamed, code moved into a new file with no more uses of that
 class's field, or an inner class lifted into a file of its own, whose reads the list gains as
 lines; the check cannot count those, so review reads a lifting diff for a reader that is new), and a change that converts a file's last read of a field deletes its line.
 The second list is what makes the check see every read (inbox #1268 in olive-ferret), since a read through a
@@ -208,6 +208,6 @@ that proposes it, and says so where the player's words name nothing on the point
 - **Which moves count as a read that only moved** (a reader file renamed, a new file with no more
   uses, an inner class lifted out), the planning agent's proposal (minty-quail-breezy-bison). That
   such a read passes the field-read check and the list gains its lines is the player's
-  (inbox #1350).
+  (inbox #1350 in grassy-trout).
 - **A design where a fake has nothing to be handed to is wrong** (inbox #1156 in gray-dolphin).
 - **What no caller would miss goes** (inbox #1156 in gray-dolphin).
