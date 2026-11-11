@@ -72,9 +72,9 @@ extends RefCounted
 ## stands on tree ground or on the home street — the two things `RouteTree`/`ClosurePlanner`
 ## already guarantee a route through — so nothing here can cut the corridor. `tests/test_seals.gd`
 ## measures this over many seeds and days rather than asserting it at runtime, which is
-## the reading of what changes here: the catalogue's own placements are asked `RouteReachRule` as
-## they are placed; this placement needs no such rule because nothing it does can break the thing
-## it is measured against.
+## the reading of what changes here: the catalogue's own placements are asked the day's route rules
+## as they are placed (`StreetInvalidation`, `RouteGroundRule`); this placement needs no such rule
+## because nothing it does can break the thing it is measured against.
 ##
 ## **"Tree ground" includes the join, now.** `RouteTree._grow_the_trunk()` guarantees a coloured
 ## path from the home street outward to the rest of the tree even where every branch's own random

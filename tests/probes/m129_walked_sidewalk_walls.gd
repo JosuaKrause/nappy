@@ -119,7 +119,7 @@ const _DOOR_ID_PREFIX := "checkpoint"
 enum Source {
 	CANDIDATE_LOOP,   ## the dawn phases and the draw, reached by scripted and recurring rows.
 	SEAL,             ## `SealPlanner.plan_day`, before the scheduler ever runs.
-	CALM_GROUND,      ## `_spoil_the_parks_she_used` — appended to `planned` directly, no rule asked.
+	CALM_GROUND,      ## `_spoil_the_parks_she_used` — asked only the routes' ground (`RouteGroundRule`).
 	CLOSURE,          ## `ClosurePlanner.plan_day` / `map.closed_tiles` — a tile barrier, not a row.
 	REGION,           ## `RegionPlanner.plan_day`'s wall and door bodies.
 	OTHER,            ## ambient, scars, the taught-run pursuer — everything else `build_day` adds.
@@ -338,7 +338,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 
 	before = events.size()
 	EventScheduler._spoil_the_parks_she_used(day, EventScheduler._stream(base, 3), map, events,
-			calm, CalmAreas.NONE, RouteReachRule.new(map, corridor), 0)
+			calm, CalmAreas.NONE, RouteGroundRule.new(map, corridor, true), 0)
 	_tag_new(events.placements(), provenance, before, Source.CALM_GROUND)
 
 	before = events.size()

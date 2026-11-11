@@ -1233,8 +1233,8 @@ func validate() -> bool:
 			return false
 	if kind == GameEnums.EventKind.AMBIENT:
 		return true
-	# Neither `AHEAD_OF_PLAYER` nor `TOWARD_PLAYER` has a tile, so the dawn's reach rule
-	# (`RouteReachRule`) cannot check that what it blocks leaves a route to a park. Anything that stands in
+	# Neither `AHEAD_OF_PLAYER` nor `TOWARD_PLAYER` has a tile, so the day's route rules
+	# (`StreetInvalidation`) cannot check that what it blocks leaves a route to a park. Anything that stands in
 	# the way is sited on the map; a transient one that merely *emits* is fine, and so is a lethal
 	# one, which appears in front of her and is gone shortly after.
 	if spawn_mode != SpawnMode.MAP and obstructs_radius > 0.0:

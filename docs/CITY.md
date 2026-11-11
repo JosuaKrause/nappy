@@ -224,15 +224,15 @@ bodies never seal it off:
 - **`ClosurePlanner` asks for it before accepting each closure**, beside the calm: a closure that
   would cut off every tile of it is refused. The second opinion, as it is for the calm.
 - **The catalogue's own bodies keep the tree open as they are placed**, since friction stands on the
-  corridor: every body a day's dawn draws or rolls is judged by the rules that keep a route's junctions and
-  its walked sidewalk open (`RouteJunctionsRule`, `RouteSidewalkRule`, `PacingOpeningRule`) and the
-  one that keeps every route tile home reaches reached (`RouteReachRule`: an obstructing body whose
-  disc would cut home off from a route tile it reaches without it), asked against everything
-  already down, the seals and the region wall's own bodies included. The run's scars and the park
-  spoilers are asked `RouteReachRule` alone, since they stand where they stand rather than where a
-  draw put them. A body that would close the tree is not placed. The reach rule asks a body off the
-  routes too, since the last body of a ring that seals home in can stand beside a route an earlier
-  one already crossed. A walk's sitings are not asked it. A soft seal
+  corridor: every body a day judges, at dawn or on her walk, is judged by the rules that keep a
+  route's junctions, its walked sidewalk and a pacing beat's opening open (`RouteJunctionsRule`,
+  `RouteSidewalkRule`, `PacingOpeningRule`) and by the one that keeps its ground off the streets
+  free (`RouteGroundRule`: no obstructing body's disc, and no lethal row's inner disc, covers a tile
+  a route runs along on an alley, a park cut or a square), asked against everything already down,
+  the seals and the region wall's own bodies included. The run's scars and the park spoilers are
+  asked `RouteGroundRule` alone, with a street's route tiles counted too, since they stand where
+  they stand rather than where a draw put them and the line rules are not asked of them. So no body
+  closes the tree, and nothing floods the city to see whether one has. A soft seal
   stands only off the tree, so its bands never cut the tree's way to the place.
 
 **What it promises is one tile of the place, not every tile of it and not a tile chosen ahead.** The
@@ -859,9 +859,9 @@ reachable, through rules the day already follows for the rest of the tree: a bou
 the spur takes is a door rather than wall, no seal stands on it, and no closure lands on it. And
 `ClosurePlanner` asks for the door beside the calm before accepting each closure that day, so a
 closure that would cut it off is refused, not repaired — the second opinion, as it is for the calm —
-and the dawn keeps a route to it among the day's bodies (`RouteReachRule`: no body cuts a route
-tile off from home), since it is the last night's narrow resistance target and the day's routes run
-to it (see "Guarantees").
+and no body the day places closes a route to it (the route rules, `RouteGroundRule` among them),
+since it is the last night's narrow resistance target and the day's routes run to it (see
+"Guarantees").
 Because the door is outside the home's region, every way there crosses a region door;
 `tests/test_power_station.gd` plans the day with its walls, seals and closures standing, finds the
 door reachable, and finds it out of reach again with the doors shut. On every other day the tree
@@ -1527,7 +1527,7 @@ be taken and discovered rather than reading as a wall on sight the moment she gl
 stands on tree ground or the doorstep — the two things the tree and `ClosurePlanner` already
 guarantee a route through, and the trunk above is what makes the first of those cover the join as
 well — so nothing a seal does can cut the corridor. The catalogue's own placements are kept off
-it as they are placed (`RouteReachRule`); sealing needs no equivalent; `tests/test_seals.gd`
+it as they are placed (the route rules of `StreetInvalidation`); sealing needs no equivalent; `tests/test_seals.gd`
 measures the guarantee over many seeds and days instead of
 asserting it at runtime.
 

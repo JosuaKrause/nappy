@@ -1,10 +1,13 @@
 extends RefCounted
-## `RouteJunctionsRule`, `RouteSidewalkRule`, `PacingOpeningRule` and `RouteReachRule`, the four
-## rules that keep the day's routes open, each asked of candidates on a generated city's routes. **Why these build a
-## city:** each rule reads the route tree's own geometry (which junction boxes the routes cross,
-## which sidewalk a route is walked along, the beat a pacing man walks), and a stand-in corridor
-## would be the rule's own arithmetic read back to it. The one combined suite is for that shared
-## setup: seed 4242 on day 5, its route tree and corridor, built once.
+## `RouteJunctionsRule`, `RouteSidewalkRule`, `PacingOpeningRule` and `RouteGroundRule`, the four
+## rules that keep the day's routes open. **Why the first three build a city:** each reads the route
+## tree's own geometry (which junction boxes the routes cross, which sidewalk a route is walked
+## along, the beat a pacing man walks), and a stand-in corridor would be the rule's own arithmetic
+## read back to it. The one combined suite is for that shared setup: seed 4242 on day 5, its route
+## tree and corridor, built once. **The ground rule reads only which tiles a route runs along and
+## what kind of ground each is**, so its cases are one interaction each on a hand-drawn map
+## (`StreetMap.full()` with one block painted alley) under a fake corridor that names the route's
+## tiles.
 ##
 ## - **The junctions:** a burst water main, whose body reaches 96px each way, standing at the middle
 ##   of a junction box the routes cross closes the crossing and is refused; the same body far from
@@ -14,9 +17,13 @@ extends RefCounted
 ## - **The pacing opening:** with a man shouting pacing his beat on a route street, some tile of that
 ##   street holds a delivery van that would close the opening his beat leaves, and the rule refuses
 ##   it there; with no man there, the same van at the same tile is allowed.
-## - **The reach:** barricades asked one at a time in rings round home, each kept when allowed,
-##   never leave home sealed off from a route tile it reached before, and at least one is refused
-##   (a ring is what seals home in).
+## - **The route's ground:** a barricade (a body 62px each way) on the alley a route runs down is
+##   refused, and the same barricade on the same alley four tiles beside the route stands; an
+##   abduction, whose 22px body stops short of the route a tile away and whose 54px lethal inner
+##   disc reaches it, standing there is refused;
+##   a man shouting, who has no body, stands on the route itself. With the streets counted, the
+##   barricade across the sidewalk a route walks is refused and on the far sidewalk stands; with
+##   them not counted, the line rules' ground, it stands on the route's sidewalk.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
@@ -37,7 +44,8 @@ func run(t: TestRunner) -> void:
 	_test_a_body_closing_a_route_crossing_is_refused(t)
 	_test_a_body_closing_a_route_sidewalk_is_refused(t)
 	_test_a_body_closing_a_beats_opening_is_refused(t)
-	_test_a_ring_of_bodies_never_seals_home_off(t)
+	_test_a_body_on_a_routes_ground_off_the_streets_is_refused(t)
+	_test_a_body_on_a_routes_street_is_refused_where_the_streets_count(t)
 
 ## `def` built at `tile`, given a counted role so it is asked about.
 func _at(id: String, tile: Vector2i) -> EventPlan:
@@ -118,35 +126,95 @@ func _test_a_body_closing_a_beats_opening_is_refused(t: TestRunner) -> void:
 			"and every one of those vans is allowed with no man there (%d of %d)"
 			% [allowed_without, refused_with])
 
-func _test_a_ring_of_bodies_never_seals_home_off(t: TestRunner) -> void:
-	var rule := RouteReachRule.new(_map, _corridor)
-	var grid := ReachabilityGrid.build(_map)
-	var home := _map.home_tile()
-	var routes: Array[Vector2i] = []
-	for y in _map.size.y:
-		for x in _map.size.x:
-			if _corridor.carries_a_route(Vector2i(x, y)):
-				routes.append(Vector2i(x, y))
-	var reached_bare := grid.flood([home], _map.closed_tiles)
-	var kept: Array[EventPlan] = []
-	var refused: Array[EventPlan] = []
-	for radius: int in [3, 5, 7]:
-		for step: Vector2i in [Vector2i(1, 0), Vector2i(1, 1), Vector2i(0, 1), Vector2i(-1, 1),
-				Vector2i(-1, 0), Vector2i(-1, -1), Vector2i(0, -1), Vector2i(1, -1)]:
-			var barricade := EventPlan.new(EventCatalogue.by_id("barricade"),
-					_map.tile_to_world(home + step * radius))
-			if rule.allows(barricade, home + step * radius, NONE, kept):
-				kept.append(barricade)
-			else:
-				refused.append(barricade)
-	var blocked := EventScheduler.blocked_by(_map, kept)
-	var reached := grid.flood([home], blocked)
-	var lost := 0
-	for tile in routes:
-		if not blocked.has(tile) and grid.reaches(tile, _map.closed_tiles, reached_bare) \
-				and not grid.reaches(tile, blocked, reached):
-			lost += 1
-	t.check(lost == 0, "the barricades kept leave every route tile home reached still reached (%d lost)"
-			% lost)
-	t.check(not refused.is_empty(), "a ring of barricades round home has one refused (%d of 24)"
-			% refused.size())
+# ------------------------------------------------------------- the route's ground ---
+
+## The block the alley is painted over, and the alley a route runs down it: the block's whole
+## interior is alley ground, and the route runs down two of its columns near its west side, from
+## the street north of the block to the street south of it.
+const ALLEY_BLOCK := Vector2i(2, 2)
+const ROUTE_COLUMNS: Array[int] = [35, 36]
+## The row of the alley the bodies are stood on, in the block's middle.
+const ALLEY_ROW := 38
+## The street north of the block: its far (north) sidewalk's outer row, and the south sidewalk band
+## the route walks, whose kerb-side row the body is stood on.
+const FAR_SIDEWALK_ROW := 28
+const ROUTE_SIDEWALK_ROWS: Array[int] = [32, 33]
+
+## A corridor whose routes run along exactly `tiles`, the one question the ground rule asks of it.
+class _Route extends Corridor:
+	var _tiles := {}
+
+	func _init(tiles: Array[Vector2i]) -> void:
+		for tile in tiles:
+			_tiles[tile] = true
+
+	## Overrides Corridor.carries_a_route.
+	func carries_a_route(tile: Vector2i) -> bool:
+		return _tiles.has(tile)
+
+## The streets, with `ALLEY_BLOCK`'s interior painted alley, and the route of the cases below: down
+## `ROUTE_COLUMNS` of the alley and along the street north of it on `ROUTE_SIDEWALK_ROWS`.
+static func _alley_map() -> CityMap:
+	var map := StreetMap.full()
+	var origin := ALLEY_BLOCK * CityMap.period() + Vector2i.ONE * Tuning.STREET_WIDTH
+	for y in range(origin.y, origin.y + Tuning.BLOCK_SIZE):
+		for x in range(origin.x, origin.x + Tuning.BLOCK_SIZE):
+			map.set_tile(Vector2i(x, y), GameEnums.TileType.ALLEY)
+	return map
+
+static func _alley_route() -> _Route:
+	var origin := ALLEY_BLOCK * CityMap.period() + Vector2i.ONE * Tuning.STREET_WIDTH
+	var tiles: Array[Vector2i] = []
+	for y in range(origin.y, origin.y + Tuning.BLOCK_SIZE):
+		for x: int in ROUTE_COLUMNS:
+			tiles.append(Vector2i(x, y))
+	for x in range(origin.x, origin.x + Tuning.BLOCK_SIZE):
+		for y: int in ROUTE_SIDEWALK_ROWS:
+			tiles.append(Vector2i(x, y))
+	return _Route.new(tiles)
+
+## `id`, standing at the middle of `tile`.
+static func _standing(map: CityMap, id: String, tile: Vector2i) -> EventPlan:
+	return EventPlan.new(EventCatalogue.by_id(id), map.tile_to_world(tile))
+
+func _test_a_body_on_a_routes_ground_off_the_streets_is_refused(t: TestRunner) -> void:
+	var map := _alley_map()
+	var rule := RouteGroundRule.new(map, _alley_route())
+	var on_it := Vector2i(ROUTE_COLUMNS[1], ALLEY_ROW)
+	var beside := Vector2i(ROUTE_COLUMNS[1] + 4, ALLEY_ROW)
+	var lethal_at := Vector2i(ROUTE_COLUMNS[1] + 1, ALLEY_ROW)
+	t.check(map.tile_at(beside) == GameEnums.TileType.ALLEY
+			and map.tile_at(lethal_at) == GameEnums.TileType.ALLEY,
+			"the tiles beside the route are the same alley")
+	t.check(not rule.allows(_standing(map, "barricade", on_it), on_it, NONE, NONE),
+			"a body on the alley a route runs down is refused")
+	t.check(rule.allows(_standing(map, "barricade", beside), beside, NONE, NONE),
+			"the same body on the alley four tiles beside the route stands")
+	var abduction := _standing(map, "abduction", lethal_at)
+	t.check(abduction.row().obstructs_within() < Tuning.TILE_SIZE
+			and abduction.blocking_radius() >= Tuning.TILE_SIZE,
+			"the abduction's body stops short of the route a tile away, and its inner disc reaches it")
+	t.check(not rule.allows(abduction, lethal_at, NONE, NONE),
+			"a lethal row whose inner disc reaches the route's alley is refused")
+	var man := _standing(map, "homeless_yeller", on_it)
+	t.check(not man.obstructs(), "the man shouting has no body")
+	t.check(rule.allows(man, on_it, NONE, NONE), "a row with no body stands on the route itself")
+
+func _test_a_body_on_a_routes_street_is_refused_where_the_streets_count(t: TestRunner) -> void:
+	var map := _alley_map()
+	var route := _alley_route()
+	var counting := RouteGroundRule.new(map, route, true)
+	var origin := ALLEY_BLOCK * CityMap.period() + Vector2i.ONE * Tuning.STREET_WIDTH
+	var middle := origin.x + Tuning.BLOCK_SIZE / 2
+	var across := Vector2i(middle, ROUTE_SIDEWALK_ROWS[1])
+	var far := Vector2i(middle, FAR_SIDEWALK_ROW)
+	t.check(map.tile_at(across) == GameEnums.TileType.SIDEWALK
+			and map.tile_at(far) == GameEnums.TileType.SIDEWALK,
+			"both bodies stand on the street's sidewalks")
+	t.check(not counting.allows(_standing(map, "barricade", across), across, NONE, NONE),
+			"with the streets counted, a body across the sidewalk a route walks is refused")
+	t.check(counting.allows(_standing(map, "barricade", far), far, NONE, NONE),
+			"and the same body on the far sidewalk stands")
+	var line_ground := RouteGroundRule.new(map, route)
+	t.check(line_ground.allows(_standing(map, "barricade", across), across, NONE, NONE),
+			"with them not counted, the body on the route's sidewalk is left to the line rules")

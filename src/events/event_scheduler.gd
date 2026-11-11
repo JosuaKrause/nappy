@@ -244,7 +244,8 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 	# the park that is taken once she has reached it (PLAYTEST-122: "the day guarantees a second
 	# open park she can reach from the swing"). Dawn keeps it by construction: the calm other than
 	# `calm.besides()` is the ground the calm rule and `_calm_kept_clean()` keep clean, and the
-	# day's routes, which `RouteReachRule` keeps reached, run to it.
+	# day's routes, which no body the day plans closes (the route rules of `StreetInvalidation`,
+	# and `RouteGroundRule` for the scars and the spoilers), run to it.
 	_count_what_is_left_uncovered(beside_the_routes, map, events, route, trace)
 	return events
 
@@ -277,11 +278,12 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 		leave_alone = calm.unused_ground()
 	var locations := DayLocations.lay_out(map, corridor)
 	events.use_locations(locations)
-	# Where home reaches among the day's bodies, worked out once and kept in step for every judge
-	# below (`RouteReachRule`). The run's scars and the spoilers are asked it alone: their ground
-	# is not the bags', and they keep the spacing and the line rules they always stood without,
-	# but a body that cuts the routes off from home is not stood.
-	var reach := RouteReachRule.new(map, corridor)
+	# What the run's scars and the spoilers are asked: their ground is not the bags', and they keep
+	# the spacing and the line rules they always stood without, so no body of theirs covers a tile
+	# a route runs along, the streets' included (`RouteGroundRule`, counting the streets). Every
+	# other judge below asks the day's rules (`StreetInvalidation`), which hold the same rule off
+	# the streets and the line rules on them.
+	var route_ground := RouteGroundRule.new(map, corridor, true)
 
 	# **The fixed parts' phases** (the design's "the city's fixed parts have phases of their own"):
 	# the ambient rows and the masts stand where their planners put them, and each is recorded on
@@ -295,7 +297,7 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	# location on a day before the masts holds nothing and is drawn like any other.
 	var fixed := _place_ambient(day, map, heat)
 	events.add_all(fixed)
-	_place_scars(day, scars, map, events, reach, heat)
+	_place_scars(day, scars, map, events, route_ground, heat)
 	var masts := _place_masts(day, map, mast_sites, heat, doors, scars)
 	events.add_all(masts)
 	fixed.append_array(masts)
@@ -313,24 +315,24 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	if kept_clean != CalmAreas.NONE:
 		leave_alone.append(calm.ground_of(kept_clean))
 	_place_the_roadblocks(beside_the_routes, day, base, map, events, ground, leave_alone,
-			corridor, doors, spec, locations, trace, reach)
+			corridor, doors, spec, locations, trace)
 	# **The scripted rows' dawn phase**: each draws one of the day's open locations its ground
 	# takes and is assigned it (`ScriptedPhase`), offered through the dawn draw's own path and
 	# judged by the day's rules, so the draw after passes over it. The one-shots are owed to her
 	# walk (`_place_one_shots()`).
 	var phase_ground := RuledLocationGround.new(day, base, map, events, corridor,
 			LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets),
-			StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false, null, reach))
+			StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false))
 	var weigh := func(def: EventDef, location: Location) -> float:
 		return _weight_in(def, location, day, map, ground, corridor, spec.holds_the_home_streets)
 	var phase := ScriptedPhase.new(locations, phase_ground, weigh)
 	_place_scripted(day, _stream(base, 1), events, phase, heat)
 	_place_one_shots(day, consumed_one_shots, events, heat, trace)
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, events, calm, kept_clean,
-			reach, heat, trace)
+			route_ground, heat, trace)
 	_owe_the_moments(day, _stream(base, MOMENTS_SALT), events, heat, spec.caps_per_day)
 	return _draw_the_locations(day, base, map, events, ground, leave_alone, corridor, doors, spec,
-			locations, heat, beside_the_routes, reach)
+			locations, heat, beside_the_routes)
 
 ## **The roadblock phase at dawn** (inbox #1185 in gentle-owl: the day's routes first, then roadblocks next to
 ## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
@@ -359,14 +361,14 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 ## anything already down, and never over one.
 static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityMap,
 		events: DayEvents, ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
-		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations, trace: RunTrace,
-		reach: RouteReachRule = null) -> void:
+		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations,
+		trace: RunTrace) -> void:
 	if def == null:
 		return
 	def = def.for_day(day)
 	var judged := RuledRoadblockGround.new(def, day, map, events, ground, corridor,
 			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-					spec.one_notice_at_a_time, null, reach),
+					spec.one_notice_at_a_time),
 			spec.holds_the_home_streets)
 	var phase := RoadblockPhase.new(locations, judged)
 	var placed: Array[String] = []
@@ -932,7 +934,7 @@ static func _ensure_the_run_is_taught(day: int, events: DayEvents, heat: int = 0
 ## is next to the loop. A merely-`shut_calm` area is not skipped: it is still calm ground, and this
 ## is exactly what stands in it.
 static func _spoil_the_parks_she_used(day: int, rng: RandomNumberGenerator, map: CityMap,
-		events: DayEvents, calm: CalmAreas, kept_clean: Vector2i, reach: RouteReachRule,
+		events: DayEvents, calm: CalmAreas, kept_clean: Vector2i, route_ground: RouteGroundRule,
 		heat: int = 0, trace: RunTrace = null) -> void:
 	var blocks := calm.blocks()
 	var spoilable := blocks.size() - 1
@@ -941,7 +943,7 @@ static func _spoil_the_parks_she_used(day: int, rng: RandomNumberGenerator, map:
 			return
 		if block.x >= 0 and block in blocks and block != kept_clean:
 			spoilable -= 1
-			_spoil_one_park(day, rng, map, events, calm, block, reach, heat, trace)
+			_spoil_one_park(day, rng, map, events, calm, block, route_ground, heat, trace)
 
 ## **The calm area the day keeps clean, where only construction can keep one**: `NONE` while an area
 ## counted today (any but `calm.besides()`, day 12's swing park) is one she has not used this act,
@@ -972,7 +974,7 @@ static func _calm_kept_clean(calm: CalmAreas, events: DayEvents) -> Vector2i:
 	return least
 
 static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
-		events: DayEvents, calm: CalmAreas, block: Vector2i, reach: RouteReachRule,
+		events: DayEvents, calm: CalmAreas, block: Vector2i, route_ground: RouteGroundRule,
 		heat: int = 0, trace: RunTrace = null) -> void:
 
 	var lot := calm.rect_of(block)
@@ -995,9 +997,8 @@ static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
 		# outside the calm ground the cell was measured from.
 		var at := map.tile_to_world(_nearest_of(open, map.world_to_tile(cell)))
 		var plan := EventPlan.new(def, at)
-		# A body that would cut the routes off from home is not stood: the park stays busy
-		# without it.
-		if not _keeps_the_routes(plan, map, events, reach):
+		# A body on a tile a route runs along is not stood: the park stays busy without it.
+		if not _keeps_the_routes(plan, map, route_ground):
 			continue
 		events.add(plan)
 		placed.append(def.id)
@@ -1229,11 +1230,11 @@ static func _was_silenced(foot: Vector2, day: int, scars: Array[Dictionary]) -> 
 	return false
 
 ## Permanent marks left by earlier days, placed again exactly where they happened, each into
-## `events`, unless a body of one would cut a route tile off from home (`reach`): then it is not
-## stood today, which is the day's routes kept open by construction rather than a repair taking it
-## away afterwards.
+## `events`, unless a body of one would cover a tile a route runs along (`route_ground`, the day's
+## `RouteGroundRule` counting the streets): then it is not stood today, which is the day's routes
+## kept open by construction rather than a repair taking it away afterwards.
 static func _place_scars(day: int, scars: Array[Dictionary], map: CityMap, events: DayEvents,
-		reach: RouteReachRule, heat: int = 0) -> void:
+		route_ground: RouteGroundRule, heat: int = 0) -> void:
 	for scar in scars:
 		if int(scar["since_day"]) >= day or String(scar["id"]) == SILENCED_MAST:
 			continue
@@ -1241,18 +1242,17 @@ static func _place_scars(day: int, scars: Array[Dictionary], map: CityMap, event
 		if def:
 			var plan := EventPlan.new(EventCatalogue.heated(def, heat), scar["position"])
 			plan.permanent = true
-			if _keeps_the_routes(plan, map, events, reach):
+			if _keeps_the_routes(plan, map, route_ground):
 				events.add(plan)
 
-## Whether `plan`, stood where it is, leaves every route tile home reaches reached (`reach`), asked
-## against what the day holds and what stands. Only the reach: a scar or a spoiler is not spaced and not given a role, and stands on a route's
-## line as it always did.
-static func _keeps_the_routes(plan: EventPlan, map: CityMap, events: DayEvents,
-		reach: RouteReachRule) -> bool:
-	var placed := events.placements()
-	var around := placed.duplicate()
-	around.append_array(events.standing())
-	return reach.allows(plan, map.world_to_tile(plan.position), placed, around)
+## Whether `plan`, stood where it is, leaves the day's routes their ground: no body of it covers a
+## tile a route runs along, on a street or off one (`route_ground`). Only that: a scar or a spoiler
+## is not spaced and not given a role, and stands on a route's line as it always did, so it asks
+## nothing of what the day holds or what stands.
+static func _keeps_the_routes(plan: EventPlan, map: CityMap,
+		route_ground: RouteGroundRule) -> bool:
+	var none: Array[EventPlan] = []
+	return route_ground.allows(plan, map.world_to_tile(plan.placed_at()), none, none)
 
 ## Where a placement's body stands once it is built: the first point of its path when it has one,
 ## recentred on the pavement band unless `pavement_side` pins it — the reading
@@ -1929,7 +1929,7 @@ class WalkSiting extends RefCounted:
 static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEvents,
 		ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
 		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations,
-		heat: int, beside_the_routes: EventDef, reach: RouteReachRule = null) -> Array[EventPlan]:
+		heat: int, beside_the_routes: EventDef) -> Array[EventPlan]:
 	var rows := {}
 	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
 		if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
@@ -1941,7 +1941,7 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEv
 	var judged := RuledLocationGround.new(day, base, map, events, corridor,
 			LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets),
 			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-					spec.one_notice_at_a_time, null, reach))
+					spec.one_notice_at_a_time))
 	var caps := _caps_of(rows, day, spec, _stream(base, CAPS_SALT)) if spec.caps_per_day else {}
 	return LocationDraw.new(locations, bags, rows, judged, caps).draw_all(
 			_stream(base, LOCATIONS_SALT))
@@ -2369,8 +2369,7 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
 		already: Array[EventPlan], ground: Dictionary, leave_alone: Array[Rect2],
 		corridor: Corridor, doors: PackedVector2Array,
-		standing: Array[EventPlan] = [], kept: Verdicts = null,
-		reach: RouteReachRule = null) -> EventPlan:
+		standing: Array[EventPlan] = [], kept: Verdicts = null) -> EventPlan:
 	var best: EventPlan = null
 	var best_room := -INF
 	# Built once per call rather than per try: neither `already` nor `standing` changes across the
@@ -2391,8 +2390,7 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# that caller's to drop whenever what a verdict reads changes — see `WalkSiting.begin_look()`.
 	var verdicts: Verdicts = kept if kept else Verdicts.new()
 	# The day's rules, the same ones the dawn draw asks (`StreetInvalidation`), so they are stated once.
-	var judge := StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false, null,
-			reach)
+	var judge := StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false)
 	for _attempt in EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := build_placement(def, map, tile, rng)

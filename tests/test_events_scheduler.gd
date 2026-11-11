@@ -755,9 +755,9 @@ const _CUTTING_BODY := "burst_water_main"
 
 ## **On the swing day, a scar that would cut the clean calm area off is not stood.** Day 12's route
 ## to calm ground besides the swing's that no event's field reaches (`docs/CITY.md`, "Guarantees")
-## is kept by construction: the day's routes run to it, and a scar is asked `RouteReachRule` before
-## it stands (`EventScheduler._place_scars()`), so a body that would leave the clean area's route
-## tiles unreached from home is refused where it would stand.
+## is kept by construction: the day's routes run to it, and a scar is asked `RouteGroundRule`, with
+## the streets counted, before it stands (`EventScheduler._place_scars()`), so a body that covers a
+## tile the clean area's route runs along is refused where it would stand.
 ##
 ## The route tree keeps calm ground reachable, so no day the game plans on its own puts a body on the
 ## one street to a clean area. The day here is built so it does: every street but the three the home,
