@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The gate that stops an event rebuilding a draw list it does not need —
 ## `EventLook.redraw_if_the_picture_changed()`, the picture key behind it and
@@ -174,7 +173,7 @@ func _test_a_bobbing_event_moves_its_key(t: TestRunner) -> void:
 func _test_the_normal_dogs_opposite_step_moves_its_key(t: TestRunner) -> void:
 	var to_the_top_of_the_bob := PI / EventPictures.BOB_PER_PX * 0.5
 	var half_a_turn := PI / EventInstance.GAIT_RATE
-	for id in ["dog_walker", "loose_dog", "charging_dog"]:
+	for id: String in ["dog_walker", "loose_dog", "charging_dog"]:
 		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id(id), false)
 		var drawn := [0]
 		instance.draw.connect(func() -> void: drawn[0] += 1)
@@ -214,8 +213,9 @@ func _test_the_normal_dogs_opposite_step_moves_its_key(t: TestRunner) -> void:
 func _the_dog_drawn(instance: EventInstance) -> Array[String]:
 	var pictures: Array[String] = []
 	for entry in DrawnEvent.shown(instance):
-		if entry.picture.begins_with("events/dog") or entry.picture.begins_with("events/charging_dog"):
-			pictures.append(entry.picture)
+		var picture: String = entry.picture
+		if picture.begins_with("events/dog") or picture.begins_with("events/charging_dog"):
+			pictures.append(picture)
 	return pictures
 
 ## The crouch *is* the telegraph (`_draw_cat` swaps the whole family at `is_telegraphing()`), so the
@@ -305,7 +305,7 @@ func _test_the_caret_strength_is_in_the_key(t: TestRunner) -> void:
 	]
 	var moved := []
 	var strengths := []
-	for state in states:
+	for state: Array in states:
 		var before: int = drawn[0]
 		instance.excitement.set_player_at(here + state[0], state[1])
 		await DrawnEvent.frames(t)
@@ -430,7 +430,7 @@ func _test_separated_details_keep_the_owner_key_stable(t: TestRunner) -> void:
 			t.check(silent_swaps == swaps, "%s's small-detail swaps leave its owner key alone" % id)
 		instance.free()
 	# The crash's two frames stand on the same ground contacts, so the second frame keeps the shadow.
-	for vertical in [false, true]:
+	for vertical: bool in [false, true]:
 		var a := EventPictures.wide_scene_texture(EventDef.Look.CAR_ACCIDENT, vertical)
 		var b := EventPictures.wide_scene_texture(EventDef.Look.CAR_ACCIDENT, vertical, true)
 		t.check(a != b, "the crash has its own second frame (vertical %s)" % vertical)

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## M108, "every living thing that moves has a stride" — the event half. `tests/test_event_views.gd`
 ## already pins each family's own five-view table and heading source; this suite pins the second
@@ -66,13 +65,13 @@ func run(t: TestRunner) -> void:
 # ------------------------------------------------------------------- the tables ---
 
 func _test_b_tables_are_complete(t: TestRunner) -> void:
-	for name in GAIT_FAMILY_DICTS:
+	for name: String in GAIT_FAMILY_DICTS:
 		var by_view_b: Dictionary = GAIT_FAMILY_DICTS[name][1]
 		t.check(by_view_b.size() == 5, "%s carries exactly five b-frame views" % name)
 		for view in VIEWS:
 			t.check(by_view_b.has(view) and by_view_b[view] != null,
 					"%s has a resolving b-frame %s view" % [name, view])
-	for name in IDLE_FAMILY_DICTS:
+	for name: String in IDLE_FAMILY_DICTS:
 		var by_view_b: Dictionary = IDLE_FAMILY_DICTS[name][1]
 		t.check(by_view_b.size() == 5, "%s carries exactly five idle-frame views" % name)
 		for view in VIEWS:
@@ -83,13 +82,13 @@ func _test_b_tables_are_complete(t: TestRunner) -> void:
 ## walker precedent's own "legs and shoes cross" (or the sitters' lean, or the busker's raised
 ## hand) has to actually be a different picture, not a second preload of the same source.
 func _test_b_tables_differ_from_a_per_view(t: TestRunner) -> void:
-	for name in GAIT_FAMILY_DICTS:
+	for name: String in GAIT_FAMILY_DICTS:
 		var by_view: Dictionary = GAIT_FAMILY_DICTS[name][0]
 		var by_view_b: Dictionary = GAIT_FAMILY_DICTS[name][1]
 		for view in VIEWS:
 			t.check(by_view[view] != by_view_b[view],
 					"%s's %s view differs between frame a and frame b" % [name, view])
-	for name in IDLE_FAMILY_DICTS:
+	for name: String in IDLE_FAMILY_DICTS:
 		var by_view: Dictionary = IDLE_FAMILY_DICTS[name][0]
 		var by_view_b: Dictionary = IDLE_FAMILY_DICTS[name][1]
 		for view in VIEWS:
@@ -287,7 +286,7 @@ func _test_a_standing_normal_dog_rests(t: TestRunner) -> void:
 		var rest: String = EventPictures.dog_picture(view, false, false)
 		t.check(_the_dog_drawn(instance) == [rest],
 				"a %s dog that has not moved stands in its rest pose" % view)
-		for second_half in [false, true]:
+		for second_half: bool in [false, true]:
 			var half := "second" if second_half else "first"
 			var walked := 0
 			while not (instance.look.gait_is_stepping()
@@ -310,8 +309,9 @@ func _test_a_standing_normal_dog_rests(t: TestRunner) -> void:
 func _the_dog_drawn(instance: EventInstance) -> Array[String]:
 	var pictures: Array[String] = []
 	for entry in DrawnEvent.shown(instance):
-		if entry.picture.begins_with("events/dog"):
-			pictures.append(entry.picture)
+		var picture: String = entry.picture
+		if picture.begins_with("events/dog"):
+			pictures.append(picture)
 	return pictures
 
 ## The victim's own scripted walk to the van is a straight lerp over `AbductionSpec.taken_over` seconds
@@ -349,7 +349,7 @@ func _test_idle_families_alternate_on_time_without_moving(t: TestRunner) -> void
 		"cafe_tables": EventPictures.SITTER_IDLE_PERIOD,
 		"busker": EventPictures.BUSKER_STRUM_PERIOD,
 	}
-	for def_id in periods:
+	for def_id: String in periods:
 		var period: float = periods[def_id]
 		var instance := EventInstance.new()
 		instance.setup(EventCatalogue.by_id(def_id), Vector2.ZERO)
