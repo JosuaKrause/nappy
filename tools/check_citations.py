@@ -26,13 +26,19 @@ What is read where: fenced code blocks are never read. Links and paths are flagg
 else, inside code spans too, since a path in backticks is still a path. Parenthesised citations
 and `inbox #N in name` are read outside code spans only, so an example in backticks is not checked.
 
-A parenthesised citation is a parenthesis whose content, or one `;`-separated part of it, starts
-with a hyphenated name, an optional number and nothing else but, after a comma, free text:
-`(woolly-penguin #759)`, `(PLAYTEST-145; olive-hedgehog #598)`, `(woolly-penguin #999, the rule)`
-(checked: #999 is flagged). Every further citation in the part is checked too, after a comma, `, and`
-or `and`: `(woolly-finch 35, woolly-finch 36)`, `(woolly-finch 35 and brisk-heron 1)`.
-So a hyphenated word alone in parentheses that names no file is
-flagged too; reword it, or put `<!-- lint-allow -->` on its line.
+A parenthesis is read one `;`-separated part at a time, and every piece of a part shaped like a
+citation is checked wherever it stands: a hyphenated name, an optional number, and after it a comma,
+the part's end, or `and` and another such piece. A piece starts the part (also after a leading
+`and`) or follows `, `, `, and `, `, see `, `, also ` or ` and `: `(woolly-penguin #759)`,
+`(PLAYTEST-145; olive-hedgehog #598)`, `(woolly-penguin #999, the rule)` (#999 is flagged),
+`(the filer's proposal, curly-rabbit #1094)`, `(woolly-finch 35, see woolly-finch 36)` and
+`(woolly-finch 35 and brisk-heron 1)` are all read. A number list belongs to its citation
+(`brisk-heron 1, 13`, `woolly-penguin #758, #759`). What a writer must avoid, or reword, or mark
+with `<!-- lint-allow -->`: a hyphenated word alone between those separators that names no file
+(`(polite-marten, long-standing)`), since a misspelt name has to be flagged without resolving it,
+and a hyphenated word alone in parentheses. Two bare names joined by `and` with no number on either
+(`(well-known and long-standing)`) are prose and not read, so such a pair is never checked either.
+A piece after any other word (`or`, `&`, free text before it) is not read.
 
 Run by the host's own `python3` from tools/lint.sh, before CI installs uv, so it stays
 3.9-compatible (pyproject.toml pins ruff's target for it). `X | None` appears only in annotations,
@@ -58,8 +64,12 @@ NAME = r"[A-Za-z0-9]+(?:-[A-Za-z0-9]+)+"
 NOTES = r"#\d+(?:, #\d+)*"
 NUMBERS = r"\d+(?:[-\u2013]\d+)?(?:, \d+(?:[-\u2013]\d+)?)*"
 SPEC = rf"(?: ({NOTES}|{NUMBERS}))?"
-FURTHER = re.compile(rf"(?:, and |, | and )({NAME}){SPEC}(?=, | and |$)")
-CITATION = re.compile(rf"^({NAME}){SPEC}(?=, |$| and (?:{NAME}){SPEC}(?:, | and |$))")
+# A piece of a part that is shaped like a citation: after the part's start or a separator, a name and an
+# optional number, then a separator, an `and` before another such piece, or the part's end.
+PIECE = re.compile(
+    rf"(?:^(?:and )?|, and |, see |, also |, | and )({NAME}){SPEC}"
+    rf"(?=, |$| and (?:{NAME}){SPEC}(?:, | and |$))"
+)
 INBOX_IN = re.compile(rf"\binbox (#\d+(?:(?:, and |, | and )#\d+)*) in ({NAME})\b")
 NOTE_HEADING = re.compile(r"^##[ \t]+#(\d+)\b", re.MULTILINE)
 NUMBER_HEADING = re.compile(r"^#{2,3}[ \t]+(?:Finding |Statement )?(\d+)\b(?![-/])", re.MULTILINE)
@@ -165,12 +175,16 @@ def check_text(rel: str, text: str, pool: dict[str, list[Path]], root: Path) -> 
     for match in PAREN.finditer(prose):
         for part in match.group(1).split(";"):
             text_part = re.sub(r"\s+", " ", part).strip()
-            citation = CITATION.match(text_part)
-            if citation is None:
-                continue
-            cite(match.start(), citation.group(1), citation.group(2))
-            for further in FURTHER.finditer(text_part, citation.end()):
-                cite(match.start(), further.group(1), further.group(2))
+            found = list(PIECE.finditer(text_part))
+            for i, piece in enumerate(found):
+                # Two bare names joined by "and" are prose (`well-known and long-standing`), not citations.
+                before = text_part[: piece.start(1)].endswith(" and ")
+                after = text_part.startswith(" and ", piece.end())
+                if piece.group(2) is None:
+                    near = [found[j] for j, side in ((i - 1, before), (i + 1, after)) if side and 0 <= j < len(found)]
+                    if near and all(n.group(2) is None for n in near):
+                        continue
+                cite(match.start(), piece.group(1), piece.group(2))
     return hits
 
 

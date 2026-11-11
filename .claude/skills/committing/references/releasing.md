@@ -39,7 +39,7 @@ refuses a dirty tree, any branch but `main`, a `main` that is not level with `or
 commit that already carries the newest `v*` tag, and a machine with no `gh` — every refusal fires
 in the dry run too, so the dry run tells the truth about whether the real thing would work. **It
 tags nothing until it has read the `test` check on `main`'s commit as green.** That check is CI's
-last job (it needs every other job: classify, gates, hooks, cost-table, game, plan, shards, costs and browser), so it reads `none` for
+last job (it needs every other job: classify, gates, hooks, `cost-table`, game, plan, shards, costs and browser), so it reads `none` for
 the first minutes after a merge and the `push` form waits, polling every 20 seconds. A read that
 fails is retried with `gh`'s own error printed, never taken as a pass; a failed check refuses, and
 so does a check still not green after 30 minutes, a bound that exists so an unattended run cannot

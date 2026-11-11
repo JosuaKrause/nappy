@@ -118,23 +118,46 @@ class CheckCitationsTests(unittest.TestCase):
 
     def test_text_after_a_comma_does_not_hide_the_citation(self) -> None:
         self.flagged("A rule (woolly-penguin #999, the rule).\n", "has no `## #999` heading")
+        self.flagged("A rule (PLAYTEST-16, finding 7).\n", "cite one with the statement's number")
 
     def test_a_wrong_second_citation_is_flagged_after_each_separator(self) -> None:
-        # Mutation: reading only the first citation of a part (the old `(?:, .*)?$` tail) passes all four.
+        # Mutation: reading only the first citation of a part (the old `(?:, .*)?$` tail) passes all of these.
         self.flagged("A rule (woolly-penguin #759, woolly-penguin #999).\n", "(woolly-penguin #999)")
         self.flagged("A rule (PLAYTEST-16 7, PLAYTEST-16 8).\n", "has no statement 8")
         self.flagged("A rule (PLAYTEST-16 7, and brisk-heron 5).\n", "(brisk-heron 5)")
         self.flagged("A rule (PLAYTEST-16 7 and woolly-pengiun #759).\n", "(woolly-pengiun) names no file")
         self.flagged("A rule (PLAYTEST-16 7; woolly-penguin #759, woolly-penguin #999).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (PLAYTEST-16 7, see woolly-penguin #999).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (PLAYTEST-16 7; and woolly-penguin #999).\n", "(woolly-penguin #999)")
+
+    def test_a_citation_after_words_is_read(self) -> None:
+        # Mutation: reading a part only when it opens with a citation skips all of these.
+        self.flagged("A rule (the filer's proposal, woolly-penguin #999).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (**playtest-feedback**, woolly-penguin #999).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (dependency injection, woolly-penguin #999; the rest).\n", "(woolly-penguin #999)")
+        self.flagged("A rule (a thing, also woolly-penguin #999).\n", "(woolly-penguin #999)")
+
+    def test_a_third_citation_is_read(self) -> None:
+        # Mutation: reading only the first further citation of a part.
+        self.flagged("A rule (PLAYTEST-16 7, brisk-heron 1, PLAYTEST-16 8).\n", "has no statement 8")
+        self.flagged("A rule (PLAYTEST-16 7, brisk-heron 1 and woolly-penguin #999).\n", "(woolly-penguin #999)")
 
     def test_second_citations_that_resolve_pass(self) -> None:
-        # Mutation: treating every word after a comma or "and" as a citation flags the free text here.
         self.skill(
             "A rule (woolly-penguin #759, woolly-penguin #758; PLAYTEST-16 7, and brisk-heron 1, 13).\n"
-            "Free text (polite-marten, a well-known rule and a long-standing one).\n"
+            "Also (the filer's proposal, woolly-penguin #759) and (PLAYTEST-16 7, see brisk-heron 1).\n"
         )
         self.assertEqual(self.run_check()[0], 0)
-        self.flagged("A rule (PLAYTEST-16, finding 7).\n", "cite one with the statement's number")
+
+    def test_prose_with_hyphenated_words_is_not_a_citation(self) -> None:
+        # Mutations: a piece read with no trailing separator; any word read, not only a hyphenated one; "and"
+        # joining two bare names, or a bare name and anything, read as a citation.
+        self.skill(
+            "Free text (polite-marten, a well-known rule and a long-standing one).\n"
+            "(polite-marten, well-known rules apply) (polite-marten, proposal) (well-known and good).\n"
+            "(well-known and long-standing) (polite-marten, short-lived and never pushed).\n"
+        )
+        self.assertEqual(self.run_check(), (0, "", ""))
 
     def test_an_inbox_citation_names_a_playtest_holding_the_note(self) -> None:
         self.flagged("Filed as inbox #760 in woolly-penguin.\n", "(inbox #760 in woolly-penguin)")
