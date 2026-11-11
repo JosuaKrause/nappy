@@ -20,9 +20,13 @@ review's findings, filed by the orchestrator, built as tooling first (inbox #130
   `names.size() if names else 5` is printed behind its guard.
 - **A guard whose other value reads a lowercase name** (an engine property, a member or a global
   function: `barrier_post.body_position() if barrier_post else global_position`) is printed behind
-  its guard rather than taken for the chain; a literal or a constant there leaves the method an
-  answer. `EventInstance.body_position()` is the one method under `src/` this changes, and no file
-  reads its chain.
+  its guard rather than taken for the chain. An other value that reads no lowercase name at the
+  head of a chain leaves the method an answer: a literal, or a chain headed by an uppercase name or by
+  `$` (`Vector2.ZERO`, `Tuning.fallback()`, `$Label.z_index`), with the type a cast names left out
+  (`[] as Array[int]`). Such a chain can read live state, as `global_position` does, and the tool
+  does not judge it; `--help` names it among what the tool does not see.
+  `EventInstance.body_position()` is the one method under `src/` this changes, and no file reads its
+  chain.
 - **The four rules of the guards and views that no case held** each have one: every part of a guard
   joined by `and` tests the returned chain; a view is looked for only where the class has no answer
   of its own; a private method hands no view out; a guarded chain is not looked for where a method
@@ -42,7 +46,8 @@ review's findings, filed by the orchestrator, built as tooling first (inbox #130
   any lowercase name at the head of the other value is taken for an engine value, since the tool
   keeps no list of engine properties, so a global function call there is printed behind the guard
   too; and "a class under `src/`" is read literally, so a prefix of a class under `tests/` is printed
-  behind its guard (the builder's).
+  behind its guard; the type a cast names is cut out rather than a list of the engine's type names
+  kept, and a node's name after `$` is no name read (the builder's).
 
 ## Verified
 
