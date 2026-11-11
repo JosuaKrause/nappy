@@ -24,11 +24,12 @@ event's own canvas, the looks drawn in slices with the scenery, and the roadbloc
   `EventVehicleLook.victim_gait_is_stepping()` (the base answers false). The caret's flash is one
   function, `_mark_is_flashed_off()`; `_mark_swell()` is `_share_of_its_peak_now()`, so the slice
   looks and the fire's look can call it in their pull requests.
-- **The nine family looks are unchanged** and still read `event.def` and `event.drawer`; their two
+- **The nine family looks are unchanged** and still read `event.def` and `event.drawer`; their three
   pull requests convert them.
-- **Five suites hand the drawer before `setup()`**, as the spawner does (`test_danger`,
-  `test_event_views`, `test_heat`, `test_protest`, `test_frame_record`); nothing under `src/` sets a
-  drawer, an atlas or whether an event draws after `setup()`.
+- **Four suites hand the drawer before `setup()`**, as the spawner does (`test_danger`,
+  `test_event_views`, `test_heat`, `test_protest`), and `test_frame_record` makes its stand-in look
+  with the four arguments; nothing under `src/` sets a drawer, an atlas or whether an event draws
+  after `setup()`.
 - `docs/ARCHITECTURE.md`'s `views/` paragraph and `docs/EVENTS.md`'s vocabulary cell name the
   hand-in and the renamed swell. `tools/field_reads.txt` lost 31 lines and gained none.
 
@@ -49,7 +50,7 @@ meter on every tick (`probes/m159_tick_sweep_events_cost.gd`, the `chain` values
 row's look draws (`probes/look_fingerprint.gd`, its `LK` lines), run with the probe file from its
 own pull request at `943ed9d8b` and again at `77b1cbaee`, the same file in both trees each time.
 What a look draws straight on the canvas no probe sees: `_draw_body_shadow()` changed only where it
-asks (`casts_a_shadow()`, `body_pieces()`).
+asks (`casts_a_shadow()`, `body_pieces()`, and each piece's `ground_shape()`).
 
 ## Choices the builder made where the design was silent, open to the player's overturn
 
