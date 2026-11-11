@@ -97,7 +97,10 @@ enum Phase {
 	DONE,
 }
 
-## Where it is in its life — see `Phase`. Changed only by `transition()`.
+## Where it is in its life — see `Phase`. Changed only by `transition()`. Public
+## because suites read it: no game file outside this one does, and the CI list of test-only
+## members (`tools/check_test_only_members.py`) cannot hold it, since other classes have a
+## member of the same name.
 var phase := Phase.WARNING
 ## Whether its telegraph or notice ended into `Phase.ACTIVE` — run out, or cut short by a lunge, a
 ## flush or the masked man's run. A row that left, parked or stopped before that is still within
@@ -296,7 +299,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	var start := EventFootprints.stands_at(_map, definition, route[0] if route.size() > 0 else at)
 	position = start
 	_heading = face
-	look = EventLooks.for_row(self, definition, drawer, skip_draw)
+	look = EventLooks.for_row(self, definition, drawer, skip_draw, barrier_post)
 	look.face(face)
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
@@ -1761,6 +1764,9 @@ func rim() -> EntityHalo:
 ## How this instance looks (`EventLooks.for_row()`, handed its row and its drawer in `setup()`): it
 ## draws the instance from what it asks it and, in the family looks, from some of its public state,
 ## decides when it is drawn again, and holds the drawing nodes a long picture is drawn in.
+## Public because suites read it: no game file outside this one does, and the CI list of test-only
+## members (`tools/check_test_only_members.py`) cannot hold it, since other classes have a
+## member of the same name.
 var look: EventLook
 
 ## What a protest points its placards at, handed in by whoever knows (`EventManager.points_at`,
@@ -2211,3 +2217,7 @@ func where_its_placards_point() -> Vector2:
 ## plan's `walks()` answers.
 func walks() -> PackedVector2Array:
 	return path
+
+## Whether its guard is gone for good and it is only its barrier (`Phase.SPENT`), solid and silent.
+func is_only_its_barrier() -> bool:
+	return phase == Phase.SPENT
