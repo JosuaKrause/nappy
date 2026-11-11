@@ -300,7 +300,7 @@
 # for an encoded command or one kept in a file the shell then runs.
 #
 # **Three shapes are text, and nothing else is** *(plaid-tapir, statement 4: the player chose "B",
-# the rule narrowed to what can be told for certain, everything else read as before; inbox #1292
+# the rule narrowed to what can be told for certain, everything else read as before; inbox #1292 in grassy-trout
 # asks that a command which only writes text naming the GitHub CLI is not refused, so each shape is
 # as wide as that certainty reaches and no wider)*. Each is made only of plain words (letters,
 # digits and `_./:@,+=-`) besides what is named, so nothing in it is quoted, expanded, globbed,

@@ -50,7 +50,7 @@ bare name of the file's own class with no receiver (`if is_ready:`).
 
 - **The new name stops at yes-or-no fields**: shown that a wider rule (every converted field's
   method a new name, or every one but a number's) renames accessors across the events' design,
-  the player answered "A", stop at yes-or-no fields (inbox #1349). A third way, the name kept
+  the player answered "A", stop at yes-or-no fields (inbox #1349 in grassy-trout). A third way, the name kept
   wherever every read of the field fails, is ruled out: it needs a list of such reads, and the
   same record says how three wordings of one were each wrong. Asked on the board whether each
   conversion's pull request also shows a search for the old name read without its parentheses

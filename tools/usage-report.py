@@ -489,14 +489,14 @@ def comparison(rows: list[Row], compare_to: str) -> list[str]:
         actual = sum(x.dollars(price_for(x.model, x.context) or PRICES[x.model]) for x in turns)
         ratio = f"{actual / at_other:5.2f}x" if at_other else "n/a"
         out.append(f"  {fam:8} {weighted:>9} {fmt_usd(actual):>10} {fmt_usd(at_other):>10} {ratio:>6}")
-    # inbox #1291: the player's words behind this caveat.
+    # inbox #1291 in grassy-trout: the player's words behind this caveat.
     out.extend(
         [
             "  For information only. The same tokens is an assumption: a model that gets more done per turn would "
             "not have used the same tokens (Fable typically needs fewer turns and tokens than Opus on the same "
             f"task and does work Opus cannot), so the 'at {compare_to}' column ({other}) is not what the work "
             "would have cost there.",
-            "  A model is never chosen on this column alone (inbox #1291).",
+            "  A model is never chosen on this column alone (inbox #1291 in grassy-trout).",
         ]
     )
     return out

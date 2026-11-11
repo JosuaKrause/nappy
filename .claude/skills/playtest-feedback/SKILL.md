@@ -93,7 +93,7 @@ number keep it, and so do the entries and records that already have one.
   whatever the band, until the work starts), optionally a `fable-only: true` line (every pull
   request that builds an item of the entry carries the GitHub label `fable-only`: Fable designs the
   code and reviews it, and writing the code may go to another model; only for an entry the player
-  names, inbox #1293, inbox #1299), and an `after: <entry folder>` line for each entry it
+  names, inbox #1293 in grassy-trout, inbox #1299 in grassy-trout), and an `after: <entry folder>` line for each entry it
   truly waits on; `tools/queue.sh` prints the queue in the order the bands give, and there is no
   order list to edit (brisk-heron 13). **A playtest note is filed `now`** unless the player names
   another band, since a note from playing is a bug report (olive-koala 11): pass `--priority now` to
@@ -250,4 +250,4 @@ corrects them. The citation is the player's word each one extends:
 - **The `fable-only: true` line on a fresh entry filed from a closed marked entry's leftovers**
   ("An entry whose work is mostly built is closed, and what is left of it is filed fresh"): the
   player named the closed entry's work as Fable's, and the leftovers are that work, so the filer
-  carries the line over (inbox #1299).
+  carries the line over (inbox #1299 in grassy-trout).

@@ -1,7 +1,7 @@
 # minty-quail — Every suite takes the typed runner, by one script · 2026-11-11
 
 **The ask.** "we type when we can" (inbox #1280 in olive-ferret), and the runner's class name
-(inbox #1282). The scripted rewrite is the orchestrator's proposal, put to the player with the count
+(inbox #1282 in grassy-trout). The scripted rewrite is the orchestrator's proposal, put to the player with the count
 before those words; the words do not name it. The plainer alternative was to leave every test file
 until its suite is converted.
 
