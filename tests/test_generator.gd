@@ -79,13 +79,13 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 			var layout: BlockLayout = map.layout_of(block)
 			var lot := CityMap.block_rect(block)
 			var holes: Array[Rect2i] = []
-			for hole: Rect2i in [layout.square, layout.alley, layout.passage_rect()]:
+			for hole: Rect2i in [layout.square_rect(), layout.alley_rect(), layout.passage_rect()]:
 				if BlockLayout.has(hole):
 					holes.append(hole)
-			if BlockLayout.has(layout.open_rect):
-				if layout.open_rect == lot:
+			if BlockLayout.has(layout.open_ground()):
+				if layout.open_ground() == lot:
 					continue  # open ground, nothing built on it
-				holes.append(layout.open_rect)
+				holes.append(layout.open_ground())
 			if block == map.home_block_coordinate():
 				holes.append(map.home_tile_rect())
 			var pieces: Array[Rect2i] = []
@@ -110,11 +110,11 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 			if holes.is_empty():
 				seen.plain += 1
 				t.check(pieces == [lot], "%s: with no hole the lot is one building" % where)
-			elif holes.size() == 1 and BlockLayout.has(layout.alley):
+			elif holes.size() == 1 and BlockLayout.has(layout.alley_rect()):
 				seen.alley += 1
 				t.check(pieces.size() == 2, "%s: a through-alley leaves two slabs (got %d)"
 						% [where, pieces.size()])
-			elif holes.size() == 1 and BlockLayout.has(layout.square):
+			elif holes.size() == 1 and BlockLayout.has(layout.square_rect()):
 				seen.corner += 1
 				t.check(pieces.size() == 2, "%s: a corner square leaves an L of two (got %d)"
 						% [where, pieces.size()])
@@ -122,7 +122,7 @@ func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 				seen.home += 1
 				t.check(pieces.size() == 3, "%s: the home's notch leaves three (got %d)"
 						% [where, pieces.size()])
-			elif BlockLayout.has(layout.open_rect):
+			elif BlockLayout.has(layout.open_ground()):
 				seen.court += 1
 	for kind: String in seen:
 		t.check(seen[kind] > 0, "some generated block is a %s one (%d found)" % [kind, seen[kind]])
@@ -171,13 +171,13 @@ func _test_determinism(t: TestRunner) -> void:
 	for i in 5:
 		var first := CityGenerator.generate(_seed(i))
 		var second := CityGenerator.generate(_seed(i))
-		t.check(first.tiles == second.tiles, "seed %d regenerates the identical map" % _seed(i))
+		t.check(first.walk_tiles() == second.walk_tiles(), "seed %d regenerates the identical map" % _seed(i))
 		t.check(first.home_tile_rect() == second.home_tile_rect(), "seed %d puts the home back" % _seed(i))
 		t.check(first.calm_blocks_now() == second.calm_blocks_now(), "seed %d keeps its parks" % _seed(i))
 
 	var a := CityGenerator.generate(_seed(1))
 	var b := CityGenerator.generate(_seed(2))
-	t.check(a.tiles != b.tiles, "different seeds produce different cities")
+	t.check(a.walk_tiles() != b.walk_tiles(), "different seeds produce different cities")
 
 func _test_buildings_tile_the_blocks(t: TestRunner) -> void:
 	for i in 12:
@@ -397,20 +397,20 @@ func _test_calm_zones_are_one_lot_of_one_thing(t: TestRunner) -> void:
 ## zone's, and solid ground, which is what tells the crowd and the telemetry map it is a wall.
 func _check_apartment_complex(t: TestRunner, map: CityMap, anchor: Vector2i, seed_value: int) -> void:
 	var layout: BlockLayout = map.layout_of(anchor)
-	t.check(layout.open_rect.size.x == CityGenerator.APARTMENT_COURT_TILES,
+	t.check(layout.open_ground().size.x == CityGenerator.APARTMENT_COURT_TILES,
 			"seed %d: complex %s has a court %d tiles across, not %d"
-			% [seed_value, anchor, layout.open_rect.size.x, CityGenerator.APARTMENT_COURT_TILES])
+			% [seed_value, anchor, layout.open_ground().size.x, CityGenerator.APARTMENT_COURT_TILES])
 	t.check(layout.has_passage(),
 			"seed %d: complex %s has an archway into it" % [seed_value, anchor])
 
 	var lot := map.lot_rect(anchor)
-	t.check(lot.encloses(layout.open_rect),
+	t.check(lot.encloses(layout.open_ground()),
 			"seed %d: complex %s keeps its court inside the mass" % [seed_value, anchor])
 	var walkable := 0
 	for tile in map.rect_tiles(lot):
 		if map.is_walkable(tile):
 			walkable += 1
-	var inside := layout.open_rect.get_area() + layout.passage_rect().get_area()
+	var inside := layout.open_ground().get_area() + layout.passage_rect().get_area()
 	t.check(walkable == inside,
 			"seed %d: complex %s is solid apart from its court and archway (%d walkable of %d)"
 			% [seed_value, anchor, walkable, inside])
@@ -427,7 +427,7 @@ func _check_apartment_complex(t: TestRunner, map: CityMap, anchor: Vector2i, see
 				"seed %d: the street %s the complex %s took is built over"
 				% [seed_value, key, anchor])
 		for tile in map.rect_tiles(map.street_network().by_key(key).tile_rect()):
-			t.check(not map.is_walkable(tile) or layout.open_rect.has_point(tile)
+			t.check(not map.is_walkable(tile) or layout.open_ground().has_point(tile)
 					or layout.passage_rect().has_point(tile),
 					"seed %d: %s inside complex %s is solid" % [seed_value, tile, anchor])
 	t.check(built == absorbed,
@@ -656,7 +656,7 @@ func _test_a_big_building_joins_two_blocks(t: TestRunner) -> void:
 				t.check(map.starting_purpose(block) == GameEnums.BlockPurpose.BIG_BUILDING,
 						"seed %d: block %s is a big building for the whole run" % [_seed(i), block])
 				var layout: BlockLayout = map.layout_of(block)
-				t.check(layout != null and not BlockLayout.has(layout.open_rect),
+				t.check(layout != null and not BlockLayout.has(layout.open_ground()),
 						"seed %d: and has nothing carved into it to repaint" % _seed(i))
 
 			# Solid across the whole footprint, the street between included.
@@ -869,7 +869,7 @@ func _test_an_alley_is_exactly_one_cell_wide(t: TestRunner) -> void:
 	for i in 40:
 		var map := _map(i)
 		for block: Vector2i in map.blocks_with_layouts():
-			var alley: Rect2i = (map.layout_of(block) as BlockLayout).alley
+			var alley: Rect2i = (map.layout_of(block) as BlockLayout).alley_rect()
 			if not BlockLayout.has(alley):
 				continue
 			rolled += 1

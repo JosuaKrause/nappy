@@ -117,8 +117,8 @@ func _test_each_mover_is_stopped_by_its_own_layers(t: TestRunner) -> void:
 func _test_is_walkable_is_the_lattice(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
 	var disagree := 0
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.is_walkable(tile) != map.passable(tile, Mover.lattice()):
 				disagree += 1
@@ -518,7 +518,7 @@ func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> voi
 		instance.departure.leave(0.05)
 		if instance.is_finished:
 			break
-		if not map.step_is_clear(before, instance.global_position, Mover.of(mover.blocked_by)):
+		if not map.step_is_clear(before, instance.global_position, Mover.of(mover.layers_blocked())):
 			off += 1
 		before = instance.global_position
 	t.check(off == 0, "its departure never enters a building (%d steps did)" % off)
@@ -552,7 +552,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 		var instance := city.events.spawn_extra(def, at, route)
 		instance.set_process(false)
 		var her := at + Vector2(0.0, -6.0 * TILE)
-		var asked := Mover.of(mover.blocked_by)
+		var asked := Mover.of(mover.layers_blocked())
 		var before := instance.global_position
 		var guard_before := Vector2.INF
 		var left_from := Vector2.INF

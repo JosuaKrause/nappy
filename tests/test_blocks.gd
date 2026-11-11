@@ -63,9 +63,9 @@ func _test_every_block_has_an_arc(t: TestRunner) -> void:
 					"block %s belongs to a lot with an arc" % block)
 	for block: Vector2i in map.blocks_with_plans():
 		var plan: BlockPlan = map.plans_by_block()[block]
-		t.check(plan.steps.size() >= 1, "block %s has at least a starting purpose" % block)
-		t.check(plan.steps[0].from_day == 1, "block %s starts on day 1" % block)
-		t.check(plan.steps[0].cause == GameEnums.BlockCause.SCHEDULED,
+		t.check(plan.step_count() >= 1, "block %s has at least a starting purpose" % block)
+		t.check(plan.step_at(0).from_day == 1, "block %s starts on day 1" % block)
+		t.check(plan.step_at(0).cause == GameEnums.BlockCause.SCHEDULED,
 				"block %s does not need a cause to be what it starts as" % block)
 
 ## An arc is a line, not a tree: it never goes backwards in time, so a player who learns
@@ -76,7 +76,7 @@ func _test_arcs_only_move_forward(t: TestRunner) -> void:
 		for block: Vector2i in map.blocks_with_plans():
 			var plan: BlockPlan = map.plans_by_block()[block]
 			var previous := 0
-			for step: BlockPlan.Step in plan.steps:
+			for step: BlockPlan.Step in plan.steps_in_order():
 				t.check(step.from_day >= previous,
 						"seed %d block %s: arc days never go backwards" % [map.city_seed(), block])
 				previous = step.from_day
@@ -150,7 +150,7 @@ func _test_a_requisitioned_block_stops_being_calm(t: TestRunner) -> void:
 				continue
 			found = true
 			var layout: BlockLayout = map.layout_of(block)
-			for tile in map.rect_tiles(layout.open_rect):
+			for tile in map.rect_tiles(layout.open_ground()):
 				t.check(not Tile.is_calm(map.tile_at(tile)),
 						"seed %d: requisitioned block %s has no calm ground left"
 						% [map.city_seed(), block])
@@ -180,13 +180,13 @@ func _test_the_same_seed_plans_the_same_arcs(t: TestRunner) -> void:
 	for block: Vector2i in first.blocks_with_plans():
 		var a: BlockPlan = first.plans_by_block()[block]
 		var b: BlockPlan = second.plans_by_block().get(block)
-		if not b or a.steps.size() != b.steps.size():
+		if not b or a.step_count() != b.step_count():
 			same = false
 			break
-		for step in a.steps.size():
-			if a.steps[step].purpose != b.steps[step].purpose \
-					or a.steps[step].from_day != b.steps[step].from_day \
-					or a.steps[step].cause != b.steps[step].cause:
+		for step in a.step_count():
+			if a.step_at(step).purpose != b.step_at(step).purpose \
+					or a.step_at(step).from_day != b.step_at(step).from_day \
+					or a.step_at(step).cause != b.step_at(step).cause:
 				same = false
 	t.check(same, "the same seed plans the same arcs")
 
@@ -497,8 +497,8 @@ func _worst_case(map: CityMap) -> CityState:
 
 func _walkable_set(map: CityMap) -> Dictionary:
 	var walkable := {}
-	for y in map.size.y:
-		for x in map.size.x:
+	for y in map.size_in_tiles().y:
+		for x in map.size_in_tiles().x:
 			var tile := Vector2i(x, y)
 			if map.is_walkable(tile):
 				walkable[tile] = true

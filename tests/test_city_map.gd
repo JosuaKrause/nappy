@@ -123,7 +123,8 @@ func _test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t: TestR
 	t.check(map.fenced_park_block().x >= 0 and map.is_closed(street),
 			"seed %d: the act III map has a fenced park and a closed street" % seed_value)
 	var twin := map.copy()
-	t.check(twin.fenced_park_block() == map.fenced_park_block() and twin.fenced_park_act == map.fenced_park_act,
+	t.check(twin.fenced_park_block() == map.fenced_park_block()
+			and twin.fenced_park_act == map.fenced_park_act,
 			"seed %d: the copy has the same fenced park" % seed_value)
 	_check_the_same(t, map, twin, "seed %d, in act III" % seed_value)
 	# The handover is carried: both maps' next repaint keeps the same fence standing.
@@ -140,7 +141,7 @@ func _test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t: TestR
 func _test_a_copy_of_an_authored_scene_map_carries_its_recipe(t: TestRunner) -> void:
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
 	var map: CityMap = RecipeCityBuilder.build(data).map
-	t.check(map.stretch_active and not map.recipe_dawn_tiles.is_empty(),
+	t.check(map.stretch_active and map.has_recipe_dawn_ground(),
 			"the authored map has an active stretch and saved dawn ground")
 	var twin := map.copy()
 	t.check(twin.stretch_active and twin.recipe_dawn_tiles == map.recipe_dawn_tiles,
@@ -181,9 +182,10 @@ func _hand_a_day_to(map: CityMap) -> void:
 	map.close_streets(closures)
 	var pits: Array[Vector2i] = [street]
 	map.set_seal_tree_pits(pits)
-	(map.plans_by_block()[map.calm_blocks_now()[0]] as BlockPlan).then(GameEnums.BlockPurpose.REQUISITIONED, 3,
-			GameEnums.BlockCause.SCHEDULED)
-	var spent: Array[Vector2i] = [map.calm_blocks_now()[0]]
+	var first_calm := map.calm_blocks_now()[0]
+	var plan := map.plans_by_block()[first_calm] as BlockPlan
+	plan.then(GameEnums.BlockPurpose.REQUISITIONED, 3, GameEnums.BlockCause.SCHEDULED)
+	var spent: Array[Vector2i] = [first_calm]
 	map.set_spent_calm(spent)
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), Tuning.RUN_LENGTH_DAYS)
@@ -240,8 +242,8 @@ func _answers(map: CityMap) -> Dictionary:
 	var shut := PackedByteArray()
 	var held := PackedByteArray()
 	var pits := PackedByteArray()
-	for y in range(0, map.size.y, _STRIDE):
-		for x in range(0, map.size.x, _STRIDE):
+	for y in range(0, map.size_in_tiles().y, _STRIDE):
+		for x in range(0, map.size_in_tiles().x, _STRIDE):
 			var tile := Vector2i(x, y)
 			streets.append(int(map.is_street(tile)) + 2 * int(map.is_carriageway(tile)) \
 					+ 4 * int(map.is_crossing(tile)))
@@ -314,8 +316,9 @@ func _plain_members(object: Object, skipped: Array[String] = []) -> Dictionary:
 
 ## `value` with every object in it replaced by its members (`_plain_members()`), so two values
 ## compare equal exactly when they hold the same data, whichever objects hold it, and every array,
-## dictionary and packed array in it new, so no later write to what it was read from reaches it. Godot
-## shares a packed array by reference, so each packed type is copied through its own typed name.
+## dictionary and packed array in it new, so no later write to what it was read from reaches it.
+## Godot shares a packed array by reference, so each packed type is copied through its own typed
+## name.
 func _plain(value: Variant) -> Variant:
 	if value is PackedByteArray:
 		return (value as PackedByteArray).duplicate()
