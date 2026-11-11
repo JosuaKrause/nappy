@@ -5,7 +5,7 @@ extends EventLook
 
 ## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match event.def.look:
+	match _row.picture():
 		EventDef.Look.BURNING_BUILDING:
 			_draw_fire(canvas)
 
@@ -45,7 +45,7 @@ var _fire_facade_found := false
 ## statement 12) and *"the fire should be on the whole building not only the door"*
 ## (sandy-egret), which has no body and no shadow to draw, only the picture.
 func _draw_fire(canvas: CanvasItem) -> void:
-	if event.def.obstructs_radius > 0.0:
+	if _row.has_a_body():
 		_draw_fire_where_it_stands(canvas)
 		return
 	var against_the_wall := _wall_offset()
@@ -53,14 +53,14 @@ func _draw_fire(canvas: CanvasItem) -> void:
 	for i in flames.size():
 		var flicker := 1.0 + 0.25 * sin(event.age * 9.0 + i * 1.7)
 		var height := (_FIRE_HEIGHT + i % 2 * _FIRE_HEIGHT_TALL) * flicker
-		event.drawer.stand(canvas, EventPictures.FLAME,
+		_drawer.stand(canvas, EventPictures.FLAME,
 				against_the_wall + Vector2(flames[i].x, 0.0), Vector2(flames[i].y, height))
 	# Neighboring plumes billow out of step, so a long front's smoke does not pulse as one.
 	var billowing := idle_is_stepping(EventPictures.STEAM_BILLOW_PERIOD)
 	var plumes := _smoke_across(_fire_facade_runs())
 	for i in plumes.size():
 		var picture := EventPictures.STEAM_B if billowing != (i % 2 == 1) else EventPictures.STEAM
-		event.drawer.stand(canvas, picture, against_the_wall
+		_drawer.stand(canvas, picture, against_the_wall
 				+ Vector2(plumes[i].x, -(_FIRE_HEIGHT + _FIRE_HEIGHT_TALL)),
 				Vector2(plumes[i].y, _SMOKE_SIZE.y))
 
@@ -77,7 +77,7 @@ func _fire_facade_runs() -> PackedVector2Array:
 ## reaches past it. Empty for anything but a fire with no body, whose drawing is its picture. Read
 ## by `_drawn_reach()` and `drawn_rect_now()`; a sited fire never moves, so neither changes.
 func _fire_front_box() -> Rect2:
-	if event.def.look != EventDef.Look.BURNING_BUILDING or event.def.obstructs_radius > 0.0:
+	if _row.picture() != EventDef.Look.BURNING_BUILDING or _row.has_a_body():
 		return Rect2()
 	var top := -(_FIRE_HEIGHT + _FIRE_HEIGHT_TALL) - _SMOKE_SIZE.y
 	var box := Rect2()
@@ -91,15 +91,13 @@ func _fire_front_box() -> Rect2:
 ## Flames scaled by what the event is currently emitting, so a fire visibly roars, over the body's
 ## own shadow: five flames 11px apart, spanning the ±31px the 30px body is half of.
 func _draw_fire_where_it_stands(canvas: CanvasItem) -> void:
-	var strength := 1.0
-	if event.def.intensity > 0.0:
-		strength = clampf(event.current_intensity() / event.def.intensity, 0.2, 1.0)
+	var strength := maxf(0.2, _share_of_its_peak_now())
 	_draw_body_shadow(canvas)
 	for i in 5:
 		var offset := (i - 2.0) * 11.0
 		var flicker := 1.0 + 0.25 * sin(event.age * 9.0 + i * 1.7)
 		var height := (34.0 + i % 2 * 14.0) * strength * flicker
-		event.drawer.stand(canvas, EventPictures.FLAME, Vector2(offset, 0.0), Vector2(18.0, height))
+		_drawer.stand(canvas, EventPictures.FLAME, Vector2(offset, 0.0), Vector2(18.0, height))
 
 ## The facade a fire sited at `at` burns on, as the stretches of it the city draws, each as its
 ## west and east ends in local x measured from `at`: the lot (`CityMap.building_rects`, one per

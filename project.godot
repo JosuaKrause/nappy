@@ -33,6 +33,11 @@ gdscript/warnings/untyped_declaration=2
 gdscript/warnings/unsafe_property_access=2
 gdscript/warnings/unsafe_method_access=2
 
+; A statement that does nothing fails the parse: a method's name alone on a line (`crowd.clear` for
+; `crowd.clear()`) is a reference to the function, never called. A name inside a condition, an
+; argument or an assignment still parses, so this does not reach `if crowd.clear:`.
+gdscript/warnings/standalone_expression=2
+
 [display]
 
 window/size/viewport_width=1280

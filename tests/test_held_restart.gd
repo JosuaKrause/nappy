@@ -83,8 +83,8 @@ func _send(event: InputEvent) -> void:
 ## .push_input()`, which every touch test in `tests/test_pause.gd` uses, bypasses that pass
 ## entirely. Instrumenting every event `_input()` saw, ahead of this fix, showed the emulated
 ## `InputEventMouseButton` press dispatching *before* the real `InputEventScreenTouch` press for the
-## same finger — so the pause screen's own catch-all (`TouchInput.is_press()`, which does not ask
-## whether this device even has touch hardware to emulate a click from) read the emulated click as
+## same finger — so the pause screen's own catch-all (whose mouse branch did not ask whether this
+## device even has touch hardware to emulate a click from) read the emulated click as
 ## *carry on* a moment ahead of the real touch reaching the restart handler, and the two-frame
 ## acknowledge delay closed the screen and cancelled the hold before it could ever complete — the
 ## real touch's own matching release then landed on a screen already invisible and did nothing at

@@ -5,7 +5,7 @@ extends EventLook
 
 ## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match event.def.look:
+	match _row.picture():
 		EventDef.Look.ROBBER, EventDef.Look.ROBBER_GIVING_CHASE:
 			_draw_robber(canvas)
 		EventDef.Look.MASKED_PURSUER, EventDef.Look.DOOR_GUARD, \
@@ -35,7 +35,7 @@ func _draw_robber(canvas: CanvasItem) -> void:
 	# *her* — see `robber_waiting_heading()`.
 	var heading := robber_waiting_heading() if waiting else event.facing_now()
 	var view := select_view(heading)
-	event.drawer.stand(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+	_drawer.stand(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
 			is_mirrored())
 
 ## The robber's picture for this frame: waiting, his two-frame alert walk through his notice
@@ -58,7 +58,7 @@ func _draw_policeman(canvas: CanvasItem) -> void:
 	_draw_body_shadow(canvas)
 	var by_view := _policeman_pictures()
 	var view := select_view(event.facing_now())
-	event.drawer.stand(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+	_drawer.stand(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
 			is_mirrored())
 
 ## The policeman's picture for this frame: his alert, hand raised, for the second the man out of an
@@ -81,7 +81,7 @@ func _policeman_pictures() -> Dictionary:
 ## (`has_stopped_her()`) until he turns to walk back.
 func _stands_still_now() -> bool:
 	return event.is_waiting() or event.is_telegraphing() or (event.has_stopped_her()
-			and not event.is_leaving)
+			and not event.is_on_its_way_out())
 
 ## A masked man coming up a stairwell, or a door's guard coming after her once she has walked under
 ## its boom — the same man, and the guardsman a torn poster sends or a vehicle lets out:
@@ -107,7 +107,7 @@ func _draw_masked_pursuer(canvas: CanvasItem) -> void:
 ## (`PursuitSpec.Start.CHARGES_AT_ONCE`). Otherwise `guard_standing_*` while `_stands_still_now()` —
 ## the masked man's wait, a stop — and `guard_lunging_*` after.
 func _masked_pursuer_pictures() -> Dictionary:
-	if event.is_standing_for_its_notice() or (event.def.notice_within() > 0.0
+	if event.is_standing_for_its_notice() or (_row.notice_within() > 0.0
 			and event.is_telegraphing()):
 		return EventPictures.GUARD_ALERT_BY_VIEW
 	return EventPictures.GUARD_STANDING_BY_VIEW if _stands_still_now() \

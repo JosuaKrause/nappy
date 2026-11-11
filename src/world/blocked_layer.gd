@@ -17,41 +17,75 @@ extends RefCounted
 ## recipe's exterior or a stretch's void reads; this record holds what is put down on top of it.
 
 ## Tile -> true where a precinct's post stands.
-var posts := {}
+var _posts := {}
 ## Tile -> true for today's closed ground (`CityMap.close_streets()`, the fenced park).
-var closed := {}
+var _closed := {}
 ## Tile -> true where a soft seal's body shuts the pavement to walkers today.
-var soft_sealed := {}
+var _soft_sealed := {}
 ## Tile -> how many stationary solid bodies stand on it.
-var bodies := {}
+var _bodies := {}
 ## Owner id -> the tiles it recorded, so `release()` gives exactly those back.
 var _owners := {}
-## Bumped whenever a tile enters or leaves `bodies` — a version a reader only compares with the one
+## Bumped whenever a tile enters or leaves `_bodies` — a version a reader only compares with the one
 ## its own answer was built from (the red arrow's sweeps, a figure's walk to her). Not bumped when a
 ## second body is counted onto a tile already standing.
-var body_version := 0
+var _body_version := 0
 
 ## The same record as one of its own, every tile and every body's owner carried, so a tile
 ## recorded or released on one record is not on the other (`CityMap.copy()`).
 func copy() -> BlockedLayer:
 	var twin := BlockedLayer.new()
-	twin.posts = posts.duplicate()
-	twin.closed = closed.duplicate()
-	twin.soft_sealed = soft_sealed.duplicate()
-	twin.bodies = bodies.duplicate()
+	twin._posts = _posts.duplicate()
+	twin._closed = _closed.duplicate()
+	twin._soft_sealed = _soft_sealed.duplicate()
+	twin._bodies = _bodies.duplicate()
 	for owner: int in _owners:
 		var tiles: Array[Vector2i] = _owners[owner]
 		twin._owners[owner] = tiles.duplicate()
-	twin.body_version = body_version
+	twin._body_version = _body_version
 	return twin
+
+## Records the precinct's posts afresh: the tiles under `at`, replacing whatever was laid before
+## (`CityMap.index_posts()`).
+func lay_posts(at: Array[Vector2i]) -> void:
+	_posts = {}
+	for tile in at:
+		_posts[tile] = true
+
+## Today's closed ground as the record itself, tile -> true, not a copy: what a closure writes into
+## and a flood reads (`CityMap.closed_tiles`).
+func todays_closed_tiles() -> Dictionary:
+	return _closed
+
+## Lets go of today's closed ground and records `tiles` as the closed ground instead.
+func replace_closed_tiles(tiles: Dictionary) -> void:
+	_closed = tiles
+
+## Today's soft-sealed pavement as the record itself, tile -> true (`CityMap.soft_sealed_tiles`).
+func todays_soft_sealed_tiles() -> Dictionary:
+	return _soft_sealed
+
+## Lets go of today's soft-sealed pavement and records `tiles` instead.
+func replace_soft_sealed_tiles(tiles: Dictionary) -> void:
+	_soft_sealed = tiles
+
+## The tiles under today's stationary solid bodies as the record itself, tile -> how many bodies
+## stand on it (`CityMap.obstructed_tiles`).
+func todays_body_tiles() -> Dictionary:
+	return _bodies
+
+## How many times a tile has entered or left the bodies' ground: a version a reader compares with
+## the one its own answer was built from (`CityMap.obstruction_version`).
+func body_ground_changes() -> int:
+	return _body_version
 
 ## Whether anything on this record of `layers` (a `Mover`'s `blocked_by`, or part of it) stands on
 ## `tile`. The ground's own type is the map's question (`CityMap.passable()`).
 func blocks(tile: Vector2i, layers: int) -> bool:
-	return (layers & Mover.POSTS != 0 and posts.has(tile)) \
-			or (layers & Mover.CLOSED != 0 and closed.has(tile)) \
-			or (layers & Mover.SOFT_SEALS != 0 and soft_sealed.has(tile)) \
-			or (layers & Mover.BODIES != 0 and bodies.has(tile))
+	return (layers & Mover.POSTS != 0 and _posts.has(tile)) \
+			or (layers & Mover.CLOSED != 0 and _closed.has(tile)) \
+			or (layers & Mover.SOFT_SEALS != 0 and _soft_sealed.has(tile)) \
+			or (layers & Mover.BODIES != 0 and _bodies.has(tile))
 
 ## Writes `value` into `ground` (a flat grid `width` wide and `height` deep, indexed
 ## `y * width + x`) at every tile this record holds in `layers`: how a flood lays the record out once
@@ -60,13 +94,13 @@ func lay_out(ground: PackedInt32Array, width: int, height: int, layers: int,
 		value: int) -> void:
 	var records: Array[Dictionary] = []
 	if layers & Mover.POSTS != 0:
-		records.append(posts)
+		records.append(_posts)
 	if layers & Mover.CLOSED != 0:
-		records.append(closed)
+		records.append(_closed)
 	if layers & Mover.SOFT_SEALS != 0:
-		records.append(soft_sealed)
+		records.append(_soft_sealed)
 	if layers & Mover.BODIES != 0:
-		records.append(bodies)
+		records.append(_bodies)
 	for layer in records:
 		for tile: Vector2i in layer:
 			if tile.x >= 0 and tile.y >= 0 and tile.x < width and tile.y < height:
@@ -77,13 +111,13 @@ func lay_out(ground: PackedInt32Array, width: int, height: int, layers: int,
 func tiles_of(layers: int) -> Dictionary:
 	var found := {}
 	if layers & Mover.POSTS != 0:
-		found.merge(posts)
+		found.merge(_posts)
 	if layers & Mover.CLOSED != 0:
-		found.merge(closed)
+		found.merge(_closed)
 	if layers & Mover.SOFT_SEALS != 0:
-		found.merge(soft_sealed)
+		found.merge(_soft_sealed)
 	if layers & Mover.BODIES != 0:
-		for tile: Vector2i in bodies:
+		for tile: Vector2i in _bodies:
 			found[tile] = true
 	return found
 
@@ -97,9 +131,9 @@ func obstruct(owner: int, tiles: Array[Vector2i]) -> void:
 	if tiles.is_empty():
 		return
 	for tile in tiles:
-		if not bodies.has(tile):
-			body_version += 1
-		bodies[tile] = int(bodies.get(tile, 0)) + 1
+		if not _bodies.has(tile):
+			_body_version += 1
+		_bodies[tile] = int(_bodies.get(tile, 0)) + 1
 	_owners[owner] = tiles
 
 ## Gives one body's tiles back. An unknown owner is a no-op, so every way a body can stop existing
@@ -109,16 +143,16 @@ func release(owner: int) -> void:
 		return
 	var tiles: Array[Vector2i] = _owners[owner]
 	for tile in tiles:
-		var left := int(bodies.get(tile, 0)) - 1
+		var left := int(_bodies.get(tile, 0)) - 1
 		if left > 0:
-			bodies[tile] = left
+			_bodies[tile] = left
 		else:
-			bodies.erase(tile)
-			body_version += 1
+			_bodies.erase(tile)
+			_body_version += 1
 	_owners.erase(owner)
 
 ## Clears every body, at the start of a day.
 func clear_bodies() -> void:
-	bodies.clear()
+	_bodies.clear()
 	_owners.clear()
-	body_version += 1
+	_body_version += 1

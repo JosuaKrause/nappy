@@ -467,8 +467,9 @@ strategies did (the record brisk-lark):
 - **A look asks the same questions outside callers ask**, plus its own few (`is_silenced()`,
   `is_its_guard_warning()`, `is_drawn_as_a_pelican()`, `boom_openness()`), and is handed its
   `LookSpec` and its drawer. The base look (`EventLook`) is so handed ok: its row (until `LookSpec`
-  exists), its drawer and whether it draws, and it asks the live event through methods; the family
-  looks follow.
+  exists), its drawer and whether it draws, and it asks the live event through methods. The figure,
+  pursuer, vehicle, flock, checkpoint and fire looks, `SpreadLook` and `RankLook` ask the same way
+  ok; `RoadblockLook` follows.
 
 **`WhereSheIs`** (a name this design proposes) is the one object that says where she is
 this tick: her position, her pram's, the camera's view, whether she runs, whether the baby is
@@ -622,7 +623,7 @@ counted where it only writes.
 | `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()`; the body part's `lies()` (one choice of four) for the footprints (the row's `lies()`, an `EventDef.Lie`, until the body part exists, ok) |
 | `vehicle` (`VehicleSpec.field_from_its_centre`) | 8 in, 2 out (the scene recipes, the park cordon); 3 lines of the spec | row `drives()` ok; the field part's `datum()` |
 | `intensity` | 7 in | row `has_a_field()` ok; the field part's `peak()` and `peak_through()` for the live event and the looks (the row's `peak()` and `peak_through()` until the field part exists ok) |
-| `inner_radius` | 6 in, 2 out (the resistance's contact point and director) | row `core_within()`; live `core_reaches(point)`; the flock and the looks are handed the field's spec |
+| `inner_radius` | 6 in, 2 out (the resistance's contact point and director) | row `core_within()` ok (the canvas looks ask it); live `core_reaches(point)`; the flock and the looks are handed the field's spec |
 | `outer_radius` | 7 in, the dev rig untyped | row `heard_within()` ok; live and plan `field_reaches(point)` ok; live `field_rings()` |
 | `core_intensity`, `core_radius`, `falloff_power` | 2 in each | inside `FieldSpec`: `emission_at_distance()` ok, `reach_above()` ok, `silent_beyond()` ok |
 | `pulse_period`, `intensity_ramp` | 4 and 2 in | the field part's `peak_through()`, `pulses_every()` (the looks' flicker); the live event asks the row's ok, the looks and the spawner still read `pulse_period` |
@@ -650,7 +651,7 @@ counted where it only writes.
 | `look` | 13 in (every look) | row `picture()` ok; each look is handed its `LookSpec` |
 | `warning_picture`, `draws_body_shadow`, `trails_a_lead`, `hides_in_its_hold`, `may_be_a_pelican` | 2 or 3 in each (the footprints, the looks, the spawner) | methods of `LookSpec`, asked by the looks, the footprints and the spawner only (meanwhile the row's `casts_a_shadow()`, `drags_a_lead()` and `vanishes_into_its_hold()` ok, asked by the footprints; `warning_picture` still a listed read) |
 | `guard_sides` | 2 in, 1 out (`SealPlanner`), `RegionPlanner` writing | `LookSpec.guard_sides()`; a draft for the wall's copies |
-| `abduction` (`AbductionSpec`: `taken_over`, `standing_offset`) | 5 in; 5 lines of the spec | the abduction behaviour and the van's look are handed the spec; its two methods |
+| `abduction` (`AbductionSpec`: `taken_over`, `standing_offset`) | 5 in; 5 lines of the spec | the abduction behaviour and the van's look are handed the spec; its two methods; meanwhile, until the look is handed the spec, the van's look reads it off the row it is handed (`_row.abduction`), its two fields under their own names |
 | `aftermath` (`Aftermath`: `scar`, `on_finish`, `on_sight`) | 4 in, 2 out (the scene recipes, `SealPlanner`); 10 lines of the spec | row `scar_id()`, `leaves_behind()` (asked by the live event ok), `calls_in()`, `has_an_aftermath()`; a draft's `without_its_aftermath()` |
 | `_cost_cache` | private | stays inside `FieldSpec`, worked out when the spec is built |
 
@@ -669,11 +670,11 @@ counted where it only writes.
 | `_map`, `_navigator`, `_mover` | 4 in each | handed to each part at setup |
 | `_obstruction`, `_spread_vertical` | 2 in each (the barrier post, the car, the far guard) | `EventBody` ok: `drop()` ok, `pin_where_it_stands()` (built as `pin_at(at)`), `runs_vertically()` ok; the barrier post, the far guard and the car reach them through `Figure` ok |
 | `_charge` (`ChargeRecord`: `began`, `ended`, `warned`), `_notice` (`Warning`: `length`, `cancel_if`, `on_expired`), `_telegraph_ended`, `_chase_way`, `_guard_spent`, `gave_up` | 1 to 3 in each (four behaviours) | `Figure.charge_began()` ok, `charge_ended()` ok, `hold_the_notice()` ok, `notice_has_run()` ok, the behaviours reach the rest only through `Figure` ok; `has_charged()` ok, `is_chasing()` ok, `has_given_up()` ok (`gave_up` stays public while suites and probes read it) |
-| `hold`, `abduction`, `departure`, `route`, `car`, `barrier_post`, `investigation`, `pursuit`, `on_foot`, `notice_run`, `flock`, `unreachable` | 30 lines in (the composer, behaviours reaching siblings, three looks) | private; siblings handed to each other by the composer; outside callers ask the live event (`closes_on(point)` ok, `is_taking_a_victim()` ok) |
+| `hold`, `abduction`, `departure`, `route`, `car`, `barrier_post`, `investigation`, `pursuit`, `on_foot`, `notice_run`, `flock`, `unreachable` | 30 lines in (the composer, behaviours reaching siblings, three looks) | private; siblings handed to each other by the composer; outside callers ask the live event (`closes_on(point)` ok, `is_taking_a_victim()` ok, `how_long_its_victim_has_walked()` ok) |
 | `excitement` | 4 in | `source()` ok |
-| `drawer`, `atlas`, `timing`, `trace`, `signals`, `skip_draw`, `points_at`, `is_pelican` | 1 to 9 in (written by the spawner after it makes the event, read by the looks) | handed in at setup in one call; the looks are handed the drawer; `is_drawn_as_a_pelican()`; the unmarked van's take is handed `trace` at setup ok; the car asks `signals` through `Figure.lights()` meanwhile, since the spawner sets them after `setup()`, and `lights()` goes when the one setup call (3b) hands them in |
+| `drawer`, `atlas`, `timing`, `trace`, `signals`, `skip_draw`, `points_at`, `is_pelican` | 1 to 9 in (written by the spawner after it makes the event, read by the looks) | handed in at setup in one call; the looks are handed the drawer; `is_drawn_as_a_pelican()` ok; the unmarked van's take is handed `trace` at setup ok; the car asks `signals` through `Figure.lights()` meanwhile, since the spawner sets them after `setup()`, and `lights()` goes when the one setup call (3b) hands them in |
 | `gate_state` | 2 in (two looks) | `is_raised()` ok, `boom_openness()`; handed in at setup from the plan's `gate()` |
-| `guard_warns_her` | the looks (the checkpoint controller asks already) | `raise_its_guards_hand(on)` ok, `is_its_guard_warning()` ok |
+| `guard_warns_her` | the looks (the checkpoint controller asks already) | `raise_its_guards_hand(on)` ok, `is_its_guard_warning()` ok; the field is private |
 | `silenced` | 2 in; written by streaming | `silence()`, `is_silenced()` ok |
 | `came_under_a_warning` | the live event itself | `was_warned_of()` ok |
 | `look` | 2 in (two looks reading another's) | private; a look is handed the look it needs; a slice is handed its look ok, the roadblock's band and far guard still read the field |

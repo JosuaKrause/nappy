@@ -53,13 +53,6 @@ src/city/city.gd forced
 # [BlockLayout] src/city/block_layout.gd
 src/routes/closure_planner.gd open_rect
 
-# [BlockedLayer] src/world/blocked_layer.gd
-src/city/city_map.gd closed
-src/city/city_map.gd posts
-src/city/city_map.gd soft_sealed
-src/world/world_map.gd bodies
-src/world/world_map.gd body_version
-
 # [Building] src/city/building.gd
 src/city/blackout.gd powered
 src/city/city.gd condition
@@ -632,17 +625,7 @@ src/events/street_invalidation.gd id
 src/events/street_invalidation.gd paces
 src/events/street_rules/pacing_opening_rule.gd paces
 src/events/street_rules/route_sidewalk_rule.gd paces
-src/events/views/checkpoint_look.gd look
 src/events/views/event_vehicle_look.gd abduction
-src/events/views/event_vehicle_look.gd look
-src/events/views/event_vehicle_look.gd obstructs_radius
-src/events/views/figure_look.gd inner_radius
-src/events/views/figure_look.gd look
-src/events/views/fire_look.gd intensity
-src/events/views/fire_look.gd look
-src/events/views/fire_look.gd obstructs_radius
-src/events/views/flock_look.gd look
-src/events/views/pursuer_look.gd look
 src/events/views/roadblock_look.gd guard_sides
 src/events/views/roadblock_look.gd look
 src/events/walk_ground.gd aftermath
@@ -746,25 +729,8 @@ src/events/event_streaming.gd silenced
 src/events/events_ahead.gd def
 src/events/events_ahead.gd is_finished
 src/events/events_ahead.gd is_leaving
-src/events/views/checkpoint_look.gd def
-src/events/views/checkpoint_look.gd gate_state
-src/events/views/checkpoint_look.gd guard_warns_her
 src/events/views/event_look.gd age
-src/events/views/event_vehicle_look.gd abduction
-src/events/views/event_vehicle_look.gd def
-src/events/views/event_vehicle_look.gd drawer
-src/events/views/figure_look.gd def
-src/events/views/figure_look.gd drawer
-src/events/views/figure_look.gd is_pelican
-src/events/views/figure_look.gd silenced
 src/events/views/fire_look.gd age
-src/events/views/fire_look.gd def
-src/events/views/fire_look.gd drawer
-src/events/views/flock_look.gd def
-src/events/views/flock_look.gd drawer
-src/events/views/pursuer_look.gd def
-src/events/views/pursuer_look.gd drawer
-src/events/views/pursuer_look.gd is_leaving
 src/events/views/rank_look.gd age
 src/events/views/roadblock_look.gd barrier_post
 src/events/views/roadblock_look.gd def
