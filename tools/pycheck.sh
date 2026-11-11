@@ -67,6 +67,7 @@ run uv run python tools/test_agent_identity.py
 run uv run python tools/test_agent_stats.py
 run uv run python tools/test_usage_report.py
 run uv run python tools/test_agents_to_reassess.py
+run uv run python tools/test_compare_placement_rows.py
 run uv run python tools/test_cli_help.py
 run uv run python tools/test_experiment_preflight.py
 run uv run python tools/test_prune_merged.py
