@@ -467,7 +467,9 @@ def parse(argv: list[str]) -> argparse.Namespace:
             "Fails when a file under src/ names a class or autoload of a higher or a sibling layer, or a file in the"
             " world or simulation layers fetches through a group, an autoload or a static holding state, unless"
             " tools/layer_map.py lists it as an exception; fails too when a listed exception is gone, or a file is"
-            " in no layer."
+            " in no layer. Also fails a node fetched by an absolute path or from the root, and a use of a listed"
+            " exception beyond its listed count. `Tuning` read as constants is exempt, a `res://` or `uid://` path"
+            " counts as the file it loads, and comments and strings are blanked before the code is read."
         ),
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,

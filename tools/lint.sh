@@ -57,7 +57,8 @@ or unreadable SVGs and parser failures fail the command. With no arguments, scan
 governed set (AGENTS.md, CLAUDE.md, README.md, every
 .claude/skills/**/*.md, a skill's reference files included, every docs/*.md except DECISIONS.md,
 and every file under docs/todo/ and docs/review/). Also checks the queue's layout: a name used for two things across docs/todo,
-docs/decisions, docs/review and docs/playtests, a checkbox under docs/todo/, a link in
+docs/decisions, docs/review and docs/playtests (a decision or review item drawn without `--entry`, whose
+heading ends "· not from an entry", beside an entry of the same date and pair is one), a checkbox under docs/todo/, a link in
 docs/TODO.md to an entry folder that does not exist, and every entry's band line (through
 tools/queue.sh --check), and the citations of the player's words in CLAUDE.md and every
 .claude/skills/**/*.md (tools/check_citations.py), and that every method of src/ and tests/ overriding a

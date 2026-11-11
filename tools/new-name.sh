@@ -45,7 +45,8 @@ docs/playtests, writes the thing it names with a heading and the date, and print
               playtest   docs/playtests/<name>.md
   --entry N   decision and review only: take the name of entry N (its full name, its two words,
               or an old entry's milestone number such as M210) instead of a new one; when that
-              file exists, the name gets a pair of words drawn after it, <entry>-<adjective>-<animal>
+              file exists, the name gets a pair of words drawn after it, <entry>-<adjective>-<animal>;
+              one drawn without --entry gets a heading ending " · not from an entry"
   --priority B
               todo only: the entry's band, bug, now, next, later or parked (default: later);
               tools/queue.sh prints the queue in the order the bands give

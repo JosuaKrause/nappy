@@ -45,7 +45,11 @@ issue write through `gh api` (all but a comment, which pull requests share) the 
     cite [N ...] [--pr P]    in the working tree, puts the playtest a filed note is in beside every
                              existing citation of it outside docs/playtests/ -- `inbox #N` becomes
                              `inbox #N in name`, the playtest's bare name, in every file (never a
-                             link) -- and lists every other form for a hand fix; local only
+                             link) -- and lists every other form for a hand fix; local only. It matches a
+                             `#N` only where no digit or letter follows, so a hex color never matches
+
+`ask`, `capture`, `append` and `correct` refuse text holding one of the tool's own mark lines, a
+look-alike included (another heading level, a curly apostrophe), and write nothing.
 
 **Only a quote block is the player's words.** On a captured note, a body or an appended comment whose
 first line is a mark is a run of blocks (`MARKS`); on any other note, and in a comment the player

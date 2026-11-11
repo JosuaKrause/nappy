@@ -657,6 +657,9 @@ def parse(argv: list[str]) -> argparse.Namespace:
             " stale (the member has a reader in another file, no test reads it, or it is gone). A caller in the"
             " member's own file is not a reader; a name more than one file defines is told by the reader's type where"
             " it is known; constants are exempt unless used nowhere."
+            " A caller under src/dev counts as a reader; a function is read only as a call, not passed as a"
+            " callable; a short set of engine member names (ENGINE_MEMBERS) is never taken as a read. The list's"
+            " [no reader] and [own file only] groups only shrink."
         ),
         epilog=EPILOG,
         formatter_class=argparse.RawDescriptionHelpFormatter,

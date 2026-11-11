@@ -156,7 +156,10 @@ RECIPE_NOTES: Final = {
 
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Generate the deterministic Copper lark A/B sound-effects audition.",
+        description=(
+            "Generate the deterministic Copper lark A/B sound-effects audition: 48 kHz mono PCM16 WAVs, a"
+            " comparison WAV, the listening page and a manifest. It never plays them."
+        ),
         epilog=(
             "example: uv run python tools/synthesize-sfx.py --output "
             "build/sound-lab/scratch --seed 260926 "
