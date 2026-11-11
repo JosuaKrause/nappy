@@ -37,5 +37,7 @@ func _read_file() -> Dictionary:
 		push_warning("Ignoring invalid ground layer manifest: %s" % PATH)
 		return {}
 	var data: Variant = parser.data
-	var recipe := data as Dictionary
-	return recipe if recipe != null and int(recipe.get("version", 0)) == 1 else {}
+	if not data is Dictionary:
+		return {}
+	var recipe: Dictionary = data
+	return recipe if int(recipe.get("version", 0)) == 1 else {}
