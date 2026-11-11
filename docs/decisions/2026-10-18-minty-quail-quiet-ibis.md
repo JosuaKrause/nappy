@@ -23,14 +23,16 @@ and this is the city's own parts.
 ## Two members kept public for the suites, open to the player's overturn
 
 `tools/test_only_members.txt` gains `City.scenery_ground` and `City.scenery_ground_source` in its
-`[kept]` group, each with its reason: once the parts are handed them, only suites and probes read
-them outside `city.gd`. The builder's choice, which the orchestrator kept; the plainer alternative is
+`[kept]` group: once the parts are handed them, only suites and probes read them outside
+`city.gd` (`scenery_ground` in six suites and five probes; `scenery_ground_source` is also called by
+`SceneryGround` through a callable the check cannot follow). Both go with the scenery suites' own
+conversion (`tests-one-module.md`, entry 3). The builder's choice, which the orchestrator kept; the plainer alternative is
 both made internal and their suites and probes rewritten.
 
 ## Parity
 
 The run log is line for line what it was (`tools/test.sh observers`), and what every source charges
 her is the same on `main` at `651606332` and the head (`probes/excitement_fingerprint.gd`, its `XF`
-lines less `XF_COST`). The builder's runs of the tick sweep probe (`m159_tick_sweep_events_cost.gd`)
-were cut short on both trees on a loaded machine (70 and 47 of its lines); the review reruns it
-whole on both.
+lines less `XF_COST`), and so is every event, crowd agent and meter on every tick
+(`probes/m159_tick_sweep_events_cost.gd`, its 72 `chain` values, run whole on both trees by the
+review, after the builder's two runs were cut short on a loaded machine).
