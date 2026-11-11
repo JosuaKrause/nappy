@@ -11,11 +11,18 @@ build a city. `DayStreets`, `CityFronts` and the hand-ins for the resistance dir
 happenings, day 12's park cordon, the crowd and the run log's observer are built; the design is in
 #1166's description, under "The step's design".
 
-**What is left, the third pull request:**
+**What is left, the third step** (the third hand-ins pull request, as the entry's other items call
+it). *Read as:* "yes three prs is fine" (inbox #1173 in gray-dolphin) approved cutting the step and
+set no ceiling, so it is cut into pull requests an agent can hold. The event manager's own city and
+the day planner's fallback below are one, before the dawn's context rewrites `build_day()`'s call
+(`scheduler-breakup.md`); the smaller cases another; the summary lines a third, after the first;
+and who builds the event manager and the crowd comes last (`standing-layer-breaks.md`):
 
 - the event manager's own city: `EventManager.setup(city, …)` and `EventWorld.city`;
 - the smaller cases: the still watch, the debug readout, the developer's rigs (`dev_rig.gd`, `route_rig_planner.gd`), `day_director.gd`,
-  `main.gd` and `day_planner.gd`, as 3c's row in #1166's "Files it touches" lists them (the
+  `main.gd` and `day_planner.gd`, as 3c's row in #1166's "Files it touches" lists them, and the
+  frame recorder and the frame trace, which read `City.events` and `City.crowd`
+  (`field-reads.md`) (the
   scenery's residency and ground, the blackout and the poster walls take what they read since the
   record 2026-10-18-minty-quail-quiet-ibis);
 - `DayPlanner`'s fallback that grows a route tree when dawn grew none is deleted, since no game

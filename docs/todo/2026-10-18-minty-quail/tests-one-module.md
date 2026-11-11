@@ -27,9 +27,11 @@ step 3c, open to overturn). Each module's pass hoists them as it touches the sui
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
 `booted_main` and `build_day`/`start_day`/`begin_day` first:
 
-1. telemetry: `test_frame_record_wiring` reads the other modules' timing hand-ins
+1. telemetry: `test_frame_record_wiring` checks that `main` hands the sitting's record to every
+   timed system by what each records into the record it was handed, not by reading its hand-in back
    (`city.frame_timing`, `scenery.timing`, `events.timing`, the baby's, the screen edge's and the
-   halo's `timing`) until each of those modules' passes gives them methods;
+   halo's `timing`), since a getter only this suite read would fail
+   `tools/check_test_only_members.py`;
 2. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
    (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
    events;

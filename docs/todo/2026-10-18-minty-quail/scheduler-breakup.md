@@ -47,11 +47,26 @@ when none is handed in goes with the one in the day planner (`city-hand-ins.md`)
 
 - **The rename of the plan record**, a pull request that is the scripted rename and nothing else,
   with the script in its description so a branch merging main reruns it. No forwarder is kept for
-  the old name (inbox #852 in minty-dolphin).
-- **`PlanBuilder` and `RowGround`**, pure moves, beside placement's route ground rule.
-- **`DawnContext` and the phases**, after the route ground rule and before the unit draw, so the
-  unit draw edits a small file. About forty suites call `build_day()` with 13 arguments; they
-  change once, through one shared test helper that builds a `DawnContext`.
+  the old name (inbox #852 in minty-dolphin). The plan is an inner class, so the field-read check
+  sees none of its fields today; once it is a class the check lists every reader of them, and the
+  pull request regenerates `tools/field_reads.txt` with `--write`. `--base` then fails each added
+  line, since a class lifted out of a file is no rename, and it fails the moves below the same
+  way, code reading listed fields moved into new files. Whether the list may gain a read that
+  moved with its code is before the player on the board (moved-reads-list, #1318), and the rename
+  and those moves wait for the answer.
+- **`PlanBuilder`**, a pure move, beside placement's route ground rule.
+- **`RowGround`**, after both: it is a seam, no pure move, since the object with its own per-day
+  cache replaces the `ground: Dictionary` threaded through `StreetInvalidation`,
+  `RouteJunctionsRule`, `LocationFit`, both ground judges, `_weight_in()`, `_best_of()` and
+  `WalkSiting`, lines the route ground rule also edits.
+- **`DawnContext`**, after `RowGround` and the event manager's own city (`city-hand-ins.md`), and
+  before the unit draw, so the unit draw edits a small file. The suites and probes that call
+  `build_day()` with 13 arguments change once, through one shared test helper that builds a
+  `DawnContext`.
+- **The phases**, a pull request of their own after `DawnContext`: the context changes a signature
+  and every caller, and the phases move code.
 
-Dawn planning's reads of live-event geometry (`standing-layer-breaks.md`) are settled where their
-code moves.
+Dawn planning's reads of live-event geometry (`standing-layer-breaks.md`) move with their code,
+each listed break carried to its new file in `tools/layer_map.py`, and are settled by row 3a of
+`event-interface.md`: the row answers for its mover and its standing place
+(`EventInstance.mover_for()` and `EventFootprints.stands_at()` are what `PlanBuilder` moves).
