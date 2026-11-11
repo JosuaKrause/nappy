@@ -71,7 +71,7 @@ run this.
 **How the receiver's class is told.** By the reader of `tools/check_field_reads.py` (its `--help` says how), over
 every `.gd` file outside `docs/`, and further where a test needs it and that check does not: a script with no
 `class_name` is the class its file declares where a `const` preloads it or an `extends "res://..."` line names it;
-an inner class is told through its outer class (`EventScheduler.Planned.new()`) and under a name that starts with an
+an inner class is told through its outer class (`StreetNetwork.Segment.new()`) and under a name that starts with an
 underscore; `self` and `super` are told in a file with no `class_name`; a value awaited from a call is what the call
 returns; the variable of a `for` whose head spans lines is typed from what it iterates; a receiver that runs over
 several lines (a dot that opens a continuation line, a bracket opened on a line before) is read from the lines
