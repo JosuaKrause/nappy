@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The meter rules from docs/MECHANICS.md.
 ##
@@ -159,7 +158,7 @@ func _test_walking_fills_sleepiness(t: TestRunner) -> void:
 	_build(t)
 	_walk()
 	await _simulate(10.0)
-	t.close_to(_baby.sleepiness, Tuning.SLEEPINESS_GAIN_WALKING * 10.0,
+	t.close_to(_baby.sleepiness_level(), Tuning.SLEEPINESS_GAIN_WALKING * 10.0,
 			"walking fills sleepiness at the base rate", 0.1)
 	_teardown()
 
@@ -223,7 +222,8 @@ func _test_a_street_day_never_settles_and_a_park_day_does(t: TestRunner) -> void
 	_build(t)
 	_walk()
 	await _simulate_fast(Tuning.day_length(1))
-	t.check(_baby.state == GameEnums.BabyState.AWAKE and _baby.sleepiness < Tuning.METER_MAX,
+	t.check(_baby.condition() == GameEnums.BabyState.AWAKE
+			and _baby.sleepiness_level() < Tuning.METER_MAX,
 			"a whole day of undisturbed street walking still does not settle her")
 	_teardown()
 
@@ -234,10 +234,10 @@ func _test_a_street_day_never_settles_and_a_park_day_does(t: TestRunner) -> void
 	_world.calm = true
 	var elapsed := walk_out
 	var short_day := Tuning.day_length(Tuning.RUN_LENGTH_DAYS)
-	while _baby.state != GameEnums.BabyState.ASLEEP and elapsed < short_day:
+	while _baby.condition() != GameEnums.BabyState.ASLEEP and elapsed < short_day:
 		await _simulate(1.0)
 		elapsed += 1.0
-	t.check(_baby.state == GameEnums.BabyState.ASLEEP,
+	t.check(_baby.condition() == GameEnums.BabyState.ASLEEP,
 			"a walk out plus one calm stretch does settle her")
 	t.check(elapsed < short_day * 0.75,
 			"and settles her by %.0fs, leaving the walk home inside the %.0fs day"
@@ -249,7 +249,7 @@ func _test_calm_zone_speeds_sleep(t: TestRunner) -> void:
 	_world.calm = true
 	_walk()
 	await _simulate(10.0)
-	t.close_to(_baby.sleepiness,
+	t.close_to(_baby.sleepiness_level(),
 			Tuning.SLEEPINESS_GAIN_WALKING * Tuning.SLEEPINESS_CALM_ZONE_MULTIPLIER * 10.0,
 			"a calm zone multiplies the sleepiness gain", 0.1)
 	_teardown()
@@ -259,7 +259,7 @@ func _test_idle_drains_sleepiness(t: TestRunner) -> void:
 	_baby.sleepiness = 50.0
 	_stand()
 	await _simulate(10.0)
-	t.close_to(_baby.sleepiness, 50.0 - Baby.SLEEPINESS_DRAIN_IDLE * 10.0,
+	t.close_to(_baby.sleepiness_level(), 50.0 - Baby.SLEEPINESS_DRAIN_IDLE * 10.0,
 			"standing still drains sleepiness", 0.1)
 	_teardown()
 
@@ -268,8 +268,8 @@ func _test_running_blocks_sleep_and_excites(t: TestRunner) -> void:
 	_baby.sleepiness = 50.0
 	_sprint()
 	await _simulate(1.0)
-	t.close_to(_baby.sleepiness, 50.0, "running neither fills nor drains sleepiness", 0.1)
-	t.close_to(_baby.excitement,
+	t.close_to(_baby.sleepiness_level(), 50.0, "running neither fills nor drains sleepiness", 0.1)
+	t.close_to(_baby.excitement_level(),
 			(Baby.EXCITEMENT_FROM_RUNNING - Baby.EXCITEMENT_DECAY_RUNNING) * 1.0,
 			"a full sprint raises excitement at the net rate", 0.15)
 	_teardown()
@@ -282,9 +282,9 @@ func _test_calm_threshold_freezes_sleepiness(t: TestRunner) -> void:
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING
 	_walk()
 	await _simulate(4.0)
-	t.close_to(_baby.sleepiness, 40.0,
+	t.close_to(_baby.sleepiness_level(), 40.0,
 			"sleepiness is frozen, not drained, above the calm threshold", 0.05)
-	t.close_to(_baby.excitement, Tuning.EXCITEMENT_CALM_THRESHOLD + 5.0,
+	t.close_to(_baby.excitement_level(), Tuning.EXCITEMENT_CALM_THRESHOLD + 5.0,
 			"excitement holds when incoming equals decay", 0.05)
 	_teardown()
 
@@ -324,7 +324,7 @@ func _test_only_motion_settles_her(t: TestRunner) -> void:
 	_baby.excitement = 50.0
 	_stand()
 	await _simulate(5.0)
-	t.close_to(_baby.excitement, 50.0,
+	t.close_to(_baby.excitement_level(), 50.0,
 			"a quiet spot with nobody moving holds the meter where it is", 0.1)
 	_teardown()
 
@@ -332,7 +332,7 @@ func _test_only_motion_settles_her(t: TestRunner) -> void:
 	_baby.excitement = 50.0
 	_walk()
 	await _simulate(5.0)
-	t.close_to(_baby.excitement, 50.0 - Tuning.EXCITEMENT_DECAY_WALKING * 5.0,
+	t.close_to(_baby.excitement_level(), 50.0 - Tuning.EXCITEMENT_DECAY_WALKING * 5.0,
 			"walking the same quiet spot is what brings it down", 0.1)
 	_teardown()
 
@@ -354,7 +354,7 @@ func _test_alley_trickle(t: TestRunner) -> void:
 			"but it is close enough underneath that an alley is not somewhere she recovers")
 	# Where the alley's ground sits among the other four is `_test_only_motion_settles_her`'s.
 	await _simulate(1.0)
-	t.close_to(_baby.last_incoming, Baby.EXCITEMENT_FROM_ALLEY,
+	t.close_to(_baby.last_frame_incoming(), Baby.EXCITEMENT_FROM_ALLEY,
 			"an alley contributes its trickle to incoming excitement")
 	_teardown()
 
@@ -371,30 +371,31 @@ func _test_falls_asleep(t: TestRunner) -> void:
 	_walk()
 	await _simulate(1.0)
 	_bus.return_phase_started.disconnect(handler)
-	t.check(_baby.state == GameEnums.BabyState.ASLEEP, "a full sleepiness meter puts the baby to sleep")
+	t.check(_baby.condition() == GameEnums.BabyState.ASLEEP,
+			"a full sleepiness meter puts the baby to sleep")
 	t.check(announced[0], "falling asleep starts the return phase")
 	_teardown()
 
 func _test_sleeping_baby_is_less_sensitive(t: TestRunner) -> void:
 	_build(t)
-	_baby.state = GameEnums.BabyState.ASLEEP
+	_baby.force_sleep()  # asleep the way the game puts her there, her sleepiness meter full
 	_world.noise = 20.0
 	_walk()
 	await _simulate(ONE_FRAME)
-	t.close_to(_baby.last_incoming, 20.0 * Baby.SLEEPING_SENSITIVITY,
+	t.close_to(_baby.last_frame_incoming(), 20.0 * Baby.SLEEPING_SENSITIVITY,
 			"incoming excitement is damped while the baby sleeps")
 	_teardown()
 
 func _test_wakes_up_with_penalty(t: TestRunner) -> void:
 	_build(t)
-	_baby.state = GameEnums.BabyState.ASLEEP
-	_baby.sleepiness = Tuning.METER_MAX
+	_baby.force_sleep()
 	_baby.excitement = Tuning.EXCITEMENT_WAKE_THRESHOLD - 2.0
 	_world.noise = 40.0
 	_walk()
 	await _simulate(0.5)
-	t.check(_baby.state == GameEnums.BabyState.AWAKE, "loud enough noise wakes a sleeping baby")
-	t.close_to(_baby.sleepiness, Baby.WAKE_SLEEPINESS_PENALTY,
+	t.check(_baby.condition() == GameEnums.BabyState.AWAKE,
+			"loud enough noise wakes a sleeping baby")
+	t.close_to(_baby.sleepiness_level(), Baby.WAKE_SLEEPINESS_PENALTY,
 			"waking costs the sleepiness penalty")
 	_teardown()
 
@@ -404,12 +405,13 @@ func _test_full_excitement_cries(t: TestRunner) -> void:
 	_world.noise = 60.0
 	_walk()
 	await _simulate(0.5)
-	t.check(_baby.state == GameEnums.BabyState.CRYING, "a full excitement meter loses the day")
+	t.check(_baby.condition() == GameEnums.BabyState.CRYING,
+			"a full excitement meter loses the day")
 	# Crying is terminal for the day: nothing moves after it.
-	var frozen := _baby.excitement
+	var frozen := _baby.excitement_level()
 	_stand()
 	await _simulate(2.0)
-	t.close_to(_baby.excitement, frozen, "the meters stop once the baby is crying")
+	t.close_to(_baby.excitement_level(), frozen, "the meters stop once the baby is crying")
 	_teardown()
 
 ## M96, the day ends crying only after a push at the top. **Measured, not designed** — a real
@@ -447,7 +449,7 @@ func _test_a_sustained_source_at_the_top_cries(t: TestRunner) -> void:
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0
 	_walk()
 	await _simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW)
-	t.check(_baby.state == GameEnums.BabyState.CRYING,
+	t.check(_baby.condition() == GameEnums.BabyState.CRYING,
 			"a source that keeps emitting at the cap for the whole window ends the day")
 	_teardown()
 
@@ -459,7 +461,7 @@ func _test_the_overflow_mass_needs_both_size_and_time(t: TestRunner) -> void:
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0  # net +10/s, well above the threshold
 	_walk()
 	await _simulate(0.5)  # 0.5s of it is 5 points of mass, under `Baby.EXCITEMENT_OVERFLOW_TO_CRY`
-	t.check(_baby.state != GameEnums.BabyState.CRYING,
+	t.check(_baby.condition() != GameEnums.BabyState.CRYING,
 			"not enough time at the cap yet, however loud the source")
 	_teardown()
 
@@ -468,7 +470,7 @@ func _test_the_overflow_mass_needs_both_size_and_time(t: TestRunner) -> void:
 	_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 2.0  # net +2/s: 6 points over the whole window
 	_walk()
 	await _simulate(Baby.EXCITEMENT_OVERFLOW_WINDOW)
-	t.check(_baby.state != GameEnums.BabyState.CRYING,
+	t.check(_baby.condition() != GameEnums.BabyState.CRYING,
 			"and a source too quiet to clear the mass in the window never ends the day, however "
 			+ "long she stays")
 	_teardown()
@@ -480,14 +482,14 @@ func _test_the_overflow_mass_needs_both_size_and_time(t: TestRunner) -> void:
 ## then a short loud push at the cap ends it while that mass is still inside the window, and does
 ## not once the window has turned over, the same push alone being too small to.
 func _test_the_overflow_mass_drains_with_the_window(t: TestRunner) -> void:
-	for waited in [ONE_FRAME, Baby.EXCITEMENT_OVERFLOW_WINDOW + 1.0]:
+	for waited: float in [ONE_FRAME, Baby.EXCITEMENT_OVERFLOW_WINDOW + 1.0]:
 		_build(t)
 		_baby.excitement = Tuning.METER_MAX
 		# Net +6/s while walking: 1.4s of it is about 8.4 points, under the threshold.
 		_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 6.0
 		_walk()
 		await _simulate(1.4)
-		t.check(_baby.state != GameEnums.BabyState.CRYING,
+		t.check(_baby.condition() != GameEnums.BabyState.CRYING,
 				"a source whose mass stays under the threshold ends nothing")
 		_world.noise = 0.0
 		await _simulate(waited)
@@ -495,10 +497,10 @@ func _test_the_overflow_mass_drains_with_the_window(t: TestRunner) -> void:
 		_world.noise = Tuning.EXCITEMENT_DECAY_WALKING + 10.0
 		await _simulate(0.3)  # 3 points of its own: too few alone
 		if waited == ONE_FRAME:
-			t.check(_baby.state == GameEnums.BabyState.CRYING,
+			t.check(_baby.condition() == GameEnums.BabyState.CRYING,
 					"the mass does not clear the instant the source is gone: a short push then ends the day")
 		else:
-			t.check(_baby.state != GameEnums.BabyState.CRYING,
+			t.check(_baby.condition() != GameEnums.BabyState.CRYING,
 					"and it has fully aged out of the window well after she has left: the same push is too small")
 		_teardown()
 
@@ -523,8 +525,8 @@ func _one_bump_from(t: TestRunner, at: float) -> Dictionary:
 		frames -= 1
 	t.check(not agent.excitement.is_startled(),
 			"a bump's jolt runs down within its own duration (from %.0f)" % at)
-	var result := {"excitement": _baby.excitement,
-			"crying": _baby.state == GameEnums.BabyState.CRYING}
+	var result := {"excitement": _baby.excitement_level(),
+			"crying": _baby.condition() == GameEnums.BabyState.CRYING}
 	agent.free()
 	_teardown()
 	return result

@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access")
 extends RefCounted
 ## **Outside a step, every mover's move stands where the mover does** (`MoveProposal`), so the list a
 ## pass over every mover reads (`WorldMap.moves`, which holds no mover, only their moves) never shows
@@ -197,10 +196,11 @@ func _check_the_tick(t: TestRunner, main: Node2D, seed_value: int, tick: int, co
 			counts["recycled"] += 1
 		last[id] = agent.position
 		poses.append(["crowd %s" % CrowdAgent.Kind.keys()[agent.kind], agent.position])
-	for figure in city.get_node("Entities").get_children():
-		if figure is CordonOfficer and not figure.is_queued_for_deletion():
+	for figure: Node in city.get_node("Entities").get_children():
+		var officer := figure as CordonOfficer
+		if officer != null and not officer.is_queued_for_deletion():
 			counts["officers"] += 1
-			poses.append(["cordon officer", figure.position])
+			poses.append(["cordon officer", officer.position])
 	_check_the_moves(t, seed_value, tick, poses, city.map.moves.all(), counts)
 
 ## Every mover's pose has a move on the list standing there and closed, and every move on the list

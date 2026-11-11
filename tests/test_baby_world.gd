@@ -25,7 +25,7 @@ const STREET_NOISE := 6.0
 
 ## Answers as the escape's building does (no decay beyond the base, nothing charging her) or, handed
 ## `decay` and `noise`, as a street does. The rig for the two questions the suite asks of her
-## (`decay_rate()` and `last_incoming`), the same questions `main`'s wiring changes the answer to.
+## (`decay_rate()` and `last_frame_incoming()`), the same questions `main`'s wiring changes the answer to.
 class FakeWorld extends WorldContext:
 	var decay := 1.0
 	var noise := 0.0
@@ -79,15 +79,15 @@ func _test_a_baby_answers_from_the_world_she_was_last_handed(t: TestRunner) -> v
 	t.close_to(baby.decay_rate(), walking * building.decay,
 			"in the building her decay is the building's ground's")
 	await _let_her_tick(t, baby)
-	t.check(baby.last_incoming == 0.0, "and nothing in the building charges her")
+	t.check(baby.last_frame_incoming() == 0.0, "and nothing in the building charges her")
 
 	baby.set_world(street)
 	t.close_to(baby.decay_rate(), walking * STREET_DECAY,
 			"on the street her decay is the street's ground's")
 	await _let_her_tick(t, baby)
-	t.check(baby.last_incoming > 0.0,
+	t.check(baby.last_frame_incoming() > 0.0,
 			"and what charges her there reaches her meter (%.2f/s, the street's %.2f/s)"
-			% [baby.last_incoming, STREET_NOISE])
+			% [baby.last_frame_incoming(), STREET_NOISE])
 
 	baby.set_world(null)
 	t.check(baby.world() == null and baby.decay_rate() == 0.0,
@@ -98,7 +98,7 @@ func _test_a_baby_answers_from_the_world_she_was_last_handed(t: TestRunner) -> v
 
 ## One physics tick, on which the baby's own frame runs her meter and writes what it was fed.
 func _let_her_tick(t: TestRunner, baby: Baby) -> void:
-	baby.excitement = 0.0
+	baby.reset()
 	# What the meter was fed is written by her own tick, so a tick that did not run reads nothing.
 	baby.last_incoming = -1.0
 	await PhysicsTicks.pass_ticks(t, 1)

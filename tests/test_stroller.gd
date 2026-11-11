@@ -1,15 +1,17 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Direction quantisation for the player rig, including its boundary hold.
 
 const HeadIndicators := preload("res://tests/head_indicators.gd")
 const STEP := 1.0 / 60.0
 
+## The library her pages are acquired on, handed to every rig through `Stroller.use_atlas()`.
+var _library := AtlasLibrary.new()
+
 
 ## The picture of the mother's pose `frame` at the view she is drawn in now, off her pose, read
-## from her own library.
+## from the suite's library, handed to her through `use_atlas()`.
 func _mother_texture(rig: Stroller, frame: int) -> Texture2D:
-	return rig.atlas.region(StringName(rig.pose(1.0).mother_sources[frame]))
+	return _library.region(StringName(rig.pose(1.0).mother_sources[frame]))
 
 func run(t: TestRunner) -> void:
 	await _test_all_eight_facings(t)
@@ -25,6 +27,7 @@ func run(t: TestRunner) -> void:
 
 func _rig(t: TestRunner) -> Stroller:
 	var rig := Stroller.new()
+	rig.use_atlas(_library)
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -33,10 +36,10 @@ func _rig(t: TestRunner) -> Stroller:
 	return rig
 
 ## The authored picture as the live drawing path actually hands it over — the region of her
-## family's baked page on the rig's own library, which entering the tree has already acquired by
+## family's baked page on the suite's library, which entering the tree has already acquired by
 ## the time `_rig(t)` returns.
-func _through_the_atlas(rig: Stroller, path: String) -> Texture2D:
-	return rig.atlas.region(StringName(path))
+func _through_the_atlas(path: String) -> Texture2D:
+	return _library.region(StringName(path))
 
 ## Every picture she draws comes from a baked region rather than a texture of its own, and every
 ## one of her sixty body views comes from the *same* page — which is the whole of what the atlas
@@ -51,7 +54,7 @@ func _through_the_atlas(rig: Stroller, path: String) -> Texture2D:
 func _test_her_family_comes_from_its_baked_pages(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var atlas: Texture2D = null
-	for carrying in [false, true]:
+	for carrying: bool in [false, true]:
 		rig.carrying = carrying
 		for direction in range(8):
 			rig.reset_at(Vector2.ZERO, _look(direction))
@@ -85,7 +88,7 @@ func _test_her_family_comes_from_its_baked_pages(t: TestRunner) -> void:
 		t.check((pram as AtlasTexture).atlas != atlas,
 				"which is the page the two parents share, not the one her body is on")
 	for mark: String in HeadIndicators.ALL:
-		var packed := rig.atlas.region(StringName(mark))
+		var packed := _library.region(StringName(mark))
 		t.check(packed is AtlasTexture,
 				"the head indicator %s is drawn from the UI's page" % mark.get_file())
 		t.check(not (packed is AtlasTexture) or (packed as AtlasTexture).atlas != atlas,
@@ -139,11 +142,11 @@ func _test_live_draw_selection(t: TestRunner) -> void:
 		# the pose's mother and pram pictures answer the region once the group is collected
 		# and the source before that, and what these assertions are about is *which* view the
 		# selector picks, which is the same question either way.
-		t.check(_mother_texture(rig, 0) == _through_the_atlas(rig, mother_first_frames[direction]),
+		t.check(_mother_texture(rig, 0) == _through_the_atlas(mother_first_frames[direction]),
 				"mother draw selects the authored texture for direction %d" % direction)
-		t.check(_mother_texture(rig, 1) == _through_the_atlas(rig, mother_second_frames[direction]),
+		t.check(_mother_texture(rig, 1) == _through_the_atlas(mother_second_frames[direction]),
 				"mother draw selects gait frame B for direction %d" % direction)
-		t.check(rig.pose(1.0).pram_texture() == _through_the_atlas(rig, pram_textures[direction]),
+		t.check(rig.pose(1.0).pram_texture() == _through_the_atlas(pram_textures[direction]),
 				"pram draw selects the authored texture for direction %d" % direction)
 		t.check(rig.pose(1.0).mirrored == mirrored[direction],
 				"mother and pram mirror together for direction %d" % direction)
