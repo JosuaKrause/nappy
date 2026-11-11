@@ -65,8 +65,9 @@ review; a builder runs it again):
 - *Proposed, not asked for, the plainer alternative being to decide each when the closing pull
   request lists what is left:* **the rest** ends as follows. `DrawnView` goes on the world layer in
   the map, beside `VisibleView`: it names only the engine, as the halo's rim did. The `DangerEdge`
-  uses go when the third hand-ins step's summary lines rewrite `RunSession`, and the `DevRig` uses
-  with that step's smaller cases. The `player` group, and `city.gd`'s and `visible_view.gd`'s
+  uses in the run log's session (`RunSession`'s edge field and `watch()`'s edge parameter) go in a
+  pull request of their own, which hands the session what it reads of the danger edge (the
+  orchestrator's proposal), and the `DevRig` uses with the third hand-ins step's smaller cases. The `player` group, and `city.gd`'s and `visible_view.gd`'s
   `Stroller`, go with who builds the event manager and the crowd, which hands her in;
   `interior_scene.gd`'s with the building's pass; the `CityEdge` kinds, read by `main.gd`, the rigs
   and the run log, after the third hand-ins step; `Prop` as a data constant, in a pull request of

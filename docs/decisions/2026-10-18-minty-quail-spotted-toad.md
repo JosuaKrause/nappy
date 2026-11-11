@@ -27,9 +27,15 @@ goes was the hand-ins' builder's proposal and the orchestrator's, open to the pl
 
 - **`RoadClosure.summary_words()`** is a method outside the builder's files, added so the streets'
   line reads no closure field rather than adding two lines to the field-read list (the builder's).
+- **The run log's session is handed the run's block arcs** as an argument of its setup, since it
+  has no listed read of the run's attempt state and the field-read list may not grow; the
+  alternative is a listed read of the run's state (the builder's).
 
 ## Left, each with its reason
 
+- **The danger edge's uses in the run log's session** (its edge field and `watch()`'s edge
+  parameter), listed layer breaks, are a pull request of their own, which `standing-layer-breaks.md`
+  names; this pass rewrites the session only for the summary lines.
 - **No direct check of the events' line**: its suites belong to a typing pass in flight, and the
   recorded run log already shows the line.
 
