@@ -710,7 +710,7 @@ field under `[EventPlan]`.
 | `_is_door`, `_in_the_wall`, `_is_a_seal` | private already | as they are |
 
 Other classes of the folder with listed lines, each converted in the pull request that owns its
-file: `EventWorld` (55 lines, the context the event manager hands its own parts), `EventManager`
+file: `EventWorld` (52 lines, the context the event manager hands its own parts), `EventManager`
 (14, read by the city scene and waiting on the third hand-ins pull request), `ChargeRecord` (3),
 `PendingWarning` (6), `EventStreaming` (3), `Warning` (3),
 `EventsAhead` (2), `EventPursuit`, `EventFlock`,

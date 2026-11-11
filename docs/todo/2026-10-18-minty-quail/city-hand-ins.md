@@ -20,18 +20,13 @@ the crowd last (`standing-layer-breaks.md`). The player's answer was three pull 
 ("yes three prs is fine", inbox #1173 in gray-dolphin), so the plainer alternative is one large
 third pull request:
 
-- the event manager's own city: `EventManager.setup(city, …)` and `EventWorld.city`;
-- the smaller cases: `day_director.gd`, `main.gd` and `day_planner.gd`, as 3c's row in #1166's
-  "Files it touches" lists them (the scenery's residency and ground, the blackout and the poster
+- the smaller cases: `day_director.gd` and `main.gd`, as 3c's row in #1166's "Files it touches"
+  lists them (the event manager and its day planner take what they read since the record
+  2026-10-18-minty-quail-crisp-otter, the scenery's residency and ground, the blackout and the poster
   walls take what they read since the record 2026-10-18-minty-quail-quiet-ibis, the still watch, the
   debug readout, the frame recorder and the frame trace since the record
   2026-10-18-minty-quail-calm-wombat, and the developer's rig, the route rig and its planner since
   the record 2026-10-18-minty-quail-plush-chipmunk);
-- `DayPlanner`'s fallback that grows a route tree when dawn grew none is deleted, since no game
-  path reaches it. The rigs that start the event manager's day on a built city without `City.start_day()`
-  (`tests/event_manager_rig.gd`, which the two event manager suites share, `tests/test_masts.gd`,
-  `tests/test_pursuer_on_foot.gd` and three probes, at least) hand it a `DayStreets` whose day they
-  began instead.
 
 **Which map a test uses** is writing-tests' rule (inbox #1172 in gray-dolphin): the shared writer's map is for a test
 of one interaction or edge case, never for a booted day or a measurement.
