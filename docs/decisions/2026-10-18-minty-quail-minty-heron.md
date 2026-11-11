@@ -17,8 +17,10 @@ texts; its search covers `BadgeModel` and `BadgeModel.Subject`, `DangerEdge`, `M
   their scripts, as `tests/finale_rig.gd` and `tests/test_main.gd` name them; the pause screen is typed
   as `PauseScreen`; loop variables take their writers' types; `test_danger`'s street rig is a preloaded
   script's instance.
-- **One read converted**: `edge.model.announcing()` in `test_danger.gd` asks `DangerEdge.announcing()`,
-  which returns `model.announcing()` and which `DangerEdge._draw()` also calls. No check deleted or
+- **Two reads converted** in `test_danger.gd`, both through `DangerEdge.announcing()`, which returns
+  `model.announcing()` and which `DangerEdge._draw()` and the run log's observer also call:
+  `edge.model.announcing()`, and `edge.model.has_badges()` as `not edge.announcing().is_empty()`
+  (`BadgeModel.has_badges()` asks whether the list `announcing()` builds from is empty). No check deleted or
   moved, nothing under `src/` or the rigs changed.
 
 ## Fields read and written, by class
@@ -29,10 +31,10 @@ read in their class; the other classes' answers are the tool's.
 - **`BadgeModel.Subject`** (searched): `approach_speed`, `charging`, `finished`, `key`, `left`,
   `logged_name`, `pending`, `position`, `shown`, `speed`, `warned`, read or written → no method (plain
   data the event source's adapter fills field by field).
-- **`DangerEdge`** (searched): `atlas`, written → no method; `model`, read for `has_badges()` → no
-  method.
+- **`DangerEdge`** (searched): `atlas`, written → no method.
 - **`HelpText`** (searched): `line` → no method (`show_line()` writes it).
-- **`Baby`**: `excitement`, written → `reset()` sets it to 0.0; `state`, written → no method.
+- **`Baby`**: `excitement`, written → `reset()` sets it to 0.0; `state`, written → `reset()` and `force_sleep()` write it through the
+  private `_set_state()`; neither sets a chosen state.
 - **`CrowdAgent`**: `excitement` → `mood()`.
 - **`DayEnd`**: `elapsed_seconds`, `reason`, `result`, written → no method.
 - **`EventDef`**: `hard_fail` → `ends_the_day()`; `inner_radius` → `core_within()`; `look` →
@@ -43,8 +45,9 @@ read in their class; the other classes' answers are the tool's.
   `source()`; `atlas`, written, and `drawer`, read and written → no method.
 - **`EventManager`**: `streaming`, `warnings` → no method.
 - **`ExcitementSource`**: `player_at`, read through `CrowdExcitement` → no method.
-- **`ResistanceRunState`**: `completed_steps`, `progress`, written → `give_back()` and `restore()`
-  assign both and `reset()` assigns `progress`; none sets a chosen value.
+- **`ResistanceRunState`**: `completed_steps`, `progress`, written → the game writes both through
+  `RunState.complete_resistance_step()`, which appends a chosen step; `give_back()` and `restore()`
+  assign both, and `reset()` assigns `progress` and clears `completed_steps`.
 - **`ResistanceSteps.Step`**: `brief` (read and written), `header`, `index`, `is_pickup`,
   `needs_goal`, `title` → no method.
 - **`RunHeader`**: `day`, written → `reset()` and `restore()` assign it; neither sets a chosen day.
