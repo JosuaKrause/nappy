@@ -15,8 +15,8 @@ func run(t: TestRunner) -> void:
 	_test_each_state_has_three_distinct_poses_per_view(t)
 	await _test_every_view_resolves_every_pose_in_both_states(t)
 
-## A rig in the tree, so her own `_enter_tree()` acquires her page (on a library of her own, since
-## nobody hands her one) and her own `_physics_process()` runs.
+## A rig in the tree, handed the suite's library (`use_atlas()`) so her own `_enter_tree()` acquires
+## her page on it, and her own `_physics_process()` runs.
 func _rig(t: TestRunner, carrying: bool) -> Stroller:
 	var rig := Stroller.new()
 	rig.use_atlas(_library)
@@ -52,7 +52,8 @@ func _walk(t: TestRunner, rig: Stroller, frames: int) -> Array[Dictionary]:
 func _test_the_cycle_visits_contact_passing_contact_passing(t: TestRunner, carrying: bool, samples: Array[Dictionary]) -> void:
 	var frames: Array[int] = []
 	for sample in samples:
-		var frame: int = sample.pose.gait_frame
+		var pose: Stroller.Pose = sample.pose
+		var frame: int = pose.gait_frame
 		if frames.is_empty() or frames[-1] != frame:
 			frames.append(frame)
 	t.check(frames.size() >= 8 and frames.slice(0, 8) == [0, 1, 2, 1, 0, 1, 2, 1],
@@ -63,13 +64,14 @@ func _test_the_gait_follows_distance_and_changes_frame_on_quarter_boundaries(t: 
 	var by_distance := true
 	var by_quarter := true
 	for sample in samples:
-		var phase: float = sample.pose.walk_phase
+		var pose: Stroller.Pose = sample.pose
+		var phase: float = pose.walk_phase
 		wrapped = wrapped and phase >= 0.0 and phase < TAU
 		# Each step advances the phase by the distance it covered, whatever the speed.
 		var advanced := fposmod(phase - float(sample.phase_before), TAU)
 		by_distance = by_distance and is_equal_approx(advanced,
 				fposmod(float(sample.moved) * WalkerLook.GAIT_RATE, TAU))
-		by_quarter = by_quarter and sample.pose.gait_frame \
+		by_quarter = by_quarter and pose.gait_frame \
 				== Stroller.MOTHER_GAIT_LOOP[int(floor(phase / (TAU / 4.0))) % 4]
 	t.check(wrapped, "the %s gait phase wraps at one TAU" % _state_name(carrying))
 	t.check(by_distance, "the %s gait advances by distance covered" % _state_name(carrying))
@@ -80,8 +82,10 @@ func _test_idle_holds_the_passing_pose_from_every_phase(t: TestRunner, carrying:
 	var quarters := {}
 	var held := true
 	for sample in samples:
-		quarters[int(floor(float(sample.pose.walk_phase) / (TAU / 4.0)))] = true
-		held = held and sample.idle_pose.gait_frame == 1
+		var pose: Stroller.Pose = sample.pose
+		var idle_pose: Stroller.Pose = sample.idle_pose
+		quarters[int(floor(pose.walk_phase / (TAU / 4.0)))] = true
+		held = held and idle_pose.gait_frame == 1
 	t.check(quarters.size() == 4, "the %s walk visits all four quarters of the phase"
 			% _state_name(carrying))
 	t.check(held, "idle %s settles on C from every phase" % _state_name(carrying))
