@@ -21,7 +21,7 @@ const RecordingSceneryDrawer := preload("res://tests/recording_scenery_drawer.gd
 ## city is the expensive part of this suite by a wide margin.
 var _maps: Array[CityMap] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 7))
 	_test_every_block_has_an_arc(t)
@@ -51,7 +51,7 @@ func _map(index: int = 0) -> CityMap:
 ## and four blocks of ground, and the three it absorbed appear only in `zone_anchor`. The two
 ## sets have to partition the city between them — a block in neither is ground nothing paints,
 ## and a block in both is a park with a building in the middle of it.
-func _test_every_block_has_an_arc(t) -> void:
+func _test_every_block_has_an_arc(t: TestRunner) -> void:
 	var map := _map()
 	var absorbed := map.zone_anchor.size() - map.zone_rects.size()
 	t.check(map.block_plans.size() + absorbed == Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y,
@@ -71,7 +71,7 @@ func _test_every_block_has_an_arc(t) -> void:
 
 ## An arc is a line, not a tree: it never goes backwards in time, so a player who learns
 ## that a boarded-up street is on its way to something worse is never wrong about the order.
-func _test_arcs_only_move_forward(t) -> void:
+func _test_arcs_only_move_forward(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := _map(i)
 		for block: Vector2i in map.block_plans:
@@ -88,7 +88,7 @@ func _test_arcs_only_move_forward(t) -> void:
 ## The hard floor. A day can only be won on calm ground, so an arc set that takes all of it
 ## makes an unwinnable run rather than a hard one. Checked on the *last* day, with every
 ## scheduled step taken and every event-caused one forced, which is the worst case.
-func _test_enough_calm_survives_the_whole_run(t) -> void:
+func _test_enough_calm_survives_the_whole_run(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := _map(i)
 		var state := _worst_case(map)
@@ -99,7 +99,7 @@ func _test_enough_calm_survives_the_whole_run(t) -> void:
 
 ## A fire in a block whose plan has no fire in it leaves the shell and changes nothing else.
 ## Without this a scar anywhere would drag every block it touched along somebody else's arc.
-func _test_a_cause_only_fires_where_the_arc_expects_it(t) -> void:
+func _test_a_cause_only_fires_where_the_arc_expects_it(t: TestRunner) -> void:
 	var map := _map()
 	var state := CityState.new()
 	state.begin_day(map.block_plans, 1)
@@ -128,7 +128,7 @@ func _test_a_cause_only_fires_where_the_arc_expects_it(t) -> void:
 ## The replacement invariant, stated as a test. Push every block to the end of its arc and
 ## the set of walkable tiles must be identical, tile for tile. No requisition, boarding or
 ## fire can seal a street, open a shortcut, or move the route the player learned on day 1.
-func _test_purposes_never_change_what_is_walkable(t) -> void:
+func _test_purposes_never_change_what_is_walkable(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := _map(i)
 		var before := _walkable_set(map)
@@ -139,7 +139,7 @@ func _test_purposes_never_change_what_is_walkable(t) -> void:
 				% map.seed_used)
 
 ## Requisitioning is the point of the whole mechanism: the same ground, no longer calm.
-func _test_a_requisitioned_block_stops_being_calm(t) -> void:
+func _test_a_requisitioned_block_stops_being_calm(t: TestRunner) -> void:
 	var found := false
 	for i in SEEDS:
 		var map := _map(i)
@@ -164,7 +164,7 @@ func _test_a_requisitioned_block_stops_being_calm(t) -> void:
 
 ## A court with no way in is a hole in the map. The first version of courtyards was exactly
 ## that and failed the connectivity check on every seed; the archway is why it does not.
-func _test_a_courtyard_can_be_reached(t) -> void:
+func _test_a_courtyard_can_be_reached(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := _map(i)
 		var reachable := map.walk_field(map.home_rect.position)
@@ -174,7 +174,7 @@ func _test_a_courtyard_can_be_reached(t) -> void:
 						"seed %d: courtyard tile %s is reachable from home"
 						% [map.seed_used, tile])
 
-func _test_the_same_seed_plans_the_same_arcs(t) -> void:
+func _test_the_same_seed_plans_the_same_arcs(t: TestRunner) -> void:
 	var first := CityGenerator.generate(BASE_SEED + 21)
 	var second := CityGenerator.generate(BASE_SEED + 21)
 	var same := first.block_plans.size() == second.block_plans.size()
@@ -197,7 +197,7 @@ func _test_the_same_seed_plans_the_same_arcs(t) -> void:
 ## — across a few seeds and checks every pair of trees `CityMap.anchor_of` puts in the same lot,
 ## which is what the clump would actually have been caught by rather than a unit test of the
 ## rejection alone.
-func _test_park_trees_keep_their_distance(t) -> void:
+func _test_park_trees_keep_their_distance(t: TestRunner) -> void:
 	var checked_any_pair := false
 	for seed_value in [BASE_SEED, BASE_SEED + 7, BASE_SEED + 14]:
 		var map := CityGenerator.generate(seed_value)
@@ -241,7 +241,7 @@ func _test_park_trees_keep_their_distance(t) -> void:
 ## blocks — so what is worth asserting is that construction holds against a real lattice: every
 ## street of every run is a real ordinary street, no run is shorter or longer than the bounds, no
 ## two runs share a street, and both directions actually occur across a sweep.
-func _test_tree_runs_are_straight_runs_of_three_to_five(t) -> void:
+func _test_tree_runs_are_straight_runs_of_three_to_five(t: TestRunner) -> void:
 	var horizontal_seen := false
 	var vertical_seen := false
 	var total := 0
@@ -281,7 +281,7 @@ func _test_tree_runs_are_straight_runs_of_three_to_five(t) -> void:
 
 ## Trees are geometry she learns, so they are fixed for the run like a building: the same seed
 ## has to give the same runs and the same pits, whatever order anybody asks in.
-func _test_tree_runs_are_fixed_for_the_seed(t) -> void:
+func _test_tree_runs_are_fixed_for_the_seed(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var again := CityGenerator.generate(BASE_SEED)
 	var first := StreetTrees.planted(map)
@@ -301,7 +301,7 @@ func _test_tree_runs_are_fixed_for_the_seed(t) -> void:
 ## `StreetTrees.STREET_TREE_RUNS` is chosen under, not a restatement of it: raising the run count is
 ## allowed right up to the point where a tree-lined street stops being the exception, and this is the
 ## point.
-func _test_tree_lined_streets_stay_rare(t) -> void:
+func _test_tree_lined_streets_stay_rare(t: TestRunner) -> void:
 	var max_lined_fraction := 0.25
 	var worst := 0.0
 	var ordinary_total := 0
@@ -326,7 +326,7 @@ func _test_tree_lined_streets_stay_rare(t) -> void:
 ## The spacing is measured over the **run**, not over one street — which is the whole difference
 ## between "a pit every other lot-length" and "a pit every other lot-length within each block".
 ## Checked per kerb line, since the two kerbs of a street are two independent rows.
-func _test_pits_keep_their_spacing_across_a_whole_run(t) -> void:
+func _test_pits_keep_their_spacing_across_a_whole_run(t: TestRunner) -> void:
 	var pairs := 0
 	for map in _maps:
 		var by_line := {}
@@ -353,7 +353,7 @@ func _test_pits_keep_their_spacing_across_a_whole_run(t) -> void:
 ## The mouth margin is what keeps a pit off a crossing and off a checkpoint's own doorway, and it
 ## has to keep holding inside a run — a run's junctions are the places two of its streets meet, so
 ## they are exactly where a naive walk along the line would plant one.
-func _test_a_pit_is_never_on_a_junction_or_a_mouth(t) -> void:
+func _test_a_pit_is_never_on_a_junction_or_a_mouth(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		for tree in StreetTrees.planted(map):
@@ -372,7 +372,7 @@ func _test_a_pit_is_never_on_a_junction_or_a_mouth(t) -> void:
 ## computed from `Prop`'s own textures rather than read off a live prop, because every caller is a
 ## headless planner with no scene. This is the thing that stops the copy drifting: a real street
 ## tree, built by a real `City`, has to carry exactly the shape the planners assumed.
-func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t) -> void:
+func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 	t.add_child(city)
@@ -398,7 +398,7 @@ func _test_the_planner_and_the_prop_agree_on_a_tree_footprint(t) -> void:
 ## city prepared (`update_view()`, which the residency calls). The residency is first brought to the
 ## view the camera gives, where it stands while the camera does, so its own frame neither prepares
 ## nor releases a chunk while the beds are read.
-func _test_street_tree_beds_are_ground_decals(t) -> void:
+func _test_street_tree_beds_are_ground_decals(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, BASE_SEED)
 	t.add_child(city)
@@ -438,7 +438,7 @@ func _test_street_tree_beds_are_ground_decals(t) -> void:
 
 ## The decals drawn whole on their own canvas, the way they draw when they are not streamed: every
 ## bed of a planted tree drawn once, through the drawer they are handed.
-func _test_unstreamed_decals_draw_every_bed(t) -> void:
+func _test_unstreamed_decals_draw_every_bed(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var planted := StreetTrees.planted(map)
 	var atlas := AtlasLibrary.new()
@@ -470,7 +470,7 @@ func _beds_drawn(shown: Array[Dictionary], bed: Texture2D) -> Dictionary:
 
 ## Every planted tree whose pit the map has not emptied has one bed (`bed`, the picture) drawn
 ## centred on its position at the picture's own size, and nothing else is drawn as a bed.
-func _check_one_bed_for_each_tree(t, beds: Dictionary, bed: Texture2D,
+func _check_one_bed_for_each_tree(t: TestRunner, beds: Dictionary, bed: Texture2D,
 		planted: Array[StreetTrees.Planted], map: CityMap, what: String) -> void:
 	var expected := {}
 	for entry in planted:

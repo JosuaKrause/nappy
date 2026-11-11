@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Printing rig for "a car is turned only by what blocks its roadway": which of a car's shut
 ## conditions each row of a real day actually reaches, and whether the body behind it stands on the
@@ -45,7 +44,7 @@ var _causes := {}
 ## row id -> { "frames", "spill", "road", "held", "far": float, "first": String }
 var _rows := {}
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for city_seed: int in SEEDS:
 		var map := CityGenerator.generate(city_seed)
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)

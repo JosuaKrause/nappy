@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## A signal head: lit, it shows its face with one lamp on it; with the power out it is drawn again with
 ## no lamp at all (what the last night's blackout does to it, `tests/test_blackout.gd`).
@@ -20,10 +20,10 @@ class GreenSignals extends TrafficSignals:
 	func green_for(_junction: Vector2i, _vertical: bool) -> bool:
 		return true
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_a_head_shows_its_lamp_and_loses_it_when_the_power_goes(t)
 
-func _test_a_head_shows_its_lamp_and_loses_it_when_the_power_goes(t) -> void:
+func _test_a_head_shows_its_lamp_and_loses_it_when_the_power_goes(t: TestRunner) -> void:
 	var signals := GreenSignals.new()
 	var light := TrafficLight.new()
 	var head := RecordingTrafficLightDrawer.new()

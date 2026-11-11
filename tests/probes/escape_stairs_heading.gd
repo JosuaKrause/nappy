@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for the escape's stairs (inbox #783 in minty-lemur): every walkable tile of both stairwells,
 ## each of eight directions and an analog diagonal pressed through the real `Stroller` physics step,
@@ -19,7 +19,7 @@ const INPUTS := {
 	"down-left": [-1.0, 1.0], "analog right-up": [0.9, -0.3],
 }
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()

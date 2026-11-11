@@ -22,7 +22,7 @@ extends "res://tests/events_shared_city.gd"
 
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_scheduler_is_deterministic(t)
 	_test_scheduler_respects_placement_and_caps(t)
 	_test_one_shots_fire_once_per_run(t)
@@ -69,7 +69,7 @@ func _quietest_calm_block(events: DayEvents, calm: CalmAreas) -> Vector2i:
 			best = block
 	return best
 
-func _test_scheduler_is_deterministic(t) -> void:
+func _test_scheduler_is_deterministic(t: TestRunner) -> void:
 	var map := _map()
 	for day in [1, 5, 14]:
 		var consumed_a: Array[String] = []
@@ -89,7 +89,7 @@ func _test_scheduler_is_deterministic(t) -> void:
 			consumed).placements()
 	t.check(_signature(day_one) != _signature(day_two), "different days plan differently")
 
-func _test_scheduler_respects_placement_and_caps(t) -> void:
+func _test_scheduler_respects_placement_and_caps(t: TestRunner) -> void:
 	var map := _map()
 	for day in range(1, 15):
 		var planned := _planned(day)
@@ -121,7 +121,7 @@ func _test_scheduler_respects_placement_and_caps(t) -> void:
 ## day of a *run*" is a statement about carrying `consumed` across the whole calendar, and a
 ## sampled day cannot say it. What it asserts is true of every run rather than of the average, so a
 ## second city is there to keep it from being a fact about one layout and a third would add nothing.
-func _test_one_shots_fire_once_per_run(t) -> void:
+func _test_one_shots_fire_once_per_run(t: TestRunner) -> void:
 	var one_shots_seen := 0
 	for seed_value in [4242, 5150]:
 		var map := CityGenerator.generate(seed_value)
@@ -158,7 +158,7 @@ func _test_one_shots_fire_once_per_run(t) -> void:
 ## adds is more draws from one refusal rather than a layout the refusal could be wrong about — the
 ## corridor a candidate is tested against is grown afresh for every one of the seven days either
 ## way, so the sample is already seven different corridors.
-func _test_alley_robbery_never_lands_on_a_required_alley(t) -> void:
+func _test_alley_robbery_never_lands_on_a_required_alley(t: TestRunner) -> void:
 	var checked := 0
 	for run_seed in [4242]:
 		var map := CityGenerator.generate(run_seed)
@@ -185,7 +185,7 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t) -> void:
 ## two-point dash it builds runs across whichever side of the alley is narrower, never along it. Read straight
 ## off `CityMap.alley_rects` rather than off a scheduled placement, so it holds for every alley a
 ## seed generates rather than only the ones a roll happens to use that day.
-func _test_the_mouse_crosses_the_alleys_own_short_axis(t) -> void:
+func _test_the_mouse_crosses_the_alleys_own_short_axis(t: TestRunner) -> void:
 	var checked := 0
 	var solid := 0
 	for run_seed in [4242, 2102613802, 90210]:
@@ -245,7 +245,7 @@ func _dash_of_the_mouse_at(map: CityMap, at: Vector2) -> PackedVector2Array:
 ## the fix: this holds the whole sequence end to end, on a real generated alley, rather than only
 ## the crossing axis `_test_the_mouse_crosses_the_alleys_own_short_axis` already checks in
 ## isolation.
-func _test_the_mouse_waits_until_she_is_near(t) -> void:
+func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_mouse")
 	t.check(def.notice_within() > 0.0 and def.pursuit == null,
 			"alley_mouse waits like a pursuer without becoming one")
@@ -320,7 +320,7 @@ func _test_the_mouse_waits_until_she_is_near(t) -> void:
 ## street outside spoils the lot and not the court. The guarantee: somewhere in the city there
 ## is calm ground with nothing emitting into it, read off the day as the scheduler answers it
 ## (`DayEvents.is_spoiled()`, whose own logic `tests/test_day_events.gd` checks).
-func _test_one_park_stays_usable(t) -> void:
+func _test_one_park_stays_usable(t: TestRunner) -> void:
 	var calm := CalmAreas.of(_map())
 	for day in range(1, 15):
 		var events := _day_events(day)
@@ -350,7 +350,7 @@ func _test_one_park_stays_usable(t) -> void:
 ## `build_day`, asked once per candidate per unused area, so one city's fourteen days already asks
 ## it tens of thousands of times. A second city asked the same question again on a different
 ## street plan and cost two and a half minutes to do it.
-func _test_calm_she_has_not_used_is_left_alone(t) -> void:
+func _test_calm_she_has_not_used_is_left_alone(t: TestRunner) -> void:
 	for run_seed in [4242]:
 		var map := CityGenerator.generate(run_seed)
 		var used_this_act: Array[Vector2i] = []
@@ -372,7 +372,7 @@ func _test_calm_she_has_not_used_is_left_alone(t) -> void:
 						% [run_seed, day, block, ", ".join(near)])
 			used_this_act.append(_quietest_calm_block(events, calm))
 
-func _test_successors_resolve(t) -> void:
+func _test_successors_resolve(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		if def.aftermath.on_finish == "":
 			continue
@@ -383,7 +383,7 @@ func _test_successors_resolve(t) -> void:
 ## The opposite direction: `aftermath.on_sight` names what arrives once a row has been seen,
 ## `aftermath.on_finish`'s own check above, mirrored. `burning_building` is the only row that
 ## carries one today.
-func _test_sighted_successors_resolve(t) -> void:
+func _test_sighted_successors_resolve(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
 		if def.aftermath.on_sight == "":
@@ -396,7 +396,7 @@ func _test_sighted_successors_resolve(t) -> void:
 
 ## It has no scheduled day at all, so nothing but `EventSpawner._summon_the_sighted_row()` can
 ## put one in the world — see `EventDef.aftermath.on_sight` on `burning_building`.
-func _test_fire_truck_is_never_scheduled(t) -> void:
+func _test_fire_truck_is_never_scheduled(t: TestRunner) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
 	t.check(truck != null, "the fire engine exists")
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -416,7 +416,7 @@ func _test_fire_truck_is_never_scheduled(t) -> void:
 ##
 ## Its forward reach (548px) is deeper than the view is from her, so on its street she is inside its
 ## field from its first frame, and the warning before it exists is the whole of what she is owed.
-func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_street(t) -> void:
+func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_street(t: TestRunner) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
 	var kerb := Vector2(2000.0, 4000.0)
 	# It comes down the street from the north to the kerb, so up its road is up the screen.
@@ -476,7 +476,7 @@ func _test_the_fire_engine_is_warned_long_enough_from_the_worst_position_on_the_
 			% [checked, worst_sight]) + "out of sight and reaches her no sooner than its minimum "
 			+ "after the badge%s" % ("" if wrong.is_empty() else ": " + wrong[0]))
 
-func _test_along_street_paths_stay_in_bounds(t) -> void:
+func _test_along_street_paths_stay_in_bounds(t: TestRunner) -> void:
 	var map := _map()
 	var extent := map.world_size()
 	for day in range(1, 15):
@@ -508,7 +508,7 @@ func _test_along_street_paths_stay_in_bounds(t) -> void:
 ## **Every weight `EventScheduler.GROUND_WEIGHTS` holds is one the draw can find**: keyed by a row the
 ## catalogue has and by a `Location.Kind`, so a misspelt row or a renamed kind fails here rather than
 ## quietly weighing one and moving the fitted mix.
-func _test_every_ground_weight_names_a_row_and_a_kind(t) -> void:
+func _test_every_ground_weight_names_a_row_and_a_kind(t: TestRunner) -> void:
 	var stray: Array[String] = []
 	for id: String in EventScheduler.GROUND_WEIGHTS:
 		if EventCatalogue.by_id(id) == null:
@@ -537,7 +537,7 @@ const _WALL_SHARE_TOLERANCE := 0.2
 ## wall the full day stands at its cap stands at most its cap times the share, rounded up (its cap is
 ## scaled as well as its weight), and a day before `Tuning.REGION_WALL_FIRST_DAY` is the same day
 ## either way.
-func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t) -> void:
+func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t: TestRunner) -> void:
 	var map := _map()
 	var walls := 0
 	var kept := 0
@@ -601,7 +601,7 @@ static func _walls_of(plans: Array[EventScheduler.Planned]) -> int:
 ## (`EventScheduler.across_the_section()`, which the phase's offers share), on the suite's own city: the
 ## middle section of a street of the main road, and of the first street that is not, the one with
 ## its carriageway and the other without the main road under it.
-func _test_nothing_beside_the_routes_stands_on_the_main_road(t) -> void:
+func _test_nothing_beside_the_routes_stands_on_the_main_road(t: TestRunner) -> void:
 	var map := _map()
 	var def := EventCatalogue.by_id("roadblock").for_day(13)
 	var main: Location = null
@@ -643,7 +643,7 @@ static func _has_a_carriageway(map: CityMap, section: Location) -> bool:
 ## left with none close by is written once the day is planned. The phase's own draw, its bias and its
 ## stop are checked with stand-ins in `tests/test_roadblock_phase.gd`; this holds the phase and the
 ## day's real ground together.
-func _test_day_13s_roadblocks_stand_beside_the_routes(t) -> void:
+func _test_day_13s_roadblocks_stand_beside_the_routes(t: TestRunner) -> void:
 	var map := _map()
 	var day := 13
 	var tree := RouteTree.for_day(map, day)
@@ -703,7 +703,7 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t) -> void:
 ## the judged ground the roadblock phase asks (`EventScheduler.RuledRoadblockGround`) is asked of
 ## every route-adjacent section before and after one roadblock stands. Sections it offered one
 ## within that spacing before are offered none, or one standing clear of it, after.
-func _test_a_roadblock_leaves_no_section_within_its_spacing_offered(t) -> void:
+func _test_a_roadblock_leaves_no_section_within_its_spacing_offered(t: TestRunner) -> void:
 	var map := _map()
 	var day := 13
 	var corridor := Corridor.of(RouteTree.for_day(map, day))
@@ -767,7 +767,7 @@ const _CUTTING_BODY := "burst_water_main"
 ## alone, and a scar stands across the middle of a street only the clean area's walk uses
 ## (`_CUTTING_BODY`). The guards say the case is live: that body alone cuts the clean area off and
 ## leaves the spoiled one reached, so the check fails when the scar is stood regardless.
-func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t) -> void:
+func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) -> void:
 	var map := CityGenerator.generate(_CHOICE_CITY_SEED)
 	var day := ResistanceSteps.swing_day()
 	var target := ResistanceSteps.target_candidates(ResistanceSteps.narrow_target_on(day), map, null)
@@ -878,7 +878,7 @@ func _keep_streets_to(map: CityMap, to: Vector2i, keep: Dictionary) -> bool:
 ## of the shared city, each mast the day stands takes the location holding it, and no other placed
 ## row stands inside that location (a playground's ground is in no location, so it holds none). Before the masts' first day, a mast's
 ## location holds nothing and is drawn like any other, so the days asked span it.
-func _test_the_fixed_parts_hold_their_locations(t) -> void:
+func _test_the_fixed_parts_hold_their_locations(t: TestRunner) -> void:
 	var asked := 0
 	for day in [3, 5, 8, 11, 14]:
 		var events := _day_events(day)
@@ -906,7 +906,7 @@ func _test_the_fixed_parts_hold_their_locations(t) -> void:
 ## row is placed (day 10's night raid, day 13's firefight), it stands inside a location that is
 ## taken for the day, on ground the location takes, and no row the draw placed stands in that
 ## location beside it.
-func _test_a_scripted_row_takes_a_location_of_its_own(t) -> void:
+func _test_a_scripted_row_takes_a_location_of_its_own(t: TestRunner) -> void:
 	var asked := 0
 	for day in [10, 13]:
 		var events := _day_events(day)
@@ -936,7 +936,7 @@ func _test_a_scripted_row_takes_a_location_of_its_own(t) -> void:
 ## soft seal is not held: its carriageway is still walkable and a row standing on it is the price of
 ## that route (`docs/EVENTS.md`, the held streets), so a seal body handed in as standing leaves its
 ## location open to the draw. Each stood by hand on the middle of an open sidewalk location of day 5.
-func _test_a_wall_body_holds_its_location_and_a_seal_none(t) -> void:
+func _test_a_wall_body_holds_its_location_and_a_seal_none(t: TestRunner) -> void:
 	var map := _map()
 	var day := 5
 	var corridor := Corridor.of(RouteTree.for_day(map, day))

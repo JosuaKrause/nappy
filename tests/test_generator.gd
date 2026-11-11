@@ -37,7 +37,7 @@ func _map(i: int) -> CityMap:
 	var found: CityMap = _cities[i]
 	return found
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_blocks_buildings_are_what_its_holes_leave(t)
 	_test_layout_maths(t)
 	_test_guarantees_hold_across_seeds(t)
@@ -70,7 +70,7 @@ func run(t) -> void:
 ## the home's notch in the middle of the south edge leaves three. A block a big building spans
 ## into its neighbour is left to `_test_a_big_building_joins_two_blocks`. Every piece lies inside the lot,
 ## clear of every hole, and the pieces and holes together are the lot's whole area.
-func _test_a_blocks_buildings_are_what_its_holes_leave(t) -> void:
+func _test_a_blocks_buildings_are_what_its_holes_leave(t: TestRunner) -> void:
 	var seen := {"plain": 0, "alley": 0, "corner": 0, "home": 0, "court": 0}
 	for i in 40:
 		var map := _map(i)
@@ -146,7 +146,7 @@ func _overlaps(rects: Array) -> bool:
 ## block plus a street, that a block is `BLOCK_SIZE` square — is not restated: those are
 ## `CityMap.period()` and `CityMap.block_rect()` written out a second time, and would only ever go
 ## red because somebody resized the city on purpose.
-func _test_layout_maths(t) -> void:
+func _test_layout_maths(t: TestRunner) -> void:
 	var period := CityMap.period()
 	t.check(CityMap.corridor_offset(0) == 0, "the map starts with a street corridor")
 	t.check(CityMap.corridor_offset(Tuning.STREET_WIDTH) == -1,
@@ -158,7 +158,7 @@ func _test_layout_maths(t) -> void:
 
 # --------------------------------------------------------------- guarantees ---
 
-func _test_guarantees_hold_across_seeds(t) -> void:
+func _test_guarantees_hold_across_seeds(t: TestRunner) -> void:
 	var failures: Array[String] = []
 	for i in SEEDS_TO_VALIDATE:
 		var map := _map(i)
@@ -168,7 +168,7 @@ func _test_guarantees_hold_across_seeds(t) -> void:
 	t.check(failures.is_empty(), "every seed satisfies the generation guarantees: %s"
 			% ", ".join(failures.slice(0, 3)))
 
-func _test_determinism(t) -> void:
+func _test_determinism(t: TestRunner) -> void:
 	for i in 5:
 		var first := CityGenerator.generate(_seed(i))
 		var second := CityGenerator.generate(_seed(i))
@@ -180,7 +180,7 @@ func _test_determinism(t) -> void:
 	var b := CityGenerator.generate(_seed(2))
 	t.check(a.tiles != b.tiles, "different seeds produce different cities")
 
-func _test_buildings_tile_the_blocks(t) -> void:
+func _test_buildings_tile_the_blocks(t: TestRunner) -> void:
 	for i in 12:
 		var map := _map(i)
 		var building_tiles := map.tiles_of_type(GameEnums.TileType.BUILDING).size()
@@ -195,7 +195,7 @@ func _test_buildings_tile_the_blocks(t) -> void:
 					stray += 1
 		t.check(stray == 0, "seed %d: no building sits on a walkable tile (%d did)" % [_seed(i), stray])
 
-func _test_home_opens_onto_the_street(t) -> void:
+func _test_home_opens_onto_the_street(t: TestRunner) -> void:
 	for i in 12:
 		var map := _map(i)
 		for tile in map.rect_tiles(map.home_rect):
@@ -220,7 +220,7 @@ func _test_home_opens_onto_the_street(t) -> void:
 ## Guarded against vacuity by counting the precincts and the big buildings actually found across
 ## the seeds checked — a list that happened to roll neither would pass this by having nothing to
 ## check.
-func _test_a_precincts_own_ground_is_never_built_over(t) -> void:
+func _test_a_precincts_own_ground_is_never_built_over(t: TestRunner) -> void:
 	var seeds := 40
 	# The sweep's own cities, plus the one seed that is here by name rather than by index. Built as
 	# `[map, seed]` pairs rather than as a set of seed numbers so the forty come out of `_map()`,
@@ -255,7 +255,7 @@ func _test_a_precincts_own_ground_is_never_built_over(t) -> void:
 ## decided where alleys are rolled (`CityGenerator._build_block`) rather than slid sideways
 ## afterwards. Guarded against vacuity — zero on the home block proves nothing if the city rolled
 ## none anywhere — by also counting alleys elsewhere.
-func _test_no_alley_on_the_home_block(t) -> void:
+func _test_no_alley_on_the_home_block(t: TestRunner) -> void:
 	var on_home_block := 0
 	var elsewhere := 0
 	for i in 60:
@@ -283,7 +283,7 @@ func _test_no_alley_on_the_home_block(t) -> void:
 ## enough that the middle is still a long walk from anywhere calm. Either one alone is easy — a home
 ## in the middle of a small city has a park next door, and a home a long way from a park is a home in
 ## a corner.
-func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t) -> void:
+func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t: TestRunner) -> void:
 	for i in 24:
 		var map := _map(i)
 		# The map's own measurement, not a second one: it is taken from inside the home rather
@@ -313,7 +313,7 @@ func _test_the_home_is_in_the_middle_of_a_city_worth_walking(t) -> void:
 ## is true of both; everything below it is asked of the right kind. Counting the dictionary and
 ## calling the answer "calm zones" is the mistake this split exists to stop — it would have let a
 ## city satisfy M21 with a thing you cannot walk across.
-func _test_calm_zones_are_one_lot_of_one_thing(t) -> void:
+func _test_calm_zones_are_one_lot_of_one_thing(t: TestRunner) -> void:
 	for i in 12:
 		var map := _map(i)
 		var squares := 0
@@ -396,7 +396,7 @@ func _test_calm_zones_are_one_lot_of_one_thing(t) -> void:
 ## single-block courtyard's**, or it is a light well in a building twenty-two tiles across. And the
 ## streets it took are **built over**, not painted with grass: absent from the lattice like a
 ## zone's, and solid ground, which is what tells the crowd and the telemetry map it is a wall.
-func _check_apartment_complex(t, map: CityMap, anchor: Vector2i, seed_value: int) -> void:
+func _check_apartment_complex(t: TestRunner, map: CityMap, anchor: Vector2i, seed_value: int) -> void:
 	var layout: BlockLayout = map.block_layouts[anchor]
 	t.check(layout.open_rect.size.x == CityGenerator.APARTMENT_COURT_TILES,
 			"seed %d: complex %s has a court %d tiles across, not %d"
@@ -458,7 +458,7 @@ func _check_apartment_complex(t, map: CityMap, anchor: Vector2i, seed_value: int
 ## Note what did **not** move, because it is the reason M21 exists and the curve does not repeal it:
 ## a block is still a lap and a zone is still a route. The curve pays for the lap; it does not make
 ## the block bigger.
-func _test_a_calm_zone_is_a_route_rather_than_a_lap(t) -> void:
+func _test_a_calm_zone_is_a_route_rather_than_a_lap(t: TestRunner) -> void:
 	var zone_blocks := Tuning.CALM_ZONE_BLOCKS * Tuning.CALM_ZONE_BLOCKS
 	var fill := Tuning.METER_MAX / Tuning.sleepiness_gain_calm(zone_blocks)
 	var block_fill := Tuning.METER_MAX / Tuning.sleepiness_gain_calm(1)
@@ -504,7 +504,7 @@ func _test_a_calm_zone_is_a_route_rather_than_a_lap(t) -> void:
 ## single exit, so sealing the street outside the front door seals the player in no matter
 ## how well connected the rest of the city is. That is a constraint on where Act IV may
 ## place a barricade, not a flaw in the layout — see docs/CITY.md.
-func _test_no_single_street_closure_isolates_the_parks(t) -> void:
+func _test_no_single_street_closure_isolates_the_parks(t: TestRunner) -> void:
 	for i in SEEDS_TO_STRESS:
 		var map := _map(i)
 		var parks := map.calm_tiles()
@@ -555,7 +555,7 @@ func _street_segments(map: CityMap) -> Array[Rect2i]:
 ##
 ## The counts are the other half: a city with no dead ends in it silently loses the whole
 ## milestone, and every check here would still pass.
-func _test_a_dead_end_is_a_dead_end(t) -> void:
+func _test_a_dead_end_is_a_dead_end(t: TestRunner) -> void:
 	var total := 0
 	var seeds := 12
 	for i in seeds:
@@ -639,7 +639,7 @@ func _test_a_dead_end_is_a_dead_end(t) -> void:
 ## Its lots never re-open either. `tests/test_blocks.gd` holds that in general — the walkable set
 ## is identical tile for tile across every block arc — and here the mechanism is that each block's
 ## `BlockLayout` is empty, so a repaint finds nothing to paint back.
-func _test_a_big_building_joins_two_blocks(t) -> void:
+func _test_a_big_building_joins_two_blocks(t: TestRunner) -> void:
 	var seeds := 12
 	var total := 0
 	for i in seeds:
@@ -710,7 +710,7 @@ func _test_a_big_building_joins_two_blocks(t) -> void:
 ## re-deriving which junctions are affected, because the set of "ground that stopped being a
 ## street" is exactly `zone_rects` (as tile rects) plus `built_over` (which already includes the
 ## zones that are apartment complexes) plus every dead end and big building's own wall or mass.
-func _test_a_missing_arm_has_no_crossing_on_it(t) -> void:
+func _test_a_missing_arm_has_no_crossing_on_it(t: TestRunner) -> void:
 	var seeds := 12
 	for i in seeds:
 		var map := _map(i)
@@ -736,7 +736,7 @@ func _test_a_missing_arm_has_no_crossing_on_it(t) -> void:
 ## corridor that crosses the span anywhere inside it, on either axis, is inside this rect too —
 ## rather than over one seed's junction, which is the shape that let the original bug hide behind
 ## whichever axis a test happened to look from.
-func _test_nothing_goes_into_a_precinct(t) -> void:
+func _test_nothing_goes_into_a_precinct(t: TestRunner) -> void:
 	var seeds := 25
 	for i in seeds:
 		var map := _map(i)
@@ -770,7 +770,7 @@ func _test_nothing_goes_into_a_precinct(t) -> void:
 ## wall it, or a big building can build over it, all on the crossing street rather than on the
 ## precinct's own band, which nothing may take. Asserted only where `is_street` says the crossing
 ## is still there.
-func _test_a_precincts_end_is_a_t_junction(t) -> void:
+func _test_a_precincts_end_is_a_t_junction(t: TestRunner) -> void:
 	var seeds := 25
 	var road_band := Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH * 2
 	for i in seeds:
@@ -810,7 +810,7 @@ func _along_across_rect(vertical: bool, along_lo: int, along_size: int,
 
 ## Every precinct span gets a line of posts at each end, standing exactly where the paving
 ## begins: `CityMap.post_positions()` is geometry alone, so this holds it without a scene.
-func _test_bollards_stand_where_the_paving_begins(t) -> void:
+func _test_bollards_stand_where_the_paving_begins(t: TestRunner) -> void:
 	var seeds := 25
 	for i in seeds:
 		var map := _map(i)
@@ -852,7 +852,7 @@ func _test_bollards_stand_where_the_paving_begins(t) -> void:
 ## the offset itself and the alley's absolute position have to be even: the offset is rolled from
 ## the lot edge, and the lot edge is even by construction, so an even offset is what makes the
 ## alley's own tile coordinate even too.
-func _test_an_alley_is_exactly_one_cell_wide(t) -> void:
+func _test_an_alley_is_exactly_one_cell_wide(t: TestRunner) -> void:
 	var checked := 0
 	for i in 40:
 		var map := _map(i)
@@ -912,7 +912,7 @@ func _seed(index: int) -> int:
 ## (8.85 areas of which 3.00 courtyards → 8.43 of which 2.55) and generation retries per city
 ## falling 0.50 → 0.00 — because a courtyard beside the front door used to fail the home-distance
 ## guarantee and roll the whole map again.
-func _test_calm_is_never_at_the_edge_or_beside_the_spine(t) -> void:
+func _test_calm_is_never_at_the_edge_or_beside_the_spine(t: TestRunner) -> void:
 	var last := Tuning.CITY_BLOCKS - Vector2i.ONE
 	for i in 24:
 		var map := _map(i)
@@ -943,7 +943,7 @@ func _test_calm_is_never_at_the_edge_or_beside_the_spine(t) -> void:
 ## Measured before the fix: 10 cities in 40 had at least one pair, 12 side by side and 8 diagonal,
 ## and every one of them was courtyard-to-courtyard. It costs one extra generation attempt in
 ## forty and takes calm areas per city from 9.22 to 9.18.
-func _test_no_two_calm_areas_are_in_each_others_ring(t) -> void:
+func _test_no_two_calm_areas_are_in_each_others_ring(t: TestRunner) -> void:
 	for i in 24:
 		var map := _map(i)
 		var owner := {}

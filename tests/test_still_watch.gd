@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `StillWatch`, the stillness heuristic behind `--quit-when-still`, driven the way `main` builds it:
 ## handed a city, her, and the day's clock through `setup()`, standing in a tree, and fed her
@@ -32,7 +31,7 @@ const _TICK_RATE := 600
 ## made by `create_temp()` removes its folder when it is released): nothing under `user://`.
 var _scratch: DirAccess
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var tick_rate := Engine.physics_ticks_per_second
 	Engine.physics_ticks_per_second = _TICK_RATE
 	_scratch = DirAccess.create_temp("still_watch")
@@ -69,7 +68,7 @@ class Rig:
 	## The tick the watch asked for its picture on, or -1 while it has not.
 	var triggered_at := -1
 
-	func _init(t, hold_seconds: float, map: CityMap, picture_dir: String) -> void:
+	func _init(t: TestRunner, hold_seconds: float, map: CityMap, picture_dir: String) -> void:
 		viewport.size = Vector2i(64, 64)
 		t.add_child(viewport)
 		# A screen far from every junction, until a test places one on it.
@@ -107,7 +106,7 @@ class Rig:
 ## Lets `count` physics ticks pass with her standing at `at` for each. The coroutine resumes as a
 ## tick begins and before the nodes' own physics step of it, so the position set here is the one the
 ## watch reads on that tick.
-func _stand(t, rig: Rig, at: Vector2, count: int) -> void:
+func _stand(t: TestRunner, rig: Rig, at: Vector2, count: int) -> void:
 	for i in count:
 		rig.player.global_position = at
 		await t.get_tree().physics_frame
@@ -117,14 +116,14 @@ func _hold_seconds() -> float:
 	return float(_HOLD_TICKS) / Engine.physics_ticks_per_second
 
 ## A rig whose first physics tick has begun, so `_stand()` is in step with the ticks.
-func _rig(t) -> Rig:
+func _rig(t: TestRunner) -> Rig:
 	var rig := Rig.new(t, _hold_seconds(), _signalled_map(), _scratch.get_current_dir() + "/still")
 	await t.get_tree().physics_frame
 	return rig
 
 ## Standing exactly where she started — the doorstep, before she has ever moved — must never
 ## trigger, however long it is held: the flag is armed only once she has actually gone somewhere.
-func _test_the_opening_stand_never_triggers(t) -> void:
+func _test_the_opening_stand_never_triggers(t: TestRunner) -> void:
 	var rig := await _rig(t)
 	await _stand(t, rig, Vector2.ZERO, _HOLD_TICKS * 3)
 	t.check(rig.triggered_at < 0, "three holds at the start before any move never arms the flag")
@@ -132,7 +131,7 @@ func _test_the_opening_stand_never_triggers(t) -> void:
 
 ## The tick she moves past the radius is recognised as a move, not read as an instant trigger, and it
 ## arms the watch: standing there afterwards is what fires it.
-func _test_a_move_past_the_radius_arms_it_without_triggering(t) -> void:
+func _test_a_move_past_the_radius_arms_it_without_triggering(t: TestRunner) -> void:
 	var rig := await _rig(t)
 	await _stand(t, rig, Vector2.ZERO, 2)
 	var moved := Vector2(StillWatch.STILL_RADIUS + 1.0, 0.0)
@@ -144,7 +143,7 @@ func _test_a_move_past_the_radius_arms_it_without_triggering(t) -> void:
 
 ## The hold counts from the move, and fires when it reaches the given number of seconds: not half
 ## way, and not a margin past it.
-func _test_holding_still_after_the_move_triggers_at_the_hold(t) -> void:
+func _test_holding_still_after_the_move_triggers_at_the_hold(t: TestRunner) -> void:
 	var rig := await _rig(t)
 	await _stand(t, rig, Vector2.ZERO, 2)
 	await _stand(t, rig, Vector2(10, 0), 1)
@@ -162,7 +161,7 @@ func _test_holding_still_after_the_move_triggers_at_the_hold(t) -> void:
 
 ## A second move mid-hold restarts the countdown from the new spot rather than finishing at the
 ## hold's own total counted across two different places she stood.
-func _test_a_further_move_restarts_the_hold_from_the_new_spot(t) -> void:
+func _test_a_further_move_restarts_the_hold_from_the_new_spot(t: TestRunner) -> void:
 	var rig := await _rig(t)
 	await _stand(t, rig, Vector2.ZERO, 2)
 	await _stand(t, rig, Vector2(10, 0), _HOLD_TICKS - _MARGIN)
@@ -176,7 +175,7 @@ func _test_a_further_move_restarts_the_hold_from_the_new_spot(t) -> void:
 
 ## Sub-radius wobble — the slide's own settling against a wall, not a real move — never resets the
 ## hold that is already counting.
-func _test_jitter_inside_the_radius_does_not_reset_the_hold(t) -> void:
+func _test_jitter_inside_the_radius_does_not_reset_the_hold(t: TestRunner) -> void:
 	var rig := await _rig(t)
 	await _stand(t, rig, Vector2.ZERO, 2)
 	await _stand(t, rig, Vector2(10, 0), 1)
@@ -190,7 +189,7 @@ func _test_jitter_inside_the_radius_does_not_reset_the_hold(t) -> void:
 
 ## A day that is not running — over, or the tree paused — freezes the hold rather than
 ## resetting it: resuming afterward picks the count back up from where it left off.
-func _test_a_day_not_running_freezes_the_hold_instead_of_resetting_it(t) -> void:
+func _test_a_day_not_running_freezes_the_hold_instead_of_resetting_it(t: TestRunner) -> void:
 	var rig := await _rig(t)
 	await _stand(t, rig, Vector2.ZERO, 2)
 	await _stand(t, rig, Vector2(10, 0), 1)
@@ -207,7 +206,7 @@ func _test_a_day_not_running_freezes_the_hold_instead_of_resetting_it(t) -> void
 
 ## A detention — held — never fires however long it runs, unlike a day that is not running, which
 ## only pauses a count already under way.
-func _test_held_ticks_never_trigger_however_long_they_run(t) -> void:
+func _test_held_ticks_never_trigger_however_long_they_run(t: TestRunner) -> void:
 	var rig := await _rig(t)
 	await _stand(t, rig, Vector2.ZERO, 2)
 	await _stand(t, rig, Vector2(10, 0), 1)
@@ -219,7 +218,7 @@ func _test_held_ticks_never_trigger_however_long_they_run(t) -> void:
 ## The distinction from a plain pause: a hold **restarts** the count on release rather than
 ## resuming it. Without this, whatever had accumulated *before* the hold began survives it and
 ## fires the instant she is free to move again — exactly the checkpoint bug this exists to fix.
-func _test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t) -> void:
+func _test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t: TestRunner) -> void:
 	var rig := await _rig(t)
 	var here := Vector2(10, 0)
 	await _stand(t, rig, Vector2.ZERO, 2)
@@ -239,7 +238,7 @@ func _test_release_from_a_hold_restarts_the_count_rather_than_resuming_it(t) -> 
 ## The whole of `held`'s third case on a built city and a real screen: with the main road's light red
 ## for the pedestrian on a junction the screen shows, the watch never fires however long she stands;
 ## once the light is green for her, the hold fires.
-func _test_a_red_light_on_screen_holds_the_watch_and_a_green_one_does_not(t) -> void:
+func _test_a_red_light_on_screen_holds_the_watch_and_a_green_one_does_not(t: TestRunner) -> void:
 	var rig := await _rig(t)
 	var box := _junction_box(rig.city.map, _main_junction(rig.city.map, 0))
 	rig.viewport.canvas_transform = Transform2D(0.0, -box.position + Vector2(8, 8))
@@ -287,7 +286,7 @@ func _junction_box(map: CityMap, junction: Vector2i) -> Rect2:
 			Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH))
 
 func _test_facing_a_red_light_true_for_the_nearest_visible_junction_wherever_she_stands(
-		t: Object) -> void:
+		t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
@@ -300,7 +299,7 @@ func _test_facing_a_red_light_true_for_the_nearest_visible_junction_wherever_she
 	t.check(StillWatch.facing_a_red_light(map, signals, far_away, view),
 			"and so is its amber — the crossing arm stays red through the clearance period")
 
-func _test_facing_a_red_light_false_when_the_visible_junction_shows_green(t: Object) -> void:
+func _test_facing_a_red_light_false_when_the_visible_junction_shows_green(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = Tuning.signal_main_green_seconds() + Tuning.SIGNAL_AMBER_SECONDS + 0.1
@@ -312,7 +311,7 @@ func _test_facing_a_red_light_false_when_the_visible_junction_shows_green(t: Obj
 ## off "wherever she stands" instead (PLAYTEST-128.md statement 13), so a red light still holds it
 ## from the carriageway.
 func _test_facing_a_red_light_true_on_the_carriageway_now_that_her_tile_no_longer_matters(
-		t: Object) -> void:
+		t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
@@ -320,7 +319,7 @@ func _test_facing_a_red_light_true_on_the_carriageway_now_that_her_tile_no_longe
 	t.check(StillWatch.facing_a_red_light(map, signals, map.tile_to_world(_tile_in(_main_junction(map, 0), Vector2i(3, 3))), view),
 			"standing on the carriageway no longer ends the hold — only the light does")
 
-func _test_facing_a_red_light_false_with_no_signalled_junction_on_screen(t: Object) -> void:
+func _test_facing_a_red_light_false_with_no_signalled_junction_on_screen(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
@@ -329,7 +328,7 @@ func _test_facing_a_red_light_false_with_no_signalled_junction_on_screen(t: Obje
 	t.check(not StillWatch.facing_a_red_light(map, signals, far_away,
 			view), "no junction anywhere near what is on screen is never a red light")
 
-func _test_facing_a_red_light_false_at_an_unsignalled_junction_on_screen(t: Object) -> void:
+func _test_facing_a_red_light_false_at_an_unsignalled_junction_on_screen(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
@@ -338,7 +337,7 @@ func _test_facing_a_red_light_false_at_an_unsignalled_junction_on_screen(t: Obje
 	t.check(not StillWatch.facing_a_red_light(map, signals, map.tile_to_world(_tile_in(_main_junction(map, 0), Vector2i(1, 1))), view),
 			"an ordinary junction on screen has no light to wait at, whatever the phase clock reads")
 
-func _test_facing_a_red_light_false_when_the_red_junction_is_off_screen(t: Object) -> void:
+func _test_facing_a_red_light_false_when_the_red_junction_is_off_screen(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0
@@ -349,7 +348,7 @@ func _test_facing_a_red_light_false_when_the_red_junction_is_off_screen(t: Objec
 
 ## `TrafficSignals` runs a green wave with a per-junction offset (`TrafficSignals._offset()`), so
 ## two junctions on screen can show different phases; the nearest one to her decides.
-func _test_the_nearest_of_two_disagreeing_visible_junctions_decides(t: Object) -> void:
+func _test_the_nearest_of_two_disagreeing_visible_junctions_decides(t: TestRunner) -> void:
 	var map := _signalled_map()
 	var signals := TrafficSignals.new(map)
 	signals.elapsed = 0.0

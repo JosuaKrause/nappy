@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for whether the escape's city section can be got through, and what its
 ## marble bag (`DaySpec.bag`) stands on its streets *(inbox #794 in minty-lemur: "make escape
@@ -63,7 +62,7 @@ const PARALLEL := 2
 const TIMEOUT_SECONDS := 260.0
 const POLL_MSEC := 250
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var mixes := _mixes()
 	var seeds := _seeds()
 	var plans: Array[Dictionary] = []
@@ -109,7 +108,7 @@ func _mixes() -> Array[Dictionary]:
 # ------------------------------------------------------------------- the plans ---
 
 ## Every mix's plan for one seed, on the city a straight city boot builds.
-func _plan_seed(t, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionary]:
+func _plan_seed(t: TestRunner, seed_value: int, mixes: Array[Dictionary]) -> Array[Dictionary]:
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	var day := city.run.header.day
 	t.add_child(city)

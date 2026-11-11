@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## EventManager against a real generated City: the fire, and a walk down the day's own routes.
 ##
@@ -15,7 +15,7 @@ var _city: City
 ## (it is added to the tree first), so the manager's tick sees her where this tick put her.
 var _walker_node: Walker
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	# Every test builds a city and a run of its own, so none leans on what an earlier one left
 	# behind: the scars a fire writes, the streaming radius, the day a test started.
@@ -33,7 +33,7 @@ func run(t) -> void:
 		await test.call(t)
 		_teardown()
 
-func _build_city(t) -> void:
+func _build_city(t: TestRunner) -> void:
 	_walker_node = Walker.new()
 	t.add_child(_walker_node)
 	_city = Rig.build_city(t)
@@ -46,7 +46,7 @@ func _build_city(t) -> void:
 ##
 ## Nothing walks here, which is the case: a day nobody walked far enough into for a siting to be due
 ## is the cheapest way to produce exactly the state this is for.
-func _test_a_won_day_with_the_fire_unmet_still_burns(t) -> void:
+func _test_a_won_day_with_the_fire_unmet_still_burns(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
 	_start(day)
 	var plan := _fire_plan()
@@ -134,7 +134,7 @@ var _walk_clock := 0.0
 ## From where she already is, so a second call carries on down the same route rather than walking
 ## her back to its first point — which is what a test that stops at the siting and then keeps going
 ## needs.
-func _walk(t, rig: Stroller, route: PackedVector2Array, until := Callable()) -> Vector2:
+func _walk(t: TestRunner, rig: Stroller, route: PackedVector2Array, until := Callable()) -> Vector2:
 	_walker_node.rig = rig
 	_walker_node.route = route
 	_walker_node.next = _nearest_on(route, rig.global_position)
@@ -157,7 +157,7 @@ func _walk(t, rig: Stroller, route: PackedVector2Array, until := Callable()) -> 
 ## engine is created on the carriageway, on the line of the fire's own street through the kerb it
 ## stops at, up the road from that kerb rather than past it, level with her or further up rather than
 ## between her and the fire, and wholly out of sight — and is given the route down to the kerb.
-func _test_the_engine_waits_on_its_road_to_the_fire(t) -> void:
+func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
@@ -296,7 +296,7 @@ func _branches_on(day: int, position: Vector2) -> Array[int]:
 ## the-sightings): with the burning building standing only under the left corner, the day's own
 ## visible area in the joystick scheme sends no `seen-fire` and summons no engine; in the tap scheme,
 ## the same view and the same fire, it does both.
-func _test_the_fire_under_a_covered_corner_is_not_sighted(t) -> void:
+func _test_the_fire_under_a_covered_corner_is_not_sighted(t: TestRunner) -> void:
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var events := _city.events
 	var def := EventCatalogue.by_id("burning_building")
@@ -348,7 +348,7 @@ func _fire_plan() -> EventScheduler.Planned:
 ## branch she is walking**, which is `WalkSiting.still_ahead_of()`'s own question asked from where
 ## she was standing. And it is **off screen**: outside the streaming band, so nothing about it is
 ## visible and nothing about it is real yet.
-func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
+func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var day := Tuning.RUN_TAUGHT_DAY
 	for leg: String in ["out", "home again"]:
@@ -414,7 +414,7 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t) -> void:
 ## the first time it streams in — `EventStreaming.stream_in` records the scar there. The rule itself
 ## is checked in `tests/test_events.gd`, against a director with the geometry written rather than
 ## walked; what is checked here is the wiring, against a real streaming manager and a real walk.
-func _test_the_fire_burns_where_her_walk_put_it(t) -> void:
+func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
@@ -455,7 +455,7 @@ func _test_the_fire_burns_where_her_walk_put_it(t) -> void:
 ## its telegraph, and the engine it calls is warned first, just out of sight, and reaches her no
 ## sooner than its own minimum after its badge. Nothing about the site is a reachability question
 ## (inbox #1173): the fire has no body and the engine parks on the carriageway.
-func _test_the_fire_she_meets_is_seen_coming(t) -> void:
+func _test_the_fire_she_meets_is_seen_coming(t: TestRunner) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(Tuning.RUN_TAUGHT_DAY)
 	var plan := _fire_plan()
@@ -576,7 +576,7 @@ func _test_the_fire_she_meets_is_seen_coming(t) -> void:
 ## consumed where it becomes real rather than where it is planned, and a day 3 lost before she ever
 ## got near it is offered it again. A day on which it burned is not: the city remembers that one, and
 ## the shell is standing in it.
-func _test_a_fire_that_was_never_lit_was_not_spent(t) -> void:
+func _test_a_fire_that_was_never_lit_was_not_spent(t: TestRunner) -> void:
 	var consumed: Array[String] = []
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var day := Tuning.RUN_TAUGHT_DAY

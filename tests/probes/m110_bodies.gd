@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
+@warning_ignore_start("unsafe_property_access")
 extends RefCounted
 ## Printing rig for "every solid body diverts the crowd, as far as avoiding it": how much of a real
 ## day's ground the solid bodies take, how much of the crowd is stepping round one, how often anybody
@@ -23,7 +23,7 @@ const SEEDS := [4242, 24757, 91117]
 const DAYS := [1, 5, 9]
 const SECONDS := 30.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for city_seed: int in SEEDS:
 		var map := CityGenerator.generate(city_seed)
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)

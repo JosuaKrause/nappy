@@ -45,7 +45,7 @@ const ACT_SAMPLE_DAYS: Array[int] = [2, 5, 9, 13]
 const BASE_SEED := 730105
 const STEP := 0.2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_measure_return_phase()
 	t.check(true, "zz_m98_return_phase probe ran")
 

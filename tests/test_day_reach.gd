@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `DayReach`, where she can get to from home as the walk was planned: what shuts the way and what
 ## does not, checked here once on a street laid out by hand — a sidewalk two tiles wide and forty
@@ -9,7 +8,7 @@ extends RefCounted
 const ACROSS := 20
 const BEYOND := Vector2i(30, 5)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_body_across_the_street_shuts_the_way(t)
 	_test_a_door_body_shuts_nothing(t)
 	_test_a_plan_not_placed_shuts_nothing(t)
@@ -28,7 +27,7 @@ func _across(map: CityMap, x: int, id := "barricade") -> EventScheduler.Planned:
 	return EventScheduler.Planned.new(EventCatalogue.by_id(id),
 			map.tile_to_world(Vector2i(x, 5)) + Vector2(0, Tuning.TILE_SIZE * 0.5))
 
-func _test_a_body_across_the_street_shuts_the_way(t) -> void:
+func _test_a_body_across_the_street_shuts_the_way(t: TestRunner) -> void:
 	var map := _street()
 	var open := DayReach.of(map, [] as Array[EventScheduler.Planned])
 	t.check(open.reaches(BEYOND), "with nothing standing, the far end of the street is reached")
@@ -38,7 +37,7 @@ func _test_a_body_across_the_street_shuts_the_way(t) -> void:
 			"and the ground under it is shut")
 	t.check(reach.reaches(Vector2i(10, 5)), "while the ground on home's side of it is still reached")
 
-func _test_a_door_body_shuts_nothing(t) -> void:
+func _test_a_door_body_shuts_nothing(t: TestRunner) -> void:
 	var map := _street()
 	var hut := _across(map, ACROSS, "checkpoint_hut")
 	t.check(not DayReach.of(map, [hut] as Array[EventScheduler.Planned]).reaches(BEYOND),
@@ -47,13 +46,13 @@ func _test_a_door_body_shuts_nothing(t) -> void:
 	t.check(DayReach.of(map, [hut] as Array[EventScheduler.Planned]).reaches(BEYOND),
 			"and the same hut stood at a region door shuts nothing: a door is a crossing")
 
-func _test_a_plan_not_placed_shuts_nothing(t) -> void:
+func _test_a_plan_not_placed_shuts_nothing(t: TestRunner) -> void:
 	var map := _street()
 	var unplaced := EventScheduler.Planned.new(EventCatalogue.by_id("barricade"), Vector2.INF)
 	t.check(DayReach.of(map, [unplaced] as Array[EventScheduler.Planned]).reaches(BEYOND),
 			"a row the day budgeted but has not sited stands nowhere")
 
-func _test_a_soft_seal_band_and_a_closure_are_shut(t) -> void:
+func _test_a_soft_seal_band_and_a_closure_are_shut(t: TestRunner) -> void:
 	var map := _street()
 	var band := {}
 	for y in range(5, 7):
@@ -70,7 +69,7 @@ func _test_a_soft_seal_band_and_a_closure_are_shut(t) -> void:
 ## task both take): from a seed, tile by tile along the sidewalk, every tile reached is nearer the
 ## centre than the radius, the walk stops at shut ground even where the circle goes on, and a seed
 ## standing on shut ground still walks out of it, as she may stand inside a body's disc.
-func _test_her_paths_stop_at_the_circle_and_at_what_is_shut(t) -> void:
+func _test_her_paths_stop_at_the_circle_and_at_what_is_shut(t: TestRunner) -> void:
 	var map := _street()
 	var from := Vector2i(5, 5)
 	var centre := map.tile_to_world(from)

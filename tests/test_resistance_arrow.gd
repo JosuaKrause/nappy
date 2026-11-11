@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## The red arrow: what it points at, how it chooses and switches, and where every arrow ends.
 ##
@@ -13,7 +12,7 @@ extends "res://tests/resistance_rig.gd"
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
 const RecordingAtlas := preload("res://tests/recording_atlas.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t)
 	_test_an_arrow_exists_on_every_task_day(t)
 	_test_the_arrow_chooses_by_walking_distance_not_straight_line(t)
@@ -36,7 +35,7 @@ func _settle_the_arrow(director: ResistanceDirector) -> void:
 ## Every built perform step earns the red arrow, the "any instance" ones (the man shouting, a
 ## roadblock) included. A mark never earns one, whichever task it unlocks. Each case plays its day
 ## on a city of its own.
-func _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t) -> void:
+func _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var mark_only := _director(t)
 	mark_only.start_day(6, _rng(6, "resistance"), 300.0)
@@ -72,7 +71,7 @@ func _test_the_red_arrow_points_at_every_task_and_never_at_a_mark(t) -> void:
 
 ## plush-moose: an arrow exists on every task day, the any-instance days (6 and 13) and day 11's
 ## masts included, from the moment the mark is read, and the last night's from dawn.
-func _test_an_arrow_exists_on_every_task_day(t) -> void:
+func _test_an_arrow_exists_on_every_task_day(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	for day: int in range(6, Tuning.RUN_LENGTH_DAYS + 1):
 		run.attempt_spend.scars = []
@@ -114,7 +113,7 @@ func _open_run_for(before: int, after: int) -> Vector2i:
 ## director ticked once, which is how the task comes to ride him (`tick()` retargets the contact onto
 ## the look-alike she is within reach of); then the day's own man, who rode the contact before, is
 ## retired along with the rest.
-func _yeller_arrow_case(t, before: int, after: int, offsets: Array) -> Array:
+func _yeller_arrow_case(t: TestRunner, before: int, after: int, offsets: Array) -> Array:
 	_build_city_in_a_new_run(t)
 	var director := _director_on_the_yeller_perform(t)
 	var tile := _open_run_for(before, after)
@@ -141,7 +140,7 @@ func _put_a_yeller(tile: Vector2i) -> EventInstance:
 ## bodies between her and the man who is nearer as the crow flies sends the arrow to the farther
 ## one she can walk to sooner. The wall goes up after the arrow has chosen, in the live record of
 ## bodies (`CityMap.obstruct_tiles()`), so this is also the arrow reading what blocks her now.
-func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t) -> void:
+func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t: TestRunner) -> void:
 	var made := _yeller_arrow_case(t, 15, 8, [6, -14])
 	var director: ResistanceDirector = made[0]
 	var player: Stroller = made[1]
@@ -189,7 +188,7 @@ func _test_the_arrow_chooses_by_walking_distance_not_straight_line(t) -> void:
 ## plush-moose, "might switch if another closest one comes close": as she walks the arrow moves to
 ## whichever target has become closer on foot, with a hold of `ARROW_HOLD_TILES` so two about-as-
 ## near ones do not make it flicker, and the tick moves it by itself.
-func _test_the_arrow_switches_as_another_target_becomes_closer(t) -> void:
+func _test_the_arrow_switches_as_another_target_becomes_closer(t: TestRunner) -> void:
 	var made := _yeller_arrow_case(t, 15, 15, [-6, 14])
 	var director: ResistanceDirector = made[0]
 	var player: Stroller = made[1]
@@ -224,7 +223,7 @@ func _test_the_arrow_switches_as_another_target_becomes_closer(t) -> void:
 ## `EventStreaming.stream_out()` frees it — asking for the arrow is still a read that answers a
 ## real place (the contact's own, never a freed one's and never (0, 0)), and the next frame points
 ## the arrow at a target that is still there.
-func _test_the_arrow_leaves_a_freed_instance_at_once(t) -> void:
+func _test_the_arrow_leaves_a_freed_instance_at_once(t: TestRunner) -> void:
 	# The contact rides the far man, as it rides a live man shouting all day.
 	var made := _yeller_arrow_case(t, 15, 15, [12, -4])
 	var director: ResistanceDirector = made[0]
@@ -334,7 +333,7 @@ func _beside_the_mast(director: ResistanceDirector, foot: Vector2) -> Vector2:
 ## down in every city. The suite's own city is walked in full; the others are asked the one question
 ## the walk asks, `WalkSiting.ahead_of()` from points along the longest route, without walking, which
 ## keeps six cities as cheap as one. A city that fails fails here rather than being skipped.
-func _test_day_eleven_answers_at_any_live_mast(t) -> void:
+func _test_day_eleven_answers_at_any_live_mast(t: TestRunner) -> void:
 	var routed_on := [-1]
 	var missed: Array[int] = []
 	for seed_value: int in DAY_ELEVEN_SEEDS:
@@ -379,7 +378,7 @@ const DAY_ELEVEN_SEEDS: Array[int] = [SEED, 90210, 1234567, 314159, 555555, 8675
 
 ## One city's half of `_test_day_eleven_answers_at_any_live_mast`; sets `routed_on[0]` to the seed
 ## once its walk has put the routed mast down, and checks the rest only then.
-func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -> void:
+func _answer_day_eleven_at_any_live_mast(t: TestRunner, seed_value: int, routed_on: Array) -> void:
 	var read := _read_the_mark_on(t, 11, seed_value)
 	var director: ResistanceDirector = read[0]
 	var player: Stroller = read[2]
@@ -459,7 +458,7 @@ func _answer_day_eleven_at_any_live_mast(t, seed_value: int, routed_on: Array) -
 	director.free()
 
 ## A single-target task keeps its arrow on its contact exactly, retargeting or not.
-func _test_a_single_target_arrow_stays_on_its_contact(t) -> void:
+func _test_a_single_target_arrow_stays_on_its_contact(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var read := _read_the_mark_on(t, 7, SEED)
 	var van: ResistanceDirector = read[0]
@@ -481,7 +480,7 @@ func _test_a_single_target_arrow_stays_on_its_contact(t) -> void:
 ## from some standable, reachable tile near it (day 9 is crossed instead, and its own test is
 ## below). Before, the arrow ended beside the mast (32px), on the swing's tile centre, on a pavement
 ## tile in front of the station door and on the middle of the district door's street.
-func _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t) -> void:
+func _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t: TestRunner) -> void:
 	var checked := [0]
 	for seed_value: int in [SEED, 90210, 1234567]:
 		var run := _build_city_in_a_new_run(t, seed_value)
@@ -516,7 +515,7 @@ func _test_every_arrow_ends_on_its_item_and_its_touch_can_be_made(t) -> void:
 
 ## The finale on the test city in the real day order, the goal met: `[director, Vector2.INF, her
 ## rig]`, the shape `_read_the_mark_on()` answers, the finale having no mark.
-func _start_the_finale(t, seed_value: int) -> Array:
+func _start_the_finale(t: TestRunner, seed_value: int) -> Array:
 	var day := Tuning.RUN_LENGTH_DAYS
 	_city.run.resistance.completed_steps = _all_but_the_finale()
 	_city.run.facts.completed_resistance_alley_tiles = []
@@ -560,7 +559,7 @@ func _the_item_of(director: ResistanceDirector, step: ResistanceSteps.Step) -> V
 ## **The contact asks the library its director is handed** for its picture's page, not a library of
 ## its own: the director is handed a recording one (`ResistanceDirector.use_atlas()`) before the day
 ## starts, and the contact it offers has asked it, which a contact handed none would not have.
-func _test_the_contact_draws_from_the_library_its_director_is_handed(t) -> void:
+func _test_the_contact_draws_from_the_library_its_director_is_handed(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var recording := RecordingAtlas.new()
 	_handed_atlas = recording
@@ -581,7 +580,7 @@ func _test_the_contact_draws_from_the_library_its_director_is_handed(t) -> void:
 ## enters the tree, `Prop.shape`): the contact the director offers on day 12 carries that ellipse as
 ## its `touch_ellipse`, and from eight bearings, standing with her edge a pixel inside the ellipse's
 ## outline completes it, at each side and each corner, and standing two pixels clear of it does not.
-func _test_the_swings_touch_is_the_ellipse_at_its_base(t) -> void:
+func _test_the_swings_touch_is_the_ellipse_at_its_base(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var read := _read_the_mark_on(t, 12, SEED)
 	var director: ResistanceDirector = read[0]

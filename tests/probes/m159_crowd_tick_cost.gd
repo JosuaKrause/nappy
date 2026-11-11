@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration", "unsafe_property_access")
 extends RefCounted
 ## What the crowd's physics tick (`Crowd._physics_process()`) costs, split by the call that pays it,
 ## on fixed seeds — a headless workload on this machine, not a phone frame.
@@ -46,7 +46,7 @@ const WINDOW := 600
 const PARTS: Array[String] = ["signals", "pockets", "resolve", "keep_room", "index",
 		"claims", "give_way", "gates", "doors", "player", "agents"]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

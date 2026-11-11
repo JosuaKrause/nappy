@@ -65,7 +65,7 @@ static func _seat(counter: VisitCounter, home: Node) -> void:
 	counter.name = VisitCounter.NODE_NAME
 	home.get_node(NodePath(Sitting.NODE_NAME)).add_child(counter)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var day_lines: Array[String] = await _test_a_day_lost_to_each_cause_won_and_the_next_begun(t)
 	var escape_lines: Array[String] = await _test_the_escape_handed_over_lost_and_left(t)
 	_test_the_run_log_is_the_baseline(t, day_lines, escape_lines)
@@ -76,7 +76,7 @@ func run(t) -> void:
 
 ## Day 1 of `SEED`: the controls answered twice (a joystick, then a key), lost to a car, to her
 ## crying, to a catalogue row and to dusk, each retried, then won, and day 2 begun.
-func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
+func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t: TestRunner) -> Array[String]:
 	var saved_paused: bool = t.get_tree().paused
 	var run := RunState.new()
 	var counter := RecordingCounter.new(run)
@@ -150,7 +150,7 @@ func _test_a_day_lost_to_each_cause_won_and_the_next_begun(t) -> Array[String]:
 ## The summary's continue pressed through the viewport, and the tree held still again at once: the
 ## continue that starts a day unpauses the tree in the same frame the test resumes in, before any
 ## physics tick of it has run, so every line the next call writes is stamped at the same clock.
-func _continue_while_paused(t, main: Node) -> void:
+func _continue_while_paused(t: TestRunner, main: Node) -> void:
 	await Boot.press_continue(t, main)
 	t.get_tree().paused = true
 
@@ -161,7 +161,7 @@ static func _edge_of(main: Node) -> Node:
 ## The observer stamps its lines with the clock and reads the resistance and the badges, so it has
 ## to process after them each frame, as it did when `main` added it straight after the day's
 ## clock: tree order is process order, and the session that holds it is `main`'s first child.
-func _check_the_observer_runs_after(t, main: Node, world: Array, boot: String) -> void:
+func _check_the_observer_runs_after(t: TestRunner, main: Node, world: Array, boot: String) -> void:
 	var found := main.find_children("*", "TelemetryObserver", true, false)
 	var observer: TelemetryObserver = found[0] if not found.is_empty() else null
 	t.check(observer != null, "%s's boot builds the observer with a log open" % boot)
@@ -177,7 +177,7 @@ func _check_the_observer_runs_after(t, main: Node, world: Array, boot: String) -
 ## outcome screen — and begun again, the walk out of the service door into the city, and out by the
 ## tunnel. Each section is counted as a day of its own (`DaySpec.BUILDING_DAY`,
 ## `DaySpec.CITY_DAY`) beside the escape's own names.
-func _test_the_escape_handed_over_lost_and_left(t) -> Array[String]:
+func _test_the_escape_handed_over_lost_and_left(t: TestRunner) -> Array[String]:
 	var saved_paused: bool = t.get_tree().paused
 	var run := RunState.new()
 	run.start_run(SEED)
@@ -252,7 +252,7 @@ static func _words_on(summary: Node) -> String:
 ## Every line both scenarios handed the run log, against what the same script handed it before the
 ## observers were rebuilt. The first differing line is named, since a count alone says nothing about which entry
 ## moved.
-func _test_the_run_log_is_the_baseline(t, day_lines: Array[String],
+func _test_the_run_log_is_the_baseline(t: TestRunner, day_lines: Array[String],
 		escape_lines: Array[String]) -> void:
 	var got: Array[String] = []
 	got.append_array(day_lines)
@@ -298,7 +298,7 @@ static func _lines_kept(lines: Array[String]) -> Array[String]:
 
 ## A normal run out of nerves goes back to its checkpoint; a hard one ends badly; a final day won
 ## with the resistance done ends well, and without it neutrally.
-func _test_endings_and_checkpoints(t) -> void:
+func _test_endings_and_checkpoints(t: TestRunner) -> void:
 	var run := RunState.new()
 	var counter := RecordingCounter.new(run)
 	t.add_child(counter)
@@ -331,7 +331,7 @@ func _test_endings_and_checkpoints(t) -> void:
 
 ## A run begun fresh, one picked back up from the save, and the same run coming back on a reload
 ## the page itself made, which sends nothing.
-func _test_a_fresh_run_a_resume_and_a_reload(t) -> void:
+func _test_a_fresh_run_a_resume_and_a_reload(t: TestRunner) -> void:
 	var run := RunState.new()
 	var counter := RecordingCounter.new(run)
 	t.add_child(counter)

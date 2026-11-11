@@ -1,9 +1,9 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## M188: the narrow targets are reachable on their day, and a task is placed near its mark.
 
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_task_is_placed_near_its_mark(t)
 	_test_the_narrow_targets_are_reachable_on_their_day(t)
 	_free_city()
@@ -23,7 +23,7 @@ func run(t) -> void:
 ## the world is put outside her view, day 13's found roadblock excepted, which stood there all along. *("create a circle around the current player position with the
 ## radius of the desired distance -- then follow the path until it reaches the edge of the
 ## circle".)* Before, it was drawn anywhere within 576px as the crow flies.
-func _test_a_task_is_placed_near_its_mark(t) -> void:
+func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 	var checked := [0]
 	var fell_back := [0]
 	for seed_value: int in [SEED, 90210, 1234567]:
@@ -109,7 +109,7 @@ const NARROW_TARGET_SEEDS: Array[int] = [196838, 355218, 323542, 252271]
 ## **Day 12 owes a second park as well**: some calm area other than the swing's, clean — no field
 ## the day planned reaching its ground — and reachable from home under the same flood, which is
 ## where she settles the baby once the swing's park is taken.
-func _test_the_narrow_targets_are_reachable_on_their_day(t) -> void:
+func _test_the_narrow_targets_are_reachable_on_their_day(t: TestRunner) -> void:
 	var checked := 0
 	for seed_value in NARROW_TARGET_SEEDS:
 		for day: int in [9, 12, Tuning.RUN_LENGTH_DAYS]:

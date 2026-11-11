@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `RoadblockPhase`, the roadblock phase at dawn (inbox #1185 in gentle-owl): it draws among every route-adjacent
 ## section the day's ground offers a valid roadblock, with a bias toward the farthest from the
@@ -11,7 +10,7 @@ extends RefCounted
 ## `tests/test_events_placement.gd`; the phase on a real day is `tests/test_events_scheduler.gd`'s
 ## day-13 check.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_it_stops_once_every_route_tile_has_one_close_by(t)
 	_test_a_section_offered_none_is_never_drawn(t)
 	_test_a_section_closed_to_a_draw_is_never_drawn(t)
@@ -125,7 +124,7 @@ static func _taken(ground: _Ground, sections: Array[Location], seed_value: int) 
 		taken.append(ground.section_of(plan))
 	return taken
 
-func _test_it_stops_once_every_route_tile_has_one_close_by(t) -> void:
+func _test_it_stops_once_every_route_tile_has_one_close_by(t: TestRunner) -> void:
 	var always := true
 	for seed_value in SEEDS:
 		var a := _section(Vector3i(2, 2, 1), 0)
@@ -152,7 +151,7 @@ func _test_it_stops_once_every_route_tile_has_one_close_by(t) -> void:
 			+ "that covers the last: each section it drew taken and stood in the day (%d seeds)"
 			% SEEDS)
 
-func _test_a_section_offered_none_is_never_drawn(t) -> void:
+func _test_a_section_offered_none_is_never_drawn(t: TestRunner) -> void:
 	var never := true
 	for seed_value in SEEDS:
 		var refused := _section(Vector3i(2, 2, 1), 1)
@@ -173,7 +172,7 @@ func _test_a_section_offered_none_is_never_drawn(t) -> void:
 ## A section closed to a draw, as one is once a sidewalk of it holds a fixed part
 ## (`StreetLocations.close_the_section_of()` records it drawn empty), is never drawn: a roadblock
 ## spans the street and would take that sidewalk over the part standing there.
-func _test_a_section_closed_to_a_draw_is_never_drawn(t) -> void:
+func _test_a_section_closed_to_a_draw_is_never_drawn(t: TestRunner) -> void:
 	var never := true
 	for seed_value in SEEDS:
 		var closed := _section(Vector3i(2, 2, 1), 1)
@@ -195,7 +194,7 @@ func _test_a_section_closed_to_a_draw_is_never_drawn(t) -> void:
 ## still stops: once A, the one section close by the other route tile, stands, no section left could
 ## bring a roadblock close by a tile that has none, so B and C, close by nothing, are not drawn after
 ## it. Before A they may be, since A could still cover a tile then.
-func _test_it_stops_once_no_section_could_cover_a_tile_left(t) -> void:
+func _test_it_stops_once_no_section_could_cover_a_tile_left(t: TestRunner) -> void:
 	var always := true
 	var nothing_first := 0
 	for seed_value in SEEDS:
@@ -222,7 +221,7 @@ func _test_it_stops_once_no_section_could_cover_a_tile_left(t) -> void:
 ## Thirty sections, each the only one close by a route tile of its own: full coverage takes all
 ## thirty, and every section could still help to the end, so only the cap stops the phase, at
 ## `RoadblockPhase.MOST`.
-func _test_it_stops_at_the_most_it_stands(t) -> void:
+func _test_it_stops_at_the_most_it_stands(t: TestRunner) -> void:
 	var sections: Array[Location] = []
 	var ground := _Ground.new()
 	var names: Array[int] = []
@@ -243,7 +242,7 @@ func _test_it_stops_at_the_most_it_stands(t) -> void:
 
 ## A section close by no route tile is in the draw like any other: the bias ranks every offered
 ## section, and nothing leaves one out for what it would cover.
-func _test_every_offered_section_is_in_the_draw(t) -> void:
+func _test_every_offered_section_is_in_the_draw(t: TestRunner) -> void:
 	var drawn := 0
 	for seed_value in SEEDS:
 		var nothing := _section(Vector3i(9, 9, 0), 1)
@@ -260,7 +259,7 @@ func _test_every_offered_section_is_in_the_draw(t) -> void:
 ## A first roadblock is placed at A, the only section close by the first route tile; the second
 ## route tile is close by B, about 450px from A, and C, about 900px from it. With the weight the
 ## square of the distance, C is about four times as likely as B: drawn more often, and B still drawn.
-func _test_each_roadblock_leans_toward_the_farthest(t) -> void:
+func _test_each_roadblock_leans_toward_the_farthest(t: TestRunner) -> void:
 	var near := 0
 	var far := 0
 	for seed_value in SEEDS:
@@ -287,7 +286,7 @@ func _test_each_roadblock_leans_toward_the_farthest(t) -> void:
 ## D, the section after it (160px from A), is close by the same route tile as B. With the ground
 ## asking offers again within 100px of a roadblock just placed, B is never placed after A, though the
 ## bias would draw it about one time in five were its first offer kept.
-func _test_offers_near_a_roadblock_just_placed_are_asked_again(t) -> void:
+func _test_offers_near_a_roadblock_just_placed_are_asked_again(t: TestRunner) -> void:
 	var never := true
 	var counted := 0
 	for seed_value in SEEDS:

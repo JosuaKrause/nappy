@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Whether the crowd is drawn moving on every frame the screen draws, faster than the 30Hz tick it
 ## steps on**: a busy street's crowd run by the engine's own loop, in a window, and a run of
@@ -28,7 +27,7 @@ const FRAMES := 12
 const ZOOM := Vector2(2.0, 2.0)
 const CROP := Vector2i(240, 150)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var out := OS.get_environment("CROWD_FRAMES_OUT")
 	DisplayServer.window_set_flag(DisplayServer.WINDOW_FLAG_NO_FOCUS, true)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)

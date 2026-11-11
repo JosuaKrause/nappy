@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the escape's density (inbox #785 in minty-lemur): how many of each of its own rows the
 ## finale's plan stands, and which row its alley-mouth walls are, per seed. Not a suite: it prints
@@ -15,7 +14,7 @@ const ROWS: Array[String] = ["military_convoy", "abduction", "roadblock", "final
 ## The seed the run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	var totals := {}

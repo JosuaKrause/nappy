@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M181, "the station's front door, day 9's door and day 12's swing are
 ## reachable by construction": for each seed and each of the three days, how many of the day's target
@@ -28,7 +27,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed the run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	own_run.resistance.progress = Tuning.RESISTANCE_GOAL

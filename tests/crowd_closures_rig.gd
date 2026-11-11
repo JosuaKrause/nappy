@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **The cases behind `test_crowd_closures_a.gd`, `_b.gd` and `_c.gd`; not a suite itself.** Each
 ## part runs the scenarios and the door-day cases it owns, so no suite runs two minutes serial; the
@@ -54,7 +54,7 @@ func scenarios() -> Array[Callable]:
 	]
 
 ## The scenarios of `scenarios()` at `indices`, in the order given.
-func run_scenarios(t, indices: Array[int]) -> void:
+func run_scenarios(t: TestRunner, indices: Array[int]) -> void:
 	var all := scenarios()
 	for index in indices:
 		var scenario := all[index]
@@ -64,15 +64,15 @@ func run_scenarios(t, indices: Array[int]) -> void:
 		scenario.call(t)
 		_city.free()
 
-func run_region_wall(t) -> void:
+func run_region_wall(t: TestRunner) -> void:
 	_test_a_region_wall_is_shut_and_a_door_is_carved_out(t)
 
-func run_day_start(t) -> void:
+func run_day_start(t: TestRunner) -> void:
 	_test_day_start_keeps_room_for_its_own_picture(t)
 
 ## One door day, shared: building a city and planning days until one carries a door, and every test
 ## below places its own bodies at the same hut anyway.
-func run_door_day(t) -> void:
+func run_door_day(t: TestRunner) -> void:
 	var door_day := _open_a_door_day(t)
 	_test_a_walker_is_held_at_a_door_in_four_states(t, door_day)
 	_test_a_line_at_a_door_stays_short(t, door_day)
@@ -127,7 +127,7 @@ func _advance(seconds: float) -> void:
 ## The seal is stood here the way `SealPlanner` stands one — the same `sealed_variant` and the same
 ## `positions_across()` across the street — rather than by planning a day, so the segment under test is
 ## this one and not whatever the seed rolled.
-func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
+func _test_a_hard_seal_shuts_its_street_to_the_crowd(t: TestRunner) -> void:
 	var segment: StreetNetwork.Segment = null
 	for candidate in _city.map.network.segments():
 		if _city.map.has_street(candidate.key()):
@@ -203,7 +203,7 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t) -> void:
 
 ## M119, item 1, as M156 leaves it: no car is placed inside a junction sealed on every side, on the
 ## morning or on any recycle after it — and the walkers are in there walking.
-func _test_nobody_is_placed_in_a_sealed_junction(t) -> void:
+func _test_nobody_is_placed_in_a_sealed_junction(t: TestRunner) -> void:
 	var sealed := _a_junction_to_seal(t)
 	if sealed.is_empty():
 		return
@@ -279,7 +279,7 @@ func _test_nobody_is_placed_in_a_sealed_junction(t) -> void:
 ##
 ## **Cars only, because there is no walker pocket**: a walker caught by the same seals walks the
 ## stubs and turns at the barrier on the end of each, which is the test above.
-func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
+func _test_a_pocket_empties_once_it_is_out_of_view(t: TestRunner) -> void:
 	var sealed := _a_junction_to_seal(t)
 	if sealed.is_empty():
 		return
@@ -349,7 +349,7 @@ func _test_a_pocket_empties_once_it_is_out_of_view(t) -> void:
 ## **Counted as an entry rather than as presence**, because placement also puts walkers on sealed-in
 ## ground now (the test above) and a count of who is standing there cannot tell the two apart. A
 ## walker counts once it has been seen outside the arm and is then seen inside it.
-func _test_a_walker_turns_into_a_street_sealed_further_along(t) -> void:
+func _test_a_walker_turns_into_a_street_sealed_further_along(t: TestRunner) -> void:
 	var sealed := _a_junction_to_seal(t)
 	if sealed.is_empty():
 		return
@@ -404,7 +404,7 @@ func _test_a_walker_turns_into_a_street_sealed_further_along(t) -> void:
 ## The floor is each agent's own stride (`stride_length()`) over the fastest its kind goes
 ## (`speed_range()`) rather than a number, so it survives any rebalancing of walking speed or of the
 ## gait — what it pins is that a reversal is worth a stride, not that a stride is 35px.
-func _test_a_turn_around_commits_to_its_new_heading(t) -> void:
+func _test_a_turn_around_commits_to_its_new_heading(t: TestRunner) -> void:
 	var sealed := _a_junction_to_seal(t)
 	if sealed.is_empty():
 		return
@@ -525,7 +525,7 @@ func _on_screen(at: Vector2, focus: Vector2) -> bool:
 ## Two guards against a vacuous sweep, because "nothing jumped" passes on its own where nothing was
 ## on screen and nothing turned: the agent-frames actually inside the viewport are counted, and so
 ## are the contended turns that actually ended in front of the camera.
-func _test_no_car_in_sight_ever_moves_further_than_it_drove(t) -> void:
+func _test_no_car_in_sight_ever_moves_further_than_it_drove(t: TestRunner) -> void:
 	var sealed := _a_junction_to_seal(t)
 	if sealed.is_empty():
 		return
@@ -633,7 +633,7 @@ func _advance_watching(seconds: float, at: Vector2) -> void:
 ## it, one bordering the home block has a carve-out on one arm, and one on a precinct's own corridor
 ## is not ground a car may be on in the first place — none of the three is the plain four-armed
 ## crossroads the finding is about. Empty, with a failed check, where this city has none.
-func _a_junction_to_seal(t) -> Dictionary:
+func _a_junction_to_seal(t: TestRunner) -> Dictionary:
 	var home := {}
 	for segment in _city.map.network.around_blocks(Rect2i(_city.map.home_block, Vector2i.ONE)):
 		home[segment.key()] = true
@@ -669,7 +669,7 @@ func _a_junction_to_seal(t) -> Dictionary:
 ## `EventManager.start_day`), the only way to get an actual `RegionPlanner.RegionPlan` with real
 ## wall and door segments on it, over however many sampled days it takes this seed's tree to cross
 ## its own boundary at least once.
-func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
+func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
@@ -772,7 +772,7 @@ func _test_a_region_wall_is_shut_and_a_door_is_carved_out(t) -> void:
 ## unrepeatable, and every property here is about *which* walker is let in and *when*; the agents
 ## put back are placed by hand, one at a time, on the lane the hut stands beside. `start_day` still
 ## runs first, because that is what builds the day's huts out of the region plan.
-func _open_a_door_day(t) -> Dictionary:
+func _open_a_door_day(t: TestRunner) -> Dictionary:
 	var map := MapCache.of(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
@@ -866,7 +866,7 @@ func _past_the_hut(agent: CrowdAgent, hut: WalkerDoorHold) -> float:
 ## *("walking -> waiting -> inspection -> emerging on the other side (with cooldown to not go back
 ## again) -> walking")* — the hut is occupied exactly while it is inside, and a walker whose answer
 ## is to walk through does not stop at all.
-func _test_a_walker_is_held_at_a_door_in_four_states(t, scene: Dictionary) -> void:
+func _test_a_walker_is_held_at_a_door_in_four_states(t: TestRunner, scene: Dictionary) -> void:
 	if scene.is_empty():
 		return
 	var city: City = scene["city"]
@@ -1014,7 +1014,7 @@ func _door_phase(walker: CrowdAgent, hut: WalkerDoorHold, been_inside: bool) -> 
 ## and the next walker to see the door turns away at the door rather than joining. The line is
 ## asserted against the constant rather than against a count, so moving the cap moves the test with
 ## it; what would fail is a line that grows past whatever the cap says.
-func _test_a_line_at_a_door_stays_short(t, scene: Dictionary) -> void:
+func _test_a_line_at_a_door_stays_short(t: TestRunner, scene: Dictionary) -> void:
 	if scene.is_empty():
 		return
 	var city: City = scene["city"]
@@ -1073,7 +1073,7 @@ func _test_a_line_at_a_door_stays_short(t, scene: Dictionary) -> void:
 ## comes to a full stop at a lowered gate and the gate still raises for it once it has been stopped
 ## for `Crowd.GATE_STOP_SECONDS`. *(2026-09-02, the player: "cars need to slow down to a full stop
 ## before the gate opens and they can go ahead again.")*
-func _test_a_car_still_stops_for_the_boom(t, scene: Dictionary) -> void:
+func _test_a_car_still_stops_for_the_boom(t: TestRunner, scene: Dictionary) -> void:
 	if scene.is_empty():
 		return
 	var city: City = scene["city"]
@@ -1116,7 +1116,7 @@ func _test_a_car_still_stops_for_the_boom(t, scene: Dictionary) -> void:
 ## than the whole day's pipeline — checked against the predicate directly, for the same reason the
 ## door carve-out above is: whether a random walker wanders onto one particular tile inside a short
 ## window is a question about the day's population, not about this rule.
-func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t) -> void:
+func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t: TestRunner) -> void:
 	var day := 3
 	var tree := RouteTree.for_day(_city.map, day)
 	var seal_rng := RandomNumberGenerator.new()
@@ -1213,7 +1213,7 @@ func _all_soft_sealed(tiles: Array[Vector2i]) -> bool:
 ## shuts a hard seal's street would be wrong. `HeldStreets.Why.HOME` is the carve-out, the same
 ## shape a region door's is. Driven off a real day — `held` has to be genuinely
 ## non-empty around the home block for this to test anything rather than pass vacuously.
-func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
+func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
@@ -1277,7 +1277,7 @@ func _test_the_doorstep_street_is_not_shut_by_its_own_hold(t) -> void:
 ## length less a car) on its way out and at least `CarStrategy.BRIDGE_ENTRY_MIN` (past the camera's
 ## reach beyond the edge) on its way in, which is the whole of how it looks like it drives across
 ## rather than stopping dead at the kerb.
-func _test_only_cars_go_over_the_bridge(t) -> void:
+func _test_only_cars_go_over_the_bridge(t: TestRunner) -> void:
 	var spine_x := (_city.map.main_road * CityMap.period() + Tuning.STREET_WIDTH * 0.5) \
 			* float(Tuning.TILE_SIZE)
 	var limit := _city.map.world_size().y
@@ -1313,7 +1313,7 @@ func _test_only_cars_go_over_the_bridge(t) -> void:
 ## street. A walker legitimately does: a zone is calm ground as well as a shortcut, and standing on
 ## it is correct rather than a leak. So the property is asked only of cars, over a real zone with
 ## real traffic around it rather than by re-deriving what `LaneStrategy.cannot_go_on()` already computes.
-func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t) -> void:
+func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t: TestRunner) -> void:
 	if _city.map.zone_rects.is_empty():
 		return
 	var anchor: Vector2i = _city.map.zone_rects.keys()[0]
@@ -1347,7 +1347,7 @@ func _test_the_crowd_agrees_a_zone_absorbed_the_corridor(t) -> void:
 ## `_test_only_cars_go_over_the_bridge`) is not spine-specific, so an **ordinary** boundary gets the
 ## same guarantee for free. Checked here at the east edge, on a corridor that is not the spine, so
 ## the fix is asserted as the general one it is rather than as a property of the bridge alone.
-func _test_agents_do_not_overrun_an_ordinary_edge(t) -> void:
+func _test_agents_do_not_overrun_an_ordinary_edge(t: TestRunner) -> void:
 	var limit := _city.map.world_size().x
 	var at := Vector2(limit - Tuning.TILE_SIZE, _city.map.world_size().y * 0.5)
 	_city.crowd.start_day(1, _rng(2), at)
@@ -1374,7 +1374,7 @@ func _test_agents_do_not_overrun_an_ordinary_edge(t) -> void:
 ## coordinates, for half the time, asserting a strictly stronger version of the same
 ## sentence (nobody at all, rather than no walker and no off-spine car). Running both was the same
 ## refusal paid for twice.
-func _test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t) -> void:
+func _test_out_of_bounds_is_blocked_except_a_car_on_the_spine(t: TestRunner) -> void:
 	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
 	var size := _city.map.world_size()
@@ -1427,7 +1427,7 @@ class Landings extends RefCounted:
 ## coming onto the bridge it is beyond the camera's reach from the map's edge. Stood at each end,
 ## the crowd's own spine cars are recycled as they leave the field, and the landings past the edge
 ## are read.
-func _test_spine_cars_are_put_out_of_sight(t) -> void:
+func _test_spine_cars_are_put_out_of_sight(t: TestRunner) -> void:
 	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
 	var size := _city.map.world_size()
@@ -1473,7 +1473,7 @@ func _test_spine_cars_are_put_out_of_sight(t) -> void:
 ## never visibly drives on across the mountain over it, and the bridge is long enough that a car
 ## never drives off the end of its deck. Stood at each end, the furthest any spine car gets past the
 ## map edge is measured over thirty seconds, by which time the furthest has settled.
-func _test_cars_do_not_drive_on_across_the_mountain(t) -> void:
+func _test_cars_do_not_drive_on_across_the_mountain(t: TestRunner) -> void:
 	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
 	var size := _city.map.world_size()
@@ -1522,7 +1522,7 @@ func _test_cars_do_not_drive_on_across_the_mountain(t) -> void:
 ## through a hole in the border is two-way when the inbound frames are a real fraction of the
 ## outbound ones, and a handful — the fallback of six missed rolls, which is the reported state —
 ## is what the check has to refuse.
-func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t) -> void:
+func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t: TestRunner) -> void:
 	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
 	var spine_hi := spine_lo + Tuning.STREET_WIDTH * float(Tuning.TILE_SIZE)
 	var size := _city.map.world_size()
@@ -1570,7 +1570,7 @@ func _test_cars_come_out_of_the_tunnel_and_off_the_bridge(t) -> void:
 ## already covers that pair) and read the same way `_test_out_of_bounds_is_blocked_except_a_car_
 ## on_the_spine` does: against `CityMap.in_bounds`, not a pixel tolerance, so a walker standing on
 ## the mountain, the forest or the water band is exactly what fails this.
-func _test_nobody_enters_across_a_plain_edge(t) -> void:
+func _test_nobody_enters_across_a_plain_edge(t: TestRunner) -> void:
 	var spine_lo := _city.map.main_road * CityMap.period() * float(Tuning.TILE_SIZE)
 	var away_from_spine := spine_lo * 0.5
 	var size := _city.map.world_size()
@@ -1609,7 +1609,7 @@ func _test_nobody_enters_across_a_plain_edge(t) -> void:
 ## early exit. Read off the recycles the crowd makes itself, as the bodies that leave a field narrowed
 ## to 250px land again, with the field's own edge pinned 50px from the true one so an entry aimed
 ## this way has exactly that much real room and no more.
-func _test_the_entry_roll_is_kept_inside_its_own_room(t) -> void:
+func _test_the_entry_roll_is_kept_inside_its_own_room(t: TestRunner) -> void:
 	# The crowd's own field is a box of `Tuning.CROWD_FIELD_RADIUS` round the focus, so a focus that
 	# far and 50px in from the west edge puts the box's west edge 50px from the true one: what leaves
 	# the box is recycled and lands again at its west edge heading east.
@@ -1672,7 +1672,7 @@ func _test_the_entry_roll_is_kept_inside_its_own_room(t) -> void:
 ## Read off the recycles the crowd makes itself, as the bodies that leave a box with its north edge
 ## 45px from the true one land again; a city of this test's own, so no other test's closures or seals
 ## can shut the corridors it stands beside and starve it of samples.
-func _test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t) -> void:
+func _test_an_entry_beside_a_plain_edge_keeps_room_for_its_own_picture(t: TestRunner) -> void:
 	# The box's north edge 45px from the true one, as the west edge is 50px in the test above; the
 	# focus is in from the west and east edges as well, so the box is not grown to make up for ground
 	# it hangs over.
@@ -1722,7 +1722,7 @@ func _entry_clearance(agent: CrowdAgent) -> float:
 ## day rather than off a pinned rig, because `setup()`'s own retries depend on the corridors actually
 ## in view rather than on a hand-placed field. A city of its own for the same reason the test above
 ## has one: nothing another test closed or sealed stands in it.
-func _test_day_start_keeps_room_for_its_own_picture(t) -> void:
+func _test_day_start_keeps_room_for_its_own_picture(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Day 7's van gets a second instance on her route, from a rigged bag *(inbox #586 in
 ## olive-hedgehog: "each olive badger rigged bag should be 2 or 3"; inbox #650 in mossy-beaver: "I
@@ -24,7 +24,7 @@ const RUN_SEED := 2
 const ROW := "delivery_van"
 const STEP := 0.1
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var met := 0
 	for seed_value in SEEDS:
 		if _a_mark_puts_a_van_on_her_route(t, seed_value):
@@ -34,7 +34,7 @@ func run(t) -> void:
 	_test_the_van_is_sited_wholly_out_of_the_camera_view(t)
 
 ## Answers whether a second van was put on her route in this city.
-func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
+func _a_mark_puts_a_van_on_her_route(t: TestRunner, seed_value: int) -> bool:
 	var size := ResistanceSteps.VAN_WITHIN_THE_NEXT
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
@@ -190,7 +190,7 @@ func _a_mark_puts_a_van_on_her_route(t, seed_value: int) -> bool:
 ## every third cell of the day's longest route with her walking it either way, its drawing
 ## (`EventFootprints.footprint_of()`, where it is drawn round its feet) against the 640x360 view led
 ## `Stroller.CAMERA_LOOK_AHEAD` along her heading as the camera leads her.
-func _test_the_van_is_sited_wholly_out_of_the_camera_view(t) -> void:
+func _test_the_van_is_sited_wholly_out_of_the_camera_view(t: TestRunner) -> void:
 	var seed_value: int = SEEDS[0]
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)

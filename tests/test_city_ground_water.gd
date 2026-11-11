@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The water a city paints off its map's southern edge, and which ground surface owns it: the shore
 ## the ground keeps resident is water on every cell outside the map and clear of the bridge's
@@ -15,10 +14,10 @@ const GroundCells := preload("res://tests/ground_cells.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const WATER_SEED := 4242
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_water_ownership(t)
 
-func _test_water_ownership(t) -> void:
+func _test_water_ownership(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, WATER_SEED)
 	t.add_child(city)
 	city.build(MapCache.of(WATER_SEED))

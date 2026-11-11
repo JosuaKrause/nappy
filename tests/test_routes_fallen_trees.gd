@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## *(2026-09-11, the player: "fallen trees should only be possible on streets with trees and one
 ## spot should be empty (the fallen tree's spot)".)* A fallen tree only falls where a tree stood,
@@ -16,7 +15,7 @@ const BASE_SEED := 5150
 var _maps: Array[CityMap] = []
 var _plan_cache := {}
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 13))
 	_test_a_fallen_tree_only_falls_where_a_tree_stood(t)
@@ -58,7 +57,7 @@ func _plan_uncached(map: CityMap, day: int) -> Array[RoadClosure]:
 ## the guard at the bottom — some day across the sweep has to have felled a tree — many times over,
 ## and what the loop is actually checking is a **gate** inside `_pick_kind`, asked once per
 ## closure: a weight rather than a gate would have shown up on the first map that felled one.
-func _test_a_fallen_tree_only_falls_where_a_tree_stood(t) -> void:
+func _test_a_fallen_tree_only_falls_where_a_tree_stood(t: TestRunner) -> void:
 	var felled := 0
 	for map: CityMap in _maps.slice(0, 4):
 		var lined := StreetTrees.segment_keys_with_trees(map)
@@ -95,7 +94,7 @@ func _test_a_fallen_tree_only_falls_where_a_tree_stood(t) -> void:
 ## `ClosurePlanner.plan_day()` rolls the kind with the fallen tree gated out, as well as of the days
 ## whose closures are all bare, because a day that happens never to reach a bare street would pass
 ## the second half vacuously.
-func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t) -> void:
+func _test_a_day_with_no_tree_lined_street_still_closes_its_quota(t: TestRunner) -> void:
 	var bare_closures := 0
 	var bare_days := 0
 	for map in _maps:

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The run's flow through its screens (`RunFlow`): what each screen's continue leads to, and that a
 ## continue with no screen up leads nowhere.
@@ -24,7 +24,7 @@ var _home: Node
 ## The run log each boot is handed, open before the boot, whose headers say which walks it began.
 var _run_log: RecordingLog
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_raising_a_brief_announces_it(t)
 	_test_each_screen_continues_to_its_step(t)
 	_test_a_continue_from_a_screen_the_run_has_left_leads_nowhere(t)
@@ -42,7 +42,7 @@ func run(t) -> void:
 # ------------------------------------------------------------ the transitions ---
 
 ## A brief raised tells whoever listens which day or section it leads into, so a dev rig can answer it.
-func _test_raising_a_brief_announces_it(t) -> void:
+func _test_raising_a_brief_announces_it(t: TestRunner) -> void:
 	var flow := RunFlow.new()
 	var heard: Array[DaySpec] = []
 	flow.brief_opened.connect(func(spec: DaySpec) -> void: heard.append(spec))
@@ -54,7 +54,7 @@ func _test_raising_a_brief_announces_it(t) -> void:
 
 ## Every mode's continue: the step `main` carries out, and the mode that step leaves the run in. A
 ## mode with no screen up answers nothing and stays where it is.
-func _test_each_screen_continues_to_its_step(t) -> void:
+func _test_each_screen_continues_to_its_step(t: TestRunner) -> void:
 	var M := RunFlow.Mode
 	var S := RunFlow.Step
 	var cases := [
@@ -83,7 +83,7 @@ func _test_each_screen_continues_to_its_step(t) -> void:
 ## The screen's continue carries the mode it was raised in, and the flow answers by it: a continue
 ## from a screen the run has already left — a day's summary once the next day is being walked, a
 ## run-over screen once the ending is up — leads nowhere and moves nothing.
-func _test_a_continue_from_a_screen_the_run_has_left_leads_nowhere(t) -> void:
+func _test_a_continue_from_a_screen_the_run_has_left_leads_nowhere(t: TestRunner) -> void:
 	var M := RunFlow.Mode
 	for case: Array in [[M.DAY_OVER, M.WALKING], [M.RUN_OVER, M.ENDING], [M.SECTION_LOST, M.BRIEF],
 			[M.BRIEF, M.WALKING]]:
@@ -95,7 +95,7 @@ func _test_a_continue_from_a_screen_the_run_has_left_leads_nowhere(t) -> void:
 
 ## What `DayDirector.finish_day()` settled picks the screen: handed over before gone back before
 ## run over, since one end can carry only one of them, and an ordinary end otherwise.
-func _test_a_day_end_raises_the_screen_its_end_asks_for(t) -> void:
+func _test_a_day_end_raises_the_screen_its_end_asks_for(t: TestRunner) -> void:
 	var M := RunFlow.Mode
 	var ordinary := DayEnd.new()
 	var handed := DayEnd.new()
@@ -113,7 +113,7 @@ func _test_a_day_end_raises_the_screen_its_end_asks_for(t) -> void:
 				% [M.keys()[case[1]], M.keys()[flow.mode]])
 
 ## A lost section's outcome screen retries it; the one that ended the run leads to the ending.
-func _test_a_lost_section_raises_its_outcome_or_ends_the_run(t) -> void:
+func _test_a_lost_section_raises_its_outcome_or_ends_the_run(t: TestRunner) -> void:
 	var flow := RunFlow.new()
 	t.check(flow.section_lost(false) == RunFlow.Step.SHOW_OUTCOME
 			and flow.mode == RunFlow.Mode.SECTION_LOST, "a lost section raises its outcome screen")
@@ -124,7 +124,7 @@ func _test_a_lost_section_raises_its_outcome_or_ends_the_run(t) -> void:
 
 ## A scene recipe is one authored day: whatever screen it ends on, its continue plays the scene
 ## again, a lost section is its runtime's to retry, and its won last day hands over to nothing.
-func _test_an_authored_scene_plays_again_from_every_screen(t) -> void:
+func _test_an_authored_scene_plays_again_from_every_screen(t: TestRunner) -> void:
 	var M := RunFlow.Mode
 	var scene := AuthoredScene.new()
 	for mode: int in [M.BRIEF, M.DAY_OVER, M.BACK_TO_CHECKPOINT, M.INTO_ESCAPE, M.SECTION_LOST,
@@ -146,7 +146,7 @@ func _test_an_authored_scene_plays_again_from_every_screen(t) -> void:
 ## The rest of what an authored scene changes is asked of the flow it configures: the city's map
 ## is the scene's own, and the control lessons are skipped when the scene has learned them. The
 ## game's own run generates its map and teaches.
-func _test_an_authored_scene_configures_the_rest_of_the_run(t) -> void:
+func _test_an_authored_scene_configures_the_rest_of_the_run(t: TestRunner) -> void:
 	var own := RunFlow.new()
 	t.check(not own.authored and own.authored_map() == null and not own.lessons_learned(),
 			"the game's own run is configured by no scene")
@@ -171,7 +171,7 @@ class _LearnedScene extends AuthoredScene:
 	func lessons_learned() -> bool:
 		return true
 
-func _test_only_a_run_stands_behind_its_own_escape(t) -> void:
+func _test_only_a_run_stands_behind_its_own_escape(t: TestRunner) -> void:
 	var O := RunFlow.Opening
 	for case: Array in [[O.FRESH, false], [O.RESUMED, false], [O.CARRIED_FROM_CHECKPOINT, false],
 			[O.ESCAPE_HANDED_OVER, true], [O.ESCAPE_RESUMED, true], [O.ESCAPE_BY_FLAG, false]]:
@@ -181,7 +181,7 @@ func _test_only_a_run_stands_behind_its_own_escape(t) -> void:
 				% [O.keys()[case[0]], "has" if case[1] else "has no"])
 
 ## Esc does not open over a section's brief or the epilogue, and does over a day's brief.
-func _test_the_escape_screens_hold_esc_back_only_in_a_section(t) -> void:
+func _test_the_escape_screens_hold_esc_back_only_in_a_section(t: TestRunner) -> void:
 	var M := RunFlow.Mode
 	var section := DaySpec.for_section(DaySpec.Section.BUILDING, 180.0, "Escape the building")
 	for case: Array in [[section, M.BRIEF, true], [section, M.EPILOGUE, true],
@@ -198,7 +198,7 @@ func _test_the_escape_screens_hold_esc_back_only_in_a_section(t) -> void:
 ## begun, its world as it stands with whether it is a retry, and planned with that world once the
 ## director has started it. An authored scene's walk is never announced planned, and what its setup
 ## could not stand is handed back.
-func _test_the_observers_hear_the_spec_begun_and_planned(t) -> void:
+func _test_the_observers_hear_the_spec_begun_and_planned(t: TestRunner) -> void:
 	var run := RunState.new()
 	var scene := AuthoredScene.new()
 	for authored: bool in [false, true]:
@@ -254,7 +254,7 @@ class _HeardDirector extends DayDirector:
 ## **Booted and driven as a player drives it** (`tests/booted_main.gd`): the screens are read off
 ## what they show (the summary up, its continue shown or not, the day's clock running) and pressed
 ## through the viewport, the tap on the continue button and the key as an action event.
-func _test_a_tap_then_a_key_continue_once(t) -> void:
+func _test_a_tap_then_a_key_continue_once(t: TestRunner) -> void:
 	var booted: Boot.Booted = await _boot(t, ["--no-title"])
 	var main := booted.main
 	var day := Boot.day(main)
@@ -292,7 +292,7 @@ func _test_a_tap_then_a_key_continue_once(t) -> void:
 ## A hard run's last nerve: the run-over screen's continue raises the ending, and the tap's own
 ## continue must not then reach the ending and restart the run before it has been seen. The ending
 ## is the summary with no continue on it (`DaySummary.show_summary()` hides it on an ending).
-func _test_a_tap_then_a_key_on_the_run_over_screen_show_the_ending(t) -> void:
+func _test_a_tap_then_a_key_on_the_run_over_screen_show_the_ending(t: TestRunner) -> void:
 	var booted: Boot.Booted = await _boot(t, ["--no-title"])
 	var main := booted.main
 	var reloads: Array[int] = []
@@ -311,7 +311,7 @@ func _test_a_tap_then_a_key_on_the_run_over_screen_show_the_ending(t) -> void:
 
 ## A lost section's retry comes up behind its brief (PLAYTEST-94 10), and the tap's own continue
 ## must not then reach that brief and start the retry before it has been read.
-func _test_a_tap_then_a_key_on_a_lost_section_show_the_retry_brief(t) -> void:
+func _test_a_tap_then_a_key_on_a_lost_section_show_the_retry_brief(t: TestRunner) -> void:
 	var booted: Boot.Booted = await _boot(t, ["--start-escape", "city"])
 	var main := booted.main
 	var summary := Boot.summary(main)
@@ -343,7 +343,7 @@ func _test_a_tap_then_a_key_on_a_lost_section_show_the_retry_brief(t) -> void:
 
 ## The real `main.tscn` on `SEED` with `args`, unsaved and uncounted, once its boot has finished
 ## (its first day running, or behind its brief), with the tree paused as a screen leaves it.
-func _boot(t, args: Array) -> Boot.Booted:
+func _boot(t: TestRunner, args: Array) -> Boot.Booted:
 	_saved_paused = t.get_tree().paused
 	t.get_tree().paused = true
 	var words := ["--seed", str(SEED)]
@@ -363,7 +363,7 @@ func _boot(t, args: Array) -> Boot.Booted:
 ## A tap on the continue button, then a key inside the two frames the tap's acknowledgement holds
 ## open, both pushed through the viewport, then long enough for the tap's own continue to come due.
 ## The screen is let lay itself out first, so the button stands where it is drawn.
-func _tap_then_key(t, main: Node2D) -> void:
+func _tap_then_key(t: TestRunner, main: Node2D) -> void:
 	var summary := Boot.summary(main)
 	await UI.frames(t)
 	UI.push(summary, UI.touch_at(UI.centre(UI.button(summary, "Continue")), true))
@@ -388,7 +388,7 @@ func _continue_shown(main: Node2D) -> bool:
 	return UI.button(Boot.summary(main), "Continue").is_visible_in_tree()
 
 ## `count` physics ticks, waited on.
-func _physics_frames(t, count: int) -> void:
+func _physics_frames(t: TestRunner, count: int) -> void:
 	for _tick in count:
 		await t.get_tree().physics_frame
 
@@ -401,7 +401,7 @@ func _walks_begun() -> Array[String]:
 			begun.append(line)
 	return begun
 
-func _shut_down(t, booted: Boot.Booted) -> void:
+func _shut_down(t: TestRunner, booted: Boot.Booted) -> void:
 	booted.free_all()
 	_run_log.free()
 	_home.free()

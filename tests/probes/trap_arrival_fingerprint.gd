@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Every start the resistance director picks for a pursuer it sends at her, printed one line
 ## each**, so a change to how a start is sited can be shown to pick exactly what it picked before:
@@ -36,7 +35,7 @@ const STEP := 1.0 / 60.0
 
 var _lines: Array[String] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var printed := 0
 	for seed_value in SEEDS:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
@@ -48,7 +47,7 @@ func run(t) -> void:
 	print("TA_TOTAL %d lines" % printed)
 	t.check(printed > 0, "there were starts to print (%d)" % printed)
 
-func _a_day(t, city: City, seed_value: int, day: int) -> int:
+func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 	var finale := day == Tuning.RUN_LENGTH_DAYS
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():

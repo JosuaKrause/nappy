@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Every placement a walk starts with, printed one line each**, so a change to how a walk is
 ## planned can be shown to place exactly what it placed before: the row, where it stands (tile and
@@ -28,7 +27,7 @@ const BUILDING_SEEDS: Array[int] = [4242, 1, 77]
 const DAY_SEEDS: Array[int] = [4242, 77]
 const DAYS: Array[int] = [1, 4, 8, 9, 10, 12, 14]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var lines := 0
 	for seed_value in ESCAPE_SEEDS:
 		for day in ESCAPE_DAYS:
@@ -43,7 +42,7 @@ func run(t) -> void:
 
 ## The escape's city, built as `main._build_the_escape_city()` does and dressed and planned as
 ## `DayDirector.start()` does.
-func _the_escape_city(t, seed_value: int, day: int) -> int:
+func _the_escape_city(t: TestRunner, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	city.run.header.day = day
@@ -61,7 +60,7 @@ func _the_escape_city(t, seed_value: int, day: int) -> int:
 	return printed
 
 ## The building, with its events started as every entry into the section starts them.
-func _the_building(t, seed_value: int) -> int:
+func _the_building(t: TestRunner, seed_value: int) -> int:
 	var own_run := RunState.new()
 	own_run.start_run(seed_value)
 	own_run.header.day = Tuning.RUN_LENGTH_DAYS
@@ -75,7 +74,7 @@ func _the_building(t, seed_value: int) -> int:
 	return printed
 
 ## A day, as `DayDirector.start()` plans it: the city's own morning, then the events.
-func _a_day(t, seed_value: int, day: int) -> int:
+func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_day(day)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	city.run.header.day = day

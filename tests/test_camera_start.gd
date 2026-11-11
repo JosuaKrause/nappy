@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The map's top-left corner must never show for a moment when a run starts — PLAYTEST-76: "when
 ## starting the game I can briefly see the top left of the map." The world's origin is the map's
@@ -27,14 +27,14 @@ const MapCache := preload("res://tests/city_map_cache.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_camera_start_scratch.json"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t)
 	await _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t)
 
 ## The real `main.tscn` handed a scratch save, `config` and a run of its own (parked in a home the
 ## test frees), put in the tree and left at the boot's first suspension: the frame the boot camera
 ## draws.
-func _start_a_boot(t, config: RunConfig) -> Array:
+func _start_a_boot(t: TestRunner, config: RunConfig) -> Array:
 	var save := GameSave.new(_SCRATCH_SAVE)
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
@@ -57,7 +57,7 @@ func _end_the_boot(boot: Array) -> void:
 ## Boots for real, checks the frame the bug lived on, then lets the boot finish and checks the two
 ## frames PLAYTEST-76's own entry named as candidates: the first with the run started, and the
 ## first after the title's disc is pressed.
-func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
+func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t: TestRunner) -> void:
 	var boot := _start_a_boot(t, Boot.config([]))
 	var main: Node2D = boot[0]
 
@@ -124,7 +124,7 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 ## halves — the box and the camera — have something to correct. After a reload the box would
 ## already be the rotated one, which leaves only the camera wrong; the camera's assertion is that
 ## case.
-func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t) -> void:
+func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t: TestRunner) -> void:
 	var window: Window = t.get_tree().root
 	var saved_size := window.size
 	var saved_box := window.content_scale_size

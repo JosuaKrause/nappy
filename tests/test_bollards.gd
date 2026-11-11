@@ -28,7 +28,7 @@ const ROW_ALONG := 1488.0
 const ROW_ACROSS_FIRST := 4996.0
 const ROW_POSTS := 5
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_only_the_bollard_has_a_body(t)
 	_test_the_post_body_is_its_drawn_ground_contact(t)
 	_test_every_gap_is_narrower_than_her_body(t)
@@ -36,14 +36,14 @@ func run(t) -> void:
 	_test_the_row_stops_her_at_a_diagonal_from_every_offset(t)
 	_test_holding_a_diagonal_never_gets_her_past_the_row(t)
 
-func _prop(t, kind: Prop.Kind, at := Vector2.ZERO) -> Prop:
+func _prop(t: TestRunner, kind: Prop.Kind, at := Vector2.ZERO) -> Prop:
 	var prop := Prop.new()
 	prop.kind = kind
 	prop.position = at
 	t.add_child(prop)
 	return prop
 
-func _test_only_the_bollard_has_a_body(t) -> void:
+func _test_only_the_bollard_has_a_body(t: TestRunner) -> void:
 	for kind in [Prop.Kind.TREE, Prop.Kind.STREET_TREE, Prop.Kind.SACK, Prop.Kind.SACK_PILE]:
 		var prop := _prop(t, kind)
 		t.check(prop.body_shape() == null,
@@ -53,7 +53,7 @@ func _test_only_the_bollard_has_a_body(t) -> void:
 	t.check(post.body_shape() != null, "a bollard has a body")
 	post.free()
 
-func _test_the_post_body_is_its_drawn_ground_contact(t) -> void:
+func _test_the_post_body_is_its_drawn_ground_contact(t: TestRunner) -> void:
 	var post := _prop(t, Prop.Kind.BOLLARD)
 	var circle := post.body_shape() as CircleShape2D
 	t.check(circle != null and is_equal_approx(circle.radius, Prop.bollard_shape().radius),
@@ -70,7 +70,7 @@ func _row() -> Dictionary:
 
 ## A gap between two posts is narrower than her body, which is the guarantee between the post's size,
 ## its spacing and her body that makes a row a wall: nothing is asked of a map.
-func _test_every_gap_is_narrower_than_her_body(t) -> void:
+func _test_every_gap_is_narrower_than_her_body(t: TestRunner) -> void:
 	var post := _prop(t, Prop.Kind.BOLLARD)
 	var post_radius: float = Prop.bollard_shape().radius
 	post.free()
@@ -82,7 +82,7 @@ func _test_every_gap_is_narrower_than_her_body(t) -> void:
 
 ## Sweeps a copy of her real rig from `from` along `heading` for `distance`, with the pram body on
 ## her circumference as `_physics_process()` puts it; returns how far she got.
-func _walk(t, from: Vector2, heading: Vector2, distance: float, facing := Vector2.ZERO) -> float:
+func _walk(t: TestRunner, from: Vector2, heading: Vector2, distance: float, facing := Vector2.ZERO) -> float:
 	if facing == Vector2.ZERO:
 		facing = heading
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
@@ -101,7 +101,7 @@ func _walk(t, from: Vector2, heading: Vector2, distance: float, facing := Vector
 	player.free()
 	return walked
 
-func _test_the_row_stops_her_and_the_pavement_does_not(t) -> void:
+func _test_the_row_stops_her_and_the_pavement_does_not(t: TestRunner) -> void:
 	var made := _row_with_posts(t)
 	var holder: Node2D = made[0]
 	var row: Dictionary = made[1]
@@ -130,7 +130,7 @@ func _test_the_row_stops_her_and_the_pavement_does_not(t) -> void:
 	holder.free()
 
 ## The posts of the row, `holder` holding them, and the row.
-func _row_with_posts(t) -> Array:
+func _row_with_posts(t: TestRunner) -> Array:
 	var row := _row()
 	var holder := Node2D.new()
 	t.add_child(holder)
@@ -144,7 +144,7 @@ func _row_with_posts(t) -> Array:
 ## Her facing follows the input, not her velocity, so the pram circle can sit 45 degrees off the
 ## way she moves. From every offset across the band, straight at the row or at 30 or 45 degrees
 ## either side of it, she is stopped before the row.
-func _test_the_row_stops_her_at_a_diagonal_from_every_offset(t) -> void:
+func _test_the_row_stops_her_at_a_diagonal_from_every_offset(t: TestRunner) -> void:
 	var made := _row_with_posts(t)
 	var holder: Node2D = made[0]
 	var row: Dictionary = made[1]
@@ -171,7 +171,7 @@ func _test_the_row_stops_her_at_a_diagonal_from_every_offset(t) -> void:
 ## Holding a diagonal, a slide loop like `move_and_slide()`'s from many offsets across the band:
 ## she gets past the row only by sliding along it and round its end onto the pavement, never
 ## through it. Her facing is the held diagonal.
-func _test_holding_a_diagonal_never_gets_her_past_the_row(t) -> void:
+func _test_holding_a_diagonal_never_gets_her_past_the_row(t: TestRunner) -> void:
 	var made := _row_with_posts(t)
 	var holder: Node2D = made[0]
 	var row: Dictionary = made[1]

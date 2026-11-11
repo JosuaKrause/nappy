@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `RegionPlanner`: the lattice's junctions partition into `Tuning.REGION_COUNT` regions at
 ## generation, and from `Tuning.REGION_WALL_FIRST_DAY` a day's `RouteTree` turns the permanent
@@ -30,7 +30,7 @@ const BASE_SEED := 260917
 
 var _maps: Array[CityMap] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 137))
 	_test_partition_covers_every_real_junction(t)
@@ -143,7 +143,7 @@ func _alley_mouth_tiles(map: CityMap, rect: Rect2i, vertical: bool, at_start: bo
 ## contradiction on its own — a tiny or unusually shaped lattice could legitimately grow fewer —
 ## but this project's fixed 11×11 lattice and four regions leaves ample room, so the sweep asserts
 ## the number rather than merely a floor.
-func _test_partition_covers_every_real_junction(t) -> void:
+func _test_partition_covers_every_real_junction(t: TestRunner) -> void:
 	var sizes_report: Array[String] = []
 	for map in _maps:
 		var seen := {}
@@ -168,7 +168,7 @@ func _test_partition_covers_every_real_junction(t) -> void:
 
 ## The same seed assigns the same regions twice — a run is learnable or it is nothing, the same
 ## reason every other planner in `src/routes/` is deterministic from its seed.
-func _test_assignment_is_deterministic(t) -> void:
+func _test_assignment_is_deterministic(t: TestRunner) -> void:
 	for map in _maps:
 		var rng_a := RandomNumberGenerator.new()
 		rng_a.seed = hash("regions:%d" % map.seed_used)
@@ -191,7 +191,7 @@ func _wall_street_keys(map: CityMap) -> Dictionary:
 
 ## A calm area's own access segments are never boundary segments — a boundary through a park's
 ## frontage would wall off half a destination, which is a region edge affecting a path.
-func _test_calm_atoms_are_never_boundary(t) -> void:
+func _test_calm_atoms_are_never_boundary(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		for area in ClosurePlanner.calm_areas(map):
@@ -202,7 +202,7 @@ func _test_calm_atoms_are_never_boundary(t) -> void:
 						% [map.seed_used, area.block, segment.key()])
 	t.check(checked > 0, "at least one calm area's access street was checked (%d)" % checked)
 
-func _test_the_home_street_is_never_boundary(t) -> void:
+func _test_the_home_street_is_never_boundary(t: TestRunner) -> void:
 	for map in _maps:
 		var home := ClosurePlanner.home_street(map)
 		t.check(home != null, "seed %d: the front door opens onto a street" % map.seed_used)
@@ -213,7 +213,7 @@ func _test_the_home_street_is_never_boundary(t) -> void:
 
 ## Every street along a precinct span's own corridor is interior to one region — cutting one would
 ## wall off half a place the player is told how to find.
-func _test_precinct_spans_are_never_boundary(t) -> void:
+func _test_precinct_spans_are_never_boundary(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		for span: Vector4i in map.precinct_spans:
@@ -249,7 +249,7 @@ func _wall_at_a(map: CityMap, segment: StreetNetwork.Segment) -> bool:
 ## listed alley's two ends lie in different regions' floods, so none is listed that does not cross.
 ## A boundary segment's own walled mouth tiles are excluded from the per-tile check: they are
 ## blocked ground, reached from neither side.
-func _test_flood_matches_the_partition(t) -> void:
+func _test_flood_matches_the_partition(t: TestRunner) -> void:
 	var checked_cells := 0
 	var listed_alleys := 0
 	for map in _maps:
@@ -329,7 +329,7 @@ func _alley_end_tiles(rect: Rect2i) -> Array[Vector2i]:
 
 # ---------------------------------------------------------------------------- the day ---
 
-func _test_no_wall_before_the_first_day(t) -> void:
+func _test_no_wall_before_the_first_day(t: TestRunner) -> void:
 	for map in _maps:
 		for day in range(1, Tuning.REGION_WALL_FIRST_DAY):
 			_repaint_for(map, day)
@@ -348,7 +348,7 @@ func _test_no_wall_before_the_first_day(t) -> void:
 ## Also measures how often a calm-less region gets a door at all (the tree crossing it, which the
 ## milestone's decree says must win when it happens) and every region the day's tree actually
 ## reaches a calm area in is reached from the doorstep once only the doors are open.
-func _test_the_day_plan_shape(t) -> void:
+func _test_the_day_plan_shape(t: TestRunner) -> void:
 	var sampled_days := 0
 	var total_walls := 0
 	var total_doors := 0
@@ -437,7 +437,7 @@ func _test_the_day_plan_shape(t) -> void:
 ## is what `_test_flood_matches_the_partition` holds, by blocking exactly these alleys' mouths and
 ## flooding the ground. Also counts how many alleys the day lists, the measurement the coordinator
 ## asked the generation-time pass to report.
-func _test_crossing_alleys_are_consistent(t) -> void:
+func _test_crossing_alleys_are_consistent(t: TestRunner) -> void:
 	var crossing_alleys := 0
 	for map in _maps:
 		for day in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
@@ -471,7 +471,7 @@ func _test_crossing_alleys_are_consistent(t) -> void:
 ## (a roadblock's 60px reaches roughly two tiles along the street, wide enough to cover an alley
 ## mouth at offset 4 outright). Checked against **every** alley, not only crossings, since the
 ## concern is a segment wall body bleeding sideways into unrelated ground.
-func _test_wall_bodies_never_cover_an_alley_mouth(t) -> void:
+func _test_wall_bodies_never_cover_an_alley_mouth(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		var alley_mouth_tiles := {}
@@ -509,7 +509,7 @@ func _test_wall_bodies_never_cover_an_alley_mouth(t) -> void:
 ## sidewalk — and the two sidewalk ones keep `EventDef.guard_sides`' own default (`[-1, 1]`, two
 ## each) while the road body between them (`bodies.size() / 2`, the same middle index
 ## `RegionPlanner._add_door_bodies` reads its `road_index` from) is empty.
-func _test_wall_crossing_posts_four_guards(t) -> void:
+func _test_wall_crossing_posts_four_guards(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		for day in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
@@ -556,7 +556,7 @@ func _test_wall_crossing_posts_four_guards(t) -> void:
 ## guard's own feet (`EventFootprints.guard_post_offset()`, at the mouth's own `runs_vertically()`
 ## reading) fall on the far side of the alley's own long-axis extent from its interior, at both
 ## mouths.
-func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
+func _test_alley_wall_bodies_post_one_guard_each(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		for day in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
@@ -609,7 +609,7 @@ func _test_alley_wall_bodies_post_one_guard_each(t) -> void:
 ## the alley's own width, so this checks the drawn extent (`2 * obstructs_radius`, what
 ## `SpreadLook._draw_spread` actually paints) stays within the alley's own tile rect on the
 ## across-alley axis — no tolerance needed, since the fit is exact rather than merely close.
-func _test_alley_wall_bodies_fit_their_own_mouth(t) -> void:
+func _test_alley_wall_bodies_fit_their_own_mouth(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		for day in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS]:
@@ -657,7 +657,7 @@ func _test_alley_wall_bodies_fit_their_own_mouth(t) -> void:
 ## already sweep at their own seed counts, and the measured rate is a rate over (seed, day) pairs
 ## rather than over layouts, so three maps' worth of fourteen days is already the wide sample it
 ## wants.
-func _test_winnability_holds_with_the_wall_standing(t) -> void:
+func _test_winnability_holds_with_the_wall_standing(t: TestRunner) -> void:
 	var without_main_road_days := 0
 	var without_main_road_held := 0
 	for map: CityMap in _maps.slice(0, RULE_SEEDS):
@@ -714,7 +714,7 @@ func _test_winnability_holds_with_the_wall_standing(t) -> void:
 ## a time — "this segment is not a boundary segment" — not a fact about the layout underneath it, so
 ## three maps' fourteen days each is a wide sample of the gate and a fourth map asks it again rather
 ## than asking something new.
-func _test_closures_and_seals_never_land_on_a_boundary(t) -> void:
+func _test_closures_and_seals_never_land_on_a_boundary(t: TestRunner) -> void:
 	for map: CityMap in _maps.slice(0, RULE_SEEDS):
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			_repaint_for(map, day)

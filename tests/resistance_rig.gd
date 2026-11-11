@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What the resistance suites share** (`tests/test_resistance_*.gd`): the city each builds, the
 ## director over it, and the walks, views and sweeps more than one of them drives. A helper, not a
@@ -48,7 +47,7 @@ var _player: Stroller
 
 var _contact: ContactPoint
 
-func _build_pickup(t, step_index: int) -> void:
+func _build_pickup(t: TestRunner, step_index: int) -> void:
 	_player = Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -67,7 +66,7 @@ func _build_pickup(t, step_index: int) -> void:
 ## `_physics_process()` once — a contact asks whether she is touching it — before the test reads on.
 ## `physics_frame` is emitted before the nodes take their step, so the process frame is what says
 ## the step has been taken.
-func _step_a_frame(t) -> void:
+func _step_a_frame(t: TestRunner) -> void:
 	await t.get_tree().physics_frame
 	await t.get_tree().process_frame
 
@@ -83,7 +82,7 @@ var _city: City
 ## The city of `seed_value` in a run of its own, which it hands to every director built over it
 ## (`_director()`): the run starts fresh, with no step done, no alley used and no scar, and the test
 ## sets whatever else the day it asks about needs on it. Returns the run.
-func _build_city_in_a_new_run(t, seed_value := SEED) -> RunState:
+func _build_city_in_a_new_run(t: TestRunner, seed_value := SEED) -> RunState:
 	_free_city()
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
@@ -124,7 +123,7 @@ func _would_show(box: Rect2, at: Vector2) -> bool:
 ## for a rig that hands nothing.
 var _handed_atlas: AtlasLibrary = null
 
-func _director(t) -> ResistanceDirector:
+func _director(t: TestRunner) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
@@ -156,7 +155,7 @@ func _completed_through(last_index: int) -> Array[int]:
 ## need, since `start_day()` alone only ever offers a mark (`ResistanceSteps.for_day()`). Returns
 ## the director with step 2 (the yeller perform) already active: the mark is read with nobody in
 ## the world (`_read_the_mark()`).
-func _director_on_the_yeller_perform(t, seed_value := SEED) -> ResistanceDirector:
+func _director_on_the_yeller_perform(t: TestRunner, seed_value := SEED) -> ResistanceDirector:
 	var director := _director(t)
 	director.start_day(6, _rng(6, "resistance", seed_value), 300.0)
 	_read_the_mark(director)
@@ -218,7 +217,7 @@ func _all_but_the_finale() -> Array[int]:
 
 ## Same shape `_build_pickup` uses for a bare `ContactPoint` — a real `Stroller`, physics off,
 ## which the caller hands to its director (`ResistanceDirector.use_player()`), as `main` does.
-func _rig_player(t, at: Vector2) -> Stroller:
+func _rig_player(t: TestRunner, at: Vector2) -> Stroller:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -275,7 +274,7 @@ func _marks_guard_feet() -> Vector2:
 ## it did not move) and the guard's feet after it (`_marks_guard_feet()`). The relocation is the one
 ## placement a tick makes, so a sweep asks the director's rule of a hundred tiles in a few
 ## milliseconds; the city is the test's, freed by the next build or `_free_city()`.
-func _relocations_over_the_marks(t, seed_value: int, her_at: Callable) -> Array[Dictionary]:
+func _relocations_over_the_marks(t: TestRunner, seed_value: int, her_at: Callable) -> Array[Dictionary]:
 	var run := _build_city_in_a_new_run(t, seed_value)
 	run.resistance.completed_steps = _completed_through(2)
 	_look_at(Rect2())
@@ -418,7 +417,7 @@ func _run_the_traps_warning(row_id: String, her: Vector2) -> float:
 
 ## A day-10 director with the mark touched: the neighbor out in the city, walking home. Planned
 ## through the real day order, since the walk is stated over the day's own closures and bodies.
-func _director_on_the_neighbor(t) -> ResistanceDirector:
+func _director_on_the_neighbor(t: TestRunner) -> ResistanceDirector:
 	var day := ResistanceHappenings.NEIGHBOR_DAY
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, day)
@@ -443,7 +442,7 @@ func _warning_for(events: EventManager, id: String) -> PendingWarning:
 ## reachable from home under the day's whole obstruction, `_day_reachability()`) and standing at its
 ## centre for a physics frame completes today's contact (`ContactTouches.touches_from()`). On
 ## `in_city`, or the test city.
-func _touched_from_standable_ground(t, director: ResistanceDirector, item: Vector2,
+func _touched_from_standable_ground(t: TestRunner, director: ResistanceDirector, item: Vector2,
 		in_city: City = null) -> bool:
 	var city := in_city if in_city else _city
 	var map := city.map
@@ -535,7 +534,7 @@ func _paths_reach_between(director: ResistanceDirector, her: Vector2, near: floa
 ## `seed_value`, and reads the day's mark standing on it with her screen the view around her:
 ## `[director with the task active, the mark's position, her rig]`. With `trace_into`, the director
 ## is handed a trace that records its lines there, from the day's start.
-func _read_the_mark_on(t, day: int, seed_value: int, trace_into: Array[String] = []) -> Array:
+func _read_the_mark_on(t: TestRunner, day: int, seed_value: int, trace_into: Array[String] = []) -> Array:
 	var run: RunState = _city.run
 	run.resistance.completed_steps = _completed_through(2 * (day - 6))
 	run.facts.completed_resistance_alley_tiles = []

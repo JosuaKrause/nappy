@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `DebugLayers` (M104, "the debug view") and the two pieces of it that sit outside that one class:
 ## `GroundShape.shadow_outline()`, which `draw_shadow()` now draws from directly, and
@@ -10,7 +10,7 @@ extends RefCounted
 ## the node the readout names and the keys are real events pushed through the viewport; whether a
 ## layer asks to be redrawn is counted in the draws it gets over real frames.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_shadow_outline_matches_a_points_ellipse(t)
 	_test_shadow_outline_matches_a_segments_hull(t)
 	_test_shadow_outline_matches_a_rectangles_squashed_corners(t)
@@ -40,7 +40,7 @@ func _bounds(points: PackedVector2Array) -> Rect2:
 		rect = rect.expand(point)
 	return rect
 
-func _test_shadow_outline_matches_a_points_ellipse(t) -> void:
+func _test_shadow_outline_matches_a_points_ellipse(t: TestRunner) -> void:
 	var shape := GroundShape.point(10.0)
 	var bounds := _bounds(shape.shadow_outline(Vector2(40.0, 20.0)))
 	t.close_to(bounds.size.x, 20.0, "a point's shadow is as wide as its own diameter", 0.5)
@@ -50,7 +50,7 @@ func _test_shadow_outline_matches_a_points_ellipse(t) -> void:
 	t.close_to(bounds.get_center().x, 40.0, "centred on the position it was asked to draw at", 0.5)
 	t.close_to(bounds.get_center().y, 20.0, "on both axes", 0.5)
 
-func _test_shadow_outline_matches_a_segments_hull(t) -> void:
+func _test_shadow_outline_matches_a_segments_hull(t: TestRunner) -> void:
 	var shape := GroundShape.segment(20.0, 6.0)
 	var bounds := _bounds(shape.shadow_outline(Vector2.ZERO, Vector2.RIGHT))
 	t.close_to(bounds.size.x, 2.0 * (20.0 + 6.0),
@@ -66,7 +66,7 @@ func _test_shadow_outline_matches_a_segments_hull(t) -> void:
 			1.0)
 	t.close_to(vertical_bounds.size.x, 2.0 * 6.0, "and the across measurement follows", 1.0)
 
-func _test_shadow_outline_matches_a_rectangles_squashed_corners(t) -> void:
+func _test_shadow_outline_matches_a_rectangles_squashed_corners(t: TestRunner) -> void:
 	var shape := GroundShape.rect(Vector2(30.0, 10.0))
 	var points := shape.shadow_outline(Vector2.ZERO, Vector2.RIGHT)
 	t.check(points.size() == 4, "a rectangle's shadow outline is exactly its four corners")
@@ -79,7 +79,7 @@ func _test_shadow_outline_matches_a_rectangles_squashed_corners(t) -> void:
 # The fields layer's own geometry — the same `Field.falloff()` prices, so a screenshot of this
 # layer cannot disagree with the meter. See docs/TODO.md, M61, "the field, the shadow and the body".
 
-func _test_field_outline_of_a_stationary_point_is_a_circle(t) -> void:
+func _test_field_outline_of_a_stationary_point_is_a_circle(t: TestRunner) -> void:
 	var shape := GroundShape.point(9.0)
 	var points := shape.field_outline(Vector2(20.0, 5.0), Vector2.RIGHT, Vector2.ZERO, 50.0)
 	var bounds := _bounds(points)
@@ -90,7 +90,7 @@ func _test_field_outline_of_a_stationary_point_is_a_circle(t) -> void:
 	t.close_to(bounds.get_center().x, 20.0, "centred on the emitter itself", 1.0)
 	t.close_to(bounds.get_center().y, 5.0, "on both axes", 1.0)
 
-func _test_field_outline_of_a_stationary_segment_is_a_stadium(t) -> void:
+func _test_field_outline_of_a_stationary_segment_is_a_stadium(t: TestRunner) -> void:
 	var shape := GroundShape.segment(40.0, 24.0)
 	var points := shape.field_outline(Vector2.ZERO, Vector2.RIGHT, Vector2.ZERO, 50.0)
 	var bounds := _bounds(points)
@@ -106,7 +106,7 @@ func _test_field_outline_of_a_stationary_segment_is_a_stadium(t) -> void:
 ## `level * Field.scale(e)` dead ahead (sample zero), further than `level` rather than equal
 ## to it — the picture `DebugLayers`' layer `1` draws has to agree with the same growth the meter
 ## prices.
-func _test_field_outline_of_a_moving_point_is_the_eccentric_ellipse(t) -> void:
+func _test_field_outline_of_a_moving_point_is_the_eccentric_ellipse(t: TestRunner) -> void:
 	var speed := 130.0
 	var velocity := Vector2(speed, 0.0)
 	var level := 100.0
@@ -136,19 +136,19 @@ func _layers(raw: String) -> Array[int]:
 	return RunConfig.parse(PackedStringArray(["--layers", raw]), "", true).layers_override
 
 
-func _test_parse_layers_reads_a_comma_list(t) -> void:
+func _test_parse_layers_reads_a_comma_list(t: TestRunner) -> void:
 	var result := _layers("1,3")
 	t.check(result == [1, 3], "the two named layers, in the order given")
 	t.check(_layers("") == [], "an empty value asks for nothing")
 
-func _test_parse_layers_drops_malformed_entries_without_crashing(t) -> void:
+func _test_parse_layers_drops_malformed_entries_without_crashing(t: TestRunner) -> void:
 	t.check(_layers("1,x,2") == [1, 2],
 			"a non-numeric entry is dropped, not a crash or an empty result")
 	t.check(_layers("1,9,0") == [1],
 			"an out-of-range entry (there is no layer 9 or 0 to set) is dropped the same way")
 	t.check(_layers("2,2") == [2], "a repeated entry is not added twice")
 
-func _test_apply_initial_state_sets_only_the_listed_layers(t) -> void:
+func _test_apply_initial_state_sets_only_the_listed_layers(t: TestRunner) -> void:
 	var layers := DebugLayers.new()
 	layers.apply_initial_state([1, 3])
 	t.check(layers.layer_on(1) and not layers.layer_on(2) and layers.layer_on(3),
@@ -175,7 +175,7 @@ class Rig:
 	var city := City.new()
 	var run := RunState.new()
 
-	func _init(t, config: RunConfig) -> void:
+	func _init(t: TestRunner, config: RunConfig) -> void:
 		t.add_child(layer)
 		layer.add_child(label)
 		readout.setup(config, label, layer, run.header, null, Callable())
@@ -199,7 +199,7 @@ func _config(words: Array, debug_build: bool, query := "") -> RunConfig:
 func _all_off(layers: DebugLayers) -> bool:
 	return not layers.layer_on(1) and not layers.layer_on(2) and not layers.layer_on(3)
 
-func _test_no_layer_node_exists_outside_a_debug_build(t) -> void:
+func _test_no_layer_node_exists_outside_a_debug_build(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], false))
 	t.check(rig.layers() == null,
 			"a release build never builds the layer node at all, not merely leaves it invisible")
@@ -210,7 +210,7 @@ func _test_no_layer_node_exists_outside_a_debug_build(t) -> void:
 ## release page's own `?debug=1&layers=1,3` needs somewhere to draw into — but every geometry layer
 ## still starts off, exactly as an unflagged debug run's own default, because `layers_override`
 ## itself is empty without `?layers=` named.
-func _test_the_readout_flag_alone_builds_the_node_with_every_layer_off(t) -> void:
+func _test_the_readout_flag_alone_builds_the_node_with_every_layer_off(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], false, "?debug=1"))
 	t.check(rig.layers() != null,
 			"?debug=1 builds the layer node so a release page's own ?layers= has somewhere to draw")
@@ -218,7 +218,7 @@ func _test_the_readout_flag_alone_builds_the_node_with_every_layer_off(t) -> voi
 			"and every geometry layer starts off, since ?layers= itself named none")
 	rig.free_all()
 
-func _test_a_debug_build_builds_the_layers_off_by_default(t) -> void:
+func _test_a_debug_build_builds_the_layers_off_by_default(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], true))
 	var layers := rig.layers()
 	t.check(layers != null and layers.get_parent() == rig.readout,
@@ -229,7 +229,7 @@ func _test_a_debug_build_builds_the_layers_off_by_default(t) -> void:
 
 ## The flag the player types reaches the node: `--layers 1,3` on a debug build starts exactly those
 ## on.
-func _test_the_layers_flag_starts_only_the_listed_layers_on(t) -> void:
+func _test_the_layers_flag_starts_only_the_listed_layers_on(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config(["--layers", "1,3"], true))
 	var layers := rig.layers()
 	t.check(layers != null and layers.layer_on(1) and not layers.layer_on(2) and layers.layer_on(3),
@@ -249,7 +249,7 @@ func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
 ## `1` fields, `2` shadows, `3` bounding boxes, `4` the readout, `5` the routes and `6` the frame
 ## graph, and nothing else is a layer key. Each key is pressed alone from a state with everything
 ## off, and what it turned on is the one thing that changed.
-func _test_the_layer_keys_resolve_to_their_own_layer(t) -> void:
+func _test_the_layer_keys_resolve_to_their_own_layer(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], true))
 	rig.readout.draw_routes(rig.city.map)
 	var routes := rig.readout.get_node("RouteLines") as RouteLines
@@ -276,7 +276,7 @@ func _test_the_layer_keys_resolve_to_their_own_layer(t) -> void:
 			"a seventh key answers nothing")
 	rig.free_all()
 
-func _test_a_release_or_an_echo_toggles_nothing(t) -> void:
+func _test_a_release_or_an_echo_toggles_nothing(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], true))
 	var layers := rig.layers()
 	UI.push(rig.readout, _key(KEY_1, false))
@@ -288,7 +288,7 @@ func _test_a_release_or_an_echo_toggles_nothing(t) -> void:
 	t.check(layers.layer_on(1), "and the press itself still does")
 	rig.free_all()
 
-func _test_number_keys_toggle_their_own_layer(t) -> void:
+func _test_number_keys_toggle_their_own_layer(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], true))
 	var layers := rig.layers()
 
@@ -311,7 +311,7 @@ func _test_number_keys_toggle_their_own_layer(t) -> void:
 	t.check(rig.readout.readout_on() and rig.label.visible, "and 4 again turns it back on")
 	rig.free_all()
 
-func _test_layer_keys_do_nothing_outside_a_debug_build(t) -> void:
+func _test_layer_keys_do_nothing_outside_a_debug_build(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], false))
 	t.check(rig.layers() == null, "no layer node in a release build")
 	var readout_before := rig.readout.readout_on()
@@ -336,7 +336,7 @@ class DrawCount extends DebugLayers:
 	func _draw() -> void:
 		draws += 1
 
-func _test_no_redraw_is_asked_with_every_layer_off(t) -> void:
+func _test_no_redraw_is_asked_with_every_layer_off(t: TestRunner) -> void:
 	var layers := DrawCount.new()
 	t.add_child(layers)
 	await UI.frames(t, 3)
@@ -365,7 +365,7 @@ func _test_no_redraw_is_asked_with_every_layer_off(t) -> void:
 ## M142: a retained `_draw()` keeps its last picture until something calls `queue_redraw()` again,
 ## so the toggle that turns the last layer off still owes exactly one redraw — the empty one that
 ## erases what was on screen.
-func _test_a_switch_off_still_owes_one_redraw(t) -> void:
+func _test_a_switch_off_still_owes_one_redraw(t: TestRunner) -> void:
 	var layers := DrawCount.new()
 	t.add_child(layers)
 	await UI.frames(t, 3)
@@ -380,7 +380,7 @@ func _test_a_switch_off_still_owes_one_redraw(t) -> void:
 			% [layers.draws, at_switch_off])
 	layers.free()
 
-func _test_collision_nodes_under_finds_the_shape_and_the_polygon_at_every_depth(t) -> void:
+func _test_collision_nodes_under_finds_the_shape_and_the_polygon_at_every_depth(t: TestRunner) -> void:
 	var root := StaticBody2D.new()
 	t.add_child(root)
 	var shape := CollisionShape2D.new()

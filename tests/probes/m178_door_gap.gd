@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for M178, "a gate lets her out alive": how many of a day's events sit inside a
 ## region door's own clear ground, and what refusing them costs the day's density. Not a suite — it
@@ -28,7 +27,7 @@ const BASE_SEED := 305117
 static func _days() -> Array[int]:
 	return [Tuning.REGION_WALL_FIRST_DAY, 11]
 
-func run(_t) -> void:
+func run(_t: TestRunner) -> void:
 	print("\n== events inside a region door's gap (%.0fpx of clear ground, field-to-body) =="
 			% Tuning.CHECKPOINT_EVENT_GAP)
 	print("%-12s %5s %6s %8s %8s %8s %8s" % [

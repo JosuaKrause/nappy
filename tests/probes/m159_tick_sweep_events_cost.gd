@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What the baby's influence sweep (`Baby._physics_process()`) and the events' physics step
 ## (`EventManager._physics_process()`) cost per 30/s tick, on fixed seeds and days — a headless
@@ -54,7 +54,7 @@ const EVENT_PARTS: Array[String] = ["retire", "camera", "site", "stream", "owed"
 ## The sweep's queries, then the baby's whole step.
 const SWEEP_PARTS: Array[String] = ["event_sources", "door", "crowd_sources", "baby"]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

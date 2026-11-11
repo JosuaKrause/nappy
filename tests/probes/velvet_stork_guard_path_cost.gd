@@ -32,7 +32,7 @@ const FRAME := 1.0 / 60.0
 const CHASE_SECONDS := 31.8
 
 ## Overrides test_day13_guard.run.
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var seeds := DEFAULT_SEEDS.duplicate()
 	if OS.get_environment("PROBE_SEEDS") != "":
 		seeds.clear()
@@ -42,7 +42,7 @@ func run(t) -> void:
 		for walks in [false, true]:
 			_measure(t, seed_value, walks)
 
-func _measure(t, seed_value: int, walks: bool) -> void:
+func _measure(t: TestRunner, seed_value: int, walks: bool) -> void:
 	var city := _build_city(t, seed_value)
 	var director := _start_the_day(t, city, seed_value)
 	var player := _rig_player(t, director, director.contact_position())

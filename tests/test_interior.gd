@@ -18,7 +18,7 @@ const PARTS: Array[String] = [
 ## How many times real time a door's fade runs at when a test lets it (`_let_the_fade_run()`).
 const FADE_SCALE := 6.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_test_the_map_builds(t)
 	_test_the_stairwell_grammar_is_exact_in_both_shafts(t)
@@ -58,7 +58,7 @@ func run(t) -> void:
 	await _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t)
 	await _test_the_building_shows_what_the_city_shows(t)
 
-func _test_the_map_builds(t: Node) -> void:
+func _test_the_map_builds(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	t.check(f != null and not f.floor_tiles().is_empty(), "the map builds a non-empty tile grid")
 	for part in PARTS:
@@ -69,7 +69,7 @@ func _test_the_map_builds(t: Node) -> void:
 ## alternation only through the fourth door's two-cell level approach. This checks the authored
 ## rows and the parsed cells in both shafts, so a correct-looking constant that is not what the map
 ## paints cannot pass.
-func _test_the_stairwell_grammar_is_exact_in_both_shafts(t: Node) -> void:
+func _test_the_stairwell_grammar_is_exact_in_both_shafts(t: TestRunner) -> void:
 	var expected: Array[String] = [
 		"..........",
 		".D........",
@@ -120,7 +120,7 @@ func _test_the_stairwell_grammar_is_exact_in_both_shafts(t: Node) -> void:
 ## Walkability and drawing are properties of the symbol roles, not of a second sparse flight map.
 ## The walkable roles have TileSet sources because they are the surface; the three side roles also
 ## have sources but remain solid.
-func _test_stair_symbols_define_walkability_and_art(t: Node) -> void:
+func _test_stair_symbols_define_walkability_and_art(t: TestRunner) -> void:
 	for symbol in ["F", "t", "m", "T", "M"]:
 		var kind := _kind_painted_for(symbol)
 		t.check(InteriorTile.is_walkable(kind), "'%s' is walkable" % symbol)
@@ -143,7 +143,7 @@ func _kind_painted_for(symbol: String) -> InteriorTile.Kind:
 			return f.floor_kind_at(origin + Vector2i(x, y))
 	return InteriorTile.Kind.NONE
 
-func _test_every_door_has_the_counterpart_it_claims(t: Node) -> void:
+func _test_every_door_has_the_counterpart_it_claims(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	var expected_pairs: Array[Array] = [
 		["hallway_third:left", "stairwell_left:landing_third"],
@@ -174,7 +174,7 @@ func _test_every_door_has_the_counterpart_it_claims(t: Node) -> void:
 			continue
 		t.check(back.target_door == id, "'%s' and '%s' are each other's counterpart" % [id, door.target_door])
 
-func _test_the_exit_and_the_entrance_are_what_they_claim(t: Node) -> void:
+func _test_the_exit_and_the_entrance_are_what_they_claim(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	t.check(f.exit_position().x >= 0, "the map records an exit tile")
 	t.check(f.floor_kind_at(f.exit_position()) == InteriorTile.Kind.EMERGENCY_EXIT,
@@ -190,7 +190,7 @@ func _test_the_exit_and_the_entrance_are_what_they_claim(t: Node) -> void:
 
 ## A few representative points between parts — the gap `InteriorMap._SLOT_STRIDE` leaves, since
 ## nothing is ever placed there.
-func _test_the_ground_between_parts_is_not_walkable(t: Node) -> void:
+func _test_the_ground_between_parts_is_not_walkable(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	for x in [30, 94, 158, 222, 286, 350]:
 		var tile := Vector2i(x, 0)
@@ -198,7 +198,7 @@ func _test_the_ground_between_parts_is_not_walkable(t: Node) -> void:
 
 ## A flood fill that crosses doors, starting at her own door on the third-floor hallway — every
 ## walkable cell in the whole building must be reachable from it once a door is allowed to jump.
-func _test_every_walkable_tile_is_reachable_from_her_door_through_the_doors(t: Node) -> void:
+func _test_every_walkable_tile_is_reachable_from_her_door_through_the_doors(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	var seen := {f.start_position(): true}
 	var queue: Array[Vector2i] = [f.start_position()]
@@ -230,7 +230,7 @@ func _test_every_walkable_tile_is_reachable_from_her_door_through_the_doors(t: N
 ## The other half of the same guarantee: **without** crossing a door, a flood fill from one part's
 ## own waypoint never reaches another part's — the gaps `InteriorMap._SLOT_STRIDE` leaves are wide
 ## enough that walking alone, with no door, cannot cross from one part to the next.
-func _test_no_two_parts_are_reachable_by_walking_alone(t: Node) -> void:
+func _test_no_two_parts_are_reachable_by_walking_alone(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	var components := {}
 	for part in PARTS:
@@ -246,7 +246,7 @@ func _test_no_two_parts_are_reachable_by_walking_alone(t: Node) -> void:
 ## atlas source, or `InteriorScene.build()` would silently skip painting that cell — `PUDDLE` is the
 ## one walkable kind that is never a `tiles` entry of its own (see its own doc), so it is the one
 ## exclusion.
-func _test_the_tileset_carries_every_walkable_ground_kind(t: Node) -> void:
+func _test_the_tileset_carries_every_walkable_ground_kind(t: TestRunner) -> void:
 	for kind in InteriorTile.Kind.values():
 		if kind == InteriorTile.Kind.PUDDLE or not InteriorTile.is_walkable(kind):
 			continue
@@ -255,7 +255,7 @@ func _test_the_tileset_carries_every_walkable_ground_kind(t: Node) -> void:
 ## Builds the TileSet for real (needs `Tuning.TILE_SIZE`, an autoload — see this suite's own doc
 ## for why it runs as a scene) and paints the whole map, checking the ground layer actually holds a
 ## cell for every tile the plan says is walkable ground.
-func _test_the_scene_paints_the_whole_map(t: Node) -> void:
+func _test_the_scene_paints_the_whole_map(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
@@ -275,7 +275,7 @@ func _test_the_scene_paints_the_whole_map(t: Node) -> void:
 ## by each body's own position, rather than through a physics-space query: a fresh body is not
 ## guaranteed to be registered with the physics server until a physics frame has actually run,
 ## which nothing here steps.
-func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
+func _test_collision_blocks_exactly_the_non_walkable_ground(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
@@ -341,7 +341,7 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: Node) -> void:
 ## this way. A source's own tile region on the page (`get_tile_texture_region()`) is what says which
 ## region it draws, as a drawn sprite's own `AtlasTexture` (`.atlas`/`.region`) does, since either is
 ## a live region rather than a cropped copy with no `resource_path` of its own.
-func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
+func _test_the_grammar_tiles_are_the_whole_staircase(t: TestRunner) -> void:
 	var expected_names := {
 		InteriorTile.Kind.STAIR_TOP_E: &"interior/m158_stair_side_upper_e",
 		InteriorTile.Kind.STAIR_MIDDLE_E: &"interior/m158_stair_side_lower_e",
@@ -436,7 +436,7 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: Node) -> void:
 ## tile of a real `InteriorScene` (so `slope_dir_at` answers for actual flight tiles rather than a
 ## hand-built stand-in), a key is held, one physics tick passes, and the heading she is steering by
 ## (`Stroller.steering`, what `PosterWalls` reads of her) is the walk's.
-func _test_a_sideways_press_on_a_flight_walks_its_slope(t: Node) -> void:
+func _test_a_sideways_press_on_a_flight_walks_its_slope(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
@@ -528,7 +528,7 @@ func _strollers_on(scene: InteriorScene, tiles: Array[Vector2i]) -> Array[Stroll
 ## she moves by it (`input_she_moves_by()`) and the heading each is steering by, in order, with the
 ## keys let go again. Every walker starts the tick where she was put, so what she steers by is what
 ## her own `_physics_process()` read of the held keys and the ground under her.
-func _steer(t: Node, scene: InteriorScene, walkers: Array[Stroller], tiles: Array[Vector2i],
+func _steer(t: TestRunner, scene: InteriorScene, walkers: Array[Stroller], tiles: Array[Vector2i],
 		name: String) -> Dictionary:
 	for index in walkers.size():
 		walkers[index].reset_at(scene.map.tile_to_world(tiles[index]))
@@ -551,7 +551,7 @@ func _steer(t: Node, scene: InteriorScene, walkers: Array[Stroller], tiles: Arra
 ## pressed, down if that is the side the flight descends to and up otherwise, and a pure up or down
 ## press moves nowhere. **On a level `F` tile**, a landing, every press is left as it was pressed. Each press is held on real input and read of a real `Stroller` on every tile at once
 ## after one physics tick (`Stroller.steering`).
-func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Node) -> void:
+func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
@@ -603,7 +603,7 @@ func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Node
 ## engine orders it, by her absolute z against each door picture's, and for one in her own z and
 ## y-sorted with her, by its foot against hers, with her standing on every walkable tile within a
 ## tile of each door, at the tile's centre and at its four edges as near as her body lets her.
-func _test_every_door_is_drawn_under_her(t: Node) -> void:
+func _test_every_door_is_drawn_under_her(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
@@ -691,7 +691,7 @@ static func _absolute_z(item: CanvasItem) -> int:
 ## `InteriorMap._mark_diagonal_clearances()` frees both corners only when neither is already
 ## walkable. That keeps the basement entry open without clearing the corrected shaft's explicit
 ## `.` background or its painted side cells.
-func _test_every_diagonal_step_has_both_its_pinch_corners_cleared(t: Node) -> void:
+func _test_every_diagonal_step_has_both_its_pinch_corners_cleared(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	var diagonals: Array[Vector2i] = [Vector2i(1, 1), Vector2i(1, -1), Vector2i(-1, 1), Vector2i(-1, -1)]
 	var checked := 0
@@ -722,7 +722,7 @@ func _test_every_diagonal_step_has_both_its_pinch_corners_cleared(t: Node) -> vo
 ## corridor is the one-tile `STAIR_DOWN` picture, the walk out of the door is a straight column
 ## with no diagonal step in it, and the cell is level — `flight_direction()` answers zero, so a
 ## sideways press on it is a sideways step rather than a slide along a slope.
-func _test_the_basement_entry_is_a_straight_level_stair(t: Node) -> void:
+func _test_the_basement_entry_is_a_straight_level_stair(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	var entry := f.door("basement:entry")
 	t.check(entry != null, "the basement keeps its entry door")
@@ -757,7 +757,7 @@ func _test_the_basement_entry_is_a_straight_level_stair(t: Node) -> void:
 ## those here would double the work rather than test anything new. **Not vacuous**: every assertion
 ## below reads the player's own `global_position` back after the fade, not a value this test computed
 ## itself, so a door that silently failed to move her would fail the very next line.
-func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> void:
+func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	for side in ["left", "right"]:
 		var part := "stairwell_%s" % side
@@ -838,7 +838,7 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: Node) -> voi
 ## walking onto the counterpart door and letting the fade run, as in the game. `player` is a plain
 ## `Node2D` rather than a `Stroller`: a door puts anything that is not a `Stroller` at the door by a
 ## bare `global_position` assignment, and nothing here touches physics or the camera.
-func _test_a_door_release_latch_keeps_a_door_from_retaking_her(t: Node) -> void:
+func _test_a_door_release_latch_keeps_a_door_from_retaking_her(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -893,7 +893,7 @@ func _frames(t: Node, count: int) -> void:
 
 ## Lets a door's whole fade run on real frames: to black, the move to the counterpart door under it,
 ## and back, at `FADE_SCALE` times real time (`PhysicsTicks.pass_ticks()`), with a margin.
-func _let_the_fade_run(t: Node) -> void:
+func _let_the_fade_run(t: TestRunner) -> void:
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(InteriorScene.FADE_SECONDS * 2.0 + 0.2,
 			FADE_SCALE), Callable(), FADE_SCALE)
 
@@ -952,7 +952,7 @@ func _shortest_path_length(f: InteriorMapPlan, start: Vector2i, goal: Vector2i) 
 ## The second and third floors are asked the opposite question in the same breath, because the
 ## answer to the fire is crossing a hallway to the other shaft: a collapse that closed those too
 ## would close the section.
-func _test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t: Node) -> void:
+func _test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	t.check(f.rubble_area().size.x > 0 and f.rubble_area().size.y > 0,
 			"the top floor carries a collapse (%s)" % f.rubble_area())
@@ -994,7 +994,7 @@ func _test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t: Node) -> vo
 ## Stated over the fire's own blocking reach — `obstructs_radius` plus her own body, which is where
 ## her centre is stopped — rather than over a number of tiles, so it survives the fire's body being
 ## retuned.
-func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
+func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
@@ -1064,7 +1064,7 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: Node) -> void:
 ## man coming up the right shaft pushes her) and the right shaft from the first floor to the lobby
 ## (the way she can also take). A fire on the first floor's approach would leave the second flight
 ## open and shut the last, which is the walk that lost the crossing.
-func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t: Node) -> void:
+func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t: TestRunner) -> void:
 	for run_seed in [1, 2, 7, 99, 4242, 12345, 777, 31337, 5, 8675309]:
 		var scene := InteriorScene.new()
 		t.add_child(scene)
@@ -1149,7 +1149,7 @@ func _shaft_tiles(scene: InteriorScene, part_id: String) -> Array[Vector2i]:
 ## measured rather than assumed: every door in his shaft has to sit further from every point of his
 ## line than `inner_radius`, the radius that takes the baby, or stepping onto a door is not an
 ## answer to him at all.
-func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> void:
+func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -1218,7 +1218,7 @@ func _test_the_masked_man_runs_the_stairs_rather_than_crossing_them(t: Node) -> 
 ## `EventManager`, so standing on the masked man's line ends the section through the same
 ## `EventBus.hard_fail_triggered` a day's catch sends, and the manager names what struck her
 ## (`EventManager.what_struck_her()`), which the loss's cause reads.
-func _test_his_catch_ends_the_section_with_what_struck_her(t: Node) -> void:
+func _test_his_catch_ends_the_section_with_what_struck_her(t: TestRunner) -> void:
 	# Twice real time: a tick is 1/15 of a second, so a step of his is a few pixels against his
 	# catch radius, and he cannot step across her between two ticks.
 	const SCALE := 2.0
@@ -1262,7 +1262,7 @@ func _test_his_catch_ends_the_section_with_what_struck_her(t: Node) -> void:
 ## shaft he leaves the way every figure leaves, through the building's map, so he never goes on
 ## through the wall past the top landing; every step he takes after his run is on ground she could
 ## stand on.
-func _test_his_run_stops_at_the_building_walls(t: Node) -> void:
+func _test_his_run_stops_at_the_building_walls(t: TestRunner) -> void:
 	const STEP := 1.0 / 60.0
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -1306,7 +1306,7 @@ func _test_his_run_stops_at_the_building_walls(t: Node) -> void:
 ##
 ## Non-vacuous on purpose: both closures are counted, so a build where the fire stood somewhere
 ## harmless or the rubble was never laid would fail the guard rather than pass the flood.
-func _test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t: Node) -> void:
+func _test_the_service_exit_is_reachable_past_the_rubble_the_fire_and_his_line(t: TestRunner) -> void:
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -1402,7 +1402,7 @@ func _walk_distance_to_nearest(f: InteriorMapPlan, targets: Array[Vector2i]) -> 
 ## **And each gate is one she cannot go round**, checked by taking that one cell out of the
 ## walkable set and asking whether the exit is still reachable from the entry. A gate on a cell
 ## with a way past it is scenery.
-func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: Node) -> void:
+func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	var walk := scene.map.basement_walk()
@@ -1505,7 +1505,7 @@ func _basement_reaches_the_exit_without(without: Vector2i) -> bool:
 ## - **A vent's own gaps are its own period.** Measured between successive blows rather than read
 ##   off `Tuning`, so a stagger or a retire that quietly dropped a beat would show.
 ## - **A vent that is off is not there at all** — no instance, so no body and nothing charged.
-func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: Node) -> void:
+func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: TestRunner) -> void:
 	# Three times real time: a tick is a tenth of a second, which a vent's period (4 to 5.5s) and its
 	# notice are several times over.
 	const SCALE := 3.0
@@ -1578,7 +1578,7 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: Node) -> 
 ## So the body is withheld for as long as she stands in the footprint and goes down the moment she
 ## is clear — a precondition rather than a repair, and the steam charges her the whole time, so
 ## standing in a vent is the most expensive way through it rather than a way past it.
-func _test_a_vent_never_closes_around_her(t: Node) -> void:
+func _test_a_vent_never_closes_around_her(t: TestRunner) -> void:
 	# Three times real time, as the vents' clocks are walked in `_test_the_vents_blow_on_their_own_clocks_and_give_notice_first`.
 	const SCALE := 3.0
 	var tick_seconds := SCALE / Engine.physics_ticks_per_second
@@ -1650,7 +1650,7 @@ func _test_a_vent_never_closes_around_her(t: Node) -> void:
 ## pocket, standing still, where the ground gives nothing back (`EXCITEMENT_DECAY_IDLE` is zero
 ## recovery). If the vents are far enough apart that the middle is outside both fields, the pocket
 ## costs nothing and can hold her all day, which is why the rate is measured rather than assumed.
-func _test_no_pocket_between_two_vents_outlasts_the_noise(t: Node) -> void:
+func _test_no_pocket_between_two_vents_outlasts_the_noise(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
@@ -1684,7 +1684,7 @@ func _test_no_pocket_between_two_vents_outlasts_the_noise(t: Node) -> void:
 ## standing `STAND_AT` out from the vent, and every frame's `contribution_at()` is summed. 30px is
 ## where a vent holds her centre (`STEAM_VENT_BODY` + her own body), which is where she waits at
 ## the gate and the nearest she can be to a blow, so the dearest a blow costs her.
-func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: Node) -> void:
+func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: TestRunner) -> void:
 	const STEP := 1.0 / 60.0
 	const STAND_AT := 30.0
 	var steam := EventCatalogue.by_id("basement_steam")
@@ -1739,7 +1739,7 @@ func _is_shut(vent: EventScheduler.Planned, at: float, steam: EventDef) -> bool:
 ## scene answers the baby's `decay_multiplier()` with `InteriorScene.EXCITEMENT_DECAY_BASEMENT_MULTIPLIER`
 ## (nothing) at every tile of the basement's corridor and with an ordinary 1.0 in every other part
 ## of the building, so a blow's points stay on the meter until she is out.
-func _test_the_meter_does_not_fall_in_the_basement(t: Node) -> void:
+func _test_the_meter_does_not_fall_in_the_basement(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()
@@ -1773,7 +1773,7 @@ func _test_the_meter_does_not_fall_in_the_basement(t: Node) -> void:
 ## - the grate is ground: drawn over the floor tiles and under the layer she and every blow stand
 ##   in, so she walks over it and each blow's cloud is drawn over it, never the other way round;
 ## - a restart leaves each vent's grate lying, and lays none over it.
-func _test_every_vent_has_its_grate_blowing_or_not(t: Node) -> void:
+func _test_every_vent_has_its_grate_blowing_or_not(t: TestRunner) -> void:
 	# Three times real time, as the vents' clocks are walked in the test of their clocks.
 	const SCALE := 3.0
 	const WINDOW := 12.0
@@ -1931,7 +1931,7 @@ func _lit(scene: InteriorScene, windows: Array[Sprite2D]) -> int:
 ## windows' own pictures as the building's events bring a bang on real physics ticks, with the
 ## night of far flashes stopped (`stop_the_night()`, as the exit does) so that nothing but the bang
 ## can light them.
-func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
+func _test_an_explosion_flashes_every_hallway_window(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
@@ -1997,7 +1997,7 @@ func _test_an_explosion_flashes_every_hallway_window(t: Node) -> void:
 ##   that a stray source elsewhere in the building could muddy.
 ##
 ## And the same seed twice, since the waits come off the section's own seeded stream.
-func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> void:
+func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: TestRunner) -> void:
 	const SPAN := 60.0
 	const DRAWS := 4000
 	var scene := InteriorScene.new()
@@ -2141,7 +2141,7 @@ func _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t: Node) -> 
 ## a crowd. Each is driven here against the real building rather than a stand-in, so what is
 ## checked is that the masked man coming up a stairwell raises a badge, the fire she is standing
 ## beside wears a rim, and the building's walls are bodies the bounding-box layer traces.
-func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
+func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	var rng := RandomNumberGenerator.new()
@@ -2238,7 +2238,7 @@ func _test_the_building_shows_what_the_city_shows(t: Node) -> void:
 ## basement darker, the stairwells on the red emergency lighting, and a hallway lit by a blast while
 ## its windows flash. Every door is asked which part it is in, since a door's id names its part and
 ## the light is chosen by the part.
-func _test_the_escape_building_is_dark_by_part(t) -> void:
+func _test_the_escape_building_is_dark_by_part(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
 	scene.build()

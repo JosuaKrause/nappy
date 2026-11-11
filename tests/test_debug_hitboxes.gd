@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
+@warning_ignore_start("unsafe_property_access")
 extends RefCounted
 ## **Every hitbox a real day builds is drawn** (PLAYTEST-57: *"and make sure *all* hitboxes are
 ## actually drawn"*): `DebugLayers.collision_nodes_under()`, which the bounding-box layer draws every
@@ -15,7 +15,7 @@ extends RefCounted
 const MapCache := preload("res://tests/city_map_cache.gd")
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_bounding_box_layer_draws_every_enabled_body(t)
 
 ## PLAYTEST-57: *"and make sure *all* hitboxes are actually drawn"* — the bounding-box layer's own
@@ -25,7 +25,7 @@ func run(t) -> void:
 ## hand — independently of `DebugLayers.collision_nodes_under()`, which `_draw_bodies()` draws
 ## every outline from, so a bug in that walk cannot hide from this test — and checks it finds the
 ## same bodies in the two trees.
-func _test_the_bounding_box_layer_draws_every_enabled_body(t) -> void:
+func _test_the_bounding_box_layer_draws_every_enabled_body(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, 5551212)
 	t.add_child(city)
 	city.build(MapCache.of(5551212))

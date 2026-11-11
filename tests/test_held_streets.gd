@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `HeldStreets` (`src/city/held_streets.gd`): which street segments are held and why, and that the
 ## crowd's carve-outs (a region door, a street bordering the home block) are answered from the
@@ -8,12 +7,12 @@ const A := Vector3i(1, 2, 0)
 const B := Vector3i(3, 4, 1)
 const C := Vector3i(5, 6, 0)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_held_segment_is_held_for_the_reasons_it_was_given(t)
 	_test_only_a_door_or_a_home_street_is_crossable(t)
 	_test_a_copy_and_a_clear_are_independent(t)
 
-func _test_a_held_segment_is_held_for_the_reasons_it_was_given(t) -> void:
+func _test_a_held_segment_is_held_for_the_reasons_it_was_given(t: TestRunner) -> void:
 	var held := HeldStreets.new()
 	held.hold(A, HeldStreets.Why.WALL)
 	held.hold(A, HeldStreets.Why.HOME)
@@ -25,7 +24,7 @@ func _test_a_held_segment_is_held_for_the_reasons_it_was_given(t) -> void:
 			"and no reason it was not given")
 	t.check(held.size() == 2 and held.keys().size() == 2, "two segments are held")
 
-func _test_only_a_door_or_a_home_street_is_crossable(t) -> void:
+func _test_only_a_door_or_a_home_street_is_crossable(t: TestRunner) -> void:
 	var held := HeldStreets.new()
 	held.hold(A, HeldStreets.Why.DOOR)
 	held.hold(B, HeldStreets.Why.HOME)
@@ -35,7 +34,7 @@ func _test_only_a_door_or_a_home_street_is_crossable(t) -> void:
 	held.hold(C, HeldStreets.Why.HOME)
 	t.check(held.is_crossable(C), "a segment that is also a home street is")
 
-func _test_a_copy_and_a_clear_are_independent(t) -> void:
+func _test_a_copy_and_a_clear_are_independent(t: TestRunner) -> void:
 	var held := HeldStreets.new()
 	held.hold(A, HeldStreets.Why.SEAL)
 	var twin := held.duplicate()

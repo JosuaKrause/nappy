@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## What she can see (`VisibleView`), the one answer every "is it visible" question in the game asks
 ## *(feathery-lynx, inbox #581, the player: "use that everywhere where visibility is concerned -- for
@@ -7,7 +7,7 @@ extends RefCounted
 ## sight, and that a portrait window presenting the game rotated changes none of it. What reads it —
 ## the badge, the placing, the sightings, a chalk mark's notice, the crews — is tested where each is.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick(t)
 	_test_the_margin_counts_past_the_edge_and_into_a_corner(t)
 	_test_just_out_of_sight_is_the_edge_of_the_view_on_each_side(t)
@@ -21,7 +21,7 @@ func run(t) -> void:
 ## Whichever side the title chose, every consumer sees the painted footprint, while spawning stays
 ## outside the complete camera. The ground inward of the focal discs is visible. What the badge sees
 ## is read off the badge itself (`_badge_sees()`), on the edge's own frames.
-func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t) -> void:
+func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t: TestRunner) -> void:
 	var paused: bool = t.get_tree().paused
 	t.get_tree().paused = false
 	var atlas := AtlasLibrary.new()
@@ -82,7 +82,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t) -> v
 ## badge down on its first frame if any of the cyclist shows, by its own test of the cyclist's point
 ## and drawing against the view it is handed. So after the edge's own frames the badge is down
 ## exactly where the edge saw it. A fresh cyclist each time, so no earlier frame has seen it.
-static func _badge_sees(t, edge: DangerEdge, source: _Source, row: EventDef, at: Vector2) -> bool:
+static func _badge_sees(t: TestRunner, edge: DangerEdge, source: _Source, row: EventDef, at: Vector2) -> bool:
 	var bike := EventInstance.new()
 	bike.setup(row, at)
 	bike.resume(row.telegraph_time, 0.0)
@@ -99,7 +99,7 @@ static func _badge_sees(t, edge: DangerEdge, source: _Source, row: EventDef, at:
 
 ## The view's centre, and points well inside each bottom corner, at its bottom middle, and in the
 ## middle — the middle and the bottom middle seen in both schemes, the corners only in the tap one.
-func _test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick(t) -> void:
+func _test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick(t: TestRunner) -> void:
 	var tap := VisibleView.around(Vector2.ZERO, null)
 	var joystick := VisibleView.around(Vector2.ZERO, TouchCover.joystick())
 	var view := tap.view
@@ -119,7 +119,7 @@ func _test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick
 
 ## `margin` world px count as in sight past the view's edge and into a covered corner, the badge's
 ## hysteresis; with none, the edge is the edge.
-func _test_the_margin_counts_past_the_edge_and_into_a_corner(t) -> void:
+func _test_the_margin_counts_past_the_edge_and_into_a_corner(t: TestRunner) -> void:
 	var joystick := VisibleView.around(Vector2.ZERO, TouchCover.joystick())
 	var past := Vector2(0.0, -Tuning.VIEW_HALF_EXTENT.y - 10.0)
 	t.check(not joystick.sees(past) and joystick.sees(past, 20.0),
@@ -134,7 +134,7 @@ func _test_the_margin_counts_past_the_edge_and_into_a_corner(t) -> void:
 ## On the tap scheme's whole view a thing is placed where its drawn box has just left the view:
 ## straight up, its feet at the top edge (the box stands above them); straight down, the box's top at
 ## the bottom edge; across, half the box past the side.
-func _test_just_out_of_sight_is_the_edge_of_the_view_on_each_side(t) -> void:
+func _test_just_out_of_sight_is_the_edge_of_the_view_on_each_side(t: TestRunner) -> void:
 	var tap := VisibleView.around(Vector2.ZERO, null)
 	var box := Rect2(-10.0, -30.0, 20.0, 30.0)
 	var m := VisibleView.CLEAR_MARGIN
@@ -156,7 +156,7 @@ func _test_just_out_of_sight_is_the_edge_of_the_view_on_each_side(t) -> void:
 
 ## In the joystick scheme a way down into a bottom corner ends at the corner's edge, nearer than the
 ## view's own: the corner is out of sight, as the area says.
-func _test_just_out_of_sight_may_be_a_covered_corner(t) -> void:
+func _test_just_out_of_sight_may_be_a_covered_corner(t: TestRunner) -> void:
 	var tap := VisibleView.around(Vector2.ZERO, null)
 	var joystick := VisibleView.around(Vector2.ZERO, TouchCover.joystick())
 	var box := Rect2(-6.0, -12.0, 12.0, 12.0)
@@ -177,7 +177,7 @@ func _test_just_out_of_sight_may_be_a_covered_corner(t) -> void:
 ## The floor holds whatever the corners allow: no direction, in either scheme, places a thing
 ## nearer than `Offscreen.min_boundary()` when asked for it, which is the worst case
 ## `EventDef.validate()` checks a row's field against.
-func _test_just_out_of_sight_is_never_nearer_than_its_floor(t) -> void:
+func _test_just_out_of_sight_is_never_nearer_than_its_floor(t: TestRunner) -> void:
 	var floor_px := Offscreen.min_boundary()
 	for joystick: bool in [false, true]:
 		var view := VisibleView.around(Vector2.ZERO, TouchCover.joystick() if joystick else null)
@@ -191,7 +191,7 @@ func _test_just_out_of_sight_is_never_nearer_than_its_floor(t) -> void:
 
 ## `look_through()` reads the camera on her and the scheme of the controls it was handed: a body with
 ## no camera is the view about her, and with no controls handed the scheme is the tap one.
-func _test_the_view_follows_the_camera_and_the_scheme(t) -> void:
+func _test_the_view_follows_the_camera_and_the_scheme(t: TestRunner) -> void:
 	var body := Node2D.new()
 	body.global_position = Vector2(500.0, 300.0)
 	var view := VisibleView.new()
@@ -221,7 +221,7 @@ func _test_the_view_follows_the_camera_and_the_scheme(t) -> void:
 ## controls are authored in either way — which is why `VisibleView` asks its question of the world
 ## box and needs no rotation of its own. Built from the camera's canvas transform at zoom 2, turned
 ## and not, and `ScreenOrientation.to_design_space()`, the turn `DangerEdge` draws through.
-func _test_a_rotated_window_shows_the_same_world_under_the_same_corners(t) -> void:
+func _test_a_rotated_window_shows_the_same_world_under_the_same_corners(t: TestRunner) -> void:
 	var centre := Vector2(812.0, -233.0)
 	var zoom := ScreenOrientation.DESIGN_SIZE / (Tuning.VIEW_HALF_EXTENT * 2.0)
 	var flat := Transform2D(0.0, zoom, 0.0, ScreenOrientation.DESIGN_SIZE * 0.5) \
@@ -271,7 +271,7 @@ class _Source extends Node:
 ## warnings-and-placement): a cyclist riding at her inside the left corner's rectangle is out of
 ## sight in the joystick scheme, so `DangerEdge` keeps its badge; in the tap scheme it is in sight,
 ## and there is none.
-func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t) -> void:
+func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	var her := Vector2(2000.0, 2000.0)

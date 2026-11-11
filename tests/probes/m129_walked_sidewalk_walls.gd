@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Does a **solid body** ever close the walked sidewalk of a route street? Printed rather than
 ## asserted. Not a suite: it lives under `tests/probes/`, where the runner never discovers it, and
@@ -153,7 +153,7 @@ class ClosedBand extends RefCounted:
 	var culprits: Array = []   # Array[Body]
 	var ground_only := false   # closed by a closure tile / the ground alone, no body responsible
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_measure()
 	t.check(true, "m129 walked-sidewalk-walls probe ran")
 

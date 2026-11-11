@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Walkers standing at a blockage made of partial bodies in neighbouring rows of a precinct. Printed,
 ## not asserted; not a suite, run by name:
@@ -13,7 +12,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0
 const CASES := [[67, 3, Vector2i(10, 156)], [24757, 5, Vector2i(122, 156)]]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for case: Array in CASES:
 		var seed_value: int = case[0]
 		var day: int = case[1]

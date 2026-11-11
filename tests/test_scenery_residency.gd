@@ -29,7 +29,7 @@ const RoofReads := preload("res://tests/roof_reads.gd")
 ## `Building.roof_drawer`, as the city hands it.
 var _drawers := {}
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for seed_value in [4242, 3265820891]:
 		await _test_all_mode(t, seed_value)
 		await _test_all_mode_budget(t, seed_value)
@@ -44,7 +44,7 @@ func _view(at: Vector2) -> Rect2:
 
 ## A city built over a run of its own from `seed_value`, every building
 ## handed a recording roof drawer. Every test builds its own, so none reads what another left.
-func _city_for(t, seed_value: int) -> City:
+func _city_for(t: TestRunner, seed_value: int) -> City:
 	var city: City = RunCity.with_own_run(CITY, seed_value)
 	t.add_child(city)
 	city.build(MapCache.of(seed_value))
@@ -55,7 +55,7 @@ func _free(city: City) -> void:
 	_drawers.clear()
 	city.free()
 
-func _test_residency_follows_the_view(t, seed_value: int) -> void:
+func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	var city := _city_for(t, seed_value)
 	var map := city.map
 	var run := city.run
@@ -171,7 +171,7 @@ func _test_residency_follows_the_view(t, seed_value: int) -> void:
 	t.check(water_count > 1, "the phase check covers multiple water chunks")
 	_free(city)
 
-func _test_roof_phase(t, seed_value: int) -> void:
+func _test_roof_phase(t: TestRunner, seed_value: int) -> void:
 	var city := _city_for(t, seed_value)
 	var observed := 0
 	for building in city.buildings():
@@ -203,7 +203,7 @@ func _test_roof_phase(t, seed_value: int) -> void:
 	t.check(observed > 0, "phase reconstruction checks actual generated city fan rotors")
 	_free(city)
 
-func _check_roof_ownership(t, city: City) -> void:
+func _check_roof_ownership(t: TestRunner, city: City) -> void:
 	var owned := {}
 	var count := 0
 	# The layer the city hands every building to stand its roof art in.
@@ -291,7 +291,7 @@ func _collision_shape(building: Building) -> Shape2D:
 ## Lets real process frames pass until the city's ground clock has run `seconds` more, under a high
 ## `Engine.time_scale` so few frames do it. The residency's own per-frame maintenance is paused for
 ## the stretch, so the view the caller chose is the view it finds again; a clock that stops short fails.
-func _run_the_city_clock(t, city: City, seconds: float) -> void:
+func _run_the_city_clock(t: TestRunner, city: City, seconds: float) -> void:
 	var ground := city.scenery_ground
 	var until := ground.elapsed + seconds
 	var clock := Engine.time_scale
@@ -344,7 +344,7 @@ func _ring_keys(city: City, view: Rect2, count: int) -> Array[Vector2i]:
 func _all_prepared(ground: SceneryGround, keys: Array[Vector2i]) -> bool:
 	return keys.all(func(key: Vector2i) -> bool: return ground.chunks.has(key))
 
-func _check_whole_layout(t, city: City, key: Vector2i) -> void:
+func _check_whole_layout(t: TestRunner, city: City, key: Vector2i) -> void:
 	var layer: TileMapLayer = city.scenery_ground.chunks[key]
 	var surfaces := 0
 	for child in layer.get_children():
@@ -352,7 +352,7 @@ func _check_whole_layout(t, city: City, key: Vector2i) -> void:
 	t.check(layer.rendering_quadrant_size >= SceneryGround.CHUNK_TILES and surfaces <= 1,
 			"a whole-region mode builds one renderer quadrant and at most one water surface")
 
-func _test_all_mode(t, seed_value: int) -> void:
+func _test_all_mode(t: TestRunner, seed_value: int) -> void:
 	var city := _city_for(t, seed_value)
 	_use_mode(city, SceneryGround.Mode.ALL)
 	var ground := city.scenery_ground
@@ -389,7 +389,7 @@ func _test_all_mode(t, seed_value: int) -> void:
 ## frame rather than prepared all at once in the next. *(2026-10-03: "if we keep the 2ms budget then
 ## it also should apply to the next frame and so on".)* A budget one microsecond long makes every
 ## update one job, so the spill-over is countable without timing anything.
-func _test_all_mode_budget(t, seed_value: int) -> void:
+func _test_all_mode_budget(t: TestRunner, seed_value: int) -> void:
 	var city := _city_for(t, seed_value)
 	_use_mode(city, SceneryGround.Mode.ALL)
 	var ground := city.scenery_ground
@@ -423,7 +423,7 @@ func _test_all_mode_budget(t, seed_value: int) -> void:
 			+ "(regions per update: %s)" % [counts])
 	_free(city)
 
-func _test_one_mode(t, seed_value: int) -> void:
+func _test_one_mode(t: TestRunner, seed_value: int) -> void:
 	var city := _city_for(t, seed_value)
 	_use_mode(city, SceneryGround.Mode.ONE)
 	var ground := city.scenery_ground
@@ -478,7 +478,7 @@ func _test_one_mode(t, seed_value: int) -> void:
 
 ## Under the frame record the scenery queue's update is charged to `scenery`, counts the jobs it
 ## ran by kind and the guard's preparations apart, and keeps what it spent past its budget.
-func _test_frame_record(t, seed_value: int) -> void:
+func _test_frame_record(t: TestRunner, seed_value: int) -> void:
 	var city := _city_for(t, seed_value)
 	_use_mode(city, SceneryGround.Mode.ALL)
 	var scenery := city.scenery
@@ -519,7 +519,7 @@ func _test_frame_record(t, seed_value: int) -> void:
 	scenery.update(view)
 	_free(city)
 
-func _test_pending(t, seed_value: int) -> void:
+func _test_pending(t: TestRunner, seed_value: int) -> void:
 	var city := _city_for(t, seed_value)
 	_use_mode(city, SceneryGround.Mode.STEPPED)
 	var ground := city.scenery_ground
@@ -616,7 +616,7 @@ func _added(ground: SceneryGround, before: Array) -> int:
 		return -1000
 	return ground.chunks.size() - before.size()
 
-func _check_chunk(t, city: City, key: Vector2i) -> void:
+func _check_chunk(t: TestRunner, city: City, key: Vector2i) -> void:
 	for y in range(key.y * SceneryGround.CHUNK_TILES, (key.y + 1) * SceneryGround.CHUNK_TILES):
 		for x in range(key.x * SceneryGround.CHUNK_TILES, (key.x + 1) * SceneryGround.CHUNK_TILES):
 			var tile := Vector2i(x, y)
@@ -631,7 +631,7 @@ func _check_chunk(t, city: City, key: Vector2i) -> void:
 							source, city.map.seed_used, tile, city.scenery_ground.tile_set),
 							"completed region preserves seeded atlas selection")
 
-func _check_coverage(t, city: City, view: Rect2) -> void:
+func _check_coverage(t: TestRunner, city: City, view: Rect2) -> void:
 	var lo := Vector2i((view.position / Tuning.TILE_SIZE).floor())
 	var hi := Vector2i((view.end / Tuning.TILE_SIZE).ceil())
 	var wrong := 0

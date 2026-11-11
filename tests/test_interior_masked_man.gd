@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The escape's masked man and her body on the stairwell flights, on real physics ticks: the 45-degree
 ## walk of every flight, the lines onto the second flight that are caught and the ones that get
@@ -13,7 +13,7 @@ const MaskedManMeeting := preload("res://tests/masked_man_meeting.gd")
 var _rig := InteriorRig.new()
 var _meeting := MaskedManMeeting.new(_rig)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	await _test_her_body_walks_every_flight_at_45_degrees(t)
 	await _test_she_has_to_run_to_the_first_floor_door(t)
@@ -46,7 +46,7 @@ const _STAIR_WALKS := [
 	[Vector2i(8, 24), 1, "move_left", false], [Vector2i(8, 25), 1, "move_left", true],
 ]
 
-func _test_her_body_walks_every_flight_at_45_degrees(t: Node) -> void:
+func _test_her_body_walks_every_flight_at_45_degrees(t: TestRunner) -> void:
 	# Six seconds of the game's 30Hz ticks, taken eight times as often as the engine would.
 	const MAX_TICKS := 180
 	const WALK_PACE := 8
@@ -149,7 +149,7 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: Node) -> void:
 ## row 11's centre) how near he comes to her centre on the tick, the only place he moves and the
 ## catch is checked, stays outside his catch (`EventCatalogue.MASKED_PURSUER_CATCH`). A start
 ## running a little after he does is not pinned either way.
-func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
+func _test_she_has_to_run_to_the_first_floor_door(t: TestRunner) -> void:
 	for walk: Array in MaskedManMeeting.TURNS:
 		for pace: String in ["walk", "run", "walk-run"]:
 			var met := await _meeting.meet(t, walk, pace)
@@ -176,7 +176,7 @@ func _test_she_has_to_run_to_the_first_floor_door(t: Node) -> void:
 ## how fast he closes as his step over the frame's own delta, so on a frame several ticks long the
 ## first running frame's closing speed is under the badge's threshold and the badge comes up a
 ## frame late. The run is therefore taken at the engine's own rate from just before he runs.
-func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: Node) -> void:
+func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: TestRunner) -> void:
 	for walk: Array in MaskedManMeeting.TURNS:
 		for pace: String in ["walk", "run", "walk-run"]:
 			var met := await _meeting.meet(t, walk, pace, true)
@@ -204,7 +204,7 @@ func _test_the_edge_badge_points_at_the_masked_man_from_his_run(t: Node) -> void
 ##   prevent, and no screenshot could ever catch it.
 ## - **The gap is the stated one**, measured from him leaving the top of the shaft to the next one
 ##   appearing at the foot, rather than read off the constant.
-func _test_another_masked_man_comes_up_the_same_shaft(t: Node) -> void:
+func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 	const STEP := 1.0 / 30.0
 	var scene := InteriorScene.new()
 	t.add_child(scene)

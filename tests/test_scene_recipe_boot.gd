@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **A booted scene recipe runs under the walk its clock runs on**: `main` hands the authored scene
 ## (`SceneRecipeRuntime.install()`) the spec the run flow started — a day's, or the escape city's
@@ -15,11 +14,11 @@ const Seat := preload("res://tests/seat.gd")
 const DAY_RECIPE := "res://scene-recipes/power-station-hall.json"
 const ESCAPE_RECIPE := "res://scene-recipes/trailer-chase.json"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_a_day_scene_runs_under_the_days_spec(t)
 	await _test_an_escape_scene_runs_under_the_sections_spec(t)
 
-func _test_a_day_scene_runs_under_the_days_spec(t) -> void:
+func _test_a_day_scene_runs_under_the_days_spec(t: TestRunner) -> void:
 	var seat := Seat.new(t)
 	var booted: Boot.Booted = await seat.boot(t, _scratch("day"), ["--recipe", DAY_RECIPE])
 	var day := Boot.day(booted.main)
@@ -32,7 +31,7 @@ func _test_a_day_scene_runs_under_the_days_spec(t) -> void:
 	booted.free_all()
 	seat.end()
 
-func _test_an_escape_scene_runs_under_the_sections_spec(t) -> void:
+func _test_an_escape_scene_runs_under_the_sections_spec(t: TestRunner) -> void:
 	var seat := Seat.new(t)
 	var booted: Boot.Booted = await seat.boot(t, _scratch("escape"), ["--recipe", ESCAPE_RECIPE])
 	var day := Boot.day(booted.main)
@@ -47,7 +46,7 @@ func _test_an_escape_scene_runs_under_the_sections_spec(t) -> void:
 
 ## The scene's events took their settings from the spec the clock runs on, and the clock was
 ## started for that spec's length.
-func _check_the_events_run_under(t, day: DayController, city: City, scene: String) -> void:
+func _check_the_events_run_under(t: TestRunner, day: DayController, city: City, scene: String) -> void:
 	t.check(city.events.ahead.sends_poster_pursuits == day.spec.poster_pursuits
 			and city.events.ahead.holds_the_home_streets == day.spec.holds_the_home_streets,
 			"%s's events run under the spec its clock runs on" % scene)

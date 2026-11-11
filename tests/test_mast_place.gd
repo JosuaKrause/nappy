@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Every mast is outside the zero-cost line (`Planned.counts_against_the_line()`): the six
 ## fixed ones by their `mast_id`, and the two day 11 adds — queued near the mark and routed onto her
@@ -8,7 +7,7 @@ extends RefCounted
 ## day-11 check walks the cities; this is the rule alone. A mast keeps being a plan the other
 ## rows count nothing for, and an ordinary row with the same field still counts.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var mast := EventCatalogue.by_id("loudspeaker")
 	var yeller := EventCatalogue.by_id("homeless_yeller")
 	var here := Vector2(100, 100)

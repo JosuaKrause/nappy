@@ -1,8 +1,8 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends "res://tests/resistance_rig.gd"
 ## M188: a mark is never placed in an alley she cannot reach.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t)
 	_free_city()
 
@@ -18,7 +18,7 @@ func run(t) -> void:
 ## seeds to three for the same reason), so this stays at four rather than growing further.
 const MARK_REACHABILITY_SWEEP_SEEDS: Array[int] = [2295276695, 291862120, 314159, 555555]
 
-func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
+func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t: TestRunner) -> void:
 	var checked := 0
 	for seed_value in MARK_REACHABILITY_SWEEP_SEEDS:
 		# One city of a run of its own per seed: each day below clears the steps and the alleys

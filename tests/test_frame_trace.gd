@@ -1,8 +1,8 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## Raw intervals retain their own counters; bounded capture and pause gaps cannot hide a hitch.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var buffer := FrameTraceBuffer.new(4)
 	var counters := PackedInt64Array()
 	counters.resize(FrameTraceBuffer.COLUMNS.size() - 4)

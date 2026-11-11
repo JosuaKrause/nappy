@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## Day 12's walk home after the park is taken, played through the real transitions: the swing
 ## touched on a booted `Main`, the cordon closing round the park, the baby asleep, the day won or
@@ -58,7 +58,7 @@ var _happenings: ResistanceHappenings
 ## Where the swing is, set by `_touch_the_swing()`.
 var _swing := Vector2.INF
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		await _test_asleep_in_the_park_and_out_through_the_gap(t, seed_value)
 		await _test_asleep_elsewhere_with_the_park_taped_behind_her(t, seed_value)
@@ -69,7 +69,7 @@ func run(t) -> void:
 ## A booted `Main` standing at day 12's dawn on `seed_value`, a normal run, with the mark read and
 ## the swing offered. The run is the suite's own, in a sitting of its own the boot takes
 ## (`Boot.home_playing()`), so the game plays that seed at that day; the save is at a scratch path.
-func _day_twelve(t, seed_value: int) -> Node2D:
+func _day_twelve(t: TestRunner, seed_value: int) -> Node2D:
 	# `Main` rolls its own seed unless a command line or a save gives one: a save of this seed's run,
 	# standing at day 12's dawn, is the way a test gives it, written to the scratch path the boot
 	# reads. The run the boot plays is the sitting's, a fresh one the resume reads that save into.
@@ -111,7 +111,7 @@ func _touch_the_contact(director: ResistanceDirector) -> void:
 ## own, read off the world), or by happenings of the suite's own, handed the day's obstruction as the director hands it to its own at the touch, whose `cordon` says where its last
 ## gap is: the one thing a walk out through the gap needs, which nothing in the world shows before
 ## the gap closes.
-func _touch_the_swing(t, main: Node2D, through_the_director := false) -> Vector2:
+func _touch_the_swing(t: TestRunner, main: Node2D, through_the_director := false) -> Vector2:
 	var director := Boot.resistance(main)
 	var swing := director.contact_position()
 	Boot.player(main).global_position = swing
@@ -186,7 +186,7 @@ func _walk_out_through_the_gap(main: Node2D, swing: Vector2, shows: Callable) ->
 
 ## The day's end seen from the summary: it comes up, is left with one press, and the next morning
 ## is a running day 13 with everything of the cordon gone.
-func _check_the_next_morning(t, main: Node2D, label: String) -> void:
+func _check_the_next_morning(t: TestRunner, main: Node2D, label: String) -> void:
 	t.check(Boot.summary(main).is_showing(), "%s: the won day's summary is up" % label)
 	var map: CityMap = Boot.city(main).map
 	await Boot.press_continue(t, main)
@@ -210,13 +210,13 @@ func _check_the_next_morning(t, main: Node2D, label: String) -> void:
 
 ## Nothing of yesterday's cordon is left in the world: no officer on the city's entities, and the
 ## park no longer shut to anyone walking.
-func _check_no_cordon_stands(t, main: Node2D, label: String, when: String) -> void:
+func _check_no_cordon_stands(t: TestRunner, main: Node2D, label: String, when: String) -> void:
 	var city := Boot.city(main)
 	t.check(CordonInTheWorld.officers(city).is_empty()
 			and not CordonInTheWorld.is_shut(city.map, _swing),
 			"%s: no cordon stands in %s" % [label, when])
 
-func _finish(t) -> void:
+func _finish(t: TestRunner) -> void:
 	t.get_tree().paused = false
 	_booted.free_all()
 	_home.free()
@@ -225,7 +225,7 @@ func _finish(t) -> void:
 
 ## The baby falls asleep inside the park, the cordon still closing; she walks out through the last
 ## gap with her asleep, and home.
-func _test_asleep_in_the_park_and_out_through_the_gap(t, seed_value: int) -> void:
+func _test_asleep_in_the_park_and_out_through_the_gap(t: TestRunner, seed_value: int) -> void:
 	var label := "seed %d, asleep in the park" % seed_value
 	var main: Node2D = await _day_twelve(t, seed_value)
 	var shows := _camera_on(main)
@@ -253,7 +253,7 @@ func _test_asleep_in_the_park_and_out_through_the_gap(t, seed_value: int) -> voi
 
 ## Out first, settled elsewhere with the park taped behind her, then home: the rig's own route, on
 ## to the summary and the next morning.
-func _test_asleep_elsewhere_with_the_park_taped_behind_her(t, seed_value: int) -> void:
+func _test_asleep_elsewhere_with_the_park_taped_behind_her(t: TestRunner, seed_value: int) -> void:
 	var label := "seed %d, settled outside" % seed_value
 	var main: Node2D = await _day_twelve(t, seed_value)
 	var shows := _camera_on(main)
@@ -273,7 +273,7 @@ func _test_asleep_elsewhere_with_the_park_taped_behind_her(t, seed_value: int) -
 
 ## Standing in the park with the baby asleep as the last gap is taped: the day is lost to the
 ## cordon, the summary is left, and the day is played again from its dawn, with a cordon to come.
-func _test_shut_in_with_the_baby_asleep(t, seed_value: int) -> void:
+func _test_shut_in_with_the_baby_asleep(t: TestRunner, seed_value: int) -> void:
 	var label := "seed %d, shut in asleep" % seed_value
 	var main: Node2D = await _day_twelve(t, seed_value)
 	var shows := _camera_on(main)

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## A shared marble bag *(pebbly-ibis, inbox #575 in feathery-lynx)*: a bag with marbles of its own
 ## that stands as a marble in regular bags, any number of times, and is one bag wherever it stands.
@@ -8,7 +8,7 @@ extends RefCounted
 ## which the nested bag is not; that its marble is spent like a plain one; and that its draws are
 ## reproducible from its seed.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_shared_bag_appearing_several_times_is_drawn_from_as_one_bag(t)
 	_test_a_shared_bag_in_more_than_one_regular_bag_is_one_bag(t)
 	_test_a_shared_bag_is_filled_again_when_empty(t)
@@ -18,7 +18,7 @@ func run(t) -> void:
 
 ## Three of its marbles in one regular bag, and the regular bag drawn through twice: the six draws
 ## are six draws of the shared bag, which hands out exactly its own marbles, once each.
-func _test_a_shared_bag_appearing_several_times_is_drawn_from_as_one_bag(t) -> void:
+func _test_a_shared_bag_appearing_several_times_is_drawn_from_as_one_bag(t: TestRunner) -> void:
 	var shared := MarbleBag.shared(["a", "b", "c", "d", "e", "f"], 3)
 	var regular := MarbleBag.new([], [shared, shared, shared], 11)
 	var drawn: Array = []
@@ -34,7 +34,7 @@ func _test_a_shared_bag_appearing_several_times_is_drawn_from_as_one_bag(t) -> v
 			"and six draws are the shared bag's six marbles, none twice: %s" % [drawn])
 
 ## Two regular bags, each holding the shared bag, take from the same marbles.
-func _test_a_shared_bag_in_more_than_one_regular_bag_is_one_bag(t) -> void:
+func _test_a_shared_bag_in_more_than_one_regular_bag_is_one_bag(t: TestRunner) -> void:
 	var shared := MarbleBag.shared(["a", "b", "c", "d"], 5)
 	var first := MarbleBag.new([], [shared, "x"], 1)
 	var second := MarbleBag.new([], [shared, shared], 2)
@@ -55,7 +55,7 @@ func _test_a_shared_bag_in_more_than_one_regular_bag_is_one_bag(t) -> void:
 			"so no marble comes out of it twice before it is empty: %s" % [got])
 
 ## Empty, it is filled again from its own marbles — where a nested bag of n is spent after n draws.
-func _test_a_shared_bag_is_filled_again_when_empty(t) -> void:
+func _test_a_shared_bag_is_filled_again_when_empty(t: TestRunner) -> void:
 	var shared := MarbleBag.shared(["a", "b"], 9)
 	var regular := MarbleBag.new([], [shared], 4)
 	var counts := {"a": 0, "b": 0}
@@ -74,7 +74,7 @@ func _test_a_shared_bag_is_filled_again_when_empty(t) -> void:
 
 ## A regular bag holding k shared marbles draws the shared bag exactly k times per fill, not for
 ## ever: the next draw is a plain marble of the next fill.
-func _test_a_shared_marble_is_spent_like_a_plain_one(t) -> void:
+func _test_a_shared_marble_is_spent_like_a_plain_one(t: TestRunner) -> void:
 	var shared := MarbleBag.shared(["a", "b", "c", "d", "e"], 2)
 	var regular := MarbleBag.new([], [shared, shared, "x"], 6)
 	for _i in 3:
@@ -94,7 +94,7 @@ func _test_a_shared_marble_is_spent_like_a_plain_one(t) -> void:
 
 ## A rig takes from the bag being drawn from: a shared marble in it gives a draw of the shared bag
 ## and is spent there like a plain marble, so no bag marble is left standing in the regular bag.
-func _test_a_rig_taking_from_a_bag_holding_a_shared_marble_draws_it_and_spends_it(t) -> void:
+func _test_a_rig_taking_from_a_bag_holding_a_shared_marble_draws_it_and_spends_it(t: TestRunner) -> void:
 	var shared := MarbleBag.shared(["s1", "s2", "s3", "s4"], 3)
 	var regular := MarbleBag.new([], [shared, shared, "x", "x"], 8)
 	regular.rig(["ensured"], 4)
@@ -113,7 +113,7 @@ func _test_a_rig_taking_from_a_bag_holding_a_shared_marble_draws_it_and_spends_i
 			+ "spent like plain ones (%s)" % [regular.sizes()])
 
 ## Rebuilding both bags from their seeds and skipping to a count draws what the first run drew next.
-func _test_a_shared_bag_draws_the_same_from_the_same_seed(t) -> void:
+func _test_a_shared_bag_draws_the_same_from_the_same_seed(t: TestRunner) -> void:
 	var marbles := []
 	for i in 20:
 		marbles.append(i)

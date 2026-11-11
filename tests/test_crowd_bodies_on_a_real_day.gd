@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Nobody in a day's crowd is ever inside a body the day's real plan stood in the street.
 ##
@@ -14,7 +13,7 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_nobody_ever_stands_in_a_body_on_a_real_day(t)
 
 ## Nobody is ever inside a body's own footprint, over a day's real crowd on a day's real plan,
@@ -38,7 +37,7 @@ func run(t) -> void:
 ## so a walker on the nearest pavement lane can be inside its radius while standing on a tile whose
 ## middle it does not cover — which is a walker beside a wreck rather than a walker in one. Held
 ## ground is the line this draws instead, because that is the property the siting owns.
-func _test_nobody_ever_stands_in_a_body_on_a_real_day(t) -> void:
+func _test_nobody_ever_stands_in_a_body_on_a_real_day(t: TestRunner) -> void:
 	var cars_seen := 0
 	for city_seed: int in [4242, 24757, 91117]:
 		var map := CityGenerator.generate(city_seed)

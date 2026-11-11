@@ -220,7 +220,7 @@ class Verdict extends RefCounted:
 	## The shape of each of them, in the order the line meets them. `shape` above is the first.
 	var shapes: Array[int] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_measure()
 	t.check(true, "m129 zero-cost-line probe ran")
 

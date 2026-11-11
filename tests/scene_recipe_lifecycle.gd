@@ -51,7 +51,7 @@ static func belongs(filename: String, prefix: String) -> bool:
 		return not filename.begins_with(PREFIX_TRAILER) and not filename.begins_with(PREFIX_TASK)
 	return filename.begins_with(prefix)
 
-func lifecycle(t, prefix: String) -> void:
+func lifecycle(t: TestRunner, prefix: String) -> void:
 	await PhysicsTicks.settle(t)
 	var tested := 0
 	for filename in DirAccess.get_files_at("res://scene-recipes"):
@@ -81,7 +81,7 @@ func lifecycle(t, prefix: String) -> void:
 ## A boot of the recipe at `path` under `mode` ("free" or "scripted"), the reload it asks for handed
 ## to `reloads` and its sitting parked in `home` as a real reload parks it at the root. Its save is
 ## at a scratch path, which `Boot.Booted.free_all()` removes.
-func _boot(t, path: String, mode: String, home: Node, reloads: Array[int]) -> Boot.Booted:
+func _boot(t: TestRunner, path: String, mode: String, home: Node, reloads: Array[int]) -> Boot.Booted:
 	var scratch := "user://scene_recipe_lifecycle_%s_%d.json" % [mode, OS.get_process_id()]
 	# Parsed for a window and without `--no-save`, so the save is refused by the recipe flags' own
 	# policy (`GameSave._uses_save()`) and not by the headless gate: a scratch save written is a failure.
@@ -94,7 +94,7 @@ func _boot(t, path: String, mode: String, home: Node, reloads: Array[int]) -> Bo
 
 ## The scripted boot of `path`: its start, read at `begin()`, or an empty dictionary when it did not
 ## stand. Freed at once, before the walk it plays can reach its end.
-func _scripted_boot(t, path: String, label: String) -> Dictionary:
+func _scripted_boot(t: TestRunner, path: String, label: String) -> Dictionary:
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	_quits.clear()
@@ -110,7 +110,7 @@ func _scripted_boot(t, path: String, label: String) -> Dictionary:
 
 ## What a scene started from: its actors and the events installed, as the manifest records them at
 ## `begin()`, and the run's day and seed. Empty when no scene stands.
-func _start_of(t, booted: Boot.Booted, run: RunState, recipe: SceneRecipeRuntime,
+func _start_of(t: TestRunner, booted: Boot.Booted, run: RunState, recipe: SceneRecipeRuntime,
 		label: String) -> Dictionary:
 	if recipe == null or recipe.manifest.get("setup_failed", false):
 		return {}
@@ -136,7 +136,7 @@ func _start_of(t, booted: Boot.Booted, run: RunState, recipe: SceneRecipeRuntime
 ## multiplier, `City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER`), and no more than the meter holds: what raises it (the crowd and every event near her) is not
 ## bounded by what the scene installs, so a rise is not checked. An escape and a
 ## full sleep meter start her asleep (`Baby.force_sleep()`).
-func _meters_hold(t, main: Node, recipe: SceneRecipeRuntime, label: String) -> void:
+func _meters_hold(t: TestRunner, main: Node, recipe: SceneRecipeRuntime, label: String) -> void:
 	var baby := Boot.baby(main)
 	if baby == null:
 		return
@@ -156,7 +156,7 @@ func _meters_hold(t, main: Node, recipe: SceneRecipeRuntime, label: String) -> v
 ## The free-play boot of `path`, played the ways a player plays a scene and left the ways one is
 ## left. Returns `{"initial": <its start>, "bounded_returned": <she went out of a bounded scene
 ## and back>}`.
-func _free_play(t, path: String, label: String) -> Dictionary:
+func _free_play(t: TestRunner, path: String, label: String) -> Dictionary:
 	var result := {"initial": {}, "bounded_returned": false}
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
@@ -218,7 +218,7 @@ func _free_play(t, path: String, label: String) -> Dictionary:
 
 ## Free play, left a second time through a won day: the day's win applies the normal progression,
 ## and the summary's continue reloads.
-func _win_the_day(t, main: Node, run: RunState, reloads: Array[int], label: String) -> void:
+func _win_the_day(t: TestRunner, main: Node, run: RunState, reloads: Array[int], label: String) -> void:
 	var authored_day := run.header.day
 	if authored_day == Tuning.RUN_LENGTH_DAYS:
 		# The door touched, so the run has earned the good ending: outside a recipe that hands the
@@ -235,7 +235,7 @@ func _win_the_day(t, main: Node, run: RunState, reloads: Array[int], label: Stri
 ## Free play, left through a lost escape: perturbs a real actor as well as the player, so a retry
 ## that only moved the player could not pass because a stationary guard happens to remain at its
 ## start, and loses.
-func _lose_the_escape(t, recipe: SceneRecipeRuntime, reloads: Array[int], label: String) -> void:
+func _lose_the_escape(t: TestRunner, recipe: SceneRecipeRuntime, reloads: Array[int], label: String) -> void:
 	var changed := false
 	for actor_name: String in recipe.named:
 		if actor_name != "player":
@@ -248,7 +248,7 @@ func _lose_the_escape(t, recipe: SceneRecipeRuntime, reloads: Array[int], label:
 
 ## A bounded scene installs no body outside its ground; she walks out of it by the nearest way and
 ## back to where she started. Whether she did.
-func _go_out_and_back(t, main: Node, map: CityMap, label: String) -> bool:
+func _go_out_and_back(t: TestRunner, main: Node, map: CityMap, label: String) -> bool:
 	var player := Boot.player(main)
 	for plan: EventScheduler.Planned in Boot.city(main).events.plans():
 		if not map.recipe_bounds.has_point(map.world_to_tile(plan.position)):
@@ -274,7 +274,7 @@ func _go_out_and_back(t, main: Node, map: CityMap, label: String) -> bool:
 ## The void round a stretch is a wall: she walks to the nearest of its cut-off streets by its open
 ## ground, then walks at the void for `EDGE_SECONDS` and never stands on a tile the scene does not
 ## have, having come to the edge.
-func _walk_at_the_void(t, player: Stroller, map: CityMap, label: String) -> void:
+func _walk_at_the_void(t: TestRunner, player: Stroller, map: CityMap, label: String) -> void:
 	var path := path_to_the_void(map, map.world_to_tile(player.global_position))
 	t.check(not path.is_empty(), "%s: the stretch has a street running into the void" % label)
 	if path.is_empty():
@@ -296,7 +296,7 @@ func _walk_at_the_void(t, player: Stroller, map: CityMap, label: String) -> void
 
 ## Walks `player` towards `target` on real input until it is within a quarter tile of it. False,
 ## with the check failed, when the walk is blocked, or a step moves her more than a tick can.
-func _walk_to(t, player: Stroller, target: Vector2, label: String) -> bool:
+func _walk_to(t: TestRunner, player: Stroller, target: Vector2, label: String) -> bool:
 	for _tick in PhysicsTicks.ticks_for(WALK_SECONDS, WALK_SCALE):
 		var before := player.global_position
 		# A stroller facing a wall stops its body six pixels before the tile center.
@@ -319,7 +319,7 @@ func _walk_to(t, player: Stroller, target: Vector2, label: String) -> bool:
 func _run_step() -> float:
 	return Tuning.RUN_SPEED * WALK_SCALE / Engine.physics_ticks_per_second
 
-func _tick_of_walking(t) -> void:
+func _tick_of_walking(t: TestRunner) -> void:
 	await PhysicsTicks.pass_ticks(t, 1, Callable(), WALK_SCALE)
 
 func _press(direction: Vector2) -> void:

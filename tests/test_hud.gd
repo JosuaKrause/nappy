@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
+@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## The HUD's teaching lines, plus the debug/release gate that decides what else it draws.
 ##
@@ -22,7 +22,7 @@ const UIScreens := preload("res://tests/ui_screens.gd")
 ## How fast the long stands run (`Engine.time_scale` for the stretch, put back after it).
 const FAST_SCALE := 21.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_the_run_hint_fires_once_on_the_teaching_day(t)
 	await _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t)
 	await _test_the_run_hint_never_fires_off_the_teaching_day(t)
@@ -49,7 +49,7 @@ func run(t) -> void:
 ## A HUD configured as `main` configures it, before it enters the tree: `debug` false is the release
 ## shape, `touch` the device answer, `learned` an authored mid-game scene's `tutorial_complete`.
 ## It reads `run`, which the test owns.
-func _hud(t, run: RunState, debug := true, touch := false, learned := false) -> CanvasLayer:
+func _hud(t: TestRunner, run: RunState, debug := true, touch := false, learned := false) -> CanvasLayer:
 	var hud: CanvasLayer = HUD_SCENE.instantiate()
 	hud.configure(debug, false, learned)
 	hud.use_touch(touch)
@@ -90,7 +90,7 @@ func _close_offers(steps: Array[int]) -> void:
 
 ## A mother with her camera in the tree and her own physics running: the rig the HUD looks up by
 ## group to ask whether she is standing still.
-func _stroller(t) -> Stroller:
+func _stroller(t: TestRunner) -> Stroller:
 	var stroller := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -102,7 +102,7 @@ func _stroller(t) -> Stroller:
 ## She walks east with the move key held for a few real physics frames, then lets go and is left to
 ## settle to a standstill: "she has walked today" and "she has stopped" both happen the way they do
 ## in play.
-func _walk_then_stop(t, stroller: Stroller) -> void:
+func _walk_then_stop(t: TestRunner, stroller: Stroller) -> void:
 	Input.action_press(&"move_right")
 	for _i in 8:
 		await t.get_tree().physics_frame
@@ -121,7 +121,7 @@ class Stopwatch extends Node:
 
 ## Lets frames pass under `Engine.time_scale` until `done` says so or `limit_seconds` of game time
 ## have gone by; the clock is put back after. Returns the seconds that passed.
-func _stand(t, watch: Stopwatch, limit_seconds: float, done: Callable) -> float:
+func _stand(t: TestRunner, watch: Stopwatch, limit_seconds: float, done: Callable) -> float:
 	var clock := Engine.time_scale
 	Engine.time_scale = FAST_SCALE
 	var start := watch.seconds
@@ -137,7 +137,7 @@ func _stand(t, watch: Stopwatch, limit_seconds: float, done: Callable) -> float:
 ## sometimes after the running tutorial. it should only show up for the tutorial.")* The first
 ## pursuit telegraphed on `Tuning.RUN_TAUGHT_DAY` is the lesson, and it is the only telegraph in
 ## the whole run allowed to say anything: a second pursuit the same day is not a second lesson.
-func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
+func _test_the_run_hint_fires_once_on_the_teaching_day(t: TestRunner) -> void:
 	var run := _run_on(Tuning.RUN_TAUGHT_DAY)
 	var hud := _hud(t, run)
 
@@ -162,7 +162,7 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t) -> void:
 ## playtest 29 finding 4: nothing on screen may name a key at all, on any device.)* The device flag
 ## used to choose between this wording and "Hold SHIFT to run"; now both values produce the same
 ## line, since the double-tap wording is the only one left.
-func _test_the_run_hint_names_a_double_tap_on_a_touch_device(t) -> void:
+func _test_the_run_hint_names_a_double_tap_on_a_touch_device(t: TestRunner) -> void:
 	var run := _run_on(Tuning.RUN_TAUGHT_DAY)
 	var hud := _hud(t, run, true, false)
 
@@ -178,7 +178,7 @@ func _test_the_run_hint_names_a_double_tap_on_a_touch_device(t) -> void:
 ## 29 finding 4.)* The device flag used to choose between "Tap to walk, double tap to run" and
 ## "Arrow keys or WASD to walk"; the keyboard wording is gone, so both values now produce the touch
 ## line.
-func _test_the_walk_hint_names_a_tap_on_a_touch_device(t) -> void:
+func _test_the_walk_hint_names_a_tap_on_a_touch_device(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var hud := _hud(t, run, true, false)
 
@@ -194,7 +194,7 @@ func _test_the_walk_hint_names_a_tap_on_a_touch_device(t) -> void:
 ## again on the same HUD instance when a nerve is spent, so the first retry of `RUN_TAUGHT_DAY` is
 ## already marked taught by an attempt the player never got to finish — and every attempt after
 ## that stays silent. The flag has to belong to the attempt on this one day.
-func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
+func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t: TestRunner) -> void:
 	var run := _run_on(Tuning.RUN_TAUGHT_DAY)
 	var hud := _hud(t, run)
 
@@ -226,7 +226,7 @@ func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t) -> void:
 ## top for mobile so they're not hidden by the finger.")* The device answer, handed to the HUD
 ## before it enters the tree, picks the anchors; desktop keeps the original bottom-left column
 ## untouched. Two HUDs, one per answer, since the placement is made as the HUD enters the tree.
-func _test_the_meters_move_to_the_top_on_a_touch_device(t) -> void:
+func _test_the_meters_move_to_the_top_on_a_touch_device(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var desktop := _hud(t, run, true, false)
 	var meters := desktop.find_child("Meters", true, false) as Control
@@ -258,7 +258,7 @@ func _test_the_meters_move_to_the_top_on_a_touch_device(t) -> void:
 ## or a key — that is not there. The device answer used to pick between this and "Esc to pause";
 ## now both values produce the same line. She walks, stops, and stands past `TEACH_PAUSE_AFTER` on
 ## real frames.
-func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t) -> void:
+func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var stroller := _stroller(t)
 	var hud := _hud(t, run, true, false)
@@ -286,7 +286,7 @@ func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t) -> void:
 ## wait for release, and the time spent held must not count toward the stand a released player
 ## still has to earn: held for longer than the usual wait it says nothing, and once her detention
 ## runs out it still takes the full wait of her own stillness.
-func _test_the_pause_hint_waits_out_a_detention(t) -> void:
+func _test_the_pause_hint_waits_out_a_detention(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var stroller := _stroller(t)
 	var hud := _hud(t, run)
@@ -323,7 +323,7 @@ func _test_the_pause_hint_waits_out_a_detention(t) -> void:
 ## Every pursuit after the teaching day is the mechanic working, not the lesson repeating —
 ## `alley_robbery` from day 8 pursues exactly like `charging_dog` does, and none of it is a
 ## keybinding reminder.
-func _test_the_run_hint_never_fires_off_the_teaching_day(t) -> void:
+func _test_the_run_hint_never_fires_off_the_teaching_day(t: TestRunner) -> void:
 	# Before the day the run is taught: nothing has been taught yet, so there is nothing to repeat
 	# either — the hint still must not fire, because it belongs to one specific day.
 	var run_before := _run_on(Tuning.RUN_TAUGHT_DAY - 1)
@@ -347,7 +347,7 @@ func _test_the_run_hint_never_fires_off_the_teaching_day(t) -> void:
 
 ## Day, act and nerves are all read between days already; during the day the release build says
 ## none of it. A test is itself a debug build, so the release shape is a HUD configured for it.
-func _test_the_release_hud_drops_the_header(t) -> void:
+func _test_the_release_hud_drops_the_header(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var release := _hud(t, run, false)
 	t.check(_label(release, "Header").text == "", "the release build draws no header at all")
@@ -363,7 +363,7 @@ func _test_the_release_hud_drops_the_header(t) -> void:
 ## already on the pram, and the other two are read between days. An announcement is not part of
 ## that cut: it is the one thing the game says out loud, and it keeps the same label in both
 ## shapes because nothing else was asked to carry it.
-func _test_the_release_hud_drops_the_status_line_but_keeps_announcements(t) -> void:
+func _test_the_release_hud_drops_the_status_line_but_keeps_announcements(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var stroller := _stroller(t)
 	stroller.set_physics_process(false)
@@ -402,7 +402,7 @@ func _test_the_release_hud_drops_the_status_line_but_keeps_announcements(t) -> v
 ## re-asks the group whenever it has no baby yet, so the first frame the escape's `Baby` exists is
 ## the first frame the readout can see it too — the same `Baby.state` the pram's own picture
 ## (`Stroller._draw_baby_cue()`) already reads.
-func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t) -> void:
+func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var hud := _hud(t, run)
 	await UIScreens.frames(t)
@@ -434,7 +434,7 @@ func _test_the_status_line_finds_a_baby_that_appears_after_the_hud_does(t) -> vo
 ## half is done a day later, because `complete_resistance_step` records a pickup too even
 ## though a pickup grants no progress. `has_joined_resistance()` (`progress > 0`) would still
 ## be zero at that point, which is why it is not the test here.
-func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
+func _test_the_first_mark_is_never_named_but_later_ones_are(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var release := _hud(t, run, false)
 	var debug := _hud(t, run, true)
@@ -466,7 +466,7 @@ func _test_the_first_mark_is_never_named_but_later_ones_are(t) -> void:
 
 ## The small HUD task line is the short version and always one line: every step's own line fits
 ## the width the HUD gives the label (the Meters column, 280px) at its 12px font, so it never wraps.
-func _test_every_task_line_fits_on_one_line(t) -> void:
+func _test_every_task_line_fits_on_one_line(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var hud := _hud(t, run, false)
 	var label := _label(hud, "Resistance")
@@ -491,7 +491,7 @@ func _test_every_task_line_fits_on_one_line(t) -> void:
 ## The big message shown when a mark is touched breaks between sentences where it must wrap: every
 ## real mark text comes out with each line inside the Teach label's width, and a sentence is never
 ## split. A two-sentence message too wide for one line breaks after the first.
-func _test_a_touched_marks_message_breaks_between_sentences(t) -> void:
+func _test_a_touched_marks_message_breaks_between_sentences(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var hud := _hud(t, run)
 	var teach := _teach(hud)
@@ -525,7 +525,7 @@ func _test_a_touched_marks_message_breaks_between_sentences(t) -> void:
 ## The wording rule holds for every task, not only the first: every perform step
 ## names `Step.header` — the associated mark's own words, cut to fit — never `Step.title`, which
 ## stays unused by the header and is reserved for the progress dots.
-func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> void:
+func _test_every_perform_steps_header_names_the_instruction_not_the_title(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var hud := _hud(t, run, false)
 	var label := _label(hud, "Resistance")
@@ -551,7 +551,7 @@ func _test_every_perform_steps_header_names_the_instruction_not_the_title(t) -> 
 ## will be immediately announced when touching the mark there is no need to mention tasks in the
 ## day brief at all"* moved the announcement onto the world's own teaching line instead of
 ## removing it.
-func _test_a_completed_step_puts_no_text_on_screen(t) -> void:
+func _test_a_completed_step_puts_no_text_on_screen(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var hud := _hud(t, run)
 	_teach(hud).show_line("")
@@ -572,7 +572,7 @@ func _test_a_completed_step_puts_no_text_on_screen(t) -> void:
 ## item asks: a perform step's own completion is the day's last contact, so nothing else ever
 ## overwrites the "out there:" line on its own, and clearing it on completion is what stops it
 ## naming an already-finished task for the rest of the day.
-func _test_the_task_line_clears_when_the_task_is_done(t) -> void:
+func _test_the_task_line_clears_when_the_task_is_done(t: TestRunner) -> void:
 	var run := _run_on(7)
 	# Day 6 already behind her, so the "first mark is never named" gate — the goal has been
 	# joined — is open for day 7's own mark (index 3) and perform (index 4) below.
@@ -609,7 +609,7 @@ func _test_the_task_line_clears_when_the_task_is_done(t) -> void:
 ## screenshots a meter and reads the number back, which is exactly why this survived every gate —
 ## `MeterBar.displayed_value()` and `displayed_fraction()` are pulled out to pure functions for
 ## precisely that reason, so the formatting is a value this suite can hold without a render.
-func _test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t) -> void:
+func _test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t: TestRunner) -> void:
 	t.check(MeterBar.displayed_value(99.999) == 99,
 			"a value a hair under the max still floors to 99, not a rounded-up 100")
 	t.check(MeterBar.displayed_value(99.5) == 99,
@@ -633,7 +633,7 @@ func _test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t) -> void:
 ## "joystick run should now say hold <run button> or double tap to run where it makes sense".)* The
 ## tap scheme draws no run button, so it keeps "double tap to run"; a `TouchControls` in the tree
 ## set to `JOYSTICK` is what the HUD asks.
-func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
+func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t: TestRunner) -> void:
 	var run := _run_on(Tuning.RUN_TAUGHT_DAY)
 	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
 	t.add_child(controls)
@@ -686,7 +686,7 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t) -> void:
 ## walking lesson on day 1 (at dawn and again when the controls are chosen), the pause lesson
 ## (a stand after walking says nothing) and the run lesson (the teaching day does not reopen it).
 ## Each assertion fails if its guard is dropped.
-func _test_learned_lessons_say_no_control_lesson(t) -> void:
+func _test_learned_lessons_say_no_control_lesson(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var stroller := _stroller(t)
 	var hud := _hud(t, run, true, false, true)
@@ -718,7 +718,7 @@ func _test_learned_lessons_say_no_control_lesson(t) -> void:
 
 ## The same calls with `lessons_learned` false: every lesson comes back, so the test above cannot
 ## pass for a HUD that says nothing at all.
-func _test_unlearned_lessons_are_all_said(t) -> void:
+func _test_unlearned_lessons_are_all_said(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var stroller := _stroller(t)
 	var hud := _hud(t, run, true, false, false)

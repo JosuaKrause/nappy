@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What the suites that check a recipe's runtime rules share; not a suite.** A recipe is judged
 ## the way the game judges one: written to a file and loaded by `SceneRecipeRuntime.load_recipe()`,
@@ -13,7 +12,7 @@ var _written := 0
 ## The errors loading `recipe` raises: `[]` for a recipe the game would play. The recipe must pass
 ## the schema (`SceneRecipe.validate()`), so that what a test sees refused was refused by the runtime
 ## and not by a missing field; that is one check of `t`'s.
-func errors_of(t, recipe: Dictionary) -> Array:
+func errors_of(t: TestRunner, recipe: Dictionary) -> Array:
 	var full := {"version": 1, "name": "probe", "seed": 1, "extent": {"scope": "full"},
 			"city": {"context_seed": 1}}
 	full.merge(recipe, true)
@@ -37,5 +36,5 @@ func errors_of(t, recipe: Dictionary) -> Array:
 	return loaded.errors
 
 ## Whether loading `recipe` raises an error that reads `words`.
-func refused(t, recipe: Dictionary, words: String) -> bool:
+func refused(t: TestRunner, recipe: Dictionary, words: String) -> bool:
 	return "\n".join(errors_of(t, recipe)).contains(words)

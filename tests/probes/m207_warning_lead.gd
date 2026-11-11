@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 class_name M207Lead
 extends RefCounted
 ## Measurement probe for M207, "a warning comes shortly before its danger, and comes by itself":
@@ -70,7 +70,7 @@ const ANSWERS := [Answer.TOWARD, Answer.STAND, Answer.AWAY]
 ## to escape a pursuer (amendment 8 of M226).
 const GOLD_ANSWERS := [Answer.TOWARD, Answer.STAND, Answer.AWAY, Answer.RUN]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var edge := DangerEdge.new()
 	print("\n== M207: seconds from the first warning to the earliest reach ==")
 	print("| row | how it is met | walking toward | standing | walking away | exists after | floor | "

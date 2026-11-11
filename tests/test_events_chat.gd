@@ -22,7 +22,7 @@ const RUN_SEED := 2
 ## The long waits go at this many times real time (`PhysicsTicks`): each tick is that much longer.
 const WAIT_SCALE := 3.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	await _test_a_conversation_locks_her_and_releases(t)
 	await _test_a_conversation_prices_by_the_babys_state(t)
@@ -56,7 +56,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 ## world (`EventManager.setup_world()`), and in the tree: its own physics tick hands every instance
 ## where she is and starts the hold. Added to the tree before the stroller, so on every tick it
 ## runs first. `_free_manager()` frees it.
-func _chat_manager(t) -> EventManager:
+func _chat_manager(t: TestRunner) -> EventManager:
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
 	# Open ground, so no wall keeps a field from her (`ExcitementSource.contribution_at()`).
@@ -88,7 +88,7 @@ func _free_the_cast(manager: EventManager, mother, stroller) -> void:
 
 ## A bare `Stroller`, in the tree so `_ready()` has run, its `@onready` camera lookup resolves and
 ## her own physics runs (the lock is run down on her tick).
-func _chat_stroller(t) -> Stroller:
+func _chat_stroller(t: TestRunner) -> Stroller:
 	var stroller := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -97,7 +97,7 @@ func _chat_stroller(t) -> Stroller:
 	t.add_child(stroller)
 	return stroller
 
-func _test_a_conversation_locks_her_and_releases(t) -> void:
+func _test_a_conversation_locks_her_and_releases(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(2000.0, 2000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
@@ -136,7 +136,7 @@ func _test_a_conversation_locks_her_and_releases(t) -> void:
 			"and the same held key moves her again the instant it does")
 	_free_the_cast(manager, mother, stroller)
 
-func _test_a_conversation_prices_by_the_babys_state(t) -> void:
+func _test_a_conversation_prices_by_the_babys_state(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(3000.0, 3000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
@@ -207,7 +207,7 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 ## outside `EventDef.detain_distance()` but still inside `inner_radius` does not — the ambient
 ## field reaches her there and only the conversation must not. She paces, so she carries no body
 ## and her reach is measured from her own centre.
-func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
+func _test_a_conversation_only_starts_inside_detain_radius(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(4000.0, 4000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
@@ -243,7 +243,7 @@ func _test_a_conversation_only_starts_inside_detain_radius(t) -> void:
 			"and the instance is untouched by it")
 	_free_the_cast(manager, mother, stroller)
 
-func _test_a_conversation_happens_once_per_instance(t) -> void:
+func _test_a_conversation_happens_once_per_instance(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(5000.0, 5000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
@@ -277,7 +277,7 @@ func _test_a_conversation_happens_once_per_instance(t) -> void:
 ## mother to stop her. Driven through the manager's own streaming on a plan the way a scene's
 ## recipe hands the day its plans (`EventManager.start_recipe()`), with her ticks streaming around
 ## her as a day's do.
-func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
+func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(5000.0, 5000.0)
 	var path := PackedVector2Array([at, at + Vector2(256.0, 0.0)])
@@ -318,7 +318,7 @@ func _test_a_mother_streamed_out_after_her_chat_does_not_come_back(t) -> void:
 
 ## The design's own sentence is that the take "only means anything where she can see it happen" —
 ## a van she never comes near takes nobody, and it begins the moment she does.
-func _test_the_take_begins_only_once_she_is_close(t) -> void:
+func _test_the_take_begins_only_once_she_is_close(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("abduction")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
@@ -332,7 +332,7 @@ func _test_the_take_begins_only_once_she_is_close(t) -> void:
 	instance.free()
 
 ## One telemetry entry, written once — not per frame, and not before the walk actually finishes.
-func _test_a_completed_take_is_logged_exactly_once(t) -> void:
+func _test_a_completed_take_is_logged_exactly_once(t: TestRunner) -> void:
 	var lines: Array[String] = []
 	var def := EventCatalogue.by_id("abduction")
 	var instance_where := WhereSheIs.nowhere()
@@ -367,7 +367,7 @@ func _hunting_abduction() -> EventDef:
 ## A hunting van has other business: the moment it stops waiting, an in-progress take is
 ## abandoned rather than finished — no victim drawn again, taken or not, and nothing logged for a
 ## take that never completed.
-func _test_a_hunting_van_draws_no_victim(t) -> void:
+func _test_a_hunting_van_draws_no_victim(t: TestRunner) -> void:
 	var lines: Array[String] = []
 	var hot := _hunting_abduction()
 	var instance_where := WhereSheIs.nowhere()
@@ -392,7 +392,7 @@ func _test_a_hunting_van_draws_no_victim(t) -> void:
 ## Anything that stands still is solid at the width it is drawn, and a hunting van stands still:
 ## it hunts on foot (`EventDef.hunts` letting its men out, inbox #669 in coral-lark: "Same as the police"), letting its men
 ## out rather than moving, so its body stays where it is once it has noticed her too.
-func _test_a_hunting_van_stays_solid_once_it_notices_her(t) -> void:
+func _test_a_hunting_van_stays_solid_once_it_notices_her(t: TestRunner) -> void:
 	var hot := _hunting_abduction()
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, hot, Vector2.ZERO, PackedVector2Array(), instance_where)

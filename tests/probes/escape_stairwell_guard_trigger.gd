@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for the stairwell guard's charge distance (inbox #782 in minty-lemur, inbox #764 in minty-lemur): where in
 ## the right shaft the masked man starts his run, by the way she comes down to the first floor, and
@@ -42,13 +42,13 @@ const ROUTES := {
 
 const StrollerSteer := preload("res://tests/probes/stroller_velocity_step.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for s: int in SEEDS:
 		for route in ["turn-10", "turn-11", "turn-9", "turn-9-left", "door"]:
 			for pace in ["walk", "run", "walk-run"]:
 				_once(t, s, route, pace)
 
-func _once(t, s: int, route: String, pace: String) -> void:
+func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
 	var f := InteriorMap.build()
 	var scene := InteriorScene.new()
 	t.add_child(scene)

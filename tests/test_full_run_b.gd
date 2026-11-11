@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Fourteen days end to end, the run of seed 90210. One of the parts the suite is split into by seed so
 ## none runs two minutes serial; the run is in `tests/full_run_rig.gd`.
@@ -9,5 +8,5 @@ extends RefCounted
 
 const Rig := preload("res://tests/full_run_rig.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await Rig.new().run(t, 90210)

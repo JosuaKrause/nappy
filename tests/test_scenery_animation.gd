@@ -8,7 +8,7 @@ const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const EastWestStreet := preload("res://tests/east_west_street.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_roof_rotors(t)
 	_test_both_rotor_phases_share_one_registration(t)
 	await _test_event_parts(t)
@@ -22,7 +22,7 @@ func run(t) -> void:
 ## process frame is given: a frame at a hundredth of its length cannot reach the interval, and one at
 ## a hundred thousand times its length always crosses it, so no check depends on how long a frame
 ## takes.
-func _test_roof_rotors(t) -> void:
+func _test_roof_rotors(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var drawer := RecordingRoofDrawer.new()
@@ -130,7 +130,7 @@ func _rotor_picture(atlas: AtlasLibrary, frame_b: bool) -> Texture2D:
 
 ## Both rotor frames are cropped out of the housing canvas from their editable vector sources, whose
 ## viewBoxes must agree, or the second frame would jump when the rotor turns.
-func _test_both_rotor_phases_share_one_registration(t) -> void:
+func _test_both_rotor_phases_share_one_registration(t: TestRunner) -> void:
 	var authored: Array[Rect2] = []
 	for path in ["res://art/props/industrial_vent_rotor.svg",
 			"res://art/props/industrial_vent_rotor_b.svg"]:
@@ -152,7 +152,7 @@ func _test_both_rotor_phases_share_one_registration(t) -> void:
 ## way the game hands `setup()` a map. What each layer of the scenery stands is read off a recording
 ## scenery drawer, handed to the scenery by the event's drawer (`EventInstance.drawer`, as its
 ## manager's spawner hands the real one) the way the real one hands its own.
-func _test_event_parts(t) -> void:
+func _test_event_parts(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	for id: String in ["car_accident", "burst_water_main"]:
@@ -301,7 +301,7 @@ func _body_of(instance: EventInstance) -> StaticBody2D:
 ## where the ground hands its own, and cells of the test's own. What decides which cells of a city
 ## are water is the city's painting (`tests/test_city_ground_water.gd`); this is what a surface does
 ## with the cells it is given.
-func _test_water_surfaces(t) -> void:
+func _test_water_surfaces(t: TestRunner) -> void:
 	var parent := Node2D.new()
 	t.add_child(parent)
 	var cells: Array[Vector2i] = []

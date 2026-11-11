@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The screen-edge badge for the masked man with the camera interpolated, as the game runs it, from
 ## many places in the physics tick. Its own suite for its wall time (see `test_interior_masked_man.gd`).
@@ -10,7 +9,7 @@ const MaskedManMeeting := preload("res://tests/masked_man_meeting.gd")
 var _rig := InteriorRig.new()
 var _meeting := MaskedManMeeting.new(_rig)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	await _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t)
 
@@ -24,7 +23,7 @@ func run(t) -> void:
 ## charger reset taken out, at an earlier head with the old 0.8 s timer, it failed in 2 of 3 review runs):
 ## it exercises the game's own interpolated camera. Walk pace is the case that failed (the masked man sets off while she is still
 ## walking, from inside the out-of-sight margin band).
-func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t: Node) -> void:
+func _test_the_edge_badge_does_not_depend_on_when_in_the_physics_tick_she_starts(t: TestRunner) -> void:
 	var pauses_ms := [0, 19, 43, 71, 83]
 	var worst := 0
 	var failures := 0

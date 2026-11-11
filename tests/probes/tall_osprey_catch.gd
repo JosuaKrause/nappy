@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for tall-osprey, "the robber's capture zone is too big": a rig that gives the
 ## alley robber's chase different answers, over several seeds, at several catch sizes. Not a suite:
@@ -25,7 +25,7 @@ const STEP := 1.0 / 60.0
 const SEEDS := 200
 const CATCHES := [30.0, 28.0, 26.0, 24.0, 22.0, 20.0, 18.0, 16.0]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for lunge in [0.0, 30.0]:
 		print("== %s ==" % ("held: lunge_reach 30 (108px)" if lunge > 0.0 else "follows the catch"))
 		for catch_radius in CATCHES:

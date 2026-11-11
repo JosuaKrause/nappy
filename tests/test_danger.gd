@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The danger vocabulary: what M22 put in place of the aura rings.
 ##
@@ -14,7 +14,7 @@ extends RefCounted
 ##
 ##     How dangerous a thing is has to be visible from looking at *the thing*.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_atlas.acquire(&"events")
 	await _test_a_stationary_thing_she_stands_in_is_unmarked(t)
 	_test_walking_toward_a_stationary_thing_earns_a_caret(t)
@@ -57,7 +57,7 @@ var _atlas := AtlasLibrary.new()
 ## in reach at all. `set_player_at()`'s default velocity is `Vector2.ZERO`, so a caller that gives
 ## no velocity at all is exactly this case. See `_test_walking_toward_a_stationary_thing_earns_a_
 ## caret` for the one PLAYTEST-115 overturned: the same café, her walking toward it.
-func _test_a_stationary_thing_she_stands_in_is_unmarked(t) -> void:
+func _test_a_stationary_thing_she_stands_in_is_unmarked(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cafe_tables")
 	t.check(def != null and not def.mobile, "cafe_tables is a stationary row")
 	if not def:
@@ -74,7 +74,7 @@ func _test_a_stationary_thing_she_stands_in_is_unmarked(t) -> void:
 ## position no longer held fixed: walking straight at it from outside its own field, at
 ## `Tuning.WALK_SPEED` and no decay given back, the projection now nets something, because in five
 ## seconds of carrying on she really is about to be inside it.
-func _test_walking_toward_a_stationary_thing_earns_a_caret(t) -> void:
+func _test_walking_toward_a_stationary_thing_earns_a_caret(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cafe_tables")
 	if not def:
 		return
@@ -96,7 +96,7 @@ func _test_walking_toward_a_stationary_thing_earns_a_caret(t) -> void:
 ## read after the horizon has actually elapsed, comes out close to what `expected_impact_at()`
 ## said at the start of it. `total_landed` is `landed` itself: one source, so its whole share of
 ## the decay is its own, the same simplification `expected_impact_at()`'s own doc names.
-func _test_the_caret_matches_the_halo_after_the_horizon(t) -> void:
+func _test_the_caret_matches_the_halo_after_the_horizon(t: TestRunner) -> void:
 	var def := EventDef.new()
 	def.id = "caret_matches_halo"
 	def.intensity = 30.0
@@ -150,7 +150,7 @@ func _test_the_caret_matches_the_halo_after_the_horizon(t) -> void:
 ## projects the identical flat mean (`0.625` of `def.intensity`), checked directly rather than only
 ## through its own later average. `busker`'s 7s pulse against the same 5s horizon does not share
 ## that coincidence, so its four phases are expected to differ from each other.
-func _test_the_caret_follows_a_pulse_across_its_horizon(t) -> void:
+func _test_the_caret_follows_a_pulse_across_its_horizon(t: TestRunner) -> void:
 	var horizon := Tuning.EXPECTED_IMPACT_HORIZON
 	var phases := 4
 	for id: String in ["homeless_yeller", "busker"]:
@@ -230,7 +230,7 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t) -> void:
 ## doc proves this for the backward-looking halo), so the sum of the two shared carets is checked
 ## against `total_landed − decay` after the walk rather than against each source's own halo in
 ## isolation.
-func _test_two_sources_share_the_decay_the_way_the_halo_does(t) -> void:
+func _test_two_sources_share_the_decay_the_way_the_halo_does(t: TestRunner) -> void:
 	var horizon := Tuning.EXPECTED_IMPACT_HORIZON
 
 	var def_a := EventDef.new()
@@ -293,7 +293,7 @@ func _test_two_sources_share_the_decay_the_way_the_halo_does(t) -> void:
 ## "carets shouldn't be chosen by source value but by expected impact value" — and, confirming the
 ## consequence of it: "a cat's dash on a standing player lands about 30 and is not marked".)* A cat
 ## driving straight at a standing player still lands under `Tuning.EXPECTED_IMPACT_POINTS`.
-func _test_a_cat_dashing_at_her_is_unmarked(t) -> void:
+func _test_a_cat_dashing_at_her_is_unmarked(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cat_dash")
 	t.check(def != null, "cat_dash is in the catalogue")
 	if not def:
@@ -310,7 +310,7 @@ func _test_a_cat_dashing_at_her_is_unmarked(t) -> void:
 ## The doubled caret's own question, on the row the vocabulary keeps the doubling for: a hard-fail
 ## row on a course that reaches her lethal radius is red, and the same row on a course that misses
 ## it — however loud its field still reads along the way — carries nothing at all.
-func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
+func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	t.check(def != null and def.hard_fail, "cyclist is a hard-fail row")
 	if not def:
@@ -347,7 +347,7 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t) -> void:
 ## scenarios, one for each way a lethal row can be *not yet arrived* and still owe her the mark:
 ## a mobile row already riding its route, a pursuer that has noticed her and is holding its
 ## stand-off, and a pursuer that has not noticed anything yet.
-func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
+func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t: TestRunner) -> void:
 	var cyclist_def := EventCatalogue.by_id("cyclist")
 	if cyclist_def:
 		# No `_advance()` at all: still inside its own 2.0s telegraph, and already moving —
@@ -392,7 +392,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t) -> void:
 ## than a def's `inner_radius`. The car is one the crowd's own entry places on a straight stretch of
 ## a real city (`Crowd.add_recipe_actor()`), driving down its lane at the slowest speed a car is
 ## generated at.
-func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t) -> void:
+func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t: TestRunner) -> void:
 	var street := _a_street(t)
 	if street.is_empty():
 		return
@@ -412,7 +412,7 @@ func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t) -> void:
 ## `Tuning.EXPECTED_IMPACT_POINTS` (40) by construction, so no ordinary walker can ever earn a
 ## caret on its own field — only a jolt (a bump, a horn) could add enough, and this one carries
 ## none.
-func _test_a_walker_brushing_past_is_unmarked(t) -> void:
+func _test_a_walker_brushing_past_is_unmarked(t: TestRunner) -> void:
 	var street := _a_street(t)
 	if street.is_empty():
 		return
@@ -427,7 +427,7 @@ func _test_a_walker_brushing_past_is_unmarked(t) -> void:
 ## A crowd over a real generated map, emptied (no city is built around it: this suite asks the crowd's
 ## bodies), with a straight stretch of ordinary street to place a body on: `{crowd, map, corridor,
 ## along}`, or an empty dictionary (and a failed check) when the map has none.
-func _a_street(t) -> Dictionary:
+func _a_street(t: TestRunner) -> Dictionary:
 	var map := MapCache.of(STREET_SEED)
 	var crowd := _street_rig.a_crowd(t, map)
 	var rng := RandomNumberGenerator.new()
@@ -453,7 +453,7 @@ var _street_rig = preload("res://tests/crowd_street_rig.gd").new()
 ## ordinary arterial density, for the same forty-second walk `docs/EVENTS.md`'s own cost-table
 ## measurement uses, with the player standing still on the pavement rather than walking it: not
 ## one amber caret over the whole of it.
-func _test_the_arterial_at_ordinary_density_marks_nobody(t) -> void:
+func _test_the_arterial_at_ordinary_density_marks_nobody(t: TestRunner) -> void:
 	var map := MapCache.of(9137)
 	var crowd := _street_rig.a_crowd(t, map)
 	var standing_at := CrowdLanes.arterial_pavement(map)
@@ -475,7 +475,7 @@ func _test_the_arterial_at_ordinary_density_marks_nobody(t) -> void:
 
 ## The one property the ring had that a symbol does not get for free. Without it a pulsing event
 ## stops being something to time a pass through and becomes something that hurts at random.
-func _test_the_mark_still_breathes(t) -> void:
+func _test_the_mark_still_breathes(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("homeless_yeller")
 	t.check(def != null and def.pulse_period > 0.0, "the yeller pulses")
 	if not def:
@@ -506,7 +506,7 @@ func _test_the_mark_still_breathes(t) -> void:
 ## the events both watch the ground she is standing on, in the same frame. A setter lets
 ## whichever runs second clear what the first just said — so a lethal event on top of her would
 ## be silently downgraded to nothing by the traffic deciding there was no car coming.
-func _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t) -> void:
+func _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t: TestRunner) -> void:
 	var rig := _rig(t)
 	t.check(rig.alert_level() == Stroller.Alert.NONE, "nothing over her head to begin with")
 
@@ -536,7 +536,7 @@ func _test_a_warning_cannot_be_cleared_by_somebody_who_cannot_see_it(t) -> void:
 ##
 ## Run through `EventManager` rather than through `Stroller.warn()`, because the thing that was
 ## wrong was *which events call it*, and no test in this suite could see that.
-func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
+func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t: TestRunner) -> void:
 	var manager := _manager(t)
 	# Its own tick off (after it enters the tree, which turns it on): the warning under test is run
 	# through `_warn_through()`, and a bare manager's whole tick wants a director.
@@ -603,7 +603,7 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t) -> void:
 ## for: *the entity itself carries most of it* — except a car, which carried nothing at all,
 ## because the caret is drawn by `EventInstance` and a car is not an event. A lethal thing bore
 ## down on the player and produced a mark over **her** head and nothing anywhere else.
-func _test_a_car_sounding_its_horn_carries_its_own_mark(t) -> void:
+func _test_a_car_sounding_its_horn_carries_its_own_mark(t: TestRunner) -> void:
 	var methods: Array[String] = []
 	for entry in (load("res://src/crowd/crowd_agent.gd") as GDScript).get_script_method_list():
 		methods.append(String(entry["name"]))
@@ -623,7 +623,7 @@ func _test_a_car_sounding_its_horn_carries_its_own_mark(t) -> void:
 ## before the same margin fires, buying it more warning for nothing the player did — `"keep"` holds
 ## the viewport at a fixed 1280×720 and bars the rest, so this is the setting the badge's whole
 ## unit of measurement depends on.
-func _test_the_screen_edge_is_the_same_size_for_everyone(t) -> void:
+func _test_the_screen_edge_is_the_same_size_for_everyone(t: TestRunner) -> void:
 	t.check(ProjectSettings.get_setting("display/window/stretch/aspect") == "keep",
 			"the window letterboxes instead of showing more or less city on a different screen")
 
@@ -635,7 +635,7 @@ func _test_the_screen_edge_is_the_same_size_for_everyone(t) -> void:
 ##
 ## The arithmetic of the window (a time to arrive, not a distance) is `tests/test_badge_model.gd`'s;
 ## this runs the plumbing, what the edge hands the model, on real frames.
-func _test_the_badge_measures_the_things_own_speed(t) -> void:
+func _test_the_badge_measures_the_things_own_speed(t: TestRunner) -> void:
 	# The edge runs its own frames, and each thing moves by hand at its own speed over the frame's
 	# own length: a stationary fire engine with her walking at it, then the same one driving at her.
 	var manager := _manager(t)
@@ -680,7 +680,7 @@ func _test_the_badge_measures_the_things_own_speed(t) -> void:
 ## that the edge asks it. The crossing cat comes at 240px/s, fast enough to be badged on its speed
 ## alone, and its row does not announce it (it does not telegraph its coming, PLAYTEST-145 20), so
 ## a second of it running at her from off screen puts nothing on the edge.
-func _test_the_edge_badges_only_what_the_row_announces(t) -> void:
+func _test_the_edge_badges_only_what_the_row_announces(t: TestRunner) -> void:
 	var manager := _manager(t)
 	manager.set_physics_process(false)
 	var standing := Node2D.new()
@@ -710,7 +710,7 @@ func _test_the_edge_badges_only_what_the_row_announces(t) -> void:
 
 ## An instance still around keeps its badge frame to frame, and one `_events.instances()` stopped
 ## carrying loses it rather than leaving it up forever.
-func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t) -> void:
+func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t: TestRunner) -> void:
 	var manager := _manager(t)
 	manager.set_physics_process(false)
 	var standing := Node2D.new()
@@ -744,7 +744,7 @@ func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t) -> void:
 ## useful.")* The hold on the traffic's warning is 1.4s and has a real job — surviving the gap
 ## between two cars in one lane — so the fix is a second condition rather than a shorter hold,
 ## and the condition belongs to the system that can see it.
-func _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t) -> void:
+func _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t: TestRunner) -> void:
 	var rig := _rig(t)
 
 	rig.warn(Stroller.Alert.SOON, 1.4, Crowd.WARNING_SOURCE)
@@ -773,7 +773,7 @@ func _test_a_source_can_take_down_its_own_warning_and_nobody_elses(t) -> void:
 ## The baby's own cue. *(Playtest 06, finding 5.)* Four states, each a different instruction, and
 ## the test is that they are *states* — a mark that is up whenever a meter is moving is the HUD
 ## drawn over the pram, which is the rings' mistake arriving from the other direction.
-func _test_the_pram_says_how_the_baby_is(t) -> void:
+func _test_the_pram_says_how_the_baby_is(t: TestRunner) -> void:
 	var baby := Baby.new()
 
 	baby.state = GameEnums.BabyState.AWAKE
@@ -811,7 +811,7 @@ func _test_the_pram_says_how_the_baby_is(t) -> void:
 ## that is not there, on the commonest picture in the game. It is the same shape as playtest 06's
 ## own two findings, which were both about *when* rather than *which*, and it reached a player for
 ## the same reason: nothing in this suite could see a `_draw`, so the decision is a function now.
-func _test_the_babys_cue_only_steps_aside_for_something(t) -> void:
+func _test_the_babys_cue_only_steps_aside_for_something(t: TestRunner) -> void:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var rig: Stroller = scene.instantiate()
 
@@ -876,7 +876,7 @@ func _test_the_babys_cue_only_steps_aside_for_something(t) -> void:
 
 ## Carrying, the cue sits over her head on all eight facings and steps aside to one fixed shoulder,
 ## so a run that turns does not move it (inbox #778 in minty-lemur: the zzz "moves around wildly").
-func _test_the_carried_babys_cue_stays_over_her_head(t) -> void:
+func _test_the_carried_babys_cue_stays_over_her_head(t: TestRunner) -> void:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var rig: Stroller = scene.instantiate()
 	rig.carrying = true
@@ -903,7 +903,7 @@ func _test_the_carried_babys_cue_stays_over_her_head(t) -> void:
 ## A manager over open ground and a run of its own, handed in as the escape's building is handed its
 ## world (`EventManager.setup_world()`), in the tree; the events it spawns stand in the world node
 ## its map is drawn in, a child of the manager. `_free_manager()` frees it.
-func _manager(t) -> EventManager:
+func _manager(t: TestRunner) -> EventManager:
 	var run := RunState.new()
 	run.start_run(1)
 	var map := WorldMap.open_ground()
@@ -922,7 +922,7 @@ func _free_manager(manager: EventManager) -> void:
 ## asked to redraw, and what the recording drawer it was handed before `setup()` (`_instance()`)
 ## holds for that draw is read back. One entry for a costly mark, two stacked for a lethal one
 ## (`colour`, and `size.x` its width), none when no mark is wanted.
-func _carets(t, instance: EventInstance) -> Array[Dictionary]:
+func _carets(t: TestRunner, instance: EventInstance) -> Array[Dictionary]:
 	var drawer := instance.drawer as RecordingEventDrawer
 	if not instance.is_inside_tree():
 		t.add_child(instance)
@@ -965,7 +965,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 ## A Stroller with the camera it looks up by path, in the tree so its `@onready` actually runs, its
 ## own tick off until a test lets real ticks pass (`_physics_ticks()`). `SomeNode.new()` is not
 ## named `SomeNode`, so the camera has to be named explicitly or the lookup fails silently.
-func _rig(t) -> Stroller:
+func _rig(t: TestRunner) -> Stroller:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -978,7 +978,7 @@ func _rig(t) -> Stroller:
 ## Lets `seconds` of the stroller's own physics ticks pass for real, counted in ticks, one tick a
 ## frame (record busy-puffin: a slow frame would pack several), its tick switched on only for them.
 ## Ends on the frame after the last tick, so the rig has run every one of them.
-func _physics_ticks(t, rig: Stroller, seconds: float) -> void:
+func _physics_ticks(t: TestRunner, rig: Stroller, seconds: float) -> void:
 	var steps := Engine.max_physics_steps_per_frame
 	Engine.max_physics_steps_per_frame = 1
 	rig.set_physics_process(true)

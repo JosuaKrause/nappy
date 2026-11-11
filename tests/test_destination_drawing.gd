@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What a resistance contact draws (snowy-kestrel, the player: "red arrow tasks show a chalk mark at
 ## their destination"): the chalk mark and its touched picture belong to the pickup alone, and a
@@ -13,13 +12,13 @@ extends RefCounted
 ## with the contact (the task on offer after a pickup is read, where the red arrow ends) is the
 ## director's suite's and not this one's.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_only_a_pickup_draws_a_mark_and_a_done_one_keeps_its_touched_picture(t)
 
 ## On every step of the subquest: a pickup's contact draws its chalk, untouched and done (the read
 ## mark keeps its touched picture where she read it); a task's destination draws nothing, untouched
 ## or done.
-func _test_only_a_pickup_draws_a_mark_and_a_done_one_keeps_its_touched_picture(t) -> void:
+func _test_only_a_pickup_draws_a_mark_and_a_done_one_keeps_its_touched_picture(t: TestRunner) -> void:
 	var pickups := 0
 	var tasks := 0
 	for step in ResistanceSteps.all():

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for M96, "the day ends crying only after a push at the top"
 ## (docs/playtests/PLAYTEST-126.md, statement 1). Not a suite: it prints numbers rather than
@@ -54,7 +54,7 @@ var _world: FakeWorld
 var _stroller: Stroller
 var _baby: Baby
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("\n== M96: the day ends crying only after a push at the top ==")
 	print("(mass, window) settings swept: %s" % [SETTINGS])
 
@@ -115,7 +115,7 @@ func _report_cross(label: String, cross: Dictionary) -> void:
 ## inside a tree, and `_update_excitement()` reads those fields rather than this script's locals.
 ## Without this, `decay_rate()`'s own guard (`if not _stroller or not _world: return 0.0`) would
 ## silently zero every decay figure this probe measures.
-func _build(t) -> void:
+func _build(t: TestRunner) -> void:
 	_world = FakeWorld.new()
 	t.add_child(_world)
 	_stroller = Stroller.new()
@@ -173,7 +173,7 @@ func _track_cross(cross: Dictionary, elapsed: float) -> void:
 
 ## One whole `CrowdAgent` bump — the same jolt `Crowd._bump()` fires on a genuine contact — landed
 ## while walking, starting from `at`.
-func _one_bump_from(t, at: float) -> Dictionary:
+func _one_bump_from(t: TestRunner, at: float) -> Dictionary:
 	_build(t)
 	var agent := CrowdAgent.new()
 	agent.global_position = _stroller.global_position
@@ -196,7 +196,7 @@ func _one_bump_from(t, at: float) -> Dictionary:
 
 ## Two bumps back to back, both landed while she is already sitting at the cap — the player's own
 ## "one bump into one pedestrian" turning into two before the mass has had a chance to drain.
-func _two_bumps_at_the_top(t) -> Dictionary:
+func _two_bumps_at_the_top(t: TestRunner) -> Dictionary:
 	_build(t)
 	_baby.excitement = Tuning.METER_MAX
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
@@ -230,7 +230,7 @@ func _two_bumps_at_the_top(t) -> Dictionary:
 
 ## Walking a straight line past a stationary row's own field, lateral to its centre by one lane's
 ## width, starting already at the cap.
-func _walk_past_row(t, id: String) -> Dictionary:
+func _walk_past_row(t: TestRunner, id: String) -> Dictionary:
 	var def := EventCatalogue.by_id(id)
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2.ZERO]))
@@ -266,7 +266,7 @@ func _walk_past_row(t, id: String) -> Dictionary:
 ## is ignored on purpose: this rig places her by hand rather than colliding her, and what a solid
 ## body costs is a route decision the fairness contract already prices elsewhere — the question
 ## here is only what standing inside the field itself does to the mass.
-func _stand_in_row(t, id: String, seconds: float) -> Dictionary:
+func _stand_in_row(t: TestRunner, id: String, seconds: float) -> Dictionary:
 	var def := EventCatalogue.by_id(id)
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2.ZERO]))
@@ -299,7 +299,7 @@ func _stand_in_row(t, id: String, seconds: float) -> Dictionary:
 ## Seconds for a baby at 100 with nothing near, walking ordinary ground, to fall under
 ## `Baby.EXCITEMENT_NEARLY_CRYING` — independent of the two new constants, since nothing is
 ## adding to the mass once the source is gone.
-func _fall_from_the_top(t) -> float:
+func _fall_from_the_top(t: TestRunner) -> float:
 	_build(t)
 	_baby.excitement = Tuning.METER_MAX
 	_world.noise = 0.0

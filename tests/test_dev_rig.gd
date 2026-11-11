@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `DevRig` (src/dev/dev_rig.gd) is the half of the dev-flag surface that reads the live city —
 ## docs/TODO.md, M100, "Small, real, and nobody's": the code `--spawn`, `--follow`, `--overview`
@@ -30,7 +30,7 @@ const RUN_SEED := 2
 var _city: City
 var _resistance: ResistanceDirector
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_build_day(t)
 	_test_named_tile_targets_land_on_a_walkable_tile(t)
 	_test_event_target_lands_near_a_placed_event(t)
@@ -54,7 +54,7 @@ func _rng(stream: String) -> RandomNumberGenerator:
 ## (the same reasoning `tests/test_event_manager.gd`'s own `_build_city()` gives), and the
 ## resistance run over the city's own fresh run, so day 6 selects step 1 on a run that has done
 ## nothing, on the seed `RUN_SEED` names.
-func _build_day(t) -> void:
+func _build_day(t: TestRunner) -> void:
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
 	_city.build(MapCache.of(SEED))
@@ -73,14 +73,14 @@ func _build_day(t) -> void:
 			_city.spawn_siting)
 	_resistance.start_day(DAY, _rng("resistance"), 300.0)
 
-func _teardown(t) -> void:
+func _teardown(t: TestRunner) -> void:
 	_resistance.free()
 	_city.free()
 
 ## `park` and `alley` are plain tile-type sweeps; both have to exist in a generated city (see
 ## `docs/CITY.md`'s own generation guarantees) and both have to leave her somewhere she can
 ## actually stand, which is the whole promise `for_spawn_target()` makes for every named target.
-func _test_named_tile_targets_land_on_a_walkable_tile(t) -> void:
+func _test_named_tile_targets_land_on_a_walkable_tile(t: TestRunner) -> void:
 	for target in ["park", "alley"]:
 		var at := DevRig.for_spawn_target(target, _city, _resistance, _city.run.header)
 		t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),
@@ -89,14 +89,14 @@ func _test_named_tile_targets_land_on_a_walkable_tile(t) -> void:
 ## `event` takes the first non-ambient placed plan — `_city.events.stream_radius = INF` in
 ## `_build_day()` places every plan without a player to stream one in, so day 4's set is
 ## guaranteed to have at least one.
-func _test_event_target_lands_near_a_placed_event(t) -> void:
+func _test_event_target_lands_near_a_placed_event(t: TestRunner) -> void:
 	var at := DevRig.for_spawn_target("event", _city, _resistance, _city.run.header)
 	t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),
 			"--spawn event lands on a walkable tile (%s)" % at)
 
 ## `closure:0` reads the day's own closures rather than the tile grid, so what it pins is that a
 ## generated day actually has one and that the lookup does not fall back to the doorstep.
-func _test_closure_target_lands_near_the_first_closure(t) -> void:
+func _test_closure_target_lands_near_the_first_closure(t: TestRunner) -> void:
 	t.check(not _city.streets().closures().is_empty(), "day %d has a closure to look at" % DAY)
 	var at := DevRig.for_spawn_target("closure:0", _city, _resistance, _city.run.header)
 	t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),
@@ -105,7 +105,7 @@ func _test_closure_target_lands_near_the_first_closure(t) -> void:
 ## `contact` reads `ResistanceDirector.contact_position()` rather than the map at all, so this is
 ## the one target that would return the home fallback on a wiring bug even though the city has
 ## plenty of walkable tiles elsewhere.
-func _test_contact_target_lands_beside_the_resistance_mark(t) -> void:
+func _test_contact_target_lands_beside_the_resistance_mark(t: TestRunner) -> void:
 	var contact := _resistance.contact_position()
 	t.check(contact != Vector2.INF, "day %d has a resistance mark placed" % DAY)
 	var at := DevRig.for_spawn_target("contact", _city, _resistance, _city.run.header)
@@ -115,7 +115,7 @@ func _test_contact_target_lands_beside_the_resistance_mark(t) -> void:
 ## Every named branch above returns before the two warning paths at the bottom of
 ## `for_spawn_target()` — this is what exercises them: a target matching nothing rolls all the way
 ## through and lands on the doorstep, with a warning rather than a silent wrong answer.
-func _test_an_unknown_target_warns_and_returns_home(t) -> void:
+func _test_an_unknown_target_warns_and_returns_home(t: TestRunner) -> void:
 	var at := DevRig.for_spawn_target("not-a-real-target", _city, _resistance, _city.run.header)
 	t.check(at == _city.map.home_world_position(),
 			"an unrecognised --spawn target falls back to the doorstep rather than guessing")
@@ -128,7 +128,7 @@ func _test_an_unknown_target_warns_and_returns_home(t) -> void:
 ## `push_warning` rather than `push_error` because this test feeds the bad input on purpose and has
 ## to reach it by return value rather than failing the run), and only then does the same doorstep
 ## fallback an unrecognised target reaches apply.
-func _test_a_queue_fed_row_refuses_by_name(t) -> void:
+func _test_a_queue_fed_row_refuses_by_name(t: TestRunner) -> void:
 	var lines: Array[String] = []
 	var game_trace := _city.trace
 	_city.trace = RunTrace.recording(lines)
@@ -146,7 +146,7 @@ func _test_a_queue_fed_row_refuses_by_name(t) -> void:
 ## `outer_radius` (168px) sits *under* its own `EventDef.notice` (150px is under 168, but the old
 ## `outer_radius * 0.6` = 100.8px offset was under both) — so the old offset stood her inside the
 ## trigger. The fixed offset has to clear the larger of the two plus a tile's margin.
-func _test_a_waiting_row_stands_outside_its_trigger(t) -> void:
+func _test_a_waiting_row_stands_outside_its_trigger(t: TestRunner) -> void:
 	var found: EventScheduler.Planned = null
 	for plan in _city.events.plans():
 		if plan.def.id == "pigeon_flock" and plan.is_placed():
@@ -169,7 +169,7 @@ func _test_a_waiting_row_stands_outside_its_trigger(t) -> void:
 ## carriageway column on a north-south street, because the offset never asked which axis the
 ## street's own width ran on. `CityMap`'s `corridor_offset` is pure arithmetic on
 ## `Tuning.STREET_WIDTH`, so a bare `CityMap.new()` answers it without generating a city.
-func _test_the_pavement_offset_crosses_the_streets_own_axis(t) -> void:
+func _test_the_pavement_offset_crosses_the_streets_own_axis(t: TestRunner) -> void:
 	var map := CityMap.new()
 	const RADIUS := 100.0
 
@@ -199,7 +199,7 @@ const _CHECKPOINT_SEED := 771103
 ## Before the region wall exists, `door_bodies` is empty every day regardless of seed — the same
 ## "not there yet" shape `_test_an_unknown_target_warns_and_returns_home` covers for a typo'd
 ## target, but reached here through a real target on a day too early for it.
-func _test_no_door_before_the_region_wall_starts(t) -> void:
+func _test_no_door_before_the_region_wall_starts(t: TestRunner) -> void:
 	t.check(DAY < Tuning.REGION_WALL_FIRST_DAY,
 			"day %d is before the region wall starts (day %d)" % [DAY, Tuning.REGION_WALL_FIRST_DAY])
 	var at := DevRig.for_spawn_target("door", _city, _resistance, _city.run.header)
@@ -208,7 +208,7 @@ func _test_no_door_before_the_region_wall_starts(t) -> void:
 
 ## `door:0` lands on a walkable tile `TILE_SIZE * 4` back from the first hut, along its own
 ## `facing` axis — the approach side a `--walk` in that same direction closes toward.
-func _test_door_target_lands_on_the_approach_side_of_a_hut(t) -> void:
+func _test_door_target_lands_on_the_approach_side_of_a_hut(t: TestRunner) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := MapCache.of(_CHECKPOINT_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)

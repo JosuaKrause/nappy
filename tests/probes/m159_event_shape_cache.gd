@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Supplemental unprofiled timing for event spread classification. The active-play comparison is
 ## the performance evidence; this isolates the enum match replaced by the cached read so profiler
@@ -7,7 +6,7 @@ extends RefCounted
 const PASSES := 20000
 const PAIRS := 5
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var defs := EventCatalogue.all()
 	t.check(not defs.is_empty(), "the classifier benchmark has catalogue definitions to read")
 	_measure_legacy(defs)

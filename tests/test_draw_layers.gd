@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## The one draw-layer list (`DrawLayer`): nothing else writes a `z_index`, the layers keep the order
 ## each one's reason gives, a world adds a node on the layer it is asked for, and a long footprint is
@@ -9,7 +8,7 @@ const MODULE := "res://src/world/draw_layer.gd"
 const EastWestStreet = preload("res://tests/east_west_street.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_no_z_index_is_written_outside_the_module(t)
 	_test_the_scan_finds_a_write(t)
 	_test_the_layers_keep_their_reasons(t)
@@ -21,7 +20,7 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------ the module ---
 
-func _test_no_z_index_is_written_outside_the_module(t) -> void:
+func _test_no_z_index_is_written_outside_the_module(t: TestRunner) -> void:
 	var files := _files_under("res://src", ".gd")
 	files.append_array(_files_under("res://scenes", ".tscn"))
 	t.check(files.size() > 100, "there were scripts and scenes to read (%d)" % files.size())
@@ -36,7 +35,7 @@ func _test_no_z_index_is_written_outside_the_module(t) -> void:
 	t.check(_z_writes(FileAccess.get_file_as_string(MODULE), false).size() > 0,
 			"and DrawLayer itself writes one, so the scan reads the form a write takes")
 
-func _test_the_scan_finds_a_write(t) -> void:
+func _test_the_scan_finds_a_write(t: TestRunner) -> void:
 	t.check(_z_writes("func f() -> void:\n\tnode.z_index = 3\n", false).size() == 1,
 			"the scan finds a script that writes a z_index")
 	t.check(_z_writes("\tz_as_relative = false\n", false).size() == 1,
@@ -85,7 +84,7 @@ static func _files_under(directory: String, suffix: String) -> PackedStringArray
 # ------------------------------------------------------------------ the order ---
 
 ## Each ordering is a reason the list states, not its numbers.
-func _test_the_layers_keep_their_reasons(t) -> void:
+func _test_the_layers_keep_their_reasons(t: TestRunner) -> void:
 	var z := func(layer: int) -> int: return _z_asked_onto(layer)
 	t.check(z.call(DrawLayer.Layer.GROUND) == 0,
 			"the ground draws at the engine's default z, where a world's own ground nodes draw")
@@ -115,7 +114,7 @@ func _z_asked_onto(layer: int) -> int:
 	node.free()
 	return z
 
-func _test_a_world_adds_a_node_on_its_layer(t) -> void:
+func _test_a_world_adds_a_node_on_its_layer(t: TestRunner) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var standing := Node2D.new()
@@ -140,7 +139,7 @@ func _test_a_world_adds_a_node_on_its_layer(t) -> void:
 
 # ------------------------------------------------------------------- slices ---
 
-func _test_slices_stand_at_their_own_feet(t) -> void:
+func _test_slices_stand_at_their_own_feet(t: TestRunner) -> void:
 	var across := DrawLayer.slice_feet(Vector2(-30.0, 5.0), Vector2(30.0, 5.0), 3)
 	t.check(across.size() == 3 and across[0] == Vector2(-20.0, 5.0)
 			and across[1] == Vector2(0.0, 5.0) and across[2] == Vector2(20.0, 5.0),
@@ -162,7 +161,7 @@ func _test_slices_stand_at_their_own_feet(t) -> void:
 ## A spread-drawn row stood in a world draws its picture in slices: each a node of its own in the
 ## world's entity layer at its own feet, covering the body's run, ahead of the instance in the tree
 ## so the instance's caret is drawn over them at a tie; the rim stands behind the first.
-func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
+func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	var def := EventCatalogue.by_id("construction")
@@ -212,7 +211,7 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 ## **An event's slices go with it** while the world it stood in stays: freed with the instance on
 ## its own, a frame later no slice of it is left in the world's entity layer. Freeing the world
 ## would take every slice with it whatever the instance does, so the world is kept.
-func _test_the_slices_go_with_their_event(t) -> void:
+func _test_the_slices_go_with_their_event(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	var world := WorldContext.new()
@@ -275,7 +274,7 @@ static func _slices_in(layer: Node) -> int:
 ## atlas, so a crash's and a burst main's scenery is still built behind each slice: the part of
 ## the picture each slice of a fallen tree was drawn with, and the band each slice's scenery was
 ## cut to.
-func _test_every_long_picture_is_drawn_in_slices(t) -> void:
+func _test_every_long_picture_is_drawn_in_slices(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	for id: String in ["cafe_tables", "protest", "firefight", "fallen_tree", "car_accident",

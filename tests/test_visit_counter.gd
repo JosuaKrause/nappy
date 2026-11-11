@@ -51,7 +51,7 @@ class RecordingCounter extends VisitCounter:
 	func _send_event(name: String) -> void:
 		sent.append(name)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_should_send_truth_table(t)
 	_test_day_event_name(t)
 	_test_loss_cause_names_every_day_result(t)
@@ -94,7 +94,7 @@ func run(t) -> void:
 ## release build, `?debug=1` unasked); the fourth, `window.goatcounter.count` being present, is
 ## `send()`'s `present`, which counts at once when true and queues when false. All four are
 ## required; missing any one of them sends nothing.
-func _test_should_send_truth_table(t) -> void:
+func _test_should_send_truth_table(t: TestRunner) -> void:
 	var scripts: Array[String] = []
 	var outbox := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))
 	t.check(GoatCounterOutbox.may_ever_send(true, false, false),
@@ -128,7 +128,7 @@ func _test_should_send_truth_table(t) -> void:
 			% [web, debug_build, debug_requested, present])
 
 ## A day-scoped name is `nappy-day-<day>-<suffix>`, joined the way PLAYTEST-132's own example does.
-func _test_day_event_name(t) -> void:
+func _test_day_event_name(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.day_ended.emit(6, GameEnums.DayResult.LOST_CRYING, "", 0.0)
 	t.check(counter.sent.back() == "nappy-day-6-lost-crying",
@@ -146,7 +146,7 @@ func _test_day_event_name(t) -> void:
 
 ## `GameEnums.DayResult`'s own keys are the loss causes — nothing here invents a second name for
 ## one, it only lowercases and hyphenates the key already in the game. A day's end sends the key.
-func _test_loss_cause_names_every_day_result(t) -> void:
+func _test_loss_cause_names_every_day_result(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	var named := [
 		[GameEnums.DayResult.WON, "won", "a win names itself, no 'lost-' prefix"],
@@ -164,7 +164,7 @@ func _test_loss_cause_names_every_day_result(t) -> void:
 ## What a day's end sends is the loss kind with `EventBus.day_ended`'s own raw cause folded on, for
 ## the two results that ever have one — a win or a timeout keeps its bare name even if it is
 ## (wrongly) handed a cause, since the game names none for either.
-func _test_loss_event_suffix_folds_a_cause_only_for_the_two_results_that_ever_have_one(t) -> void:
+func _test_loss_event_suffix_folds_a_cause_only_for_the_two_results_that_ever_have_one(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.day_ended.emit(2, GameEnums.DayResult.LOST_CRYING, "traffic", 0.0)
 	t.check(counter.sent.back() == "nappy-day-2-lost-crying-traffic", "a crying loss folds its cause on")
@@ -180,7 +180,7 @@ func _test_loss_event_suffix_folds_a_cause_only_for_the_two_results_that_ever_ha
 	t.check(counter.sent.back() == "nappy-day-2-lost-timeout", "a timeout never carries a cause either")
 	_done(counter)
 
-func _test_run_begun_name(t) -> void:
+func _test_run_begun_name(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.run_begun.emit(1, false)
 	t.check(counter.sent == ["nappy-run-fresh"],
@@ -191,7 +191,7 @@ func _test_run_begun_name(t) -> void:
 	t.check(counter.sent == ["nappy-run-resumed-day-9"], "a resumed run names the day it resumed on")
 	_done(counter)
 
-func _test_mode_event_name(t) -> void:
+func _test_mode_event_name(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.run_mode_chosen.emit(true, 1)
 	t.check(counter.sent.front() == "nappy-mode-hard", "a hard run")
@@ -201,7 +201,7 @@ func _test_mode_event_name(t) -> void:
 	_done(counter)
 
 ## Every run keeps the plain `began`, so its series runs on unbroken; a hard run adds its copy.
-func _test_day_began_names(t) -> void:
+func _test_day_began_names(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.run.calendar.hard_mode = false
 	counter.begin(5)
@@ -213,7 +213,7 @@ func _test_day_began_names(t) -> void:
 		"a hard run's day sends the plain name and its hard-only copy")
 	_done(counter)
 
-func _test_checkpoint_event_name(t) -> void:
+func _test_checkpoint_event_name(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.went_back_to_a_checkpoint.emit(8, 10)
 	t.check(counter.sent.back() == "nappy-checkpoint-8-from-day-10",
@@ -225,7 +225,7 @@ func _test_checkpoint_event_name(t) -> void:
 ## The day a fresh run's title stands in front of has already begun as a normal run's by the time
 ## the title says the run is hard, so the counter sends that day's hard copy with the mode; every
 ## later day of a hard run sends it as the day begins.
-func _test_a_hard_run_counts_its_days_twice_and_a_normal_run_once(t) -> void:
+func _test_a_hard_run_counts_its_days_twice_and_a_normal_run_once(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.run.calendar.hard_mode = false
 	counter.begin(1)
@@ -248,7 +248,7 @@ func _test_a_hard_run_counts_its_days_twice_and_a_normal_run_once(t) -> void:
 
 ## A key begins the run in the tap scheme, and is still reported as keys: the name comes from the
 ## input that began the run, not the scheme it fell back to.
-func _test_controls_event_name(t) -> void:
+func _test_controls_event_name(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.controls_chosen.emit(true, false)
 	t.check(counter.sent.back() == "nappy-controls-joystick", "the joystick button")
@@ -261,7 +261,7 @@ func _test_controls_event_name(t) -> void:
 
 ## `chatting_mother` is a `chat`; every other id that can reach `EventBus.player_detained` — the
 ## catalogue's only other two rows with a `detain_seconds` above zero — is a `checkpoint`.
-func _test_detention_suffix(t) -> void:
+func _test_detention_suffix(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
 	counter.begin(day)
@@ -280,7 +280,7 @@ func _test_detention_suffix(t) -> void:
 ## index 2 is the perform step it unlocks (`ResistanceSteps._build()`), so this is real catalogue
 ## data rather than an index chosen to make the parity come out right. A completed step is sent as
 ## `mark-read` or `task-done` accordingly.
-func _test_is_pickup_step(t) -> void:
+func _test_is_pickup_step(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
 	counter.begin(day)
@@ -301,7 +301,7 @@ func _test_is_pickup_step(t) -> void:
 ## `JavaScriptBridge` at all — the point of the check is that the *listening* itself is inert, the
 ## same "telemetry must not touch gameplay" invariant `tests/test_telemetry.gd` pins for the run
 ## log, adapted for a listener with no per-frame watch of its own.
-func _test_listening_touches_no_gameplay_state(t) -> void:
+func _test_listening_touches_no_gameplay_state(t: TestRunner) -> void:
 	var counter := VisitCounter.new()
 	var bus: Node = EVENT_BUS_SCRIPT.new()
 	var flow := RunFlow.new()
@@ -379,7 +379,7 @@ func _run_snapshot(run: RunState) -> Dictionary:
 ## it), by day" — a step offered and then completed never reaches `_on_day_ended()`'s own sweep; a
 ## step offered and never touched, or offered on an earlier day and still open, does. Read off what
 ## the counter sends when the day ends: a skipped step is a `task-skipped` of the day it was offered.
-func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
+func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.begin(5)
 	counter.bus.resistance_contact_available.emit(5)
@@ -409,7 +409,7 @@ func _test_task_skipped_only_for_a_step_still_open_on_its_own_day(t) -> void:
 ## a pickup rather than apply a parity rule of their own — checked here through what each sends.
 ## Index 1 (day 6's mark) and index 2 (the perform step it unlocks) are real `ResistanceSteps` data,
 ## not indices chosen to make a parity come out right.
-func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t) -> void:
+func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.begin(6)
 	counter.bus.resistance_contact_available.emit(1)
@@ -434,7 +434,7 @@ func _test_mark_and_task_sends_are_split_by_the_resistance_own_data(t) -> void:
 ## (PLAYTEST-143: "no, even current run wouldn't work if the player dies multiple times on the same
 ## day"). Read off `RecordingCounter`, which keeps what `_send_event()` was asked for, since the
 ## real one is silent in this process.
-func _test_every_tear_and_every_hold_is_sent(t) -> void:
+func _test_every_tear_and_every_hold_is_sent(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
 	counter.begin(day)
@@ -457,7 +457,7 @@ func _test_every_tear_and_every_hold_is_sent(t) -> void:
 ## The fold this counter makes: the day's end's own cause becomes part of the one event a lost day
 ## sends, never a `lost-crying` beside a second `noise-traffic` of its own — the double counting the
 ## player asked to see gone ("lost-crying still doesn't tell me anything about how they died").
-func _test_a_lost_day_folds_its_cause_into_one_event_not_two(t) -> void:
+func _test_a_lost_day_folds_its_cause_into_one_event_not_two(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
 	counter.bus.day_ended.emit(day, GameEnums.DayResult.LOST_CRYING, "traffic", 0.0)
@@ -467,7 +467,7 @@ func _test_a_lost_day_folds_its_cause_into_one_event_not_two(t) -> void:
 
 ## A hard-fail day folds the same way, off `LossCause.of()`'s own raw name for it, as the day's
 ## end carries it.
-func _test_a_hard_fail_day_folds_its_cause_too(t) -> void:
+func _test_a_hard_fail_day_folds_its_cause_too(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
 	counter.bus.day_ended.emit(day, GameEnums.DayResult.LOST_HARD_FAIL, "alley-robbery", 0.0)
@@ -476,7 +476,7 @@ func _test_a_hard_fail_day_folds_its_cause_too(t) -> void:
 	_done(counter)
 
 ## A lost day ended with no cause still sends the bare loss name rather than nothing.
-func _test_a_lost_day_with_no_recorded_cause_still_sends_the_bare_loss_name(t) -> void:
+func _test_a_lost_day_with_no_recorded_cause_still_sends_the_bare_loss_name(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
 	counter.bus.day_ended.emit(day, GameEnums.DayResult.LOST_CRYING, "", 0.0)
@@ -487,7 +487,7 @@ func _test_a_lost_day_with_no_recorded_cause_still_sends_the_bare_loss_name(t) -
 ## A cause never attaches to a result that has none. The game names a cause only for
 ## `LOST_CRYING`/`LOST_HARD_FAIL`, so a `WON` or `LOST_TIMEOUT` handed one can only happen by driving
 ## the handler directly, the way this test does — and even then, the bare name is what is sent.
-func _test_won_and_timeout_never_carry_a_pending_cause(t) -> void:
+func _test_won_and_timeout_never_carry_a_pending_cause(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
 	counter.bus.day_ended.emit(day, GameEnums.DayResult.WON, "traffic", 0.0)
@@ -499,7 +499,7 @@ func _test_won_and_timeout_never_carry_a_pending_cause(t) -> void:
 ## save that same reload just wrote — `resumed` (from `EventBus.run_begun`) reads `true`, but the
 ## page never actually left. A save is only a resume if this page has not already reported a run
 ## beginning once before. The four cases of (resumed, already reported), read off what is sent.
-func _test_resumed_for_report_truth_table(t) -> void:
+func _test_resumed_for_report_truth_table(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.run_begun.emit(4, true)
 	counter.bus.run_begun.emit(4, true)
@@ -528,7 +528,7 @@ func _test_resumed_for_report_truth_table(t) -> void:
 ## a second one on the same instance — the day-14 handover's own `reload_current_scene()`, or any
 ## other reload within one page's life — is never reported as resumed even though `main.gd` still
 ## passed `resumed = true`, because the save it found is this page's own.
-func _test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t) -> void:
+func _test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.run_begun.emit(14, true)
 	t.check(counter.sent == ["nappy-run-resumed-day-14"],
@@ -550,7 +550,7 @@ func _test_a_second_run_begun_on_the_same_page_is_never_reported_as_resumed(t) -
 ## parameter rather than asking the page (which is hard-wired absent off the web), so the queueing
 ## logic is testable here without a real page: the outbox evaluates what it is handed a recorder
 ## for.
-func _test_pending_events_queue_until_present_and_flush_in_order(t) -> void:
+func _test_pending_events_queue_until_present_and_flush_in_order(t: TestRunner) -> void:
 	var scripts: Array[String] = []
 	var outbox := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))
 	outbox.send("nappy-run-fresh", false)
@@ -576,7 +576,7 @@ func _test_pending_events_queue_until_present_and_flush_in_order(t) -> void:
 ## page's), refuses every event before its outbox is touched. Nothing it was handed is queued: the
 ## outbox's next counted event, a probe sent with `count.js` present, flushes whatever the outbox
 ## holds ahead of itself, and the recorder sees the probe alone.
-func _test_send_event_never_queues_when_it_may_never_send(t) -> void:
+func _test_send_event_never_queues_when_it_may_never_send(t: TestRunner) -> void:
 	var counter := VisitCounter.new()
 	var bus: Node = EVENT_BUS_SCRIPT.new()
 	var scripts: Array[String] = []
@@ -615,7 +615,7 @@ func _test_send_event_never_queues_when_it_may_never_send(t) -> void:
 ## was already reported. Three arrivals of the one row: placed at once and telegraphing, created
 ## warned the way `spawn_warned()` does it (`came_under_a_warning` set, then `resume()`), and
 ## streamed back in mid-chase, which reports nothing a second time.
-func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
+func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	t.check(def.pursuit != null and def.notice_within() <= 0.0,
 		"'charging_dog' is a pursuer that never waits, the case a resume could misread")
@@ -676,7 +676,7 @@ func _test_a_chase_is_reported_once_however_the_pursuer_arrived(t) -> void:
 ## `dog-warned` once when it starts warning her, nothing for a warning she walks out of or a second
 ## warning, and `dog-chased` only at its charge; the alley robber's warning sends his own
 ## `alley-robbery-warned`.
-func _test_a_waiting_dog_is_counted_warned_then_chased(t) -> void:
+func _test_a_waiting_dog_is_counted_warned_then_chased(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
 	var day := counter.run.header.day
@@ -708,7 +708,7 @@ func _test_a_waiting_dog_is_counted_warned_then_chased(t) -> void:
 ## **Every charger has a counter of its own, named by its row** *(inbox #764 in minty-lemur, the player: "Ending a
 ## day and a charging counter are not the same thing")*, the dog keeping its `dog-*` names and the
 ## day-3 lesson's dog its own `dog-tutorial-*`.
-func _test_every_charger_has_its_own_counter(t) -> void:
+func _test_every_charger_has_its_own_counter(t: TestRunner) -> void:
 	var names := {"charging_dog": "dog", "charging_dog_tutorial": "dog-tutorial",
 			"alley_robbery": "alley-robbery", "roadblock": "roadblock", "door_guard": "door-guard",
 			"robber_giving_chase": "robber-giving-chase",
@@ -740,7 +740,7 @@ func _test_every_charger_has_its_own_counter(t) -> void:
 ## `EventManager.check_hard_fails()` and a patrol car's man stopping her call) and then finished
 ## anyway, as a day that goes on under `--invincible` would; run off; and walked away from until his
 ## clock runs out. Each sends `-chased` and then one end, and a catch said twice is counted once.
-func _test_a_charge_ends_in_exactly_one_of_three(t) -> void:
+func _test_a_charge_ends_in_exactly_one_of_three(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
 	var day := counter.run.header.day
@@ -790,7 +790,7 @@ func _test_a_charge_ends_in_exactly_one_of_three(t) -> void:
 ## like dog tutorial")*: its own row, `charging_dog_tutorial`, which `EventDirector` hands out in
 ## place of the first dog it sends on `Tuning.RUN_TAUGHT_DAY`, names its charge `dog-tutorial-*`;
 ## the charging dog's own row is an ordinary `dog`.
-func _test_the_lesson_dog_has_its_own_set(t) -> void:
+func _test_the_lesson_dog_has_its_own_set(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
 	var day := counter.run.header.day
@@ -817,7 +817,7 @@ func _test_the_lesson_dog_has_its_own_set(t) -> void:
 ## implies charge")*. The man a vehicle lets out stands with his hand raised for a second: the
 ## counter sends his `-warned` as the hand goes up, nothing more for that second, and `-chased` only
 ## when he charges. Day 13's guard set on her in her view counts the same way, as `task-guard`.
-func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t) -> void:
+func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
 	var day := counter.run.header.day
@@ -853,7 +853,7 @@ func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t) -> void:
 ## **The masked man in the escape's stairwell has his counter** like every charger: `-warned` as his
 ## hand goes up, `-chased` when he starts his run, and then `-caught` (the building's `EventManager`
 ## reports his catch, as a day's does) or `-outlasted` when his run is over without one.
-func _test_the_masked_man_has_his_counter(t) -> void:
+func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
 	var day := counter.run.header.day
@@ -896,7 +896,7 @@ func _test_the_masked_man_has_his_counter(t) -> void:
 ## *(inbox #764 in minty-lemur, the player: "Charging is independent of an ended day")*: the day's end asks every
 ## charge still running (`EventManager.end_the_charges_still_running()`), and one that ends this way
 ## is not also counted shaken or outlasted when it is finished after.
-func _test_a_charge_cut_short_by_the_day_is_counted_ended(t) -> void:
+func _test_a_charge_cut_short_by_the_day_is_counted_ended(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
 	var day := counter.run.header.day
@@ -950,7 +950,7 @@ func _walk(instance: EventInstance, where: WhereSheIs, her: Vector2, seconds: fl
 ## the pelican spawns, when it's on screen, and when it's hitting the player. it must appear as its
 ## own entry")* — one send per signal, in the order the signals came. That each signal fires once
 ## per pelican, at its moment, is `tests/test_pelican.gd`'s.
-func _test_the_pelican_is_its_own_entry(t) -> void:
+func _test_the_pelican_is_its_own_entry(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
 	counter.bus.pelican_spawned.emit(null)
@@ -966,7 +966,7 @@ func _test_the_pelican_is_its_own_entry(t) -> void:
 
 ## A day the pelican ends folds `pelican` into its loss, never its row's `cyclist` — the cause
 ## `LossCause.of()` names it by (`tests/test_loss_cause.gd`), carried through.
-func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
+func _test_a_day_lost_to_the_pelican_names_the_pelican(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	var day := counter.run.header.day
 	counter.bus.pelican_struck_her.emit(null)
@@ -980,7 +980,7 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 ## not the run's, since an influence that waited can go out after the next day began; the row
 ## hyphenated as every id in a name is; and an influence never seen named apart, so influenced ÷
 ## seen counts only what she could see. When each is sent is `tests/test_encounters.gd`'s.
-func _test_encounters_and_runs_are_named_by_their_day_and_row(t) -> void:
+func _test_encounters_and_runs_are_named_by_their_day_and_row(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.encounter_seen.emit(4, "charging_dog")
 	counter.bus.encounter_influenced.emit(4, "charging_dog", true)
@@ -997,7 +997,7 @@ func _test_encounters_and_runs_are_named_by_their_day_and_row(t) -> void:
 ## on and you opt out for everything except /nappy.josuakrause.com/"). Every handler is driven
 ## through `RecordingCounter`, and each name it sent is checked in the options
 ## `GoatCounterOutbox.send()` hands `count()` and in the script line itself, parsed back rather than searched as text.
-func _test_every_event_opts_out_of_sessions(t) -> void:
+func _test_every_event_opts_out_of_sessions(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.bus.run_begun.emit(1, false)
 	counter.begin(1)
@@ -1060,7 +1060,7 @@ func _test_every_event_opts_out_of_sessions(t) -> void:
 ## counted while it is walked is named by the day of the walk last begun — the building's
 ## `DaySpec.BUILDING_DAY`, the city's `DaySpec.CITY_DAY` — never by the calendar, which stays on
 ## the last day for the whole escape. The escape's own names go out beside the day's, as before.
-func _test_an_escape_section_is_counted_as_a_day_of_its_own(t) -> void:
+func _test_an_escape_section_is_counted_as_a_day_of_its_own(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.run.header.day = Tuning.RUN_LENGTH_DAYS
 	var building := DaySpec.BUILDING_DAY

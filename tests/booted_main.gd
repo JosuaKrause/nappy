@@ -66,7 +66,7 @@ class Booted:
 ## of generated cities (`tests/city_map_cache.gd`'s `source()`); a boot handed none generates its
 ## own. A boot that has not finished within `BOOT_FRAMES` fails `t`'s check and is returned as it
 ## stands.
-static func boot(t, scratch_path: String, config: RunConfig = null,
+static func boot(t: TestRunner, scratch_path: String, config: RunConfig = null,
 		before := Callable(), still := false, maps := Callable()) -> Booted:
 	var booted := Booted.new()
 	booted.path = scratch_path
@@ -92,7 +92,7 @@ static func boot(t, scratch_path: String, config: RunConfig = null,
 ## fewer from run to run; at that scale a tick's delta moves nothing a pixel can show (never 0: the
 ## crowd divides a step by its delta), and every boot starts its suite from the same dawn. The
 ## engine's scale is put back before this returns, so no tick passes between the boot and the suite.
-static func until_booted(t, main: Node, still := false) -> void:
+static func until_booted(t: TestRunner, main: Node, still := false) -> void:
 	var clock := Engine.time_scale
 	if still:
 		Engine.time_scale = STILL_SCALE
@@ -112,7 +112,7 @@ static func until_booted(t, main: Node, still := false) -> void:
 ## than one of its own. A reload the boot asks for leaves that sitting where it is, and the boot
 ## standing for the reload takes it again, as a real one takes the sitting parked at the root. The
 ## caller frees the home.
-static func home_playing(t, run: RunState) -> Node:
+static func home_playing(t: TestRunner, run: RunState) -> Node:
 	var home := Node.new()
 	t.add_child(home)
 	var sitting := Sitting.new()
@@ -196,7 +196,7 @@ static func touch_controls(main: Node) -> TouchControls:
 
 ## A press on the title's button `button_name` ("Left", "Tap", "Right"), pushed through the
 ## viewport where the layout draws it, with the frames the tap's acknowledgement takes.
-static func press_title(t, main: Node, button_name := "Tap") -> void:
+static func press_title(t: TestRunner, main: Node, button_name := "Tap") -> void:
 	var screen := title(main)
 	await UI.frames(t)
 	UI.push(screen, UI.touch_at(UI.centre(UI.button(screen, button_name)), true))
@@ -204,7 +204,7 @@ static func press_title(t, main: Node, button_name := "Tap") -> void:
 
 ## A press on the summary's continue button (a brief, a day's end, an outcome screen), the way the
 ## title's is pressed.
-static func press_continue(t, main: Node) -> void:
+static func press_continue(t: TestRunner, main: Node) -> void:
 	var screen := summary(main)
 	await UI.frames(t)
 	UI.push(screen, UI.touch_at(UI.centre(UI.button(screen, "Continue")), true))

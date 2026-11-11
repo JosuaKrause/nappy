@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **Where the crowd and the event figures meet**: how often a walker's or a crowd car's body overlaps
 ## an event figure's, how long crowd cars stand for one, whether a junction stalls, and the crowd's
@@ -61,7 +61,7 @@ var _bumps := 0
 var _strikes := 0
 var _lines := 0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	EventBus.car_near_miss.connect(func(_at: Vector2) -> void: _horns += 1)
 	EventBus.crowd_bumped.connect(func(_at: Vector2) -> void: _bumps += 1)
 	EventBus.hard_fail_triggered.connect(func(cause: String) -> void:
@@ -86,7 +86,7 @@ func _listed(name: String, fallback: Array[int]) -> Array[int]:
 		listed.append(int(part))
 	return listed
 
-func _a_day(t, city: City, seed_value: int, day: int) -> void:
+func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.index <= 2 * (day - 6):

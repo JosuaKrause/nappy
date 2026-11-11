@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## How much of the city carries street trees, over a seed sweep — the measurement
 ## `StreetTrees.STREET_TREE_RUNS` is set from. Prints the fraction of ordinary streets that are
@@ -9,7 +8,7 @@ extends RefCounted
 const SEEDS := 30
 const BASE_SEED := 505050
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var total_ordinary := 0
 	var total_lined := 0
 	var total_runs := 0

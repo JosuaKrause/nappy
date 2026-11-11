@@ -31,7 +31,7 @@ const CLEAR_TRIALS := 60
 const POSITIONS := 150
 const STEP := 0.05
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var seeds := DEFAULT_SEEDS.duplicate()
 	if OS.get_environment("PROBE_SEEDS") != "":
 		seeds.clear()
@@ -112,7 +112,7 @@ static func _route_from(map: CityMap, from: Vector2i,
 		route.append(map.tile_to_world(tile))
 	return route
 
-func _the_sent_robbers_starts(t, seed_value: int) -> void:
+func _the_sent_robbers_starts(t: TestRunner, seed_value: int) -> void:
 	var suite = SUITE.new()
 	# The suite's own city builder: a city in a run of its own, which the suite's `_rig_player()`
 	# reads back as `_city` to hand her to the city's events.

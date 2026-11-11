@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The charging dog past the teaching day — M96, "the teaching day, and the dog after it".
 ##
@@ -29,7 +29,7 @@ extends RefCounted
 const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_day_3_is_still_sited_on_her_heading(t)
 	_test_day_4_is_a_map_placement(t)
 	_test_day_4_is_never_owed_to_the_director(t)
@@ -68,7 +68,7 @@ func _site_the_dog(director: EventDirector, at: Vector2, heading: Vector2) -> Ar
 
 ## Day 3: unavoidable, on her exact line — `_teach_the_run()` puts it at the head of the queue and
 ## nothing about its siting has changed.
-func _test_day_3_is_still_sited_on_her_heading(t) -> void:
+func _test_day_3_is_still_sited_on_her_heading(t: TestRunner) -> void:
 	var map := _map()
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
@@ -95,7 +95,7 @@ func _test_day_3_is_still_sited_on_her_heading(t) -> void:
 ## and every day the row is eligible on past the teaching day, the same reason `alley_robbery`'s own
 ## required-alley test is over placements rather than the pool directly: a def whose field answers
 ## `MAP` and a scheduler that still refuses to place it are two different bugs.
-func _test_day_4_is_a_map_placement(t) -> void:
+func _test_day_4_is_a_map_placement(t: TestRunner) -> void:
 	var checked := 0
 	for run_seed in [4242, 2102613802, 90210]:
 		var map := MapCache.of(run_seed)
@@ -122,7 +122,7 @@ func _test_day_4_is_a_map_placement(t) -> void:
 ## `EventDirector` can legitimately owe the row anyway — the two calls share a seed so the
 ## sprinkle's own roll, which reads nothing from `plans`, comes out identically either way, and
 ## the only thing left to differ is what the plan itself contributed.
-func _test_day_4_is_never_owed_to_the_director(t) -> void:
+func _test_day_4_is_never_owed_to_the_director(t: TestRunner) -> void:
 	var map := _map()
 	var def := EventCatalogue.by_id("charging_dog")
 	for seed in [3, 17, 29, 41, 53]:
@@ -144,7 +144,7 @@ func _test_day_4_is_never_owed_to_the_director(t) -> void:
 ## The notice a placement on a day is handed, the same question `_test_spawn_mode_switches_after_the_teaching_day`
 ## asks of `spawn_mode_on()` — `EventDef.for_day()` carries the same day-keyed switch, for the trigger
 ## rather than the siting.
-func _test_the_notice_switches_after_the_teaching_day(t) -> void:
+func _test_the_notice_switches_after_the_teaching_day(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	t.check(def != null, "charging_dog is in the catalogue")
 	if not def:
@@ -164,7 +164,7 @@ func _test_the_notice_switches_after_the_teaching_day(t) -> void:
 ## switch. `EventInstance` never asks a day of anybody — this is where the day answer actually has
 ## to arrive: a different `EventDef`, `EventDef.notice` already set, never a mutation of the one
 ## day 3's own dog reads.
-func _test_day_4_dog_waits_until_she_is_in_its_field(t) -> void:
+func _test_day_4_dog_waits_until_she_is_in_its_field(t: TestRunner) -> void:
 	var cold := EventCatalogue.by_id("charging_dog")
 	if not cold:
 		return
@@ -190,7 +190,7 @@ func _test_day_4_dog_waits_until_she_is_in_its_field(t) -> void:
 ## Day 3's own dog, unchanged: the raw catalogue def, `EventDef.notice` still 0.0, so it is already
 ## telegraphing its charge from the first frame, wherever she happens to be standing. The same fact
 ## `tests/test_danger.gd` checks from the caret's side; this is the trigger's own.
-func _test_day_3_dog_still_charges_the_moment_it_streams_in(t) -> void:
+func _test_day_3_dog_still_charges_the_moment_it_streams_in(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	if not def:
 		return
@@ -208,7 +208,7 @@ func _test_day_3_dog_still_charges_the_moment_it_streams_in(t) -> void:
 ## streams in rather than waiting the way a `MAP` placement on the same day would. Swept over many
 ## seeds because "now and then" is a probability, not a certainty on any one day: both outcomes
 ## have to actually occur somewhere in the sweep, or the roll is dead code.
-func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t) -> void:
+func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t: TestRunner) -> void:
 	var map := _map()
 	var day := Tuning.RUN_TAUGHT_DAY + 1
 	var at := CrowdLanes.arterial_pavement(map)
@@ -240,7 +240,7 @@ func _test_the_sprinkle_offers_day_3s_own_shape_on_a_later_day(t) -> void:
 ## And it never doubles the teaching day itself: `_teach_the_run()` already guarantees day 3 its
 ## one dog with the tip and the delay, and a second roll stacked on top would be two lessons where
 ## the entry asks for one guarantee and, separately, an unguaranteed sprinkle confined to later days.
-func _test_the_sprinkle_never_runs_on_the_teaching_day(t) -> void:
+func _test_the_sprinkle_never_runs_on_the_teaching_day(t: TestRunner) -> void:
 	var map := _map()
 	var def := EventCatalogue.by_id("charging_dog")
 	for seed in range(50):
@@ -278,7 +278,7 @@ func _handed_out_rows(director: EventDirector, at: Vector2, heading: Vector2,
 ## that stayed set would move every later dog's counts into the lesson's. The second dog is rigged
 ## into the front of her route's bag (`EventDirector.rig_her_route()`, as a task rigs one), since the
 ## day's route bag draws its marbles by chance.
-func _test_only_the_teaching_days_first_dog_is_the_lesson(t) -> void:
+func _test_only_the_teaching_days_first_dog_is_the_lesson(t: TestRunner) -> void:
 	var map := _map()
 	var dog := EventCatalogue.by_id("charging_dog")
 	var director := EventDirector.new(map)
@@ -301,7 +301,7 @@ func _test_only_the_teaching_days_first_dog_is_the_lesson(t) -> void:
 ## dog is a copy of the row with its day switch taken off (`from_day_after`), so it is still
 ## director-sited past day 3, the shape the sprinkle sends, and so the one row that could be made the
 ## lesson there. Nothing the director hands out that day is the lesson's row.
-func _test_no_other_day_hands_out_the_lesson(t) -> void:
+func _test_no_other_day_hands_out_the_lesson(t: TestRunner) -> void:
 	var map := _map()
 	var row := EventCatalogue.by_id("charging_dog")
 	var dog: EventDef = row.duplicate()
@@ -323,7 +323,7 @@ func _test_no_other_day_hands_out_the_lesson(t) -> void:
 
 ## **And a sprinkled dog is not the lesson either**: the dog the director sprinkles in day 3's shape past
 ## the teaching day (`EventDirector._owe_the_sprinkled_dog()`) is the ordinary `charging_dog`.
-func _test_a_sprinkled_dog_is_never_the_lesson(t) -> void:
+func _test_a_sprinkled_dog_is_never_the_lesson(t: TestRunner) -> void:
 	var map := _map()
 	var at := CrowdLanes.arterial_pavement(map)
 	at.y = map.world_size().y * 0.5

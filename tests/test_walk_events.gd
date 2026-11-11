@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `WalkEvents`, the walk's events read through one object while she walks: its plans in the order
 ## they stream, every plan but the one being placed, the doors and the day's calm areas, checked
@@ -6,7 +5,7 @@ extends RefCounted
 ## handed. Everything that reads the walk is handed it, or a stand-in with
 ## the answers set (`tests/fake_walk_events.gd`).
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_plan_placed_while_she_walks_joins_the_walk(t)
 	_test_everything_but_leaves_out_the_plan_being_placed(t)
 	_test_clearing_forgets_the_walk(t)
@@ -17,7 +16,7 @@ func run(t) -> void:
 func _row(id: String, at: Vector2) -> EventScheduler.Planned:
 	return EventScheduler.Planned.new(EventCatalogue.by_id(id), at)
 
-func _test_a_plan_placed_while_she_walks_joins_the_walk(t) -> void:
+func _test_a_plan_placed_while_she_walks_joins_the_walk(t: TestRunner) -> void:
 	var first := _row("busker", Vector2(64, 64))
 	var walk := WalkEvents.new()
 	walk.take([first] as Array[EventScheduler.Planned])
@@ -26,7 +25,7 @@ func _test_a_plan_placed_while_she_walks_joins_the_walk(t) -> void:
 	t.check(walk.plans() == ([first, mast] as Array[EventScheduler.Planned]),
 			"a plan placed while she walks streams after every plan already in the walk")
 
-func _test_everything_but_leaves_out_the_plan_being_placed(t) -> void:
+func _test_everything_but_leaves_out_the_plan_being_placed(t: TestRunner) -> void:
 	var a := _row("busker", Vector2(64, 64))
 	var b := _row("roadblock", Vector2(320, 64))
 	var c := _row("cafe_tables", Vector2(640, 64))
@@ -40,7 +39,7 @@ func _test_everything_but_leaves_out_the_plan_being_placed(t) -> void:
 	t.check(walk.everything_but(elsewhere) == ([a, b, c] as Array[EventScheduler.Planned]),
 			"a plan not yet in the walk (a place from her route's bag) leaves nothing out")
 
-func _test_clearing_forgets_the_walk(t) -> void:
+func _test_clearing_forgets_the_walk(t: TestRunner) -> void:
 	var walk := WalkEvents.new()
 	walk.take([_row("busker", Vector2(64, 64))] as Array[EventScheduler.Planned], CalmAreas.new(),
 			PackedVector2Array([Vector2(640, 64)]))
@@ -51,7 +50,7 @@ func _test_clearing_forgets_the_walk(t) -> void:
 ## **Whether a point stands clear of the walk's events** (`is_clear_at()`, what the park cordon keeps
 ## its last gap clear of): inside a body's clearance is not clear, past it is; a spent plan, one not
 ## placed, and one inside the ground left out are not asked.
-func _test_a_point_is_clear_of_the_walk_past_each_plans_clearance(t) -> void:
+func _test_a_point_is_clear_of_the_walk_past_each_plans_clearance(t: TestRunner) -> void:
 	var her := 14.0
 	var block := _row("barricade", Vector2(320, 320))
 	var reach := block.clearance(her)
@@ -72,7 +71,7 @@ func _test_a_point_is_clear_of_the_walk_past_each_plans_clearance(t) -> void:
 
 ## **What stands inside an area** (`placed_within()`, what a section holds for day 13's swap): the
 ## walk's placed, unspent plans standing in it, and not one outside it, one spent, or one never placed.
-func _test_what_stands_inside_an_area(t) -> void:
+func _test_what_stands_inside_an_area(t: TestRunner) -> void:
 	var inside := _row("busker", Vector2(100, 100))
 	var outside := _row("cafe_tables", Vector2(400, 100))
 	var spent := _row("cafe_tables", Vector2(120, 120))
@@ -84,7 +83,7 @@ func _test_what_stands_inside_an_area(t) -> void:
 			"what stands inside an area is the placed, unspent plans standing in it")
 
 ## **The day's locations it was handed** (`locations()`), and none once it forgets the walk.
-func _test_the_walk_holds_the_days_locations(t) -> void:
+func _test_the_walk_holds_the_days_locations(t: TestRunner) -> void:
 	var locations := DayLocations.new()
 	var walk := WalkEvents.new()
 	walk.take([] as Array[EventScheduler.Planned], null, PackedVector2Array(), null, locations)

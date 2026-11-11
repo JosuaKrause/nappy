@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The day loop: the two phases, the four ways a day ends, and the run-level bookkeeping
 ## that decides which ending you get.
@@ -29,7 +29,7 @@ var _day: DayController
 var _run: RunState
 var _results: Array[GameEnums.DayResult] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_map = MapCache.of(SEED)
 	_test_start_sets_the_clock(t)
 	_test_running_out_of_daylight_loses(t)
@@ -66,7 +66,7 @@ func _fresh_run() -> RunState:
 	return run
 
 ## The rig's day over `_run`, a run of its own unless the test handed one it keeps across builds.
-func _build(t) -> void:
+func _build(t: TestRunner) -> void:
 	_results = []
 	if _run == null:
 		_run = _fresh_run()
@@ -104,7 +104,7 @@ func map_edge_tile() -> int:
 
 # ------------------------------------------------------------------- phases ---
 
-func _test_start_sets_the_clock(t) -> void:
+func _test_start_sets_the_clock(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	t.check(_day.phase == GameEnums.DayPhase.WALKING, "a day starts in the walking phase")
@@ -114,7 +114,7 @@ func _test_start_sets_the_clock(t) -> void:
 	t.close_to(_day.fraction_remaining(), 0.5, "the light tracks the clock")
 	_teardown()
 
-func _test_running_out_of_daylight_loses(t) -> void:
+func _test_running_out_of_daylight_loses(t: TestRunner) -> void:
 	_build(t)
 	_day.start(10.0)
 	_tick(9.0)
@@ -124,7 +124,7 @@ func _test_running_out_of_daylight_loses(t) -> void:
 	t.check(_day.failure_reason != "", "a timeout explains itself")
 	_teardown()
 
-func _test_sleeping_starts_the_return_phase(t) -> void:
+func _test_sleeping_starts_the_return_phase(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.return_phase_started.emit()
@@ -133,7 +133,7 @@ func _test_sleeping_starts_the_return_phase(t) -> void:
 	t.check(_results.is_empty(), "falling asleep does not by itself win the day")
 	_teardown()
 
-func _test_home_only_wins_during_the_return(t) -> void:
+func _test_home_only_wins_during_the_return(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	_at_home()
@@ -145,7 +145,7 @@ func _test_home_only_wins_during_the_return(t) -> void:
 	t.check(_results == [GameEnums.DayResult.WON], "getting a sleeping baby home wins the day")
 	_teardown()
 
-func _test_falling_asleep_at_home_wins_immediately(t) -> void:
+func _test_falling_asleep_at_home_wins_immediately(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	_at_home()
@@ -154,7 +154,7 @@ func _test_falling_asleep_at_home_wins_immediately(t) -> void:
 			"falling asleep on the doorstep does not need a lap of the block")
 	_teardown()
 
-func _test_being_woken_resumes_walking(t) -> void:
+func _test_being_woken_resumes_walking(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.return_phase_started.emit()
@@ -169,7 +169,7 @@ func _test_being_woken_resumes_walking(t) -> void:
 
 # -------------------------------------------------------------------- losses ---
 
-func _test_crying_loses(t) -> void:
+func _test_crying_loses(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
@@ -177,7 +177,7 @@ func _test_crying_loses(t) -> void:
 	t.check(_day.failure_reason != "", "crying explains itself")
 	_teardown()
 
-func _test_hard_fail_loses_with_a_reason(t) -> void:
+func _test_hard_fail_loses_with_a_reason(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.hard_fail_triggered.emit("abduction")
@@ -196,7 +196,7 @@ func _test_hard_fail_loses_with_a_reason(t) -> void:
 ## rows fire (`EventManager.check_hard_fails()`, the building's as a day's), so this table has to carry it too, or losing
 ## the section on the stairs falls back to the generic "It went wrong." the table's own default
 ## reads whenever an id has no line.
-func _test_the_masked_pursuer_has_its_own_hard_fail_line(t) -> void:
+func _test_the_masked_pursuer_has_its_own_hard_fail_line(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.hard_fail_triggered.emit("masked_pursuer")
@@ -208,7 +208,7 @@ func _test_the_masked_pursuer_has_its_own_hard_fail_line(t) -> void:
 
 ## Every outcome runs through _end(), and a day that has already ended must stay ended —
 ## otherwise a cry during the dusk frame would spend two nerves.
-func _test_a_day_ends_only_once(t) -> void:
+func _test_a_day_ends_only_once(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
@@ -221,7 +221,7 @@ func _test_a_day_ends_only_once(t) -> void:
 
 # ------------------------------------------------------------ run bookkeeping ---
 
-func _test_nerves_and_endings(t) -> void:
+func _test_nerves_and_endings(t: TestRunner) -> void:
 	var run := _fresh_run()
 
 	run.start_run(SEED)
@@ -319,7 +319,7 @@ func _test_nerves_and_endings(t) -> void:
 ## game". `run.calendar.regain_a_nerve()` is what `finish_day()` calls for an ordinary won day; the
 ## escape's own win reaches the same `finish_day()` call with the city section's `DaySpec`, whose
 ## rules exclude it, since "the escape doesn't have nerves" (the player).
-func _test_a_won_day_gives_a_nerve_back(t) -> void:
+func _test_a_won_day_gives_a_nerve_back(t: TestRunner) -> void:
 	var run := _fresh_run()
 
 	run.start_run(SEED)
@@ -366,7 +366,7 @@ func _test_a_won_day_gives_a_nerve_back(t) -> void:
 ##
 ## It lives in `DayController` rather than in `Baby` because of the invariant: the baby's whole
 ## interface to the world is three questions and none of them is about blocks.
-func _test_the_city_learns_where_she_settled(t) -> void:
+func _test_the_city_learns_where_she_settled(t: TestRunner) -> void:
 	_build(t)
 	var run := _run
 	_day.start(300.0)
@@ -409,7 +409,7 @@ func _test_the_city_learns_where_she_settled(t) -> void:
 ## `RunSession` watches the city with no observer, exactly the way a telemetry-off run leaves it:
 ## the title pressed through the viewport, the day lost by the baby crying, and the summary read
 ## off the screen.
-func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> void:
+func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t: TestRunner) -> void:
 	var saved_paused: bool = t.get_tree().paused
 
 	var run := RunState.new()
@@ -448,7 +448,7 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t) -> voi
 ## `Texts.DAY_BRIEF`. `SummaryModel.day_over()` reads it off the run's day directly, whichever
 ## `DayResult` this is, so a lost day's own line reads exactly as it did this morning and a second
 ## call shows the same words again rather than nothing.
-func _test_the_day_brief_shows_the_days_own_line(t) -> void:
+func _test_the_day_brief_shows_the_days_own_line(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
 	run.header.day = 6
@@ -479,7 +479,7 @@ func _test_the_day_brief_shows_the_days_own_line(t) -> void:
 ## **`_title`, not `_body`**: the one line about the day that ended is the screen's own title,
 ## with everything under it — `_body`'s "Day N of N" and its nerve line, `_brief`'s morning
 ## line — about the day that is coming instead. See `SummaryModel.day_over()`'s own doc.
-func _test_the_summary_shows_when_the_day_ended(t) -> void:
+func _test_the_summary_shows_when_the_day_ended(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
@@ -516,7 +516,7 @@ func _test_the_summary_shows_when_the_day_ended(t) -> void:
 ## (`DayDirector.finish_day()` calls `run.calendar.finish_day()` first), so day 4's own win shows
 ## day 5; a loss with nerves left leaves `run.header.day` on the day being retried, so it shows the
 ## same day again, with the retry line naming it too.
-func _test_the_summary_shows_the_coming_days_number(t) -> void:
+func _test_the_summary_shows_the_coming_days_number(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
@@ -542,7 +542,7 @@ func _test_the_summary_shows_the_coming_days_number(t) -> void:
 ## Nerves are stars everywhere they show, never a digit — on a win as much as a loss, since the
 ## count carried into the coming day matters whichever way the last one went — and on the day
 ## brief a resumed run opens on too, the first day's own brief included.
-func _test_nerves_are_stars_never_numbers(t) -> void:
+func _test_nerves_are_stars_never_numbers(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
@@ -580,7 +580,7 @@ func _test_nerves_are_stars_never_numbers(t) -> void:
 ## resumed run's day brief adds (`DaySummary._note`), which every other screen hides on the way in
 ## and the epilogue hides too, so a section's brief or a resumed day's note cannot leak onto the
 ## last screen of the run.
-func _test_the_epilogue_carries_no_brief_note(t) -> void:
+func _test_the_epilogue_carries_no_brief_note(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
@@ -599,7 +599,7 @@ func _test_the_epilogue_carries_no_brief_note(t) -> void:
 ## The day 7 brief breaks its line before "The same face is on most of them." — `Texts.DAY_BRIEF[7]` is
 ## plain prose with no break of its own; `SentenceLines.break_for_label()` (see its own suite,
 ## `tests/test_sentence_lines.gd`) is what puts one in, at the only sentence end there is to choose.
-func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:
+func _test_the_day_7_brief_breaks_before_the_same_face(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
@@ -620,7 +620,7 @@ func _test_the_day_7_brief_breaks_before_the_same_face(t) -> void:
 ## The `BAD` ending names the last day played, not the last day completed — a run that loses its
 ## last nerve on day 1 reads day 1, not 0. The neutral and good endings are reached by finishing
 ## day 14 and say nothing about which day, since the run finished rather than stopped mid-day.
-func _test_the_bad_ending_names_the_day_it_reached(t) -> void:
+func _test_the_bad_ending_names_the_day_it_reached(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
 	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
@@ -674,7 +674,7 @@ func _ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0) -> DayEnd
 ##
 ## Drives a run directly rather than through a director: the five fields are what the director
 ## reads to decide what today offers, and the sub-test below holds that it actually does.
-func _test_a_lost_day_gives_the_resistance_back(t) -> void:
+func _test_a_lost_day_gives_the_resistance_back(t: TestRunner) -> void:
 	var run := _fresh_run()
 
 	# The mark she found on the day she lost. Touching it granted no progress — it never does.
@@ -744,7 +744,7 @@ func _test_a_lost_day_gives_the_resistance_back(t) -> void:
 ## `run.calendar.day_rng(day, "resistance")`, so a retry of the same day with the same run seed and an
 ## untouched step is the same alley — the mark is not merely on offer again, it is where she
 ## already knows to look.
-func _test_the_retry_meets_the_same_mark_in_the_same_alley(t) -> void:
+func _test_the_retry_meets_the_same_mark_in_the_same_alley(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	var run := city.run
 	run.header.day = 6
@@ -773,7 +773,7 @@ func _test_the_retry_meets_the_same_mark_in_the_same_alley(t) -> void:
 	retry.free()
 	city.free()
 
-func _resistance_director(t, city: City) -> ResistanceDirector:
+func _resistance_director(t: TestRunner, city: City) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
@@ -794,7 +794,7 @@ func _resistance_director(t, city: City) -> ResistanceDirector:
 ##
 ## **And a won day keeps all of it**, which is the half that would pass on its own if the give-back
 ## were simply a `clear()`.
-func _test_a_lost_day_gives_back_what_it_burned(t) -> void:
+func _test_a_lost_day_gives_back_what_it_burned(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var block := Vector2i(3, 3)
 

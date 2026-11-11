@@ -1,13 +1,12 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `QuitOption.available()` with the run's configuration handed in: `--web` (`RunConfig.web_preview`)
 ## asks for the web shape on a debug build, and nothing else does.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_web_preview_needs_both_a_debug_build_and_the_flag(t)
 	_test_available_matches_the_platform_when_nothing_overrides_it(t)
 
-func _test_web_preview_needs_both_a_debug_build_and_the_flag(t) -> void:
+func _test_web_preview_needs_both_a_debug_build_and_the_flag(t: TestRunner) -> void:
 	t.check(not QuitOption.available(RunConfig.parse(PackedStringArray(["--web"]), "", true)),
 			"a debug build carrying --web asks for the web shape")
 	t.check(QuitOption.available(RunConfig.parse(PackedStringArray(), "", true)),
@@ -21,5 +20,5 @@ func _test_web_preview_needs_both_a_debug_build_and_the_flag(t) -> void:
 
 ## Nothing in this test process is ever a web export, so `available()` — with no override in
 ## play — must answer exactly what a desktop platform always does: quitting works.
-func _test_available_matches_the_platform_when_nothing_overrides_it(t) -> void:
+func _test_available_matches_the_platform_when_nothing_overrides_it(t: TestRunner) -> void:
 	t.check(QuitOption.available(), "this test process is never a Web export, so quitting is on")

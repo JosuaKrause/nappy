@@ -23,7 +23,7 @@ extends RefCounted
 const POINTS_STEP := 83.0
 const SHARE_BOXES: Array[Vector2] = [Vector2(24.0, 24.0), Vector2(110.0, 70.0), Vector2(300.0, 200.0)]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_visible_view(t)
 	_crowd_view(t)
 
@@ -51,7 +51,7 @@ static func _hex(values: Array) -> String:
 static func _rect_hex(box: Rect2) -> String:
 	return _hex([box.position.x, box.position.y, box.size.x, box.size.y])
 
-func _visible_view(t) -> void:
+func _visible_view(t: TestRunner) -> void:
 	var rig := Stroller.new()
 	rig.set_physics_process(false)
 	rig.set_process(false)
@@ -118,7 +118,7 @@ func _print_view(label: String, view: VisibleView) -> void:
 					clears.append(view.clear_of_sight(view.view.get_center() + start, way, box, least))
 	print("SR_VV %s | clear %s" % [label, _hex(clears)])
 
-func _crowd_view(t) -> void:
+func _crowd_view(t: TestRunner) -> void:
 	var anchor := Node.new()
 	t.add_child(anchor)
 	var view := _crowd_view_of(anchor)

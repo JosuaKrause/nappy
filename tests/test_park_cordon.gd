@@ -38,7 +38,7 @@ var _clock := 0.0
 var _ground_rect := Rect2()
 var _line_rect := Rect2()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	# Finishing the swing's task the game's way makes the director's own happenings take the park
 	# first, so the suite's own `take_the_park()` would return false. The director therefore leaves
 	# the task open.
@@ -74,7 +74,7 @@ func run(t) -> void:
 ##
 ## `before_the_day` runs once the day is planned and before the director reads the day's obstruction
 ## (`ResistanceDirector.reach_obstruction()`), so what it closes is part of that obstruction.
-func _at_the_swing(t, before_the_touch := Callable(), through_the_director := false,
+func _at_the_swing(t: TestRunner, before_the_touch := Callable(), through_the_director := false,
 		before_the_day := Callable()) -> Dictionary:
 	_run = RunState.new()
 	_run.start_run(SEED)
@@ -202,7 +202,7 @@ func _stop_listening(listener: Array) -> void:
 ## officer's drawing is wholly off its camera (`DRAWING_OFF_THE_VIEW`) and his feet are on ground
 ## open to him (`OPEN_TO_IT`) — asked of the siting, the public seam — and the wide camera puts them
 ## further out, which a cordon keeping a view of its own could not.
-func _test_the_officers_are_placed_by_the_siting_they_are_handed(t) -> void:
+func _test_the_officers_are_placed_by_the_siting_they_are_handed(t: TestRunner) -> void:
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
 	var swing: Vector2 = fixture.swing
@@ -243,7 +243,7 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t) -> void:
 ## a library of their own: a cordon handed a recording library (`tests/recording_atlas.gd`) and ticked
 ## until it has put out its officers, tape and posts has had each kind ask it, as many times as there
 ## are of them standing.
-func _test_the_cordons_figures_ask_the_library_it_is_handed(t) -> void:
+func _test_the_cordons_figures_ask_the_library_it_is_handed(t: TestRunner) -> void:
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
 	var swing: Vector2 = fixture.swing
@@ -282,7 +282,7 @@ func _test_the_cordons_figures_ask_the_library_it_is_handed(t) -> void:
 ## handed to the director standing outside the park, and `director.tick()` run; the cordon is read
 ## off what it puts in the world (its officers, and whether the park is shut), never off the
 ## director's happenings.
-func _test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t) -> void:
+func _test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t: TestRunner) -> void:
 	var fixture := _at_the_swing(t, Callable(), true)
 	var state: CityState = fixture.state
 	var park: Vector2i = fixture.park
@@ -330,7 +330,7 @@ func _test_reaching_the_swing_sends_the_police_and_the_ground_stays_grass(t) -> 
 
 ## Nothing of an officer is in the camera's view where he is placed; each then walks into it, so
 ## his arrival is what she sees of the cordon coming.
-func _test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t) -> void:
+func _test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t: TestRunner) -> void:
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
 	var her := [fixture.swing]
@@ -360,7 +360,7 @@ func _test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t) -> void:
 ## The tape goes up a stretch at a time from where the officers arrived, both ways round, so what
 ## is open of the edge is always one gap, and the last of it is taped nearest where she stood (on
 ## this seed's park every edge leads home, so the nearest of all).
-func _test_the_open_edge_shrinks_to_one_gap_nearest_her(t) -> void:
+func _test_the_open_edge_shrinks_to_one_gap_nearest_her(t: TestRunner) -> void:
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
 	var swing: Vector2 = fixture.swing
@@ -407,7 +407,7 @@ func _test_the_open_edge_shrinks_to_one_gap_nearest_her(t) -> void:
 ## her, but it is a pocket nothing leads home from. She stands there and the cordon is played through the director; the last
 ## stretch taped is far from her, on ground that leads home. A cordon handed no obstruction tapes the
 ## pocket's side last, the stretch nearest her.
-func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstruction(t) -> void:
+func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstruction(t: TestRunner) -> void:
 	var side := {}
 	var seal := func() -> void:
 		var park := CityGenerator.swing_park(_city.map)
@@ -479,7 +479,7 @@ func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstructio
 ## Standing at the swing: the last gap is taped with her inside — on this seed's small park, where
 ## an officer is in her view almost at once, `ParkCordon.PARK_CLOSING_SECONDS` after the touch — and
 ## that ends the day with the cordon's own reason, which has a sentence.
-func _test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t) -> void:
+func _test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t: TestRunner) -> void:
 	var listener := _listen_for_hard_fails()
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
@@ -501,7 +501,7 @@ func _test_standing_at_the_swing_shuts_her_in_and_ends_the_day(t) -> void:
 
 ## Walking, not running, from the swing to the nearest edge after `REACTION` gets her out through
 ## the gap before it closes, and the gap she walks through is open when she crosses the tape's line.
-func _test_walking_out_from_the_swing_gets_her_out_in_time(t) -> void:
+func _test_walking_out_from_the_swing_gets_her_out_in_time(t: TestRunner) -> void:
 	var listener := _listen_for_hard_fails()
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
@@ -538,7 +538,7 @@ func _test_walking_out_from_the_swing_gets_her_out_in_time(t) -> void:
 ## Each taped stretch stands a static body the length of the stretch on its line, and its edge
 ## tiles are recorded as obstructed. An officer whose stretch she is standing in waits until she
 ## has stepped off it.
-func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t) -> void:
+func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t: TestRunner) -> void:
 	var listener := _listen_for_hard_fails()
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
@@ -622,7 +622,7 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t) -> void:
 ## tape and the pram's circle (`Stroller.PRAM_BODY_RADIUS`, 8px, centred 14px out along her
 ## facing) does not: no stretch is taped while any of her collision shape would overlap its body,
 ## so the gap waits for her.
-func _test_no_tape_goes_up_through_the_pram(t) -> void:
+func _test_no_tape_goes_up_through_the_pram(t: TestRunner) -> void:
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
 	var director: ResistanceDirector = fixture.director
@@ -679,7 +679,7 @@ func _circle_meets(box: Rect2, centre: Vector2, radius: float) -> bool:
 ## Neither steps across tape that is up or onto ground nobody walks (a building), the busker
 ## crosses the line within the last gap, the gap closes only once both are through it, and the
 ## officer is gone where she cannot see him, not a fixed walk away.
-func _test_the_parks_people_are_walked_out_through_the_gap(t) -> void:
+func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> void:
 	var person: Array = [null]
 	var fixture := _at_the_swing(t, func() -> void:
 		var park := CityGenerator.swing_park(_city.map)
@@ -785,7 +785,7 @@ func _busker_in_the_park(pace := 0.0) -> EventInstance:
 ## way is walked he is in her view no longer than walking out of the view box square to its sides
 ## takes at `ParkCordon.PARK_CLOSING_LEAVE_SPEED`, never slower than half that pace in it, and never
 ## across tape that is up.
-func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
+func _test_a_person_walked_out_never_ends_in_her_view(t: TestRunner) -> void:
 	for set_off: float in [4.0, 8.0]:
 		var person: Array = [null]
 		var fixture := _at_the_swing(t, func() -> void: person[0] = _busker_in_the_park())
@@ -849,7 +849,7 @@ func _test_a_person_walked_out_never_ends_in_her_view(t) -> void:
 ## **Someone already leaving on their own is walked out through the gap too**, rather than straight
 ## away from her through the tape: once when they set off before the swing is touched, and once
 ## when they set off after it, before their escort has reached them.
-func _test_someone_already_leaving_is_walked_out_through_the_gap(t) -> void:
+func _test_someone_already_leaving_is_walked_out_through_the_gap(t: TestRunner) -> void:
 	for after_the_touch: float in [-1.0, 0.5]:
 		var person: Array = [null]
 		var fixture := _at_the_swing(t, func() -> void:
@@ -899,7 +899,7 @@ func _set_off_on_their_own(person: EventInstance, her: Vector2) -> void:
 ## it, and he never walks through tape. *(How long the gap is held for him is not asked: at any pace
 ## the game gives him he is out of the park long before the tapers are round, so only the slow
 ## person below holds a gap the tapers owe.)*
-func _test_an_escort_sent_back_alone_is_let_out_before_the_gap_shuts(t) -> void:
+func _test_an_escort_sent_back_alone_is_let_out_before_the_gap_shuts(t: TestRunner) -> void:
 	var person: Array = [null]
 	var fixture := _at_the_swing(t, func() -> void: person[0] = _busker_in_the_park())
 	var happenings: ResistanceHappenings = fixture.happenings
@@ -946,7 +946,7 @@ func _test_an_escort_sent_back_alone_is_let_out_before_the_gap_shuts(t) -> void:
 ## stretch than a body reaches (`ParkCordon.WALKER_REACH`): nothing else keeps it down then, no
 ## escort's walk crosses it and no body is beside it. In those frames the gap stays untaped and the
 ## cordon open, and they leave through it without crossing tape.
-func _test_a_slow_person_leaving_alone_holds_the_gap_from_across_the_park(t) -> void:
+func _test_a_slow_person_leaving_alone_holds_the_gap_from_across_the_park(t: TestRunner) -> void:
 	var person: Array = [null]
 	var fixture := _at_the_swing(t, func() -> void:
 		person[0] = _busker_in_the_park(ParkCordon.PARK_CLOSING_LEAVE_SPEED / 10.0)
@@ -991,7 +991,7 @@ func _test_a_slow_person_leaving_alone_holds_the_gap_from_across_the_park(t) -> 
 
 ## The park stays requisitioned the next morning, and the cordon's nodes and obstructed tiles go
 ## with the day.
-func _test_the_park_stays_taken_and_the_cordon_goes_with_the_day(t) -> void:
+func _test_the_park_stays_taken_and_the_cordon_goes_with_the_day(t: TestRunner) -> void:
 	var fixture := _at_the_swing(t)
 	var happenings: ResistanceHappenings = fixture.happenings
 	var her := [Vector2.INF]

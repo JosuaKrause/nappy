@@ -1,8 +1,7 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Raster parity evidence for the authored whole scenes and their registered layer compositions.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var output := OS.get_environment("SCENERY_COMPARISON_OUTPUT")
 	if not output.is_empty():
 		DirAccess.make_dir_recursive_absolute(output)

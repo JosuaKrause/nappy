@@ -93,7 +93,7 @@ const SWAY_WIDTH := 16.0
 static func _jump_threshold() -> float:
 	return 2.0 * Tuning.CAR_SPEED.y * STEP
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var totals := {}
 	var causes := {}
 	var shunts := {}

@@ -1,11 +1,10 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `ViewBag`, one view's bag (inbox #1185 in gentle-owl: "each of the views has their own bag to draw from"): every
 ## marble drawn without putting back and the bag filled again once empty, a marble the location does
 ## not accept never drawn and left in the bag for the next, and each marble's share scaled by the
 ## location's weight. Bags of a handful of marbles built by hand.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_fill_is_drawn_whole_before_it_is_filled_again(t)
 	_test_a_marble_not_accepted_is_never_drawn_and_stays(t)
 	_test_the_empty_event_is_drawn_when_nothing_else_is_accepted(t)
@@ -20,7 +19,7 @@ static func _yes(_id: String) -> bool:
 static func _one(_id: String) -> float:
 	return 1.0
 
-func _test_a_fill_is_drawn_whole_before_it_is_filled_again(t) -> void:
+func _test_a_fill_is_drawn_whole_before_it_is_filled_again(t: TestRunner) -> void:
 	var bag := ViewBag.new({"cafe": 2, "yeller": 1, ViewBag.EMPTY: 3}, 7)
 	var counts := {}
 	for _i in 6:
@@ -31,7 +30,7 @@ func _test_a_fill_is_drawn_whole_before_it_is_filled_again(t) -> void:
 	var again := bag.draw(_yes, _one)
 	t.check(again in ["cafe", "yeller", ViewBag.EMPTY], "and the seventh draws from a fresh fill")
 
-func _test_a_marble_not_accepted_is_never_drawn_and_stays(t) -> void:
+func _test_a_marble_not_accepted_is_never_drawn_and_stays(t: TestRunner) -> void:
 	var bag := ViewBag.new({"cafe": 1, "yeller": 3, ViewBag.EMPTY: 1}, 11)
 	var no_yeller := func(id: String) -> bool: return id != "yeller"
 	var drawn: Array[String] = []
@@ -45,7 +44,7 @@ func _test_a_marble_not_accepted_is_never_drawn_and_stays(t) -> void:
 	t.check(next == (["yeller", "yeller", "yeller"] as Array[String]),
 			"and his marbles stay in the bag for the next location that accepts him (%s)" % [next])
 
-func _test_the_empty_event_is_drawn_when_nothing_else_is_accepted(t) -> void:
+func _test_the_empty_event_is_drawn_when_nothing_else_is_accepted(t: TestRunner) -> void:
 	var bag := ViewBag.new({"cafe": 4, ViewBag.EMPTY: 1}, 3)
 	var nothing := func(_id: String) -> bool: return false
 	t.check(bag.draw(nothing, _one) == ViewBag.EMPTY, "a location that accepts no row draws empty")
@@ -55,7 +54,7 @@ func _test_the_empty_event_is_drawn_when_nothing_else_is_accepted(t) -> void:
 ## A location that accepts nothing, at a bag whose empty marbles are gone, is given a second fill
 ## beside what is left: the three cafes it refused stay, and three more come with the fill, so six
 ## draws that accept the cafe draw six cafes.
-func _test_a_second_fill_keeps_what_was_refused(t) -> void:
+func _test_a_second_fill_keeps_what_was_refused(t: TestRunner) -> void:
 	var bag := ViewBag.new({"cafe": 3, ViewBag.EMPTY: 1}, 5)
 	var nothing := func(_id: String) -> bool: return false
 	t.check(bag.draw(nothing, _one) == ViewBag.EMPTY and bag.draw(nothing, _one) == ViewBag.EMPTY,
@@ -68,7 +67,7 @@ func _test_a_second_fill_keeps_what_was_refused(t) -> void:
 
 ## A cafe and an empty marble, one each: drawn without weight, the cafe comes first about half the
 ## time; weighed nine times over by the location, about nine times in ten.
-func _test_a_locations_weight_scales_a_marbles_share(t) -> void:
+func _test_a_locations_weight_scales_a_marbles_share(t: TestRunner) -> void:
 	var plain := 0
 	var weighed := 0
 	var nine := func(id: String) -> float: return 9.0 if id == "cafe" else 1.0
@@ -81,7 +80,7 @@ func _test_a_locations_weight_scales_a_marbles_share(t) -> void:
 			% plain)
 	t.check(weighed > 330, "weighed nine times over, about nine times in ten (%d of 400)" % weighed)
 
-func _test_the_same_seed_draws_the_same(t) -> void:
+func _test_the_same_seed_draws_the_same(t: TestRunner) -> void:
 	var first: Array[String] = []
 	var second: Array[String] = []
 	var a := ViewBag.new({"cafe": 2, "yeller": 2, ViewBag.EMPTY: 5}, 99)

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends "res://tests/events_shared_city.gd"
 ## A placement asks each candidate its rules once, and every try still rolls.
 ##
@@ -31,7 +31,7 @@ extends "res://tests/events_shared_city.gd"
 
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_one_judgement_per_candidate(t)
 	_test_one_offer_per_look(t)
 	_test_a_look_shares_its_verdicts(t)
@@ -95,7 +95,7 @@ func _same(a: EventScheduler.Planned, b: EventScheduler.Planned) -> bool:
 ## Pools of tiles of a row's ground, each placed twice from one stream (`WalkSiting.among()`, the
 ## placement over a pool the game asks for day 11's mast): by a siting whose store counts, and by
 ## one whose store keeps nothing and so judges every try afresh.
-func _test_one_judgement_per_candidate(t) -> void:
+func _test_one_judgement_per_candidate(t: TestRunner) -> void:
 	var map := _map()
 	var day := 9
 	var already := _planned(day)
@@ -146,7 +146,7 @@ func _test_one_judgement_per_candidate(t) -> void:
 ## Several fires owed at once, each asked in every look — a one-shot never waits its turn — walked
 ## down the day's longest route: each look works its offer out once, whatever the number of
 ## copies, and judges no candidate twice while its verdicts stand.
-func _test_one_offer_per_look(t) -> void:
+func _test_one_offer_per_look(t: TestRunner) -> void:
 	var map := _map()
 	var day := Tuning.RUN_TAUGHT_DAY
 	var consumed: Array[String] = []
@@ -257,7 +257,7 @@ func _ask_copies(siting: EventScheduler.WalkSiting, verdicts: CountingVerdicts, 
 ## — a band ahead of her holding one tile of the row's ground — each from its own copy of one
 ## stream: inside a look the candidate is judged once for all four; outside one it is judged once
 ## for each; and both answer the same placements, leaving the streams in the same states.
-func _test_a_look_shares_its_verdicts(t) -> void:
+func _test_a_look_shares_its_verdicts(t: TestRunner) -> void:
 	var map := _map()
 	var day := 9
 	var already := _planned(day)
@@ -321,7 +321,7 @@ func _longest_route(day: int) -> PackedVector2Array:
 ## else, `EventScheduler.EVENT_SPACING_ANY`) — but only once the look's verdicts are dropped. Kept,
 ## they answer from before the crew stood there and put it on the very spot, which is the placement
 ## no fresh judgement makes and why the director drops them.
-func _test_a_dropped_verdict_is_judged_again(t) -> void:
+func _test_a_dropped_verdict_is_judged_again(t: TestRunner) -> void:
 	var map := _map()
 	var day := 9
 	var already := _planned(day)
@@ -418,7 +418,7 @@ class SpySiting extends EventScheduler.WalkSiting:
 ## sited ahead of her and then left behind and moved: the director drops the look's verdicts just
 ## before and just after asking about a plan already placed, and once more after each plan it
 ## places or moves.
-func _test_the_director_drops_the_verdicts(t) -> void:
+func _test_the_director_drops_the_verdicts(t: TestRunner) -> void:
 	var map := _map()
 	var day := Tuning.RUN_TAUGHT_DAY
 	var consumed: Array[String] = []

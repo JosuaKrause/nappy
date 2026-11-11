@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The events draw from the one baked `events` page rather than from individually preloaded
 ## textures or a runtime-packed group per family. `tests/test_event_views.gd`,
@@ -31,7 +30,7 @@ extends RefCounted
 const StreetMap := preload("res://tests/fixtures/street_map.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_every_picture_the_events_can_draw_is_on_the_events_page(t)
 	_test_every_look_a_row_can_carry_has_pictures_on_the_page(t)
 	_test_every_badge_silhouette_is_on_the_page(t)
@@ -48,7 +47,7 @@ func run(t) -> void:
 ## not be loaded individually"* ([PLAYTEST-105](../docs/playtests/PLAYTEST-105.md)), made checkable:
 ## a path the bake does not know is a picture that would have to be loaded on its own to be drawn,
 ## and a path baked onto some *other* group is one this page's reference does not cover.
-func _test_every_picture_the_events_can_draw_is_on_the_events_page(t) -> void:
+func _test_every_picture_the_events_can_draw_is_on_the_events_page(t: TestRunner) -> void:
 	var script: Script = load("res://src/events/views/event_pictures.gd")
 	var pictures: Dictionary = {}
 	for value: Variant in script.get_script_constant_map().values():
@@ -96,7 +95,7 @@ func _collect_paths(value: Variant, found: Dictionary) -> void:
 ## The other direction: every look a catalogue row can carry has pictures enumerated for it, and
 ## every one of those is on the page. `family_sources()` is what makes "everything a look can draw"
 ## enumerable at all; this is what stops a new `Look` being added with nothing listed for it.
-func _test_every_look_a_row_can_carry_has_pictures_on_the_page(t) -> void:
+func _test_every_look_a_row_can_carry_has_pictures_on_the_page(t: TestRunner) -> void:
 	var looks: Dictionary = {}
 	for def in EventCatalogue.all():
 		looks[def.look] = def.id
@@ -119,7 +118,7 @@ func _test_every_look_a_row_can_carry_has_pictures_on_the_page(t) -> void:
 ## page the thing in the street draws from — `DangerEdge._draw_arrow()` reads
 ## `AtlasTable.native_size()` for the badge's fit and `AtlasLibrary.region()` for the picture, so
 ## a silhouette missing from the page is an arrow that says nothing on a day the row appears.
-func _test_every_badge_silhouette_is_on_the_page(t) -> void:
+func _test_every_badge_silhouette_is_on_the_page(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
 		if def.look == EventDef.Look.NONE:
@@ -142,7 +141,7 @@ func _test_every_badge_silhouette_is_on_the_page(t) -> void:
 ## `tests/test_atlas_library.gd` holds each baked region to its own PNG pixel for pixel; this holds
 ## that there is a PNG to hold it to. The charging dog's rest and alert are drawn from their SVGs,
 ## which the player judges in the game (inbox #748: "yes that's what I've been saying all along").
-func _test_both_dog_families_draw_their_accepted_transfers(t) -> void:
+func _test_both_dog_families_draw_their_accepted_transfers(t: TestRunner) -> void:
 	var pictures: Dictionary = {}
 	for picture in EventPictures.family_sources(EventDef.Look.LOOSE_DOG):
 		pictures[picture] = true
@@ -168,7 +167,7 @@ func _start_a_day(manager: EventManager, day: int) -> void:
 ## The event manager the lifetime tests watch: the real one, over a world of its own (a map of
 ## streets and a run, `setup_world()`) and the library handed in where the game hands its own, so
 ## no city is built around it.
-func _manager(t, atlas: AtlasLibrary) -> EventManager:
+func _manager(t: TestRunner, atlas: AtlasLibrary) -> EventManager:
 	var manager := EventManager.new()
 	manager.atlas = atlas
 	manager.setup_world(StreetMap.full(), RunState.new())
@@ -187,7 +186,7 @@ func _manager(t, atlas: AtlasLibrary) -> EventManager:
 ## the pairing visible at all; in a booted game it is a count on a page `RESIDENT_GROUPS` holds. A
 ## reference a day's events took and never gave back would leave the page held after the manager is
 ## freed, so the one release line at the end is what says the counts balanced.
-func _test_the_manager_holds_its_page_for_its_own_life(t) -> void:
+func _test_the_manager_holds_its_page_for_its_own_life(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var group := EventPictures.ATLAS_GROUP
@@ -213,7 +212,7 @@ func _test_the_manager_holds_its_page_for_its_own_life(t) -> void:
 ## the title screen with a day still running. The library's counts outlive the freed node (in a
 ## booted game the library is the sitting's), so `EventManager._exit_tree()` is the only thing
 ## between this and a reference held for the rest of the process.
-func _test_a_manager_freed_mid_day_still_gives_its_page_back(t) -> void:
+func _test_a_manager_freed_mid_day_still_gives_its_page_back(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var manager := _manager(t, atlas)

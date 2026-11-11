@@ -14,7 +14,7 @@ const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
 ## Where each recipe is written and loaded, and what loading it answers.
 var _errors := RecipeErrors.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_authored_fixtures_replace_the_roll(t)
 	_displayed_reservations(t)
 	_joined_authored_ducts(t)
@@ -22,7 +22,7 @@ func run(t) -> void:
 
 ## A standalone production roof of `district`, drawn through `drawer` when one is handed, else
 ## through the real drawer it makes for itself.
-func _roof(t, footprint: Vector2, height: float, district: int,
+func _roof(t: TestRunner, footprint: Vector2, height: float, district: int,
 		drawer: RoofDrawer = null) -> Building:
 	var building := Building.new()
 	building.footprint = footprint
@@ -41,7 +41,7 @@ func _roof_objects_on(building: Building) -> Array[Building.RoofObject]:
 			objects.append(child)
 	return objects
 
-func _test_authored_fixtures_replace_the_roll(t) -> void:
+func _test_authored_fixtures_replace_the_roll(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var building := _roof(t, Vector2(256, 256), 64, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
 	var fixtures := [{"cell": [1, 2], "kind": "duct_straight"},
@@ -74,7 +74,7 @@ func _test_authored_fixtures_replace_the_roll(t) -> void:
 				"rejected fixtures do not mutate the valid roof")
 	building.free()
 
-func _displayed_reservations(t) -> void:
+func _displayed_reservations(t: TestRunner) -> void:
 	for fixture in [
 		[GameEnums.BlockPurpose.CIVIC, "service_bulkhead"],
 		[GameEnums.BlockPurpose.CIVIC, "skylight_a"],
@@ -111,7 +111,7 @@ func _displayed_reservations(t) -> void:
 				and _roof_objects_on(building).is_empty(), "explicit empty recipe clears all roof objects")
 		building.free()
 
-func _joined_authored_ducts(t) -> void:
+func _joined_authored_ducts(t: TestRunner) -> void:
 	var building := _roof(t, Vector2(256, 128), 32, GameEnums.BlockPurpose.INDUSTRIAL)
 	var fixtures := [{"cell": [1, 1], "kind": "duct_straight"},
 		{"cell": [3, 1], "kind": "duct_corner"}]
@@ -125,7 +125,7 @@ func _joined_authored_ducts(t) -> void:
 			"authored straight reaches the elbow boundary without an endpoint gap")
 	building.free()
 
-func _test_malformed_recipes_fail_before_construction(t) -> void:
+func _test_malformed_recipes_fail_before_construction(t: TestRunner) -> void:
 	for roof in [true, [{"lot": [1, 2], "fixtures": []}],
 		[{"lot": [1, 2, 8, 8], "fixtures": [{"cell": [1.5, 2], "kind": "vent"}]}],
 		[{"lot": [1, 2, 8, 8], "fixtures": [{"cell": [1, 2], "kind": "unknown"}]}]]:

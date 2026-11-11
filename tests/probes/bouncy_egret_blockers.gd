@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## How many hard blockers a day stands off its route tree: seals, road closures and wall-role
 ## catalogue rows. Printed rather than asserted. Not a suite: it lives under `tests/probes/`, where
@@ -30,7 +29,7 @@ const SEEDS := 6
 const BASE_SEED := 4242
 const DAYS := [7, 8, 9, 10, 11, 12, 13]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var started := Time.get_ticks_msec()
 	print("\n== hard blockers per day, %d seeds, days %s ==" % [SEEDS, DAYS])
 	print("  day  off-tree  sealed  seal-bodies  alley-mouths  closures  walls  friction")

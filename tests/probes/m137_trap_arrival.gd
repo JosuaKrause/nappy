@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name M137TrapArrival
 extends RefCounted
 ## Measurement probe for how often the trap's start falls back to the along-her-street
@@ -30,7 +29,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RUN_SEED := 2
 const SEEDS_TO_SWEEP := 200
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("\n== M137: how often the trap's start falls back to beside_distance() ==")
 	print("| row | seeds | above/below, clear run | beside (fallback) | no clear run at all | no legal start |")
 	print("|---|---|---|---|---|---|")
@@ -39,7 +38,7 @@ func run(t) -> void:
 
 ## `day`'s mark touched at `mark_step_index`, the same way the matching `_director_on_..._perform()`
 ## test helper reaches the perform step, then `SEEDS_TO_SWEEP` cities swept for `row_id`'s own draw.
-func _measure(t, row_id: String, day: int, mark_step_index: int) -> void:
+func _measure(t: TestRunner, row_id: String, day: int, mark_step_index: int) -> void:
 	var def := EventCatalogue.by_id(row_id)
 	if not def:
 		print("| %s | — | row not found |  |  |  |" % row_id)

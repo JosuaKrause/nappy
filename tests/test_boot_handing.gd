@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What `main` hands the worlds it builds, played through the real `main.tscn`: the crowd is handed
 ## the player only from when the old lookup by the `player` group would first have found her (not
@@ -33,7 +32,7 @@ const CARRIED_AWAY := Vector2(600.0, 0.0)
 ## The run every boot here plays: the seed handed to its configuration.
 const SEED := 4242
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	await _test_the_crowd_does_not_meet_her_behind_the_title(t)
 	await _test_the_escapes_city_is_handed_the_controls_cover(t)
@@ -48,13 +47,13 @@ class Played:
 		booted.free_all()
 		seat.end()
 
-func _boot(t, run_for_it: Callable, words: Array) -> Played:
+func _boot(t: TestRunner, run_for_it: Callable, words: Array) -> Played:
 	var played := Played.new()
 	played.seat = Seat.new(t, run_for_it)
 	played.booted = await played.seat.boot(t, _SCRATCH_SAVE, words, null, true, MapCache.source())
 	return played
 
-func _test_the_crowd_does_not_meet_her_behind_the_title(t) -> void:
+func _test_the_crowd_does_not_meet_her_behind_the_title(t: TestRunner) -> void:
 	var played := await _boot(t, Callable(), ["--seed", str(SEED)])
 	var main := played.booted.main
 	var city := Boot.city(main)
@@ -76,7 +75,7 @@ func _test_the_crowd_does_not_meet_her_behind_the_title(t) -> void:
 			"the day's start hands the crowd her: its patch stands on her wherever she is")
 	played.end()
 
-func _test_the_escapes_city_is_handed_the_controls_cover(t) -> void:
+func _test_the_escapes_city_is_handed_the_controls_cover(t: TestRunner) -> void:
 	var played := await _boot(t, func(run: RunState) -> void:
 				run.start_run(SEED)
 				run.header.day = Tuning.RUN_LENGTH_DAYS

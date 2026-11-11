@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends "res://tests/resistance_rig.gd"
 ## The resistance subquest's step table, touch-completion, the director's seeded dawn draws, a perform step expiring, and a finished task shown by the world: the package, the yeller leaving, the sabotage.
 
@@ -7,7 +7,7 @@ extends "res://tests/resistance_rig.gd"
 ## The library the bare event instances below draw from, holding the events' page for them.
 var _events_atlas := AtlasLibrary.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_step_table(t)
 	_test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t)
 	_test_step_selection(t)
@@ -40,7 +40,7 @@ func run(t) -> void:
 	await _test_the_sabotage_silences_the_city(t)
 	_free_city()
 
-func _test_step_table(t) -> void:
+func _test_step_table(t: TestRunner) -> void:
 	var steps := ResistanceSteps.all()
 	# Not `size() == 15`: `ResistanceSteps._build()` is a literal array, so a count of it is that
 	# array restated and adding a task would mean editing both in lockstep. The guard here is only
@@ -84,7 +84,7 @@ func _test_step_table(t) -> void:
 ## own teaching line, which does not wrap). A relationship rather than a literal, since the exact
 ## wording is not the player's: about as long as day 6's own mark, the item's own reference for
 ## "short", one sentence, and still saying where the thing is and where to take it.
-func _test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t) -> void:
+func _test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t: TestRunner) -> void:
 	var day6 := ResistanceSteps.by_index(1).brief
 	var day8 := ResistanceSteps.by_index(5).brief
 	t.check(day8.length() <= day6.length() * 1.5,
@@ -94,7 +94,7 @@ func _test_day_eights_mark_is_about_as_long_as_the_shortest_other_mark(t) -> voi
 	t.check("stroller" in day8, "and where what she takes is")
 	t.check(day8.count(".") == 1 and day8.ends_with("."), "in one sentence")
 
-func _test_step_selection(t) -> void:
+func _test_step_selection(t: TestRunner) -> void:
 	var none: Array[int] = []
 	t.check(ResistanceSteps.for_day(1, none, none, false) == null,
 			"nothing is on offer before the resistance exists")
@@ -123,7 +123,7 @@ func _test_step_selection(t) -> void:
 	var later := ResistanceSteps.for_day(8, done, failed, false)
 	t.check(later != null and later.index == 5, "but the run carries on to the next task's mark")
 
-func _test_the_finale_needs_the_legwork(t) -> void:
+func _test_the_finale_needs_the_legwork(t: TestRunner) -> void:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if not step.needs_goal:
@@ -138,7 +138,7 @@ func _teardown_contact() -> void:
 	_contact.free()
 	_player.free()
 
-func _test_touching_completes_a_pickup(t) -> void:
+func _test_touching_completes_a_pickup(t: TestRunner) -> void:
 	_build_pickup(t, 1)
 	var completed: Array[int] = []
 	_contact.completed.connect(func(index: int) -> void: completed.append(index))
@@ -149,7 +149,7 @@ func _test_touching_completes_a_pickup(t) -> void:
 	t.check(completed == [1], "and reports which step it was, once")
 	_teardown_contact()
 
-func _test_walking_away_leaves_it_untouched(t) -> void:
+func _test_walking_away_leaves_it_untouched(t: TestRunner) -> void:
 	_build_pickup(t, 1)
 	_player.global_position = Vector2(500.0, 0.0)
 	await _step_a_frame(t)
@@ -162,7 +162,7 @@ func _test_walking_away_leaves_it_untouched(t) -> void:
 ## `tests/test_atlas_leaf_consumers.gd` runs for every other consumer that switched from code or a
 ## loaded texture to an `AtlasLibrary` region: a name the bake never wrote would otherwise sit
 ## silent until somebody looked at a screenshot.
-func _test_the_chalk_mark_pictures_are_baked_on_decoration(t) -> void:
+func _test_the_chalk_mark_pictures_are_baked_on_decoration(t: TestRunner) -> void:
 	for name: StringName in [ContactPoint.MARK, ContactPoint.MARK_TOUCHED]:
 		t.check(AtlasTable.baked().has_region(name), "%s is a baked region" % name)
 		t.check(AtlasTable.baked().group_of(name) == ContactPoint.ATLAS_GROUP,
@@ -170,7 +170,7 @@ func _test_the_chalk_mark_pictures_are_baked_on_decoration(t) -> void:
 
 ## The shared plumbing every task needs: a contact that rides on an `EventInstance` rather
 ## than sitting on a bare tile, and follows it if it moves.
-func _test_a_perform_contact_rides_on_its_instance(t) -> void:
+func _test_a_perform_contact_rides_on_its_instance(t: TestRunner) -> void:
 	_player = Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -215,7 +215,7 @@ func _test_a_perform_contact_rides_on_its_instance(t) -> void:
 ## completes on the very first tick she is within his `inner_radius`, even short of `REACH`,
 ## while an ordinary step at the identical distance does not complete at all, and stepping short
 ## of `inner_radius` altogether does not complete either.
-func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t) -> void:
+func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRunner) -> void:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -277,7 +277,7 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t) -> void
 	instance.free()
 	player.free()
 
-func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
+func _test_a_perform_contact_sees_its_rider_finish(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.atlas = _events_atlas
 	instance.setup(EventCatalogue.by_id("roadblock"), Vector2.ZERO)
@@ -307,7 +307,7 @@ func _test_a_perform_contact_sees_its_rider_finish(t) -> void:
 ## would leave pressing against its far side completing nothing. And standing two
 ## pixels past `ContactPoint.REACH` beyond the farthest she can be stopped from its centre (its
 ## furthest reach and her own body), on any side, completes nothing.
-func _test_touching_a_tasks_body_from_any_side_completes_it(t) -> void:
+func _test_touching_a_tasks_body_from_any_side_completes_it(t: TestRunner) -> void:
 	for id: String in ["delivery_van", "roadblock"]:
 		var step := _perform_on(7 if id == "delivery_van" else 13)
 		var instance := EventInstance.new()
@@ -362,7 +362,7 @@ func _test_touching_a_tasks_body_from_any_side_completes_it(t) -> void:
 ## same. Day 9's door stands unguarded behind a mark's own guard; day 13's roadblock is the one task
 ## with a guard of its own; day 14's front door is the one task offered at dawn, and stands
 ## unguarded, since its trap comes to her once she has handed the key over.
-func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t) -> void:
+func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	run.resistance.progress = Tuning.RESISTANCE_GOAL
 	for day in [9, 13, Tuning.RUN_LENGTH_DAYS]:
@@ -390,7 +390,7 @@ func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t) -> void:
 ## `Vector2.INF` for a guard that was not placed. A guard is the one of his row the step put in the
 ## street (`_new_one()`): the mark's (`EventCatalogue.mark_guard()`) or a task's
 ## (`EventCatalogue.task_guard()`).
-func _attempt_the_day(t, day: int, her: Vector2, seen: bool) -> Array[Vector2]:
+func _attempt_the_day(t: TestRunner, day: int, her: Vector2, seen: bool) -> Array[Vector2]:
 	var run: RunState = _city.run
 	run.resistance.completed_steps = _completed_through(2 * (day - 6)) \
 			if day < Tuning.RUN_LENGTH_DAYS else _all_but_the_finale()
@@ -432,7 +432,7 @@ func _attempt_the_day(t, day: int, her: Vector2, seen: bool) -> Array[Vector2]:
 ## The whole design rests on the run being learnable: the alley that was safe on day 9 has
 ## to be safe on day 9 every time you replay that run — and the same is true of a perform
 ## step's own placement.
-func _test_placement_is_deterministic(t) -> void:
+func _test_placement_is_deterministic(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var first := _director(t)
 	first.start_day(6, _rng(6, "resistance"), 300.0)
@@ -452,7 +452,7 @@ func _test_placement_is_deterministic(t) -> void:
 ## A task is one day: touching the mark activates the perform it unlocks in the same
 ## `start_day()`'s own RNG and guard state, without waiting for a `start_day()` that would not
 ## come until tomorrow.
-func _test_touching_the_mark_activates_the_same_days_task(t) -> void:
+func _test_touching_the_mark_activates_the_same_days_task(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director(t)
 	director.start_day(6, _rng(6, "resistance"), 300.0)
@@ -470,7 +470,7 @@ func _test_touching_the_mark_activates_the_same_days_task(t) -> void:
 ## within 96px of where the map's alley puts him, two-thirds through it or
 ## at a courtyard's inner end — and the distance is the same every time this day is replayed. On a
 ## city of its own with no day started, so every guard is a dawn guard.
-func _test_the_guard_is_seeded(t) -> void:
+func _test_the_guard_is_seeded(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	_seen_guard_distances = []
 	var before := _director(t)
@@ -523,7 +523,7 @@ var _seen_guard_distances: Array[float] = []
 # Playtest 19 finding 6, in the player's own words: "if it was placed but never on screen it
 # should count as not placed and be placed on the next alley the player comes close to."
 
-func _test_a_perform_step_expires_when_its_rider_is_gone(t) -> void:
+func _test_a_perform_step_expires_when_its_rider_is_gone(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var director := _director_on_the_yeller_perform(t)
 	t.check(director.current_step() != null and director.current_step().index == 2,
@@ -544,7 +544,7 @@ func _test_a_perform_step_expires_when_its_rider_is_gone(t) -> void:
 ## that must be done by half the day. The mark is read, the task goes on offer, and the day's own
 ## ticks (`tick()`) run its deadline out, to prove the mechanism a later slice's tasks will use
 ## still works.
-func _test_a_timed_step_expires(t) -> void:
+func _test_a_timed_step_expires(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var mark := ResistanceSteps.by_index(1)
 	var timed := ResistanceSteps.Step.new()
@@ -573,7 +573,7 @@ func _test_a_timed_step_expires(t) -> void:
 ## Step 4's cost is deferred and total rather than local: picking the package up does not cost the
 ## street it happened on, it makes every street after it dearer for the rest of the day. Day 7's
 ## mark is read and the van's task it unlocks is done, the package handed over.
-func _test_completing_the_package_makes_the_pram_heavier(t) -> void:
+func _test_completing_the_package_makes_the_pram_heavier(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var somewhere := _city.map.tile_to_world(Vector2i(10, 10))
 	var before := _city.decay_multiplier(somewhere)
@@ -589,7 +589,7 @@ func _test_completing_the_package_makes_the_pram_heavier(t) -> void:
 			"and every street after it decays slower for the rest of the day", 0.001)
 	director.free()
 
-func _test_starting_a_day_resets_the_package_flag(t) -> void:
+func _test_starting_a_day_resets_the_package_flag(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	run.resistance.carrying_package = true
 	var director := _director(t)
@@ -621,7 +621,7 @@ func _open_ground_near(near: Vector2) -> Vector2:
 ## Split into two moments (M205, "he keeps shouting for a bit"): the instant the note changes
 ## hands, and once `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` has actually elapsed. He does
 ## not leave the first moment — he stays and keeps shouting, still charging her, until the second.
-func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
+func _test_completing_the_yeller_step_sends_only_its_rider_away(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director_on_the_yeller_perform(t)
 	t.check(director.current_step() != null and director.current_step().index == 2,
@@ -664,7 +664,7 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t) -> void:
 ## round and walking back. `_be_done()`'s own rule ("something on a route carries on the way it
 ## was going") would carry him at her on whichever half has him walking toward where she is
 ## standing; `leave_for_a_completed_task()` turns him to leave away from her regardless.
-func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t) -> void:
+func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t: TestRunner) -> void:
 	for on_the_second_half in [false, true]:
 		var instance := EventInstance.new()
 		instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO,
@@ -698,7 +698,7 @@ func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t) ->
 ## standing right there watching — that backstop is for a departure nobody could be watching (a
 ## headless rig, a streamed-out day), not for one that starts with her in reach. He only finishes
 ## once he has actually walked far enough away.
-func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t) -> void:
+func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]))
@@ -735,7 +735,7 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t) -> v
 ## departure — `_be_done()` reached with nothing routing it through the resistance, here by his
 ## giving up (`give_up_the_chase()`), since a man shouting has no duration to run out — still gives
 ## up at the plain six-second backstop, watched or not: this changes nothing about it.
-func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
+func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
 	t.add_child(instance)
@@ -755,7 +755,7 @@ func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t) -> void:
 ## a lost day's resistance work back, and the retry starts at the mark again, not straight at the
 ## task: a task is one day, so there is no dawn shortcut into the middle of it the way the old
 ## two-beat design had.
-func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> void:
+func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	run.header.run_seed = SEED
 	run.header.day = 6
@@ -800,7 +800,7 @@ func _test_a_lost_day_still_offers_the_mark_and_then_the_yeller_on_retry(t) -> v
 ## comes once she is far enough from the station (`Blackout`) — and then the field each one has been
 ## holding near itself since day 5 goes with it, `EventManager.silence_all_masts()`: a mast has an
 ## edge like any other row's, so what stops is everywhere a mast actually stands, not the whole map.
-func _test_the_sabotage_silences_the_city(t) -> void:
+func _test_the_sabotage_silences_the_city(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	run.resistance.completed_steps = _completed_through(8)
 	run.resistance.progress = Tuning.RESISTANCE_GOAL

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## A crowd car kills only what is in front of it while it drives.
 ##
@@ -23,7 +23,7 @@ const STEP := 1.0 / 60.0
 var _rig = RIG.new()
 var _fails: Array[String] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var map := CityGenerator.generate(SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
@@ -57,7 +57,7 @@ func _rng() -> RandomNumberGenerator:
 	rng.seed = hash("car-front:%d" % SEED)
 	return rng
 
-func _test_the_rear_half_is_safe_and_the_front_half_is_not(t, city: City, map: CityMap,
+func _test_the_rear_half_is_safe_and_the_front_half_is_not(t: TestRunner, city: City, map: CityMap,
 		street: Vector2i, lane: int) -> void:
 	var car := _a_car(city, map, street, lane, Tuning.CAR_SPEED.x)
 	var forward := car.heading()
@@ -86,7 +86,7 @@ func _test_the_rear_half_is_safe_and_the_front_half_is_not(t, city: City, map: C
 	t.check(CarStrike.hits(at, forward, speed, at) and not CarStrike.hits(at, forward, 0.0, at),
 			"a car that has stopped cannot run anybody over")
 
-func _test_a_car_pulling_away_from_a_stand_does_not_end_the_day(t) -> void:
+func _test_a_car_pulling_away_from_a_stand_does_not_end_the_day(t: TestRunner) -> void:
 	var forward := Vector2.DOWN
 	var centre := Vector2(400.0, 400.0)
 	var behind := centre - forward * (Tuning.CAR_STRIKE_HALF_LENGTH - 4.0)
@@ -119,19 +119,19 @@ func _the_day_ends_with_her_ahead(city: City, car: CrowdAgent, gap: float, secon
 	her.free()
 	return _fails.has("car_strike")
 
-func _test_a_car_driving_at_her_still_does(t, city: City, map: CityMap, street: Vector2i,
+func _test_a_car_driving_at_her_still_does(t: TestRunner, city: City, map: CityMap, street: Vector2i,
 		lane: int) -> void:
 	var car := _a_car(city, map, street, lane, Tuning.CAR_SPEED.x)
 	var ended: bool = await _the_day_ends_with_her_ahead(city, car, 120.0, 2.0)
 	t.check(ended, "a car driving at her still ends the day")
 
-func _test_a_car_driving_away_from_her_does_not(t, city: City, map: CityMap, street: Vector2i,
+func _test_a_car_driving_away_from_her_does_not(t: TestRunner, city: City, map: CityMap, street: Vector2i,
 		lane: int) -> void:
 	var car := _a_car(city, map, street, lane, Tuning.CAR_SPEED.x)
 	var ended: bool = await _the_day_ends_with_her_ahead(city, car, -(Tuning.CAR_STRIKE_HALF_LENGTH - 4.0), 2.0)
 	t.check(not ended, "a car driving away from her, who stands just behind it, never ends the day")
 
-func _test_a_fast_car_is_foreseen(t, city: City, map: CityMap, street: Vector2i,
+func _test_a_fast_car_is_foreseen(t: TestRunner, city: City, map: CityMap, street: Vector2i,
 		lane: int) -> void:
 	# At the top speed the car covers 46px per 0.25s sample, more than the 26px strike box, so a
 	# sampled prediction can step over her; the closed form cannot.

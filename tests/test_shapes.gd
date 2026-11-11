@@ -12,7 +12,7 @@ const _PROBE_RADIUS := 0.5
 ## How far past an edge (or inside it) a probe stands to be clearly on one side of it, in px.
 const _PROBE_MARGIN := 1.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_reach_and_across(t)
 	_test_distance_to_spine_of_a_point(t)
 	_test_distance_to_spine_of_a_segment(t)
@@ -38,7 +38,7 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------ the datum ---
 
-func _test_reach_and_across(t) -> void:
+func _test_reach_and_across(t: TestRunner) -> void:
 	var point := GroundShape.point(9.0)
 	t.check(is_equal_approx(point.reach(), 9.0), "a point's reach is its own radius")
 	t.check(is_equal_approx(point.across(), 9.0), "a point's across is its own radius too")
@@ -49,14 +49,14 @@ func _test_reach_and_across(t) -> void:
 	t.check(is_equal_approx(segment.across(), 5.0),
 			"a segment's across is its radius alone, not its half_length")
 
-func _test_distance_to_spine_of_a_point(t) -> void:
+func _test_distance_to_spine_of_a_point(t: TestRunner) -> void:
 	var shape := GroundShape.point(6.0)
 	t.check(is_equal_approx(shape.distance_to_spine(Vector2.ZERO), 0.0),
 			"on a point's own spine (the origin) is zero")
 	t.check(is_equal_approx(shape.distance_to_spine(Vector2(3.0, 4.0)), 5.0),
 			"off it is the plain Euclidean distance, whatever the shape's own radius is")
 
-func _test_distance_to_spine_of_a_segment(t) -> void:
+func _test_distance_to_spine_of_a_segment(t: TestRunner) -> void:
 	var shape := GroundShape.segment(10.0, 3.0)
 	t.check(is_equal_approx(shape.distance_to_spine(Vector2(5.0, 0.0)), 0.0),
 			"on the spine, between its ends, is zero")
@@ -68,7 +68,7 @@ func _test_distance_to_spine_of_a_segment(t) -> void:
 					.distance_to(Vector2(10.0, 0.0))),
 			"past an end is the Euclidean distance to that end, not to the line through the spine")
 
-func _test_collision_shape_types_and_sizes(t) -> void:
+func _test_collision_shape_types_and_sizes(t: TestRunner) -> void:
 	var point_shape := GroundShape.point(8.0).collision_shape()
 	t.check(point_shape is CircleShape2D, "a point shape's collision resource is a CircleShape2D")
 	t.check(is_equal_approx((point_shape as CircleShape2D).radius, 8.0),
@@ -81,7 +81,7 @@ func _test_collision_shape_types_and_sizes(t) -> void:
 	t.check(is_equal_approx(capsule.height, 26.0),
 			"and its height is 2 * reach() (2 * 13), the full length end to end")
 
-func _test_band_reduces_to_a_point_under_its_own_radius(t) -> void:
+func _test_band_reduces_to_a_point_under_its_own_radius(t: TestRunner) -> void:
 	var wide := GroundShape.band(60.0)
 	t.check(wide.half_length > 0.0, "a band wider than BAND_RADIUS is a real segment")
 	t.check(is_equal_approx(wide.reach(), 60.0), "and its reach is exactly what it was asked for")
@@ -106,7 +106,7 @@ func _shape_agrees(def: EventDef) -> bool:
 		return true
 	return def.shape != null and is_equal_approx(def.shape.reach(), def.obstructs_radius)
 
-func _test_every_catalogue_row_agrees_with_its_shape(t) -> void:
+func _test_every_catalogue_row_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
 		if def.look != EventDef.Look.NONE:
@@ -119,7 +119,7 @@ func _test_every_catalogue_row_agrees_with_its_shape(t) -> void:
 							def.shape.reach() if def.shape else -1.0])
 	t.check(checked >= 20, "and most of the catalogue actually obstructs (%d rows)" % checked)
 
-func _test_every_heated_copy_agrees_with_its_shape(t) -> void:
+func _test_every_heated_copy_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
 		for level in EventCatalogue.heat_levels():
@@ -134,7 +134,7 @@ func _test_every_heated_copy_agrees_with_its_shape(t) -> void:
 							hot.shape.reach() if hot.shape else -1.0])
 	t.check(checked > EventCatalogue.all().size(), "every row was checked at every heat level")
 
-func _test_every_seal_candidate_agrees_with_its_shape(t) -> void:
+func _test_every_seal_candidate_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
 	for candidate in SealPlanner.candidates():
 		for id in candidate.def_ids:
@@ -163,7 +163,7 @@ const _SPREAD_LOOKS: Array[EventDef.Look] = [
 	EventDef.Look.SCAFFOLDING, EventDef.Look.COLLAPSED_FRONTAGE,
 ]
 
-func _test_every_spread_row_still_fills_the_pavement_it_blocked(t) -> void:
+func _test_every_spread_row_still_fills_the_pavement_it_blocked(t: TestRunner) -> void:
 	var half_band := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
 	var checked := 0
 	for def in EventCatalogue.all():
@@ -219,7 +219,7 @@ func _real_segment(map: CityMap, horizontal: bool) -> StreetNetwork.Segment:
 func _along_axis(segment: StreetNetwork.Segment) -> Vector2:
 	return Vector2.RIGHT if segment.horizontal else Vector2.DOWN
 
-func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t) -> void:
+func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t: TestRunner) -> void:
 	var map := CityGenerator.generate(_HARD_SEAL_SEED)
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
@@ -287,7 +287,7 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t) -> void:
 # A building's footprint is the one shape in the game that is not already a point or a band — see
 # `GroundShape.rect()`'s own docstring for why nothing else needs one.
 
-func _test_rect_reach_across_and_distance_to_spine(t) -> void:
+func _test_rect_reach_across_and_distance_to_spine(t: TestRunner) -> void:
 	var shape := GroundShape.rect(Vector2(30.0, 10.0))
 	t.check(is_equal_approx(shape.reach(), Vector2(30.0, 10.0).length()),
 			"a rectangle's reach is its half-diagonal, the corner rather than an edge")
@@ -306,7 +306,7 @@ func _test_rect_reach_across_and_distance_to_spine(t) -> void:
 					Vector2(10.0, 10.0).length()),
 			"past a corner is the Euclidean distance to that corner, not to either edge alone")
 
-func _test_rect_collision_shape(t) -> void:
+func _test_rect_collision_shape(t: TestRunner) -> void:
 	var shape := GroundShape.rect(Vector2(48.0, 32.0))
 	var collision := shape.collision_shape()
 	t.check(collision is RectangleShape2D, "a rectangle shape's collision resource is a RectangleShape2D")
@@ -318,7 +318,7 @@ func _test_rect_collision_shape(t) -> void:
 ## north: PLAYTEST-57.md, "Roofs" — *"also allow going in a little bit for northern edges of
 ## roofs"* — so she may step a little way into the top of a wall in this projection rather than
 ## stop a tile short of it.
-func _test_a_built_building_carries_its_own_footprint_as_its_body(t) -> void:
+func _test_a_built_building_carries_its_own_footprint_as_its_body(t: TestRunner) -> void:
 	var footprint := Vector2(96.0, 160.0)
 	var building := Building.new()
 	building.footprint = footprint
@@ -361,7 +361,7 @@ func _test_a_built_building_carries_its_own_footprint_as_its_body(t) -> void:
 ## "lethal != noise" — but the noise shape still has to be at least as big as what it stands next
 ## to, or a car would read (and cast a shadow) smaller than the box that actually kills. If this
 ## fails, the strike box is not this commit's to change — report it instead.
-func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t) -> void:
+func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t: TestRunner) -> void:
 	var car := CrowdAgent.new()
 	car.kind = CrowdAgent.Kind.CAR
 	var shape: GroundShape = car.strategy.ground_shape()
@@ -378,7 +378,7 @@ func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t) -> void:
 # already tested above) and an ellipse moving (`eccentric_distance()`), eccentricity from speed. See
 # docs/EVENTS.md, "The emission model".
 
-func _test_field_distance_of_a_stationary_point_is_unchanged(t) -> void:
+func _test_field_distance_of_a_stationary_point_is_unchanged(t: TestRunner) -> void:
 	var shape := GroundShape.point(9.0)
 	for offset in [Vector2(30.0, 0.0), Vector2(0.0, -50.0), Vector2(12.0, 40.0)]:
 		var d := shape.field_distance(Vector2.ZERO, Vector2.RIGHT, Vector2.ZERO, offset)
@@ -386,7 +386,7 @@ func _test_field_distance_of_a_stationary_point_is_unchanged(t) -> void:
 				("a stationary point's field distance at %s is the plain distance to its centre "
 						% offset) + "(%.1f), exactly the circle every field always was" % offset.length())
 
-func _test_field_distance_of_a_stationary_segment_is_a_capsule(t) -> void:
+func _test_field_distance_of_a_stationary_segment_is_a_capsule(t: TestRunner) -> void:
 	var shape := GroundShape.segment(40.0, 24.0)
 	var outer := 90.0
 	var along_point := Vector2(shape.half_length + outer, 0.0)
@@ -403,7 +403,7 @@ func _test_field_distance_of_a_stationary_segment_is_a_capsule(t) -> void:
 ## (`R` abeam at every speed), and motion only adds reach *ahead* of it — `R · Field.scale(e)`
 ## dead ahead, `R/(1+e)` behind, both derived from `GroundShape.eccentric_distance()`'s own
 ## docstring.
-func _test_field_distance_of_a_moving_point_is_an_ellipse(t) -> void:
+func _test_field_distance_of_a_moving_point_is_an_ellipse(t: TestRunner) -> void:
 	var speed := 130.0
 	var e := Field.eccentricity(speed)
 	var scale := Field.scale(e)
@@ -429,7 +429,7 @@ func _test_field_distance_of_a_moving_point_is_an_ellipse(t) -> void:
 ## The player's own reference: *"an unstretched car field should be the same width... if anything
 ## the moving size should be bigger than the rest size"* — the abeam half-width is the resting
 ## radius `R` exactly, at a standstill and at every speed up to the eccentricity cap.
-func _test_abeam_half_width_equals_the_resting_radius_at_every_speed(t) -> void:
+func _test_abeam_half_width_equals_the_resting_radius_at_every_speed(t: TestRunner) -> void:
 	var outer := 120.0
 	for speed in [0.0, 40.0, 130.0, 165.0, 240.0, 500.0]:
 		var velocity := Vector2(speed, 0.0)
@@ -441,7 +441,7 @@ func _test_abeam_half_width_equals_the_resting_radius_at_every_speed(t) -> void:
 
 ## The width the player asked to keep is not the reach the player asked to grow: forward reach
 ## strictly increases with speed, right up to the eccentricity cap.
-func _test_forward_reach_grows_monotonically_with_speed(t) -> void:
+func _test_forward_reach_grows_monotonically_with_speed(t: TestRunner) -> void:
 	var outer := 120.0
 	var previous := outer
 	for speed in [0.0, 50.0, 100.0, 130.0, 165.0, 240.0, 390.0, 500.0]:
@@ -454,13 +454,13 @@ func _test_forward_reach_grows_monotonically_with_speed(t) -> void:
 	t.check(previous > outer, "and by the fastest speed sampled, forward reach has actually grown "
 			+ "past the resting radius (%.1f > %.1f)" % [previous, outer])
 
-func _test_zero_speed_gives_a_disc(t) -> void:
+func _test_zero_speed_gives_a_disc(t: TestRunner) -> void:
 	var point := Vector2(37.0, -14.0)
 	var d := GroundShape.eccentric_distance(Vector2.ZERO, Vector2.ZERO, point)
 	t.check(is_equal_approx(d, point.length()),
 			"a standing emitter's effective distance is the plain distance — zero speed is a disc")
 
-func _test_approaching_costs_more_than_receding(t) -> void:
+func _test_approaching_costs_more_than_receding(t: TestRunner) -> void:
 	var velocity := Vector2(150.0, 0.0)
 	var r := 80.0
 	var approaching := GroundShape.eccentric_distance(Vector2.ZERO, velocity, Vector2(r, 0.0))
@@ -477,7 +477,7 @@ func _test_approaching_costs_more_than_receding(t) -> void:
 ## core is full strength wherever the body is, and past it the point is wrong by at most the spine's
 ## half-length. A moving segment reaching past its core would quietly drop its own body from its
 ## field — this is the regression guard.
-func _test_no_emitting_segment_row_moves(t) -> void:
+func _test_no_emitting_segment_row_moves(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
 		if def.shape == null or def.shape.kind != GroundShape.Kind.SEGMENT or def.intensity <= 0.0:

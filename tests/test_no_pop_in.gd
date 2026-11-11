@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Nothing that arrives from off screen is ever drawn on the frame it exists.** *(Amendment 6 of
 ## M226, the player: "objects don't spawn \"at the edge of the screen\" they spawn *offscreen*" · "I
@@ -21,7 +20,7 @@ extends RefCounted
 const SEEDS: Array[int] = [4242, 90210, 1234567, 31337]
 const BEARINGS := 48
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_open_ground_over_every_bearing_and_camera(t)
 	_test_her_own_sidewalk_on_real_cities(t)
 	_test_the_road_and_the_lane(t)
@@ -73,7 +72,7 @@ static func _drawn_in(view: VisibleView, instance: EventInstance) -> bool:
 	var rect := instance.look.drawn_rect_now()
 	return Rect2(instance.global_position + rect.position, rect.size).intersects(view.view)
 
-func _test_open_ground_over_every_bearing_and_camera(t) -> void:
+func _test_open_ground_over_every_bearing_and_camera(t: TestRunner) -> void:
 	var her := Vector2(1000.0, 1000.0)
 	var placed := 0
 	var marked := 0
@@ -106,7 +105,7 @@ func _test_open_ground_over_every_bearing_and_camera(t) -> void:
 ## Her own sidewalk on several real cities: the cyclist and the loose dog sent down her line from
 ## points along the arterial, every way along it, through every camera — moved sideways or further
 ## onto their ground, never back into the view.
-func _test_her_own_sidewalk_on_real_cities(t) -> void:
+func _test_her_own_sidewalk_on_real_cities(t: TestRunner) -> void:
 	var placed := 0
 	var popped: Array[String] = []
 	for seed_value in SEEDS:
@@ -135,7 +134,7 @@ func _test_her_own_sidewalk_on_real_cities(t) -> void:
 
 ## The fire engine on its road, from every point up its street she may stand at, and day 13's column
 ## in its lane, through every camera.
-func _test_the_road_and_the_lane(t) -> void:
+func _test_the_road_and_the_lane(t: TestRunner) -> void:
 	var truck := EventCatalogue.by_id("fire_truck")
 	var column := EventSpawner.as_warned(EventCatalogue.by_id("military_convoy"))
 	var kerb := Vector2(2000.0, 4000.0)
@@ -168,7 +167,7 @@ func _test_the_road_and_the_lane(t) -> void:
 ## where holding it would bring the front truck into view she is too near the road's end for it to
 ## come from there, so `in_its_lane()` has no place (the warning is withdrawn) rather than a place in
 ## view. With her a view's height or less from either end, every answer is off screen or none.
-func _test_the_lane_at_the_ends_of_the_road(t) -> void:
+func _test_the_lane_at_the_ends_of_the_road(t: TestRunner) -> void:
 	var column := EventSpawner.as_warned(EventCatalogue.by_id("military_convoy"))
 	var top := 16.0
 	var bottom := 4000.0
@@ -198,7 +197,7 @@ func _test_the_lane_at_the_ends_of_the_road(t) -> void:
 ## calls), about the middle of the box `ScreenOrientation.content_scale_size()` presents, mapped back
 ## into the 1280x720 design box with `ScreenOrientation.to_design_space()`; nothing an arrival draws
 ## lands in that box.
-func _test_a_turned_window_shows_nothing_either(t) -> void:
+func _test_a_turned_window_shows_nothing_either(t: TestRunner) -> void:
 	var her := Vector2(1000.0, 1000.0)
 	var zoom := ScreenOrientation.DESIGN_SIZE / (Tuning.VIEW_HALF_EXTENT * 2.0)
 	var design := Rect2(Vector2.ZERO, ScreenOrientation.DESIGN_SIZE)

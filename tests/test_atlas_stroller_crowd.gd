@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The stroller, the head indicators and the crowd draw from `AtlasLibrary` regions rather than
 ## from individually preloaded textures or a runtime packer. `tests/test_stroller.gd`,
@@ -24,7 +23,7 @@ const BakedRegions := preload("res://tests/baked_regions.gd")
 const StreetMap := preload("res://tests/fixtures/street_map.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t)
 	_test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t)
 	_test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t)
@@ -33,7 +32,7 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------ stroller ---
 
-func _rig(t, atlas: AtlasLibrary) -> Stroller:
+func _rig(t: TestRunner, atlas: AtlasLibrary) -> Stroller:
 	var rig := Stroller.new()
 	rig.use_atlas(atlas)
 	var camera := Camera2D.new()
@@ -49,7 +48,7 @@ func _rig(t, atlas: AtlasLibrary) -> Stroller:
 ## that ever releases them. In a booted game each of these is a count on a page the boot already
 ## holds; with no boot behind this rig they are the references that load and drop the pages,
 ## which is what makes the pairing visible at all.
-func _test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t) -> void:
+func _test_stroller_acquires_for_the_whole_run_and_releases_on_exit(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var groups: Array[StringName] = [Stroller.parent_atlas(false), Stroller.STROLLER_ATLAS,
@@ -79,7 +78,7 @@ func _rng(tag: String) -> RandomNumberGenerator:
 ## game hands its own: no city, lights, streets or player are built around it. A day is started
 ## with nobody to place (`populate` off), since the page is taken on the first day whether or not
 ## anyone walks it.
-func _crowd(t, atlas: AtlasLibrary) -> Crowd:
+func _crowd(t: TestRunner, atlas: AtlasLibrary) -> Crowd:
 	var crowd := Crowd.new()
 	crowd.atlas = atlas
 	var world := WorldContext.new()
@@ -101,7 +100,7 @@ func _start(crowd: Crowd, day: int, tag: String) -> void:
 ##
 ## A second reference the second day's `start_day()` took on top of the first would leave the page
 ## held once the crowd is freed, so the one release line at the end is what says it took none.
-func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t) -> void:
+func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var crowd := _crowd(t, atlas)
@@ -126,7 +125,7 @@ func _test_clear_keeps_the_page_and_a_second_day_still_holds_one_reference(t) ->
 ## `clear()` with no day ever started. `clear()` never touches `ATLAS_GROUP` at all, so this holds
 ## independently of whether a day ever ran; pinned anyway as the shape the finale actually
 ## exercises.
-func _test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t) -> void:
+func _test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var crowd := _crowd(t, atlas)
@@ -141,7 +140,7 @@ func _test_a_direct_clear_with_no_day_started_is_a_safe_no_op(t) -> void:
 ## this test freeing its crowd without ever calling `clear()` first. The library's counts outlive
 ## the freed node (in a booted game the library is the sitting's), so `Crowd._exit_tree()` is the
 ## only thing standing between this and a reference held for the rest of the process.
-func _test_a_crowd_freed_without_clear_still_releases_its_page(t) -> void:
+func _test_a_crowd_freed_without_clear_still_releases_its_page(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var crowd := _crowd(t, atlas)
@@ -155,7 +154,7 @@ func _test_a_crowd_freed_without_clear_still_releases_its_page(t) -> void:
 
 ## The crowd hands each agent it makes the library it holds the crowd's page on, so an agent's look
 ## draws its regions from the page the crowd holds. An agent handed none has no library to draw from.
-func _test_every_agent_the_crowd_makes_draws_from_the_crowds_library(t) -> void:
+func _test_every_agent_the_crowd_makes_draws_from_the_crowds_library(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var crowd := _crowd(t, atlas)
 	crowd.start_day(1, _rng("agents-draw"), Vector2.INF, true)

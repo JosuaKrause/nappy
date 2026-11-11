@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Where a torn poster's pursuer on foot starts, one line a tear**, so a change to how his start
 ## is sited can be counted: the tears whose start moves and the tears that now send nobody. Not a
@@ -22,7 +21,7 @@ const SEEDS := 40
 const TEARS_A_DAY := 5
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var printed := 0
 	var nobody := 0
 	for seed_value in range(1, SEEDS + 1):

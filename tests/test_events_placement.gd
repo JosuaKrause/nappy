@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The two halves of `EventScheduler.role_for`: a lethal event is a wall and a wall never stands
 ## on ground a route runs along, and friction is aimed at the route as a weight rather than a rule.
@@ -18,7 +18,7 @@ extends RefCounted
 const MapCache := preload("res://tests/city_map_cache.gd")
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_day_is_placed_by_role(t)
 	_test_friction_on_a_sidewalk_can_be_walked_past(t)
 	_test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t)
@@ -89,7 +89,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d" % [4242, day])
 	return rng
 
-func _test_the_day_is_placed_by_role(t) -> void:
+func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
 	# The day's poster crews are drawn by exactly these rules and handed to her walk with no
 	# position (`LocationDraw.draw_all()`). What this asks is how the draw places, so the crews are
@@ -254,7 +254,7 @@ func _test_the_day_is_placed_by_role(t) -> void:
 ## by hand rather than asking the scheduler for it, so a future row narrow enough to slip both
 ## readings is caught by its own numbers rather than assumed impossible. `burning_building`
 ## (`ONE_SHOT`) is excluded from it since a set piece is never asked the friction-or-wall question.
-func _test_friction_on_a_sidewalk_can_be_walked_past(t) -> void:
+func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 	var checked := 0
 	for day in [8, 14]:
 		var map := _repainted_city(day)
@@ -389,7 +389,7 @@ func _paces_a_beat_with_no_way_out(plan: EventScheduler.Planned, map: CityMap) -
 ## Asked of the whole catalogue against a real city rather than of the one row, so the next row
 ## given a pavement side is held to it without anybody adding an id to a list. Rows with an empty
 ## `placement` are the seal pictures, sited by `SealPlanner` on ground it picks itself.
-func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t) -> void:
+func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
 	var ground := {}
 	var asked := 0
@@ -429,7 +429,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t) -> void:
 ## strewn over the map is refused it, loudly: the refusal says the location the tile names does not
 ## take the row there (or that none holds it), rather than the row being placed somewhere else. The count at the end is what
 ## stops it passing having placed nothing.
-func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
+func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("poster_crew_square")
 	t.check(def != null and def.first_day <= 14, "the square poster crew is in the catalogue")
 	if not def:
@@ -520,7 +520,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t) -> void:
 ## guards is that the sweep can still produce the case at all. City 88 is in the sweep for it: its
 ## day 1, before any mast holds a location, paces a walled beat, so the floor rests on a day no
 ## change to the later days' draws moves.
-func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t) -> void:
+func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t: TestRunner) -> void:
 	var on_the_route := 0
 	var walled := 0
 	var by_a_side_route := 0
@@ -635,7 +635,7 @@ func _beat_tiles(map: CityMap, plan: EventScheduler.Planned) -> Array[Vector2i]:
 ##
 ## **And it cannot pass vacuously**: a day where no counted row ever stood within reach of a route
 ## junction would satisfy it with nothing checked, so the rows that do are counted and asserted.
-func _test_a_routes_junctions_stay_clear(t) -> void:
+func _test_a_routes_junctions_stay_clear(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
 	var junctions := 0
 	var in_reach := 0
@@ -774,7 +774,7 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 ## The walk is written out here rather than borrowed from the scheduler, for the reason the junction
 ## check gives — only the reading of what a row denies is shared, since there is one place that is
 ## written down.
-func _test_nothing_takes_the_routes_own_sidewalk(t) -> void:
+func _test_nothing_takes_the_routes_own_sidewalk(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
 	var bands := 0
 	var bands_with_a_row := 0
@@ -855,7 +855,7 @@ func _a_route_is_walked_along(corridor: Corridor, band: Rect2i) -> bool:
 ## **It cannot pass vacuously**: a sample where no pacing row ever stood on a route street would
 ## satisfy it having checked nothing, so those streets are counted and asserted. `homeless_yeller`
 ## (14.0 over 210px, no body, paces) is the row the sample is really about.
-func _test_a_pacing_rows_opening_stays_open(t) -> void:
+func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
 	var paced_streets := 0
 	var closed := 0
@@ -971,7 +971,7 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 ## checks the opposite claim — over several days on a real generated map, until at least one
 ## placement turns up at `corridor.depth(tile) == 0`. A check that never saw an on-corridor flock
 ## would hold whether the exemption worked or not.
-func _test_a_flock_is_scenery(t) -> void:
+func _test_a_flock_is_scenery(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var on_corridor := 0
 	var off_corridor := 0
@@ -1000,7 +1000,7 @@ func _test_a_flock_is_scenery(t) -> void:
 ## What a row denies along a line (`EventDef.line_reach()`): a lethal row keeps its whole
 ## `outer_radius`, since nothing about being quiet at the rim makes walking into it survivable, and
 ## no row reaches less than its own body.
-func _test_a_lethal_rows_line_reach_is_its_whole_field(t) -> void:
+func _test_a_lethal_rows_line_reach_is_its_whole_field(t: TestRunner) -> void:
 	var lethal := 0
 	for def in EventCatalogue.all():
 		if not def.hard_fail:

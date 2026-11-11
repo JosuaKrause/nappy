@@ -37,7 +37,7 @@ const _STRIDE := 3
 ## Every layer a mover can be stopped by, so `ground_for()` lays out the whole of today's record.
 const _ALL_LAYERS := Mover.GROUND | Mover.POSTS | Mover.TODAY
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var original := CityGenerator.generate(seed_value)
 		_test_a_copy_keeps_the_generators_guarantees(t, original, seed_value)
@@ -49,11 +49,11 @@ func run(t) -> void:
 
 ## The copy of a generated city is one `CityGenerator.validate()` passes, every guarantee of it: the
 ## calm blocks, the home, the routes to the parks.
-func _test_a_copy_keeps_the_generators_guarantees(t, original: CityMap, seed_value: int) -> void:
+func _test_a_copy_keeps_the_generators_guarantees(t: TestRunner, original: CityMap, seed_value: int) -> void:
 	var problems := CityGenerator.validation_problems(original.copy())
 	t.check(problems.is_empty(), "seed %d: the copy passes every guarantee (%s)" % [seed_value, problems])
 
-func _test_a_copy_answers_what_the_map_answers(t, original: CityMap, seed_value: int) -> void:
+func _test_a_copy_answers_what_the_map_answers(t: TestRunner, original: CityMap, seed_value: int) -> void:
 	var twin := original.copy()
 	t.check(twin != original, "seed %d: the copy is another map" % seed_value)
 	_check_the_same(t, original, twin, "seed %d, as generated" % seed_value)
@@ -72,7 +72,7 @@ func _test_a_copy_answers_what_the_map_answers(t, original: CityMap, seed_value:
 ## A map in the middle of a day, the day's records on it, copies with every record carried: the
 ## closures, the soft seals, a body, the holds, the emptied tree pits, and a handover still waiting
 ## for the next repaint.
-func _test_a_copy_taken_during_a_day_carries_the_days_record(t, original: CityMap,
+func _test_a_copy_taken_during_a_day_carries_the_days_record(t: TestRunner, original: CityMap,
 		seed_value: int) -> void:
 	var map := original.copy()
 	var street := _a_street_tile(map)
@@ -106,7 +106,7 @@ func _test_a_copy_taken_during_a_day_carries_the_days_record(t, original: CityMa
 ## spent calm area, `fenced_park` set), and the fence handed over again for the next repaint, copies
 ## with the closures, the fence and its handover carried. The fence is checked by name besides the
 ## member comparison, so a copy that drops it fails on a check that says what.
-func _test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t, original: CityMap,
+func _test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t: TestRunner, original: CityMap,
 		seed_value: int) -> void:
 	var day := 9
 	var map := original.copy()
@@ -138,7 +138,7 @@ func _test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t, origi
 
 ## An authored scene's city (`RecipeCityBuilder.build()`) copies with what only a recipe fills: its
 ## saved dawn ground, its stretch and the stretch being active, its tree moves and context.
-func _test_a_copy_of_an_authored_scene_map_carries_its_recipe(t) -> void:
+func _test_a_copy_of_an_authored_scene_map_carries_its_recipe(t: TestRunner) -> void:
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
 	var map: CityMap = RecipeCityBuilder.build(data).map
 	t.check(map.stretch_active and not map.recipe_dawn_tiles.is_empty(),
@@ -152,7 +152,7 @@ func _test_a_copy_of_an_authored_scene_map_carries_its_recipe(t) -> void:
 ## was, and the other way round. Each map is compared with what it answered and held before (a
 ## snapshot of plain data, `_snapshot()`), not with another copy, which would share whatever the
 ## two maps wrongly shared.
-func _test_what_one_map_is_handed_leaves_the_other_alone(t, original: CityMap,
+func _test_what_one_map_is_handed_leaves_the_other_alone(t: TestRunner, original: CityMap,
 		seed_value: int) -> void:
 	var map := original.copy()
 	var before := _snapshot(map)
@@ -202,7 +202,7 @@ func _a_street_tile(map: CityMap) -> Vector2i:
 	return Vector2i.ZERO
 
 ## Both comparisons of this suite's header, each a check of its own.
-func _check_the_same(t, expected: CityMap, actual: CityMap, situation: String) -> void:
+func _check_the_same(t: TestRunner, expected: CityMap, actual: CityMap, situation: String) -> void:
 	_check_alike(t, _snapshot(expected), _snapshot(actual), situation)
 
 ## What `map` answers and what it holds, `_answers()` and `_members()`, as plain data of the
@@ -211,7 +211,7 @@ func _snapshot(map: CityMap) -> Array:
 	return [_plain(_answers(map)), _members(map)]
 
 ## The two checks of `_check_the_same()`, on two snapshots.
-func _check_alike(t, expected: Array, actual: Array, situation: String) -> void:
+func _check_alike(t: TestRunner, expected: Array, actual: Array, situation: String) -> void:
 	var asked: Dictionary = expected[0]
 	var answered: Dictionary = actual[0]
 	var differing: Array[String] = []

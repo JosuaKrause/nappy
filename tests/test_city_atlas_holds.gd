@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The atlas groups a `City` holds while it stands, each read off the run log's lines for the page
 ## (`tests/atlas_page_log.gd`): the "decoration" page arrives with `City.build()` and is read from
@@ -16,7 +15,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RUN_SEED := 2
 const SEED := 4242
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_city_reads_the_group_once(t)
 	_test_the_group_is_released_when_the_city_is_freed(t)
 
@@ -29,7 +28,7 @@ func run(t) -> void:
 ## failure directly — see `tests/test_atlas_library.gd`'s own note beside the same choice: the
 ## `push_error` it raises is a real engine error, and an engine error fails the whole run
 ## (`docs/DECISIONS.md`, M164), which would be a worse silence than the state checks below.
-func _test_the_city_reads_the_group_once(t) -> void:
+func _test_the_city_reads_the_group_once(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var map := MapCache.of(SEED)
@@ -54,7 +53,7 @@ func _test_the_city_reads_the_group_once(t) -> void:
 
 ## `City._exit_tree()` owes `build()`'s `acquire()` a matching `release()` — a city freed without
 ## one would leave the page counted, and resident, for a city that no longer exists.
-func _test_the_group_is_released_when_the_city_is_freed(t) -> void:
+func _test_the_group_is_released_when_the_city_is_freed(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var map := MapCache.of(SEED)

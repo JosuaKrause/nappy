@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends "res://tests/test_day13_guard.gd"
 ## Parity probe for minty-quail's shared-components D2 (the walk field on the world layer, the chase
 ## way from the `Navigator`): prints, deterministically and with no timing in it, what the move of
@@ -28,7 +28,7 @@ const FRAME := 1.0 / 60.0
 const CHASE_SECONDS := 31.8
 
 ## Overrides test_day13_guard.run.
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for seed_value in GUARD_SEEDS:
 		for walks in [false, true]:
 			_the_guard(t, seed_value, walks)
@@ -36,7 +36,7 @@ func run(t) -> void:
 		for seed_value in ARROW_SEEDS:
 			_the_arrow(t, day, seed_value)
 
-func _the_guard(t, seed_value: int, walks: bool) -> void:
+func _the_guard(t: TestRunner, seed_value: int, walks: bool) -> void:
 	var city := _build_city(t, seed_value)
 	var director := _start_the_day(t, city, seed_value)
 	var player := _rig_player(t, director, director.contact_position())
@@ -93,7 +93,7 @@ static func _arrow_tile(director: ResistanceDirector, map: CityMap) -> Vector2i:
 	var at := director.red_arrow_target()
 	return Vector2i(-1, -1) if at == Vector2.INF else map.world_to_tile(at)
 
-func _the_arrow(t, day: int, seed_value: int) -> void:
+func _the_arrow(t: TestRunner, day: int, seed_value: int) -> void:
 	var city := _build_city(t, seed_value)
 	var director := _read_the_mark(t, city, day, seed_value)
 	var player := _rig_player(t, director, director.contact_position())
@@ -141,7 +141,7 @@ func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
 		spots.append(map.tile_to_world(sidewalk[i]))
 	return spots
 
-func _read_the_mark(t, city: City, day: int, seed_value: int) -> ResistanceDirector:
+func _read_the_mark(t: TestRunner, city: City, day: int, seed_value: int) -> ResistanceDirector:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < day:

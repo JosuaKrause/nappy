@@ -10,7 +10,7 @@ extends RefCounted
 const MapCache := preload("res://tests/city_map_cache.gd")
 const RecordingShadowDrawer := preload("res://tests/recording_shadow_drawer.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_a_single_rectangle_casts_the_read_shape(t)
 	await _test_two_edge_joined_buildings_shade_as_one_with_no_seam(t)
 	await _test_a_disjoint_building_is_unaffected_by_a_neighbour(t)
@@ -21,7 +21,7 @@ func run(t) -> void:
 ## What a non-streamed `BuildingShadows` over `rects` has every chunk draw once a frame has passed:
 ## `{"full": [...], "triangles": [...]}`, every chunk's tiles together, and `"chunks"`, each chunk's
 ## tiles and the patch (`"key"`) its node is named for.
-func _drawn_over(t, rects: Array[Rect2i]) -> Dictionary:
+func _drawn_over(t: TestRunner, rects: Array[Rect2i]) -> Dictionary:
 	var drawer := RecordingShadowDrawer.new()
 	var shadows := BuildingShadows.new()
 	shadows.drawer = drawer
@@ -51,7 +51,7 @@ func _drawn_over(t, rects: Array[Rect2i]) -> Dictionary:
 ## hands in for a task scene's stretch; here it lets every tile through and counts the tiles it is
 ## asked about. A tile is asked about only when shadow tiles are worked out, so streamed shadows
 ## handed their footprints ask about none until a view prepares a chunk.
-func _test_resident_geometry_matches_the_complete_union(t) -> void:
+func _test_resident_geometry_matches_the_complete_union(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
 	var whole_drawn: Dictionary = await _drawn_over(t, map.building_rects)
 	var expected := {}
@@ -111,7 +111,7 @@ func _test_resident_geometry_matches_the_complete_union(t) -> void:
 ## The exact reading of the shape the entry gives: a band along the bottom edge one tile past the
 ## western corner, a band up the western edge stopping one tile short of the top, and a triangle
 ## under the south-eastern corner alone — nothing at the top of the western band.
-func _test_a_single_rectangle_casts_the_read_shape(t) -> void:
+func _test_a_single_rectangle_casts_the_read_shape(t: TestRunner) -> void:
 	var rect := Rect2i(5, 5, 3, 4) # columns 5..7, rows 5..8 (x0=5, x1=7, y0=5, y1=8)
 	var tiles: Dictionary = await _drawn_over(t, [rect])
 	var full := _to_set(tiles.full)
@@ -134,7 +134,7 @@ func _test_a_single_rectangle_casts_the_read_shape(t) -> void:
 ## Two buildings sharing a north-south edge — the second immediately east of the first, same rows —
 ## merge into one 6-wide union. The player's own contract: nothing is shaded where they touch, and
 ## the union shades as one rectangle rather than each building shading its neighbour's own wall.
-func _test_two_edge_joined_buildings_shade_as_one_with_no_seam(t) -> void:
+func _test_two_edge_joined_buildings_shade_as_one_with_no_seam(t: TestRunner) -> void:
 	var west := Rect2i(5, 5, 3, 4) # columns 5..7, so a lone west would put its own corner
 			# triangle at (7, 9) — see `_test_a_single_rectangle_casts_the_read_shape`.
 	var east := Rect2i(8, 5, 3, 4) # columns 8..10, sharing the seam at column 7/8
@@ -155,7 +155,7 @@ func _test_two_edge_joined_buildings_shade_as_one_with_no_seam(t) -> void:
 
 ## A building far from any other casts its own shadow untouched by a neighbour it does not touch —
 ## the two footprints' shadows are simply the union of what each would cast alone.
-func _test_a_disjoint_building_is_unaffected_by_a_neighbour(t) -> void:
+func _test_a_disjoint_building_is_unaffected_by_a_neighbour(t: TestRunner) -> void:
 	var near := Rect2i(0, 0, 2, 2)
 	var far := Rect2i(20, 20, 2, 2)
 	var combined: Dictionary = await _drawn_over(t, [near, far])
@@ -185,7 +185,7 @@ func _spread_out_buildings() -> Array[Rect2i]:
 		Rect2i(BuildingShadows.CHUNK_TILES * 3, BuildingShadows.CHUNK_TILES * 3, 7, 7),
 	]
 
-func _test_the_chunks_are_a_partition_of_the_tile_sets(t) -> void:
+func _test_the_chunks_are_a_partition_of_the_tile_sets(t: TestRunner) -> void:
 	var drawn: Dictionary = await _drawn_over(t, _spread_out_buildings())
 	var by_chunk: Array = drawn.chunks
 	t.check(by_chunk.size() > 1,
@@ -210,7 +210,7 @@ func _test_the_chunks_are_a_partition_of_the_tile_sets(t) -> void:
 ## Each chunk's tiles are the patch it actually covers, which is what makes the renderer's rect
 ## culling correct: a tile drawn by an item whose rect is somewhere else would come and go with the
 ## wrong patch of city.
-func _test_a_chunk_holds_only_its_own_tiles(t) -> void:
+func _test_a_chunk_holds_only_its_own_tiles(t: TestRunner) -> void:
 	var drawn: Dictionary = await _drawn_over(t, _spread_out_buildings())
 	var size := BuildingShadows.CHUNK_TILES
 	var checked := 0

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `SealPlanner`: every street off the day's tree carries a seal (a share of them from the gatehouse
 ## day), the tree, the doorstep and the main road never do, and sealing never breaks the day's own
@@ -24,7 +24,7 @@ const BASE_SEED := 71717
 
 var _maps: Array[CityMap] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 91))
 	_test_off_tree_streets_are_sealed(t)
@@ -135,7 +135,7 @@ const _SEAL_SHARE_TOLERANCE := 0.1
 ## of all three"), so there the check is the share sealed over the seed's days with the wall, and
 ## still never a seal off the candidates. Which days those are is the day's spec's answer, the one
 ## the planner is handed, not a comparison with the day number made here.
-func _test_off_tree_streets_are_sealed(t) -> void:
+func _test_off_tree_streets_are_sealed(t: TestRunner) -> void:
 	for map in _maps:
 		var walled_candidates := 0
 		var walled_sealed := 0
@@ -174,7 +174,7 @@ func _test_off_tree_streets_are_sealed(t) -> void:
 				% [map.seed_used, share, walled_sealed, walled_candidates]
 				+ "the share asked for is %.2f" % SealPlanner.GATEHOUSE_DAY_SEAL_SHARE)
 
-func _test_the_tree_and_the_doorstep_are_never_sealed(t) -> void:
+func _test_the_tree_and_the_doorstep_are_never_sealed(t: TestRunner) -> void:
 	for map in _maps:
 		for day in [1, 7, 14]:
 			var tree := _tree_for(map, day)
@@ -195,7 +195,7 @@ func _test_the_tree_and_the_doorstep_are_never_sealed(t) -> void:
 ## its class doc, "The main road is exempt too". Checked over every real vertical segment at
 ## `map.main_road`'s own corridor index, not only the ones sampled for the other tests, since a
 ## seal here would wall the one street the design deliberately leaves open to cross.
-func _test_the_main_road_is_never_sealed(t) -> void:
+func _test_the_main_road_is_never_sealed(t: TestRunner) -> void:
 	for map in _maps:
 		if map.main_road < 0:
 			continue
@@ -211,7 +211,7 @@ func _test_the_main_road_is_never_sealed(t) -> void:
 
 ## `SealPlanner` only ever reads `tree.is_on_the_tree()` — it must never grow, shrink or move what
 ## the tree itself carries.
-func _test_the_tree_itself_is_untouched(t) -> void:
+func _test_the_tree_itself_is_untouched(t: TestRunner) -> void:
 	for map in _maps:
 		var day := 5
 		_repaint_for(map, day)
@@ -242,7 +242,7 @@ func _test_the_tree_itself_is_untouched(t) -> void:
 ## `SealPlanner` never seals. Checked directly against `is_on_the_tree()` rather than against
 ## `SealPlanner`'s output, because the guarantee belongs to the tree and holds before any seal is
 ## placed at all.
-func _test_the_doorstep_reaches_the_corridor(t) -> void:
+func _test_the_doorstep_reaches_the_corridor(t: TestRunner) -> void:
 	var total := 0
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -327,7 +327,7 @@ func _some_calm_is_reached(map: CityMap, grid: ReachabilityGrid, blocked: Dictio
 ## cost more than the meter allows before she arrives — full survivability needs the day's own event
 ## and crowd simulation over the static graph this test builds, which is a real gap and is named
 ## rather than closed here.
-func _test_a_day_is_reachable_without_the_main_road(t) -> void:
+func _test_a_day_is_reachable_without_the_main_road(t: TestRunner) -> void:
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var tree := _tree_for(map, day)
@@ -349,7 +349,7 @@ func _test_a_day_is_reachable_without_the_main_road(t) -> void:
 ## Re-derives the same rule `SealPlanner._seal_alley_mouths` uses, which is what catches the rule
 ## and the placement drifting apart from each other rather than only catching one of them being
 ## wrong on its own.
-func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t) -> void:
+func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t: TestRunner) -> void:
 	var candidates := 0
 	for map in _maps:
 		for day in [1, 4, 7, 10, 14]:
@@ -386,7 +386,7 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t) -> void:
 
 # --------------------------------------------------------------------- candidates ---
 
-func _test_candidate_shapes(t) -> void:
+func _test_candidate_shapes(t: TestRunner) -> void:
 	for candidate in SealPlanner.candidates():
 		var wanted := 1 if candidate.strength == SealPlanner.Strength.HARD else 2
 		t.check(candidate.def_ids.size() == wanted,
@@ -404,7 +404,7 @@ func _test_candidate_shapes(t) -> void:
 ## drawn. Asked of the day the game plans (`plan_day` on day 1's spec), which is what the dawn
 ## calls, rather than of the planner's private gate: some planned seal standing on a street (an
 ## alley's mouth can be walled with a soft picture's row too) is one of a soft picture's rows.
-func _test_day_one_has_a_working_soft_pair(t) -> void:
+func _test_day_one_has_a_working_soft_pair(t: TestRunner) -> void:
 	var soft_ids := {}
 	for candidate in SealPlanner.candidates():
 		if candidate.strength == SealPlanner.Strength.SOFT:
@@ -432,7 +432,7 @@ func _test_day_one_has_a_working_soft_pair(t) -> void:
 ## than assumed by checking every soft candidate's own `obstructs_radius` stays within its own
 ## pavement (`Tuning.SIDEWALK_WIDTH` tiles), so the surviving body can never bleed across into the
 ## side the thinning pass just opened.
-func _test_thinning_leaves_a_walkable_line(t) -> void:
+func _test_thinning_leaves_a_walkable_line(t: TestRunner) -> void:
 	var checked := 0
 	var untouched_width := (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
 	var own_pavement := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
@@ -458,7 +458,7 @@ func _test_thinning_leaves_a_walkable_line(t) -> void:
 ## since thinning only ever removes seal bodies and the doorstep-to-corridor join is a fact about
 ## `RouteTree`, which `SealPlanner` never touches (`_test_the_tree_itself_is_untouched`). Asserted
 ## anyway rather than left as an inference.
-func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t) -> void:
+func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t: TestRunner) -> void:
 	for map in _maps:
 		var day := 6
 		_repaint_for(map, day)
@@ -493,7 +493,7 @@ func _first_real_segment(map: CityMap) -> StreetNetwork.Segment:
 ## `seal_planner.gd`'s class doc, "no gap between them." Checked directly for every `HARD`
 ## candidate, including all four dedicated hard-seal pictures, rather than trusted from the
 ## arithmetic alone.
-func _test_hard_seals_cover_the_street_edge_to_edge(t) -> void:
+func _test_hard_seals_cover_the_street_edge_to_edge(t: TestRunner) -> void:
 	var map := _maps[0]
 	var segment := _first_real_segment(map)
 	t.check(segment != null, "the map has at least one real street to check hard seals against")
@@ -531,7 +531,7 @@ func _test_hard_seals_cover_the_street_edge_to_edge(t) -> void:
 ## `obstructs_radius` 96 — exactly half the 192px street — so `positions_across` places exactly one
 ## body spanning it edge to edge, rather than repeating the scene several times across the street.
 ## See each row's own class doc in `event_catalogue.gd`.
-func _test_whole_scene_hard_seals_place_a_single_body(t) -> void:
+func _test_whole_scene_hard_seals_place_a_single_body(t: TestRunner) -> void:
 	var map := _maps[0]
 	var segment := _first_real_segment(map)
 	if not segment:
@@ -553,7 +553,7 @@ func _test_whole_scene_hard_seals_place_a_single_body(t) -> void:
 ## fails**: it simply seals the gaps its picture shows, which is the defect this milestone exists to
 ## remove, wearing a green suite. Every other row has no parts to lose, so this is stated over the
 ## one that does, on the only path it is ever placed by.
-func _test_a_placed_crash_keeps_its_two_car_bodies(t) -> void:
+func _test_a_placed_crash_keeps_its_two_car_bodies(t: TestRunner) -> void:
 	var expected := EventCatalogue.by_id("car_accident").solid_parts.size()
 	var found := 0
 	for map in _maps:
@@ -582,7 +582,7 @@ func _test_a_placed_crash_keeps_its_two_car_bodies(t) -> void:
 ## thing that number was chosen for, so a change to the falloff shape, the radii or the parts fails
 ## here rather than passing a number back to itself. The **cheapest** open line is what it measures:
 ## a guarantee about a price is a guarantee about the price she can actually get.
-func _test_squeezing_past_a_crash_costs_more_than_half_the_meter(t) -> void:
+func _test_squeezing_past_a_crash_costs_more_than_half_the_meter(t: TestRunner) -> void:
 	var map := _maps[0]
 	var crash := EventCatalogue.by_id("car_accident")
 	var checked := 0
@@ -654,7 +654,7 @@ func _crash_pass_cost(instance: EventInstance, offset: float) -> float:
 ##
 ## `fallen_tree` is excluded by name and checked by the test below instead: it is the one body in
 ## the game that stands **on** a pit.
-func _test_no_seal_body_stands_in_a_street_tree(t) -> void:
+func _test_no_seal_body_stands_in_a_street_tree(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		var trees := StreetTrees.footprint_tiles(map)
@@ -675,7 +675,7 @@ func _test_no_seal_body_stands_in_a_street_tree(t) -> void:
 ## pieces stand flush with its edges (`SealPlanner.positions_across()`); the barricade, wider than
 ## half a share of the street, is the row that reached over them. Every seal of every day, on every
 ## map.
-func _test_no_seal_reaches_over_a_building(t) -> void:
+func _test_no_seal_reaches_over_a_building(t: TestRunner) -> void:
 	var checked := 0
 	var barricades := 0
 	for map in _maps:
@@ -710,7 +710,7 @@ func _test_no_seal_reaches_over_a_building(t) -> void:
 ## live per-day bookkeeping, which only matches the day this loop is on when the plan was *just*
 ## made for it — a cached plan from earlier in the suite answers for a pit some other day's
 ## planning (and repainting) has since moved on from.
-func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
+func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> void:
 	var found := 0
 	var reach := EventCatalogue.by_id("fallen_tree").obstructs_radius
 	for map in _maps:
@@ -795,7 +795,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t) -> void:
 ## **What it does not prove**: whether a zero-cost line exists end to end — that is the probe's
 ## own question, over the sidewalk and the pacing rules too, not only the junction one, and over
 ## whether a walk actually connects rather than whether each junction locally does.
-func _test_the_catalogue_sees_a_seal_at_a_route_junction(t) -> void:
+func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
 		for day in [1, 5, 9, 13]:

@@ -14,7 +14,7 @@ extends RefCounted
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_every_gap_is_narrower_than_her_body(t)
 	_test_nothing_walks_through_the_row_but_her_own_body(t)
 
@@ -38,7 +38,7 @@ func _rows(map: CityMap) -> Array:
 	return out
 
 ## Every gap between two posts of a row is narrower than her body, on every map.
-func _test_every_gap_is_narrower_than_her_body(t) -> void:
+func _test_every_gap_is_narrower_than_her_body(t: TestRunner) -> void:
 	var post_radius := Prop.bollard_shape().radius
 	# Her body alone, whatever way she faces, is 2 x 14 across; a gap that holds it lets her by.
 	var body := 2.0 * Tuning.PLAYER_BODY_RADIUS
@@ -59,7 +59,7 @@ func _test_every_gap_is_narrower_than_her_body(t) -> void:
 ## street side of a row reaches the precinct side only by the pavement (so it is longer than the
 ## straight line down the band), and `ReachabilityGrid` has no node on a post's tile but joins the
 ## two sides all the same.
-func _test_nothing_walks_through_the_row_but_her_own_body(t) -> void:
+func _test_nothing_walks_through_the_row_but_her_own_body(t: TestRunner) -> void:
 	for seed_value in [1000, 500, 4242]:
 		var map: CityMap = MapCache.of(seed_value)
 		var posts := map.post_positions()

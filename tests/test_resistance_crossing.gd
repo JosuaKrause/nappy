@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## Day 9's door: the task is done by crossing it, not by standing at it, and what the guard and the hut do about a crossing.
 ##
@@ -9,7 +8,7 @@ extends "res://tests/resistance_rig.gd"
 ## the hand a gatehouse's guard raises (`_a_guard_warns_her()`) and `_a_guard_is_after_her()`. She is put down at the start of a walk the way the game puts her down
 ## (`Stroller.teleport_to()`: an outright move, which the next look at her compares nothing across).
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t)
 	await _test_standing_at_the_door_completes_nothing(t)
 	_test_a_crossing_taken_back_does_not_do_day_nine(t)
@@ -21,7 +20,7 @@ func run(t) -> void:
 
 ## Day 9 on a city of its own, every door in the world: `[director with the task active, her rig]`,
 ## her handed to the city's events as the game does. Frees what an earlier attempt left standing.
-func _day_nine(t) -> Array:
+func _day_nine(t: TestRunner) -> Array:
 	_build_city_in_a_new_run(t)
 	_city.events.stream_radius = INF
 	var read := _read_the_mark_on(t, 9, SEED)
@@ -42,7 +41,7 @@ func _end_the_attempt(director: ResistanceDirector, player: Stroller) -> void:
 ## under the boom, the crossing sends no robber from off screen: the door's own guard is its price.
 ## *(2026-10-04, the player, asked whether both should come at once: "(a)" — under the boom only the
 ## guard, the robber only after an inspected crossing.)*
-func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> void:
+func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRunner) -> void:
 	var crossings := 0
 	var gatehouse := Vector2.INF
 	for direction: float in [1.0, -1.0]:
@@ -115,7 +114,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t) -> voi
 ## Standing at the named gatehouse, or on the door's line under the boom, completes nothing: her
 ## touch is the manager's own frame with her put down there (the hold a gatehouse starts needs
 ## its seconds to run before it lets her through, so one frame is only the touch).
-func _test_standing_at_the_door_completes_nothing(t) -> void:
+func _test_standing_at_the_door_completes_nothing(t: TestRunner) -> void:
 	for direction: float in [1.0, -1.0]:
 		var day := _day_nine(t)
 		var director: ResistanceDirector = day[0]
@@ -139,7 +138,7 @@ func _test_standing_at_the_door_completes_nothing(t) -> void:
 ## and the task is not done either, however long she then waits: `door_crossed` is sent only
 ## when the warning has run with her still across. Walked through and staying across, the same
 ## door then does the task, with its guard after her.
-func _test_a_crossing_taken_back_does_not_do_day_nine(t) -> void:
+func _test_a_crossing_taken_back_does_not_do_day_nine(t: TestRunner) -> void:
 	for direction: float in [1.0, -1.0]:
 		var day := _day_nine(t)
 		var director: ResistanceDirector = day[0]
@@ -180,7 +179,7 @@ func _test_a_crossing_taken_back_does_not_do_day_nine(t) -> void:
 ## then stayed across or taken back before its 2s. A's guard comes exactly when she stays across
 ## A, and the task is done exactly when she is across both when he comes. She is put down between
 ## the two doors, so the step is not seen as a walk across anything.
-func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> void:
+func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t: TestRunner) -> void:
 	for a_stays: bool in [true, false]:
 		for b_walk: String in ["none", "stays", "back"]:
 			var day := _day_nine(t)
@@ -236,7 +235,7 @@ func _test_a_crossing_held_behind_another_door_counts_only_with_its_guard(t) -> 
 ## that door: the hold ends the guard's chase
 ## (`CheckpointController._end_the_guard_for_a_hold()`), and nobody else is sent — no robber
 ## warned of or set on her, no second guard.
-func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
+func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t: TestRunner) -> void:
 	for direction: float in [1.0, -1.0]:
 		var day := _day_nine(t)
 		var director: ResistanceDirector = day[0]
@@ -311,7 +310,7 @@ func _test_a_hut_ends_the_guard_the_walk_under_sets_and_sends_nobody(t) -> void:
 ## either side, and sends the robber after her from where she was let out, never through the door.
 ## The hold is the game's own: she steps within a gatehouse's reach (`check_detentions()`), the
 ## conversation runs its clock out, and the release puts her down.
-func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) -> void:
+func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t: TestRunner) -> void:
 	var crossings := 0
 	var elsewhere := 0
 	for entry_side: float in [1.0, -1.0]:
@@ -378,7 +377,7 @@ func _test_day_nine_completes_when_she_is_let_through_after_the_inspection(t) ->
 ## The manager's own frames see a crossing: on day 9, she is put down beside the named boom and
 ## walks across its line a frame later, and the crossing starts its warning without any call
 ## to the checkpoints (`EventManager` runs `watch_the_door_lines()` every physics frame).
-func _test_the_frames_see_a_crossing(t) -> void:
+func _test_the_frames_see_a_crossing(t: TestRunner) -> void:
 	var day := _day_nine(t)
 	var director: ResistanceDirector = day[0]
 	var player: Stroller = day[1]

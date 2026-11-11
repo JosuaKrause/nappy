@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for the bags per view (`docs/EVENTS.md`, "The three views and the placement
 ## order"): **what the day's placement puts in each view, per day.** Not a suite: it prints rather
@@ -20,7 +20,7 @@ const SEEDS := 18
 const SAMPLE_DAYS := [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14]
 const NAMES := ["on the route", "route-adjacent", "off the route"]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for day in SAMPLE_DAYS:
 		_mix_on(day)
 	t.check(true, "placement_view_mix probe ran")

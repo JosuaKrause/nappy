@@ -19,7 +19,7 @@ static func col_of(building: Building, cell: Rect2) -> int:
 ## potted-plant picture or the plain one per that balcony's own roll; and nothing on a front with
 ## no escape. A wide front's second escape (if any) keeps the minimum gap from the first. Answers
 ## whether the front had at least one escape, so a sweep can say it was not vacuous.
-static func check_fire_escape(t, front, label: String) -> bool:
+static func check_fire_escape(t: TestRunner, front, label: String) -> bool:
 	var building: Building = front.building
 	var escapes: Array[int] = front.escape_cols()
 	if escapes.is_empty():

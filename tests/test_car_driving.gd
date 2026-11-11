@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A car's step is proposed, checked and then committed (`EventInstance.step()`, with the car's own
 ## check in `EventCarDriving.check()`): what the step decides on the pose it would end on — parking
@@ -10,7 +9,7 @@ extends RefCounted
 
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_last_step_taken_back_does_not_park_it_short(t)
 	_test_a_car_comes_back_standing(t)
 
@@ -31,7 +30,7 @@ func _step(engine: EventInstance, where: WhereSheIs, her: Vector2, facing: Vecto
 ## Parked there, it would be parked short of its kerb, for good: a parked engine never drives on.
 ## Taken back with its step, it stands for her, and once she has gone it drives the rest of the way
 ## and parks at its kerb.
-func _test_a_last_step_taken_back_does_not_park_it_short(t) -> void:
+func _test_a_last_step_taken_back_does_not_park_it_short(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2(-300.0, 0.0), Vector2.ZERO])
 	var length := route[0].distance_to(route[1])
 	var refused_at_the_end := 0
@@ -69,7 +68,7 @@ func _test_a_last_step_taken_back_does_not_park_it_short(t) -> void:
 ## **A car carries nothing across a stream-out** (`EventCarDriving` saves nothing): whether it stands is
 ## decided again every frame, and a car streamed back in stands as one first made does, driving off
 ## only once she is out of its way.
-func _test_a_car_comes_back_standing(t) -> void:
+func _test_a_car_comes_back_standing(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2(-300.0, 0.0), Vector2.ZERO])
 	var engine_where := WhereSheIs.nowhere()
 	var engine := _engine(t, route, engine_where)

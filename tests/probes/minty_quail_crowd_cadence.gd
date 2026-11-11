@@ -50,7 +50,7 @@ var _horns := 0
 var _bumps := 0
 var _strikes := 0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var frames: Array[int] = []
 	for word in (OS.get_environment("CADENCE_FRAMES") if OS.has_environment("CADENCE_FRAMES")
 			else "1,2,4").split(","):

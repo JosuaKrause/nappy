@@ -159,7 +159,7 @@ func _probe_the_camera() -> void:
 ## Where each recipe is written and loaded, and what loading it answers.
 var _errors := RecipeErrors.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_test_schema(t)
 	_test_hold_is_for_a_straight_departure(t)
@@ -174,7 +174,7 @@ func run(t) -> void:
 
 ## `hold` reproduces a plain walk away, so it is refused for every row whose departure is anything
 ## else, with a reason that fits the row.
-func _test_hold_is_for_a_straight_departure(t) -> void:
+func _test_hold_is_for_a_straight_departure(t: TestRunner) -> void:
 	t.check(SceneRecipeRuntime.hold_refusal(EventCatalogue.by_id("charging_dog")) == "",
 			"a dog may be held")
 	for row: String in ["fire_truck", "delivery_van", "roadblock"]:
@@ -197,7 +197,7 @@ func _test_hold_is_for_a_straight_departure(t) -> void:
 ## there. The dog is a real one, installed by a recipe's `hold` through the runtime's own `install()`
 ## and `begin()` in a city of its own run's, turned away from her by its own departure
 ## (`EventInstance.leave_for_a_completed_task()`); the walking is whatever real frames make of it.
-func _test_a_held_departure_places_its_move(t) -> void:
+func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	const CITY_SCENE := preload("res://scenes/world/city.tscn")
 	const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
 	var own_run := RunState.new()
@@ -265,7 +265,7 @@ func _test_a_held_departure_places_its_move(t) -> void:
 
 ## `charging` starts a pursuer that waits for her already set on her, so it is refused for a row with
 ## no radius to skip and for one that sets off beside her on its own clock.
-func _test_charging_is_for_a_pursuer_that_waits(t) -> void:
+func _test_charging_is_for_a_pursuer_that_waits(t: TestRunner) -> void:
 	t.check(SceneRecipeRuntime.charging_refusal(
 			EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)) == "",
 			"the hunting roadblock's guard may start charging")
@@ -277,7 +277,7 @@ func _test_charging_is_for_a_pursuer_that_waits(t) -> void:
 			"row": "roadblock", "at": [0, 0], "charging": 1}]}}).size() > 0, "charging must be a boolean")
 
 ## `relentless` keeps a pursuer from giving up because she ran, so a row that does not pursue is refused.
-func _test_relentless_is_for_a_pursuer(t) -> void:
+func _test_relentless_is_for_a_pursuer(t: TestRunner) -> void:
 	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.by_id("charging_dog")) == "",
 			"a pursuer may be kept coming")
 	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.by_id("pigeon_flock")).contains("pursue"),
@@ -285,7 +285,7 @@ func _test_relentless_is_for_a_pursuer(t) -> void:
 	t.check(_errors.errors_of(t, {"setup": {"day": 7, "events": [{"name": "g",
 			"row": "roadblock", "at": [0, 0], "relentless": 1}]}}).size() > 0, "relentless must be a boolean")
 
-func _test_schema(t) -> void:
+func _test_schema(t: TestRunner) -> void:
 	var valid := {"setup": {"day": 1, "parent": "mother"},
 			"playback": {"duration": 2, "walk": "0.5s0.5E1p", "camera": {"fixed": true},
 				"settled_camera": true}}
@@ -360,7 +360,7 @@ func _test_schema(t) -> void:
 ## day's dawn gives it (`EventCatalogue.heated()`). Installed through the runtime's own `install()`
 ## against a real city in a run of its own, and read off the plans the scene's events were started
 ## on (`EventManager.plans()`), so a field the runtime read and then ignored would fail here.
-func _test_heat_installs_the_heated_row(t) -> void:
+func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 	const CITY_SCENE := preload("res://scenes/world/city.tscn")
 	const STROLLER_SCENE := preload("res://scenes/player/stroller.tscn")
 	var own_run := RunState.new()
@@ -410,7 +410,7 @@ func _test_heat_installs_the_heated_row(t) -> void:
 ## with the director's reasons printed. Each is a free-play scene begun as `main` begins it, in a city
 ## of a run of its own with a real director, the mark read by her touch (`ContactPoint.complete_now()`),
 ## and the runtime's own ticks passing; the director is ticked as `main` ticks it.
-func _test_a_task_gone_after_the_read(t) -> void:
+func _test_a_task_gone_after_the_read(t: TestRunner) -> void:
 	var placed := _task_scene(t, 7, {})
 	t.check(placed.errors.is_empty(), "the task scene is installed: %s" % [placed.errors])
 	var runtime: SceneRecipeRuntime = placed.runtime
@@ -478,7 +478,7 @@ const NEAR_HOME := Vector2i(62, 84)
 ## hands it, a stroller at the alley mouth, and the free-play runtime begun. `task` is the recipe's
 ## `setup.task`: a day-7 mark at the alley's mark tile, or (`"neighbor": true`) a day-10 mark with the
 ## neighbor pinned near home. `errors` are what `install()` returned. `_free_task_scene()` frees it.
-func _task_scene(t, day: int, task: Dictionary) -> Dictionary:
+func _task_scene(t: TestRunner, day: int, task: Dictionary) -> Dictionary:
 	var built := RecipeCityBuilder.build({"version": 1, "name": "task", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
 	var map: CityMap = built.map
@@ -523,7 +523,7 @@ func _free_task_scene(made: Dictionary) -> void:
 	for node: Node in [made.runtime, made.player, made.director, made.city]:
 		node.free()
 
-func _test_arguments(t) -> void:
+func _test_arguments(t: TestRunner) -> void:
 	for args: PackedStringArray in [
 		PackedStringArray(["--recipe-mode", "unknown"]),
 		PackedStringArray(["--seed", "3"]),
@@ -549,7 +549,7 @@ func _test_arguments(t) -> void:
 ## while each leg of `1e1N1p` is under way, by the scene's own clock (`elapsed()`, the clock a
 ## capture is timed off). Removed from the tree, it lets go of what it held. The frames pass under
 ## `Engine.time_scale`, which leaves the scene's clock in physics ticks.
-func _test_inputs(t) -> void:
+func _test_inputs(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure({"data": {"playback": {"duration": 3, "walk": "1e1N1p"}},
@@ -573,11 +573,11 @@ func _test_inputs(t) -> void:
 			and not Input.is_action_pressed("run"), "runtime cleanup releases its held input")
 
 ## Lets real physics frames pass until the scene's own clock reads `seconds`.
-func _until_elapsed(t, runtime: SceneRecipeRuntime, seconds: float) -> void:
+func _until_elapsed(t: TestRunner, runtime: SceneRecipeRuntime, seconds: float) -> void:
 	while runtime.elapsed() < seconds:
 		await t.get_tree().physics_frame
 
-func _test_real_argv_and_failure(t) -> void:
+func _test_real_argv_and_failure(t: TestRunner) -> void:
 	var stem := "user://scene_recipe_runtime_probe_%d" % OS.get_process_id()
 	var script_path := stem + ".gd"
 	var scene_path := stem + ".tscn"

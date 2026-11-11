@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `GameSave`, and the functions on `RunState` and its registry it reads and writes through
 ## (`run_parts.run_data()`/`restore_state()`) — see docs/MECHANICS.md, "Saving and resuming". The
@@ -27,7 +26,7 @@ const _SCRATCH_PATH := "user://test_save_scratch.json"
 var _save := GameSave.new(_SCRATCH_PATH)
 
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 
 	_test_uses_save_is_false_under_the_headless_runner(t)
 	_test_debug_run_uses_save_policy(t)
@@ -169,7 +168,7 @@ func _headless(callable: Callable) -> void:
 ## `tools/check.sh`'s own boot) safe to run at all: nothing here ever reaches the player's real
 ## `user://save.json`, because the headless display server this runner boots against already
 ## answers "no" on its own, before a path override is even asked for.
-func _test_uses_save_is_false_under_the_headless_runner(t) -> void:
+func _test_uses_save_is_false_under_the_headless_runner(t: TestRunner) -> void:
 	_save.configure(RunConfig.at_boot())
 	t.check(RunConfig.at_boot().headless and not _a_write_lands(),
 			"the headless test runner never reads or writes the real save")
@@ -179,7 +178,7 @@ func _test_uses_save_is_false_under_the_headless_runner(t) -> void:
 	t.check(not _a_write_lands(), "nor does a run nothing has configured yet")
 
 ## The debug build's policy on whether a run saves, read off whether a write lands.
-func _test_debug_run_uses_save_policy(t) -> void:
+func _test_debug_run_uses_save_policy(t: TestRunner) -> void:
 	_save.configure(_windowed_run(PackedStringArray(), "", true))
 	t.check(_a_write_lands(), "a flagless debug run uses the save")
 	_save.configure(_windowed_run(PackedStringArray(["--seed", "1"]), "", true))
@@ -194,7 +193,7 @@ func _test_debug_run_uses_save_policy(t) -> void:
 	_save.configure(null)
 
 
-func _test_no_save_query_parsing(t) -> void:
+func _test_no_save_query_parsing(t: TestRunner) -> void:
 	t.check(not DevFlags.new(PackedStringArray(), "", true).no_save(),
 			"an absent URL parameter changes nothing")
 	t.check(not DevFlags.new(PackedStringArray(), "?nosave=0", true).no_save(),
@@ -210,7 +209,7 @@ func _test_no_save_query_parsing(t) -> void:
 ## live page. The `?debug=1`-alone and empty-query cases pin that opening the bundle is not the
 ## same as having used anything in it, which is the property that keeps an ordinary release page's
 ## own save exactly as it always was.
-func _test_web_debug_flag_used_query_parsing(t) -> void:
+func _test_web_debug_flag_used_query_parsing(t: TestRunner) -> void:
 	t.check(not DevFlags.new(PackedStringArray(), "", false).web_debug_flag_used(),
 			"an absent query used nothing")
 	t.check(not DevFlags.new(PackedStringArray(), "?debug=1", false).web_debug_flag_used(),
@@ -225,7 +224,7 @@ func _test_web_debug_flag_used_query_parsing(t) -> void:
 ## The gated entry points `main.gd` actually calls (`write()`, `try_resume()` and `clear()`) refuse
 ## outright under the headless runner, and touch no file at all in doing so — the property every
 ## other suite, and `tools/check.sh`'s own boot, are safe *because* of.
-func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> void:
+func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t: TestRunner) -> void:
 	var run := _a_run()
 	_save.configure(_windowed_run())
 	_save.clear()
@@ -254,7 +253,7 @@ func _test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t) -> 
 ## `tests/test_run_state.gd` holds.)
 ## `PROPERTY_USAGE_SCRIPT_VARIABLE` is what separates a field this script declares from the base
 ## `Node` properties `get_property_list()` also reports (`name`, `process_mode`, and the rest).
-func _test_round_trip_field_list_matches_the_property_list(t) -> void:
+func _test_round_trip_field_list_matches_the_property_list(t: TestRunner) -> void:
 	var run := _a_run()
 	var declared: Array[String] = []
 	for property in run.get_property_list():
@@ -272,7 +271,7 @@ func _test_round_trip_field_list_matches_the_property_list(t) -> void:
 ## The run's play time is counted in physics ticks (inbox #866 in minty-dolphin) and saved as seconds
 ## (`to_data()`), so any save's seconds, whatever number they hold, load to the nearest tick, and
 ## a tick count is written back as its seconds.
-func _test_play_time_is_saved_as_seconds_and_counted_in_ticks(t) -> void:
+func _test_play_time_is_saved_as_seconds_and_counted_in_ticks(t: TestRunner) -> void:
 	var header := RunHeader.new()
 	var old := header.to_data()
 	old["play_seconds"] = 123.456
@@ -290,7 +289,7 @@ func _test_play_time_is_saved_as_seconds_and_counted_in_ticks(t) -> void:
 ## Every field, mutated to a value its default could not be mistaken for, round-tripped through
 ## the actual file — `write()`/`try_resume()`, not the in-memory dictionaries, so a JSON
 ## int-becomes-float or a `Vector2i` key that cannot survive `JSON.stringify()` would show up here.
-func _test_round_trip_preserves_every_field(t) -> void:
+func _test_round_trip_preserves_every_field(t: TestRunner) -> void:
 	var run := _a_run(778899)
 	run.header.day = 6
 	run.header.nerves = 3
@@ -356,7 +355,7 @@ func _test_round_trip_preserves_every_field(t) -> void:
 ## a save taken before the change would have written — this writes the file only after the gain and
 ## wipes the live count before reading it back, so a save that quietly dropped the regained nerve
 ## rather than the round trip itself is what would fail this.
-func _test_a_won_days_regained_nerve_survives_a_round_trip(t) -> void:
+func _test_a_won_days_regained_nerve_survives_a_round_trip(t: TestRunner) -> void:
 	var run := _a_run(240927)
 	run.header.nerves = 3
 	run.calendar.finish_day(GameEnums.DayResult.WON)
@@ -381,13 +380,13 @@ func _fake_block_plan() -> BlockPlan:
 # ----------------------------------------------------------------- dropped saves ---
 
 
-func _test_missing_file_is_dropped(t) -> void:
+func _test_missing_file_is_dropped(t: TestRunner) -> void:
 	var run := _a_run()
 	_save.clear()
 	t.check(_save.try_resume(run).is_empty(), "no file at all resumes nothing")
 
 
-func _test_garbled_text_is_dropped(t) -> void:
+func _test_garbled_text_is_dropped(t: TestRunner) -> void:
 	var run := _a_run()
 	var before: Dictionary = run.run_parts.run_data()["state"]
 	_write_raw("not valid json at all {{{")
@@ -395,7 +394,7 @@ func _test_garbled_text_is_dropped(t) -> void:
 	t.check(run.run_parts.run_data()["state"] == before, "and the run is left exactly as it was")
 
 
-func _test_wrong_format_version_is_dropped(t) -> void:
+func _test_wrong_format_version_is_dropped(t: TestRunner) -> void:
 	var run := _a_run()
 	var before: Dictionary = run.run_parts.run_data()["state"]
 	_write_raw(JSON.stringify({
@@ -409,7 +408,7 @@ func _test_wrong_format_version_is_dropped(t) -> void:
 	t.check(run.run_parts.run_data()["state"] == before, "and the run is untouched by trying")
 
 
-func _test_incomplete_state_is_dropped(t) -> void:
+func _test_incomplete_state_is_dropped(t: TestRunner) -> void:
 	var run := _a_run()
 	var before: Dictionary = run.run_parts.run_data()["state"]
 	var state: Dictionary = run.run_parts.run_data()["state"]
@@ -431,7 +430,7 @@ func _write_raw(text: String) -> void:
 	file.close()
 
 
-func _test_clear_deletes_the_file(t) -> void:
+func _test_clear_deletes_the_file(t: TestRunner) -> void:
 	var run := _a_run()
 	_with_a_scratch_save(func() -> void:
 		var answers := _Answers.new()
@@ -447,7 +446,7 @@ func _test_clear_deletes_the_file(t) -> void:
 		t.check(answers.results.is_empty(), "and nothing is left for a later answer to settle")
 	)
 
-func _test_write_refuses_once_the_run_has_ended(t) -> void:
+func _test_write_refuses_once_the_run_has_ended(t: TestRunner) -> void:
 	var run := _a_run()
 	_save.clear()
 	run.header.ending = GameEnums.Ending.BAD
@@ -458,7 +457,7 @@ func _test_write_refuses_once_the_run_has_ended(t) -> void:
 ## section's own brief, which is `RunState.facts.escape_section` surviving the file — the same
 ## mechanism a day under way already rides on, and deliberately the same one rather than a second
 ## save path beside it.
-func _test_the_escape_section_survives_a_round_trip(t) -> void:
+func _test_the_escape_section_survives_a_round_trip(t: TestRunner) -> void:
 	var run := _a_run(313131)
 	run.header.day = Tuning.RUN_LENGTH_DAYS
 	run.facts.escape_section = DaySpec.Section.CITY
@@ -481,7 +480,7 @@ func _test_the_escape_section_survives_a_round_trip(t) -> void:
 ## The payload is assembled here rather than pasted from a real old file, so it stays a save of
 ## *this* build's snapshot shape with only the new key missing — which is the thing that has to
 ## keep working, and the only part of an older file that differs.
-func _test_a_save_from_before_the_escape_still_loads(t) -> void:
+func _test_a_save_from_before_the_escape_still_loads(t: TestRunner) -> void:
 	var run := _a_run(424242)
 	run.header.day = 9
 	run.header.nerves = 3
@@ -509,7 +508,7 @@ func _test_a_save_from_before_the_escape_still_loads(t) -> void:
 ## The same mechanism `escape_section` rides on, for the alley tiles the resistance has already
 ## used this run (M177) — closing the game between days must not hand the next mark back every
 ## alley to choose from again.
-func _test_completed_resistance_alley_tiles_survive_a_round_trip(t) -> void:
+func _test_completed_resistance_alley_tiles_survive_a_round_trip(t: TestRunner) -> void:
 	var run := _a_run(515151)
 	run.facts.completed_resistance_alley_tiles = [Vector2i(4, 9), Vector2i(-2, 15)]
 	t.check(_saved(run, false), "a run with used alley tiles writes a save")
@@ -522,7 +521,7 @@ func _test_completed_resistance_alley_tiles_survive_a_round_trip(t) -> void:
 	_save.clear()
 
 ## Expiring the physical fence cannot reopen the once-per-run choice, including after a reload.
-func _test_an_expired_fence_survives_a_round_trip(t) -> void:
+func _test_an_expired_fence_survives_a_round_trip(t: TestRunner) -> void:
 	var run := _a_run(14040)
 	run.facts.fenced_park = Vector2i(6, 8)
 	run.facts.fenced_park_act = 3
@@ -549,7 +548,7 @@ func _test_an_expired_fence_survives_a_round_trip(t) -> void:
 ## **A save written before this field existed still loads**, the same reasoning
 ## `_test_a_save_from_before_the_escape_still_loads()` holds for `escape_section`: a file with no
 ## mention of it is a complete save and resumes with nothing recorded, by absence.
-func _test_a_save_from_before_the_alley_tiles_still_loads(t) -> void:
+func _test_a_save_from_before_the_alley_tiles_still_loads(t: TestRunner) -> void:
 	var run := _a_run(626262)
 	var old_shape := JSON.stringify({
 		"format_version": GameSave.FORMAT_VERSION,
@@ -572,7 +571,7 @@ func _test_a_save_from_before_the_alley_tiles_still_loads(t) -> void:
 ## The same mechanism `escape_section` rides on, for the one calm area this run has fenced (M129) —
 ## closing the game mid-act must not let a second park get fenced on reopening, which is exactly
 ## what forgetting `fenced_park` on reload would do.
-func _test_the_fenced_park_survives_a_round_trip(t) -> void:
+func _test_the_fenced_park_survives_a_round_trip(t: TestRunner) -> void:
 	var run := _a_run(535353)
 	run.facts.fenced_park = Vector2i(6, 9)
 	run.facts.fenced_park_act = 3
@@ -589,7 +588,7 @@ func _test_the_fenced_park_survives_a_round_trip(t) -> void:
 ## `_test_a_save_from_before_the_escape_still_loads()` holds for `escape_section`: a file with no
 ## mention of it is a complete save and resumes with no park fenced, by absence — the same state a
 ## run that has not reached act III yet is already in, so nothing forces a second fence later.
-func _test_a_save_from_before_the_fenced_park_still_loads(t) -> void:
+func _test_a_save_from_before_the_fenced_park_still_loads(t: TestRunner) -> void:
 	var run := _a_run(646464)
 	var old_shape := JSON.stringify({
 		"format_version": GameSave.FORMAT_VERSION,
@@ -612,7 +611,7 @@ func _test_a_save_from_before_the_fenced_park_still_loads(t) -> void:
 
 ## **The pelican bag's count survives the file, and a save from before it loads at 0.** `pelican`
 ## rides at the top level beside `posters`, for the same reason.
-func _test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at_0(t) -> void:
+func _test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at_0(t: TestRunner) -> void:
 	var run := _a_run(656565)
 	run.pelican.draws = 9
 	run.pelican.photograph()
@@ -634,7 +633,7 @@ func _test_the_pelican_bags_count_survives_a_round_trip_and_an_old_save_loads_at
 
 ## **The walls survive the file, and a save from before there were posters loads with none up.**
 ## `posters` rides at the top level for the reason `escape_section` does.
-func _test_the_posters_survive_a_round_trip(t) -> void:
+func _test_the_posters_survive_a_round_trip(t: TestRunner) -> void:
 	var run := _a_run(646464)
 	run.posters.paste(Vector2i(5, 6), PosterArt.Kind.LEADER, false, 1)
 	run.posters.photograph()
@@ -669,7 +668,7 @@ func _test_the_posters_survive_a_round_trip(t) -> void:
 ## one-task-per-day table does not have at that index, which `RunState` and `ResistanceDirector`
 ## already treat as nothing, so the resumed run simply offers whatever the new table's own
 ## `for_day()` finds for the day it resumes on.
-func _test_a_save_from_before_a_task_was_one_day_still_loads(t) -> void:
+func _test_a_save_from_before_a_task_was_one_day_still_loads(t: TestRunner) -> void:
 	var run := _a_run(636363)
 	run.header.day = 7
 	run.header.nerves = 4
@@ -705,7 +704,7 @@ func _test_a_save_from_before_a_task_was_one_day_still_loads(t) -> void:
 ## The round trip is the point, so the state is written, wiped to something else, and read back
 ## before the day is lost — a check that never left memory would pass with the three fields missing
 ## from the save entirely.
-func _test_a_day_under_way_gives_back_the_fire_it_lit(t) -> void:
+func _test_a_day_under_way_gives_back_the_fire_it_lit(t: TestRunner) -> void:
 	var run := _a_run(59)
 	run.header.day = Tuning.RUN_TAUGHT_DAY
 	run.header.nerves = 3
@@ -729,7 +728,7 @@ func _test_a_day_under_way_gives_back_the_fire_it_lit(t) -> void:
 
 ## In hard mode the last nerve ends the run exactly as it does when a day is lost by playing it out —
 ## and the ending clears the save, since there is nothing left to resume.
-func _test_day_under_way_load_on_the_last_nerve_ends_the_run(t) -> void:
+func _test_day_under_way_load_on_the_last_nerve_ends_the_run(t: TestRunner) -> void:
 	_save.clear_when_a_run_ends()
 	var run := _a_run(56)
 	run.calendar.choose_mode(true)
@@ -751,7 +750,7 @@ func _test_day_under_way_load_on_the_last_nerve_ends_the_run(t) -> void:
 ## The same load in a normal run goes back to its checkpoint instead, through the same call: the run
 ## goes on, standing at the checkpoint's dawn with every nerve, and the save is still there to be
 ## written over by the dawn `main._write_dawn_for_a_resumed_run()` writes next.
-func _test_day_under_way_load_on_a_normal_runs_last_nerve_goes_back(t) -> void:
+func _test_day_under_way_load_on_a_normal_runs_last_nerve_goes_back(t: TestRunner) -> void:
 	var run := _a_run(57)
 	run.header.day = 8
 	run.header.nerves = 2
@@ -779,7 +778,7 @@ func _test_day_under_way_load_on_a_normal_runs_last_nerve_goes_back(t) -> void:
 ## A save written before there were two modes or checkpoints — no `hard_mode` key, no `checkpoint`
 ## key — loads as a normal run whose checkpoint is day 1 of its own city, and `FORMAT_VERSION` is
 ## what it always was.
-func _test_a_save_from_before_checkpoints_still_loads(t) -> void:
+func _test_a_save_from_before_checkpoints_still_loads(t: TestRunner) -> void:
 	var run := _a_run(59)
 	run.header.day = 10
 	t.check(_saved(run, false), "a save is written")
@@ -799,7 +798,7 @@ func _test_a_save_from_before_checkpoints_still_loads(t) -> void:
 
 ## The mode and the checkpoint survive a save, and a checkpoint this build could not give back is
 ## dropped for checkpoint zero rather than half-applied later.
-func _test_the_mode_and_the_checkpoint_survive_a_round_trip(t) -> void:
+func _test_the_mode_and_the_checkpoint_survive_a_round_trip(t: TestRunner) -> void:
 	var run := _a_run(60)
 	run.header.day = 4
 	run.calendar.begin_day()
@@ -833,7 +832,7 @@ func _test_the_mode_and_the_checkpoint_survive_a_round_trip(t) -> void:
 ## `RunState.calendar.finish_day()` at all in `main._ready()` — asserted here as the shape of the contract
 ## the two booleans below make untestable any other way: nerves and day both hold whatever the
 ## save itself named, because nothing here ever touches them.
-func _test_summary_load_costs_nothing(t) -> void:
+func _test_summary_load_costs_nothing(t: TestRunner) -> void:
 	var run := _a_run(57)
 	run.header.day = 8
 	run.header.nerves = 4
@@ -846,7 +845,7 @@ func _test_summary_load_costs_nothing(t) -> void:
 ## looked at) already reflects the spent nerve *and* writes the fresh dawn as not yet under way —
 ## since nothing has happened in it yet. A second close-and-reopen before ever touching that screen
 ## therefore finds `day_under_way: false` and costs nothing more.
-func _test_double_load_does_not_charge_twice(t) -> void:
+func _test_double_load_does_not_charge_twice(t: TestRunner) -> void:
 	var run := _a_run(58)
 	run.header.day = 5
 	run.header.nerves = 5
@@ -867,7 +866,7 @@ func _test_double_load_does_not_charge_twice(t) -> void:
 			"a second close before pressing continue on the day brief finds nothing under way")
 
 
-func _test_either_ending_clears_the_save(t) -> void:
+func _test_either_ending_clears_the_save(t: TestRunner) -> void:
 	_save.clear_when_a_run_ends()
 	var run := _a_run(59)
 	run.header.day = 3
@@ -900,7 +899,7 @@ class _Answers extends RefCounted:
 ## to before any browser has answered, including the web's, which this desktop runner cannot reach
 ## through `write()` itself. A web page whose storage was refused at boot is a failed save without
 ## any flush, since a flush there succeeds for a copy no reload finds.
-func _test_a_save_moment_answers_by_platform_and_storage(t) -> void:
+func _test_a_save_moment_answers_by_platform_and_storage(t: TestRunner) -> void:
 	t.check(GameSave.moment_result(true, false, true) == GameSave.Result.CONFIRMED,
 			"off the web, a closed file is a kept save")
 	t.check(GameSave.moment_result(true, true, true) == GameSave.Result.PENDING,
@@ -914,7 +913,7 @@ func _test_a_save_moment_answers_by_platform_and_storage(t) -> void:
 
 ## Off the web, `write()` itself answers `CONFIRMED` and never calls `settled`: the file closing is
 ## the confirmation, so a desktop save shows the symbol at once.
-func _test_a_desktop_write_is_confirmed_at_once(t) -> void:
+func _test_a_desktop_write_is_confirmed_at_once(t: TestRunner) -> void:
 	var run := _a_run()
 	_with_a_scratch_save(func() -> void:
 		var answers := _Answers.new()
@@ -926,7 +925,7 @@ func _test_a_desktop_write_is_confirmed_at_once(t) -> void:
 
 ## A run the save refuses (a dev or headless run), and a run that has already ended, answer `REFUSED`, which draws
 ## nothing — neither is a save that failed, so neither may show the strike.
-func _test_a_refused_or_ended_run_is_not_a_failed_save(t) -> void:
+func _test_a_refused_or_ended_run_is_not_a_failed_save(t: TestRunner) -> void:
 	var run := _a_run()
 	var answers := _Answers.new()
 	_headless(func() -> void:
@@ -944,7 +943,7 @@ func _test_a_refused_or_ended_run_is_not_a_failed_save(t) -> void:
 ## The race `Flushes`' settling exists for: the page's answer and the timeout both settle the same
 ## flush, and only the first counts. A flush that answers after timing out stays failed rather than
 ## taking back the strike already shown, and a timeout after an answer changes nothing.
-func _test_a_flush_settles_once_whichever_answer_comes_first(t) -> void:
+func _test_a_flush_settles_once_whichever_answer_comes_first(t: TestRunner) -> void:
 	var flushes := GameSave.Flushes.new()
 	var answered := _Answers.new()
 	var token := flushes.register(_next_operation(), answered.take)
@@ -969,7 +968,7 @@ func _test_a_flush_settles_once_whichever_answer_comes_first(t) -> void:
 
 ## A held restart reloads `main` while a flush may still be out, so the `settled` callable can name
 ## an object that no longer exists by the time the browser answers. Settling it does nothing.
-func _test_a_flush_whose_listener_is_gone_settles_quietly(t) -> void:
+func _test_a_flush_whose_listener_is_gone_settles_quietly(t: TestRunner) -> void:
 	var flushes := GameSave.Flushes.new()
 	var gone := Node.new()
 	var token := flushes.register(_next_operation(), Callable(gone, &"set_name"))
@@ -982,7 +981,7 @@ func _test_a_flush_whose_listener_is_gone_settles_quietly(t) -> void:
 ## A deletion is settled through the same token table a write is, and a deletion's answer also
 ## reaches `EventBus.save_deletion_settled`, which is how a symbol that outlived its `main` hears it.
 ## A write's answer never does.
-func _test_a_deletion_flush_settles_through_the_bus_and_a_write_flush_does_not(t) -> void:
+func _test_a_deletion_flush_settles_through_the_bus_and_a_write_flush_does_not(t: TestRunner) -> void:
 	var flushes := GameSave.Flushes.new()
 	var heard: Array[bool] = []
 	var listen := func(_operation: int, kept: bool) -> void: heard.append(kept)
@@ -1010,7 +1009,7 @@ func _test_a_deletion_flush_settles_through_the_bus_and_a_write_flush_does_not(t
 ## The restart frees `main` while its deletion's flush is still out, so the callable a deletion was
 ## given can name a freed object when the browser answers; nothing is called, and the bus still
 ## says it.
-func _test_a_deletion_flush_whose_listener_is_gone_settles_quietly(t) -> void:
+func _test_a_deletion_flush_whose_listener_is_gone_settles_quietly(t: TestRunner) -> void:
 	var flushes := GameSave.Flushes.new()
 	var heard: Array[bool] = []
 	var listen := func(_operation: int, kept: bool) -> void: heard.append(kept)
@@ -1027,7 +1026,7 @@ func _test_a_deletion_flush_whose_listener_is_gone_settles_quietly(t) -> void:
 ## adds at most `MAX_FLUSH_STEP_SECONDS` to a flush's wait, so a flush the browser was never given
 ## the chance to run is not timed out by that frame — and is not struck through for a save the
 ## browser then reports kept. A deletion's flush counts the same way.
-func _test_one_huge_frame_does_not_time_a_flush_out(t) -> void:
+func _test_one_huge_frame_does_not_time_a_flush_out(t: TestRunner) -> void:
 	var steps := int(GameSave.FLUSH_TIMEOUT_SECONDS / GameSave.MAX_FLUSH_STEP_SECONDS)
 	# An hour between two frames counts as one clamped step: it is as far along as `steps - 1` more
 	# clamped steps leave it one short of the timeout, and the next one reaches it.
@@ -1080,7 +1079,7 @@ func _test_one_huge_frame_does_not_time_a_flush_out(t) -> void:
 			"and the write's was too: the browser's own answer on that frame is kept, not ignored")
 
 ## The timeout still exists: frames actually drawn add up to `FLUSH_TIMEOUT_SECONDS`.
-func _test_a_flush_still_times_out_after_enough_frames(t) -> void:
+func _test_a_flush_still_times_out_after_enough_frames(t: TestRunner) -> void:
 	var flushes := GameSave.Flushes.new()
 	var answers := _Answers.new()
 	var token := flushes.register(_next_operation(), answers.take, true)
@@ -1096,7 +1095,7 @@ func _test_a_flush_still_times_out_after_enough_frames(t) -> void:
 ## *"show deleting the save file with a save symbol as well. every change in the save state needs
 ## to show the symbol"* — a deletion that removes a file raises the symbol, answered at once off
 ## the web, and a pending one holds it fully shown until the browser's answer reaches the bus.
-func _test_a_deletion_raises_and_settles_the_symbol(t) -> void:
+func _test_a_deletion_raises_and_settles_the_symbol(t: TestRunner) -> void:
 	var run := _a_run()
 	_with_a_scratch_save(func() -> void:
 		# Written before the symbol is built: a write raises the symbol too.
@@ -1127,7 +1126,7 @@ func _test_a_deletion_raises_and_settles_the_symbol(t) -> void:
 
 ## The same strike as a write that was not kept, for a deletion that was not: answered at once, or
 ## by the browser later, and for the full ten seconds.
-func _test_a_deletion_not_kept_strikes_the_symbol(t) -> void:
+func _test_a_deletion_not_kept_strikes_the_symbol(t: TestRunner) -> void:
 	var immediate_timeline := SaveIndicator.Showing.new()
 	var immediate := SaveIndicator.new(immediate_timeline)
 	t.add_child(immediate)
@@ -1151,7 +1150,7 @@ func _test_a_deletion_not_kept_strikes_the_symbol(t) -> void:
 ## Statement 8: the run's end deletes the save through `_save.clear_when_a_run_ends()`, which has no
 ## way to reach `main`, and the symbol shows it anyway. A day that does not end the run deletes
 ## nothing and shows nothing.
-func _test_a_run_that_ends_shows_the_symbol_for_the_deletion(t) -> void:
+func _test_a_run_that_ends_shows_the_symbol_for_the_deletion(t: TestRunner) -> void:
 	_save.clear_when_a_run_ends()
 	var run := _a_run(61)
 	run.header.day = 3
@@ -1175,7 +1174,7 @@ func _test_a_run_that_ends_shows_the_symbol_for_the_deletion(t) -> void:
 
 ## The charge a reopened run pays can end it: the lost day was the last nerve. That deletion shows
 ## the symbol too, provided a symbol is listening when `main._ready()` charges it.
-func _test_a_resumed_run_ended_by_its_charge_shows_the_symbol(t) -> void:
+func _test_a_resumed_run_ended_by_its_charge_shows_the_symbol(t: TestRunner) -> void:
 	_save.clear_when_a_run_ends()
 	var run := _a_run(62)
 	run.calendar.choose_mode(true)
@@ -1196,7 +1195,7 @@ func _test_a_resumed_run_ended_by_its_charge_shows_the_symbol(t) -> void:
 
 ## Statement 8: a restart after the run already ended finds no save to delete, changes nothing and
 ## shows nothing.
-func _test_a_restart_with_no_save_left_shows_nothing(t) -> void:
+func _test_a_restart_with_no_save_left_shows_nothing(t: TestRunner) -> void:
 	_with_a_scratch_save(func() -> void:
 		var indicator := SaveIndicator.new()
 		t.add_child(indicator)
@@ -1211,7 +1210,7 @@ func _test_a_restart_with_no_save_left_shows_nothing(t) -> void:
 ## leaves at the tree's root; a sitting of the test's own here), so it is still there on the title
 ## the reload builds, still pending, and the browser's answer settles it. An idle symbol is not
 ## carried: the next boot builds its own.
-func _test_the_restarts_symbol_survives_the_scene_reload(t) -> void:
+func _test_the_restarts_symbol_survives_the_scene_reload(t: TestRunner) -> void:
 	var sitting := Sitting.new()
 	t.add_child(sitting)
 	var old_main := Node.new()
@@ -1242,7 +1241,7 @@ func _test_the_restarts_symbol_survives_the_scene_reload(t) -> void:
 
 ## A symbol freed with its scene stops listening: a signal drops a freed object by itself, so a
 ## later deletion reaches nobody and calls nothing.
-func _test_the_symbols_listening_ends_with_the_symbol(t) -> void:
+func _test_the_symbols_listening_ends_with_the_symbol(t: TestRunner) -> void:
 	var before := EventBus.save_deleted.get_connections().size()
 	var indicator := SaveIndicator.new()
 	t.add_child(indicator)
@@ -1263,7 +1262,7 @@ func _test_the_symbols_listening_ends_with_the_symbol(t) -> void:
 ## A write tells `EventBus` what it came to, so the symbol hears it without `main` relaying it, and
 ## begins exactly once for one save. A write
 ## `GameSave` refuses (a headless run, an ended run) announces nothing.
-func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t) -> void:
+func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t: TestRunner) -> void:
 	var run := _a_run()
 	var heard: Array[int] = []
 	var listen := func(_operation: int, result: int) -> void: heard.append(result)
@@ -1291,7 +1290,7 @@ func _test_a_write_announces_itself_on_the_bus_and_begins_the_symbol_once(t) -> 
 
 ## A write's web answer reaches `EventBus.save_write_settled`, and only a write's: a deletion's goes
 ## to `save_deletion_settled`, so one answer settles one change however many are out.
-func _test_a_write_flush_settles_the_write_signal_and_a_deletion_flush_does_not(t) -> void:
+func _test_a_write_flush_settles_the_write_signal_and_a_deletion_flush_does_not(t: TestRunner) -> void:
 	var flushes := GameSave.Flushes.new()
 	var heard: Array[bool] = []
 	var listen := func(_operation: int, kept: bool) -> void: heard.append(kept)
@@ -1315,7 +1314,7 @@ func _test_a_write_flush_settles_the_write_signal_and_a_deletion_flush_does_not(
 ## the browser answers a flush whose `settled` callable names the freed `main`. The symbol must
 ## still be answered; before the answer went through the bus it stayed pending, fully shown, for
 ## good.
-func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_saved(t) -> void:
+func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_saved(t: TestRunner) -> void:
 	var flushes := GameSave.Flushes.new()
 	var sitting := Sitting.new()
 	t.add_child(sitting)
@@ -1354,7 +1353,7 @@ func _test_a_pending_write_is_answered_after_the_restart_freed_the_main_that_sav
 ## A symbol that did not live through a reload never began the changes announced before it, and an
 ## answer to one of those settles nothing on it: its own pending change stays pending, and its own
 ## failure still strikes.
-func _test_an_answer_to_a_change_the_symbol_never_began_is_ignored(t) -> void:
+func _test_an_answer_to_a_change_the_symbol_never_began_is_ignored(t: TestRunner) -> void:
 	var timeline := SaveIndicator.Showing.new()
 	var indicator := SaveIndicator.new(timeline)
 	t.add_child(indicator)
@@ -1372,7 +1371,7 @@ func _test_an_answer_to_a_change_the_symbol_never_began_is_ignored(t) -> void:
 
 ## Every announced change carries its own operation id, larger for every change begun later, and its
 ## web answer carries the same id back — the tie between an answer and its change.
-func _test_each_change_carries_its_own_operation_id_to_its_answer(t) -> void:
+func _test_each_change_carries_its_own_operation_id_to_its_answer(t: TestRunner) -> void:
 	var run := _a_run()
 	var announced: Array[int] = []
 	var announce := func(operation: int, _result: int) -> void: announced.append(operation)
@@ -1406,7 +1405,7 @@ func _test_each_change_carries_its_own_operation_id_to_its_answer(t) -> void:
 
 ## *"we should show it until it is fully confirmed saved"* — while a save is unanswered the symbol
 ## is fully shown and nothing counts down, however long the browser takes.
-func _test_the_symbol_holds_with_no_timer_while_a_save_is_pending(t) -> void:
+func _test_the_symbol_holds_with_no_timer_while_a_save_is_pending(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin(1)
 	showing.advance(SaveIndicator.MIN_SHOWN_SECONDS + SaveIndicator.FADE_SECONDS + 10.0)
@@ -1415,7 +1414,7 @@ func _test_the_symbol_holds_with_no_timer_while_a_save_is_pending(t) -> void:
 
 ## *"okay always show it. but show it for at least a second"* — a desktop save is answered in the
 ## frame it begins, and the symbol still shows, fully, for a second and then fades.
-func _test_a_save_answered_at_once_shows_for_a_second_then_fades(t) -> void:
+func _test_a_save_answered_at_once_shows_for_a_second_then_fades(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	t.check(showing.is_idle() and showing.alpha() == 0.0, "nothing shows before a save")
 	showing.begin(1)
@@ -1433,7 +1432,7 @@ func _test_a_save_answered_at_once_shows_for_a_second_then_fades(t) -> void:
 
 ## A pending save keeps the symbol up past the minimum, and the fade begins at the answer, not a
 ## hold later.
-func _test_a_save_pending_three_seconds_fades_straight_after_its_answer(t) -> void:
+func _test_a_save_pending_three_seconds_fades_straight_after_its_answer(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin(1)
 	showing.advance(1.0)
@@ -1450,7 +1449,7 @@ func _test_a_save_pending_three_seconds_fades_straight_after_its_answer(t) -> vo
 ## Any change still unanswered keeps the symbol fully shown, an older one as much as the newest, so
 ## nothing still being written looks finished — even once the newest has answered and decided the
 ## picture.
-func _test_any_unanswered_save_keeps_the_symbol_up(t) -> void:
+func _test_any_unanswered_save_keeps_the_symbol_up(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin(1)
 	showing.begin(2)
@@ -1473,7 +1472,7 @@ func _test_any_unanswered_save_keeps_the_symbol_up(t) -> void:
 
 ## *"if it fails it show for at least 10s"* — however fast the failure came back, the struck
 ## picture is fully shown for ten seconds from the strike.
-func _test_a_failure_answered_at_once_shows_struck_for_ten_seconds(t) -> void:
+func _test_a_failure_answered_at_once_shows_struck_for_ten_seconds(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin(1)
 	showing.settle(1, false)
@@ -1488,7 +1487,7 @@ func _test_a_failure_answered_at_once_shows_struck_for_ten_seconds(t) -> void:
 
 ## A web flush that times out answers after 5s: the ten seconds count from the strike, so the
 ## struck picture itself is up until 15s.
-func _test_a_failure_answered_after_five_seconds_is_struck_until_fifteen(t) -> void:
+func _test_a_failure_answered_after_five_seconds_is_struck_until_fifteen(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin(1)
 	showing.advance(5.0)
@@ -1501,7 +1500,7 @@ func _test_a_failure_answered_after_five_seconds_is_struck_until_fifteen(t) -> v
 
 ## A save beginning while the symbol fades brings it back to full with the second restarted; one
 ## beginning while it is already fully shown does not restart that clock.
-func _test_a_save_beginning_mid_fade_restarts_the_second(t) -> void:
+func _test_a_save_beginning_mid_fade_restarts_the_second(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin(1)
 	showing.settle(1, true)
@@ -1516,7 +1515,7 @@ func _test_a_save_beginning_mid_fade_restarts_the_second(t) -> void:
 	t.check(showing.alpha() < 1.0, "and then fading")
 
 
-func _test_a_save_beginning_while_fully_shown_does_not_restart_the_second(t) -> void:
+func _test_a_save_beginning_while_fully_shown_does_not_restart_the_second(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin(1)
 	showing.settle(1, true)
@@ -1539,7 +1538,7 @@ func _test_a_save_beginning_while_fully_shown_does_not_restart_the_second(t) -> 
 ## *"an older success answered after a newer failure does not clear the strike"* (golden-otter) —
 ## the newest save failing while an older one is out strikes the picture at once, its ten seconds
 ## starting then, and the older one's later success leaves the strike where it is.
-func _test_the_newest_failure_strikes_and_an_older_success_does_not_clear_it(t) -> void:
+func _test_the_newest_failure_strikes_and_an_older_success_does_not_clear_it(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin(1)
 	showing.begin(2)
@@ -1566,7 +1565,7 @@ func _test_the_newest_failure_strikes_and_an_older_success_does_not_clear_it(t) 
 ## *"an older failure answered after a newer success does not strike the symbol"* (golden-otter) —
 ## nor does one answered while the newest is still out: an older save's failure decides nothing,
 ## and the symbol owes only the plain second.
-func _test_an_older_failure_never_strikes(t) -> void:
+func _test_an_older_failure_never_strikes(t: TestRunner) -> void:
 	var after := SaveIndicator.Showing.new()
 	after.begin(1)
 	after.begin(2)
@@ -1589,7 +1588,7 @@ func _test_an_older_failure_never_strikes(t) -> void:
 
 ## Golden-otter statement 1 in all four shapes: whichever of two overlapping saves answers first,
 ## the picture is what the save started last came to.
-func _test_only_the_newest_save_decides_in_either_order_of_arrival(t) -> void:
+func _test_only_the_newest_save_decides_in_either_order_of_arrival(t: TestRunner) -> void:
 	for newest_kept: bool in [true, false]:
 		for newest_first: bool in [true, false]:
 			var showing := SaveIndicator.Showing.new()
@@ -1608,7 +1607,7 @@ func _test_only_the_newest_save_decides_in_either_order_of_arrival(t) -> void:
 						"plain" if newest_kept else "struck"])
 
 ## Every failure of the newest save restarts the ten seconds.
-func _test_each_failure_restarts_the_struck_clock(t) -> void:
+func _test_each_failure_restarts_the_struck_clock(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin(1)
 	showing.settle(1, false)
@@ -1622,7 +1621,7 @@ func _test_each_failure_restarts_the_struck_clock(t) -> void:
 
 ## *The strike follows the newest answer*: a newer save that was kept clears an earlier failure's
 ## strike, even with its ten seconds unspent, and the plain symbol then gets its own second.
-func _test_a_kept_save_after_a_failed_one_clears_the_strike(t) -> void:
+func _test_a_kept_save_after_a_failed_one_clears_the_strike(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin(1)
 	showing.settle(1, false)
@@ -1649,7 +1648,7 @@ func _test_a_kept_save_after_a_failed_one_clears_the_strike(t) -> void:
 
 ## `begin()` does not clear the strike: a save still unanswered does not hide a known failure, and
 ## only its own answer decides.
-func _test_begin_does_not_clear_a_strike_while_its_save_is_unanswered(t) -> void:
+func _test_begin_does_not_clear_a_strike_while_its_save_is_unanswered(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin(1)
 	showing.settle(1, false)
@@ -1664,7 +1663,7 @@ func _test_begin_does_not_clear_a_strike_while_its_save_is_unanswered(t) -> void
 	t.check(showing.struck and showing.alpha() == 1.0, "with a fresh ten seconds")
 
 ## Once the symbol has faded away the strike is forgotten: the next save comes up plain.
-func _test_a_struck_symbol_that_faded_away_is_forgotten(t) -> void:
+func _test_a_struck_symbol_that_faded_away_is_forgotten(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.begin(1)
 	showing.settle(1, false)
@@ -1677,7 +1676,7 @@ func _test_a_struck_symbol_that_faded_away_is_forgotten(t) -> void:
 
 ## An answer to a save never begun here, or a second answer to one already settled, is ignored:
 ## it raises nothing, is not counted against the next save, and does not move the picture.
-func _test_a_stray_answer_shows_nothing(t) -> void:
+func _test_a_stray_answer_shows_nothing(t: TestRunner) -> void:
 	var showing := SaveIndicator.Showing.new()
 	showing.settle(7, false)
 	t.check(showing.is_idle() and showing.alpha() == 0.0,
@@ -1693,7 +1692,7 @@ func _test_a_stray_answer_shows_nothing(t) -> void:
 ## The struck symbol is its own picture on the `ui` atlas (`art/ui/save_unavailable.svg`), swapped
 ## in for the plain one rather than drawn over it — so the region has to exist and be a different
 ## picture, and a kept save afterwards has to swap back.
-func _test_a_save_not_kept_swaps_to_the_struck_picture(t) -> void:
+func _test_a_save_not_kept_swaps_to_the_struck_picture(t: TestRunner) -> void:
 	var indicator := SaveIndicator.new()
 	t.add_child(indicator)
 	var icon := indicator.find_child("Icon", true, false) as TextureRect

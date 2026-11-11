@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/crowd_street_rig.gd"
 ## The crowd against the things standing in the street: a café's tables, a construction band, a
 ## kerbed van, a stall. *("yes every solid body should do that -- not necessarily force a turn
@@ -20,7 +19,7 @@ const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
 	var crowd := a_crowd(t, map)
 
@@ -134,7 +133,7 @@ func _footway_span(corridor: int, near: bool) -> Vector2:
 ##
 ## The whole run is inside one block's length of street, with no junction in it, so what is being
 ## asked about is the sidestep and not the random corner turn a walker rolls at every junction.
-func _test_a_walker_steps_round_a_one_lane_body(t, crowd: Crowd, map: CityMap) -> void:
+func _test_a_walker_steps_round_a_one_lane_body(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
 	var run := a_straight_run(map, Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a straight stretch of ordinary street to stand a body in")
 	if run.x < 0:
@@ -176,7 +175,7 @@ func _test_a_walker_steps_round_a_one_lane_body(t, crowd: Crowd, map: CityMap) -
 ## **The junction before the body is what the walk is measured against**, rather than a distance in
 ## tiles: giving up at the last junction is exactly the behaviour this replaces, so the pavement
 ## between that junction and the body is the ground that used to be empty and now is not.
-func _test_a_body_across_a_footway_turns_a_walker_where_it_meets_it(t, crowd: Crowd,
+func _test_a_body_across_a_footway_turns_a_walker_where_it_meets_it(t: TestRunner, crowd: Crowd,
 		map: CityMap) -> void:
 	var run := a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a long enough stretch for a walker to turn in")
@@ -260,7 +259,7 @@ func _test_a_body_across_a_footway_turns_a_walker_where_it_meets_it(t, crowd: Cr
 ## uses. The oncoming lane is a different tile and keeps flowing, which is what this asks in the
 ## same breath: both cars are on the road at the same time and only one of them has anything in
 ## front of it.
-func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, crowd: Crowd,
+func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t: TestRunner, crowd: Crowd,
 		map: CityMap) -> void:
 	var run := a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a long enough stretch for a car to turn in")
@@ -312,7 +311,7 @@ func _test_a_body_in_a_lane_turns_a_car_and_leaves_the_oncoming_lane_alone(t, cr
 # a queue fills for the whole run and a walker that turns spends a stride in.
 
 ## A body across all six lanes of one row.
-func _test_a_precinct_blocked_across_its_width_turns_walkers_round(t, crowd: Crowd,
+func _test_a_precinct_blocked_across_its_width_turns_walkers_round(t: TestRunner, crowd: Crowd,
 		map: CityMap) -> void:
 	var got := _walk_at_a_precinct_wall(t, crowd, map, [[0, 1, 2, 3, 4, 5]], "across its width")
 	if got.is_empty():
@@ -331,7 +330,7 @@ func _test_a_precinct_blocked_across_its_width_turns_walkers_round(t, crowd: Cro
 ## the band; lanes 0, 4 and 5 beyond are open but are not reached from it. With the wall decided one
 ## row at a time the walkers stood at row 0, since no row was full and the sidestep had no better
 ## lane to go to.
-func _test_partial_bodies_in_neighbouring_rows_wall_a_precinct(t, crowd: Crowd,
+func _test_partial_bodies_in_neighbouring_rows_wall_a_precinct(t: TestRunner, crowd: Crowd,
 		map: CityMap) -> void:
 	_walk_at_a_precinct_wall(t, crowd, map,
 			[[0, 1, 4, 5], [1, 2, 3], [4, 5]], "of staggered partial rows")
@@ -339,7 +338,7 @@ func _test_partial_bodies_in_neighbouring_rows_wall_a_precinct(t, crowd: Crowd,
 ## Walls a precinct with `rows` (the lanes taken in the rows `wall`, `wall + 1`, ...), walks six
 ## walkers at it and checks that they turn round. Returns the site and a walker, or an empty
 ## dictionary when this city has no precinct with the room to do it in.
-func _walk_at_a_precinct_wall(t, crowd: Crowd, map: CityMap, rows: Array,
+func _walk_at_a_precinct_wall(t: TestRunner, crowd: Crowd, map: CityMap, rows: Array,
 		label: String) -> Dictionary:
 	var span := Vector4i(-1, -1, -1, -1)
 	for candidate in map.precinct_spans:
@@ -430,7 +429,7 @@ func _walk_at_a_precinct_wall(t, crowd: Crowd, map: CityMap, rows: Array,
 ## Asserted against `GroundShape.tiles_under()` directly rather than against a written-down list,
 ## because the point is that the two agree: a list would pass while both drifted together. Three
 ## rows of different shapes, so a point body and a band body are both covered.
-func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map: CityMap) -> void:
+func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRunner, map: CityMap) -> void:
 	var run := a_straight_run(map, Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a straight stretch to site a body on")
 	if run.x < 0:
@@ -469,7 +468,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t, map: Ci
 ## every hard seal's segment in `CityMap.held`, and the record skips a body on held ground
 ## because the whole street is shut to the crowd already. So this asks the rasterising — the half
 ## M118 changed — on ground where the answer is not thrown away.
-func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map: CityMap) -> void:
+func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t: TestRunner, map: CityMap) -> void:
 	var run := a_straight_run(map, Tuning.BLOCK_SIZE)
 	if run.x < 0:
 		return
@@ -512,7 +511,7 @@ func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t, map: Ci
 ## segment is held as well, which is what turns a car a junction early rather than at the cars
 ## themselves; what this test is about is the half a walker reads, and the hold has nothing to say
 ## to a walker.
-func _test_a_walker_passes_a_crash_on_its_pavement(t, crowd: Crowd, map: CityMap) -> void:
+func _test_a_walker_passes_a_crash_on_its_pavement(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
 	var run := a_straight_run(map, Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a straight stretch to stand a crash in")
 	if run.x < 0:
@@ -587,7 +586,7 @@ func _offsets_of(covered: Array[Vector2i], base: int) -> Array:
 ## The van is `GroundShape.band(22.0)` and the kerb lane centre is 16px from the kerb, so its body
 ## genuinely overhangs the road by six pixels — the tile the overhang lands in is the whole
 ## question, and the record answers it by asking whether the middle of that tile is covered.
-func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t, crowd: Crowd, map: CityMap) -> void:
+func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
 	var run := a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
 	t.check(run.x >= 0, "this city has a long enough stretch to park a van on")
 	if run.x < 0:
@@ -625,7 +624,7 @@ func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t, crowd: Crowd, map: Cit
 ## A fallen tree lies across the whole street — both pavements and both lanes — so a car still turns
 ## away from it at the last junction. The turn-at-the-junction is a car's only answer: it cannot
 ## turn round against a barrier, and a car stopped nose to one holds the junction behind it.
-func _test_a_row_across_the_whole_street_still_turns_a_car(t, crowd: Crowd, map: CityMap) -> void:
+func _test_a_row_across_the_whole_street_still_turns_a_car(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
 	var run := a_straight_run(map, CityMap.period() + Tuning.BLOCK_SIZE)
 	if run.x < 0:
 		return
