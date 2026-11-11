@@ -9,11 +9,13 @@ under "What is left".
 **The trap.** `thing.is_ready`, where `is_ready` is a method, is a reference to the function: always
 true in a condition, and a statement that does nothing where a call was meant (`crowd.clear` for
 `crowd.clear()`). A name in a condition trips no warning of the engine's. A name alone on a line
-trips its warning for a statement that does nothing (`standalone_expression`), which stands at the
-engine's default level, a warning, and no headless run prints a warning.
+trips the engine's warning for a statement that does nothing (`standalone_expression`), which
+`project.godot` makes an error, so that case fails the parse.
 
 **What reports it today.**
 
+- The engine, for a method's name alone on a line: `project.godot` makes `standalone_expression`
+  an error, and no line of the tree trips it (minty-quail-round-dolphin).
 - `tools/check_field_reads.py` fails a method's name read through a receiver whose class it cannot
   tell, in a file under `src/` without the opt-out line. Its `--help` says which names count.
 - The naming rule of designing-classes ("Fields are not API"), for every conversion of a yes-or-no
@@ -44,7 +46,7 @@ bare name of the file's own class with no receiver (`if is_ready:`).
   tested against null; its `look`, an enum read in a `match`; `Run.index`, compared between two
   runs. The events' design names accessors after such fields (`pursuit()`, `look()`).
 
-**Ways to build it, none chosen.**
+**Ways to build the rest, none chosen.**
 
 - **How far the new name goes beyond yes-or-no fields**, a question put to the player, since
   either wider answer renames accessors across the events' design: every method that replaces a
@@ -57,10 +59,6 @@ bare name of the file's own class with no receiver (`if is_ready:`).
   of both, a conversion's pull request can show a search for the old name read without its
   parentheses coming back empty, which finds the read the conversion missed and not one a branch
   merged later brings.
-- **The engine's own warning for a statement that does nothing**, raised to an error like the three
-  warnings of the typed-access step. Measured (the record minty-quail-busy-heron,
-  `tools/decisions.sh busy-heron`): a method's name alone on a line then fails the parse, and a name
-  in a condition still parses. Not measured: how many lines of the tree trip it today.
 - **A rule in the field-read check**: a typed receiver's method named with no `(` after it fails
   unless the reference hands the `Callable` on. The same record says what a first build of this
   was, why it left its pull request, and where its code is. Built again, the list of forms that
