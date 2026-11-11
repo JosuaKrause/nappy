@@ -71,6 +71,11 @@ behind an untyped name (inbox #1268 in olive-ferret; the **designing-classes** s
 Each fails the parse with "Warning treated as error", and the script fails to load, a suite as a
 `LOAD FAIL`.
 
+**A statement that does nothing is an error too**: `project.godot` raises `standalone_expression`
+the same way, so a method's name alone on a line (`crowd.clear` written for `crowd.clear()`) fails
+the parse. A name inside a condition, an argument or an assignment still parses and is not caught
+by the engine. No file opts out of this one.
+
 **Code is typed wherever the language can type it, and an untyped name is never a habit**
 (inbox #1280 in olive-ferret): `src/`, the suites and their rigs, fakes and probes, and the scripts under `tools/`
 alike. A value stays a Variant only where the language cannot type it, such as the inner level of
