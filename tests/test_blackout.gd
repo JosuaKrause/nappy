@@ -25,7 +25,7 @@ const BUILDINGS := 3
 
 ## The run the test now running stands in: `_begin()` makes it afresh at the top of every test and
 ## `_end()` frees what it made at its bottom, so no test reads what an earlier one left.
-var _run: RunState
+var _resistance: ResistanceRunState
 var _map: CityMap
 var _signals: TrafficSignals
 var _events: FakeEventManager
@@ -49,8 +49,8 @@ func run(t) -> void:
 ## A blackout over a city on the last day with the sabotage not yet done, handed its parts the way
 ## `City.build()` hands them, and in the tree.
 func _begin(t, from_the_start := false) -> void:
-	_run = RunState.new()
-	_run.resistance.sabotage_done = false
+	_resistance = ResistanceRunState.new()
+	_resistance.sabotage_done = false
 	_map = CityMap.new()
 	_map.power_station = STATION
 	_map.power_station_door = STATION_DOOR
@@ -67,7 +67,7 @@ func _begin(t, from_the_start := false) -> void:
 	_blackout = Blackout.new()
 	_blackout.dark_from_the_start = from_the_start
 	t.add_child(_blackout)
-	_blackout.setup(_map, _buildings, _signals, _events, _run.resistance)
+	_blackout.setup(_map, _buildings, _signals, _events, _resistance)
 
 func _count_dark() -> void:
 	_went_dark += 1
@@ -86,7 +86,7 @@ func _end() -> void:
 	_events.free()
 	_blackout = null
 	_her = null
-	_run = null
+	_resistance = null
 	_map = null
 	_signals = null
 	_events = null
@@ -95,7 +95,7 @@ func _end() -> void:
 ## (`ResistanceDirector`, where `tests/test_resistance_*` hold how). The blackout is stated over the
 ## flag and never over how it was set.
 func _do_the_sabotage() -> void:
-	_run.resistance.sabotage_done = true
+	_resistance.sabotage_done = true
 
 ## The city after the sabotage is done and she has walked far enough south of the station.
 func _go_dark(t) -> void:
@@ -178,7 +178,7 @@ func _test_a_retry_gives_the_power_back(t) -> void:
 	_begin(t)
 	await _go_dark(t)
 	t.check(_is_dark(), "the power was off before the retry")
-	_run.resistance.give_back()
+	_resistance.give_back()
 	await _she_stands_at(t, _south_of_the_station(Blackout.BLACKOUT_DISTANCE * 4.0))
 	t.check(not _is_dark(), "with the sabotage given back, the power is back")
 	t.check(_powered_buildings() == BUILDINGS, "and the same windows are lit again (%d)"

@@ -23,8 +23,8 @@ var chunks: Dictionary = {}
 ## Only chunks owns complete regions. Each pending key owns exactly one unfinished layer.
 var pending: Dictionary = {}
 var _map: CityMap
-## Which source each tile is painted from, asked of the city that owns the answer (`City.scenery_ground_source()`),
-## handed in by `configure()`.
+## Which source each tile is painted from, asked of the city that owns the answer
+## (`City.scenery_ground_source()`), handed in by `configure()`.
 var _source_of := Callable()
 ## The city's library (`AtlasLibrary`), handed by the city before it configures the ground, and
 ## handed on to every water surface a chunk stands up.

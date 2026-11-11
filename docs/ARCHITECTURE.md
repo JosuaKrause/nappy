@@ -1212,8 +1212,8 @@ field with its value before and after (`tests/shared_state.gd`).
 - `test_destination_drawing.gd` — on every task day, the mark on offer draws its chalk and keeps
   its touched picture once read, and the task's destination draws none, untouched or done, while
   the red arrow ends on it.
-- `test_blackout.gd` — the last night's blackout over stand-ins for the city and what it switches,
-  no city built: nothing off without the sabotage or beside the station, every window, light and
+- `test_blackout.gd` — the last night's blackout over the parts `Blackout` is handed (a map, buildings,
+  signals, the run's resistance and a fake event manager), no city built: nothing off without the sabotage or beside the station, every window, light and
   mast told off in one call past the distance, dark for as long as the sabotage stands and lit again
   on a retry, and the escape's blackout dark from its first frame. What the switched parts do dark
   is theirs: `test_traffic_light.gd` (a signal head with no lamp), `test_traffic_signals.gd` (a dark

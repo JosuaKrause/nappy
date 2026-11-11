@@ -105,9 +105,8 @@ func _go_dark() -> void:
 	EventBus.city_gone_dark.emit()
 	for building in _buildings:
 		building.powered = false
-	if _signals:
-		_signals.powered = false
-	if _events and _events.silence_all_masts() > 0:
+	_signals.powered = false
+	if _events.silence_all_masts() > 0:
 		EventBus.city_went_quiet.emit()
 
 ## Power back on — only ever a retried day, whose dawn gave the sabotage back. The masts need
@@ -116,8 +115,7 @@ func restore() -> void:
 	_is_dark = false
 	for building in _buildings:
 		building.powered = true
-	if _signals:
-		_signals.powered = true
+	_signals.powered = true
 
 func _sabotaged() -> bool:
 	return _resistance.sabotage_done or forced
