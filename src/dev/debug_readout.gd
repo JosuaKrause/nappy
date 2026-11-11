@@ -306,13 +306,12 @@ func _readout_due(delta: float) -> bool:
 	_readout_wait = READOUT_INTERVAL
 	return true
 
-## Her ground: the city's tile and whether it is calm or an alley, or the building's tile, which has
-## neither.
-## Whether the world she is walking is a city: its map is the city's, where the escape's building
-## has the building's.
+## Whether the world she is walking is a city: its map is the city's, not the escape building's.
 func _in_a_city() -> bool:
 	return _map is CityMap
 
+## Her ground: the city's tile and whether it is calm or an alley, or the building's tile, which has
+## neither.
 func _where_she_is_lines() -> Array:
 	var here := _player.global_position
 	if _in_a_city():
