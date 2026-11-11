@@ -29,7 +29,7 @@ goes was the hand-ins' builder's proposal and the orchestrator's, open to the pl
   line reads no closure field rather than adding two lines to the field-read list (the builder's).
 - **The run log's session is handed the run's block arcs** as an argument of its setup, since it
   has no listed read of the run's attempt state and the field-read list may not grow; the
-  alternative is a listed read of the run's state (the builder's).
+  alternative is a listed read of the run's state (the planner's).
 
 ## Left, each with its reason
 
