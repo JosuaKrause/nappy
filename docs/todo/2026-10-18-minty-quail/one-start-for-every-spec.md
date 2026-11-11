@@ -23,5 +23,5 @@ approved it", inbox #1268 in olive-ferret); the detail was worked out by the sam
   (`city-hand-ins.md`): the city scene stops building its own, and the building and the city get
   theirs from one factory (`standing-layer-breaks.md`, the city scene as builder).
 
-**The pull requests** are `city-hand-ins.md`'s cut of its third step; only the event manager's own
-city touches the event manager's setup, and that one lands between two placement pull requests.
+**The pull request:** it touches the event manager's setup and lands between two placement pull
+requests (`city-hand-ins.md` holds the proposal to cut it).

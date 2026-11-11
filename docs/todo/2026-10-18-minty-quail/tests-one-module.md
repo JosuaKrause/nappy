@@ -31,7 +31,8 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
    timed system by what each records into the record it was handed, not by reading its hand-in back
    (`city.frame_timing`, `scenery.timing`, `events.timing`, the baby's, the screen edge's and the
    halo's `timing`), since a getter only this suite read would fail
-   `tools/check_test_only_members.py`;
+   `tools/check_test_only_members.py`. *Read as:* the sentence above that a var a test reads gets a
+   method holds where a game file asks too; where none would, the test reads the public effect;
 2. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
    (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
    events;

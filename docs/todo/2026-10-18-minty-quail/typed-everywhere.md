@@ -32,8 +32,8 @@ engine hold a file to that.
 - **The files under `src/` are typed in the module passes** (`field-reads.md`).
 - **A probe that names a member no class has parses only behind its opt-out line** and fails when
   it runs. `tests/probes/bouncy_egret_day11_mast.gd` reads `siting.scenery_ground` off
-  `EventScheduler.WalkSiting` twice, a member that is `_ground`; the pull request that next types
-  the probe points it there.
+  `EventScheduler.WalkSiting` twice, a member that is the private `_ground`; the pull request that
+  next types the probe has it ask through a method.
 
 **Proposed, not asked for:** one scripted rewrite, as a pull request of its own right after the
 typed-access step lands, that types the runner in every suite (`func run(t: TestRunner) -> void:`, the

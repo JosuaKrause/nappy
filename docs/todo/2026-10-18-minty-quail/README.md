@@ -109,7 +109,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
      parts wait with those parts and the rest for nothing; **the building** (`src/interior/`,
      `src/finale/`), whose one read of `WorldMap.world` goes with the map interface's world half
      (`standing-layer-breaks.md`); and **the developer's rigs** (`src/dev/`), row 3c of
-     `event-interface.md`.
+     `event-interface.md`. The plainer alternative is to leave them to `field-reads.md`'s
+     one-pull-request-per-area sentence.
    - **Tools:** `baseline-measurements.md`'s further readings, and `typed-everywhere.md`: code is
      typed wherever the language can type it, the tests included (its scripted rewrite of the
      suites' runner is the orchestrator's proposal, marked so there).
@@ -132,8 +133,8 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    worth an entry of its own. It also reruns `tests/probes/placement_rows.gd` on main and on the
    refactor's head and compares the two with `tools/compare-placement-rows.py`, which applies the
    rule the record grassy-magpie states (that record carries the output of the hand-run script it
-   replaced, with that step's own list). Before it does, the tool refuses a log line of a day
-   outside 1 to 14, which it reads today though `placement_rows.gd` cannot print one, and both
+   replaced, with that step's own list). Before it does, the tool is made to refuse a log line of
+   a day outside 1 to 14, which it reads today though `placement_rows.gd` cannot print one, and both
    probes are settled
    on `DayPlanner`'s planning: `placement_rows.gd` plans each day's closures, region wall and seals
    and hands the seals and the wall's bodies in as standing since placement step 3c, which moved

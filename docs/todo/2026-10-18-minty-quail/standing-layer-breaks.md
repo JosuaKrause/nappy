@@ -34,7 +34,8 @@ review; a builder runs it again):
   texts' `HelpText` token; her class's constants and type tests where she is not handed in
   (`city.gd`, `interior_scene.gd`, `visible_view.gd`); the run reading `ResistanceHappenings`' day
   of the neighbor's raid; the row's check against `SpawnSiting`'s least distance; `DrawnView`,
-  named by two looks; and the `player` group the blackout and the poster walls find her through.
+  named by two looks; the scheduler naming `City.BURNT_FRONTAGE_SCAR`; and the `player` group the
+  blackout and the poster walls find her through.
 
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
@@ -49,8 +50,9 @@ review; a builder runs it again):
   as the field's type, `use_bus()`, and one teller per signal that does nothing without a bus
   (minty-quail-fluffy-yak). The two classes already handed it, `ChargeRecord` and
   `CheckpointController`, take it in their constructor and emit with no guard.
-- Who builds the event manager and the crowd gets a planning pass of its own, by Fable, reading
-  `city.gd` and `main.gd` whole, once the third hand-ins step's other pull requests have taken the
+- *Proposed, not asked for, the plainer alternative being that the builder of the third hand-ins
+  pull request decides these:* who builds the event manager and the crowd gets a planning pass of
+  its own, by Fable, reading `city.gd` and `main.gd` whole, once the third hand-ins step's other pull requests have taken the
   readers under `src/` away (`city-hand-ins.md`), so the building and the city get their event
   manager the same way (`one-start-for-every-spec.md`). Undecided until then: where the factory
   lives and what it is called; whether the blackout and the poster walls, which `City.build()` also
@@ -69,8 +71,9 @@ review; a builder runs it again):
   `interior_scene.gd`'s with the building's pass; the `CityEdge` kinds, read by `main.gd`, the rigs
   and the run log, after the third hand-ins step; `Prop` as a data constant, in a pull request of
   its own; `GameSave` and `HelpText` in the view's pass; `ResistanceHappenings` with a run's parts
-  (`field-reads.md`); and the calendar's map and `SpawnSiting` with rows 3c and 4b of
-  `event-interface.md`.
+  (`field-reads.md`); the calendar's map and `SpawnSiting` with rows 3c and 4b of
+  `event-interface.md`; and the scheduler's `City.BURNT_FRONTAGE_SCAR` with its breakup
+  (`scheduler-breakup.md`).
 - `src/events/` holds data, model and simulation files side by side, so a new file there takes the
   most permissive of the three by default: the folder is split by layer, or the map names a
   default for it that a new file has to opt out of.
