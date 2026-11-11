@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Scenery phases update their own retained layers without changing static layout or bodies.
 
@@ -132,7 +131,7 @@ func _rotor_picture(atlas: AtlasLibrary, frame_b: bool) -> Texture2D:
 ## viewBoxes must agree, or the second frame would jump when the rotor turns.
 func _test_both_rotor_phases_share_one_registration(t: TestRunner) -> void:
 	var authored: Array[Rect2] = []
-	for path in ["res://art/props/industrial_vent_rotor.svg",
+	for path: String in ["res://art/props/industrial_vent_rotor.svg",
 			"res://art/props/industrial_vent_rotor_b.svg"]:
 		var source := FileAccess.get_file_as_string(path)
 		var regex := RegEx.new()
@@ -199,8 +198,9 @@ func _test_event_parts(t: TestRunner) -> void:
 			for layer in moving:
 				t.check(layer.frame_b != initial, "the existing event clock advances each detail")
 				var turned := _pictures_on(laid, layer)
-				t.check(not turned.is_empty() and turned.size() == before[layer].size()
-						and _all_differ(turned, before[layer]),
+				var earlier: Array[Texture2D] = before[layer]
+				t.check(not turned.is_empty() and turned.size() == earlier.size()
+						and _all_differ(turned, earlier),
 						"every moving detail stands its alternate picture once its frame flips")
 			# Nothing flips a stationary layer's frame; flipped here through the member its scenery
 			# flips a moving one's by, it is drawn again with the same pictures.
@@ -210,9 +210,10 @@ func _test_event_parts(t: TestRunner) -> void:
 				layer.frame_b = not layer.frame_b
 			await t.get_tree().process_frame
 			for layer in still:
+				var earlier: Array[Texture2D] = before[layer]
 				t.check(laid.passes_of(layer) > passes[layer]
-						and not before[layer].is_empty()
-						and _pictures_on(laid, layer) == before[layer],
+						and not earlier.is_empty()
+						and _pictures_on(laid, layer) == earlier,
 						"stationary surroundings have no alternate picture")
 				layer.frame_b = not layer.frame_b
 			t.check(not asked, "animation leaves the static event key alone")
@@ -235,7 +236,9 @@ func _test_event_parts(t: TestRunner) -> void:
 			await t.get_tree().process_frame
 			var rebound := false
 			for scenery in _sceneries_of(instance):
-				rebound = rebound or not _split_by_animation(scenery)[0].is_empty()
+				var split := _split_by_animation(scenery)
+				var animated: Array = split[0]
+				rebound = rebound or not animated.is_empty()
 			t.check(rebound, "reentry rebinds event scenery regions")
 			var again := _sceneries_of(instance)
 			instance.free()

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `AtlasLibrary.plan()`'s own contract, on synthetic sizes rather than the tree's own pictures:
 ## `test_atlas_library.gd` holds the fill floor and aspect ceiling the real pages must clear, and
@@ -76,8 +75,8 @@ func _test_no_two_padded_regions_overlap(t: TestRunner) -> void:
 	var regions: Array = layout["regions"]
 	var page := Rect2i(Vector2i.ZERO, layout["size"])
 	var outside := 0
-	for rect in regions:
-		if not page.encloses((rect as Rect2i).grow(AtlasLibrary.PADDING)):
+	for rect: Rect2i in regions:
+		if not page.encloses(rect.grow(AtlasLibrary.PADDING)):
 			outside += 1
 	t.check(outside == 0, "every region and its padding is on the page (%d are not)" % outside)
 	var overlaps := 0

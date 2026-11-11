@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## When a baked page may be read from disk, and which page each picture is on.
 ##
@@ -46,7 +45,7 @@ func _test_each_parent_has_a_page_of_their_own(t: TestRunner) -> void:
 		# Every view she is drawn in, pushing and carrying, on the eight facings; the pram's with them.
 		var views: Dictionary = {}
 		var prams: Dictionary = {}
-		for carrying in [false, true]:
+		for carrying: bool in [false, true]:
 			rig.carrying = carrying
 			for direction in range(8):
 				rig.reset_at(Vector2.ZERO, Vector2.from_angle(direction * PI / 4.0))

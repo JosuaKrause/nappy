@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## M185's fixing half — the home block has fixed visuals: every building on it draws the same on
 ## every seed (window style, which windows are lit, height, front and roof furniture), and her own

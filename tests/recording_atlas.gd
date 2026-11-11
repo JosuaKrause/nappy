@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends AtlasLibrary
 ## **An atlas library that remembers who asked it for a page**: each `acquire()` is counted under the
 ## script that called it, so a suite can say what a node asked the library it was handed. A node that
@@ -10,9 +9,10 @@ var _asked := {}
 
 ## Overrides AtlasLibrary.acquire.
 func acquire(group: StringName) -> void:
-	var stack := get_stack()
+	var stack: Array = get_stack()
 	if stack.size() > 1:
-		var source := String(stack[1].get("source", ""))
+		var frame: Dictionary = stack[1]
+		var source := String(frame.get("source", ""))
 		_asked[source] = int(_asked.get(source, 0)) + 1
 	super(group)
 
