@@ -407,7 +407,7 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t: TestRu
 	_start(day)
 	var after_city := _city.map.held_streets()
 
-	for key: Variant in alone:
+	for key: Vector3i in alone:
 		t.check(after_city.has(key),
 				"everything the manager's own fallback tree holds, City.start_day holds too")
 
