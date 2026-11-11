@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `DayController`'s clock: the countdown itself, and how often it tells anyone about it.
 ##
@@ -7,7 +7,7 @@ extends RefCounted
 ## whole second actually displayed has changed, which this suite holds from the emitting side —
 ## `hud.gd` itself belongs to a different milestone and is read only.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var standing: Array[Node] = t.get_children()
 	_test_the_clock_emits_once_per_second_crossed(t)
 	_test_a_day_starting_is_its_own_emit(t)
@@ -24,7 +24,7 @@ func run(t) -> void:
 ## The stand-in for her the last `_rig()` handed its clock, which a test moves to a goal.
 var _her: Node2D
 
-func _rig(t) -> DayController:
+func _rig(t: TestRunner) -> DayController:
 	var player := Node2D.new()
 	t.add_child(player)
 	_her = player
@@ -39,7 +39,7 @@ func _rig(t) -> DayController:
 	day.use_the_walk(null, player)
 	return day
 
-func _test_the_clock_emits_once_per_second_crossed(t) -> void:
+func _test_the_clock_emits_once_per_second_crossed(t: TestRunner) -> void:
 	var day := _rig(t)
 	var emits := [0]
 	var on_emit := func(_remaining: float, _total: float) -> void:
@@ -71,7 +71,7 @@ func _test_the_clock_emits_once_per_second_crossed(t) -> void:
 	EventBus.day_time_changed.disconnect(on_emit)
 	day.free()
 
-func _test_a_day_starting_is_its_own_emit(t) -> void:
+func _test_a_day_starting_is_its_own_emit(t: TestRunner) -> void:
 	var day := _rig(t)
 	var emits := [0]
 	var on_emit := func(_remaining: float, _total: float) -> void:
@@ -90,7 +90,7 @@ func _test_a_day_starting_is_its_own_emit(t) -> void:
 ## `tick()`), so once the first second of a frozen day has been told, the value driving the
 ## gate never changes again -- the gate must not re-emit an unchanging number just because
 ## `tick()` keeps being called.
-func _test_invincible_stops_emitting_once_the_first_second_is_told(t) -> void:
+func _test_invincible_stops_emitting_once_the_first_second_is_told(t: TestRunner) -> void:
 	var day := _rig(t)
 	day.invincible = true
 	var emits := [0]
@@ -111,7 +111,7 @@ func _test_invincible_stops_emitting_once_the_first_second_is_told(t) -> void:
 
 ## The escape's clock reads to the hundredth and tells the HUD on every frame; a day's still emits
 ## once a second; the ending screens' formatter keeps three digits. *(inbox #746 in woolly-penguin.)*
-func _test_the_escape_clock_moves_every_frame(t) -> void:
+func _test_the_escape_clock_moves_every_frame(t: TestRunner) -> void:
 	var escape := _rig(t)
 	escape.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
 	var labels := []
@@ -150,7 +150,7 @@ func _test_the_escape_clock_moves_every_frame(t) -> void:
 ## fraction, never past where the next tick puts it, and the countdown itself untouched. A day's
 ## whole-second clock and a frozen escape clock are told nothing by a drawn frame. Each clock is let
 ## process for exactly one real frame (`_one_drawn_frame()`).
-func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t) -> void:
+func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t: TestRunner) -> void:
 	var tick := 1.0 / Engine.physics_ticks_per_second
 	var shown := []
 	var on_emit := func(remaining: float, _total: float) -> void:
@@ -184,14 +184,14 @@ func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t) -> void:
 ## Lets `clock` process for exactly one real frame, with `shown` emptied just before it: processing
 ## is turned on after a frame has begun and off once the next one begins, since `process_frame`
 ## fires ahead of the nodes' own `_process` of the frame it names.
-func _one_drawn_frame(t, clock: DayController, shown: Array) -> void:
+func _one_drawn_frame(t: TestRunner, clock: DayController, shown: Array) -> void:
 	await t.get_tree().process_frame
 	clock.set_process(true)
 	shown.clear()
 	await t.get_tree().process_frame
 	clock.set_process(false)
 
-func _test_the_formatters(t) -> void:
+func _test_the_formatters(t: TestRunner) -> void:
 	t.check(RunState.format_clock_hundredths(179.43) == "2:59.43",
 			"hundredths: 2:59.43 (%s)" % RunState.format_clock_hundredths(179.43))
 	t.check(RunState.format_clock_hundredths(0.0) == "0:00.00", "hundredths at zero")
@@ -199,7 +199,7 @@ func _test_the_formatters(t) -> void:
 			"the ending's run length keeps three digits (%s)" % RunState.format_clock(179.432))
 
 ## A frozen `--invincible` escape clock has nothing new to tell the HUD, flag or not.
-func _test_a_frozen_escape_clock_stays_silent(t) -> void:
+func _test_a_frozen_escape_clock_stays_silent(t: TestRunner) -> void:
 	var escape := _rig(t)
 	escape.invincible = true
 	escape.spec = DaySpec.for_section(DaySpec.Section.CITY, 180.0)
@@ -220,7 +220,7 @@ func _test_a_frozen_escape_clock_stays_silent(t) -> void:
 ## building says she is through its service exit (`reach_the_exit()`), the city when she reaches
 ## one of its two ways out, however the baby is — and which way is kept. A day is never won by
 ## either: its goal is her front door.
-func _test_each_section_is_won_at_its_own_goal(t) -> void:
+func _test_each_section_is_won_at_its_own_goal(t: TestRunner) -> void:
 	var results: Array[int] = []
 	var on_finished := func(result: GameEnums.DayResult) -> void:
 		results.append(result)

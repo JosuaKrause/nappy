@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A spine whose lights are out still carries its traffic: right before left and "nothing enters a box
 ## it cannot leave" hold a five-times-busier street together without a light.
@@ -25,7 +24,7 @@ var _city: City
 ## How many car samples the last `_spine_traffic()` took.
 var _sampled_cars := 0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_the_dark_spine_keeps_moving(t)
 
 func _rng(label: String) -> RandomNumberGenerator:
@@ -33,7 +32,7 @@ func _rng(label: String) -> RandomNumberGenerator:
 	rng.seed = hash("dark spine:%d:%s" % [SEED, label])
 	return rng
 
-func _test_the_dark_spine_keeps_moving(t) -> void:
+func _test_the_dark_spine_keeps_moving(t: TestRunner) -> void:
 	_city = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(_city)
 	_city.build(MapCache.of(SEED))
@@ -65,7 +64,7 @@ func _test_the_dark_spine_keeps_moving(t) -> void:
 ## seconds of the crowd's own physics ticks, with a stroller standing on the sidewalk beside the
 ## spine for the crowd to make way for, so the field is over the spine and the cars there are the
 ## ones being simulated. The spine is lit or dark as the city has it.
-func _spine_traffic(t) -> Vector2:
+func _spine_traffic(t: TestRunner) -> Vector2:
 	_city.crowd.start_day(Tuning.RUN_LENGTH_DAYS, _rng("traffic"))
 	var her := Stroller.new()
 	var camera := Camera2D.new()

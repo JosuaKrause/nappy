@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Nothing off screen is redrawn, and every cue is back on the frame it can be seen.
 ## *(velvet-marten, #700, the player: "Skipping redraws for of screen elements. Also we don't really
@@ -21,7 +21,7 @@ const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const SCREEN := Vector2(1280.0, 720.0)
 const ZOOM := 2.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_box_is_the_screen_grown_by_the_margin(t)
 	_test_a_hand_built_agent_with_no_screen_is_always_drawn(t)
 	_test_a_car_reach_holds_everything_it_draws(t)
@@ -34,7 +34,7 @@ func run(t) -> void:
 
 ## A screen of its own for the gates to ask about: a `SubViewport` the size of the design box whose
 ## canvas shows the world from `top_left` at the game's zoom, so no other suite's camera moves it.
-func _screen(t, top_left := Vector2.ZERO) -> SubViewport:
+func _screen(t: TestRunner, top_left := Vector2.ZERO) -> SubViewport:
 	var screen := SubViewport.new()
 	screen.size = Vector2i(SCREEN)
 	t.add_child(screen)
@@ -50,7 +50,7 @@ func _world_shown(top_left: Vector2) -> Rect2:
 
 ## The box is the world the canvas shows grown by the margin, read off the transform alone, so a
 ## zoom and the portrait presentation's quarter turn are the screen they are.
-func _test_the_box_is_the_screen_grown_by_the_margin(t) -> void:
+func _test_the_box_is_the_screen_grown_by_the_margin(t: TestRunner) -> void:
 	var screen := _screen(t, Vector2(100.0, 50.0))
 	var box := DrawnView.box_of(screen)
 	var wanted := _world_shown(Vector2(100.0, 50.0)).grow(DrawnView.MARGIN)
@@ -70,7 +70,7 @@ func _test_the_box_is_the_screen_grown_by_the_margin(t) -> void:
 
 ## A rig that steps an agent by hand outside any tree keeps the gate's old answer: there is no screen
 ## for it to be off, so every change still asks for its redraw.
-func _test_a_hand_built_agent_with_no_screen_is_always_drawn(t) -> void:
+func _test_a_hand_built_agent_with_no_screen_is_always_drawn(t: TestRunner) -> void:
 	var car := CrowdAgent.new()
 	car.kind = CrowdAgent.Kind.CAR
 	car.position = Vector2(-5000.0, -5000.0)
@@ -83,7 +83,7 @@ func _test_a_hand_built_agent_with_no_screen_is_always_drawn(t) -> void:
 ## `_draw_mark()`'s and `Sprites.draw_caret()`'s own arithmetic; and every view of a walker in both
 ## halves of its stride. A reach that left any of it out would let that part onto the screen
 ## before the gate redraws it.
-func _test_a_car_reach_holds_everything_it_draws(t) -> void:
+func _test_a_car_reach_holds_everything_it_draws(t: TestRunner) -> void:
 	var reach := CrowdAgent.DRAWN_REACH
 	var car := CrowdAgent.new()
 	car.kind = CrowdAgent.Kind.CAR
@@ -120,7 +120,7 @@ func _test_a_car_reach_holds_everything_it_draws(t) -> void:
 ## **A car off screen is neither redrawn nor projected for its caret, and it is redrawn — red caret
 ## and all — no later than the first frame any of it can be seen.** A car driving in from the
 ## west with her standing in its lane ahead of it, so its caret is the doubled red the whole way.
-func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t) -> void:
+func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestRunner) -> void:
 	var screen := _screen(t)
 	var shown := _world_shown(Vector2.ZERO)
 	var car := CrowdAgent.new()
@@ -181,7 +181,7 @@ func _the_gate_projected_her_caret(car: CrowdAgent) -> bool:
 
 ## A walker whose picture did not change while it was off screen — covering no ground (nothing steps
 ## it), its view and stride where they were — still redraws on its first frame back, since what it shows was not kept.
-func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t) -> void:
+func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t: TestRunner) -> void:
 	var screen := _screen(t)
 	var walker := CrowdAgent.new()
 	walker.kind = CrowdAgent.Kind.WALKER
@@ -205,7 +205,7 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t) -> voi
 ## owed no later than the frame any of it can be seen.** A cyclist on course for her, so its caret
 ## is the doubled red, stands still while the screen pans onto it, the way it does when she walks
 ## towards it; what can be seen is `drawn_rect_now()`, the drawing's own extent, caret included.
-func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_shows(t) -> void:
+func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_shows(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cyclist")
 	t.check(def != null and def.hard_fail, "cyclist is a hard-fail row")
 	if not def:
@@ -289,7 +289,7 @@ class LongFrontage extends WorldMap:
 ## the screen pans along it from the east, so the far end shows long before the point does. What can
 ## be seen is what a fire of the same siting tells its drawer to stand (flames and smoke), on real
 ## frames, not the box the gate asks with.
-func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
+func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("burning_building")
 	t.check(def != null and def.obstructs_radius <= 0.0, "burning_building is the street fire")
 	if not def:
@@ -349,7 +349,7 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t) -> void:
 ## frames; a frame "redraws" when the engine drew the edge in it (its `draw` signal). The fire engine
 ## is moved by hand at its own speed over each frame's own length, and the manager's tick is off, so
 ## nothing else moves it.
-func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t) -> void:
+func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t: TestRunner) -> void:
 	# The page the badge's picture and the engine's are drawn from, as `main` hands the edge it.
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
@@ -406,14 +406,14 @@ func _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t) -> void:
 
 ## Lets one real frame pass and answers whether the engine drew `edge` in it (`drawn`, its count of
 ## `draw` signals).
-static func _redraws(t, _edge: DangerEdge, drawn: Array) -> bool:
+static func _redraws(t: TestRunner, _edge: DangerEdge, drawn: Array) -> bool:
 	var before: int = drawn[0]
 	await t.get_tree().process_frame
 	return drawn[0] > before
 
 ## The arrow is hidden every frame it is not wanted; only the frame it goes from shown to hidden has
 ## anything to take off the screen.
-func _test_a_hidden_arrow_redraws_once(t) -> void:
+func _test_a_hidden_arrow_redraws_once(t: TestRunner) -> void:
 	var arrow := HomeArrow.new()
 	t.check(not arrow.hide_arrow(), "an arrow already hidden is not redrawn to hide it again")
 	arrow.show_toward(Vector2(100.0, 100.0))

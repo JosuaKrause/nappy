@@ -18,7 +18,7 @@ const SPACING := 8.3
 const DELAYS := 25
 const DELAY_STEP := 0.5
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var rig := Rig.new(t)
 	for asleep in [false, true]:
 		var straight: Array = []

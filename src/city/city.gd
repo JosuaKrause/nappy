@@ -332,9 +332,9 @@ func build(city_map: CityMap) -> void:
 	map.world = self
 	navigator = map.navigator()
 	scenery = SceneryResidency.new()
-	scenery.city = self
 	scenery.timing = frame_timing
 	scenery.frame_locked = scenery_frame_locked
+	scenery.setup(self, map, scenery_ground, _building_shadows, _decals)
 	add_child(scenery)
 	scenery_ground.mode = ground_mode
 	scenery_ground.atlas = atlas
@@ -358,7 +358,7 @@ func build(city_map: CityMap) -> void:
 	_posters.name = "Posters"
 	_posters.equip(trace, poster_art, atlas)
 	add_child(_posters)
-	_posters.setup(self, map, run)
+	_posters.setup(_buildings, map, run)
 	# Footprints are fixed for the run (`docs/DECISIONS.md`, M61); streamed shadow chunks derive
 	# their geometry from this source as they become resident.
 	var shown_rects: Array[Rect2i] = []
@@ -391,6 +391,7 @@ func build(city_map: CityMap) -> void:
 	spawn_siting = SpawnSiting.new(map, navigator, events.visible_view, _streets.siting_region)
 	events.setup(self, map, navigator, spawn_siting)
 	events.force(forced_row, forced_interval)
+	_posters.watch_events(events)
 	crowd = Crowd.new()
 	crowd.name = "Crowd"
 	crowd.skip_agent_drawing = skip_crowd_drawing
@@ -407,7 +408,7 @@ func build(city_map: CityMap) -> void:
 	_blackout.forced = blackout_forced
 	_blackout.dark_from_the_start = dark_from_the_start
 	add_child(_blackout)
-	_blackout.setup(self, _buildings)
+	_blackout.setup(map, _buildings, signals, events, run.resistance)
 	_daylight = CanvasModulate.new()
 	_daylight.name = "Daylight"
 	add_child(_daylight)
@@ -1539,7 +1540,7 @@ func _spawn_boundary() -> void:
 ## place rather than four.
 func _paint_ground() -> void:
 	_tinted_route = null
-	scenery_ground.configure(self, _composed_ground_tile_set())
+	scenery_ground.configure(map, scenery_ground_source, _composed_ground_tile_set())
 	var initial := scenery.view if scenery.view.has_area() else _home_scenery_view()
 	for key in scenery_ground.keys_in(initial.grow(SceneryResidency.LOAD_MARGIN)):
 		scenery_ground.prepare(key)

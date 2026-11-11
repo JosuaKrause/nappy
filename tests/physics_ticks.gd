@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name PhysicsTicks
 extends RefCounted
 ## Lets real physics ticks pass for a suite, one tick a rendered frame. After a slow frame the
@@ -17,7 +16,7 @@ extends RefCounted
 ## covers (`ticks_for()` with the same `scale`) and holds at any step. Both engine values are put back.
 ## **`each` ends the wait early by returning `true`**: no further tick is let pass, so a walk that
 ## stops at an event is not stepped on past it.
-static func pass_ticks(t, ticks: int, each := Callable(), scale := 1.0) -> void:
+static func pass_ticks(t: Node, ticks: int, each := Callable(), scale := 1.0) -> void:
 	var steps := Engine.max_physics_steps_per_frame
 	var clock := Engine.time_scale
 	Engine.max_physics_steps_per_frame = 1
@@ -44,7 +43,7 @@ const FASTER := 8
 ## and the same positions, the engine only taking the ticks `factor` times as often in real time.
 ## `scale` is the game-time speed of each tick as in `pass_ticks()`, kept per tick whatever `factor` is.
 ## Both settings are put back, and the runner's shared-state check compares both.
-static func pass_ticks_faster(t, ticks: int, factor: int, each := Callable(), scale := 1.0) -> void:
+static func pass_ticks_faster(t: Node, ticks: int, factor: int, each := Callable(), scale := 1.0) -> void:
 	var rate := Engine.physics_ticks_per_second
 	Engine.physics_ticks_per_second = rate * factor
 	await pass_ticks(t, ticks, each, Engine.time_scale * scale * factor)
@@ -54,7 +53,7 @@ static func pass_ticks_faster(t, ticks: int, factor: int, each := Callable(), sc
 ## may run a backlog of ticks (up to the engine's own limit, planned before any suite set it to one)
 ## in a single go, which would land inside the first `pass_ticks()`, so that it passes more ticks
 ## than it was asked for.
-static func settle(t) -> void:
+static func settle(t: Node) -> void:
 	var steps := Engine.max_physics_steps_per_frame
 	Engine.max_physics_steps_per_frame = 1
 	await t.get_tree().process_frame

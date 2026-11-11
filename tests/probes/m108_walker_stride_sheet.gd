@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Evidence rig for M108's "walkers first" stride item: renders each of the walker's five
 ## authored views with gait frame a beside gait frame b, body tinted and trim above — the same
@@ -21,7 +21,7 @@ const TINT := Color("4f5b52")
 
 const VIEWS: Array[String] = ["front", "back", "side", "front_diagonal", "back_diagonal"]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	var rows := []
 	for view in VIEWS:

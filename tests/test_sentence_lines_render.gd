@@ -9,7 +9,7 @@ const PAUSE_SCENE := preload("res://scenes/ui/pause_screen.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var title: Label = summary.get_node("Root/Center/Lines/Title")
@@ -68,7 +68,7 @@ func run(t) -> void:
 	hud.free()
 
 ## The label as the screen lays it out: the width it asks for, as the box it sits in gives it.
-func _check_label(t, source: String, label: Label, what: String) -> void:
+func _check_label(t: TestRunner, source: String, label: Label, what: String) -> void:
 	var wrapped := SentenceLines.break_for_label(source, label)
 	var lines_of := func(text: String) -> int:
 		label.text = text
@@ -76,7 +76,7 @@ func _check_label(t, source: String, label: Label, what: String) -> void:
 		return label.get_line_count()
 	_compare(t, wrapped, lines_of, source, label.custom_minimum_size.x, what)
 
-func _check_help(t, source: String, label: HelpText, what: String) -> void:
+func _check_help(t: TestRunner, source: String, label: HelpText, what: String) -> void:
 	var wrapped := SentenceLines.break_for_help(source, label)
 	var lines_of := func(text: String) -> int:
 		label.show_line(text)
@@ -89,7 +89,7 @@ func _check_help(t, source: String, label: HelpText, what: String) -> void:
 ## The sentences are the lines `SentenceLines` breaks the text into at a width no two can share
 ## (a label 1 px wide), and each is shown alone in the screen's own
 ## label (`lines_of`), which has to lay it out on one line.
-func _compare(t, wrapped: String, lines_of: Callable, source: String, width: float,
+func _compare(t: TestRunner, wrapped: String, lines_of: Callable, source: String, width: float,
 		what: String) -> void:
 	var broken := wrapped.split("\n").size()
 	var narrow := Label.new()

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The escalation: act gating, the mechanics the later acts introduced, and the invariants
 ## that stop a late day from being quietly unwinnable.
@@ -11,7 +11,7 @@ const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
 var _map: CityMap
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_map = CityGenerator.generate(SEED)
 	_test_acts_are_gated_by_day(t)
 	_test_a_protest_grows(t)
@@ -26,7 +26,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 
 # -------------------------------------------------------------------- gating ---
 
-func _test_acts_are_gated_by_day(t) -> void:
+func _test_acts_are_gated_by_day(t: TestRunner) -> void:
 	# The boundaries themselves are `Tuning.ACT_START_DAYS` and are not restated here — a check
 	# that reads that array back would only ever fail because somebody moved an act on purpose.
 	# What is worth pinning is the relationship between two tables that do not know about each
@@ -43,7 +43,7 @@ func _test_acts_are_gated_by_day(t) -> void:
 
 # ------------------------------------------------------------------ mechanics ---
 
-func _instance(t, def: EventDef, at := Vector2.ZERO) -> EventInstance:
+func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at)
 	t.add_child(instance)
@@ -54,7 +54,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 	for i in int(round(seconds / STEP)):
 		instance.step(STEP)
 
-func _test_a_protest_grows(t) -> void:
+func _test_a_protest_grows(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("protest")
 	t.check(def.intensity_ramp > 1.0, "a protest swells rather than holding")
 	var instance := _instance(t, def)
@@ -77,7 +77,7 @@ func _peak_over(instance: EventInstance, seconds: float) -> float:
 	return peak
 
 ## The burnt-out shell is on the same corner on day 12 as it was the morning after the fire.
-func _test_scars_outlive_the_day_that_made_them(t) -> void:
+func _test_scars_outlive_the_day_that_made_them(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(SEED)
 	run.header.day = 3
@@ -116,7 +116,7 @@ func _test_scars_outlive_the_day_that_made_them(t) -> void:
 ## **Then the dawn after it shows that building burnt** — *"the building is what needs to be burnt,
 ## not an object next to the building"* — through `City.start_day()`, the way a real morning
 ## reaches `CityFronts.mark_the_burnt_frontage()`, from a scar recorded where a real fire sites.
-func _test_the_scarred_building_shows_burnt(t) -> void:
+func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	city.run.header.day = 4
 	t.add_child(city)
@@ -281,7 +281,7 @@ func _contains(planned: Array, id: String) -> bool:
 ## From act II onwards several events physically close streets, and from act IV a run can
 ## accumulate permanent barricades. Any combination that seals the home off from every park
 ## makes the day unwinnable in a way the player cannot see coming.
-func _test_a_park_stays_reachable_every_day(t) -> void:
+func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 	# Stack the deck: pretend several convoys have already left barricades around, in rings of
 	# 3, 5 and 7 tiles round the home's door (a ring is what can seal the home in; four far-off
 	# ones cannot), and plan every day.

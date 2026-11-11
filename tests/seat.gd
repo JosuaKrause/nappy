@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## **What one test plays**: a `RunState` made fresh for it and the sitting that holds it, parked in a
 ## node of the test's own standing for the tree's root (`Boot.home_playing()`). A boot taken with
@@ -20,7 +20,7 @@ var home: Node
 var sitting: Sitting
 
 ## `prepare`, when given, is called with the unplayed run (a run to be played from a later day).
-func _init(t, prepare := Callable()) -> void:
+func _init(t: TestRunner, prepare := Callable()) -> void:
 	run = RunState.new()
 	if prepare.is_valid():
 		prepare.call(run)
@@ -32,7 +32,7 @@ func _init(t, prepare := Callable()) -> void:
 ## the caller frees; without one the boot writes the sitting's own. `maps`, when given, is where the
 ## boot's cities come from (`main.use_city_maps()`). The caller frees the boot
 ## (`Booted.free_all()`) before `end()`.
-func boot(t, scratch_path: String, words: Array, run_log: Telemetry = null,
+func boot(t: TestRunner, scratch_path: String, words: Array, run_log: Telemetry = null,
 		still := false, maps := Callable()) -> Boot.Booted:
 	var seat := self
 	return await Boot.boot(t, scratch_path, Boot.config(words),

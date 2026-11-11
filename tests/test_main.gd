@@ -59,7 +59,7 @@ class AskedSource extends RefCounted:
 ## `main` builds its city on the map its source hands it: asked once, with the run's seed, and the
 ## city that stands is built on the very map it returned. A `main` that generated its own would ask
 ## nothing, and one that asked twice would have two maps to repaint for one city.
-func _test_a_boot_builds_its_city_on_the_map_it_is_handed(t) -> void:
+func _test_a_boot_builds_its_city_on_the_map_it_is_handed(t: TestRunner) -> void:
 	var seat := Seat.new(t)
 	var source := AskedSource.new()
 	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, ["--seed", str(SEED)], null, true,
@@ -74,7 +74,7 @@ func _test_a_boot_builds_its_city_on_the_map_it_is_handed(t) -> void:
 
 ## An authored scene's own map still wins: the source is never asked, and the city stands on the
 ## scene's map (its stretch active), not a generated one.
-func _test_an_authored_scenes_map_wins_over_the_map_source(t) -> void:
+func _test_an_authored_scenes_map_wins_over_the_map_source(t: TestRunner) -> void:
 	var seat := Seat.new(t)
 	var source := AskedSource.new()
 	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE,
@@ -89,7 +89,7 @@ func _test_an_authored_scenes_map_wins_over_the_map_source(t) -> void:
 
 ## `--day-length` reaches the day a boot starts: the real `main` booted with `--day-length 77` walks
 ## a day whose clock is 77 seconds long, read off the day's own spec.
-func _test_a_boot_gives_the_day_its_configured_length(t) -> void:
+func _test_a_boot_gives_the_day_its_configured_length(t: TestRunner) -> void:
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--day-length", "77"]),
@@ -108,7 +108,7 @@ func _test_a_boot_gives_the_day_its_configured_length(t) -> void:
 ## viewport and walked out through the building's `exit_requested`; and booted straight onto the
 ## escape's street, and onto an ordinary day. What the baby does with the world she is handed is
 ## `tests/test_baby_world.gd`'s, and what the city answers for its ground and bodies the city's.
-func _test_main_hands_the_baby_the_world_it_puts_her_in(t) -> void:
+func _test_main_hands_the_baby_the_world_it_puts_her_in(t: TestRunner) -> void:
 	var run := _a_run_on(DaySpec.Section.BUILDING)
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
@@ -143,7 +143,7 @@ func _a_run_on(section: int) -> RunState:
 	run.facts.escape_section = section
 	return run
 
-func _boot_hands_the_baby_the_city(t, section: int, what: String) -> void:
+func _boot_hands_the_baby_the_city(t: TestRunner, section: int, what: String) -> void:
 	var run := _a_run_on(section)
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
@@ -155,12 +155,57 @@ func _boot_hands_the_baby_the_city(t, section: int, what: String) -> void:
 	booted.free_all()
 	home.free()
 
+## **`main` tells the on-screen controls when a hold lets her out**, in every place it makes her:
+## a boot's player is handed the connection from `Stroller.let_out_of_the_hold` to
+## `TouchControls.stand_still_after_hold()`, so a heading a tap locked in is dropped when she is
+## released. Each boot taps the controls (a press and a lift through the viewport, which locks a
+## heading with no finger down), emits her release, and reads the controls' public seam, the `move_*`
+## actions they hold. `tests/test_checkpoints.gd` makes this connection by hand to test the hold
+## itself; this is the root's half of it.
+func _test_main_connects_her_release_to_the_controls(t: TestRunner) -> void:
+	await _boot_connects_her_release(t, DaySpec.Section.NONE, "an ordinary day's boot")
+	await _boot_connects_her_release(t, DaySpec.Section.CITY, "a boot onto the escape's street")
+
+func _boot_connects_her_release(t: TestRunner, section: int, what: String) -> void:
+	var run := _a_run_on(section)
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
+			func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
+	var player := Boot.player(booted.main)
+	var controls := Boot.touch_controls(booted.main)
+	t.check(player != null and controls != null, "%s has her and the controls" % what)
+	if player != null and controls != null:
+		# The day stands behind its title and the escape behind its brief; each press is the
+		# player's own.
+		if controls.get_tree().paused and Boot.title(booted.main) != null \
+				and Boot.title(booted.main).visible:
+			await Boot.press_title(t, booted.main)
+		if controls.get_tree().paused:
+			await Boot.press_continue(t, booted.main)
+		Input.action_release(&"move_left")
+		Input.action_release(&"move_right")
+		Input.action_release(&"move_up")
+		Input.action_release(&"move_down")
+		var tap_at := controls.get_viewport().get_canvas_transform() \
+				* (player.global_position + Vector2(-100.0, 0.0))
+		UI.push(controls, UI.touch_at(tap_at, true, 7))
+		UI.push(controls, UI.touch_at(tap_at, false, 7))
+		t.check(Input.is_action_pressed(&"move_left"),
+				"%s: a tap locks a heading west, with no finger down (paused %s, at %s)"
+				% [what, controls.get_tree().paused, tap_at])
+		player.let_out_of_the_hold.emit()
+		t.check(not Input.is_action_pressed(&"move_left"),
+				"%s: her release reaches the controls, which stand still" % what)
+	Input.action_release(&"move_left")
+	booted.free_all()
+	home.free()
+
 ## **`main` binds the run's presentation choice to the rig before anything has drawn it**, on a
 ## day's way in and on the escape's (`--start-escape`): real boots of `main` for each family
 ## (`--parent`) whose stroller is caught the moment it enters the tree (`SceneTree.node_added`), and
 ## the rig that stands after the boot is the family the run chose. What a rig draws of the family it is
 ## handed is `tests/test_player_presentation.gd`'s.
-func _test_main_binds_the_family_before_the_first_draw(t) -> void:
+func _test_main_binds_the_family_before_the_first_draw(t: TestRunner) -> void:
 	for male in [false, true]:
 		var parent := "father" if male else "mother"
 		var in_the_escape: Array[bool] = []
@@ -174,17 +219,18 @@ func _test_main_binds_the_family_before_the_first_draw(t) -> void:
 		var booted: Boot.Booted = await _boot_catching_the_rig(t, seat, ["--parent", parent], on_a_day)
 		var rig := Boot.player(booted.main)
 		t.check(in_the_escape == [male] and on_a_day == [male] and rig != null
-				and rig.is_male == male and seat.run.header.player_is_male == male,
+				and rig.pose(1.0).mother_sources[0].begins_with("rig/father_") == male
+				and seat.run.header.player_is_male == male,
 				"ordinary and escape construction share a choice bound before the first draw")
 		booted.free_all()
 		seat.end()
 
 ## A boot of `main` over `seat`'s run on `words`, with the family of every stroller that entered the
 ## tree during it, at the moment it entered, appended to `entered`.
-func _boot_catching_the_rig(t, seat: Seat, words: Array, entered: Array[bool]) -> Boot.Booted:
+func _boot_catching_the_rig(t: TestRunner, seat: Seat, words: Array, entered: Array[bool]) -> Boot.Booted:
 	var catch := func(node: Node) -> void:
 		if node is Stroller:
-			entered.append((node as Stroller).is_male)
+			entered.append((node as Stroller).pose(1.0).mother_sources[0].begins_with("rig/father_"))
 	t.get_tree().node_added.connect(catch)
 	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words, null, false, MapCache.source())
 	t.get_tree().node_added.disconnect(catch)
@@ -194,7 +240,7 @@ func _boot_catching_the_rig(t, seat: Seat, words: Array, entered: Array[bool]) -
 ## the session's): a line written through the watch's trace reaches the recording run log the boot
 ## is handed (`tests/recording_log.gd`), which a trace nobody handed the watch would drop. The hold
 ## is long enough that the watch never fires and quits here.
-func _test_the_still_watch_writes_into_the_boots_run_log(t) -> void:
+func _test_the_still_watch_writes_into_the_boots_run_log(t: TestRunner) -> void:
 	var run_log := RecordingLog.new()
 	run_log.begin_run(SEED)
 	var run := RunState.new()
@@ -227,7 +273,7 @@ class ReadoutRig:
 	## The run whose seed and day the readout names, made for this rig alone.
 	var run := RunState.new()
 
-	func _init(t, config: RunConfig) -> void:
+	func _init(t: TestRunner, config: RunConfig) -> void:
 		t.add_child(layer)
 		layer.add_child(label)
 		var camera := Camera2D.new()
@@ -237,6 +283,7 @@ class ReadoutRig:
 		t.add_child(stroller)
 		stroller.set_physics_process(false)
 		baby.name = "Baby"
+		baby.use_bus(EventBus)
 		stroller.add_child(baby)
 		baby.set_physics_process(false)
 		t.add_child(day)
@@ -255,11 +302,12 @@ class ReadoutRig:
 		day.free()
 		stroller.free()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_a_boot_builds_its_city_on_the_map_it_is_handed(t)
 	await _test_an_authored_scenes_map_wins_over_the_map_source(t)
 	await _test_a_boot_gives_the_day_its_configured_length(t)
 	await _test_main_hands_the_baby_the_world_it_puts_her_in(t)
+	await _test_main_connects_her_release_to_the_controls(t)
 	await _test_main_binds_the_family_before_the_first_draw(t)
 	await _test_the_still_watch_writes_into_the_boots_run_log(t)
 	await _test_a_placed_player_keeps_room_limits(t)
@@ -348,33 +396,33 @@ func _instance(words: Array, calls: Calls) -> Node2D:
 
 ## Puts a configured `main` in the tree and lets real frames pass until its boot has finished, so
 ## the run, the day and the title are built.
-func _enter(t, main: Node2D) -> void:
+func _enter(t: TestRunner, main: Node2D) -> void:
 	t.add_child(main)
 	await Boot.until_booted(t, main, true)
 
 ## `home`, when given, stands for the tree's root the boot parks its sitting in before a reload and
 ## takes it from at boot (`main.use_sitting_home()`).
-func _boot(t, words: Array, calls: Calls, home: Node = null) -> Node2D:
+func _boot(t: TestRunner, words: Array, calls: Calls, home: Node = null) -> Node2D:
 	var main := _instance(words, calls)
 	if home:
 		main.use_sitting_home(home)
 	await _enter(t, main)
 	return main
 
-func _shut(t, main: Node2D) -> void:
+func _shut(t: TestRunner, main: Node2D) -> void:
 	t.get_tree().paused = false
 	main.free()
 
 ## A press on the title's button `button_name` ("Left", "Right", "Tap"), pushed through the viewport
 ## where the layout really draws it, and the frames the tap's acknowledgement takes.
-func _press_on_the_title(t, main: Node2D, button_name: String) -> void:
+func _press_on_the_title(t: TestRunner, main: Node2D, button_name: String) -> void:
 	var title := _one(main, "TitleScreen")
 	await UI.frames(t)
 	UI.push(title, UI.touch_at(UI.centre(UI.button(title, button_name)), true))
 	await UI.frames(t)
 
 ## What a player's keys on the title end up as: a run started by a key, in tap mode.
-func _start_by_key(t, main: Node2D) -> void:
+func _start_by_key(t: TestRunner, main: Node2D) -> void:
 	_one(main, "TitleScreen").start_requested.emit(
 			ControlsMode.Mode.TAP, true, ControlsMode.Side.LEFT)
 	await UI.frames(t)
@@ -395,7 +443,7 @@ func _config(words: Array, debug_build := true, query := "") -> RunConfig:
 ## stands on the doorstep before she exists and is freed once hers stands where it stood; the
 ## viewport's current camera is then hers, on her, with her normal smoothing, before any frame has
 ## smoothed it.
-func _check_boot_camera_handoff(t, main: Node2D, interpolated: bool) -> void:
+func _check_boot_camera_handoff(t: TestRunner, main: Node2D, interpolated: bool) -> void:
 	var player := _one(main, "Stroller") as Stroller
 	var camera: Camera2D = player.get_node("Camera2D")
 	print("CAMERA_HANDOFF interpolated=%s player=%s screen=%s target=%s" % [interpolated,
@@ -409,7 +457,7 @@ func _check_boot_camera_handoff(t, main: Node2D, interpolated: bool) -> void:
 			% interpolated)
 	t.check(camera.position_smoothing_enabled, "boot handoff preserves normal follow smoothing")
 
-func _test_a_placed_player_keeps_room_limits(t) -> void:
+func _test_a_placed_player_keeps_room_limits(t: TestRunner) -> void:
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
 	player.set_physics_process(false)
@@ -432,7 +480,7 @@ func _test_a_placed_player_keeps_room_limits(t) -> void:
 ## A release build never assembles the readout: not into the label, and not into a hidden one. A
 ## debug build still builds it, so the gate is not just "always empty". Real frames carry the
 ## readout's own `_process()`.
-func _test_the_readout_is_not_assembled_outside_a_debug_build(t) -> void:
+func _test_the_readout_is_not_assembled_outside_a_debug_build(t: TestRunner) -> void:
 	var release := ReadoutRig.new(t, _config([], false))
 	await UI.frames(t)
 	t.check(release.label.text == "",
@@ -455,7 +503,7 @@ class DeltaTape extends Node:
 
 ## `?debug=1` (`--debug`) is read independently of the build, so a release build still assembles the
 ## readout the moment it holds. The text is re-set a few times a second, not every frame.
-func _test_the_readout_flag_shows_it_on_a_release_build(t) -> void:
+func _test_the_readout_flag_shows_it_on_a_release_build(t: TestRunner) -> void:
 	var rig := ReadoutRig.new(t, _config(["--debug"], false))
 	await UI.frames(t)
 	t.check("seed" in rig.label.text and "fps" in rig.label.text,
@@ -517,7 +565,7 @@ func _test_the_readout_flag_shows_it_on_a_release_build(t) -> void:
 
 ## The note `?debug=1` adds exists only when the flag holds; an ordinary debug build without it gets
 ## none.
-func _test_the_debug_mode_note_only_exists_when_requested(t) -> void:
+func _test_the_debug_mode_note_only_exists_when_requested(t: TestRunner) -> void:
 	var plain := ReadoutRig.new(t, _config([], true))
 	t.check(plain.readout.get_node_or_null("DebugModeNote") == null,
 			"no note is built at all when the flag was not asked for")
@@ -533,7 +581,7 @@ func _test_the_debug_mode_note_only_exists_when_requested(t) -> void:
 ## parented under the readout's own layer, **off by default**, unlike the readout it sits under
 ## *(2026-09-15, the player: "spike view should be independent of debug layer 4 it should be its
 ## own debug layer and turned off by default unless --spikes is set".)*
-func _test_the_frame_graph_only_exists_when_requested(t) -> void:
+func _test_the_frame_graph_only_exists_when_requested(t: TestRunner) -> void:
 	var none := ReadoutRig.new(t, _config([], false))
 	t.check(none.graph() == null, "no graph is built at all when neither flag was asked for")
 	none.free_all()
@@ -549,7 +597,7 @@ func _test_the_frame_graph_only_exists_when_requested(t) -> void:
 ## The boot policy with the command line taken out of it: `--spikes` alone starts the graph on,
 ## `--layers` naming 6 does the same, and neither leaves it off. Driven through the configuration
 ## the readout is handed.
-func _test_graph_starts_on_under_spikes_or_layers_six(t) -> void:
+func _test_graph_starts_on_under_spikes_or_layers_six(t: TestRunner) -> void:
 	var cases := [
 		[["--spikes"], true, "--spikes alone starts the graph on"],
 		[["--layers", "6"], true, "--layers naming 6 starts it on the same way, without --spikes"],
@@ -563,7 +611,7 @@ func _test_graph_starts_on_under_spikes_or_layers_six(t) -> void:
 
 ## What a player reaches: the key. `6` is the spike view; a release, not a press, does nothing; an
 ## echo does nothing, a held key being one request.
-func _test_key_six_resolves_to_the_frame_graph_layer(t) -> void:
+func _test_key_six_resolves_to_the_frame_graph_layer(t: TestRunner) -> void:
 	var rig := ReadoutRig.new(t, _config([]))
 	UI.push(rig.readout, _key(KEY_6, false))
 	t.check(not rig.readout.graph_on(), "a release, not a press, does nothing")
@@ -577,7 +625,7 @@ func _test_key_six_resolves_to_the_frame_graph_layer(t) -> void:
 ## `6` toggles the graph's own switch and visibility, independent of `4` — *(2026-09-15, the
 ## player: "spike view should be independent of debug layer 4".)* Pressing `4` first proves the two
 ## do not share a switch; pressing `6` then proves it has one of its own.
-func _test_key_six_toggles_the_graph_independent_of_four(t) -> void:
+func _test_key_six_toggles_the_graph_independent_of_four(t: TestRunner) -> void:
 	var rig := ReadoutRig.new(t, _config([]))
 	var graph := rig.graph()
 	t.check(not graph.visible, "the graph starts off")
@@ -595,7 +643,7 @@ func _test_key_six_toggles_the_graph_independent_of_four(t) -> void:
 
 ## A readout handed `--spikes` or `--layers 6` builds the graph already on; one handed neither
 ## builds it off.
-func _test_the_run_configuration_starts_the_graph(t) -> void:
+func _test_the_run_configuration_starts_the_graph(t: TestRunner) -> void:
 	for case in [[["--spikes"], true], [["--layers", "6"], true], [[], false]]:
 		var rig := ReadoutRig.new(t, _config(case[0]))
 		t.check(rig.graph().visible == case[1],
@@ -606,7 +654,7 @@ func _test_the_run_configuration_starts_the_graph(t) -> void:
 ## fills from that moment instead of picking up a stale window. *(2026-09-15: "spike recording
 ## should only be on while the layer is on. that means toggling the layer twice will lead to a
 ## blank frame array".)* The ring is fed by the readout's own frames.
-func _test_key_six_twice_empties_the_ring(t) -> void:
+func _test_key_six_twice_empties_the_ring(t: TestRunner) -> void:
 	var rig := ReadoutRig.new(t, _config([]))
 	var graph := rig.graph()
 	UI.push(rig.readout, _key(KEY_6))
@@ -627,7 +675,7 @@ func _test_key_six_twice_empties_the_ring(t) -> void:
 ## readout is told the title opens and closes (`open_the_title()`, `close_the_title()` and
 ## `show_for_the_walk()`, which `main` calls): the graph comes off with its ring kept, `4` does not
 ## move it while the title is open, and the walk brings it back with the ring as it was left.
-func _test_the_title_hides_the_graph_and_keeps_its_ring(t) -> void:
+func _test_the_title_hides_the_graph_and_keeps_its_ring(t: TestRunner) -> void:
 	var rig := ReadoutRig.new(t, _config([]))
 	var graph := rig.graph()
 	UI.push(rig.readout, _key(KEY_6))
@@ -658,7 +706,7 @@ func _test_the_title_hides_the_graph_and_keeps_its_ring(t) -> void:
 
 ## azure-puffin, #665: the title's two joystick buttons carry an "L" and an "R" so they read as
 ## different settings; the tap button carries no mark.
-func _test_the_title_joystick_buttons_carry_l_and_r(t) -> void:
+func _test_the_title_joystick_buttons_carry_l_and_r(t: TestRunner) -> void:
 	var run := RunState.new()
 	var title: TitleScreen = TITLE_SCREEN_SCENE.instantiate()
 	title.use_run(run)
@@ -681,7 +729,7 @@ func _test_the_title_joystick_buttons_carry_l_and_r(t) -> void:
 ## over the title screen, so it is on and hidden behind it, `4` and `6` do not bring it out, and
 ## the walk shows it; and `--no-focus-pause` (which `--screenshot` implies), under which losing
 ## focus opens no pause. Also the boot's camera handoff, with interpolation on.
-func _test_a_left_joystick_press_on_the_title_sets_the_controls_mode(t) -> void:
+func _test_a_left_joystick_press_on_the_title_sets_the_controls_mode(t: TestRunner) -> void:
 	var interpolated: bool = t.get_tree().physics_interpolation
 	t.get_tree().physics_interpolation = true
 	var calls := Calls.new()
@@ -730,7 +778,7 @@ func _test_a_left_joystick_press_on_the_title_sets_the_controls_mode(t) -> void:
 	_shut(t, main)
 	seat.end()
 
-func _test_a_right_joystick_press_on_the_title_sets_the_controls_mode(t) -> void:
+func _test_a_right_joystick_press_on_the_title_sets_the_controls_mode(t: TestRunner) -> void:
 	var interpolated: bool = t.get_tree().physics_interpolation
 	t.get_tree().physics_interpolation = false
 	var calls := Calls.new()
@@ -753,7 +801,7 @@ func _test_a_right_joystick_press_on_the_title_sets_the_controls_mode(t) -> void
 ## rig's default. A first boot's right joystick press is that answer, and its won day 14's continue
 ## is the hand-over, which parks the sitting in a home of the test's own standing for the tree's
 ## root; the boot standing for the reload is handed only that home and takes the sitting from it.
-func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
+func _test_the_title_choice_survives_the_handover_to_the_escape(t: TestRunner) -> void:
 	var seat := Seat.new(t)
 	var home := seat.home
 	var run := seat.run
@@ -798,7 +846,7 @@ func _test_the_title_choice_survives_the_handover_to_the_escape(t) -> void:
 ## is parked in a home of the test's own standing for the tree's root.
 ## The first boot plays that run and day 14's hand-over reloads; the boot standing for the reload,
 ## handed only the home, opens on the escape the run was left in.
-func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t) -> void:
+func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t: TestRunner) -> void:
 	var home := Node.new()
 	t.add_child(home)
 	var sitting := Sitting.new()
@@ -836,7 +884,7 @@ func _test_a_sittings_own_run_crosses_the_reload_into_the_next_boot(t) -> void:
 ## the tree running behind it, a run started by a key, a played day (the walk's tick), the focus
 ## notifications over each screen, day 14's hand-over, and the ending's restart and quit wiring.
 ## The run is fresh and seeded, so the same city is played on every run of the suite.
-func _test_a_session_on_one_booted_game(t) -> void:
+func _test_a_session_on_one_booted_game(t: TestRunner) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	# Day 14's hand-over parks the sitting in the seat's home rather than at the tree's root.
 	var seat := Seat.new(t)
@@ -862,7 +910,7 @@ func _test_a_session_on_one_booted_game(t) -> void:
 ## way and hands it a starting mode from the configured `--controls` word. A run with no word gets
 ## `TAP`, and a boot that opens its title starts from the rig's default even when an earlier title
 ## answered. A boot with no `--start-escape` opens on the title of a day in the city.
-func _check_a_boot_builds_the_one_control_reader(t, main: Node2D) -> void:
+func _check_a_boot_builds_the_one_control_reader(t: TestRunner, main: Node2D) -> void:
 	t.check(_all(main, "TouchControls").is_empty(), "nothing is built before _ready() runs")
 	await _enter(t, main)
 	var readers := _all(main, "TouchControls")
@@ -885,7 +933,7 @@ func _check_a_boot_builds_the_one_control_reader(t, main: Node2D) -> void:
 ## The title has nothing behind it to pause (the same reason the `pause` action itself does not open
 ## over it) and the walk's tick does not count behind it with the tree running; a key then begins
 ## the run in tap mode and the counter hears it as a key.
-func _check_the_title_then_a_key_starts_in_tap(t, main: Node2D, run: RunState) -> void:
+func _check_the_title_then_a_key_starts_in_tap(t: TestRunner, main: Node2D, run: RunState) -> void:
 	var title := _one(main, "TitleScreen") as TitleScreen
 	var pause := _one(main, "PauseScreen") as PauseScreen
 	var window := main.get_node("ReturnWindow") as ReturnWindow
@@ -914,7 +962,7 @@ func _check_the_title_then_a_key_starts_in_tap(t, main: Node2D, run: RunState) -
 ## ticks, never a drawn frame's length, so a long frame adds no play time (inbox #866 in
 ## minty-dolphin) — and the same tick runs the day's countdown. Played with real physics frames; a
 ## lag spike is a real stall of the frame.
-func _check_play_seconds_only_advance_while_the_world_moves(t, main: Node2D, run: RunState) -> void:
+func _check_play_seconds_only_advance_while_the_world_moves(t: TestRunner, main: Node2D, run: RunState) -> void:
 	var tree: SceneTree = t.get_tree()
 	var day := _one(main, "DayController") as DayController
 	var summary := _one(main, "DaySummary") as DaySummaryScript
@@ -1021,7 +1069,7 @@ func _check_play_seconds_only_advance_while_the_world_moves(t, main: Node2D, run
 
 ## Puts the screens a focus check leaves behind away: the pause closed, the summary dismissed, the
 ## tree running, and the window's own half second over.
-func _reset_the_screens(t, main: Node2D) -> void:
+func _reset_the_screens(t: TestRunner, main: Node2D) -> void:
 	(_one(main, "PauseScreen") as PauseScreen).close()
 	(_one(main, "DaySummary") as DaySummaryScript).dismiss()
 	main.get_node("ReturnWindow").end(true)
@@ -1029,7 +1077,7 @@ func _reset_the_screens(t, main: Node2D) -> void:
 
 ## Losing focus on a played day, the summary and the ending over it, the pause already open. The
 ## engine's own notification goes to the return window, which is what the OS sends.
-func _check_focus_loss(t, main: Node2D, run: RunState) -> void:
+func _check_focus_loss(t: TestRunner, main: Node2D, run: RunState) -> void:
 	var window := main.get_node("ReturnWindow") as ReturnWindow
 	var pause := _one(main, "PauseScreen") as PauseScreen
 	var summary := _one(main, "DaySummary") as DaySummaryScript
@@ -1104,7 +1152,7 @@ func _end_day_fourteen(main: Node2D, run: RunState, hard: bool, sabotage_done: b
 ## summary, because the thing that has to hold is an *omission* — that
 ## `run.calendar.finish_day()` is not called — and an omission is only visible where the call
 ## would have been.
-func _check_a_won_day_fourteen_hands_over(t, main: Node2D, calls: Calls, run: RunState) -> void:
+func _check_a_won_day_fourteen_hands_over(t: TestRunner, main: Node2D, calls: Calls, run: RunState) -> void:
 	var reloads_before := calls.reloads.size()
 	_end_day_fourteen(main, run, false, true)
 	t.check(run.header.ending == GameEnums.Ending.NONE,
@@ -1144,7 +1192,7 @@ func _check_a_won_day_fourteen_hands_over(t, main: Node2D, calls: Calls, run: Ru
 ## ever check that they emit the signal, never that anything downstream is listening. The neutral
 ## ending day 14 just put on screen gets each screen's output signal emitted, and the reload and
 ## the quit it would take are counted: each reaches the one thing that means it.
-func _check_the_summary_and_pause_restart_signals_are_both_connected(t, main: Node2D,
+func _check_the_summary_and_pause_restart_signals_are_both_connected(t: TestRunner, main: Node2D,
 		calls: Calls, run: RunState) -> void:
 	var summary := _one(main, "DaySummary") as DaySummaryScript
 	var pause := _one(main, "PauseScreen") as PauseScreen
@@ -1193,7 +1241,7 @@ func _ground_of(city: City) -> SceneryGround:
 ## once a frame through the rendering server, which nothing in this synchronous headless suite
 ## steps. The check reads the actual static `TileMapLayer` cells plus the independently drawn
 ## south-water cells rather than re-deriving what should be there.
-func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
+func _test_the_unclamped_view_at_every_corner_is_painted(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(MapCache.of(SEED))
@@ -1235,7 +1283,7 @@ func _test_the_unclamped_view_at_every_corner_is_painted(t) -> void:
 ## The trailer overview grows the finite city by one authored landscape margin. Its added east and
 ## west columns are forest, while the north and south bands own their corners and the bridge's
 ## road carries on to any depth.
-func _test_the_overview_is_landscape_to_every_edge(t) -> void:
+func _test_the_overview_is_landscape_to_every_edge(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(MapCache.of(SEED))
@@ -1279,7 +1327,7 @@ func _test_the_overview_is_landscape_to_every_edge(t) -> void:
 
 ## `--no-focus-pause` is parsed from the command line and the page's query into the run's
 ## configuration, which is what `main` reads.
-func _test_no_focus_pause_from_args(t) -> void:
+func _test_no_focus_pause_from_args(t: TestRunner) -> void:
 	t.check(not _config([]).no_focus_pause,
 			"no command-line modifier leaves focus loss pausing the game")
 	t.check(_config(["--no-focus-pause"]).no_focus_pause, "--no-focus-pause turns it off directly")
@@ -1287,7 +1335,7 @@ func _test_no_focus_pause_from_args(t) -> void:
 			"--screenshot implies it without being told to, since a rig's window opens unfocused")
 	t.check(not _config(["--seed", "1"]).no_focus_pause, "an unrelated flag does not imply it")
 
-func _test_no_focus_pause_from_query(t) -> void:
+func _test_no_focus_pause_from_query(t: TestRunner) -> void:
 	t.check(not _config([], true, "").no_focus_pause,
 			"an absent URL parameter leaves focus loss pausing the game")
 	t.check(not _config([], true, "?nofocuspause=0").no_focus_pause,
@@ -1299,14 +1347,14 @@ func _test_no_focus_pause_from_query(t) -> void:
 # ---------------------------------------------------------------------- the return window ---
 
 ## A return window on the suite's viewport, measured on `clock`, in the tree.
-func _window(t, clock, no_focus_pause := false, rig := false) -> ReturnWindow:
+func _window(t: TestRunner, clock, no_focus_pause := false, rig := false) -> ReturnWindow:
 	var window := ReturnWindow.new()
 	window.use_clock(clock.read)
 	t.add_child(window)
 	window.setup(t.get_viewport(), no_focus_pause, rig)
 	return window
 
-func _press_accept(t) -> void:
+func _press_accept(t: TestRunner) -> void:
 	var press := InputEventAction.new()
 	press.action = &"ui_accept"
 	press.pressed = true
@@ -1316,7 +1364,7 @@ func _press_accept(t) -> void:
 ## nothing, so the press that brings the page back cannot resume the pause screen or start the day
 ## brief. Real events are pushed through the suite's own viewport; the window is measured on a clock
 ## moved past its end rather than waited out.
-func _test_return_ignores_input_for_half_a_second(t) -> void:
+func _test_return_ignores_input_for_half_a_second(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(SEED)
 	for what in [Node.NOTIFICATION_APPLICATION_FOCUS_IN, Node.NOTIFICATION_APPLICATION_RESUMED]:
@@ -1363,7 +1411,7 @@ func _test_return_ignores_input_for_half_a_second(t) -> void:
 ## moves nothing; a frame landing inside the window leaves it running and a later frame still puts
 ## input back, read off the clock each frame; and a scene reload inside the window (leaving the
 ## tree) puts it back at once, because the root viewport outlives the scene.
-func _test_return_window_always_ends(t) -> void:
+func _test_return_window_always_ends(t: TestRunner) -> void:
 	var clock := UI.FakeClock.new()
 	var window := _window(t, clock)
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
@@ -1387,7 +1435,7 @@ func _test_return_window_always_ends(t) -> void:
 ## The window opens on a return, not on the first focus at load: a focus-in with no loss before it
 ## does not arm (the v0.25.0 browser check's Space arrived inside it and was dropped), a loss then a
 ## focus-in does, and the web's `blur`/`visibilitychange`/`focus` decide the same way.
-func _test_return_window_needs_a_departure(t) -> void:
+func _test_return_window_needs_a_departure(t: TestRunner) -> void:
 	var clock := UI.FakeClock.new()
 	var window := _window(t, clock)
 	window.notification(Node.NOTIFICATION_APPLICATION_FOCUS_IN)
@@ -1414,7 +1462,7 @@ func _test_return_window_needs_a_departure(t) -> void:
 	window.free()
 
 ## A rig (`--no-focus-pause`, `--screenshot`) is never slowed by the window.
-func _test_return_window_is_off_under_the_override(t) -> void:
+func _test_return_window_is_off_under_the_override(t: TestRunner) -> void:
 	var clock := UI.FakeClock.new()
 	var override := _window(t, clock, true, false)
 	override.notification(Node.NOTIFICATION_APPLICATION_FOCUS_OUT)
@@ -1433,7 +1481,7 @@ func _test_return_window_is_off_under_the_override(t) -> void:
 ## This is also the exact set `RigLock._input()`'s own gate (`locked_out`) and `RigLock.setup()`'s
 ## window-flag/`InputMap`-erasure both key off, so a case proven here holds for all three without a
 ## live window to check them against.
-func _test_is_rig_from_args(t) -> void:
+func _test_is_rig_from_args(t: TestRunner) -> void:
 	t.check(not _config([]).is_rig, "no flags at all is a person, not a rig")
 	t.check(not _config(["--seed", "1", "--day", "9"]).is_rig,
 			"flags that only choose what she is looking at do not make it a rig")
@@ -1446,7 +1494,7 @@ func _test_is_rig_from_args(t) -> void:
 ## timer and `tools/lib_dev_flags.sh`'s `rig_kill_after_seconds()` are built on (that one mirrors
 ## this exact arithmetic against the same `RIG_QUIT_SECONDS` marker block this file's constants
 ## come from — see `tests/test_cli_help.sh` for the shell side).
-func _test_rig_quit_seconds_from(t) -> void:
+func _test_rig_quit_seconds_from(t: TestRunner) -> void:
 	var margin := DevFlags.RIG_QUIT_MARGIN_SECONDS
 	var ceiling := DevFlags.RIG_QUIT_CEILING_SECONDS
 	t.check(is_equal_approx(DevFlags.rig_quit_seconds_from(25.0, 210.0), 25.0 + margin),

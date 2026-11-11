@@ -799,14 +799,25 @@ func _add_trailer_rigs() -> void:
 	if text:
 		add_child(text)
 
-## All entry points bind the run's existing choice before the rig enters the tree or draws, and
-## hand the baby whether `--invincible` stands her excitement meter still.
+## All entry points bind the run's existing choice before the rig enters the tree or draws, hand
+## the baby the bus she reports on (the `EventBus` autoload, which the day's clock, the HUD, the run
+## log's observer and the event manager listen on) and her frame timing, and tell her when
+## `--invincible` stands her excitement meter still. Her being let out of a checkpoint's hold
+## (`Stroller.let_out_of_the_hold`) reaches the on-screen controls, which drop a heading they locked
+## in with no finger down (`TouchControls.stand_still_after_hold()`), for each of the three places
+## that make her, and nothing hears it before the controls exist.
 func _make_player() -> Stroller:
 	var player: Stroller = STROLLER.instantiate()
-	player.atlas = _sitting.atlas
-	player.is_male = _run.header.player_is_male
-	(player.get_node("Baby") as Baby).excitement_frozen = config.invincible
-	(player.get_node("Baby") as Baby).timing = _sitting.frame_timing
+	player.use_atlas(_sitting.atlas)
+	player.draw_as_father(_run.header.player_is_male)
+	var baby := player.get_node("Baby") as Baby
+	baby.use_bus(EventBus)
+	baby.use_frame_timing(_sitting.frame_timing)
+	if config.invincible:
+		baby.freeze_excitement()
+	player.let_out_of_the_hold.connect(func() -> void:
+		if _touch_controls:
+			_touch_controls.stand_still_after_hold())
 	return player
 
 ## A city node in the tree, handed the dev choices that decide how it draws and schedules itself
@@ -940,10 +951,13 @@ func _put_her_in(map: WorldMap) -> void:
 ## is live**, which is when the crowd's old lookup by that group would first have found her: not
 ## behind the title (`Stroller.stand_aside()` takes her out of the group, so a crowd handed her
 ## then would step round and bump a pram nobody sees), but at `_engage_the_day()`, and where a day
-## is walked with no title in front of it. Never taken back, as the lookup's result never was.
+## is walked with no title in front of it. Never taken back, as the lookup's result never was. With
+## her, the bus the crowd reports her bumps, a car's strike and its horn on (`Crowd.use_bus()`):
+## all three are about her, so the crowd says nothing before it has her.
 func _hand_the_crowd_her() -> void:
 	if _city and _city.crowd and _player:
 		_city.crowd.use_player(_player)
+		_city.crowd.use_bus(EventBus)
 
 ## Hands each world's events what the on-screen controls cover of the screen, for their view of what
 ## she can see (`VisibleView`, `EventManager.use_controls()`). Idempotent, and called wherever either
@@ -1755,7 +1769,7 @@ func _apply_orientation() -> void:
 	if not _player or not _touch_controls or not _hud:
 		return
 	_rotated = rotate
-	_player.set_screen_rotation(rotate)
+	ScreenOrientation.apply_to_camera(_player.camera(), rotate)
 	_touch_controls.rotated = rotate
 	# `_edge` (the screen-edge badge) is built with the first world the boot builds — see
 	# `_add_danger_edge()` — so it is null only for a script-only `main` a test drives by hand.

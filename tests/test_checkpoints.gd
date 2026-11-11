@@ -37,7 +37,7 @@ const TOLL_TOLERANCE := 1.5
 
 var _maps: Array[CityMap] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 251))
@@ -116,7 +116,7 @@ func _plan_for(map: CityMap, day: int) -> RegionPlanner.RegionPlan:
 ## Every street door stands exactly three bodies — two `checkpoint_hut` and one `checkpoint_gate`
 ## — at its own mouth; every alley door stands exactly two `checkpoint_post`, one at each mouth.
 ## Also the measurement the report asked for: doors and bodies per sampled day.
-func _test_every_door_has_its_three_bodies(t) -> void:
+func _test_every_door_has_its_three_bodies(t: TestRunner) -> void:
 	var sampled := 0
 	var total_doors := 0
 	var total_alley_doors := 0
@@ -163,7 +163,7 @@ func _test_every_door_has_its_three_bodies(t) -> void:
 ## in that alley's own rect. The check a segment-level assertion alone cannot make — see
 ## `tests/test_regions.gd`, "The check a segment-level rule cannot do" — is that a body's own
 ## `obstructs_radius` circle never reaches a *different* boundary crossing's ground either.
-func _test_door_bodies_stand_on_their_own_ground(t) -> void:
+func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 	var checked := 0
 	for pair in _sampled_days():
 		var map: CityMap = pair[0]
@@ -216,7 +216,7 @@ func _test_door_bodies_stand_on_their_own_ground(t) -> void:
 ## draws crosses the whole carriageway rather than lying along a kerb. The last one is what the
 ## picture got wrong: hung from the near post, the arm sat entirely to one side of the ground
 ## point, at the height of the road's upper kerb with the lanes open under it.
-func _test_the_boom_bars_the_carriageway(t) -> void:
+func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 	var checked := 0
 	var spans := {}
 	for pair in _sampled_days():
@@ -297,7 +297,7 @@ func _test_the_boom_bars_the_carriageway(t) -> void:
 ## boom for a `gate_state` of none) and stands in the tree until it has drawn; the picture it paints
 ## lands where the recording drawer says, and what the player sees of the boom is the opaque
 ## pixels of that picture along the cross axis, bar and posts together, so that is what is measured.
-func _drawn_boom_span(t, gate: EventScheduler.Planned) -> Vector2:
+func _drawn_boom_span(t: TestRunner, gate: EventScheduler.Planned) -> Vector2:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(EventPictures.ATLAS_GROUP)
 	var drawer := RecordingEventDrawer.new(atlas)
@@ -345,7 +345,7 @@ func _drawn_boom_span(t, gate: EventScheduler.Planned) -> Vector2:
 ## was 25.5s of the suite's ~39s, all four seeds paying for the same question. The day still runs
 ## the full `REGION_WALL_FIRST_DAY..RUN_LENGTH_DAYS` range, because *that* axis is real — a
 ## scripted-availability window is a fact about the day, not the map.
-func _test_the_three_rows_validate_and_are_never_rolled(t) -> void:
+func _test_the_three_rows_validate_and_are_never_rolled(t: TestRunner) -> void:
 	for id in ["checkpoint_hut", "checkpoint_gate", "checkpoint_post"]:
 		t.check(EventCatalogue.by_id(id) != null, "'%s' is in the catalogue" % id)
 
@@ -371,7 +371,7 @@ func _test_the_three_rows_validate_and_are_never_rolled(t) -> void:
 ## appended to the walk's plans (`WalkEvents`) in `start_day()`, the same way `wall_bodies` already is, or
 ## the whole structure is correct data nobody ever meets — see `tests/test_event_manager.gd`'s own
 ## class doc on why this suite exists at all: "the bugs that live here are wiring bugs."
-func _test_the_manager_actually_places_the_door_structure(t) -> void:
+func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
@@ -437,7 +437,7 @@ func _test_the_manager_actually_places_the_door_structure(t) -> void:
 ## than a count. A location near a door draws among the rows its ground still accepts, so it draws
 ## empty more often, while the rows it refused stay in the bag for the locations after it
 ## (`ViewBag.draw()`): the day gives up a share of its events near the doors, never most of them.
-func _test_nothing_the_day_places_reaches_into_a_doors_gap(t) -> void:
+func _test_nothing_the_day_places_reaches_into_a_doors_gap(t: TestRunner) -> void:
 	var days: Array[int] = [Tuning.REGION_WALL_FIRST_DAY, Tuning.REGION_WALL_FIRST_DAY + 4]
 	var kept := 0
 	var loose := 0
@@ -515,7 +515,7 @@ func _placed_count(plans: Array[EventScheduler.Planned]) -> int:
 # first and she follows; the walk is driven on real physics ticks, one a frame (`PhysicsTicks`),
 # and a position written to her between two of them is where the next tick finds her.
 
-func _manager(t) -> EventManager:
+func _manager(t: TestRunner) -> EventManager:
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
 	# The map is drawn in a world of its own, as a city's is (`City.build()`), which every event the
@@ -536,7 +536,7 @@ func _manager(t) -> EventManager:
 func _free_manager(manager: EventManager) -> void:
 	manager.free()
 
-func _real_stroller(t) -> Stroller:
+func _real_stroller(t: TestRunner) -> Stroller:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var stroller: Stroller = scene.instantiate()
 	t.add_child(stroller)
@@ -575,7 +575,7 @@ func _planned_instance(manager: EventManager, def: EventDef, at: Vector2, face: 
 ## A whole street door across an east-west street at (5200, 5200) — the northern hut, the gate and
 ## the southern hut, a tile apart across the street, the geometry `RegionPlanner._add_door_bodies`
 ## builds — in a manager with a real stroller. `_free_door_rig()` frees all of it.
-func _door_rig(t) -> Dictionary:
+func _door_rig(t: TestRunner) -> Dictionary:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
@@ -594,7 +594,7 @@ func _free_door_rig(rig: Dictionary) -> void:
 ## Lets the hold run its course: the manager's own ticks step every live instance (the hold's clock,
 ## `EventHold`, only runs down inside `EventInstance.step()`) and then start and release, and hers
 ## run the input lock down. `seconds` of ticks and two more, for the tick the release lands on.
-func _pass_the_hold(t, seconds: float) -> void:
+func _pass_the_hold(t: TestRunner, seconds: float) -> void:
 	await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(seconds, WAIT_SCALE) + 2,
 			PhysicsTicks.FASTER, Callable(), WAIT_SCALE)
 
@@ -602,7 +602,7 @@ func _pass_the_hold(t, seconds: float) -> void:
 ## comes out the other side, outside the band, on the same pavement lane — the mirror of where she
 ## stood, reflected through the crossing's own cross-street line and pushed clear of the hold's own
 ## trigger. See `CheckpointController._release_finished_holds()`.
-func _test_a_hut_detains_and_releases_on_the_other_side(t) -> void:
+func _test_a_hut_detains_and_releases_on_the_other_side(t: TestRunner) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
@@ -681,7 +681,7 @@ func _release_move_actions() -> void:
 ## twice. Held through (the key, the finger, still down at the release): she moves the first frame
 ## after it, in the held direction. Lifted during the hold: she has not moved a frame after it. A
 ## tap or a drag whose finger is already up when the hold lets her out counts as lifted.
-func _test_she_stands_still_when_a_hold_lets_her_out(t) -> void:
+func _test_she_stands_still_when_a_hold_lets_her_out(t: TestRunner) -> void:
 	var axis := Vector2.RIGHT
 	var centre := Vector2(4000.0, 4000.0)
 	for held_through in [true, false]:
@@ -694,6 +694,8 @@ func _test_she_stands_still_when_a_hold_lets_her_out(t) -> void:
 			manager.use_player(stroller)
 			var controls: TouchControls = _TOUCH_CONTROLS.instantiate()
 			t.add_child(controls)
+			# Her release reaches the controls as `main._make_player()` connects it.
+			stroller.let_out_of_the_hold.connect(controls.stand_still_after_hold)
 			if way == "a joystick drag's finger":
 				controls.set_mode(ControlsMode.Mode.JOYSTICK)
 			var hut := _door_instance(manager, "checkpoint_hut", centre, axis)
@@ -778,7 +780,7 @@ func _test_she_stands_still_when_a_hold_lets_her_out(t) -> void:
 ## look identical to one that measured the rule. Said against the toll instead, the guard would be
 ## asking the neighbour to be louder than a door, which is a balance decision it has no business
 ## holding.
-func _test_the_hold_charges_only_its_toll(t) -> void:
+func _test_the_hold_charges_only_its_toll(t: TestRunner) -> void:
 	# A bare world handed one `EventManager`, so a real `Baby` is driven against the same answer
 	# the game's own city gives (`WorldContext.excitement_sources_at()`, whose door rule — a hold
 	# silences everything else — is `ExcitementSources.all_at()`'s), rather than a rig that summed
@@ -848,7 +850,7 @@ func _test_the_hold_charges_only_its_toll(t) -> void:
 ## Three things have to agree, and the point of holding them together is that they are three
 ## different code paths reading one answer: the meter's own sum, what each body's `landed()` says
 ## it did, and which of them the halo would draw a rim on.
-func _test_a_boundarys_structures_charge_as_one(t) -> void:
+func _test_a_boundarys_structures_charge_as_one(t: TestRunner) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
@@ -927,7 +929,7 @@ func _test_a_boundarys_structures_charge_as_one(t) -> void:
 ## latch for **every** redetaining body whose reach covers the release point, not only the door
 ## that let her out, and the other door is exactly the case that reads as being taken straight
 ## back in.
-func _test_a_corner_of_two_doors_is_one_toll(t) -> void:
+func _test_a_corner_of_two_doors_is_one_toll(t: TestRunner) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
@@ -985,7 +987,7 @@ func _test_a_corner_of_two_doors_is_one_toll(t) -> void:
 ## (the manager's tick steps the hold and releases her in one go, so no frame is drawn between the
 ## hold's end and the release), and asserts that no tick leaves her visible at the place she went in;
 ## the tick the hold ends on has already moved her and shown her.
-func _test_she_is_never_drawn_at_the_place_she_went_in(t) -> void:
+func _test_she_is_never_drawn_at_the_place_she_went_in(t: TestRunner) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
@@ -1038,7 +1040,7 @@ func _test_she_is_never_drawn_at_the_place_she_went_in(t) -> void:
 ## its own script, it records whether `is_visible_in_tree()` already read `true` whenever a genuine
 ## `NOTIFICATION_RESET_PHYSICS_INTERPOLATION` reaches the node — the one signal a headless suite
 ## can read without a physics tick or a drawn frame to wait for.
-func _test_the_release_resets_interpolation_after_showing_her_again(t) -> void:
+func _test_the_release_resets_interpolation_after_showing_her_again(t: TestRunner) -> void:
 	var manager := _manager(t)
 	# Not `_real_stroller(t)`: the script has to be swapped **before** the scene ever enters the
 	# tree, or `_ready()` has already run against the genuine `Stroller` script and every
@@ -1088,7 +1090,7 @@ func _test_the_release_resets_interpolation_after_showing_her_again(t) -> void:
 ## ran out reaches this exact path live. Same rig and the same spy as the test above; `reset_at()`
 ## rather than a release is what is driven, from inside a live hold so there is a stale
 ## interpolated pair for it to actually collapse.
-func _test_a_day_boundary_mid_hold_resets_interpolation_after_showing_her_again(t) -> void:
+func _test_a_day_boundary_mid_hold_resets_interpolation_after_showing_her_again(t: TestRunner) -> void:
 	var manager := _manager(t)
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var stroller: Stroller = scene.instantiate()
@@ -1132,7 +1134,7 @@ func _test_a_day_boundary_mid_hold_resets_interpolation_after_showing_her_again(
 ##
 ## `tests/camera_interpolation_spy.gd` is the same hook as the body's, swapped onto the real
 ## `Camera2D` child instead.
-func _test_entering_a_hold_resets_the_cameras_interpolation_too(t) -> void:
+func _test_entering_a_hold_resets_the_cameras_interpolation_too(t: TestRunner) -> void:
 	var manager := _manager(t)
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var stroller: Stroller = scene.instantiate()
@@ -1255,7 +1257,7 @@ func _release_points(body: EventScheduler.Planned) -> Array[Vector2]:
 ## **And the same days planned without the gap are what says the sweep is not vacuous.** The run
 ## this milestone comes from was let out at 72 and crying 0.4s later, so the unguarded number has to
 ## be able to break the same bound — a sweep whose "before" also passed would be measuring nothing.
-func _test_the_ground_she_is_let_out_onto_is_survivable(t) -> void:
+func _test_the_ground_she_is_let_out_onto_is_survivable(t: TestRunner) -> void:
 	var days: Array[int] = [Tuning.REGION_WALL_FIRST_DAY, Tuning.REGION_WALL_FIRST_DAY + 4]
 	var worst_guarded := 0.0
 	var worst_unguarded := 0.0
@@ -1316,7 +1318,7 @@ func _test_the_ground_she_is_let_out_onto_is_survivable(t) -> void:
 ##   boundary is, and dropping one opens a street the partition means to hold. What makes them
 ##   survivable is that a roadblock's band costs nothing, so the wall's three add nothing to the
 ##   hut's own rate.
-func _test_the_run_that_killed_her_five_times(t) -> void:
+func _test_the_run_that_killed_her_five_times(t: TestRunner) -> void:
 	var axis := Vector2.RIGHT
 	var hut_at := Vector2(8000.0, 8000.0)
 	var hut := EventScheduler.Planned.new(EventCatalogue.by_id("checkpoint_hut"), hut_at)
@@ -1362,7 +1364,7 @@ func _test_the_run_that_killed_her_five_times(t) -> void:
 ## milestone's number, and a rig that copied it would go on passing after it moved, which is the
 ## exact shape of the defect this suite is checking. `Stroller._physics_process()` is the one place
 ## that positions the pram's shape, so the rig lets one tick of hers pass and measures the result.
-func _reach_ahead(t, stroller: Stroller, facing: Vector2) -> float:
+func _reach_ahead(t: TestRunner, stroller: Stroller, facing: Vector2) -> float:
 	stroller.facing = facing
 	await PhysicsTicks.pass_ticks(t, 1)
 	var reach := Tuning.PLAYER_BODY_RADIUS
@@ -1385,7 +1387,7 @@ func _reach_ahead(t, stroller: Stroller, facing: Vector2) -> float:
 ## against the hut's body, that place is inside the trigger.** Both approaches are checked, because
 ## the pram reaches further ahead of her along a street than across one (`Stroller.OBLIQUE_Y`
 ## foreshortens the vertical component of everything she is drawn and shaped with).
-func _test_a_stroller_stopped_against_the_hut_is_detained(t) -> void:
+func _test_a_stroller_stopped_against_the_hut_is_detained(t: TestRunner) -> void:
 	var axis := Vector2.RIGHT
 	var centre := Vector2(4800.0, 4800.0)
 	# North is out of the carriageway and onto the pavement the hut stands on; east is along the
@@ -1430,7 +1432,7 @@ func _test_a_stroller_stopped_against_the_hut_is_detained(t) -> void:
 ## conditions `_draw_checkpoint_hut()`, `_draw()` and `draw_body()` (the halo's own re-draw entry
 ## point) gate on, so asserting them here is asserting what the halo and the picture actually do
 ## without a canvas.
-func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:
+func _test_she_and_the_guard_are_gone_during_the_hold(t: TestRunner) -> void:
 	var ids: Array[String] = ["checkpoint_hut", "checkpoint_post"]
 	for id in ids:
 		var manager := _manager(t)
@@ -1466,7 +1468,7 @@ func _test_she_and_the_guard_are_gone_during_the_hold(t) -> void:
 ## The whole hold's ticks: the manager steps every live instance's own clock, starts and releases the
 ## hold, and her tick moves her camera, in the order a real tick runs them. A camera fault is
 ## visible to a check made after any of them.
-func _advance_hold(t, seconds: float, scale := 1.0) -> void:
+func _advance_hold(t: TestRunner, seconds: float, scale := 1.0) -> void:
 	await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(seconds, scale), PhysicsTicks.FASTER, Callable(), scale)
 
 ## The whole hold, end to end, against the four faults PLAYTEST-57 reported in it: *"the camera
@@ -1478,7 +1480,7 @@ func _advance_hold(t, seconds: float, scale := 1.0) -> void:
 ## street, the geometry `RegionPlanner._add_door_bodies` builds — and walks her into it from where
 ## her own body actually stops, so the approach, the trigger, the two seconds, the camera and the
 ## release are all one run rather than four checks of four pieces.
-func _test_the_whole_hold_reads_as_one_move(t) -> void:
+func _test_the_whole_hold_reads_as_one_move(t: TestRunner) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
@@ -1597,7 +1599,7 @@ func _test_the_whole_hold_reads_as_one_move(t) -> void:
 ## huts' own triggers reach past the kerb into that road, so this is also the check that a hut does
 ## not reach into the carriageway its own boom spans — see
 ## `CheckpointController._on_a_booms_carriageway()`.
-func _test_crossing_the_street_at_the_door_still_puts_her_through_it(t) -> void:
+func _test_crossing_the_street_at_the_door_still_puts_her_through_it(t: TestRunner) -> void:
 	var at_the_boom := _door_rig(t)
 	var boom_manager: EventManager = at_the_boom["manager"]
 	var boom_stroller: Stroller = at_the_boom["stroller"]
@@ -1649,7 +1651,7 @@ func _test_crossing_the_street_at_the_door_still_puts_her_through_it(t) -> void:
 ## far side, **leaving** the post's own reach re-arms it, and walking back in costs her the same
 ## hold and returns her to the original side. The two halves are the whole of the latch's contract:
 ## standing where she was let out is free, and the walk out and back is what pays again.
-func _test_walking_back_redetains_her(t) -> void:
+func _test_walking_back_redetains_her(t: TestRunner) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
@@ -1690,7 +1692,7 @@ func _test_walking_back_redetains_her(t) -> void:
 ## for its own doors *(2026-09-12: "same mechanism can be reused in the escape scene when going
 ## through doors")*, so it is checked here as a thing rather than only through the checkpoint that
 ## first needed it.
-func _test_the_release_latch(t) -> void:
+func _test_the_release_latch(t: TestRunner) -> void:
 	var latch := ReleaseLatch.new()
 	t.check(not latch.holds(), "a fresh latch holds nothing")
 
@@ -1717,7 +1719,7 @@ func _test_the_release_latch(t) -> void:
 ## second conversation — restated here beside the redetaining rows so the new gate in
 ## `CheckpointController.check_detentions()` (`not instance.def.redetains and
 ## instance.has_chatted()`) is checked against both branches in the same suite.
-func _test_the_chatting_mother_still_detains_once(t) -> void:
+func _test_the_chatting_mother_still_detains_once(t: TestRunner) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
@@ -1750,7 +1752,7 @@ func _test_the_chatting_mother_still_detains_once(t) -> void:
 ## same way a real car still exercises the real `Crowd._stop_for_gates()`/`CarStrategy._give_way()`
 ## machinery `_test_a_car_can_always_stop_for_a_zebra_it_can_see` trusts for the zebra. Reports the
 ## stop duration and the pass, per the milestone's own request.
-func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t) -> void:
+func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
@@ -1818,7 +1820,7 @@ func _test_a_car_stops_at_a_closed_gate_and_passes_once_it_opens(t) -> void:
 ## both positions: no hold starts at the gate or at either hut beside it, the body is solid while
 ## the arm is down and not while it is up — and a hut still takes her in from its own sidewalk, so
 ## the toll is where the guard is.
-func _test_the_boom_never_inspects_her(t) -> void:
+func _test_the_boom_never_inspects_her(t: TestRunner) -> void:
 	var rig := _door_rig(t)
 	var manager: EventManager = rig["manager"]
 	var stroller: Stroller = rig["stroller"]
@@ -1857,7 +1859,7 @@ func _test_the_boom_never_inspects_her(t) -> void:
 ## keeps a raised gate up while any of her rig is under it, as it does for a car within a length,
 ## and lowers it the moment the road and she are both clear. Driven by the crowd's own rig tick,
 ## `Crowd.step()`, which runs it with the rest of the tick's first half.
-func _test_the_arm_never_comes_down_on_her(t) -> void:
+func _test_the_arm_never_comes_down_on_her(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
@@ -1889,7 +1891,7 @@ func _test_the_arm_never_comes_down_on_her(t) -> void:
 ## cars must leave it exactly as long. Drives her into the hut along its own sidewalk with the
 ## door's real gate beside it marked raised and asserts the inspection still starts and still
 ## runs its full length.
-func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t) -> void:
+func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t: TestRunner) -> void:
 	var manager := _manager(t)
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
@@ -1921,7 +1923,7 @@ func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t) -> void:
 ## a door day — stood up live in a real `City`'s manager, with a real stroller. A real city because
 ## what a walk under the boom sets off is added to it like any unplanned event, and asks its map for
 ## walkable ground.
-func _street_door_rig(t) -> Dictionary:
+func _street_door_rig(t: TestRunner) -> Dictionary:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(BASE_SEED)
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
@@ -1977,7 +1979,7 @@ func _walks_under(told: Array[String]) -> int:
 ## or not — nothing asks the arm — and each crossing counts; standing short of it does not. The
 ## hut's own inspection, whose release sets her down across the same line, is a teleport and not a
 ## walk, so it counts nothing.
-func _test_a_walk_under_the_boom_is_seen(t) -> void:
+func _test_a_walk_under_the_boom_is_seen(t: TestRunner) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
 	var walks_told: Array[String] = []
@@ -2031,13 +2033,13 @@ func _stand_for(rig: Dictionary, seconds: float) -> void:
 ## guard is enough"; inbox #788 in minty-lemur, the player: "The actual crossing will start the timer and if the
 ## player goes back no charge happens but if they stay crossed the charge will start. Warning
 ## starts when the player is crossing".)* Walking up to the raised boom, nobody raises his hand. The
-## frame she crosses, the guard at the hut across the road from her raises his (`guard_warns_her`),
-## counted once on the page; for `CheckpointController.CROSSING_WARNING` nobody comes; back across the line
+## frame she crosses, the guard at the hut across the road from her raises his
+## (`EventInstance.is_its_guard_warning()`), counted once on the page; for `CheckpointController.CROSSING_WARNING` nobody comes; back across the line
 ## before it runs, it is called off and nobody comes after it either. Staying across, once it has
 ## run a `door_guard` steps out of the wall of that hut, on her side of the line, charging from his
 ## first frame, while the hut's own guard stays at his post; a second walk under while he is after
 ## her sets nobody else on her.
-func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
+func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
 	var walks_told: Array[String] = []
@@ -2057,7 +2059,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	var far_hut := huts[1] if near_hut == huts[0] else huts[0]
 	_step_her_to(rig, lane - axis * 20.0)
 	_stand_for(rig, 0.5)
-	t.check(not near_hut.guard_warns_her and not far_hut.guard_warns_her,
+	t.check(not near_hut.is_its_guard_warning() and not far_hut.is_its_guard_warning(),
 			"walking up to the raised boom, no guard raises his hand")
 	var warned: Array[String] = []
 	var on_warned := func(id: String) -> void: warned.append(id)
@@ -2065,12 +2067,12 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	# Across, and back before the warning runs: called off.
 	_step_her_to(rig, lane + axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING * 0.5)
-	t.check(far_hut.guard_warns_her and not near_hut.guard_warns_her,
+	t.check(far_hut.is_its_guard_warning() and not near_hut.is_its_guard_warning(),
 			"the frame she crosses, the guard across the road raises his hand")
 	t.check(_door_guard_after_her(city.events) == null, "and nobody is after her yet")
 	_step_her_to(rig, lane - axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING * 2.0)
-	t.check(_door_guard_after_her(city.events) == null and not far_hut.guard_warns_her,
+	t.check(_door_guard_after_her(city.events) == null and not far_hut.is_its_guard_warning(),
 			"back across before it runs, it is called off: nobody comes, and his hand is down")
 	# Across, and staying across: the guard comes once it has run.
 	_step_her_to(rig, lane + axis * 20.0)
@@ -2108,7 +2110,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 ## other hut the farther one by then. Once the warning has run, the `door_guard` steps out of the
 ## hut whose guard warned her (`CheckpointController._crossing_hut`), not out of the one now
 ## farther away.
-func _test_the_guard_who_warned_is_the_guard_who_comes(t) -> void:
+func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
 	var gate: EventInstance = rig["gate"]
@@ -2127,7 +2129,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t) -> void:
 	_step_her_to(rig, lane - axis * 20.0)
 	_step_her_to(rig, lane + axis * 20.0)
 	_stand_for(rig, 0.5)
-	t.check(far_hut.guard_warns_her and not near_hut.guard_warns_her,
+	t.check(far_hut.is_its_guard_warning() and not near_hut.is_its_guard_warning(),
 			"crossing in the near lane, the guard across the road raises his hand")
 	var far_lane := gate.global_position - across * 60.0 + axis * 20.0
 	_step_her_to(rig, far_lane)
@@ -2154,7 +2156,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t) -> void:
 ## rather than tailing her. From a street door's far hut he steps out 32px along the street from its
 ## centre, 80px across from the near lane she crossed in; from an alley's post, 32px along, 16px to
 ## 48px across.
-func _test_the_guard_leaves_room_to_answer(t) -> void:
+func _test_the_guard_leaves_room_to_answer(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("door_guard")
 	t.check(def != null and def.pursuit != null and def.hard_fail and def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE),
 			"door_guard is a lethal pursuer that charges at once once the crossing's warning has run")
@@ -2235,7 +2237,7 @@ static func _door_guard_after_her(manager: EventManager) -> EventInstance:
 ## and stays across while the crossing's warning runs (`CheckpointController.CROSSING_WARNING`), and
 ## the guard steps out of the northern hut, `doors[0]`, the one across the road, on the east side
 ## she crossed to — the shape every test below starts from.
-func _guard_after_her_rig(t) -> Dictionary:
+func _guard_after_her_rig(t: TestRunner) -> Dictionary:
 	var rig := _door_rig(t)
 	var doors: Array[EventInstance] = []
 	doors.assign(rig["doors"])
@@ -2263,7 +2265,7 @@ func _free_guard_after_her_rig(rig: Dictionary) -> void:
 ## **The moment a hut starts holding her, a `door_guard` chasing her gives up — no catch can land
 ## during the hold or after it.** She walks up to the far hut, never the one he stepped out of, and
 ## his chase ends exactly as it does when she outruns him.
-func _test_a_huts_hold_ends_the_door_guards_chase(t) -> void:
+func _test_a_huts_hold_ends_the_door_guards_chase(t: TestRunner) -> void:
 	var rig := _guard_after_her_rig(t)
 	var manager: EventManager = rig["manager"]
 	var stroller: Stroller = rig["stroller"]
@@ -2288,7 +2290,7 @@ func _test_a_huts_hold_ends_the_door_guards_chase(t) -> void:
 
 ## **His own hut counts too.** "Any hut counts, the one he came out of included" — walking back into
 ## the hut he stepped out of is still a voluntary inspection, so it ends his chase the same way.
-func _test_a_hold_at_the_guards_own_hut_ends_it_too(t) -> void:
+func _test_a_hold_at_the_guards_own_hut_ends_it_too(t: TestRunner) -> void:
 	var rig := _guard_after_her_rig(t)
 	var manager: EventManager = rig["manager"]
 	var stroller: Stroller = rig["stroller"]
@@ -2313,7 +2315,7 @@ func _test_a_hold_at_the_guards_own_hut_ends_it_too(t) -> void:
 ## keeps chasing through a hut's hold exactly as it does today. (The escape's `masked_pursuer`
 ## follows a fixed path rather than `EventPursuit` and never carries a `def.pursuit`,
 ## so it has no give-up state to reach in the first place.)
-func _test_a_hold_does_not_end_the_roadblock_guard(t) -> void:
+func _test_a_hold_does_not_end_the_roadblock_guard(t: TestRunner) -> void:
 	var rig := _guard_after_her_rig(t)
 	var manager: EventManager = rig["manager"]
 	var stroller: Stroller = rig["stroller"]
@@ -2343,7 +2345,7 @@ func _test_a_hold_does_not_end_the_roadblock_guard(t) -> void:
 ## (`CheckpointController._end_the_guard_for_a_hold()`); the `robber_giving_chase` sent after
 ## her once she is let through day 9's door is never that guard, so stepping back into a hut
 ## with him 200px behind her starts the hold, and he keeps coming and catches her while she is held.
-func _test_a_huts_hold_does_not_end_the_robbers_chase(t) -> void:
+func _test_a_huts_hold_does_not_end_the_robbers_chase(t: TestRunner) -> void:
 	var rig := _door_rig(t)
 	var manager: EventManager = rig["manager"]
 	var stroller: Stroller = rig["stroller"]
@@ -2378,7 +2380,7 @@ func _test_a_huts_hold_does_not_end_the_robbers_chase(t) -> void:
 ## `_end_the_guard_for_a_hold()` — it fires only from a hold that has actually started, so a chase
 ## nowhere near a hut catches her as it always did, `CheckpointController.check_detentions()`
 ## running every frame beside it and finding nothing to hold her for.
-func _test_a_chase_with_no_hold_still_catches(t) -> void:
+func _test_a_chase_with_no_hold_still_catches(t: TestRunner) -> void:
 	var rig := _guard_after_her_rig(t)
 	var manager: EventManager = rig["manager"]
 	var stroller: Stroller = rig["stroller"]

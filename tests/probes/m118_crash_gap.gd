@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What walking past a car crash costs, measured rather than derived — the number
 ## `EventCatalogue.CAR_ACCIDENT_INTENSITY` is set from.
@@ -21,7 +21,7 @@ const STEP := 1.0 / 60.0
 ## Lateral sampling across the street, in px — fine enough to find the edge of a gap.
 const LANE_STEP := 2.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var worst_pass := INF
 	var best_pass := 0.0
 	var lanes_found := 0

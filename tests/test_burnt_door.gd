@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Day 8's burnt-building task stands on the building's door, and the red arrow, the contact and the
 ## acceptance point agree on it (teal-moose, playtest azure-koala finding 1: "burnt building task is
@@ -17,7 +17,7 @@ const ContactTouches := preload("res://tests/contact_touches.gd")
 const SEED := 1
 const DAY := 8
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(city)
 	city.build(CityGenerator.generate(SEED))
@@ -97,7 +97,7 @@ func tile_is_taken(city: City, tile: Vector2i) -> bool:
 
 ## Day 8 started through the real order and its mark read, so the task is placed. Reading the mark
 ## completes a step of the city's run, so the run's resistance starts over for each front.
-func _task_on_offer(t, city: City) -> ResistanceDirector:
+func _task_on_offer(t: TestRunner, city: City) -> ResistanceDirector:
 	city.run.resistance.completed_steps = []
 	city.run.resistance.failed_steps = []
 	city.run.resistance.progress = 0

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `FrameGraph`'s own arithmetic — the ring, the mean and the classification — driven with literal
 ## deltas rather than a live `Performance` reading, the same reason `tests/test_performance.gd`
@@ -9,7 +8,7 @@ extends RefCounted
 ## `FrameGraph` is a `Control`, so every instance this suite builds is freed by hand — nodes are
 ## not refcounted the way the `RefCounted` classes the rest of this file's neighbours test are.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_more_than_the_window_pushes_only_the_last_240_remain(t)
 	_test_the_mean_is_the_windows_own_mean(t)
 	_test_classification_of_an_ordinary_a_costly_and_a_lethal_frame(t)
@@ -21,7 +20,7 @@ func run(t) -> void:
 ## `FRAME_GRAPH_FRAMES` (240) pushes would leave the whole window; 300 is 60 past it, so the first
 ## 60 pushed (indices 0..59) must have aged out and the last 240 (indices 60..299) must be exactly
 ## what remains, oldest first.
-func _test_more_than_the_window_pushes_only_the_last_240_remain(t) -> void:
+func _test_more_than_the_window_pushes_only_the_last_240_remain(t: TestRunner) -> void:
 	var graph := FrameGraph.new()
 	for i in range(300):
 		graph.push(0.001 * i)
@@ -36,7 +35,7 @@ func _test_more_than_the_window_pushes_only_the_last_240_remain(t) -> void:
 
 ## Three known deltas average to a known mean — the ring holds fewer than the window's own 240, so
 ## nothing has aged out and the mean is exactly their arithmetic mean.
-func _test_the_mean_is_the_windows_own_mean(t) -> void:
+func _test_the_mean_is_the_windows_own_mean(t: TestRunner) -> void:
 	var graph := FrameGraph.new()
 	graph.push(0.010)
 	graph.push(0.020)
@@ -48,7 +47,7 @@ func _test_the_mean_is_the_windows_own_mean(t) -> void:
 ## Against the two fixed lines, whatever the window holds: 0.025s (25ms, past the 16.7ms line but
 ## short of 33.3ms) classes costly, 0.040s (40ms, past 33.3ms) classes lethal, and 0.011s (11ms,
 ## past neither) classes neither. The steady 10ms window is there to show the mean plays no part.
-func _test_classification_of_an_ordinary_a_costly_and_a_lethal_frame(t) -> void:
+func _test_classification_of_an_ordinary_a_costly_and_a_lethal_frame(t: TestRunner) -> void:
 	var graph := FrameGraph.new()
 	for i in range(10):
 		graph.push(0.010)
@@ -69,7 +68,7 @@ func _test_classification_of_an_ordinary_a_costly_and_a_lethal_frame(t) -> void:
 ## `push()`'s own gate, exercised directly rather than through `main.gd`'s call site: a graph the
 ## `4` key (or a release page that never built one) has turned off must feed nothing into the ring
 ## and queue no redraw, not merely stay invisible while quietly warming one nobody can see.
-func _test_a_hidden_graph_records_nothing(t) -> void:
+func _test_a_hidden_graph_records_nothing(t: TestRunner) -> void:
 	var graph := FrameGraph.new()
 	graph.visible = false
 	graph.push(0.016)
@@ -83,7 +82,7 @@ func _test_a_hidden_graph_records_nothing(t) -> void:
 ## yellow lines after the fact)".)* A class decided at push time cannot change afterwards, since
 ## a frame's class reads fixed lines only; what a stored class could still get wrong is falling out of
 ## step with its frame when the ring trims.
-func _test_the_classes_age_out_with_their_frames(t) -> void:
+func _test_the_classes_age_out_with_their_frames(t: TestRunner) -> void:
 	var graph := FrameGraph.new()
 	for i in range(300):
 		graph.push(0.010)
@@ -100,7 +99,7 @@ func _test_the_classes_age_out_with_their_frames(t) -> void:
 ## is on. that means toggling the layer twice will lead to a blank frame array".)* So a graph with
 ## a full window empties both arrays on `clear()`, and a push right after starts a fresh window of
 ## one rather than resuming the 240 that were there before.
-func _test_clear_empties_the_ring(t) -> void:
+func _test_clear_empties_the_ring(t: TestRunner) -> void:
 	var graph := FrameGraph.new()
 	for i in range(10):
 		graph.push(0.010)
@@ -120,7 +119,7 @@ func _layers(raw: String) -> Array[int]:
 ## `6` (the frame graph's own key) joins `5` in the list `--layers`/`?layers=` may set, on the same
 ## terms `tests/test_route_lines.gd` already holds for `5`: `4` (the readout) stays rejected even
 ## though it sits inside the numeric range the others span.
-func _test_parse_layers_accepts_six_and_still_rejects_four(t) -> void:
+func _test_parse_layers_accepts_six_and_still_rejects_four(t: TestRunner) -> void:
 	t.check(_layers("6") == [6], "6 (the spike view) is accepted on its own")
 	t.check(_layers("1,4,6") == [1, 6],
 			"4 is still dropped — the readout is never set through this flag — while 1 and 6 pass")

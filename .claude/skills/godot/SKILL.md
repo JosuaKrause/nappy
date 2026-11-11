@@ -71,6 +71,11 @@ behind an untyped name (inbox #1268 in olive-ferret; the **designing-classes** s
 Each fails the parse with "Warning treated as error", and the script fails to load, a suite as a
 `LOAD FAIL`.
 
+**A statement that does nothing is an error too**: `project.godot` raises `standalone_expression`
+the same way, so a method's name alone on a line (`crowd.clear` written for `crowd.clear()`) fails
+the parse. A name inside a condition, an argument or an assignment still parses and is not caught
+by the engine.
+
 **Code is typed wherever the language can type it, and an untyped name is never a habit**
 (inbox #1280 in olive-ferret): `src/`, the suites and their rigs, fakes and probes, and the scripts under `tools/`
 alike. A value stays a Variant only where the language cannot type it, such as the inner level of
@@ -155,6 +160,14 @@ only the deploy target can enter is a branch nobody has seen.
 
 **`--script` skips autoloads.** The test suite runs as a **scene**
 (`godot --headless --path . res://tests/tests.tscn`) because every test needs `Tuning`.
+
+**An engine question is asked with a script saved to a file, through the repository's own
+runners** (`tools/test.sh`, a probe under `tests/probes/`, `tools/check.sh`), **never by reloading a
+GDScript from source held in memory, nor by changing `debug/gdscript/warnings/*` through
+`ProjectSettings` at run time.** On 4.7.2 that combination under `-d` crashes the engine with
+signal 11 (golden-elk), and a crash can put macOS's crash dialog in front of the player; which part
+of the combination is necessary is not known. The three warnings "Types" lists are already errors
+through `project.godot`, so a script has no reason to set them.
 
 **An autoload name cannot also be a `class_name`.** That is why shared enums live in
 `src/game_enums.gd` rather than on an autoload.

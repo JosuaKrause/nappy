@@ -9,6 +9,11 @@ extends CharacterBody2D
 ##
 ## The parent/pram sources below select the complete drawing in either presentation mode.
 
+## She has been let out of a checkpoint's hold and stands still, the frame she is shown again
+## (`show_after_inspection()`): a heading the controls locked in with no finger down is dropped
+## there (`_stand_still_after_the_hold()`).
+signal let_out_of_the_hold
+
 ## Seconds a camera move that is not her walking — currently only the checkpoint's own ease onto
 ## the hut and back — takes to arrive. The move is smooth-stepped rather than linear so it reads
 ## as an ease rather than a slide or a cut; short enough that most of `EventCatalogue.CHECKPOINT_DETAIN_SECONDS`
@@ -255,17 +260,27 @@ var steering := Vector2.ZERO
 func steering_direction() -> Vector2:
 	return steering
 
-## Bound by Main before the first drawing; reset, pause and carrying never choose it again.
-var is_male := false
+## Bound by Main before the first drawing (`draw_as_father()`); reset, pause and carrying never
+## choose it again.
+var _is_male := false
+
+## Which parent she is drawn as, the father when `male` and the mother otherwise: told once by
+## `main` as it makes her, before she enters the tree and takes her parent's page (`_enter_tree()`).
+func draw_as_father(male: bool) -> void:
+	_is_male = male
 
 ## The parent page `_ready()` took a reference on, so `_exit_tree()` gives back the same one even
-## if `is_male` were ever written afterwards. Empty before she is ready, which is why releasing it
+## if `_is_male` were ever written afterwards. Empty before she is ready, which is why releasing it
 ## is safe only from `_exit_tree()`, which cannot run before `_ready()` has.
 var _parent_atlas: StringName = &""
 ## The baked atlas pages she draws from (`AtlasLibrary`), handed by `main` before she enters the
-## tree (`main._make_player()`); a stroller nobody handed one (a suite's) makes its own when she
-## first enters the tree.
+## tree (`use_atlas()`); a stroller nobody handed one (a suite's) makes its own when she first
+## enters the tree.
 var atlas: AtlasLibrary = null
+
+## The atlas pages she draws from from now on (`atlas`), handed by `main` as it makes her.
+func use_atlas(library: AtlasLibrary) -> void:
+	atlas = library
 
 ## The escape scene's carrying rig: the baby in the parent's arms instead of ahead in the pram.
 ## Set once by `main` as the escape's first world is built, before she is ever drawn; nothing ever
@@ -367,13 +382,13 @@ var _camera_smoothing_when_free := true
 ## `Building._enter_tree()` states for the same reason). Three references rather than a load:
 ## `main`'s boot has already taken every one of these pages and holds them for the life of the
 ## process, so each of these only bumps a count that proves the page is there while she draws
-## from it. **The parent is read here**, and `_exit_tree()` gives back the same one — `is_male`
+## from it. **The parent is read here**, and `_exit_tree()` gives back the same one — `_is_male`
 ## is bound before she enters the tree (`main._make_player()`) and `docs/GRAPHICS.md` holds it
 ## fixed for the run, so the two can never name different pages.
 func _enter_tree() -> void:
 	if atlas == null:
 		atlas = AtlasLibrary.new()
-	_parent_atlas = parent_atlas(is_male)
+	_parent_atlas = parent_atlas(_is_male)
 	atlas.acquire(_parent_atlas)
 	atlas.acquire(STROLLER_ATLAS)
 	atlas.acquire(INDICATOR_ATLAS)
@@ -544,12 +559,12 @@ func show_after_inspection() -> void:
 ## the next frame. A key, a finger and a joystick drag held through the hold are all still read, so
 ## they keep steering her. One lifted during the hold is already gone from `Input.get_vector()`, so
 ## she stands still. A heading a tap or a drag locked in whose finger is up is dropped by the
-## controls (`TouchControls.stand_still_after_hold()`), since its action stays pressed with nothing
-## holding it.
+## controls, since its action stays pressed with nothing holding it: she says she was let out
+## (`let_out_of_the_hold`), and whoever builds the controls connects it to them (`main`, to
+## `TouchControls.stand_still_after_hold()`).
 func _stand_still_after_the_hold() -> void:
 	velocity = Vector2.ZERO
-	if is_inside_tree():
-		get_tree().call_group(HelpText.CONTROLS_GROUP, &"stand_still_after_hold")
+	let_out_of_the_hold.emit()
 
 ## The held input as she moves by it: what `Input.get_vector()` says. Read-only, for the
 ## telemetry's blocked watch and the joystick's knob, which must show the heading she walks.
@@ -928,11 +943,11 @@ func set_camera_limits(bounds: Rect2) -> void:
 	_camera.limit_right = int(bounds.end.x)
 	_camera.limit_bottom = int(bounds.end.y)
 
-## Rotates the world in the viewport without asking the device to rotate, through her own camera —
-## `ScreenOrientation.apply_to_camera()` is the one definition of what that does to a camera, and
-## says why the world turns through a camera rather than a `CanvasLayer`.
-func set_screen_rotation(rotate: bool) -> void:
-	ScreenOrientation.apply_to_camera(_camera, rotate)
+## Her own camera, the one that follows her and shows the world while she walks: `main` turns it
+## with the screen's rotation (`ScreenOrientation.apply_to_camera()`), as it turns the boot camera
+## that stands in for it before she exists.
+func camera() -> Camera2D:
+	return _camera
 
 # ------------------------------------------------------------------ queries ---
 # Consumed by `Baby` to decide how the meters move.
@@ -1065,25 +1080,25 @@ class Pose extends RefCounted:
 func _mother_source(frame: int) -> String:
 	if carrying:
 		if _view_direction == 0 or _view_direction == 4:
-			return FATHER_CARRYING_SIDE[frame] if is_male else MOTHER_CARRYING_SIDE[frame]
+			return FATHER_CARRYING_SIDE[frame] if _is_male else MOTHER_CARRYING_SIDE[frame]
 		if _view_direction == 1 or _view_direction == 3:
-			return (FATHER_CARRYING_FRONT_DIAGONAL[frame] if is_male
+			return (FATHER_CARRYING_FRONT_DIAGONAL[frame] if _is_male
 					else MOTHER_CARRYING_FRONT_DIAGONAL[frame])
 		if _view_direction == 2:
-			return FATHER_CARRYING_FRONT[frame] if is_male else MOTHER_CARRYING_FRONT[frame]
+			return FATHER_CARRYING_FRONT[frame] if _is_male else MOTHER_CARRYING_FRONT[frame]
 		if _view_direction == 5 or _view_direction == 7:
-			return (FATHER_CARRYING_BACK_DIAGONAL[frame] if is_male
+			return (FATHER_CARRYING_BACK_DIAGONAL[frame] if _is_male
 					else MOTHER_CARRYING_BACK_DIAGONAL[frame])
-		return FATHER_CARRYING_BACK[frame] if is_male else MOTHER_CARRYING_BACK[frame]
+		return FATHER_CARRYING_BACK[frame] if _is_male else MOTHER_CARRYING_BACK[frame]
 	if _view_direction == 0 or _view_direction == 4:
-		return FATHER_SIDE[frame] if is_male else MOTHER_SIDE[frame]
+		return FATHER_SIDE[frame] if _is_male else MOTHER_SIDE[frame]
 	if _view_direction == 1 or _view_direction == 3:
-		return FATHER_FRONT_DIAGONAL[frame] if is_male else MOTHER_FRONT_DIAGONAL[frame]
+		return FATHER_FRONT_DIAGONAL[frame] if _is_male else MOTHER_FRONT_DIAGONAL[frame]
 	if _view_direction == 2:
-		return FATHER_FRONT[frame] if is_male else MOTHER_FRONT[frame]
+		return FATHER_FRONT[frame] if _is_male else MOTHER_FRONT[frame]
 	if _view_direction == 5 or _view_direction == 7:
-		return FATHER_BACK_DIAGONAL[frame] if is_male else MOTHER_BACK_DIAGONAL[frame]
-	return FATHER_BACK[frame] if is_male else MOTHER_BACK[frame]
+		return FATHER_BACK_DIAGONAL[frame] if _is_male else MOTHER_BACK_DIAGONAL[frame]
+	return FATHER_BACK[frame] if _is_male else MOTHER_BACK[frame]
 
 ## The authored pram view for the direction she is facing, as the path it is baked under.
 func _pram_source() -> String:

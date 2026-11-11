@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What the baby's influence sweep (`Baby._physics_process()`) and the events' physics step
 ## (`EventManager._physics_process()`) cost per 30/s tick, on fixed seeds and days — a headless
@@ -54,7 +54,7 @@ const EVENT_PARTS: Array[String] = ["retire", "camera", "site", "stream", "owed"
 ## The sweep's queries, then the baby's whole step.
 const SWEEP_PARTS: Array[String] = ["event_sources", "door", "crowd_sources", "baby"]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -104,6 +104,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	crowd.start_day(day, _rng("crowd", city_seed, day), start)
 	crowd.set_gates(city.streets().region_plan().gates)
 	crowd._player = rig
+	crowd.use_bus(EventBus)
 	events.use_player(rig)
 	rig.global_position = start
 	rig.velocity = Vector2.ZERO
@@ -111,6 +112,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	rig._alert_left = 0.0
 	var baby := Baby.new()
 	baby.name = "Baby"
+	baby.use_bus(EventBus)
 	rig.add_child(baby)
 	baby.set_physics_process(false)
 	# Thirty-two zero bytes rather than an empty array, which `HashingContext.update()` refuses.

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## Coverage of the actual daily offered route graph, after Main plans closures and events.
 ## This inspects generated options; it does not run a player or choose a new route.
@@ -15,7 +15,7 @@ var _ground: SceneryGround
 ## The save the boot is handed, so the player's own is never touched.
 const SCRATCH_SAVE := "user://lazy_scenery_routes_scratch.json"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var seat := Seat.new(t)
 	var booted := await seat.boot(t, SCRATCH_SAVE, [])
 	_city = Boot.city(booted.main)

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## A task scene's stretch (`docs/SCENE_RECIPES.md`, "The task scenes"): the recipe's tiles are the
 ## only ground, the void beyond is no ground and a wall, authored edits survive save/load and daily
@@ -21,7 +21,7 @@ const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
 ## Where each recipe is written and loaded, and what loading it answers.
 var _errors := RecipeErrors.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
 	var built := RecipeCityBuilder.build(data)
@@ -50,7 +50,7 @@ func run(t) -> void:
 ## fails whether it is far off or only just outside the real half-width at a close zoom (the stale
 ## `Tuning.VIEW_HALF_EXTENT` constant, 320px, would have counted it); one inside it passes at the
 ## default zoom and zoomed out.
-func _test_appeared_requires_sight(t) -> void:
+func _test_appeared_requires_sight(t: TestRunner) -> void:
 	var seen := await _sight(t, 1.0, 2)
 	t.check(seen == [0], "at the default camera zoom, an actor in view counts once it enters view: %s" % [seen])
 	var far := await _sight(t, 1.0, 36)
@@ -68,7 +68,7 @@ func _test_appeared_requires_sight(t) -> void:
 ## The exit statuses a scripted scene ends its game with: a free-standing walker (`setup.actors`) `tiles`
 ## tiles east of her on a sidewalk, a camera at `zoom` on her in a 1280x720 viewport, and the observation
 ## that the walker `appeared` by the fifth tick, left to its own ticks past the scene's half second.
-func _sight(t, zoom: float, tiles: int) -> Array[int]:
+func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 	var own_run := RunState.new()
 	own_run.start_run(4242)
 	own_run.header.day = 3
@@ -131,7 +131,7 @@ func _sight(t, zoom: float, tiles: int) -> Array[int]:
 ## cut off is ground in its saved `context`. Asked of the saved scene and of a copy with one road
 ## run hand-edited to sidewalk, which the saved context still has as road: an edit an author makes
 ## is what the scene shows, and holds here as it holds in play.
-func _test_the_stretch_is_the_only_ground(t, map: CityMap, data: Dictionary) -> void:
+func _test_the_stretch_is_the_only_ground(t: TestRunner, map: CityMap, data: Dictionary) -> void:
 	t.check(map.has_stretch() and map.stretch_active, "the scene's map shows its stretch")
 	var context := RecipeCityContext.restore(data.context)
 	_check_the_ground(t, map, data, context, "the saved scene")
@@ -154,7 +154,7 @@ func _test_the_stretch_is_the_only_ground(t, map: CityMap, data: Dictionary) -> 
 	t.check(map.stretch_active and map.tile_at(outside) == GameEnums.TileType.BUILDING,
 			"and the void is back once it is done")
 
-func _check_the_ground(t, map: CityMap, data: Dictionary, context: CityMap, label: String) -> void:
+func _check_the_ground(t: TestRunner, map: CityMap, data: Dictionary, context: CityMap, label: String) -> void:
 	var listed := {}
 	for type_name: String in data.stretch.tiles:
 		for run: Array in data.stretch.tiles[type_name]:
@@ -193,7 +193,7 @@ func _check_the_ground(t, map: CityMap, data: Dictionary, context: CityMap, labe
 ## in its saved context. A target standing on that hidden ground, nearer to her than one on the
 ## stretch by the context's walk, is the counterexample: a sweep of the raw context picks it, and the
 ## scene's real walk must pick the one on the street she can walk to.
-func _test_the_arrow_stays_on_the_stretch(t, map: CityMap) -> void:
+func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 	var raw_ground := PackedInt32Array()
 	raw_ground.resize(map.tiles.size())
 	raw_ground.fill(WalkField.UNREACHED)
@@ -254,7 +254,7 @@ func _swept(map: CityMap, targets: Array[Dictionary], ground: PackedInt32Array) 
 		field.advance(map, ground, map.tiles.size())
 	return field
 
-func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
+func _test_saved_layout_is_independent(t: TestRunner, data: Dictionary) -> void:
 	var original := RecipeCityBuilder.build(data)
 	var changed_seed := data.duplicate(true)
 	changed_seed.city.context_seed = 1
@@ -322,7 +322,7 @@ func _test_saved_layout_is_independent(t, data: Dictionary) -> void:
 ## Authored values are construction inputs, not a visual override applied after construction. The
 ## day-7 rear lot touches the two-column front lot: making its wall four rows high makes the live
 ## front roof extend four rows to meet it.
-func _test_authored_building_values_drive_live_joins(t, day_seven: Dictionary) -> void:
+func _test_authored_building_values_drive_live_joins(t: TestRunner, day_seven: Dictionary) -> void:
 	var edited := day_seven.duplicate(true)
 	var back_lot := Rect2i(90, 56, 2, 6)
 	var front_lot := Rect2i(90, 62, 2, 8)
@@ -354,7 +354,7 @@ func _test_authored_building_values_drive_live_joins(t, day_seven: Dictionary) -
 ## A stretch keeps the complete courtyard as hidden context but draws only its authored members.
 ## The first visible task-14 member therefore supplies their shared tint; the hidden context's
 ## earlier member cannot override it, and the second visible member retains its own authored roll.
-func _test_authored_partial_courtyard_controls_live_tint(t) -> void:
+func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 	var edited: Dictionary = SceneRecipe.load_file(PARTIAL_COURTYARD_SCENE).data.duplicate(true)
 	var tint_source_lot := Rect2i(118, 34, 13, 4)
 	var visible_sibling_lot := Rect2i(132, 34, 8, 4)
@@ -391,7 +391,7 @@ func _test_authored_partial_courtyard_controls_live_tint(t) -> void:
 					% [tint_source.tint_variant, visible_sibling.tint_variant])
 		city.free()
 
-func _test_the_schema(t, data: Dictionary) -> void:
+func _test_the_schema(t: TestRunner, data: Dictionary) -> void:
 	var bare := data.duplicate(true)
 	bare.erase("stretch")
 	t.check("\n".join(SceneRecipe.validate(bare)).contains("come together"),
@@ -409,7 +409,7 @@ func _test_the_schema(t, data: Dictionary) -> void:
 	t.check("\n".join(_errors.errors_of(t, crowd)).contains("authored actors"),
 			"a stretch's crowd is its listed starting population, never a rolled one")
 
-func _test_the_crowd_enters_at_the_ends(t, map: CityMap) -> void:
+func _test_the_crowd_enters_at_the_ends(t: TestRunner, map: CityMap) -> void:
 	var field := CrowdField.new(map, Vector2.ZERO)
 	field.use_stretch()
 	var ends := field.ends_of_the_stretch()
@@ -437,7 +437,7 @@ func _test_the_crowd_enters_at_the_ends(t, map: CityMap) -> void:
 ## drafting inputs make (`SceneRecipeDraft.base_of()`). Asked as a draft run asks it: a city of the
 ## witness, the tiles she walked recorded (`SceneRecipeDraft.record()`), the stretch composed
 ## (`SceneRecipeDraft.compose()`), and `stretch.tiles` read back.
-func _test_the_draft_takes_whole_streets(t, data: Dictionary) -> void:
+func _test_the_draft_takes_whole_streets(t: TestRunner, data: Dictionary) -> void:
 	var witness: CityMap = RecipeCityBuilder.build(SceneRecipeDraft.base_of(data)).map
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
@@ -468,7 +468,7 @@ func _test_the_draft_takes_whole_streets(t, data: Dictionary) -> void:
 
 ## The stretch a draft that walked `walked` (tiles, in order) and was pinned `pinned` (world points)
 ## composes for `data`'s recipe in `city`, in a run of its own on day 7.
-func _drafted(t, city: City, data: Dictionary, walked: Array[Vector2i],
+func _drafted(t: TestRunner, city: City, data: Dictionary, walked: Array[Vector2i],
 		pinned: Array[Vector2]) -> Dictionary:
 	var draft := SceneRecipeDraft.new()
 	var walker := Node2D.new()
@@ -498,7 +498,7 @@ func _listed(drafted: Dictionary) -> Dictionary:
 ## `SceneRecipeRuntime` places is already clear of every door it stands, by `MastSites.is_eligible()`
 ## alone. Asked of every street door a day plans (`RegionPlanner.plan_day()`) on the context city,
 ## from the first day with checkpoints and on the last.
-func _test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t) -> void:
+func _test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t: TestRunner) -> void:
 	var map: CityMap = RecipeCityBuilder.build({"version": 1, "name": "doors", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": 1917501}}).map
 	var points := MastSites.possible_door_points(map)
@@ -519,7 +519,7 @@ func _test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t) -> void:
 			"every one of the %d bodies of a day's street doors stands on a point a mast keeps clear of (%d do not)"
 			% [bodies, off_a_point])
 
-func _test_the_route_bag(t, map: CityMap, data: Dictionary) -> void:
+func _test_the_route_bag(t: TestRunner, map: CityMap, data: Dictionary) -> void:
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
@@ -538,7 +538,7 @@ func _test_the_route_bag(t, map: CityMap, data: Dictionary) -> void:
 	t.check("\n".join(_errors.errors_of(t, asked)).contains("round the player"),
 			"a crowd observation asks about the picture round her")
 
-func _test_the_city_draws_the_stretch_alone(t, map: CityMap) -> void:
+func _test_the_city_draws_the_stretch_alone(t: TestRunner, map: CityMap) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
 	city.build(map)

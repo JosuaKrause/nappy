@@ -24,8 +24,8 @@ var draws: Array[Dictionary] = []
 ## its `draw` signal, emitted before every `_draw()` but the one it was first seen in, counts them.
 var _passes := {}
 
-## What the scenery this builds lays its pictures through, handed on to it through
-## `EventScenery.drawer` in place of the one the real drawer hands; null to keep that one.
+## What the scenery this builds lays its pictures through, handed to it in
+## `EventScenery.draw_through()` in place of the one the real drawer hands; null to keep that one.
 var scenery_drawer: SceneryDrawer = null
 
 func _init(atlas: AtlasLibrary = null) -> void:
@@ -55,13 +55,18 @@ func caret(canvas: CanvasItem, at: Vector2, width: float, colour: Color) -> void
 func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
 		band: Rect2) -> EventScenery:
 	var built := super(picture, extent, anchor, shadow, band)
-	if scenery_drawer != null:
-		built.drawer = scenery_drawer
 	draws.append({"canvas": built, "kind": &"scenery", "picture": picture, "foot": anchor,
 		"size": extent, "rect": Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent),
 		"mirrored": false, "colour": Color.WHITE, "band": band, "pass": 0,
 		"frame": Engine.get_process_frames()})
 	return built
+
+## The scenery's drawer is this one's `scenery_drawer` when a test hands one, handed through the
+## same `EventScenery.draw_through()` call the real drawer makes.
+##
+## Overrides EventDrawer._scenery_drawer.
+func _scenery_drawer() -> SceneryDrawer:
+	return scenery_drawer if scenery_drawer != null else super()
 
 func _record(canvas: CanvasItem, kind: StringName, picture: String, rect: Rect2, foot: Vector2,
 		size: Vector2, mirrored: bool, colour: Color, band := Rect2()) -> void:

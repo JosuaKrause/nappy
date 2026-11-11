@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
+@warning_ignore_start("unsafe_property_access")
 extends RefCounted
 ## M202, a rig's own presses reach the game: a rig's lock-out (`RigLock._input()`) marks every
 ## event handled while `locked_out`, which is exactly the state every `--press` run is in —
@@ -23,7 +23,7 @@ class Catcher extends Node:
 	func _unhandled_input(event: InputEvent) -> void:
 		seen.append(event)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t)
 	await _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out(t)
 	_test_the_gate_does_nothing_once_the_rig_unlocks(t)
@@ -35,7 +35,7 @@ func run(t) -> void:
 ## out — both must be marked handled before `Catcher` ever sees them. `Input.flush_buffered_events()`
 ## is what makes `Input.parse_input_event()` dispatch synchronously rather than queue for a frame
 ## this suite never runs.
-func _test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t) -> void:
+func _test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t: TestRunner) -> void:
 	var gate := RigLock.new()
 	t.add_child(gate)
 	var catcher := Catcher.new()
@@ -63,7 +63,7 @@ func _test_a_real_key_and_pointer_press_are_swallowed_while_locked_out(t) -> voi
 ## the rig the game builds for `--press pause 0 --press key:r 1` (`AutoScreenshot.from_config()`),
 ## standing in the tree on a clock the suite moves, so a regression in the tagging itself, not only
 ## in this suite's idea of it, would fail here.
-func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out(t) -> void:
+func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out(t: TestRunner) -> void:
 	var gate := RigLock.new()
 	t.add_child(gate)
 	var catcher := Catcher.new()
@@ -103,7 +103,7 @@ func _test_both_forms_of_a_taps_press_reach_the_unhandled_phase_while_locked_out
 ## The gate off (a plain, unlocked run) has nothing to prove about tagging: every event, real or
 ## the rig's own, already reaches the unhandled phase, so this is what says the two tests above are
 ## about the lockout and not about `Catcher` catching everything regardless.
-func _test_the_gate_does_nothing_once_the_rig_unlocks(t) -> void:
+func _test_the_gate_does_nothing_once_the_rig_unlocks(t: TestRunner) -> void:
 	var gate := RigLock.new()
 	t.add_child(gate)
 	var catcher := Catcher.new()
@@ -130,7 +130,7 @@ func _test_the_gate_does_nothing_once_the_rig_unlocks(t) -> void:
 ## `RigLock._exit_tree()` putting the bindings back. `setup()` is called twice, since a second call
 ## finds the bindings already empty and must not record that over the real ones; that half fails
 ## without `_erase_real_input()` recording an action only the first time.
-func _test_the_lock_gives_the_bindings_back_when_freed(t) -> void:
+func _test_the_lock_gives_the_bindings_back_when_freed(t: TestRunner) -> void:
 	var before := _bindings()
 	t.check(not (before.get(&"move_right", []) as Array).is_empty(),
 			"the keys are bound when this starts, so the comparison below is not of two empty maps")

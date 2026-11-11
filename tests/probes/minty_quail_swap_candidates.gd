@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What day 13's two blocking beats could replace**: the blocking bodies the day's plan placed,
 ## sorted by where they stand against the day's routes, so the swap a beat makes during the walk
@@ -19,7 +18,7 @@ const DAY := 13
 const SPOTS := 10
 const REACHES: Array[float] = [900.0, 1300.0, 1700.0]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var asked := 0
 	for seed_value in SEEDS:
 		var city := _start(t, seed_value)
@@ -118,7 +117,7 @@ func _route_tiles(map: CityMap, corridor: Corridor) -> Array[Vector2i]:
 				found.append(tile)
 	return found
 
-func _start(t, seed_value: int) -> City:
+func _start(t: TestRunner, seed_value: int) -> City:
 	var spec := DaySpec.for_day(DAY)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	city.run.header.day = DAY

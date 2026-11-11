@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The behaviours an event is composed of (`EventBehaviours.compose()`): that each one's own state
 ## survives a stream-out — saved off one instance (`save_behaviours()`), put
@@ -8,7 +8,7 @@ extends RefCounted
 
 const STEP := 0.1
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_pursuit_round_trips(t)
 	_test_the_masked_mans_warning_round_trips(t)
 	_test_the_masked_man_waits_again_once_she_leaves_after_his_warning_ran(t)
@@ -52,7 +52,7 @@ func _round_trip(t: TestRunner, first: EventInstance, what: String, behaviour: S
 
 # -------------------------------------------------------------------- pursuit ---
 
-func _test_the_pursuit_round_trips(t) -> void:
+func _test_the_pursuit_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
@@ -75,7 +75,7 @@ func _test_the_pursuit_round_trips(t) -> void:
 
 ## Stood inside his run distance as he notices her, he runs once his warning has run, and one
 ## streamed out half way through it runs on the same tick as one that never left.
-func _test_the_masked_mans_warning_round_trips(t) -> void:
+func _test_the_masked_mans_warning_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("masked_pursuer")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(0.0, -600.0)])
 	var her := Vector2(def.notice.runs_within - 20.0, 0.0)
@@ -104,7 +104,7 @@ func _test_the_masked_mans_warning_round_trips(t) -> void:
 
 ## His warning, run out with her outside his run distance, is still called off by her leaving his
 ## notice: he waits again rather than standing warning for ever.
-func _test_the_masked_man_waits_again_once_she_leaves_after_his_warning_ran(t) -> void:
+func _test_the_masked_man_waits_again_once_she_leaves_after_his_warning_ran(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("masked_pursuer")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(0.0, -600.0)])
 	var instance_where := WhereSheIs.nowhere()
@@ -121,7 +121,7 @@ func _test_the_masked_man_waits_again_once_she_leaves_after_his_warning_ran(t) -
 
 # ----------------------------------------------------------------------- hold ---
 
-func _test_the_hold_round_trips(t) -> void:
+func _test_the_hold_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("chatting_mother")
 	var at := Vector2(2000.0, 2000.0)
 	var first := _instance(t, def, at, PackedVector2Array([at, at + Vector2(256.0, 0.0)]))
@@ -137,7 +137,7 @@ func _test_the_hold_round_trips(t) -> void:
 
 ## Built by hand on both, as `_ready()` builds them in the tree, and once they have flown: a
 ## restore that put nothing back leaves the second flock where `build()` scattered it.
-func _test_the_flock_round_trips(t) -> void:
+func _test_the_flock_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
@@ -161,7 +161,7 @@ func _test_the_flock_round_trips(t) -> void:
 
 # -------------------------------------------------------------- investigation ---
 
-func _test_the_investigation_round_trips(t) -> void:
+func _test_the_investigation_round_trips(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
 	var first := _instance(t, hot)
 	first.age = 2.0
@@ -175,7 +175,7 @@ func _test_the_investigation_round_trips(t) -> void:
 
 # -------------------------------------------------------------------- officer ---
 
-func _test_the_officer_round_trips(t) -> void:
+func _test_the_officer_round_trips(t: TestRunner) -> void:
 	var first := _instance(t, EventCatalogue.by_id("policeman_giving_chase"))
 	first.age = 3.0
 	var state := {"trail": PackedVector2Array([Vector2(10.0, 0.0), Vector2(20.0, 0.0)]),
@@ -191,7 +191,7 @@ func _test_the_officer_round_trips(t) -> void:
 
 # ------------------------------------------------------------------ departure ---
 
-func _test_the_departure_round_trips(t) -> void:
+func _test_the_departure_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("charging_dog")
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
@@ -206,7 +206,7 @@ func _test_the_departure_round_trips(t) -> void:
 
 # ---------------------------------------------------------------- unreachable ---
 
-func _test_the_unreachable_dog_round_trips(t) -> void:
+func _test_the_unreachable_dog_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("loose_dog")
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
@@ -222,7 +222,7 @@ func _test_the_unreachable_dog_round_trips(t) -> void:
 
 # ----------------------------------------------------------------------- take ---
 
-func _test_the_take_round_trips(t) -> void:
+func _test_the_take_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("abduction")
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
@@ -238,7 +238,7 @@ func _test_the_take_round_trips(t) -> void:
 
 ## The route and how far along it are the event's own body, which `resume()` carries; the walk
 ## itself keeps nothing.
-func _test_the_route_walk_has_no_state_of_its_own(t) -> void:
+func _test_the_route_walk_has_no_state_of_its_own(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("dog_walker")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
 	var first := _instance(t, def, Vector2.ZERO, path)
@@ -257,7 +257,7 @@ func _test_the_route_walk_has_no_state_of_its_own(t) -> void:
 ## streamed out was not leaving, so what it saved must not put that back to the fresh default. The
 ## cut is a body put down on its road behind where it had got to, on the map both cars drive, as
 ## `tests/test_world_passability.gd` puts one down, so `resume()` itself is what begins the departure.
-func _test_a_departure_begun_on_resume_is_not_written_over(t) -> void:
+func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("police_patrol")
 	var tile := float(Tuning.TILE_SIZE)
 	var map := CityMap.new(Vector2i(24, 3))
@@ -291,7 +291,7 @@ func _test_a_departure_begun_on_resume_is_not_written_over(t) -> void:
 
 ## Through `EventManager`'s own streaming on a plan, the way a day puts it in the world: what the
 ## behaviours saved going out is on the plan, and comes back on the instance that streams in.
-func _test_the_manager_streams_a_behaviours_state(t) -> void:
+func _test_the_manager_streams_a_behaviours_state(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var at := Vector2(5000.0, 5000.0)
 	var world := WorldContext.new()
@@ -331,7 +331,7 @@ func _test_the_manager_streams_a_behaviours_state(t) -> void:
 
 ## **A roadblock's spent guard and the post he left come back across a stream-out**
 ## (`EventBarrierPost`), as only the barrier; a barrier whose guards both stand carries nothing.
-func _test_the_barrier_post_round_trips(t) -> void:
+func _test_the_barrier_post_round_trips(t: TestRunner) -> void:
 	var def := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
@@ -344,14 +344,15 @@ func _test_the_barrier_post_round_trips(t) -> void:
 	t.check(side != 0 and first.barrier_post.is_spent(), "his guard set off from his post and is spent")
 	var second := _round_trip(t, first, "barrier post", &"EventBarrierPost")
 	t.check(second.barrier_post.is_spent() and second.barrier_post.chaser_side() == side
-			and second.phase == EventInstance.Phase.SPENT and second.barrier_post.far.has_left(),
+			and second.phase == EventInstance.Phase.SPENT
+			and second.barrier_post.sides_still_posted().is_empty(),
 			"it comes back as only the barrier, his post empty and the far guard gone")
 	first.free()
 	second.free()
 
 ## A row that drives is composed of a car's driving (`EventCarDriving`), which is not driving until
 ## it is let go; nothing else is.
-func _test_a_car_is_composed_of_its_vehicle(t) -> void:
+func _test_a_car_is_composed_of_its_vehicle(t: TestRunner) -> void:
 	var patrol_where := WhereSheIs.nowhere()
 	var patrol := _instance(t, EventCatalogue.by_id("police_patrol"), Vector2.ZERO,
 			PackedVector2Array(), patrol_where)

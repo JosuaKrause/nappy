@@ -4,7 +4,7 @@ extends "res://tests/resistance_rig.gd"
 
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t)
 	_test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t)
 	_free_city()
@@ -19,7 +19,7 @@ func run(t) -> void:
 ## that very plan out when it is lit again; and the next day's and the last night's masts, planned
 ## from the scars, stand it again at its own foot, silenced. Before, the task went to the nearest of
 ## the city's six masts, 1,377px and 3,948px away on two of these cities.
-func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t) -> void:
+func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunner) -> void:
 	var added := [0]
 	var room_days := [0]
 	for seed_value: int in [SEED, 90210, 1234567]:
@@ -163,7 +163,7 @@ func _plan_the_day(day: int, seed_value: int) -> void:
 ## mark reachable only by crossing a district door passes here. That is the player's own rule
 ## (crisp-moose, statement 2: *"the alley must be next to a path. if there is no path to it it
 ## shouldn't appear"*): a door always lets her through after its hold, so it is a path.
-func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t) -> void:
+func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t: TestRunner) -> void:
 	var seeds: Array[int] = [4242, 2295276695]
 	var checked := 0
 	for seed_value in seeds:

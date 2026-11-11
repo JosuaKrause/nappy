@@ -1,9 +1,8 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Prints production-accepted sites on one explicit construction context for recipe authoring.
 ## It varies no city seed; use the resulting coordinates as reviewed pins in saved recipes.
 
-func run(_t) -> void:
+func run(_t: TestRunner) -> void:
 	var data := {"version": 1, "name": "sites", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": 1917501}}
 	var built := RecipeCityBuilder.build(data)

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for downy-otter, "a mark is never placed in an alley she cannot reach"
 ## (olive-koala, statement 9: *"also a mark should never be placed in an alley that is not reachable
@@ -23,7 +23,7 @@ const SEEDS: Array[int] = [4242, 90210, 2295276695, 314159, 271828, 555555]
 ## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var totals := {"dawn": [0, 0, 0], "moved": [0, 0, 0]}
 	for seed_value in SEEDS:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)

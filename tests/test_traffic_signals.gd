@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `TrafficSignals`' power: a lit spine junction holds its own traffic for part of the cycle, and once
 ## the power is out (what `Blackout` does, `tests/test_blackout.gd`) a light decides nothing though it
@@ -10,13 +9,13 @@ extends RefCounted
 
 const StreetMap := preload("res://tests/fixtures/street_map.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_dark_junction_is_negotiated(t)
 
 ## With no light, nothing but the crowd's own box rule decides a spine junction: a car with nobody
 ## crossing is let through on the spine exactly as on a side street, rather than held at a red that no
 ## longer shows.
-func _test_a_dark_junction_is_negotiated(t) -> void:
+func _test_a_dark_junction_is_negotiated(t: TestRunner) -> void:
 	var map := StreetMap.full()
 	var signals := TrafficSignals.new(map)
 	var junction := Vector2i(map.main_road, 3)

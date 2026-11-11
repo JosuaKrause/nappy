@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for plush-moose, "every task has a red arrow to the closest by walking
 ## distance": what choosing the arrow's target costs per tick on the three days several places
@@ -44,7 +43,7 @@ const STEP := 0.1
 ## The seed of each city's own run: the one the test runner starts the live run on.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for day in DAYS:
 		var ticks: Array[int] = []
 		var slices: Array[int] = []
@@ -120,7 +119,7 @@ func _worst_count(values: Array[int]) -> int:
 		worst = maxi(worst, v)
 	return worst
 
-func _read_the_mark(t, city: City, day: int, seed_value: int) -> ResistanceDirector:
+func _read_the_mark(t: TestRunner, city: City, day: int, seed_value: int) -> ResistanceDirector:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < day:
@@ -206,7 +205,7 @@ func _positions(city: City, director: ResistanceDirector) -> Array[Vector2]:
 		spots.append(map.tile_to_world(sidewalk[i]))
 	return spots
 
-func _rig_player(t, at: Vector2) -> Stroller:
+func _rig_player(t: TestRunner, at: Vector2) -> Stroller:
 	var player := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

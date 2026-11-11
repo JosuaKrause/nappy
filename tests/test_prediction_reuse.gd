@@ -13,7 +13,7 @@ class CountedEvent extends EventInstance:
 
 	func _init() -> void:
 		super()
-		var rim: RefCounted = excitement.rim
+		var rim: SourceRim = excitement.rim
 		excitement = Source.new(self)
 		excitement.rim = rim
 
@@ -33,7 +33,7 @@ class CountedCrowd extends CrowdAgent:
 
 	func _init() -> void:
 		super()
-		var rim: RefCounted = excitement.rim
+		var rim: SourceRim = excitement.rim
 		excitement = Source.new(self)
 		excitement.rim = rim
 
@@ -49,7 +49,7 @@ class CountedCrowd extends CrowdAgent:
 class ReferenceEvent extends EventInstance:
 	func _init() -> void:
 		super()
-		var rim: RefCounted = excitement.rim
+		var rim: SourceRim = excitement.rim
 		excitement = Source.new(self)
 		excitement.rim = rim
 
@@ -62,7 +62,7 @@ class ReferenceEvent extends EventInstance:
 class ReferenceCrowd extends CrowdAgent:
 	func _init() -> void:
 		super()
-		var rim: RefCounted = excitement.rim
+		var rim: SourceRim = excitement.rim
 		excitement = Source.new(self)
 		excitement.rim = rim
 
@@ -71,7 +71,7 @@ class ReferenceCrowd extends CrowdAgent:
 		func expected_gross_at(at: Vector2) -> float:
 			return Reference.crowd_gross(_agent, at)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_catalogue_and_mutations(t)
 	_test_crowd_mutations(t)
 	_test_live_net_and_skipped_work(t)
@@ -91,7 +91,7 @@ func _copy_definition(original: EventDef) -> EventDef:
 	copy.solid_parts = original.solid_parts
 	return copy
 
-func _event_parity(t, source: CountedEvent, at: Vector2, label: String) -> void:
+func _event_parity(t: TestRunner, source: CountedEvent, at: Vector2, label: String) -> void:
 	var expected := Reference.event_gross(source, at)
 	t.check(_same_bits(source.excitement.expected_gross_at(at), expected), label + " matches reference")
 	var runs := source.sampling_runs
@@ -99,14 +99,14 @@ func _event_parity(t, source: CountedEvent, at: Vector2, label: String) -> void:
 	if source.birds().is_empty():
 		t.check(source.sampling_runs == runs, label + " repeats without sampling")
 
-func _crowd_parity(t, source: CountedCrowd, at: Vector2, label: String) -> void:
+func _crowd_parity(t: TestRunner, source: CountedCrowd, at: Vector2, label: String) -> void:
 	var expected := Reference.crowd_gross(source, at)
 	t.check(_same_bits(source.excitement.expected_gross_at(at), expected), label + " matches reference")
 	var runs := source.sampling_runs
 	t.check(_same_bits(source.excitement.expected_gross_at(at), expected), label + " repeats exactly")
 	t.check(source.sampling_runs == runs, label + " repeats without sampling")
 
-func _test_catalogue_and_mutations(t) -> void:
+func _test_catalogue_and_mutations(t: TestRunner) -> void:
 	# What retires an instance from outside its tick (`EventManager.retire()`).
 	var retiring := EventManager.new()
 	var sampled := 0
@@ -204,7 +204,7 @@ func _test_catalogue_and_mutations(t) -> void:
 	t.check(flock_queries > 0, "flock bypass assertions exercise constructed birds")
 	retiring.free()
 
-func _test_crowd_mutations(t) -> void:
+func _test_crowd_mutations(t: TestRunner) -> void:
 	for kind: int in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 		var source := CountedCrowd.new()
 		source.kind = kind
@@ -253,7 +253,7 @@ func _test_crowd_mutations(t) -> void:
 		_crowd_parity(t, source, at, "crowd kind")
 		source.free()
 
-func _test_live_net_and_skipped_work(t) -> void:
+func _test_live_net_and_skipped_work(t: TestRunner) -> void:
 	var event := CountedEvent.new()
 	event.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO)
 	var crowd := CountedCrowd.new()
@@ -277,7 +277,7 @@ func _test_live_net_and_skipped_work(t) -> void:
 	event.free()
 	crowd.free()
 
-func _test_consumer_order(t) -> void:
+func _test_consumer_order(t: TestRunner) -> void:
 	var cached_where := WhereSheIs.nowhere()
 	var cached := CountedEvent.new()
 	var reference_where := WhereSheIs.nowhere()
@@ -335,7 +335,7 @@ static func _rim_target(rim: HaloRig.ToldRim) -> Array:
 ## The two halos run on real frames, one pass each per frame. The managers' own tick is off
 ## (`set_physics_process(false)`): what is compared is the halo's pass, and the manager's would
 ## step the sources and sweep the retired ones out of the list between the checks.
-func _test_halo_and_removal(t) -> void:
+func _test_halo_and_removal(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	var managers: Array[EventManager] = []

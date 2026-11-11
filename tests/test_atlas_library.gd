@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The baked atlases' own contract: that the pages on disk were baked from the tree the suite is
 ## running against, that every picture the membership file names for *this bake's mode* has a
@@ -22,7 +21,7 @@ const MANIFEST_PATH := "res://assets/atlases/baked/bake_manifest.json"
 ## above nought that a table that failed to load cannot pass this suite by sweeping nothing.
 const FEWEST_CREDIBLE_REGIONS := 400
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var membership := _read_json(MEMBERSHIP_PATH)
 	t.check(not membership.is_empty(), "the membership file parses")
 	_test_the_bake_is_not_stale(t)
@@ -40,7 +39,7 @@ func run(t) -> void:
 ## first, so a failure here means either that something wrote into the tree mid-run or that the
 ## suite was started by hand around the wrapper — and in both cases every other check below is
 ## asking about a page that no longer stands for the tree it is being compared with.
-func _test_the_bake_is_not_stale(t) -> void:
+func _test_the_bake_is_not_stale(t: TestRunner) -> void:
 	var manifest := _read_json(MANIFEST_PATH)
 	t.check(not manifest.is_empty(), "the bake manifest parses")
 	if manifest.is_empty():
@@ -65,7 +64,7 @@ func _test_the_bake_is_not_stale(t) -> void:
 ## out of layers and carries the whole pictures of none of them. So the expected count is this
 ## mode's two lists, and a member of the other mode's list appearing here would fail the exact
 ## count below.
-func _test_every_member_has_a_region(t, membership: Dictionary) -> void:
+func _test_every_member_has_a_region(t: TestRunner, membership: Dictionary) -> void:
 	var groups: Dictionary = membership.get("groups", {})
 	t.check(not groups.is_empty(), "the membership file lists groups")
 	var mode_key := "members_svg" if AtlasTable.baked().bake_mode() == "svg" else "members_png"
@@ -105,7 +104,7 @@ func _test_every_member_has_a_region(t, membership: Dictionary) -> void:
 ## has a transfer — is, pixel for pixel, the raster of its own source: its own PNG where the
 ## default bake finds one, its own SVG where it does not or where the bake is `--svg`. Pixels rather
 ## than a size, because a swapped picture of the same canvas would keep the size and lose the view.
-func _test_a_transfer_only_ever_stands_in_for_its_own_source(t, membership: Dictionary) -> void:
+func _test_a_transfer_only_ever_stands_in_for_its_own_source(t: TestRunner, membership: Dictionary) -> void:
 	var groups: Dictionary = membership.get("groups", {})
 	var mode_key := "members_svg" if AtlasTable.baked().bake_mode() == "svg" else "members_png"
 	var png_bake := AtlasTable.baked().bake_mode() == "png"
@@ -189,7 +188,7 @@ static func _raster_like_the_bake(path: String) -> Image:
 ## A region lies inside its page, and the one-pixel border every region owns is its own: two
 ## regions grown by `PADDING` never touch. That is what makes an extruded border true for both
 ## of a pair of neighbours rather than for whichever was written last.
-func _test_regions_do_not_overlap(t) -> void:
+func _test_regions_do_not_overlap(t: TestRunner) -> void:
 	var by_group: Dictionary = {}
 	for name: StringName in BakedRegions.names():
 		var group := AtlasTable.baked().group_of(name)
@@ -225,7 +224,7 @@ func _test_regions_do_not_overlap(t) -> void:
 ## shadow would hold a megabyte of texture to read two integers. And a library is built over that
 ## table alone: the `Sitting` builds one before any boot opens a loading window, so building it
 ## must read no page from disk, which the run log's silence about every group shows.
-func _test_geometry_needs_nothing_acquired(t) -> void:
+func _test_geometry_needs_nothing_acquired(t: TestRunner) -> void:
 	var _built := AtlasLibrary.new()
 	var pages := PageLog.new(_built)
 	var name := &"ui/pause"
@@ -247,7 +246,7 @@ func _test_geometry_needs_nothing_acquired(t) -> void:
 ## `WeakRef` to the texture itself, since a page dropped from the library's hands while the texture
 ## stays resident is exactly the bug this file exists to prevent, and through the run log's one load
 ## line and one release line, the page's life as the game writes it (`tests/atlas_page_log.gd`).
-func _test_a_page_arrives_and_leaves_with_its_references(t) -> void:
+func _test_a_page_arrives_and_leaves_with_its_references(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var name := &"ui/pause"
@@ -340,7 +339,7 @@ static func _fill_floor_percent(member_count: int) -> float:
 ## measured as worst, and a fifth the raised floor below now also catches — and failed the aspect
 ## ceiling on all ten, which is why the floor is not simply raised until everything passes: a
 ## floor a shelf-packed page can still clear is not a floor.
-func _test_pages_meet_a_fill_floor(t) -> void:
+func _test_pages_meet_a_fill_floor(t: TestRunner) -> void:
 	var shapes := _group_shapes()
 	for group: StringName in shapes.keys():
 		var shape: _GroupShape = shapes[group]
@@ -370,7 +369,7 @@ static func _aspect_ceiling(sizes: Array[Vector2i]) -> float:
 ## same reverted-packer run that proves the fill floor also proves this one: every shelf-packed
 ## page is a single strip, tens of times wider than it is tall, which is exactly the shape this
 ## check exists to catch.
-func _test_pages_meet_an_aspect_ceiling(t) -> void:
+func _test_pages_meet_an_aspect_ceiling(t: TestRunner) -> void:
 	var shapes := _group_shapes()
 	for group: StringName in shapes.keys():
 		var shape: _GroupShape = shapes[group]

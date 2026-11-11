@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **Day 13's task roadblock, found or swapped in**, on the six probe seeds: how many roadblocks the
 ## day's plan stands at dawn, how many of them stand beside her routes (on a street no route runs
@@ -22,7 +21,7 @@ const SPOTS := 10
 ## The seed of each city's own run: the one the test runner starts the live run on.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var outcomes := {}
 	var distances: Array[float] = []
 	var asked := 0
@@ -133,7 +132,7 @@ func _route_tiles(city: City) -> Array[Vector2i]:
 				found.append(tile)
 	return found
 
-func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int) -> Stroller:
+func _start_the_day(t: TestRunner, city: City, director: ResistanceDirector, seed_value: int) -> Stroller:
 	_restart_the_day(city, director, seed_value, t)
 	var player := Stroller.new()
 	var camera := Camera2D.new()
@@ -146,7 +145,7 @@ func _start_the_day(t, city: City, director: ResistanceDirector, seed_value: int
 	player.set_physics_process(false)
 	return player
 
-func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int, t = null) -> void:
+func _restart_the_day(city: City, director: ResistanceDirector, seed_value: int, t: TestRunner = null) -> void:
 	var done: Array[int] = []
 	for step in ResistanceSteps.all():
 		if step.day < DAY:

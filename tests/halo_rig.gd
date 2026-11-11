@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What the halo suites share for reading rims on real frames: a clock of the frame time the rims
 ## were handed, and the rim a body hands its source, wrapped so a test reads what `ExcitementHalo`
@@ -61,7 +61,7 @@ class ToldRim extends SourceRim:
 
 ## Wraps the rim `instance` hands its source in a `ToldRim`, and answers it.
 static func told(instance: EventInstance) -> ToldRim:
-	var rim := ToldRim.new(instance.excitement.rim as SourceRim)
+	var rim := ToldRim.new(instance.excitement.rim)
 	instance.excitement.rim = rim
 	return rim
 
@@ -92,7 +92,7 @@ class ListSet extends ExcitementSources:
 ## source's rim is swapped for a `ToldRim` that draws nothing (a plain `EntityHalo` on its body), so
 ## the selection is read the way the halo suites read what a rim was told. Answers the lit sources;
 ## the caller frees the bodies.
-static func lit_among(t, sources: Array, at: Vector2) -> Array:
+static func lit_among(t: TestRunner, sources: Array, at: Vector2) -> Array:
 	var set := ListSet.new()
 	for source in sources:
 		var body: Node = source.body

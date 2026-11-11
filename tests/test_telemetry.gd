@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The run log: its format, and the promise that having it on changes nothing.
 ##
@@ -38,7 +37,7 @@ const CityStateReads := preload("res://tests/city_state_reads.gd")
 ## The generated cities a test process builds once and hands out as copies.
 const CityMapCache := preload("res://tests/city_map_cache.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var suite_scratch := "user://telemetry-test-suite-%d" % Time.get_ticks_usec()
 	_log = Telemetry.new(suite_scratch)
 	_test_it_is_off_until_a_run_asks_for_it(t)
@@ -142,7 +141,7 @@ func _pictures(kind: String) -> PackedStringArray:
 
 ## The state the whole suite runs in. A dormant `note()` has to be a boolean check and a
 ## return — not a formatted string thrown away, and above all not a file.
-func _test_it_is_off_until_a_run_asks_for_it(t) -> void:
+func _test_it_is_off_until_a_run_asks_for_it(t: TestRunner) -> void:
 	t.check(not _log.is_active(),
 			"telemetry is dormant in the test suite unless a test turns it on")
 	t.check(_log.current_log() == null, "and there is no log to write into")
@@ -154,7 +153,7 @@ func _test_it_is_off_until_a_run_asks_for_it(t) -> void:
 ## The columns are the whole readability argument: a reader scans down the `kind` column to
 ## find every `near`, or down the time column to find what happened at 0:48. Both stop working
 ## the moment a line is formatted by hand somewhere else.
-func _test_a_line_is_a_time_a_kind_and_a_sentence(t) -> void:
+func _test_a_line_is_a_time_a_kind_and_a_sentence(t: TestRunner) -> void:
 	var log := TelemetryLog.new()
 	log.note(0.0, "start", "doorstep (52,88), facing 0°")
 	log.note(96.42, "home", "WON")
@@ -173,7 +172,7 @@ func _test_a_line_is_a_time_a_kind_and_a_sentence(t) -> void:
 ## An aggregate can always be computed from an ordered log; the order can never be recovered
 ## from an aggregate. This is the property the format exists for, so it is asserted rather
 ## than assumed.
-func _test_order_is_the_record(t) -> void:
+func _test_order_is_the_record(t: TestRunner) -> void:
 	var log := TelemetryLog.new()
 	log.header("day 3")
 	for i in 20:
@@ -187,7 +186,7 @@ func _test_order_is_the_record(t) -> void:
 
 ## Shared so that a tile written by the scheduler and a tile written by the observer read the
 ## same. Two spellings of a position in one log is two things to grep for.
-func _test_the_formatting_helpers(t) -> void:
+func _test_the_formatting_helpers(t: TestRunner) -> void:
 	t.check(RunTrace.tile(Vector2i(3, 5)) == "(3,5)", "a tile has no space in it")
 	# The city is drawn from above with +y downward, so south is *down*. Getting this backwards
 	# would put every `turn` entry in the log 180 degrees out and nothing would ever say so.
@@ -215,7 +214,7 @@ func _test_the_formatting_helpers(t) -> void:
 ## gets cannot be asserted — this repo has a tag reachable from `HEAD` (`v0.0.0`), so in practice
 ## `source_version()` always returns the tag form here, but a shallow checkout with no tags
 ## reachable is `git describe --always`'s bare-hash fallback, and neither is wrong.
-func _test_the_commit_is_recorded_or_honestly_unknown(t) -> void:
+func _test_the_commit_is_recorded_or_honestly_unknown(t: TestRunner) -> void:
 	var version := BuildInfo.source_version()
 	t.check(version != "", "a run always records something about where it came from")
 	if version == "unknown":
@@ -252,7 +251,7 @@ func _test_the_commit_is_recorded_or_honestly_unknown(t) -> void:
 ## wrong: consume one more value from the day's RNG and every event placed after it moves. So: plan every day of
 ## a run handed no trace, plan them again handed one that keeps every line, and require the two to
 ## agree exactly.
-func _test_tracing_a_day_does_not_change_it(t) -> void:
+func _test_tracing_a_day_does_not_change_it(t: TestRunner) -> void:
 	var map := CityMapCache.of(31337)
 
 	var quiet: Array[String] = []
@@ -274,7 +273,7 @@ func _test_tracing_a_day_does_not_change_it(t) -> void:
 
 ## The other hoist: `CityState._advance` names the purpose it is leaving, which means it reads the
 ## arc twice instead of once. Reading is free and must stay free.
-func _test_tracing_the_arcs_does_not_change_them(t) -> void:
+func _test_tracing_the_arcs_does_not_change_them(t: TestRunner) -> void:
 	var map := CityMapCache.of(8812)
 	var quiet := _arc_signature(map)
 	var lines: Array[String] = []
@@ -284,7 +283,7 @@ func _test_tracing_the_arcs_does_not_change_them(t) -> void:
 
 ## A day's entries have to land under that day's header, or a fourteen-day log is one
 ## undifferentiated column and the reader cannot tell day 1 from day 12.
-func _test_a_day_header_opens_a_day(t) -> void:
+func _test_a_day_header_opens_a_day(t: TestRunner) -> void:
 	_log.begin_run(0)
 	_log.begin_day(3, 1, 8812, 8813, 180.0)
 	_log.set_clock(11.3)
@@ -312,7 +311,7 @@ func _test_a_day_header_opens_a_day(t) -> void:
 ## both halves: that a clock pushed after it actually reaches the line, and that a clock pushed
 ## **before** any section is open still does not, which is the guarantee relied on and is what
 ## would hide a section that never opened.
-func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t) -> void:
+func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t: TestRunner) -> void:
 	_log.begin_run(0)
 	# No section open yet: a run that never opens one writes zeroes, which is the behaviour the
 	# escape was getting for the whole of its walk.
@@ -349,7 +348,7 @@ func _test_the_escape_opens_a_section_so_its_lines_carry_a_time(t) -> void:
 ## and `begin_day()` do. Asked through the pictures that land in the run's `auto/` folder, on a
 ## screen that can draw. That the observer's `start_section()` goes through it, and not through
 ## `set_clock(0.0)`, is `tests/test_telemetry_observer.gd`'s, asked of a log that counts the calls.
-func _test_a_retried_section_restarts_its_snapshot_schedule(t) -> void:
+func _test_a_retried_section_restarts_its_snapshot_schedule(t: TestRunner) -> void:
 	var scratch := _open_a_scratch_run("retry")
 	_log.begin_section(DaySpec.BUILDING_DAY, "Escape the building", 4242, 180.0)
 	_log.set_clock(45.0)
@@ -392,7 +391,7 @@ func _test_a_retried_section_restarts_its_snapshot_schedule(t) -> void:
 ## would still be a correct picture, and a mark that never got drawn is the failure worth catching
 ## — three of them are stated over data the generator could legitimately return empty
 ## (`precinct_spans`, closures), so those are asserted only when there is something to assert.
-func _test_the_map_picture_covers_the_city_and_marks_it(t) -> void:
+func _test_the_map_picture_covers_the_city_and_marks_it(t: TestRunner) -> void:
 	var map := _picture_map()
 	var image := TelemetryMap.render(map)
 	t.check(image.get_size() == map.size * TelemetryMap.SCALE,
@@ -421,7 +420,7 @@ func _test_the_map_picture_covers_the_city_and_marks_it(t) -> void:
 ## all the way across, so where every other street has a stripe of asphalt down its middle this one
 ## has none. Asserted across the corridor rather than by presence: the old assertion could have
 ## passed on a single blue pixel, and this one fails if the paving ever stops being paving.
-func _check_a_precinct_shows_as_paving(t, map: CityMap, image: Image) -> void:
+func _check_a_precinct_shows_as_paving(t: TestRunner, map: CityMap, image: Image) -> void:
 	var paving := Tile.ground_colour(GameEnums.TileType.SIDEWALK)
 	for span: Vector4i in map.precinct_spans:
 		var vertical := span.x == 1
@@ -450,7 +449,7 @@ func _check_a_precinct_shows_as_paving(t, map: CityMap, image: Image) -> void:
 ## blended into whatever it crosses — see `TelemetryMap.CORRIDOR_ALPHA`. A test naming one colour
 ## would have to know the ground under every cell, and would be asserting the alpha rather than
 ## the drawing.
-func _test_the_map_picture_draws_the_corridor(t) -> void:
+func _test_the_map_picture_draws_the_corridor(t: TestRunner) -> void:
 	var map := _picture_map()
 	var tree := _FixedTree.along_a_street()
 
@@ -463,7 +462,7 @@ func _test_the_map_picture_draws_the_corridor(t) -> void:
 		on_the_tree[cell] = true
 
 	var missed := 0
-	for cell in on_the_tree:
+	for cell: Vector2i in on_the_tree:
 		var tile: Vector2i = cell * ReachabilityGrid.CELL
 		var before := plain.get_pixel(tile.x * TelemetryMap.SCALE, tile.y * TelemetryMap.SCALE)
 		var after := drawn.get_pixel(tile.x * TelemetryMap.SCALE, tile.y * TelemetryMap.SCALE)
@@ -523,7 +522,7 @@ func _mark_of(role: GameEnums.BlockerRole) -> Color:
 ## split is this project's oldest and the marks were moved twice by looking: the route lines were
 ## drawn at the mark's own strength and read as corridor, and "she reached this one" was a fade
 ## before it was a pip.
-func _test_the_map_picture_marks_what_the_day_placed(t) -> void:
+func _test_the_map_picture_marks_what_the_day_placed(t: TestRunner) -> void:
 	var map := _picture_map()
 	var tree := _FixedTree.along_a_street()
 	var plans := _what_a_day_placed(map)
@@ -587,12 +586,12 @@ func _a_row(lethal: bool) -> EventDef:
 ## dictionary directly rather than by playing a day, because what is being tested is the drawing and
 ## not `TelemetryObserver.watch_met_events`, which has its own test. A plan the day never sited
 ## draws nothing.
-func _check_a_glyph_says_what_it_is(t, map: CityMap,
+func _check_a_glyph_says_what_it_is(t: TestRunner, map: CityMap,
 		plans: Array[EventScheduler.Planned]) -> void:
 	var lethal: EventScheduler.Planned = plans[0]
 	var costly: EventScheduler.Planned = plans[1]
 	var corner := Vector2i(1, 1)
-	for plan in [costly, lethal]:
+	for plan: EventScheduler.Planned in [costly, lethal]:
 		var only: Array[EventScheduler.Planned] = [plan]
 		var image := TelemetryMap.render(map, [], null, only)
 		var at := map.world_to_tile(plan.position)
@@ -625,7 +624,7 @@ func _check_a_glyph_says_what_it_is(t, map: CityMap,
 ## walk — the two claims `TelemetryObserver.watch_the_trail` makes about a sample, checked the way
 ## the corridor's own stroke is: by whether the pixel changed, since both are blended into the
 ## ground rather than painted over it.
-func _test_the_map_picture_draws_the_trail_and_distinguishes_running(t) -> void:
+func _test_the_map_picture_draws_the_trail_and_distinguishes_running(t: TestRunner) -> void:
 	var map := _picture_map()
 	# The middle of the map rather than the home or a calm area: both are drawn *after* the trail
 	# on purpose (they are the picture's fixed points) and would silently paint over a trail point
@@ -649,10 +648,10 @@ func _test_the_map_picture_draws_the_trail_and_distinguishes_running(t) -> void:
 ## event never covers: a route that ever bent would be drawn as its bounding box, and a bounding box
 ## is a plausible-looking rectangle rather than an obvious error. It is the same shape as the rest
 ## of this file — *an identity standing in for the property* — caught before it can happen.
-func _test_every_routed_event_is_a_straight_line(t) -> void:
+func _test_every_routed_event_is_a_straight_line(t: TestRunner) -> void:
 	var map := CityMapCache.of(4242)
 	var consumed: Array[String] = []
-	for day in [1, 3, 7, 14]:
+	for day: int in [1, 3, 7, 14]:
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
 				CalmAreas.of(map), MastSites.compute(map), consumed).placements():
 			if plan.path.size() < 2:
@@ -680,7 +679,7 @@ func _tile_colour(image: Image, tile: Vector2i) -> Color:
 ## Rendering is a **read**. It takes no RNG and changes nothing about the map, which is the same
 ## promise `_test_tracing_a_day_does_not_change_it` makes about the log — and it is worth its own
 ## check because this one draws from a `CityMap` that is mutable by design.
-func _test_the_map_picture_reads_the_map_and_nothing_else(t) -> void:
+func _test_the_map_picture_reads_the_map_and_nothing_else(t: TestRunner) -> void:
 	var map := _picture_map()
 	var before := map.tiles.duplicate()
 	var calm_before := map.calm_blocks.size()
@@ -698,7 +697,7 @@ func _test_the_map_picture_reads_the_map_and_nothing_else(t) -> void:
 ## press is a tool that lies about having worked. Asserted through the **log**, which is the only
 ## part of it that exists headless — there is no viewport to photograph in the suite, and that is
 ## itself the thing being relied on.
-func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
+func _test_a_picture_asked_for_by_hand_is_never_capped(t: TestRunner) -> void:
 	_log.begin_run(0)
 	_log.begin_day(1, 1, 1, 1, 180.0)
 	var log := _log.current_log()
@@ -707,7 +706,7 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 		_log.snapshot_now("press %d" % i)
 	t.check(log.recorded_lines().size() - before == TelemetryShots.PER_DAY * 2 + 1,
 			"every press writes its line, well past the heuristic's own daily cap")
-	t.check(log.recorded_lines().back().contains("shot"),
+	t.check(log.recorded_lines()[-1].contains("shot"),
 			"and the line is a shot entry")
 	_log.end_run()
 	t.check(not _log.is_active(), "and the suite is left dormant again")
@@ -718,7 +717,7 @@ func _test_a_picture_asked_for_by_hand_is_never_capped(t) -> void:
 ## one counter shared by `snapshot()`'s `auto/` and `snapshot_now()`'s `asked/`, so a picture's own
 ## number says when in the run — relative to every other picture the run took, from either folder
 ## — it was taken.
-func _test_the_shot_name_is_a_run_wide_counter_shared_by_auto_and_asked(t) -> void:
+func _test_the_shot_name_is_a_run_wide_counter_shared_by_auto_and_asked(t: TestRunner) -> void:
 	var shots := TelemetryShots.new()
 	var first := shots.next_name("asked", "-attempt1")
 	t.check(first == "001-attempt1-asked.png",
@@ -733,7 +732,7 @@ func _test_the_shot_name_is_a_run_wide_counter_shared_by_auto_and_asked(t) -> vo
 ## calendar advancing (`begin_day()`'s own note on `_day_attempts`), both keep counting rather
 ## than starting over — only the attempt suffix changes. A new day clears the day's allowance and
 ## spacing (`restart_schedule()`), never the counter; only a new run's names start over.
-func _test_the_counter_never_resets_across_a_day_or_a_retried_attempt(t) -> void:
+func _test_the_counter_never_resets_across_a_day_or_a_retried_attempt(t: TestRunner) -> void:
 	var shots := TelemetryShots.new()
 	t.check(shots.next_name("asked", "-attempt1") == "001-attempt1-asked.png",
 			"the first picture of the run")
@@ -775,7 +774,7 @@ func _test_the_counter_never_resets_across_a_day_or_a_retried_attempt(t) -> void
 ## past dusk that day asked for the exact same file and each one silently overwrote the last. A
 ## counter cannot repeat this way at all, which this checks directly by holding the clock at zero
 ## across two names and confirming the day clock genuinely never moved between them.
-func _test_a_day_clock_held_at_zero_still_gets_two_distinct_shot_names(t) -> void:
+func _test_a_day_clock_held_at_zero_still_gets_two_distinct_shot_names(t: TestRunner) -> void:
 	var scratch := _open_a_scratch_run("held-clock")
 	_log.begin_day(1, 1, 1, 1, 180.0)
 	_log.set_clock(0.0)
@@ -808,7 +807,7 @@ func _delete_recursive(path: String) -> void:
 		for file in dir.get_files():
 			DirAccess.remove_absolute("%s/%s" % [path, file])
 	DirAccess.remove_absolute(path)
-	for ancestor in [path.get_base_dir()]:
+	for ancestor: String in [path.get_base_dir()]:
 		var above := DirAccess.open(ancestor)
 		if above and above.get_files().is_empty() and above.get_directories().is_empty():
 			DirAccess.remove_absolute(ancestor)
@@ -817,7 +816,7 @@ func _delete_recursive(path: String) -> void:
 ## real run of a log over a folder of the test's own. `false` (a rig) because this is a
 ## scripted check rather than a person at the controls, the same reason `check.sh` and `shot.sh`
 ## write `rig-`.
-func _test_a_runs_files_share_one_folder(t) -> void:
+func _test_a_runs_files_share_one_folder(t: TestRunner) -> void:
 	var map := _picture_map()
 	var scratch := "user://telemetry-test-folder-%d" % Time.get_ticks_usec()
 	_use_a_log_over(scratch)
@@ -856,7 +855,7 @@ func _test_a_runs_files_share_one_folder(t) -> void:
 ## Every filename that can repeat within a run asks for its attempt's suffix, the first attempt
 ## included. Driven through a real run's `maps/` folder, where `write_map()` names the picture: a
 ## question about the attempts counted per day, answered by the files that land.
-func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void:
+func _test_the_attempt_suffix_names_every_attempt_including_the_first(t: TestRunner) -> void:
 	var map := _picture_map()
 	var scratch := "user://telemetry-test-suffix-%d" % Time.get_ticks_usec()
 	_use_a_log_over(scratch)
@@ -892,7 +891,7 @@ func _test_the_attempt_suffix_names_every_attempt_including_the_first(t) -> void
 ## same day number — `begin_day()` sees the same day twice — and `write_map()` is called
 ## once per attempt by `RunSession`. Without the attempt in the name the second call's map would
 ## overwrite the first's, which is exactly the picture worth keeping: the day that went wrong.
-func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t) -> void:
+func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(t: TestRunner) -> void:
 	var map := _picture_map()
 	var scratch := "user://telemetry-test-second-%d" % Time.get_ticks_usec()
 	_use_a_log_over(scratch)
@@ -928,7 +927,7 @@ func _test_a_second_attempt_at_a_day_writes_a_second_map_instead_of_overwriting(
 ## `TelemetryPage.asks_for_telemetry()` is the pure half of the web override, pulled out for
 ## exactly this: a test process is never a Web export, so there is no real
 ## `window.location.search` to drive it with.
-func _test_the_web_override_flag_parses_the_query(t) -> void:
+func _test_the_web_override_flag_parses_the_query(t: TestRunner) -> void:
 	t.check(TelemetryPage.asks_for_telemetry("?telemetry=1"),
 			"the leading '?' a real address bar gives is not part of the key")
 	t.check(TelemetryPage.asks_for_telemetry("telemetry=1"),
@@ -945,7 +944,7 @@ func _test_the_web_override_flag_parses_the_query(t) -> void:
 ## dev only the CI build is release.")* the web override's gate is a build type and a
 ## platform, which a test cannot fake together, so `TelemetryPage.reads_the_url()` makes that promise a truth
 ## table instead.
-func _test_reads_the_url_only_when_debug_and_web(t) -> void:
+func _test_reads_the_url_only_when_debug_and_web(t: TestRunner) -> void:
 	t.check(TelemetryPage.reads_the_url(true, true),
 			"a debug build on the web reads the query string -- the one case the flag exists for")
 	t.check(not TelemetryPage.reads_the_url(false, true),
@@ -993,7 +992,7 @@ func _steady_frames(count: int, dt: float) -> Array:
 
 ## One frame at five times the mean of the ten steady frames before it, padded out with more
 ## steady frames so the second's own `frame`/`spike` report actually closes.
-func _test_a_frame_past_twice_the_mean_writes_one_spike_line(t) -> void:
+func _test_a_frame_past_twice_the_mean_writes_one_spike_line(t: TestRunner) -> void:
 	var frames := Frames.new()
 	var deltas := _steady_frames(10, 0.02)
 	deltas.append(0.1)
@@ -1010,7 +1009,7 @@ func _test_a_frame_past_twice_the_mean_writes_one_spike_line(t) -> void:
 				"and the mean it was measured against (got '%s')" % spikes[0])
 
 ## No frame in a second of ordinary frames is ever twice the mean of its own neighbours.
-func _test_steady_frames_write_no_spike_line(t) -> void:
+func _test_steady_frames_write_no_spike_line(t: TestRunner) -> void:
 	var frames := Frames.new()
 	frames.feed(_steady_frames(55, 0.02))
 	t.check(frames.spikes().is_empty() and frames.lines.size() == 1,
@@ -1018,7 +1017,7 @@ func _test_steady_frames_write_no_spike_line(t) -> void:
 
 ## Two frames qualify in the same second — a big one, then a smaller one that still clears twice
 ## the (now higher) mean. The rate limit keeps the worse of the two, not the more recent.
-func _test_two_spikes_in_one_second_write_only_the_worse_one(t) -> void:
+func _test_two_spikes_in_one_second_write_only_the_worse_one(t: TestRunner) -> void:
 	var frames := Frames.new()
 	var deltas := _steady_frames(10, 0.02)
 	deltas.append(0.5)
@@ -1037,7 +1036,7 @@ func _test_two_spikes_in_one_second_write_only_the_worse_one(t) -> void:
 
 ## The same series as the first test, with the flag off: nothing about the frame accounting
 ## changes, but no spike line is ever written.
-func _test_no_spike_line_with_the_flag_off(t) -> void:
+func _test_no_spike_line_with_the_flag_off(t: TestRunner) -> void:
 	var frames := Frames.new()
 	var deltas := _steady_frames(10, 0.02)
 	deltas.append(0.1)
@@ -1063,7 +1062,7 @@ func _test_no_spike_line_with_the_flag_off(t) -> void:
 ## starts at nought whatever any other library in the process holds — a `City` left standing by an
 ## earlier suite holds `events` on its own library, not on this one — and the library is dropped
 ## with the test, leaving nothing behind for the suite that runs next.
-func _test_a_baked_page_says_which_moment_loaded_it(t) -> void:
+func _test_a_baked_page_says_which_moment_loaded_it(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.trace_note = _log.note
 	var group := EventPictures.ATLAS_GROUP
@@ -1169,16 +1168,16 @@ func _arc_signature(map: CityMap, trace: RunTrace = null) -> String:
 
 ## `--invincible` is noted on the day header the way the seed is, once when the day opens, never as
 ## a per-frame entry, so a log of a day that could not be lost says so.
-func _test_the_day_header_notes_the_invincible_flag_once_per_day(t) -> void:
+func _test_the_day_header_notes_the_invincible_flag_once_per_day(t: TestRunner) -> void:
 	_log.begin_run(4242, false)
 
 	_log.configure(RunConfig.parse(PackedStringArray(["--invincible"]), "", true))
 	_log.begin_day(1, 1, 4242, 4242, 144.0)
-	var on_lines := _log.current_log().recorded_lines().duplicate()
+	var on_lines: Array[String] = _log.current_log().recorded_lines().duplicate()
 
 	_log.configure(RunConfig.parse(PackedStringArray(), "", true))
 	_log.begin_day(2, 1, 4242, 4242, 144.0)
-	var off_lines := _log.current_log().recorded_lines().duplicate()
+	var off_lines: Array[String] = _log.current_log().recorded_lines().duplicate()
 
 	_log.configure(null)
 	_log.end_run()
@@ -1194,7 +1193,7 @@ func _test_the_day_header_notes_the_invincible_flag_once_per_day(t) -> void:
 
 ## The run log's own burst refuses in a headless run, where its screen draws nothing; the refusal
 ## starts nothing, so a second request is refused the same way and not as an overlap.
-func _test_a_headless_burst_is_refused_without_a_capture_wait(t) -> void:
+func _test_a_headless_burst_is_refused_without_a_capture_wait(t: TestRunner) -> void:
 	_log.begin_run(0, false)
 	t.check(not _log.start_burst("headless test"),
 			"headless capture refuses without beginning a renderer wait")
@@ -1212,8 +1211,8 @@ func _test_a_headless_burst_is_refused_without_a_capture_wait(t) -> void:
 ## a folder of the test's own is handed a recorder on the burst suite's bench (its screen, clock and
 ## scratch folder, `tests/test_burst_capture.gd`) through `use_bursts()`, the way `main` hands the
 ## log it makes the game's own, which is on the viewport and draws nothing here.
-func _test_a_day_or_a_run_ending_cuts_the_active_burst_short(t) -> void:
-	var bench = BurstSuite.Bench.new("day-and-run")
+func _test_a_day_or_a_run_ending_cuts_the_active_burst_short(t: TestRunner) -> void:
+	var bench := BurstSuite.Bench.new("day-and-run")
 	var scratch := "user://telemetry-test-bursts-%d" % Time.get_ticks_usec()
 	_use_a_log_over(scratch)
 	_log.use_bursts(bench.recorder)

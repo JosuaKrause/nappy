@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
+@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Synchronous headless preparation and geometric coverage experiment. No rendered-frame claims.
 ## Run with tools/test.sh probes/lazy_scenery_measure.gd; external timeout belongs to the caller.
@@ -20,7 +20,7 @@ const SCRATCH_SAVE := "user://lazy_scenery_measure_scratch.json"
 ## The library every city measured here is handed, holding the shared pages for the whole probe.
 var _atlas := AtlasLibrary.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("LAZY_META " + JSON.stringify({"engine": Engine.get_version_info(),
 		"os": OS.get_name(), "processor": OS.get_processor_name(),
 		"mode": "headless synchronous; no engine frame between stages"}))
@@ -38,7 +38,7 @@ func run(t) -> void:
 		_atlas.release(group)
 	_actual_boot(t)
 
-func _measure(t, seed_value: int, trial: int) -> void:
+func _measure(t: TestRunner, seed_value: int, trial: int) -> void:
 	var started := Time.get_ticks_usec()
 	var map := CityGenerator.generate(seed_value)
 	var generation_ms := (Time.get_ticks_usec() - started) / 1000.0
@@ -196,7 +196,7 @@ func _building_count(city: City, rect: Rect2) -> int:
 		result += int(rect.intersects(city.map.tile_rect_to_world(building.lot)))
 	return result
 
-func _counterfactual(city: City, t) -> void:
+func _counterfactual(city: City, t: TestRunner) -> void:
 	var source: SceneryGround = city.scenery_ground
 	var expected_count := GroundCells.used_cells(source).size()
 	var home := city.map.doorstep_world_position()
@@ -251,7 +251,7 @@ func _counterfactual(city: City, t) -> void:
 
 ## Observe the real first suspended boot frame, then complete its two warmup awaits as the
 ## camera regression suite does. This validates geometry, not a rendered image or boot timing.
-func _actual_boot(t) -> void:
+func _actual_boot(t: TestRunner) -> void:
 	# Booted the way `Boot.boot()` boots it, a scratch save and a sitting playing a run of its own,
 	# but not waited on: the point is the first frame, before the warm-up awaits complete.
 	var seat := Seat.new(t)

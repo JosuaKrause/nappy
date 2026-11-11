@@ -50,7 +50,7 @@ var _horns := 0
 var _bumps := 0
 var _strikes := 0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var frames: Array[int] = []
 	for word in (OS.get_environment("CADENCE_FRAMES") if OS.has_environment("CADENCE_FRAMES")
 			else "1,2,4").split(","):
@@ -102,6 +102,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 	crowd.start_day(day, rng, start)
 	crowd.set_gates(city.streets().region_plan().gates)
 	crowd._player = rig
+	crowd.use_bus(EventBus)
 	var with_events := OS.get_environment("CADENCE_EVENTS") != ""
 	var meeting = null
 	if with_events:

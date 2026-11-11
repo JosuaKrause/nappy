@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `ScriptedPhase`, the dawn phase for a row the day places for a reason of its own (a scripted row
 ## on its day): it draws one of the day's open locations, weighted by
@@ -49,7 +48,7 @@ class _Ground extends LocationGround:
 	func stand(plan: EventScheduler.Planned) -> void:
 		stood.append(plan)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_location_weighed_nothing_is_never_drawn(t)
 	_test_a_location_weighed_nothing_is_not_drawn_once_the_rest_refuse(t)
 	_test_the_draw_follows_the_weights(t)
@@ -69,7 +68,7 @@ func _rng(i: int) -> RandomNumberGenerator:
 	rng.seed = hash("scripted phase:%d" % i)
 	return rng
 
-func _test_a_location_weighed_nothing_is_never_drawn(t) -> void:
+func _test_a_location_weighed_nothing_is_never_drawn(t: TestRunner) -> void:
 	var drawn_nothing := 0
 	for i in SEEDS:
 		var locations := _Locations.new()
@@ -85,7 +84,7 @@ func _test_a_location_weighed_nothing_is_never_drawn(t) -> void:
 	t.check(drawn_nothing == 0, "a location weighed nothing is never drawn (%d of %d)"
 			% [drawn_nothing, SEEDS])
 
-func _test_the_draw_follows_the_weights(t) -> void:
+func _test_the_draw_follows_the_weights(t: TestRunner) -> void:
 	var heavy_taken := 0
 	for i in SEEDS:
 		var locations := _Locations.new()
@@ -102,7 +101,7 @@ func _test_the_draw_follows_the_weights(t) -> void:
 	t.check(share > 0.68 and share < 0.82, "three to one draws the heavy location near three in four (%.2f)"
 			% share)
 
-func _test_a_location_that_takes_nothing_is_passed_over(t) -> void:
+func _test_a_location_that_takes_nothing_is_passed_over(t: TestRunner) -> void:
 	var elsewhere := 0
 	for i in SEEDS:
 		var locations := _Locations.new()
@@ -128,7 +127,7 @@ func _test_a_location_that_takes_nothing_is_passed_over(t) -> void:
 	t.check(phase.place(_row(), _rng(0)) == null and ground.stood.is_empty(),
 			"with no location that takes it, the row does not happen")
 
-func _test_what_it_takes_is_assigned_and_stood(t) -> void:
+func _test_what_it_takes_is_assigned_and_stood(t: TestRunner) -> void:
 	var locations := _Locations.new()
 	var one := _location(0)
 	locations.open = [one]
@@ -139,7 +138,7 @@ func _test_what_it_takes_is_assigned_and_stood(t) -> void:
 	t.check(plan != null and one.is_taken(), "the location it drew is taken for the day")
 	t.check(ground.stood.size() == 1 and ground.stood[0] == plan, "and the ground stands the plan")
 
-func _test_a_location_weighed_nothing_is_not_drawn_once_the_rest_refuse(t) -> void:
+func _test_a_location_weighed_nothing_is_not_drawn_once_the_rest_refuse(t: TestRunner) -> void:
 	var landed := 0
 	for i in SEEDS:
 		var locations := _Locations.new()

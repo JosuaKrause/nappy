@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/events_shared_city.gd"
 ## Events that move on their own rather than waiting for her: a flock of birds (as birds, not one
 ## sprite drawn often), a mobile row that follows its own path, and a crouching row that holds
@@ -11,7 +10,7 @@ extends "res://tests/events_shared_city.gd"
 
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_flock_is_birds_rather_than_one_bird_drawn_often(t)
 	_test_a_flock_goes_up_when_she_reaches_the_birds(t)
 	_test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t)
@@ -35,7 +34,7 @@ func _advance(instance: EventInstance, seconds: float) -> void:
 ## Walks her past a flock at `offset` px to one side at `Tuning.WALK_SPEED`, telling the instance
 ## where she is every tick the way the world does, and answers how far from the middle she was on
 ## the first frame the birds were off the ground — `INF` if they never left it.
-func _flock_flushes_at(t, def: EventDef, offset: float) -> float:
+func _flock_flushes_at(t: TestRunner, def: EventDef, offset: float) -> float:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	var her := Vector2(-def.outer_radius - 120.0, offset)
@@ -53,7 +52,7 @@ func _flock_flushes_at(t, def: EventDef, offset: float) -> float:
 ## Net points from walking a straight line past a flock at `offset` px to one side, at
 ## `Tuning.WALK_SPEED`, telling the instance where she is every tick the way the world does — the
 ## one thing `M174Pass`'s rig never does, and why `docs/COSTS.md` cannot price this row.
-func _flock_walked_through(t, def: EventDef, offset: float) -> float:
+func _flock_walked_through(t: TestRunner, def: EventDef, offset: float) -> float:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where)
 	var her := Vector2(-def.outer_radius - 120.0, offset)
@@ -94,7 +93,7 @@ func _widest_gap_between_birds(instance: EventInstance) -> float:
 ##   is inside the disc `validate_event` checked. This is the assertion that says so.
 ## - **The middle costs and the rim does not**, which is the whole reason a flock is worth eleven
 ##   sources: the price of one depends on whether you went through it or round it.
-func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
+func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	t.check(def.flock_spread < def.outer_radius,
 			"and the room it takes up comes out of the field it emits over, not on top of it")
@@ -153,7 +152,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t) -> void:
 ## Stated over the walk rather than over the numbers it was written from: the rig tells where
 ## she is (`WhereSheIs.tell()`) every tick, which is the one thing the pass rig behind
 ## `docs/COSTS.md` never does and the reason that table dashes this row.
-func _test_a_flock_goes_up_when_she_reaches_the_birds(t) -> void:
+func _test_a_flock_goes_up_when_she_reaches_the_birds(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var touch := def.flock_spread + Tuning.PLAYER_BODY_RADIUS
 	t.check(touch < def.notice_within(),
@@ -189,7 +188,7 @@ func _test_a_flock_goes_up_when_she_reaches_the_birds(t) -> void:
 ## encounters and the rate is easy to cut too far while chasing something else. There is no upper
 ## bound: *"not following the procedure should be costly"* — the procedure being to wait the birds
 ## out, which is free — so what walking into them costs is the player's to set by feel.
-func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t) -> void:
+func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var through := _flock_walked_through(t, def, 0.0)
 	var dog := M174Pass.pass_net_averaged(EventCatalogue.by_id("loose_dog"), 0.0,
@@ -225,7 +224,7 @@ func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t) ->
 ##   bursting would have spent its whole event two screens away; one that emitted its full 42/s
 ##   while pecking would be a place nobody can walk past. The birds leave the ground only once she
 ##   is inside `EventDef.notice`, which is the telegraph contract paid in geometry.
-func _test_a_flock_is_a_place_she_can_see(t) -> void:
+func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		t.check(def.spawn_mode_on(day) == EventDef.SpawnMode.MAP,
@@ -288,7 +287,7 @@ func _test_a_flock_is_a_place_she_can_see(t) -> void:
 			% [instance.excitement.contribution_at(Vector2.ZERO), on_the_ground])
 	instance.free()
 
-func _test_mobile_follows_its_path(t) -> void:
+func _test_mobile_follows_its_path(t: TestRunner) -> void:
 	# `military_convoy` rather than the fire engine: this is about the generic path-following
 	# mechanic, not about fire. At its path's end the truck is done with it (`_be_done()`): it
 	# drives on out of sight, leaving, with nothing left to do on the path.
@@ -314,7 +313,7 @@ func _test_mobile_follows_its_path(t) -> void:
 ## Playtest 04 found the cat doing nothing, and this is half of why. Its route is one street
 ## wide, so at 240px/s it finished the whole crossing inside its own 1.6s telegraph — it never
 ## reached full intensity, and the running sprite never drew once in six milestones.
-func _test_a_crouching_event_holds_still_until_it_bolts(t) -> void:
+func _test_a_crouching_event_holds_still_until_it_bolts(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cat_dash")
 	var path := PackedVector2Array([Vector2(0.0, 0.0), Vector2(400.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)

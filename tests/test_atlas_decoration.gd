@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The "decoration" `AtlasLibrary` group — props, litter and city decals. `tests/test_atlas_library.gd`
 ## already covers the atlas contract every group shares (every member baked, no two regions
@@ -9,7 +8,7 @@ extends RefCounted
 ## stands (read once, released when the city is freed) is a fact about `City` and is
 ## `tests/test_city_atlas_holds.gd`'s.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_shadow_sizes_read_the_region_table(t)
 	_test_street_tree_footprint_matches_the_region_table(t)
 
@@ -18,13 +17,13 @@ func run(t) -> void:
 ## asks for by name. Built off the scene tree, one `Prop` at a time, in the order `City` itself
 ## builds one: `Prop.new()`, then the exports, then `add_child()` — which is what fires `_ready()`
 ## and computes `shape`.
-func _test_shadow_sizes_read_the_region_table(t) -> void:
+func _test_shadow_sizes_read_the_region_table(t: TestRunner) -> void:
 	var point_cases := [
 		[Prop.Kind.BOLLARD, Prop.BOLLARD, 0.4],
 		[Prop.Kind.SACK, Prop.SACK, 0.35],
 		[Prop.Kind.SACK_PILE, Prop.SACK_PILE, 0.3],
 	]
-	for case in point_cases:
+	for case: Array in point_cases:
 		var kind: Prop.Kind = case[0]
 		var region: StringName = case[1]
 		var fraction: float = case[2]
@@ -68,7 +67,7 @@ func _test_shadow_sizes_read_the_region_table(t) -> void:
 ## `tests/test_atlas_library.gd`'s `_test_baked_pixels_are_todays_pictures` already establishes
 ## that `native_size()` is bit-identical to the SVG import this used to read (see the docstring on
 ## `footprint_radius()` itself), so this only pins the planner and the region table together.
-func _test_street_tree_footprint_matches_the_region_table(t) -> void:
+func _test_street_tree_footprint_matches_the_region_table(t: TestRunner) -> void:
 	var widest := 0.0
 	for name: StringName in Prop.TREES:
 		widest = maxf(widest, float(AtlasTable.baked().native_size(name).x) * 0.28)

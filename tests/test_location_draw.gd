@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `LocationDraw`, the day's open locations each drawn from its view's bag at dawn
 ## (inbox #1185 in gentle-owl): each open location drawn once and what it drew recorded, an event
@@ -9,7 +8,7 @@ extends RefCounted
 ## (`_Locations`, a handful built by hand), the ground (`_Ground`, whose refusals and weights a
 ## check sets); the bags are real (`ViewBag`), of a few marbles each.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_each_open_location_is_drawn_once(t)
 	_test_a_taken_unavailable_or_drawn_location_is_left_alone(t)
 	_test_a_row_the_ground_refuses_is_never_drawn_there(t)
@@ -75,7 +74,7 @@ static func _drawn(locations: _Locations, fill: Dictionary, rows: Dictionary, gr
 	var bags := {ON: ViewBag.new(fill, seed_value)}
 	return LocationDraw.new(locations, bags, rows, ground, caps).draw_all(_rng())
 
-func _test_each_open_location_is_drawn_once(t) -> void:
+func _test_each_open_location_is_drawn_once(t: TestRunner) -> void:
 	var locations := _Locations.new()
 	locations.order = [_location(0), _location(1), _location(2)] as Array[Location]
 	var ground := _Ground.new()
@@ -93,7 +92,7 @@ func _test_each_open_location_is_drawn_once(t) -> void:
 		t.check(location.is_drawn(), "and every location says it is drawn")
 	t.check(empties == 1, "and the third draws the empty event (%d)" % empties)
 
-func _test_a_taken_unavailable_or_drawn_location_is_left_alone(t) -> void:
+func _test_a_taken_unavailable_or_drawn_location_is_left_alone(t: TestRunner) -> void:
 	var taken := _location(0)
 	taken.take(EventScheduler.Planned.new(_row("roadblock"), taken.centre()))
 	var closed := _location(1, false)
@@ -106,7 +105,7 @@ func _test_a_taken_unavailable_or_drawn_location_is_left_alone(t) -> void:
 	t.check(locations.recorded.keys() == [open],
 			"only the open location is drawn: one taken, one unavailable and one drawn already are not")
 
-func _test_a_row_the_ground_refuses_is_never_drawn_there(t) -> void:
+func _test_a_row_the_ground_refuses_is_never_drawn_there(t: TestRunner) -> void:
 	var never := true
 	for seed_value in 50:
 		var refusing := _location(0)
@@ -122,7 +121,7 @@ func _test_a_row_the_ground_refuses_is_never_drawn_there(t) -> void:
 		never = never and at != null and at.row_id() == "dog_walker"
 	t.check(never, "a location whose ground refuses the cafe draws the dog walker instead, every time")
 
-func _test_a_row_at_its_cap_is_not_drawn(t) -> void:
+func _test_a_row_at_its_cap_is_not_drawn(t: TestRunner) -> void:
 	var capped := _Locations.new()
 	capped.order = [_location(0), _location(1), _location(2)] as Array[Location]
 	var placed := _drawn(capped, {"cafe_tables": 3}, {"cafe_tables": _row("cafe_tables")},
@@ -141,7 +140,7 @@ func _test_a_row_at_its_cap_is_not_drawn(t) -> void:
 
 ## A cafe and an empty marble: a location weighing the cafe a thousand times over draws it on nearly
 ## every seed, one weighing it as the bag does about half the time.
-func _test_a_locations_weight_reaches_its_bag(t) -> void:
+func _test_a_locations_weight_reaches_its_bag(t: TestRunner) -> void:
 	var heavy := 0
 	var plain := 0
 	for seed_value in 200:
@@ -164,7 +163,7 @@ func _test_a_locations_weight_reaches_its_bag(t) -> void:
 
 ## A bag of one poster crew, a row her walk sites (`EventDef.is_handed_to_her_walk()`): the location
 ## draws it, and what is recorded, stood and answered is the crew with no position, for the walk.
-func _test_a_row_handed_to_her_walk_is_drawn_unplaced(t) -> void:
+func _test_a_row_handed_to_her_walk_is_drawn_unplaced(t: TestRunner) -> void:
 	var location := _location(0)
 	var locations := _Locations.new()
 	locations.order = [location] as Array[Location]

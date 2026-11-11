@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## M98, pressure in the empty acts — "Patrols for acts III and IV, built around encounter cost."
 ## `EventDirector.owe_the_return()`'s own shape: what it owes per act, the pacing it switches to,
@@ -21,7 +21,7 @@ const RETURN_DAY := 13
 ## physics tick (the director only counts seconds handed in, so this is a simulated walk).
 const STEP := 0.1
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_no_double_batch_in_a_day(t)
 	_test_forced_queue_is_untouched(t)
 	_test_pacing_switches_after_the_return_is_owed(t)
@@ -117,7 +117,7 @@ class Walk:
 
 ## The baby can wake and settle again inside one day — `EventBus.return_phase_started` firing
 ## twice must not owe a second batch on top of the first.
-func _test_no_double_batch_in_a_day(t) -> void:
+func _test_no_double_batch_in_a_day(t: TestRunner) -> void:
 	var map := _map()
 	var director := _director(map)
 	var day := RETURN_DAY # act IV, the largest batch
@@ -133,7 +133,7 @@ func _test_no_double_batch_in_a_day(t) -> void:
 ## director is handed the flag as the manager hands it (`force()`, taken up by `start_day()`): the
 ## queue stays the one forced row, and the forced row keeps coming at the forced interval (5s, a
 ## fixed wait where the return's pacing would roll 9 to 16s) before and after the return.
-func _test_forced_queue_is_untouched(t) -> void:
+func _test_forced_queue_is_untouched(t: TestRunner) -> void:
 	var map := _map()
 	var director := _director(map, "cyclist")
 	t.check(director.owed() == 1, "the forced day owes the one forced row (%d)" % director.owed())
@@ -162,7 +162,7 @@ func _test_forced_queue_is_untouched(t) -> void:
 ## chance to land inside the leg rather than after she is home. Read as the seconds between the
 ## events `due()` hands out while she walks on: no gap under the interval's floor, and by the
 ## return none over the tighter ceiling, where the ordinary pacing leaves gaps the tight one cannot.
-func _test_pacing_switches_after_the_return_is_owed(t) -> void:
+func _test_pacing_switches_after_the_return_is_owed(t: TestRunner) -> void:
 	var map := _map()
 	var ordinary := _a_route_of_cats_and_cyclists(map)
 	var before := _gaps(Walk.new(ordinary, map).hand_outs(300.0))
@@ -215,7 +215,7 @@ func _gaps(handed: Array) -> Array[float]:
 ## IV day, whose dawn bought dozens of route events, the return's patrols are not left behind them:
 ## each comes within `EventDirector.RETURN_PATROL_WITHIN_THE_NEXT` events of the return or of the patrol
 ## before it, so all of them are met within that many events each.
-func _test_each_patrol_comes_within_its_rigged_bag(t) -> void:
+func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 	var map := _map()
 	var director := _the_return_days_director(map, 29)
 	var count: int = EventDirector.RETURN_PATROLS_PER_ACT[Tuning.act_for_day(RETURN_DAY) - 1]
@@ -244,7 +244,7 @@ func _test_each_patrol_comes_within_its_rigged_bag(t) -> void:
 ## each patrol's other marble is that row's, spent unmet, so the patrols are the only events handed
 ## out, one after another. Counted only when handed out, the first patrol's bag would never be
 ## spent and the others would never be rigged.
-func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t) -> void:
+func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t: TestRunner) -> void:
 	var map := _map()
 	var limited: EventDef = null
 	for id: String in EventDirector.ordinary_route_marbles(RETURN_DAY, 0):
@@ -284,7 +284,7 @@ func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t) -> void:
 ## carriageway lane of her own street, driving opposite her own heading so it meets her rather than
 ## following her, on real driveable road tiles of a generated map. Asked as the game asks: the path
 ## `due()` hands out with the patrol.
-func _test_sited_on_driveable_road_toward_her(t) -> void:
+func _test_sited_on_driveable_road_toward_her(t: TestRunner) -> void:
 	var map := _map()
 	var director := _the_return_days_director(map, 29)
 	director.owe_the_return(RETURN_DAY, 0)
@@ -323,7 +323,7 @@ func _test_sited_on_driveable_road_toward_her(t) -> void:
 ## invent a road. The patrol is the next event owed, she walks on the spot in a park and is handed
 ## nothing for a long while, and it is still owed, not spent: it is handed out as soon as she
 ## stands on a street.
-func _test_empty_in_a_park(t) -> void:
+func _test_empty_in_a_park(t: TestRunner) -> void:
 	var map := _map()
 	var calm := map.calm_tiles()
 	t.check(not calm.is_empty(), "the generated map has calm ground to test against")

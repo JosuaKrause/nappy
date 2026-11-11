@@ -282,9 +282,9 @@ func _update_hover(position: Vector2) -> void:
 	_restart_button.set_hovered(_buttons.visible and _restart_button.contains_design_point(at))
 
 ## Whether an acknowledge-and-resume coroutine is already in flight — guards the same double-fire a
-## real touch device's own emulated mouse click could otherwise cause, since `TouchInput.is_press()`
-## reads both event types and a device with real touch hardware delivers one of each for a single
-## finger.
+## real touch device's own emulated mouse click could otherwise cause, since a device with real
+## touch hardware delivers both an `InputEventScreenTouch` and an `InputEventMouseButton` for a
+## single finger.
 var _resuming := false
 
 ## Flashes the continue button pressed for two frame boundaries before actually resuming — the same
@@ -352,16 +352,16 @@ func _unhandled_input(event: InputEvent) -> void:
 	# space even in mouse mode".)* The pointer scheme reads a click everywhere now, so this screen
 	# has to accept one too rather than leaving the keyboard as the only way past it.
 	#
-	# **The two event shapes are split rather than read through `TouchInput.is_press()`, the same
-	# way `DaySummary._unhandled_input()`'s own equivalent branch already is.** *(M211: "the pause
+	# **The two event shapes are read apart, the same way `DaySummary._unhandled_input()`'s own
+	# equivalent branch reads them, so the mouse one can be gated on `not _touch`.** *(M211: "the pause
 	# screen is currently bugged where you cannot restart from it. it just goes back to the current
 	# game when pressing the button.")* A real touch device emulates a mouse click from every finger
 	# it reads, and — confirmed by driving a real touch through `Input.parse_input_event()` +
 	# `flush_buffered_events()` in `tests/test_held_restart.gd` — that emulated `InputEventMouseButton`
 	# press dispatches *before* the real `InputEventScreenTouch` press for the same finger, not
-	# after. A press on the restart button used to reach here first as the emulated click, since
-	# `TouchInput.is_press()` does not ask whether this device even has touch hardware to emulate
-	# one from, firing `_acknowledge_and_resume()` a frame or two ahead of the real touch reaching
+	# after. A mouse branch that does not ask whether this device even has touch hardware to emulate
+	# one from would let a press on the restart button reach here first as the emulated click,
+	# firing `_acknowledge_and_resume()` a frame or two ahead of the real touch reaching
 	# `_handle_restart_touch()` above — and that coroutine's own `close()` cancels whatever hold the
 	# real touch had just started and resumes the day before the hold could ever complete. Gating
 	# the mouse branch on `not _touch`, exactly as `_handle_restart_touch()`'s own mouse branch

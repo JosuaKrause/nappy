@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The run's state kept in one registered list (`RunStateRegistry` of `RunSubState` parts) — see
 ## docs/ARCHITECTURE.md, "The run's state".
@@ -39,7 +39,7 @@ class FakeOwner:
 	extends RefCounted
 	var part := RunHeader.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var fixture: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(FIXTURE_PATH))
 
 	_test_the_scenario_writes_what_main_wrote(t, fixture)
@@ -82,7 +82,7 @@ func _without_build(file: Dictionary) -> Dictionary:
 	kept.erase("build")
 	return kept
 
-func _test_the_scenario_writes_what_main_wrote(t, fixture: Dictionary) -> void:
+func _test_the_scenario_writes_what_main_wrote(t: TestRunner, fixture: Dictionary) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
 	var written: Dictionary = _written_for(run, true)
@@ -92,7 +92,7 @@ func _test_the_scenario_writes_what_main_wrote(t, fixture: Dictionary) -> void:
 	t.check(int(written["format_version"]) == GameSave.FORMAT_VERSION,
 			"and the format version is the one the fixture was written in")
 
-func _test_a_loss_gives_back_what_main_gave_back(t, fixture: Dictionary) -> void:
+func _test_a_loss_gives_back_what_main_gave_back(t: TestRunner, fixture: Dictionary) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
 	SCENARIO.lose_a_day(run)
@@ -101,7 +101,7 @@ func _test_a_loss_gives_back_what_main_gave_back(t, fixture: Dictionary) -> void
 			"a lost day on the scenario leaves the file main's give-back left (%s)"
 			% _first_difference(_without_build(after), _without_build(fixture["after_a_loss"])))
 
-func _test_a_save_written_by_main_loads_and_resumes(t, fixture: Dictionary) -> void:
+func _test_a_save_written_by_main_loads_and_resumes(t: TestRunner, fixture: Dictionary) -> void:
 	var run := _fresh(5)
 	var file := FileAccess.open(_SCRATCH_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(fixture["written"]))
@@ -112,7 +112,7 @@ func _test_a_save_written_by_main_loads_and_resumes(t, fixture: Dictionary) -> v
 			"and the run it gives back writes the same file again (%s)" % _first_difference(
 			_without_build(_written_for(run, true)), _without_build(fixture["written"])))
 
-func _test_a_lost_day_from_a_loaded_save_gives_back_what_main_gave_back(t, fixture: Dictionary) -> void:
+func _test_a_lost_day_from_a_loaded_save_gives_back_what_main_gave_back(t: TestRunner, fixture: Dictionary) -> void:
 	var run := _fresh(5)
 	var file := FileAccess.open(_SCRATCH_PATH, FileAccess.WRITE)
 	file.store_string(JSON.stringify(fixture["written"]))
@@ -151,12 +151,12 @@ static func _unregistered_in(owner: Object, registry: RunStateRegistry) -> Array
 	return missing
 
 ## Every part a `RunState` declares is on its registry.
-func _test_the_registry_lists_every_part_the_state_declares(t) -> void:
+func _test_the_registry_lists_every_part_the_state_declares(t: TestRunner) -> void:
 	var run := _fresh(1)
 	var missing := _unregistered_in(run, run.run_parts)
 	t.check(missing.is_empty(), "every run sub-state a RunState declares is registered (%s)" % [missing])
 
-func _test_a_part_left_off_the_list_is_caught(t) -> void:
+func _test_a_part_left_off_the_list_is_caught(t: TestRunner) -> void:
 	var owner := FakeOwner.new()
 	var registry := RunStateRegistry.new()
 	t.check(_unregistered_in(owner, registry) == ["part"],
@@ -167,7 +167,7 @@ func _test_a_part_left_off_the_list_is_caught(t) -> void:
 
 ## Photographs a run, spends more of every kind of thing an attempt can spend, gives back: the run
 ## is what it was at the photograph, every part of it.
-func _test_every_part_gives_back_what_it_photographed(t) -> void:
+func _test_every_part_gives_back_what_it_photographed(t: TestRunner) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
 	run.run_parts.photograph()
@@ -189,7 +189,7 @@ func _test_every_part_gives_back_what_it_photographed(t) -> void:
 
 ## A part's variables and its data keys correspond one to one: a field added to a part and not to
 ## its `to_data()` is the mistake the old six places made easy.
-func _test_every_part_declares_each_field_once_in_its_data(t) -> void:
+func _test_every_part_declares_each_field_once_in_its_data(t: TestRunner) -> void:
 	var run := _fresh(1)
 	for part in run.run_parts.parts():
 		var variables := 0
@@ -202,7 +202,7 @@ func _test_every_part_declares_each_field_once_in_its_data(t) -> void:
 				% [name, variables, part.to_data().size()])
 
 ## Each part, written through JSON and read back into a reset part, writes the same data.
-func _test_every_part_round_trips_through_json(t) -> void:
+func _test_every_part_round_trips_through_json(t: TestRunner) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
 	for part in run.run_parts.parts():

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What every source charges her, tick by tick, printed one line per source**, so a change to how
 ## excitement is computed can be shown to compute exactly what it computed before. Not a suite: it
@@ -37,7 +36,7 @@ const DAYS: Array[int] = [1, Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAY
 const ESCAPE_SEEDS: Array[int] = [4242]
 const BUILDING_SEEDS: Array[int] = [4242, 77]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var lines := 0
 	for seed_value in DAY_SEEDS:
 		for day in DAYS:
@@ -50,7 +49,7 @@ func run(t) -> void:
 	t.check(lines > 0, "there were sources to print (%d)" % lines)
 
 ## A day, as `DayDirector.start()` starts it: the city's own morning, the events and the crowd.
-func _a_day(t, seed_value: int, day: int) -> int:
+func _a_day(t: TestRunner, seed_value: int, day: int) -> int:
 	var spec := DaySpec.for_day(day)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	city.run.header.day = day
@@ -74,7 +73,7 @@ func _a_day(t, seed_value: int, day: int) -> int:
 	return printed
 
 ## The escape's city, built and planned as `DayDirector.start()` does, with nobody on it.
-func _the_escape_city(t, seed_value: int) -> int:
+func _the_escape_city(t: TestRunner, seed_value: int) -> int:
 	var day := Tuning.RUN_LENGTH_DAYS
 	var spec := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
@@ -94,7 +93,7 @@ func _the_escape_city(t, seed_value: int) -> int:
 	return printed
 
 ## The building, with its events started as every entry into the section starts them.
-func _the_building(t, seed_value: int) -> int:
+func _the_building(t: TestRunner, seed_value: int) -> int:
 	var own_run := RunState.new()
 	own_run.start_run(seed_value)
 	own_run.header.day = Tuning.RUN_LENGTH_DAYS
@@ -110,7 +109,7 @@ func _the_building(t, seed_value: int) -> int:
 	return printed
 
 ## One walk of `ticks` ticks in `world`, printing every source's line after every tick.
-func _walk(t, walk: String, world: WorldContext, events: EventManager, crowd: Crowd,
+func _walk(t: TestRunner, walk: String, world: WorldContext, events: EventManager, crowd: Crowd,
 		start: Vector2, ticks := TICKS) -> int:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
@@ -126,6 +125,7 @@ func _walk(t, walk: String, world: WorldContext, events: EventManager, crowd: Cr
 	rig.add_child(baby)
 	baby.set_physics_process(false)
 	baby.set_world(world)
+	baby.use_bus(EventBus)
 	var halo := ExcitementHalo.new()
 	t.add_child(halo)
 	halo.set_process(false)
@@ -134,6 +134,7 @@ func _walk(t, walk: String, world: WorldContext, events: EventManager, crowd: Cr
 	events.stream_around(start)
 	if crowd:
 		crowd._player = rig
+		crowd.use_bus(EventBus)
 	var here := start
 	var reached := {}
 	var printed := 0
@@ -181,7 +182,7 @@ func _print_the_sources(walk: String, tick: int, events: EventManager, crowd: Cr
 		printed += _print_one(walk, tick, "E%d:%s" % [i, instance.logged_name()], [
 				source.contribution_at(her), source.expected_gross_at(her),
 				source.expected_impact_at(her), source.landed()],
-				source.will_be_lethal(her), caret, (source.rim as SourceRim).is_held())
+				source.will_be_lethal(her), caret, source.rim.is_held())
 	if crowd:
 		var agents := crowd.agents()
 		for i in agents.size():
@@ -191,7 +192,7 @@ func _print_the_sources(walk: String, tick: int, events: EventManager, crowd: Cr
 					source.contribution_at(her), source.expected_gross_at(her),
 					source.expected_impact_at(her), source.landed()],
 					source.will_be_lethal(her), source.caret_strength(),
-					(source.rim as SourceRim).is_held())
+					source.rim.is_held())
 	return printed
 
 func _print_one(walk: String, tick: int, label: String, values: Array, lethal: bool, caret: int,

@@ -28,15 +28,19 @@ engine hold a file to that.
 
 - **What is untyped in a test goes as its suite is converted** to public seams and to one module
   (`tests-public-seams.md`, `tests-one-module.md`): the pull request that converts a suite types it
-  and deletes its file-level ignore.
+  and deletes its file-level ignore. A module's typing pass may come first, typing its suites and
+  deleting their lines, while their reads of other modules' fields wait for those modules' passes. *Proposed, not asked
+  for:* the fields of a module whose pass has merged are converted in the other suites by one sweep
+  after the last typing pass, from the reads its record lists with their methods; the plainer
+  alternative is to leave them to each suite's later conversion to one module.
 - **The files under `src/` are typed in the module passes** (`field-reads.md`).
+- **A probe that names a member no class has parses only behind its opt-out line** and fails when
+  it runs. `tests/probes/bouncy_egret_day11_mast.gd` reads `siting.scenery_ground` off
+  `EventScheduler.WalkSiting` twice, a member that is the private `_ground`, which no method answers; the probe replays
+  `EventScheduler._best_of()`'s rules through `WalkSiting`'s private members, so it is typed or deleted by step 4
+  of `placement-by-construction.md`, which deletes `_best_of()`.
 
-**Proposed, not asked for:** one scripted rewrite, as a pull request of its own right after the
-typed-access step lands, that types the runner in every suite (`func run(t: TestRunner) -> void:`, the
-runner's class name being the player's ask, inbox #1282) and takes out of each file's ignore what the file
-no longer trips, the script kept in the pull request's description so a branch merging `main`
-reruns it. The plainer alternative is to leave every test file as it is until its suite is
-converted. The plan was put to the player with the count, before the third message; the player's
-words do not name it.
-
-**Done when** no file under `tests/` carries a file-level ignore of the typing warnings.
+**Done when** no file under `tests/` carries a file-level ignore of the typing warnings, whichever of the
+three it names (`uv run python tools/check_field_reads.py --summary` counts the files by folder), and neither
+does a script a suite writes out at run time (the `PROBE` strings of `tests/test_scene_recipe_activity.gd` and
+`tests/test_scene_recipe_runtime.gd`, which the census does not read).

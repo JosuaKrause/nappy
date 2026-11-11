@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **A crowd handed no navigator moves by its map's own** (`Crowd.setup()`, `WorldMap.navigator()`):
 ## the game's city hands its crowd the city's navigator, and a rig that hands none gets the map's,
@@ -13,10 +12,10 @@ const DAY := 1
 ## let a push that went nowhere show as a walker still on his lane.
 const FRAMES := 6
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_a_crowd_handed_no_navigator_pushes_a_walker_aside(t)
 
-func _test_a_crowd_handed_no_navigator_pushes_a_walker_aside(t) -> void:
+func _test_a_crowd_handed_no_navigator_pushes_a_walker_aside(t: TestRunner) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var map := StreetMap.full()

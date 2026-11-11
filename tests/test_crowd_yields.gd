@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The crowd gives way to the movers that keep their course** (inbox #884 in plaid-raven): a
 ## walker steps aside or is pushed, and a crowd car stands, while the event figure keeps its course.
@@ -21,9 +20,9 @@ const RIG := preload("res://tests/test_crowd_bodies.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
-var _rig = RIG.new()
+var _rig: RIG = RIG.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_row_hands_what_it_stands_as_to_its_move(t)
 	_test_a_row_hands_whether_it_has_parked_to_its_move(t)
 	_test_an_event_leaves_the_list_of_moves_where_it_goes(t)
@@ -78,7 +77,7 @@ func _walk_at_a_standing_figure(crowd: Crowd, map: CityMap, stood_round: bool,
 		closest = minf(closest, walker.position.distance_to(at))
 		deepest = maxf(deepest, walker.position.y)
 	map.moves.leave(figure)
-	return {"closest": closest, "touching": walker.shape.reach() + figure.radius,
+	return {"closest": closest, "touching": walker.lane().shape().reach() + figure.radius,
 			"past": deepest > at.y + float(Tuning.TILE_SIZE)}
 
 ## A vehicle's move, a patrol car's size (the reach of `police_patrol`'s body), standing at `at`
@@ -146,10 +145,10 @@ func _drive_at_a_vehicle(crowd: Crowd, map: CityMap, corridor: int, car_along: f
 ## Whether a crowd car's capsule overlaps a figure's body: its centre nearer the car's spine than
 ## the two radii.
 func _overlaps(car: CrowdAgent, figure: MoveProposal) -> bool:
-	var spine := car.heading() * car.shape.half_length
+	var spine := car.heading() * car.lane().shape().spine_half_length()
 	var nearest := Geometry2D.get_closest_point_to_segment(figure.from, car.position - spine,
 			car.position + spine)
-	return nearest.distance_to(figure.from) < car.shape.radius + figure.radius - 0.5
+	return nearest.distance_to(figure.from) < car.lane().shape().rounding_radius() + figure.radius - 0.5
 
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
@@ -163,7 +162,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 ## it does in the game (`EventInstance._enter_tree()`). The move is what the crowd's separation pass
 ## reads off the list (`ProposedMoves.keeping_their_course()`), so it is read there and not off the
 ## instance. `move` is null when the list does not hold exactly the one move.
-func _a_row_on_a_map(t, id: String) -> Dictionary:
+func _a_row_on_a_map(t: TestRunner, id: String) -> Dictionary:
 	var map := WorldMap.open_ground()
 	var instance := EventInstance.new()
 	instance.skip_draw = true
@@ -179,7 +178,7 @@ func _a_row_on_a_map(t, id: String) -> Dictionary:
 ## before its charge may be walked through, as the player allowed. One row of each answer shows the
 ## declaration is handed over rather than fixed. That every row declares it is
 ## `EventDef.validate()`'s refusal to load without.
-func _test_a_row_hands_what_it_stands_as_to_its_move(t) -> void:
+func _test_a_row_hands_what_it_stands_as_to_its_move(t: TestRunner) -> void:
 	var expected := {"police_patrol": true, "charging_dog": false}
 	for id: String in expected:
 		var rig := _a_row_on_a_map(t, id)
@@ -188,19 +187,21 @@ func _test_a_row_hands_what_it_stands_as_to_its_move(t) -> void:
 		if move != null:
 			t.check(move.stood_round == expected[id],
 					"%s's move says a walker goes round it while it stands: %s" % [id, expected[id]])
-		rig["instance"].free()
+		var instance: EventInstance = rig["instance"]
+		instance.free()
 
 ## **Each row's `when_it_stops` reaches its move as whether it has parked** (`EventInstance`, inbox #909 in freckled-moose):
 ## a stall, which never moves, has parked from the start; the fire engine has not while it
 ## drives and has once it stops at its fire, and not once it leaves; the patrol car and the charging
 ## dog go on, so never. That every row declares it is `EventDef.validate()`'s refusal to load
 ## without.
-func _test_a_row_hands_whether_it_has_parked_to_its_move(t) -> void:
+func _test_a_row_hands_whether_it_has_parked_to_its_move(t: TestRunner) -> void:
 	var stall := _a_row_on_a_map(t, "market_stall")
 	var stall_move: MoveProposal = stall["move"]
 	t.check(stall_move != null and stall_move.parked,
 			"a stall, which never moves, has parked from the start")
-	stall["instance"].free()
+	var stall_instance: EventInstance = stall["instance"]
+	stall_instance.free()
 	var engine := _a_row_on_a_map(t, "fire_truck")
 	var engine_move: MoveProposal = engine["move"]
 	var engine_instance: EventInstance = engine["instance"]
@@ -226,7 +227,7 @@ func _test_a_row_hands_whether_it_has_parked_to_its_move(t) -> void:
 ## plan joins the day's as one planned after dawn does (`EventStreaming.add()`, which the events
 ## ahead of her call) and is streamed in around `at`. `move` is the one move the streamed-in event put
 ## on the map's list.
-func _a_manager_with_a_live_event(t, at: Vector2) -> Dictionary:
+func _a_manager_with_a_live_event(t: TestRunner, at: Vector2) -> Dictionary:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var run := RunState.new()
@@ -244,13 +245,15 @@ func _a_manager_with_a_live_event(t, at: Vector2) -> Dictionary:
 			"move": listed[0] if listed.size() == 1 else null}
 
 func _free_the_manager(rig: Dictionary) -> void:
-	rig.manager.free()
-	rig.world.free()
+	var manager: EventManager = rig["manager"]
+	var world: WorldContext = rig["world"]
+	manager.free()
+	world.free()
 
 ## **An event that goes leaves the list of moves at once** (minty-quail-34), not at the end of the
 ## frame when its node leaves the tree: a finished one, one streamed out, and every one `clear()`
 ## throws away. Nothing here ends a frame, as the probes' loops do not.
-func _test_an_event_leaves_the_list_of_moves_where_it_goes(t) -> void:
+func _test_an_event_leaves_the_list_of_moves_where_it_goes(t: TestRunner) -> void:
 	var at := Vector2(5000.0, 5000.0)
 	var rig := _a_manager_with_a_live_event(t, at)
 	var manager: EventManager = rig.manager
@@ -293,7 +296,7 @@ func _test_an_event_leaves_the_list_of_moves_where_it_goes(t) -> void:
 ## **A resting figure stood on other ground by hand is placed, not walked there**
 ## (`EventManager.move_extra()`, the task guard following her): the pass reads no velocity off a
 ## step longer than `SeparationPass.PLACEMENT_STEP`, and the figure does not count as under way.
-func _test_a_placement_is_not_a_walk(t) -> void:
+func _test_a_placement_is_not_a_walk(t: TestRunner) -> void:
 	var at := Vector2(5000.0, 5000.0)
 	var rig := _a_manager_with_a_live_event(t, at)
 	var manager: EventManager = rig.manager
@@ -333,7 +336,7 @@ func _a_figure_move_for_the_walk(moves: ProposedMoves, at: Vector2) -> MovePropo
 
 ## **A walker walks round an object or a vehicle standing in its way** (inbox #905 in freckled-moose): placed on its
 ## lane and never moved, like a parked van, its body is never entered, and the walker gets past it.
-func _test_a_walker_steps_round_a_standing_object(t, crowd: Crowd, map: CityMap) -> void:
+func _test_a_walker_steps_round_a_standing_object(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
 	var got := _walk_at_a_standing_figure(crowd, map, true, false)
 	t.check(not got.is_empty(), "this city has a straight stretch of street to stand a figure on")
 	if got.is_empty():
@@ -346,7 +349,7 @@ func _test_a_walker_steps_round_a_standing_object(t, crowd: Crowd, map: CityMap)
 ## **A walker may walk through a person or an animal standing still** (inbox #905 in freckled-moose): one that walked
 ## into place and has stood there since, like a dog crouched before its charge, is not stood round,
 ## and the walker keeps to its lane through it.
-func _test_a_walker_may_pass_through_a_standing_person(t, crowd: Crowd, map: CityMap) -> void:
+func _test_a_walker_may_pass_through_a_standing_person(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
 	var got := _walk_at_a_standing_figure(crowd, map, false, true)
 	if got.is_empty():
 		return
@@ -360,7 +363,7 @@ func _test_a_walker_may_pass_through_a_standing_person(t, crowd: Crowd, map: Cit
 ## **A car stands behind a vehicle stopped in its lane for as long as it stands, and goes on when it
 ## goes** (inbox #909 in freckled-moose): the patrol car at a red light or while its man is out is waited for, well past
 ## a moment's pause, and the car never turns round for it.
-func _test_a_car_stands_behind_a_stopped_figure_and_goes_on_when_it_goes(t, crowd: Crowd,
+func _test_a_car_stands_behind_a_stopped_figure_and_goes_on_when_it_goes(t: TestRunner, crowd: Crowd,
 		map: CityMap) -> void:
 	var block := _a_block_before_a_box(map)
 	t.check(block.x >= 0, "this city has a block's stretch before a junction box to drive down")
@@ -380,7 +383,7 @@ func _test_a_car_stands_behind_a_stopped_figure_and_goes_on_when_it_goes(t, crow
 
 ## **A car behind a parked vehicle in its lane turns round** (inbox #909 in freckled-moose), as it does at a blocked
 ## street, rather than standing behind it for the rest of the day.
-func _test_a_car_turns_round_behind_a_parked_figure(t, crowd: Crowd, map: CityMap) -> void:
+func _test_a_car_turns_round_behind_a_parked_figure(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
 	var block := _a_block_before_a_box(map)
 	if block.x < 0:
 		return
@@ -397,7 +400,7 @@ func _test_a_car_turns_round_behind_a_parked_figure(t, crowd: Crowd, map: CityMa
 ## its braking distance from the moment it appears, so the brake alone leaves the car in it and only
 ## the step hold (`CarStrategy.give_way_on_the_step()`) keeps the overlap at 0: with that hold removed
 ## this check fails.
-func _test_a_car_never_drives_through_a_figure_that_stops_in_front_of_it(t, crowd: Crowd,
+func _test_a_car_never_drives_through_a_figure_that_stops_in_front_of_it(t: TestRunner, crowd: Crowd,
 		map: CityMap) -> void:
 	var block := _a_block_before_a_box(map)
 	if block.x < 0:
@@ -413,7 +416,7 @@ func _test_a_car_never_drives_through_a_figure_that_stops_in_front_of_it(t, crow
 ## **A car never stands in a junction box for a figure standing past it** (inbox #909 in freckled-moose, the box rule
 ## of the **crowd-traffic** skill): it holds at the stop line, since a car standing in the box would
 ## hold the crossing street too.
-func _test_a_car_holds_at_the_line_for_a_figure_standing_past_the_box(t, crowd: Crowd,
+func _test_a_car_holds_at_the_line_for_a_figure_standing_past_the_box(t: TestRunner, crowd: Crowd,
 		map: CityMap) -> void:
 	var block := _a_block_before_a_box(map)
 	if block.x < 0:

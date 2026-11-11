@@ -1,8 +1,10 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name GroundFloorChecks
 extends RefCounted
 ## What the ground-floor suites share: where a column's cell is, and what a front's fire escape must
 ## look like. A helper, not a suite: the runner loads only `test_*.gd`.
+
+## What a building's front shows, read off the pictures it was drawn with (`tests/front_reads.gd`).
+const FrontReads := preload("res://tests/front_reads.gd")
 
 ## The ground floor's cell of column `col`, in local space: one tile, in the same top-left convention
 ## every picture's corner is put in (a cell's corner is `(-columns * TILE / 2 + col * TILE, -TILE)`).
@@ -19,7 +21,7 @@ static func col_of(building: Building, cell: Rect2) -> int:
 ## potted-plant picture or the plain one per that balcony's own roll; and nothing on a front with
 ## no escape. A wide front's second escape (if any) keeps the minimum gap from the first. Answers
 ## whether the front had at least one escape, so a sweep can say it was not vacuous.
-static func check_fire_escape(t, front, label: String) -> bool:
+static func check_fire_escape(t: TestRunner, front: FrontReads, label: String) -> bool:
 	var building: Building = front.building
 	var escapes: Array[int] = front.escape_cols()
 	if escapes.is_empty():

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `CalmAreas`, the day's calm areas as dawn sees them: the one place what a calm area's ground
 ## is, which of them she has used this act, and which one the swing day sets
@@ -16,7 +15,7 @@ const COURT := Vector2i(1, 0)
 ## A block she settled in that is not calm today, as a requisitioned park is.
 const TAKEN := Vector2i(2, 0)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_each_area_answers_its_own_calm_ground(t)
 	_test_used_and_unused_are_read_off_the_act(t)
 	_test_the_swing_park_is_set_aside_on_the_swing_day_only(t)
@@ -35,7 +34,7 @@ func _map() -> CityMap:
 	map.calm_blocks = [PARK, COURT] as Array[Vector2i]
 	return map
 
-func _test_each_area_answers_its_own_calm_ground(t) -> void:
+func _test_each_area_answers_its_own_calm_ground(t: TestRunner) -> void:
 	var calm := CalmAreas.of(_map())
 	t.check(calm.blocks() == ([PARK, COURT] as Array[Vector2i]),
 			"the calm areas are the map's calm blocks, in its order")
@@ -48,7 +47,7 @@ func _test_each_area_answers_its_own_calm_ground(t) -> void:
 	t.check(calm.rect_of(TAKEN) == Rect2i() and calm.ground_of(TAKEN) == Rect2(),
 			"a block that is not calm has no calm ground")
 
-func _test_used_and_unused_are_read_off_the_act(t) -> void:
+func _test_used_and_unused_are_read_off_the_act(t: TestRunner) -> void:
 	var used: Array[Vector2i] = [TAKEN, COURT]
 	var calm := CalmAreas.of(_map(), used)
 	t.check(calm.unused() == ([PARK] as Array[Vector2i]),
@@ -70,7 +69,7 @@ func _a_day_whose_narrow_target_is_not_the_swing() -> int:
 
 ## The park is the city's swing park (`BlockPlan.forced_open_on`, which
 ## `CityGenerator.swing_park()` reads), and the swing's tile stands in it.
-func _test_the_swing_park_is_set_aside_on_the_swing_day_only(t) -> void:
+func _test_the_swing_park_is_set_aside_on_the_swing_day_only(t: TestRunner) -> void:
 	var map := _map()
 	var plan := BlockPlan.of(GameEnums.BlockPurpose.PARK)
 	plan.forced_open_on = ResistanceSteps.swing_day()

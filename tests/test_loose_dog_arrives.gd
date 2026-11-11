@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **A loose dog sent from behind her arrives and runs past, or is retired out of sight.**
 ## *(sunny-hedgehog, 2026-09-27: "a loose dog that spawns behind me never arrives it stays offscreen
@@ -35,7 +34,7 @@ var _map: CityMap
 var _run: RunState
 var _rig: Stroller
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_run = RunState.new()
 	_run.start_run(RUN_SEED)
@@ -125,7 +124,7 @@ func _on_a_clear_line(start: Vector2) -> Vector2:
 ## own physics is off) until the director sends a loose dog down her line, ahead of her; then she
 ## turns round and goes up at `speed`. The manager sends and steps the dog on its own ticks. Answers
 ## the dog and how near it came to her.
-func _meet_and_turn(t, speed: float) -> Dictionary:
+func _meet_and_turn(t: TestRunner, speed: float) -> Dictionary:
 	var step := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
 	var seen := {"dog": null, "sent": false, "closest": INF, "finished": false}
 	var before := _events.instances().duplicate()
@@ -160,7 +159,7 @@ func _meet_and_turn(t, speed: float) -> Dictionary:
 
 ## Lets real physics ticks pass with her running up at `speed`; when `dog` is over, when and how far
 ## from her. The manager steps the dog in its own ticks.
-func _run_away(t, dog: EventInstance, speed: float) -> Dictionary:
+func _run_away(t: TestRunner, dog: EventInstance, speed: float) -> Dictionary:
 	var route_end := dog.path[dog.path.size() - 1]
 	var step := 1.0 / Engine.physics_ticks_per_second * FAST_SCALE
 	var seen := {"over_at": INF, "gap": INF, "from_end": INF, "dog": dog, "left": false}

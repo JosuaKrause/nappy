@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `Corridor`, the ground today's routes run through, here only for the view a whole street is in
 ## (`view_of()`, inbox #1185 in gentle-owl): on the route, route-adjacent (beside the routes, where day 13's dawn
@@ -7,7 +6,7 @@ extends RefCounted
 ## along the street from junction (2, 2) to (4, 2), which crosses the junctions (2, 2), (3, 2) and
 ## (4, 2).
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_each_street_is_in_one_of_the_three_views(t)
 	_test_ground_beyond_the_streets_is_told_its_view(t)
 
@@ -20,7 +19,7 @@ func _corridor() -> Corridor:
 static func _street(key: Vector3i) -> StreetNetwork.Segment:
 	return StreetNetwork.Segment.new(Vector2i(key.x, key.y), key.z == 0)
 
-func _test_each_street_is_in_one_of_the_three_views(t) -> void:
+func _test_each_street_is_in_one_of_the_three_views(t: TestRunner) -> void:
 	var corridor := _corridor()
 	t.check(corridor.view_of(_street(Vector3i(2, 2, 0))) == PlacementView.View.ON_THE_ROUTE,
 			"a street a route runs along is on the route, both its sidewalks")
@@ -38,7 +37,7 @@ func _test_each_street_is_in_one_of_the_three_views(t) -> void:
 ## Ground beyond the streets (`view_of_ground()`) is in the view of the nearest of its tiles to the
 ## routes: a rect reaching over a route street's tiles is on the route, one reaching only a street
 ## beside the routes route-adjacent, one inside a block off the route.
-func _test_ground_beyond_the_streets_is_told_its_view(t) -> void:
+func _test_ground_beyond_the_streets_is_told_its_view(t: TestRunner) -> void:
 	var corridor := _corridor()
 	var route_tile := _street(Vector3i(2, 2, 0)).tile_rect().get_center()
 	var beside_tile := _street(Vector3i(3, 2, 1)).tile_rect().get_center()

@@ -16,7 +16,7 @@ const FrontReads := preload("res://tests/front_reads.gd")
 const BASE_SEED := 40200
 const SEEDS := 3
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_curve(t)
 	_test_cracks_are_deterministic_and_grow(t)
 	_test_pavement_cracks_before_road(t)
@@ -31,7 +31,7 @@ func run(t) -> void:
 
 # ---------------------------------------------------------------------- the curve ---
 
-func _test_the_curve(t) -> void:
+func _test_the_curve(t: TestRunner) -> void:
 	t.check(Tuning.degradation_for(1) == 0.0, "day 1 is before the curve starts")
 	t.check(Tuning.degradation_for(Tuning.DEGRADATION_FIRST_DAY - 1) == 0.0,
 			"the day before DEGRADATION_FIRST_DAY is still zero")
@@ -65,7 +65,7 @@ static func _count_cracked(map: CityMap, tiles: Array[Vector2i], day: int) -> in
 			count += 1
 	return count
 
-func _test_cracks_are_deterministic_and_grow(t) -> void:
+func _test_cracks_are_deterministic_and_grow(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i)
 		var sidewalks := _tiles_of(map, GameEnums.TileType.SIDEWALK)
@@ -89,7 +89,7 @@ func _test_cracks_are_deterministic_and_grow(t) -> void:
 			last_count = count
 		t.check(_count_cracked(map, sidewalks, 1) == 0, "day 1 has no cracked sidewalk tiles")
 
-func _test_pavement_cracks_before_road(t) -> void:
+func _test_pavement_cracks_before_road(t: TestRunner) -> void:
 	var total_sidewalk := 0
 	var total_road := 0
 	var cracked_sidewalk := 0
@@ -110,7 +110,7 @@ func _test_pavement_cracks_before_road(t) -> void:
 
 # ---------------------------------------------------------------------- litter ---
 
-func _test_litter_stays_off_roads_and_calm_ground(t) -> void:
+func _test_litter_stays_off_roads_and_calm_ground(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i)
 		var placed := Litter.placed(map, Tuning.RUN_LENGTH_DAYS)
@@ -122,7 +122,7 @@ func _test_litter_stays_off_roads_and_calm_ground(t) -> void:
 					"no litter decal lands on the road's own lanes")
 			t.check(not Tile.is_calm(type), "no litter decal lands inside a calm area")
 
-func _test_litter_grows_with_the_day(t) -> void:
+func _test_litter_grows_with_the_day(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	t.check(Litter.placed(map, 1).is_empty(), "day 1 places no litter")
 	var last := 0
@@ -133,7 +133,7 @@ func _test_litter_grows_with_the_day(t) -> void:
 
 # ---------------------------------------------------------------------- sacks ---
 
-func _test_sacks_wait_for_the_curve_then_alleys_before_fronts(t) -> void:
+func _test_sacks_wait_for_the_curve_then_alleys_before_fronts(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	t.check(GarbageSacks.placed(map, Tuning.DEGRADATION_FIRST_DAY - 1).is_empty(),
 			"no sack stands before the curve starts")
@@ -162,7 +162,7 @@ func _test_sacks_wait_for_the_curve_then_alleys_before_fronts(t) -> void:
 ## the tiles beside the pile first. The bar is the mean plus five standard deviations of the
 ## no-preference count, far enough above chance that no pinned roll passes by luck; dropping the
 ## preference puts the count near the mean and fails it.
-func _test_the_mouse_prefers_a_pile(t) -> void:
+func _test_the_mouse_prefers_a_pile(t: TestRunner) -> void:
 	var day := Tuning.RUN_LENGTH_DAYS
 	var mouse := EventCatalogue.by_id("alley_mouse")
 	var mice := 0
@@ -202,7 +202,7 @@ func _test_the_mouse_prefers_a_pile(t) -> void:
 
 # ---------------------------------------------------------------------- buildings ---
 
-func _test_boarded_storefronts_and_windows_shutter(t) -> void:
+func _test_boarded_storefronts_and_windows_shutter(t: TestRunner) -> void:
 	var building := FrontReads.new_building()
 	building.district = GameEnums.BlockPurpose.COMMERCIAL
 	building.footprint = Vector2(96.0, 96.0)
@@ -237,7 +237,7 @@ func _test_boarded_storefronts_and_windows_shutter(t) -> void:
 ## records what it paints, as the city hands it the real one, and what is asked is what the front
 ## was drawn with: every picture against the intact ones, and a burnt parapet over each column, a
 ## burnt window in each window cell and a burnt door on a door column.
-func _test_a_burnt_building_shows_nothing_intact(t) -> void:
+func _test_a_burnt_building_shows_nothing_intact(t: TestRunner) -> void:
 	var intact: Array[StringName] = [
 		Building.WINDOW_DARK, Building.WINDOW_LIT, Building.WINDOW_TALL_DARK,
 		Building.WINDOW_TALL_LIT, Building.WINDOW_SHUTTERED_DARK, Building.WINDOW_SHUTTERED_LIT,
@@ -300,7 +300,7 @@ func _test_a_burnt_building_shows_nothing_intact(t) -> void:
 			"burnt windows, shops and doors were drawn to ask about (%d, %d, %d)"
 			% [windows, shops, doors])
 
-func _test_ambient_shuttering_waits_for_the_curve(t) -> void:
+func _test_ambient_shuttering_waits_for_the_curve(t: TestRunner) -> void:
 	var any_shuttered_late := false
 	var any_shuttered_early := false
 	var buildings: Array[Building] = []
@@ -332,7 +332,7 @@ func _test_ambient_shuttering_waits_for_the_curve(t) -> void:
 	t.check(any_shuttered_late,
 			"by the last day some lived-in commercial storefronts have shuttered ahead of any block turning")
 
-func _test_storefront_variants_use_seeded_bags(t) -> void:
+func _test_storefront_variants_use_seeded_bags(t: TestRunner) -> void:
 	var sampled: Array[Building] = []
 	var first_orders := {}
 	var bag_width := Building.STOREFRONT_TEXTURES.size()

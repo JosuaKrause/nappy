@@ -36,7 +36,7 @@ const TITLE := preload("res://scenes/ui/title_screen.tscn")
 const RUN_SEED := 2
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var was_paused: bool = t.get_tree().paused
 	_test_a_canvas_layer_is_always_visible(t)
 	_test_the_pause_puts_back_what_it_found(t)
@@ -86,7 +86,7 @@ func _fresh_run() -> RunState:
 
 ## A pause screen on a platform, in the tree and closed, standing over `run`, or over a fresh run of
 ## its own.
-func _pause(t, touch := false, can_quit := true, run: RunState = null) -> PauseScreen:
+func _pause(t: TestRunner, touch := false, can_quit := true, run: RunState = null) -> PauseScreen:
 	var pause: PauseScreen = PAUSE.instantiate()
 	if run == null:
 		run = _fresh_run()
@@ -98,7 +98,7 @@ func _pause(t, touch := false, can_quit := true, run: RunState = null) -> PauseS
 ## A title screen on a platform, in the tree and closed. Its clock runs well past any restart the
 ## process stamped (the stamp is process-wide, and the guard test makes one), so only the guard
 ## test meets the guard.
-func _title(t, touch := false, can_quit := true, run: RunState = null) -> TitleScreen:
+func _title(t: TestRunner, touch := false, can_quit := true, run: RunState = null) -> TitleScreen:
 	var title: TitleScreen = TITLE.instantiate()
 	if run == null:
 		run = _fresh_run()
@@ -109,7 +109,7 @@ func _title(t, touch := false, can_quit := true, run: RunState = null) -> TitleS
 	return title
 
 ## A between-days summary on a platform, in the tree and not yet showing.
-func _summary(t, touch := false) -> CanvasLayer:
+func _summary(t: TestRunner, touch := false) -> CanvasLayer:
 	var summary: CanvasLayer = SUMMARY.instantiate()
 	summary.use_touch(touch)
 	t.add_child(summary)
@@ -130,7 +130,7 @@ func _show_day_over(summary: CanvasLayer, result: GameEnums.DayResult) -> void:
 func _clocked(restart: ModeButton, clock: UI.FakeClock) -> void:
 	restart.use_clock(clock.read)
 
-func _test_button_catches_and_hover_are_radial_when_rotated(t) -> void:
+func _test_button_catches_and_hover_are_radial_when_rotated(t: TestRunner) -> void:
 	var window: Window = t.get_window()
 	var old_size := window.size
 	for rotated in [false, true]:
@@ -221,7 +221,7 @@ func _test_button_catches_and_hover_are_radial_when_rotated(t) -> void:
 		t.get_tree().paused = false
 	window.size = old_size
 
-func _test_a_canvas_layer_is_always_visible(t) -> void:
+func _test_a_canvas_layer_is_always_visible(t: TestRunner) -> void:
 	var summary := _summary(t)
 	t.check(not summary.is_showing(), "a fresh summary is not showing")
 	t.check(summary.visible,
@@ -231,7 +231,7 @@ func _test_a_canvas_layer_is_always_visible(t) -> void:
 ## Opening over the between-days summary is the case the first version refused outright, on the
 ## grounds that two things fighting over `get_tree().paused` is how a pause stops meaning anything.
 ## That is true, and the answer is to not fight: whatever was found is what goes back.
-func _test_the_pause_puts_back_what_it_found(t) -> void:
+func _test_the_pause_puts_back_what_it_found(t: TestRunner) -> void:
 	var pause := _pause(t)
 	t.check(not pause.is_open(), "the pause starts closed")
 
@@ -260,7 +260,7 @@ func _test_the_pause_puts_back_what_it_found(t) -> void:
 ## of three and found it missing on the third. Asserted as the property rather than as the key, so a
 ## fourth screen that forgets it fails here: **from every screen the game can come to rest on, space
 ## carries on.**
-func _test_space_carries_on_from_every_screen(t) -> void:
+func _test_space_carries_on_from_every_screen(t: TestRunner) -> void:
 	var pause := _pause(t)
 	var resumed := [0]
 	pause.resumed.connect(func() -> void: resumed[0] += 1)
@@ -285,7 +285,7 @@ func _test_space_carries_on_from_every_screen(t) -> void:
 ## somebody stops to ask how far in they are and how much they can still get wrong. It is read at
 ## `open()` rather than kept in step with `EventBus`: a screen only ever looked at while the game is
 ## stopped cannot go stale, and a listener that has to stay correct across fourteen days will not.
-func _test_the_pause_says_where_the_run_stands(t) -> void:
+func _test_the_pause_says_where_the_run_stands(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var pause := _pause(t, false, true, run)
 	var standing := UI.control(pause, "Standing") as Label
@@ -322,7 +322,7 @@ func _test_the_pause_says_where_the_run_stands(t) -> void:
 ##
 ## The keys are pushed as real `InputEventKey`s, because that is what the two screens read and it is
 ## exactly the difference the M36 bug turned on. `--press key:r` is the same check in a real window.
-func _test_there_is_a_way_out_of_a_finished_run(t) -> void:
+func _test_there_is_a_way_out_of_a_finished_run(t: TestRunner) -> void:
 	var pause := _pause(t)
 	var restarts := [0]
 	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
@@ -356,7 +356,7 @@ func _test_there_is_a_way_out_of_a_finished_run(t) -> void:
 ## under test itself, so the guard is driven through that call on a sitting of the test's own; the
 ## restart wiring that stamps it in play is checked in `tests/test_save_wiring.gd`.
 ## The window passing is a restart stamped further back than the guard is long.
-func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
+func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t: TestRunner) -> void:
 	var sitting := Sitting.new()
 	var title := _title(t)
 	title.use_sitting(sitting)
@@ -384,7 +384,7 @@ func _test_a_press_soon_after_a_restart_is_swallowed_not_started(t) -> void:
 ## *(M38: "as title screen just use the home and street in front without player and let act I events
 ## play out.")* It shows and hides and owns two keys; deciding what keeps running is `main`'s, and a
 ## title screen that paused the tree itself would take that decision away from it.
-func _test_the_title_screen_does_not_stop_the_city(t) -> void:
+func _test_the_title_screen_does_not_stop_the_city(t: TestRunner) -> void:
 	var title := _title(t)
 	t.check(not title.is_open(), "the title starts hidden")
 
@@ -415,7 +415,7 @@ func _test_the_title_screen_does_not_stop_the_city(t) -> void:
 ## press stands in for the rest of them. Read as *the keyboard is a desktop and a desktop is a
 ## mouse* — a player pressing a direction key has told this screen nothing about a thumb either, the
 ## same reasoning that makes `TAP` the mouse mode at all.
-func _test_every_walking_key_begins_the_run(t) -> void:
+func _test_every_walking_key_begins_the_run(t: TestRunner) -> void:
 	var title := _title(t)
 	var started_modes: Array[ControlsMode.Mode] = []
 	var by_keys: Array[bool] = []
@@ -439,7 +439,7 @@ func _test_every_walking_key_begins_the_run(t) -> void:
 ## made it a 48.3px circle, about half the area. Pinned on the title's three buttons, which are the
 ## pause screen's and the summary's too (one `ModeButton`), at points in the old square's corner and
 ## just past its edge, in the button's own local frame so a rotated presentation does not matter.
-func _test_a_round_button_catches_its_old_square_and_five_percent_past_its_disc(t) -> void:
+func _test_a_round_button_catches_its_old_square_and_five_percent_past_its_disc(t: TestRunner) -> void:
 	var title := _title(t)
 	title.open()
 	await UI.frames(t)
@@ -475,7 +475,7 @@ func _test_a_round_button_catches_its_old_square_and_five_percent_past_its_disc(
 ##
 ## Acknowledged two frames ahead of itself, the same as every other button that fires and closes
 ## its own screen — see `_test_a_tap_advances_every_screen` for why both frames are waited out.
-func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t) -> void:
+func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t: TestRunner) -> void:
 	var title := _title(t)
 	var started: Array[Array] = []
 	var by_keys: Array[bool] = []
@@ -517,7 +517,7 @@ func _test_a_press_on_either_title_button_starts_a_run_in_that_mode(t) -> void:
 ## event handed straight to a screen's handler skips Godot's GUI layer, the one place that consumed
 ## a raw `InputEventScreenTouch` before `ModeButton._ready()` set `MOUSE_FILTER_IGNORE`, and
 ## `UI.push` goes through the viewport, so it is the one call that would fail here if that regressed.
-func _test_a_real_touch_on_a_title_button_reaches_the_title_screen(t) -> void:
+func _test_a_real_touch_on_a_title_button_reaches_the_title_screen(t: TestRunner) -> void:
 	var title := _title(t)
 	var started_modes: Array[ControlsMode.Mode] = []
 	var by_keys: Array[bool] = []
@@ -548,7 +548,7 @@ func _test_a_real_touch_on_a_title_button_reaches_the_title_screen(t) -> void:
 ## (`use_platform()`) so a test can drive both. *(Playtest 29 finding 4: "never should it be
 ## mentioned to the user" — the hint this test used to also check no longer names the key on either
 ## platform, so only the key's own effect is asserted here now.)*
-func _test_the_title_quit_key_matches_the_platform(t) -> void:
+func _test_the_title_quit_key_matches_the_platform(t: TestRunner) -> void:
 	var title := _title(t, false, true)
 	var quit := [0]
 	title.quit_requested.connect(func() -> void: quit[0] += 1)
@@ -567,7 +567,7 @@ func _test_the_title_quit_key_matches_the_platform(t) -> void:
 
 ## The same agreement, one screen further in — see `_test_the_title_quit_key_matches_the_platform`
 ## for why only the key's own effect is asserted, not a hint that no longer names it.
-func _test_the_pause_quit_key_matches_the_platform(t) -> void:
+func _test_the_pause_quit_key_matches_the_platform(t: TestRunner) -> void:
 	var pause := _pause(t, false, true)
 	var quit := [0]
 	pause.quit_requested.connect(func() -> void: quit[0] += 1)
@@ -589,7 +589,7 @@ func _test_the_pause_quit_key_matches_the_platform(t) -> void:
 
 ## A title whose mode is already decided (a save brought back) names it, "Normal" or "Hard Mode",
 ## in place of the checkbox; a new game shows the checkbox and no name.
-func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
+func _test_the_title_names_the_mode_once_it_is_decided(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var title := _title(t, false, true, run)
 	run.calendar.hard_mode = false
@@ -615,7 +615,7 @@ func _test_the_title_names_the_mode_once_it_is_decided(t) -> void:
 ## I'm willing to compromise on letting them stay silently".)* Each caption says what its own
 ## button does rather than naming the mode — see `Texts.WALKING_LESSON_PAUSE`'s doc for why the teaching line itself does
 ## not change here at all (2026-09-07's M88 asked for the buttons back, not a new lesson).
-func _test_the_title_hint_and_body_match_the_platform(t) -> void:
+func _test_the_title_hint_and_body_match_the_platform(t: TestRunner) -> void:
 	var title := _title(t)
 	var hint := UI.control(title, "Hint") as Label
 	var body := UI.control(title, "Body") as Label
@@ -641,7 +641,7 @@ func _test_the_title_hint_and_body_match_the_platform(t) -> void:
 ## With one hue doing every button, hover and pressed are the only feedback left that a press
 ## registered at all — see `Palette.BUTTON_PRESSED`'s own doc — so the three states have to read as
 ## three states rather than two of them collapsing into the same shade.
-func _test_the_button_fill_states_are_distinguishable(t) -> void:
+func _test_the_button_fill_states_are_distinguishable(t: TestRunner) -> void:
 	t.check(Palette.BUTTON_FILL != Palette.BUTTON_HOVER,
 			"resting and hover are different shades")
 	t.check(Palette.BUTTON_FILL != Palette.BUTTON_PRESSED,
@@ -654,7 +654,7 @@ func _test_the_button_fill_states_are_distinguishable(t) -> void:
 ## than only through a screen — see `ModeButton`'s own class comment for why the two screens share
 ## one implementation of "held for about a second" instead of each keeping its own clock. The
 ## button is handed a clock the test moves, so a hold of a full second is a clock a second on.
-func _test_mode_button_restart_hold_state_machine(t) -> void:
+func _test_mode_button_restart_hold_state_machine(t: TestRunner) -> void:
 	var clock := UI.FakeClock.new()
 	var button := ModeButton.new()
 	button.symbol = ModeButton.Symbol.RESTART
@@ -697,7 +697,7 @@ func _test_mode_button_restart_hold_state_machine(t) -> void:
 ## the hold. Asserted on the stylebox directly, the same way
 ## `_test_mode_button_pressed_and_hovered_drive_the_stylebox` reads every other state transition,
 ## with a real frame let pass after the clock moves.
-func _test_the_restart_hold_drops_its_pressed_fill_once_the_sweep_starts(t) -> void:
+func _test_the_restart_hold_drops_its_pressed_fill_once_the_sweep_starts(t: TestRunner) -> void:
 	var clock := UI.FakeClock.new()
 	var button := ModeButton.new()
 	button.symbol = ModeButton.Symbol.RESTART
@@ -725,7 +725,7 @@ func _test_the_restart_hold_drops_its_pressed_fill_once_the_sweep_starts(t) -> v
 ## `_test_a_continue_press_flashes_before_it_is_acted_on` already does for the flash.
 ## `begin_hold()`/`end_hold()`/`cancel_hold()` route through the same two functions, so `RESTART`'s
 ## own timed hold is covered by the same assertions rather than a second set.
-func _test_mode_button_pressed_and_hovered_drive_the_stylebox(t) -> void:
+func _test_mode_button_pressed_and_hovered_drive_the_stylebox(t: TestRunner) -> void:
 	var button := ModeButton.new()
 	button.symbol = ModeButton.Symbol.CONTINUE
 
@@ -772,7 +772,7 @@ func _test_mode_button_pressed_and_hovered_drive_the_stylebox(t) -> void:
 ## `MOUSE_FILTER_IGNORE` silences `mouse_entered`/`mouse_exited` the same way it silences a click.)*
 ## Checked on the title screen's own two buttons and the pause screen's continue button —
 ## `DaySummary` shares the identical hover shape and is not re-checked here.
-func _test_hover_lights_up_the_button_under_the_mouse(t) -> void:
+func _test_hover_lights_up_the_button_under_the_mouse(t: TestRunner) -> void:
 	var title := _title(t, false)
 	title.open()
 	await UI.frames(t)
@@ -820,7 +820,7 @@ func _test_hover_lights_up_the_button_under_the_mouse(t) -> void:
 ##
 ## `build_text()` is the version and the commit joined, which is what the "DEBUG MODE ON" note
 ## carries after its words, so the note is read back here as well.
-func _test_the_title_names_a_version(t) -> void:
+func _test_the_title_names_a_version(t: TestRunner) -> void:
 	var title := _title(t)
 	title.open()
 	var version := UI.control(title, "Version") as Label
@@ -850,7 +850,7 @@ func _test_the_title_names_a_version(t) -> void:
 ## continue/restart pair says what a press does instead. `Esc`, `space`, `r` and `q` all keep
 ## working regardless (see `_test_there_is_a_way_out_of_a_finished_run` and the quit-key tests);
 ## only the sentences naming them are gone.
-func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
+func _test_the_pause_hint_and_body_match_the_platform(t: TestRunner) -> void:
 	var pause := _pause(t, false)
 	t.get_tree().paused = false
 	var hint := UI.control(pause, "Hint") as Label
@@ -884,7 +884,7 @@ func _test_the_pause_hint_and_body_match_the_platform(t) -> void:
 ## both pointer schemes work on every device now, and a press sets a direction on a
 ## keyboard-and-mouse desktop exactly as it does on a phone, so the same buttons are a control
 ## there too.
-func _test_the_buttons_show_on_every_device(t) -> void:
+func _test_the_buttons_show_on_every_device(t: TestRunner) -> void:
 	var desktop := _pause(t, false)
 	t.check(UI.control(desktop, "Buttons").visible, "a keyboard-and-mouse desktop gets the buttons too")
 	desktop.free()
@@ -899,7 +899,7 @@ func _test_the_buttons_show_on_every_device(t) -> void:
 ## start a hold and immediately close the screen underneath it. Driven with events shaped at the
 ## restart button's centre, where the layout really draws it, the same way every other touch test
 ## in this file drives a real propagated event rather than calling the hold logic by name.
-func _test_the_restart_button_is_a_hold(t) -> void:
+func _test_the_restart_button_is_a_hold(t: TestRunner) -> void:
 	var pause := _pause(t, true)
 	var restarts := [0]
 	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
@@ -956,7 +956,7 @@ func _test_the_restart_button_is_a_hold(t) -> void:
 ##
 ## The press position is the button's own real `get_global_rect().get_center()` after the layout
 ## frames, so this is asserting against the button's actual on-screen shape.
-func _test_a_real_touch_on_the_continue_button_reaches_the_pause_screen(t) -> void:
+func _test_a_real_touch_on_the_continue_button_reaches_the_pause_screen(t: TestRunner) -> void:
 	var pause := _pause(t, true)
 	var resumed := [0]
 	pause.resumed.connect(func() -> void: resumed[0] += 1)
@@ -981,7 +981,7 @@ func _test_a_real_touch_on_the_continue_button_reaches_the_pause_screen(t) -> vo
 ## The other half of the same regression: a hold has to survive the GUI layer on both its press
 ## and its matching release, not only its press — see the test above for why a pushed event is
 ## what exercises that layer at all.
-func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_pause_screen(t) -> void:
+func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_pause_screen(t: TestRunner) -> void:
 	var pause := _pause(t, true)
 	var restarts := [0]
 	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
@@ -1024,7 +1024,7 @@ func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_pause_screen(t) 
 ## `main._ready()` actually wires together, rather than asserting against `TouchControls` alone:
 ## the bug is in how the two interact, not in either on its own. The dismissing press never being
 ## tracked is read from what the later drift does to her heading, which is what it was for.
-func _test_pause_keeps_the_last_heading_through_the_dismiss_press(t) -> void:
+func _test_pause_keeps_the_last_heading_through_the_dismiss_press(t: TestRunner) -> void:
 	# She stands east of the pause screen's continue button, so a heading taken from a finger on
 	# that button would point west, not along the heading she carried in.
 	var rig := Node2D.new()
@@ -1075,7 +1075,7 @@ func _test_pause_keeps_the_last_heading_through_the_dismiss_press(t) -> void:
 
 ## The other half of the same fix: a run that was never walking must not start walking from the
 ## press that dismisses the pause either.
-func _test_pause_stays_standing_through_the_dismiss_press(t) -> void:
+func _test_pause_stays_standing_through_the_dismiss_press(t: TestRunner) -> void:
 	var rig := Node2D.new()
 	rig.add_to_group("player")
 	rig.global_position = Vector2(1100.0, 300.0)
@@ -1122,7 +1122,7 @@ func _release_moves() -> void:
 ## The between-days summary and the ending it leads to say nothing at all — the continue/restart
 ## pair says it instead, on every device. *(Playtest 29 finding 4: "never should it be mentioned
 ## to the user.")* `space` still carries on regardless of what the hint says.
-func _test_the_summary_hint_matches_the_platform(t) -> void:
+func _test_the_summary_hint_matches_the_platform(t: TestRunner) -> void:
 	var summary := _summary(t, false)
 	var hint := UI.control(summary, "Hint") as Label
 
@@ -1153,7 +1153,7 @@ func _test_the_summary_hint_matches_the_platform(t) -> void:
 ## does — restart the run. The restart button stays, hold and all — *(2026-09-06, asked directly:
 ## "the restart button, hold and all")* — since a screen with no day left to protect still owes one
 ## interaction learned everywhere it is met.
-func _test_an_ending_has_no_continue_button(t) -> void:
+func _test_an_ending_has_no_continue_button(t: TestRunner) -> void:
 	var summary := _summary(t, true)
 	var continue_column := UI.control(summary, "ContinueColumn")
 
@@ -1177,7 +1177,7 @@ func _test_an_ending_has_no_continue_button(t) -> void:
 ## The day summary's own restart button, the second half of M76's item 2 — the pause screen's own
 ## version is `_test_the_restart_button_is_a_hold`, and the two share every line of the state
 ## machine through `ModeButton.begin_hold()`/`end_hold()`, so only the wiring differs here.
-func _test_the_summary_restart_button_is_a_hold(t) -> void:
+func _test_the_summary_restart_button_is_a_hold(t: TestRunner) -> void:
 	var summary := _summary(t, true)
 	var restarts := [0]
 	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
@@ -1210,7 +1210,7 @@ func _test_the_summary_restart_button_is_a_hold(t) -> void:
 ## an event handed straight to a handler skips the GUI layer that consumed the raw touch before
 ## `ModeButton._ready()` set `MOUSE_FILTER_IGNORE`, and an event pushed through the viewport is the
 ## one that would fail here if that regressed.
-func _test_a_real_touch_on_the_continue_button_reaches_the_summary(t) -> void:
+func _test_a_real_touch_on_the_continue_button_reaches_the_summary(t: TestRunner) -> void:
 	var summary := _summary(t, true)
 	var carried_on := [0]
 	summary.continued.connect(func(_raised_in: int) -> void: carried_on[0] += 1)
@@ -1231,7 +1231,7 @@ func _test_a_real_touch_on_the_continue_button_reaches_the_summary(t) -> void:
 	summary.free()
 
 ## The other half: a hold has to survive the GUI layer on both its press and its matching release.
-func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_summary(t) -> void:
+func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_summary(t: TestRunner) -> void:
 	var summary := _summary(t, true)
 	var restarts := [0]
 	summary.restart_requested.connect(func() -> void: restarts[0] += 1)
@@ -1266,7 +1266,7 @@ func _test_a_real_touch_hold_on_the_restart_button_fires_on_the_summary(t) -> vo
 ## did, would already show the reverted colour and `carried_on == 1` after the *first* frame
 ## here, since `SceneTree.process_frame` fires before the frame it names is drawn rather than after
 ## — see `DaySummary._acknowledge_and_continue()`'s own doc for how that was found.
-func _test_a_continue_press_flashes_before_it_is_acted_on(t) -> void:
+func _test_a_continue_press_flashes_before_it_is_acted_on(t: TestRunner) -> void:
 	var summary := _summary(t, true)
 	_show_day_over(summary, GameEnums.DayResult.WON)
 	await UI.frames(t)
@@ -1303,7 +1303,7 @@ func _test_a_continue_press_flashes_before_it_is_acted_on(t) -> void:
 ## game will be clicking on one of the buttons".)* A bare tap that lands on neither button does
 ## nothing at all — see `_test_a_press_on_either_title_button_starts_a_run_in_that_mode` for the
 ## case that does.
-func _test_a_tap_advances_every_screen(t) -> void:
+func _test_a_tap_advances_every_screen(t: TestRunner) -> void:
 	var title := _title(t)
 	var started := [0]
 	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
@@ -1356,7 +1356,7 @@ func _test_a_tap_advances_every_screen(t) -> void:
 ##
 ## **The title screen is not a third case here either** — see `_test_a_tap_advances_every_screen`'s
 ## own doc for why a bare click, same as a bare tap, now does nothing on this screen.
-func _test_a_mouse_click_advances_every_screen(t) -> void:
+func _test_a_mouse_click_advances_every_screen(t: TestRunner) -> void:
 	var title := _title(t)
 	var started := [0]
 	title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
@@ -1428,7 +1428,7 @@ func _left_click() -> InputEventMouseButton:
 ## The pause screen's run line shows the run button where the chosen scheme draws one (inbox #533),
 ## and is re-read on every open, since the title screen can choose the scheme after the screen was
 ## built.
-func _test_the_pause_body_names_the_run_button_in_the_joystick_scheme(t) -> void:
+func _test_the_pause_body_names_the_run_button_in_the_joystick_scheme(t: TestRunner) -> void:
 	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
 	t.add_child(controls)
 	var pause := _pause(t)

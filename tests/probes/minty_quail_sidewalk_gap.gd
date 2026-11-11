@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **How much sidewalk a body leaves open across the street from it**, for the rule that a body
 ## blocks her way unless it leaves a gap a whole sidewalk wide (`Tuning.SIDEWALK_WIDTH` tiles).
@@ -22,7 +21,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEEDS: Array[int] = [4242, 90210, 1234567, 7, 31337, 2024]
 const DAY := 13
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var beats := {"barricade": {}, "roadblock": {}}
 	var rows := {}
 	var asked := 0
@@ -109,7 +108,7 @@ func _line(tally: Dictionary) -> String:
 		total += int(tally[key])
 	return "%d bodies | %s" % [total, ", ".join(parts)]
 
-func _start(t, seed_value: int) -> City:
+func _start(t: TestRunner, seed_value: int) -> City:
 	var spec := DaySpec.for_day(DAY)
 	var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 	city.run.header.day = DAY

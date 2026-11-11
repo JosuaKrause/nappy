@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## When a baked page may be read from disk, and which page each picture is on.
 ##
@@ -20,7 +19,7 @@ const HeadIndicators := preload("res://tests/head_indicators.gd")
 const BakedRegions := preload("res://tests/baked_regions.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_test_each_parent_has_a_page_of_their_own(t)
 	_test_the_indicators_share_the_ui_page(t)
@@ -32,13 +31,13 @@ func run(t) -> void:
 ## since it's guaranteed to not use half of it"* — as the bake actually wrote it: each parent's
 ## sixty views on a page of their own, and the five pram views, which either parent pushes, on a
 ## third the run holds whichever parent it drew.
-func _test_each_parent_has_a_page_of_their_own(t) -> void:
+func _test_each_parent_has_a_page_of_their_own(t: TestRunner) -> void:
 	var seen: Dictionary = {}
 	var drawn_by := {}
 	for male: bool in [false, true]:
 		var page := Stroller.parent_atlas(male)
 		var rig := Stroller.new()
-		rig.is_male = male
+		rig.draw_as_father(male)
 		var camera := Camera2D.new()
 		camera.name = "Camera2D"
 		rig.add_child(camera)
@@ -46,7 +45,7 @@ func _test_each_parent_has_a_page_of_their_own(t) -> void:
 		# Every view she is drawn in, pushing and carrying, on the eight facings; the pram's with them.
 		var views: Dictionary = {}
 		var prams: Dictionary = {}
-		for carrying in [false, true]:
+		for carrying: bool in [false, true]:
 			rig.carrying = carrying
 			for direction in range(8):
 				rig.reset_at(Vector2.ZERO, Vector2.from_angle(direction * PI / 4.0))
@@ -77,7 +76,7 @@ func _test_each_parent_has_a_page_of_their_own(t) -> void:
 ## *"the UI and head indicators could be combined"* — one group, and the same page as the buttons,
 ## which is what "combined" has to mean for it to save anything. The marks are still drawn by
 ## their own pass and tinted on their own; a page is not a pass.
-func _test_the_indicators_share_the_ui_page(t) -> void:
+func _test_the_indicators_share_the_ui_page(t: TestRunner) -> void:
 	t.check(not &"head_indicators" in AtlasTable.baked().groups(),
 			"and the head indicators are no longer a group of their own")
 	for path: String in HeadIndicators.ALL:
@@ -101,7 +100,7 @@ func _test_the_indicators_share_the_ui_page(t) -> void:
 ## sequence has claimed the loading moments on, which is every one a suite builds along with a
 ## `Stroller`, a `City` or a `Crowd` by hand, and where there is no played frame for a load to
 ## stutter. The moment `main` boots, the rule is on for the sitting's library until it leaves.
-func _test_a_page_may_only_be_read_in_a_window(t) -> void:
+func _test_a_page_may_only_be_read_in_a_window(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	t.check(atlas.moment_for_a_load() == AtlasLibrary.MOMENT_UNMANAGED,

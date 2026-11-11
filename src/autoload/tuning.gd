@@ -117,7 +117,6 @@ const EXPECTED_IMPACT_HORIZON := 5.0
 
 # ---------------------------------------------------------------- telegraph ---
 
-const TELEGRAPH_TIME_DEFAULT := 2.5
 ## Hard-fail events must give twice the escape margin of an ordinary event.
 const TELEGRAPH_HARD_FAIL_MARGIN := 2.0
 
@@ -1045,7 +1044,7 @@ func longest_act_days() -> int:
 	return longest
 
 ## How many calm areas a city has to have: one per day of the longest act, plus one in reserve.
-## See `CityGenerator.MIN_CALM_BLOCKS`, which this is asserted against on boot.
+## `tests/test_tuning_fairness.gd` holds `CityGenerator.MIN_CALM_BLOCKS` to at least this.
 func calm_areas_needed() -> int:
 	return longest_act_days() + 1
 

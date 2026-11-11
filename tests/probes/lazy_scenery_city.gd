@@ -29,7 +29,7 @@ func _dress_blocks(state: CityState) -> void:
 	spans["dressing_ms"] = (Time.get_ticks_usec() - started) / 1000.0
 
 ## Overrides City._close_streets.
-func _close_streets(day: int, rng: RandomNumberGenerator) -> void:
+func _close_streets(spec: DaySpec, rng: RandomNumberGenerator) -> void:
 	var started := Time.get_ticks_usec()
-	super._close_streets(day, rng)
+	super._close_streets(spec, rng)
 	spans["closures_ms"] = (Time.get_ticks_usec() - started) / 1000.0

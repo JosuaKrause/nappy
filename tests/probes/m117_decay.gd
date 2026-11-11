@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What the meter actually does on each kind of ground, walked rather than derived. Not a suite:
 ## it prints numbers rather than asserting relationships, so it lives under `tests/probes/`, where
@@ -32,14 +32,14 @@ const SECONDS := 40.0
 const SEEDS := [4242, 90210, 1337]
 const SAMPLE_DAYS := [1, 9]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_ground_rates(t)
 	_cost_table()
 	t.check(true, "m117 decay probe ran")
 
 # ------------------------------------------------------------------ ground rates ---
 
-func _ground_rates(t) -> void:
+func _ground_rates(t: TestRunner) -> void:
 	print("\n== net excitement rate by ground, %.0fs walks, %d seeds ==" % [SECONDS, SEEDS.size()])
 	print("walking decay %.2f/s  ×  calm %.2f  precinct %.2f  street 1.00  main road %.2f"
 			% [Tuning.EXCITEMENT_DECAY_WALKING, City.EXCITEMENT_DECAY_CALM_ZONE_MULTIPLIER,

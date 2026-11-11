@@ -24,4 +24,4 @@ approved it", inbox #1268 in olive-ferret); the detail was worked out by the sam
   theirs from one factory (`standing-layer-breaks.md`, the city scene as builder).
 
 **The pull request:** it touches the event manager's setup and lands between two placement pull
-requests.
+requests (`city-hand-ins.md` holds the proposal to cut it).

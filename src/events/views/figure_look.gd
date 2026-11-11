@@ -7,7 +7,7 @@ extends EventLook
 
 ## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match event.def.look:
+	match _row.picture():
 		EventDef.Look.CAT:
 			_draw_cat(canvas)
 		EventDef.Look.MOUSE:
@@ -58,10 +58,10 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.LOUDSPEAKER_MAST:
 			_draw_mast(canvas)
 
-## The two pedal frames a cyclist draws, `[by_view, by_view_b]`: the pelican's when `is_pelican`
-## is set, the kid's otherwise. The one place the choice is read.
+## The two pedal frames a cyclist draws, `[by_view, by_view_b]`: the pelican's when the event is
+## drawn as one (`is_drawn_as_a_pelican()`), the kid's otherwise. The one place the choice is read.
 func _rider_pictures() -> Array[Dictionary]:
-	if event.is_pelican:
+	if event.is_drawn_as_a_pelican():
 		return [EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B]
 	return [EventPictures.CYCLIST_BY_VIEW, EventPictures.CYCLIST_BY_VIEW_B]
 
@@ -91,7 +91,7 @@ func _draw_loose_dog(canvas: CanvasItem) -> void:
 	canvas.draw_line(Vector2(0.0, -8.0), behind + Vector2(0.0, -2.0), Palette.OUTLINE, 2.0)
 	var view := select_view(event.facing_now())
 	var dog := EventPictures.dog_picture(view, gait_is_stepping(), gait_is_second_half())
-	event.drawer.stand(canvas, dog, Vector2.ZERO, Vector2.ZERO,
+	_drawer.stand(canvas, dog, Vector2.ZERO, Vector2.ZERO,
 			is_mirrored())
 
 func _draw_cat(canvas: CanvasItem) -> void:
@@ -106,7 +106,7 @@ func _draw_cat(canvas: CanvasItem) -> void:
 		by_view = EventPictures.CAT_RUNNING_BY_VIEW_B
 	_draw_body_shadow(canvas)
 	var view := select_view(event.facing_now())
-	event.drawer.stand(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+	_drawer.stand(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
 			is_mirrored())
 
 ## The tables, and the people at them.
@@ -132,7 +132,7 @@ func _draw_busker(canvas: CanvasItem) -> void:
 	var mirror := is_mirrored()
 	var by_view := EventPictures.BUSKER_BY_VIEW_B \
 			if idle_is_stepping(EventPictures.BUSKER_STRUM_PERIOD) else EventPictures.BUSKER_BY_VIEW
-	event.drawer.stand(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+	_drawer.stand(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
 			mirror)
 
 ## The pole and horns stand whether the mast is live or silenced — a mast never leaves. On top of
@@ -143,15 +143,15 @@ func _draw_busker(canvas: CanvasItem) -> void:
 ## indicator about when a mast is active / has a broadcast")*.
 func _draw_mast(canvas: CanvasItem) -> void:
 	_draw_simple(EventPictures.MAST, canvas)
-	if event.silenced:
+	if event.is_silenced():
 		return
 	if mast_is_telegraphing_now():
-		event.drawer.stand(canvas, EventPictures.MAST_LAMP, EventPictures.MAST_LAMP_AT, Vector2.ZERO,
+		_drawer.stand(canvas, EventPictures.MAST_LAMP, EventPictures.MAST_LAMP_AT, Vector2.ZERO,
 				false, Palette.SIGNAL_AMBER)
 		return
-	event.drawer.stand(canvas, EventPictures.MAST_LAMP, EventPictures.MAST_LAMP_AT, Vector2.ZERO,
+	_drawer.stand(canvas, EventPictures.MAST_LAMP, EventPictures.MAST_LAMP_AT, Vector2.ZERO,
 			false, Palette.SIGNAL_GREEN)
-	event.drawer.stand(canvas, EventPictures.SOUND_PULSE, EventPictures.MAST_PULSE_AT, Vector2.ZERO,
+	_drawer.stand(canvas, EventPictures.SOUND_PULSE, EventPictures.MAST_PULSE_AT, Vector2.ZERO,
 			false)
 
 ## The person, the dog, and the lead between them.
@@ -160,7 +160,7 @@ func _draw_mast(canvas: CanvasItem) -> void:
 ## street for is the span it owns, and a span you cannot see is a span you walk into. The dog
 ## leads on the side the walker is heading, so the pair reads as being dragged along.
 func _draw_dog_walker(canvas: CanvasItem) -> void:
-	var reach := event.def.inner_radius * 0.8
+	var reach := _row.core_within() * 0.8
 	# The lead's own span stays a plain east/west offset — a composite the walker's own picture
 	# does not own, unaffected by which of the eight views that picture now is.
 	var to_the_dog := Vector2(-reach if _heading_is_west() else reach, 0.0)
@@ -180,9 +180,9 @@ func _draw_dog_walker(canvas: CanvasItem) -> void:
 	var person_by_view := EventPictures.PERSON_BY_VIEW_B if stepping \
 			else EventPictures.PERSON_BY_VIEW
 	var dog := EventPictures.dog_picture(view, stepping, gait_is_second_half())
-	event.drawer.stand(canvas, person_by_view[view], Vector2.ZERO,
+	_drawer.stand(canvas, person_by_view[view], Vector2.ZERO,
 			Vector2.ZERO, mirror)
-	event.drawer.stand(canvas, dog, to_the_dog, Vector2.ZERO, mirror)
+	_drawer.stand(canvas, dog, to_the_dog, Vector2.ZERO, mirror)
 
 ## Another mother with a pram — one picture, two postures. Strolling is what she looks like for the
 ## whole of her beat; talking is what she looks like for exactly the `detain_seconds` of a
@@ -199,5 +199,5 @@ func _draw_chatting_mother(canvas: CanvasItem) -> void:
 	if not chatting and gait_is_stepping():
 		by_view = EventPictures.CHATTING_MOTHER_WALKING_BY_VIEW_B
 	var view := select_view(event.facing_now())
-	event.drawer.stand(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
+	_drawer.stand(canvas, by_view[view], Vector2.ZERO, Vector2.ZERO,
 			is_mirrored())

@@ -29,7 +29,8 @@ each read, and its pull requests in order, the first of which run beside the pla
   `tools/check_field_reads.py`, with the list in `tools/field_reads.txt`, run in CI's `gates` job.
   Asked on the board whether the list may gain the lines of a read that only moved (into a new
   file, or with a class lifted out of another), the player answered "A", that it may
-  (inbox #1350). Which moves count is the record minty-quail-breezy-bison's.
+  (inbox #1350). Which moves count is the planning agent's proposal, written in the record
+  minty-quail-breezy-bison.
 
 **Every receiver gets a class the check can tell** (inbox #1268 in olive-ferret). Shown "The field-read check
 skips about two thirds of reads because it cannot tell the receiver's class", the player: "isn't
@@ -50,23 +51,16 @@ the event instance, then the city map and the city, so the events go first, as t
 
 Left, each its own design question:
 
-- **The strategies' calls on the mover's underscore methods.** The car and walker strategies still
-  make 49 calls to 11 of `LaneMover`'s underscore methods (`_along()`, `_cross()`,
-  `_set_along()`, `_set_cross()`, `_turn_round()`, `_tile_ahead()` and the like); a later pull
-  request turns those into the strategy's questions on the narrow lane interface (`LaneMover.Lane`),
-  named for what is asked and what happens.
 - **A run's parts.** `RunState` hands out `header`, `calendar`, `resistance`, `attempt_spend`,
   `posters` and `facts`, and a read through one is two field reads (`RunHeader`, `RunCalendar`,
   `ResistanceRunState`, `RunFacts`, `SettledState`): the parts reached through methods and each
   part's fields behind methods; the vars are renamed, and the files the third hand-ins pull
   request touches and the tests read them, so it waits for that pull request.
-- **`BlockedLayer`**, converted with the map's property wrappers in `src/city/`.
 - **The city's own classes** have their readers converted except three groups, each with a home:
   - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
-    (`RecipeCityContext`) are the scene recipes' city. They go with or after `placement-by-construction.md`'s bullet on the
-    scene recipes assigning locations, which rewrites the scene recipes, so no work is done twice (inbox #1185 in gentle-owl); a design for the map
-    capturing and restoring itself waits for it.
-  - `City.events` and `City.crowd`, read by the poster walls and the frame recorder and trace, go with
+    (`RecipeCityContext`) are the scene recipes' city. The scene recipes are placed by location (`placement-by-construction.md`, "What is built"), so they wait
+    for nothing there; what is left is a design for the map capturing and restoring itself.
+  - `City.events` and `City.crowd`, read by the frame recorder and trace, go with
     the third hand-ins pull request (`city-hand-ins.md`), which hands those readers their parts. An
     accessor on `City` would add uses of `EventManager` and `Crowd` to breaks `tools/layer_map.py` lists.
   - A field only a test still reads (`CityMap.home_rect`, `home_block`, `courtyard_rects`,
@@ -74,6 +68,26 @@ Left, each its own design question:
     `station_yard_cols`, `BuildingShadows.streamed`, `falls_on`, `PosterState.pasted_through`) keeps its
     direct write in the city and goes with the tests-one-module item (`tests-one-module.md`), when its
     tests read through a method the game also calls.
+- **Her and the baby's parts that only tests read.** `Stroller.atlas` and `Baby.timing` are handed in
+  through `use_atlas()` and `use_frame_timing()` and read by their own file and two suites:
+  `tests/test_atlas_boot.gd` finds every node holding an atlas by the field's name (`"atlas" in node`,
+  `node.get("atlas")`), so renaming `Stroller.atlas` would make that walk skip her with no failure,
+  and `tests/test_frame_record_wiring.gd` reads `Baby.timing`. They become underscore-private with
+  the tests-one-module item (`tests-one-module.md`), when those suites read through a method the game
+  also calls.
+- **Three public fields with no reader under `src/` outside their own class.**
+  `SpreadLook.Slice.index` is read only by the look probe, by string (`canvas.get(&"index")` in
+  `tests/probes/look_fingerprint.gd`), which row 4a's scripted rewrite of `event-interface.md` would
+  not find; it goes private when the probe asks `SpreadLook.slices()` for a slice's place, with the
+  probe's `LK` hash shown unchanged and a released slice not yet freed taken care of.
+  `SceneryLayer.frame_b` is used only by suites (`test_roof_entities`, `test_scenery_residency`,
+  `test_scenery_animation`) and a windowed probe, and `SceneryLayer.drawer` only by its own file;
+  `tools/check_test_only_members.py` misses `frame_b` because the name is also a local elsewhere.
+- **The flock's look reads a bird's fields.** `_draw_birds()` in `src/events/views/flock_look.gd`
+  reads `at`, `lift`, `heading` and `phase` off `EventFlock.Bird`, an inner class
+  `tools/check_field_reads.py` does not see, and four suites read the same fields. `Bird` gets its
+  methods and those suites ask them in one pull request, since row 4a of `event-interface.md`
+  changes no line under `src/`.
 - **The lines the placement rewrite and the third hand-ins pull request touch** (`src/events/`,
   `src/routes/`, `src/dev/`, `scene_recipe*`, `day_director.gd`, `main.gd`, `day_planner.gd`,
   `run_session.gd`, the event manager and `EventWorld`, scenery residency and ground, the blackout,

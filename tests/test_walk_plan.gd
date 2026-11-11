@@ -29,7 +29,7 @@ const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
 ## Where each recipe is written and loaded, and what loading it answers.
 var _errors := RecipeErrors.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	await _test_west_then_north_ends_where_the_abrupt_script_does(t)
 	await _test_the_turn_sweeps_through_the_bearings_between(t)
@@ -47,7 +47,7 @@ func run(t) -> void:
 
 ## A Stroller with the camera it looks up by path, in the tree so its `@onready` runs and its own
 ## physics ticks move her — the same rig `tests/test_danger.gd` builds.
-func _rig(t) -> Stroller:
+func _rig(t: TestRunner) -> Stroller:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -77,7 +77,7 @@ func _walk_rig(script: String, smooth: bool, clock: TickClock) -> AutoScreenshot
 
 ## Walks `script` from a standstill at the origin, smooth or abrupt, and returns where she is after
 ## every tick (`positions[n]` after `n` ticks), her velocity after every tick, and the plan.
-func _walk(t, script: String, smooth: bool) -> Dictionary:
+func _walk(t: TestRunner, script: String, smooth: bool) -> Dictionary:
 	var steps := AutoScreenshot.parse_script(script)
 	var plan := WalkPlan.make(steps, Engine.physics_ticks_per_second, smooth)
 	var total := 0.0
@@ -120,7 +120,7 @@ func _turns_blended(plan: WalkPlan, ticks: int) -> int:
 ## The two walks of `script` agree wherever her velocity does — before a turn, and from the moment
 ## the smoothed turn has caught up with the abrupt one — and end at rest at the same point. The
 ## count of agreeing ticks after the first turn keeps "wherever" from being vacuous.
-func _check_same_place(t, script: String, smoothed: int) -> Dictionary:
+func _check_same_place(t: TestRunner, script: String, smoothed: int) -> Dictionary:
 	var abrupt: Dictionary = await _walk(t, script, false)
 	var smooth: Dictionary = await _walk(t, script, true)
 	var plan: WalkPlan = smooth.plan
@@ -155,7 +155,7 @@ func _check_same_place(t, script: String, smoothed: int) -> Dictionary:
 	return {"abrupt": abrupt, "smooth": smooth}
 
 ## The player's own case: one second west, one second north, from one spot.
-func _test_west_then_north_ends_where_the_abrupt_script_does(t) -> void:
+func _test_west_then_north_ends_where_the_abrupt_script_does(t: TestRunner) -> void:
 	await _check_same_place(t, "1w1n", 1)
 	# And with a turn on each side of a middle step, so a position after one turn and before the
 	# next is compared, not only the end.
@@ -163,7 +163,7 @@ func _test_west_then_north_ends_where_the_abrupt_script_does(t) -> void:
 
 ## "Gradually": the smooth walk heads through bearings strictly between west and north, which
 ## the abrupt one only crosses in the few ticks its velocity takes to swing.
-func _test_the_turn_sweeps_through_the_bearings_between(t) -> void:
+func _test_the_turn_sweeps_through_the_bearings_between(t: TestRunner) -> void:
 	var walks: Dictionary = await _check_same_place(t, "1w1n", 1)
 	var smooth_between := 0
 	var abrupt_between := 0
@@ -184,11 +184,11 @@ func _test_the_turn_sweeps_through_the_bearings_between(t) -> void:
 					% [smooth_between, abrupt_between])
 
 ## Two bearings neither of which is an axis, through an angle that is not a right angle.
-func _test_an_oblique_bearing_turn_ends_where_the_abrupt_script_does(t) -> void:
+func _test_an_oblique_bearing_turn_ends_where_the_abrupt_script_does(t: TestRunner) -> void:
 	await _check_same_place(t, "1.5@30@1.5@145@", 1)
 
 ## A reversal cannot sweep without drifting sideways, so it slows to a stop and walks back.
-func _test_a_reversal_slows_through_a_stop_and_ends_where_the_abrupt_script_does(t) -> void:
+func _test_a_reversal_slows_through_a_stop_and_ends_where_the_abrupt_script_does(t: TestRunner) -> void:
 	var walks: Dictionary = await _check_same_place(t, "1e1w", 1)
 	var velocities: Array[Vector2] = walks.smooth.velocities
 	var sideways := 0.0
@@ -198,7 +198,7 @@ func _test_a_reversal_slows_through_a_stop_and_ends_where_the_abrupt_script_does
 
 ## A turn at a run, and a turn after a lead-in too short for the full window, which a trailer
 ## shot's first legs are.
-func _test_a_running_turn_and_a_turn_after_a_short_lead_in(t) -> void:
+func _test_a_running_turn_and_a_turn_after_a_short_lead_in(t: TestRunner) -> void:
 	await _check_same_place(t, "1.5W1.5N", 1)
 	await _check_same_place(t, "0.3s2w", 1)
 
@@ -206,7 +206,7 @@ func _test_a_running_turn_and_a_turn_after_a_short_lead_in(t) -> void:
 
 ## Smooth off presses on every tick exactly the step that tick falls in — the step's own vector and
 ## run, bit for bit, never a blend.
-func _test_smooth_off_presses_exactly_the_abrupt_script(t) -> void:
+func _test_smooth_off_presses_exactly_the_abrupt_script(t: TestRunner) -> void:
 	var steps := AutoScreenshot.parse_script("1w0.5p1.2@45@0.6S1n")
 	var plan := WalkPlan.make(steps, Engine.physics_ticks_per_second, false)
 	var mismatches := 0
@@ -227,7 +227,7 @@ func _test_smooth_off_presses_exactly_the_abrupt_script(t) -> void:
 
 ## A stand, a change between walking and running, and a turn with no room on either side are left
 ## abrupt: the smooth plan presses on every tick what the abrupt one does.
-func _test_what_is_never_smoothed_presses_exactly_the_abrupt_script(t) -> void:
+func _test_what_is_never_smoothed_presses_exactly_the_abrupt_script(t: TestRunner) -> void:
 	for script in ["1e1W", "1e0.5p1w", "1e0.1n1w"]:
 		var steps := AutoScreenshot.parse_script(script)
 		var abrupt := WalkPlan.make(steps, Engine.physics_ticks_per_second, false)
@@ -244,7 +244,7 @@ func _test_what_is_never_smoothed_presses_exactly_the_abrupt_script(t) -> void:
 
 ## The deadzone `Input.get_vector()` applies is undone before the press, so what she reads is the
 ## blend itself, not a slower walk still.
-func _test_a_blended_press_reads_back_as_the_blend(t) -> void:
+func _test_a_blended_press_reads_back_as_the_blend(t: TestRunner) -> void:
 	for wanted: Vector2 in [Vector2(-0.5, -0.5), Vector2(0.1, 0.0), Vector2(0.3, -0.6)]:
 		WalkPlan.press({"direction": wanted, "run": false, "blending": true})
 		var read := Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
@@ -256,7 +256,7 @@ func _test_a_blended_press_reads_back_as_the_blend(t) -> void:
 
 ## `--smooth-walk`: the rig presses the plan from its physics tick, not the script's step clock. The
 ## rig stands in the tree and its own ticks run; what it pressed is read off `Input` after each.
-func _test_a_smooth_walk_rig_presses_the_plan_tick_by_tick(t) -> void:
+func _test_a_smooth_walk_rig_presses_the_plan_tick_by_tick(t: TestRunner) -> void:
 	var node := _walk_rig("1w1n", true, TickClock.new())
 	t.add_child(node)
 	var read := Input.get_vector(&"move_left", &"move_right", &"move_up", &"move_down")
@@ -290,7 +290,7 @@ class Probe extends Node:
 ## A step clock reading past the first one-second step would advance an abrupt script to north; a
 ## smooth script is pressed by its plan alone, so with the clock read at 1.5s while the plan is
 ## still on its first step the press stays west on every frame.
-func _test_the_step_clock_never_advances_a_smooth_script(t) -> void:
+func _test_the_step_clock_never_advances_a_smooth_script(t: TestRunner) -> void:
 	var clock := UI.FakeClock.new()
 	var node := _walk_rig("1w1n", true, TickClock.new())
 	node.simulation_clock = clock.read
@@ -313,7 +313,7 @@ func _test_the_step_clock_never_advances_a_smooth_script(t) -> void:
 	_release()
 
 ## `playback.smooth` is a boolean or the recipe is refused, like every other playback switch.
-func _test_a_recipe_says_smooth_with_a_boolean(t) -> void:
+func _test_a_recipe_says_smooth_with_a_boolean(t: TestRunner) -> void:
 	var recipe := {"playback": {"walk": "1w1n", "smooth": true}}
 	t.check(not "\n".join(_errors.errors_of(t, recipe)).contains("smooth"),
 			"a boolean smooth is accepted")

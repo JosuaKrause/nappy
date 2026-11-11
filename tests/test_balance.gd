@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The day's pitch, measured against the real world rather than against the numbers.
 ##
@@ -39,7 +38,7 @@ var _clock: DayController
 var _config := RunConfig.parse(PackedStringArray(), "", true)
 var _days: DayDirector
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	_city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(_city)
@@ -62,7 +61,7 @@ func _new_run() -> void:
 	_city.run.start_run(RUN_SEED)
 
 ## Starts the run's current day, which is `day`, the way the game does (`DayDirector.start()`).
-func _start_day(t, day: int) -> void:
+func _start_day(t: TestRunner, day: int) -> void:
 	t.check(_city.run.header.day == day, "the run is on day %d (%d)" % [day, _city.run.header.day])
 	_days.start(DaySpec.for_day(day, _config.day_length_for(day)))
 
@@ -88,7 +87,7 @@ func _stand_at(at: Vector2) -> void:
 ## day places its mark for; and the day director handed all of them. The City is the world the baby
 ## is handed, so it is asking the real map and the real crowd. Nothing ticks the clock — `main` is
 ## what does — so no day here ends on its own.
-func _build_rig(t) -> void:
+func _build_rig(t: TestRunner) -> void:
 	_stroller = Stroller.new()
 	# The name matters: Stroller's @onready looks the camera up by path. Matches the real
 	# camera's own scene (`process_callback = 0` in `stroller.tscn`) rather than leaving the
@@ -102,6 +101,7 @@ func _build_rig(t) -> void:
 	_baby = Baby.new()
 	_stroller.add_child(_baby)
 	_baby.set_world(_city)
+	_baby.use_bus(EventBus)
 	_clock = DayController.new()
 	t.add_child(_clock)
 	_clock.setup(_city.run)
@@ -125,7 +125,7 @@ func _place_rig(at: Vector2) -> void:
 ## time, each `TIME_SCALE` times as long as a tick, so a day's seconds take a quarter of the
 ## frames; what is measured is what the ground and the noise do, and a longer step does not change
 ## it. Returns how long it took her to settle in game seconds, or -1.0 if she never did.
-func _walk_until_asleep(t, at: Vector2, seconds: float) -> float:
+func _walk_until_asleep(t: TestRunner, at: Vector2, seconds: float) -> float:
 	_stroller.global_position = at
 	var total := PhysicsTicks.ticks_for(seconds, TIME_SCALE)
 	# A lambda copies a local number, so the tick she fell asleep on is kept in an array.
@@ -147,7 +147,7 @@ func _walk_until_asleep(t, at: Vector2, seconds: float) -> float:
 
 ## The park has to be quiet enough that the meter never freezes in it, or the only place a
 ## day can be won is a place a day cannot be won.
-func _test_a_calm_park_still_settles_her(t) -> void:
+func _test_a_calm_park_still_settles_her(t: TestRunner) -> void:
 	_new_run()
 	_start_day(t, 1)
 	var park := _quietest_park()
@@ -173,7 +173,7 @@ func _test_a_calm_park_still_settles_her(t) -> void:
 ## longer walk than the plateau itself takes to reach is not a longer look at anything, only more
 ## frames of the same reading. Sixty seconds is six times that settling time, which is margin
 ## against the plateau being reached slower on a seed or a day this test does not use.
-func _test_the_arterial_never_settles_her(t) -> void:
+func _test_the_arterial_never_settles_her(t: TestRunner) -> void:
 	_new_run()
 	_start_day(t, 1)
 	var street := CrowdLanes.arterial_pavement(_city.map)
@@ -193,7 +193,7 @@ func _test_the_arterial_never_settles_her(t) -> void:
 ## The days are one run's, each banked as won before the next begins, so where she settled is
 ## remembered and the act's later days read it spent: the park she used is spoiled and off the
 ## day's tree, and the quietest park is found among what is left.
-func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t) -> void:
+func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t: TestRunner) -> void:
 	_new_run()
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		_start_day(t, day)
@@ -209,7 +209,7 @@ func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t) -> void:
 ## exactly on the ambient source's own centre, where `EventScheduler._place_ambient` puts it, is
 ## the worst point in any park it is in, so if she settles there she settles everywhere else in
 ## the same park too.
-func _test_the_playground_itself_settles_her(t) -> void:
+func _test_the_playground_itself_settles_her(t: TestRunner) -> void:
 	_new_run()
 	_start_day(t, 1)
 	if _city.map.playgrounds.is_empty():

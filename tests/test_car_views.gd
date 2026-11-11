@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The eight-sector heading selector (`EightDirection`) as the crowd car's own caller.
 ##
@@ -16,7 +15,7 @@ const ViewRig := preload("res://tests/view_rig.gd")
 
 var _rig: ViewRig
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_rig = ViewRig.new(t)
 	_test_body_and_trim_can_never_disagree(t)
 	_test_cardinal_headings_select_the_expected_view(t)
@@ -38,7 +37,7 @@ func run(t) -> void:
 
 ## A car the game placed on a lane running along `heading` (`CrowdAgent.setup()`), at the pace that
 ## placement rolled.
-func _car(t, heading: Vector2 = Vector2.RIGHT) -> CrowdAgent:
+func _car(t: TestRunner, heading: Vector2 = Vector2.RIGHT) -> CrowdAgent:
 	var agent := _rig.place(CrowdAgent.Kind.CAR, heading)
 	t.check(agent != null, "a car is placed heading %s" % heading)
 	return agent
@@ -48,11 +47,11 @@ func _car(t, heading: Vector2 = Vector2.RIGHT) -> CrowdAgent:
 ## different cars' worth of paint and glass. And it pins the tint split: body and trim have to be
 ## two distinct baked regions, or tinting the body (`AgentLook.draw_body()`'s own `colour` argument) would
 ## tint the trim drawn over it as well.
-func _test_body_and_trim_can_never_disagree(t) -> void:
+func _test_body_and_trim_can_never_disagree(t: TestRunner) -> void:
 	var body_views := CarLook.BODY_BY_VIEW.keys()
 	var trim_views := CarLook.TRIM_BY_VIEW.keys()
 	t.check(body_views.size() == trim_views.size(), "the car family has as many trim views as body views")
-	for view in body_views:
+	for view: String in body_views:
 		t.check(CarLook.TRIM_BY_VIEW.has(view),
 				"every body view %s has a matching trim view" % view)
 		var body_region := StringName(CarLook.BODY_BY_VIEW[view])
@@ -67,11 +66,11 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 
 ## The four cardinal/side sectors a car reaches without ever being on an arc: a car placed on a lane
 ## running each way (`CrowdAgent.setup()`), with no turn committed.
-func _test_cardinal_headings_select_the_expected_view(t) -> void:
+func _test_cardinal_headings_select_the_expected_view(t: TestRunner) -> void:
 	# [lane heading] per sector, cardinal ones only (0 E, 2 S, 4 W, 6 N) — the diagonals are never a
 	# lane axis and are covered by the turn test below instead.
 	var cardinal := {0: Vector2.RIGHT, 2: Vector2.DOWN, 4: Vector2.LEFT, 6: Vector2.UP}
-	for sector in cardinal.keys():
+	for sector: int in cardinal.keys():
 		var agent := _car(t, cardinal[sector])
 		if agent == null:
 			continue
@@ -95,7 +94,7 @@ func _arc_turned(degrees: float, direction := 1.0, turning := 1.0) -> CarTurn:
 	var lane := CrowdLanes.road_lane(false, direction)
 	var turn := CarTurn.into_an_arm(false, direction, 0, CrowdLanes.lane_centre(0, lane), 0,
 			CrowdLanes.ROAD_OFFSETS[0], turning, Vector2i.ZERO)
-	turn.travelled = turn.radius * deg_to_rad(degrees)
+	turn.travel_on(turn.radius * deg_to_rad(degrees))
 	return turn
 
 ## A turn whose tangent is exactly `sector`'s own 45-degree-multiple centre: halfway round a quarter
@@ -112,12 +111,12 @@ func _turn_facing(sector: int) -> CarTurn:
 ## goes diagonal. A car's own `LaneMover.heading()` reads its committed turn's `heading_at()` once the run-up is spent
 ## (`LaneMover.take_the_turn()`), so
 ## a car partway round an arc is exactly this state.
-func _test_a_turn_sweeps_through_the_diagonal_views(t) -> void:
+func _test_a_turn_sweeps_through_the_diagonal_views(t: TestRunner) -> void:
 	var agent := _car(t)
 	if agent == null:
 		return
 	var look := ViewRig.car_look(agent)
-	for sector in [1, 3, 5, 7]:
+	for sector: int in [1, 3, 5, 7]:
 		agent.take_the_turn(_turn_facing(sector), 0.0)
 		look.view = (sector + 4) % 8
 		var heading := agent.heading()
@@ -136,7 +135,7 @@ func _test_a_turn_sweeps_through_the_diagonal_views(t) -> void:
 ## before rather than reading a facing out of a heading that no longer means one. The car is stopped
 ## the way a crash stops one (`CrowdAgent.crashed_into()`), the public way to bring a car's speed to
 ## zero.
-func _test_a_stopped_car_keeps_its_view(t) -> void:
+func _test_a_stopped_car_keeps_its_view(t: TestRunner) -> void:
 	var agent := _car(t)
 	if agent == null:
 		return
@@ -159,7 +158,7 @@ func _test_a_stopped_car_keeps_its_view(t) -> void:
 ## `WalkerLook.sector()`'s own doc gives for the walker: the ordinary update on the very next
 ## frame already replaces whatever was drawn before. The car is placed again for real
 ## (`CrowdAgent.setup()`).
-func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
+func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t: TestRunner) -> void:
 	var agent := _car(t)
 	if agent == null:
 		return
@@ -192,7 +191,7 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
 ## car's nearest ground contact and lands on the strike box's own southernmost point. The side view
 ## is in it on the same terms as the rest — an east-facing car's box reaches
 ## `CAR_STRIKE_HALF_WIDTH` south of the node and its picture's wheels belong there, not on the node.
-func _test_every_sector_picture_agrees_with_the_strike_box(t) -> void:
+func _test_every_sector_picture_agrees_with_the_strike_box(t: TestRunner) -> void:
 	for sector in range(8):
 		var view: String = CarLook.VIEW_BY_SECTOR[sector]
 		var heading := Vector2.from_angle(deg_to_rad(sector * 45.0))
@@ -231,12 +230,12 @@ func _test_every_sector_picture_agrees_with_the_strike_box(t) -> void:
 ## get weirdly offset". Sampled either side of all eight boundaries, one hundredth of a degree apart:
 ## whatever the texture does, the ground line may not move further than the strike box's own south
 ## point moved over the same hundredth of a degree.
-func _test_the_registration_is_continuous_across_a_sector_boundary(t) -> void:
+func _test_the_registration_is_continuous_across_a_sector_boundary(t: TestRunner) -> void:
 	var step := 0.01
 	for boundary in range(8):
 		var angle := 22.5 + 45.0 * float(boundary)
 		var ground := []
-		for side in [-step, step]:
+		for side: float in [-step, step]:
 			var heading := Vector2.from_angle(deg_to_rad(angle + side))
 			var sector := EightDirection.nearest(heading)
 			var view: String = CarLook.VIEW_BY_SECTOR[sector]
@@ -282,18 +281,18 @@ class TracingAtlas extends AtlasLibrary:
 ## A car handed a `TracingAtlas`, in the tree with its rim lit, so its halo eases in and draws on
 ## real frames. Answers the atlas, whose `halo` is the car's own rim; the caller frees the car, then
 ## calls `_put_away()`.
-func _lit_and_traced(t, agent: CrowdAgent) -> TracingAtlas:
+func _lit_and_traced(t: TestRunner, agent: CrowdAgent) -> TracingAtlas:
 	var atlas := TracingAtlas.new()
 	atlas.acquire(Crowd.ATLAS_GROUP)
 	agent.use_atlas(atlas)
 	t.add_child(agent)
-	agent.excitement.rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
-	atlas.watch(agent.excitement.rim.entity_halo())
+	agent.mood().rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	atlas.watch(agent.mood().rim.entity_halo())
 	return atlas
 
 ## The copies the halo traced in a whole draw pass begun after this call: the second pass from now,
 ## since the first may have begun before the call. Empty if no such pass came within a few seconds.
-static func _next_whole_pass(t, atlas: TracingAtlas) -> Array:
+static func _next_whole_pass(t: TestRunner, atlas: TracingAtlas) -> Array:
 	var from := atlas.passes.size()
 	var started := Time.get_ticks_msec()
 	var frames := 0
@@ -311,7 +310,7 @@ static func _put_away(atlas: TracingAtlas) -> void:
 ## `draw_body`, and the rim re-runs it once per ring offset (`EntityHalo._on_draw()`). Read in one of
 ## the halo's own draw passes: every region it asks for is the body, trim or wheels of the view this
 ## car draws, and each of the three is traced at every offset of the ring.
-func _test_the_halo_redraws_the_same_body(t) -> void:
+func _test_the_halo_redraws_the_same_body(t: TestRunner) -> void:
 	var agent := _car(t)
 	if agent == null:
 		return
@@ -325,13 +324,13 @@ func _test_the_halo_redraws_the_same_body(t) -> void:
 		CarLook.region_of(CarLook.WHEELS_BY_VIEW[view]): 0,
 	}
 	var other := 0
-	for copy in copies:
+	for copy: Array in copies:
 		if body.has(copy[0]):
 			body[copy[0]] += 1
 		else:
 			other += 1
 	var every_offset := true
-	for region in body:
+	for region: StringName in body:
 		every_offset = every_offset and body[region] == EntityHalo.HALO_OFFSETS
 	t.check(not copies.is_empty() and other == 0 and every_offset,
 			("the halo redraws exactly this car's own %s body, trim and wheels at each of the %d "
@@ -342,11 +341,11 @@ func _test_the_halo_redraws_the_same_body(t) -> void:
 	agent.free()
 	_put_away(atlas)
 
-## Whether `halo` draws the alpha its glow was told, `ExcitementHalo.MAX_ALPHA` here: the shader's
+## Whether `halo` draws the alpha its glow was told, `EntityHalo.MAX_ALPHA` here: the shader's
 ## own `halo_colour`, which stays transparent until the rim has eased at all.
 func _glow_has_arrived(halo: EntityHalo) -> bool:
 	var drawn: Variant = halo.get_instance_shader_parameter("halo_colour")
-	return drawn is Color and is_equal_approx((drawn as Color).a, ExcitementHalo.MAX_ALPHA)
+	return drawn is Color and is_equal_approx((drawn as Color).a, EntityHalo.MAX_ALPHA)
 
 ## **A steady glow is not a steady body, and the rim has to follow the body.** The rim is traced by
 ## re-running the owner's own `AgentLook.draw_body()` (pinned by the test above), and `_draw()` is retained —
@@ -355,15 +354,15 @@ func _glow_has_arrived(halo: EntityHalo) -> bool:
 ## turning". A headless draw leaves no picture to read, so what is asserted here is the state the
 ## drawing reads — the same division `tests/test_checkpoints.gd` draws for the checkpoint hut's own
 ## suppression.
-func _test_the_rim_is_re_traced_under_a_steady_glow(t) -> void:
+func _test_the_rim_is_re_traced_under_a_steady_glow(t: TestRunner) -> void:
 	var agent := _car(t)
 	if agent == null:
 		return
 	var look := ViewRig.car_look(agent)
 	# In the tree, so the halo's own `_process()` runs on real frames and the glow eases in.
 	t.add_child(agent)
-	agent.excitement.rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
-	var halo: EntityHalo = agent.excitement.rim.entity_halo()
+	agent.mood().rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	var halo: EntityHalo = agent.mood().rim.entity_halo()
 	var started := Time.get_ticks_msec()
 	while not _glow_has_arrived(halo) and Time.get_ticks_msec() - started < 10_000:
 		await t.get_tree().process_frame
@@ -401,7 +400,7 @@ func _drawn_picture(view: String, heading: Vector2) -> Rect2:
 	var anchor := CarLook.body_anchor(view, heading)
 	var drawn := Rect2()
 	var merged := false
-	for path in [CarLook.BODY_BY_VIEW[view], CarLook.TRIM_BY_VIEW[view],
+	for path: String in [CarLook.BODY_BY_VIEW[view], CarLook.TRIM_BY_VIEW[view],
 			CarLook.WHEELS_BY_VIEW[view]]:
 		var extent := Vector2(AtlasTable.baked().native_size(StringName(path)))
 		var layer := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent)
@@ -438,7 +437,7 @@ func _traced_rim(look: CarLook, view: String, heading: Vector2) -> Rect2:
 ## Mirroring is deliberately not a variable here: `Sprites.mirrored_transform()` reflects about the
 ## anchor, which a rect centred on that anchor's own x is symmetric under, so the *bounds* are the
 ## same either way. `tests/test_halo.gd` holds the mirrored ring itself.
-func _test_the_rim_and_the_picture_share_one_footprint(t) -> void:
+func _test_the_rim_and_the_picture_share_one_footprint(t: TestRunner) -> void:
 	var agent := _car(t)
 	if agent == null:
 		return
@@ -479,7 +478,7 @@ func _turn_at(degrees: float) -> CarTurn:
 ## answers it) — the same division `_test_the_rim_is_re_traced_under_a_steady_glow()` above already
 ## makes. The gate is run with a delta of zero: it is the key being checked here, not the clocks the
 ## same call runs down.
-func _test_the_redraw_gate_carries_the_live_anchor(t) -> void:
+func _test_the_redraw_gate_carries_the_live_anchor(t: TestRunner) -> void:
 	var agent := _car(t)
 	if agent == null:
 		return
@@ -551,10 +550,10 @@ func _test_the_redraw_gate_carries_the_live_anchor(t) -> void:
 ## does: every view has one, baked as a region of its own, on exactly the body's canvas — the one
 ## size `Sprites.draw_standing()` bottom-centres all three layers by. A wheels picture of another
 ## size would stand its tyres somewhere under the car other than where they were drawn.
-func _test_wheels_share_the_body_canvas(t) -> void:
+func _test_wheels_share_the_body_canvas(t: TestRunner) -> void:
 	t.check(CarLook.WHEELS_BY_VIEW.keys().size() == CarLook.BODY_BY_VIEW.keys().size(),
 			"every body view has a wheels view and nothing else does")
-	for view in CarLook.BODY_BY_VIEW.keys():
+	for view: String in CarLook.BODY_BY_VIEW.keys():
 		t.check(CarLook.WHEELS_BY_VIEW.has(view), "the %s view has wheels" % view)
 		var wheels := StringName(CarLook.WHEELS_BY_VIEW[view])
 		var body := StringName(CarLook.BODY_BY_VIEW[view])
@@ -569,7 +568,7 @@ func _test_wheels_share_the_body_canvas(t) -> void:
 ## A car in a lane, driven one tick at a time at a cruising speed. Its lane is east-west, which
 ## `LaneMover.heading()` answers exactly, so nothing but the bob can change about its picture. Pinned
 ## on the lane the game placed an eastbound car on, at `speed` (`CrowdAgent.setup_at()`).
-func _cruising_car(t, speed: float) -> CrowdAgent:
+func _cruising_car(t: TestRunner, speed: float) -> CrowdAgent:
 	var agent := _rig.place_at_speed(CrowdAgent.Kind.CAR, Vector2.RIGHT, speed)
 	t.check(agent != null, "a car is pinned on an eastbound lane at %.0fpx/s" % speed)
 	return agent
@@ -580,7 +579,7 @@ func _cruising_car(t, speed: float) -> CrowdAgent:
 ## cover no ground move nothing. Each tick advances the look with an injected `delta`: this checks
 ## the arithmetic of the bob over ground covered, which the crowd's tick hands the look
 ## (`CarLook.advance()`).
-func _test_a_moving_car_bobs_and_a_stopped_car_sits_still(t) -> void:
+func _test_a_moving_car_bobs_and_a_stopped_car_sits_still(t: TestRunner) -> void:
 	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
 	if agent == null:
 		return
@@ -614,7 +613,7 @@ func _test_a_moving_car_bobs_and_a_stopped_car_sits_still(t) -> void:
 
 ## **The bob is a function of ground covered, not of time**: a slow car and a fast one that have
 ## covered the same distance are at the same point of it, and the fast one gets there sooner.
-func _test_the_bob_is_driven_by_ground_covered(t) -> void:
+func _test_the_bob_is_driven_by_ground_covered(t: TestRunner) -> void:
 	var slow := _cruising_car(t, Tuning.CAR_SPEED.x)
 	var fast := _cruising_car(t, Tuning.CAR_SPEED.y)
 	if slow == null or fast == null:
@@ -638,7 +637,7 @@ func _test_the_bob_is_driven_by_ground_covered(t) -> void:
 ## the crowd's tick makes, and a look beside it by the same tick, and every copy the halo traces
 ## stands at an offset of `EntityHalo.trace_offsets()` lifted by that look's bob, up a rise and again
 ## after the car drives on.
-func _test_the_halo_rides_the_bob(t) -> void:
+func _test_the_halo_rides_the_bob(t: TestRunner) -> void:
 	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
 	if agent == null:
 		return
@@ -661,11 +660,11 @@ func _test_the_halo_rides_the_bob(t) -> void:
 
 ## That every copy in `copies` stands at an offset of the ring lifted by `bob`, and every offset of
 ## the ring has a copy.
-func _check_the_copies_ride(t, copies: Array, bob: float, when: String) -> void:
+func _check_the_copies_ride(t: TestRunner, copies: Array, bob: float, when: String) -> void:
 	var ring := EntityHalo.trace_offsets(bob)
 	var offsets := {}
 	var off_the_ring := 0
-	for copy in copies:
+	for copy: Array in copies:
 		var on_the_ring := false
 		for i in ring.size():
 			if (copy[1] as Vector2).is_equal_approx(ring[i]):
@@ -686,7 +685,7 @@ func _check_the_copies_ride(t, copies: Array, bob: float, when: String) -> void:
 ## for a redraw exactly when that key moved. The car's own picture is advanced by
 ## `CrowdAgent.advance_the_picture()`, the call the crowd's tick makes, and the look beside it by the
 ## same velocity and the same tick.
-func _test_the_redraw_gate_follows_the_bob(t) -> void:
+func _test_the_redraw_gate_follows_the_bob(t: TestRunner) -> void:
 	var agent := _cruising_car(t, Tuning.CAR_SPEED.x)
 	if agent == null:
 		return

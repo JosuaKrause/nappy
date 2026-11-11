@@ -119,8 +119,8 @@ func _ready() -> void:
 
 	_baby = get_tree().get_first_node_in_group("baby") as Baby
 	if _baby:
-		_sleepiness.value = _baby.sleepiness
-		_excitement.value = _baby.excitement
+		_sleepiness.value = _baby.sleepiness_level()
+		_excitement.value = _baby.excitement_level()
 	_refresh_header()
 	_refresh_state()
 	_refresh_resistance()
@@ -378,7 +378,7 @@ func _refresh_state() -> void:
 	if not _debug:
 		_state_label.text = ""
 		return
-	var text: String = _STATE_TEXT.get(_baby.state, "?")
+	var text: String = _STATE_TEXT.get(_baby.condition(), "?")
 	var reason := _baby.stall_reason()
 	if reason != "":
 		text += "   (not settling: %s)" % reason

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Protester pointing (M65): which of the eight `protester_point_*` poses a protest rank draws,
 ## and when it stays the plain `protester.svg` instead. See `docs/EVENTS.md`, the `protest` row,
@@ -10,7 +10,7 @@ const SEED := 4242
 
 var _city: City
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var standing: Array[Node] = t.get_children()
 	_test_bearing_sectors_pick_the_matching_pose(t)
 	_test_a_bearing_off_centre_still_rounds_to_its_sector(t)
@@ -36,7 +36,7 @@ func _at_bearing(degrees: float, distance: float) -> Vector2:
 
 ## One sample squarely inside each of the eight 45° sectors, so a swapped table entry shows up as
 ## a specific wrong pose rather than a single "not plain" check any of the eight would pass.
-func _test_bearing_sectors_pick_the_matching_pose(t) -> void:
+func _test_bearing_sectors_pick_the_matching_pose(t: TestRunner) -> void:
 	var from := Vector2(100.0, 100.0)
 	var sectors := [
 		[0.0, EventPictures.PROTESTER_POINT_N, "north"],
@@ -55,7 +55,7 @@ func _test_bearing_sectors_pick_the_matching_pose(t) -> void:
 
 ## A bearing 20° either side of a sector's own centre is still well inside its 45°-wide band —
 ## the pose is picked by nearest, not by an exact match.
-func _test_a_bearing_off_centre_still_rounds_to_its_sector(t) -> void:
+func _test_a_bearing_off_centre_still_rounds_to_its_sector(t: TestRunner) -> void:
 	var from := Vector2.ZERO
 	for offset in [-20.0, 20.0]:
 		var objective := from + _at_bearing(90.0 + offset, 150.0)
@@ -64,7 +64,7 @@ func _test_a_bearing_off_centre_still_rounds_to_its_sector(t) -> void:
 
 # ---------------------------------------------------------------- no objective ---
 
-func _test_plain_pose_with_no_objective(t) -> void:
+func _test_plain_pose_with_no_objective(t: TestRunner) -> void:
 	t.check(EventPictures.protester_texture(Vector2.ZERO, Vector2.INF) == EventPictures.PROTESTER,
 			"no objective at all draws the plain rank")
 	t.check(EventPictures.protester_texture(Vector2(5.0, 5.0), Vector2(5.0, 5.0))
@@ -85,14 +85,14 @@ func _test_plain_pose_with_no_objective(t) -> void:
 ## `_city` never freed would leave the group resident for the rest of the process — a suite
 ## sharing a later shard with `tests/test_telemetry.gd` then finds "events" already held before
 ## its own load/release test even starts.
-func _build_city(t) -> void:
+func _build_city(t: TestRunner) -> void:
 	if _city != null:
 		_city.free()
 	_city = RunCity.with_own_run(CITY_SCENE, SEED)
 	t.add_child(_city)
 	_city.build(CityGenerator.generate(SEED))
 
-func _director(t) -> ResistanceDirector:
+func _director(t: TestRunner) -> ResistanceDirector:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
@@ -105,23 +105,31 @@ func _rng(day: int) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d:resistance" % [SEED, day])
 	return rng
 
-## The pictures a protest the city's events made stands its rank in, drawn: it is handed a
-## recording drawer through `EventInstance.drawer`, the member its manager's spawner assigns, and
-## real frames pass so its slices are put in beside it and drawn, one protester each.
-func _rank_drawn(t, protest: EventInstance) -> Array[String]:
-	var drawer := RecordingEventDrawer.new()
-	protest.drawer = drawer
+## Hands the city's events a recording drawer to give every instance they make from here on, as
+## `tests/test_pelican.gd` does: a look is handed its drawer as it is made.
+func _record_the_drawing() -> void:
+	_city.events.world.drawer = RecordingEventDrawer.new()
+
+## The pictures a protest the city's events made stands its rank in, drawn: it was handed the
+## recording drawer its manager's spawner hands every instance (`_record_the_drawing()`), and real
+## frames pass so its slices are put in beside it and drawn, one protester each. Only what is drawn
+## on the protest and its slices is read, since the drawer is every later instance's too.
+func _rank_drawn(t: TestRunner, protest: EventInstance) -> Array[String]:
+	var drawer := protest.drawer as RecordingEventDrawer
 	for i in 3:
 		await t.get_tree().process_frame
 	var pictures: Array[String] = []
+	var slices := (protest.look as SpreadLook).slices()
 	for entry in drawer.shown():
-		if entry.kind == &"stand":
+		var slice := entry.canvas as SpreadLook.Slice
+		var its_own: bool = entry.canvas == protest or (slice != null and slices.has(slice))
+		if entry.kind == &"stand" and its_own:
 			pictures.append(entry.picture)
 	return pictures
 
 ## *(2026-09-11, the player: "the mark is findable now -- I don't think we need pointing for
 ## that.")* A pickup gives the protests' pointing hand-in (`EventManager.points_at`) nothing to hand back.
-func _test_plain_pose_on_a_mark_step(t) -> void:
+func _test_plain_pose_on_a_mark_step(t: TestRunner) -> void:
 	_build_city(t)
 	var director := _director(t)
 	director.start_day(6, _rng(6), 300.0)
@@ -137,7 +145,7 @@ func _test_plain_pose_on_a_mark_step(t) -> void:
 ## step activates the protester's objective the moment the mark it belongs to is touched rather
 ## than waiting for a `start_day()` that does not come until tomorrow. Before the first arrow field
 ## settles, that objective is the contact `_begin_step()` already placed.
-func _test_pointing_pose_on_a_perform_step(t) -> void:
+func _test_pointing_pose_on_a_perform_step(t: TestRunner) -> void:
 	_build_city(t)
 	var director := _director(t)
 	director.start_day(6, _rng(6), 300.0)
@@ -159,13 +167,14 @@ func _test_pointing_pose_on_a_perform_step(t) -> void:
 ## A protest the city's events make asks the director it was handed (`ResistanceDirector.setup()`
 ## hands `EventManager.points_at` its objective), not a node it looks up: its rank
 ## points where the director's objective is, every protester drawn in the pose that points there.
-func _test_a_protest_the_city_makes_points_where_its_director_does(t) -> void:
+func _test_a_protest_the_city_makes_points_where_its_director_does(t: TestRunner) -> void:
 	_build_city(t)
 	var director := _director(t)
 	director.start_day(6, _rng(6), 300.0)
 	director.contact().complete_now()
 	var objective: Vector2 = _city.events.points_at.call()
 	t.check(objective != Vector2.INF, "the perform step gives the protest somewhere to point")
+	_record_the_drawing()
 	var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"),
 			objective + Vector2(0.0, 300.0))
 	t.check(protest.points_at.call() == objective,
@@ -182,8 +191,9 @@ func _test_a_protest_the_city_makes_points_where_its_director_does(t) -> void:
 
 ## With no director handed in (the escape building, a bare rig) a protest has nothing to point at
 ## and stands its rank plain.
-func _test_a_protest_with_no_director_points_at_nothing(t) -> void:
+func _test_a_protest_with_no_director_points_at_nothing(t: TestRunner) -> void:
 	_build_city(t)
+	_record_the_drawing()
 	var protest := _city.events.spawn_extra(EventCatalogue.by_id("protest"), Vector2(300.0, 300.0))
 	t.check(not protest.points_at.is_valid() or protest.points_at.call() == Vector2.INF,
 			"a protest with no director handed in has nothing to point at")

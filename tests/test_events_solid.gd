@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends "res://tests/events_shared_city.gd"
 ## Playtest 07, findings 16 and 13: *"none of the non-moving obstacles do anything -- I can freely
 ## walk over them"*, and *"I can walk over the robber and he doesn't do anything"*. The answer is a
@@ -14,7 +14,7 @@ extends "res://tests/events_shared_city.gd"
 
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_everything_that_stands_still_is_solid(t)
 	_test_a_lethal_thing_can_still_be_reached(t)
 	_test_the_pram_is_the_size_the_rules_think_it_is(t)
@@ -29,7 +29,7 @@ func run(t) -> void:
 ## inferred from a zero, because the failure this catches is the one that happened: a field that
 ## is only set where somebody remembered to set it, on five rows out of thirty, for six
 ## milestones.
-func _test_everything_that_stands_still_is_solid(t) -> void:
+func _test_everything_that_stands_still_is_solid(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
 		# A moving wall pins her against a building on a two-tile pavement, which is a different
@@ -67,7 +67,7 @@ func _test_everything_that_stands_still_is_solid(t) -> void:
 ##
 ## This is `alley_robbery`'s bug in the abstract: at an inner radius of 22 against a man 11 wide,
 ## the pram would have been held three pixels outside the thing that takes the baby.
-func _test_a_lethal_thing_can_still_be_reached(t) -> void:
+func _test_a_lethal_thing_can_still_be_reached(t: TestRunner) -> void:
 	var lethal := 0
 	for def in EventCatalogue.all():
 		if not def.hard_fail or def.obstructs_radius <= 0.0:
@@ -80,7 +80,7 @@ func _test_a_lethal_thing_can_still_be_reached(t) -> void:
 
 ## `Tuning.PLAYER_BODY_RADIUS` is a copy of a number authored in the player's scene, and the rule
 ## above is arithmetic on it. A copy nothing checks is a lie waiting to happen.
-func _test_the_pram_is_the_size_the_rules_think_it_is(t) -> void:
+func _test_the_pram_is_the_size_the_rules_think_it_is(t: TestRunner) -> void:
 	var scene: PackedScene = load("res://scenes/player/stroller.tscn")
 	var stroller: Node = scene.instantiate()
 	var shape := (stroller.get_node("CollisionShape2D") as CollisionShape2D).shape as CircleShape2D
@@ -92,7 +92,7 @@ func _test_the_pram_is_the_size_the_rules_think_it_is(t) -> void:
 ## Playtest 07, finding 7: *"there is also a car obstacle on the road that is basically a still
 ## car standing on the road doing nothing."* A parked van belongs against a kerb — on the
 ## pavement she is walking down, and out of a traffic lane the crowd drives straight through.
-func _test_a_parked_van_is_at_the_kerb(t) -> void:
+func _test_a_parked_van_is_at_the_kerb(t: TestRunner) -> void:
 	var map := _map()
 	var parked := 0
 	for day in range(1, 15):
@@ -115,7 +115,7 @@ func _test_a_parked_van_is_at_the_kerb(t) -> void:
 ## Playtest 07, finding 15: *"the backing out lorry does not connect to the building making it
 ## hard to visually read."* The danger is the gap behind a wall of metal, so there has to be a
 ## wall — and it has to be east or west of it, because the silhouette is drawn side-on.
-func _test_a_lorry_has_a_wall_to_back_into(t) -> void:
+func _test_a_lorry_has_a_wall_to_back_into(t: TestRunner) -> void:
 	var map := _map()
 	var backing := 0
 	for day in range(3, 15):
@@ -154,7 +154,7 @@ func _test_a_lorry_has_a_wall_to_back_into(t) -> void:
 ## The last two checks are the ones that keep it from passing vacuously: an exemption over ground
 ## nothing could have stood on is not an exemption, and a day that stopped placing events would
 ## satisfy the first check perfectly.
-func _test_nothing_stands_on_the_doorstep_street(t) -> void:
+func _test_nothing_stands_on_the_doorstep_street(t: TestRunner) -> void:
 	var map := _map()
 	var home := ClosurePlanner.home_street(map)
 	t.check(home != null, "the front door opens onto a street")
@@ -223,7 +223,7 @@ func _add_a_physical_body(bodies: Array, plan: EventScheduler.Planned) -> void:
 ## `REGION_WALL_FIRST_DAY`, closures from act I), so the sample has to span the acts; the seeds
 ## drop to two because the second is there to keep the sample from being one street plan and the
 ## third and fourth were asking the same question a third and fourth time.
-func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
+func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> void:
 	const SEEDS := 2
 	const BASE_SEED := 314159
 	const DAYS := [1, 4, 7, 10, 14]
@@ -342,7 +342,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t) -> void:
 ## closures, a seal plan and a `build_day` — so this asks one more question of it rather than
 ## building a second assembly; the probe is where the wider sample already lives if this suite's
 ## own finding ever needs a closer look.
-func _test_no_body_closes_a_walked_sidewalk(t) -> void:
+func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 	const SEEDS := 2
 	const BASE_SEED := 271828
 	const DAYS := [1, 8, 13]

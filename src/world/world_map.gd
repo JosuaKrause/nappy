@@ -142,19 +142,15 @@ func passable(tile: Vector2i, mover: Mover) -> bool:
 	return _ground_lets(tile, layers) and not blocked.blocks(tile, layers & Mover.TODAY)
 
 ## Tiles a stationary solid body stands on today, as tile -> how many bodies stand there
-## (`BlockedLayer.bodies`).
+## (`BlockedLayer.todays_body_tiles()`).
 var obstructed_tiles: Dictionary:
 	get:
-		return blocked.bodies
-	set(value):
-		blocked.bodies = value
+		return blocked.todays_body_tiles()
 ## Bumped whenever a tile enters or leaves `obstructed_tiles`: a version a reader compares with the
-## one its own answer was built from (`BlockedLayer.body_version`).
+## one its own answer was built from (`BlockedLayer.body_ground_changes()`).
 var obstruction_version: int:
 	get:
-		return blocked.body_version
-	set(value):
-		blocked.body_version = value
+		return blocked.body_ground_changes()
 
 ## Clears today's solid bodies, once a day.
 func clear_day_obstructions() -> void:

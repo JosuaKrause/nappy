@@ -32,7 +32,9 @@ judged by its word, so a local or an engine method of that name hides it: `ParkC
 `gap`, so it can take no `[kept]` line, whose reason stands as a comment on it, record minty-quail-grassy-squirrel) and
 `RouteTree.grow` (`Rect2.grow` calls). The queued fix takes a plain word in another file as a read only where that
 file's class extends the member's class, and an engine-typed or local receiver as not a src class's. A declaration is
-taken for the whole file, not per function.
+taken for the whole file, not per function. `EventInstance.look` and `EventInstance.phase` are held up the same way:
+namesakes (`officer.phase`, `VisibleView.look()`) count as readers, so neither can take a `[kept]` line, and the reason
+stands as a comment on each (record minty-quail-calm-egret).
 
 **Build.** The members named in Scope, owner by owner (or several small owners together) in a pull request each, each
 also removing a check that holds nothing once its member is gone (curly-rabbit #1097). An `[own file only]` member

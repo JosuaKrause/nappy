@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What stopping excitement at walls does to the price of the day's own routes, walked rather than
 ## derived. Not a suite: it prints numbers rather than asserting relationships, so it lives under
@@ -43,7 +42,7 @@ var _depths: Array[Vector2] = [Vector2.INF,
 		Vector2(Tuning.WALL_SHIELD_DEPTH, Tuning.THIN_WALL_SHIELD_DEPTH),
 		Vector2(Tuning.THIN_WALL_SHIELD_DEPTH, Tuning.THIN_WALL_SHIELD_DEPTH)]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var mismatches := 0
 	var grand_events := [0.0, 0.0, 0.0]
 	var grand_crowd := [0.0, 0.0, 0.0]

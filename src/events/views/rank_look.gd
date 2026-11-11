@@ -5,7 +5,7 @@ extends SpreadLook
 
 ## Overrides SpreadLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match event.def.look:
+	match _row.picture():
 		EventDef.Look.CAFE:
 			_draw_cafe(canvas)
 		EventDef.Look.PROTEST:
@@ -27,13 +27,13 @@ func _draw_figure(canvas: CanvasItem) -> void:
 ##
 ## **On the screen each table and its sitter are a slice of their own** (`_slice_plan()`), standing
 ## at their share of the run's feet, so each table sorts against her and against the next table and
-## its sitter *(inbox #827 in curly-moose: "yes, slice the cafe tables")*; slice `only` draws its
+## its sitter (inbox #827 in curly-moose); slice `only` draws its
 ## own sitter and table from `origin`, the first also the shadow. On any other canvas, or with
 ## `only` below zero, the whole frontage is drawn, every sitter before every table.
 func _draw_cafe(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> void:
 	if only < 0 and _drawn_by_its_slices(canvas):
 		return
-	var half := maxf(11.0, event.def.obstructs_radius)
+	var half := _half_run()
 	if only <= 0:
 		_draw_body_shadow(canvas, origin)
 	var segments := _cafe_table_count()
@@ -50,7 +50,7 @@ func _draw_cafe(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> void:
 ## How many tables the café's frontage holds: as few as cover its run, none stretched past its own
 ## picture's length.
 func _cafe_table_count() -> int:
-	var half := maxf(11.0, event.def.obstructs_radius)
+	var half := _half_run()
 	var segment := EventPictures.native_size(EventPictures.CAFE_TABLE)
 	var along_natural := segment.y if event.runs_vertically() else segment.x
 	return maxi(1, ceili(half * 2.0 / along_natural))
@@ -74,7 +74,7 @@ func _draw_cafe_sitter(canvas: CanvasItem, origin: Vector2, half: float, width: 
 	var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[sitter_sector]
 	var sitter: String = by_view[view]
 	var mirror := EightDirection.is_mirrored(sitter_sector)
-	event.drawer.stand(canvas, sitter, origin + event.spread_at(chair_along) + Vector2(0.0, -7.0),
+	_drawer.stand(canvas, sitter, origin + event.spread_at(chair_along) + Vector2(0.0, -7.0),
 			Vector2.ZERO, mirror)
 
 ## Table `i` of the frontage, standing at the middle of its share of the run, alternate ones
@@ -84,7 +84,7 @@ func _draw_cafe_table(canvas: CanvasItem, origin: Vector2, half: float, width: f
 	var segment := EventPictures.native_size(EventPictures.CAFE_TABLE)
 	var thickness := segment.x if event.runs_vertically() else segment.y
 	var along := -half + width * (i + 0.5)
-	event.drawer.stand(canvas, EventPictures.CAFE_TABLE, origin + event.spread_at(along),
+	_drawer.stand(canvas, EventPictures.CAFE_TABLE, origin + event.spread_at(along),
 			_spread_extent(width, thickness), i % 2 == 1)
 
 ## The bearing from an alternating café chair to its own table. This follows the chair anchor's
@@ -125,7 +125,7 @@ func _draw_protest(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> vo
 	var feet := _protest_feet(picture)
 	for i in feet.size():
 		if only < 0 or i == only:
-			event.drawer.stand(canvas, picture, origin + feet[i],
+			_drawer.stand(canvas, picture, origin + feet[i],
 					Vector2.ZERO, mirror)
 
 ## The protest's picture this frame and whether it is mirrored.
@@ -157,7 +157,7 @@ func _protest_pose_now() -> Array:
 ## than the plain one's, because a pointing pose's placard arm doubles it, so the count of slices
 ## follows the pose (`_move_the_slices()`).
 func _protest_feet(picture: String) -> PackedVector2Array:
-	var half := maxf(11.0, event.def.obstructs_radius)
+	var half := _half_run()
 	var across := maxi(2, roundi(half * 2.0 / (EventPictures.native_size(picture).x * 0.8)))
 	var step := half * 2.0 / across
 	var feet := DrawLayer.slice_feet(Vector2(-half + step * 0.5, -14.0),
@@ -165,9 +165,9 @@ func _protest_feet(picture: String) -> PackedVector2Array:
 	feet.append_array(DrawLayer.slice_feet(Vector2(-half, 0.0), Vector2(half, 0.0), across))
 	return feet
 
-## People behind cover, shooting at each other. Not a building on fire, which is what it drew for
-## fourteen milestones — the same five flames as `burning_building`, on the one event in the
-## catalogue whose content is that there are *people* doing this.
+## People behind cover, shooting at each other, and not a building on fire (`burning_building`'s
+## flames): it is the one event in the catalogue whose content is that there are *people* doing
+## this.
 ##
 ## The flashes are drawn rather than authored, because a muzzle flash is a light and not an object,
 ## and they are timed off the pulse envelope so they land on the beat the meter is already moving
@@ -180,18 +180,16 @@ func _protest_feet(picture: String) -> PackedVector2Array:
 func _draw_firefight(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> void:
 	if only < 0 and _drawn_by_its_slices(canvas):
 		return
-	var half := maxf(11.0, event.def.obstructs_radius)
+	var half := _half_run()
 	if only <= 0:
 		_draw_body_shadow(canvas, origin)
-	var strength := 1.0
-	if event.def.intensity > 0.0:
-		strength = clampf(event.current_intensity() / event.def.intensity, 0.0, 1.0)
+	var strength := _share_of_its_peak_now()
 	for index in 2:
 		if only >= 0 and index != only:
 			continue
 		var side := -1.0 if index == 0 else 1.0
 		var at := origin + Vector2(side * half * 0.62, 0.0)
-		event.drawer.stand(canvas, EventPictures.GUNMAN, at, Vector2.ZERO,
+		_drawer.stand(canvas, EventPictures.GUNMAN, at, Vector2.ZERO,
 				side > 0.0)
 		# Sized off the current emission and jittered per side, so the two are never in step.
 		var flare := strength * (0.6 + 0.4 * sin(event.age * 17.0 + side * 2.1))
@@ -208,24 +206,24 @@ const MUZZLE_FLASH := Color("e8b64a")
 
 ## Overrides SpreadLook._slice_plan.
 func _slice_plan() -> PackedVector2Array:
-	match event.def.look:
+	match _row.picture():
 		EventDef.Look.PROTEST:
 			return _protest_feet(_protest_pose_now()[0])
 		EventDef.Look.FIREFIGHT:
-			var half := maxf(11.0, event.def.obstructs_radius)
+			var half := _half_run()
 			return DrawLayer.slice_feet(Vector2(-half, 0.0), Vector2(half, 0.0), 2)
 		EventDef.Look.CAFE:
 			var tables := _spread_run()
 			return DrawLayer.slice_feet(tables[0], tables[1], _cafe_table_count())
 	return PackedVector2Array()
 
-## Overrides SpreadLook._draw_a_slice.
-func _draw_a_slice(slice: Slice) -> void:
-	var origin := -_slice_feet[slice.index]
-	match event.def.look:
+## Overrides SpreadLook.draw_the_slice.
+func draw_the_slice(canvas: CanvasItem, index: int) -> void:
+	var origin := -_slice_feet[index]
+	match _row.picture():
 		EventDef.Look.PROTEST:
-			_draw_protest(slice, slice.index, origin)
+			_draw_protest(canvas, index, origin)
 		EventDef.Look.CAFE:
-			_draw_cafe(slice, slice.index, origin)
+			_draw_cafe(canvas, index, origin)
 		EventDef.Look.FIREFIGHT:
-			_draw_firefight(slice, slice.index, origin)
+			_draw_firefight(canvas, index, origin)

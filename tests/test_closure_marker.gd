@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A closure's cause lies across the street it closes, whichever way the street runs. A headless
 ## draw pass makes no pixels to read (the **verify** skill), so this pins the two queries
@@ -6,13 +5,13 @@ extends RefCounted
 ## baked pictures' own sizes. Whether each picture reads as the thing it is lying the right way is
 ## a screenshot's question: the sheets under `docs/evidence/m187-closures-across-2026-09-23/`.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_each_street_axis_has_its_own_picture(t)
 	_test_a_cause_is_centred_on_the_street_it_closes(t)
 
 ## Across a north-south street a cause lies left to right, across an east-west one it lies down
 ## the screen, and the two are different pictures rather than one drawn for both.
-func _test_each_street_axis_has_its_own_picture(t) -> void:
+func _test_each_street_axis_has_its_own_picture(t: TestRunner) -> void:
 	for kind: int in ClosureMarker.CAUSES:
 		var across := ClosureMarker.cause_picture(kind, true)
 		var down := ClosureMarker.cause_picture(kind, false)
@@ -34,7 +33,7 @@ func _test_each_street_axis_has_its_own_picture(t) -> void:
 ## Lying down the screen, a cause covers the same length of road its across picture spans, up
 ## from its feet — so the picture has to be at least that tall, and its feet have to stand far
 ## enough below the street's middle for that length to be centred on it, as the across picture is.
-func _test_a_cause_is_centred_on_the_street_it_closes(t) -> void:
+func _test_a_cause_is_centred_on_the_street_it_closes(t: TestRunner) -> void:
 	for kind: int in ClosureMarker.CAUSES:
 		var label := RoadClosure.display_name(kind)
 		var lie := float(AtlasTable.baked().native_size(ClosureMarker.cause_picture(kind, true)).x)

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the seals' reach over buildings (inbox #785 in minty-lemur, "I saw wood on the roof"):
 ## per row, how many pieces a day's seals (days 1 to 14) and the escape's plan stand, how many of
@@ -18,7 +17,7 @@ const LAST_SEED := 30
 ## The seed the run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	var day_rows := {}

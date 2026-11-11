@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Whether days 6 to 14 fit their clock, walked mark → task → calm → home by `RouteRig`
 ## (`src/dev/route_rig.gd`, `--route`) rather than guessed at with `--walk`'s own timed headings.
@@ -44,7 +44,7 @@ const SEEDS := [4242, 90210, 1234567]
 const _TIMEOUT_SECONDS := 220.0
 const _POLL_MSEC := 250
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("\n== M184 — does day N fit its clock, mark -> task -> calm -> home ==")
 	print("%d days x %d seeds, day length %.0fs" % [DAYS.size(), SEEDS.size(), Tuning.day_length(6)])
 	var rows: Array[String] = []

@@ -46,7 +46,7 @@ const IDLE_FAMILY_DICTS := {
 
 const VIEWS: Array[String] = ["front", "back", "side", "front_diagonal", "back_diagonal"]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_b_tables_are_complete(t)
 	_test_b_tables_differ_from_a_per_view(t)
 	_test_moving_instance_alternates_gait_frames(t)
@@ -65,7 +65,7 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------- the tables ---
 
-func _test_b_tables_are_complete(t) -> void:
+func _test_b_tables_are_complete(t: TestRunner) -> void:
 	for name in GAIT_FAMILY_DICTS:
 		var by_view_b: Dictionary = GAIT_FAMILY_DICTS[name][1]
 		t.check(by_view_b.size() == 5, "%s carries exactly five b-frame views" % name)
@@ -82,7 +82,7 @@ func _test_b_tables_are_complete(t) -> void:
 ## Every family with a b table draws something different from its own a frame at every view — the
 ## walker precedent's own "legs and shoes cross" (or the sitters' lean, or the busker's raised
 ## hand) has to actually be a different picture, not a second preload of the same source.
-func _test_b_tables_differ_from_a_per_view(t) -> void:
+func _test_b_tables_differ_from_a_per_view(t: TestRunner) -> void:
 	for name in GAIT_FAMILY_DICTS:
 		var by_view: Dictionary = GAIT_FAMILY_DICTS[name][0]
 		var by_view_b: Dictionary = GAIT_FAMILY_DICTS[name][1]
@@ -105,7 +105,7 @@ func _heading_for_sector(sector: int) -> Vector2:
 ## the mid-stride frame as it walks, and returns to the rest frame later in the same stride — the
 ## walker's own `sin(phase * 2.0) > 0.0` shape, read here through `gait_is_stepping()` rather than
 ## re-derived, exactly as `_draw_dog_walker()` reads it.
-func _test_moving_instance_alternates_gait_frames(t) -> void:
+func _test_moving_instance_alternates_gait_frames(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
@@ -125,7 +125,7 @@ func _test_moving_instance_alternates_gait_frames(t) -> void:
 ## `alley_robbery`'s waiting posture never covers ground — `EventPursuit` only turns `_heading` toward
 ## her while `is_waiting()`, it does not move — so it must hold frame a for as long as it waits,
 ## whatever `_gait_phase` happens to be sitting on.
-func _test_waiting_robber_holds_frame_a(t) -> void:
+func _test_waiting_robber_holds_frame_a(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
@@ -142,7 +142,7 @@ func _test_waiting_robber_holds_frame_a(t) -> void:
 ## `chatting_mother`'s pacing beat gets a stride; her conversation freezes `_process()` entirely
 ## (see that function's own `is_chatting()` branch), so the gait must freeze on frame a with it
 ## rather than continue alternating on whatever phase it had reached the moment she stopped.
-func _test_chatting_mother_freezes_gait_when_talking(t) -> void:
+func _test_chatting_mother_freezes_gait_when_talking(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("chatting_mother"), Vector2.ZERO, route, Vector2.RIGHT)
@@ -163,7 +163,7 @@ func _test_chatting_mother_freezes_gait_when_talking(t) -> void:
 ## pictures it tells its drawer to stand are the crouched ones. The hand stays here: a crouching
 ## cat covers no ground under its manager's step, so no step the game takes puts its stride on a
 ## step, and the guard is for the state the game cannot reach.
-func _test_crouched_cat_never_reads_the_running_b_frame(t) -> void:
+func _test_crouched_cat_never_reads_the_running_b_frame(t: TestRunner) -> void:
 	var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("cat_dash"), false)
 	t.check(instance.is_telegraphing(), "a cat starts in its crouch")
 	instance.held_by_hand = true
@@ -189,7 +189,7 @@ func _test_crouched_cat_never_reads_the_running_b_frame(t) -> void:
 ## `_gait_phase`, so the dog is on one of its two steps exactly while the walker is mid-stride and
 ## on its rest exactly while he is on his rest frame — asked here through the same two queries
 ## `_draw_dog_walker()` reads, over a walk long enough to pass through every beat.
-func _test_dog_walker_and_dog_share_one_phase(t) -> void:
+func _test_dog_walker_and_dog_share_one_phase(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
@@ -211,7 +211,7 @@ func _test_dog_walker_and_dog_share_one_phase(t) -> void:
 ## forward. now we need one frame with the other leg forward")*. The side and diagonals rest on b
 ## and take the opposite step on c; front and back rest on their neutral c and take the opposite
 ## step on b, because their a and b already reach with opposite leg pairs.
-func _test_the_normal_dog_has_three_pictures_in_four_beats(t) -> void:
+func _test_the_normal_dog_has_three_pictures_in_four_beats(t: TestRunner) -> void:
 	var expected := {
 		"side": ["events/dog", "events/dog_b", "events/dog_c", "events/dog_b"],
 		"front_diagonal": ["events/dog_front_diagonal", "events/dog_front_diagonal_b",
@@ -241,7 +241,7 @@ func _test_the_normal_dog_has_three_pictures_in_four_beats(t) -> void:
 ## rest — and each beat lasts the same ground, a quarter of a turn of `_gait_phase` at
 ## `GAIT_RATE`, which is when the walker's own two frames swap as well. The loose dog reads the
 ## same queries at its own speed.
-func _test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t) -> void:
+func _test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t: TestRunner) -> void:
 	var beat := PI / 2.0 / EventInstance.GAIT_RATE
 	var cycle := ["events/dog", "events/dog_b", "events/dog_c", "events/dog_b"]
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(900.0, 0.0)])
@@ -275,7 +275,7 @@ func _test_a_walking_normal_dog_steps_rests_and_steps_the_other_way(t) -> void:
 ## sitting in. The walker is sent off (`leave_for_a_completed_task()`) and stepped the way its
 ## manager steps it until its stride is on a step in each half, then given a tick that covers no
 ## ground (a step of no time), and the dog it draws on real frames is on its rest picture.
-func _test_a_standing_normal_dog_rests(t) -> void:
+func _test_a_standing_normal_dog_rests(t: TestRunner) -> void:
 	# The heading each view is drawn from.
 	var headings := {"side": Vector2.RIGHT, "front": Vector2.DOWN, "back": Vector2.UP,
 			"front_diagonal": Vector2(1.0, 1.0).normalized(),
@@ -319,7 +319,7 @@ func _the_dog_drawn(instance: EventInstance) -> Array[String]:
 ## (`victim_gait_is_stepping()`) instead of sharing `_gait_phase` — see that function's own doc. It
 ## must start on frame a (`sin(0) == 0`) and later step, the same shape the distance-driven gait
 ## has, over the fixed walk rather than an open-ended one.
-func _test_victim_gait_starts_on_frame_a_and_later_steps(t) -> void:
+func _test_victim_gait_starts_on_frame_a_and_later_steps(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("abduction")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
@@ -344,7 +344,7 @@ func _test_victim_gait_starts_on_frame_a_and_later_steps(t) -> void:
 ## `_busker()` are both stationary rows — so their own alternation has to come from
 ## `idle_is_stepping()`'s timer rather than any distance covered, and it does actually flip both ways
 ## over a long enough run.
-func _test_idle_families_alternate_on_time_without_moving(t) -> void:
+func _test_idle_families_alternate_on_time_without_moving(t: TestRunner) -> void:
 	var periods := {
 		"cafe_tables": EventPictures.SITTER_IDLE_PERIOD,
 		"busker": EventPictures.BUSKER_STRUM_PERIOD,
@@ -369,7 +369,7 @@ func _test_idle_families_alternate_on_time_without_moving(t) -> void:
 
 ## "A per-instance phase offset from the instance's own RNG stream so a row of sitters does not
 ## lean in unison": two cafés sited at different positions must draw different offsets.
-func _test_idle_phase_offset_differs_by_siting(t) -> void:
+func _test_idle_phase_offset_differs_by_siting(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cafe_tables")
 	var a := EventInstance.new()
 	a.setup(def, Vector2(0.0, 0.0))
@@ -383,7 +383,7 @@ func _test_idle_phase_offset_differs_by_siting(t) -> void:
 # ------------------------------------------------------------------- resets ---
 
 ## "A stride never starts mid-cycle": both `setup()` and `resume()` reset the gait phase to zero.
-func _test_gait_and_idle_phase_reset_on_setup(t) -> void:
+func _test_gait_and_idle_phase_reset_on_setup(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)
@@ -404,7 +404,7 @@ func _test_gait_and_idle_phase_reset_on_setup(t) -> void:
 ## pure read of state `_process()` already settled this tick, so the main draw and every halo ring
 ## calling it again within the same frame must all agree — exactly the property that keeps a
 ## walking entity's halo from showing a different frame than its own body.
-func _test_gait_query_is_stable_within_a_tick(t) -> void:
+func _test_gait_query_is_stable_within_a_tick(t: TestRunner) -> void:
 	var route := PackedVector2Array([Vector2.ZERO, Vector2(400.0, 0.0)])
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id("dog_walker"), Vector2.ZERO, route, Vector2.RIGHT)

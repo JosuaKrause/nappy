@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `--route` booted into the escape's building follows the run from the building to a city exit with
 ## nobody touching it: `BuildingWalker` (`src/dev/building_walker.gd`) presses the building's brief and
@@ -23,7 +22,7 @@ const POLL_MSEC := 500
 ## The run log's own folder name, which sits somewhere under the child's home.
 const LOG_FOLDER := "telemetry"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var started_at := Time.get_unix_time_from_system()
 	# Kept alive until `run()` ends: freeing it removes the folder and all it holds, hidden files too.
 	var scratch := DirAccess.create_temp("route_building_home")

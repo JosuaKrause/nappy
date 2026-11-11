@@ -27,22 +27,22 @@ step 3c, open to overturn). Each module's pass hoists them as it touches the sui
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
 `booted_main` and `build_day`/`start_day`/`begin_day` first:
 
-1. telemetry: `test_frame_record_wiring` reads the other modules' timing hand-ins
+1. telemetry: `test_frame_record_wiring` checks that `main` hands the sitting's record to every
+   timed system by what each records into the record it was handed, not by reading its hand-in back
    (`city.frame_timing`, `scenery.timing`, `events.timing`, the baby's, the screen edge's and the
-   halo's `timing`) until each of those modules' passes gives them methods;
+   halo's `timing`), since a getter only this suite read would fail
+   `tools/check_test_only_members.py`. *Read as:* the sentence above that a var a test reads gets a
+   method holds where a game file asks too; where none would, the test reads the public effect;
 2. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
    (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
    events;
-3. atlas and scenery: `test_scenery_residency` observes a whole city until `SceneryGround` and
-   `SceneryResidency` take a narrower hand-in than `City`, and `test_events_scenery` waits for the
-   events;
+3. atlas and scenery: `test_events_scenery` waits for the events;
 4. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
    and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
    what it reads from the city (its map, streets, events and poster walls) instead of the whole
    `City`, so a stand-in can be handed in; `test_recipe_crowd`'s `Crowd.recipe_coverage` check moves
    to a crowd suite;
-5. the night group: `Blackout` takes the whole `City`, so `test_blackout`'s stand-in is a
-   never-built `City`, until `Blackout` takes a narrower hand-in; `test_heat` reads the event
+5. the night group: `test_heat` reads the event
    instance's vars (`age`, `is_leaving`, `is_finished`, `barrier_post`) until they have methods, and
    it and `test_dark_spine` hold the scheduler's and the crowd's answers in a day-planning case each,
    to move to those modules' suites; `test_power_station`'s yard-layer frame-record case belongs in
@@ -50,9 +50,11 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
 6. the crowd: a crowd suite takes `test_recipe_crowd`'s `Crowd.recipe_coverage` check (entry 4);
    the events' answers still held in the crowd's suites move with the events (entry 7):
    `test_crowd_yields`' four checks of the event instance and manager (stands as, parked, the list
-   of moves, placement), the events half of `test_danger` (about twenty tests of events, the baby,
-   the badge and the screen edge) and of `test_wall_shield`, and
-   `test_crowd_bodies_on_a_real_day`'s check that a crash's cars stand on recorded ground;
+   of moves, placement) and `test_crowd_bodies_on_a_real_day`'s check that a crash's cars stand on
+   recorded ground. `test_danger` (the danger vocabulary) and `test_wall_shield`
+   (`CityMap.wall_between()`) are not the crowd's suites though each holds a crowd half; their
+   events half (in `test_danger`, about twenty tests of events, the baby, the badge and the screen
+   edge) moves with the events too;
 7. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
    `protest`, the day 6, 7 and 13 suites) and the resistance (`resistance_*`, `spent_park`,
    `park_cordon`, `burnt_door`);

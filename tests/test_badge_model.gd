@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `BadgeModel` stepped on its own: fakes for the dangers, a rectangle for the view, a number for the
 ## clock — no scene, no camera, no frame timing. When a danger's screen-edge badge goes up, when it
@@ -12,7 +12,7 @@ const STEP := 1.0 / 60.0
 ## The camera's view about her at (0, 0): the world the badge asks "in sight?" of.
 const VIEW := Rect2(-320.0, -180.0, 640.0, 360.0)
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_danger_closing_from_off_screen_gets_its_badge_at_the_announce_line(t)
 	_test_a_danger_walking_away_or_too_slow_gets_none(t)
 	_test_a_raised_badge_stays_up_while_it_stands_and_while_it_turns_away(t)
@@ -56,7 +56,7 @@ static func _up(model: BadgeModel, id: String) -> bool:
 			return true
 	return false
 
-func _test_a_danger_closing_from_off_screen_gets_its_badge_at_the_announce_line(t) -> void:
+func _test_a_danger_closing_from_off_screen_gets_its_badge_at_the_announce_line(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var truck := _vehicle(1, Vector2(2000.0, 0.0))
 	truck.logged_name = "fire_truck"
@@ -80,7 +80,7 @@ func _test_a_danger_closing_from_off_screen_gets_its_badge_at_the_announce_line(
 ## engine at 190px/s, four seconds away and announced, and a dawdler at 40px/s, twenty seconds away
 ## and somebody else's problem for now. Nothing slower than a stroll is announced at any distance.
 ## Each is closed in on for a second, long enough for the badge's smoothed approach to settle.
-func _test_the_lead_window_is_a_time_and_not_a_distance(t) -> void:
+func _test_the_lead_window_is_a_time_and_not_a_distance(t: TestRunner) -> void:
 	for case: Array in [[190.0, 800.0, true], [40.0, 800.0, false],
 			[BadgeModel.CLOSING_SPEED - 1.0, 400.0, false]]:
 		var model := BadgeModel.new()
@@ -93,7 +93,7 @@ func _test_the_lead_window_is_a_time_and_not_a_distance(t) -> void:
 				"something doing %.0fpx/s with %.0fpx to go is %s" % [case[0], case[1],
 				"announced" if case[2] else "not announced"])
 
-func _test_a_danger_walking_away_or_too_slow_gets_none(t) -> void:
+func _test_a_danger_walking_away_or_too_slow_gets_none(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var away := _vehicle(1, Vector2(500.0, 0.0))
 	var slow := _vehicle(2, Vector2(0.0, 500.0), 10.0)
@@ -105,7 +105,7 @@ func _test_a_danger_walking_away_or_too_slow_gets_none(t) -> void:
 
 ## A badge, once up, stays up until its danger is in sight or gone: while it stands still and while
 ## it turns away and runs off; no timer ends it.
-func _test_a_raised_badge_stays_up_while_it_stands_and_while_it_turns_away(t) -> void:
+func _test_a_raised_badge_stays_up_while_it_stands_and_while_it_turns_away(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var thing := _vehicle(1, Vector2(1000.0, 0.0))
 	thing.logged_name = "thing"
@@ -127,7 +127,7 @@ func _test_a_raised_badge_stays_up_while_it_stands_and_while_it_turns_away(t) ->
 	_step(model, [thing])
 	t.check(not _up(model, "thing"), "dropped the frame it is in sight")
 
-func _test_a_raised_badge_ends_when_its_danger_leaves_the_world(t) -> void:
+func _test_a_raised_badge_ends_when_its_danger_leaves_the_world(t: TestRunner) -> void:
 	for finished in [true, false]:
 		var model := BadgeModel.new()
 		var truck := _vehicle(1, Vector2(1000.0, 0.0))
@@ -144,7 +144,7 @@ func _test_a_raised_badge_ends_when_its_danger_leaves_the_world(t) -> void:
 ## Three badges raised, then their dangers stop (one turns away) and stay out of sight: all three are
 ## kept and drawn. Fails if a badge ends when its
 ## condition (the danger closing) lapses.
-func _test_kept_badges_stay_drawn_after_their_dangers_stop_or_turn_away(t) -> void:
+func _test_kept_badges_stay_drawn_after_their_dangers_stop_or_turn_away(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var subjects: Array = []
 	for i in 3:
@@ -165,7 +165,7 @@ func _test_kept_badges_stay_drawn_after_their_dangers_stop_or_turn_away(t) -> vo
 
 ## Six badges at once, all drawn, none dropped before its danger is in sight, however many there are. Five are kept
 ## (stopped, out of sight) while a sixth keeps closing; then one comes into sight and only it goes.
-func _test_six_badges_at_once_are_all_drawn_and_none_drops_early(t) -> void:
+func _test_six_badges_at_once_are_all_drawn_and_none_drops_early(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var subjects: Array = []
 	for i in 6:
@@ -192,7 +192,7 @@ func _test_six_badges_at_once_are_all_drawn_and_none_drops_early(t) -> void:
 ## six arrows on the edge. Fails if the drawing limits how many it shows. An arrow draws its event's
 ## picture from the atlas the control is handed, so the pictures asked for in one draw pass are the
 ## arrows drawn.
-func _test_the_drawing_shows_every_badge_the_model_lists(t) -> void:
+func _test_the_drawing_shows_every_badge_the_model_lists(t: TestRunner) -> void:
 	var atlas := _PictureAtlas.new()
 	atlas.acquire(&"events")
 	var source := _Source.new()
@@ -253,7 +253,7 @@ class _Source extends Node:
 	func pending_warnings() -> Array[PendingWarning]:
 		return warnings
 
-func _test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t) -> void:
+func _test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t: TestRunner) -> void:
 	# Seen, then out past the edge but inside the margin band: the band only decides whether a badge
 	# goes up, so a seen, non-charging thing closing from inside it is not raised until it is past it.
 	var model := BadgeModel.new()
@@ -272,7 +272,7 @@ func _test_something_seen_and_sitting_in_the_margin_band_is_not_badged_fresh(t) 
 		_step(model, [truck])
 	t.check(_up(model, "truck"), "past the band it is")
 
-func _test_a_charger_setting_off_inside_the_band_is_badged_from_that_frame(t) -> void:
+func _test_a_charger_setting_off_inside_the_band_is_badged_from_that_frame(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var man := _vehicle(1, Vector2(300.0, 0.0), 112.0)
 	man.logged_name = "man"
@@ -286,7 +286,7 @@ func _test_a_charger_setting_off_inside_the_band_is_badged_from_that_frame(t) ->
 	_step(model, [man])
 	t.check(_up(model, "man"), "the first frame he runs, from inside the band, his badge is up")
 
-func _test_the_masked_mans_run_from_each_start_keeps_the_badge_until_he_is_in_view(t) -> void:
+func _test_the_masked_mans_run_from_each_start_keeps_the_badge_until_he_is_in_view(t: TestRunner) -> void:
 	# Four starts in and around the band (px past the view's right edge), the way the camera's
 	# position decides where the stairwell lies against the view.
 	for start: float in [5.0, 25.0, 45.0, 64.0, 90.0]:
@@ -320,7 +320,7 @@ func _test_the_masked_mans_run_from_each_start_keeps_the_badge_until_he_is_in_vi
 ## view recedes from him at nearly his own pace and he stays in the band for a long while. The
 ## badge is kept until he is in sight ("first up 0 frames in, down on N" was the old drop). The view
 ## moves with her.
-func _test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_the_way(t) -> void:
+func _test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_the_way(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var here := Vector2.ZERO
 	var man := _vehicle(1, Vector2(VIEW.end.x + 100.0, 0.0), 112.0)
@@ -359,7 +359,7 @@ func _test_a_masked_man_running_after_her_as_she_walks_away_keeps_the_badge_all_
 			"and the badge is up from the frame he runs until he is in view (first up %d, down on %d of %d frames)"
 			% [first, dropped, frame])
 
-func _test_a_thing_that_arrives_under_its_warning_keeps_its_badge(t) -> void:
+func _test_a_thing_that_arrives_under_its_warning_keeps_its_badge(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var dog := _vehicle(1, Vector2(VIEW.end.x + 20.0, 0.0), 100.0)
 	dog.logged_name = "dog"
@@ -372,7 +372,7 @@ func _test_a_thing_that_arrives_under_its_warning_keeps_its_badge(t) -> void:
 		if not dog.shown:
 			t.check(_up(model, "dog"), "and keeps it on frame %d until it is in sight" % i)
 
-func _test_a_pending_warning_is_announced_for_its_whole_warning(t) -> void:
+func _test_a_pending_warning_is_announced_for_its_whole_warning(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var w := _vehicle(0, Vector2(0.0, 0.0), 190.0)
 	w.pending = true
@@ -385,7 +385,7 @@ func _test_a_pending_warning_is_announced_for_its_whole_warning(t) -> void:
 ## A pending warning with 0.7s left is ranked against a live thing by when each arrives: the live
 ## one, still 0.6s off, is listed ahead of it, and once it is 0.75s off the warning is. A warning's
 ## arrival time that was read wrong by a tenth of a second would swap the second order.
-func _test_a_pending_warning_is_ranked_by_its_arrival_among_live_dangers(t) -> void:
+func _test_a_pending_warning_is_ranked_by_its_arrival_among_live_dangers(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var live := _vehicle(1, Vector2(900.0, 0.0), 600.0)
 	live.logged_name = "live"
@@ -409,7 +409,7 @@ func _test_a_pending_warning_is_ranked_by_its_arrival_among_live_dangers(t) -> v
 	t.check(before_it == ["live", "warning"], "0.6s off, the live danger comes before a warning with 0.7s left (%s)" % str(before_it))
 	t.check(after_it == ["warning", "live"], "0.75s off, the warning with 0.7s left comes first (%s)" % str(after_it))
 
-func _test_the_warning_with_less_time_left_is_listed_first(t) -> void:
+func _test_the_warning_with_less_time_left_is_listed_first(t: TestRunner) -> void:
 	for sooner_first in [true, false]:
 		var model := BadgeModel.new()
 		var late := _vehicle(1, Vector2(100.0, 0.0))
@@ -427,7 +427,7 @@ func _test_the_warning_with_less_time_left_is_listed_first(t) -> void:
 			names.append(b["id"])
 		t.check(names == ["soon", "late"], "the warning with less time left is first, handed in either order (%s)" % str(names))
 
-func _test_every_badge_is_listed_soonest_arrival_first(t) -> void:
+func _test_every_badge_is_listed_soonest_arrival_first(t: TestRunner) -> void:
 	var model := BadgeModel.new()
 	var subjects: Array = []
 	for i in 5:
@@ -443,7 +443,7 @@ func _test_every_badge_is_listed_soonest_arrival_first(t) -> void:
 		names.append(b["id"])
 	t.check(names == ["v0", "v1", "v2", "v3", "v4"], "all five, the soonest to arrive first (%s)" % str(names))
 
-func _test_a_subject_no_longer_handed_over_is_forgotten(t) -> void:
+func _test_a_subject_no_longer_handed_over_is_forgotten(t: TestRunner) -> void:
 	# What forgetting shows: a badge up for a closing truck is gone with it, and the same truck handed
 	# over again is a fresh thing with no measured approach, so it is not badged on its first frame back.
 	var model := BadgeModel.new()

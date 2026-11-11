@@ -550,10 +550,10 @@ func _step_them(delta: float) -> void:
 ## **Tells where she is, once a tick** (`WhereSheIs.tell()`, `EventWorld.where_she_is()`), which
 ## every instance was handed when it was made and hears from the word after.
 ##
-## Here rather than in the instance for the same reason `Crowd` writes `pedestrian_ahead` rather
-## than letting each car look: the player is found once a frame in one place, and an
-## `EventInstance` has never had to know she exists. It is handed a point, and everything it does
-## with the point is a distance.
+## Here rather than in the instance for the same reason `Crowd` finds who stands ahead of a car
+## (`LaneMover.Lane.see_a_pedestrian_at()`) rather than letting each car look: the player is found
+## once a frame in one place, and an `EventInstance` has never had to know she exists. It is handed
+## a point, and everything it does with the point is a distance.
 ##
 ## Everything hears it, not only the pursuers: *"am I out of sight yet"* is the same question asked
 ## by anything that is **leaving** — see `EventInstance._be_done`.

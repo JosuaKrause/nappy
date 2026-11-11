@@ -102,10 +102,10 @@ of another kind can be read in ways that take a function as silently (a test aga
 `match`, a lookup), and this rule does not cover it. One method that predates the rule keeps a
 yes-or-no field's name, `EventDef.investigates()`, with no read of it left without parentheses.
 
-**Two lists hold "Fields are not API" while `src/` is converted, and neither grows except by what only moved** (inbox #1350). Much of `src/` still
+**Two lists hold "Fields are not API" while `src/` is converted, and neither grows except by what only moved.** Much of `src/` still
 reads fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that
 adds a read of another class's field, today's being listed in `tools/field_reads.txt`, unless the
-read only moved (its reader file renamed, code moved into a new file with no more uses of that
+read only moved (inbox #1350; its reader file renamed, code moved into a new file with no more uses of that
 class's field, or an inner class lifted into a file of its own, whose reads the list gains as
 lines; the check cannot count those, so review reads a lifting diff for a reader that is new), and a change that converts a file's last read of a field deletes its line.
 The second list is what makes the check see every read (inbox #1268 in olive-ferret), since a read through a

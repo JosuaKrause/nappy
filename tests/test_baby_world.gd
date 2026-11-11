@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The baby is handed the world she stands in, and is handed it again when the world changes.
 ##
@@ -26,7 +25,7 @@ const STREET_NOISE := 6.0
 
 ## Answers as the escape's building does (no decay beyond the base, nothing charging her) or, handed
 ## `decay` and `noise`, as a street does. The rig for the two questions the suite asks of her
-## (`decay_rate()` and `last_incoming`), the same questions `main`'s wiring changes the answer to.
+## (`decay_rate()` and `last_frame_incoming()`), the same questions `main`'s wiring changes the answer to.
 class FakeWorld extends WorldContext:
 	var decay := 1.0
 	var noise := 0.0
@@ -42,11 +41,11 @@ class FakeWorld extends WorldContext:
 	func excitement_sources_at(_world_position: Vector2) -> Array:
 		return [[_noise, noise]] if noise > 0.0 else []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_baby_with_no_world_is_neutral(t)
 	await _test_a_baby_answers_from_the_world_she_was_last_handed(t)
 
-func _test_a_baby_with_no_world_is_neutral(t) -> void:
+func _test_a_baby_with_no_world_is_neutral(t: TestRunner) -> void:
 	var baby := Baby.new()
 	t.check(baby.world() == null, "a baby never placed in a world holds none")
 	t.check(baby.decay_rate() == 0.0, "a baby never placed in a world has no decay rate")
@@ -55,7 +54,7 @@ func _test_a_baby_with_no_world_is_neutral(t) -> void:
 ## Handed the building, she reads the building; handed the street, the same baby reads the street
 ## and no longer the building; handed none, she is neutral again. Each answer is the one the
 ## world handed her gives: the decay of the ground under her, and what the bodies there charge her.
-func _test_a_baby_answers_from_the_world_she_was_last_handed(t) -> void:
+func _test_a_baby_answers_from_the_world_she_was_last_handed(t: TestRunner) -> void:
 	var building := FakeWorld.new()
 	var street := FakeWorld.new()
 	street.decay = STREET_DECAY
@@ -80,15 +79,15 @@ func _test_a_baby_answers_from_the_world_she_was_last_handed(t) -> void:
 	t.close_to(baby.decay_rate(), walking * building.decay,
 			"in the building her decay is the building's ground's")
 	await _let_her_tick(t, baby)
-	t.check(baby.last_incoming == 0.0, "and nothing in the building charges her")
+	t.check(baby.last_frame_incoming() == 0.0, "and nothing in the building charges her")
 
 	baby.set_world(street)
 	t.close_to(baby.decay_rate(), walking * STREET_DECAY,
 			"on the street her decay is the street's ground's")
 	await _let_her_tick(t, baby)
-	t.check(baby.last_incoming > 0.0,
+	t.check(baby.last_frame_incoming() > 0.0,
 			"and what charges her there reaches her meter (%.2f/s, the street's %.2f/s)"
-			% [baby.last_incoming, STREET_NOISE])
+			% [baby.last_frame_incoming(), STREET_NOISE])
 
 	baby.set_world(null)
 	t.check(baby.world() == null and baby.decay_rate() == 0.0,
@@ -98,8 +97,8 @@ func _test_a_baby_answers_from_the_world_she_was_last_handed(t) -> void:
 	street.free()
 
 ## One physics tick, on which the baby's own frame runs her meter and writes what it was fed.
-func _let_her_tick(t, baby: Baby) -> void:
-	baby.excitement = 0.0
+func _let_her_tick(t: TestRunner, baby: Baby) -> void:
+	baby.reset()
 	# What the meter was fed is written by her own tick, so a tick that did not run reads nothing.
 	baby.last_incoming = -1.0
 	await PhysicsTicks.pass_ticks(t, 1)

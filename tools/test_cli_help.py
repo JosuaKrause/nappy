@@ -66,6 +66,8 @@ ENTRY_POINTS = (
     "check_test_only_members.py",
     "merge-test-only-members.py",
     "check_field_reads.py",
+    "typing_census.py",
+    "compare-placement-rows.py",
 )
 
 SOUND_FILES = (

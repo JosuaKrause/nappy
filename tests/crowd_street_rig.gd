@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The street rig the crowd suites share: a straight stretch of a real city's ordinary street, and
 ## an agent placed on one of its lanes through the entry the game gives a task scene's pinned actors
@@ -58,7 +57,7 @@ func agent_on(city: City, map: CityMap, kind: CrowdAgent.Kind, corridor: int, la
 ## A crowd on `map` in a bare world held under `t`, built the way a task scene's rig builds it (the
 ## world, the map, the lights and no streets handed to `Crowd.setup()`) and with no city around it,
 ## which a suite of the crowd does not test. Free it with `free_crowd()`.
-func a_crowd(t, map: CityMap) -> Crowd:
+func a_crowd(t: TestRunner, map: CityMap) -> Crowd:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var crowd := Crowd.new()

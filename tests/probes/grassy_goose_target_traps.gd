@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for grassy-goose (inbox #556), "a touched target sends the robber from off
 ## screen": where the trap's start falls on each target's own ground — the burnt building's door on
@@ -57,7 +56,7 @@ const THROUGH_THE_DOOR := 1
 const STOOD_CAUGHT := 2
 const A_WALK_ESCAPES := 3
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("robber_giving_chase")
 	var starts := {}
 	var walks := {}
@@ -191,7 +190,7 @@ func _runs_through_a_door(city: City, start: Vector2, her: Vector2) -> bool:
 ## A `robber_giving_chase` started at `start` against her at `her`, walking `heading` at
 ## `Tuning.WALK_SPEED` (standing still for `Vector2.ZERO`), for his whole notice and chase. Whether
 ## he catches her.
-func _chase(t, city: City, def: EventDef, start: Vector2, her_at: Vector2, heading: Vector2) -> bool:
+func _chase(t: TestRunner, city: City, def: EventDef, start: Vector2, her_at: Vector2, heading: Vector2) -> bool:
 	var chaser_where := WhereSheIs.nowhere()
 	var chaser := EventInstance.new()
 	chaser.setup(def, start, PackedVector2Array(), Vector2.RIGHT, city.map, null, chaser_where)

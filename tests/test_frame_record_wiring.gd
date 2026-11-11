@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## **The frame recorder wired into a real boot of `main`**, which is the combination this suite is
 ## for: the sitting's record handed to every timed system, the recorder's markers first and last in
@@ -18,7 +18,7 @@ const _SCRATCH_SAVE := "user://test_frame_record_scratch.json"
 ## The folder the boot's recorder is handed to write its record in on the desktop.
 const _SCRATCH_RECORDS := "user://test_frame_record_scratch_records"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_the_recorder_in_a_real_main(t)
 
 ## The recorder in a real boot of `main` (`tests/booted_main.gd`) under `--frame-record`: `main`
@@ -35,7 +35,7 @@ func run(t) -> void:
 ## sets the recorder up from it before `_start()` makes the day's agents, as in the game. The
 ## file a desktop save writes is a scratch path the sitting already keeps, so nothing reaches the
 ## player's own records.
-func _test_the_recorder_in_a_real_main(t) -> void:
+func _test_the_recorder_in_a_real_main(t: TestRunner) -> void:
 	var restarted := FrameLedger.new(FrameLedger.CAPACITY)
 	var record := FrameRecord.new()
 	record.start(restarted)
@@ -125,7 +125,7 @@ func _test_the_recorder_in_a_real_main(t) -> void:
 ## walked, shows the recorder's line, the one that begins `slow` (what follows it changes with each
 ## slow frame); the engine's time scale is raised so a refresh comes within a few frames, and put
 ## back.
-func _the_readout_shows(t, main: Node, recorder: FrameRecorder) -> bool:
+func _the_readout_shows(t: TestRunner, main: Node, recorder: FrameRecorder) -> bool:
 	var label: Label = main.get_node("CanvasLayer/Status")
 	var scale := Engine.time_scale
 	Engine.time_scale = 5.0
@@ -144,7 +144,7 @@ func _the_readout_shows(t, main: Node, recorder: FrameRecorder) -> bool:
 ## timed call, since an agent steps inside the crowd's tick and times nothing of its own, so no
 ## frame makes as many timed calls as there are agents; once the record stops, each tick still
 ## steps every agent once and the record is not touched again.
-func _check_the_crowd_is_timed_once(t, crowd: Crowd, record: FrameRecord,
+func _check_the_crowd_is_timed_once(t: TestRunner, crowd: Crowd, record: FrameRecord,
 		ledger: FrameLedger) -> void:
 	var steps := Engine.max_physics_steps_per_frame
 	Engine.max_physics_steps_per_frame = 1
@@ -203,7 +203,7 @@ class _LaterTick extends Node:
 		spent_us.append(Time.get_ticks_usec() - from)
 
 ## Whether one physics tick moves every agent's clock by exactly that tick's length.
-func _one_tick_steps_each_once(t, crowd: Crowd, agents: Array[CrowdAgent]) -> bool:
+func _one_tick_steps_each_once(t: TestRunner, crowd: Crowd, agents: Array[CrowdAgent]) -> bool:
 	await t.get_tree().physics_frame
 	var clocks: Array[float] = []
 	for agent in agents:
@@ -216,7 +216,7 @@ func _one_tick_steps_each_once(t, crowd: Crowd, agents: Array[CrowdAgent]) -> bo
 	return true
 
 ## Lets `count` frames pass and be stored, and answers how many rows the ledger stored meanwhile.
-func _frames_counted(t, ledger: FrameLedger, count: int) -> int:
+func _frames_counted(t: TestRunner, ledger: FrameLedger, count: int) -> int:
 	var before := ledger.rows().size()
 	await UI.frames(t, count + 1)
 	return ledger.rows().size() - before

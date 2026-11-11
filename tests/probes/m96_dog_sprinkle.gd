@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for M96, "the teaching day, and the dog after it" — the sprinkle's own rate.
 ## Not a suite: it prints rather than asserting, so it lives here under `tests/probes/`, where the
@@ -25,7 +25,7 @@ const SEEDS := 8
 const BASE_SEED := 771307
 const STEP := 0.2
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_measure_sprinkle_rate()
 	t.check(true, "zz_m96_dog_sprinkle probe ran")
 

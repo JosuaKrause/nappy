@@ -40,7 +40,7 @@ func sources_at(at: Vector2) -> Array:
 	for agent in _crowd.agents():
 		if agent.global_position.distance_squared_to(at) > reach_squared:
 			continue
-		var source := agent.excitement
+		var source := agent.mood()
 		var contribution := source.contribution_at(at)
 		if contribution > 0.0:
 			sources.append([source, contribution])
@@ -49,4 +49,4 @@ func sources_at(at: Vector2) -> Array:
 ## Overrides ExcitementSources.every_source.
 func every_source(into: Array) -> void:
 	for agent in _crowd.agents():
-		into.append(agent.excitement)
+		into.append(agent.mood())

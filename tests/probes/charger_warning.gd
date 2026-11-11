@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for the one-radius charger (inbox #788 in minty-lemur): every charger that waits for her, warns
 ## while she is inside its one radius and charges once its warning has run with her still inside.
@@ -22,7 +22,7 @@ const STEP := 1.0 / 60.0
 const REACTION := 0.3
 const TIMES: Array[float] = [1.0, 1.5, 2.0, 2.5, 3.0]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for def in _waiting_chargers():
 		for warns_for in TIMES:
 			var copy := def.duplicate() as EventDef
@@ -58,7 +58,7 @@ static func _waiting_chargers() -> Array[EventDef]:
 	return rows
 
 ## One walk; `{"charged", "caught", "closest"}`, the closest measured from his charge on.
-static func _walk(t, def: EventDef, walk: String) -> Dictionary:
+static func _walk(t: TestRunner, def: EventDef, walk: String) -> Dictionary:
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT, null, null,

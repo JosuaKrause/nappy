@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The barrier a roadblock's guard walks out of stays where it was built (spotted-wombat, "keep the
 ## barrier in place"). *"the guard pursuer makes his barrier jump up and down and then dissappear"*
@@ -14,7 +13,7 @@ const RoadblockRig := preload("res://tests/escape_roadblock_rig.gd")
 
 const STEP := 1.0 / 60.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t)
 	await _test_a_shaken_off_guard_leaves_the_barrier_standing(t)
 	await _test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t)
@@ -33,7 +32,7 @@ func _hot_roadblock() -> EventDef:
 ## (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for`). The roadblock is a plan handed to a
 ## manager's streaming on open ground (`RoadblockRig.Stage`), as a day's is, and its band stands
 ## beside it once the idle frame has passed. Answers `[guard, her, stage]`; `stage.close()` frees it.
-func _chasing(t, post: Vector2, atlas: AtlasLibrary = null) -> Array:
+func _chasing(t: TestRunner, post: Vector2, atlas: AtlasLibrary = null) -> Array:
 	var hot := _hot_roadblock()
 	var stage := RoadblockRig.Stage.new(t, WorldMap.open_ground(), atlas)
 	var guard := stage.stand(EventScheduler.Planned.new(hot, post))
@@ -77,7 +76,7 @@ func _band_halo(guard: EventInstance) -> EntityHalo:
 
 ## The picture is moved on the drawn frame, not the tick (`EventInstance._process()`), so the guard
 ## is stepped as his manager steps him and a real frame passes after each step.
-func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> void:
+func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t: TestRunner) -> void:
 	var post := Vector2(400.0, 0.0)
 	# The pictures a drawn frame redraws come from the atlas the manager hands every event.
 	var atlas := AtlasLibrary.new()
@@ -109,7 +108,7 @@ func _test_the_barrier_is_drawn_at_its_body_on_every_frame_of_the_chase(t) -> vo
 	stage.close()
 	atlas.release(&"events")
 
-func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
+func _test_a_shaken_off_guard_leaves_the_barrier_standing(t: TestRunner) -> void:
 	var post := Vector2(400.0, 0.0)
 	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
@@ -149,7 +148,7 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t) -> void:
 	t.check(not guard.is_finished and guard.is_solid(), "it is still there two minutes on")
 	stage.close()
 
-func _test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t) -> void:
+func _test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t: TestRunner) -> void:
 	var post := Vector2(400.0, 0.0)
 	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
@@ -173,7 +172,7 @@ func _test_a_guard_whose_time_runs_out_leaves_the_barrier_standing(t) -> void:
 			and guard.body_position().is_equal_approx(post), "the barrier stands after he goes")
 	stage.close()
 
-func _test_a_guard_who_is_gone_does_not_come_back(t) -> void:
+func _test_a_guard_who_is_gone_does_not_come_back(t: TestRunner) -> void:
 	var post := Vector2(400.0, 0.0)
 	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
@@ -200,7 +199,7 @@ func _test_a_guard_who_is_gone_does_not_come_back(t) -> void:
 
 ## The sight rule: with her staying within ~300px of him the backstop (`EventDeparture.LEAVING_GIVES_UP`, 6s) must
 ## not remove him in view; he is still leaving after 8s, well away from the post.
-func _test_he_is_never_removed_in_view_while_she_stays_near(t) -> void:
+func _test_he_is_never_removed_in_view_while_she_stays_near(t: TestRunner) -> void:
 	var post := Vector2(400.0, 0.0)
 	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
@@ -222,7 +221,7 @@ func _test_he_is_never_removed_in_view_while_she_stays_near(t) -> void:
 	stage.close()
 
 ## The band's rim is one object, lit on every frame he walks away, and the man holds none.
-func _test_the_barrier_rim_survives_the_departure(t) -> void:
+func _test_the_barrier_rim_survives_the_departure(t: TestRunner) -> void:
 	var post := Vector2(400.0, 0.0)
 	var made := await _chasing(t, post)
 	var guard: EventInstance = made[0]
@@ -259,7 +258,7 @@ func _test_the_barrier_rim_survives_the_departure(t) -> void:
 
 ## A heated roadblock streamed through `EventManager` itself, the only place the plan carries what
 ## the instance forgets: shaken off and streamed out, it comes back as only the barrier.
-func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
+func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, 4242)
 	t.add_child(city)
 	city.build(CityGenerator.generate(4242))
@@ -359,7 +358,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t) -> void:
 ## the map's record, and the guard who steps out to his post on her side is then off the band's
 ## tiles: she walks round to the band's far side while he warns, and the line to her crosses his own
 ## band. He still charges, and a second band's body between them still hides her.
-func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t) -> void:
+func _test_a_posted_guard_sees_and_charges_her_across_his_own_band(t: TestRunner) -> void:
 	var map: CityMap = RoadblockRig.plan_for(4242)["map"]
 	var post := Vector2(2128.0, 80.0)
 	var stage := RoadblockRig.Stage.new(t, map)
@@ -414,7 +413,7 @@ func _open_ground_either_side(map: CityMap, body: Vector2) -> Vector2:
 ## own band's body; the catch is not (`EventInstance.is_lethal_at()`). A roadblock's arms are
 ## shorter than its band is thick, so the case gives the row longer arms: a point within them, on
 ## the far side of the band's body from his post, is no catch while the sight across it is clear.
-func _test_his_catch_does_not_reach_through_his_own_band(t) -> void:
+func _test_his_catch_does_not_reach_through_his_own_band(t: TestRunner) -> void:
 	var map: CityMap = RoadblockRig.plan_for(4242)["map"]
 	# The catalogue's own row, its arms lengthened for the case and put back after it.
 	var def := _hot_roadblock()

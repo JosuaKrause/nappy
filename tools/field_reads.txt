@@ -9,8 +9,6 @@
 
 # [AbductionSpec] src/events/abduction_spec.gd
 src/events/behaviours/event_abduction.gd taken_over
-src/events/views/event_look.gd standing_offset
-src/events/views/event_look.gd taken_over
 src/events/views/event_vehicle_look.gd standing_offset
 src/events/views/event_vehicle_look.gd taken_over
 
@@ -49,11 +47,6 @@ src/dev/dev_rig.gd sleepiness
 src/dev/route_rig.gd state
 src/dev/scene_recipe_runtime.gd excitement
 src/dev/scene_recipe_runtime.gd sleepiness
-src/main.gd excitement_frozen
-src/main.gd timing
-src/ui/hud.gd excitement
-src/ui/hud.gd sleepiness
-src/ui/hud.gd state
 
 # [Blackout] src/city/blackout.gd
 src/city/city.gd dark_from_the_start
@@ -61,13 +54,6 @@ src/city/city.gd forced
 
 # [BlockLayout] src/city/block_layout.gd
 src/routes/closure_planner.gd open_rect
-
-# [BlockedLayer] src/world/blocked_layer.gd
-src/city/city_map.gd closed
-src/city/city_map.gd posts
-src/city/city_map.gd soft_sealed
-src/world/world_map.gd bodies
-src/world/world_map.gd body_version
 
 # [Building] src/city/building.gd
 src/city/blackout.gd powered
@@ -127,16 +113,6 @@ src/events/event_instance.gd ended
 src/events/event_instance.gd warned
 
 # [City] src/city/city.gd
-src/city/blackout.gd events
-src/city/blackout.gd map
-src/city/blackout.gd run
-src/city/blackout.gd signals
-src/city/poster_walls.gd events
-src/city/scenery_ground.gd map
-src/city/scenery_residency.gd _building_shadows
-src/city/scenery_residency.gd _decals
-src/city/scenery_residency.gd map
-src/city/scenery_residency.gd scenery_ground
 src/dev/debug_readout.gd crowd
 src/dev/debug_readout.gd events
 src/dev/debug_readout.gd map
@@ -318,7 +294,6 @@ src/city/city.gd view
 src/telemetry/run_session.gd sources
 
 # [CrowdAgent] src/crowd/crowd_agent.gd
-src/crowd/crowd_sources.gd excitement
 src/dev/debug_layers.gd excitement
 src/run/day_director.gd excitement
 
@@ -417,9 +392,6 @@ src/events/event_director.gd after_day
 
 # [EncounterWatch] src/events/encounter_watch.gd
 src/events/event_manager.gd day
-
-# [EventBarrierPost] src/events/behaviours/event_barrier_post.gd
-src/events/views/roadblock_look.gd far
 
 # [EventBehaviour] src/events/behaviours/event_behaviour.gd
 src/events/event_instance.gd steps_each_tick
@@ -580,20 +552,7 @@ src/events/event_excitement.gd inner_radius
 src/events/event_excitement.gd intensity
 src/events/event_excitement.gd outer_radius
 src/events/event_excitement.gd shape
-src/events/event_footprints.gd draws_body_shadow
-src/events/event_footprints.gd flock_size
 src/events/event_footprints.gd flock_spread
-src/events/event_footprints.gd hard_fail
-src/events/event_footprints.gd has_a_spread
-src/events/event_footprints.gd hides_in_its_hold
-src/events/event_footprints.gd intensity
-src/events/event_footprints.gd lies_across_its_street
-src/events/event_footprints.gd look
-src/events/event_footprints.gd obstructs_radius
-src/events/event_footprints.gd shape
-src/events/event_footprints.gd stands_along_its_street
-src/events/event_footprints.gd trails_a_lead
-src/events/event_footprints.gd vehicle
 src/events/event_footprints.gd warning_picture
 src/events/event_instance.gd counts_charges_as
 src/events/event_instance.gd duration
@@ -665,38 +624,7 @@ src/events/street_invalidation.gd id
 src/events/street_invalidation.gd paces
 src/events/street_rules/pacing_opening_rule.gd paces
 src/events/street_rules/route_sidewalk_rule.gd paces
-src/events/views/checkpoint_look.gd look
-src/events/views/event_look.gd abduction
-src/events/views/event_look.gd draws_body_shadow
-src/events/views/event_look.gd intensity
-src/events/views/event_look.gd look
-src/events/views/event_look.gd mobile
-src/events/views/event_look.gd obstructs_radius
-src/events/views/event_look.gd pulse_period
-src/events/views/event_look.gd pursuit
-src/events/views/event_look.gd shape
-src/events/views/event_look.gd speed
-src/events/views/event_look.gd telegraph_time
-src/events/views/event_look.gd vehicle
-src/events/views/event_looks.gd look
 src/events/views/event_vehicle_look.gd abduction
-src/events/views/event_vehicle_look.gd look
-src/events/views/event_vehicle_look.gd obstructs_radius
-src/events/views/figure_look.gd inner_radius
-src/events/views/figure_look.gd look
-src/events/views/fire_look.gd intensity
-src/events/views/fire_look.gd look
-src/events/views/fire_look.gd obstructs_radius
-src/events/views/flock_look.gd look
-src/events/views/pursuer_look.gd look
-src/events/views/rank_look.gd intensity
-src/events/views/rank_look.gd look
-src/events/views/rank_look.gd obstructs_radius
-src/events/views/roadblock_look.gd guard_sides
-src/events/views/roadblock_look.gd look
-src/events/views/spread_look.gd look
-src/events/views/spread_look.gd obstructs_radius
-src/events/views/spread_look.gd shape
 src/events/walk_ground.gd aftermath
 src/events/walk_ground.gd hard_fail
 src/events/walk_ground.gd mobile
@@ -772,7 +700,6 @@ src/events/behaviours/event_behaviours.gd pursuit
 src/events/behaviours/event_behaviours.gd route
 src/events/behaviours/event_behaviours.gd unreachable
 src/events/event_excitement.gd age
-src/events/event_footprints.gd def
 src/events/event_manager.gd def
 src/events/event_manager.gd excitement
 src/events/event_manager.gd held_by_hand
@@ -799,54 +726,9 @@ src/events/event_streaming.gd silenced
 src/events/events_ahead.gd def
 src/events/events_ahead.gd is_finished
 src/events/events_ahead.gd is_leaving
-src/events/views/checkpoint_look.gd def
-src/events/views/checkpoint_look.gd gate_state
-src/events/views/checkpoint_look.gd guard_warns_her
-src/events/views/event_look.gd abduction
 src/events/views/event_look.gd age
-src/events/views/event_look.gd barrier_post
-src/events/views/event_look.gd def
-src/events/views/event_look.gd drawer
-src/events/views/event_look.gd excitement
-src/events/views/event_look.gd gate_state
-src/events/views/event_look.gd guard_warns_her
-src/events/views/event_look.gd is_finished
-src/events/views/event_look.gd is_leaving
-src/events/views/event_look.gd path
-src/events/views/event_look.gd points_at
-src/events/views/event_look.gd silenced
-src/events/views/event_look.gd skip_draw
-src/events/views/event_looks.gd def
-src/events/views/event_vehicle_look.gd abduction
-src/events/views/event_vehicle_look.gd def
-src/events/views/event_vehicle_look.gd drawer
-src/events/views/figure_look.gd def
-src/events/views/figure_look.gd drawer
-src/events/views/figure_look.gd is_pelican
-src/events/views/figure_look.gd silenced
 src/events/views/fire_look.gd age
-src/events/views/fire_look.gd def
-src/events/views/fire_look.gd drawer
-src/events/views/flock_look.gd def
-src/events/views/flock_look.gd drawer
-src/events/views/pursuer_look.gd def
-src/events/views/pursuer_look.gd drawer
-src/events/views/pursuer_look.gd is_leaving
 src/events/views/rank_look.gd age
-src/events/views/rank_look.gd def
-src/events/views/rank_look.gd drawer
-src/events/views/roadblock_look.gd barrier_post
-src/events/views/roadblock_look.gd def
-src/events/views/roadblock_look.gd is_finished
-src/events/views/roadblock_look.gd is_leaving
-src/events/views/roadblock_look.gd look
-src/events/views/roadblock_look.gd phase
-src/events/views/roadblock_look.gd skip_draw
-src/events/views/spread_look.gd def
-src/events/views/spread_look.gd drawer
-src/events/views/spread_look.gd is_finished
-src/events/views/spread_look.gd look
-src/events/views/spread_look.gd skip_draw
 src/events/warning_board.gd barrier_post
 src/events/warning_board.gd car
 src/events/warning_board.gd def
@@ -880,10 +762,6 @@ src/resistance/resistance_director.gd points_at
 
 # [EventPursuit] src/events/behaviours/event_pursuit.gd
 src/dev/scene_recipe_runtime.gd outrun_for
-
-# [EventScenery] src/events/event_scenery.gd
-src/events/views/event_drawer.gd atlas
-src/events/views/event_drawer.gd drawer
 
 # [EventSpawner] src/events/event_spawner.gd
 src/events/event_manager.gd pelican_rig
@@ -985,10 +863,7 @@ src/events/event_def.gd kind
 src/events/event_excitement.gd half_extents
 src/events/event_excitement.gd half_length
 src/events/event_excitement.gd kind
-src/events/event_footprints.gd radius
 src/events/event_instance.gd radius
-src/events/views/event_look.gd half_length
-src/events/views/event_look.gd radius
 src/events/walk_ground.gd half_length
 src/events/walk_ground.gd kind
 src/events/walk_ground.gd radius
@@ -1010,11 +885,6 @@ src/main.gd atlas
 src/main.gd map
 
 # [LaneMover] src/crowd/lane_mover.gd
-src/crowd/crowd.gd gate_hold
-src/crowd/crowd.gd junction_hold
-src/crowd/crowd.gd kind
-src/crowd/crowd.gd pedestrian_ahead
-src/crowd/crowd.gd shape
 src/dev/debug_layers.gd kind
 src/dev/debug_layers.gd shape
 src/dev/scene_recipe_draft.gd kind
@@ -1165,11 +1035,6 @@ src/telemetry/telemetry_map.gd segment
 src/telemetry/telemetry_observer.gd kind
 src/telemetry/telemetry_observer.gd segment
 
-# [RoadblockFarGuard] src/events/behaviours/roadblock_far_guard.gd
-src/events/views/roadblock_look.gd at
-src/events/views/roadblock_look.gd heading
-src/events/views/roadblock_look.gd walked
-
 # [RouteRig] src/dev/route_rig.gd
 src/main.gd trace
 
@@ -1312,7 +1177,6 @@ src/autoload/game_save.gd header
 src/autoload/game_save.gd run_parts
 src/autoload/visit_counter.gd calendar
 src/autoload/visit_counter.gd header
-src/city/blackout.gd resistance
 src/city/city.gd attempt_spend
 src/city/city.gd posters
 src/city/city.gd resistance
@@ -1375,12 +1239,7 @@ src/city/scenery_residency.gd chunks
 src/city/scenery_residency.gd mode
 src/city/scenery_residency.gd pending
 
-# [SceneryLayer] src/city/scenery_layer.gd
-src/events/event_scenery.gd drawer
-src/events/event_scenery.gd frame_b
-
 # [SceneryResidency] src/city/scenery_residency.gd
-src/city/city.gd city
 src/city/city.gd frame_locked
 src/city/city.gd timing
 src/city/city.gd view
@@ -1411,9 +1270,7 @@ src/dev/scene_recipe_runtime.gd facing
 src/events/checkpoint_controller.gd outright_moves
 src/events/event_manager.gd carrying
 src/events/event_manager.gd facing
-src/main.gd atlas
 src/main.gd carrying
-src/main.gd is_male
 
 # [TelemetryLog] src/telemetry/telemetry_log.gd
 src/dev/still_watch.gd path

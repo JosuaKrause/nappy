@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `RouteRig` (`src/dev/route_rig.gd`) is `--route`'s own walker — docs/TODO.md, M184, "A rig
 ## walks the route" — and `RouteRigPlanner` (`src/dev/route_rig_planner.gd`) is what it asks where
@@ -54,7 +53,7 @@ var _stroller: Stroller
 ## asks the clock; a test about the rig starts a day of its own (`_started_day()`).
 var _clock: DayController
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_build_day(t)
 	_test_a_plan_never_cuts_a_true_diagonal(t)
 	_test_a_straight_run_on_plain_road_is_never_cut(t)
@@ -113,7 +112,7 @@ func _rng(day: int, stream: String) -> RandomNumberGenerator:
 ## for every ordinary day, `Tuning.RESISTANCE_GOAL` for the last night's finale, which needs
 ## `RunState.sabotage_available()` to hold before the step is on offer at all. `her` hands the
 ## director and the events her (`use_player()`), as `main` does. Freed by `_free_fixture()`.
-func _build_fixture(t, day: int, progress_at_dawn := 0, her := true,
+func _build_fixture(t: TestRunner, day: int, progress_at_dawn := 0, her := true,
 		run_seed := RUN_SEED) -> Dictionary:
 	var run := RunState.new()
 	run.start_run(run_seed)
@@ -131,6 +130,7 @@ func _build_fixture(t, day: int, progress_at_dawn := 0, her := true,
 	city.events.start_day(DaySpec.for_day(day), _rng(day, "events"), consumed)
 
 	var stroller: Stroller = STROLLER_SCENE.instantiate()
+	(stroller.get_node("Baby") as Baby).use_bus(EventBus)
 	t.add_child(stroller)
 	stroller.global_position = city.map.doorstep_world_position()
 	if her:
@@ -154,7 +154,7 @@ func _free_fixture(fixture: Dictionary) -> void:
 
 ## The suite's own day 6, with nobody handed to the director or the events, so nothing reads her
 ## position but the rig and its planner.
-func _build_day(t) -> void:
+func _build_day(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, DAY, 0, false)
 	_run = fixture["run"]
 	_city = fixture["city"]
@@ -191,7 +191,7 @@ func _release() -> void:
 ## rather than hard-coded, so a change to the generator's own layout cannot make this suite pass
 ## on a coincidence. `t.check`s that one exists rather than crashing on `Vector2i(-1, -1)` if a
 ## future seed or a future generator ever ran out.
-func _find_tile(t, type: GameEnums.TileType, margin: int = 3) -> Vector2i:
+func _find_tile(t: TestRunner, type: GameEnums.TileType, margin: int = 3) -> Vector2i:
 	for y in range(margin, _city.map.size.y - margin):
 		for x in range(margin, _city.map.size.x - margin):
 			var tile := Vector2i(x, y)
@@ -209,7 +209,7 @@ func _cuttable(tile: Vector2i) -> bool:
 # ----------------------------------------------------------------- the rig ---
 
 ## A day of her own for the rig to walk, started as `main` starts one, over `city`'s map.
-func _started_day(t, city: City, stroller: Stroller, run: RunState) -> DayController:
+func _started_day(t: TestRunner, city: City, stroller: Stroller, run: RunState) -> DayController:
 	var day := DayController.new()
 	t.add_child(day)
 	day.setup(run)
@@ -224,7 +224,7 @@ func _started_day(t, city: City, stroller: Stroller, run: RunState) -> DayContro
 ## test reads back the rig's `route` lines and the doors' `checkpoint` lines in the order they were
 ## written; `_end_rig()` gives the events back the trace they had. The rig's own frames run from
 ## here on.
-func _started_rig(t, city: City, stroller: Stroller, resistance: ResistanceDirector,
+func _started_rig(t: TestRunner, city: City, stroller: Stroller, resistance: ResistanceDirector,
 		day: DayController, run: RunState, words: Array) -> RouteRig:
 	var rig := RouteRigNoQuit.new()
 	t.add_child(rig)
@@ -292,7 +292,7 @@ func _pressed() -> Vector2:
 ## one tick a frame, the simulation slows down under load rather than catching up, and the frame
 ## timeline is the tick timeline. The engine's own values are put back however the run ends: `each`
 ## cannot return past this function.
-func _real_frames(t, ticks: int, each: Callable = Callable(), scale := FAST) -> float:
+func _real_frames(t: TestRunner, ticks: int, each: Callable = Callable(), scale := FAST) -> float:
 	var clock := Engine.time_scale
 	var steps := Engine.max_physics_steps_per_frame
 	Engine.time_scale = scale
@@ -315,11 +315,11 @@ func _ticks_for(seconds: float) -> int:
 	return ceili(seconds * Engine.physics_ticks_per_second / FAST - 0.001)
 
 ## Real frames for `seconds` of day time at `FAST`.
-func _frames_for(t, seconds: float) -> void:
+func _frames_for(t: TestRunner, seconds: float) -> void:
 	await _real_frames(t, _ticks_for(seconds))
 
 ## `count` real frames at real time, one tick each.
-func _steps(t, count: int) -> void:
+func _steps(t: TestRunner, count: int) -> void:
 	await _real_frames(t, count, Callable(), 1.0)
 
 ## Gives the city's events back their trace and frees what a rig test built.
@@ -333,7 +333,7 @@ func _end_rig(rig: RouteRig, day: DayController) -> void:
 # ---------------------------------------------------------- straight cuts ---
 
 ## An open square of `size` tiles on cuttable ground, its top-left tile, scanned like `_find_tile()`.
-func _find_open_square(t, size: int) -> Vector2i:
+func _find_open_square(t: TestRunner, size: int) -> Vector2i:
 	for y in range(3, _city.map.size.y - 3 - size):
 		for x in range(3, _city.map.size.x - 3 - size):
 			var fits := true
@@ -355,7 +355,7 @@ func _find_open_square(t, size: int) -> Vector2i:
 ## one step diagonally across the middle of an open square, all of it cuttable ground clear by more
 ## than a cut's own clearance, keeps its corner, which is what makes this a test of the rule and not
 ## of the ground.
-func _test_a_plan_never_cuts_a_true_diagonal(t) -> void:
+func _test_a_plan_never_cuts_a_true_diagonal(t: TestRunner) -> void:
 	var square := _find_open_square(t, 5)
 	if square == Vector2i(-1, -1):
 		return
@@ -369,7 +369,7 @@ func _test_a_plan_never_cuts_a_true_diagonal(t) -> void:
 
 ## A stretch of plain `ROAD` down one column, `length` tiles, with open ground on both sides, so a
 ## cut down it fails on the tile type and nothing else; its top tile.
-func _find_road_column(t, length: int) -> Vector2i:
+func _find_road_column(t: TestRunner, length: int) -> Vector2i:
 	for y in range(4, _city.map.size.y - 4 - length):
 		for x in range(4, _city.map.size.x - 4):
 			var fits := true
@@ -390,7 +390,7 @@ func _find_road_column(t, length: int) -> Vector2i:
 ## open** — the rule is about the tile *type*, not about what is in the way of it. A plan held down
 ## a column of plain road (the ground either side kept off, as a re-plan keeps off what caught her)
 ## keeps a waypoint on every tile of it rather than joining the ends.
-func _test_a_straight_run_on_plain_road_is_never_cut(t) -> void:
+func _test_a_straight_run_on_plain_road_is_never_cut(t: TestRunner) -> void:
 	var top := _find_road_column(t, 7)
 	if top == Vector2i(-1, -1):
 		return
@@ -433,7 +433,7 @@ func _find_cuttable_row(length: int) -> Vector2i:
 ## tiles wide (the tiles of an open run, painted over and put back) keeps the straight cut from the
 ## run's near end to its far end as two waypoints, and a cut refusing the crossing would keep a
 ## waypoint on every tile.
-func _test_a_straight_run_onto_a_crossing_is_cut(t) -> void:
+func _test_a_straight_run_onto_a_crossing_is_cut(t: TestRunner) -> void:
 	var left := _find_cuttable_row(5)
 	t.check(left != Vector2i(-1, -1), "seed %d day %d has an open run of five tiles to paint a crosswalk on"
 			% [SEED, DAY])
@@ -463,7 +463,7 @@ func _test_a_straight_run_onto_a_crossing_is_cut(t) -> void:
 ## `ROAD`. On a seed with a calm tile ordinarily reachable on foot — every seed
 ## `tests/test_route_tree.gd` already requires one for — the sidewalk is priced so far below the
 ## carriageway that nothing here should be `ROAD` at all.
-func _test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t) -> void:
+func _test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t: TestRunner) -> void:
 	var planner := _planner()
 	var here := _city.map.world_to_tile(_city.map.doorstep_world_position())
 	var calm := _city.map.calm_tiles()
@@ -496,7 +496,7 @@ func _test_plan_never_steps_on_a_plain_road_tile_when_the_sidewalk_reaches(t) ->
 ## suite walks passes it, and with no body's clearance already reaching its frontage tile.
 ## Quiet (`_site_is_quiet()`). Scanned rather than hard-coded, like `_find_tile()`. Answers
 ## `Vector2i(-1, -1)` if none.
-func _find_kerb_site(t, planner: RouteRigPlanner) -> Vector2i:
+func _find_kerb_site(t: TestRunner, planner: RouteRigPlanner) -> Vector2i:
 	var doorstep := _city.map.world_to_tile(_city.map.doorstep_world_position())
 	var clear := planner.body_clear_tiles()
 	for y in range(4, _city.map.size.y - 4):
@@ -544,11 +544,11 @@ func _kerb_site_fits(kerb: Vector2i, inward: Vector2i, clear: Dictionary) -> boo
 ## beside it is 10px from the van's side, under her 14px radius, and so is the carriageway's first
 ## lane. `body_clear_tiles()` must keep a plan off both, and off the kerb tiles either side, while
 ## leaving the carriageway's second lane open: that is the way past a van at the kerb.
-func _test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van(t) -> void:
+func _test_body_clearance_keeps_her_off_the_frontage_beside_a_kerbed_van(t: TestRunner) -> void:
 	_check_clearance_beside_a_kerbed_van(t, _planner())
 
 ## The same checks on a run of the given seed, a fixture of its own.
-func _test_clearance_holds_on_a_run_that_pinches_the_far_sidewalk(t, run_seed: int) -> void:
+func _test_clearance_holds_on_a_run_that_pinches_the_far_sidewalk(t: TestRunner, run_seed: int) -> void:
 	var fixture := _build_fixture(t, DAY, 0, false, run_seed)
 	var saved := [_run, _city, _resistance, _stroller]
 	_run = fixture["run"]
@@ -562,7 +562,7 @@ func _test_clearance_holds_on_a_run_that_pinches_the_far_sidewalk(t, run_seed: i
 	_stroller = saved[3]
 	_free_fixture(fixture)
 
-func _check_clearance_beside_a_kerbed_van(t, planner: RouteRigPlanner) -> void:
+func _check_clearance_beside_a_kerbed_van(t: TestRunner, planner: RouteRigPlanner) -> void:
 	var kerb := _find_kerb_site(t, planner)
 	if kerb == Vector2i(-1, -1):
 		return
@@ -606,7 +606,7 @@ func _check_clearance_beside_a_kerbed_van(t, planner: RouteRigPlanner) -> void:
 ## (the second lane and the pavement kept off, as a re-plan keeps off what caught her) keeps the
 ## tile as a waypoint of its own and moves it off the van, which is how she gets through a gap that
 ## fits her only off the tile centres, as between two vans at the kerb either side of a road.
-func _test_a_crossed_clearance_tile_is_walked_at_its_roomiest_point(t) -> void:
+func _test_a_crossed_clearance_tile_is_walked_at_its_roomiest_point(t: TestRunner) -> void:
 	var planner := _planner()
 	var kerb := _find_kerb_site(t, planner)
 	if kerb == Vector2i(-1, -1):
@@ -674,7 +674,7 @@ func _step_toward(tile: Vector2i, to: Vector2i) -> Vector2i:
 ## it hands every re-plan), rather than ringing her own position and walking her straight back to
 ## the same pinch. Pinned on a tile the ordinary plan walks through, since the claim under test is
 ## what a plan does with that ground once a stall has named it.
-func _test_a_replan_keeps_off_the_ground_round_what_caught_her(t) -> void:
+func _test_a_replan_keeps_off_the_ground_round_what_caught_her(t: TestRunner) -> void:
 	var planner := _planner()
 	_stroller.global_position = _city.map.doorstep_world_position()
 	var calm := planner.resolve("calm")
@@ -695,7 +695,7 @@ func _test_a_replan_keeps_off_the_ground_round_what_caught_her(t) -> void:
 ## The maneuver starts from the compass point pointing most directly away from what caught her,
 ## rather than always from north — pressing into the body first spends a whole
 ## `RouteRig._UNSTICK_TRY_SECONDS` on the one direction that cannot work.
-func _test_unstick_tries_the_direction_away_from_what_caught_her_first(t) -> void:
+func _test_unstick_tries_the_direction_away_from_what_caught_her_first(t: TestRunner) -> void:
 	var planner := _planner()
 	_stroller.global_position = _city.map.doorstep_world_position()
 	var order := planner.unstick_order(Vector2.LEFT, 48.0)
@@ -711,7 +711,7 @@ func _test_unstick_tries_the_direction_away_from_what_caught_her_first(t) -> voi
 ## street side of the middle of the row to the precinct side must not step on a tile within her
 ## body's reach of a post, and the pavement beside the row stays open, so there is a plan. The
 ## reach is the rig's own (a post's radius plus hers), copied here as the test's oracle.
-func _test_a_plan_never_goes_through_a_precincts_posts(t) -> void:
+func _test_a_plan_never_goes_through_a_precincts_posts(t: TestRunner) -> void:
 	var posts := _city.map.post_positions()
 	t.check(posts.size() >= 2, "the suite's city has a precinct with a row of posts")
 	if posts.size() < 2:
@@ -743,24 +743,24 @@ func _test_a_plan_never_goes_through_a_precincts_posts(t) -> void:
 
 ## `mark` is today's own contact for exactly as long as the pickup step is still on offer — day 6's
 ## own mark, in this suite's fixture.
-func _test_resolve_target_mark_is_todays_contact(t) -> void:
+func _test_resolve_target_mark_is_todays_contact(t: TestRunner) -> void:
 	var step := _resistance.current_step()
 	t.check(step != null and step.is_pickup, "day %d's own step on offer is the pickup mark" % DAY)
 	t.check(_planner().resolve("mark") == _resistance.contact_position(),
 			"'mark' resolves to the day's own contact position")
 
 ## `task` answers `Vector2.INF` until the mark that unlocks it has actually been touched.
-func _test_resolve_target_task_is_unavailable_before_the_mark_is_touched(t) -> void:
+func _test_resolve_target_task_is_unavailable_before_the_mark_is_touched(t: TestRunner) -> void:
 	t.check(_planner().resolve("task") == Vector2.INF,
 			"'task' is unresolved while the mark is still the step on offer")
 
-func _test_resolve_target_home_is_the_home_rects_centre(t) -> void:
+func _test_resolve_target_home_is_the_home_rects_centre(t: TestRunner) -> void:
 	t.check(_planner().resolve("home") == _city.map.home_world_position(),
 			"'home' resolves to CityMap.home_world_position()")
 
 ## `spawn:<name>` is handed straight to `DevRig.for_spawn_target()`, the same lookup `--spawn`
 ## itself uses — `park` is one `tests/test_dev_rig.gd` already exercises directly.
-func _test_resolve_target_spawn_reaches_devrig(t) -> void:
+func _test_resolve_target_spawn_reaches_devrig(t: TestRunner) -> void:
 	var at := _planner().resolve("spawn:park")
 	t.check(at == DevRig.for_spawn_target("park", _city, _resistance, _run.header),
 			"'spawn:park' resolves exactly as DevRig.for_spawn_target('park', ...) does")
@@ -769,7 +769,7 @@ func _test_resolve_target_spawn_reaches_devrig(t) -> void:
 ## (`DaySpec.exits`, which the day's start hands a `CITY_EDGE` section from the world it stood); a
 ## day has none, so on a day they are unavailable, and with no `ResistanceDirector` — the escape
 ## has none — `mark` and `task` are unavailable rather than a crash.
-func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t) -> void:
+func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t: TestRunner) -> void:
 	var clock := DayController.new()
 	t.add_child(clock)
 	var planner := RouteRigPlanner.new(_city, _stroller, _resistance, clock, _run)
@@ -786,7 +786,7 @@ func _test_resolve_target_tunnel_and_bridge_are_the_escape_cities_exits(t) -> vo
 			== Vector2.INF, "with no resistance director, 'mark' and 'task' are unavailable")
 	clock.free()
 
-func _test_resolve_target_unknown_word_warns_and_answers_inf(t) -> void:
+func _test_resolve_target_unknown_word_warns_and_answers_inf(t: TestRunner) -> void:
 	t.check(_planner().resolve("not-a-real-target") == Vector2.INF,
 			"an unrecognised --route word answers Vector2.INF rather than guessing")
 
@@ -809,7 +809,7 @@ func _touch_the_mark(fixture: Dictionary) -> ResistanceSteps.Step:
 
 ## Day 10, warn the neighbor: `TargetKind.NEIGHBOR` rides the neighbor out in the city, and the
 ## planner follows it through `contact_position()` exactly as it follows a `mark` that has moved.
-func _test_task_target_resolves_for_the_neighbor_task_on_day_10(t) -> void:
+func _test_task_target_resolves_for_the_neighbor_task_on_day_10(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, 10)
 	var mark: ResistanceSteps.Step = (fixture["resistance"] as ResistanceDirector).current_step()
 	t.check(mark != null and mark.is_pickup, "day 10 offers a mark")
@@ -828,7 +828,7 @@ func _test_task_target_resolves_for_the_neighbor_task_on_day_10(t) -> void:
 ## stands on open ground, which is handed back unchanged; with its tile recorded obstructed
 ## (`CityMap.obstructed_tiles`, written here as `EventManager` records a body — `tests/probes/m110_bodies.gd`
 ## reads and rewrites it the same way) the point found is open, unobstructed ground beside it.
-func _test_task_target_steps_off_obstructed_ground(t) -> void:
+func _test_task_target_steps_off_obstructed_ground(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, 10)
 	_touch_the_mark(fixture)
 	var map: CityMap = (fixture["city"] as City).map
@@ -852,7 +852,7 @@ func _test_task_target_steps_off_obstructed_ground(t) -> void:
 
 ## Day 11, silence a mast: `TargetKind.MAST` sits beside a live mast's own foot, a bare point the
 ## director computes rather than a rider.
-func _test_task_target_resolves_for_the_mast_task_on_day_11(t) -> void:
+func _test_task_target_resolves_for_the_mast_task_on_day_11(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, 11)
 	var director := fixture["resistance"] as ResistanceDirector
 	var mark: ResistanceSteps.Step = director.current_step()
@@ -878,7 +878,7 @@ func _test_task_target_resolves_for_the_mast_task_on_day_11(t) -> void:
 
 ## Day 12, the swing: `TargetKind.PARK_SWING` sits at the one park the city chose for it, a bare
 ## point `ResistanceSteps.target_candidates()` computes from today's city.
-func _test_task_target_resolves_for_the_swing_task_on_day_12(t) -> void:
+func _test_task_target_resolves_for_the_swing_task_on_day_12(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, 12)
 	var mark: ResistanceSteps.Step = (fixture["resistance"] as ResistanceDirector).current_step()
 	t.check(mark != null and mark.is_pickup, "day 12 offers a mark")
@@ -893,7 +893,7 @@ func _test_task_target_resolves_for_the_swing_task_on_day_12(t) -> void:
 
 ## Day 9, the crossing: `TargetKind.DOOR` sits at one of today's region-wall doors, the other bare
 ## point `target_candidates()` computes rather than a rider.
-func _test_task_target_resolves_for_the_door_task_on_day_9(t) -> void:
+func _test_task_target_resolves_for_the_door_task_on_day_9(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, 9)
 	var mark: ResistanceSteps.Step = (fixture["resistance"] as ResistanceDirector).current_step()
 	t.check(mark != null and mark.is_pickup, "day 9 offers a mark")
@@ -915,7 +915,7 @@ func _test_task_target_resolves_for_the_door_task_on_day_9(t) -> void:
 ## day-8 door): the door is walked to from the tile straight out from the facade (32px), never a
 ## diagonal (45px), which a leg arriving within `RouteRigPlanner.ARRIVE_RADIUS` could leave past
 ## the door's reach (`ResistanceDirector.DOOR_REACH`, 50.6px).
-func _test_task_target_resolves_for_the_station_door_on_the_last_night(t) -> void:
+func _test_task_target_resolves_for_the_station_door_on_the_last_night(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, Tuning.RUN_LENGTH_DAYS, Tuning.RESISTANCE_GOAL)
 	var director := fixture["resistance"] as ResistanceDirector
 	var task: ResistanceSteps.Step = director.current_step()
@@ -953,7 +953,7 @@ func _test_task_target_resolves_for_the_station_door_on_the_last_night(t) -> voi
 ## `calm` reads `CityMap.calm_tiles()` live, so a tile spoiled after the fixture was built (the
 ## day 12 shape, once the swing is reached) is never offered — pinned directly with `set_tile()`
 ## rather than by playing a whole day forward to spoil one for real.
-func _test_nearest_calm_excludes_ground_the_day_has_spoiled(t) -> void:
+func _test_nearest_calm_excludes_ground_the_day_has_spoiled(t: TestRunner) -> void:
 	var planner := _planner()
 	_stroller.global_position = _city.map.doorstep_world_position()
 	var first := planner.resolve("calm")
@@ -975,7 +975,7 @@ func _test_nearest_calm_excludes_ground_the_day_has_spoiled(t) -> void:
 ## she is standing in it, so the nearest calm tile by walking is in it. On an ordinary morning that
 ## park is calm ground like any other; taken here the way `Happenings.take_the_park()` takes it,
 ## `CityState.take()` then `CityMap.recompute_calm()`, it is not.
-func _test_calm_leaves_the_park_being_taken(t) -> void:
+func _test_calm_leaves_the_park_being_taken(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, 12)
 	var map: CityMap = (fixture["city"] as City).map
 	var stroller: Stroller = fixture["stroller"]
@@ -1009,7 +1009,7 @@ func _test_calm_leaves_the_park_being_taken(t) -> void:
 ## alone. Asked from sidewalk tiles across the city until the two readings part. The walks are
 ## measured over the ground the planner's first reading keeps to — the sidewalk, off closed,
 ## sealed and obstructed ground — which is the reading both answers come from here.
-func _test_resolve_target_calm_home_prefers_the_combined_walk(t) -> void:
+func _test_resolve_target_calm_home_prefers_the_combined_walk(t: TestRunner) -> void:
 	var planner := _planner()
 	var map := _city.map
 	var stands := map.tiles_of_type(GameEnums.TileType.SIDEWALK)
@@ -1064,7 +1064,7 @@ func _settling_ground() -> Vector2:
 
 ## A rig set down on calm ground with the baby awake, walking `targets` from there: its first leg
 ## ends where it begins, so it is pacing at `calm` within a frame or two.
-func _settling_rig(t, targets: Array) -> Dictionary:
+func _settling_rig(t: TestRunner, targets: Array) -> Dictionary:
 	var baby: Baby = _stroller.get_node("Baby")
 	baby.reset()
 	baby.set_physics_process(false)
@@ -1086,7 +1086,7 @@ func _end_settling(settle: Dictionary) -> void:
 ## point of settling (waiting for the baby to fall asleep) the moment she took her very first step
 ## of it: `calm` would "settle" in one physics frame regardless of whether the baby was anywhere
 ## near asleep, and she would set off for home.
-func _test_pace_does_not_advance_the_target(t) -> void:
+func _test_pace_does_not_advance_the_target(t: TestRunner) -> void:
 	var settle := await _begin_settling(t, ["calm", "home"])
 	if settle.is_empty():
 		return
@@ -1107,7 +1107,7 @@ func _test_pace_does_not_advance_the_target(t) -> void:
 
 ## Starts a settling rig and lets it reach its calm point. Answers it, or `{}` (after a failed
 ## check) when the leg never ended there.
-func _begin_settling(t, targets: Array) -> Dictionary:
+func _begin_settling(t: TestRunner, targets: Array) -> Dictionary:
 	var settle := _settling_rig(t, targets)
 	await _frames_for(t, 0.5)
 	t.check(_count("reached 'calm'") == 1,
@@ -1122,7 +1122,7 @@ func _begin_settling(t, targets: Array) -> Dictionary:
 ## actually wait for the state the meter reports rather than a fixed number of frames.
 ## `Baby.force_sleep()` is the same dev affordance `--spawn` rigs already use to skip walking the
 ## meter up by hand.
-func _test_check_settled_waits_for_asleep(t) -> void:
+func _test_check_settled_waits_for_asleep(t: TestRunner) -> void:
 	var settle := await _begin_settling(t, ["calm"])
 	if settle.is_empty():
 		return
@@ -1141,7 +1141,7 @@ func _test_check_settled_waits_for_asleep(t) -> void:
 ## calm tile was would never end. Nothing in the game repaints calm ground during a day (day 12's
 ## park keeps its grass under the cordon, `ParkCordon`), so this holds the rig's own rule for
 ## ground that stops being calm under her. Pinned with `set_tile()` on the tile she paces on.
-func _test_calm_ground_gone_under_her_looks_again(t) -> void:
+func _test_calm_ground_gone_under_her_looks_again(t: TestRunner) -> void:
 	var settle := await _begin_settling(t, ["calm", "home"])
 	if settle.is_empty():
 		return
@@ -1162,7 +1162,7 @@ func _test_calm_ground_gone_under_her_looks_again(t) -> void:
 ## within `RouteRigPlanner.ARRIVE_RADIUS` of the exact doorstep point, so a day can win a few pixels
 ## before the rig arrives. She stands on home ground a tile off its centre, walking `home`, and the
 ## baby falls asleep (`Baby.force_sleep()`), which wins the day on the spot.
-func _test_on_day_finished_won_still_finishes(t) -> void:
+func _test_on_day_finished_won_still_finishes(t: TestRunner) -> void:
 	var map := _city.map
 	var centre := map.home_world_position()
 	var stand := Vector2.INF
@@ -1203,7 +1203,7 @@ func _test_on_day_finished_won_still_finishes(t) -> void:
 ## own frames switched off), which is exactly what a physical wedge reads as to the tile grid:
 ## nothing wrong with the ground, and no progress since the last check. Read off what the rig
 ## presses and the re-plans it writes, frame by frame.
-func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t) -> void:
+func _test_maybe_replan_waits_before_forcing_a_physical_maneuver(t: TestRunner) -> void:
 	_stroller.reset_at(_city.map.doorstep_world_position())
 	t.check(_planner().resolve("calm") != Vector2.INF, "a calm target exists for this leg")
 	_stroller.set_physics_process(false)
@@ -1271,7 +1271,7 @@ func _first_at(timeline: Array[Dictionary], matches: Callable) -> int:
 ## day 6 seed 1234567 leg that walked the other way across the city and stalled far from any mark.
 ## The contact is moved by hand here (`ResistanceDirector.contact()`, its position the one thing the
 ## director's own move changes), and put back.
-func _test_a_mark_leg_follows_the_mark_when_it_moves(t) -> void:
+func _test_a_mark_leg_follows_the_mark_when_it_moves(t: TestRunner) -> void:
 	_stroller.reset_at(_city.map.doorstep_world_position())
 	var dawn := _resistance.contact_position()
 	var day := _started_day(t, _city, _stroller, _run)
@@ -1293,7 +1293,7 @@ func _test_a_mark_leg_follows_the_mark_when_it_moves(t) -> void:
 ## can keep her from. Its own day 6, since completing the mark moves the day's resistance on. The
 ## mark is completed as reading it completes it (`ContactPoint.complete_now()`) while she is still
 ## far from it.
-func _test_a_mark_leg_ends_when_the_director_records_the_mark(t) -> void:
+func _test_a_mark_leg_ends_when_the_director_records_the_mark(t: TestRunner) -> void:
 	var fixture := _build_fixture(t, DAY, 0, false)
 	var city: City = fixture["city"]
 	var stroller: Stroller = fixture["stroller"]
@@ -1322,7 +1322,7 @@ func _test_a_mark_leg_ends_when_the_director_records_the_mark(t) -> void:
 ## jump no step covers, made as the hold ends) re-plans from where she lands rather than walking her
 ## back to the stale waypoints on the side she came from. She lands on the calm tile the leg walks
 ## to, so a plan from where she landed arrives at once.
-func _test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t) -> void:
+func _test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t: TestRunner) -> void:
 	_stroller.reset_at(_city.map.doorstep_world_position())
 	var calm := _planner().resolve("calm")
 	t.check(calm != Vector2.INF, "a calm target exists for this leg")
@@ -1365,7 +1365,7 @@ func _test_a_door_hold_is_not_a_stall_and_its_far_side_is_planned_from(t) -> voi
 ## her there, and the rig reporting it reached and done. `home` rather than `calm`: the doorstep sits
 ## right on the home block's own edge, so this leg is short and has nothing left to prove about
 ## calm ground or the baby's own settle that the dedicated tests above have not already covered.
-func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
+func _test_a_real_leg_walks_her_there_and_reports_it(t: TestRunner) -> void:
 	_stroller.reset_at(_city.map.doorstep_world_position())
 	var start_position := _stroller.global_position
 	var day := _started_day(t, _city, _stroller, _run)
@@ -1386,7 +1386,7 @@ func _test_a_real_leg_walks_her_there_and_reports_it(t) -> void:
 ## The first day a region wall stands, in a run of its own, with her handed to the events so its
 ## doors hold and set her down, and the wall's street door: its boom (`checkpoint_gate`, the body
 ## solid while lowered) and the hut standing on its line.
-func _build_day_with_doors(t) -> Dictionary:
+func _build_day_with_doors(t: TestRunner) -> Dictionary:
 	var fixture := _build_fixture(t, Tuning.REGION_WALL_FIRST_DAY)
 	var city: City = fixture["city"]
 	var gate: EventInstance = null
@@ -1444,7 +1444,7 @@ func _passes_within(map: CityMap, path: Array[Vector2i], point: Vector2, reach: 
 ## centre is exactly half a tile off the body's crossing axis: both lanes are the crossing, and the
 ## lane beside them is door reach. Read as neither, a door left no open way through its wall, so
 ## the plan gave up every door's reach and walked her into the hut from the side.
-func _test_a_door_between_two_lanes_opens_both_as_its_crossing(t, doors: Dictionary) -> void:
+func _test_a_door_between_two_lanes_opens_both_as_its_crossing(t: TestRunner, doors: Dictionary) -> void:
 	var hut: EventInstance = doors.get("hut")
 	if not hut:
 		return
@@ -1467,7 +1467,7 @@ func _test_a_door_between_two_lanes_opens_both_as_its_crossing(t, doors: Diction
 ## route through the boom either way.")*: a plan from four tiles on one side of the boom to four
 ## tiles on the other, down the carriageway the bare grid walks straight through it, never steps on
 ## ground where the boom — rather than a hut — would be the body to take her.
-func _test_a_plan_never_goes_through_the_boom(t, doors: Dictionary) -> void:
+func _test_a_plan_never_goes_through_the_boom(t: TestRunner, doors: Dictionary) -> void:
 	var gate: EventInstance = doors.get("gate")
 	if not gate:
 		return
@@ -1501,7 +1501,7 @@ func _test_a_plan_never_goes_through_the_boom(t, doors: Dictionary) -> void:
 ## latched round where she stands the plan goes round its body; with her far from it the same plan
 ## goes down its line, which is the crossing — so the first answer is the latch's and not a hut the
 ## plan could never have walked through.
-func _test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t, doors: Dictionary) -> void:
+func _test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t: TestRunner, doors: Dictionary) -> void:
 	var hut: EventInstance = doors.get("hut")
 	if not hut:
 		return
@@ -1540,7 +1540,7 @@ func _test_a_plan_does_not_walk_into_a_door_that_has_just_let_her_out(t, doors: 
 ## would be (`DaySpec.exits`), the one target word that names a point the test chooses. The count
 ## must stay at zero while she ends up on the far side, held by a hut on the way, which is what says
 ## the leg crossed.
-func _test_a_rig_run_never_walks_under_a_boom(t, doors: Dictionary) -> void:
+func _test_a_rig_run_never_walks_under_a_boom(t: TestRunner, doors: Dictionary) -> void:
 	var gate: EventInstance = doors.get("gate")
 	if not gate:
 		return

@@ -10,8 +10,8 @@ extends Node2D
 ## the look-ahead, the held step, placement and recycling, the junction and queue questions, the
 ## heading and the velocity — is here, and never asks which kind it is; what only one kind does is
 ## its `strategy`, a `WalkerStrategy` or a `CarStrategy` that `kind` installs (`LaneStrategy` says
-## what it is asked). The per-frame inputs `Crowd` writes for the cars and for the walkers at a door
-## are fields of the mover the crowd hands them to.
+## what it is asked). The per-frame inputs `Crowd` works out for the cars and for the walkers at a
+## door it tells the mover through its lane (`Lane`'s events), which keeps them as fields.
 ##
 ## **The mover has no picture, no excitement and no halo.** `CrowdAgent` is the crowd member built on
 ## it: it adds the field it contributes to the baby's meter, the halo and caret that warn of it, and
@@ -247,6 +247,40 @@ class Lane:
 	func door_ahead_along() -> float:
 		return _of.door_ahead_along
 
+	## Where it stands along its axis, and across it, in px. Written out rather than asking the
+	## mover's own `_along()` and `_cross()`, since the strategies ask them many times a tick for
+	## every agent and a member read is cheaper than a second call.
+	func position_along() -> float:
+		return _of.position.y if _of._vertical else _of.position.x
+
+	func position_across() -> float:
+		return _of.position.x if _of._vertical else _of.position.y
+
+	## The tile `distance` away along an axis that is vertical or not, the way `direction_along`
+	## points, from where it stands or, when `from` is not `Vector2.INF`, from `from`.
+	func tile_ahead(vertical: bool, direction_along: float, distance: float,
+			from: Vector2) -> Vector2i:
+		var origin := _of.position if from == Vector2.INF else from
+		var offset := Vector2(0.0, direction_along * distance) if vertical \
+				else Vector2(direction_along * distance, 0.0)
+		return _of._map.world_to_tile(origin + offset)
+
+	## Whether the street segment `tile` is on is shut to it today, the way a hard blocker is.
+	func street_is_shut_at(tile: Vector2i) -> bool:
+		return _of._segment_is_shut(tile)
+
+	## Whether it stands somewhere it could have got to on its own.
+	func stands_on_a_street() -> bool:
+		return _of._stands_on_a_street()
+
+	## Whether it is far enough from the camera that taking it away cannot be seen.
+	func is_out_of_view() -> bool:
+		return _of._out_of_view()
+
+	## Whether it has walked out of the patch of city that is being simulated.
+	func has_left_the_field() -> bool:
+		return _of._has_left_the_field()
+
 	# --------------------------------------------------------------------- events ---
 
 	## It starts in a lane: travelling `direction_along` an axis that is vertical or not, in the lane
@@ -301,11 +335,15 @@ class Lane:
 	func limit_speed_to(limit: float) -> void:
 		_of._speed = minf(_of._speed, limit)
 
+	## It drives `distance` straight on down its lane, the way it points.
+	func drive_on(distance: float) -> void:
+		_of._set_along(_of._along() + distance * _of._direction)
+
 	## It drives `travel` of its straight run-up before a turn's arc begins and answers how much of
 	## `travel` is left: along its lane, steering across toward the lane's centre line.
 	func drive_the_run_up(travel: float, delta: float) -> float:
 		var straight := minf(travel, _of._turn_run_up)
-		_of._set_along(_of._along() + straight * _of._direction)
+		drive_on(straight)
 		_of._set_cross(move_toward(_of._cross(), _of._lane_centre, STEER_SPEED * delta))
 		_of._turn_run_up -= straight
 		return travel - straight
@@ -341,6 +379,64 @@ class Lane:
 	func clear_what_is_ahead() -> void:
 		_of.gap_ahead = INF
 		_of.leader_speed = 0.0
+
+	## It is placed `at` along its axis, where it stands across unchanged: a jump outside its own
+	## step, so its move stands there too.
+	func be_placed_along(at: float) -> void:
+		_of._set_along(at)
+
+	## It is placed at `point`: a jump outside its own step, so its move stands there too.
+	func be_placed_at(point: Vector2) -> void:
+		_of.position = point
+		_of.place_its_move()
+
+	## It is placed `along` its axis on its lane's centre line: a jump outside its own step, so its
+	## move stands there too.
+	func be_placed_on_its_lane_at(along: float) -> void:
+		_of._set_along(along)
+		_of._set_cross(_of._lane_centre)
+
+	## It turns round where it stands, unless it is still walking off the stride its last
+	## about-face costs (`LaneMover._turn_round()`).
+	func turn_round_where_it_stands() -> void:
+		_of._turn_round()
+
+	## It leaves the field and comes back in elsewhere (`LaneMover._recycle()`), or, on a stretch
+	## where she can see it, turns round instead.
+	func be_recycled() -> void:
+		_of._recycle()
+
+	# ------------------------------------------------------- what the crowd finds ---
+	# What `Crowd` works out once a tick over the pair of them or over the street, and tells the car:
+	# whose turn it is at a box, a gate down ahead, somebody near its road.
+
+	## The crowd found a junction box ahead that it has to give way at, with the stop line
+	## `distance` ahead of it (`Crowd._give_way_at_junctions()`).
+	func find_a_junction_to_hold_at(distance: float) -> void:
+		_of.junction_hold = distance
+
+	## The crowd found no junction box ahead that it has to give way at: it has the right of way,
+	## or is near none.
+	func find_no_junction_to_hold_at() -> void:
+		_of.junction_hold = INF
+
+	## The crowd found a lowered checkpoint gate ahead that it has to stop for, with the stop line
+	## `distance` ahead of it (`Crowd._stop_for_gates()`).
+	func find_a_gate_to_hold_at(distance: float) -> void:
+		_of.gate_hold = distance
+
+	## The crowd found no gate ahead that it has to stop for.
+	func find_no_gate_to_hold_at() -> void:
+		_of.gate_hold = INF
+
+	## The crowd found somebody standing at `at`, near enough to its road to watch
+	## (`Crowd._meet_the_player()`).
+	func see_a_pedestrian_at(at: Vector2) -> void:
+		_of.pedestrian_ahead = at
+
+	## The crowd found nobody near enough to its road to watch.
+	func see_no_pedestrian() -> void:
+		_of.pedestrian_ahead = Vector2.INF
 
 ## Stepped on the physics tick, inside the crowd's own (`step()`), so it is drawn interpolated
 ## between two ticks as she and the events are, and moves as smoothly as they do on a screen drawing
@@ -677,7 +773,8 @@ func step(delta: float) -> void:
 var _move := MoveProposal.new(true)
 
 ## **Puts its move where it stands, after something outside its step has moved it**: a car carried
-## along a turn (`CarStrategy._follow_the_turn()`), a walker pushed by her bump (`Crowd._bump()`).
+## along a turn (`CarStrategy._follow_the_turn()`), a walker pushed by her bump (`Crowd._bump()`), a
+## walker put into a checkpoint hut (`Lane.be_placed_at()`).
 ## Its own setters (`_set_along()`, `_set_cross()`) and a placement taken back already do, so outside
 ## a step its move is always where it stands.
 func place_its_move() -> void:
@@ -966,13 +1063,6 @@ func _choose_lane(roll: float) -> void:
 ## pavement worth aiming at. See `CrowdLanes.SIDEWALK_LANE_SPREAD`.
 func _lane_centre_here() -> float:
 	return strategy.lane_centre_here()
-
-## The tile `distance` away along an axis, from this agent or from `from`.
-func _tile_ahead(vertical: bool, direction: float, distance: float, from: Vector2) -> Vector2i:
-	var origin := position if from == Vector2.INF else from
-	var offset := Vector2(0.0, direction * distance) if vertical \
-			else Vector2(direction * distance, 0.0)
-	return _map.world_to_tile(origin + offset)
 
 ## How far the way ahead is clear, in tiles, worked out **once per tile** rather than once per
 ## frame. `LOOKAHEAD_TILES + 1` means nothing within reach.

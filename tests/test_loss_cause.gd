@@ -1,10 +1,9 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `LossCause`, the pure rules behind the cause `EventBus.day_ended` carries — the hard-fail cause
 ## and the crying cause, named where the day ended for the run log and the page's counter alike.
 ## See `EventBus.day_ended`'s own doc. Plain values in, a name out: no scene, no globals.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_hard_fail_cause_suffix(t)
 	_test_crying_cause_suffix(t)
 	_test_a_day_lost_to_the_pelican_names_the_pelican(t)
@@ -23,7 +22,7 @@ func _crying(landed_by_group: Dictionary) -> String:
 ## already is — `roadblock` included, so a row that turns lethal only once the resistance's heat
 ## reaches it (`EventDef.at_heat()`) needs no entry of its own here. Raw, unprefixed
 ## — `VisitCounter._loss_event_suffix()` is what folds it onto `lost-hard-fail`.
-func _test_hard_fail_cause_suffix(t) -> void:
+func _test_hard_fail_cause_suffix(t: TestRunner) -> void:
 	t.check(_hard_fail("car_strike") == "car",
 		"the one hard fail that is not a catalogue row")
 	t.check(_hard_fail("charging_dog") == "charging-dog",
@@ -39,7 +38,7 @@ func _test_hard_fail_cause_suffix(t) -> void:
 ## alphabetically first key that is present, falling back to `self` when nothing landed anything
 ## in the window at all. Raw, unprefixed — `VisitCounter._loss_event_suffix()` is what folds it onto
 ## `lost-crying`.
-func _test_crying_cause_suffix(t) -> void:
+func _test_crying_cause_suffix(t: TestRunner) -> void:
 	t.check(_crying({"homeless_yeller": 12.0, "crowd": 4.0})
 			== "homeless-yeller", "the largest group names the cause, hyphenated")
 	t.check(_crying({"crowd": 6.0, "traffic": 9.0}) == "traffic",
@@ -55,7 +54,7 @@ func _test_crying_cause_suffix(t) -> void:
 ## The pelican is named `pelican` in the cause, never its row's `cyclist` *(inbox #527 in azure-tapir)*: a hard fail
 ## through `EventManager.what_struck_her()`'s own name, and a crying loss through the grouping `DayDirector.landed_by_group()` reads, checked in
 ## `tests/test_day_director.gd`.
-func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
+func _test_a_day_lost_to_the_pelican_names_the_pelican(t: TestRunner) -> void:
 	t.check(_hard_fail("cyclist", "pelican") == "pelican",
 		"a day the pelican's reach ended is lost to the pelican")
 	t.check(_hard_fail("cyclist", "cyclist") == "cyclist"
@@ -65,7 +64,7 @@ func _test_a_day_lost_to_the_pelican_names_the_pelican(t) -> void:
 ## `LossCause.of()` is the one entry: a win and a timeout have no cause, a hard-fail day is named by
 ## what struck her, a crying day by what landed the most, and the inputs a result does not read
 ## are ignored.
-func _test_the_cause_by_result(t) -> void:
+func _test_the_cause_by_result(t: TestRunner) -> void:
 	var landed := {"crowd": 2.0, "traffic": 7.0}
 	t.check(LossCause.of(GameEnums.DayResult.WON, "car_strike", "x", landed) == "",
 			"a win has no cause")

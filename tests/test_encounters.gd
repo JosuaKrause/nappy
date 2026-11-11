@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The page's counter's encounters and bouts of running (`EncounterWatch`) *(misty-newt, the
 ## player: "how frequent do certain events actually appear and are players avoiding them or
@@ -22,7 +22,7 @@ var _seen: Array[String] = []
 var _influenced: Array[String] = []
 var _ran: Array[int] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	var on_seen := func(day: int, name: String) -> void: _seen.append("%d:%s" % [day, name])
 	var on_influenced := func(day: int, name: String, seen: bool) -> void:
@@ -60,7 +60,7 @@ func _clear() -> void:
 
 ## A manager over a bare map and a run of its own, handed in as the escape's building is handed its
 ## world (`EventManager.setup_world()`), in the tree. `_free_manager()` frees it.
-func _manager(t) -> EventManager:
+func _manager(t: TestRunner) -> EventManager:
 	var run := RunState.new()
 	run.start_run(SEED)
 	var map := CityMap.new()
@@ -86,7 +86,7 @@ func _watch() -> EncounterWatch:
 	return watch
 
 ## An instance of the row `id` standing at `at`, in the tree and never ticking on its own.
-func _instance(t, id: String, at: Vector2) -> EventInstance:
+func _instance(t: TestRunner, id: String, at: Vector2) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(EventCatalogue.by_id(id), at)
 	t.add_child(instance)
@@ -113,7 +113,7 @@ static func _visible(centre: Vector2, joystick := false) -> VisibleView:
 ## Far enough from any instance near the origin that nothing of it is in view.
 const AWAY := Vector2(2000.0, 0.0)
 
-func _test_one_encounter_is_one_seen(t) -> void:
+func _test_one_encounter_is_one_seen(t: TestRunner) -> void:
 	_clear()
 	var watch := _watch()
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
@@ -125,7 +125,7 @@ func _test_one_encounter_is_one_seen(t) -> void:
 			"three seconds in full view are one seen, carrying the day and the row (%s)" % [_seen])
 	yeller.free()
 
-func _test_coming_back_after_the_gap_is_a_second_encounter(t) -> void:
+func _test_coming_back_after_the_gap_is_a_second_encounter(t: TestRunner) -> void:
 	_clear()
 	var watch := _watch()
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
@@ -137,7 +137,7 @@ func _test_coming_back_after_the_gap_is_a_second_encounter(t) -> void:
 			% _seen.size())
 	yeller.free()
 
-func _test_coming_back_inside_the_gap_is_the_same_encounter(t) -> void:
+func _test_coming_back_inside_the_gap_is_the_same_encounter(t: TestRunner) -> void:
 	_clear()
 	var watch := _watch()
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
@@ -151,7 +151,7 @@ func _test_coming_back_inside_the_gap_is_the_same_encounter(t) -> void:
 
 ## The yeller's drawn box straddling the view's right edge: in view but mostly out of it is an
 ## encounter with nothing seen; then nearly all of it in view is seen.
-func _test_a_sliver_at_the_edge_is_not_seen(t) -> void:
+func _test_a_sliver_at_the_edge_is_not_seen(t: TestRunner) -> void:
 	_clear()
 	var watch := _watch()
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
@@ -175,7 +175,7 @@ func _test_a_sliver_at_the_edge_is_not_seen(t) -> void:
 ## rectangles *do* count")*: each covered corner holds its own ring and run button whole, and
 ## reaches no higher than the ring's top; in the joystick scheme what lies in a corner is not
 ## visible, in the tap scheme it is, and the middle of the view is visible in both.
-func _test_the_joystick_corners_are_not_visible(t) -> void:
+func _test_the_joystick_corners_are_not_visible(t: TestRunner) -> void:
 	var left := TouchCover.joystick().left
 	var right := TouchCover.joystick().right
 	var ring := Vector2(TouchControls.RING_RADIUS, TouchControls.RING_RADIUS)
@@ -220,7 +220,7 @@ func _test_the_joystick_corners_are_not_visible(t) -> void:
 
 ## A yeller standing in the view's bottom-left corner: in the joystick scheme it is under the
 ## controls, so nothing is seen and no encounter opens; in the tap scheme it is seen.
-func _test_a_thing_under_the_joystick_controls_is_not_seen(t) -> void:
+func _test_a_thing_under_the_joystick_controls_is_not_seen(t: TestRunner) -> void:
 	_clear()
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
 	var instances: Array[EventInstance] = [yeller]
@@ -240,7 +240,7 @@ func _test_a_thing_under_the_joystick_controls_is_not_seen(t) -> void:
 	t.check(_seen.size() == 1, "with the tap scheme it is (%d)" % _seen.size())
 	yeller.free()
 
-func _test_a_tenth_of_the_meter_is_one_influence_per_encounter(t) -> void:
+func _test_a_tenth_of_the_meter_is_one_influence_per_encounter(t: TestRunner) -> void:
 	_clear()
 	var watch := _watch()
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
@@ -271,7 +271,7 @@ func _test_a_tenth_of_the_meter_is_one_influence_per_encounter(t) -> void:
 ## A landing from off screen opens an encounter. Its influence waits: seen later in the same
 ## encounter it goes out after the seen as an ordinary influence; over without being seen, it goes
 ## out as an unseen one.
-func _test_an_influence_from_off_screen_waits_to_be_seen(t) -> void:
+func _test_an_influence_from_off_screen_waits_to_be_seen(t: TestRunner) -> void:
 	_clear()
 	var watch := _watch()
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
@@ -317,7 +317,7 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t) -> void:
 ## for her is an influence the moment it chases, with nothing landed; a lorry that can end the day
 ## is one the moment she is inside its reach, and a checkpoint post the moment she is inside its
 ## hold — neither with anything landed.
-func _test_a_chase_or_a_catch_is_always_an_influence(t) -> void:
+func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	_clear()
 	var watch := _watch()
 	var dog := _chasing_dog(t, EventCatalogue.by_id("charging_dog"))
@@ -377,7 +377,7 @@ func _stand(watch: EncounterWatch, instances: Array[EventInstance], at: Vector2,
 ## *(Inbox #586 in olive-hedgehog, the player: "use the real catch code".)* A guard within reach with a building's
 ## corner between them has not touched her, a cyclist still only warned has not reached her, and a
 ## hold the manager would not begin (another one already running) is not a hold.
-func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
+func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	_clear()
 	var map := CityMap.new(Vector2i(8, 8))
 	map.fill_rect(Rect2i(0, 0, 8, 8), GameEnums.TileType.SIDEWALK)
@@ -442,7 +442,7 @@ func _test_influenced_follows_the_real_catch_and_hold(t) -> void:
 ## the game plays it: she walks into a hut and is held (`CheckpointController.check_detentions()`),
 ## the cyclist waits past the hut where its release puts her down, and the manager's own physics
 ## ticks run the watch, the release and the hard fail in their order.
-func _test_a_catch_on_the_frame_a_door_releases_her_counts(t) -> void:
+func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> void:
 	_clear()
 	var manager := _manager(t)
 	manager.start_recipe([] as Array[EventScheduler.Planned], DaySpec.for_day(DAY), DAY,
@@ -502,7 +502,7 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t) -> void:
 ## *(Inbox #577: "the static things question was meant for telemetry. we need to record seen for
 ## them".)* Every row that draws something has a drawn box to be seen by, and a fallen tree in
 ## full view, with her beside it, is seen and never influenced.
-func _test_a_static_row_is_seen_and_never_influenced(t) -> void:
+func _test_a_static_row_is_seen_and_never_influenced(t: TestRunner) -> void:
 	var boxless: Array[String] = []
 	for def in EventCatalogue.all():
 		if EventPictures.icon_for(def.look).is_empty():
@@ -523,7 +523,7 @@ func _test_a_static_row_is_seen_and_never_influenced(t) -> void:
 	tree.free()
 
 ## A dog of `def` that has been warned of and is coming for her at the origin, from 200px off.
-func _chasing_dog(t, def: EventDef) -> EventInstance:
+func _chasing_dog(t: TestRunner, def: EventDef) -> EventInstance:
 	var dog_where := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
 	dog.setup(def, Vector2(200.0, 0.0), PackedVector2Array(), Vector2.RIGHT, null, null,
@@ -537,7 +537,7 @@ func _chasing_dog(t, def: EventDef) -> EventInstance:
 		dog.step(STEP)
 	return dog
 
-func _test_two_instances_are_two_encounters(t) -> void:
+func _test_two_instances_are_two_encounters(t: TestRunner) -> void:
 	_clear()
 	var watch := _watch()
 	var first := _instance(t, "homeless_yeller", Vector2(-60.0, 0.0))
@@ -548,7 +548,7 @@ func _test_two_instances_are_two_encounters(t) -> void:
 	first.free()
 	second.free()
 
-func _test_runs_less_than_the_gap_apart_are_one_bout(t) -> void:
+func _test_runs_less_than_the_gap_apart_are_one_bout(t: TestRunner) -> void:
 	_clear()
 	var watch := _watch()
 	var none: Array[EventInstance] = []
@@ -570,7 +570,7 @@ func _test_runs_less_than_the_gap_apart_are_one_bout(t) -> void:
 ## controls is not seen while they are the joystick scheme, and is once they are the tap one — and a
 ## pelican under the bottom-right ones is the same for `pelican-seen` *(inbox #581: "yes,
 ## everything should follow this (and treat it depending on the input mode)")*.
-func _test_the_manager_reads_the_controls_scheme(t) -> void:
+func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 	_clear()
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)
@@ -628,7 +628,7 @@ func _test_the_manager_reads_the_controls_scheme(t) -> void:
 ## under the day it was started for, and tells nothing while she is stood aside for the title. The
 ## check is on that outcome only: removing the `player` group return inside
 ## `_watch_the_encounters()` leaves it passing, so it does not name that guard.
-func _test_the_manager_tells_the_encounter_under_its_day(t) -> void:
+func _test_the_manager_tells_the_encounter_under_its_day(t: TestRunner) -> void:
 	_clear()
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	t.add_child(city)

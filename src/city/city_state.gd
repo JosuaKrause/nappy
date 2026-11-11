@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name CityState
 extends RefCounted
 ## Where every block currently is along its arc, for one run.
@@ -188,7 +187,8 @@ func _advance(plans: Dictionary, block: Vector2i, day: int,
 	var was := purpose_of(plans, block)
 	_stage[block] = _index(block) + 1
 	_changed_on[block] = day
+	var cause_name: String = GameEnums.BlockCause.keys()[cause]
 	trace.note("arc", "block %s %s -> %s (%s)" % [
 		RunTrace.tile(block), RunTrace.purpose(was),
 		RunTrace.purpose(purpose_of(plans, block)),
-		GameEnums.BlockCause.keys()[cause].to_lower()])
+		cause_name.to_lower()])

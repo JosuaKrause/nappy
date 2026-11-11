@@ -1,21 +1,21 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The fairness contracts that are about shared numbers rather than about an event**, stated over
 ## `Tuning` and failing the suite, and so CI, when a number is unfair. A row of the catalogue validates
 ## itself when it is first asked for (`EventDef.validate()`, which also holds a pursuer to
-## `Tuning.validate_pursuit()`); traffic, the signals and the return patrols have no row to hang that on,
-## so the three contracts live here.
+## `Tuning.validate_pursuit()`); traffic, the signals, the return patrols and the calm areas have no row to hang that on,
+## so the contracts live here.
 ##
 ## Each check states the contract in the terms it is felt in, with the numbers in the message, so a
 ## failure says which number to move and by how much.
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_horn_is_long_enough_to_cross_the_carriageway(t)
 	_test_the_crowd_watches_far_enough_to_sound_the_horn(t)
 	_test_a_door_holds_some_walkers(t)
 	_test_a_walker_can_get_round_a_body(t)
 	_test_the_side_streets_green_clears_the_carriageway(t)
 	_test_the_return_patrols_keep_their_shape(t)
+	_test_the_city_has_a_calm_area_for_every_day_of_an_act(t)
 
 # --------------------------------------------------------------------- traffic ---
 
@@ -27,7 +27,7 @@ func run(t) -> void:
 ## fail is owed. The dark junction of the last night's blackout is held to this check too: the spine's
 ## traffic does not give way at its zebras lit or dark, so what is left between her and a hard fail
 ## is the painted carriageway and the horn, stated in seconds of the car's own travel.
-func _test_the_horn_is_long_enough_to_cross_the_carriageway(t) -> void:
+func _test_the_horn_is_long_enough_to_cross_the_carriageway(t: TestRunner) -> void:
 	var required := Tuning.required_horn_time()
 	t.check(Tuning.CAR_HORN_TIME + 0.001 >= required,
 			"Unfair traffic: CAR_HORN_TIME %.2fs < required %.2fs (carriageway %.0fpx)"
@@ -35,7 +35,7 @@ func _test_the_horn_is_long_enough_to_cross_the_carriageway(t) -> void:
 
 ## The duration above is only true if the crowd watches far enough to let a car sound it — see
 ## `CAR_HORN_SIGHT`. Checked against the fastest car, since a slower one needs less reach.
-func _test_the_crowd_watches_far_enough_to_sound_the_horn(t) -> void:
+func _test_the_crowd_watches_far_enough_to_sound_the_horn(t: TestRunner) -> void:
 	var required := Tuning.required_horn_sight()
 	t.check(Crowd.CAR_HORN_SIGHT + 0.001 >= required,
 			("Unfair traffic: CAR_HORN_SIGHT %.0fpx < %.0fpx the fastest car needs "
@@ -45,7 +45,7 @@ func _test_the_crowd_watches_far_enough_to_sound_the_horn(t) -> void:
 ## The three answers a walker may be given at a door are one draw of one number, so the two fractions have
 ## to leave something over — held is the remainder, and a remainder of nothing is a door nobody is ever
 ## held at with no error anywhere to say so.
-func _test_a_door_holds_some_walkers(t) -> void:
+func _test_a_door_holds_some_walkers(t: TestRunner) -> void:
 	t.check(WalkerStrategy.WALKER_DOOR_PASS_FRACTION + WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION < 1.0,
 			"No walker is ever held at a door: pass %.3f + turn back %.3f leaves nothing"
 			% [WalkerStrategy.WALKER_DOOR_PASS_FRACTION, WalkerStrategy.WALKER_DOOR_TURN_BACK_FRACTION])
@@ -53,7 +53,7 @@ func _test_a_door_holds_some_walkers(t) -> void:
 ## A walker going round a solid body has to have finished crossing to the other lane of its own footway by
 ## the time it gets there. Stated over the distance rather than the time, because what it is really about
 ## is where the walker is when it reaches the body.
-func _test_a_walker_can_get_round_a_body(t) -> void:
+func _test_a_walker_can_get_round_a_body(t: TestRunner) -> void:
 	var lane_gap := float(Tuning.TILE_SIZE) + 2.0 * CrowdLanes.SIDEWALK_LANE_SPREAD
 	var crossing_run := lane_gap / CrowdAgent.STEER_SPEED * Tuning.PEDESTRIAN_SPEED.y
 	var start := float(WalkerStrategy.WALKER_BODY_SIDESTEP_TILES * Tuning.TILE_SIZE)
@@ -69,7 +69,7 @@ func _test_a_walker_can_get_round_a_body(t) -> void:
 ## the side street's green has to be long enough to cross the carriageway with the same doubled margin
 ## every other lethal thing in the game owes. Stated over the crossing she is making rather than over
 ## the light she is watching: it is the side street that is green while the main road is stopped.
-func _test_the_side_streets_green_clears_the_carriageway(t) -> void:
+func _test_the_side_streets_green_clears_the_carriageway(t: TestRunner) -> void:
 	var required := Tuning.required_horn_time()
 	t.check(Tuning.SIGNAL_SIDE_GREEN_SECONDS + 0.001 >= required,
 			"Unfair signal: side green %.2fs < %.2fs needed to cross %.0fpx of carriageway"
@@ -81,7 +81,7 @@ func _test_the_side_streets_green_clears_the_carriageway(t) -> void:
 ## is ordered and strictly shorter than `AHEAD_INTERVAL`'s on both ends — the rows this owes have to
 ## be able to land inside the return leg they were sized against, not merely inside "the day" the
 ## ordinary pacing still covers.
-func _test_the_return_patrols_keep_their_shape(t) -> void:
+func _test_the_return_patrols_keep_their_shape(t: TestRunner) -> void:
 	t.check(EventDirector.RETURN_PATROL_INTERVAL.x <= EventDirector.RETURN_PATROL_INTERVAL.y,
 			"RETURN_PATROL_INTERVAL is not ordered: %s" % EventDirector.RETURN_PATROL_INTERVAL)
 	t.check(EventDirector.RETURN_PATROL_INTERVAL.x < EventDirector.AHEAD_INTERVAL.x
@@ -89,3 +89,16 @@ func _test_the_return_patrols_keep_their_shape(t) -> void:
 			("RETURN_PATROL_INTERVAL %s is not shorter than AHEAD_INTERVAL %s: the return "
 			% [EventDirector.RETURN_PATROL_INTERVAL, EventDirector.AHEAD_INTERVAL])
 			+ "would owe patrols no faster than an ordinary walk already gets")
+
+# ------------------------------------------------------------------ calm areas ---
+
+## A day spoils every calm area she has used so far this act, so an act of N days burns N of them
+## and the last day of an act is winnable only with one more in reserve. `CityGenerator`'s floor
+## on calm areas is authored apart from the act lengths, so the two are held together here:
+## moving an act boundary, or lengthening the run, fails this rather than leaving the last day of
+## an act short of places to recover.
+func _test_the_city_has_a_calm_area_for_every_day_of_an_act(t: TestRunner) -> void:
+	var needed := Tuning.calm_areas_needed()
+	t.check(CityGenerator.MIN_CALM_BLOCKS >= needed,
+			"Unfair city: MIN_CALM_BLOCKS %d < %d calm areas the longest act (%d days) needs"
+			% [CityGenerator.MIN_CALM_BLOCKS, needed, Tuning.longest_act_days()])

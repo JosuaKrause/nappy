@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The eight-sector heading selector (`EightDirection`) and its walker caller (`CrowdAgent`).
 ##
@@ -34,7 +33,7 @@ const ViewRig := preload("res://tests/view_rig.gd")
 
 var _rig: ViewRig
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_rig = ViewRig.new(t)
 	_test_selector_nearest_covers_all_eight(t)
 	_test_selector_boundary_hold(t)
@@ -53,13 +52,13 @@ func run(t) -> void:
 
 # ------------------------------------------------------------------- selector ---
 
-func _test_selector_nearest_covers_all_eight(t) -> void:
+func _test_selector_nearest_covers_all_eight(t: TestRunner) -> void:
 	for sector in range(8):
 		var heading := Vector2.from_angle(deg_to_rad(sector * 45.0))
 		t.check(EightDirection.nearest(heading) == sector,
 				"heading at %d degrees is nearest sector %d" % [sector * 45, sector])
 
-func _test_selector_boundary_hold(t) -> void:
+func _test_selector_boundary_hold(t: TestRunner) -> void:
 	var current := EightDirection.nearest(Vector2.from_angle(deg_to_rad(0.0)))
 	current = EightDirection.update(current, Vector2.from_angle(deg_to_rad(26.0)))
 	t.check(current == 0, "five degree hold keeps east just past the 22.5 degree boundary")
@@ -70,7 +69,7 @@ func _test_selector_boundary_hold(t) -> void:
 	current = EightDirection.update(current, Vector2.from_angle(deg_to_rad(16.0)))
 	t.check(current == 0, "southeast returns to east below the margin")
 
-func _test_selector_wrap_boundary_holds(t) -> void:
+func _test_selector_wrap_boundary_holds(t: TestRunner) -> void:
 	var current := EightDirection.update(2, Vector2.from_angle(deg_to_rad(330.0)))
 	current = EightDirection.update(current, Vector2.from_angle(deg_to_rad(340.0)))
 	t.check(current == 7, "north-east holds through the zero degree wrap")
@@ -79,7 +78,7 @@ func _test_selector_wrap_boundary_holds(t) -> void:
 
 ## The one behaviour `Stroller` never needed, since its own `facing` is never the zero vector:
 ## a heading at or below the idle threshold holds instead of being read as a facing at all.
-func _test_selector_idle_threshold_retains(t) -> void:
+func _test_selector_idle_threshold_retains(t: TestRunner) -> void:
 	var current := EightDirection.update(6, Vector2.from_angle(deg_to_rad(90.0)) * SPEED, 5.0)
 	t.check(current == 2, "a clear heading above the threshold still updates normally")
 	current = EightDirection.update(current, Vector2(3.0, 0.0), 5.0)
@@ -93,7 +92,7 @@ func _test_selector_idle_threshold_retains(t) -> void:
 
 ## A walker the game placed on a lane running along `heading` (`CrowdAgent.setup()`), at the pace
 ## that placement rolled.
-func _walker(t, heading: Vector2) -> CrowdAgent:
+func _walker(t: TestRunner, heading: Vector2) -> CrowdAgent:
 	var agent := _rig.place(CrowdAgent.Kind.WALKER, heading)
 	t.check(agent != null, "a walker is placed heading %s" % heading)
 	return agent
@@ -102,7 +101,7 @@ func _walker(t, heading: Vector2) -> CrowdAgent:
 ## (`CrowdAgent.step_aside()`) so its steering target is a lane over and its heading swings onto the
 ## diagonal, as it does for a walker nudged aside by the player. Null when there is no such
 ## placement; that the walker then draws that sector is what the callers read off its look.
-func _walker_facing(t, sector: int) -> CrowdAgent:
+func _walker_facing(t: TestRunner, sector: int) -> CrowdAgent:
 	var lane: Array = SECTOR_LANES[sector]
 	var agent := _walker(t, lane[0])
 	if agent == null:
@@ -111,7 +110,7 @@ func _walker_facing(t, sector: int) -> CrowdAgent:
 		agent.step_aside(lane[1], SIDESTEP, 1.0)
 	return agent
 
-func _test_walker_headings_select_the_expected_view(t) -> void:
+func _test_walker_headings_select_the_expected_view(t: TestRunner) -> void:
 	for sector in range(8):
 		var agent := _walker_facing(t, sector)
 		if agent == null:
@@ -130,11 +129,11 @@ func _test_walker_headings_select_the_expected_view(t) -> void:
 ## to draw two different walkers' worth of coat and hands. And it pins the tint split at the same
 ## time: body and trim have to be two distinct baked regions, or tinting the body (`AgentLook.draw_body()`'s
 ## own `colour` argument) would tint the trim drawn over it as well.
-func _test_body_and_trim_can_never_disagree(t) -> void:
+func _test_body_and_trim_can_never_disagree(t: TestRunner) -> void:
 	var body_views := WalkerLook.BODY_BY_VIEW.keys()
 	var trim_views := WalkerLook.TRIM_BY_VIEW.keys()
 	t.check(body_views.size() == trim_views.size(), "the walker family has as many trim views as body views")
-	for view in body_views:
+	for view: String in body_views:
 		t.check(WalkerLook.TRIM_BY_VIEW.has(view),
 				"every body view %s has a matching trim view" % view)
 		var body_region := StringName(WalkerLook.BODY_BY_VIEW[view])
@@ -151,7 +150,7 @@ func _test_body_and_trim_can_never_disagree(t) -> void:
 ## `LaneMover.velocity()` while it has already arrived at its lane centre, which is exactly the "at rest"
 ## the look reads as no heading at all. A walker is told to wait the way the player's
 ## bump tells it (`CrowdAgent.step_aside()` along its own line of travel, away from where it is going).
-func _test_a_stopped_walker_keeps_its_view(t) -> void:
+func _test_a_stopped_walker_keeps_its_view(t: TestRunner) -> void:
 	var agent := _walker(t, Vector2.RIGHT)
 	if agent == null:
 		return
@@ -181,7 +180,7 @@ func _stop(agent: CrowdAgent) -> void:
 ## because that heading is exactly on a sector centre, 45 degrees clear of its neighbours — twice the
 ## hold's own 27.5 degree reach — the same "no prior-view hold" guarantee `Stroller.reset_at()`
 ## gives a new day.
-func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t) -> void:
+func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t: TestRunner) -> void:
 	var agent := _walker_facing(t, 1)  # south-east, the kind of diagonal only real steering ever produces
 	if agent == null:
 		return
@@ -223,7 +222,7 @@ func _stride_to(look: WalkerLook, phase: float) -> void:
 ## `_test_walker_headings_select_the_expected_view()` relies on. The stride is advanced with an
 ## injected `delta`: this checks the arithmetic of one tick, which the crowd's tick hands the look
 ## (`WalkerLook.advance()`).
-func _test_advancing_the_gait_tracks_distance_not_time(t) -> void:
+func _test_advancing_the_gait_tracks_distance_not_time(t: TestRunner) -> void:
 	var agent := _walker(t, Vector2.RIGHT)
 	if agent == null:
 		return
@@ -248,7 +247,7 @@ func _test_advancing_the_gait_tracks_distance_not_time(t) -> void:
 			"a walker covering no distance advances no stride at all")
 	agent.free()
 
-func _test_a_moving_walker_alternates_gait_frames(t) -> void:
+func _test_a_moving_walker_alternates_gait_frames(t: TestRunner) -> void:
 	var agent := _walker(t, Vector2.RIGHT)
 	if agent == null:
 		return
@@ -266,7 +265,7 @@ func _test_a_moving_walker_alternates_gait_frames(t) -> void:
 ## The same give-way/queue/halt zeroing `_test_a_stopped_walker_keeps_its_view()` already reaches
 ## the view hold with also reaches the gait: `velocity()` is `heading() * _speed * WalkerStrategy._yield_factor()`,
 ## so a walker yielding reads zero regardless of the stride it was at.
-func _test_a_stopped_walker_holds_gait_frame_a(t) -> void:
+func _test_a_stopped_walker_holds_gait_frame_a(t: TestRunner) -> void:
 	var agent := _walker(t, Vector2.RIGHT)
 	if agent == null:
 		return
@@ -281,13 +280,13 @@ func _test_a_stopped_walker_holds_gait_frame_a(t) -> void:
 ## `AgentLook.draw_body()`'s walker branch picks `WalkerLook.BODY_BY_VIEW_B`/`TRIM_BY_VIEW_B` together off
 ## one `stepping` boolean, so the two tables have to carry exactly the same five views the ordinary
 ## frame-a tables do, the same invariant `_test_body_and_trim_can_never_disagree()` pins for frame a.
-func _test_walker_gait_b_tables_agree_with_a(t) -> void:
+func _test_walker_gait_b_tables_agree_with_a(t: TestRunner) -> void:
 	var body_views_b := WalkerLook.BODY_BY_VIEW_B.keys()
 	var trim_views_b := WalkerLook.TRIM_BY_VIEW_B.keys()
 	t.check(body_views_b.size() == WalkerLook.BODY_BY_VIEW.size()
 			and trim_views_b.size() == WalkerLook.TRIM_BY_VIEW.size(),
 			"the walker's gait-b family covers every view the gait-a family does")
-	for view in WalkerLook.BODY_BY_VIEW.keys():
+	for view: String in WalkerLook.BODY_BY_VIEW.keys():
 		t.check(WalkerLook.BODY_BY_VIEW_B.has(view),
 				"view %s has a gait-b body to match its gait-a body" % view)
 		t.check(WalkerLook.TRIM_BY_VIEW_B.has(view),
@@ -296,7 +295,7 @@ func _test_walker_gait_b_tables_agree_with_a(t) -> void:
 				and AtlasTable.baked().has_region(StringName(WalkerLook.TRIM_BY_VIEW_B[view])),
 				"both gait-b regions for %s are actually baked" % view)
 
-func _test_walker_gait_b_tables_cover_every_sector(t) -> void:
+func _test_walker_gait_b_tables_cover_every_sector(t: TestRunner) -> void:
 	for sector in range(8):
 		var view: String = WalkerLook.VIEW_BY_SECTOR[sector]
 		t.check(WalkerLook.BODY_BY_VIEW_B.has(view) and WalkerLook.TRIM_BY_VIEW_B.has(view),

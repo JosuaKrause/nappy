@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M97, calm areas that hold — "Spoiling a returned-to calm area is not
 ## consistently effective" (playtest 20: "the spoilage of a calm area is not always effective I
@@ -35,7 +34,7 @@ const BASE_SEED := 419070
 ## crowd conditions. The spoiled day is settle-day + 1.
 const SETTLE_DAYS: Array[int] = [1, 4, 8, 12]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_reproduce_zero_density_visits()
 	t.check(true, "zz_m97_spoilage probe ran")
 

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The map's top-left corner must never show for a moment when a run starts — PLAYTEST-76: "when
 ## starting the game I can briefly see the top left of the map." The world's origin is the map's
@@ -24,21 +23,23 @@ extends RefCounted
 
 const Boot := preload("res://tests/booted_main.gd")
 const MapCache := preload("res://tests/city_map_cache.gd")
+## The game's composition root, which the boot hands its save, home, maps and configuration.
+const MainScript := preload("res://src/main.gd")
 ## The save every boot is handed, so nothing here reaches `user://save.json`.
 const _SCRATCH_SAVE := "user://test_camera_start_scratch.json"
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t)
 	await _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t)
 
 ## The real `main.tscn` handed a scratch save, `config` and a run of its own (parked in a home the
 ## test frees), put in the tree and left at the boot's first suspension: the frame the boot camera
 ## draws.
-func _start_a_boot(t, config: RunConfig) -> Array:
+func _start_a_boot(t: TestRunner, config: RunConfig) -> Array:
 	var save := GameSave.new(_SCRATCH_SAVE)
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
-	var main: Node2D = Boot.MAIN_SCENE.instantiate()
+	var main: MainScript = Boot.MAIN_SCENE.instantiate()
 	main.use_save(save)
 	main.use_sitting_home(home)
 	main.use_city_maps(MapCache.source())
@@ -47,7 +48,7 @@ func _start_a_boot(t, config: RunConfig) -> Array:
 	return [main, save, home]
 
 func _end_the_boot(boot: Array) -> void:
-	var main: Node2D = boot[0]
+	var main: MainScript = boot[0]
 	main.get_tree().paused = false
 	main.free()
 	(boot[1] as GameSave).free()
@@ -57,9 +58,9 @@ func _end_the_boot(boot: Array) -> void:
 ## Boots for real, checks the frame the bug lived on, then lets the boot finish and checks the two
 ## frames PLAYTEST-76's own entry named as candidates: the first with the run started, and the
 ## first after the title's disc is pressed.
-func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
+func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t: TestRunner) -> void:
 	var boot := _start_a_boot(t, Boot.config([]))
-	var main: Node2D = boot[0]
+	var main: MainScript = boot[0]
 
 	# The suspended point. She is only built after the canvas warm-up returns, so no camera of
 	# *hers* exists yet — confirming this is really the gap the doc above describes, not a
@@ -124,7 +125,7 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t) -> void:
 ## halves — the box and the camera — have something to correct. After a reload the box would
 ## already be the rotated one, which leaves only the camera wrong; the camera's assertion is that
 ## case.
-func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t) -> void:
+func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t: TestRunner) -> void:
 	var window: Window = t.get_tree().root
 	var saved_size := window.size
 	var saved_box := window.content_scale_size
@@ -134,7 +135,7 @@ func _test_a_boot_camera_is_turned_for_a_portrait_phone_before_the_first_frame(t
 			"the window this test boots into is one that wants rotation on a touch screen")
 
 	var boot := _start_a_boot(t, Boot.config(["--touch"]))
-	var main: Node2D = boot[0]
+	var main: MainScript = boot[0]
 
 	# The suspended point, before her camera exists: the frame the boot camera draws.
 	t.check(Boot.player(main) == null, "suspended before she exists, where the boot camera draws")

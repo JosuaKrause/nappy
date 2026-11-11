@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
+@warning_ignore_start("unsafe_property_access")
 class_name TelemetryObserver
 extends Node
 ## Watches the player and writes down what happened to them.
@@ -136,7 +136,7 @@ var _world_map := WorldMap.open_ground()
 var _keeps_a_trail := true
 ## The event source being watched — the day's `EventManager`, the escape's building's in the
 ## building and the escape's city's outside it — handed in with the map (`watch()`).
-var _events: Node
+var _events: EventManager
 ## `"the building"` or `"the city"` while a section of the escape is being watched, `""` on a day:
 ## the section the walk's spec is (`watch()`), named in its `start`, `lost`, `home` and `woke`
 ## lines.
@@ -281,7 +281,7 @@ func setup(run: RunState, clock: DayController, resistance: ResistanceDirector, 
 ## `streets` and the crowd's sources (`crowd`), each null in a world with none, which switches off
 ## the street, calm-ground, closure and trail watchers and the dusk map. `section` names the section
 ## of the escape the walk is in its lines, "" on a day.
-func watch(map: WorldMap, events: Node, player: Stroller, baby: Baby, city_map: CityMap,
+func watch(map: WorldMap, events: EventManager, player: Stroller, baby: Baby, city_map: CityMap,
 		streets: DayStreets, crowd: ExcitementSources, section: String) -> void:
 	_world_map = map
 	_events = events
@@ -365,11 +365,10 @@ func _tile_of(world_position: Vector2) -> Vector2i:
 	return _world_map.world_to_tile(world_position)
 
 ## The event source being watched: a day's `EventManager`, or the escape's section's.
-func _source() -> Node:
+func _source() -> EventManager:
 	return _events
 
-## The live instances, typed, from whichever source is being watched — see `DangerEdge._live()`
-## for why a duck-typed source is read through one function.
+## The live instances of the source being watched, none while there is no source.
 func _live() -> Array[EventInstance]:
 	var source := _source()
 	if not source:
@@ -642,7 +641,7 @@ func _watch_the_cues(delta: float) -> void:
 			# is up on the pavement after a car has gone past is a cue outliving what it warns
 			# about, with a number on it.
 			_log.note("cue", "the mark over her head: %s for %.1fs (%.1fs of it on the "
-					% [Stroller.Alert.keys()[_mark].to_lower(),
+					% [String(Stroller.Alert.keys()[_mark]).to_lower(),
 					_log.clock() - _mark_since, _mark_on_road]
 					+ "road)%s" % _mark_why)
 		if level != Stroller.Alert.NONE:
@@ -1184,8 +1183,11 @@ func _on_near_miss(at: Vector2) -> void:
 ## the two named terms by came from her: running, or standing in an alley.
 func _meters() -> String:
 	var here := _player.global_position
-	var source := _source()
-	var from_events: float = source.sources.total_at(here) if source else 0.0
+	# `sources` is read off a `Node` view of the manager: the field read waits for the events'
+	# interface, and this one receiver is why the file keeps its opt-out line.
+	var source: Node = _source()
+	var events_charge: EventSources = source.sources if source else null
+	var from_events := events_charge.total_at(here) if events_charge else 0.0
 	var from_crowd := _crowd.total_at(here) if _crowd else 0.0
 	return "exc %.0f, in %.1f/s (crowd %.1f, events %.1f), sleep %.0f" % [
 		_baby.excitement_level(), _baby.last_frame_incoming(), from_crowd, from_events, _baby.sleepiness_level()]

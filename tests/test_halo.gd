@@ -37,7 +37,7 @@ const WALK_FRAMES := 40
 ## game hands every one it places its world's library (`EventInstance.atlas`).
 var _atlas := AtlasLibrary.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_atlas.acquire(&"events")
 	await _test_a_weak_source_is_left_out(t)
 	await _test_a_source_above_the_floor_is_selected(t)
@@ -89,7 +89,7 @@ static func _is_drawn_at(halo: EntityHalo, alpha: float) -> bool:
 ## Lets real frames pass until `done` answers true or `seconds` of frame time have passed on
 ## `clock`, and answers whether `done` came true. Bounded in frames too, so a tree that stopped
 ## processing ends the wait rather than hanging the suite.
-static func _frames_until(t, clock: HaloRig.FrameClock, done: Callable, seconds: float) -> bool:
+static func _frames_until(t: TestRunner, clock: HaloRig.FrameClock, done: Callable, seconds: float) -> bool:
 	var from := clock.elapsed
 	var frames := 0
 	while not done.call():
@@ -100,7 +100,7 @@ static func _frames_until(t, clock: HaloRig.FrameClock, done: Callable, seconds:
 	return true
 
 ## Lets real frames pass until `seconds` of frame time have passed on `clock`.
-static func _frames_for(t, clock: HaloRig.FrameClock, seconds: float) -> void:
+static func _frames_for(t: TestRunner, clock: HaloRig.FrameClock, seconds: float) -> void:
 	var from := clock.elapsed
 	while clock.elapsed - from < seconds:
 		await t.get_tree().process_frame
@@ -119,7 +119,7 @@ func _def(id: String, intensity: float, inner := 40.0, outer := 150.0) -> EventD
 ## A manager over open ground and a run of its own, handed in as the escape's building is handed its
 ## world (`EventManager.setup_world()`), in the tree; the events it spawns stand in the world node
 ## its map is drawn in, a child of the manager. `_free_manager()` frees it.
-func _manager(t) -> EventManager:
+func _manager(t: TestRunner) -> EventManager:
 	var run := RunState.new()
 	run.start_run(1)
 	# Open ground, so no wall keeps a field from her (`ExcitementSource.contribution_at()`).
@@ -157,20 +157,20 @@ func _rig_instance(t: TestRunner, def: EventDef, at: Vector2,
 
 # ------------------------------------------------------------------- the floor ---
 
-func _test_a_weak_source_is_left_out(t) -> void:
+func _test_a_weak_source_is_left_out(t: TestRunner) -> void:
 	var weak := _instance_at(_def("weak", 0.5), Vector2.ZERO)
 	t.check((await HaloRig.lit_among(t, [weak.excitement], Vector2.ZERO)).is_empty(),
 			"a source under CONTRIBUTION_FLOOR at her own position earns no halo")
 	weak.free()
 
-func _test_a_source_above_the_floor_is_selected(t) -> void:
+func _test_a_source_above_the_floor_is_selected(t: TestRunner) -> void:
 	var strong := _instance_at(_def("strong", 10.0), Vector2.ZERO)
 	var picked := await HaloRig.lit_among(t, [strong.excitement], Vector2.ZERO)
 	t.check(picked.size() == 1 and picked[0] == strong.excitement,
 			"a source clearing the floor at her own position is drawn")
 	strong.free()
 
-func _test_it_goes_to_zero_out_of_reach(t) -> void:
+func _test_it_goes_to_zero_out_of_reach(t: TestRunner) -> void:
 	var def := _def("reach", 10.0)
 	var instance := _instance_at(def, Vector2.ZERO)
 	var far := Vector2(def.outer_radius + 1.0, 0.0)
@@ -180,7 +180,7 @@ func _test_it_goes_to_zero_out_of_reach(t) -> void:
 
 # ------------------------------------------------------------------- the cap ---
 
-func _test_the_cap_keeps_the_strongest(t) -> void:
+func _test_the_cap_keeps_the_strongest(t: TestRunner) -> void:
 	var instances: Array[EventInstance] = []
 	var expected_ids: Array[String] = []
 	var total := ExcitementHalo.MAX_SOURCES + 3
@@ -228,7 +228,7 @@ func _test_the_cap_keeps_the_strongest(t) -> void:
 ## moves each one's clock by — an event's tick (`EventInstance.step()`, which its manager runs) or a
 ## crowd body's (`CrowdExcitement.advance()`, which the agent's own tick calls) — standing in for
 ## that many seconds of simulated time elapsing.
-func _check_accumulates_and_decays(t, source, advance: Callable, label: String) -> void:
+func _check_accumulates_and_decays(t: TestRunner, source, advance: Callable, label: String) -> void:
 	source.excitement.accumulate_landed(35.0)
 	t.check(is_equal_approx(source.excitement.landed(), 35.0),
 			"%s: a burst reads as itself, not decayed from the frame it landed" % label)
@@ -257,7 +257,7 @@ func _check_accumulates_and_decays(t, source, advance: Callable, label: String) 
 	t.check(is_equal_approx(source.excitement.landed(), 20.0),
 			"%s: an aged-out entry drops on its own; a fresh one beside it still counts" % label)
 
-func _test_landed_accumulates_and_decays(t) -> void:
+func _test_landed_accumulates_and_decays(t: TestRunner) -> void:
 	var instance := _instance_at(_def("landed_event", 10.0), Vector2.ZERO)
 	_check_accumulates_and_decays(t, instance, instance.step, "EventInstance")
 	instance.free()
@@ -271,7 +271,7 @@ func _test_landed_accumulates_and_decays(t) -> void:
 # in what the traced number counts. `landed()` above is still the gross trace; `net_landed()` is
 # what the halo actually reads now — see that function's own doc.
 
-func _test_net_landed_shares_decay_by_proportion(t) -> void:
+func _test_net_landed_shares_decay_by_proportion(t: TestRunner) -> void:
 	t.check(is_equal_approx(ExcitementSource.net_landed(30.0, 40.0, 20.0), 15.0),
 			"a source that landed 30 of a 40-point window keeps 30 less its 3/4 share of a " +
 			"20-point decay (15)")
@@ -284,7 +284,7 @@ func _test_net_landed_shares_decay_by_proportion(t) -> void:
 			"nothing landed from anybody: nothing to share the decay against, so net is zero " +
 			"rather than dividing by zero")
 
-func _test_net_landed_never_below_zero_and_floors_together(t) -> void:
+func _test_net_landed_never_below_zero_and_floors_together(t: TestRunner) -> void:
 	# decay (50) exceeds total_landed (40): the bar is not climbing at all over the window, and
 	# every source's share scales by the identical factor past one, so every source floors to
 	# zero together -- never one source reading negative while another stays positive.
@@ -294,7 +294,7 @@ func _test_net_landed_never_below_zero_and_floors_together(t) -> void:
 			"and the smaller one floors at zero too -- a source is red only while the bar is " +
 			"climbing because of it, and here it is not climbing at all")
 
-func _test_net_landed_sums_to_the_bars_rise_while_climbing(t) -> void:
+func _test_net_landed_sums_to_the_bars_rise_while_climbing(t: TestRunner) -> void:
 	var landed_by_source := [12.0, 8.0, 5.0]
 	var total := 25.0
 	var decay := 9.0
@@ -311,7 +311,7 @@ func _test_net_landed_sums_to_the_bars_rise_while_climbing(t) -> void:
 ## else). Proof the regression this overturns would be caught: the strong source's own target
 ## colour is asserted to differ from what its *gross* landed value would have coloured it, not only
 ## to equal its net.
-func _test_process_reads_net_shared_by_baby_decay(t) -> void:
+func _test_process_reads_net_shared_by_baby_decay(t: TestRunner) -> void:
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	var manager := _manager(t)
@@ -359,7 +359,7 @@ func _test_process_reads_net_shared_by_baby_decay(t) -> void:
 
 # ---------------------------------------------------------------- colour ---
 
-func _test_the_rim_colour_ramp_ends(t) -> void:
+func _test_the_rim_colour_ramp_ends(t: TestRunner) -> void:
 	t.check((await _told_for(t, 0.0))[1].is_equal_approx(Palette.HALO_WEAK),
 			"no landed excitement reads as the weak end of the ramp")
 	var saturated := Tuning.EXPECTED_IMPACT_POINTS
@@ -376,7 +376,7 @@ func _test_the_rim_colour_ramp_ends(t) -> void:
 
 ## What the halo tells the rim of a source that has landed `net` points and shares no decay (strength,
 ## then colour): one source in the world, at her own position, on real frames.
-func _told_for(t, net: float) -> Array:
+func _told_for(t: TestRunner, net: float) -> Array:
 	var instance := _instance_at(_def("net_probe", 10.0), Vector2.ZERO)
 	instance.excitement.accumulate_landed(net)
 	await HaloRig.lit_among(t, [instance.excitement], Vector2.ZERO)
@@ -393,8 +393,8 @@ func _told_for(t, net: float) -> Array:
 # rises fast and saturates by `LOW_EMPHASIS_POINTS`, so transparency does the work at the low end
 # that a straight line to `Tuning.EXPECTED_IMPACT_POINTS` would leave flat.
 
-func _test_the_rim_brightness_emphasises_low_values(t) -> void:
-	var floor_alpha := ExcitementHalo.MIN_MAGNITUDE * ExcitementHalo.MAX_ALPHA
+func _test_the_rim_brightness_emphasises_low_values(t: TestRunner) -> void:
+	var floor_alpha := ExcitementHalo.MIN_MAGNITUDE * EntityHalo.MAX_ALPHA
 	t.check(is_equal_approx((await _told_for(t, 0.0))[0], floor_alpha),
 			"nothing landed yet reads at the floor, not at zero -- a picked source is never " +
 			"invisible while it is still earning its first point")
@@ -406,9 +406,9 @@ func _test_the_rim_brightness_emphasises_low_values(t) -> void:
 	t.check(one < five and five < fifteen,
 			"the curve rises fast through the low end, which is the whole point of it")
 	t.check(is_equal_approx((await _told_for(t, ExcitementHalo.LOW_EMPHASIS_POINTS))[0],
-			ExcitementHalo.MAX_ALPHA),
+			EntityHalo.MAX_ALPHA),
 			"LOW_EMPHASIS_POINTS is where the curve saturates")
-	t.check(is_equal_approx(forty, ExcitementHalo.MAX_ALPHA),
+	t.check(is_equal_approx(forty, EntityHalo.MAX_ALPHA),
 			"well past LOW_EMPHASIS_POINTS stays solid rather than overshooting -- colour, not " +
 			"transparency, is what carries the difference between fifteen and forty")
 
@@ -418,7 +418,7 @@ func _test_the_rim_brightness_emphasises_low_values(t) -> void:
 # `EntityHalo` is the natural home for the eased state, since both `EventInstance` and `CrowdAgent`
 # already own one -- see its class doc.
 
-func _test_entity_halo_eases_toward_its_target(t) -> void:
+func _test_entity_halo_eases_toward_its_target(t: TestRunner) -> void:
 	var traced := [0]
 	var drawn_frames := [0]
 	var halo := EntityHalo.new(func(_canvas: CanvasItem) -> void: traced[0] += 1,
@@ -430,7 +430,7 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 	# The frame the two entered on passes first, so every frame after the glow is set is one both
 	# were processed on.
 	await t.get_tree().process_frame
-	halo.set_glow(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	halo.set_glow(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var from := clock.elapsed
 	var on_the_line := true
 	var part_way := false
@@ -438,12 +438,12 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 		await t.get_tree().process_frame
 		var alpha := _drawn(halo).a
 		var share := minf((clock.elapsed - from) / EntityHalo.FADE_IN_SECONDS, 1.0)
-		on_the_line = on_the_line and absf(alpha - ExcitementHalo.MAX_ALPHA * share) < 0.001
-		part_way = part_way or (alpha > 0.0 and alpha < ExcitementHalo.MAX_ALPHA)
+		on_the_line = on_the_line and absf(alpha - EntityHalo.MAX_ALPHA * share) < 0.001
+		part_way = part_way or (alpha > 0.0 and alpha < EntityHalo.MAX_ALPHA)
 	t.check(on_the_line and part_way,
 			"on every frame of FADE_IN_SECONDS the rim draws the share of its target the frames so far "
 			+ "have covered, part way up between -- never a jump from nothing to the target in one frame")
-	t.close_to(_drawn(halo).a, ExcitementHalo.MAX_ALPHA,
+	t.close_to(_drawn(halo).a, EntityHalo.MAX_ALPHA,
 			"a target held for the whole of FADE_IN_SECONDS is reached", 0.01)
 	var colour := _drawn(halo)
 	t.check(Color(colour.r, colour.g, colour.b).is_equal_approx(Palette.HALO_STRONG),
@@ -452,7 +452,7 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 	var frames_before := clock.frames
 	await _frames_for(t, clock, 0.05)
 	var frames := clock.frames - frames_before
-	t.check(_is_drawn_at(halo, ExcitementHalo.MAX_ALPHA) and halo.is_showing() and frames > 0
+	t.check(_is_drawn_at(halo, EntityHalo.MAX_ALPHA) and halo.is_showing() and frames > 0
 			and traced[0] - traced_before == frames * EntityHalo.HALO_OFFSETS,
 			"a rim holding a steady target is settled *and* drawn, and traced afresh every frame "
 			+ "(%d copies over %d frames), because the body under a steady glow moves"
@@ -483,7 +483,7 @@ func _test_entity_halo_eases_toward_its_target(t) -> void:
 ## re-traced every frame, for good. The hair is reached with real frames and public calls: fade in,
 ## a target of 5e-6 (which `move_toward` lands on exactly), then zero in the same colour, so the
 ## rim reads arrived while it is still showing.
-func _test_a_fade_leaving_a_hair_of_alpha_arrives_at_zero(t) -> void:
+func _test_a_fade_leaving_a_hair_of_alpha_arrives_at_zero(t: TestRunner) -> void:
 	var traced := [0]
 	var halo := EntityHalo.new(func(_canvas: CanvasItem) -> void: traced[0] += 1,
 			func() -> float: return 0.0)
@@ -491,7 +491,7 @@ func _test_a_fade_leaving_a_hair_of_alpha_arrives_at_zero(t) -> void:
 	t.add_child(clock)
 	t.add_child(halo)
 	await t.get_tree().process_frame
-	halo.set_glow(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	halo.set_glow(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	await _frames_for(t, clock, EntityHalo.FADE_IN_SECONDS + STEP)
 	halo.set_glow(5e-6, Palette.HALO_STRONG)
 	await _frames_for(t, clock, EntityHalo.FADE_OUT_SECONDS + STEP)
@@ -510,7 +510,7 @@ func _test_a_fade_leaving_a_hair_of_alpha_arrives_at_zero(t) -> void:
 # a candidate now, not only a startled body -- CONTRIBUTION_FLOOR and MAX_SOURCES are what keep a
 # busy pavement legible.
 
-func _test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t) -> void:
+func _test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t: TestRunner) -> void:
 	# `CrowdExcitement`'s field reads only global_position, kind and the jolt fields -- none of
 	# which setup() touches -- so a bare .new() is enough, verified by reading the function rather
 	# than assumed.
@@ -524,7 +524,7 @@ func _test_a_startled_car_clears_the_floor_at_its_horn_inner_radius(t) -> void:
 			"means a halo, and this still holds now that every car is a candidate")
 	car.free()
 
-func _test_an_ordinary_walker_is_a_candidate(t) -> void:
+func _test_an_ordinary_walker_is_a_candidate(t: TestRunner) -> void:
 	# No startle at all -- just the ambient PEDESTRIAN_INTENSITY, which is what "the crowd is the
 	# noise, and the noise is attributable" means in arithmetic.
 	var walker := CrowdAgent.new()
@@ -537,7 +537,7 @@ func _test_an_ordinary_walker_is_a_candidate(t) -> void:
 			"and is therefore picked -- the whole crowd is a candidate, not only a caret-worthy body")
 	walker.free()
 
-func _test_the_halo_takes_a_mixed_candidate_set(t) -> void:
+func _test_the_halo_takes_a_mixed_candidate_set(t: TestRunner) -> void:
 	var instance := _instance_at(_def("busker", 10.0), Vector2.ZERO)
 	var car := CrowdAgent.new()
 	car.kind = CrowdAgent.Kind.CAR
@@ -557,7 +557,7 @@ func _test_the_halo_takes_a_mixed_candidate_set(t) -> void:
 # keyed by the picked objects themselves once, and tests membership in that instead. The set of
 # who gets a nonzero target and who gets zero must come out exactly the same either way.
 
-func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
+func _test_process_picks_the_same_sources_the_linear_scan_did(t: TestRunner) -> void:
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	var manager := _manager(t)
@@ -581,7 +581,7 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 
 	t.check(strong_rim.strength > 0.0 and strong_rim.is_held(),
 			"a source above the floor at her position is picked and told a nonzero target")
-	t.check(weak.rim() == null and not (weak.excitement.rim as SourceRim).is_held(),
+	t.check(weak.rim() == null and not weak.excitement.rim.is_held(),
 			"a source out of reach is told zero, so it never builds a rim at all -- the same answer " +
 			"the linear `in` scan gave before the picked set became a Dictionary lookup")
 
@@ -609,7 +609,7 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t) -> void:
 # `tests/crowd_rig.gd`'s `_test_walking_into_somebody_displaces_and_startles_them` is the check
 # that would have caught it, and did, while this fix was still on `CrowdAgent`.
 
-func _test_event_instance_contribution_is_cached_per_frame_per_position(t) -> void:
+func _test_event_instance_contribution_is_cached_per_frame_per_position(t: TestRunner) -> void:
 	var instance := _instance_at(_def("cached_event", 20.0, 40.0, 150.0), Vector2.ZERO)
 
 	var near := instance.excitement.contribution_at(Vector2(10.0, 0.0))
@@ -631,7 +631,7 @@ func _test_event_instance_contribution_is_cached_per_frame_per_position(t) -> vo
 ## moves, and a cache keyed only on `(age, world_position)` went on answering the pre-finish
 ## contribution for the rest of that tick. `_be_done()`'s `is_leaving = true` branch is the other
 ## half of the same guard `contribution_at()`'s early return reads, and gets the same check.
-func _test_finishing_outside_process_invalidates_the_contribution_cache(t) -> void:
+func _test_finishing_outside_process_invalidates_the_contribution_cache(t: TestRunner) -> void:
 	var def := _def("finishable", 40.0)
 	var instance := _instance_at(def, Vector2(400.0, 400.0))
 	var nearby := Vector2(400.0, 300.0)
@@ -677,7 +677,7 @@ func _test_finishing_outside_process_invalidates_the_contribution_cache(t) -> vo
 ## `cat_dash` is `AHEAD_OF_PLAYER` and `mobile`, but a rig instance built with no route never
 ## enters `EventRouteWalk.advance()` (`path.size() > 1` is false), so it holds still at `at` for its
 ## whole life -- exactly what "standing on her" needs to hold the distance at zero throughout.
-func _test_a_cat_dash_is_selected_and_lands(t) -> void:
+func _test_a_cat_dash_is_selected_and_lands(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("cat_dash")
 	var cat := _rig_instance(t, def, Vector2.ZERO)
 
@@ -700,7 +700,7 @@ func _test_a_cat_dash_is_selected_and_lands(t) -> void:
 
 ## A flock's own `global_position` never moves (only its birds do), so "standing on her" is simply
 ## siting it at `Vector2.ZERO` and reading `contribution_at()` there for the whole burst.
-func _test_a_flock_is_selected_and_lands(t) -> void:
+func _test_a_flock_is_selected_and_lands(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var flock_where := WhereSheIs.nowhere()
 	var flock := _rig_instance(t, def, Vector2.ZERO, flock_where)
@@ -739,7 +739,7 @@ func _test_a_flock_is_selected_and_lands(t) -> void:
 ## different one frame on, and the rim over them, settled and lit -- the pair the old rule threw the
 ## frame away on -- is drawn again on every frame (the engine's `draw` signal, which a headless run
 ## emits like any other).
-func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
+func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("pigeon_flock")
 	var flock_where := WhereSheIs.nowhere()
 	var flock := _rig_instance(t, def, Vector2.ZERO, flock_where)
@@ -766,16 +766,16 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
 	# And the rim over them is exactly the state that used to stop re-tracing.
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
-	(flock.excitement.rim as SourceRim).set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	flock.excitement.rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var halo: EntityHalo = flock.rim()
 	await _frames_until(t, clock, func() -> bool:
-		return _is_drawn_at(halo, ExcitementHalo.MAX_ALPHA), EntityHalo.FADE_IN_SECONDS + 1.0)
+		return _is_drawn_at(halo, EntityHalo.MAX_ALPHA), EntityHalo.FADE_IN_SECONDS + 1.0)
 	var drawn := [0]
 	halo.draw.connect(func() -> void: drawn[0] += 1)
 	var frames_before := clock.frames
 	await _frames_for(t, clock, 0.05)
 	var frames := clock.frames - frames_before
-	t.check(_is_drawn_at(halo, ExcitementHalo.MAX_ALPHA) and halo.is_showing() and frames > 0
+	t.check(_is_drawn_at(halo, EntityHalo.MAX_ALPHA) and halo.is_showing() and frames > 0
 			and drawn[0] == frames,
 			"the flock's own rim is settled, lit and drawn again on every frame (%d of %d) while "
 			% [drawn[0], frames] + "its birds keep moving, where it once held the freeze frame the "
@@ -801,7 +801,7 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t) -> void:
 ## mirrored ring covers the same ground as the unmirrored one. **A distinctness check alone would
 ## not hold it** — a ring that composed the offset the wrong way round is still twelve distinct
 ## points, just not around the body.
-func _test_the_rims_mirrored_copies_land_on_the_ring(t) -> void:
+func _test_the_rims_mirrored_copies_land_on_the_ring(t: TestRunner) -> void:
 	var bob := -2.5
 	var anchor := Vector2(0.0, 26.0)
 	var ring := EntityHalo.trace_offsets(bob)
@@ -886,19 +886,19 @@ class RimProbe:
 ## A live event holds no rim until `ExcitementHalo` picks it, and gives it back on the spot once
 ## faded. A rim built in `_ready()` for every live event is what filled the web's blocks at dawn
 ## and left the man shouting beside her doorstep dark however hard he was charging her.
-func _test_an_event_holds_no_rim_until_it_is_picked(t) -> void:
+func _test_an_event_holds_no_rim_until_it_is_picked(t: TestRunner) -> void:
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	var instance := _rig_instance(t, EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
-	var rim_of := instance.excitement.rim as SourceRim
+	var rim_of := instance.excitement.rim
 	t.check(instance.rim() == null and not rim_of.is_held(),
 			"a live event holds no rim before anything has picked it")
-	rim_of.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	rim_of.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	t.check(instance.rim() != null and rim_of.is_held(),
 			"its first nonzero glow builds the rim")
 	var rim: EntityHalo = instance.rim()
 	await _frames_until(t, clock, func() -> bool:
-		return _is_drawn_at(rim, ExcitementHalo.MAX_ALPHA), EntityHalo.FADE_IN_SECONDS + 1.0)
+		return _is_drawn_at(rim, EntityHalo.MAX_ALPHA), EntityHalo.FADE_IN_SECONDS + 1.0)
 	rim_of.set_strength(0.0, Palette.HALO_WEAK)
 	t.check(instance.rim() == rim,
 			"told zero, the rim stays to fade out rather than vanishing on the spot")
@@ -913,7 +913,7 @@ func _test_an_event_holds_no_rim_until_it_is_picked(t) -> void:
 ## The relationship the budget rests on: every source the halo can pick fits under the
 ## budget with room to spare, so the picked set alone never fills it and a wait for a block always
 ## ends with a fade; and the warm pass's own quad fits on top.
-func _test_the_lit_rims_always_fit_the_budget(t) -> void:
+func _test_the_lit_rims_always_fit_the_budget(t: TestRunner) -> void:
 	t.check(ExcitementHalo.MAX_SOURCES < EntityHalo.RIM_BUDGET,
 			"MAX_SOURCES (%d) stays under RIM_BUDGET (%d)"
 			% [ExcitementHalo.MAX_SOURCES, EntityHalo.RIM_BUDGET])
@@ -927,7 +927,7 @@ func _test_the_lit_rims_always_fit_the_budget(t) -> void:
 ## fills. Counted by `RimProbe`, in the order rims are built and freed, so a rim freed at the end
 ## of the frame still counts while the frame's new rims are built. A picked source that finds the
 ## budget full waits, and the walk checks that it waits only then.
-func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
+func _test_live_rims_stay_within_what_the_web_can_read(t: TestRunner) -> void:
 	var probe := RimProbe.new(t.get_tree())
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
@@ -1009,7 +1009,7 @@ func _test_live_rims_stay_within_what_the_web_can_read(t) -> void:
 ## Read in the order the rims and the body come and go (`RimProbe.events`): the retired event's rim
 ## leaves, the new pick's rim is built, and only then does the retired body leave the tree. A rim
 ## left to go with its body would leave beside it, after the new pick had found the budget full.
-func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) -> void:
+func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t: TestRunner) -> void:
 	var probe := RimProbe.new(t.get_tree())
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
@@ -1023,12 +1023,12 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 	var held: Array[EventInstance] = []
 	for i in EntityHalo.RIM_BUDGET:
 		var instance := manager.spawn_extra(_def("held_%d" % i, 20.0), Vector2(32.0 * float(i), 0.0))
-		(instance.excitement.rim as SourceRim).set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+		instance.excitement.rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 		held.append(instance)
 	# Lit fully before the halo is in the tree, so each fade is a whole FADE_OUT_SECONDS.
 	await _frames_until(t, clock, func() -> bool:
 		for instance in held:
-			if not _is_drawn_at(instance.rim(), ExcitementHalo.MAX_ALPHA):
+			if not _is_drawn_at(instance.rim(), EntityHalo.MAX_ALPHA):
 				return false
 		return true, EntityHalo.FADE_IN_SECONDS + 1.0)
 	# Far from every one of them: all told zero, all still fading, all counted.
@@ -1044,7 +1044,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 	var retired: EventInstance = held[0]
 	var retired_rim := retired.rim().get_instance_id()
 	var retired_id := retired.get_instance_id()
-	var retired_rim_of := retired.excitement.rim as SourceRim
+	var retired_rim_of := retired.excitement.rim
 	# Whether the retired event still held its rim as its body left the tree: a rim that goes with
 	# its body has left the tree a moment before (children leave first) but is still held.
 	var held_as_the_body_left := [true]
@@ -1060,7 +1060,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 	t.check(not held_as_the_body_left[0] and probe.when("out", retired_rim) >= 0
 			and probe.when("out", retired_rim) < probe.when("body", retired_id),
 			"the retired event's rim is freed on the spot, ahead of its own deletion")
-	t.check(fresh_rim != 0 and (fresh.excitement.rim as SourceRim).is_held()
+	t.check(fresh_rim != 0 and fresh.excitement.rim.is_held()
 			and probe.when("out", retired_rim) < probe.when("in", fresh_rim)
 			and probe.when("in", fresh_rim) < probe.when("body", retired_id),
 			"the new pick builds its rim the same frame, in the block the retired one gave back")
@@ -1077,7 +1077,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t) ->
 ## A body whose source is nothing but an `ExcitementSource`, for a picked set a test turns over by
 ## hand: `strength` is its excitement/s anywhere, and it holds its rim through a `SourceRim` as every
 ## body does — built on its first nonzero glow, freed on the spot once faded. It has landed enough
-## that a lit rim reads at `ExcitementHalo.MAX_ALPHA`, so every fade out is a whole
+## that a lit rim reads at `EntityHalo.MAX_ALPHA`, so every fade out is a whole
 ## `EntityHalo.FADE_OUT_SECONDS`, the longest a rim can hold its block after it is dropped.
 class ChurnSource extends Node2D:
 	var strength := 0.0
@@ -1145,14 +1145,14 @@ static func _sets(manager: EventManager, crowd: Crowd = null) -> Array[Excitemen
 ## tells each zero (none is picked yet), the budget is full of fading rims, one finishing every few
 ## frames from the shortest fade on, which is still over half of `EntityHalo.FADE_OUT_SECONDS`.
 ## Returns the sources.
-func _fill_the_budget_with_fading_rims(t, events: ChurnEvents, clock: HaloRig.FrameClock) -> Array:
+func _fill_the_budget_with_fading_rims(t: TestRunner, events: ChurnEvents, clock: HaloRig.FrameClock) -> Array:
 	var fading: Array = []
 	var told: Array[float] = []
 	for i in EntityHalo.RIM_BUDGET:
 		var source := ChurnSource.new()
 		events.add_child(source)
 		events.list.append(source)
-		told.append(ExcitementHalo.MAX_ALPHA * float(EntityHalo.RIM_BUDGET + i + 1)
+		told.append(EntityHalo.MAX_ALPHA * float(EntityHalo.RIM_BUDGET + i + 1)
 				/ float(2 * EntityHalo.RIM_BUDGET))
 		source.rim.set_strength(told[i], Palette.HALO_STRONG)
 		fading.append(source)
@@ -1170,7 +1170,7 @@ func _fill_the_budget_with_fading_rims(t, events: ChurnEvents, clock: HaloRig.Fr
 ## has room for beside it, are picked a few frames later. The rims finish a few at a time, and no block goes to the
 ## weaker pick while a stronger, newer one is still waiting: on no frame is the weak pick lit and a
 ## strong one not.
-func _test_a_stronger_new_pick_is_lit_before_a_weaker_one_that_began_waiting_earlier(t) -> void:
+func _test_a_stronger_new_pick_is_lit_before_a_weaker_one_that_began_waiting_earlier(t: TestRunner) -> void:
 	var probe := RimProbe.new(t.get_tree())
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
@@ -1235,7 +1235,7 @@ func _test_a_stronger_new_pick_is_lit_before_a_weaker_one_that_began_waiting_ear
 ## **A pick that still holds a fading rim is lit at once, in the rim it has, with the budget full
 ## and a rimless pick waiting.** Relighting needs no new block, and it is the player's "only the top
 ## k most intensive show" that says the weaker newcomer does not get in ahead of it.
-func _test_a_repicked_fading_rim_is_lit_again_at_once(t) -> void:
+func _test_a_repicked_fading_rim_is_lit_again_at_once(t: TestRunner) -> void:
 	var probe := RimProbe.new(t.get_tree())
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
@@ -1292,7 +1292,7 @@ func _test_a_repicked_fading_rim_is_lit_again_at_once(t) -> void:
 ## engine's frames are. The bound that holds is the other half: once every strong source stops being picked, the weak one is lit within
 ## `EntityHalo.FADE_OUT_SECONDS` and the frame or two it takes to see the fade end, whatever it was
 ## doing before. No fade is cut short and no block goes past the budget throughout.
-func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t) -> void:
+func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t: TestRunner) -> void:
 	var fade_frames := int(ceil(EntityHalo.FADE_OUT_SECONDS / STEP))
 	var fresh := func(pool: Array, step: int) -> void:
 		for i in pool.size():
@@ -1407,7 +1407,7 @@ func _test_a_weak_pick_is_lit_within_one_fade_of_the_stronger_ones_stopping(t) -
 ## **Counted is read where it shows, in the budget.** Fourteen other rims fade beside it, so with
 ## it the budget is full, and a new pick wants a block the whole time: a dropped holder the halo did
 ## not count would let that pick in at once, one rim past the budget.
-func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t) -> void:
+func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t: TestRunner) -> void:
 	var probe := RimProbe.new(t.get_tree())
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
@@ -1431,11 +1431,11 @@ func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t
 		var source := ChurnSource.new()
 		events.add_child(source)
 		events.list.append(source)
-		source.rim.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+		source.rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 		others.append(source)
 	await _frames_until(t, clock, func() -> bool:
 		for source: ChurnSource in others:
-			if not _is_drawn_at(source.rim.entity_halo(), ExcitementHalo.MAX_ALPHA):
+			if not _is_drawn_at(source.rim.entity_halo(), EntityHalo.MAX_ALPHA):
 				return false
 		return true, EntityHalo.FADE_IN_SECONDS + 1.0)
 	t.add_child(halo)

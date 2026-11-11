@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What the artwork owes the game, asked of the pixels the game actually draws.
 ##
@@ -64,7 +63,7 @@ var _transfer_rules := false
 ## The library each page image is read through, fresh for this suite.
 var _atlas := AtlasLibrary.new()
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_transfer_rules = AtlasTable.baked().bake_mode() == "png"
 	if not _transfer_rules:
 		print("test_visuals: %s bake — the transfer registration rules are not asked of the "
@@ -82,7 +81,7 @@ func run(t) -> void:
 ## centred across it — otherwise she floats or walks beside herself when she turns. Each also has
 ## to carry real transparency *inside* its own bounds: the gaps between an arm and a body, and
 ## between a pram's wheels, are what stop a figure reading as a filled block.
-func _test_the_rig_stands_on_its_canvas_bottom(t) -> void:
+func _test_the_rig_stands_on_its_canvas_bottom(t: TestRunner) -> void:
 	var checked := 0
 	for name: StringName in BakedRegions.names():
 		if not String(name).begins_with("rig/"):
@@ -115,7 +114,7 @@ func _test_the_rig_stands_on_its_canvas_bottom(t) -> void:
 ##
 ## **How many whole tiles there are to ask about is the bake's** — see
 ## `FEWEST_WHOLE_GROUND_TILES`.
-func _test_ground_tiles_cover_their_cell(t) -> void:
+func _test_ground_tiles_cover_their_cell(t: TestRunner) -> void:
 	var checked := 0
 	var holed: Array[String] = []
 	for name: StringName in BakedRegions.names():
@@ -147,7 +146,7 @@ func _test_ground_tiles_cover_their_cell(t) -> void:
 ## **An `--svg` bake has no components at all to ask about**, since it composes nothing and its
 ## page carries no layer: there the sweep asserts that absence rather than a count, which is the
 ## same claim from the other side.
-func _test_ground_components_keep_their_canvas(t) -> void:
+func _test_ground_components_keep_their_canvas(t: TestRunner) -> void:
 	var checked := 0
 	var bases := 0
 	for name: StringName in BakedRegions.names():
@@ -184,7 +183,7 @@ func _test_ground_components_keep_their_canvas(t) -> void:
 ## The props whose caller draws them on a point rather than on a rectangle. A ground decal is
 ## placed by its canvas centre and a standing object by its canvas bottom, so where the artwork
 ## sits inside its canvas *is* where the object sits in the world.
-func _test_props_keep_the_placement_their_callers_draw_on(t) -> void:
+func _test_props_keep_the_placement_their_callers_draw_on(t: TestRunner) -> void:
 	for name in CENTRED_PROPS:
 		var image := _region_image(name)
 		t.check(image != null, "%s is a baked region" % name)
@@ -220,7 +219,7 @@ func _test_props_keep_the_placement_their_callers_draw_on(t) -> void:
 ## triple wave: the outermost row and column of each baby cue's baked image carry no part of
 ## the stroke. The anchor offset is not held here; each SVG's header states it beside
 ## `Stroller.INDICATOR_BOTTOM_PADDING`.
-func _test_baby_cues_keep_a_transparent_border(t) -> void:
+func _test_baby_cues_keep_a_transparent_border(t: TestRunner) -> void:
 	for name in BABY_CUES:
 		var image := _region_image(name)
 		t.check(image != null, "%s is a baked region" % name)

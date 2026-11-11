@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `DoorClearanceRule`: nothing's field comes within `Tuning.CHECKPOINT_EVENT_GAP` of a region door.
 ## A candidate closer than the gap and its own reach is refused, one past it allowed, and a day with
@@ -6,7 +5,7 @@ extends RefCounted
 
 const PLACED: Array[EventScheduler.Planned] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var cafe := EventCatalogue.by_id("cafe_tables")
 	var door := Vector2(2000, 2000)
 	var rule := DoorClearanceRule.new(PackedVector2Array([door]))

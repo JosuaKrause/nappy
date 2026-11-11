@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The capture keys, and the animation burst's lifecycle and manifest.
 ##
@@ -10,7 +9,7 @@ extends RefCounted
 ## the lines it hands the run log.
 
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_b_and_the_rig_action_choose_the_burst(t)
 	_test_a_release_build_ignores_the_capture_keys(t)
 	_test_overlapping_requests_refuse_before_a_capture_wait(t)
@@ -31,7 +30,7 @@ class Rig:
 	var run := RunState.new()
 	var run_log := RecordingLog.new()
 
-	func _init(t, debug_build := true) -> void:
+	func _init(t: TestRunner, debug_build := true) -> void:
 		run_log.begin_run(0, false)
 		t.add_child(layer)
 		layer.add_child(label)
@@ -59,7 +58,7 @@ class Rig:
 ## Each is pushed through the viewport to the readout, and what it chose is read from the run log:
 ## a picture writes the line "asked for a picture", a burst the line the headless refusal writes
 ## ("burst refused"), since a headless run has no drawable viewport to capture.
-func _test_b_and_the_rig_action_choose_the_burst(t) -> void:
+func _test_b_and_the_rig_action_choose_the_burst(t: TestRunner) -> void:
 	var rig := Rig.new(t)
 	var rig_action := InputEventAction.new()
 	rig_action.action = &"snapshot_burst"
@@ -84,7 +83,7 @@ func _test_b_and_the_rig_action_choose_the_burst(t) -> void:
 			"the named action used by the scripted rig follows the burst branch")
 	rig.free_all()
 
-func _test_a_release_build_ignores_the_capture_keys(t) -> void:
+func _test_a_release_build_ignores_the_capture_keys(t: TestRunner) -> void:
 	var rig := Rig.new(t, false)
 	UI.push(rig.readout, _p_key(false))
 	UI.push(rig.readout, _b_key(false))
@@ -192,7 +191,7 @@ class Bench:
 			recorder.cancel("probe over")
 			refused = false
 		else:
-			refused = lines.back().contains("another burst is active")
+			refused = lines[-1].contains("another burst is active")
 		lines.resize(before)
 		return refused
 
@@ -226,11 +225,11 @@ class Bench:
 
 ## A recorder with a sequence running refuses a second before it can replace it. (The run log's own
 ## burst refusing headless is `tests/test_telemetry.gd`'s.)
-func _test_overlapping_requests_refuse_before_a_capture_wait(t) -> void:
+func _test_overlapping_requests_refuse_before_a_capture_wait(t: TestRunner) -> void:
 	var bench := Bench.new("overlap")
 	var first := bench.start("first")
 	t.check(first != "" and not bench.recorder.start(bench.root, "overlap test")
-				and bench.lines.back().contains("burst refused: another burst is active"),
+				and bench.lines[-1].contains("burst refused: another burst is active"),
 			"a second request is refused before it can replace the active recorder")
 	bench.draw()
 	var manifest := bench.manifest(first)
@@ -243,7 +242,7 @@ func _test_overlapping_requests_refuse_before_a_capture_wait(t) -> void:
 ## The manifest is the handoff to `clip.py`: it must describe frame order and actual elapsed times,
 ## while path allocation must refuse both an existing directory and an existing file. Every folder
 ## is named from the clock, which stands still here, so each new one has to step past the others.
-func _test_unique_paths_and_manifest_timing(t) -> void:
+func _test_unique_paths_and_manifest_timing(t: TestRunner) -> void:
 	var bench := Bench.new("paths")
 	var first := bench.start("first")
 	t.check(first != "" and DirAccess.dir_exists_absolute(first),
@@ -323,7 +322,7 @@ func _frames_until_the_end(seconds: float) -> Array:
 
 ## A recorder cancelled by hand, or a deadline with nothing drawn, cancels the sequence. And a
 ## deadline or a frame wait left over from a sequence that has ended does nothing to the next one.
-func _test_cancellation_and_stale_callbacks_cannot_cross_sequences(t) -> void:
+func _test_cancellation_and_stale_callbacks_cannot_cross_sequences(t: TestRunner) -> void:
 	var bench := Bench.new("lifecycle")
 	var cut := bench.start("cut short")
 	bench.clock.advance(0.1)
@@ -360,17 +359,17 @@ func _test_cancellation_and_stale_callbacks_cannot_cross_sequences(t) -> void:
 
 ## A manifest that can no longer be written ends the sequence, and the log never calls it a
 ## finished burst: blocked before a frame is drawn, and blocked before the deadline closes it.
-func _test_metadata_write_failure_stops_without_claiming_success(t) -> void:
+func _test_metadata_write_failure_stops_without_claiming_success(t: TestRunner) -> void:
 	var bench := Bench.new("write-failure")
 	_block_the_manifest(bench.start("blocked on a frame"))
 	bench.draw()
 	t.check(not bench.busy()
-				and bench.lines.back().contains("burst abandoned: metadata write failed"),
+				and bench.lines[-1].contains("burst abandoned: metadata write failed"),
 			"a manifest path occupied by a directory reports its write failure")
 	_block_the_manifest(bench.start("blocked at the deadline"))
 	bench.clock.advance(BurstRecorder.DURATION_SECONDS)
 	t.check(not bench.busy(), "a metadata failure always terminates the recorder")
-	t.check(bench.lines.back().contains("burst abandoned")
+	t.check(bench.lines[-1].contains("burst abandoned")
 				and _count(bench.lines, "burst complete") == 0,
 			"a failed final write is never logged as a successful burst")
 	bench.close()

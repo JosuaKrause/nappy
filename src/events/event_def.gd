@@ -347,6 +347,10 @@ func solid_reach() -> float:
 func ground_shape() -> GroundShape:
 	return shape
 
+## Whether a shadow is put down under its body (`draws_body_shadow`).
+func casts_a_shadow() -> bool:
+	return draws_body_shadow
+
 ## The pieces its body is made of, in the scene's own frame (`parts()`, which the readers outside
 ## the live event's body still ask): one piece at the origin for every row but the crash.
 func body_pieces() -> Array[SolidPart]:
@@ -750,6 +754,20 @@ enum HeatResponse {
 ## And one constraint rather than an exemption, in `validate()`: a `hard_fail` event's body has to
 ## fit *inside* its lethal radius with her own body to spare.
 @export var obstructs_radius := 0.0
+
+## **How a row's body and its picture lie on the street it stands on**, the one choice the three
+## flags `has_a_spread`, `stands_along_its_street` and `lies_across_its_street` make between them
+## (`lies()`); no row sets two.
+enum Lie {
+	## As it faces: no flag.
+	AS_IT_FACES,
+	## Drawn as a spread across its street (`has_a_spread`).
+	SPREAD,
+	## Along its street without being drawn as a spread (`stands_along_its_street`).
+	ALONG,
+	## Across its street (`lies_across_its_street`).
+	ACROSS,
+}
 
 ## **When the row's body is solid to her.** Almost every body is a place, solid from its first frame
 ## for the whole of its life; two rows are solid only part of the time, and a row is one or the
@@ -1767,6 +1785,11 @@ func peak_through(age: float, into_its_burst: float, beat := -1.0) -> float:
 func pulses_every() -> float:
 	return pulse_period
 
+## The peak rate of its field at its centre (`intensity`), before a swell, a pulse or a phase moves
+## it, or 0 for a row with no field: what the share it emits now is measured against.
+func peak() -> float:
+	return intensity
+
 ## **The shape its field is priced from** (`EventInstance.field_shape()`), and the reach a long
 ## body gives it (`field_reach()`): its `shape`, or none — a point at its centre — for a row whose
 ## field is priced from its centre (`VehicleSpec.field_from_its_centre`, the fire engine) or that
@@ -1917,6 +1940,11 @@ func approach_speed() -> float:
 func heard_within() -> float:
 	return outer_radius
 
+## How far from its centre its core reaches (`inner_radius`): the span a dog walker's dog is led
+## ahead at is a share of it.
+func core_within() -> float:
+	return inner_radius
+
 ## Whether walking into its reach ends her day (`hard_fail`): a place that ends the day. A car's
 ## strike is its driving's (`EventCarDriving`), not this.
 func ends_the_day() -> bool:
@@ -1939,6 +1967,34 @@ func leaves_behind() -> String:
 ## The picture it is drawn as, which is the silhouette its badge carries (`EventPictures.icon_for()`).
 func picture() -> Look:
 	return look
+
+## How wide its body's picture is drawn along its run, in px: twice the radius of its body
+## (`obstructs_radius`).
+func drawn_width() -> float:
+	return obstructs_radius * 2.0
+
+## How it lies on its street (`has_a_spread`, then `stands_along_its_street`, then
+## `lies_across_its_street`): as a spread across it, along it, across it, or as it faces.
+func lies() -> Lie:
+	if has_a_spread:
+		return Lie.SPREAD
+	if stands_along_its_street:
+		return Lie.ALONG
+	if lies_across_its_street:
+		return Lie.ACROSS
+	return Lie.AS_IT_FACES
+
+## Whether it is a flock of bodies wheeling over one place (`flock_size`).
+func is_a_flock() -> bool:
+	return flock_size > 0
+
+## Whether it drags a slack lead behind it (`trails_a_lead`): the loose dog.
+func drags_a_lead() -> bool:
+	return trails_a_lead
+
+## Whether its own hold hides the whole of it (`hides_in_its_hold`): one guard at an alley mouth.
+func vanishes_into_its_hold() -> bool:
+	return hides_in_its_hold
 
 ## Whether it holds her when she comes to it (`detain_seconds`): a chatting mother's conversation,
 ## a door's hut or post. What the crowd's walkers are held at.

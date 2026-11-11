@@ -9,11 +9,13 @@ under "What is left".
 **The trap.** `thing.is_ready`, where `is_ready` is a method, is a reference to the function: always
 true in a condition, and a statement that does nothing where a call was meant (`crowd.clear` for
 `crowd.clear()`). A name in a condition trips no warning of the engine's. A name alone on a line
-trips its warning for a statement that does nothing (`standalone_expression`), which stands at the
-engine's default level, a warning, and no headless run prints a warning.
+trips the engine's warning for a statement that does nothing (`standalone_expression`), which
+`project.godot` makes an error, so that case fails the parse.
 
 **What reports it today.**
 
+- The engine, for a method's name alone on a line: `project.godot` makes `standalone_expression`
+  an error, and no line of the tree trips it (minty-quail-round-dolphin).
 - `tools/check_field_reads.py` fails a method's name read through a receiver whose class it cannot
   tell, in a file under `src/` without the opt-out line. Its `--help` says which names count.
 - The naming rule of designing-classes ("Fields are not API"), for every conversion of a yes-or-no
@@ -44,23 +46,16 @@ bare name of the file's own class with no receiver (`if is_ready:`).
   tested against null; its `look`, an enum read in a `match`; `Run.index`, compared between two
   runs. The events' design names accessors after such fields (`pursuit()`, `look()`).
 
-**Ways to build it, none chosen.**
+**How the rest is handled.**
 
-- **How far the new name goes beyond yes-or-no fields**, a question put to the player, since
-  either wider answer renames accessors across the events' design: every method that replaces a
-  field takes a new name, a number's included, which needs no knowledge of the engine and costs a
-  name for every converted field; or only a number keeps its name, which leaves a number read in
-  any of the silent ways above: assigned with `:=`, made into text, handed to an untyped
-  argument, tested for truth, compared with another read of itself. A third way, the name kept
+- **The new name stops at yes-or-no fields**: shown that a wider rule (every converted field's
+  method a new name, or every one but a number's) renames accessors across the events' design,
+  the player answered "A", stop at yes-or-no fields (inbox #1349). A third way, the name kept
   wherever every read of the field fails, is ruled out: it needs a list of such reads, and the
-  same record says how three wordings of one were each wrong. Beside either answer or in place
-  of both, a conversion's pull request can show a search for the old name read without its
-  parentheses coming back empty, which finds the read the conversion missed and not one a branch
-  merged later brings.
-- **The engine's own warning for a statement that does nothing**, raised to an error like the three
-  warnings of the typed-access step. Measured (the record minty-quail-busy-heron,
-  `tools/decisions.sh busy-heron`): a method's name alone on a line then fails the parse, and a name
-  in a condition still parses. Not measured: how many lines of the tree trip it today.
+  same record says how three wordings of one were each wrong. Asked on the board whether each
+  conversion's pull request also shows a search for the old name read without its parentheses
+  coming back empty, which finds the read the conversion missed and not one a branch merged later
+  brings: open, and no rule holds it until the player answers.
 - **A rule in the field-read check**: a typed receiver's method named with no `(` after it fails
   unless the reference hands the `Callable` on. The same record says what a first build of this
   was, why it left its pull request, and where its code is. Built again, the list of forms that

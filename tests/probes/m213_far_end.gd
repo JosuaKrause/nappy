@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for M213, "the robber stands at the far end of the mark's own alley", and for
 ## brisk-wombat's "a robber appears out of nowhere": prints numbers, asserts nothing, so it lives
@@ -33,14 +33,14 @@ const RUN_SEED := 2
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_reachability(t)
 	_on_screen(t)
 	_task_guards(t)
 
 ## The guard the guarded task (day 13's roadblock) stands at its contact, placed the instant she
 ## reads the mark: how often none is placed, and how often he shows on her screen.
-func _task_guards(t) -> void:
+func _task_guards(t: TestRunner) -> void:
 	var placed := 0
 	var unguarded := 0
 	var seen := 0
@@ -102,7 +102,7 @@ func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 	rng.seed = hash("%d:%d:%s" % [seed_value, day, stream])
 	return rng
 
-func _reachability(t) -> void:
+func _reachability(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	var robbery := EventCatalogue.by_id("alley_robbery")
@@ -155,7 +155,7 @@ func _reachability(t) -> void:
 				% [names[i], total, all, 100.0 * total / maxf(1.0, all), too_close[i]])
 	t.check(true, "probe ran")
 
-func _on_screen(t) -> void:
+func _on_screen(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
 	# Her view is a `VisibleView` of its own, and the siting handed to each director sees it: this

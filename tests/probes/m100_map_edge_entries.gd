@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Diagnoses PLAYTEST-69's re-report of "people still come out from outside the map" — a re-report
 ## of the finding M120 (`DECISIONS.md`) already answered once, by giving an ordinary walker or an
@@ -26,7 +26,7 @@ const RUN_SEED := 2
 const SEED := 4242
 const SAMPLES := 150
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var map := CityGenerator.generate(SEED)
 	_diagnose_recycle(map)
 	_diagnose_day_start(t, map)
@@ -104,7 +104,7 @@ func _cross_positions(cross_extent: float, fixed: float, vertical: bool) -> Arra
 ## Candidate 2: the morning's own placement. `Crowd.start_day()` places every agent through
 ## `CrowdAgent.setup()`, which rolls freely between `CrowdField.along_bounds()` — already clamped
 ## flush to the true edge near one — with no room question asked at all.
-func _diagnose_day_start(t, map: CityMap) -> void:
+func _diagnose_day_start(t: TestRunner, map: CityMap) -> void:
 	var size := map.world_size()
 	var edges := {
 		"west": Vector2(Tuning.TILE_SIZE, size.y * 0.5),

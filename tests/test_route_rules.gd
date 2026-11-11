@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `RouteJunctionsRule`, `RouteSidewalkRule`, `PacingOpeningRule` and `RouteReachRule`, the four
 ## rules that keep the day's routes open, each asked of candidates on a generated city's routes. **Why these build a
@@ -28,7 +28,7 @@ var _map: CityMap
 var _tree: RouteTree
 var _corridor: Corridor
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_map = MapCache.of(SEED)
 	var state := CityState.new()
 	state.begin_day(_map.block_plans, DAY)
@@ -57,7 +57,7 @@ func _far_from_the_routes() -> Vector2i:
 			return middle
 	return Vector2i(-1, -1)
 
-func _test_a_body_closing_a_route_crossing_is_refused(t) -> void:
+func _test_a_body_closing_a_route_crossing_is_refused(t: TestRunner) -> void:
 	var rule := RouteJunctionsRule.new(_map, _corridor, {})
 	var junction: Vector2i = _tree.junctions()[0]
 	var box := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
@@ -71,7 +71,7 @@ func _test_a_body_closing_a_route_crossing_is_refused(t) -> void:
 	t.check(rule.allows(far, _far_from_the_routes(), NONE, NONE),
 			"the same body far from every route is allowed")
 
-func _test_a_body_closing_a_route_sidewalk_is_refused(t) -> void:
+func _test_a_body_closing_a_route_sidewalk_is_refused(t: TestRunner) -> void:
 	var rule := RouteSidewalkRule.new(_map, _corridor)
 	var walked: Array = _corridor.walked_sidewalks(_map)
 	t.check(not walked.is_empty(), "the day's routes are walked along sidewalks")
@@ -88,7 +88,7 @@ func _test_a_body_closing_a_route_sidewalk_is_refused(t) -> void:
 	t.check(rule.allows(far, _far_from_the_routes(), NONE, NONE),
 			"the same body on a street no route runs along is allowed")
 
-func _test_a_body_closing_a_beats_opening_is_refused(t) -> void:
+func _test_a_body_closing_a_beats_opening_is_refused(t: TestRunner) -> void:
 	var rule := PacingOpeningRule.new(_map, _corridor)
 	var refused_with := 0
 	var allowed_without := 0
@@ -119,7 +119,7 @@ func _test_a_body_closing_a_beats_opening_is_refused(t) -> void:
 			"and every one of those vans is allowed with no man there (%d of %d)"
 			% [allowed_without, refused_with])
 
-func _test_a_ring_of_bodies_never_seals_home_off(t) -> void:
+func _test_a_ring_of_bodies_never_seals_home_off(t: TestRunner) -> void:
 	var rule := RouteReachRule.new(_map, _corridor)
 	var grid := ReachabilityGrid.build(_map)
 	var home := _map.home_tile()

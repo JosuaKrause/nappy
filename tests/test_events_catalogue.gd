@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The catalogue's own fairness contract: the physical and visual shape every row keeps regardless
 ## of where the scheduler places it -- the geometry a `spread` body draws at, that it fits the
@@ -18,7 +18,7 @@ const STEP := 1.0 / 60.0
 const DrawnEvent := preload("res://tests/drawn_event.gd")
 const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_protest_stays_something_she_can_be_routed_through(t)
 	_test_where_a_body_stands_is_read_from_one_place(t)
 	_test_one_barrier_costs_less_than_the_hold_it_stands_at(t)
@@ -61,7 +61,7 @@ const _SPREAD_LOOKS: Array[EventDef.Look] = [
 ## contract's independent expected set; PROTEST and FIREFIGHT are removed here because they stand
 ## along their street without being drawn as a spread (`EventDef.stands_along_its_street`). The
 ## geometry, phase and finish checks only guard against a future unrelated writer.
-func _test_spread_classification_follows_every_look_and_copy(t) -> void:
+func _test_spread_classification_follows_every_look_and_copy(t: TestRunner) -> void:
 	var def := EventDef.new()
 	t.check(not def.has_a_spread, "a default invisible definition has no spread")
 	def.look = EventDef.Look.ROADWORKS
@@ -103,7 +103,7 @@ func _test_spread_classification_follows_every_look_and_copy(t) -> void:
 ## moved after dawn (`EventInstance.move_to()`) takes as a new body does: a stationary solid row
 ## the pavement does not pin is stood on the middle of its band, a mobile row, a pinned one or one
 ## with no body where it is put.
-func _test_where_a_body_stands_is_read_from_one_place(t) -> void:
+func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 	var map := CityGenerator.generate(4242)
 	var lane := Vector2i(-1, -1)
 	for y in map.size.y:
@@ -147,7 +147,7 @@ const _CARRIAGEWAY_SPREAD_CLEARANCE := (Tuning.SIDEWALK_WIDTH + 0.5) * Tuning.TI
 ##
 ## Not "the intensity is 19.5", which would be the catalogue read back to itself: what would tell
 ## you something is that the row changed role.
-func _test_a_protest_stays_something_she_can_be_routed_through(t) -> void:
+func _test_a_protest_stays_something_she_can_be_routed_through(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("protest")
 	var day := def.first_day
 	var map := CityGenerator.generate(4242)
@@ -190,7 +190,7 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 ## The three detainers are already exempt from "nothing is cheaper to walk through than around" for
 ## exactly this reason, `_PRICED_BY_THEIR_CAPTURE`; this is the same sentence said about the
 ## strongest thing standing at the same place, which is the one that actually bills her.
-func _test_one_barrier_costs_less_than_the_hold_it_stands_at(t) -> void:
+func _test_one_barrier_costs_less_than_the_hold_it_stands_at(t: TestRunner) -> void:
 	var barriers := 0
 	for def in EventCatalogue.all():
 		if not def.barrier_structure:
@@ -208,7 +208,7 @@ func _test_one_barrier_costs_less_than_the_hold_it_stands_at(t) -> void:
 ## a bug, not a difficulty setting, so the whole catalogue is checked. "Visible" is the badge for a
 ## row warned of before it exists, so what is held against the floor is `EventDef.warning_time()`
 ## rather than the telegraph alone.
-func _test_catalogue_is_fair(t) -> void:
+func _test_catalogue_is_fair(t: TestRunner) -> void:
 	var defs := EventCatalogue.all()
 	t.check(not defs.is_empty(), "the catalogue is not empty")
 	for def in defs:
@@ -236,7 +236,7 @@ func _test_catalogue_is_fair(t) -> void:
 ## leaves its `minimum_telegraph()` where it was, at `Tuning.OFFSCREEN_WARNING_MIN`. Every one's badge
 ## alone (`EventDef.warned_for()`) is at most `Tuning.WARNING_ALONE_MAX`, and the column's copy cuts
 ## the planned convoy's in-world telegraph to it rather than carrying it over.
-func _test_a_warning_first_is_owed_a_flat_minimum(t) -> void:
+func _test_a_warning_first_is_owed_a_flat_minimum(t: TestRunner) -> void:
 	var warned: Array[EventDef] = []
 	for def in EventCatalogue.all():
 		if def.warns_before_it_exists():
@@ -278,7 +278,7 @@ func _test_a_warning_first_is_owed_a_flat_minimum(t) -> void:
 ## her and carries a heavy penalty — it can end the day or hit her hard. Neither of these two does:
 ## no screen-edge badge and no warning first; the cat still owes its in-world crouch, while the
 ## fire engine, which can hit her hard, keeps its badge and its warning first.
-func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
+func _test_the_loose_dog_and_the_cat_do_not_telegraph(t: TestRunner) -> void:
 	for id: String in ["loose_dog", "cat_dash"]:
 		var def := EventCatalogue.by_id(id)
 		t.check(not def.telegraphs and not def.warns_before_it_exists(),
@@ -301,7 +301,7 @@ func _test_the_loose_dog_and_the_cat_do_not_telegraph(t) -> void:
 ## than she walks; nothing for a row that does not telegraph. How fast a row comes
 ## (`approach_speed()`) is its chase speed for a pursuer, and every row it announces has a
 ## silhouette for the badge to carry.
-func _test_a_row_says_whether_its_coming_is_announced_and_how_fast(t) -> void:
+func _test_a_row_says_whether_its_coming_is_announced_and_how_fast(t: TestRunner) -> void:
 	var walk := Tuning.WALK_SPEED
 	var robber := EventCatalogue.by_id("alley_robbery")
 	t.check(robber.announces_its_coming(walk) and robber.announces_its_coming(walk * 10.0),
@@ -330,7 +330,7 @@ func _test_a_row_says_whether_its_coming_is_announced_and_how_fast(t) -> void:
 ## multi-part row sent through a warning first; its own telegraph is too short to clear the flat
 ## floor a warned-first row is held to, so the duplicate's telegraph is widened first, which
 ## changes nothing `as_warned_first()` copies by hand.
-func _test_as_warned_first_carries_solid_parts_too(t) -> void:
+func _test_as_warned_first_carries_solid_parts_too(t: TestRunner) -> void:
 	var crash := EventCatalogue.by_id("car_accident")
 	t.check(crash.solid_parts.size() >= 2,
 			"'car_accident' has at least two solid parts (%d), so the copy below cannot pass vacuously"
@@ -367,7 +367,7 @@ func _test_as_warned_first_carries_solid_parts_too(t) -> void:
 ## directly from the street lattice rather than through `EventScheduler`'s tile pool. Their
 ## clearance is checked in `tests/test_seals.gd` instead, against the street's own 192px width
 ## rather than a single tile's, which is the ground they actually stand on.
-func _test_a_spread_body_fits_the_ground_it_stands_on(t) -> void:
+func _test_a_spread_body_fits_the_ground_it_stands_on(t: TestRunner) -> void:
 	var checked := 0
 	for def in EventCatalogue.all():
 		if not _SPREAD_LOOKS.has(def.look) or def.placement.is_empty():
@@ -394,7 +394,7 @@ func _test_a_spread_body_fits_the_ground_it_stands_on(t) -> void:
 ## `VEHICLE_BODY` (44px across) still has to leave a gap to the frontage narrower than the pram, or
 ## the row stops being an obstacle: `docs/EVENTS.md`'s `delivery_van` row reads that placement as
 ## "a **wall** by physical fit", and the gap is the exact shape of "no line to walk."
-func _test_a_kerbed_body_still_pins_the_frontage(t) -> void:
+func _test_a_kerbed_body_still_pins_the_frontage(t: TestRunner) -> void:
 	var kerb_edge := Tuning.TILE_SIZE * 0.5
 	var band := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE
 	var frontage_gap := (band - kerb_edge) - EventCatalogue.VEHICLE_BODY
@@ -445,7 +445,7 @@ func _test_a_kerbed_body_still_pins_the_frontage(t) -> void:
 ## is on an east-west street, where the spread has to rotate onto local Y to block anything at all.
 ## A bare `CityMap.new()` needs no generation for this — `corridor_offset` is arithmetic over
 ## `Tuning`'s constants alone.
-func _test_a_spread_rotates_with_the_street(t) -> void:
+func _test_a_spread_rotates_with_the_street(t: TestRunner) -> void:
 	var map := CityMap.new()
 
 	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
@@ -491,7 +491,7 @@ func _runs_vertically_at(map: WorldMap, at: Vector2) -> bool:
 ## Stationary seal vehicles use the street axis even though their default facing is right. The van
 ## faces along it and the burnt car lies across it. Side art fits the circular body's diameter,
 ## while end art keeps the narrower projection instead of stretching into a square.
-func _test_stationary_vehicles_face_their_street(t) -> void:
+func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 	var map := CityMap.new()
 	var ns_tile := Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 	var ew_tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2)
@@ -542,7 +542,7 @@ func _test_stationary_vehicles_face_their_street(t) -> void:
 ## anything about a layout, so what a second city adds is more draws from the same rule — and a
 ## day's worth of draws is already hundreds. The days stay whole because a run is what carries the
 ## `consumed` set forward, which is what makes a later day's pool different from an earlier one's.
-func _test_a_spread_never_lands_on_a_corner(t) -> void:
+func _test_a_spread_never_lands_on_a_corner(t: TestRunner) -> void:
 	var checked := 0
 	for run_seed in [4242]:
 		var map := CityGenerator.generate(run_seed)
@@ -571,7 +571,7 @@ func _test_a_spread_never_lands_on_a_corner(t) -> void:
 ## stands are read off what it was told to draw: where each post's feet are, against the real
 ## asset size and the real `obstructs_radius`, and in which order each slice draws its post and
 ## its segment.
-func _test_a_spread_cap_matches_what_it_obstructs(t) -> void:
+func _test_a_spread_cap_matches_what_it_obstructs(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("construction")
 	var half := maxf(11.0, def.obstructs_radius)
 	var cap_size := EventPictures.native_size(EventPictures.BARRIER_END)
@@ -664,7 +664,7 @@ static func _posts_drawn(drawn: Array, segment: String, behind: bool,
 ## drawn body stays aligned with the obstruction is read off what a `fallen_tree` drawn on either
 ## axis with a recording drawer handed in was told to draw: every slice cuts its band out of the
 ## one whole picture, and that picture spans the row's own obstruction along its run.
-func _test_a_wide_scene_faces_its_street(t) -> void:
+func _test_a_wide_scene_faces_its_street(t: TestRunner) -> void:
 	var horizontal := EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, false)
 	var vertical := EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, true)
 	t.check(horizontal == EventPictures.FALLEN_TREE,
@@ -723,7 +723,7 @@ func _test_a_wide_scene_faces_its_street(t) -> void:
 ## spanning the street leaves neither. The offsets those lanes fall out of are read off the two
 ## pictures (`EventCatalogue._car_accident_parts`) and checked by eye with the bounding-box layer
 ## (`--layers 3`); what this holds is the thing that would be wrong if they drifted.
-func _test_a_crash_is_solid_only_where_its_cars_are(t) -> void:
+func _test_a_crash_is_solid_only_where_its_cars_are(t: TestRunner) -> void:
 	var map := CityMap.new()
 	var crash := EventCatalogue.by_id("car_accident")
 	# This fixture puts a live scenery-bearing instance in the tree without an EventManager, whose
@@ -800,7 +800,7 @@ func _walkable_lane_beside(instance: EventInstance, half: float, side: float) ->
 	return width
 
 ## Every other row is exactly one piece at its own origin, so nothing but the crash changed shape.
-func _test_every_other_row_is_one_body(t) -> void:
+func _test_every_other_row_is_one_body(t: TestRunner) -> void:
 	for def in EventCatalogue.all():
 		if def.solid_parts.size() > 1:
 			continue
@@ -816,7 +816,7 @@ func _test_every_other_row_is_one_body(t) -> void:
 ## The `NONE` exemption is spelled out rather than skipped, because `look` has no useful default
 ## any more — a row that forgets to choose one is invisible, which is the quietest way for an
 ## event to stop working.
-func _test_no_two_rows_draw_the_same_picture(t) -> void:
+func _test_no_two_rows_draw_the_same_picture(t: TestRunner) -> void:
 	# Three rows are legitimately invisible: something else already draws the ground they stand
 	# on, a mast's own picture carries its curfew announcement too (`EventCatalogue.
 	# _curfew_announce()`), or — the finale's explosion — the whole of the row is that it happens
@@ -844,7 +844,7 @@ func _test_no_two_rows_draw_the_same_picture(t) -> void:
 ## sprite are the old failure with more enum rows in front of it. `EventPictures.icon_for()` is
 ## the one table of what a look *is*, and it is also what the screen-edge badge draws — so this
 ## asserts the badge can never again show a delivery van for a fire engine.
-func _test_every_look_carries_its_own_silhouette(t) -> void:
+func _test_every_look_carries_its_own_silhouette(t: TestRunner) -> void:
 	var seen := {}
 	for def in EventCatalogue.all():
 		if def.look == EventDef.Look.NONE:
@@ -864,7 +864,7 @@ func _test_every_look_carries_its_own_silhouette(t) -> void:
 ## whichever way it lies"*, and an invisible body in front of day 8's burnt building is exactly that
 ## (olive-koala, statement 4: *"the *building* is what needs to be burnt *not* an object next to the
 ## building!"*).
-func _test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t) -> void:
+func _test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t: TestRunner) -> void:
 	for id in _DRAWN_ON_A_BUILDING:
 		var def := EventCatalogue.by_id(id)
 		t.check(def != null, "the catalogue carries '%s'" % id)
@@ -879,7 +879,7 @@ func _test_a_row_drawn_on_a_building_stands_nothing_on_the_sidewalk(t) -> void:
 ## one placed at dawn would be met only if she walked there. Day 3's fire, sited from her walk, keeps
 ## the rule; the same row with its `on_her_way` taken off breaks it; a recurring row with none keeps
 ## it, since the rule is about one-shots.
-func _test_a_one_shot_is_sited_on_her_way(t) -> void:
+func _test_a_one_shot_is_sited_on_her_way(t: TestRunner) -> void:
 	var fire := EventCatalogue.by_id("burning_building")
 	t.check(not fire.is_a_one_shot_off_her_way(), "day 3's fire, sited from her walk, keeps the rule")
 	var unsited: EventDef = fire.duplicate()

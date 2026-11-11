@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `RouteLines` (M135, "the day's routes drawn as a debug layer") and the `--layers`/`?layers=`
 ## parsing that reaches its own key, `5`.
@@ -21,7 +21,7 @@ const DAYS := [1, 5, 9, 14]
 
 const UI := preload("res://tests/ui_screens.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_parse_layers_accepts_five_and_still_rejects_four(t)
 	_test_no_route_lines_node_exists_outside_a_debug_build(t)
 	_test_the_readout_flag_alone_builds_the_node_off(t)
@@ -42,7 +42,7 @@ func _layers(raw: String) -> Array[int]:
 ## Beside `test_debug_layers.gd`'s own `_test_parse_layers_*` cases, which stop at `1..3`: `5` is
 ## the one other layer `--layers`/`?layers=` may set, and `4` (the readout, toggled its own way)
 ## stays rejected even though it now sits inside the numeric range the other four span.
-func _test_parse_layers_accepts_five_and_still_rejects_four(t) -> void:
+func _test_parse_layers_accepts_five_and_still_rejects_four(t: TestRunner) -> void:
 	t.check(_layers("5") == [5], "5 (the day's routes) is accepted on its own")
 	t.check(_layers("1,4,5") == [1, 5],
 			"4 is still dropped — the readout is never set through this flag — while 1 and 5 pass")
@@ -59,7 +59,7 @@ class Rig:
 	var city := City.new()
 	var run := RunState.new()
 
-	func _init(t, config: RunConfig) -> void:
+	func _init(t: TestRunner, config: RunConfig) -> void:
 		t.add_child(layer)
 		layer.add_child(label)
 		readout.setup(config, label, layer, run.header, null, Callable())
@@ -78,7 +78,7 @@ class Rig:
 func _config(words: Array, debug_build: bool, query := "") -> RunConfig:
 	return RunConfig.parse(PackedStringArray(words), query, debug_build)
 
-func _test_no_route_lines_node_exists_outside_a_debug_build(t) -> void:
+func _test_no_route_lines_node_exists_outside_a_debug_build(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], false))
 	t.check(rig.routes() == null,
 			"a release build never builds the route-lines node, not merely leaves it invisible")
@@ -87,7 +87,7 @@ func _test_no_route_lines_node_exists_outside_a_debug_build(t) -> void:
 ## M193, "the live page's ?debug=1 reaches the debug flags": `?debug=1` alone builds the node —
 ## the same shape `test_debug_layers.gd`'s own readout-flag-alone case pins — since a release
 ## page's own `?debug=1&layers=5` needs somewhere to draw into, still off until `?layers=` names it.
-func _test_the_readout_flag_alone_builds_the_node_off(t) -> void:
+func _test_the_readout_flag_alone_builds_the_node_off(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], false, "?debug=1"))
 	t.check(rig.routes() != null,
 			"?debug=1 builds the route-lines node so a release page's own ?layers=5 has somewhere "
@@ -96,7 +96,7 @@ func _test_the_readout_flag_alone_builds_the_node_off(t) -> void:
 			"and it starts off, since ?layers= itself named none")
 	rig.free_all()
 
-func _test_a_debug_build_builds_the_node_off_by_default(t) -> void:
+func _test_a_debug_build_builds_the_node_off_by_default(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], true))
 	t.check(rig.routes() != null and rig.routes().get_parent() == rig.readout,
 			"a debug build adds the one node, parented under the readout")
@@ -105,7 +105,7 @@ func _test_a_debug_build_builds_the_node_off_by_default(t) -> void:
 	rig.free_all()
 
 ## `--layers 5` is the keypress-free request for the layer: the node starts on, drawn in the tree.
-func _test_the_layers_flag_starts_the_node_on(t) -> void:
+func _test_the_layers_flag_starts_the_node_on(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config(["--layers", "5"], true))
 	t.check(rig.routes() != null and rig.routes().is_visible_in_tree(),
 			"--layers 5 starts the route lines on")
@@ -126,7 +126,7 @@ func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
 
 ## A press of `5` turns the layer on; a release, an echo (a held key is one request, not a flood of
 ## them) and every other digit that is not a layer of this node leave it as it is.
-func _test_key_five_is_the_route_lines_layer(t) -> void:
+func _test_key_five_is_the_route_lines_layer(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], true))
 	var routes := rig.routes()
 	UI.push(rig.readout, _key(KEY_5, false))
@@ -141,7 +141,7 @@ func _test_key_five_is_the_route_lines_layer(t) -> void:
 	t.check(routes.is_visible_in_tree(), "5 is the day's routes")
 	rig.free_all()
 
-func _test_key_five_toggles_visibility(t) -> void:
+func _test_key_five_toggles_visibility(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], true))
 	var routes := rig.routes()
 	t.check(not routes.visible, "the layer starts off")
@@ -153,7 +153,7 @@ func _test_key_five_toggles_visibility(t) -> void:
 
 ## The number keys answer a debug build alone: a release page can ask for the picture, never
 ## toggle it by hand.
-func _test_key_five_does_nothing_in_a_release_build(t) -> void:
+func _test_key_five_does_nothing_in_a_release_build(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], false, "?debug=1"))
 	var routes := rig.routes()
 	UI.push(rig.readout, _key(KEY_5))
@@ -186,7 +186,7 @@ func _plan(seed: int, day: int) -> _Built:
 ## reachability-cell step (`ReachabilityGrid.CELL` = 2 tiles) for the interior, since that is the
 ## grain `RouteTree` stores it in, and a fixed, provably exact distance for the one calm-side
 ## connector this class adds beyond the tree.
-func _test_a_planned_day_yields_one_polyline_per_route_from_its_first_cell_to_calm(t) -> void:
+func _test_a_planned_day_yields_one_polyline_per_route_from_its_first_cell_to_calm(t: TestRunner) -> void:
 	var cell_step := float(ReachabilityGrid.CELL) * Tuning.TILE_SIZE
 	# The exact distance from a two-tile cell's own centre to the centre of a tile one 4-neighbour
 	# step beyond one of its four corners: (0.5, 0.5) - corner - delta, and only the two deltas

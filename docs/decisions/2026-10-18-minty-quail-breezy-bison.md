@@ -33,7 +33,7 @@ vouches for each new class that declares its vars; each such added line is a vis
 list, which review reads. A change
 to the checker itself still compares nothing (`checker_changed`). The docstring, the `--base` help
 and the list's generated header say the rule; the designing-classes skill's sentence on the check
-says it too, and lists the rule as proposed. `tools/test_check_field_reads.py` holds a passing and
+says it too, cites the player's answer for it, and lists which moves count as proposed. `tools/test_check_field_reads.py` holds a passing and
 a failing case for each rule, each with the mutation that would fail it (eight mutated checkers,
 each failing a case), and one case end to end through a temporary git repository. The base's tree
 is built only when an added line is neither listed nor paired by a rename.

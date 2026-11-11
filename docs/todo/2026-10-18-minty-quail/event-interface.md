@@ -407,6 +407,14 @@ shared state. What it asks, and what the event is asked on its behalf:
 | The nearest event, for the readouts | live `row_id()`, `age()`, `telegraphs_for()`, `field_reaches(point)` | the live event |
 | What an encounter was (`EncounterWatch`, inside the events) | live `detains_her()` ok, `source()` ok; its own record kept in its own table, not on the live event | hold, field |
 
+**What the bus carries about an event.** Six signals of the bus (`src/autoload/event_bus.gd`:
+`event_telegraphed`, `event_activated` and the four `pelican_*`) carry the live event in an untyped
+parameter, the whole of what that file's opt-out line is for. The layer map has the bus on the
+model layer, so typing them `EventInstance` would make the model name the simulation. *Proposed,
+not asked for:* row 3b types them `Node2D`, what a live event is and what the model may name, and
+the listeners read `as EventInstance` as the run log's already does. The plainer alternative is to
+keep the opt-out line on the bus as the one file that cannot be typed, with its reason.
+
 ### 2.7 The resistance
 
 | What is asked | Method | Answered by |
@@ -451,7 +459,7 @@ strategies did (the record brisk-lark):
 - **What never changes is handed in, not asked for.** When the live event is set up, each part is
   handed its own spec, the map, the navigator, what it walks as, `WhereSheIs`, and the sibling
   parts it works with (the car is handed the investigation, the departure the barrier post, the
-  roadblock's look the barrier post). No part looks a sibling up through the event.
+  roadblock's look the barrier post ok). No part looks a sibling up through the event.
 - **What changes is asked through one narrow interface the live event builds for its parts**,
   `EventInstance.Figure` (a name this design proposes: the figure a behaviour moves). Questions:
   `place()`, `heading()`, `travelled()`, `age()`, `chase_age()`, `walks()`, the phase questions.
@@ -465,8 +473,11 @@ strategies did (the record brisk-lark):
   minty-quail-striped-hawk list. Every behaviour, and the barrier post's far guard, asks through it
   and is handed its parts; none holds its event.
 - **A look asks the same questions outside callers ask**, plus its own few (`is_silenced()`,
-  `is_its_guard_warning()`, `is_drawn_as_a_pelican()`, `boom_openness()`), and is handed its
-  `LookSpec` and its drawer.
+  `is_its_guard_warning()`, `is_drawn_as_a_pelican()`), and is handed its
+  `LookSpec` and its drawer. The base look (`EventLook`) is so handed ok: its row (until `LookSpec`
+  exists), its drawer and whether it draws, and it asks the live event through methods. The figure,
+  pursuer, vehicle, flock, checkpoint and fire looks, `SpreadLook`, `RankLook` and `RoadblockLook`
+  ask the same way ok.
 
 **`WhereSheIs`** (a name this design proposes) is the one object that says where she is
 this tick: her position, her pram's, the camera's view, whether she runs, whether the baby is
@@ -614,13 +625,13 @@ counted where it only writes.
 | `repeat_every`, `repeat_after` | 2 in | row `comes_again_every()` ok, `comes_again_after()`, asked once as a plan is made; plan `repeats()` ok |
 | `shape` | 11 in, 3 out (the route rig, the happenings, `SealPlanner`) | row `ground_shape()` ok; the field part's `datum()`; a draft for the copies; the live body and the look are handed the body part |
 | `solid_parts`, `_default_parts` | 1 in, 2 out (both copying it into a variant) | row `body_pieces()` ok; a draft copies parts, so the hand copy goes |
-| `obstructs_radius` | 10 in, 2 out (the route rig, `SealPlanner`) | row `obstructs_within()` ok, `closes_ground()`, `has_a_body()` ok, `solid_reach()` ok; the looks ask `drawn_width()` |
+| `obstructs_radius` | 10 in, 2 out (the route rig, `SealPlanner`) | row `obstructs_within()` ok, `closes_ground()`, `has_a_body()` ok, `solid_reach()` ok; the looks and the footprints ask the row's `drawn_width()` ok, twice the radius, for the run of a spread, a rank or a wide scene (floored at 11px) and for a stationary vehicle's side, its `has_a_body()` ok for whether it has a body and `obstructs_within()` ok for its shadow's disc |
 | `solid_when` | 4 in, 1 out (the route rig), the resistance untyped | row `is_a_boom()` ok, `stands_as_a_fixed_body()`; the body part's `solid_from()` for the live body (the row's until the body part exists ok); live `is_solid()` ok |
 | `stands_as`, `when_it_stops` | 2 in each (the live event filling its move) | the body part's `is_walked_round()`, `parks()`, asked by the live body (the row's until the body part exists ok) |
-| `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()`; the body part's `lies()` (one choice of four) for the footprints |
+| `has_a_spread`, `stands_along_its_street`, `lies_across_its_street` | 3, 2 and 2 in (the scheduler, the footprints) | row `lies_as_a_spread()`; the body part's `lies()` (one choice of four) for the footprints (the row's `lies()`, an `EventDef.Lie`, until the body part exists, ok) |
 | `vehicle` (`VehicleSpec.field_from_its_centre`) | 8 in, 2 out (the scene recipes, the park cordon); 3 lines of the spec | row `drives()` ok; the field part's `datum()` |
-| `intensity` | 7 in | row `has_a_field()` ok; the field part's `peak()` and `peak_through()` for the live event and the looks |
-| `inner_radius` | 6 in, 2 out (the resistance's contact point and director) | row `core_within()`; live `core_reaches(point)`; the flock and the looks are handed the field's spec |
+| `intensity` | 7 in | row `has_a_field()` ok; the field part's `peak()` and `peak_through()` for the live event and the looks (the row's `peak()` and `peak_through()` until the field part exists ok) |
+| `inner_radius` | 6 in, 2 out (the resistance's contact point and director) | row `core_within()` ok (the canvas looks ask it); live `core_reaches(point)`; the flock and the looks are handed the field's spec |
 | `outer_radius` | 7 in, the dev rig untyped | row `heard_within()` ok; live and plan `field_reaches(point)` ok; live `field_rings()` |
 | `core_intensity`, `core_radius`, `falloff_power` | 2 in each | inside `FieldSpec`: `emission_at_distance()` ok, `reach_above()` ok, `silent_beyond()` ok |
 | `pulse_period`, `intensity_ramp` | 4 and 2 in | the field part's `peak_through()`, `pulses_every()` (the looks' flicker); the live event asks the row's ok, the looks and the spawner still read `pulse_period` |
@@ -644,11 +655,11 @@ counted where it only writes.
 | `paces` | 4 in, 1 out (the happenings), the resistance untyped | row `paces_a_beat()`; live `beat()` |
 | `path_mode`, `path_length_tiles` | 3 and 2 in | the route part's `kind()`, `tiles()`, asked by the plan builder |
 | `stops_where_it_arrives` | 3 in, 1 out (the scene recipes) | row `parks_where_it_arrives()`; live `has_parked()` |
-| `flock_size`, `flock_spread` | 5 and 4 in | row `is_a_flock()`; `EventFlock` is handed `FlockSpec` |
+| `flock_size`, `flock_spread` | 5 and 4 in | row `is_a_flock()` ok; `EventFlock` is handed `FlockSpec` |
 | `look` | 13 in (every look) | row `picture()` ok; each look is handed its `LookSpec` |
-| `warning_picture`, `draws_body_shadow`, `trails_a_lead`, `hides_in_its_hold`, `may_be_a_pelican` | 2 or 3 in each (the footprints, the looks, the spawner) | methods of `LookSpec`, asked by the looks, the footprints and the spawner only |
+| `warning_picture`, `draws_body_shadow`, `trails_a_lead`, `hides_in_its_hold`, `may_be_a_pelican` | 2 or 3 in each (the footprints, the looks, the spawner) | methods of `LookSpec`, asked by the looks, the footprints and the spawner only (meanwhile the row's `casts_a_shadow()`, `drags_a_lead()` and `vanishes_into_its_hold()` ok, asked by the footprints; `warning_picture` still a listed read) |
 | `guard_sides` | 2 in, 1 out (`SealPlanner`), `RegionPlanner` writing | `LookSpec.guard_sides()`; a draft for the wall's copies |
-| `abduction` (`AbductionSpec`: `taken_over`, `standing_offset`) | 5 in; 5 lines of the spec | the abduction behaviour and the van's look are handed the spec; its two methods |
+| `abduction` (`AbductionSpec`: `taken_over`, `standing_offset`) | 5 in; 5 lines of the spec | the abduction behaviour and the van's look are handed the spec; its two methods; meanwhile, until the look is handed the spec, the van's look reads it off the row it is handed (`_row.abduction`), its two fields under their own names |
 | `aftermath` (`Aftermath`: `scar`, `on_finish`, `on_sight`) | 4 in, 2 out (the scene recipes, `SealPlanner`); 10 lines of the spec | row `scar_id()`, `leaves_behind()` (asked by the live event ok), `calls_in()`, `has_an_aftermath()`; a draft's `without_its_aftermath()` |
 | `_cost_cache` | private | stays inside `FieldSpec`, worked out when the spec is built |
 
@@ -657,24 +668,24 @@ counted where it only writes.
 | Field | Reader files | Replaced by |
 |---|---|---|
 | `def` | 29 in, 8 out | the questions of section 2 on the live event; `row()` ok for passing the row on |
-| `is_finished` | 12 in, 6 out; 154 reads in tests | `is_gone()` ok |
+| `is_finished` | 12 in, 6 out; 154 reads in tests | `is_gone()` ok (the base look asks it ok) |
 | `is_leaving` | 13 in; 133 in tests | `is_on_its_way_out()` ok |
 | `is_parked` | 3 in, 1 out (the resistance) | `has_parked()` |
-| `phase` | 2 in; 40 in tests | the phase questions (`is_waiting()` ok, `is_telegraphing()` ok, `is_active()`, `has_stopped_her()` ok, `is_only_its_barrier()`); `transition()` reached by its parts through `Figure.begin()` ok; fifteen lines of six suites call `transition()` to put an event in a phase that sets a check up, kept public for them (`tools/test_only_members.txt`), and each goes when its suite reaches the phase the way the game does or is handed a fake event: step 5's `FakeEvent` covers the crowd-yield and resistance suites, and nothing is named yet for `test_scenery_animation` and `test_prediction_reuse` |
+| `phase` | 2 in; 40 in tests | the phase questions (`is_waiting()` ok, `is_telegraphing()` ok, `is_active()`, `has_stopped_her()` ok, `is_only_its_barrier()` ok); `transition()` reached by its parts through `Figure.begin()` ok; fifteen lines of six suites call `transition()` to put an event in a phase that sets a check up, kept public for them (`tools/test_only_members.txt`), and each goes when its suite reaches the phase the way the game does or is handed a fake event: step 5's `FakeEvent` covers the crowd-yield and resistance suites, and nothing is named yet for `test_scenery_animation` and `test_prediction_reuse`; no game file outside `event_instance.gd` reads the field, and it goes private once 4a has rewritten the tests' reads (the reason it is public is a comment on the member) |
 | `age` | 7 in, 1 out (the readout); set by rigs and recipes | `age()`; set only by its own tick and by `resume()`, which becomes `restore(save)` in 3b |
-| `path` | 7 in | `walks()`, `beat()`, `way_left()` ok |
+| `path` | 7 in | `walks()` ok, `beat()`, `way_left()` ok |
 | `_heading`, `_path_travelled`, `_gait_phase`, `_gait_moving` | 8, 4, 1 and 1 in (the behaviours) | `Figure.heading()` ok, `travelled()` ok, `turn_to()` ok, `walk_on()` ok; outside: `facing_now()` ok, `path_travelled()` ok, `gait_phase()` ok |
 | `_map`, `_navigator`, `_mover` | 4 in each | handed to each part at setup |
 | `_obstruction`, `_spread_vertical` | 2 in each (the barrier post, the car, the far guard) | `EventBody` ok: `drop()` ok, `pin_where_it_stands()` (built as `pin_at(at)`), `runs_vertically()` ok; the barrier post, the far guard and the car reach them through `Figure` ok |
 | `_charge` (`ChargeRecord`: `began`, `ended`, `warned`), `_notice` (`Warning`: `length`, `cancel_if`, `on_expired`), `_telegraph_ended`, `_chase_way`, `_guard_spent`, `gave_up` | 1 to 3 in each (four behaviours) | `Figure.charge_began()` ok, `charge_ended()` ok, `hold_the_notice()` ok, `notice_has_run()` ok, the behaviours reach the rest only through `Figure` ok; `has_charged()` ok, `is_chasing()` ok, `has_given_up()` ok (`gave_up` stays public while suites and probes read it) |
-| `hold`, `abduction`, `departure`, `route`, `car`, `barrier_post`, `investigation`, `pursuit`, `on_foot`, `notice_run`, `flock`, `unreachable` | 30 lines in (the composer, behaviours reaching siblings, three looks) | private; siblings handed to each other by the composer; outside callers ask the live event (`closes_on(point)` ok, `is_taking_a_victim()` ok) |
+| `hold`, `abduction`, `departure`, `route`, `car`, `barrier_post`, `investigation`, `pursuit`, `on_foot`, `notice_run`, `flock`, `unreachable` | 30 lines in (the composer, behaviours reaching siblings, three looks) | private; siblings handed to each other by the composer; outside callers ask the live event (`closes_on(point)` ok, `is_taking_a_victim()` ok, `how_long_its_victim_has_walked()` ok); the roadblock's look is handed the barrier post ok |
 | `excitement` | 4 in | `source()` ok |
-| `drawer`, `atlas`, `timing`, `trace`, `signals`, `skip_draw`, `points_at`, `is_pelican` | 1 to 9 in (written by the spawner after it makes the event, read by the looks) | handed in at setup in one call; the looks are handed the drawer; `is_drawn_as_a_pelican()`; the unmarked van's take is handed `trace` at setup ok; the car asks `signals` through `Figure.lights()` meanwhile, since the spawner sets them after `setup()`, and `lights()` goes when the one setup call (3b) hands them in |
-| `gate_state` | 2 in (two looks) | `is_raised()` ok, `boom_openness()`; handed in at setup from the plan's `gate()` |
-| `guard_warns_her` | the looks (the checkpoint controller asks already) | `raise_its_guards_hand(on)` ok, `is_its_guard_warning()` ok |
-| `silenced` | 2 in; written by streaming | `silence()`, `is_silenced()` |
+| `drawer`, `atlas`, `timing`, `trace`, `signals`, `skip_draw`, `points_at`, `is_pelican` | 1 to 9 in (written by the spawner after it makes the event, read by the looks) | handed in at setup in one call; the looks are handed the drawer and whether they draw ok; `is_drawn_as_a_pelican()` ok; the unmarked van's take is handed `trace` at setup ok; the car asks `signals` through `Figure.lights()` meanwhile, since the spawner sets them after `setup()`, and `lights()` goes when the one setup call (3b) hands them in |
+| `gate_state` | none under `src/` outside `event_instance.gd`, written by streaming; suites read and write it | `is_raised()` ok, which the looks and the checkpoint controller ask ok; handed in at setup from the plan's `gate()` |
+| `guard_warns_her` | the looks (the checkpoint controller asks already) | `raise_its_guards_hand(on)` ok, `is_its_guard_warning()` ok; the field is private |
+| `silenced` | 2 in; written by streaming | `silence()`, `is_silenced()` ok |
 | `came_under_a_warning` | the live event itself | `was_warned_of()` ok |
-| `look` | 2 in (two looks reading another's) | private; a look is handed the look it needs |
+| `look` | 2 in (two looks reading another's) | private; a slice, the roadblock's band and its far guard are each handed their look ok, so no game file outside `event_instance.gd` reads the field; it goes private when row 5's drawing suites are handed a look another way (about 114 test lines ask a live event's look what it shows; the reason it is public is a comment on the member) |
 
 ### 4.3 The plan (`EventScheduler.Planned`, to be `EventPlan`)
 
@@ -694,14 +705,14 @@ Reads by `rg`, since the check does not list it.
 | `comes_in`, `wait_began`, `kept_live`, `was_live` | 6, 3, 3 and 5 (streaming) | streaming's own state per plan; `keep_in_the_world()` ok stays as the way to ask for it, and `come_first_in(seconds)` ok, by which the building's plan says when an event first comes, tells streaming rather than writing a field |
 | `repeat_every`, `repeat_after`, `at_her`, `arrives_aged` | 5 (streaming) | `repeats()` ok; `come_again_every(seconds)` ok, `come_where_she_stands()` ok, `arrive_aged(seconds)` ok as the building's plan is made; `comes_where_she_stands()`, `arrives_aged()` |
 | `gate_state` | 2 | `gate()`, set as the region's doors are made |
-| `permanent` | 1 | `is_permanent()` ok, `make_permanent()` |
+| `permanent` | 1 (the plan's own `spoils()`) | `make_permanent()` for the writers; `is_permanent()`, which no game file asks, is deleted with the test's one clause when the plan becomes `EventPlan`, since `tools/check_test_only_members.py` sees it then |
 | `_is_door`, `_in_the_wall`, `_is_a_seal` | private already | as they are |
 
 Other classes of the folder with listed lines, each converted in the pull request that owns its
 file: `EventWorld` (55 lines, the context the event manager hands its own parts), `EventManager`
-(8, read by the city scene and waiting on the third hand-ins pull request), `ChargeRecord` (7),
-`PendingWarning` (6), `RoadblockFarGuard` (4), `EventStreaming` (3), `Warning` (3),
-`EventBarrierPost`, `EventScenery`, `EventsAhead` (2 each), `EventPursuit`, `EventFlock`,
+(14, read by the city scene and waiting on the third hand-ins pull request), `ChargeRecord` (3),
+`PendingWarning` (6), `EventStreaming` (3), `Warning` (3),
+`EventsAhead` (2), `EventPursuit`, `EventFlock`,
 `EncounterWatch`, `EventSpawner` (1 each).
 
 ## 5. The pull requests, in order
@@ -724,10 +735,10 @@ questions, and is at test parity with the run log and GoatCounter's names unchan
 |---|---|---|---|
 | **1** | **Two reads left of the callers outside the events folder**, which otherwise ask the event (the record minty-quail-rosy-lynx). A method and a variable cannot share a name, so the plan's `role`, read by the run log's map, becomes `role()` when the plan's fields go private in 3a. The row's `speed`, read where a badge is made for a warning with nothing in the world yet, is the fourth of the slightly wrong answers (section 7, point 6): the pull request that makes it `approach_speed()` removes the read | `src/telemetry/telemetry_map.gd` (in 3a); `src/ui/danger_edge.gd` (in point 6's pull request for it) | With 3a; after this row's first step has merged |
 | **2a** | **The live event's behaviours ask it through `Figure`, and are handed the rest.** `EventBody` taken out of `EventInstance` ok; the composer hands each behaviour its settings, the map, the navigator and its siblings ok; the eight existing specs get their methods as far as a converted reader asks them ok. Built (the records minty-quail-velvet-owl, -olive-finch, -tiny-alpaca, -tawny-swan, -striped-hawk, -striped-magpie and -silver-marmot). Left to later rows: the traffic lights, the gate's state and `_spread_is_vertical()`, handed in by the one setup call (3b); the specs' remaining methods, with the steps that convert their readers | `src/events/event_instance.gd`, `behaviours/*` (all ask through `Figure` ok), `event_excitement.gd`, `charge_record.gd`, `warning.gd`, the eight spec files (methods added) | **Now, beside placement**, after 1 (both add to `event_instance.gd`). The third hand-ins pull request, which rewrites the manager's setup, meets `WhereSheIs` there: the events' world holds it and `EventSpawner.create()` hands it to each live event |
-| **2b** | **The looks ask the live event and are handed their settings.** | `src/events/views/*`, `event_footprints.gd`, `event_scenery.gd` | **Now**, beside 2a once `Figure` and the outward questions are in |
+| **2b** | **The looks ask the live event and are handed their settings.** Built but for `LookSpec`, which waits for 4b (the records minty-quail-polite-newt, -mossy-hedgehog, -tall-toad, -busy-badger, -merry-magpie and -calm-egret). Left listed, each because the natural name is a standing field's or the file is another track's: the live event's `age`, the row's `guard_sides`, `warning_picture`, `flock_spread` and `abduction`, `AbductionSpec.taken_over` and `standing_offset`, `WorldMap.world`. The flock's look's reads of a bird are in `field-reads.md`; the two statements of the 11px floor (`EventFootprints.drawn_box_of()`, `SpreadLook.NARROWEST_HALF_RUN`) wait for 4b's body part; and of the times section 6 asks for, four of 2a's seven pull requests hold theirs in their records, each its own base against its head (-velvet-owl, -olive-finch, -tiny-alpaca and -tawny-swan, every probe of section 6 that is timed); 2a's last three (-striped-hawk, -striped-magpie and -silver-marmot) and 2b's six took none, so what is owed is one reading of those probes from the merge of -tawny-swan to the merge of -calm-egret, and of `look_fingerprint.gd`'s `LK_COST` from the merge of -polite-newt, the probe's own, to -calm-egret. It holds other tracks' merges too, so it is listed for the end remeasure and holds no step (section 7, point 5) | `src/events/views/*`, `event_footprints.gd`, `event_scenery.gd` (handed its atlas and its drawer ok) | **Now**, beside 2a once `Figure` and the outward questions are in |
 | **3a** | **The dawn and the walk's ground ask rows and plans.** The plan's fields go private. Small where placement wrote against section 3 | `event_plan.gd`, `event_scheduler.gd` and what the breakup made of it (`dawn_phases/`, `plan_builder.gd`, `row_ground.gd`, `dawn_context.gd`), `street_rules/*`, `street_invalidation.gd`, the location files, `view_bag.gd`, `walk_ground.gd`, `day_events.gd`, `walk_events.gd`, `day_reach.gd`, `mast_sites.gd`, `day_planner.gd`, `src/routes/seal_planner.gd`, `region_planner.gd` | After placement and the scheduler's breakup close |
-| **3b** | **The event manager's parts.** Streaming keeps its own state per plan, tells the plan what happened and carries a live event's state out and back as one `EventSave`; the spawner hands a live event everything in one setup call; `EventWorld`'s 55 lines | `event_manager.gd`, `event_world.gd`, `event_streaming.gd`, `event_spawner.gd`, `event_director.gd`, `events_ahead.gd`, `warning_board.gd`, `pending_warning.gd` | After placement (its step 4 rewrites the director's and `EventsAhead`'s siting) and the third hand-ins pull request. Beside 3a and 3c |
-| **3c** | **The resistance, the scene recipes and the rigs.** | `src/resistance/*`, `src/dev/*`, `src/city/city.gd` | After placement's bullet on the scene recipes and the third hand-ins pull request. Beside 3a and 3b |
+| **3b** | **The event manager's parts.** Streaming keeps its own state per plan, tells the plan what happened and carries a live event's state out and back as one `EventSave`; the spawner hands a live event everything in one setup call; `EventWorld`'s 55 lines | `event_manager.gd`, `event_world.gd`, `event_streaming.gd`, `event_spawner.gd`, `event_director.gd`, `events_ahead.gd`, `warning_board.gd`, `pending_warning.gd`, the six event parameters of `src/autoload/event_bus.gd` | After placement (its step 4 rewrites the director's and `EventsAhead`'s siting) and the third hand-ins pull request. Beside 3a and 3c |
+| **3c** | **The resistance, the scene recipes and the rigs.** | `src/resistance/*`, `src/dev/*`, `src/city/city.gd` | After the third hand-ins pull request. Beside 3a and 3b |
 | **4a** | **The tests, the probes and the cost table read through the methods.** One scripted rewrite, each replacement a line of section 4's tables, the script in the description so a branch merging main reruns it. No line under `src/` changes | `tests/**`, `tools/cost_table.gd` | After 3a to 3c |
 | **4b** | **A row is written as its parts.** `EventDraft`, the eight new specs, the row with no public field and no `Resource` base, the catalogue rewritten row by row, every variant made from a draft, `validate()` without the pairings a part makes unwritable; the tests that build or change a row use a draft. `docs/EVENTS.md`'s "Adding a new event" and the events skill's "Adding a row" say the new form | `event_def.gd`, `event_catalogue.gd`, `event_draft.gd` and the spec files, the variant sites in `seal_planner.gd`, `region_planner.gd`, `happenings.gd`, `event_director.gd`, `event_spawner.gd`; the tests that write a row | After 4a |
 | **5** | **The events' and the resistance's suites test one module each** (`tests-one-module.md`, entry 7), in the groups below | `tests/**` | After 4b; its groups beside each other |
@@ -741,7 +752,8 @@ waits, because it converts the files those two tracks are rewriting.
 flock have no spec of their own, so in 2a their live halves are handed the row and ask the row;
 4b hands each its spec, one constructor line apiece. The eight specs that exist are handed over
 from 2a on. The field's live half is so handed: the event's source takes the row and where she is
-at setup (`use_row_and_where_she_is()`), ok.
+at setup (`use_row_and_where_she_is()`), ok. So is the look's: `EventLooks.for_row()` hands the base
+look its row and its drawer at setup, ok, until `LookSpec` (4b).
 
 **Skills and docs.** 4b rewrites the events skill's "Adding a row" and its field names, and
 designing-classes' sentence that much of `src/` still reads fields goes with the last line of the
@@ -774,7 +786,11 @@ written once, after it is final.
   (`test_event_phase`, `test_event_behaviours`, `test_events_pursuit`, `test_car_driving`,
   `test_police_car`, `test_fire_truck_body`, `test_car_front`, `test_protest`,
   `test_events_chat`, the drawing suites: one real live event on open ground or a hand-drawn map,
-  a `WhereSheIs` the test moves, a fake navigator where a wall matters); the event manager and its
+  a `WhereSheIs` the test moves, a fake navigator where a wall matters, and what a look shows read
+  off a recording drawer handed to the event before `setup()` (`tests/recording_event_drawer.gd`)
+  or, for a question no picture answers, off a look the suite makes with `EventLooks.for_row()`
+  round a `FakeEvent` (*proposed, not asked for:* the plainer alternative is that the live event's
+  public `look` stays for them); the event manager and its
   parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`: the manager real, plans
   plain, a real city only in the suite whose header gives the reason); the dawn
   (`test_events_scheduler`, `_placement`, `test_event_spacing`, the day 6, 7 and 13 suites: rows
@@ -798,7 +814,7 @@ or hands the value in once. The paths that run every tick or every drawn frame:
 | **The baby's sweep** (`Baby._physics_process()`, through `EventSources.sources_at()` to each source's `contribution_at()`) | a far event: five row fields to work out the distance beyond which it is silent, on every call; a near one: about eight row fields in `current_intensity()`, then `emission_at_distance()` | the silent distance is worked out once when the `FieldSpec` is built, since a built row cannot change (today it is worked out on every call because a rig may change the row); the ramp and the pulse are one question to the field (to the row, until the field part exists, ok); the kernel is the method it is today |
 | **The danger prediction** (the caret: `ExcitementSource.expected_gross_at()`, twenty samples a source a drawn frame, behind a cache) | the cache's key copies nine values of the row and its shape every frame, to notice a row that was changed | the key holds the field's spec and the shape by reference; the samples call the same two methods as today. Fewer reads than now |
 | **The fields layer** (the debug view's overlay, `DebugLayers._draw_fields()`) | three row fields and the shape per live event per redraw | one `field_rings()` |
-| **Drawing** (each visible event's look, every drawn frame) | `def.look` sixteen times in `event_look.gd`, the shape, the body's width | the look holds its `LookSpec` and the width from construction; the mark's question (`walk_through_cost()`) is cached in the field's spec |
+| **Drawing** (each visible event's look, every drawn frame) | `def.look` sixteen times in `event_look.gd`, the shape, the body's width | the look holds its `LookSpec` and the width from construction (the base look holds its row ok, until `LookSpec`); the mark's question (`walk_through_cost()`) is cached in the field's spec |
 | **The crowd's tick** | no event field: the published moves, the blocked tiles, a boom's state | nothing changes; measured as the control |
 
 **How big it can be.** The events skill's own figure is a few dozen live events at once, on the
@@ -817,9 +833,13 @@ configuration alone moves between rounds, as that record found):
 - `tools/test.sh probes/calm_pelican_fields_layer_cost.gd`: the fields layer.
 - `tools/test.sh probes/m159_crowd_tick_cost.gd`: the control; its chain over every agent's
   position is identical.
+- `tools/test.sh probes/look_fingerprint.gd`: what every row's look draws, the catalogue's rows,
+  their full-heat and last-day copies and the rows the game stands from them; its `LK` lines are
+  identical or a step of 2b is not done. It cannot see what a look draws straight on the canvas,
+  nor a term of a look's picture key taken out alone (the record minty-quail-polite-newt).
 
 **The bar.** The design's: in a step that changes no behaviour, the fingerprint and the chain are
-identical, always. On the times, the player's answer (section 7, point 5) is read as: they are
+identical, always, and in a step of 2b the looks' `LK` lines too. On the times, the player's answer (section 7, point 5) is read as: they are
 measured and reported in the pull request and listed for the end remeasure, and no step is held or
 tuned for them.
 

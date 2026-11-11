@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M205, "he keeps shouting for a bit": what day 6's note handover
 ## (`ResistanceSteps.by_index(2)`, the perform riding `homeless_yeller`) actually costs, from the
@@ -44,7 +43,7 @@ const STEP := 1.0 / 60.0
 const PHASE_SAMPLES := 8
 const LEAD := 500.0
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("homeless_yeller")
 	var reach_awake := _handover_net_averaged(def, false, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 	var reach_asleep := _handover_net_averaged(def, false, Tuning.EXCITEMENT_DECAY_WALKING,

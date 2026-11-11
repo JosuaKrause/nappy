@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M180, posters she notices: whether the day's poster crews are met, now that
 ## her walk sites them (`EventDef.on_her_way`, `OnHerWay.at_a_front`), and how much they paste while
@@ -17,7 +16,7 @@ const STEP := 1.0 / 30.0
 const WALK_SECONDS := 240.0
 const PAST_THE_FORK := 6
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	print("seed   day walk          crews  sited  met  first sited  sheets pasted  waited on")
 	for seed_value: int in SEEDS:
 		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
@@ -30,7 +29,7 @@ func run(t) -> void:
 		city.free()
 	t.check(true, "m180_crews_on_her_way probe ran")
 
-func _walk_one(t, city: City, seed_value: int, day: int, walk_name: String) -> void:
+func _walk_one(t: TestRunner, city: City, seed_value: int, day: int, walk_name: String) -> void:
 	city.run.posters.reset()
 	var tree := RouteTree.for_day(city.map, day)
 	city.poster_walls().start_day(day, tree)
@@ -207,7 +206,7 @@ func _as_world(city: City, route: Array, outward: bool) -> PackedVector2Array:
 
 # ------------------------------------------------------------------- the rig ---
 
-func _walker(t, at: Vector2) -> Stroller:
+func _walker(t: TestRunner, at: Vector2) -> Stroller:
 	var rig := Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"

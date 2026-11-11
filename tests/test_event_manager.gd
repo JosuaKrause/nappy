@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## EventManager against a real generated City.
 ##
@@ -11,7 +11,7 @@ const Rig := preload("res://tests/event_manager_rig.gd")
 
 var _city: City
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	# Every test builds a city and a run of its own, so none leans on what an earlier one left
 	# behind: the scars a fire writes, the streaming radius, the day a test started.
@@ -36,7 +36,7 @@ func run(t) -> void:
 		await test.call(t)
 		_teardown()
 
-func _build_city(t) -> void:
+func _build_city(t: TestRunner) -> void:
 	_city = Rig.build_city(t)
 
 ## **A guard moved is the same man, in the middle of what he was doing** (`move_extra()`): day 13's
@@ -44,7 +44,7 @@ func _build_city(t) -> void:
 ## and made again would forget her. **And a guard walking off is never turned back**: one that left
 ## before he ever noticed her still answers `is_waiting()`, and the task setting him on her
 ## (`EventInstance.notice_her_at()`) leaves him leaving.
-func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t) -> void:
+func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t: TestRunner) -> void:
 	var events := _city.events
 	var at := _city.map.doorstep_world_position()
 	var her := at + Vector2(200.0, 0.0)
@@ -75,7 +75,7 @@ func _test_a_moved_guard_keeps_what_he_is_in_the_middle_of(t) -> void:
 ## director send (`EventDirector._teach_the_run()` hands it out; docs/TELEMETRY.md, "The page counts
 ## visits", and `tests/test_visit_counter.gd` for what its counter sends). What the manager makes of
 ## each row is named by the row alone, on the day the run is taught as on any other.
-func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
+func _test_the_first_dog_of_the_run_day_is_the_lesson(t: TestRunner) -> void:
 	var events := _city.events
 	var dog := EventCatalogue.by_id("charging_dog")
 	var lesson := EventCatalogue.lesson_of(dog)
@@ -105,7 +105,7 @@ func _test_the_first_dog_of_the_run_day_is_the_lesson(t) -> void:
 ## `docs/MECHANICS.md`, "A retry is the same day"): the dawn draws every location before she can
 ## move (`LocationDraw.draw_all()`), so day 4 started a second time, after a walk east on the first
 ## start, plans from nothing the first start or the walk left in the city or the manager.
-func _test_a_day_started_twice_stands_the_same_rows(t) -> void:
+func _test_a_day_started_twice_stands_the_same_rows(t: TestRunner) -> void:
 	var events := _city.events
 	events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	var home := _city.map.doorstep_world_position()
@@ -143,14 +143,14 @@ func _teardown() -> void:
 func _start(day: int) -> void:
 	Rig.start(_city, day)
 
-func _test_day_populates_the_manager(t) -> void:
+func _test_day_populates_the_manager(t: TestRunner) -> void:
 	_start(1)
 	t.check(_city.events.active_count() > 0, "starting a day puts events in the world")
 	for instance in _city.events.instances():
 		t.check(is_instance_valid(instance), "every tracked instance is a live node")
 		t.check(instance.def != null, "every tracked instance has a def")
 
-func _test_finished_instances_are_dropped(t) -> void:
+func _test_finished_instances_are_dropped(t: TestRunner) -> void:
 	_start(1)
 	# One that leaves nothing behind and runs out on its own, stepped the way the manager steps it.
 	var victim: EventInstance = null
@@ -182,7 +182,7 @@ func _run_to_its_end(instance: EventInstance) -> bool:
 ## `finale_explosion`/`impact_crater`, the one row `aftermath.on_finish` governs: a burst that has
 ## run its course leaves its crater where it went off. Spawned directly, since the escape's rows are
 ## not a day's.
-func _test_successor_replaces_its_parent(t) -> void:
+func _test_successor_replaces_its_parent(t: TestRunner) -> void:
 	_start(12)
 	var burst := _city.events.spawner.spawn(EventCatalogue.by_id("finale_explosion"),
 			Vector2(500, 500))
@@ -203,7 +203,7 @@ func _test_successor_replaces_its_parent(t) -> void:
 		t.close_to(crater.global_position.distance_to(where), 0.0,
 				"the crater starts where the burst went off", 1.0)
 
-func _test_excitement_sums_over_instances(t) -> void:
+func _test_excitement_sums_over_instances(t: TestRunner) -> void:
 	_start(5)
 	var instances := _city.events.instances()
 	t.check(instances.size() > 1, "day 5 has several events to sum")
@@ -227,7 +227,7 @@ func _test_excitement_sums_over_instances(t) -> void:
 ## An event is in the world exactly when the player is near it. The distances matter: the
 ## streaming radius has to be wider than the widest field in the catalogue, or an event would
 ## appear *already inside* its own outer radius and the fairness contract would be a lie.
-func _test_an_event_waits_until_she_is_near_it(t) -> void:
+func _test_an_event_waits_until_she_is_near_it(t: TestRunner) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
 
@@ -274,7 +274,7 @@ func _widest_field() -> float:
 ## The other half, and the one a naive implementation gets wrong: an event that has already
 ## happened must not happen again because she walked back past it. Streaming is allowed to take
 ## an event away and give it back while it is *running*; it is not allowed to rewind it.
-func _test_an_event_that_has_run_does_not_run_again(t) -> void:
+func _test_an_event_that_has_run_does_not_run_again(t: TestRunner) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
 	var plan: EventScheduler.Planned = null
@@ -310,7 +310,7 @@ func _test_an_event_that_has_run_does_not_run_again(t) -> void:
 ## tile a second, and every time the player left its radius and came back it was rebuilt from
 ## `plan.position` and teleported to the top of its street. At a third of her walking speed that
 ## is most times, so from outside it was an event that never went anywhere.
-func _test_a_running_event_comes_back_where_it_got_to(t) -> void:
+func _test_a_running_event_comes_back_where_it_got_to(t: TestRunner) -> void:
 	_city.events.stream_radius = Tuning.EVENT_STREAM_RADIUS
 	_start(1)
 	var plan: EventScheduler.Planned = null
@@ -354,7 +354,7 @@ func _test_a_running_event_comes_back_where_it_got_to(t) -> void:
 ## at all, which cannot be in two places because there is only ever one of it, and which nothing in
 ## this rig can put anywhere: there is no player here, so no walk for it to be sited from. Over a
 ## whole run, each day's one-shots are each a single unsited plan, never live and never spent here.
-func _test_a_set_piece_is_one_plan_owed_to_her_walk(t) -> void:
+func _test_a_set_piece_is_one_plan_owed_to_her_walk(t: TestRunner) -> void:
 	var owed_to_her_walk := 0
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		_start(day)
@@ -392,7 +392,7 @@ func _test_a_set_piece_is_one_plan_owed_to_her_walk(t) -> void:
 ## a little more, one closure's own segment. See `tests/test_checkpoints.gd`'s
 ## `_test_the_manager_actually_places_the_door_structure()` for the same `City.start_day` calling
 ## convention, written against this exact gap before it had a fix.
-func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> void:
+func _test_a_day_started_through_the_manager_alone_still_carries_seals(t: TestRunner) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY  # so a region wall or door is in play, not only seals.
 	_start(day)
 	var alone := _city.map.held_streets().keys()
@@ -427,7 +427,7 @@ func _test_a_day_started_through_the_manager_alone_still_carries_seals(t) -> voi
 ## `alley_robbery` rather than a scheduled plan: it carries `EventDef.notice` cold, with no heat
 ## level or a particular day's roll needed to reach it, and a `Planned` built by hand is
 ## deterministic where waiting for the scheduler to place one on some day would not be.
-func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
+func _test_a_streamed_pursuer_resumes_the_chase(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("alley_robbery")
 	var plan := EventScheduler.Planned.new(def, Vector2(500.0, 500.0))
 
@@ -472,7 +472,7 @@ func _test_a_streamed_pursuer_resumes_the_chase(t) -> void:
 ## arterial's sidewalk with the row owed her, and the instance it creates once its warning is over;
 ## for one that does not (`loose_dog`), the instance created at once with no warning. On its first
 ## frame it is not telegraphing, its field is undamped, and a lethal row is lethal at its own centre.
-func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t) -> void:
+func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner) -> void:
 	var map := _city.map
 	var checked: Array[String] = []
 	var events := _city.events

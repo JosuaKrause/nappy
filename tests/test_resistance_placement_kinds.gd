@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration", "unsafe_property_access")
 extends "res://tests/resistance_rig.gd"
 ## The four placement kinds a perform step may use, each task's own site, and the days built in order.
 
@@ -18,7 +18,7 @@ const FrontReads := preload("res://tests/front_reads.gd")
 ## Her street door's picture and the building it stands in front of, read off the city's nodes.
 const HomeDoorReads := preload("res://tests/home_door_reads.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_the_burnt_shell_task_rides_the_recorded_scar(t)
 	await _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t)
 	await _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t)
@@ -42,7 +42,7 @@ func run(t) -> void:
 	_test_the_column_comes_down_the_main_road(t)
 	_free_city()
 
-func _test_the_burnt_shell_task_rides_the_recorded_scar(t) -> void:
+func _test_the_burnt_shell_task_rides_the_recorded_scar(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	# On ground day 3's fire can actually catch on (`AT_THE_FRONT`, a building behind it), since a
 	# real scar is only ever recorded there and the arrow ends on that building.
@@ -69,7 +69,7 @@ func _test_the_burnt_shell_task_rides_the_recorded_scar(t) -> void:
 ## checks the task rides that scar: the one shell at it, put in the world even when the scar is
 ## farther than the streaming radius, kept there when she walks away, no second scar recorded, and
 ## the arrow and the contact on the door of the building behind it.
-func _ride_a_recorded_scar(t, site: Vector2i, label: String) -> void:
+func _ride_a_recorded_scar(t: TestRunner, site: Vector2i, label: String) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var doorstep := _city.map.doorstep_world_position()
 	var scar_at := _city.map.tile_to_world(site)
@@ -121,7 +121,7 @@ func _ride_a_recorded_scar(t, site: Vector2i, label: String) -> void:
 ## shell (the lot `City` draws burnt) independently of `Building.way_in_local_x()`: its entrance
 ## door's column centre when it has one (the column its door is drawn in), half a tile up its ground
 ## floor.
-func _check_the_task_is_at_the_burnt_buildings_door(t, director: ResistanceDirector) -> void:
+func _check_the_task_is_at_the_burnt_buildings_door(t: TestRunner, director: ResistanceDirector) -> void:
 	var tip := director.red_arrow_target()
 	t.check(tip != Vector2.INF, "day 8's task earns the red arrow")
 	var shell := director.rider()
@@ -155,7 +155,7 @@ func _check_the_task_is_at_the_burnt_buildings_door(t, director: ResistanceDirec
 ## last, since the touch that completes it hands the task over. Her touch is a real physics frame
 ## with her standing where the test puts her; the two corner touches are asked of twins of the contact
 ## (`ContactTouches.touches_from()`), so they hand nothing over.
-func _check_a_touch_from_the_near_half_of_the_sidewalk(t, director: ResistanceDirector) -> void:
+func _check_a_touch_from_the_near_half_of_the_sidewalk(t: TestRunner, director: ResistanceDirector) -> void:
 	var contact := director.contact()
 	var door := director.contact_position()
 	if contact == null or door == Vector2.INF:
@@ -196,7 +196,7 @@ func _check_a_touch_from_the_near_half_of_the_sidewalk(t, director: ResistanceDi
 ## the building behind it (`CityFronts.way_in_behind()`): its entrance door's column when it has one, and
 ## always ground the touch is measured over — a sidewalk tile straight below it, the near half
 ## `ResistanceDirector.DOOR_REACH` is sized to.
-func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t) -> void:
+func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var size := float(Tuning.TILE_SIZE)
 	var fronts := EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
@@ -235,7 +235,7 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t) -> void:
 
 ## The column each of `buildings` draws its entrance door in (-1 for none), once each has been drawn
 ## through a drawer that records.
-func _doors_drawn_on(t, buildings: Array) -> Dictionary:
+func _doors_drawn_on(t: TestRunner, buildings: Array) -> Dictionary:
 	for building: Building in buildings:
 		FrontReads.watch(building)
 	await UI.frames(t, 2)
@@ -248,7 +248,7 @@ func _doors_drawn_on(t, buildings: Array) -> Dictionary:
 ## still sends her to a burnt building: the shell stands on a front day 3's fire could have caught
 ## on, the scar is recorded there, and the building behind it is burnt at once — *"Take what's in
 ## the stroller to the burnt building"* never leads to bare sidewalk.
-func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
+func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var burnt_before := 0
 	for building in _city.buildings():
@@ -304,7 +304,7 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t) -> void:
 ## own run, restarted on `SEED`, whose streams are the ones `_rng()` draws. `started` is handed the
 ## director as the run flow hands its own, called once the walk is begun. Returns the scratch nodes
 ## `_end_the_day()` frees.
-func _start_the_day(t, day: int, resistance: ResistanceDirector,
+func _start_the_day(t: TestRunner, day: int, resistance: ResistanceDirector,
 		prepare := Callable(), started := Callable()) -> Array[Node]:
 	# The whole run, not only the snapshot's state parts: `start_run()` also resets the riders
 	# (`facts`: the escape section, used alleys, fenced park), the checkpoint and the mode.
@@ -321,6 +321,7 @@ func _start_the_day(t, day: int, resistance: ResistanceDirector,
 	player.add_child(camera)
 	var baby := Baby.new()
 	baby.name = "Baby"
+	baby.use_bus(EventBus)
 	player.add_child(baby)
 	t.add_child(player)
 	player.set_physics_process(false)
@@ -357,7 +358,7 @@ class OrderRecordingResistance extends ResistanceDirector:
 ## planned before the resistance places its mark; and once the start returns, where the run flow
 ## announces `day_planned`, the clock runs, the crowd is placed and the mark is on offer. A
 ## reordering of those calls fails here.
-func _test_a_day_is_built_in_its_order(t) -> void:
+func _test_a_day_is_built_in_its_order(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var director := OrderRecordingResistance.new()
 	t.add_child(director)
@@ -398,7 +399,7 @@ func _test_a_day_is_built_in_its_order(t) -> void:
 ## anything, so this test would pass whether the carve-out worked or was deleted. Also asserts
 ## the chosen tile's segment reads held, so the test states it is exercising that case rather
 ## than one where the held set happens to be empty.
-func _test_the_door_task_sits_at_a_region_door(t) -> void:
+func _test_the_door_task_sits_at_a_region_door(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director(t)
 	var the_day := _start_the_day(t, 9, director)
@@ -462,7 +463,7 @@ static func _copy_of_step(step: ResistanceSteps.Step) -> ResistanceSteps.Step:
 ## the attempt, the task expiring included, and both are let go — the contact freed outright, the
 ## guard's own tracking reference dropped — the moment the day is retried or a new one starts,
 ## which is what stops either from piling up.
-func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> void:
+func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	# No task carries a deadline, so the director is handed a calendar whose door task does
 	# (`use_steps()`): the same step, copied, that must be done by half the day.
@@ -527,7 +528,7 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t) -> 
 ## through, until the day ends (*"Stays crossed, until the day ends"*), so this asks what answers
 ## the report: exactly one mark's touched picture is standing once she has read it, across several
 ## ordinary days in a row, none of them failed or retried.
-func _test_a_read_mark_does_not_pile_up_across_several_ordinary_days(t) -> void:
+func _test_a_read_mark_does_not_pile_up_across_several_ordinary_days(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director(t)
 	# Day 6's mark is index 1, day 7's is 3, day 8's is 5 (`_test_step_selection`'s own
@@ -565,7 +566,7 @@ func _live_chalk_marks() -> int:
 ## deleted. Seed 2295276695 is where a home-bordering door actually exists on day 9 — measure
 ## again with `tools/test.sh probes/<name>.gd` naming that seed and printing `RegionPlanner.
 ## plan_day`'s own doors against `StreetNetwork.around_blocks` if this ever needs re-checking.
-func _test_the_door_task_never_borders_the_home_block(t) -> void:
+func _test_the_door_task_never_borders_the_home_block(t: TestRunner) -> void:
 	var seeds: Array[int] = [4242, 90210, 2295276695, 291862120, 314159, 555555]
 	var day := 9
 	var draws := 20
@@ -616,7 +617,7 @@ func _test_the_door_task_never_borders_the_home_block(t) -> void:
 		director.free()
 	t.check(checked > 0, "some (seed, draw) actually placed a door contact to check (%d)" % checked)
 
-func _test_the_swing_task_sits_at_an_open_playground(t) -> void:
+func _test_the_swing_task_sits_at_an_open_playground(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, 12)
@@ -653,7 +654,7 @@ func _test_the_swing_task_sits_at_an_open_playground(t) -> void:
 ## playground, the only swing the task may go to — even when its arc took it days before, and on
 ## the days either side it is whatever its arc says. Once she has reached the swing it is taken,
 ## and it stays taken.
-func _test_day_twelves_park_is_forced_open_whatever_its_state(t) -> void:
+func _test_day_twelves_park_is_forced_open_whatever_its_state(t: TestRunner) -> void:
 	var day := ResistanceSteps.swing_day()
 	t.check(day == 12, "the swing is day 12's task")
 	var forced := 0
@@ -698,7 +699,7 @@ func _test_day_twelves_park_is_forced_open_whatever_its_state(t) -> void:
 ## Day 11: touching the mark sends her, by the red arrow, to the foot of one live mast; reaching it
 ## silences that mast now and on every later day, through the scar it leaves — planned through the
 ## real day order, since the masts are the day's own plans.
-func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
+func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var day := 11
 	run.header.day = day
@@ -766,7 +767,7 @@ func _test_the_mast_task_silences_one_mast_for_the_rest_of_the_run(t) -> void:
 ## the near mast is drawn clearly more often and the far one still, sometimes, drawn. Each read starts
 ## a day, which builds the day's reachability afresh, so the draws are few and the masts' distances
 ## are set so the far one's share is still drawn among them.
-func _test_the_mast_task_favors_the_near_mast(t) -> void:
+func _test_the_mast_task_favors_the_near_mast(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	var map := _city.map
 	var found := _two_masts_round_a_mark(map)
@@ -852,7 +853,7 @@ func _two_masts_round_a_mark(map: CityMap) -> Array:
 ## On the mornings before day 10 the neighbor walks out of her building beside her and off along
 ## her street, away from her, with nothing pointing at them; from day 10 on there is no morning
 ## figure — on day 10 they are out in the city, and after it they are gone.
-func _test_the_neighbor_leaves_for_work_until_the_raid(t) -> void:
+func _test_the_neighbor_leaves_for_work_until_the_raid(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var door := _city.map.doorstep_world_position()
 	for day in [1, 5, ResistanceHappenings.NEIGHBOR_DAY - 1]:
@@ -884,7 +885,7 @@ func _test_the_neighbor_leaves_for_work_until_the_raid(t) -> void:
 ## that ends at her doorstep, about `ResistanceDirector.NEIGHBOR_WALK_HOME_SECONDS` of their walk away. Reached
 ## first, the neighbor runs and the task counts; reaching the door first, they are taken — the task
 ## is failed, and from the next day the wanted notice crosses their face out.
-func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
+func _test_day_ten_sends_her_to_the_neighbor_walking_home(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	run.header.day = ResistanceHappenings.NEIGHBOR_DAY
 	var director := _director_on_the_neighbor(t)
@@ -938,7 +939,7 @@ func _test_day_ten_sends_her_to_the_neighbor_walking_home(t) -> void:
 
 ## Day 10's raid: vans at her building and a patrol, arriving only once she is out of sight of her
 ## door, and never on her own sidewalk — the doorstep stays reachable along it.
-func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
+func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var happenings := ResistanceHappenings.new()
 	happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
@@ -980,7 +981,7 @@ func _test_the_raid_waits_at_her_building_with_the_doorstep_open(t) -> void:
 ## Sealed on day 11 and after a save/load: `City.build()` reads the run's scars once, at boot,
 ## which is what a resumed or reloaded run's own boot does — see `main.gd`'s two `_city.build()`
 ## call sites, both after the run has already loaded.
-func _test_the_sealed_door_stands_after_a_reload(t) -> void:
+func _test_the_sealed_door_stands_after_a_reload(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(RUN_SEED)
 	run.attempt_spend.scars = [{"id": City.SEALED_DOOR_SCAR, "position": Vector2.ZERO, "since_day": 10}]
@@ -995,7 +996,7 @@ func _test_the_sealed_door_stands_after_a_reload(t) -> void:
 ## A lost day 10 gives the scar back (the run's `run_parts.give_back()`) and the
 ## next dawn's own `_sync_home_door()` puts the ordinary door back, exactly the restore every
 ## other scar already gets.
-func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
+func _test_a_lost_day_ten_restores_the_ordinary_door(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	run.header.day = ResistanceHappenings.NEIGHBOR_DAY
 	var happenings := ResistanceHappenings.new()
@@ -1023,7 +1024,7 @@ func _test_a_lost_day_ten_restores_the_ordinary_door(t) -> void:
 ## own height at `City.HOME_BUILDING_WALL_ROWS` (4) wall rows or more — the same cell every later
 ## day and on a fresh load of the same seed. `SEED` (4242) is the seed PLAYTEST-134 found with
 ## only two wall rows before the fix.
-func _test_the_neighbor_window_is_boarded_from_day_eleven(t) -> void:
+func _test_the_neighbor_window_is_boarded_from_day_eleven(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var happenings := ResistanceHappenings.new()
 	happenings.setup(_city.map, _city.run, _city.events, _city.streets(), _city.fronts(), _city,
@@ -1082,7 +1083,7 @@ func _distance_to_rect(point: Vector2, rect: Rect2) -> float:
 ## boarded now, out of her sight, with the market stalls at its frontage gone from the day's plan,
 ## and it stays boarded. Nothing happens before she has walked a while; with nothing on her way by
 ## `ResistanceHappenings.MARKET_GONE_BY`, the nearest block she cannot see goes.
-func _test_the_market_is_found_gone(t) -> void:
+func _test_the_market_is_found_gone(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var state := CityState.new()
 	var happenings := _happenings_on_day(ResistanceHappenings.MARKET_DAY, state)
@@ -1140,7 +1141,7 @@ func _boarded_among(state: CityState, candidates: Array[Vector2i]) -> Array[Vect
 ## block's frontage, walks as long as the market waits for a way to be chosen and then past the day's
 ## deadline; the block she stands at stays commercial, whatever the day
 ## does with the others. Checked on each of the first two candidates, a city state of its own for each.
-func _test_the_market_waits_while_she_can_see_it(t) -> void:
+func _test_the_market_waits_while_she_can_see_it(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var seen := 0
 	for which in 2:
@@ -1171,7 +1172,7 @@ func _test_the_market_waits_while_she_can_see_it(t) -> void:
 ## telegraph is over, coming toward the point level with her. Every truck drives on to the end of
 ## the road and leaves nothing behind it. It comes once she nears the main road, or at
 ## `ResistanceHappenings.COLUMN_BY` wherever she is, and once.
-func _test_the_column_comes_down_the_main_road(t) -> void:
+func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	var convoy := EventCatalogue.by_id("military_convoy")
 	_build_city_in_a_new_run(t)
 	var state := CityState.new()

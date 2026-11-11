@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The city as the world the baby stands in (`WorldContext`): what its bodies charge her at a spot,
 ## and how much faster the calm ground fills her sleepiness than the street does.
@@ -14,7 +14,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const SEED := 4216201080
 const MapCache := preload("res://tests/city_map_cache.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
 	city.skip_event_drawing = true
 	city.skip_crowd_drawing = true
@@ -26,7 +26,7 @@ func run(t) -> void:
 
 ## An event placed in the city's own manager, whose field reaches the spot it stands on, is in what
 ## the city says charges her there: the events' set is among the city's.
-func _test_a_live_event_charges_the_spot_it_stands_on(t, city: City) -> void:
+func _test_a_live_event_charges_the_spot_it_stands_on(t: TestRunner, city: City) -> void:
 	var spot := Vector2.ZERO
 	t.check(city.excitement_sources_at(spot).is_empty(),
 			"before any event is live nothing charges her at the spot")
@@ -47,7 +47,7 @@ func _test_a_live_event_charges_the_spot_it_stands_on(t, city: City) -> void:
 ## On a calm tile the city answers the calm curve for the lot the tile lies in (more than the street's
 ## 1.0); on a walkable tile
 ## that is not calm it answers 1.0.
-func _test_calm_ground_fills_sleepiness_faster_than_the_street(t, city: City) -> void:
+func _test_calm_ground_fills_sleepiness_faster_than_the_street(t: TestRunner, city: City) -> void:
 	var map: CityMap = city.map
 	var calm := Vector2i(-1, -1)
 	var ordinary := Vector2i(-1, -1)

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the day's mix (`docs/EVENTS.md`, "The density, and why it is caps and
 ## bags"): **what each day places, row by row, by view and by kind of ground.** Not a suite: it
@@ -23,7 +22,7 @@ const BASE := 90210
 const STEP := 31
 const KINDS := ["sidewalk", "carriageway", "alley", "open", "junction", "other"]
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for day in range(1, 15):
 		var by_view := {}
 		var by_kind := {}

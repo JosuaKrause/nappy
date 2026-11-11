@@ -9,7 +9,7 @@ extends RefCounted
 ## off the city, the suite would test the runtime against a stand-in whose answers are a copy of this city's.
 
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	# A run of its own, handed to the city and the scene as `main` hands them the game's.
 	var own_run := RunState.new()
 	own_run.start_run(11)
@@ -80,7 +80,7 @@ func run(t) -> void:
 ## street doors (`RegionPlanner.plan_day()`), and the plan it installs holds that door, its three
 ## bodies where the day's stand, as the same rows, and its gate — the one entry both stand a door
 ## through (`RegionPlanner.stand_door()`).
-func _test_an_authored_door_stands_as_the_days(t, runtime: SceneRecipeRuntime, city: City,
+func _test_an_authored_door_stands_as_the_days(t: TestRunner, runtime: SceneRecipeRuntime, city: City,
 		player: Stroller, baby: Baby, own_run: RunState, data: Dictionary) -> void:
 	var days := RegionPlanner.plan_day(city.map, DaySpec.for_day(own_run.header.day), city.streets().route_tree())
 	t.check(not days.doors.is_empty(), "the day has a street door to author")
@@ -108,7 +108,7 @@ func _test_an_authored_door_stands_as_the_days(t, runtime: SceneRecipeRuntime, c
 ## **An authored soft seal stands as the day's own would**: on an off-walk street the day may seal
 ## (`SealPlanner.may_seal()`), its two bodies stand where the day's pass sites the same picture
 ## (`SealPlanner.seal_street()`), and both of the street's sidewalks are shut to walkers there.
-func _test_an_authored_soft_seal_stands_as_the_days(t, runtime: SceneRecipeRuntime, city: City,
+func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, runtime: SceneRecipeRuntime, city: City,
 		player: Stroller, baby: Baby, own_run: RunState, data: Dictionary) -> void:
 	var spec := DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS)
 	var cafe: SealPlanner.Candidate = null
@@ -166,7 +166,7 @@ func _along_and_side(street: StreetNetwork.Segment, centre: Vector2, at: Vector2
 ## owe no return and a torn poster sends nobody there; a day scene's walk is the day as configured,
 ## `--day-length` included (`RunConfig.day_length_for()`), and its events run with a day's settings, a torn
 ## poster sending its pursuer.
-func _test_the_scene_runs_under_the_spec_it_is_handed(t, runtime: SceneRecipeRuntime, city: City,
+func _test_the_scene_runs_under_the_spec_it_is_handed(t: TestRunner, runtime: SceneRecipeRuntime, city: City,
 		player: Stroller, baby: Baby, own_run: RunState) -> void:
 	player.global_position = city.map.tile_to_world(Vector2i(16, 16))
 	city.events.use_player(player)

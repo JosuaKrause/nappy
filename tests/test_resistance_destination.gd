@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Where a resistance task's destination is, once its pickup is read: on every task day, through the
 ## real day order, the task is on offer after the mark is touched and the red arrow still ends on its
@@ -16,7 +15,7 @@ const SEED := 4242
 
 var _city: City
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_every_task_days_destination_holds_the_arrow(t)
 	if _city != null:
 		_city.free()
@@ -25,7 +24,7 @@ func run(t) -> void:
 ## Through the real day order on every task day, each in a run of its own (the city holds it): the
 ## pickup is on offer and read, the task its touch activates is on offer, and the red arrow ends on
 ## that task's destination. What each contact point draws is `test_destination_drawing`'s.
-func _test_every_task_days_destination_holds_the_arrow(t) -> void:
+func _test_every_task_days_destination_holds_the_arrow(t: TestRunner) -> void:
 	var finale_day := Tuning.RUN_LENGTH_DAYS
 	var days: Array[int] = []
 	for step in ResistanceSteps.all():
@@ -72,7 +71,7 @@ func _test_every_task_days_destination_holds_the_arrow(t) -> void:
 						"day %d: the arrow ends on the bare point's own item" % day)
 		director.free()
 
-func _build_city(t) -> void:
+func _build_city(t: TestRunner) -> void:
 	if _city != null:
 		_city.free()
 	_city = RunCity.with_own_run(CITY_SCENE, SEED)

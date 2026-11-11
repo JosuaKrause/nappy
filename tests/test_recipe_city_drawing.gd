@@ -16,11 +16,11 @@ func _recipe() -> Dictionary:
 			"extent": {"scope": "full"}, "city": {"context_seed": 1917501},
 			"anchors": {"door": "power_station_door"}, "setup": {}, "playback": {}}
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_bounded_context(t)
 	_test_the_examples(t)
 
-func _test_the_bounded_context(t) -> void:
+func _test_the_bounded_context(t: TestRunner) -> void:
 	var input := _recipe()
 	input.extent = {"scope": "bounded", "bounds": [112, 0, 34, 56]}
 	var bounded := RecipeCityBuilder.build(input)
@@ -45,7 +45,7 @@ func _test_the_bounded_context(t) -> void:
 		t.check(extended > 0, "actual City construction extends the hall roof over its adjoining wall")
 	city.free()
 
-func _test_the_examples(t) -> void:
+func _test_the_examples(t: TestRunner) -> void:
 	for side in ["hall", "yard"]:
 		var loaded := SceneRecipe.load_file("res://scene-recipes/power-station-%s.json" % side)
 		var built := RecipeCityBuilder.build(loaded.data)

@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Roof art that can reach a street lives in the city's y-sorted entity layer at its feet.
 ##
@@ -13,7 +13,7 @@ extends RefCounted
 const RecordingRoofDrawer := preload("res://tests/recording_roof_drawer.gd")
 const RoofReads := preload("res://tests/roof_reads.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_every_placed_unit_is_drawn_at_its_foot_in_entities(t)
 	_test_the_real_drawer_draws_each_unit_as_told(t)
 	_test_the_layout_is_a_function_of_the_seed_and_the_lot(t)
@@ -28,7 +28,7 @@ func run(t) -> void:
 ## when null) on `clock` when one is given, both handed in before it enters the tree as
 ## `City._spawn_buildings()` hands them. A recording drawer stands each unit through the real one
 ## too when `stand` is set, so the objects are in the layer.
-func _new_fixture(t, district: int, drawer: RoofDrawer = null,
+func _new_fixture(t: TestRunner, district: int, drawer: RoofDrawer = null,
 		clock: SceneryGround = null, stand := false) -> Dictionary:
 	var root := Node2D.new()
 	var entities := Node2D.new()
@@ -80,7 +80,7 @@ func _interior_cells(building: Building) -> int:
 ## half way through the second interval a rotor shows its second frame and half way through the
 ## third its first again: the phase the building hands the drawer, so a rebuilt roof's rotors turn
 ## in step with the ones that were never rebuilt.
-func _test_every_placed_unit_is_drawn_at_its_foot_in_entities(t) -> void:
+func _test_every_placed_unit_is_drawn_at_its_foot_in_entities(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var clock := SceneryGround.new()
 	clock.elapsed = Building.VENT_FRAME_INTERVAL * 1.5
@@ -120,7 +120,7 @@ func _test_every_placed_unit_is_drawn_at_its_foot_in_entities(t) -> void:
 
 ## The real drawer on its own: chosen units into a bare layer, one of each kind of thing a roof
 ## unit can be (a vent housing on either rotor frame, a joined duct section, an ordinary picture).
-func _test_the_real_drawer_draws_each_unit_as_told(t) -> void:
+func _test_the_real_drawer_draws_each_unit_as_told(t: TestRunner) -> void:
 	var layer := Node2D.new()
 	t.add_child(layer)
 	var drawer := RoofDrawer.new(AtlasLibrary.new())
@@ -161,7 +161,7 @@ func _test_the_real_drawer_draws_each_unit_as_told(t) -> void:
 
 # ------------------------------------------------------------------ the layout ---
 
-func _test_the_layout_is_a_function_of_the_seed_and_the_lot(t) -> void:
+func _test_the_layout_is_a_function_of_the_seed_and_the_lot(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var twin_drawer := RecordingRoofDrawer.new()
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
@@ -184,7 +184,7 @@ func _test_the_layout_is_a_function_of_the_seed_and_the_lot(t) -> void:
 	_free(fixture)
 	_free(twin)
 
-func _test_industrial_networks_fit_and_connect(t) -> void:
+func _test_industrial_networks_fit_and_connect(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
 	var building: Building = fixture["building"]
@@ -231,7 +231,7 @@ func _test_industrial_networks_fit_and_connect(t) -> void:
 	t.check(signatures.size() > 2 and branched, "roof layouts vary in topology and include junctions")
 	_free(fixture)
 
-func _test_reserved_cells_hold_native_base_widths(t) -> void:
+func _test_reserved_cells_hold_native_base_widths(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
 	var building: Building = fixture["building"]
@@ -255,7 +255,7 @@ func _test_reserved_cells_hold_native_base_widths(t) -> void:
 				% [width, horizontal_cells * Building.TILE])
 	_free(fixture)
 
-func _test_networks_on_narrow_and_shallow_roofs(t) -> void:
+func _test_networks_on_narrow_and_shallow_roofs(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.INDUSTRIAL, drawer)
 	var building: Building = fixture["building"]
@@ -289,7 +289,7 @@ func _test_networks_on_narrow_and_shallow_roofs(t) -> void:
 ## so a roof keeps the count its cells rolled however few broad units fit on it. Checked by what
 ## that means from outside: a three-column roof, where no broad unit fits, lays out as many units
 ## as a wide roof with as many interior cells, in every district and on every seed.
-func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t) -> void:
+func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t: TestRunner) -> void:
 	for district in [GameEnums.BlockPurpose.INDUSTRIAL, GameEnums.BlockPurpose.CIVIC,
 			GameEnums.BlockPurpose.RESIDENTIAL, GameEnums.BlockPurpose.COMMERCIAL]:
 		# Three columns by seven and by thirteen tiles, with a two-tile wall, leave one interior
@@ -324,7 +324,7 @@ func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t) -> void:
 
 # ------------------------------------------------------- the holder, drawn for real ---
 
-func _test_rebuild_releases_external_roof_objects(t) -> void:
+func _test_rebuild_releases_external_roof_objects(t: TestRunner) -> void:
 	var drawer := RecordingRoofDrawer.new()
 	var fixture := _new_fixture(t, GameEnums.BlockPurpose.RESIDENTIAL, drawer, null, true)
 	var entities: Node2D = fixture["entities"]

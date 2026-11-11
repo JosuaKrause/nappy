@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The day's corridor: `RouteTree`.
 ##
@@ -38,7 +38,7 @@ class Day extends RefCounted:
 
 var _days: Array[Day] = []
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 31)
 		for day in DAYS:
@@ -65,7 +65,7 @@ func run(t) -> void:
 ## last has to be a grid-step from the doorstep, since the home's own cells are never part of a
 ## route (a door is not a route). A route that merely *contains* the right cells would pass a set
 ## comparison.
-func _test_a_route_is_a_walk_from_the_calm_to_the_door(t) -> void:
+func _test_a_route_is_a_walk_from_the_calm_to_the_door(t: TestRunner) -> void:
 	var routes := 0
 	for planned in _days:
 		var home_nodes := _home_nodes(planned)
@@ -114,7 +114,7 @@ func _test_a_route_is_a_walk_from_the_calm_to_the_door(t) -> void:
 ## resolves to, including one a calm zone painted over — and the tree can legitimately cut across
 ## exactly that ground now, since it is walkable park rather than a barrier. `planned.blocked`
 ## conflates absent and closed-today; only the closed half is still a real exclusion.
-func _test_the_tree_only_uses_streets_that_are_there(t) -> void:
+func _test_the_tree_only_uses_streets_that_are_there(t: TestRunner) -> void:
 	for planned in _days:
 		for key in planned.tree.streets():
 			if planned.map.absent_segments.has(key):
@@ -141,7 +141,7 @@ func _test_the_tree_only_uses_streets_that_are_there(t) -> void:
 ## junction box are asked of `CityMap.street_kind_at` and `CityMap.junction_at` directly, and every
 ## tile of a route's cell is asked rather than its origin alone, so a cell half on the spine could
 ## not slip through.
-func _test_no_route_runs_along_the_main_road(t) -> void:
+func _test_no_route_runs_along_the_main_road(t: TestRunner) -> void:
 	for planned in _days:
 		if planned.map.main_road < 0:
 			continue
@@ -175,7 +175,7 @@ func _test_no_route_runs_along_the_main_road(t) -> void:
 ##
 ## **It cannot pass vacuously**: a sample whose routes never went near a street would satisfy it
 ## having checked nothing, so the tiles actually examined are counted and asserted.
-func _test_a_route_crosses_a_carriageway_only_at_a_junction(t) -> void:
+func _test_a_route_crosses_a_carriageway_only_at_a_junction(t: TestRunner) -> void:
 	var street_tiles := 0
 	var on_a_carriageway := 0
 	var first := ""
@@ -211,7 +211,7 @@ func _test_a_route_crosses_a_carriageway_only_at_a_junction(t) -> void:
 ## **Same colours may not merge.** The two probes from one area can never become one path, so
 ## where a second route exists at all the area is reached two genuinely distinct ways. This is
 ## the property the whole colour mechanism exists to maintain.
-func _test_the_two_routes_of_one_area_share_no_cell(t) -> void:
+func _test_the_two_routes_of_one_area_share_no_cell(t: TestRunner) -> void:
 	var pairs := 0
 	for planned in _days:
 		for branch in planned.tree.branches:
@@ -232,7 +232,7 @@ func _test_the_two_routes_of_one_area_share_no_cell(t) -> void:
 ## new path"* — which a tile that only knows whether it is "on" cannot: two tiles each carrying one
 ## branch look identical whether it is the same branch or not. So the answer is a set of real
 ## branch indices, or "she switched" would be reported off a number nobody could check.
-func _test_a_tile_says_which_branches_it_carries(t) -> void:
+func _test_a_tile_says_which_branches_it_carries(t: TestRunner) -> void:
 	var named := 0
 	for planned in _days:
 		for cell in planned.tree.cells():
@@ -255,7 +255,7 @@ func _test_a_tile_says_which_branches_it_carries(t) -> void:
 ## **Different colours merge, and that is the point.** A tree whose branches share nothing is a
 ## star: no bundles, no chokepoints, and a fan-out as wide as the number of destinations. Every
 ## other test here passes on a star, which is why this one is stated as a proportion.
-func _test_different_areas_share_ground(t) -> void:
+func _test_different_areas_share_ground(t: TestRunner) -> void:
 	var bundled := 0
 	var cells := 0
 	for planned in _days:
@@ -272,7 +272,7 @@ func _test_different_areas_share_ground(t) -> void:
 ## offers and the player chooses. An area with no way in today legitimately has no branch —
 ## which is one a closure has sealed, or one whose ways in a calm zone absorbed, or one right
 ## next door to the home.
-func _test_every_reachable_calm_area_is_on_the_tree(t) -> void:
+func _test_every_reachable_calm_area_is_on_the_tree(t: TestRunner) -> void:
 	for planned in _days:
 		var home_nodes := _home_nodes(planned)
 		for area in planned.areas:
@@ -302,7 +302,7 @@ func _test_every_reachable_calm_area_is_on_the_tree(t) -> void:
 ## first one's route already stands on — see `_shortest_home`'s own doc — because a cell is part
 ## of a route now where a junction never was. An area with few access cells, most of them spent by
 ## probe one, more often has nowhere left for probe two to start from than the old graph did.
-func _test_a_second_route_is_offered_where_the_map_allows_one(t) -> void:
+func _test_a_second_route_is_offered_where_the_map_allows_one(t: TestRunner) -> void:
 	var offered := 0
 	var possible := 0
 	for planned in _days:
@@ -332,7 +332,7 @@ func _test_a_second_route_is_offered_where_the_map_allows_one(t) -> void:
 ## **crosses each of its two ends**, which is the whole of *"only directly adjacent paths (with a
 ## single street connecting both) counts"* — at right angles, because a tree street running
 ## straight on through the junction is one strand carrying on rather than two lying alongside.
-func _test_a_gap_joins_two_parallel_strands(t) -> void:
+func _test_a_gap_joins_two_parallel_strands(t: TestRunner) -> void:
 	var total := 0
 	for planned in _days:
 		for key in planned.tree.gaps():
@@ -355,7 +355,7 @@ func _test_a_gap_joins_two_parallel_strands(t) -> void:
 ## **A gap is a hole in the middle of the rim, not most of it**, which is the whole reason it is
 ## worth weighting separately: a preference that applied to half the band it sits in would not be a
 ## preference.
-func _test_a_gap_is_a_small_part_of_the_rim(t) -> void:
+func _test_a_gap_is_a_small_part_of_the_rim(t: TestRunner) -> void:
 	for planned in _days:
 		var rim := {}
 		for key in planned.tree.rim():
@@ -381,7 +381,7 @@ func _crossed_by_the_tree(planned: Day, junction: Vector2i, along: int) -> bool:
 ## A run is learnable or it is nothing, and the tree is now part of what a day *is*: the
 ## scheduler places against it and `TelemetryMap` draws it, so if the two grew different trees
 ## the picture would be of a plan nobody used.
-func _test_the_same_day_grows_the_same_tree(t) -> void:
+func _test_the_same_day_grows_the_same_tree(t: TestRunner) -> void:
 	for planned in _days:
 		var again := planned.again
 		t.check(again.branches.size() == planned.tree.branches.size(),
@@ -395,7 +395,7 @@ func _test_the_same_day_grows_the_same_tree(t) -> void:
 
 ## *"A route to a calm area is not stable across days, and that is the mechanism rather than a
 ## side effect."* The hard blockers are what she learns; the day is what she reads.
-func _test_a_different_day_is_a_different_way(t) -> void:
+func _test_a_different_day_is_a_different_way(t: TestRunner) -> void:
 	var moved := 0
 	var compared := 0
 	for i in SEEDS:

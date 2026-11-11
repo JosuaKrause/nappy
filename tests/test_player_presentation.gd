@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A reproducible run choice reaches every player view and survives the day's lifecycle: the run
 ## keeps it, and the rig draws only the family it is handed.
@@ -9,16 +8,16 @@ const VIEWS: Array[String] = ["side", "front_diagonal", "front", "front_diagonal
 const POSES: Array[String] = ["a", "c", "b"]
 
 ## The picture of the mother's pose `frame` at the view she is drawn in now, off her pose, read
-## from the library she was handed.
-func _mother_texture(rig: Stroller, frame: int) -> Texture2D:
-	return rig.atlas.region(StringName(rig.pose(1.0).mother_sources[frame]))
+## from the library she was handed (`library`).
+func _mother_texture(library: AtlasLibrary, rig: Stroller, frame: int) -> Texture2D:
+	return library.region(StringName(rig.pose(1.0).mother_sources[frame]))
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_seeded_equal_choice_and_lifetime(t)
 	_test_each_family_stays_in_its_own_poses(t)
 	_test_every_family_source_is_a_baked_region(t)
 
-func _test_seeded_equal_choice_and_lifetime(t) -> void:
+func _test_seeded_equal_choice_and_lifetime(t: TestRunner) -> void:
 	var state := RunState.new()
 	var observed: Dictionary = {}
 	for seed_value in range(1, 33):
@@ -36,20 +35,22 @@ func _test_seeded_equal_choice_and_lifetime(t) -> void:
 	t.check(observed.size() == 2, "the seed sweep exercises both families")
 
 ## A rig of each family, handed its choice before it enters the tree, the way `main` hands it
-## (`Stroller.is_male`), and no boot, run or city: every pose, state and facing stays in the chosen
+## (`Stroller.draw_as_father()`), and no boot, run or city: every pose, state and facing stays in the chosen
 ## family, and standing aside, continuing, resetting and resolving either state never reroll it.
 ## **That `main` binds the choice before the first draw, on a day's way in and on the escape's, is
 ## `tests/test_main.gd`'s** (`_test_main_binds_the_family_before_the_first_draw`).
-func _test_each_family_stays_in_its_own_poses(t) -> void:
-	for male in [false, true]:
+func _test_each_family_stays_in_its_own_poses(t: TestRunner) -> void:
+	for male: bool in [false, true]:
 		var rig: Stroller = STROLLER_SCENE.instantiate()
-		rig.is_male = male
+		rig.draw_as_father(male)
+		var library := AtlasLibrary.new()
+		rig.use_atlas(library)
 		t.add_child(rig)
 		rig.set_physics_process(false)
 		rig.stand_aside()
 		rig.step_back_in()
 		rig.reset_at(Vector2.ZERO)
-		for carrying in [false, true]:
+		for carrying: bool in [false, true]:
 			rig.carrying = carrying
 			for direction in range(8):
 				rig.reset_at(Vector2.ZERO, Vector2.from_angle(direction * PI / 4.0))
@@ -61,9 +62,10 @@ func _test_each_family_stays_in_its_own_poses(t) -> void:
 					t.check(source == path, "every pose/state/facing stays in its selected family")
 					t.check(rig.pose(1.0).mirrored == EightDirection.is_mirrored(direction),
 							"both presentations retain the same west-facing mirrors")
-					t.check(rig.pose(1.0).view == direction and _mother_texture(rig, frame) != null,
+					t.check(rig.pose(1.0).view == direction
+							and _mother_texture(library, rig, frame) != null,
 							"the facing settles the view and the family resolves a picture for it")
-			t.check(rig.is_male == male,
+			t.check(rig.pose(1.0).mother_sources[0].begins_with("rig/father_") == male,
 					"standing aside, continuing, resetting and resolving either state never reroll")
 		rig.free()
 
@@ -73,7 +75,7 @@ func _test_each_family_stays_in_its_own_poses(t) -> void:
 ## about the presentation choice this suite is for; what the pixels of a region owe their caller
 ## is `tests/test_visuals.gd`'s. The marks over her head are on the UI's page, which
 ## `tests/test_atlas_loading.gd` checks.
-func _test_every_family_source_is_a_baked_region(t) -> void:
+func _test_every_family_source_is_a_baked_region(t: TestRunner) -> void:
 	var sources: Array[String] = []
 	for views: Array[String] in [
 			Stroller.MOTHER_FRONT, Stroller.MOTHER_BACK, Stroller.MOTHER_SIDE,

@@ -2,7 +2,8 @@ class_name EventInstance
 extends Node2D
 ## One live event in the world: its lifetime, its telegraph phase and its excitement field. What
 ## it does is its behaviours' (`src/events/behaviours/`); how it looks is its look's
-## (`src/events/views/`), which reads its public state and draws it.
+## (`src/events/views/`), which is handed its row and its drawer, asks it and reads some of its
+## public state, and draws it.
 ##
 ## The excitement model is entirely a *query*, asked of the source it composes (`excitement`, an
 ## `EventExcitement`) over the field it states here (`field_at()`). Nothing pushes a value at the
@@ -96,7 +97,10 @@ enum Phase {
 	DONE,
 }
 
-## Where it is in its life — see `Phase`. Changed only by `transition()`.
+## Where it is in its life — see `Phase`. Changed only by `transition()`. Public
+## because suites read it: no game file outside this one does, and the CI list of test-only
+## members (`tools/check_test_only_members.py`) cannot hold it, since other classes have a
+## member of the same name.
 var phase := Phase.WARNING
 ## Whether its telegraph or notice ended into `Phase.ACTIVE` — run out, or cut short by a lunge, a
 ## flush or the masked man's run. A row that left, parked or stopped before that is still within
@@ -110,7 +114,7 @@ var is_finished: bool:
 
 ## **The one place its phase changes**, and with it what every phase change owes: the field it
 ## answers is a function of the phase, so the contribution cache is let go. A row that is done stops
-## showing its scenery on the next drawn frame, when its look reads `is_finished`.
+## showing its scenery on the next drawn frame, when its look asks `is_gone()`.
 func transition(to: Phase) -> void:
 	if phase == to:
 		return
@@ -295,7 +299,7 @@ func setup(definition: EventDef, at: Vector2, route: PackedVector2Array = Packed
 	var start := EventFootprints.stands_at(_map, definition, route[0] if route.size() > 0 else at)
 	position = start
 	_heading = face
-	look = EventLooks.for_row(self)
+	look = EventLooks.for_row(self, definition, drawer, skip_draw, barrier_post)
 	look.face(face)
 	if look is SpreadLook:
 		(look as SpreadLook).letting_go_of_the_slices.connect(_release_rims_on_slices)
@@ -546,9 +550,10 @@ var timing := FrameTiming.new()
 ## The drawer it is handed is built over the same pages; one it makes for itself is built over these.
 var atlas: AtlasLibrary
 ## What its look paints its pictures through (`EventDrawer`), handed in by whoever makes it
-## (`EventSpawner.create()`, its manager's own, built over the same atlas). An instance nobody handed
-## one (a suite's, a developer's rig) draws through one of its own over `atlas`, made the first time
-## its look asks, so a rig that hands the atlas after it enters the tree still draws from it.
+## (`EventSpawner.create()`, its manager's own, built over the same atlas), before `setup()` hands
+## it to the look, which holds it from then on. An instance nobody handed one (a suite's, a
+## developer's rig) draws through one of its own over `atlas`, made as `setup()` hands it on, so a
+## rig hands the atlas before `setup()`.
 var drawer: EventDrawer:
 	get:
 		if drawer == null:
@@ -770,11 +775,12 @@ var _notice := Warning.new()
 var _charge := ChargeRecord.new(Callable(self, &"_charger_name"), EventBus)
 ## **A checkpoint hut's guard raising his hand**: true while a crossing of this hut's door is
 ## warning her and this hut is the one across the road from her, or this alley post's
-## (`CheckpointController.warn_at_the_doors()`, which sets it every frame); once the crossing's
-## warning has run with her still across, this hut's guard comes out and charges at once
-## (`PursuitSpec.Start.CHARGES_AT_ONCE`). Drawn with `guard_alert_front` beside the hut instead of
-## `guard_standing` (`CheckpointLook._draw_checkpoint_hut()`).
-var guard_warns_her := false
+## (`CheckpointController.warn_at_the_doors()`, which sets it every frame, through
+## `raise_its_guards_hand()`); once the crossing's warning has run with her still across, this hut's
+## guard comes out and charges at once (`PursuitSpec.Start.CHARGES_AT_ONCE`). Drawn with
+## `guard_alert_front` beside the hut instead of `guard_standing`
+## (`CheckpointLook._draw_checkpoint_hut()`, asking `is_its_guard_warning()`).
+var _guard_warns_her := false
 
 ## **Whether this instance has a charging counter**: every pursuer, and a row that waits for her
 ## and runs its own line at her once she is near (`NoticeSpec.runs_within`, the masked man in the
@@ -1091,6 +1097,13 @@ var trace := RunTrace.new()
 ## `EventVehicleLook._draw_abduction` and for a test to drive by hand.
 func is_taking_a_victim() -> bool:
 	return abduction != null and abduction.is_taking()
+
+## How long the victim of the van's take has been walking to it, in seconds, while the take runs
+## (`EventAbduction.walked_for()`): what the van's look places and strides the victim by. Nothing,
+## 0, for a row with no take and between takes, as an event without a part answers that part's
+## questions.
+func how_long_its_victim_has_walked() -> float:
+	return abduction.walked_for() if is_taking_a_victim() else 0.0
 
 # ------------------------------------------------------------------ the flock ---
 
@@ -1748,12 +1761,17 @@ func rim() -> EntityHalo:
 
 # ------------------------------------------------------------------ the look ---
 
-## How this instance looks (`EventLooks.for_row()`): it draws the instance from its public state,
+## How this instance looks (`EventLooks.for_row()`, handed its row and its drawer in `setup()`): it
+## draws the instance from what it asks it and, in the family looks, from some of its public state,
 ## decides when it is drawn again, and holds the drawing nodes a long picture is drawn in.
+## Public because suites read it: no game file outside this one does, and the CI list of test-only
+## members (`tools/check_test_only_members.py`) cannot hold it, since other classes have a
+## member of the same name.
 var look: EventLook
 
 ## What a protest points its placards at, handed in by whoever knows (`EventManager.points_at`,
-## from the resistance's `_pointable_objective()`); unset, it points at nothing.
+## from the resistance's `_pointable_objective()`) after `setup()`; unset, it points at nothing.
+## Asked as `where_its_placards_point()`.
 var points_at := Callable()
 
 func _draw() -> void:
@@ -2172,8 +2190,34 @@ func source() -> EventExcitement:
 ## Tells it that the hand of its guard goes up (`on`) or comes down: a hut's guard raising his hand
 ## at her while a crossing of its door is warning her (`is_its_guard_warning()`).
 func raise_its_guards_hand(on: bool) -> void:
-	guard_warns_her = on
+	_guard_warns_her = on
 
 ## Whether its guard has his hand raised at her (`raise_its_guards_hand()`).
 func is_its_guard_warning() -> bool:
-	return guard_warns_her
+	return _guard_warns_her
+
+## Whether it is a mast that has been reached and silenced (`silenced`): it still stands, with no
+## arcs and no field.
+func is_silenced() -> bool:
+	return silenced
+
+## Whether this cyclist is the pelican rather than the kid (`is_pelican`): the one picture it
+## changes, for a look to choose its two pedal frames by.
+func is_drawn_as_a_pelican() -> bool:
+	return is_pelican
+
+## Where a protest points its placards: what it was handed to ask (`points_at`), or `Vector2.INF`,
+## nothing to point at, when it was handed nothing.
+func where_its_placards_point() -> Vector2:
+	if not points_at.is_valid():
+		return Vector2.INF
+	return points_at.call()
+
+## The route it walks, in world space; empty, or one point, for one that stands (`path`), as a
+## plan's `walks()` answers.
+func walks() -> PackedVector2Array:
+	return path
+
+## Whether its guard is gone for good and it is only its barrier (`Phase.SPENT`), solid and silent.
+func is_only_its_barrier() -> bool:
+	return phase == Phase.SPENT

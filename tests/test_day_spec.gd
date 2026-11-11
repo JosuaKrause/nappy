@@ -1,15 +1,14 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `DaySpec`: whether the region wall stands on a day is worked out once, by the spec, on the days
 ## around the wall's first, and the escape's sections never have it. What each planner does with
 ## the answer is its own suite's (`tests/test_seals.gd`, `tests/routes_closures_rig.gd`).
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_the_region_wall_stands_from_its_first_day(t)
 	_test_neither_section_of_the_escape_has_the_region_wall(t)
 	_test_the_walls_kept_follow_the_region_wall(t)
 
-func _test_the_region_wall_stands_from_its_first_day(t) -> void:
+func _test_the_region_wall_stands_from_its_first_day(t: TestRunner) -> void:
 	var first := Tuning.REGION_WALL_FIRST_DAY
 	t.check(not DaySpec.for_day(first - 1).region_wall_stands(),
 			"day %d, the day before the region wall's first, has no region wall" % (first - 1))
@@ -22,7 +21,7 @@ func _test_the_region_wall_stands_from_its_first_day(t) -> void:
 
 ## The escape's two day numbers are past the last day, so a comparison with the day number would
 ## answer yes for both; neither grows a day's tree, so neither has a wall to stand.
-func _test_neither_section_of_the_escape_has_the_region_wall(t) -> void:
+func _test_neither_section_of_the_escape_has_the_region_wall(t: TestRunner) -> void:
 	for which: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
 		var spec := DaySpec.for_section(which, 60.0)
 		t.check(not spec.region_wall_stands(),
@@ -30,7 +29,7 @@ func _test_neither_section_of_the_escape_has_the_region_wall(t) -> void:
 
 ## The catalogue's walls are thinned on exactly the days the region wall stands: the spec's own
 ## share follows its own answer, over every day of the run.
-func _test_the_walls_kept_follow_the_region_wall(t) -> void:
+func _test_the_walls_kept_follow_the_region_wall(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var spec := DaySpec.for_day(day)
 		t.check((spec.wall_row_share < 1.0) == spec.region_wall_stands(),

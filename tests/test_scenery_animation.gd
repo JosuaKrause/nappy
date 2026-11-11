@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Scenery phases update their own retained layers without changing static layout or bodies.
 
@@ -8,7 +7,7 @@ const RecordingEventDrawer := preload("res://tests/recording_event_drawer.gd")
 const EastWestStreet := preload("res://tests/east_west_street.gd")
 const PageLog := preload("res://tests/atlas_page_log.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_roof_rotors(t)
 	_test_both_rotor_phases_share_one_registration(t)
 	await _test_event_parts(t)
@@ -22,7 +21,7 @@ func run(t) -> void:
 ## process frame is given: a frame at a hundredth of its length cannot reach the interval, and one at
 ## a hundred thousand times its length always crosses it, so no check depends on how long a frame
 ## takes.
-func _test_roof_rotors(t) -> void:
+func _test_roof_rotors(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
 	var drawer := RecordingRoofDrawer.new()
@@ -130,9 +129,9 @@ func _rotor_picture(atlas: AtlasLibrary, frame_b: bool) -> Texture2D:
 
 ## Both rotor frames are cropped out of the housing canvas from their editable vector sources, whose
 ## viewBoxes must agree, or the second frame would jump when the rotor turns.
-func _test_both_rotor_phases_share_one_registration(t) -> void:
+func _test_both_rotor_phases_share_one_registration(t: TestRunner) -> void:
 	var authored: Array[Rect2] = []
-	for path in ["res://art/props/industrial_vent_rotor.svg",
+	for path: String in ["res://art/props/industrial_vent_rotor.svg",
 			"res://art/props/industrial_vent_rotor_b.svg"]:
 		var source := FileAccess.get_file_as_string(path)
 		var regex := RegEx.new()
@@ -152,7 +151,7 @@ func _test_both_rotor_phases_share_one_registration(t) -> void:
 ## way the game hands `setup()` a map. What each layer of the scenery stands is read off a recording
 ## scenery drawer, handed to the scenery by the event's drawer (`EventInstance.drawer`, as its
 ## manager's spawner hands the real one) the way the real one hands its own.
-func _test_event_parts(t) -> void:
+func _test_event_parts(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	for id: String in ["car_accident", "burst_water_main"]:
@@ -199,8 +198,9 @@ func _test_event_parts(t) -> void:
 			for layer in moving:
 				t.check(layer.frame_b != initial, "the existing event clock advances each detail")
 				var turned := _pictures_on(laid, layer)
-				t.check(not turned.is_empty() and turned.size() == before[layer].size()
-						and _all_differ(turned, before[layer]),
+				var earlier: Array[Texture2D] = before[layer]
+				t.check(not turned.is_empty() and turned.size() == earlier.size()
+						and _all_differ(turned, earlier),
 						"every moving detail stands its alternate picture once its frame flips")
 			# Nothing flips a stationary layer's frame; flipped here through the member its scenery
 			# flips a moving one's by, it is drawn again with the same pictures.
@@ -210,9 +210,10 @@ func _test_event_parts(t) -> void:
 				layer.frame_b = not layer.frame_b
 			await t.get_tree().process_frame
 			for layer in still:
+				var earlier: Array[Texture2D] = before[layer]
 				t.check(laid.passes_of(layer) > passes[layer]
-						and not before[layer].is_empty()
-						and _pictures_on(laid, layer) == before[layer],
+						and not earlier.is_empty()
+						and _pictures_on(laid, layer) == earlier,
 						"stationary surroundings have no alternate picture")
 				layer.frame_b = not layer.frame_b
 			t.check(not asked, "animation leaves the static event key alone")
@@ -235,7 +236,9 @@ func _test_event_parts(t) -> void:
 			await t.get_tree().process_frame
 			var rebound := false
 			for scenery in _sceneries_of(instance):
-				rebound = rebound or not _split_by_animation(scenery)[0].is_empty()
+				var split := _split_by_animation(scenery)
+				var animated: Array = split[0]
+				rebound = rebound or not animated.is_empty()
 			t.check(rebound, "reentry rebinds event scenery regions")
 			var again := _sceneries_of(instance)
 			instance.free()
@@ -301,7 +304,7 @@ func _body_of(instance: EventInstance) -> StaticBody2D:
 ## where the ground hands its own, and cells of the test's own. What decides which cells of a city
 ## are water is the city's painting (`tests/test_city_ground_water.gd`); this is what a surface does
 ## with the cells it is given.
-func _test_water_surfaces(t) -> void:
+func _test_water_surfaces(t: TestRunner) -> void:
 	var parent := Node2D.new()
 	t.add_child(parent)
 	var cells: Array[Vector2i] = []

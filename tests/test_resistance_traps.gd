@@ -1,11 +1,10 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## The task riding on a look-alike, the guarded targets and the handover traps: a robber or guard set on her from off screen, announced before he can catch her.
 
 ## Every test builds its city in a run of its own (`_build_city_in_a_new_run()`): a run with no
 ## step done, no alley used and no scar, the "no history, just this day" state `--day N` boots
 ## into, with what the day it asks about needs set on it.
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_a_perform_contact_is_never_relocated(t)
 	await _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t)
 	await _test_the_step_completes_on_the_look_alike_she_hands_it_to(t)
@@ -24,7 +23,7 @@ func run(t) -> void:
 
 ## Day 7's mark, started and touched — the van's own perform step, active. Mirrors
 ## `_director_on_the_yeller_perform()` for the one-place task the van's chasing guard rides on.
-func _director_on_the_van_perform(t) -> ResistanceDirector:
+func _director_on_the_van_perform(t: TestRunner) -> ResistanceDirector:
 	var director := _director(t)
 	director.start_day(7, _rng(7, "resistance"), 300.0)
 	_read_the_mark(director)
@@ -53,7 +52,7 @@ func _look_alike_ground(step: ResistanceSteps.Step, rng: RandomNumberGenerator,
 				pool.append(at)
 	return pool[rng.randi_range(0, pool.size() - 1)] if not pool.is_empty() else Vector2.INF
 
-func _test_a_perform_contact_is_never_relocated(t) -> void:
+func _test_a_perform_contact_is_never_relocated(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director_on_the_yeller_perform(t)
 	t.check(director.current_step() != null and not director.current_step().is_pickup,
@@ -76,7 +75,7 @@ func _test_a_perform_contact_is_never_relocated(t) -> void:
 ## have placed, spawned directly here rather than through it — stands well clear of the seeded
 ## rider. She is put within reach of the *decoy* rather than the rider `_begin_step()` rolled, and
 ## the contact rides onto it instead of waiting for her to find the one it was seeded on.
-func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
+func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director_on_the_yeller_perform(t)
 	var perform := director.current_step()
@@ -115,7 +114,7 @@ func _test_the_contact_rides_onto_the_first_look_alike_she_reaches(t) -> void:
 ## behind: the step completes on whichever one she then hands the note to. Two look-alikes besides
 ## the seeded rider, so the first one she comes near is a retarget rather than the rider the step
 ## already had — a walk that only ever touched the seeded one could pass with the rule deleted.
-func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t) -> void:
+func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director_on_the_yeller_perform(t)
 	var perform := director.current_step()
@@ -175,13 +174,13 @@ func _test_the_step_completes_on_the_look_alike_she_hands_it_to(t) -> void:
 ## The man shouting's task is not guarded where it waits: activating the yeller perform stands
 ## no robber anywhere — the chalk mark's own guard is the only one on the street — and no robber is
 ## sent after her until she hands it over.
-func _test_a_task_that_rides_on_a_row_stands_unguarded_until_it_is_handed_over(t) -> void:
+func _test_a_task_that_rides_on_a_row_stands_unguarded_until_it_is_handed_over(t: TestRunner) -> void:
 	_check_a_task_stands_unguarded_until_it_is_handed_over(t, 6, "the yeller perform", "robber",
 			"the chalk mark is still guarded", "the task")
 
 ## The van's task is not guarded where it waits either — the same contract as the man shouting's,
 ## on a one-place task rather than an any-instance one.
-func _test_the_van_task_stands_unguarded_until_it_is_handed_over(t) -> void:
+func _test_the_van_task_stands_unguarded_until_it_is_handed_over(t: TestRunner) -> void:
 	_check_a_task_stands_unguarded_until_it_is_handed_over(t, 7, "the van perform", "guard",
 			"day 7's mark is still guarded", "the van")
 
@@ -189,7 +188,7 @@ func _test_the_van_task_stands_unguarded_until_it_is_handed_over(t) -> void:
 ## on offer and sets its trap on her, no robber is added to the street, the one guard is still the
 ## mark's own and no task guard stands anywhere, and nobody is sent after her — no trap of the
 ## step's row is warned of or in the street.
-func _check_a_task_stands_unguarded_until_it_is_handed_over(t, day: int, perform: String,
+func _check_a_task_stands_unguarded_until_it_is_handed_over(t: TestRunner, day: int, perform: String,
 		who: String, mark_guarded: String, at: String) -> void:
 	_build_city_in_a_new_run(t)
 	var director := _director(t)
@@ -218,7 +217,7 @@ func _check_a_task_stands_unguarded_until_it_is_handed_over(t, day: int, perform
 ## is guarded exactly where it waits, like a chalk mark, and touching it sends nobody after her.
 ## Day 13 is planned through the real day order (`City.start_day()`, then the events), since the
 ## task's roadblock is one the day placed, or one of the day's events swapped for one.
-func _test_the_roadblock_keeps_a_waiting_guard(t) -> void:
+func _test_the_roadblock_keeps_a_waiting_guard(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	run.header.day = 13
 	var state := CityState.new()
@@ -277,7 +276,7 @@ func _test_the_roadblock_keeps_a_waiting_guard(t) -> void:
 ## (`CheckpointController._release_finished_holds()`), since that is where she stands when it
 ## sends him. Planned through the real day order (`City.start_day()`, then the events), since the
 ## door, the mast and the station's door are today's own plans.
-func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
+func _test_every_guarded_target_sends_a_robber_from_off_screen(t: TestRunner) -> void:
 	for day: int in [8, 9, 11, 12, Tuning.RUN_LENGTH_DAYS]:
 		var started := _start_a_guarded_target_day(t, day)
 		var director: ResistanceDirector = started[0]
@@ -324,7 +323,7 @@ func _test_every_guarded_target_sends_a_robber_from_off_screen(t) -> void:
 ## the last night, with the goal met), the director started, and a mark, when the day offers one,
 ## read with nobody in the world. `[director, the robbers in the street before it started, the
 ## guard the mark set or null]`.
-func _start_a_guarded_target_day(t, day: int) -> Array:
+func _start_a_guarded_target_day(t: TestRunner, day: int) -> Array:
 	var run := _build_city_in_a_new_run(t)
 	run.header.day = day
 	var finale := day == Tuning.RUN_LENGTH_DAYS
@@ -354,7 +353,7 @@ func _start_a_guarded_target_day(t, day: int) -> Array:
 ## gatehouse's own position and facing) for the director to answer. From each, the trap owes
 ## everything `_check_the_trap_comes_from_off_screen()` asks, his run at her through the door's line
 ## included. Frees `director`.
-func _check_day_nines_trap_from_where_she_is_let_out(t, first: ResistanceDirector) -> void:
+func _check_day_nines_trap_from_where_she_is_let_out(t: TestRunner, first: ResistanceDirector) -> void:
 	for side: float in [1.0, -1.0]:
 		var director: ResistanceDirector = first if side > 0.0 \
 				else _start_a_guarded_target_day(t, 9)[0]
@@ -389,7 +388,7 @@ func _check_day_nines_trap_from_where_she_is_let_out(t, first: ResistanceDirecto
 ## — just out of sight straight above, straight below, and either side along her street
 ## (`_fixed_starts()`) — was legal ground whose run at her keeps out of the region's wall and doors,
 ## so the director passed over none it could have taken.
-func _check_no_start_was_passed_over(t, her: Vector2, label: String) -> void:
+func _check_no_start_was_passed_over(t: TestRunner, her: Vector2, label: String) -> void:
 	var def := EventCatalogue.by_id("robber_giving_chase")
 	var siting := _city.spawn_siting
 	var asked := siting.ask(EventFootprints.footprint_of(def), Mover.on_foot(EventInstance.FIGURE_RADIUS), her)
@@ -410,7 +409,7 @@ static func _fixed_starts(def: EventDef, her: Vector2) -> Array[Vector2]:
 
 ## Camera smoothing can move the view while she stands still through a badge. The actual
 ## warning callback must place the entire drawing outside that new view in either input scheme.
-func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
+func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) -> void:
 	for joystick: bool in [false, true]:
 		_build_city_in_a_new_run(t)
 		var director := _director_on_the_yeller_perform(t)
@@ -469,7 +468,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t) -> void:
 ## where she stands, and without one none of the fixed starts (`_fixed_starts()`) had one on
 ## legal ground either, so the director passed over no clear start it could have taken. Measured
 ## per target by `tests/probes/grassy_goose_target_traps.gd`. Returns where he started, or `INF`.
-func _check_the_trap_comes_from_off_screen(t, her: Vector2, row_id: String, label: String,
+func _check_the_trap_comes_from_off_screen(t: TestRunner, her: Vector2, row_id: String, label: String,
 		front_door := false) -> Vector2:
 	var warning := _warning_for(_city.events, row_id)
 	t.check(warning != null and _live(row_id).is_empty(),
@@ -560,7 +559,7 @@ func _robbers_on_the_street() -> int:
 ## test the director places against (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`, over the same view): the
 ## joystick's covered corners only ever take ground out of sight, so a point out of the whole view
 ## is out of both.
-func _is_really_on_screen(_t, her: Vector2, at: Vector2) -> bool:
+func _is_really_on_screen(_t: TestRunner, her: Vector2, at: Vector2) -> bool:
 	var bearing := at - her
 	var lead := Vector2.ZERO
 	if bearing.length() > 0.001:
@@ -577,7 +576,7 @@ func _is_really_on_screen(_t, her: Vector2, at: Vector2) -> bool:
 ##
 ## **Swept over `RULE_SEEDS` cities rather than trusted on one.** Every seed's handover replays to
 ## the same place, and the man she handed it to keeps shouting rather than leaving at once (M205).
-func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
+func _test_the_handover_sets_a_robber_on_her_from_off_screen(t: TestRunner) -> void:
 	var seeds: Array[int] = [4242, 90210, 2295276695, 291862120, 314159, 555555]
 	for seed_value: int in seeds.slice(0, RULE_SEEDS):
 		# Each attempt is the same day of a fresh run: the mark's own alley is recorded as used when
@@ -615,7 +614,7 @@ func _test_the_handover_sets_a_robber_on_her_from_off_screen(t) -> void:
 ## package over puts up one `van_guard_giving_chase`'s warning and then sets him on her, on the same
 ## terms as the robber. The van itself is a one-place task's own rider and never leaves when the
 ## package is picked up — the director only sends the man shouting's own rider away by name.
-func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
+func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t: TestRunner) -> void:
 	var starts: Array[Vector2] = []
 	for attempt in 2:
 		_build_city_in_a_new_run(t)
@@ -653,18 +652,18 @@ func _test_the_van_handover_sets_a_guard_on_her_from_off_screen(t) -> void:
 ## The tall-osprey floor (standing still, a robber lunges no sooner than `Tuning.PURSUIT_MIN_NOTICE`
 ## after he appears) is a standing robber's, a mark's guard waiting in his alley, whom this build does
 ## not touch; a sent one has no closing-in for it to bound.
-func _test_the_robber_after_her_is_announced_before_he_can_catch_her(t) -> void:
+func _test_the_robber_after_her_is_announced_before_he_can_catch_her(t: TestRunner) -> void:
 	await _assert_a_trap_row_is_announced_before_it_can_catch_her(t, "robber_giving_chase")
 
 ## The same contract for the van's own guard: walks the guard's own row and asserts the same
 ## relationships rather than assuming the robber's numbers carry over unchecked.
-func _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t) -> void:
+func _test_the_van_guard_after_her_is_announced_before_he_can_catch_her(t: TestRunner) -> void:
 	await _assert_a_trap_row_is_announced_before_it_can_catch_her(t, "van_guard_giving_chase")
 
 ## Shared between the man shouting's row and the van's: each of this suite's two callers passes
 ## its own catalogue id, since the contract this checks is the same row-independent relationship
 ## for both.
-func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> void:
+func _assert_a_trap_row_is_announced_before_it_can_catch_her(t: TestRunner, id: String) -> void:
 	# No city of an earlier test stands in the tree while the walks tick the engine faster.
 	_free_city()
 	var def := EventCatalogue.by_id(id)
@@ -726,7 +725,7 @@ func _assert_a_trap_row_is_announced_before_it_can_catch_her(t, id: String) -> v
 ## next `physics_frame` comes once the baby has stepped on it, and the robber then takes the same
 ## tick's step, however many ticks a frame runs. The ticks are `STEP` of game time each
 ## (`_walk_ticks()`).
-func _walk_the_trap(t, def: EventDef, start: Vector2, speed: float,
+func _walk_the_trap(t: TestRunner, def: EventDef, start: Vector2, speed: float,
 		turn_to_run_after := INF) -> Dictionary:
 	var bearing := start.normalized()
 	var robber_where := WhereSheIs.nowhere()
@@ -809,17 +808,17 @@ func _give_the_ticks_back(held: Array) -> void:
 ## Spawned only by the director: no day of the run, at any heat, offers the row to the scheduler's
 ## roll, its stream or its budget — `EventCatalogue.available_on()` is the pool all three draw from —
 ## and a day the scheduler actually plans, on the first day a task can be handed over, carries none.
-func _test_the_robber_after_her_is_never_the_schedulers(t) -> void:
+func _test_the_robber_after_her_is_never_the_schedulers(t: TestRunner) -> void:
 	_assert_a_trap_row_is_never_the_schedulers(t, "robber_giving_chase")
 
 ## The same guarantee for the van's own guard: a second `SCRIPTED`/`scripted_day 0` row director-
 ## spawned at the handover, so it needs the same "the roll, the stream and the budget never reach
 ## it" check the robber's own row gets, rather than assuming a second row of the same shape is
 ## automatically exempt.
-func _test_the_van_guard_after_her_is_never_the_schedulers(t) -> void:
+func _test_the_van_guard_after_her_is_never_the_schedulers(t: TestRunner) -> void:
 	_assert_a_trap_row_is_never_the_schedulers(t, "van_guard_giving_chase")
 
-func _assert_a_trap_row_is_never_the_schedulers(t, id: String) -> void:
+func _assert_a_trap_row_is_never_the_schedulers(t: TestRunner, id: String) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		for heat in EventCatalogue.heat_levels():
 			for def in EventCatalogue.available_on(day, heat):

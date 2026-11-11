@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The sweep behind `test_park_cordon_seeds_a.gd`, `_b.gd` and `_c.gd`; not a suite itself.**
 ## Day 12's police cordon (`ParkCordon`) across a sweep of seeds, on every size of park the
@@ -63,7 +62,7 @@ const PLACES: Array[Array] = [
 ## the three together make the checks one sweep over all 41 seeds makes. The together-checks scale
 ## with the seeds a part has (30 of 41 measured, rounded up so the three floors sum to at least 30; a third walked out); the largest calm zone is
 ## checked in the part that holds `LARGE_PARK_SEED`.
-func sweep(t, seeds: Array[int]) -> void:
+func sweep(t: TestRunner, seeds: Array[int]) -> void:
 	# Finishing the swing's task the game's way makes the director's own happenings take the park
 	# first, so the sweep's own `take_the_park()` would return false. The director therefore leaves
 	# the task open.
@@ -101,7 +100,7 @@ static func part(index: int, parts: int) -> Array[int]:
 		seeds.append(LARGE_PARK_SEED)
 	return seeds
 
-func _check(t, seed_value: int, m: Dictionary) -> void:
+func _check(t: TestRunner, seed_value: int, m: Dictionary) -> void:
 	var size: Vector2 = m.park_size
 	var what := "seed %d (%.0fx%.0f park)" % [seed_value, size.x, size.y]
 	t.check(m.gap_reaches_home, "%s: the ground outside the last gap reaches home with the park "
@@ -141,7 +140,7 @@ func _check(t, seed_value: int, m: Dictionary) -> void:
 ## Day 12 on `seed_value`'s city, played twice from the swing's touch: once standing at the swing,
 ## and once walking out through the last gap `REACTION` after an officer first comes into view.
 ## Answers what was measured, or `{}` when the day has no swing park.
-func measure(t, seed_value: int) -> Dictionary:
+func measure(t: TestRunner, seed_value: int) -> Dictionary:
 	var run := RunState.new()
 	run.start_run(seed_value)
 	var city: City = RunCity.in_run(CITY_SCENE, run)

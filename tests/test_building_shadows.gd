@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## M122, the shadow every building casts. The tile arithmetic over `CityMap.building_rects` is the
 ## shadows' own; this suite hands a `BuildingShadows` footprints and a recording drawer, as the city
@@ -10,7 +9,7 @@ extends RefCounted
 const MapCache := preload("res://tests/city_map_cache.gd")
 const RecordingShadowDrawer := preload("res://tests/recording_shadow_drawer.gd")
 
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	await _test_a_single_rectangle_casts_the_read_shape(t)
 	await _test_two_edge_joined_buildings_shade_as_one_with_no_seam(t)
 	await _test_a_disjoint_building_is_unaffected_by_a_neighbour(t)
@@ -21,10 +20,10 @@ func run(t) -> void:
 ## What a non-streamed `BuildingShadows` over `rects` has every chunk draw once a frame has passed:
 ## `{"full": [...], "triangles": [...]}`, every chunk's tiles together, and `"chunks"`, each chunk's
 ## tiles and the patch (`"key"`) its node is named for.
-func _drawn_over(t, rects: Array[Rect2i]) -> Dictionary:
+func _drawn_over(t: TestRunner, rects: Array[Rect2i]) -> Dictionary:
 	var drawer := RecordingShadowDrawer.new()
 	var shadows := BuildingShadows.new()
-	shadows.drawer = drawer
+	shadows.draw_through(drawer)
 	shadows.set_buildings(rects)
 	t.add_child(shadows)
 	await t.get_tree().process_frame
@@ -43,15 +42,15 @@ func _drawn_over(t, rects: Array[Rect2i]) -> Dictionary:
 
 ## Streamed shadows, each chunk's tiles worked out from the footprints near it alone, shade what the
 ## whole city's union shades, across every chunk seam. What each chunk shades is read off a
-## recording drawer handed through the member the city hands its own through
-## (`BuildingShadows.drawer`), once every chunk of the city is prepared (`update_view()`, which the
+## recording drawer handed through the call the city hands its own through
+## (`BuildingShadows.draw_through()`), once every chunk of the city is prepared (`update_view()`, which the
 ## residency calls) and drawn.
 ##
 ## Which tiles a shadow may fall on is asked through `BuildingShadows.falls_on`, the filter the city
 ## hands in for a task scene's stretch; here it lets every tile through and counts the tiles it is
 ## asked about. A tile is asked about only when shadow tiles are worked out, so streamed shadows
 ## handed their footprints ask about none until a view prepares a chunk.
-func _test_resident_geometry_matches_the_complete_union(t) -> void:
+func _test_resident_geometry_matches_the_complete_union(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
 	var whole_drawn: Dictionary = await _drawn_over(t, map.building_rects)
 	var expected := {}
@@ -65,7 +64,7 @@ func _test_resident_geometry_matches_the_complete_union(t) -> void:
 	var drawer := RecordingShadowDrawer.new()
 	var asked := [0]
 	var shadows := BuildingShadows.new()
-	shadows.drawer = drawer
+	shadows.draw_through(drawer)
 	shadows.falls_on = func(_tile: Vector2i) -> bool:
 		asked[0] += 1
 		return true
@@ -111,15 +110,15 @@ func _test_resident_geometry_matches_the_complete_union(t) -> void:
 ## The exact reading of the shape the entry gives: a band along the bottom edge one tile past the
 ## western corner, a band up the western edge stopping one tile short of the top, and a triangle
 ## under the south-eastern corner alone — nothing at the top of the western band.
-func _test_a_single_rectangle_casts_the_read_shape(t) -> void:
+func _test_a_single_rectangle_casts_the_read_shape(t: TestRunner) -> void:
 	var rect := Rect2i(5, 5, 3, 4) # columns 5..7, rows 5..8 (x0=5, x1=7, y0=5, y1=8)
 	var tiles: Dictionary = await _drawn_over(t, [rect])
 	var full := _to_set(tiles.full)
 	var expected_bottom := [Vector2i(4, 9), Vector2i(5, 9), Vector2i(6, 9)]
-	for tile in expected_bottom:
+	for tile: Vector2i in expected_bottom:
 		t.check(full.has(tile), "the bottom band shades %s, one tile past the western corner" % tile)
 	var expected_west := [Vector2i(4, 6), Vector2i(4, 7), Vector2i(4, 8), Vector2i(4, 9)]
-	for tile in expected_west:
+	for tile: Vector2i in expected_west:
 		t.check(full.has(tile), "the western band shades %s" % tile)
 	t.check(not full.has(Vector2i(7, 9)),
 			"the bottom band stops one tile short of the eastern corner, where the triangle takes over")
@@ -134,7 +133,7 @@ func _test_a_single_rectangle_casts_the_read_shape(t) -> void:
 ## Two buildings sharing a north-south edge — the second immediately east of the first, same rows —
 ## merge into one 6-wide union. The player's own contract: nothing is shaded where they touch, and
 ## the union shades as one rectangle rather than each building shading its neighbour's own wall.
-func _test_two_edge_joined_buildings_shade_as_one_with_no_seam(t) -> void:
+func _test_two_edge_joined_buildings_shade_as_one_with_no_seam(t: TestRunner) -> void:
 	var west := Rect2i(5, 5, 3, 4) # columns 5..7, so a lone west would put its own corner
 			# triangle at (7, 9) — see `_test_a_single_rectangle_casts_the_read_shape`.
 	var east := Rect2i(8, 5, 3, 4) # columns 8..10, sharing the seam at column 7/8
@@ -155,14 +154,14 @@ func _test_two_edge_joined_buildings_shade_as_one_with_no_seam(t) -> void:
 
 ## A building far from any other casts its own shadow untouched by a neighbour it does not touch —
 ## the two footprints' shadows are simply the union of what each would cast alone.
-func _test_a_disjoint_building_is_unaffected_by_a_neighbour(t) -> void:
+func _test_a_disjoint_building_is_unaffected_by_a_neighbour(t: TestRunner) -> void:
 	var near := Rect2i(0, 0, 2, 2)
 	var far := Rect2i(20, 20, 2, 2)
 	var combined: Dictionary = await _drawn_over(t, [near, far])
 	var near_alone: Dictionary = await _drawn_over(t, [near])
 	var far_alone: Dictionary = await _drawn_over(t, [far])
 	var expected_full := _to_set(near_alone.full)
-	for tile in _to_set(far_alone.full):
+	for tile: Vector2i in _to_set(far_alone.full):
 		expected_full[tile] = true
 	t.check(_to_set(combined.full) == expected_full,
 			"two buildings that do not touch each shade exactly as they would alone")
@@ -185,32 +184,34 @@ func _spread_out_buildings() -> Array[Rect2i]:
 		Rect2i(BuildingShadows.CHUNK_TILES * 3, BuildingShadows.CHUNK_TILES * 3, 7, 7),
 	]
 
-func _test_the_chunks_are_a_partition_of_the_tile_sets(t) -> void:
+func _test_the_chunks_are_a_partition_of_the_tile_sets(t: TestRunner) -> void:
 	var drawn: Dictionary = await _drawn_over(t, _spread_out_buildings())
 	var by_chunk: Array = drawn.chunks
 	t.check(by_chunk.size() > 1,
 			"the buildings were spread over more than one chunk (%d)" % by_chunk.size())
 	# The partition is judged against the same footprints drawn as one chunk would hold them:
 	# every tile appears once across the chunks, so the set is as large as the list of them.
-	t.check(_to_set(drawn.full).size() == drawn.full.size(),
-			"no full tile is drawn by more than one chunk (%d tiles)" % drawn.full.size())
-	t.check(_to_set(drawn.triangles).size() == drawn.triangles.size(),
-			"no corner triangle is drawn by more than one chunk (%d tiles)" % drawn.triangles.size())
+	var drawn_full: Array[Vector2i] = drawn.full
+	var drawn_triangles: Array[Vector2i] = drawn.triangles
+	t.check(_to_set(drawn_full).size() == drawn_full.size(),
+			"no full tile is drawn by more than one chunk (%d tiles)" % drawn_full.size())
+	t.check(_to_set(drawn_triangles).size() == drawn_triangles.size(),
+			"no corner triangle is drawn by more than one chunk (%d tiles)" % drawn_triangles.size())
 	# And none is dropped: each building, drawn alone, shades tiles that are all among the whole's.
-	var whole_full := _to_set(drawn.full)
-	var whole_triangles := _to_set(drawn.triangles)
+	var whole_full := _to_set(drawn_full)
+	var whole_triangles := _to_set(drawn_triangles)
 	for rect in _spread_out_buildings():
 		var alone: Dictionary = await _drawn_over(t, [rect])
-		for tile in alone.full:
+		for tile: Vector2i in alone.full:
 			t.check(whole_full.has(tile), "%s, shaded by %s alone, is drawn in the whole" % [tile, rect])
-		for tile in alone.triangles:
+		for tile: Vector2i in alone.triangles:
 			t.check(whole_triangles.has(tile),
 					"%s, a corner of %s alone, is drawn in the whole" % [tile, rect])
 
 ## Each chunk's tiles are the patch it actually covers, which is what makes the renderer's rect
 ## culling correct: a tile drawn by an item whose rect is somewhere else would come and go with the
 ## wrong patch of city.
-func _test_a_chunk_holds_only_its_own_tiles(t) -> void:
+func _test_a_chunk_holds_only_its_own_tiles(t: TestRunner) -> void:
 	var drawn: Dictionary = await _drawn_over(t, _spread_out_buildings())
 	var size := BuildingShadows.CHUNK_TILES
 	var checked := 0

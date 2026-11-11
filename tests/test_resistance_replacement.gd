@@ -1,4 +1,4 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
+@warning_ignore_start("untyped_declaration")
 extends "res://tests/resistance_rig.gd"
 ## The resistance director's re-placement: an unseen mark moving to an alley she comes near, and what a relocation may never do.
 
@@ -9,7 +9,7 @@ extends "res://tests/resistance_rig.gd"
 ## and what the director did on a tick off the run's trace (`RunTrace.recording()`). Where a test asks
 ## a relocation of many tiles, each is her stroller set down and one tick (`_relocate_round()`), the
 ## mark and its guard read off the street.
-func run(t) -> void:
+func run(t: TestRunner) -> void:
 	_test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t)
 	_test_a_mark_within_notice_radius_does_not_move(t)
 	_test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t)
@@ -26,7 +26,7 @@ func run(t) -> void:
 	_free_city()
 
 ## Day 6 in a city of a run of its own, its director started and the mark placed.
-func _on_day_six(t) -> ResistanceDirector:
+func _on_day_six(t: TestRunner) -> ResistanceDirector:
 	_build_city_in_a_new_run(t)
 	var director := _director(t)
 	director.start_day(6, _rng(6, "resistance"), 300.0)
@@ -38,7 +38,7 @@ func _said(lines: Array[String], text: String) -> bool:
 			return true
 	return false
 
-func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t) -> void:
+func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t: TestRunner) -> void:
 	var director := _on_day_six(t)
 	var mark_at := director.contact_position()
 	t.check(mark_at != Vector2.INF, "day 6 places the mark")
@@ -71,7 +71,7 @@ func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t) -> void:
 ## on offer" holds by construction rather than by the luck of which tile the day's RNG chose:
 ## she stands exactly on `nearer`, which is nearer to her than the mark is by definition, and
 ## still within `NOTICE_RADIUS` of it. A city with no such pair fails the test.
-func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
+func _test_a_mark_within_notice_radius_does_not_move(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var map := _city.map
 	var marks: Array[Vector2i] = []
@@ -121,7 +121,7 @@ func _test_a_mark_within_notice_radius_does_not_move(t) -> void:
 ## at `far_alley` (beyond `NOTICE_RADIUS`, so certainly beyond the far narrower `SEEN_DISTANCE`)
 ## reproduces the distance. A single frame is enough to show the old bug is gone: the old rule
 ## pinned the mark on this exact frame, and the new one still relocates it.
-func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
+func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t: TestRunner) -> void:
 	var director := _on_day_six(t)
 	var mark_at := director.contact_position()
 	# The mark's own picture on screen and nothing else: its corners are 23px from its centre,
@@ -145,7 +145,7 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t) -> void:
 ## hands its spawn siting the region its `DayStreets` derives (`City.streets()`), and the director
 ## is handed that siting, so a relocation keeps clear of the day's wall and doors. How the region is
 ## built and handed again is `tests/test_day_streets.gd`'s.
-func _test_the_siting_reads_the_days_region_off_the_streets(t) -> void:
+func _test_the_siting_reads_the_days_region_off_the_streets(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, 10)
@@ -164,7 +164,7 @@ func _test_the_siting_reads_the_days_region_off_the_streets(t) -> void:
 ## tile, in a second city of the same seed, is what makes the assertion below discriminate the
 ## refusal: the search has to find some other candidate still in `NOTICE_RADIUS` rather than the
 ## one nearest tile it would otherwise answer.
-func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t) -> void:
+func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t: TestRunner) -> void:
 	var probe := _on_day_six(t)
 	var old_at := probe.contact_position()
 	var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, old_at)
@@ -202,7 +202,7 @@ func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t) -> void:
 ## also refuses that. Read off the street over every mark tile of `SWEEP_SEEDS`' cities, each
 ## relocated onto with her standing on it (`_relocations_over_the_marks()`) — the closest a real
 ## guard's own spot ever gets to her.
-func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
+func _test_a_guard_never_lands_within_his_own_reach_of_her(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var checked := 0
 	for seed_value in SWEEP_SEEDS:
@@ -227,7 +227,7 @@ func _test_a_guard_never_lands_within_his_own_reach_of_her(t) -> void:
 ## `tests/test_day13_guard.gd`'s, on the real day 13.)
 ## Every box is measured here from the screen's own edges rather than through the director's
 ## siting, so the test does not ask the code whether the code is right.
-func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t) -> void:
+func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t: TestRunner) -> void:
 	var relocations := 0
 	for seed_value in [4242, 555555]:
 		var run := _build_city_in_a_new_run(t, seed_value)
@@ -278,7 +278,7 @@ func _box_on_screen(centre: Vector2, half: Vector2, her: Vector2) -> bool:
 ## that was seen never moves again, however far she then walks, and one that was not follows her to
 ## the alley she comes near. In the joystick scheme it is not noticed and moves; in the tap scheme
 ## it is and stays.
-func _test_a_mark_under_a_covered_corner_is_not_noticed(t) -> void:
+func _test_a_mark_under_a_covered_corner_is_not_noticed(t: TestRunner) -> void:
 	for joystick: bool in [true, false]:
 		var scheme := "joystick" if joystick else "tap"
 		var director := _on_day_six(t)
@@ -324,7 +324,7 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t) -> void:
 ## the visible area alone would not refuse it (its guard's spot is under the corner or out of the
 ## view too) — the case `main`'s wiring has to refuse: with the view looked there, her tick never
 ## moves the mark onto that tile.
-func _test_nothing_appears_under_a_covered_corner(t) -> void:
+func _test_nothing_appears_under_a_covered_corner(t: TestRunner) -> void:
 	var director := _on_day_six(t)
 	var events := _city.events
 	var player := _rig_player(t, director.contact_position())
@@ -380,7 +380,7 @@ func _test_nothing_appears_under_a_covered_corner(t) -> void:
 ## once the camera is off them (olive-hedgehog, inbox #598). Read off the run's trace: the neighbor
 ## reaching the door first is expired, and taken only once the whole of their drawing is out of the
 ## view, covered corner included.
-func _test_the_neighbor_is_not_taken_under_a_covered_corner(t) -> void:
+func _test_the_neighbor_is_not_taken_under_a_covered_corner(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var events := _city.events
 	var scale := Tuning.VIEW_HALF_EXTENT * 2.0 / ScreenOrientation.DESIGN_SIZE
@@ -418,7 +418,7 @@ func _test_the_neighbor_is_not_taken_under_a_covered_corner(t) -> void:
 ## "I don't want any pop in")*, in either scheme and through the day's own view as `main` wires it.
 ## Their feet just below the view's bottom edge leave their picture, which stands above them, on
 ## screen; they are taken once the camera is off them.
-func _test_the_neighbor_waits_until_none_of_their_figure_shows(t) -> void:
+func _test_the_neighbor_waits_until_none_of_their_figure_shows(t: TestRunner) -> void:
 	for joystick: bool in [false, true]:
 		var scheme := "joystick" if joystick else "tap"
 		_build_city_in_a_new_run(t)
@@ -461,7 +461,7 @@ func _test_the_neighbor_waits_until_none_of_their_figure_shows(t) -> void:
 ## car's picture at the start of its beat reaches up into it, so the raid does not arrive yet; it
 ## arrives once the camera is off all of it. The happenings are the day's own
 ## (`ResistanceHappenings.start_day()`), ticked with her far from her door.
-func _test_the_raid_waits_until_none_of_it_would_be_drawn(t) -> void:
+func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void:
 	for joystick: bool in [false, true]:
 		var scheme := "joystick" if joystick else "tap"
 		_build_city_in_a_new_run(t)
@@ -526,7 +526,7 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t) -> void:
 				"%s scheme: off camera, the raid arrives (%d)" % [scheme, raid.size()])
 
 ## The other half of the same rule: near enough, for long enough, that walking away is a choice.
-func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t) -> void:
+func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t: TestRunner) -> void:
 	var director := _on_day_six(t)
 	var mark_at := director.contact_position()
 	_look_at(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6))
