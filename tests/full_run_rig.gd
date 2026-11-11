@@ -127,7 +127,7 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 			placed[instance] = instance.global_position
 		await PhysicsTicks.pass_ticks_faster(t, PhysicsTicks.ticks_for(SIMULATED_SECONDS, SIMULATION_SCALE),
 				TICK_FACTOR, Callable(), SIMULATION_SCALE)
-		for held: Object in placed.keys():
+		for held: Variant in placed.keys():
 			if is_instance_valid(held) and (held as EventInstance).global_position != placed[held]:
 				events_that_moved += 1
 
