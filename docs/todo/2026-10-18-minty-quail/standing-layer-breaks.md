@@ -35,7 +35,11 @@ review; a builder runs it again):
 **How each group is settled.** The player approved the review's point that these are not forgotten
 (inbox #1268 in olive-ferret); how each is settled is the review's worked-out detail:
 
-- The bus is handed to the emitters, which is mechanical.
+- The bus is handed to the emitters that still fetch it, which is mechanical. That each copies the
+  baby's shape is the orchestrator's reading, open to the player's overturn: the bus script preloaded
+  as the field's type, `use_bus()`, and one teller per signal that does nothing without a bus
+  (minty-quail-fluffy-yak). The two classes already handed it, `ChargeRecord` and
+  `CheckpointController`, take it in their constructor and emit with no guard.
 - Who builds the event manager and the crowd is decided in the third hand-ins pull request
   (`city-hand-ins.md`), which already rewrites `EventManager.setup(city, …)` and the readers of
   `City.events` and `City.crowd`, so the building and the city get their event manager the same way

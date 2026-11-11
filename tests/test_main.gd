@@ -155,6 +155,51 @@ func _boot_hands_the_baby_the_city(t, section: int, what: String) -> void:
 	booted.free_all()
 	home.free()
 
+## **`main` tells the on-screen controls when a hold lets her out**, in every place it makes her:
+## a boot's player is handed the connection from `Stroller.let_out_of_the_hold` to
+## `TouchControls.stand_still_after_hold()`, so a heading a tap locked in is dropped when she is
+## released. Each boot taps the controls (a press and a lift through the viewport, which locks a
+## heading with no finger down), emits her release, and reads the controls' public seam, the `move_*`
+## actions they hold. `tests/test_checkpoints.gd` makes this connection by hand to test the hold
+## itself; this is the root's half of it.
+func _test_main_connects_her_release_to_the_controls(t) -> void:
+	await _boot_connects_her_release(t, DaySpec.Section.NONE, "an ordinary day's boot")
+	await _boot_connects_her_release(t, DaySpec.Section.CITY, "a boot onto the escape's street")
+
+func _boot_connects_her_release(t, section: int, what: String) -> void:
+	var run := _a_run_on(section)
+	var home := Boot.home_playing(t, run)
+	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config([]),
+			func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
+	var player := Boot.player(booted.main)
+	var controls := Boot.touch_controls(booted.main)
+	t.check(player != null and controls != null, "%s has her and the controls" % what)
+	if player != null and controls != null:
+		# The day stands behind its title and the escape behind its brief; each press is the
+		# player's own.
+		if controls.get_tree().paused and Boot.title(booted.main) != null \
+				and Boot.title(booted.main).visible:
+			await Boot.press_title(t, booted.main)
+		if controls.get_tree().paused:
+			await Boot.press_continue(t, booted.main)
+		Input.action_release(&"move_left")
+		Input.action_release(&"move_right")
+		Input.action_release(&"move_up")
+		Input.action_release(&"move_down")
+		var tap_at := controls.get_viewport().get_canvas_transform() \
+				* (player.global_position + Vector2(-100.0, 0.0))
+		UI.push(controls, UI.touch_at(tap_at, true, 7))
+		UI.push(controls, UI.touch_at(tap_at, false, 7))
+		t.check(Input.is_action_pressed(&"move_left"),
+				"%s: a tap locks a heading west, with no finger down (paused %s, at %s)"
+				% [what, controls.get_tree().paused, tap_at])
+		player.let_out_of_the_hold.emit()
+		t.check(not Input.is_action_pressed(&"move_left"),
+				"%s: her release reaches the controls, which stand still" % what)
+	Input.action_release(&"move_left")
+	booted.free_all()
+	home.free()
+
 ## **`main` binds the run's presentation choice to the rig before anything has drawn it**, on a
 ## day's way in and on the escape's (`--start-escape`): real boots of `main` for each family
 ## (`--parent`) whose stroller is caught the moment it enters the tree (`SceneTree.node_added`), and
@@ -174,7 +219,8 @@ func _test_main_binds_the_family_before_the_first_draw(t) -> void:
 		var booted: Boot.Booted = await _boot_catching_the_rig(t, seat, ["--parent", parent], on_a_day)
 		var rig := Boot.player(booted.main)
 		t.check(in_the_escape == [male] and on_a_day == [male] and rig != null
-				and rig.is_male == male and seat.run.header.player_is_male == male,
+				and rig.pose(1.0).mother_sources[0].begins_with("rig/father_") == male
+				and seat.run.header.player_is_male == male,
 				"ordinary and escape construction share a choice bound before the first draw")
 		booted.free_all()
 		seat.end()
@@ -184,7 +230,7 @@ func _test_main_binds_the_family_before_the_first_draw(t) -> void:
 func _boot_catching_the_rig(t, seat: Seat, words: Array, entered: Array[bool]) -> Boot.Booted:
 	var catch := func(node: Node) -> void:
 		if node is Stroller:
-			entered.append((node as Stroller).is_male)
+			entered.append((node as Stroller).pose(1.0).mother_sources[0].begins_with("rig/father_"))
 	t.get_tree().node_added.connect(catch)
 	var booted: Boot.Booted = await seat.boot(t, _SCRATCH_SAVE, words, null, false, MapCache.source())
 	t.get_tree().node_added.disconnect(catch)
@@ -237,6 +283,7 @@ class ReadoutRig:
 		t.add_child(stroller)
 		stroller.set_physics_process(false)
 		baby.name = "Baby"
+		baby.use_bus(EventBus)
 		stroller.add_child(baby)
 		baby.set_physics_process(false)
 		t.add_child(day)
@@ -260,6 +307,7 @@ func run(t) -> void:
 	await _test_an_authored_scenes_map_wins_over_the_map_source(t)
 	await _test_a_boot_gives_the_day_its_configured_length(t)
 	await _test_main_hands_the_baby_the_world_it_puts_her_in(t)
+	await _test_main_connects_her_release_to_the_controls(t)
 	await _test_main_binds_the_family_before_the_first_draw(t)
 	await _test_the_still_watch_writes_into_the_boots_run_log(t)
 	await _test_a_placed_player_keeps_room_limits(t)

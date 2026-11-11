@@ -36,14 +36,14 @@ func _test_seeded_equal_choice_and_lifetime(t) -> void:
 	t.check(observed.size() == 2, "the seed sweep exercises both families")
 
 ## A rig of each family, handed its choice before it enters the tree, the way `main` hands it
-## (`Stroller.is_male`), and no boot, run or city: every pose, state and facing stays in the chosen
+## (`Stroller.draw_as_father()`), and no boot, run or city: every pose, state and facing stays in the chosen
 ## family, and standing aside, continuing, resetting and resolving either state never reroll it.
 ## **That `main` binds the choice before the first draw, on a day's way in and on the escape's, is
 ## `tests/test_main.gd`'s** (`_test_main_binds_the_family_before_the_first_draw`).
 func _test_each_family_stays_in_its_own_poses(t) -> void:
 	for male in [false, true]:
 		var rig: Stroller = STROLLER_SCENE.instantiate()
-		rig.is_male = male
+		rig.draw_as_father(male)
 		t.add_child(rig)
 		rig.set_physics_process(false)
 		rig.stand_aside()
@@ -63,7 +63,7 @@ func _test_each_family_stays_in_its_own_poses(t) -> void:
 							"both presentations retain the same west-facing mirrors")
 					t.check(rig.pose(1.0).view == direction and _mother_texture(rig, frame) != null,
 							"the facing settles the view and the family resolves a picture for it")
-			t.check(rig.is_male == male,
+			t.check(rig.pose(1.0).mother_sources[0].begins_with("rig/father_") == male,
 					"standing aside, continuing, resetting and resolving either state never reroll")
 		rig.free()
 

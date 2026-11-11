@@ -159,6 +159,7 @@ func _test_a_conversation_prices_by_the_babys_state(t) -> void:
 		baby.name = "Baby"
 		stroller.add_child(baby)
 		baby.set_world(world)
+		baby.use_bus(EventBus)
 		t.add_child(stroller)
 
 		var mother := manager.spawn_extra(def, at, path)

@@ -45,11 +45,6 @@ src/dev/dev_rig.gd sleepiness
 src/dev/route_rig.gd state
 src/dev/scene_recipe_runtime.gd excitement
 src/dev/scene_recipe_runtime.gd sleepiness
-src/main.gd excitement_frozen
-src/main.gd timing
-src/ui/hud.gd excitement
-src/ui/hud.gd sleepiness
-src/ui/hud.gd state
 
 # [Blackout] src/city/blackout.gd
 src/city/city.gd dark_from_the_start
@@ -1345,9 +1340,7 @@ src/dev/scene_recipe_runtime.gd facing
 src/events/checkpoint_controller.gd outright_moves
 src/events/event_manager.gd carrying
 src/events/event_manager.gd facing
-src/main.gd atlas
 src/main.gd carrying
-src/main.gd is_male
 
 # [TelemetryLog] src/telemetry/telemetry_log.gd
 src/dev/still_watch.gd path

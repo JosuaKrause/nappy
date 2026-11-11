@@ -3,7 +3,7 @@ extends RefCounted
 ## `--invincible`, M100 "An invincible mode for playtesting": `DevFlags`' own parsing of the flag,
 ## and what the run hands on from it — `DayController.invincible`, whose `_ignores_loss()` is the
 ## single predicate all three losing paths consult, so a lost day under the flag stays running and
-## a won day still ends; `Baby.excitement_frozen`; the HUD's own note (the run log's is
+## a won day still ends; `Baby.freeze_excitement()`; the HUD's own note (the run log's is
 ## `tests/test_telemetry.gd`'s). Each is
 ## handed its value directly, the way `main` hands it from the run's configuration.
 
@@ -195,7 +195,7 @@ func _test_the_meter_does_not_rise_under_invincible(t) -> void:
 	rig.baby.excitement = 20.0
 	rig.world.noise = 50.0
 
-	rig.baby.excitement_frozen = true
+	rig.baby.freeze_excitement()
 	await _let_the_baby_tick(rig, METER_SECONDS)
 	t.check(rig.baby.excitement <= 20.0 + 0.01,
 			"excitement never rises under --invincible, even against a live source (got %.2f)"

@@ -112,6 +112,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 	rig._alert_left = 0.0
 	var baby := Baby.new()
 	baby.name = "Baby"
+	baby.use_bus(EventBus)
 	rig.add_child(baby)
 	baby.set_physics_process(false)
 	# Thirty-two zero bytes rather than an empty array, which `HashingContext.update()` refuses.

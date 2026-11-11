@@ -126,6 +126,7 @@ func _walk(t, walk: String, world: WorldContext, events: EventManager, crowd: Cr
 	rig.add_child(baby)
 	baby.set_physics_process(false)
 	baby.set_world(world)
+	baby.use_bus(EventBus)
 	var halo := ExcitementHalo.new()
 	t.add_child(halo)
 	halo.set_process(false)

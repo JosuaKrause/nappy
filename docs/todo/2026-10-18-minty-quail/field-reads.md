@@ -71,6 +71,11 @@ Left, each its own design question:
     `station_yard_cols`, `BuildingShadows.streamed`, `falls_on`, `PosterState.pasted_through`) keeps its
     direct write in the city and goes with the tests-one-module item (`tests-one-module.md`), when its
     tests read through a method the game also calls.
+- **Her and the baby's parts that only tests read.** `Stroller.atlas` and `Baby.timing` are handed in
+  through `use_atlas()` and `use_frame_timing()` and read by their own file and the tests (the suites
+  that read `rig.atlas.region(...)`, `tests/test_frame_record_wiring.gd`); they become
+  underscore-private with the tests-one-module item (`tests-one-module.md`), when those tests read
+  through a method the game also calls.
 - **The lines the placement rewrite and the third hand-ins pull request touch** (`src/events/`,
   `src/routes/`, `src/dev/`, `scene_recipe*`, `day_director.gd`, `main.gd`, `day_planner.gd`,
   `run_session.gd`, the event manager and `EventWorld`, scenery residency and ground, the blackout,
