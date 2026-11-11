@@ -18,20 +18,22 @@ after it is a method call and is not listed.
 returns that field and nothing else: its body is `return field`, or that behind a null guard. A null guard tests
 only that the returned chain, or a prefix of it, is there: `return part.size if part != null else 0` (also
 `is_instance_valid()`, the bare chain, those joined by `and`), or `if part == null:` (also `not part`, those joined
-by `or`) returning another value first, and that other value is a literal or a constant (`0`, `null`,
-`Vector2.ZERO`, `NONE`). A test by its truth alone (`part`, `not part`) is a null test of a prefix only where the
-prefix is told as a class under `src/`, and of the whole returned chain only where the other value is `null`, since
-a number's zero or an empty string, array or vector fails it as an absent object does. A test of anything else (`if
-field > 0`), a guard the wrong way round, and a method that returns its own parameter of the field's name are no
-answer. Where the field is a property whose getter is one
-`return`, a method returning the same expression answers it too (`is_gone()` for `is_finished`, both `phase ==
-Phase.DONE`). A method that returns a value worked out from the field, or from another field, is not an answer.
+by `or`) returning another value first, and that other value reads no name that starts lowercase at the head of a
+chain: a literal, or a chain headed by an uppercase name or by `$` (`0`, `null`, `Vector2.ZERO`, `NONE`,
+`Tuning.fallback()`, `$Label.z_index`), the type a cast names left out (`[] as Array[int]`, `0 as float`). A test by
+its truth alone (`part`, `not part`) is a null test of a prefix only where the prefix is told as a class under
+`src/`, and of the whole returned chain only where the other value is `null`, since a number's zero or an empty
+string, array or vector fails it as an absent object does. A test of anything else (`if field > 0`), a guard the
+wrong way round, and a method that returns its own parameter of the field's name are no answer. Where the field is a
+property whose getter is one `return`, a method returning the same expression answers it too (`is_gone()` for
+`is_finished`, both `phase == Phase.DONE`). A method that returns a value worked out from the field, or from another
+field, is not an answer.
 
 **Printed apart from the answers, for the builder to hold against the read**, each with what it returns: `behind a
 guard`, a method whose guard tests the chain as a null guard does but whose other value reads something: a member of
-the class (`birds()` returns `flock.birds if flock else _NO_BIRDS`) or a name that starts lowercase, as an engine
-property of its base or a global function does (`barrier_post.body_position() if barrier_post else
-global_position`); or a method whose test is a truth test of a prefix not told as a class under `src/`
+the class (`birds()` returns `flock.birds if flock else _NO_BIRDS`) or a name that starts lowercase at the head of a
+chain, as an engine property of its base or a global function does (`barrier_post.body_position() if barrier_post
+else global_position`); or a method whose test is a truth test of a prefix not told as a class under `src/`
 (`names.size() if names else 5`, which returns `5` where `names` is empty) or of the whole chain with another value
 than `null` (`loud if loud else 1.0`, which returns `1.0` where `loud` is zero). Its chain is listed under the class
 that holds the guard only where no method answers the field itself; `on its view`, a method of an inner class of the
@@ -85,10 +87,12 @@ class reads by its bare name, a class nested inside an inner class, and a parame
 list closes at the margin are not told, so a read through one is printed as not told. A field reached by `get()`,
 `set()` or a string is not seen. The answer is read from the method's text: a method that returns the field through
 a local, or after any other statement, is not an answer, and a method is not matched to a property's getter where
-either `return` holds a string, whose contents are not read. A view is looked for only among the inner classes of
-the class's own file; a method of a class in another file that reads the field back is not looked for. Whether a
-method answers the read as the suite uses it (a copy where the suite changes the field, a method that also does
-something else) is the builder's to read in the class.
+either `return` holds a string, whose contents are not read. A guard's other value headed by an uppercase name or by
+`$` is not judged: it leaves the method an answer, though such a chain can read live state as `global_position` does
+(`Sitting.now`, `Tuning.fallback()`, `$Label.z_index`). A view is looked for only among the inner classes of the
+class's own file; a method of a class in another file that reads the field back is not looked for. Whether a method
+answers the read as the suite uses it (a copy where the suite changes the field, a method that also does something
+else) is the builder's to read in the class.
 """
 
 from __future__ import annotations
@@ -125,9 +129,12 @@ NESTED_CLASS = re.compile(r"^[ \t]+class[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
 NESTED_HERE = re.compile(r"^class[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
 UNSAFE_PROPERTY = "unsafe_property_access"
 RETURN = "return "
-# A lowercase name at the head of a chain, not a member's name after a dot nor the tail of a number (`1e5`).
-LOWER_NAME = re.compile(r"(?<![\w.])([a-z]\w*)")
-KEYWORDS = frozenset({"null", "true", "false", "not", "and", "or", "in", "is", "as", "if", "else", "inf", "nan"})
+# A lowercase name at the head of a chain: not a member's name after a dot, not a node's after `$` (`$label`), not
+# the tail of a number (`1e5`).
+LOWER_NAME = re.compile(r"(?<![\w.$])([a-z]\w*)")
+KEYWORDS = frozenset({"null", "true", "false", "not", "and", "or", "in", "is", "if", "else", "inf", "nan"})
+# The type a cast names, up to any brackets after it (`as Array[int]`, `as float`, `as Planner.Plan`).
+CAST_TYPE = re.compile(r"\bas[ \t]+[A-Za-z_]\w*(?:[ \t]*\.[ \t]*[A-Za-z_]\w*)*")
 # A null test of a chain, as a guard writes it: that it is there, or that it is not.
 PRESENT = re.compile(r"^(?:is_instance_valid\(\s*(?P<valid>.+?)\s*\)|(?P<compared>.+?)\s*!=\s*null|(?P<bare>.+))$")
 ABSENT = re.compile(
@@ -514,10 +521,25 @@ def truth_tested(test: str) -> list[str]:
     return [chain_text(re.sub(r"^(?:not\s+|!\s*)", "", part.strip())) for part in parts]
 
 
+def without_casts(text: str) -> str:
+    """A piece of code with the type each cast names taken out (`[] as Array[int]` is `[]`), since a type reads no
+    value."""
+    while cast := CAST_TYPE.search(text):
+        end = cast.end()
+        bracket = re.match(r"[ \t]*\[", text[end:])
+        if bracket:
+            close = reads.close_of(text, end + bracket.end() - 1)
+            end = close + 1 if close >= 0 else len(text)
+        text = text[: cast.start()] + text[end:]
+    return text
+
+
 def reads_a_name(other: str) -> bool:
     """Whether a guard's other value reads a lowercase name at the head of a chain (`global_position`, `self`): a
-    member of the class or of its engine base, not a literal or a constant (`0.0`, `null`, `Vector2.ZERO`, `NONE`)."""
-    return any(word not in KEYWORDS for word in LOWER_NAME.findall(other))
+    member of the class or of its engine base, or a global function. A literal, a chain headed by an uppercase name
+    or by `$` (`0.0`, `null`, `Vector2.ZERO.x`, `Tuning.fallback()`, `$Label.z_index`) and the type a cast names
+    (`[] as Array[int]`) read none."""
+    return any(word not in KEYWORDS for word in LOWER_NAME.findall(without_casts(other)))
 
 
 def passed_in(arguments: str) -> list[str]:

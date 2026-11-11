@@ -285,6 +285,25 @@ class AnswerTests(unittest.TestCase):
             [("rig_lets_out", "rig.hunt.lets_out if rig else 0")],
         )
 
+    def test_an_other_value_that_reads_no_lowercase_name_at_the_head_of_a_chain_leaves_an_answer(self) -> None:
+        others = {
+            "cast_array": "[] as Array[int]",
+            "cast_number": "0 as float",
+            "constant_member": "Vector2.ZERO.x",
+            "exponent": "1e5",
+            "node": "$panel.z_index",
+            "engine": "z_index",
+        }
+        row = ROW + "".join(
+            f"func {name}() -> Variant:\n\treturn hunting.lets_out if hunting else {other}\n"
+            for name, other in others.items()
+        )
+        got = found("func f(row: Row) -> void:\n\tprint(row.hunting.lets_out)\n", {"src/row.gd": row})
+        self.assertEqual(
+            got[("row", "hunting.lets_out", "read")],
+            ["lets_out", "cast_array", "cast_number", "constant_member", "exponent", "node"],
+        )
+
     def test_a_guarded_chain_is_not_looked_for_where_the_field_itself_is_answered(self) -> None:
         flock = "class_name Flock\nextends RefCounted\nvar birds: Array = []\n"
         flock += "func all_birds() -> Array:\n\treturn birds\n"
