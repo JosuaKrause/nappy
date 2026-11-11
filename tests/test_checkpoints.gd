@@ -102,7 +102,7 @@ func _sampled_days() -> Array:
 ## three-quarters of what this suite's shape section cost (10.8s of its ~11s, against 3.6s once
 ## the plan is shared). Keyed on `map.seed_used`, which is distinct per generated map, rather than
 ## on the map object itself, so the cache reads the same regardless of which test asks first.
-var _plan_cache: Dictionary = {}
+var _plan_cache: Dictionary[String, RegionPlanner.RegionPlan] = {}
 
 func _plan_for(map: CityMap, day: int) -> RegionPlanner.RegionPlan:
 	var key := "%d:%d" % [map.seed_used, day]
@@ -132,9 +132,9 @@ func _test_every_door_has_its_three_bodies(t: TestRunner) -> void:
 		total_doors += plan.doors.size()
 		total_alley_doors += plan.alley_doors.size()
 
-		var counts := {}
+		var counts: Dictionary[String, int] = {}
 		for body in plan.door_bodies:
-			counts[body.def.id] = int(counts.get(body.def.id, 0)) + 1
+			counts[body.def.id] = counts.get(body.def.id, 0) + 1
 		var huts: int = counts.get("checkpoint_hut", 0)
 		var gates: int = counts.get("checkpoint_gate", 0)
 		var posts: int = counts.get("checkpoint_post", 0)
@@ -219,7 +219,7 @@ func _test_door_bodies_stand_on_their_own_ground(t: TestRunner) -> void:
 ## point, at the height of the road's upper kerb with the lanes open under it.
 func _test_the_boom_bars_the_carriageway(t: TestRunner) -> void:
 	var checked := 0
-	var spans := {}
+	var spans: Dictionary[Vector2, Vector2] = {}
 	for pair: Array in _sampled_days():
 		var map: CityMap = pair[0]
 		var day: int = pair[1]
@@ -401,10 +401,10 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 			"day %d generated a door structure to place (%d bodies)"
 			% [day, region_plan.door_bodies.size()])
 
-	var planned_ids := {}
+	var planned_ids: Dictionary[String, int] = {}
 	for plan in city.events.plans():
 		if plan.def.id.begins_with("checkpoint_"):
-			planned_ids[plan.def.id] = int(planned_ids.get(plan.def.id, 0)) + 1
+			planned_ids[plan.def.id] = planned_ids.get(plan.def.id, 0) + 1
 	t.check(int(planned_ids.get("checkpoint_hut", 0)) > 0,
 			"the day's own plan carries checkpoint_hut, not just RegionPlanner's own list")
 	t.check(int(planned_ids.get("checkpoint_gate", 0)) > 0,
