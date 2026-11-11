@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## A rig that walks past the roadblocks on one of the escape's streets and answers what the walk
 ## did to the meter and whether a guard caught her. Shared by `tests/finale_rig.gd` (run by `test_finale_a.gd`, `_b.gd` and `_c.gd`), which pins
@@ -298,7 +297,7 @@ static func walk(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 			break
 		meter.feed(instances, her, false, false)
 		tail += 1
-	made[0].close()
+	(made[0] as Stage).close()
 	return {"cost": meter.peak - start, "peak": meter.peak, "end": meter.value, "caught": caught,
 			"charged": charged.size(), "strongest": strongest, "at": her}
 
@@ -369,7 +368,7 @@ static func lure(t: Node, map: CityMap, group: Array[EventScheduler.Planned], fr
 	var luring := {"cost": meter.peak - start, "peak": meter.peak, "end": meter.value,
 			"caught": caught, "charged": lured.size(), "strongest": 0.0, "at": her}
 	if caught:
-		made[0].close()
+		(made[0] as Stage).close()
 		return {"lure": luring, "after": {}}
 	return {"lure": luring, "after": walk(t, map, group, her, to, meter, made)}
 
