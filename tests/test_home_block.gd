@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## M185's fixing half — the home block has fixed visuals: every building on it draws the same on
 ## every seed (window style, which windows are lit, height, front and roof furniture), and her own
@@ -70,7 +69,7 @@ static func _home_block_rects(map: CityMap) -> Array[Rect2i]:
 	for rect in map.building_rects:
 		if City.block_of(rect) == map.home_block:
 			rects.append(rect)
-	rects.sort_custom(func(a, b): return a.position < b.position)
+	rects.sort_custom(func(a: Rect2i, b: Rect2i) -> bool: return a.position < b.position)
 	return rects
 
 ## The deepest of the home block's own rects — the one the door notch's world span stands in front
@@ -86,8 +85,8 @@ static func _deepest_home_block_rect(map: CityMap) -> Rect2i:
 static func _home_buildings_by_lot(city: City) -> Dictionary:
 	var result := {}
 	for building: Building in city.buildings():
-		if building.is_home_building:
-			result[building.lot] = building
+		if building.is_on_home_block():
+			result[building.lot_rect()] = building
 	return result
 
 ## The roof units standing on `building`'s roof, as the city's entity layer holds them (the layer a
@@ -97,7 +96,7 @@ static func _home_buildings_by_lot(city: City) -> Dictionary:
 ## Each is `[where, picture]`, `where` taken from the building's own origin so the same roof on two
 ## cities compares directly, in the layer's own order.
 static func _roof_units_on(city: City, building: Building) -> Array:
-	var lot := city.map.tile_rect_to_world(building.lot)
+	var lot := city.map.tile_rect_to_world(building.lot_rect())
 	var units: Array = []
 	for node in city.get_node("Entities").get_children():
 		var unit := node as Building.RoofObject
@@ -125,7 +124,7 @@ func _check_the_units_are_seen(t: TestRunner, city: City, label: String) -> void
 	for building: Building in city.buildings():
 		var units := _roof_units_on(city, building)
 		seen += units.size()
-		if not building.is_home_building and not units.is_empty():
+		if not building.is_on_home_block() and not units.is_empty():
 			with_units += 1
 	t.check(with_units > 0, "%s: some building off the home block carries roof units (%d)" % [label, with_units])
 	t.check(seen == _roof_units_in(city),
@@ -157,7 +156,7 @@ func _test_every_home_block_building_is_the_same_across_two_seeds(t: TestRunner)
 	var other := _city_for(t, OTHER_SEED)
 	var short_by_lot := _home_buildings_by_lot(short)
 	var other_by_lot := _home_buildings_by_lot(other)
-	for by_lot in [short_by_lot, other_by_lot]:
+	for by_lot: Dictionary in [short_by_lot, other_by_lot]:
 		for lot: Rect2i in by_lot:
 			FrontReads.watch(by_lot[lot])
 	await UI.frames(t, 2)
@@ -171,7 +170,7 @@ func _test_every_home_block_building_is_the_same_across_two_seeds(t: TestRunner)
 		var a: Building = short_by_lot[lot]
 		var b: Building = other_by_lot[lot]
 		t.check(a.wall_tiles() == b.wall_tiles(), "lot %s: floor count matches across seeds" % lot)
-		t.check(a.variant == b.variant, "lot %s: colour variant matches across seeds" % lot)
+		t.check(a.look_variant() == b.look_variant(), "lot %s: colour variant matches across seeds" % lot)
 		t.check(not _window_pictures(a).is_empty() and _window_pictures(a) == _window_pictures(b),
 				"lot %s: window style and lit-window pattern match across seeds" % lot)
 		t.check(a.scenery_resident and b.scenery_resident,
@@ -236,21 +235,21 @@ func _test_non_home_buildings_still_roll_the_seed(t: TestRunner) -> void:
 	var other := _city_for(t, OTHER_SEED)
 	var short_by_lot := {}
 	for building: Building in short.buildings():
-		if not building.is_home_building:
-			short_by_lot[building.lot] = building
+		if not building.is_on_home_block():
+			short_by_lot[building.lot_rect()] = building
 	var compared := 0
 	var differing := 0
 	var variants_differing := 0
 	var same_ground := 0
 	var heights_differing := 0
 	for building: Building in other.buildings():
-		if building.is_home_building or not short_by_lot.has(building.lot):
+		if building.is_on_home_block() or not short_by_lot.has(building.lot_rect()):
 			continue
 		compared += 1
-		var partner: Building = short_by_lot[building.lot]
-		if partner.variant != building.variant:
+		var partner: Building = short_by_lot[building.lot_rect()]
+		if partner.look_variant() != building.look_variant():
 			variants_differing += 1
-		if partner.variant != building.variant or partner.wall_tiles() != building.wall_tiles():
+		if partner.look_variant() != building.look_variant() or partner.wall_tiles() != building.wall_tiles():
 			differing += 1
 		# The height rolls within the range its block's purpose allows, so it is the lots whose
 		# block has the same purpose on both seeds that show the roll itself.
@@ -278,20 +277,20 @@ func _test_non_home_buildings_still_roll_the_seed(t: TestRunner) -> void:
 ## one tile deep); and the heights of a city are not all one value, so the roll is not a constant.
 ## Which stream the roll comes from is the game's own business, so it is not copied here.
 func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t: TestRunner) -> void:
-	for seed_value in [SHORT_SEED, OTHER_SEED]:
+	for seed_value: int in [SHORT_SEED, OTHER_SEED]:
 		var city := _city_for(t, seed_value)
 		var again := _city_for(t, seed_value)
 		var twin := {}
 		for building: Building in again.buildings():
-			twin[building.lot] = building
+			twin[building.lot_rect()] = building
 		var checked := 0
 		var heights := {}
 		for building: Building in city.buildings():
-			if building.is_home_building or building.power_station:
+			if building.is_on_home_block() or building.power_station:
 				continue
-			var rect := building.lot
+			var rect := building.lot_rect()
 			var partner: Building = twin.get(rect)
-			t.check(partner != null and partner.variant == building.variant,
+			t.check(partner != null and partner.look_variant() == building.look_variant(),
 					"seed %d, lot %s: a non-home building's colour variant is the same on a rebuilt city"
 					% [seed_value, rect])
 			t.check(partner != null and is_equal_approx(partner.height, building.height),
@@ -310,11 +309,11 @@ func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t: TestRunner) 
 		var by_block := {}
 		var by_block_and_depth := {}
 		for building: Building in city.buildings():
-			if building.is_home_building or building.power_station:
+			if building.is_on_home_block() or building.power_station:
 				continue
-			var block := City.block_of(building.lot)
+			var block := City.block_of(building.lot_rect())
 			by_block[block] = by_block.get(block, []) + [building]
-			var key := [block, building.lot.size.y]
+			var key := [block, building.lot_rect().size.y]
 			by_block_and_depth[key] = by_block_and_depth.get(key, []) + [building]
 		var varied_heights := 0
 		var height_groups := 0
@@ -335,7 +334,7 @@ func _test_non_home_rolls_are_a_function_of_the_seed_and_the_lot(t: TestRunner) 
 			variant_groups += 1
 			var seen := {}
 			for building: Building in group:
-				seen[building.variant] = true
+				seen[building.look_variant()] = true
 			if seen.size() >= 2:
 				varied_variants += 1
 		t.check(height_groups > 0 and varied_heights * 8 >= height_groups,

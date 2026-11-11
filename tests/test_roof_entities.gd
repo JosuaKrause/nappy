@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Roof art that can reach a street lives in the city's y-sorted entity layer at its feet.
 ##
@@ -28,7 +27,7 @@ func run(t: TestRunner) -> void:
 ## when null) on `clock` when one is given, both handed in before it enters the tree as
 ## `City._spawn_buildings()` hands them. A recording drawer stands each unit through the real one
 ## too when `stand` is set, so the objects are in the layer.
-func _new_fixture(t: TestRunner, district: int, drawer: RoofDrawer = null,
+func _new_fixture(t: TestRunner, district: GameEnums.BlockPurpose, drawer: RoofDrawer = null,
 		clock: SceneryGround = null, stand := false) -> Dictionary:
 	var root := Node2D.new()
 	var entities := Node2D.new()
@@ -43,9 +42,7 @@ func _new_fixture(t: TestRunner, district: int, drawer: RoofDrawer = null,
 	if stand:
 		(drawer as RecordingRoofDrawer).real = RoofDrawer.new(building.atlas)
 	building.position = Vector2(320.0, 320.0)
-	building.footprint = Vector2(256.0, 256.0)
-	building.height = 64.0
-	building.district = district
+	building.stand_on(Rect2i(), Vector2(256.0, 256.0), 0, district, 64.0)
 	building.roof_object_parent = entities
 	building.scenery_clock = clock
 	root.add_child(building)
@@ -290,8 +287,10 @@ func _test_networks_on_narrow_and_shallow_roofs(t: TestRunner) -> void:
 ## that means from outside: a three-column roof, where no broad unit fits, lays out as many units
 ## as a wide roof with as many interior cells, in every district and on every seed.
 func _test_narrow_and_fragmented_roofs_keep_their_unit_count(t: TestRunner) -> void:
-	for district in [GameEnums.BlockPurpose.INDUSTRIAL, GameEnums.BlockPurpose.CIVIC,
-			GameEnums.BlockPurpose.RESIDENTIAL, GameEnums.BlockPurpose.COMMERCIAL]:
+	var districts: Array[GameEnums.BlockPurpose] = [GameEnums.BlockPurpose.INDUSTRIAL,
+			GameEnums.BlockPurpose.CIVIC, GameEnums.BlockPurpose.RESIDENTIAL,
+			GameEnums.BlockPurpose.COMMERCIAL]
+	for district in districts:
 		# Three columns by seven and by thirteen tiles, with a two-tile wall, leave one interior
 		# column three and nine cells deep; five columns by five and by seven leave three columns
 		# one and three rows deep.

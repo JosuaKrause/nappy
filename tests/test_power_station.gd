@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The power station: one big building on every city, not in the home's region, a reasonable walk
 ## from the home, on industrial ground where the city has it, with a front door on a real street.
@@ -224,7 +223,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 				shut[tile] = true
 		for rect in region_plan.alley_doors:
 			var vertical := rect.size.x < rect.size.y
-			for at_start in [true, false]:
+			for at_start: bool in [true, false]:
 				for tile in map.rect_tiles(SealPlanner.alley_mouth_rect(rect, vertical, at_start)):
 					shut[tile] = true
 		var reached_shut := grid.flood([map.home_rect.position], shut)
@@ -375,9 +374,7 @@ func _test_the_hall_is_lit_only_on_the_last_night(t: TestRunner) -> void:
 	hall.power_station = true
 	hall.station_door_col = 3
 	hall.station_yard_cols = Vector2i(14, 8)
-	hall.footprint = Vector2(704.0, 256.0)
-	hall.height = 128.0
-	hall.district = GameEnums.BlockPurpose.INDUSTRIAL
+	hall.stand_on(Rect2i(), Vector2(704.0, 256.0), 0, GameEnums.BlockPurpose.INDUSTRIAL, 128.0)
 	hall.day = Tuning.POWER_STATION_DAY
 	hall.powered = true
 	t.add_child(hall)
@@ -429,9 +426,7 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t: TestRun
 	recorder.setup(func() -> bool: return false, null, null, SceneryGround.Mode.ONE, null, null,
 			run, sitting, _SCRATCH_RECORDS)
 	var station := Building.new()
-	station.district = GameEnums.BlockPurpose.INDUSTRIAL
-	station.footprint = Vector2(96.0, 256.0)
-	station.height = 64.0
+	station.stand_on(Rect2i(), Vector2(96.0, 256.0), 0, GameEnums.BlockPurpose.INDUSTRIAL, 64.0)
 	station.power_station = true
 	station.scenery_resident = false
 	t.add_child(station)
@@ -441,9 +436,10 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t: TestRun
 	for child in station.get_children():
 		if child is Node2D and child.has_meta(FrameTiming.DRAW_KIND_META):
 			layers += 1
-			for connection in (child as Node2D).draw.get_connections():
-				if connection["callable"].get_object() == recorder:
-					connection["callable"].call()
+			for connection: Dictionary in (child as Node2D).draw.get_connections():
+				var drawn_with: Callable = connection["callable"]
+				if drawn_with.get_object() == recorder:
+					drawn_with.call()
 	t.check(layers == 1, "the station's yard layer declares its kind (%d layers)" % layers)
 	# The frame the draws landed in is kept, and the next one begins: the ledger hands it out as a row.
 	ledger.keep = true
