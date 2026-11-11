@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `TouchControls`' own geometry: that the pause button shows only where and when it should, that
 ## a finger on it presses the same real `pause` action a keyboard does, and that a press anywhere
@@ -1016,7 +1015,7 @@ func _test_current_heading_reads_zero_while_detained(t: TestRunner) -> void:
 	# presses `move_right` directly, on its own, rather than through a click (which
 	# resets both axes itself), so it is the one test in this file that would otherwise read
 	# whatever a neighbour's own leftover diagonal happened to be.
-	for action in [&"move_left", &"move_right", &"move_up", &"move_down"]:
+	for action: StringName in [&"move_left", &"move_right", &"move_up", &"move_down"]:
 		Input.action_release(action)
 	Input.action_press(&"move_right")
 
@@ -1399,7 +1398,7 @@ func _test_a_swipe_through_the_dead_zone_lands_on_its_release(t: TestRunner) -> 
 func _test_round_button_margins_and_unchanged_dead_zones(t: TestRunner) -> void:
 	var rig := _rig_at(t, Vector2(5000.0, 5000.0))
 	var probe := _probe(t)
-	for rotate in [false, true]:
+	for rotate: bool in [false, true]:
 		var controls := await _controls(t)
 		controls.set_mode(ControlsMode.Mode.JOYSTICK)
 		controls.rotated = rotate
