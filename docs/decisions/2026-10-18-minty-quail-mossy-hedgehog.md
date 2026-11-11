@@ -4,12 +4,12 @@
 gray-dolphin). The events' interface design's row 2b, "the looks ask the live event and are handed
 their settings" (`docs/todo/2026-10-18-minty-quail/event-interface.md`), is built as six pull
 requests, a cut a Fable planning agent made and no tracked file holds; this is the footprints'
-part, built beside the base look's (minty-quail-tall-toad) after the picture probe
-(minty-quail-polite-newt).
+part, built together with the base look's and the picture probe's (pull requests #1322 and #1320).
 
 ## What was built
 
-- **`EventFootprints` reads no field of its row, of the live event (`def`) or of `GroundShape`**;
+- **`EventFootprints` reads no field of the live event (`def`) or of `GroundShape`, and of its row
+  only `flock_spread` and `warning_picture`**;
   no signature changed. It asks the row's existing `picture()`, `ground_shape()`,
   `rounding_radius()`, `has_a_body()`, `obstructs_within()`, `drives()`, `has_a_field()` and
   `ends_the_day()`, and six new questions: `drawn_width()`, `lies()`, `is_a_flock()`,
@@ -38,4 +38,10 @@ at `943ed9d8b`, the same in both trees).
 - **`lies()` returns one of four as an enum on the row** until the body part exists, where the
   design names the body part's `lies()`.
 - **The look's settings get the names `casts_a_shadow()`, `drags_a_lead()` and
-  `vanishes_into_its_hold()`**, the planning agent's picks, since the design's 4.1 gives none.
+  `vanishes_into_its_hold()`**, the planning agent's picks, since the design's 4.1 gives none; as
+  yes-or-no questions with new names they rest on the board's open question about the naming rule
+  (naming-rule-everywhere), whose pick they follow.
+- **`hidden_by_its_hold()` asks `event.row().vanishes_into_its_hold()`**, the one
+  `instance.row().x()` under `src/`, which the design's 2.1 rules out; the brief asked for it, since
+  a question on the live event belongs to the looks' later pull requests, which ask the live event
+  and remove this call.
