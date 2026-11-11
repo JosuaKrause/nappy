@@ -6,7 +6,7 @@ extends EventLook
 
 ## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match event.def.look:
+	match _row.picture():
 		EventDef.Look.DELIVERY_VAN:
 			# Always sited facing east — `AT_THE_KERB` never overrides `EventScheduler.Planned.
 			# facing`'s own default — and `delivery_van.svg` faces west, so `side_faces_west`
@@ -52,11 +52,11 @@ func _draw_figure(canvas: CanvasItem) -> void:
 		EventDef.Look.ARMY_TRUCK:
 			_draw_eight_view(EventPictures.ARMY_TRUCK_BY_VIEW, event.facing_now(), canvas, true)
 		EventDef.Look.MOVING_VAN:
-			_draw_stationary_vehicle(EventDef.Look.MOVING_VAN, event.def.obstructs_radius * 2.0,
+			_draw_stationary_vehicle(EventDef.Look.MOVING_VAN, _row.drawn_width(),
 					canvas)
 		EventDef.Look.BURNT_OUT_CAR:
 			_draw_stationary_vehicle(EventDef.Look.BURNT_OUT_CAR,
-					event.def.obstructs_radius * 2.0, canvas)
+					_row.drawn_width(), canvas)
 
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
@@ -69,7 +69,7 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 	var extent := EventPictures.stationary_vehicle_extent(picture, event.stands_side_on(),
 			side_width)
 	_draw_body_shadow(canvas)
-	event.drawer.stand(canvas, picture, Vector2.ZERO, extent,
+	_drawer.stand(canvas, picture, Vector2.ZERO, extent,
 			event.stands_side_on() and _heading_is_west())
 
 ## The van, and the bystander it is taking while there is one to draw.
@@ -94,8 +94,8 @@ func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 ## could get wrong.
 func _draw_abduction(canvas: CanvasItem) -> void:
 	if event.is_taking_a_victim():
-		var through := event.abduction.walked_for() / event.def.abduction.taken_over
-		var offset := event.def.abduction.standing_offset
+		var through := _victim_walk_share()
+		var offset := _row.abduction.standing_offset
 		var standing := Vector2(-offset if _heading_is_west() else offset, 0.0)
 		var at := standing.lerp(Vector2.ZERO, through)
 		_draw_shadow(canvas, at, 8.0)
@@ -105,25 +105,30 @@ func _draw_abduction(canvas: CanvasItem) -> void:
 		var view := select_view(-standing)
 		var by_view := EventPictures.VAN_VICTIM_BY_VIEW_B if victim_gait_is_stepping() \
 				else EventPictures.VAN_VICTIM_BY_VIEW
-		event.drawer.stand(canvas, by_view[view], at, Vector2.ZERO,
+		_drawer.stand(canvas, by_view[view], at, Vector2.ZERO,
 				is_mirrored())
 	# West-authored, like `delivery_van` and `fire_engine` above — see `_draw_eight_view()`'s own
 	# doc comment on `side_faces_west`.
 	_draw_eight_view(EventPictures.UNMARKED_VAN_BY_VIEW, event.facing_now(), canvas, true)
 
+## How far through its walk to the van the victim is, from 0 where the walk starts to 1 at the van:
+## the time it has walked (`EventInstance.how_long_its_victim_has_walked()`) over the walk's length
+## (`AbductionSpec.taken_over`). The one place the two are divided.
+func _victim_walk_share() -> float:
+	return event.how_long_its_victim_has_walked() / _row.abduction.taken_over
+
 ## The victim's own short scripted walk to the van (`EventAbduction`) is a straight-line lerp on
 ## `age` rather than anything that touches the ground travelled, so it gets its own derived stride
 ## instead of sharing `gait_phase()` — a persistent field would have nothing to reset between takes
-## that the walk's own time (`EventAbduction.walked_for()`) restarting at zero does not already
-## give it. The walk is at a constant speed by construction (linear interpolation over a fixed
-## time), so the distance covered by moment `t` is exactly `t * (AbductionSpec.standing_offset /
-## AbductionSpec.taken_over)`, fed through the same
-## `GAIT_RATE` and doubled-phase test `gait_is_stepping()` uses. `sin(0) == 0`, so the walk always
-## starts on frame a rather than mid-stride.
+## that the walk's own time restarting at zero does not already give it. The walk is at a constant
+## speed by construction (linear interpolation over a fixed time), so the distance covered by
+## moment `t` is exactly its share of the way (`_victim_walk_share()`) times
+## `AbductionSpec.standing_offset`, fed through the same `GAIT_RATE` and doubled-phase test
+## `gait_is_stepping()` uses. `sin(0) == 0`, so the walk always starts on frame a rather than
+## mid-stride.
 ## Overrides EventLook.victim_gait_is_stepping.
 func victim_gait_is_stepping() -> bool:
 	if not event.is_taking_a_victim():
 		return false
-	var elapsed := event.abduction.walked_for()
-	var speed := event.def.abduction.standing_offset / event.def.abduction.taken_over
-	return sin(elapsed * speed * EventInstance.GAIT_RATE * 2.0) > 0.0
+	var covered := _victim_walk_share() * _row.abduction.standing_offset
+	return sin(covered * EventInstance.GAIT_RATE * 2.0) > 0.0

@@ -1940,6 +1940,11 @@ func approach_speed() -> float:
 func heard_within() -> float:
 	return outer_radius
 
+## How far from its centre its core reaches (`inner_radius`): the span a dog walker's dog is led
+## ahead at is a share of it.
+func core_within() -> float:
+	return inner_radius
+
 ## Whether walking into its reach ends her day (`hard_fail`): a place that ends the day. A car's
 ## strike is its driving's (`EventCarDriving`), not this.
 func ends_the_day() -> bool:

@@ -113,7 +113,7 @@ func _robber_waiting_row() -> Array:
 	return row
 
 ## A flock's per-bird selection lives in `FlockLook._draw_birds()` itself
-## (`bird.view_sector = EightDirection.update(bird.view_sector, bird.heading)`), which needs a
+## (`_held_sectors[i] = EightDirection.update(_held_sectors[i], bird.heading)`), which needs a
 ## canvas to reach — so this calls the same two functions directly on a synthetic heading, which is
 ## exactly what that line reduces to for a heading already sitting on a sector's own centre.
 func _bird_row(by_view: Dictionary) -> Array:

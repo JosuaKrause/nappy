@@ -483,13 +483,13 @@ func _robber_after_her(events: EventManager) -> EventInstance:
 	return null
 
 ## Whether a crossing is warning her: a gatehouse's guard has his hand raised at her
-## (`EventInstance.guard_warns_her`), as the manager sets it every frame
+## (`EventInstance.is_its_guard_warning()`), as the manager sets it every frame
 ## (`CheckpointController.warn_at_the_doors()`). Calls it first, which sets the hands and counts a
 ## raised one once: idempotent against the manager's own per-frame call, so a drive and not only a read.
 func _a_guard_warns_her(events: EventManager) -> bool:
 	events.checkpoints.warn_at_the_doors()
 	for instance in events.instances():
-		if instance.def.redetains and instance.guard_warns_her:
+		if instance.def.redetains and instance.is_its_guard_warning():
 			return true
 	return false
 

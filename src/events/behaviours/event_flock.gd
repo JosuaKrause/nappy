@@ -44,11 +44,6 @@ class Bird extends RefCounted:
 	## Wingbeats per second, and where in one it currently is.
 	var beat := 0.0
 	var phase := 0.0
-	## This bird's own held eight-view sector — one per bird rather than one shared with the
-	## instance's own `EventLook._view_sector`, since a flock is eleven bodies wheeling
-	## independently rather than one actor with one facing. See `EventLook.select_view()`, the same
-	## hold applied per bird by `FlockLook._draw_birds()`.
-	var view_sector := 2
 
 ## Its birds, each its own body.
 var birds: Array[Bird] = []
@@ -84,7 +79,6 @@ func build() -> void:
 		var reach: float = _row.flock_spread * (0.3 + 0.7 * _roll(i, 2))
 		bird.at = Vector2(cos(angle), sin(angle) * GROUND_SQUASH) * reach
 		bird.heading = Vector2.from_angle(TAU * _roll(i, 3))
-		bird.view_sector = EightDirection.nearest(bird.heading)
 		bird.speed = GROUND_SPEED
 		# Half of them wheel each way, or the flock rotates as a body and reads as a carousel.
 		bird.turn = (1.2 + 1.4 * _roll(i, 4)) * (1.0 if i % 2 == 0 else -1.0)
@@ -215,7 +209,7 @@ func save() -> Dictionary:
 	var out: Array = []
 	for bird in birds:
 		out.append([bird.at, bird.lift, bird.heading, bird.speed, bird.turn, bird.ceiling,
-				bird.climb, bird.beat, bird.phase, bird.view_sector])
+				bird.climb, bird.beat, bird.phase])
 	return {"birds": out}
 
 ## Puts back what `save()` gave: the birds a plan carried replace the ones `build()` scattered from
@@ -238,5 +232,4 @@ func restore(state: Dictionary) -> void:
 		bird.climb = one[6]
 		bird.beat = one[7]
 		bird.phase = one[8]
-		bird.view_sector = one[9]
 		birds.append(bird)

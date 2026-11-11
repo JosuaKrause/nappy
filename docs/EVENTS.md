@@ -973,7 +973,7 @@ This is independent of the resistance. She shouldn't do it. One guard is enough"
 start the timer and if the player goes back no charge happens but if they stay crossed the charge
 will start. Warning starts when the player is crossing")*: the frame she walks across the line,
 the guard drawn at the gatehouse across the road from her raises his hand
-(`EventInstance.guard_warns_her`, `guard_alert_front`, `CheckpointController.warn_at_the_doors()`), or at
+(`EventInstance.is_its_guard_warning()`, `guard_alert_front`, `CheckpointController.warn_at_the_doors()`), or at
 an alley's door the post's own guard. Back across the line before `CheckpointController.CROSSING_WARNING` (2.0s)
 has run, or held at a hut (gone through the lawful way), the crossing is called off and nobody
 comes. **Still across once it has run, one `door_guard` steps out of the wall of that gatehouse, or
