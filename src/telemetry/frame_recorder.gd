@@ -55,8 +55,8 @@ var _record: FrameRecord
 var _in_the_title: Callable
 var _events: EventManager
 var _crowd: Crowd
-## How the ground is scheduled this run, written into a record's metadata: `Mode.ONE` for a
-## recorder that watches no city.
+## How the ground is scheduled this run, written into a record's metadata: `Mode.ONE` until
+## `setup()` hands it one.
 var _ground_mode := SceneryGround.Mode.ONE
 var _player: Stroller
 var _day: DayController

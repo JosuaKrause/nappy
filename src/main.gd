@@ -495,7 +495,7 @@ func _ready() -> void:
 		_frame_recorder = FrameRecorder.new()
 		add_child(_frame_recorder)
 		_frame_recorder.setup(_flow.in_the_title, _event_source(), _crowd_now(),
-				_city.ground_mode_in_force() if _city else SceneryGround.Mode.ONE, _player, _day,
+				_city.ground_mode_in_force(), _player, _day,
 				_run, _sitting, _frame_records_dir)
 		_readout.watch_frames(_frame_recorder)
 

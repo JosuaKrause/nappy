@@ -516,7 +516,7 @@ func _ground_decay_multiplier(world_position: Vector2) -> float:
 
 ## Overrides WorldContext.is_alley.
 func is_alley(world_position: Vector2) -> bool:
-	return Tile.is_alley(map.tile_type_at_world(world_position)) if map else false
+	return map.is_alley(world_position) if map else false
 
 # ------------------------------------------------------------------ spawning ---
 

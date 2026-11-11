@@ -133,9 +133,8 @@ func watch(player: Stroller, baby: Baby, day: DayController) -> void:
 
 ## The world she is walking: its events, its crowd (null in the escape's building), the node whose
 ## subtree holds the bodies the bounding boxes trace, its map, and the day's streets when it is a
-## city. Called
-## once per world, so walking out of the service door points the overlays at the city with whatever
-## `1`–`3` had switched on still on.
+## city. Called once per world, so walking out of the service door points the overlays at the city
+## with whatever `1`–`3` had switched on still on.
 func show_the_world(events: EventManager, crowd: Crowd, world: Node2D, map: WorldMap,
 		streets: DayStreets) -> void:
 	_events = events
@@ -309,16 +308,21 @@ func _readout_due(delta: float) -> bool:
 
 ## Her ground: the city's tile and whether it is calm or an alley, or the building's tile, which has
 ## neither.
+## Whether the world she is walking is a city: its map is the city's, where the escape's building
+## has the building's.
+func _in_a_city() -> bool:
+	return _map is CityMap
+
 func _where_she_is_lines() -> Array:
 	var here := _player.global_position
-	var city_map := _map as CityMap
-	if city_map:
+	if _in_a_city():
+		var city_map := _map as CityMap
 		var tile := city_map.world_to_tile(here)
 		return [
 			"tile  %d, %d  (%s)" % [tile.x, tile.y, _tile_name(city_map.tile_at(tile))],
 			"calm  %s    alley  %s" % [
 				"yes" if city_map.is_calm_zone(here) else "no",
-				"yes" if Tile.is_alley(city_map.tile_type_at_world(here)) else "no"],
+				"yes" if city_map.is_alley(here) else "no"],
 		]
 	if _map:
 		var tile := _map.world_to_tile(here)
@@ -328,7 +332,7 @@ func _where_she_is_lines() -> Array:
 ## What is out: the city's events, live against planned, what the director still owes ahead of her
 ## and the crowd — or, in the escape's building, its events alone.
 func _what_is_out_lines() -> Array:
-	if _crowd:
+	if _in_a_city():
 		return [
 			"events      %6d live of %d" % [
 				_events.active_count(), _events.planned_count()],
@@ -445,7 +449,7 @@ func _toggle_debug_layer(layer: int) -> void:
 ## pressed on is the one where the world is least finished.
 func _capture_context() -> String:
 	var where := Vector2i.ZERO
-	if _map is CityMap and _player:
+	if _in_a_city() and _player:
 		where = _map.world_to_tile(_player.global_position)
 	var meters := "no baby yet"
 	if _baby:

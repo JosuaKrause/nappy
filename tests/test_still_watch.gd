@@ -2,8 +2,8 @@ extends RefCounted
 ## `StillWatch`, the stillness heuristic behind `--quit-when-still`, driven the way `main` builds it:
 ## handed the city's map and lights, her, and the day's clock through `setup()`, standing in a tree,
 ## and fed her position tick by tick on real physics frames (the tick her position changes on).
-## Armed only once she has moved, frozen rather than reset while the day is not running, and reset — not frozen —
-## every tick she is held (a detention, a wait at a red light). What it does when it fires is
+## Armed only once she has moved, frozen rather than reset while the day is not running, and reset
+## — not frozen — every tick she is held (a detention, a wait at a red light). What it does when it fires is
 ## observed as the game sees it: a picture is asked for by adding an `AutoScreenshot` beneath it, and
 ## the suite switches that child's frames off the moment it arrives, since a headless run can take no
 ## picture and would quit the process.

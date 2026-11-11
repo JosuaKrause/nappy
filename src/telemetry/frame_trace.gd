@@ -30,7 +30,8 @@ var _metadata: Dictionary = {}
 var _user_flags: Array = []
 
 func setup(in_the_title: Callable, readout_on: Callable, graph_on: Callable, log_on: Callable,
-		events: EventManager, crowd: Crowd, player: Stroller, day: DayController, user_flags: Array, run: RunState) -> void:
+		events: EventManager, crowd: Crowd, player: Stroller, day: DayController,
+		user_flags: Array, run: RunState) -> void:
 	_run = run
 	_in_the_title = in_the_title
 	_readout_on = readout_on
