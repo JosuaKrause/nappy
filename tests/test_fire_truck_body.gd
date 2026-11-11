@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The fire truck is a solid body, lethal only in front of it while it drives and harmless once it
 ## has parked at the fire.
@@ -121,7 +120,7 @@ func _test_the_body_is_solid_while_it_drives_and_lethal_only_ahead(t: TestRunner
 ## strike, at least as long as walking off the carriageway takes, and the strike fires before the
 ## body would ever stop against her.
 func _test_in_front_of_it_the_warning_comes_first(t: TestRunner) -> void:
-	for facing in [Vector2.LEFT, Vector2.UP]:
+	for facing: Vector2 in [Vector2.LEFT, Vector2.UP]:
 		var engine_where := WhereSheIs.nowhere()
 		var engine := _engine(t,
 				PackedVector2Array([Vector2(-700.0, 0.0), Vector2(900.0, 0.0)]), engine_where)
@@ -336,13 +335,13 @@ func _test_parked_it_is_solid_and_harmless(t: TestRunner) -> void:
 	t.check(engine.is_parked, "the truck parks where its route ends")
 	t.check(not engine.excitement.will_be_lethal(Vector2(40.0, 0.0)),
 			"and a parked truck is not lethal ahead of it")
-	for place in [Vector2(40.0, 0.0), Vector2(-40.0, 0.0), Vector2(0.0, 30.0), Vector2(0.0, -30.0)]:
+	for place: Vector2 in [Vector2(40.0, 0.0), Vector2(-40.0, 0.0), Vector2(0.0, 30.0), Vector2(0.0, -30.0)]:
 		t.check(not engine.is_lethal_at(place), "a parked truck strikes nobody at %s" % place)
 	t.check(engine.is_solid() and _body_of(engine) != null, "and its body is still there")
 	# Her first rig goes before the walks: placed with no frame run, the physics server still has
 	# its body at the origin, under the truck, where it would stop a walker instead of the truck.
 	player.free()
-	for approach in [Vector2.DOWN, Vector2.UP, Vector2.RIGHT]:
+	for approach: Vector2 in [Vector2.DOWN, Vector2.UP, Vector2.RIGHT]:
 		var from: Vector2 = engine.global_position - approach * 90.0
 		var walker := _her(t, from, approach)
 		var walked := _walk(walker, approach, 180.0)

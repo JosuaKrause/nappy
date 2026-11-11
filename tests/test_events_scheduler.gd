@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/events_shared_city.gd"
 ## The scheduler's own determinism and safety rules -- the same seed replans identically, placement
 ## and per-day caps are respected, a one-shot fires once per run, an alley robbery and the alley
@@ -47,9 +46,9 @@ func run(t: TestRunner) -> void:
 	_test_a_roadblock_leaves_no_section_within_its_spacing_offered(t)
 
 
-func _signature(planned: Array) -> String:
+func _signature(planned: Array[EventScheduler.Planned]) -> String:
 	var parts: Array[String] = []
-	for plan in planned:
+	for plan: EventScheduler.Planned in planned:
 		parts.append("%s@%.1f,%.1f" % [plan.def.id, plan.position.x, plan.position.y])
 	return "|".join(parts)
 
@@ -71,7 +70,7 @@ func _quietest_calm_block(events: DayEvents, calm: CalmAreas) -> Vector2i:
 
 func _test_scheduler_is_deterministic(t: TestRunner) -> void:
 	var map := _map()
-	for day in [1, 5, 14]:
+	for day: int in [1, 5, 14]:
 		var consumed_a: Array[String] = []
 		var consumed_b: Array[String] = []
 		var first := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
@@ -94,7 +93,7 @@ func _test_scheduler_respects_placement_and_caps(t: TestRunner) -> void:
 	for day in range(1, 15):
 		var planned := _planned(day)
 		var counts := {}
-		for plan in planned:
+		for plan: EventScheduler.Planned in planned:
 			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
 			# An `AHEAD_OF_PLAYER` event has no tile: the day budgets it and the director sites
 			# it in front of the player later. The cap above still applies to it, which is the
@@ -104,7 +103,7 @@ func _test_scheduler_respects_placement_and_caps(t: TestRunner) -> void:
 			var tile := map.world_to_tile(plan.position)
 			t.check(map.tile_at(tile) in plan.def.placement,
 					"day %d: '%s' was placed on an allowed tile type" % [day, plan.def.id])
-		for id in counts:
+		for id: String in counts:
 			var def: EventDef = EventCatalogue.by_id(id)
 			# A one-shot is exempt: it is owed to her walk as one plan, and that it is one is
 			# asserted in `tests/test_event_manager.gd`.
@@ -123,7 +122,7 @@ func _test_scheduler_respects_placement_and_caps(t: TestRunner) -> void:
 ## second city is there to keep it from being a fact about one layout and a third would add nothing.
 func _test_one_shots_fire_once_per_run(t: TestRunner) -> void:
 	var one_shots_seen := 0
-	for seed_value in [4242, 5150]:
+	for seed_value: int in [4242, 5150]:
 		var map := CityGenerator.generate(seed_value)
 		var sites := MastSites.compute(map)
 		var consumed: Array[String] = []
@@ -160,7 +159,7 @@ func _test_one_shots_fire_once_per_run(t: TestRunner) -> void:
 ## way, so the sample is already seven different corridors.
 func _test_alley_robbery_never_lands_on_a_required_alley(t: TestRunner) -> void:
 	var checked := 0
-	for run_seed in [4242]:
+	for run_seed: int in [4242]:
 		var map := CityGenerator.generate(run_seed)
 		var consumed: Array[String] = []
 		for day in range(8, 15):
@@ -188,7 +187,7 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t: TestRunner) -> void:
 func _test_the_mouse_crosses_the_alleys_own_short_axis(t: TestRunner) -> void:
 	var checked := 0
 	var solid := 0
-	for run_seed in [4242, 2102613802, 90210]:
+	for run_seed: int in [4242, 2102613802, 90210]:
 		var map := CityGenerator.generate(run_seed)
 		for rect: Rect2i in map.alley_rects:
 			# An alley the generator has made solid stays in `alley_rects` (see `SealPlanner`'s
@@ -252,7 +251,7 @@ func _test_the_mouse_waits_until_she_is_near(t: TestRunner) -> void:
 
 	var map: CityMap
 	var rect: Rect2i
-	for run_seed in [4242, 2102613802, 90210, 37, 38]:
+	for run_seed: int in [4242, 2102613802, 90210, 37, 38]:
 		var candidate := CityGenerator.generate(run_seed)
 		if not candidate.alley_rects.is_empty():
 			map = candidate
@@ -351,7 +350,7 @@ func _test_one_park_stays_usable(t: TestRunner) -> void:
 ## it tens of thousands of times. A second city asked the same question again on a different
 ## street plan and cost two and a half minutes to do it.
 func _test_calm_she_has_not_used_is_left_alone(t: TestRunner) -> void:
-	for run_seed in [4242]:
+	for run_seed: int in [4242]:
 		var map := CityGenerator.generate(run_seed)
 		var used_this_act: Array[Vector2i] = []
 		var act := 0
@@ -790,7 +789,7 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 			if map.is_walkable(tile):
 				return tile
 		return Vector2i(-1, -1)
-	var walks := {}   # which place -> the street segments its walk from home uses
+	var walks: Dictionary = {}   # which place -> the street segments its walk from home uses
 	var keep := {}
 	for place: String in ["target", "clean", "spoiled"]:
 		var to: Vector2i = target[0]
@@ -809,9 +808,12 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 	var grid := ReachabilityGrid.build(map)
 	# The body, across the middle of the first street only the clean area's walk uses.
 	var cutting: EventScheduler.Planned = null
-	for key: Vector3i in walks["clean"]:
-		if cutting == null and not walks["target"].has(key) and not walks["spoiled"].has(key):
-			var street: StreetNetwork.Segment = walks["clean"][key]
+	var clean_walk: Dictionary = walks["clean"]
+	var target_walk: Dictionary = walks["target"]
+	var spoiled_walk: Dictionary = walks["spoiled"]
+	for key: Vector3i in clean_walk:
+		if cutting == null and not target_walk.has(key) and not spoiled_walk.has(key):
+			var street: StreetNetwork.Segment = clean_walk[key]
 			cutting = EventScheduler.Planned.new(EventCatalogue.by_id(_CUTTING_BODY),
 					map.tile_rect_to_world(street.tile_rect()).get_center())
 	t.check(cutting != null, "the clean area has a street of its own to reach it by")
@@ -880,7 +882,7 @@ func _keep_streets_to(map: CityMap, to: Vector2i, keep: Dictionary) -> bool:
 ## location holds nothing and is drawn like any other, so the days asked span it.
 func _test_the_fixed_parts_hold_their_locations(t: TestRunner) -> void:
 	var asked := 0
-	for day in [3, 5, 8, 11, 14]:
+	for day: int in [3, 5, 8, 11, 14]:
 		var events := _day_events(day)
 		var locations := events.locations()
 		var map := _map()
@@ -908,7 +910,7 @@ func _test_the_fixed_parts_hold_their_locations(t: TestRunner) -> void:
 ## location beside it.
 func _test_a_scripted_row_takes_a_location_of_its_own(t: TestRunner) -> void:
 	var asked := 0
-	for day in [10, 13]:
+	for day: int in [10, 13]:
 		var events := _day_events(day)
 		var map := _map()
 		for plan in events.placements():

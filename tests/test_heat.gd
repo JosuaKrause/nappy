@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The heat: what completing resistance tasks does to the city, and the contracts that keep the
 ## escalation from being a difficulty dial nobody checked.
@@ -700,7 +699,7 @@ func _test_a_hot_day_places_more_patrols(t: TestRunner) -> void:
 	var seeds := [8817, 4242, 2102613802, 90210, 37, 38, 39, 12345]
 	var colds := 0
 	var hots := 0
-	for run_seed in seeds:
+	for run_seed: int in seeds:
 		var map := MapCache.of(run_seed)
 		var rng_seed := hash("%d:%d" % [run_seed, day])
 		var cold_rng := RandomNumberGenerator.new()

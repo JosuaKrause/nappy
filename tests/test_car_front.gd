@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## A crowd car kills only what is in front of it while it drives.
 ##
@@ -20,7 +19,7 @@ const RIG := preload("res://tests/test_crowd_bodies.gd")
 const SEED := 4242
 const STEP := 1.0 / 60.0
 
-var _rig = RIG.new()
+var _rig := RIG.new()
 var _fails: Array[String] = []
 
 func run(t: TestRunner) -> void:

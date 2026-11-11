@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Day 7's van gets a second instance on her route, from a rigged bag *(inbox #586 in
 ## olive-hedgehog: "each olive badger rigged bag should be 2 or 3"; inbox #650 in mossy-beaver: "I
@@ -208,7 +207,7 @@ func _test_the_van_is_sited_wholly_out_of_the_camera_view(t: TestRunner) -> void
 	var seen: Array[String] = []
 	var rng := _rng(seed_value, "sited")
 	for i in range(1, path.size(), 3):
-		for way in [1, -1]:
+		for way: int in [1, -1]:
 			var from: Vector2 = path[i - 1] if way == 1 else path[i]
 			var to: Vector2 = path[i] if way == 1 else path[i - 1]
 			if from.distance_to(to) < 1.0:

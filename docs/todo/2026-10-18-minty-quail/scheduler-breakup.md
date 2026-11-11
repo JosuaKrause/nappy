@@ -49,11 +49,11 @@ when none is handed in goes with the one in the day planner (`city-hand-ins.md`)
   with the script in its description so a branch merging main reruns it. No forwarder is kept for
   the old name (inbox #852 in minty-dolphin). The plan is an inner class, so the field-read check
   sees none of its fields today; once it is a class the check lists every reader of them, and the
-  pull request regenerates `tools/field_reads.txt` with `--write`. `--base` then fails each added
-  line, since a class lifted out of a file is no rename, and it fails the moves below the same
-  way, code reading listed fields moved into new files. Asked whether the list may gain a read
-  that moved with its code, the player answered that it may (inbox #1350): pull request #1318
-  makes the check pass such a read, and the rename and those moves follow it.
+  pull request regenerates `tools/field_reads.txt` with `--write`. `--base` passes each added
+  line of a class lifted out of a file whole, and of the moves below, code reading listed fields
+  moved into a new file with no more uses, and fails a read that is new: a read that only moved
+  may add its line to the list (inbox #1350 in grassy-trout), and review reads a lifting diff for the cases the
+  check cannot count (minty-quail-breezy-bison).
 - **`PlanBuilder`**, a pure move, beside placement's route ground rule.
 - **`RowGround`**, after both: it is a seam, no pure move, since the object with its own per-day
   cache replaces the `ground: Dictionary` threaded through `StreetInvalidation`,
