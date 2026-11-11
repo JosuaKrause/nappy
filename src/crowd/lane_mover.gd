@@ -247,6 +247,37 @@ class Lane:
 	func door_ahead_along() -> float:
 		return _of.door_ahead_along
 
+	## Where it stands along its axis, and across it, in px. Written out rather than asking the
+	## mover's own `_along()` and `_cross()`, since the strategies ask them many times a tick for
+	## every agent and a member read is cheaper than a second call.
+	func position_along() -> float:
+		return _of.position.y if _of._vertical else _of.position.x
+
+	func position_across() -> float:
+		return _of.position.x if _of._vertical else _of.position.y
+
+	## The tile `distance` away along an axis that is vertical or not, the way `direction_along`
+	## points, from where it stands or, when `from` is not `Vector2.INF`, from `from`.
+	func tile_ahead(vertical: bool, direction_along: float, distance: float,
+			from: Vector2) -> Vector2i:
+		return _of._tile_ahead(vertical, direction_along, distance, from)
+
+	## Whether the street segment `tile` is on is shut to it today, the way a hard blocker is.
+	func street_is_shut_at(tile: Vector2i) -> bool:
+		return _of._segment_is_shut(tile)
+
+	## Whether it stands somewhere it could have got to on its own.
+	func stands_on_a_street() -> bool:
+		return _of._stands_on_a_street()
+
+	## Whether it is far enough from the camera that taking it away cannot be seen.
+	func is_out_of_view() -> bool:
+		return _of._out_of_view()
+
+	## Whether it has walked out of the patch of city that is being simulated.
+	func has_left_the_field() -> bool:
+		return _of._has_left_the_field()
+
 	# --------------------------------------------------------------------- events ---
 
 	## It starts in a lane: travelling `direction_along` an axis that is vertical or not, in the lane
@@ -341,6 +372,32 @@ class Lane:
 	func clear_what_is_ahead() -> void:
 		_of.gap_ahead = INF
 		_of.leader_speed = 0.0
+
+	## It is placed `at` along its axis, where it stands across unchanged: a jump outside its own
+	## step, so its move stands there too.
+	func be_placed_along(at: float) -> void:
+		_of._set_along(at)
+
+	## It is placed at `point`: a jump outside its own step, so its move stands there too.
+	func be_placed_at(point: Vector2) -> void:
+		_of.position = point
+		_of.place_its_move()
+
+	## It is placed `along` its axis on its lane's centre line: a jump outside its own step, so its
+	## move stands there too.
+	func be_placed_on_its_lane_at(along: float) -> void:
+		_of._set_along(along)
+		_of._set_cross(_of._lane_centre)
+
+	## It turns round where it stands, unless it is still walking off the stride its last
+	## about-face costs (`LaneMover._turn_round()`).
+	func turn_round_where_it_stands() -> void:
+		_of._turn_round()
+
+	## It leaves the field and comes back in elsewhere (`LaneMover._recycle()`), or, on a stretch
+	## where she can see it, turns round instead.
+	func be_recycled() -> void:
+		_of._recycle()
 
 	# ------------------------------------------------------- what the crowd finds ---
 	# What `Crowd` works out once a tick over the pair of them or over the street, and tells the car:
