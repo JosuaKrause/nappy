@@ -1,4 +1,4 @@
-
+# mossy-rabbit — Old briefs and review checkouts are swept · 2026-11-11
 
 **The ask.** The rules review found several hundred briefs under `.claude/briefs/` whose branches
 were retired before a retired branch's brief was deleted with it, and detached review checkouts under
@@ -31,10 +31,11 @@ on a second, explicit run, modelled on the retirement script's `--all` inventory
 
 ## Choices open to overturn
 
-- **`cleanup: ready` is not required** of a swept brief: the briefs the item is about were written
-  before that line existed, and every condition the line releases (the branch and its worktree
-  gone) is checked directly. The alternative keeps the briefs without the line until each is
-  released by hand (the builder's).
+- **`cleanup: ready` is not required** of a swept brief, which widens the item's "a released
+  brief": every condition the line releases (the branch and its worktree gone, no agent running)
+  is checked directly. On the first listing most briefs marked to sweep carried the line; of
+  those that did not, most were written in September, before the line existed. The alternative
+  keeps the briefs without the line until each is released by hand (the builder's).
 - **A merged pull request is required**: a brief of dropped work may be its task's only record
   (the builder's).
 - **24 hours of quiet** (`QUIET_HOURS`), one constant for briefs, transcripts and checkouts, so that
