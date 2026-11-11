@@ -37,6 +37,8 @@ src/events/events_ahead.gd walk_siting
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each
 # line.
+src/autoload/tuning.gd calm_areas_needed  # the calm areas a city has to have: one per day of the longest act plus one in reserve; tests/test_tuning_fairness.gd keeps CityGenerator.MIN_CALM_BLOCKS >= it, so an act boundary moved without the floor fails there (writing-tests's relationship-test kind)
+src/autoload/tuning.gd longest_act_days  # the longest act in days, the number calm_areas_needed() is derived from; tests/test_tuning_fairness.gd names it in the failure message of the same relationship, and calm_areas_needed() reads it
 src/autoload/tuning.gd required_horn_time  # the floor a car's horn time may not drop below; tests/test_tuning_fairness.gd keeps CAR_HORN_TIME >= it, so writing-tests's relationship-test example and crowd-traffic's horn rule fail at boot if it is lowered
 src/autoload/tuning.gd required_horn_sight  # the sight distance the horn needs; tests/test_tuning_fairness.gd and tests/crowd_rig.gd check CAR_HORN_SIGHT against it, the same fairness contract (crowd-traffic)
 src/autoload/tuning.gd sleepiness_gain_calm  # the sleepiness gain in a calm zone; tests/test_meters.gd asserts the baby's drain stays below it, a relationship test of the kind writing-tests wants

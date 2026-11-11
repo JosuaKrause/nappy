@@ -4,7 +4,8 @@ extends RefCounted
 ## Owns the state of a run: the seed, the calendar, nerves and resistance progress.
 ##
 ## Determinism contract (docs/ARCHITECTURE.md): nothing gameplay-relevant may call the
-## global `randi()`. Layout comes from `city_rng()`, a day's events from `calendar.day_rng()`.
+## global `randi()`. The city's layout is generated from `header.run_seed`, a day's events come from
+## `calendar.day_rng()`, and a stream of the run's own from `run_rng()`.
 
 ## The run's state is kept in registered parts (`RunSubState`), each declaring its own fields, its
 ## dawn copies and their save shape once; starting a run, the dawn photograph, a lost day's
@@ -149,12 +150,6 @@ func run_rng(stream: String) -> RandomNumberGenerator:
 	rng.seed = hash("%d:run:%s" % [header.run_seed, stream])
 	return rng
 
-## Deterministic RNG for city layout. Same seed, same city, for the whole run.
-func city_rng() -> RandomNumberGenerator:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = header.run_seed
-	return rng
-
 func _new_seed() -> int:
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
@@ -169,7 +164,3 @@ func snapshot_is_complete(data: Dictionary) -> bool:
 		if not data.has(field):
 			return false
 	return true
-
-## Puts a snapshot back, each part reading its own keys.
-func restore_snapshot(data: Dictionary) -> void:
-	run_parts.restore_state(data)

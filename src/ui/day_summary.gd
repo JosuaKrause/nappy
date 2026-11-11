@@ -302,8 +302,8 @@ func _acknowledge_and_continue() -> void:
 ## control scheme invited a player to use the mouse. The pointer scheme now reads a click
 ## everywhere, so a laptop player is expected to click, and the screen has to accept one.
 ##
-## **The mouse branch is its own, gated on `not _touch`, rather than folded into `TouchInput
-## .is_press()`.** A real touch device emulates a mouse click from every finger it reads, and
+## **The mouse branch is its own, gated on `not _touch`, rather than read together with the touch
+## branch.** A real touch device emulates a mouse click from every finger it reads, and
 ## `_acknowledge_and_continue()`'s two-frame delay leaves `is_showing()` true for that whole
 ## window — long enough for the emulated click to arrive while it is still open. Reading it through
 ## the same `not _touch` gate `TouchControls` and `PauseScreen`'s own restart hold use means the

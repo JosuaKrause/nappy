@@ -3,8 +3,8 @@ extends RefCounted
 ## **The fairness contracts that are about shared numbers rather than about an event**, stated over
 ## `Tuning` and failing the suite, and so CI, when a number is unfair. A row of the catalogue validates
 ## itself when it is first asked for (`EventDef.validate()`, which also holds a pursuer to
-## `Tuning.validate_pursuit()`); traffic, the signals and the return patrols have no row to hang that on,
-## so the three contracts live here.
+## `Tuning.validate_pursuit()`); traffic, the signals, the return patrols and the calm areas have no row to hang that on,
+## so the contracts live here.
 ##
 ## Each check states the contract in the terms it is felt in, with the numbers in the message, so a
 ## failure says which number to move and by how much.
@@ -16,6 +16,7 @@ func run(t) -> void:
 	_test_a_walker_can_get_round_a_body(t)
 	_test_the_side_streets_green_clears_the_carriageway(t)
 	_test_the_return_patrols_keep_their_shape(t)
+	_test_the_city_has_a_calm_area_for_every_day_of_an_act(t)
 
 # --------------------------------------------------------------------- traffic ---
 
@@ -89,3 +90,16 @@ func _test_the_return_patrols_keep_their_shape(t) -> void:
 			("RETURN_PATROL_INTERVAL %s is not shorter than AHEAD_INTERVAL %s: the return "
 			% [EventDirector.RETURN_PATROL_INTERVAL, EventDirector.AHEAD_INTERVAL])
 			+ "would owe patrols no faster than an ordinary walk already gets")
+
+# ------------------------------------------------------------------ calm areas ---
+
+## A day spoils every calm area she has used so far this act, so an act of N days burns N of them
+## and the last day of an act is winnable only with one more in reserve. `CityGenerator`'s floor
+## on calm areas is authored apart from the act lengths, so the two are held together here:
+## moving an act boundary, or lengthening the run, fails this rather than leaving the last day of
+## an act short of places to recover.
+func _test_the_city_has_a_calm_area_for_every_day_of_an_act(t: TestRunner) -> void:
+	var needed := Tuning.calm_areas_needed()
+	t.check(CityGenerator.MIN_CALM_BLOCKS >= needed,
+			"Unfair city: MIN_CALM_BLOCKS %d < %d calm areas the longest act (%d days) needs"
+			% [CityGenerator.MIN_CALM_BLOCKS, needed, Tuning.longest_act_days()])

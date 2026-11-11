@@ -30,16 +30,3 @@ static func available(config: RunConfig = null) -> bool:
 	if config != null and config.forces_touch():
 		return true
 	return DisplayServer.is_touchscreen_available()
-
-## Whether `event` is a generic press from a pointing device — a real finger
-## (`InputEventScreenTouch`) or a left mouse click — the one shape `TitleScreen`, `DaySummary` and
-## `PauseScreen` all need to dismiss themselves: each already tests `ui_accept` on its own for the
-## keyboard's equivalent, and ORs this in alongside it rather than this folding `ui_accept` in
-## itself, since `ui_accept` has nothing to do with a touch device.
-static func is_press(event: InputEvent) -> bool:
-	if event is InputEventScreenTouch:
-		return (event as InputEventScreenTouch).pressed
-	if event is InputEventMouseButton:
-		var button := event as InputEventMouseButton
-		return button.pressed and button.button_index == MOUSE_BUTTON_LEFT
-	return false

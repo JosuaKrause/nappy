@@ -105,7 +105,7 @@ const SQUARE_SIZE_TILES := 4
 ## act, so an act of four days burns four, and the plus one is what stops the last day of an act
 ## being unwinnable rather than merely hard. It is derived from the act lengths below rather than
 ## authored beside them, because the two would otherwise drift the first time either moved:
-## `calm_areas_needed()`.
+## `Tuning.calm_areas_needed()`, which `tests/test_tuning_fairness.gd` holds this floor to.
 const MIN_CALM_BLOCKS := 5
 
 ## The **apartment complex**: a courtyard lot four blocks across, with the streets between them

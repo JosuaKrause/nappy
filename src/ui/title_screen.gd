@@ -218,7 +218,7 @@ func _refresh_body() -> void:
 ## `TouchControls` is the only file `main._apply_orientation()` reaches with a `rotated` property,
 ## and `ScreenOrientation.wants_rotation()` is a pure function of the same two facts `main` itself
 ## asks it with. Needed now that `_handle_mode_button_press()` reads a raw press position rather
-## than only an action or a bare `TouchInput.is_press()`.
+## than only an action.
 func _wants_rotation() -> bool:
 	return ScreenOrientation.wants_rotation(get_window().size, _touch)
 
