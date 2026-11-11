@@ -53,7 +53,11 @@ var _record: FrameRecord
 ## Whether the title is up, asked of whoever runs the screen and handed in by `setup()`: a frame
 ## behind the title is not kept, since nobody is playing it.
 var _in_the_title: Callable
-var _city: City
+var _events: EventManager
+var _crowd: Crowd
+## How the ground is scheduled this run, written into a record's metadata: `Mode.ONE` for a
+## recorder that watches no city.
+var _ground_mode := SceneryGround.Mode.ONE
 var _player: Stroller
 var _day: DayController
 ## The run whose seed names the record and whose calendar day each frame carries, handed in by
@@ -74,13 +78,16 @@ var _records_dir := ""
 ## `_add_page_button()`.
 var _save_callback: JavaScriptObject
 
-func setup(in_the_title: Callable, city: City, player: Stroller, day: DayController,
+func setup(in_the_title: Callable, events: EventManager, crowd: Crowd,
+		ground_mode: SceneryGround.Mode, player: Stroller, day: DayController,
 		run: RunState, sitting: Sitting, records_dir: String) -> void:
 	_run = run
 	_records_dir = records_dir
 	_sitting = sitting
 	_in_the_title = in_the_title
-	_city = city
+	_events = events
+	_crowd = crowd
+	_ground_mode = ground_mode
 	_player = player
 	_day = day
 	name = "FrameRecorder"
@@ -125,8 +132,8 @@ func at_process_end() -> void:
 	ledger.keep_this_frame(not get_tree().paused and not _in_the_title.call() and _day.is_running())
 	if ledger.is_keeping():
 		var here := _player.global_position
-		ledger.set_counter(FrameLedger.CROWD_AGENTS, _city.crowd.agent_count())
-		ledger.set_counter(FrameLedger.LIVE_EVENTS, _city.events.active_count())
+		ledger.set_counter(FrameLedger.CROWD_AGENTS, _crowd.agent_count())
+		ledger.set_counter(FrameLedger.LIVE_EVENTS, _events.active_count())
 		ledger.set_counter(FrameLedger.PLAYER_X, roundi(here.x))
 		ledger.set_counter(FrameLedger.PLAYER_Y, roundi(here.y))
 		ledger.set_counter(FrameLedger.DAY, _run.header.day)
@@ -291,8 +298,7 @@ func _report_text() -> String:
 	var metadata := _metadata.duplicate()
 	metadata["build"] = BuildInfo.build_text()
 	metadata["run_seed"] = _run.header.run_seed
-	# The mode the city was handed, or a city's default for a recorder that watches none.
-	metadata["ground_mode"] = int(_city.ground_mode_in_force() if _city else SceneryGround.Mode.ONE)
+	metadata["ground_mode"] = int(_ground_mode)
 	metadata["scenery_budget_usec"] = SceneryResidency.BUDGET_USEC
 	metadata["engine"] = Engine.get_version_info()
 	metadata["renderer"] = RenderingServer.get_current_rendering_method()

@@ -1182,6 +1182,10 @@ func buildings() -> Array[Building]:
 func poster_walls() -> PosterWalls:
 	return _posters
 
+## The lights on the spine (`TrafficSignals`), for whoever reads which junction shows red.
+func traffic_signals() -> TrafficSignals:
+	return signals
+
 ## Which way the ground is scheduled this run (`ground_mode`, the `--ground-mode` flag).
 func ground_mode_in_force() -> SceneryGround.Mode:
 	return ground_mode

@@ -81,7 +81,11 @@ const STILL_RADIUS := 4.0
 ## answers the same default, and this is what the hold is before `setup()` hands it one.
 const DEFAULT_SECONDS := 1.0
 
-var _city: City
+var _map: CityMap
+var _signals: TrafficSignals
+## Null where the world has no events or no crowd; each is asked only when handed.
+var _events: EventManager
+var _crowd: Crowd
 var _player: Stroller
 var _day: DayController
 var _seconds := DEFAULT_SECONDS
@@ -105,9 +109,13 @@ var _done := false
 ## nobody handed writes nowhere.
 var trace := RunTrace.new()
 
-func setup(city: City, player: Stroller, day: DayController, hold_seconds: float,
-		picture_dir: String, recording := false) -> void:
-	_city = city
+func setup(map: CityMap, signals: TrafficSignals, events: EventManager, crowd: Crowd,
+		player: Stroller, day: DayController, hold_seconds: float, picture_dir: String,
+		recording := false) -> void:
+	_map = map
+	_signals = signals
+	_events = events
+	_crowd = crowd
 	_player = player
 	_day = day
 	_seconds = hold_seconds
@@ -124,14 +132,14 @@ func _watching() -> bool:
 	return _day.is_running() and not get_tree().paused
 
 ## Whether she cannot presently choose to walk somewhere — see the class doc for the three cases
-## and why each is needed. Touches `_city` and `_player`, so unlike `_feed()` this has no pure test
+## and why each is needed. Touches `_events` and `_player`, so unlike `_feed()` this has no pure test
 ## of its own; the geometry and signal half of it (`facing_a_red_light()`) does.
 func _held() -> bool:
 	if _player.is_detained():
 		return true
-	if _city.events and _city.events.door_holding_her_at(_player.global_position):
+	if _events and _events.door_holding_her_at(_player.global_position):
 		return true
-	return facing_a_red_light(_city.map, _city.signals, _player.global_position, _visible_world_rect())
+	return facing_a_red_light(_map, _signals, _player.global_position, _visible_world_rect())
 
 ## The world-space rect the screen currently shows, computed the same way `TouchControls`'s own
 ## screen-to-world reads do: `get_viewport().get_canvas_transform()` maps a
@@ -264,7 +272,7 @@ func _trigger() -> void:
 	_done = true
 	set_physics_process(false)
 	trace.note("still", "quit-when-still, %.1fs held | %s | near: %s" % [
-		_seconds, RunTrace.tile(_city.map.world_to_tile(_player.global_position)), _nearest()])
+		_seconds, RunTrace.tile(_map.world_to_tile(_player.global_position)), _nearest()])
 	add_child(AutoScreenshot.immediate(_picture_path(), _recording))
 
 ## Where the picture goes in a game run: a `still/` folder beside the run's other picture kinds
@@ -293,16 +301,16 @@ func _picture_path() -> String:
 func _nearest() -> String:
 	var best := INF
 	var describe := "nothing live"
-	if _city.events:
-		for instance: EventInstance in _city.events.instances():
+	if _events:
+		for instance: EventInstance in _events.instances():
 			if instance.is_finished:
 				continue
 			var distance: float = instance.global_position.distance_to(_player.global_position)
 			if distance < best:
 				best = distance
 				describe = "%s %.0fpx" % [instance.def.id, distance]
-	if _city.crowd:
-		for agent: CrowdAgent in _city.crowd.agents():
+	if _crowd:
+		for agent: CrowdAgent in _crowd.agents():
 			if agent.kind != CrowdAgent.Kind.CAR:
 				continue
 			var distance: float = agent.global_position.distance_to(_player.global_position)
