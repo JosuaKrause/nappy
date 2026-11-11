@@ -42,9 +42,10 @@ the typing plan of 2026-11-11 into file-disjoint passes.
   `investigation`, `on_foot`, `flock` and `unreachable`, its `age`, read and written, and its
   `came_under_a_warning`, `trace` and `signals`, written; a pursuit behaviour's `outrun_for`; an
   officer's `trail`; the event manager's `world`, `streaming`, `spawner`, `warnings` and `sources`,
-  and its `trace` and `atlas`, written; the event world's `map`; the plan record's `behaviours`; a
-  visible view's `view`; the danger edge's `atlas`, written; the city's `events` and `map`; the
-  map's `world`, written; and the world context's `excitement_sources`, written.
+  its `ahead`, read to place what is owed ahead, and its `trace` and `atlas`, written; the event
+  world's `map`; the plan record's `behaviours`; a visible view's `view`; the danger edge's `atlas`,
+  written; the city's `events` and `map`; the map's `world`, read and written; and the world
+  context's `excitement_sources`, written.
 
 ## Verified
 
