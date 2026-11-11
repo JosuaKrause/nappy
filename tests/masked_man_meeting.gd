@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## One meeting with the escape's masked man, shared by the suites that walk her down the right shaft
 ## to meet him: `test_interior_masked_man.gd` and `test_interior_masked_man_badge.gd`.
@@ -191,7 +190,7 @@ func _count_the_badge(edge: DangerEdge, then: Dictionary, log: Dictionary) -> vo
 	log["unseen"] = int(log["unseen"]) + 1
 
 func _hold_keys(actions: Array, running: bool) -> void:
-	for a in ["move_left", "move_right", "move_up", "move_down", "run"]:
+	for a: String in ["move_left", "move_right", "move_up", "move_down", "run"]:
 		Input.action_release(a)
 	for a: String in actions:
 		Input.action_press(a)

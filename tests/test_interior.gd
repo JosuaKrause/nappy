@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## `InteriorMap` and `InteriorMapPlan` — the escape scene's one building-wide map, walkability, the
 ## alternating stairwells of the ten-column grammar, and the doors that teleport between its seven
@@ -101,7 +100,7 @@ func _test_the_stairwell_grammar_is_exact_in_both_shafts(t: TestRunner) -> void:
 	t.check(InteriorMap.STAIRWELL_ROWS == expected,
 			"the runtime grammar is the literal 22-row diagram plus one completed lobby approach")
 	var f := InteriorMap.build()
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		var part := "stairwell_%s" % side
 		var origin: Vector2i = f.waypoint(part) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for y in expected.size():
@@ -121,12 +120,12 @@ func _test_the_stairwell_grammar_is_exact_in_both_shafts(t: TestRunner) -> void:
 ## The walkable roles have TileSet sources because they are the surface; the three side roles also
 ## have sources but remain solid.
 func _test_stair_symbols_define_walkability_and_art(t: TestRunner) -> void:
-	for symbol in ["F", "t", "m", "T", "M"]:
+	for symbol: String in ["F", "t", "m", "T", "M"]:
 		var kind := _kind_painted_for(symbol)
 		t.check(InteriorTile.is_walkable(kind), "'%s' is walkable" % symbol)
 		t.check(InteriorTileSet.source_id_for(kind) >= 0, "'%s' has a live tile source" % symbol)
 	t.check(InteriorTile.is_walkable(InteriorTile.Kind.DOOR), "'D' is a walkable transition")
-	for symbol in ["b", "c", "C"]:
+	for symbol: String in ["b", "c", "C"]:
 		var kind := _kind_painted_for(symbol)
 		t.check(not InteriorTile.is_walkable(kind), "'%s' is not walkable" % symbol)
 		t.check(InteriorTileSet.source_id_for(kind) >= 0, "'%s' is still painted" % symbol)
@@ -192,7 +191,7 @@ func _test_the_exit_and_the_entrance_are_what_they_claim(t: TestRunner) -> void:
 ## nothing is ever placed there.
 func _test_the_ground_between_parts_is_not_walkable(t: TestRunner) -> void:
 	var f := InteriorMap.build()
-	for x in [30, 94, 158, 222, 286, 350]:
+	for x: int in [30, 94, 158, 222, 286, 350]:
 		var tile := Vector2i(x, 0)
 		t.check(not f.is_walkable(tile), "the gap tile %s between two parts is not walkable" % tile)
 
@@ -232,7 +231,7 @@ func _test_every_walkable_tile_is_reachable_from_her_door_through_the_doors(t: T
 ## enough that walking alone, with no door, cannot cross from one part to the next.
 func _test_no_two_parts_are_reachable_by_walking_alone(t: TestRunner) -> void:
 	var f := InteriorMap.build()
-	var components := {}
+	var components: Dictionary[String, Dictionary] = {}
 	for part in PARTS:
 		components[part] = _flood_fill(f, f.waypoint(part))
 	for part in PARTS:
@@ -247,7 +246,7 @@ func _test_no_two_parts_are_reachable_by_walking_alone(t: TestRunner) -> void:
 ## one walkable kind that is never a `tiles` entry of its own (see its own doc), so it is the one
 ## exclusion.
 func _test_the_tileset_carries_every_walkable_ground_kind(t: TestRunner) -> void:
-	for kind in InteriorTile.Kind.values():
+	for kind: int in InteriorTile.Kind.values():
 		if kind == InteriorTile.Kind.PUDDLE or not InteriorTile.is_walkable(kind):
 			continue
 		t.check(InteriorTileSet.source_id_for(kind) >= 0, "walkable ground kind %d has a TileSet source" % kind)
@@ -281,7 +280,7 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: TestRunner) -> vo
 	scene.build()
 	var f := InteriorMap.build()
 	var blocked := {}
-	for body in scene.get_node("Collision").get_children():
+	for body: Node2D in scene.get_node("Collision").get_children():
 		blocked[scene.map.world_to_tile(body.position)] = true
 	for tile: Vector2i in f.floor_tiles():
 		if f.is_walkable(tile):
@@ -289,7 +288,7 @@ func _test_collision_blocks_exactly_the_non_walkable_ground(t: TestRunner) -> vo
 		else:
 			t.check(blocked.has(tile), "painted non-walkable tile %s is blocked" % tile)
 	t.check(blocked.has(Vector2i(30, 0)), "a gap tile between two parts is blocked")
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		var part := "stairwell_%s" % side
 		var origin: Vector2i = f.waypoint(part) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for y in InteriorMap.STAIRWELL_ROWS.size():
@@ -476,7 +475,7 @@ func _test_a_sideways_press_on_a_flight_walks_its_slope(t: TestRunner) -> void:
 					"west role %d: left moves equally left and down" % kind)
 			t.check(right.x > 0 and right.y < 0,
 					"west role %d: right moves equally right and up" % kind)
-		for redirected in [right, left]:
+		for redirected: Vector2 in [right, left]:
 			t.check(is_equal_approx(absf(redirected.x), absf(redirected.y)),
 					"flight role %d gives equal horizontal and vertical components" % kind)
 			t.check(is_equal_approx(redirected.length(), 1.0),
@@ -559,7 +558,7 @@ func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: Test
 	var tiles: Array[Vector2i] = []
 	var origins: Array[Vector2i] = []
 	var sides: Array[String] = []
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		var origin: Vector2i = f.waypoint("stairwell_%s" % side) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for tile: Vector2i in scene.map.stairwell_tiles("stairwell_%s" % side):
 			var kind: InteriorTile.Kind = f.floor_kind_at(tile)
@@ -759,7 +758,7 @@ func _test_the_basement_entry_is_a_straight_level_stair(t: TestRunner) -> void:
 ## itself, so a door that silently failed to move her would fail the very next line.
 func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) -> void:
 	var f := InteriorMap.build()
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		var part := "stairwell_%s" % side
 		var scene := InteriorScene.new()
 		t.add_child(scene)
@@ -792,7 +791,7 @@ func _test_a_rig_walks_both_stairwells_from_her_door_to_the_exit(t: TestRunner) 
 			t.check(_shortest_path_length(f, from, to) > 0,
 					"%s has a continuous walk from %s to %s"
 					% [part, landing_ids[index], landing_ids[index + 1]])
-		for id in ["landing_third", "landing_second", "landing_first"]:
+		for id: String in ["landing_third", "landing_second", "landing_first"]:
 			var landing_tile: Vector2i = f.waypoint("%s:%s" % [part, id])
 			var mid_result := scene.map.transition_at(landing_tile)
 			t.check(mid_result.is_empty(), "%s: passing %s's `F` approach triggers nothing" % [part, id])
@@ -976,7 +975,7 @@ func _test_the_rubble_shuts_the_top_floor_off_its_right_stairwell(t: TestRunner)
 			"from her own door the right stairwell cannot be entered on the top floor at all")
 	t.check(reached.has(left_door),
 			"and the left one still can, so the way down starts on the fire's own side")
-	for id in ["hallway_second", "hallway_first"]:
+	for id: String in ["hallway_second", "hallway_first"]:
 		var seen := _flood_fill(f, f.waypoint(id))
 		t.check(seen.has(f.door("%s:right" % id).tile) and seen.has(f.door("%s:left" % id).tile),
 				"%s still walks between both of its stair doors, so crossing over is possible" % id)
@@ -1022,7 +1021,7 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: TestRunner) -> 
 		# The inner cell of a level approach in the burning shaft: the cell below the second or the
 		# first floor's landing, one cell further in than its door.
 		var approaches: Array[Vector2i] = []
-		for landing_id in ["landing_second", "landing_first"]:
+		for landing_id: String in ["landing_second", "landing_first"]:
 			var landing: Vector2i = scene.map.waypoint("stairwell_%s:%s" % [burning, landing_id])
 			if scene.map.is_walkable(landing + Vector2i.DOWN):
 				approaches.append(landing + Vector2i.DOWN)
@@ -1065,7 +1064,7 @@ func _test_the_fire_closes_one_stairwell_and_leaves_the_other(t: TestRunner) -> 
 ## (the way she can also take). A fire on the first floor's approach would leave the second flight
 ## open and shut the last, which is the walk that lost the crossing.
 func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t: TestRunner) -> void:
-	for run_seed in [1, 2, 7, 99, 4242, 12345, 777, 31337, 5, 8675309]:
+	for run_seed: int in [1, 2, 7, 99, 4242, 12345, 777, 31337, 5, 8675309]:
 		var scene := InteriorScene.new()
 		t.add_child(scene)
 		var rng := RandomNumberGenerator.new()
@@ -1087,14 +1086,14 @@ func _test_the_fire_stands_on_the_second_floor_and_the_walk_is_left_right_left(t
 		var f := InteriorMap.build()
 		var reach := fire.def.obstructs_radius + Tuning.PLAYER_BODY_RADIUS
 		var shut := {}
-		for tile in f.floor_tiles():
+		for tile: Vector2i in f.floor_tiles():
 			if scene.map.tile_to_world(tile).distance_to(fire.global_position) < reach:
 				shut[tile] = true
 		# Each flight is walked between the shaft's own doors, which is where a flight begins and ends
 		# and where a door arrival lands clear of the fire.
 		var landing := {}
-		for side in ["left", "right"]:
-			for floor_id in ["third", "second", "first", "lobby"]:
+		for side: String in ["left", "right"]:
+			for floor_id: String in ["third", "second", "first", "lobby"]:
 				landing["%s:%s" % [side, floor_id]] = f.door("stairwell_%s:landing_%s" % [side, floor_id]).tile
 		t.check(_walks_between(f, shut, landing["left:third"], landing["left:second"]),
 				"seed %d: left, from the third floor to the second, is open" % run_seed)

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The escape's masked man and her body on the stairwell flights, on real physics ticks: the 45-degree
 ## walk of every flight, the lines onto the second flight that are caught and the ones that get
@@ -66,7 +65,7 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: TestRunner) -> void:
 			"the walks use the enabled real 14px player circle")
 	t.check((player.get_node("PramCollisionShape2D") as CollisionShape2D).disabled,
 			"and the pram body is off while she carries the baby")
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		var origin: Vector2i = f.waypoint("stairwell_%s" % side) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for walk: Array in _STAIR_WALKS:
 			var start: Vector2i = origin + (walk[0] as Vector2i)
@@ -76,7 +75,7 @@ func _test_her_body_walks_every_flight_at_45_degrees(t: TestRunner) -> void:
 			var label := "%s shaft from %s, %s" % [side, walk[0], action]
 			t.check(f.floor_kind_at(start) == InteriorTile.Kind.STAIRWELL_FLOOR,
 					"%s: starts on a landing tile" % label)
-			for a in ["move_left", "move_right", "move_up", "move_down"]:
+			for a: String in ["move_left", "move_right", "move_up", "move_down"]:
 				Input.action_release(a)
 			Input.action_press(action)
 			player.global_position = scene.map.tile_to_world(start)
