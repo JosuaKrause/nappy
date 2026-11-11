@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends "res://tests/events_shared_city.gd"
 ## Playtest 07, findings 16 and 13: *"none of the non-moving obstacles do anything -- I can freely
 ## walk over them"*, and *"I can walk over the robber and he doesn't do anything"*. The answer is a
@@ -235,7 +234,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 	var checked_trees := 0
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 137)
-		for day in DAYS:
+		for day: int in DAYS:
 			var state := CityState.new()
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)
@@ -349,7 +348,7 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 	var bands_checked := 0
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 173)
-		for day in DAYS:
+		for day: int in DAYS:
 			var state := CityState.new()
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)

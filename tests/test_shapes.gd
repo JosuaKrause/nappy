@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `GroundShape`: the datum a shadow and a solid body are both derived from — M61, "one shape per
 ## object". `reach()`, `across()` and `distance_to_spine()` over a point, a segment and a
@@ -226,7 +225,7 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t: TestRunner) -> v
 	var def := EventCatalogue.by_id("barricade")
 	t.check(def != null and def.shape != null and def.shape.half_length > 0.0,
 			"'barricade' is a hard seal row whose shape is a real segment, not a point")
-	for horizontal in [true, false]:
+	for horizontal: bool in [true, false]:
 		var segment := _real_segment(map, horizontal)
 		t.check(segment != null,
 				"the map has a real %s street to check" % ("horizontal" if horizontal else "vertical"))
@@ -263,7 +262,7 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t: TestRunner) -> v
 				"'barricade' reaches further than it is thick (%.1f vs %.1f), so the two axes differ"
 				% [reach, thickness])
 		t.check(_solid_at(instance, centre), "the world holds the body at its own centre")
-		for sign in [-1.0, 1.0]:
+		for sign: float in [-1.0, 1.0]:
 			t.check(_solid_at(instance, centre + cross * sign * (reach - _PROBE_MARGIN)),
 					("on a %s street, the body is solid across the street, %.0fpx toward the "
 							% [street_kind, reach - _PROBE_MARGIN]) + "kerb on one side of it")
@@ -276,7 +275,7 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t: TestRunner) -> v
 							+ "would be (%.0fpx out)") % (thickness + _PROBE_MARGIN))
 			# The corner of the capsule's bounding box lies outside the rounded end, so a body
 			# that is a rectangle of the same extent is solid there and a capsule is not.
-			for side in [-1.0, 1.0]:
+			for side: float in [-1.0, 1.0]:
 				t.check(not _solid_at(instance, centre + cross * sign * (reach - _PROBE_MARGIN)
 						+ along * side * (thickness - _PROBE_MARGIN)),
 						"and the bounding box's corner is clear: the end is rounded, not square")
@@ -380,7 +379,7 @@ func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t: TestRunner) -
 
 func _test_field_distance_of_a_stationary_point_is_unchanged(t: TestRunner) -> void:
 	var shape := GroundShape.point(9.0)
-	for offset in [Vector2(30.0, 0.0), Vector2(0.0, -50.0), Vector2(12.0, 40.0)]:
+	for offset: Vector2 in [Vector2(30.0, 0.0), Vector2(0.0, -50.0), Vector2(12.0, 40.0)]:
 		var d := shape.field_distance(Vector2.ZERO, Vector2.RIGHT, Vector2.ZERO, offset)
 		t.check(is_equal_approx(d, offset.length()),
 				("a stationary point's field distance at %s is the plain distance to its centre "
@@ -431,7 +430,7 @@ func _test_field_distance_of_a_moving_point_is_an_ellipse(t: TestRunner) -> void
 ## radius `R` exactly, at a standstill and at every speed up to the eccentricity cap.
 func _test_abeam_half_width_equals_the_resting_radius_at_every_speed(t: TestRunner) -> void:
 	var outer := 120.0
-	for speed in [0.0, 40.0, 130.0, 165.0, 240.0, 500.0]:
+	for speed: float in [0.0, 40.0, 130.0, 165.0, 240.0, 500.0]:
 		var velocity := Vector2(speed, 0.0)
 		var abeam := Vector2(0.0, outer)
 		var d := GroundShape.eccentric_distance(Vector2.ZERO, velocity, abeam)
@@ -444,7 +443,7 @@ func _test_abeam_half_width_equals_the_resting_radius_at_every_speed(t: TestRunn
 func _test_forward_reach_grows_monotonically_with_speed(t: TestRunner) -> void:
 	var outer := 120.0
 	var previous := outer
-	for speed in [0.0, 50.0, 100.0, 130.0, 165.0, 240.0, 390.0, 500.0]:
+	for speed: float in [0.0, 50.0, 100.0, 130.0, 165.0, 240.0, 390.0, 500.0]:
 		var scale := Field.scale(Field.eccentricity(speed))
 		var forward_reach := outer * scale
 		t.check(forward_reach >= previous - 0.001,

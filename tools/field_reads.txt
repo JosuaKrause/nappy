@@ -113,9 +113,6 @@ src/events/event_instance.gd ended
 src/events/event_instance.gd warned
 
 # [City] src/city/city.gd
-src/dev/debug_readout.gd crowd
-src/dev/debug_readout.gd events
-src/dev/debug_readout.gd map
 src/dev/dev_rig.gd events
 src/dev/dev_rig.gd map
 src/dev/dev_rig.gd trace
@@ -134,10 +131,6 @@ src/dev/scene_recipe_runtime.gd run
 src/dev/scene_recipe_runtime.gd signals
 src/dev/scene_recipe_runtime.gd spawn_siting
 src/dev/scene_recipe_runtime.gd trace
-src/dev/still_watch.gd crowd
-src/dev/still_watch.gd events
-src/dev/still_watch.gd map
-src/dev/still_watch.gd signals
 src/events/event_manager.gd run
 src/events/event_manager.gd signals
 src/main.gd all_cyclists_pelicans
@@ -168,10 +161,6 @@ src/run/day_director.gd crowd
 src/run/day_director.gd events
 src/run/day_director.gd map
 src/run/day_director.gd scenery
-src/telemetry/frame_recorder.gd crowd
-src/telemetry/frame_recorder.gd events
-src/telemetry/frame_trace.gd crowd
-src/telemetry/frame_trace.gd events
 src/telemetry/run_session.gd crowd
 src/telemetry/run_session.gd map
 
@@ -397,7 +386,6 @@ src/events/event_manager.gd day
 src/events/event_instance.gd steps_each_tick
 
 # [EventDef] src/events/event_def.gd
-src/city/city.gd id
 src/dev/auto_screenshot.gd pursuit
 src/dev/debug_layers.gd hard_fail
 src/dev/debug_layers.gd inner_radius
@@ -1026,7 +1014,6 @@ src/main.gd locked_out
 
 # [RoadClosure] src/routes/road_closure.gd
 src/city/city.gd kind
-src/city/city.gd segment
 src/city/city_map.gd segment
 src/city/recipe_city_builder.gd segment
 src/events/day_planner.gd segment

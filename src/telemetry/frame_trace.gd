@@ -17,7 +17,8 @@ var _in_the_title: Callable
 var _readout_on: Callable
 var _graph_on: Callable
 var _log_on: Callable
-var _city: City
+var _events: EventManager
+var _crowd: Crowd
 var _player: Stroller
 var _day: DayController
 ## The run whose seed names the trace and whose calendar day each sample records, handed in by
@@ -29,13 +30,15 @@ var _metadata: Dictionary = {}
 var _user_flags: Array = []
 
 func setup(in_the_title: Callable, readout_on: Callable, graph_on: Callable, log_on: Callable,
-		city: City, player: Stroller, day: DayController, user_flags: Array, run: RunState) -> void:
+		events: EventManager, crowd: Crowd, player: Stroller, day: DayController,
+		user_flags: Array, run: RunState) -> void:
 	_run = run
 	_in_the_title = in_the_title
 	_readout_on = readout_on
 	_graph_on = graph_on
 	_log_on = log_on
-	_city = city
+	_events = events
+	_crowd = crowd
 	_player = player
 	_day = day
 	_user_flags = user_flags
@@ -60,14 +63,14 @@ func _sample() -> void:
 	if buffer.is_full():
 		buffer.drop_one()
 		return
-	var live := _city.events.instances()
+	var live := _events.instances()
 	var identities := 0
 	for instance in live:
 		identities += instance.get_instance_id()
 	var here := _player.global_position
 	var counters := PackedInt64Array([
 		Engine.get_physics_frames(), FrameCost.draw_calls(), FrameCost.objects(),
-		FrameCost.primitives(), live.size(), identities, _city.crowd.agent_count(),
+		FrameCost.primitives(), live.size(), identities, _crowd.agent_count(),
 		int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_COUNT)),
 		int(Performance.get_monitor(Performance.OBJECT_ORPHAN_NODE_COUNT)),

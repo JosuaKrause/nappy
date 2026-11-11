@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## **What one test plays**: a `RunState` made fresh for it and the sitting that holds it, parked in a
 ## node of the test's own standing for the tree's root (`Boot.home_playing()`). A boot taken with
@@ -36,7 +35,7 @@ func boot(t: TestRunner, scratch_path: String, words: Array, run_log: Telemetry 
 		still := false, maps := Callable()) -> Boot.Booted:
 	var seat := self
 	return await Boot.boot(t, scratch_path, Boot.config(words),
-			func(unbooted: Node) -> void:
+			func(unbooted: Boot.MainScript) -> void:
 				unbooted.use_sitting_home(seat.home)
 				if run_log:
 					unbooted.use_run_log(run_log),

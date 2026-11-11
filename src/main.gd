@@ -333,7 +333,7 @@ func _ready() -> void:
 	_session = RunSession.new()
 	_session.name = "RunSession"
 	add_child(_session)
-	_session.setup(_run_log, config, EventBus, _flow, _run)
+	_session.setup(_run_log, config, EventBus, _flow, _run, _run.attempt_spend.block_arcs())
 	_run.use_trace(_session.trace)
 	_save.trace = _session.trace
 	_sitting.atlas.trace_note = _session.trace.note
@@ -489,13 +489,14 @@ func _ready() -> void:
 		trace.name = "FrameTrace"
 		add_child(trace)
 		trace.setup(_flow.in_the_title, _readout.readout_on, _readout.graph_on, _run_log.is_active,
-				_city, _player, _day, Array(config.active_args), _run)
+				_event_source(), _crowd_now(), _player, _day, Array(config.active_args), _run)
 
 	if walks_a_day and config.frame_record_requested:
 		_frame_recorder = FrameRecorder.new()
 		add_child(_frame_recorder)
-		_frame_recorder.setup(_flow.in_the_title, _city, _player, _day, _run, _sitting,
-				_frame_records_dir)
+		_frame_recorder.setup(_flow.in_the_title, _event_source(), _crowd_now(),
+				_city.ground_mode_in_force(), _player, _day,
+				_run, _sitting, _frame_records_dir)
 		_readout.watch_frames(_frame_recorder)
 
 	# Built before `_start()`, whose `day_planned` starts it once the day it is meant to walk
@@ -533,15 +534,17 @@ func _ready() -> void:
 
 	_add_the_screenshot_rig()
 
-	# Apart from the boot-order block above and below: `StillWatch` only reads `_city`, `_player`
-	# and `_day`, which already exist by here, and does not affect what day starts or how.
+	# Apart from the boot-order block above and below: `StillWatch` only reads the city's map,
+	# lights, events and crowd, `_player` and `_day`, which already exist by here, and does not
+	# affect what day starts or how.
 	if walks_a_day and config.quit_when_still_requested:
 		var still_watch := StillWatch.new()
 		still_watch.name = "StillWatch"
 		add_child(still_watch)
 		still_watch.trace = _the_trace()
-		still_watch.setup(_city, _player, _day, config.quit_when_still_seconds,
-				StillWatch.telemetry_picture_dir(_run_log), config.recording)
+		still_watch.setup(_city.map, _city.traffic_signals(), _event_source(), _crowd_now(), _player,
+				_day, config.quit_when_still_seconds, StillWatch.telemetry_picture_dir(_run_log),
+				config.recording)
 
 	# The escape's first screen — see `_open_the_first_screen_of_the_escape()`. An authored scene
 	# has already started playing above.
@@ -1641,7 +1644,7 @@ func _add_debug_layers() -> void:
 	if not _readout:
 		return
 	_readout.show_the_world(_event_source(), _crowd_now(), _world_now(), _world_map(),
-			_city)
+			_city.streets() if _city else null)
 
 ## The day's planned routes over the city — see `DebugReadout.draw_routes()`.
 func _add_route_lines() -> void:

@@ -59,6 +59,13 @@ static func kinds_on(day: int) -> Array[int]:
 			found.append(closure_kind)
 	return found
 
+## What this closure is and where, in the run log's words: its kind, which way the street runs and
+## the tile it starts at, such as `roadworks v(8,6)`.
+func summary_words() -> String:
+	return "%s %s%s" % [
+		RoadClosure.display_name(kind).to_lower(), "h" if segment.horizontal else "v",
+		RunTrace.tile(segment.a)]
+
 # ------------------------------------------------------------------ geometry ---
 
 ## Every tile of the street this closure's segment covers — the geometry, not the verdict.

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `RunConfig`, the run's configuration resolved once at boot: what it reads on which build, that
 ## a resolved one cannot change, what a recipe puts on top of it, and that `main` hands the world,
@@ -150,7 +149,7 @@ func _test_a_recipe_stands_in_for_the_run_flags(t: TestRunner) -> void:
 ## and every escape section when given, else each one's own.
 func _test_the_day_and_the_section_lengths(t: TestRunner) -> void:
 	var plain := RunConfig.parse(PackedStringArray(), "", true)
-	for day in [1, Tuning.RUN_LENGTH_DAYS]:
+	for day: int in [1, Tuning.RUN_LENGTH_DAYS]:
 		t.check(is_equal_approx(plain.day_length_for(day), Tuning.day_length(day)),
 				"day %d runs its own length with no flag" % day)
 	t.check(is_equal_approx(plain.escape_section_length(), RunConfig.FINALE_LENGTH_SECONDS),
@@ -249,7 +248,7 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 						"scenery_frame_locked": c.scenery_frame_locked}
 		t.get_tree().node_added.connect(catch)
 		var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, RunConfig.parse(words, "", true),
-				func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
+				func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 		t.get_tree().node_added.disconnect(catch)
 		var baby := Boot.baby(booted.main)
 		var rises := false
@@ -431,7 +430,7 @@ func _the_screens_answer(t: TestRunner, flagged: bool) -> void:
 	if flagged:
 		words.append_array(["--touch", "--web"])
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words),
-			func(main: Node) -> void:
+			func(main: Boot.MainScript) -> void:
 				main.use_sitting_home(home)
 				main.use_quit(func() -> void: quits[0] += 1),
 			false, MapCache.source())
