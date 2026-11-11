@@ -27,8 +27,10 @@ third pull request:
   record 2026-10-18-minty-quail-quiet-ibis, and the still watch, the debug readout, the frame
   recorder and the frame trace since the record 2026-10-18-minty-quail-calm-wombat);
 - `DayPlanner`'s fallback that grows a route tree when dawn grew none is deleted, since no game
-  path reaches it. The rigs that drive the event manager without `City.start_day()`
-  (`tests/test_event_manager.gd`, `tests/test_balance.gd`) hand it a `DayStreets` instead.
+  path reaches it. The rigs that start the event manager's day on a built city without `City.start_day()`
+  (`tests/event_manager_rig.gd`, which the two event manager suites share, `tests/test_masts.gd`,
+  `tests/test_pursuer_on_foot.gd` and three probes, at least) hand it a `DayStreets` whose day they
+  began instead.
 
 **Which map a test uses** is writing-tests' rule (inbox #1172 in gray-dolphin): the shared writer's map is for a test
 of one interaction or edge case, never for a booted day or a measurement.
