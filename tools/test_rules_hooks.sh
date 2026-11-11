@@ -2639,7 +2639,7 @@ assert_write_guard "near shape 3: a redirection -> deny" deny 'rg "git push" x >
 assert_write_guard "near shape 3: egrep -> deny, only rg and grep" deny 'egrep "git push" x'
 assert_write_guard "an echo of a quoted forced push -> deny, no text shape" deny 'echo "git push --force origin main"'
 
-# **The shapes at their widest** (inbox #1292): each allow below is the form of a command a
+# **The shapes at their widest** (inbox #1292 in grassy-trout): each allow below is the form of a command a
 # session ran, whose GitHub words are only text written to a file or searched for. A bare delimiter over a body with no $,
 # backtick or backslash is passed on as a quoted one's is; a file behind one variable is a path;
 # and the cat and the search may stand in a sequence of plain reads (cd first, then pwd, true,

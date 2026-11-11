@@ -52,7 +52,7 @@ when none is handed in goes with the one in the day planner (`city-hand-ins.md`)
   pull request regenerates `tools/field_reads.txt` with `--write`. `--base` then fails each added
   line, since a class lifted out of a file is no rename, and it fails the moves below the same
   way, code reading listed fields moved into new files. Asked whether the list may gain a read
-  that moved with its code, the player answered that it may (inbox #1350): pull request #1318
+  that moved with its code, the player answered that it may (inbox #1350 in grassy-trout): pull request #1318
   makes the check pass such a read, and the rename and those moves follow it.
 - **`PlanBuilder`**, a pure move, beside placement's route ground rule.
 - **`RowGround`**, after both: it is a seam, no pure move, since the object with its own per-day
