@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## A reproducible run choice reaches every player view and survives the day's lifecycle: the run
 ## keeps it, and the rig draws only the family it is handed.
@@ -9,9 +8,9 @@ const VIEWS: Array[String] = ["side", "front_diagonal", "front", "front_diagonal
 const POSES: Array[String] = ["a", "c", "b"]
 
 ## The picture of the mother's pose `frame` at the view she is drawn in now, off her pose, read
-## from the library she was handed.
-func _mother_texture(rig: Stroller, frame: int) -> Texture2D:
-	return rig.atlas.region(StringName(rig.pose(1.0).mother_sources[frame]))
+## from the library she was handed (`library`).
+func _mother_texture(library: AtlasLibrary, rig: Stroller, frame: int) -> Texture2D:
+	return library.region(StringName(rig.pose(1.0).mother_sources[frame]))
 
 func run(t: TestRunner) -> void:
 	_test_seeded_equal_choice_and_lifetime(t)
@@ -41,15 +40,17 @@ func _test_seeded_equal_choice_and_lifetime(t: TestRunner) -> void:
 ## **That `main` binds the choice before the first draw, on a day's way in and on the escape's, is
 ## `tests/test_main.gd`'s** (`_test_main_binds_the_family_before_the_first_draw`).
 func _test_each_family_stays_in_its_own_poses(t: TestRunner) -> void:
-	for male in [false, true]:
+	for male: bool in [false, true]:
 		var rig: Stroller = STROLLER_SCENE.instantiate()
 		rig.draw_as_father(male)
+		var library := AtlasLibrary.new()
+		rig.use_atlas(library)
 		t.add_child(rig)
 		rig.set_physics_process(false)
 		rig.stand_aside()
 		rig.step_back_in()
 		rig.reset_at(Vector2.ZERO)
-		for carrying in [false, true]:
+		for carrying: bool in [false, true]:
 			rig.carrying = carrying
 			for direction in range(8):
 				rig.reset_at(Vector2.ZERO, Vector2.from_angle(direction * PI / 4.0))
@@ -61,7 +62,7 @@ func _test_each_family_stays_in_its_own_poses(t: TestRunner) -> void:
 					t.check(source == path, "every pose/state/facing stays in its selected family")
 					t.check(rig.pose(1.0).mirrored == EightDirection.is_mirrored(direction),
 							"both presentations retain the same west-facing mirrors")
-					t.check(rig.pose(1.0).view == direction and _mother_texture(rig, frame) != null,
+					t.check(rig.pose(1.0).view == direction and _mother_texture(library, rig, frame) != null,
 							"the facing settles the view and the family resolves a picture for it")
 			t.check(rig.pose(1.0).mother_sources[0].begins_with("rig/father_") == male,
 					"standing aside, continuing, resetting and resolving either state never reroll")

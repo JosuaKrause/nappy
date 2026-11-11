@@ -79,15 +79,15 @@ func _test_a_baby_answers_from_the_world_she_was_last_handed(t: TestRunner) -> v
 	t.close_to(baby.decay_rate(), walking * building.decay,
 			"in the building her decay is the building's ground's")
 	await _let_her_tick(t, baby)
-	t.check(baby.last_incoming == 0.0, "and nothing in the building charges her")
+	t.check(baby.last_frame_incoming() == 0.0, "and nothing in the building charges her")
 
 	baby.set_world(street)
 	t.close_to(baby.decay_rate(), walking * STREET_DECAY,
 			"on the street her decay is the street's ground's")
 	await _let_her_tick(t, baby)
-	t.check(baby.last_incoming > 0.0,
+	t.check(baby.last_frame_incoming() > 0.0,
 			"and what charges her there reaches her meter (%.2f/s, the street's %.2f/s)"
-			% [baby.last_incoming, STREET_NOISE])
+			% [baby.last_frame_incoming(), STREET_NOISE])
 
 	baby.set_world(null)
 	t.check(baby.world() == null and baby.decay_rate() == 0.0,
