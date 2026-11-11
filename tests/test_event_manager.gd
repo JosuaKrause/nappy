@@ -16,6 +16,7 @@ func run(t: TestRunner) -> void:
 	# behind: the scars a fire writes, the streaming radius, the day a test started.
 	var tests: Array[Callable] = [
 		_test_day_populates_the_manager,
+		_test_the_summary_names_what_the_day_planned,
 		_test_finished_instances_are_dropped,
 		_test_successor_replaces_its_parent,
 		_test_excitement_sums_over_instances,
@@ -148,6 +149,16 @@ func _test_day_populates_the_manager(t: TestRunner) -> void:
 	for instance in _city.events.instances():
 		t.check(is_instance_valid(instance), "every tracked instance is a live node")
 		t.check(instance.def != null, "every tracked instance has a def")
+
+## Before a day there is no plan to count, so the run log's `events:` line says none; once a day is
+## planned it names each row the plan holds.
+func _test_the_summary_names_what_the_day_planned(t: TestRunner) -> void:
+	t.check(_city.events.event_summary() == "none", "with no day planned the summary says none")
+	_start(1)
+	var summary := _city.events.event_summary()
+	t.check(summary != "none" and not _city.events.plans().is_empty()
+			and summary.contains(_city.events.plans()[0].row_id()),
+			"a planned day's summary names its rows (%s)" % [summary])
 
 func _test_finished_instances_are_dropped(t: TestRunner) -> void:
 	_start(1)
