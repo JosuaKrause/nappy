@@ -7,8 +7,9 @@ goes as its suite is converted", after the telemetry's own files were typed
 
 ## What was built
 
-- **`test_telemetry`, `test_telemetry_observer`, `test_visit_counter` and `test_observers` are
-  typed**, and each loses its opt-out line. No line under `src/` changed.
+- **`test_telemetry`, `test_telemetry_observer`, `test_visit_counter`, `test_observers`,
+  `test_burst_capture` and `test_performance` are typed**, and each loses its opt-out line. No line
+  under `src/` changed.
 - **The recording page counter's bus is typed as the bus's script** rather than `Node`, which types
   every signal the suite reads through it. **The boot callbacks of `test_observers` take `Main`**,
   a preload of `res://src/main.gd`, which has no class name.
@@ -16,12 +17,15 @@ goes as its suite is converted", after the telemetry's own files were typed
 
 ## Reads left, each with its reason
 
-The suites read fields of their own fakes only, but for `counter.run.header.day`, a `RunState`
-field read through the fake's run: no game method answers the day there, so it stays, and goes with
-a run's parts (`field-reads.md`). The frame recorder's suites are not in this pass: the hand-in cut
-that rewrites the recorder takes them.
+The suites read no field of the telemetry's own classes. They read and write many fields of other
+modules' classes (the run's parts, the live event, the day, the day spec, the map, the plan, her
+facing), and those stay until each module's pass; `tools/check_field_reads.py` reads only `src/`,
+so it does not list them. `counter.run.header.day` has no method the game calls, as the game reads
+the field itself. The frame recorder's and the frame trace's suites (`test_frame_record*`,
+`test_frame_trace`) are not in this pass: the hand-in cut that rewrites the recorder and the trace
+takes them.
 
 ## Verified
 
-The four suites pass, `tools/typing_census.py --check` holds, and nothing a game file runs changed,
+The six suites pass, `tools/typing_census.py --check` holds, and nothing a game file runs changed,
 so the identity probes do not apply. No check was deleted or moved.
