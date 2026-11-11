@@ -248,8 +248,11 @@ class AnswerTests(unittest.TestCase):
         row = ROW + "func loud_or_one() -> float:\n\treturn loud if loud else 1.0\n"
         row += "func one_if_quiet() -> float:\n\tif not loud:\n\t\treturn 1.0\n\treturn loud\n"
         row += "func tail_or_null() -> Tail:\n\treturn tail if tail else null\n"
-        made = report("func f(row: Row) -> void:\n\tprint(row.loud, row.tail)\n", {"src/row.gd": row})
+        row += "func lets_out_or_five() -> int:\n\treturn hunting.lets_out if hunting and hunting.lets_out else 5\n"
+        body = "func f(row: Row) -> void:\n\tprint(row.loud, row.tail, row.hunting.lets_out)\n"
+        made = report(body, {"src/row.gd": row})
         by_label = {e.label: e for e in made.entries}
+        self.assertEqual([a.method for a in by_label["hunting.lets_out"].answers], ["lets_out"])
         self.assertEqual([a.method for a in by_label["loud"].answers], ["heard"])
         self.assertEqual(
             [(a.method, a.does) for a in by_label["loud"].guarded],
@@ -257,6 +260,30 @@ class AnswerTests(unittest.TestCase):
         )
         self.assertEqual([a.method for a in by_label["tail"].answers], ["tail_or_none", "tail_or_null"])
         self.assertEqual(by_label["tail"].guarded, [])
+
+    def test_an_engine_prefix_tested_by_its_truth_or_a_name_as_the_other_value_is_printed_behind_a_guard(self) -> None:
+        spot = "class_name Spot\nextends Node2D\nvar names: Array = []\nvar count: int:\n\tget:\n"
+        spot += "\t\treturn names.size()\nvar hunt: Hunt\n"
+        spot += "func count_or_five() -> int:\n\treturn names.size() if names else 5\n"
+        spot += "func lets_out_or_z() -> int:\n\treturn hunt.lets_out if hunt else z_index\n"
+        spot += "var rig: Rig\nfunc rig_lets_out() -> int:\n\treturn rig.hunt.lets_out if rig else 0\n"
+        rig = "class_name Rig\nextends RefCounted\nvar hunt: Hunt\n"
+        body = "func f(spot: Spot) -> void:\n\tprint(spot.count, spot.hunt.lets_out, spot.rig.hunt.lets_out)\n"
+        made = report(body, {"src/spot.gd": spot, "tests/rig.gd": rig})
+        by_label = {e.label: e for e in made.entries}
+        self.assertEqual(by_label["count"].answers, [])
+        self.assertEqual(
+            [(a.method, a.does) for a in by_label["count"].guarded], [("count_or_five", "names.size() if names else 5")]
+        )
+        self.assertEqual(by_label["hunt.lets_out"].answers, [])
+        self.assertEqual(
+            [(a.method, a.does) for a in by_label["hunt.lets_out"].guarded],
+            [("lets_out_or_z", "hunt.lets_out if hunt else z_index")],
+        )
+        self.assertEqual(
+            [(a.method, a.does) for a in by_label["rig.hunt.lets_out"].guarded],
+            [("rig_lets_out", "rig.hunt.lets_out if rig else 0")],
+        )
 
     def test_a_guarded_chain_is_not_looked_for_where_the_field_itself_is_answered(self) -> None:
         flock = "class_name Flock\nextends RefCounted\nvar birds: Array = []\n"
@@ -515,23 +542,43 @@ class ReceiverTests(unittest.TestCase):
 
     def test_a_class_nested_inside_an_inner_class_named_through_its_outer_class_is_not_told(self) -> None:
         holder = "class_name Holder\nextends RefCounted\nclass Outer:\n\tvar row: Row\n"
-        holder += "\tclass Deep extends Row:\n\t\tvar more := 0\n"
-        body = "class Outer:\n\tclass Deep extends Row:\n\t\tvar more := 0\nfunc f(x) -> void:\n"
+        holder += "\tclass Deep extends Row:\n\t\tvar more := 0\n\t\tclass Deeper extends Row:\n\t\t\tvar most := 0\n"
+        holder += "class Third:\n\tstatic var Deep: Row\nclass Other:\n\tenum Deep { A, B }\n"
+        body = "class Outer:\n\tclass Deep extends Row:\n\t\tvar more := 0\n\t\tclass Deeper extends Row:\n"
+        body += "\t\t\tvar most := 0\nclass Kid extends Outer:\n\tvar x := 0\n"
+        body += "\tfunc g() -> void:\n\t\tvar e: Deep.Deeper\n\t\tprint(e.id)\n"
+        body += 'const H := preload("res://src/holder.gd")\nfunc f(x) -> void:\n'
         body += "\tvar near := Outer.Deep.new()\n\tprint(near.loud)\n\tvar typed: Outer.Deep\n\tprint(typed.id)\n"
         body += "\tprint((x as Outer.Deep).label)\n\tprint(Holder.Outer.Deep.new().loud)\n"
         body += "\tvar far: Holder.Outer.Deep\n\tprint(far.id, Holder.Outer.new().row.loud)\n"
+        body += "\tvar deeper: Outer.Deep.Deeper\n\tprint(deeper.id, (x as Holder.Outer.Deep.Deeper).label)\n"
+        body += "\tvar kid: Kid.Deep\n\tprint(kid.id, Kid.Deep.new().loud)\n"
+        body += "\tvar loaded: H.Outer.Deep\n\tprint(loaded.id, (x as H.Outer.Deep).label)\n"
+        body += "\tprint(Holder.Third.Deep.loud)\n\tvar kind: Holder.Other.Deep\n\tprint(kind.id)\n"
         made = report(body, {"src/holder.gd": holder})
         self.assertEqual(
-            [(e.klass, e.label) for e in made.entries], [("src/holder.gd::Outer", "row"), ("src/row.gd", "loud")]
+            [(e.klass, e.label, e.sites) for e in made.entries],
+            [
+                ("src/holder.gd::Outer", "row", [(SUITE, 21)]),
+                ("src/holder.gd::Third", "Deep", [(SUITE, 28)]),
+                ("src/row.gd", "loud", [(SUITE, 21), (SUITE, 28)]),
+            ],
         )
         self.assertEqual(
             [(u.line, u.expression) for u in made.unknown],
             [
-                (7, "near.loud"),
-                (9, "typed.id"),
-                (10, "(x as Outer.Deep).label"),
-                (11, "Holder.Outer.Deep.new().loud"),
-                (13, "far.id"),
+                (11, "e.id"),
+                (15, "near.loud"),
+                (17, "typed.id"),
+                (18, "(x as Outer.Deep).label"),
+                (19, "Holder.Outer.Deep.new().loud"),
+                (21, "far.id"),
+                (23, "(x as Holder.Outer.Deep.Deeper).label"),
+                (23, "deeper.id"),
+                (25, "Kid.Deep.new().loud"),
+                (25, "kid.id"),
+                (27, "(x as H.Outer.Deep).label"),
+                (27, "loaded.id"),
             ],
         )
 
