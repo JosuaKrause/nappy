@@ -85,10 +85,6 @@ static func _select_sources(candidates: Array, at: Vector2) -> Array:
 
 # ------------------------------------------------------------------ brightness ---
 
-## The most opaque any halo may ever draw, once a source's `landed()` clears `LOW_EMPHASIS_POINTS`
-## — see docs/EVENTS.md, "Soft, and under everything."
-const MAX_ALPHA := 0.75
-
 ## Below this, `_magnitude_for()` is a floor rather than a read of `landed()`. *(2026-09-08, the
 ## player: "transparency can be used to emphasize low values ... all changes should transition
 ## (hue and transparency) instead of immediately showing the actual value".)* A source just picked
@@ -97,7 +93,7 @@ const MAX_ALPHA := 0.75
 ## nothing. The floor is what a source fades *in* to before it has anything to say about magnitude.
 const MIN_MAGNITUDE := 0.2
 
-## Where `_magnitude_for()`'s curve is already at `MAX_ALPHA`. *(2026-09-08, the player: "one point
+## Where `_magnitude_for()`'s curve is already at `EntityHalo.MAX_ALPHA`. *(2026-09-08, the player: "one point
 ## is faint but present, five is clearly there, fifteen and above is solid, and the colour then
 ## carries the difference between fifteen and forty".)* Deliberately far below
 ## `Tuning.EXPECTED_IMPACT_POINTS` (40): transparency's job is the *low* end, so it has finished
@@ -112,7 +108,7 @@ const LOW_EMPHASIS_POINTS := 15.0
 ## rises steeply near zero and flattens as it approaches one, unlike the straight line `_colour_for`
 ## wants for its own axis.
 static func _magnitude_for(net: float) -> float:
-	return MAX_ALPHA * clampf(sqrt(net / LOW_EMPHASIS_POINTS), MIN_MAGNITUDE, 1.0)
+	return EntityHalo.MAX_ALPHA * clampf(sqrt(net / LOW_EMPHASIS_POINTS), MIN_MAGNITUDE, 1.0)
 
 # -------------------------------------------------------------------- colour ---
 

@@ -69,6 +69,11 @@ extends Node2D
 ## rim built in it, not the count after the frame. Freed on the spot, before `ExcitementHalo` builds
 ## anything that frame, the block is back first.
 
+## The most opaque any halo may ever draw, once a source's `landed()` clears
+## `ExcitementHalo.LOW_EMPHASIS_POINTS` — see docs/EVENTS.md, "Soft, and under everything." The rim's
+## own alpha eases over this range, and `ExcitementHalo` scales its target by it.
+const MAX_ALPHA := 0.75
+
 ## How many directions the ring redraws the body in. Checked against a leaf blower's own concave
 ## silhouette (the arm breaks the body's own outline) at 8 first, which already read as a smooth
 ## rim rather than a facetted one at this scale. 12 is kept anyway, in the middle of the "eight to
@@ -220,7 +225,7 @@ func _process(delta: float) -> void:
 		# `delta / duration` per frame -- the same shape `_alpha`'s own step takes, scaled to its own
 		# 0..MAX_ALPHA range instead.
 		var channel_step := delta / duration
-		_alpha = move_toward(_alpha, _target_alpha, ExcitementHalo.MAX_ALPHA * channel_step)
+		_alpha = move_toward(_alpha, _target_alpha, MAX_ALPHA * channel_step)
 		_colour.r = move_toward(_colour.r, _target_colour.r, channel_step)
 		_colour.g = move_toward(_colour.g, _target_colour.g, channel_step)
 		_colour.b = move_toward(_colour.b, _target_colour.b, channel_step)

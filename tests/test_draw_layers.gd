@@ -199,8 +199,8 @@ func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t) -> void:
 			for i in range(1, slices.size()):
 				rising = rising and slices[i].global_position.y > slices[i - 1].global_position.y
 			t.check(rising, "end-on, each slice stands nearer the camera than the one before")
-		var rim_of := instance.excitement.rim as SourceRim
-		rim_of.set_strength(ExcitementHalo.MAX_ALPHA, Palette.HALO_STRONG)
+		var rim_of := instance.excitement.rim
+		rim_of.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 		var rim := instance.rim()
 		t.check(rim != null and rim.get_parent() == slices[0]
 				and (rim.global_position - instance.global_position).is_zero_approx(),
