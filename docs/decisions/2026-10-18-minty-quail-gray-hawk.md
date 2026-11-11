@@ -19,13 +19,15 @@ the typing plan of 2026-11-11 into file-disjoint passes.
 - **Search: none.** The row's, the live event's and the plan's fields are `event-interface.md` row
   4a's scripted rewrite, so this pass converts no read.
 - **Other modules' fields stay for their passes**, with the game's method where one exists: the
-  plan's `def.id` (`row_id()`) and `position` (`placed_at()`), its `def`, `path` and `role` (none);
+  plan's `def` (`row()`), `def.id` (`row_id()`), `position` (`placed_at()`) and `path` (`walks()`),
+  its `role` read (none) and written (`give_role()`);
   the row's `hard_fail` (`ends_the_day()`), `outer_radius` (`heard_within()`), `max_per_day`
   (`most_in_a_day()`), `mobile` (`moves()`), `obstructs_radius` (`obstructs_within()`) and
-  `telegraph_time` (`telegraphs_for()`), and its `id`, `kind`, `placement`, `path_mode`, `pursuit`,
-  `aftermath`, `paces`, `pavement_side`, `first_day` and `on_her_way` (read, and `on_her_way` written
+  `telegraph_time` (`telegraphs_for()`), `aftermath.on_finish` (`leaves_behind()`), `kind` where
+  compared with the ambient kind (`is_ambient()`), and its `id`, `kind`, `placement`, `path_mode`,
+  `pursuit`, `aftermath.on_sight`, `speed`, `role`, `paces`, `pavement_side`, `first_day` and `on_her_way` (read, and `on_her_way` written
   and restored; no single method answers each); the live event's `is_finished` (`is_gone()`),
-  `is_leaving` (`is_on_its_way_out()`) and `excitement` (`source()`); a pending warning's `shown`, a
+  `is_leaving` (`is_on_its_way_out()`), `excitement` (`source()`) and `path` (`walks()`); a pending warning's `shown`, a
   day spec's `wall_row_share` (written) and a segment's `a` and `horizontal` (none); the map's
   `network` (`street_network()`), `home_rect` (`home_tile_rect()`), `calm_blocks`
   (`calm_blocks_now()`), `alley_rects` (`alley_lots()`), `block_plans` (`plans_by_block()`),
