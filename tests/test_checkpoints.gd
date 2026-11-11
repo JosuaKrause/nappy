@@ -2057,7 +2057,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	var far_hut := huts[1] if near_hut == huts[0] else huts[0]
 	_step_her_to(rig, lane - axis * 20.0)
 	_stand_for(rig, 0.5)
-	t.check(not near_hut.guard_warns_her and not far_hut.guard_warns_her,
+	t.check(not near_hut.is_its_guard_warning() and not far_hut.is_its_guard_warning(),
 			"walking up to the raised boom, no guard raises his hand")
 	var warned: Array[String] = []
 	var on_warned := func(id: String) -> void: warned.append(id)
@@ -2065,12 +2065,12 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t) -> void:
 	# Across, and back before the warning runs: called off.
 	_step_her_to(rig, lane + axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING * 0.5)
-	t.check(far_hut.guard_warns_her and not near_hut.guard_warns_her,
+	t.check(far_hut.is_its_guard_warning() and not near_hut.is_its_guard_warning(),
 			"the frame she crosses, the guard across the road raises his hand")
 	t.check(_door_guard_after_her(city.events) == null, "and nobody is after her yet")
 	_step_her_to(rig, lane - axis * 20.0)
 	_stand_for(rig, CheckpointController.CROSSING_WARNING * 2.0)
-	t.check(_door_guard_after_her(city.events) == null and not far_hut.guard_warns_her,
+	t.check(_door_guard_after_her(city.events) == null and not far_hut.is_its_guard_warning(),
 			"back across before it runs, it is called off: nobody comes, and his hand is down")
 	# Across, and staying across: the guard comes once it has run.
 	_step_her_to(rig, lane + axis * 20.0)
@@ -2127,7 +2127,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t) -> void:
 	_step_her_to(rig, lane - axis * 20.0)
 	_step_her_to(rig, lane + axis * 20.0)
 	_stand_for(rig, 0.5)
-	t.check(far_hut.guard_warns_her and not near_hut.guard_warns_her,
+	t.check(far_hut.is_its_guard_warning() and not near_hut.is_its_guard_warning(),
 			"crossing in the near lane, the guard across the road raises his hand")
 	var far_lane := gate.global_position - across * 60.0 + axis * 20.0
 	_step_her_to(rig, far_lane)

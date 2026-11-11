@@ -826,7 +826,7 @@ func _test_the_roadblock_guard_raises_his_hand_at_his_post(t) -> void:
 
 func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t) -> void:
 	# The warning is the hut's guard's, drawn from her crossing of the door's line
-	# (`EventInstance.guard_warns_her`, set by `CheckpointController.warn_at_the_doors()`); the
+	# (`EventInstance.is_its_guard_warning()`, raised by `CheckpointController.warn_at_the_doors()`); the
 	# man set on her once it has run with her still across charges from his first frame
 	# (`PursuitSpec.Start.CHARGES_AT_ONCE`).
 	var def := EventCatalogue.by_id("door_guard")
@@ -844,8 +844,8 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t) -> v
 	guard.free()
 	var hut := EventInstance.new()
 	hut.setup(EventCatalogue.by_id("checkpoint_hut"), Vector2.ZERO)
-	hut.guard_warns_her = true
-	t.check(hut.guard_warns_her and EventPictures.GUARD_ALERT_BY_VIEW["front"] \
+	hut.raise_its_guards_hand(true)
+	t.check(hut.is_its_guard_warning() and EventPictures.GUARD_ALERT_BY_VIEW["front"] \
 			in EventPictures.family_sources(EventDef.Look.CHECKPOINT_HUT),
 			"and the hut's guard has his raised hand to warn her with")
 	hut.free()

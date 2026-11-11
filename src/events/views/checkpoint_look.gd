@@ -6,7 +6,7 @@ extends EventLook
 
 ## Overrides EventLook._draw_figure.
 func _draw_figure(canvas: CanvasItem) -> void:
-	match event.def.look:
+	match _row.picture():
 		EventDef.Look.CHECKPOINT_HUT:
 			_draw_checkpoint_hut(canvas)
 		EventDef.Look.CHECKPOINT_GATE:
@@ -17,7 +17,7 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			# `EventCatalogue._checkpoint_post`.
 			_draw_body_shadow(canvas)
 			_draw_at_anchor(canvas,
-					EventPictures.GUARD_ALERT_BY_VIEW["front"] if event.guard_warns_her \
+					EventPictures.GUARD_ALERT_BY_VIEW["front"] if event.is_its_guard_warning() \
 							else EventPictures.GUARD_STANDING,
 					EventPictures.GUARD_ANCHOR)
 
@@ -61,16 +61,16 @@ func _draw_checkpoint_hut(canvas: CanvasItem) -> void:
 	# dog beside a dog walker.
 	_draw_shadow(canvas, beside, 8.0)
 	_draw_at_anchor(canvas,
-			EventPictures.GUARD_ALERT_BY_VIEW["front"] if event.guard_warns_her \
+			EventPictures.GUARD_ALERT_BY_VIEW["front"] if event.is_its_guard_warning() \
 					else EventPictures.GUARD_STANDING,
 			EventPictures.GUARD_ANCHOR, beside)
 
-## The boom, raised or lowered from `gate_state` (`null` reads as lowered, the safe default before
-## `Crowd` has ever touched it), over whichever axis of road `facing_now()` says this door's street
+## The boom, raised or lowered (`is_raised()`, which reads as lowered before `Crowd` has ever touched
+## it, the safe default), over whichever axis of road `facing_now()` says this door's street
 ## runs — `EventInstance.facing_now()` is the street's own along-axis here, not a direction this
 ## stationary body ever turns to face, see `facing_now()`'s own doc.
 func _draw_checkpoint_gate(canvas: CanvasItem) -> void:
-	var raised: bool = event.gate_state != null and event.gate_state.raised
+	var raised := event.is_raised()
 	var runs_north_south := EventPictures.gate_runs_north_south(event.facing_now())
 	var picture: String
 	var anchor: Vector2
