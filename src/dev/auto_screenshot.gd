@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name AutoScreenshot
 extends Node
 ## Dev tool: let the game run for a while, save the viewport to a PNG, quit.
@@ -455,7 +454,7 @@ func _process(delta: float) -> void:
 ## `RigLock._input()` marks every event handled while `locked_out`, except one carrying this exact
 ## device id — see `RigLock._input()` for why a tag on the event and not its class.
 func _tap(what: String) -> void:
-	for pressed in [true, false]:
+	for pressed: bool in [true, false]:
 		var event: InputEvent
 		if what.begins_with(KEY_PREFIX):
 			var key := InputEventKey.new()
@@ -483,7 +482,7 @@ func _send_tap_once_the_camera_has_positioned() -> void:
 ## `--tap X Y`: one synthetic tap at `position`, press then release, the same shape a real finger's
 ## own `InputEventScreenTouch` takes — `TouchControls` reads only the press half.
 func _tap_screen(position: Vector2) -> void:
-	for pressed in [true, false]:
+	for pressed: bool in [true, false]:
 		var event := InputEventScreenTouch.new()
 		event.position = position
 		event.pressed = pressed

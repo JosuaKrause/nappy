@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name DebugReadout
 extends Node2D
 ## The developer's furniture over a run, none of it part of the game's UI: the right-hand readout
@@ -275,9 +274,9 @@ func _process(delta: float) -> void:
 	]
 	if not _skip_words.is_empty():
 		header.append("skip  %s" % ", ".join(_skip_words))
+	var phase: String = GameEnums.DayPhase.keys()[_day.phase]
 	_status.text = "\n".join(header + [
-		"phase %s  %.0fs left" % [
-			GameEnums.DayPhase.keys()[_day.phase].to_lower(), _day.time_remaining],
+		"phase %s  %.0fs left" % [phase.to_lower(), _day.time_remaining],
 	] + _where_she_is_lines() + [
 		"",
 		"speed       %6.1f" % _player.current_speed(),
@@ -366,7 +365,8 @@ func _nearest_event_text() -> String:
 		best, nearest.current_intensity()]
 
 func _tile_name(type: GameEnums.TileType) -> String:
-	return GameEnums.TileType.keys()[type].to_lower()
+	var key: String = GameEnums.TileType.keys()[type]
+	return key.to_lower()
 
 # ------------------------------------------------------------------- the keys ---
 
