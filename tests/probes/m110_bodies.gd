@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access")
 extends RefCounted
 ## Printing rig for "every solid body diverts the crowd, as far as avoiding it": how much of a real
 ## day's ground the solid bodies take, how much of the crowd is stepping round one, how often anybody
@@ -84,7 +83,8 @@ func _walk(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 			if agent.kind == CrowdAgent.Kind.WALKER:
 				walker_frames += 1
 				inside_walkers += 1 if caught else 0
-				sidestepping += 1 if agent.strategy._body_detour_held else 0
+				var walker := agent.strategy as WalkerStrategy
+				sidestepping += 1 if walker._body_detour_held else 0
 			else:
 				car_frames += 1
 				inside_cars += 1 if caught else 0

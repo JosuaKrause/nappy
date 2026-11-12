@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends SceneTree
 ## Receives the native debugger's every-frame profiler without modifying game scripts.
 ## Launch headless with --script; configuration is documented in the evidence README.
@@ -49,11 +48,12 @@ func _process(_delta: float) -> bool:
 		while packets.get_available_packet_count() > 0:
 			var message: Variant = packets.get_var()
 			if message is Array:
-				messages.append(message)
-				if not enabled and message.size() == 3:
+				var parts: Array = message
+				messages.append(parts)
+				if not enabled and parts.size() == 3:
 					enabled = true
 					if OS.get_environment("ENTITY_PROFILE_DISABLED") != "1":
-						packets.put_var(["profiler:servers", message[1], [true, [16384, false]]])
+						packets.put_var(["profiler:servers", parts[1], [true, [16384, false]]])
 	if child > 0 and not OS.is_process_running(child):
 		if disconnected_at < 0:
 			disconnected_at = Time.get_ticks_msec()

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Evidence rig for M108's "walkers first" stride item: renders each of the walker's five
 ## authored views with gait frame a beside gait frame b, body tinted and trim above — the same
@@ -23,14 +22,14 @@ const VIEWS: Array[String] = ["front", "back", "side", "front_diagonal", "back_d
 
 func run(t: TestRunner) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
-	var rows := []
+	var rows: Array[Dictionary] = []
 	for view in VIEWS:
 		rows.append(_row(view, [
 			_entry(WalkerLook.BODY_BY_VIEW[view], WalkerLook.TRIM_BY_VIEW[view]),
 			_entry(WalkerLook.BODY_BY_VIEW_B[view], WalkerLook.TRIM_BY_VIEW_B[view]),
 		]))
 	_render_sheet("walker-stride-native.png", "walker-stride-3x.png", rows)
-	for row in rows:
+	for row: Dictionary in rows:
 		print("m108_walker_stride_sheet: row %s = [frame a, frame b]" % row["label"])
 	print("m108_walker_stride_sheet: 2 PNGs written under %s" % OUT_DIR)
 	t.check(true, "m108_walker_stride_sheet probe ran")
@@ -40,7 +39,7 @@ func run(t: TestRunner) -> void:
 func _entry(body: String, trim: String) -> Dictionary:
 	return {"body": body, "trim": trim}
 
-func _row(label: String, entries: Array) -> Dictionary:
+func _row(label: String, entries: Array[Dictionary]) -> Dictionary:
 	return {"label": label, "entries": entries}
 
 # ------------------------------------------------------------------- rendering ---
@@ -68,20 +67,20 @@ func _cell_image(entry: Dictionary, scale: float) -> Image:
 	body.blend_rect(trim, Rect2i(Vector2i.ZERO, trim.get_size()), Vector2i.ZERO)
 	return body
 
-func _render_sheet(native_name: String, wide_name: String, rows: Array) -> void:
+func _render_sheet(native_name: String, wide_name: String, rows: Array[Dictionary]) -> void:
 	_render_scale(native_name, rows, 1.0)
 	_render_scale(wide_name, rows, 3.0)
 
-func _render_scale(filename: String, rows: Array, scale: float) -> void:
+func _render_scale(filename: String, rows: Array[Dictionary], scale: float) -> void:
 	var cell := int(round(CELL * scale))
 	var width := cell * 2
 	var height := cell * rows.size()
 	var sheet := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	sheet.fill(GROUND)
 	for r in rows.size():
-		var entries: Array = rows[r]["entries"]
+		var entries: Array[Dictionary] = rows[r]["entries"]
 		for c in range(2):
-			var cell_image: Image = _cell_image(entries[c], scale)
+			var cell_image := _cell_image(entries[c], scale)
 			var at := Vector2i(
 					c * cell + int((cell - cell_image.get_width()) / 2.0),
 					r * cell + int((cell - cell_image.get_height()) / 2.0))

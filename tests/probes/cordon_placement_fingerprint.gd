@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **Day 12's cordon officers, placed and walked, printed one line per sample**, so a change to the
 ## rules the cordon asks can be shown to put them exactly where they stood before. Not a suite: it
@@ -30,7 +29,7 @@ func run(t: TestRunner) -> void:
 	seeds.append(LARGE_PARK_SEED)
 	var printed := 0
 	for seed_value in seeds:
-		for walks in [false, true]:
+		for walks: bool in [false, true]:
 			printed += _a_seed(t, seed_value, walks)
 	print("CP_TOTAL %d lines" % printed)
 	t.check(printed > 0, "there were officers to print (%d)" % printed)

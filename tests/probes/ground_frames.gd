@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends Node
 ## Bounded quadrant/row/atomic comparison and real-process-frame residency coverage.
 ## Run its scene with --no-save --no-telemetry; GROUND_FRAMES_OUTPUT is a fresh JSON path.
@@ -59,7 +58,7 @@ func _run() -> void:
 	if facing_only:
 		coverage.append(await _coverage(60, Vector2.RIGHT, true))
 	else:
-		for rate in [15, 30, 60]:
+		for rate: int in [15, 30, 60]:
 			for direction: Vector2 in [Vector2.DOWN, Vector2.RIGHT, Vector2.ONE.normalized()]:
 				coverage.append(await _coverage(rate, direction))
 	var result := {"engine": Engine.get_version_info(), "processor": OS.get_processor_name(),
@@ -138,7 +137,7 @@ func _comparison(mode: String, warmup: bool) -> Dictionary:
 	var allocated := OS.get_static_memory_usage() - before
 	var pixel_hashes: Array[String] = []
 	# Completed ground and water in view: fixed clock, identical viewport, compare final pixels.
-	for key in [keys[0], keys[1]]:
+	for key: Vector2i in [keys[0], keys[1]]:
 		get_viewport().canvas_transform = Transform2D(0, -Vector2(key * 8 * Tuning.TILE_SIZE))
 		await _draw_frame()
 		if _rendered and not warmup:
@@ -279,7 +278,7 @@ func _distribution(values: Array[int]) -> Dictionary:
 
 func _hashes() -> Dictionary:
 	var hashes := {}
-	for path in ["src/city/scenery_ground.gd", "src/city/scenery_residency.gd",
+	for path: String in ["src/city/scenery_ground.gd", "src/city/scenery_residency.gd",
 			"src/city/city.gd", "src/city/scenery_water.gd", "tests/probes/ground_frames.gd"]:
 		hashes[path] = FileAccess.get_sha256("res://" + path)
 	return hashes

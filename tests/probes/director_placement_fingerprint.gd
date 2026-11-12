@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **Every placement entry point of the resistance and the events' director half, printed one line
 ## each**, so a change to the rules they ask can be shown to pick exactly what they picked before:
@@ -145,7 +144,7 @@ func _the_guard_spots(city: City, director: ResistanceDirector, label: String, a
 	var printed := 0
 	var hers: Array[Vector2] = [Vector2.INF, doorstep, at]
 	for her in hers:
-		for on_screen in [false, true]:
+		for on_screen: bool in [false, true]:
 			var rng := _rng(0, 0, "guard-spot")
 			if on_screen and her != Vector2.INF:
 				city.events.visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
@@ -297,7 +296,7 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 		var tile := RunTrace.tile(map.world_to_tile(her))
 		for heading in headings:
 			var line: Array[String] = []
-			for row in [cyclist, dog]:
+			for row: EventDef in [cyclist, dog]:
 				line.append(_point(PendingWarning.down_her_line(map, row, her, heading, view)))
 			line.append(_point(PendingWarning.along_her_heading(map, charger, her, heading, view)))
 			_print("%s ahead at %s heading %s: cyclist/dog down her line, charger along %s" % [
@@ -310,7 +309,7 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 						travel, _point(PendingWarning.on_its_route(engine, her, kerb, travel,
 								4000.0, view))])
 				printed += 1
-		for going in [1.0, -1.0]:
+		for going: float in [1.0, -1.0]:
 			_print("%s ahead at %s column going %s -> %s" % [label, tile, going,
 					_point(PendingWarning.in_its_lane(column, her, her.x - 40.0, going, 16.0,
 							map.size.y * Tuning.TILE_SIZE - 16.0, view))])

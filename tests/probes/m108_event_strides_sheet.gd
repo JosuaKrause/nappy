@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Evidence rig for M108's "every living thing that moves has a stride" item, event-family half:
 ## renders every family's five authored views with frame a beside frame b, straight from the SVG
@@ -35,7 +34,7 @@ const UNSUFFIXED_SIDE_FAMILIES: Array[String] = [
 
 func run(t: TestRunner) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
-	var rows := []
+	var rows: Array[Dictionary] = []
 	for family in NAMED_SIDE_FAMILIES + UNSUFFIXED_SIDE_FAMILIES:
 		for view in VIEWS:
 			var a_path := _source_path(family, view, false)
@@ -45,7 +44,7 @@ func run(t: TestRunner) -> void:
 				continue
 			rows.append(_row("%s %s" % [family, view], a_path, b_path))
 	_render_sheet("event-strides-native.png", "event-strides-3x.png", rows)
-	for row in rows:
+	for row: Dictionary in rows:
 		print("m108_event_strides_sheet: row %s = [frame a, frame b]" % row["label"])
 	print("m108_event_strides_sheet: 2 PNGs written under %s, %d rows" % [OUT_DIR, rows.size()])
 	t.check(true, "m108_event_strides_sheet probe ran")
@@ -68,21 +67,21 @@ func _cell_image(path: String, scale: float) -> Image:
 	image.load_svg_from_string(FileAccess.get_file_as_string(path), scale)
 	return image
 
-func _render_sheet(native_name: String, wide_name: String, rows: Array) -> void:
+func _render_sheet(native_name: String, wide_name: String, rows: Array[Dictionary]) -> void:
 	_render_scale(native_name, rows, 1.0)
 	_render_scale(wide_name, rows, 3.0)
 
-func _render_scale(filename: String, rows: Array, scale: float) -> void:
+func _render_scale(filename: String, rows: Array[Dictionary], scale: float) -> void:
 	var cell := int(round(CELL * scale))
 	var width := cell * 2
 	var height := cell * rows.size()
 	var sheet := Image.create(width, height, false, Image.FORMAT_RGBA8)
 	sheet.fill(GROUND)
 	for r in rows.size():
-		var row: Dictionary = rows[r]
-		var paths := [row["a"], row["b"]]
+		var row := rows[r]
+		var paths: Array[String] = [row["a"], row["b"]]
 		for c in range(2):
-			var cell_image: Image = _cell_image(paths[c], scale)
+			var cell_image := _cell_image(paths[c], scale)
 			var at := Vector2i(
 					c * cell + int((cell - cell_image.get_width()) / 2.0),
 					r * cell + int((cell - cell_image.get_height()) / 2.0))

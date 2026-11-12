@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for the escape's stairs (inbox #783 in minty-lemur): every walkable tile of both stairwells,
 ## each of eight directions and an analog diagonal pressed through the real `Stroller` physics step,
@@ -30,7 +29,7 @@ func run(t: TestRunner) -> void:
 	player.set_map(scene.map)
 	scene.add_entity(player)
 	player.set_physics_process(false)
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		for tile: Vector2i in scene.map.stairwell_tiles("stairwell_%s" % side):
 			var kind: InteriorTile.Kind = f.floor_kind_at(tile)
 			if not InteriorTile.is_walkable(kind) or kind == InteriorTile.Kind.DOOR:
@@ -38,9 +37,11 @@ func run(t: TestRunner) -> void:
 			for name: String in INPUTS:
 				var v: Array = INPUTS[name]
 				var heading := _walk(scene, player, tile, Vector2(v[0], v[1]))
+				var steer: Vector2 = heading[0]
+				var moved: Vector2 = heading[1]
 				print("STAIRS %s %s %s %s steer %s moved %s" % [
 						side, InteriorTile.Kind.keys()[kind], tile, name,
-						_deg(heading[0]), _deg(heading[1])])
+						_deg(steer), _deg(moved)])
 	_walk_flights(scene, player)
 	player.free()
 	scene.free()
@@ -61,22 +62,25 @@ const FLIGHTS := [
 
 func _walk_flights(scene: InteriorScene, player: Stroller) -> void:
 	var f := InteriorMap.build()
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		var origin: Vector2i = f.waypoint("stairwell_%s" % side) - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for flight: Array in FLIGHTS:
+			var named: String = flight[0]
+			var top: Vector2i = flight[1]
+			var bottom: Vector2i = flight[2]
 			var down: String = flight[3]
 			var up := "move_left" if down == "move_right" else "move_right"
-			_walk_one(scene, player, side, flight[0], "down", origin + flight[1], origin + flight[2], down)
-			_walk_one(scene, player, side, flight[0], "up", origin + flight[2], origin + flight[1], up)
+			_walk_one(scene, player, side, named, "down", origin + top, origin + bottom, down)
+			_walk_one(scene, player, side, named, "up", origin + bottom, origin + top, up)
 			# And from each landing's second row, a tile below the flight's first or last tread.
-			_walk_one(scene, player, side, flight[0], "down-2nd", origin + flight[1] + Vector2i.DOWN,
-					origin + flight[2], down)
-			_walk_one(scene, player, side, flight[0], "up-2nd", origin + flight[2] + Vector2i.DOWN,
-					origin + flight[1], up)
+			_walk_one(scene, player, side, named, "down-2nd", origin + top + Vector2i.DOWN,
+					origin + bottom, down)
+			_walk_one(scene, player, side, named, "up-2nd", origin + bottom + Vector2i.DOWN,
+					origin + top, up)
 
 func _walk_one(scene: InteriorScene, player: Stroller, side: String, flight: String, way: String,
 		from: Vector2i, to: Vector2i, action: String) -> void:
-	for a in ["move_left", "move_right", "move_up", "move_down"]:
+	for a: String in ["move_left", "move_right", "move_up", "move_down"]:
 		Input.action_release(a)
 	Input.action_press(action)
 	player.global_position = scene.map.tile_to_world(from)
@@ -114,7 +118,7 @@ func _deg(v: Vector2) -> String:
 
 ## Steering and displacement after a tenth of a second from rest at `tile`'s centre.
 func _walk(scene: InteriorScene, player: Stroller, tile: Vector2i, press: Vector2) -> Array:
-	for action in ["move_left", "move_right", "move_up", "move_down"]:
+	for action: String in ["move_left", "move_right", "move_up", "move_down"]:
 		Input.action_release(action)
 	if press.x < 0.0:
 		Input.action_press("move_left", absf(press.x))
@@ -132,7 +136,7 @@ func _walk(scene: InteriorScene, player: Stroller, tile: Vector2i, press: Vector
 		if i == 0:
 			steer = player.steering
 		_move(player, player.velocity * STEP)
-	for action in ["move_left", "move_right", "move_up", "move_down"]:
+	for action: String in ["move_left", "move_right", "move_up", "move_down"]:
 		Input.action_release(action)
 	return [steer, player.global_position - scene.map.tile_to_world(tile)]
 

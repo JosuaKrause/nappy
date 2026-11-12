@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Diagnoses PLAYTEST-69's re-report of "people still come out from outside the map" — a re-report
 ## of the finding M120 (`DECISIONS.md`) already answered once, by giving an ordinary walker or an
@@ -49,12 +48,12 @@ func _diagnose_recycle(map: CityMap) -> void:
 		"west": [false, 1.0, _cross_positions(size.y, Tuning.TILE_SIZE, false)],
 		"east": [false, -1.0, _cross_positions(size.y, size.x - Tuning.TILE_SIZE, false)],
 	}
-	for name in edges:
+	for name: String in edges:
 		var vertical: bool = edges[name][0]
 		var entering_direction: float = edges[name][1]
-		var points: Array = edges[name][2]
+		var points: Array[Vector2] = edges[name][2]
 		var limit: float = size.y if vertical else size.x
-		for kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
+		for kind: CrowdAgent.Kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 			var clearance := _picture_clearance(kind, vertical)
 			var samples := 0
 			var unsafe := 0
@@ -94,8 +93,8 @@ func _diagnose_recycle(map: CityMap) -> void:
 ## Spawn points along the edge itself, holding the axis coordinate (`fixed`) and varying the
 ## cross-axis one across a spread of the map so at least some land on a corridor whose lane
 ## offsets carry the direction being asked about.
-func _cross_positions(cross_extent: float, fixed: float, vertical: bool) -> Array:
-	var points: Array = []
+func _cross_positions(cross_extent: float, fixed: float, vertical: bool) -> Array[Vector2]:
+	var points: Array[Vector2] = []
 	for i in range(1, 6):
 		var cross := cross_extent * float(i) / 6.0
 		points.append(Vector2(cross, fixed) if vertical else Vector2(fixed, cross))
@@ -110,7 +109,7 @@ func _diagnose_day_start(t: TestRunner, map: CityMap) -> void:
 		"west": Vector2(Tuning.TILE_SIZE, size.y * 0.5),
 		"east": Vector2(size.x - Tuning.TILE_SIZE, size.y * 0.5),
 	}
-	for name in edges:
+	for name: String in edges:
 		var at: Vector2 = edges[name]
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
@@ -145,7 +144,7 @@ func _diagnose_day_start(t: TestRunner, map: CityMap) -> void:
 ## north and south overhang are real and unequal; the larger one is kept so one number covers
 ## either edge of the axis without asking which edge this call is about. Only the cardinal (`front`,
 ## `side`) views are asked, since a fresh entry never lands mid-turn.
-func _picture_clearance(kind: int, vertical: bool) -> float:
+func _picture_clearance(kind: CrowdAgent.Kind, vertical: bool) -> float:
 	if kind == CrowdAgent.Kind.CAR:
 		if vertical:
 			var body := AtlasTable.baked().native_size(
