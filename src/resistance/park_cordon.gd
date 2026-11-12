@@ -588,16 +588,6 @@ func _needed_count() -> int:
 			count += 1
 	return count
 
-## The point of the line `s` clockwise from the north-west corner.
-func _point_at(s: float) -> Vector2:
-	var left := s
-	for stretch in _stretches:
-		var length := stretch.length()
-		if left <= length:
-			return stretch.a.lerp(stretch.b, left / maxf(length, 0.001))
-		left -= length
-	return _stretches[0].a
-
 ## **Where an officer comes from**: out from `door` across the sidewalk by a tile, then along that
 ## sidewalk one way or the other, half a tile at a time, to the first place none of his figure
 ## would be in the camera's whole view and his feet are on ground he may stand on today, off the
