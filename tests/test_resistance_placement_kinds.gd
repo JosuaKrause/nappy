@@ -667,7 +667,7 @@ func _test_day_twelves_park_is_forced_open_whatever_its_state(t: TestRunner) -> 
 			continue
 		var plan: BlockPlan = map.block_plans[park]
 		t.check(plan.starting_purpose() == GameEnums.BlockPurpose.PARK
-				and plan.steps[plan.steps.size() - 1].purpose == GameEnums.BlockPurpose.REQUISITIONED,
+				and plan.step_at(plan.step_count() - 1).purpose == GameEnums.BlockPurpose.REQUISITIONED,
 				"seed %d: a park whose arc ends requisitioned" % seed_value)
 		var state := CityState.new()
 		state.begin_day(map.block_plans, day - 1)

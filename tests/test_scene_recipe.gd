@@ -92,7 +92,8 @@ func _test_station_pins(t: TestRunner) -> void:
 	var accepted := RecipeCityBuilder.build(input)
 	t.check(_errors(accepted).is_empty(), "another eligible station door is honored: %s" % [accepted.errors])
 	if _errors(accepted).is_empty():
-		t.check(accepted.map.power_station_door_key == Vector3i(9, 2, 0),
+		var map: CityMap = accepted.map
+		t.check(map.power_station_door_street().key() == Vector3i(9, 2, 0),
 				"requested east door owns the station street before region dependents")
 	input.city.power_station.door_block = [7, 1]
 	t.check(not _errors(RecipeCityBuilder.build(input)).is_empty(),

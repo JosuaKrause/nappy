@@ -51,7 +51,6 @@ src/run_trace.gd recording
 src/autoload/sitting.gd restarted_at_msec
 src/city/block_layout.gd has
 src/city/block_layout.gd playground
-src/city/block_plan.gd forced_open_on
 src/city/building.gd front_drawer
 src/city/building.gd neighbor_taken
 src/city/building.gd roof_drawer

@@ -2013,7 +2013,7 @@ func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 
 ## **The station's door point on its facade**: the middle of the drawn door
 ## (`Building._draw_front_overlay()`, centred on the two pavement tiles of
-## `CityMap.power_station_door`), half a tile up the ground floor — the same point
+## `CityMap.power_station_door_tiles()`), half a tile up the ground floor — the same point
 ## `CityFronts.way_in_behind()` gives a building's door, so the same `DOOR_REACH` covers the pavement in
 ## front of it the same way. One tile above the pavement rect's centre, which is half a tile below
 ## the wall line.

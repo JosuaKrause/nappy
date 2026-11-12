@@ -404,7 +404,7 @@ func _test_the_map_picture_covers_the_city_and_marks_it(t: TestRunner) -> void:
 	_check_a_precinct_shows_as_paving(t, map, image)
 	# A hard blocker nobody can find in the one picture built to check placements might as well
 	# not have been placed. It showed through as building at first, which is invisible.
-	t.check(map.built_over.is_empty() or seen.has(TelemetryMap.DEAD_END_MARK),
+	t.check(map.streets_built_over().is_empty() or seen.has(TelemetryMap.DEAD_END_MARK),
 			"and every street a hard blocker took is marked as taken")
 	# The ground is under all of it: a picture that is only marks has covered what it describes,
 	# which is the one way a debug overlay lies that nobody notices.
@@ -1118,8 +1118,8 @@ func _picture_map() -> CityMap:
 			Vector2i(3, 2))
 	map.calm_blocks = [Vector2i(8, 8)] as Array[Vector2i]
 	var period := CityMap.period()
-	map.built_over[Vector3i(1, 4, 6)] = Rect2i(Vector2i(4 * period, 6 * period + 8),
-			Vector2i(Tuning.STREET_WIDTH, 2))
+	map.record_built_over(Vector3i(1, 4, 6), Rect2i(Vector2i(4 * period, 6 * period + 8),
+			Vector2i(Tuning.STREET_WIDTH, 2)))
 	map.fill_rect(Rect2i(Vector2i(7 * period, 0), Vector2i(Tuning.STREET_WIDTH, map.size.y)),
 			GameEnums.TileType.SIDEWALK)
 	map.precinct_spans.append(Vector4i(1, 7, 2, 3))

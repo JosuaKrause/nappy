@@ -6,7 +6,7 @@ extends RefCounted
 ## set (`tests/fake_calm_areas.gd`).
 ##
 ## The map is two blocks: a park filling its block's lot, and a courtyard whose calm is the court
-## alone (`BlockLayout.open_rect`), the case a whole-lot reading gets wrong.
+## alone (`BlockLayout.open_ground()`), the case a whole-lot reading gets wrong.
 
 ## The park's block, whose calm ground is its whole lot: tiles (6, 6) to (13, 13).
 const PARK := Vector2i(0, 0)
@@ -67,12 +67,12 @@ func _a_day_whose_narrow_target_is_not_the_swing() -> int:
 			return step.day
 	return 0
 
-## The park is the city's swing park (`BlockPlan.forced_open_on`, which
+## The park is the city's swing park (`BlockPlan.force_open_on()`, which
 ## `CityGenerator.swing_park()` reads), and the swing's tile stands in it.
 func _test_the_swing_park_is_set_aside_on_the_swing_day_only(t: TestRunner) -> void:
 	var map := _map()
 	var plan := BlockPlan.of(GameEnums.BlockPurpose.PARK)
-	plan.forced_open_on = ResistanceSteps.swing_day()
+	plan.force_open_on(ResistanceSteps.swing_day())
 	map.block_plans[PARK] = plan
 	var swing: Array[Vector2i] = [Vector2i(9, 9)]
 	var none: Array[Vector2i] = []

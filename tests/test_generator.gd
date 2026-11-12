@@ -378,7 +378,7 @@ func _test_calm_zones_are_one_lot_of_one_thing(t: TestRunner) -> void:
 		# left was a rule nobody had taken, asserted here against a constant rather than against the
 		# map. It is gone from `_zone_fits` and gone from here with it.
 		for key: Vector3i in map.blocked_segments():
-			# Zone-absorbed streets only. `absent_segments` stopped being the zone set in M50 —
+			# Zone-absorbed streets only. The absent streets stopped being the zone set in M50 —
 			# a dead end is absent too, for the opposite reason, and so is an apartment complex's
 			# — and this sentence is about zones. Asserting it over the whole set was the identity
 			# standing in for the property, which is a mistake this project can now name.

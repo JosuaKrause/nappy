@@ -222,11 +222,8 @@ func _change_everything(run: RunState) -> void:
 	run.run_parts.photograph()
 
 func _fake_block_plan() -> BlockPlan:
-	var plan := BlockPlan.new()
-	plan.steps = [
-		BlockPlan.Step.new(GameEnums.BlockPurpose.RESIDENTIAL, 1, GameEnums.BlockCause.SCHEDULED),
-		BlockPlan.Step.new(GameEnums.BlockPurpose.BURNT_OUT, 1, GameEnums.BlockCause.FIRE),
-	]
+	var plan := BlockPlan.of(GameEnums.BlockPurpose.RESIDENTIAL).then(GameEnums.BlockPurpose.BURNT_OUT,
+			1, GameEnums.BlockCause.FIRE)
 	return plan
 
 ## The checkpoint is the first dawn of its day and nothing later: a retry of day 4, a run sent back

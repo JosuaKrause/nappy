@@ -9,7 +9,7 @@ priority: later
 door**, never unloaded on the way, so she can meet him anywhere along it. Today
 `ResistanceHappenings._send_the_neighbor_to_work()` (`src/resistance/happenings.gd`) walks him along
 her own street "until the street runs out or something closes it, then off the ordinary way";
-NARRATIVE.md has him work at the power station; `CityMap.power_station_door` exists.
+NARRATIVE.md has him work at the power station; the map records the station's door (`CityMap.power_station_door_tiles()`).
 
 **The player's own two questions, open:** "should there always be a path that goes to the power
 plant so the neighbor can follow it without disruption?" — a guaranteed path is a city-skill
