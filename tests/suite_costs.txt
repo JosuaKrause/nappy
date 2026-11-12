@@ -46,6 +46,7 @@ test_crowd_closures_a.gd 72095
 test_crowd_closures_b.gd 87447
 test_crowd_closures_c.gd 72573
 test_crowd_contributions.gd 879
+test_crowd_coverage.gd 5146
 test_crowd_field.gd 40530
 test_crowd_streets.gd 34957
 test_crowd_traffic.gd 61517
@@ -137,7 +138,6 @@ test_pursuer_on_foot.gd 21862
 test_quit_option.gd 32
 test_reachability_grid.gd 5515
 test_recipe_composition.gd 3597
-test_recipe_crowd.gd 5146
 test_recipe_roofs.gd 47
 test_recipe_structures.gd 1118
 test_regions.gd 73714
