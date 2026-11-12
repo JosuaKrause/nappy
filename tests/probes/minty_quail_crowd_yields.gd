@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **Where the crowd and the event figures meet**: how often a walker's or a crowd car's body overlaps
 ## an event figure's, how long crowd cars stand for one, whether a junction stalls, and the crowd's
@@ -42,6 +41,8 @@ extends RefCounted
 ## `PROBE_SEEDS` (comma-separated) runs other seeds.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+## This file's own script, the type of the probe a `Meeting` reads the crowd's counts off.
+const YieldsProbe := preload("res://tests/probes/minty_quail_crowd_yields.gd")
 ## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
 const SEEDS: Array[int] = [4242, 1]
@@ -228,9 +229,11 @@ func _tick_events(city: City) -> void:
 	events.streaming.retire_finished()
 
 func _take_out(city: City, before: Array) -> void:
-	for instance in city.events.instances().duplicate():
-		if not before.has(instance) and is_instance_valid(instance):
-			city.events.retire(instance)
+	# Each element is read as a Variant: one may be freed by the time it is reached (the
+	# validity test), and a typed loop variable fails on a freed instance.
+	for item: Variant in city.events.instances().duplicate():
+		if not before.has(item) and is_instance_valid(item):
+			city.events.retire(item as EventInstance)
 	city.events.streaming.retire_finished()
 
 func _stand(city: City, player: Stroller, at: Vector2) -> void:
@@ -268,7 +271,7 @@ func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 ## `minty_quail_crowd_cadence.gd` counts the figures with when it runs the day's events, handed no
 ## probe, so it reports the figures' counts alone.
 class Meeting extends RefCounted:
-	var _probe
+	var _probe: YieldsProbe
 	var _city: City
 	var _label: Dictionary
 	## Every figure seen, by move: its last pose and how many ticks in a row it has stood still.
@@ -295,7 +298,7 @@ class Meeting extends RefCounted:
 	var _bumps := 0
 	var _strikes := 0
 
-	func _init(probe, city: City, label: Dictionary) -> void:
+	func _init(probe: YieldsProbe, city: City, label: Dictionary) -> void:
 		_probe = probe
 		_city = city
 		_label = label
@@ -329,7 +332,7 @@ class Meeting extends RefCounted:
 				continue
 			line += "|%s:%s,%s,%d" % [instance.def.id, var_to_str(instance.position.x),
 					var_to_str(instance.position.y), instance.phase]
-		for officer in officers:
+		for officer: ParkCordon.Officer in officers:
 			line += "|o:%s,%s,%d" % [var_to_str(officer.at.x), var_to_str(officer.at.y),
 					officer.phase]
 		_chain.update(line.to_utf8_buffer())

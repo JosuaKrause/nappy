@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## merry-elk: how many posters she passes within view along the routes she actually walks, per day.
 ##
@@ -27,7 +26,7 @@ const PURSUIT_PER_TEAR := 0.1
 
 func run(t: TestRunner) -> void:
 	var rows := {}
-	for seed_value in SEEDS:
+	for seed_value: int in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var city: City = RunCity.with_own_run(CITY_SCENE, seed_value)
 		t.add_child(city)

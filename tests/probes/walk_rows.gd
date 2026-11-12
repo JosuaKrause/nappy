@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for the walk's mix (`docs/EVENTS.md`, "The density, and why it is caps and
 ## bags"): **what each day puts in the world as she walks, row by row, by view and by kind of
@@ -114,7 +113,7 @@ func run(t: TestRunner) -> void:
 			var guarded := ResistanceSteps.guarded_row_on(day)
 			var consumed: Array[String] = []
 			var planned_from := Time.get_ticks_usec()
-			var events = EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), sites,
+			var events: DayEvents = EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), sites,
 					consumed, [], tree, 0, doors, standing, null,
 					EventCatalogue.by_id(guarded) if guarded != "" else null)
 			print("WP %d %d %d" % [day, i, Time.get_ticks_usec() - planned_from])
@@ -272,7 +271,7 @@ static func _costs(ticks: Array[int]) -> String:
 	var sorted := ticks.duplicate()
 	sorted.sort()
 	var total := 0
-	for value in sorted:
+	for value: int in sorted:
 		total += value
 	return "%d %d %d %d %d" % [sorted.size(), sorted[sorted.size() / 2],
 			sorted[mini(sorted.size() - 1, int(sorted.size() * 0.99))], sorted[-1], total]

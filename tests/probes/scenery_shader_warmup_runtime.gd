@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends Node
 ## One bounded rendered pass through both real boot paths while their shader probes are live.
 
@@ -39,8 +38,9 @@ func _run() -> void:
 	var ordinary := MAIN_SCENE.instantiate()
 	ordinary.set("_escape_scene_requested", false)
 	add_child(ordinary)
-	_result.ordinary = await _observe_boot(ordinary, &"_player", "ordinary-boot.png")
-	if not _result.ordinary.get("complete", false):
+	var ordinary_boot: Dictionary = await _observe_boot(ordinary, &"_player", "ordinary-boot.png")
+	_result.ordinary = ordinary_boot
+	if not ordinary_boot.get("complete", false):
 		_fail("ordinary boot did not complete its rendered warmup")
 		return
 	ordinary.free()
@@ -51,8 +51,9 @@ func _run() -> void:
 	var escape := MAIN_SCENE.instantiate()
 	escape.set("_escape_scene_requested", true)
 	add_child(escape)
-	_result.escape = await _observe_boot(escape, &"_hud", "escape-boot.png")
-	if not _result.escape.get("complete", false):
+	var escape_boot: Dictionary = await _observe_boot(escape, &"_hud", "escape-boot.png")
+	_result.escape = escape_boot
+	if not escape_boot.get("complete", false):
 		_fail("escape boot did not complete its rendered warmup")
 		return
 	escape.free()

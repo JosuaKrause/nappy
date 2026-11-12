@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for velvet-stork: whether the pursuers on foot other than day 13's task guard,
 ## which keep the straight chase (`Navigator.step()`, straight at her, sliding along
@@ -113,7 +112,7 @@ static func _route_from(map: CityMap, from: Vector2i,
 	return route
 
 func _the_sent_robbers_starts(t: TestRunner, seed_value: int) -> void:
-	var suite = SUITE.new()
+	var suite: SUITE = SUITE.new()
 	# The suite's own city builder: a city in a run of its own, which the suite's `_rig_player()`
 	# reads back as `_city` to hand her to the city's events.
 	var city: City = suite._build_city(t, seed_value)

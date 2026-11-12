@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for "the city feels way empty now", read as the player meant it: **nothing on
 ## the street she is walking down.** Not a suite: it prints rather than asserting, so it lives here
@@ -34,7 +33,7 @@ func _events_per_street_by_band() -> void:
 
 	for i in SEEDS:
 		var map := CityGenerator.generate(90210 + i * 31)
-		for day in SAMPLE_DAYS:
+		for day: int in SAMPLE_DAYS:
 			var state := CityState.new()
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)

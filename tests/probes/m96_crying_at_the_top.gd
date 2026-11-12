@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for M96, "the day ends crying only after a push at the top"
 ## (docs/playtests/PLAYTEST-126.md, statement 1). Not a suite: it prints numbers rather than
@@ -59,7 +58,7 @@ func run(t: TestRunner) -> void:
 	print("(mass, window) settings swept: %s" % [SETTINGS])
 
 	print("\n-- one walker's bump --")
-	for start in [89.0, 95.0, 100.0]:
+	for start: float in [89.0, 95.0, 100.0]:
 		var peaks := _one_bump_from(t, start)
 		_report("  bump from %.0f -> %.2f" % [start, peaks["excitement"]], peaks["peak"])
 
@@ -67,7 +66,7 @@ func run(t: TestRunner) -> void:
 	var two := _two_bumps_at_the_top(t)
 	_report("  two bumps, 0.3s apart, starting at the cap", two["peak"])
 
-	for id in LOUDEST_STATIONARY_ROWS:
+	for id: String in LOUDEST_STATIONARY_ROWS:
 		print("\n-- %s (docs/COSTS.md) --" % id)
 		var walked := _walk_past_row(t, id)
 		_report("  walking past, starting at the cap", walked["peak"])
@@ -87,7 +86,7 @@ func run(t: TestRunner) -> void:
 ## would have ended the day under each.
 func _report(label: String, peak: Dictionary) -> void:
 	print(label)
-	for setting in SETTINGS:
+	for setting: Array in SETTINGS:
 		var mass: float = setting[0]
 		var window: float = setting[1]
 		var reached: float = peak.get(window, 0.0)
@@ -99,7 +98,7 @@ func _report(label: String, peak: Dictionary) -> void:
 ## the number a tighter setting is meant to shrink.
 func _report_cross(label: String, cross: Dictionary) -> void:
 	print(label)
-	for setting in SETTINGS:
+	for setting: Array in SETTINGS:
 		var mass: float = setting[0]
 		var window: float = setting[1]
 		var elapsed: float = cross.get(setting, -1.0)
@@ -139,14 +138,14 @@ func _teardown() -> void:
 ## where she was actually sitting at the cap — the same gate `_update_state()` itself checks.
 func _new_peaks() -> Dictionary:
 	var peaks := {}
-	for w in WINDOWS:
+	for w: float in WINDOWS:
 		peaks[w] = 0.0
 	return peaks
 
 func _track_peaks(peaks: Dictionary) -> void:
 	if _baby.excitement < Tuning.METER_MAX:
 		return
-	for w in WINDOWS:
+	for w: float in WINDOWS:
 		peaks[w] = maxf(peaks[w], _baby.overflow_mass(w))
 
 ## Seconds elapsed before each `SETTINGS` pair first cries, keyed by the setting's own `[mass,
@@ -154,14 +153,14 @@ func _track_peaks(peaks: Dictionary) -> void:
 ## `-1.0` means the setting never crossed within however long the scenario ran.
 func _new_cross() -> Dictionary:
 	var cross := {}
-	for setting in SETTINGS:
+	for setting: Array in SETTINGS:
 		cross[setting] = -1.0
 	return cross
 
 func _track_cross(cross: Dictionary, elapsed: float) -> void:
 	if _baby.excitement < Tuning.METER_MAX:
 		return
-	for setting in SETTINGS:
+	for setting: Array in SETTINGS:
 		if cross[setting] >= 0.0:
 			continue
 		var mass: float = setting[0]
@@ -202,7 +201,7 @@ func _two_bumps_at_the_top(t: TestRunner) -> Dictionary:
 	_stroller.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
 	var peaks := _new_peaks()
 	var gap := 0.3
-	for bump_start in [0.0, Crowd.BUMP_DURATION + gap]:
+	for bump_start: float in [0.0, Crowd.BUMP_DURATION + gap]:
 		var agent := CrowdAgent.new()
 		agent.global_position = _stroller.global_position
 		agent.excitement.startle(Crowd.BUMP_INTENSITY, Crowd.BUMP_DURATION,

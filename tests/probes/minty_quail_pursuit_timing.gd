@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **When every pursuer catches her or gives up, and when every departure ends, tick by tick**, so a
 ## change to how a mover's step is proposed, checked and committed (minty-quail shared-components
@@ -189,8 +188,13 @@ func _the_trap(city: City, director: ResistanceDirector, player: Stroller,
 	var sent := city.events.pending_warnings().size()
 	# Day 13's task guard is in the world already when he is set on her: followed with what comes.
 	var known: Array = []
-	for instance in before:
-		if is_instance_valid(instance) and instance.def.pursuit == null:
+	# Read as a Variant: an instance may be freed by now (the validity test), and a typed loop
+	# variable fails on a freed instance.
+	for item: Variant in before:
+		if not is_instance_valid(item):
+			continue
+		var instance: EventInstance = item
+		if instance.def.pursuit == null:
 			known.append(instance)
 	var run := Run.new(known)
 	for tick in TICKS + 300:
@@ -274,9 +278,11 @@ func _tick(city: City) -> void:
 	events.streaming.retire_finished()
 
 func _take_out(city: City, before: Array) -> void:
-	for instance in city.events.instances().duplicate():
-		if not before.has(instance) and is_instance_valid(instance):
-			city.events.retire(instance)
+	# Each element is read as a Variant: one may be freed by the time it is reached (the
+	# validity test), and a typed loop variable fails on a freed instance.
+	for item: Variant in city.events.instances().duplicate():
+		if not before.has(item) and is_instance_valid(item):
+			city.events.retire(item as EventInstance)
 	city.events.streaming.retire_finished()
 
 ## Stands her at `at`, the day's view looked through about her as the camera would.
