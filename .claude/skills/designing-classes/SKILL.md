@@ -102,6 +102,13 @@ of another kind can be read in ways that take a function as silently (a test aga
 `match`, a lookup), and this rule does not cover it. One method that predates the rule keeps a
 yes-or-no field's name, `EventDef.investigates()`, with no read of it left without parentheses.
 
+**Every conversion of a field to a method, of whatever kind, shows one search in its pull request's
+description** (inbox #1385 in silver-tapir): the field's old name read without parentheses, across
+`src/`, `tests/` and `tools/` (`rg -P '\.old_name\b(?!\()' src tests tools`, or the equivalent), coming
+back empty. It finds the read a conversion missed at the cost of one command. A yes-or-no field's new
+name makes the compiler find such a read; a field of another kind keeps its name, so a read left
+behind is the silent function reference above and nothing else reports it.
+
 **Two lists hold "Fields are not API" while `src/` is converted, and neither grows except by what only moved.** Much of `src/` still
 reads fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that
 adds a read of another class's field, today's being listed in `tools/field_reads.txt`, unless the
@@ -199,6 +206,9 @@ that proposes it, and says so where the player's words name nothing on the point
   it; that it holds for every conversion is the orchestrator's. The player's words on fields
   (inbox #1173 in gray-dolphin) say nothing of a method's name. The plainer alternative is the
   field's name kept, with a read a conversion misses staying true and unreported.
+- **Every conversion's pull request shows a search for the field's old name read without
+  parentheses, coming back empty, whatever the field's kind** ("Fields are not API"): the player's
+  (inbox #1385 in silver-tapir); the new-name rule above stays at yes-or-no fields.
 - **New code reads no field across objects, and a touched read moves behind a method**
   (inbox #1173 in gray-dolphin).
 - **The check fails an unknown receiver file by file, from the day a file loses its opt-out line**,

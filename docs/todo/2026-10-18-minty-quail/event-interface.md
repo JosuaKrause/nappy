@@ -729,7 +729,8 @@ One thing comes from another track and is not this design's: the Tools track's c
 the field-read check see every read (`field-reads.md`: untyped access as an error, a file-level
 ignore per file not yet converted). Every pull request below types the receivers in the files it owns, deletes those
 files' ignore lines and their lines in `tools/field_reads.txt`, answers the architecture
-questions, and is at test parity with the run log and GoatCounter's names unchanged.
+questions, and is at test parity with the run log and GoatCounter's names unchanged. Where it puts a field behind a method, its description
+also shows a search for the field's old name read without parentheses coming back empty (inbox #1385 in silver-tapir).
 
 | # | What | Files it owns | When |
 |---|---|---|---|
