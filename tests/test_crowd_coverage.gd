@@ -2,10 +2,9 @@ extends RefCounted
 ## A city overview retains ordinary crowd density and real traffic in every quadrant,
 ## while the normal player-following field keeps its population and movement behavior.
 ##
-## **Builds a real `City` for what is the crowd's to answer**: the field's coverage of a generated city and
-## its motion under production signals are `Crowd`'s own behavior (`Crowd.recipe_coverage()`), which belongs to
-## the crowd's suites; `src/crowd/crowd.gd` is another pull request's, so the check stays here until it can
-## move there.
+## **Builds a real `City`, a stated exception to "a suite builds no real object it does not test"**: what is
+## asked is the crowd's coverage of a generated city (`Crowd.recipe_coverage()`) and its motion under the
+## production signals and queue updates, which exist only against a city's own map, streets and signals.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed of the run the city is handed (`RunCity.with_own_run()`).
