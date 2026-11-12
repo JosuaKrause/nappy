@@ -1,5 +1,6 @@
 priority: next
 after: 2026-10-18-minty-quail
+after: 2026-11-11-polite-tapir
 
 # sunny-osprey — The crowd's lanes move onto the map's one navigator, if it pays · filed 2026-11-07
 
@@ -23,4 +24,4 @@ and one code path for everything that moves. **What it costs:** lane-following o
 navigator, a per-frame check in the busiest loop, and slightly different motion for every walker and
 car, against a bug never seen.
 
-*Proposed, not asked for:* the band, `next`, after minty-quail (the player named none).
+*Proposed, not asked for:* the band, `next`, after minty-quail and polite-tapir (the player named none).

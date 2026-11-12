@@ -2,7 +2,7 @@
 
 **The ask.** "there really should be no separate code for escape", "the escape is just like a
 normal day with some special settings", "all should be implemented through the regular game
-engine's means" (inbox #785 in minty-lemur). This entry's README has one controller start and finish a spec.
+engine's means" (inbox #785 in minty-lemur). The README of minty-quail has one controller start and finish a spec.
 The design review found that the day director (`DayDirector`, the class that starts and ends a
 day) finished every spec while a spec was started in three places, the escape's start hand-built
 in the main scene with a run-log path and a start signal of its own. Shown that as "A day
@@ -20,8 +20,8 @@ order to start it, and an escape start is testable without booting the whole gam
 approved it", inbox #1268 in olive-ferret); the detail was worked out by the same review after the approval:
 
 - **Who builds the event manager and the crowd**, with the third hand-ins pull request
-  (`city-hand-ins.md`): the city scene stops building its own, and the building and the city get
+  (minty-quail's `city-hand-ins.md`): the city scene stops building its own, and the building and the city get
   theirs from one factory (`standing-layer-breaks.md`, the city scene as builder).
 
 **The pull request:** it touches the event manager's setup and lands between two placement pull
-requests (`city-hand-ins.md` holds the proposal to cut it).
+requests (minty-quail's `city-hand-ins.md` holds the proposal to cut it).

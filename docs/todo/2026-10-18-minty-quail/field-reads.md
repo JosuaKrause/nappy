@@ -58,7 +58,7 @@ Left, each its own design question:
   request touches and the tests read them, so it waits for that pull request.
 - **The city's own classes** have their readers converted except two groups, each with a home:
   - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
-    (`RecipeCityContext`) are the scene recipes' city. The scene recipes are placed by location (`placement-by-construction.md`, "What is built"), so they wait
+    (`RecipeCityContext`) are the scene recipes' city. The scene recipes are placed by location (polite-tapir's `placement-by-construction.md`, "What is built"), so they wait
     for nothing there; what is left is a design for the map capturing and restoring itself.
   - A field only a test still reads (`CityMap.home_rect`, `home_block`, `courtyard_rects`,
     `Building.scenery_clock`, `door_world_x_range`, `power_station`, `station_door_col`,

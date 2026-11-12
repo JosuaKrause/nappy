@@ -14,9 +14,9 @@ happenings, day 12's park cordon, the crowd and the run log's observer are built
 **What is left, the third pull request.** *Proposed, not asked for, and on the board as
 hand-ins-third-cut, built on the orchestrator's pick since it drops nothing the player asked for:*
 one pull request cannot hold it, so cut it: the event manager's own city and the day planner's
-fallback below go before the dawn's context rewrites `build_day()`'s call (`scheduler-breakup.md`),
+fallback below go before the dawn's context rewrites `build_day()`'s call (polite-tapir's `scheduler-breakup.md`),
 the smaller cases when they are ready, and who builds the event manager and
-the crowd last (`standing-layer-breaks.md`). The player's answer was three pull requests
+the crowd last (polite-tapir's `standing-layer-breaks.md`). The player's answer was three pull requests
 ("yes three prs is fine", inbox #1173 in gray-dolphin), so the plainer alternative is one large
 third pull request:
 
