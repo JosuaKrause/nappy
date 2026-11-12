@@ -544,10 +544,18 @@ func _street_segments(map: CityMap) -> Array[Rect2i]:
 			segments.append(Rect2i(block_x, corridor * period, Tuning.BLOCK_SIZE, width))
 	return segments
 
-## The streets `map` walled at one end, as the city states them in what generation fixed
-## (`CityMap.capture()`, its `dead_ends`).
+## The streets `map` walled at one end, read off the ground the city says was built over
+## (`CityMap.streets_built_over()`, street to the rect built over, which the telemetry map draws): a
+## dead end's rect is the wall across one end of its street, where a landmark or an apartment complex
+## builds the whole street over. Told apart by that rect rather than by which ends stay walkable
+## (`RegionPlanner._dead_end_ground_region()`'s rule), since a solid apartment complex's absorbed
+## cross leaves its middle junction walkable and would read as one walkable end.
 func _dead_ends_of(map: CityMap) -> Array[Vector3i]:
-	var dead_ends: Array[Vector3i] = map.capture()["dead_ends"]
+	var dead_ends: Array[Vector3i] = []
+	var built_over := map.streets_built_over()
+	for key: Vector3i in built_over:
+		if built_over[key] != map.street_network().by_key(key).tile_rect():
+			dead_ends.append(key)
 	return dead_ends
 
 ## Hard blockers. *(M50 step 1.)*

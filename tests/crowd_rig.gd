@@ -2154,13 +2154,16 @@ func _test_nothing_walks_into_a_hard_blocker(t: TestRunner) -> void:
 		for y in range(rect.position.y, rect.end.y):
 			for x in range(rect.position.x, rect.end.x):
 				walls[Vector2i(x, y)] = true
-	var dead_ends: Array[Vector3i] = _city.map.capture()["dead_ends"]
-	t.check(not walls.is_empty(), "this city has hard blockers to walk into (%d dead ends)"
-			% dead_ends.size())
+	t.check(not walls.is_empty(), "this city has hard blockers to walk into (%d streets built over)"
+			% built_over.size())
 
+	# She stands in a dead end: a street of which only the wall across one end was built over, where
+	# a landmark or an apartment complex builds the whole street over.
 	var at := _city.map.doorstep_world_position()
-	for key: Vector3i in dead_ends:
+	for key: Vector3i in built_over:
 		var segment := _city.map.network.by_key(key)
+		if built_over[key] == segment.tile_rect():
+			continue
 		at = _city.map.tile_rect_to_world(segment.tile_rect()).get_center()
 		break
 	_city.crowd.start_day(1, _rng(1), at)

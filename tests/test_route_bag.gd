@@ -331,6 +331,8 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 				% [seed_value, first])
 		t.close_to(first_at, EventDirector.LESSON_DELAY,
 				"seed %d: and she meets it at LESSON_DELAY of walking" % seed_value, STEP * 1.5)
+		t.check(bag.left() == 0,
+				"seed %d: once the lesson's dog is drawn, no second bag waits behind it" % seed_value)
 		# The next marble fills the ordinary bag: the lesson took none of it.
 		bag.peek()
 		var ordinary := bag.bag_in_front()
