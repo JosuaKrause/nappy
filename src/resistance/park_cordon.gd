@@ -245,7 +245,7 @@ var _officer_reach := EventInstance.mover_for(EventCatalogue.by_id(OFFICER_ROW))
 ## blocked_by()`: today's closures plus every body's disc), which the last gap is checked under.
 var _blocked: Dictionary
 ## The park, as its block, and its calm ground in world space.
-var park := Vector2i(-1, -1)
+var _park := Vector2i(-1, -1)
 var _area := Rect2()
 var _rect := Rect2i()
 ## The rectangle the tape stands on: the park's ground, half a barrier's depth in. She is shut in
@@ -303,7 +303,7 @@ func _init(map: CityMap, navigator: Navigator, events: EventManager, world: Worl
 	_world = world
 	_atlas = atlas
 	_blocked = blocked
-	park = block
+	_park = block
 	_rect = ClosurePlanner.calm_area_rect(map, block)
 	_area = map.tile_rect_to_world(_rect)
 	var inset := Tuning.CLOSURE_BARRIER_DEPTH * 0.5
@@ -350,7 +350,7 @@ func tick(delta: float, her: Vector2) -> void:
 ## about a tile; a stretch needs tape where the park's edge under it opens onto walkable ground
 ## (`ParkClosure.fence()`'s runs, the late park's own entrances).
 func _cut_the_stretches(rect: Rect2i) -> void:
-	var runs: Array[ParkClosure] = ParkClosure.fence(_map, park)
+	var runs: Array[ParkClosure] = ParkClosure.fence(_map, _park)
 	var corners: Array[Vector2] = [_line.position, Vector2(_line.end.x, _line.position.y), _line.end,
 			Vector2(_line.position.x, _line.end.y)]
 	var outs: Array[Vector2i] = [Vector2i.UP, Vector2i.RIGHT, Vector2i.DOWN, Vector2i.LEFT]
@@ -578,7 +578,7 @@ func _set_out(her: Vector2) -> void:
 	_send_escorts()
 	_time_the_close(her)
 	_trace.note("contact", "the police set out to cordon the park at block %s: %d stretches, "
-			% [park, _needed_count()] + "the last gap at %s, closing %.1fs after the swing"
+			% [_park, _needed_count()] + "the last gap at %s, closing %.1fs after the swing"
 			% [last_gap, _deadline])
 
 func _needed_count() -> int:
@@ -1363,7 +1363,7 @@ func _close(her: Vector2) -> void:
 		EventBus.hard_fail_triggered.emit(TRAPPED)
 	else:
 		_trace.note("contact", "the park at block %s is cordoned off %.1fs after the swing, "
-				% [park, _elapsed] + "with her outside")
+				% [_park, _elapsed] + "with her outside")
 
 ## Sends an escort whose person has gone before he reached them back down the way out, past
 ## where she can see: from inside the gap if he is in the park, else from its point nearest him.

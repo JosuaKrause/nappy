@@ -43,13 +43,30 @@ static func is_shut(map: CityMap, inside: Vector2) -> bool:
 
 ## The tape standing in the city now: one `CordonTape` per taped stretch of the edge, each a static
 ## body the physics world blocks her with. The posts the officers plant at the stretches' ends are
-## not tape, and a piece the cordon has let go (queued to be freed) is not standing.
+## not tape: a post has no body. A piece the cordon has let go (queued to be freed) is not standing.
 static func tapes(city: City) -> Array[CordonTape]:
+	var found: Array[CordonTape] = []
+	for piece in _pieces(city):
+		if body_rect(piece).has_area():
+			found.append(piece)
+	return found
+
+## The posts standing in the city now: the cordon's pieces the officers plant at the stretches'
+## ends, each standing in the world with no body, since the tape strung between them is what stops
+## her.
+static func posts(city: City) -> Array[CordonTape]:
+	var found: Array[CordonTape] = []
+	for piece in _pieces(city):
+		if not body_rect(piece).has_area():
+			found.append(piece)
+	return found
+
+## Every piece of the cordon standing on the city's entity layer, tape and post alike.
+static func _pieces(city: City) -> Array[CordonTape]:
 	var found: Array[CordonTape] = []
 	for node in city.get_node("Entities").get_children():
 		var piece := node as CordonTape
-		if piece != null and piece.piece == CordonTape.Piece.TAPE \
-				and not piece.is_queued_for_deletion():
+		if piece != null and not piece.is_queued_for_deletion():
 			found.append(piece)
 	return found
 
@@ -65,10 +82,13 @@ static func body_rect(tape: CordonTape) -> Rect2:
 					return Rect2(part.global_position - shape.size * 0.5, shape.size)
 	return Rect2()
 
-## The two ends of the line a tape's body runs along, read off the body: the tape's length, centred.
+## The two ends of the line a tape's body runs along, read off the body: its long side, centred. A
+## stretch is about a tile long and its body `CordonTape.DEPTH` deep, so the long side is the line.
 static func ends(tape: CordonTape) -> PackedVector2Array:
-	var centre := body_rect(tape).get_center()
-	var half := Vector2(tape.length * 0.5, 0.0) if tape.across else Vector2(0.0, tape.length * 0.5)
+	var body := body_rect(tape)
+	var centre := body.get_center()
+	var half := Vector2(body.size.x * 0.5, 0.0) if body.size.x >= body.size.y \
+			else Vector2(0.0, body.size.y * 0.5)
 	return PackedVector2Array([centre - half, centre + half])
 
 ## Whether a body centred at `at` stands within `reach` of tape that is up.

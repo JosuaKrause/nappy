@@ -250,21 +250,15 @@ func _test_the_cordons_figures_ask_the_library_it_is_handed(t: TestRunner) -> vo
 	var recording := RecordingAtlas.new()
 	var cordon := ParkCordon.new(_city.map, _city.navigator, _city.events, _city, recording,
 			fixture.park, _city.spawn_siting, ResistanceReads.day_reachability(_city)[1])
-	var posts := func() -> int:
-		var found := 0
-		for node in _city.get_node("Entities").get_children():
-			var piece := node as CordonTape
-			found += 1 if piece != null and piece.piece == CordonTape.Piece.POST \
-					and not piece.is_queued_for_deletion() else 0
-		return found
 	var waited := 0.0
-	while waited < PATIENCE and (CordonInTheWorld.tapes(_city).is_empty() or posts.call() == 0):
+	while waited < PATIENCE and (CordonInTheWorld.tapes(_city).is_empty()
+			or CordonInTheWorld.posts(_city).is_empty()):
 		_look(_city, swing)
 		cordon.tick(STEP, swing)
 		waited += STEP
 	var officers := CordonInTheWorld.officers(_city).size()
 	var tapes := CordonInTheWorld.tapes(_city).size()
-	var planted: int = posts.call()
+	var planted := CordonInTheWorld.posts(_city).size()
 	t.check(officers > 0 and tapes > 0 and planted > 0,
 			"the cordon put out officers, tape and posts (%d, %d, %d)" % [officers, tapes, planted])
 	t.check(recording.acquired_from("res://src/resistance/cordon_officer.gd") >= officers,

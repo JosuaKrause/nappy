@@ -170,7 +170,7 @@ func _headless(callable: Callable) -> void:
 ## answers "no" on its own, before a path override is even asked for.
 func _test_uses_save_is_false_under_the_headless_runner(t: TestRunner) -> void:
 	_save.configure(RunConfig.at_boot())
-	t.check(RunConfig.at_boot().headless and not _a_write_lands(),
+	t.check(RunConfig.at_boot().is_headless() and not _a_write_lands(),
 			"the headless test runner never reads or writes the real save")
 	_save.configure(_headless_run())
 	t.check(not _a_write_lands(), "nor does a headless release run, flags or no flags")
@@ -751,7 +751,7 @@ func _test_day_under_way_load_on_a_normal_runs_last_nerve_goes_back(t: TestRunne
 	run.header.day = 8
 	run.header.nerves = 2
 	run.calendar.begin_day()
-	t.check(run.calendar.checkpoint_day() == 8, "day 8's dawn is the run's checkpoint")
+	t.check(run.calendar.checkpoint == run.run_parts.run_data(), "day 8's dawn is the run's checkpoint")
 	run.calendar.finish_day(GameEnums.DayResult.WON)
 	run.calendar.begin_day()
 	run.header.nerves = 1
@@ -759,15 +759,14 @@ func _test_day_under_way_load_on_a_normal_runs_last_nerve_goes_back(t: TestRunne
 		t.check(_saved(run, true), "the mid-day save on day 9, one nerve left")
 		run.start_run(58)
 		var resume := _save.try_resume(run)
-		t.check(resume.get("day_under_way") == true and run.calendar.checkpoint_day() == 8,
-				"the save comes back under way, its checkpoint with it")
+		t.check(resume.get("day_under_way") == true, "the save comes back under way")
 		t.check(run.calendar.a_loss_goes_back_to_the_checkpoint(),
 				"and losing the day it was left on goes back")
 		var continues := run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL)
 		t.check(continues and run.header.ending == GameEnums.Ending.NONE,
 				"the run goes on rather than ending")
 		t.check(run.header.day == 8 and run.header.nerves == Tuning.STARTING_NERVES,
-				"back at day 8 with every nerve")
+				"back at day 8 with every nerve: the save gave its checkpoint back with it")
 		t.check(FileAccess.file_exists(_SCRATCH_PATH), "and the save is not deleted")
 	)
 
@@ -789,8 +788,7 @@ func _test_a_save_from_before_checkpoints_still_loads(t: TestRunner) -> void:
 	var resume := _save.try_resume(run)
 	t.check(not resume.is_empty() and run.header.day == 10, "it still loads, on its own day")
 	t.check(not run.calendar.hard_mode, "as a normal run")
-	t.check(run.calendar.checkpoint.is_empty() and run.calendar.checkpoint_day() == 1,
-			"whose checkpoint is checkpoint zero, day 1")
+	t.check(run.calendar.checkpoint.is_empty(), "whose checkpoint is checkpoint zero, day 1")
 
 ## The mode and the checkpoint survive a save, and a checkpoint this build could not give back is
 ## dropped for checkpoint zero rather than half-applied later.
@@ -798,17 +796,20 @@ func _test_the_mode_and_the_checkpoint_survive_a_round_trip(t: TestRunner) -> vo
 	var run := _a_run(60)
 	run.header.day = 4
 	run.calendar.begin_day()
-	t.check(run.calendar.checkpoint_day() == 4, "day 4's dawn is kept")
+	t.check(run.calendar.checkpoint == run.run_parts.run_data(), "day 4's dawn is kept")
 	run.calendar.finish_day(GameEnums.DayResult.WON)
 	t.check(_saved(run, false), "a save is written")
 	var kept := run.calendar.checkpoint.duplicate(true)
 	run.start_run(61)
 	_save.try_resume(run)
-	t.check(run.calendar.checkpoint_day() == 4 and not run.calendar.hard_mode,
-			"a normal run comes back with its day 4 checkpoint")
+	t.check(not run.calendar.hard_mode, "a normal run comes back normal")
 	t.check(int((run.calendar.checkpoint["state"] as Dictionary)["run_seed"])
 			== int((kept["state"] as Dictionary)["run_seed"]),
 			"the checkpoint read back is the one written")
+	run.header.nerves = 1
+	t.check(run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL) and run.header.day == 4
+			and run.header.nerves == Tuning.STARTING_NERVES,
+			"with its day 4 checkpoint: its last nerve goes back to day 4")
 
 	run.calendar.choose_mode(true)
 	t.check(_saved(run, false), "a hard run's save is written")

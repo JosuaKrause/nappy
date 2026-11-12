@@ -337,7 +337,7 @@ func _test_a_completed_take_is_logged_exactly_once(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("abduction")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), instance_where,
-			RunTrace.recording(lines))
+			RecordingTrace.new(lines))
 	instance_where.tell(Vector2(def.outer_radius - 20.0, 0.0))
 	_advance(instance, instance.def.abduction.taken_over * 0.5)
 	t.check(_takes(lines) == 0, "nothing is logged while the walk is still happening")
@@ -372,7 +372,7 @@ func _test_a_hunting_van_draws_no_victim(t: TestRunner) -> void:
 	var hot := _hunting_abduction()
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, hot, Vector2.ZERO, PackedVector2Array(), instance_where,
-			RunTrace.recording(lines))
+			RecordingTrace.new(lines))
 	# Inside the field but outside the trigger, so it is only waiting — the take may begin exactly
 	# as it would for a cold van.
 	instance_where.tell(Vector2(hot.notice_within() + 20.0, 0.0))

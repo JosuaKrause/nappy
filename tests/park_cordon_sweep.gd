@@ -20,7 +20,9 @@ extends RefCounted
 ## whatever the day put beside it — with nobody in the park, and with a busker in it, standing where
 ## the suite always puts him and in the park's edge rows, where his escort's walks and the tapers'
 ## meet; and with a busker in it the cordon still closes. The officers are read off the world, the
-## figures standing on the city's entity layer, and the tape off the static bodies it stands.
+## figures standing on the city's entity layer, the tape off the static bodies it stands, and the
+## park it closes off the map: the swing's (`CityGenerator.swing_park()`), which the happenings
+## take.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const CordonInTheWorld := preload("res://tests/cordon_in_the_world.gd")
@@ -191,7 +193,7 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 func _people_taken_on(city: City, cordon: ParkCordon) -> int:
 	# The two tapers are the first two officers in the world; every other is an escort.
 	var people := maxi(0, CordonInTheWorld.officers(city).size() - 2)
-	var area := CordonInTheWorld.park_ground(city.map, cordon.park)
+	var area := CordonInTheWorld.park_ground(city.map, CityGenerator.swing_park(city.map))
 	for live in city.events.instances():
 		var def := live.def
 		if live.is_finished or not live.is_leaving or not area.has_point(live.global_position):
@@ -208,7 +210,8 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	_look(city, her[0])
 	happenings.tick(STEP, her[0], Vector2.ZERO)
 	var cordon := happenings.cordon
-	var result := {"park_size": CordonInTheWorld.park_ground(city.map, cordon.park).size,
+	var park := CityGenerator.swing_park(city.map)
+	var result := {"park_size": CordonInTheWorld.park_ground(city.map, park).size,
 			"walk": swing.distance_to(cordon.last_gap)}
 	result.people = _people_taken_on(city, cordon)
 	_measure_the_gap(city, director, cordon, result)
@@ -220,7 +223,7 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	result.stalled = standing.stalled
 	cordon.clear()
 	var again := ParkCordon.new(city.map, city.navigator, city.events, city, city.atlas,
-			cordon.park, city.spawn_siting, ResistanceReads.day_reachability(city)[1])
+			park, city.spawn_siting, ResistanceReads.day_reachability(city)[1])
 	her[0] = swing
 	_tick(city, again, her[0])
 	var walking := _play(city, again, her, shows, true, result.people == 0)
@@ -229,7 +232,7 @@ func _measure_the_day(city: City, director: ResistanceDirector,
 	again.clear()
 	var runs: Array[Dictionary] = []
 	for place in PLACES:
-		runs.append(_walk_a_person_out(city, director, cordon.park, swing, place))
+		runs.append(_walk_a_person_out(city, director, park, swing, place))
 	result.merge(runs[0])
 	result.people_runs = runs
 	return result
@@ -328,8 +331,8 @@ func _walk_a_person_out(city: City, director: ResistanceDirector, park: Vector2i
 func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCordon,
 		result: Dictionary) -> void:
 	var map := city.map
-	var rect := ClosurePlanner.calm_area_rect(map, cordon.park)
-	var area := CordonInTheWorld.park_ground(map, cordon.park)
+	var rect := ClosurePlanner.calm_area_rect(map, CityGenerator.swing_park(map))
+	var area := CordonInTheWorld.park_ground(map, CityGenerator.swing_park(map))
 	var blocked: Dictionary = ResistanceReads.day_reachability(city)[1]
 	for tile in map.rect_tiles(rect):
 		blocked[tile] = true
@@ -380,7 +383,7 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: bool,
 		watch_stalls: bool) -> Dictionary:
 	var row := EventCatalogue.by_id(ParkCordon.OFFICER_ROW)
-	var line := CordonInTheWorld.tape_line(city.map, cordon.park)
+	var line := CordonInTheWorld.tape_line(city.map, CityGenerator.swing_park(city.map))
 	var first_seen := -1.0
 	var clock := STEP
 	var gap := cordon.last_gap

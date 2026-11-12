@@ -317,8 +317,7 @@ src/
 	happenings.gd           what the story puts in the street that is not a task (the neighbor's
 	                         mornings, day 10's raid, day 11's market, day 12's park, day 13's
 	                         column); owned by the director, built and ticked on its own over a
-	                         city (`setup()`, `start_day()`, `tick()`); `spine_x()` says where the main
-	                         road's middle is
+	                         city (`setup()`, `start_day()`, `tick()`)
 	resistance_steps.gd     the calendar: a mark and the perform step it unlocks share one day,
 	                         plus the finale
 	contact_point.gd        touch to complete — a chalk mark, a task's own event instance, or a
@@ -921,7 +920,7 @@ sitting keeps across the scene reloads a run makes, the held restart, the day-14
 escape, a run carried on to its checkpoint and a recipe's lost section played again, since
 `reload_current_scene()` frees every node `main` built. It holds these facts and is one home: the run
 carried over (`carry_the_run_over`), the title's answer (`controls_word`), the instant of the last
-held restart, which the title's restart guard measures a press against (`restarted_at_msec`), the
+held restart, which the title's restart guard measures a press against (`restart_requested_at_msec()`), the
 desktop frame record's one file (`frame_record_path`), the run (`run`, a `RunState`, which `main`
 takes off it once a boot, `take_the_run()` starting one of the sitting's own on its first boot), the ground's composition recipe, read once
 per process (`ground_recipe`), the baked atlas pages and which of them are held (`atlas`, the one

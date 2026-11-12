@@ -600,7 +600,7 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t: TestRunner) -> void:
 	frame.free()
 	# The places are derived from the shadow the frame casts at its base; the contact is asked about
 	# them below, which only answers right if it carries that ellipse.
-	var semi := Vector2(shadow.reach(), shadow.across())
+	var semi := Vector2(shadow.reach(), shadow.rounding_radius())
 	var places: Array[Vector2] = []
 	for i in 8:
 		var angle := TAU * float(i) / 8.0

@@ -2,7 +2,7 @@ extends RefCounted
 ## The route's own curbstones, tinted whole: `City.tint_the_route()` re-sets cells on `_ground`
 ## itself where the walk marks the kerb (`RouteSource.marks_the_kerb_at()`, a day's tree at
 ## `Corridor.depth(tile) == 0`), the same street-grained membership
-## `RouteTree.streets()`/`is_on_the_tree()` and `GroundTiles.source_for` already answer
+## `RouteTree.streets_on_the_walk()`/`is_on_the_tree()` and `GroundTiles.source_for` already answer
 ## independently.
 ##
 ## Checks every neighborhood as its ground becomes resident, then revisits it after eviction.
@@ -26,9 +26,9 @@ func run(t: TestRunner) -> void:
 
 ## The route's own curbstones, tinted whole: `City.tint_the_route()` re-sets cells on `_ground`
 ## itself where the day's tree marks the kerb, at `Corridor.depth(tile) == 0`, the same
-## street-grained membership `RouteTree.streets()`/`is_on_the_tree()` and `GroundTiles.source_for`
-## already answer independently, so this test recomputes the expected set from those rather than trusting the
-## paint to have used its own inputs correctly, and checks `_ground`'s cells directly since there
+## street-grained membership `RouteTree.streets_on_the_walk()`/`is_on_the_tree()` and
+## `GroundTiles.source_for` already answer independently, so this test recomputes the expected set
+## from those rather than trusting the paint to have used its own inputs correctly, and checks `_ground`'s cells directly since there
 ## is no second layer to read back.
 func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner) -> void:
 	var kerb_sources := GroundTiles.ROUTE_KERB_SOURCES

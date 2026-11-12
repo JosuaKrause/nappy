@@ -26,28 +26,28 @@ const TAPE_ACROSS := &"closures/cordon_tape_across"
 const TAPE_ALONG := &"closures/cordon_tape_along"
 const POST := &"closures/cordon_post"
 
-var piece := Piece.TAPE
+var _piece := Piece.TAPE
 ## Whether a stretch runs across the screen (a north or south side) rather than up it.
-var across := true
+var _across := true
 ## A stretch's length, in pixels along its line.
 var length := Tuning.TILE_SIZE * 1.0
 
-## Sets this out as `which` piece, and for a tape its direction (`across` the way or along it) and
-## its `reach` along that direction, once, before it enters the tree.
+## Sets this out as `which` piece, and for a tape its direction (across the way, `runs_across`, or
+## along it) and its `reach` along that direction, once, before it enters the tree.
 func set_out(which: Piece, runs_across: bool, reach: float) -> void:
-	piece = which
-	across = runs_across
+	_piece = which
+	_across = runs_across
 	length = reach
 
 func _ready() -> void:
-	if piece != Piece.TAPE:
+	if _piece != Piece.TAPE:
 		return
 	var body := StaticBody2D.new()
 	var shape := CollisionShape2D.new()
 	var box := RectangleShape2D.new()
-	box.size = Vector2(length, DEPTH) if across else Vector2(DEPTH, length)
+	box.size = Vector2(length, DEPTH) if _across else Vector2(DEPTH, length)
 	shape.shape = box
-	body.position = Vector2.ZERO if across else Vector2(0.0, -length * 0.5)
+	body.position = Vector2.ZERO if _across else Vector2(0.0, -length * 0.5)
 	body.add_child(shape)
 	add_child(body)
 
@@ -68,10 +68,10 @@ func _exit_tree() -> void:
 	_atlas.release(&"street_kit")
 
 func _draw() -> void:
-	if piece == Piece.POST:
+	if _piece == Piece.POST:
 		Sprites.draw_standing(self, _atlas.region(POST), Vector2.ZERO)
 		return
-	if across:
+	if _across:
 		var native := Vector2(AtlasTable.baked().native_size(TAPE_ACROSS))
 		draw_texture_rect(_atlas.region(TAPE_ACROSS),
 				Rect2(-length * 0.5, -native.y, length, native.y), false)

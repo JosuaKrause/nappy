@@ -167,14 +167,6 @@ func _spine_half_extents(along: Vector2) -> Vector2:
 		_:
 			return Vector2.ZERO
 
-## The half-thickness perpendicular to the spine — the shape's narrow axis, and the one a spread
-## body is measured against when it has to fit a pavement band rather than merely reach across it.
-## A rectangle's is its smaller half-extent.
-func across() -> float:
-	if kind == Kind.RECT:
-		return minf(half_extents.x, half_extents.y)
-	return radius
-
 ## Distance from a local point to the spine: zero on the spine itself, the perpendicular distance
 ## beside a segment's middle, and the Euclidean distance to the nearer end once `local` is past
 ## it. Zero for a point shape, whose spine is the origin. Zero anywhere inside a rectangle, and the
