@@ -47,12 +47,16 @@ func _map(index: int = 0) -> CityMap:
 ## Every block belongs to exactly one lot, and every lot has a plan starting on day 1.
 ##
 ## Since M21 a lot is not always a block: a four-block calm zone is one entry in `block_plans`
-## and four blocks of ground, and the three it absorbed appear only in `zone_anchor`. The two
-## sets have to partition the city between them — a block in neither is ground nothing paints,
-## and a block in both is a park with a building in the middle of it.
+## and four blocks of ground, and the three it absorbed are known only by the anchor `anchor_of()`
+## names for them. The two sets have to partition the city between them — a block in neither is
+## ground nothing paints, and a block in both is a park with a building in the middle of it.
 func _test_every_block_has_an_arc(t: TestRunner) -> void:
 	var map := _map()
-	var absorbed := map.zone_anchor.size() - map.zone_anchors().size()
+	var absorbed := 0
+	for y in Tuning.CITY_BLOCKS.y:
+		for x in Tuning.CITY_BLOCKS.x:
+			if map.anchor_of(Vector2i(x, y)) != Vector2i(x, y):
+				absorbed += 1
 	t.check(map.plans_by_block().size() + absorbed == Tuning.CITY_BLOCKS.x * Tuning.CITY_BLOCKS.y,
 			"every block is in exactly one lot (%d lots, %d absorbed)"
 			% [map.plans_by_block().size(), absorbed])

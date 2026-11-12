@@ -209,9 +209,10 @@ static func _attempt(seed_value: int, choices: Dictionary = {}) -> CityMap:
 	# block's carved rects, which is why the buildings are collected afterwards rather than before.
 	_place_hard_blockers(map, purposes, block_rects, rng, choices)
 	# **After the hard blockers, and for the same reason they run after the repaint.** A region may
-	# never grow across a street a dead end or a big building just built over, and `absent_segments`
-	# only carries that once the blockers are placed — growing regions any earlier would let a
-	# region's own growth cross ground the run is about to take away.
+	# never grow across a street a dead end or a big building just built over, and the absent
+	# streets (`CityMap.has_street()`) only carry that once the blockers are placed — growing
+	# regions any earlier would let a region's own growth cross ground the run is about to take
+	# away.
 	_assign_regions(map)
 	for rects: Array[Rect2i] in block_rects.values():
 		map.add_building_lots(rects)
@@ -316,7 +317,7 @@ static func _place_precincts(map: CityMap, rng: RandomNumberGenerator) -> void:
 ## not already next to open calm.
 ##
 ## The dictionary that comes back is keyed by **lot anchors**, not by blocks: the three blocks a
-## zone absorbed are removed at the end and live in `map.zone_anchor` instead. They carry the
+## zone absorbed are removed at the end and reach their anchor through `map.anchor_of()` instead. They carry the
 ## zone's purpose while this function runs, though, because that is what makes the "never side
 ## by side" rule see a zone as calm ground without a special case for it.
 static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator, choices: Dictionary = {}) -> Dictionary:
@@ -490,9 +491,9 @@ static func _place_one_zone(purposes: Dictionary, zones: Dictionary, shuffled: A
 ##   it here rather than in `_cut_courtyards` is only because it needs a whole unclaimed footprint,
 ##   which is a thing to ask for before the single blocks are handed out.
 ## - **Its absorbed streets are hard blockers.** They are solid ground for the whole run, which is
-##   exactly what `built_over` means, and saying so is what makes the crowd, the telemetry map and
-##   the big-building placement all treat them correctly without any of them learning about
-##   apartment complexes. See `_record_zones`.
+##   exactly what a street built over (`CityMap.record_built_over()`) means, and saying so is what
+##   makes the crowd, the telemetry map and the big-building placement all treat them correctly
+##   without any of them learning about apartment complexes. See `_record_zones`.
 static func _place_apartment_complexes(purposes: Dictionary, zones: Dictionary,
 		shuffled: Array[Vector2i], rng: RandomNumberGenerator, main_road: int,
 		precinct_spans: Array[Vector4i], existing: int = 0) -> void:
@@ -631,7 +632,8 @@ static func _blocks_in(footprint: Rect2i) -> Array[Vector2i]:
 ## **Whether the streets it took are ground or wall is read off the purpose**, which is the one
 ## place that decides it: open calm walks over them and an apartment complex is built on them. Two
 ## multi-block lots, one absorb, and no caller anywhere else has to know which kind it is looking
-## at — a solid one says so in `built_over` and every rule about hard blockers picks it up for free.
+## at — a solid one says so through `record_built_over()` and every rule about hard blockers picks
+## it up for free.
 static func _record_zones(map: CityMap, purposes: Dictionary, zones: Dictionary) -> void:
 	for anchor: Vector2i in zones:
 		var footprint: Rect2i = zones[anchor]
@@ -700,17 +702,18 @@ static func _has_calm_neighbour(purposes: Dictionary, footprint: Rect2i) -> bool
 ## rows and the two vertical ones between its columns.
 ##
 ## That is the whole of it, and the graph half of `StreetNetwork` needs no other change —
-## `map.absent_segments` is added to the closed set of every route search, the four junctions
-## around the removed cross become T-junctions for free, and the one in the middle of the zone
-## is left with nothing reaching it at all.
+## `map.blocked_segments()` adds the absent streets to the closed set of every route search, the
+## four junctions around the removed cross become T-junctions for free, and the one in the middle
+## of the zone is left with nothing reaching it at all.
 ##
 ## Then the **stub**, which every hard blocker shares and states once: see
 ## `_seal_stub_crossings`.
 ##
 ## `solid` is the apartment complex: the same streets leave the lattice, and the ground where they
-## were is building rather than park. Saying so in `built_over` is what tells every rule about hard
-## blockers — the crowd's walls, the telemetry legend, where a big building may go — that this is
-## not a park to walk across, without any of them learning what an apartment complex is.
+## were is building rather than park. Saying so through `record_built_over()` is what tells every
+## rule about hard blockers — the crowd's walls, the telemetry legend, where a big building may go —
+## that this is not a park to walk across, without any of them learning what an apartment complex
+## is.
 static func _absorb_streets(map: CityMap, footprint: Rect2i, solid := false) -> void:
 	for y in range(footprint.position.y + 1, footprint.end.y):
 		for x in range(footprint.position.x, footprint.end.x):
@@ -784,7 +787,7 @@ static func _plan_arcs(map: CityMap, purposes: Dictionary,
 
 ## **The park day 12's task sends her to**, chosen once for the run: *"we can just force open the
 ## park she needs to go to that day … *then* the park starts to close"* (PLAYTEST-119). Its plan
-## carries `BlockPlan.forced_open_on`, so on that day it is a park whatever its arc has reached
+## carries its day (`BlockPlan.force_open_on()`), so on that day it is a park whatever its arc has reached
 ## (`CityState.purpose_of()`), and its arc ends requisitioned, so that once she has reached the
 ## swing it stays taken for the rest of the run (`CityState.take()`).
 ##

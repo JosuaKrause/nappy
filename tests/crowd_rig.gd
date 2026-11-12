@@ -2148,8 +2148,9 @@ func _test_the_arterial_is_the_busiest_street(t: TestRunner) -> void:
 ## bordered it.
 func _test_nothing_walks_into_a_hard_blocker(t: TestRunner) -> void:
 	var walls := {}
-	for key: Vector3i in _city.map.built_over:
-		var rect: Rect2i = _city.map.built_over[key]
+	var built_over := _city.map.streets_built_over()
+	for key: Vector3i in built_over:
+		var rect: Rect2i = built_over[key]
 		for y in range(rect.position.y, rect.end.y):
 			for x in range(rect.position.x, rect.end.x):
 				walls[Vector2i(x, y)] = true

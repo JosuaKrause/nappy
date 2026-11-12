@@ -206,10 +206,6 @@ func _ready() -> void:
 func set_world(world: WorldContext) -> void:
 	_world = world
 
-## The world she was last handed, or null.
-func world() -> WorldContext:
-	return _world
-
 ## The bus she says her meters and her state on from now on (`_bus`), handed in by whoever places
 ## her: `main` as it makes her, a test for the bus it listens on.
 func use_bus(bus: _BUS) -> void:

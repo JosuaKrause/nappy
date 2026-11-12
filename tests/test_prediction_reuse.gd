@@ -4,6 +4,27 @@ extends RefCounted
 const Reference = preload("res://tests/fixtures/prediction_reference.gd")
 const HaloRig = preload("res://tests/halo_rig.gd")
 
+## An event's source that keeps the sensitivity the halo last told it (`set_player_at()`), which the
+## frozen reference scales its projection by as the source scales its own.
+class ToldEventSource extends EventExcitement:
+	var told_sensitivity := 1.0
+
+	## Overrides EventExcitement.set_player_at.
+	func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
+			sensitivity: float = 1.0) -> void:
+		told_sensitivity = sensitivity
+		super(at, velocity, decay_rate, sensitivity)
+
+## A crowd body's source that keeps the sensitivity the halo last told it, as `ToldEventSource`.
+class ToldCrowdSource extends CrowdExcitement:
+	var told_sensitivity := 1.0
+
+	## Overrides ExcitementSource.set_player_at.
+	func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
+			sensitivity: float = 1.0) -> void:
+		told_sensitivity = sensitivity
+		super(at, velocity, decay_rate, sensitivity)
+
 ## An event whose source counts the samplings it really runs.
 class CountedEvent extends EventInstance:
 	var sampling_runs: int:
@@ -16,7 +37,7 @@ class CountedEvent extends EventInstance:
 		excitement = Source.new(self)
 		excitement.use_rim(rim)
 
-	class Source extends EventExcitement:
+	class Source extends ToldEventSource:
 		var sampling_runs := 0
 
 		## Overrides ExcitementSource._sample_expected_landed.
@@ -36,7 +57,7 @@ class CountedCrowd extends CrowdAgent:
 		excitement = Source.new(self)
 		excitement.use_rim(rim)
 
-	class Source extends CrowdExcitement:
+	class Source extends ToldCrowdSource:
 		var sampling_runs := 0
 
 		## Overrides ExcitementSource._sample_expected_landed.
@@ -52,10 +73,10 @@ class ReferenceEvent extends EventInstance:
 		excitement = Source.new(self)
 		excitement.use_rim(rim)
 
-	class Source extends EventExcitement:
+	class Source extends ToldEventSource:
 		## Overrides ExcitementSource.expected_gross_at.
 		func expected_gross_at(at: Vector2) -> float:
-			return Reference.event_gross(_event, at)
+			return Reference.event_gross(_event, at, told_sensitivity)
 
 ## A crowd body whose source projects with the frozen reference instead.
 class ReferenceCrowd extends CrowdAgent:
@@ -65,10 +86,10 @@ class ReferenceCrowd extends CrowdAgent:
 		excitement = Source.new(self)
 		excitement.use_rim(rim)
 
-	class Source extends CrowdExcitement:
+	class Source extends ToldCrowdSource:
 		## Overrides ExcitementSource.expected_gross_at.
 		func expected_gross_at(at: Vector2) -> float:
-			return Reference.crowd_gross(_agent, at)
+			return Reference.crowd_gross(_agent, at, told_sensitivity)
 
 func run(t: TestRunner) -> void:
 	_test_catalogue_and_mutations(t)
@@ -91,7 +112,8 @@ func _copy_definition(original: EventDef) -> EventDef:
 	return copy
 
 func _event_parity(t: TestRunner, source: CountedEvent, at: Vector2, label: String) -> void:
-	var expected := Reference.event_gross(source, at)
+	var expected := Reference.event_gross(source, at,
+			(source.excitement as ToldEventSource).told_sensitivity)
 	t.check(_same_bits(source.source().expected_gross_at(at), expected), label + " matches reference")
 	var runs := source.sampling_runs
 	t.check(_same_bits(source.source().expected_gross_at(at), expected), label + " repeats exactly")
@@ -99,7 +121,8 @@ func _event_parity(t: TestRunner, source: CountedEvent, at: Vector2, label: Stri
 		t.check(source.sampling_runs == runs, label + " repeats without sampling")
 
 func _crowd_parity(t: TestRunner, source: CountedCrowd, at: Vector2, label: String) -> void:
-	var expected := Reference.crowd_gross(source, at)
+	var expected := Reference.crowd_gross(source, at,
+			(source.excitement as ToldCrowdSource).told_sensitivity)
 	t.check(_same_bits(source.mood().expected_gross_at(at), expected), label + " matches reference")
 	var runs := source.sampling_runs
 	t.check(_same_bits(source.mood().expected_gross_at(at), expected), label + " repeats exactly")

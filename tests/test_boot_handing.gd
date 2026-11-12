@@ -105,12 +105,12 @@ func _test_the_escapes_city_is_handed_the_controls_cover(t: TestRunner) -> void:
 			"and its events hold the controls' cover")
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 	visible.look_through(Boot.player(main))
-	var corner := visible.view.position + TouchCover.joystick().left.get_center() \
+	var corner := visible.view.position + TouchCover.joystick().left_corner().get_center() \
 			* (visible.view.size / ScreenOrientation.DESIGN_SIZE)
-	t.check(visible.joystick and not visible.sees(corner),
+	t.check(not visible.sees(corner),
 			"in the joystick scheme its covered corner is not in sight")
 	controls.set_mode(ControlsMode.Mode.TAP)
 	visible.look_through(Boot.player(main))
-	t.check(not visible.joystick and visible.sees(corner),
+	t.check(visible.sees(corner),
 			"and in the tap scheme it is")
 	played.end()

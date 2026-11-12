@@ -105,8 +105,11 @@ func _test_a_boot_gives_the_day_its_configured_length(t: TestRunner) -> void:
 ## would go on asking the building about a street. Booted for real on the player's seed
 ## (4216201080) in the escape's building (`--start-escape`'s section), its briefs pressed through the
 ## viewport and walked out through the building's `exit_requested`; and booted straight onto the
-## escape's street, and onto an ordinary day. What the baby does with the world she is handed is
-## `tests/test_baby_world.gd`'s, and what the city answers for its ground and bodies the city's.
+## escape's street, and onto an ordinary day. Which world she was handed is read off what she
+## answers, her decay rate (`Baby.decay_rate()`, what the halo and the caret read of her): walking,
+## it is the walking decay times the ground's multiplier her world gives where she stands. What
+## the baby does with the world she is handed is `tests/test_baby_world.gd`'s, and what the city
+## answers for its ground and bodies the city's.
 func _test_main_hands_the_baby_the_world_it_puts_her_in(t: TestRunner) -> void:
 	var run := _a_run_on(DaySpec.Section.BUILDING)
 	var home := Boot.home_playing(t, run)
@@ -116,7 +119,12 @@ func _test_main_hands_the_baby_the_world_it_puts_her_in(t: TestRunner) -> void:
 	var interior := Boot.interior(main)
 	t.check(interior != null, "the boot stands in the building")
 	var baby := Boot.baby(main)
-	t.check(baby != null and interior != null and baby.world() == interior,
+	var player := Boot.player(main)
+	# Where she stands is the building's ordinary ground, not the basement that gives nothing back,
+	# so a baby handed no world, whose decay rate is zero, cannot pass.
+	t.check(baby != null and interior != null and player != null
+			and interior.decay_multiplier(player.global_position) > 0.0
+			and _her_decay_is_from(interior, baby, player, player.global_position),
 			"in the building she is handed the building")
 	await Boot.press_continue(t, main)
 	if interior:
@@ -126,8 +134,8 @@ func _test_main_hands_the_baby_the_world_it_puts_her_in(t: TestRunner) -> void:
 	t.check(city != null, "the service door has put her in the city")
 	if city != null:
 		t.check(Boot.baby(main) == baby, "and it is the same baby")
-		t.check(baby.world() == city, "who is now handed the city, not the building (%s)"
-				% baby.world())
+		t.check(_answers_from_the_city(city, baby, Boot.player(main)),
+				"who is now handed the city, not the building")
 	booted.free_all()
 	home.free()
 	await _boot_hands_the_baby_the_city(t, DaySpec.Section.CITY, "a boot straight onto the escape's street")
@@ -149,10 +157,48 @@ func _boot_hands_the_baby_the_city(t: TestRunner, section: int, what: String) ->
 			func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 	var city := Boot.city(booted.main)
 	var baby := Boot.baby(booted.main)
-	t.check(city != null and baby != null and baby.world() == city,
+	t.check(city != null and baby != null
+			and _answers_from_the_city(city, baby, Boot.player(booted.main)),
 			"%s hands the baby the city" % what)
 	booted.free_all()
 	home.free()
+
+## Whether `baby`, on the rig `player`, answers from `city`: stood on the nearest ground to her
+## whose decay multiplier is neither the building's ordinary 1.0 nor its basement's 0.0, so no
+## answer the building gives could pass, and walking, her decay rate is the city's there. She is
+## put back as she was.
+func _answers_from_the_city(city: City, baby: Baby, player: Stroller) -> bool:
+	if player == null:
+		return false
+	var map := city.map
+	var her := map.world_to_tile(player.global_position)
+	var best := Vector2.INF
+	var nearest := INF
+	for x in map.size.x:
+		for y in map.size.y:
+			var tile := Vector2i(x, y)
+			var at := map.tile_to_world(tile)
+			var multiplier := city.decay_multiplier(at)
+			if is_equal_approx(multiplier, 1.0) or is_zero_approx(multiplier):
+				continue
+			var away := Vector2(tile - her).length()
+			if away < nearest:
+				nearest = away
+				best = at
+	return best != Vector2.INF and _her_decay_is_from(city, baby, player, best)
+
+## Whether `baby`'s decay rate, with her rig `player` walking at `at`, is the walking decay times
+## the ground's multiplier `world` gives there. Asked on the spot, with no frame passing; the rig is
+## put back where it stood, as still as it was.
+func _her_decay_is_from(world: WorldContext, baby: Baby, player: Stroller, at: Vector2) -> bool:
+	var stood := player.global_position
+	var still := player.velocity
+	player.global_position = at
+	player.velocity = Vector2(Tuning.WALK_SPEED, 0.0)
+	var rate := baby.decay_rate()
+	player.global_position = stood
+	player.velocity = still
+	return is_equal_approx(rate, Tuning.EXCITEMENT_DECAY_WALKING * world.decay_multiplier(at))
 
 ## **`main` tells the on-screen controls when a hold lets her out**, in every place it makes her:
 ## a boot's player is handed the connection from `Stroller.let_out_of_the_hold` to

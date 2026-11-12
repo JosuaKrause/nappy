@@ -366,15 +366,11 @@ func _test_a_won_days_regained_nerve_survives_a_round_trip(t: TestRunner) -> voi
 	_save.try_resume(run)
 	t.check(run.header.nerves == 4, "and the regained count is what loading the save gives back")
 
-## The smallest fake `BlockPlan`-shaped dictionary `CityState.apply_cause()` needs to take a
-## `FIRE` step — a `Dictionary` because `CityState` reads `plan.steps`, not a real `BlockPlan`
-## resource, and this suite has no city to build one from.
+## The smallest arc `CityState.apply_cause()` needs to take a `FIRE` step, built the way the
+## generator builds one (`BlockPlan.of()`, `then()`), since this suite has no city to take one from.
 func _fake_block_plan() -> BlockPlan:
-	var plan := BlockPlan.new()
-	plan.steps = [
-		BlockPlan.Step.new(GameEnums.BlockPurpose.RESIDENTIAL, 1, GameEnums.BlockCause.SCHEDULED),
-		BlockPlan.Step.new(GameEnums.BlockPurpose.BURNT_OUT, 1, GameEnums.BlockCause.FIRE),
-	]
+	var plan := BlockPlan.of(GameEnums.BlockPurpose.RESIDENTIAL).then(GameEnums.BlockPurpose.BURNT_OUT,
+			1, GameEnums.BlockCause.FIRE)
 	return plan
 
 # ----------------------------------------------------------------- dropped saves ---

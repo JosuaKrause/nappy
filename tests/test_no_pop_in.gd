@@ -38,7 +38,8 @@ static func _rows() -> Array[EventDef]:
 
 ## The cameras she can be seen through, standing at `her`: on her, and led by her look-ahead
 ## (`Stroller.CAMERA_LOOK_AHEAD`, foreshortened by `Stroller.OBLIQUE_Y` vertically) in each of eight
-## directions; each in both schemes.
+## directions; each in both schemes, the tap scheme's first and the joystick's after it, so a view at
+## an odd index is a joystick view.
 static func _views(her: Vector2) -> Array[VisibleView]:
 	var views: Array[VisibleView] = []
 	var leads: Array[Vector2] = [Vector2.ZERO]
@@ -78,7 +79,9 @@ func _test_open_ground_over_every_bearing_and_camera(t: TestRunner) -> void:
 	var marked := 0
 	var popped: Array[String] = []
 	for row in _rows():
-		for view in _views(her):
+		var views := _views(her)
+		for v in views.size():
+			var view := views[v]
 			for i in BEARINGS:
 				var way := Vector2.RIGHT.rotated(TAU * i / BEARINGS)
 				var places: Array[Vector2] = [SpawnSiting.just_out_of_sight(
@@ -95,7 +98,7 @@ func _test_open_ground_over_every_bearing_and_camera(t: TestRunner) -> void:
 						marked += 1
 					if _drawn_in(view, instance) and popped.size() < 3:
 						popped.append("'%s' along %v, camera at %v%s" % [row.id, way,
-								view.view.get_center() - her, " (joystick)" if view.joystick else ""])
+								view.view.get_center() - her, " (joystick)" if v % 2 == 1 else ""])
 					instance.free()
 	t.check(placed > 0 and popped.is_empty(),
 			"on open ground, nothing any of %d arrivals draws (%d with a caret) is in view on its "

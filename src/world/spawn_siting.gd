@@ -151,7 +151,7 @@ func map() -> CityMap:
 	return _map
 
 ## Today's region as the city hands it, or null.
-func region() -> Region:
+func _region_today() -> Region:
 	return _region.call() if _region.is_valid() else null
 
 ## What a placement of something drawing `box` and walking as `mover` asks with her standing at
@@ -159,7 +159,7 @@ func region() -> Region:
 func ask(box: Rect2, mover: Mover, her: Vector2) -> Ask:
 	var asked := ask_in_sight(box, mover, her)
 	asked.beside = beside_distance(asked.view, box, her)
-	var today := region()
+	var today := _region_today()
 	if today != null:
 		for i in today.centres.size():
 			if today.centres[i].distance_to(her) <= asked.beside + today.radii[i]:
@@ -182,7 +182,7 @@ func ask_in_sight(box: Rect2, mover: Mover, her: Vector2) -> Ask:
 func ask_of_ground(box := Rect2(), mover: Mover = null) -> Ask:
 	var asked := ask_of_drawing(box)
 	asked.mover = mover if mover else Mover.on_foot()
-	var today := region()
+	var today := _region_today()
 	if today != null:
 		asked.walled_alleys = today.walled_alleys
 	return asked

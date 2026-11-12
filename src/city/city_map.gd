@@ -100,7 +100,7 @@ func restore_edges(was: Array[bool]) -> void:
 ##
 ## Keyed by the block that **anchors a lot**, which is not always one block: a four-block calm zone
 ## is a single entry whose ground covers all four of its blocks and the streets that used to run
-## between them. The other three appear in `zone_anchor` and nowhere else, so everything stated over
+## between them. The other three appear in `_zone_anchor` and nowhere else, so everything stated over
 ## `block_plans` — how many calm areas there are, which one is least spoiled, which one she settled
 ## in yesterday — counts a zone once, which is what it is.
 var block_plans := {}
@@ -112,7 +112,7 @@ var block_layouts := {}
 var zone_rects := {}
 ## Every block of a multi-block lot -> that lot's anchor, the anchor included. The inverse of
 ## `zone_rects`, kept rather than searched because `block_at()` asks it per event.
-var zone_anchor := {}
+var _zone_anchor := {}
 ## The street lattice as a graph, this city's own: every planner, placement and mover handed the
 ## map reads its streets here. Built with the map and never replaced; the same streets on every
 ## city, since the lattice is a function of `Tuning.CITY_BLOCKS` alone (`StreetNetwork`).
@@ -124,9 +124,9 @@ var network := StreetNetwork.new()
 ## **`StreetNetwork` assumes a full grid and still enumerates one.** This is the set that is not
 ## really there, so the graph half — route counting, the invariant, the doorway exemptions — needs
 ## no special case and simply gets a bigger `closed` set. See `blocked_segments()`.
-var absent_segments := {}
+var _absent_segments := {}
 ## The streets a **hard blocker** built over, as segment key -> the tile rect that is now solid.
-## A subset of `absent_segments`, kept apart because the two are absent for opposite reasons and
+## A subset of `_absent_segments`, kept apart because the two are absent for opposite reasons and
 ## anything reasoning about *why* a street is not there has to tell them apart.
 ##
 ## A calm zone's absorbed corridor is **ground you walk over** — the tiles are park and the lattice
@@ -137,8 +137,8 @@ var absent_segments := {}
 ## Anything asking "can a route go this way" wants `blocked_segments()`, which is both and does not
 ## care. This is for the things that do: the telemetry map's legend, and any test whose sentence is
 ## about zones.
-var built_over := {}
-## Which of `built_over` are **dead ends** — a street with one end walled — as a set of keys. The
+var _built_over := {}
+## Which of `_built_over` are **dead ends** — a street with one end walled — as a set of keys. The
 ## rest belong to a big building, which took its street whole.
 var dead_ends := {}
 ## The landmarks, each as the **pair of blocks** it joins. A big building builds over the one street
@@ -155,15 +155,15 @@ var big_buildings: Array[Rect2i] = []
 var power_station := Rect2i()
 ## The street the power station's front door opens onto, as a `StreetNetwork.Segment.key()` — the
 ## real street south of one of its two blocks. See `power_station_door_street()`.
-var power_station_door_key := Vector3i(-1, -1, -1)
+var _power_station_door_key := Vector3i(-1, -1, -1)
 ## The pavement tiles directly in front of the power station's front door: `POWER_STATION_DOOR_TILES`
-## wide, one deep, on the first sidewalk row of `power_station_door_key`'s street. Where she stands
+## wide, one deep, on the first sidewalk row of `_power_station_door_key`'s street. Where she stands
 ## to reach the door. See `power_station_door_position()`.
-var power_station_door := Rect2i()
+var _power_station_door := Rect2i()
 ## How many of the power station's two blocks were `INDUSTRIAL` before it was built over them — the
 ## district preference it was placed under, kept because the blocks' own purpose becomes
 ## `BIG_BUILDING` the moment the mass goes down and nothing else remembers what they were.
-var power_station_industrial_blocks := 0
+var _power_station_industrial_blocks := 0
 
 ## How wide the power station's front door is, in tiles.
 const POWER_STATION_DOOR_TILES := 2
@@ -177,18 +177,18 @@ func has_power_station() -> bool:
 func power_station_door_street() -> StreetNetwork.Segment:
 	if not has_power_station():
 		return null
-	return network.by_key(power_station_door_key)
+	return network.by_key(_power_station_door_key)
 
 ## The world point in front of the power station's front door: the middle of the pavement tiles
-## `power_station_door` names, which is where she stands to reach it and what an arrow aims at.
+## `_power_station_door` names, which is where she stands to reach it and what an arrow aims at.
 func power_station_door_position() -> Vector2:
-	return tile_rect_to_world(power_station_door).get_center()
+	return tile_rect_to_world(_power_station_door).get_center()
 
 ## Whether a street is missing because something was built over it rather than because a calm zone
 ## painted a park across it. The question every rule about *zones* actually wants to ask, now that
-## `absent_segments` has two kinds of thing in it.
+## `_absent_segments` has two kinds of thing in it.
 func is_hard_blocker(key: Vector3i) -> bool:
-	return built_over.has(key)
+	return _built_over.has(key)
 
 ## Which of `Tuning.REGION_COUNT` regions each junction belongs to, indexed by `StreetNetwork.
 ## node_of()`. `-1` before generation and for a junction no real segment ever touches. Set once by
@@ -549,9 +549,9 @@ func courtyard_lots() -> Array[Rect2i]:
 func playground_rects() -> Array[Rect2i]:
 	return playgrounds
 
-## The tile rects the city's streets were built over, by segment key (`built_over`).
+## The tile rects the city's streets were built over, by segment key (`_built_over`).
 func streets_built_over() -> Dictionary:
-	return built_over
+	return _built_over
 
 ## The tiles of the streets closed today, as a set (`closed_tiles`).
 func closed_tile_set() -> Dictionary:
@@ -562,9 +562,9 @@ func closed_tile_set() -> Dictionary:
 func power_station_blocks() -> Rect2i:
 	return power_station
 
-## The pavement tiles in front of the power station's door (`power_station_door`).
+## The pavement tiles in front of the power station's door (`_power_station_door`).
 func power_station_door_tiles() -> Rect2i:
-	return power_station_door
+	return _power_station_door
 
 ## Every block's arc by block, anchors only (`block_plans`): what `CityState` is asked through.
 func plans_by_block() -> Dictionary:
@@ -694,9 +694,9 @@ func note_diagnostic(text: String) -> void:
 func record_zone(anchor: Vector2i, footprint: Rect2i) -> void:
 	zone_rects[anchor] = footprint
 
-## Records that `block` belongs to the lot anchored at `anchor` (`zone_anchor`).
+## Records that `block` belongs to the lot anchored at `anchor` (`_zone_anchor`).
 func record_zone_member(block: Vector2i, anchor: Vector2i) -> void:
-	zone_anchor[block] = anchor
+	_zone_anchor[block] = anchor
 
 ## The anchor block of every multi-block lot (`zone_rects`).
 func zone_anchors() -> Array:
@@ -707,22 +707,22 @@ func zone_footprint(anchor: Vector2i) -> Rect2i:
 	return zone_rects[anchor]
 
 ## Takes a street out of the lattice for good, as a four-block calm zone or a dead end does
-## (`absent_segments`).
+## (`_absent_segments`).
 func mark_street_absent(key: Vector3i) -> void:
-	absent_segments[key] = true
+	_absent_segments[key] = true
 
-## Puts a street back in the lattice (`absent_segments`).
+## Puts a street back in the lattice (`_absent_segments`).
 func restore_street(key: Vector3i) -> void:
-	absent_segments.erase(key)
+	_absent_segments.erase(key)
 
 ## Records that a hard blocker built over the street `key`, now solid on `rect`
-## (`built_over`).
+## (`_built_over`).
 func record_built_over(key: Vector3i, rect: Rect2i) -> void:
-	built_over[key] = rect
+	_built_over[key] = rect
 
-## Forgets that the street `key` was built over (`built_over`).
+## Forgets that the street `key` was built over (`_built_over`).
 func forget_built_over(key: Vector3i) -> void:
-	built_over.erase(key)
+	_built_over.erase(key)
 
 ## Records that the street `key` is a dead end (`dead_ends`).
 func mark_dead_end(key: Vector3i) -> void:
@@ -762,14 +762,14 @@ func drop_last_big_building() -> void:
 
 ## Records the power station: the pair of blocks it stands over, the street its door opens onto, the
 ## pavement tiles in front of the door, and how many of its blocks were industrial
-## (`power_station`, `power_station_door_key`, `power_station_door`,
-## `power_station_industrial_blocks`).
+## (`power_station`, `_power_station_door_key`, `_power_station_door`,
+## `_power_station_industrial_blocks`).
 func record_power_station(pair: Rect2i, door_key: Vector3i, door_rect: Rect2i,
 		industrial_blocks: int) -> void:
 	power_station = pair
-	power_station_door_key = door_key
-	power_station_door = door_rect
-	power_station_industrial_blocks = industrial_blocks
+	_power_station_door_key = door_key
+	_power_station_door = door_rect
+	_power_station_industrial_blocks = industrial_blocks
 
 ## A copy of the tile bytes, to put back with `restore_tiles()` (`tiles`).
 func tiles_snapshot() -> PackedByteArray:
@@ -909,15 +909,15 @@ func copy() -> CityMap:
 	for block: Vector2i in block_layouts:
 		twin.block_layouts[block] = (block_layouts[block] as BlockLayout).copy()
 	twin.zone_rects = zone_rects.duplicate()
-	twin.zone_anchor = zone_anchor.duplicate()
-	twin.absent_segments = absent_segments.duplicate()
-	twin.built_over = built_over.duplicate()
+	twin._zone_anchor = _zone_anchor.duplicate()
+	twin._absent_segments = _absent_segments.duplicate()
+	twin._built_over = _built_over.duplicate()
 	twin.dead_ends = dead_ends.duplicate()
 	twin.big_buildings = big_buildings.duplicate()
 	twin.power_station = power_station
-	twin.power_station_door_key = power_station_door_key
-	twin.power_station_door = power_station_door
-	twin.power_station_industrial_blocks = power_station_industrial_blocks
+	twin._power_station_door_key = _power_station_door_key
+	twin._power_station_door = _power_station_door
+	twin._power_station_industrial_blocks = _power_station_industrial_blocks
 	twin.region_of_junction = region_of_junction.duplicate()
 	twin.region_has_calm = region_has_calm.duplicate()
 	twin.boundary_wall_at_a = boundary_wall_at_a.duplicate()
@@ -945,6 +945,109 @@ func copy() -> CityMap:
 	twin._closure_tree_pits = _closure_tree_pits.duplicate()
 	twin._seal_tree_pits = _seal_tree_pits.duplicate()
 	return twin
+
+## **What generation fixed in this city, each fact under its name as a typed value**: what an
+## authored scene saves as its spatial context (`RecipeCityContext`, which writes it into the
+## recipe file and reads it back) and `restored()` builds the same map from. The facts:
+##
+## - `size` (`Vector2i`), `seed` and `main_road` (`int`);
+## - the home, `home_block` (`Vector2i`) and `home_rect` (`Rect2i`);
+## - the power station, `power_station` and `power_station_door` (`Rect2i`),
+##   `power_station_door_key` (`Vector3i`) and `power_station_industrial_blocks` (`int`);
+## - the ground, `tiles` (`PackedByteArray`, one byte per tile);
+## - the lots, `building_rects`, `big_buildings`, `alley_rects`, `square_rects` and
+##   `courtyard_rects`, and the multi-block lots, `zones`, each the rect of blocks it spans (each
+##   an `Array[Rect2i]`);
+## - each anchor block's arc, `block_plans` (block -> `BlockPlan`), and its carves,
+##   `block_layouts` (block -> `BlockLayout.capture()`);
+## - the precincts, `precincts` (`Array[Vector4i]`);
+## - the streets the lattice lacks, `absent_segments` and `dead_ends` (`Array[Vector3i]`), and
+##   `built_over` (segment key -> `Rect2i`);
+## - the regions, `region_of_junction` (`PackedInt32Array`), `region_has_calm`
+##   (`PackedByteArray`) and `boundary_wall_at_a` (segment key -> `bool`);
+## - the street trees where they stand, `trees` (`Array[Vector2i]`, `StreetTrees.planted()`'s
+##   tiles).
+##
+## Nothing in it is shared with this map. Today's records, the calm a repaint left and an authored
+## scene's own stretch are not in it: they are a day's or a scene's, laid on the restored map by
+## whatever plays it.
+func capture() -> Dictionary:
+	var plans := {}
+	for block: Vector2i in block_plans:
+		plans[block] = (block_plans[block] as BlockPlan).copy()
+	var layouts := {}
+	for block: Vector2i in block_layouts:
+		layouts[block] = (block_layouts[block] as BlockLayout).capture()
+	var zones: Array[Rect2i] = []
+	for anchor: Vector2i in zone_rects:
+		zones.append(zone_rects[anchor])
+	var absent: Array[Vector3i] = []
+	absent.assign(_absent_segments.keys())
+	var walled: Array[Vector3i] = []
+	walled.assign(dead_ends.keys())
+	var trees: Array[Vector2i] = []
+	for tree in StreetTrees.planted(self):
+		trees.append(tree.tile)
+	return {"size": size, "seed": seed_used, "main_road": main_road, "home_block": home_block,
+			"home_rect": home_rect, "power_station": power_station,
+			"power_station_door": _power_station_door,
+			"power_station_door_key": _power_station_door_key,
+			"power_station_industrial_blocks": _power_station_industrial_blocks,
+			"tiles": tiles.duplicate(), "building_rects": building_rects.duplicate(),
+			"big_buildings": big_buildings.duplicate(), "alley_rects": alley_rects.duplicate(),
+			"square_rects": square_rects.duplicate(), "courtyard_rects": courtyard_rects.duplicate(),
+			"zones": zones, "block_plans": plans, "block_layouts": layouts,
+			"precincts": precinct_spans.duplicate(), "absent_segments": absent, "dead_ends": walled,
+			"built_over": _built_over.duplicate(), "region_of_junction": region_of_junction.duplicate(),
+			"region_has_calm": region_has_calm.duplicate(),
+			"boundary_wall_at_a": boundary_wall_at_a.duplicate(), "trees": trees}
+
+## **The map `facts` describes**, `facts` being what `capture()` answers or the same facts read
+## back from a saved scene. Its zones' members (`anchor_of()`) and its precincts' posts
+## (`index_posts()`) are worked out from the facts as generation works them out; the trees become
+## the scene's own list (`recipe_tree_tiles()`). Nothing in it is shared with `facts`.
+static func restored(facts: Dictionary) -> CityMap:
+	var map := CityMap.new(facts["size"])
+	map.seed_used = facts["seed"]
+	map.main_road = facts["main_road"]
+	map.home_block = facts["home_block"]
+	map.home_rect = facts["home_rect"]
+	map.power_station = facts["power_station"]
+	map._power_station_door = facts["power_station_door"]
+	map._power_station_door_key = facts["power_station_door_key"]
+	map._power_station_industrial_blocks = facts["power_station_industrial_blocks"]
+	map.tiles = (facts["tiles"] as PackedByteArray).duplicate()
+	# Assigned into the typed arrays: an untyped `Array` put in an `Array[T]` field is dropped.
+	map.building_rects.assign(facts["building_rects"])
+	map.big_buildings.assign(facts["big_buildings"])
+	map.alley_rects.assign(facts["alley_rects"])
+	map.square_rects.assign(facts["square_rects"])
+	map.courtyard_rects.assign(facts["courtyard_rects"])
+	var plans: Dictionary = facts["block_plans"]
+	for block: Vector2i in plans:
+		map.block_plans[block] = (plans[block] as BlockPlan).copy()
+	var layouts: Dictionary = facts["block_layouts"]
+	for block: Vector2i in layouts:
+		map.block_layouts[block] = BlockLayout.restored(layouts[block])
+	var zones: Array = facts["zones"]
+	for zone: Rect2i in zones:
+		map.zone_rects[zone.position] = zone
+		for block in map.rect_tiles(zone):
+			map._zone_anchor[block] = zone.position
+	map.precinct_spans.assign(facts["precincts"])
+	map.index_posts()
+	var absent: Array = facts["absent_segments"]
+	for key: Vector3i in absent:
+		map._absent_segments[key] = true
+	var walled: Array = facts["dead_ends"]
+	for key: Vector3i in walled:
+		map.dead_ends[key] = true
+	map._built_over = (facts["built_over"] as Dictionary).duplicate()
+	map.boundary_wall_at_a = (facts["boundary_wall_at_a"] as Dictionary).duplicate()
+	map.region_of_junction = (facts["region_of_junction"] as PackedInt32Array).duplicate()
+	map.region_has_calm = (facts["region_has_calm"] as PackedByteArray).duplicate()
+	map.recipe_trees.assign(facts["trees"])
+	return map
 
 func tile_at(tile: Vector2i) -> GameEnums.TileType:
 	if stretch_active and not in_stretch(tile):
@@ -1185,15 +1288,15 @@ func is_open(tile: Vector2i) -> bool:
 ## lattice with holes in it, so an overstatement is the whole of how it goes wrong.
 func blocked_segments(closed_today: Dictionary = {}) -> Dictionary:
 	if closed_today.is_empty():
-		return absent_segments.duplicate()
-	var blocked := absent_segments.duplicate()
+		return _absent_segments.duplicate()
+	var blocked := _absent_segments.duplicate()
 	for key: Vector3i in closed_today:
 		blocked[key] = true
 	return blocked
 
 ## Whether the lattice really has this street. False for the ones a calm zone absorbed.
 func has_street(key: Vector3i) -> bool:
-	return not absent_segments.has(key)
+	return not _absent_segments.has(key)
 
 ## **Every street this city's lattice really has**, in the lattice's own order: the network's
 ## segments less the ones a calm zone absorbed (`has_street()`). What the day's locations are laid out
@@ -1239,7 +1342,7 @@ func lot_rect(block: Vector2i) -> Rect2i:
 ## The block that stands for the lot this one belongs to. Identity for the 45 lots that are one
 ## block, and the anchor for the members of a zone.
 func anchor_of(block: Vector2i) -> Vector2i:
-	return zone_anchor.get(block, block)
+	return _zone_anchor.get(block, block)
 
 ## Takes today's closed streets out of the network — the tiles genuinely cut off by the barriers,
 ## not the whole street on the assumption that they are. The barriers stand at the two mouths, and

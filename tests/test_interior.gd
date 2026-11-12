@@ -434,7 +434,7 @@ func _test_the_grammar_tiles_are_the_whole_staircase(t: TestRunner) -> void:
 ## the switchback stairs moves the player diagonally")*. A real carrying `Stroller` stands on a flight
 ## tile of a real `InteriorScene` (so `slope_dir_at` answers for actual flight tiles rather than a
 ## hand-built stand-in), a key is held, one physics tick passes, and the heading she is steering by
-## (`Stroller.steering`, what `PosterWalls` reads of her) is the walk's.
+## (`Stroller.steering_direction()`, what `PosterWalls` asks of her) is the walk's.
 func _test_a_sideways_press_on_a_flight_walks_its_slope(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
@@ -549,7 +549,7 @@ func _steer(t: TestRunner, scene: InteriorScene, walkers: Array[Stroller], tiles
 ## flight tile** any press with a sideways part walks the flight's 45 degrees toward the side
 ## pressed, down if that is the side the flight descends to and up otherwise, and a pure up or down
 ## press moves nowhere. **On a level `F` tile**, a landing, every press is left as it was pressed. Each press is held on real input and read of a real `Stroller` on every tile at once
-## after one physics tick (`Stroller.steering`).
+## after one physics tick (`Stroller.steering_direction()`).
 func _test_every_tile_of_a_stairwell_steers_every_press_along_its_flight(t: TestRunner) -> void:
 	var scene := InteriorScene.new()
 	t.add_child(scene)
