@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The rotated presentation for a portrait touch window — see `ScreenOrientation`.
 ##
@@ -93,7 +92,7 @@ func _test_the_transform_sends_the_design_centre_to_the_rotated_centre(t: TestRu
 ## back must be the identity, for several points including ones outside the design box (where a
 ## touch on the letterboxed edge of a non-16:9 window would land).
 func _test_the_transform_round_trips(t: TestRunner) -> void:
-	for point in [TouchControls.PAUSE_CENTRE, Vector2.ZERO, Vector2(-40.0, 800.0)]:
+	for point: Vector2 in [TouchControls.PAUSE_CENTRE, Vector2.ZERO, Vector2(-40.0, 800.0)]:
 		var there := ScreenOrientation.to_presented_space(point, true)
 		var back := ScreenOrientation.to_design_space(there, true)
 		t.check(back.is_equal_approx(point),
@@ -249,7 +248,7 @@ func _test_a_pinned_rotated_layer_puts_a_design_point_at_its_presented_position(
 	ScreenOrientation.pin_to_design_box(control)
 	ScreenOrientation.apply_to_layer(layer, true)
 
-	for point in [Vector2(130.0, 500.0), Vector2(1150.0, 500.0), Vector2(640.0, 360.0)]:
+	for point: Vector2 in [Vector2(130.0, 500.0), Vector2(1150.0, 500.0), Vector2(640.0, 360.0)]:
 		# The control's own transform is identity (fixed anchors, no rotation or scale of its
 		# own), so a point local to it is a point in the layer's local space too -- what is left
 		# to check is that the layer's transform alone carries it the rest of the way.
@@ -294,7 +293,7 @@ func _test_every_screen_furniture_layer_is_named_by_main(t: TestRunner) -> void:
 		t.check(Boot.carries_the_rotation(layer),
 				"once the window turns portrait, '%s' carries the one rotation every layer of "
 				% layer.name + "screen furniture shares")
-	for expected in [Boot.hud(main), Boot.summary(main), Boot.pause(main), Boot.title(main)]:
+	for expected: CanvasLayer in [Boot.hud(main), Boot.summary(main), Boot.pause(main), Boot.title(main)]:
 		t.check(expected in layers, "'%s' is among them" % expected.name)
 
 	window.size = original_size

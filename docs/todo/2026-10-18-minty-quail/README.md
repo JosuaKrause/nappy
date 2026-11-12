@@ -1,5 +1,4 @@
 priority: now
-fable-only: true
 
 # minty-quail — One engine: the codebase refactored by layer, the escape a day spec · filed 2026-10-18
 
@@ -19,11 +18,20 @@ dependency injection to allow for more modular and testable code" (minty-lemur #
 building places and *where* is its own, and even that is expressed through the day's machinery. The
 review below applies the five principles to the whole codebase, not only the escape.
 
-**Nothing else is worked on until this entry is done** (inbox #1210 in gentle-owl): work built on the code before
+**Nothing else is worked on until the refactor is done** (inbox #1210 in gentle-owl): work built on the code before
 the refactor is done twice. Work on how the project is worked on (a skill, `CLAUDE.md`, a rule, a
 hook, a general project script, or anything else of that kind) is the exception and goes first
 (inbox #1305 in grassy-trout). *Read as, open to the player's correction:* a pull request another entry
-already has stays open as a draft and resumes after this entry closes.
+already has stays open as a draft and resumes after the refactor closes.
+
+**The design review's items are polite-tapir** (the refactor's design review: placement drawn as she walks, the
+event scheduler broken up, one start for every kind of day, the standing layer breaks, the baseline measurements),
+an entry of their own that carries `fable-only: true` where this entry does not (inbox #1387 in mossy-bunny).
+*Read as, the filer's, open to the player's correction:* the review was of the refactor's design ("have a fable
+agent review the design of the refactor", inbox #1265 in olive-ferret), so its items are the refactor's work, the
+refactor is this entry and polite-tapir, and the rule above (inbox #1210 in gentle-owl) covers both; the two are
+worked side by side, their items interleaved as each item says; neither waits for the other to start, and this entry's remeasure
+(step 4 below) comes after the last item of both.
 
 ## The review this entry files
 
@@ -93,30 +101,29 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    review found that the order converted the tests before the event code they read, so the largest
    group of suites would be mocked against fields and redone; shown its suggestion to go module by
    module, the player: "yeah module by module makes sense and can be parallelized". Within a
-   module: its dead code (`dead-code-sweep.md`), its standing layer breaks
-   (`standing-layer-breaks.md`), its interface and field reads with the receivers typed
+   module: its dead code (`dead-code-sweep.md`), its standing layer breaks (the design review's,
+   below), its interface and field reads with the receivers typed
    (`field-reads.md`), then its suites (`tests-one-module.md`). The player approved going
    module by module in parallel; the tracks are the design review's worked-out detail:
-   - **Placement:** `placement-by-construction.md`'s
-     steps with `scheduler-breakup.md` interleaved. Nothing else changes where events go until it
-     is done (inbox #1185 in gentle-owl).
-   - **Run flow:** who builds the events and the crowd (`one-start-for-every-spec.md`), together
-     with `city-hand-ins.md`'s third pull request.
+   - **The design review's tracks are the entry polite-tapir** (placement drawn as she walks with
+     the event scheduler's breakup interleaved, one start for every kind of day, the standing layer
+     breaks, the baseline readings); its README gives their order and where each meets the items
+     here.
+   - **Run flow:** `city-hand-ins.md`'s third pull request, which settles who builds the events and
+     the crowd together with the design review's one start for every kind of day.
    - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
      crowd; the city map. The city scene and the run's parts follow the third hand-ins pull
      request. *Proposed, not asked for:* three more passes, each what is left of a folder with
      files still under the opt-out line: **the view** (`src/ui/`), whose reads through the run's
      parts wait with those parts and the rest for nothing; **the building** (`src/interior/`,
      `src/finale/`), whose one read of `WorldMap.world` goes with the map interface's world half
-     (`standing-layer-breaks.md`); and **the developer's rigs** (`src/dev/`), row 3c of
+     (the design review's standing breaks); and **the developer's rigs** (`src/dev/`), row 3c of
      `event-interface.md`. The plainer alternative is to leave them to `field-reads.md`'s
      one-pull-request-per-area sentence.
-   - **Tools:** `baseline-measurements.md`'s further readings, and `typed-everywhere.md`: code is
+   - **Tools:** `typed-everywhere.md`: code is
      typed wherever the language can type it, the tests included.
      `method-without-parentheses.md`, a typed receiver's method named without its parentheses
      being reported, is the orchestrator's proposal and waits for no other item.
-     `field-answers-gaps.md`, three places where the typing passes' field-list tool says less than
-     it should, is its review's and waits for no other item.
    - **The events' interface** (`event-interface.md`: a body, a hold on her, a lethal field, a
      pursuit and the rest as parts an event has, and every caller asking through methods). Its
      first steps, the callers outside the events folder and the live event's own behaviours and
@@ -143,23 +150,14 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    `tests/probes/placement_view_mix.gd`, which `VIEW_SHARES` is measured with, still plans no
    closures or seals.
 
-   **The "before" is captured while the old tree can still be measured** (inbox #1268 in olive-ferret). The design
-   review found that no baseline commit is named, that no winnability or route-cost numbers from
-   before the refactor are stored, and that a probe asks only what every tree has, so once the
-   events' fields are behind methods no probe runs on both the old tree and the new; the player,
-   shown that capturing them blocks nothing: "sure". *Read as, with the specifics proposed by the
-   orchestrator and open to the player's correction:* the baseline is `v0.29.0`, the tree this
-   entry's review read. `baseline-measurements.md` captures the before-numbers into
-   `docs/evidence/` now, and takes one background reading of winnability and frame time when
-   placement closes and one after the events' field-read conversion, so the end remeasure can say
-   which half moved a number. None of it blocks a step or changes the player's "remeasuring at the
-   very end" (inbox #813 in curly-moose): a reading is recorded, not judged.
+   The "before" it compares with is the design review's baseline readings, on `v0.29.0`
+   (polite-tapir's `baseline-measurements.md`).
 
 **The entry's list is frozen** (inbox #1268 in olive-ferret). The design review found that items had been added
 to this entry through three weeks with no stated end; shown "The entry has no stated end", the
 player: "also good points". *Read as, the orchestrator's, open to the player's correction:* the
-entry is done when the items in this folder are gone, the standing breaks are each decided, and the
-remeasure is taken; a defect found in a pull request of this entry is fixed in that pull request,
+entry is done when the items in this folder are gone and the remeasure is taken, which comes after
+the design review's items too, the decision on each standing break among them; a defect found in a pull request of this entry is fixed in that pull request,
 and anything else found from here on is filed as an entry of its own after this one, never as a new
 item here. The open test gaps `tests-public-seams.md` lists add tests and refactor nothing: they
 move to such an entry when this one closes.

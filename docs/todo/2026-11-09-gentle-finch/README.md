@@ -1,5 +1,6 @@
 priority: later
 after: 2026-10-18-minty-quail
+after: 2026-11-11-polite-tapir
 fable-only: true
 
 # gentle-finch — The caret, the home arrow and the edge badge's pointer become picture files · filed 2026-11-09
@@ -13,7 +14,8 @@ So make todos for them but not part of the refactor" (inbox #1278 in olive-ferre
 
 **Read as:** each of the three becomes an image file under `art/`, drawn as every other symbol is,
 so a variation is a new picture and not a change to drawing code. It waits for the refactor
-(minty-quail, one engine: the codebase refactored by layer) and is no part of it.
+(minty-quail, one engine: the codebase refactored by layer, and polite-tapir, its design review) and
+is no part of it.
 
 *Proposed, not asked for* (the filer's): the band `later`, from "eventually"; one item per symbol,
 so each can be tried and judged alone; and the edge badge's backing disc and coloured rim, which

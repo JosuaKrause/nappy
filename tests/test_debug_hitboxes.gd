@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access")
 extends RefCounted
 ## **Every hitbox a real day builds is drawn** (PLAYTEST-57: *"and make sure *all* hitboxes are
 ## actually drawn"*): `DebugLayers.collision_nodes_under()`, which the bounding-box layer draws every
@@ -70,9 +69,11 @@ func _count_enabled_bodies(root: Node) -> int:
 	var count := 0
 	if root is StaticBody2D or root is CharacterBody2D:
 		for child in root.get_children():
-			if child is CollisionShape2D and not child.disabled and child.shape != null:
+			var shape := child as CollisionShape2D
+			var polygon := child as CollisionPolygon2D
+			if shape != null and not shape.disabled and shape.shape != null:
 				count += 1
-			elif child is CollisionPolygon2D and not child.disabled:
+			elif polygon != null and not polygon.disabled:
 				count += 1
 	for child in root.get_children():
 		count += _count_enabled_bodies(child)

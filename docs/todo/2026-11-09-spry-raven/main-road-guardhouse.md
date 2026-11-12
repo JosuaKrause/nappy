@@ -11,7 +11,7 @@ in this entry's `README.md` (gentle-owl #1186).
 their boom raised and holding no car, the closures kept off the main road, the guardhouse two tiles
 in with a crossing alley's mouth body a tile deeper, and the measurement on 40 seeds. Its description
 lists what was left when it paused: the touched suites run, the placement fingerprint rerun, main
-merged, the still taken. Resumed after minty-quail, it is reconciled with how the refactor plans the region wall and the
+merged, the still taken. Resumed after the refactor (minty-quail and polite-tapir), it is reconciled with how the refactor plans the region wall and the
 closures at dawn, where the wall's bodies now hold their locations (the record
 minty-quail-downy-toad).
 

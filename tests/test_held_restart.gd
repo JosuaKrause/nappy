@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## M211 + M212 — the pause screen's held restart restarts a run rather than resuming it, a hold
 ## survives what the real engine and a second finger can throw at it, the disc it fills lights up
@@ -32,6 +31,7 @@ extends RefCounted
 const UI := preload("res://tests/ui_screens.gd")
 const PAUSE := preload("res://scenes/ui/pause_screen.tscn")
 const SUMMARY := preload("res://scenes/ui/day_summary.tscn")
+const DaySummaryScript := preload("res://src/ui/day_summary.gd")
 
 func run(t: TestRunner) -> void:
 	await _test_the_pause_restart_survives_its_own_emulated_mouse_click(t)
@@ -56,8 +56,8 @@ func _open_pause(t: TestRunner, touch: bool, clock: UI.FakeClock) -> PauseScreen
 	return pause
 
 ## A summary showing a lost day on a platform, its restart button on `clock`, laid out.
-func _open_summary(t: TestRunner, touch: bool, clock: UI.FakeClock) -> CanvasLayer:
-	var summary: CanvasLayer = SUMMARY.instantiate()
+func _open_summary(t: TestRunner, touch: bool, clock: UI.FakeClock) -> DaySummaryScript:
+	var summary: DaySummaryScript = SUMMARY.instantiate()
 	summary.use_touch(touch)
 	t.add_child(summary)
 	UI.button(summary, "Restart").use_clock(clock.read)
@@ -354,18 +354,19 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t: TestRu
 		var is_pause: bool = case[0] == "pause"
 		var touch: bool = case[1]
 		var clock := UI.FakeClock.new()
-		var screen: Node
-		if is_pause:
-			screen = await _open_pause(t, touch, clock)
-		else:
-			screen = await _open_summary(t, touch, clock)
+		var screen: CanvasLayer
 		var restarts := [0]
 		var carried_on := [0]
-		screen.restart_requested.connect(func() -> void: restarts[0] += 1)
 		if is_pause:
-			screen.resumed.connect(func() -> void: carried_on[0] += 1)
+			var pause := await _open_pause(t, touch, clock)
+			pause.restart_requested.connect(func() -> void: restarts[0] += 1)
+			pause.resumed.connect(func() -> void: carried_on[0] += 1)
+			screen = pause
 		else:
-			screen.continued.connect(func(_raised_in: int) -> void: carried_on[0] += 1)
+			var summary := await _open_summary(t, touch, clock)
+			summary.restart_requested.connect(func() -> void: restarts[0] += 1)
+			summary.continued.connect(func(_raised_in: int) -> void: carried_on[0] += 1)
+			screen = summary
 		var at := UI.centre(UI.button(screen, "Restart"))
 
 		_send(UI.touch_at(at, true, 0) if touch else UI.mouse_at(at, true))
@@ -376,14 +377,15 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t: TestRu
 				% [case[2], case[3]] + "release sent yet (got %d)" % restarts[0])
 
 		_send(UI.touch_at(at, false, 0) if touch else UI.mouse_at(at, false))
-		var release_name: String = case[2].replace("real touch hold", "release").replace(
+		var hold_name: String = case[2]
+		var release_name := hold_name.replace("real touch hold", "release").replace(
 				"real mouse hold", "mouse release")
 		t.check(restarts[0] == 1,
 				"the %s does not restart it a second time" % release_name)
 		t.check(carried_on[0] == 0, "and never reads as %s" % ("carrying on" if is_pause else "continuing"))
 
-		if is_pause:
-			screen.close()
+		if screen is PauseScreen:
+			(screen as PauseScreen).close()
 		t.get_tree().paused = false
 		screen.free()
 

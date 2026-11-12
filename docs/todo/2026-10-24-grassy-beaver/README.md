@@ -1,5 +1,6 @@
 priority: now
 after: 2026-10-18-minty-quail
+after: 2026-11-11-polite-tapir
 after: 2026-10-24-lilac-marten
 after: 2026-10-18-snowy-goose
 
@@ -57,7 +58,7 @@ before the change exists ([tiny-lark](../../playtests/2026-11-01-tiny-lark.md), 
 
 **After the escape.** The player: "the task is clear refactor then escape then tutorial"
 (minty-dolphin #852), and earlier "the escape and day one fixes can go after the refactor"
-(minty-dolphin #830). **Read as:** this entry waits for minty-quail (the refactor) and for the
+(minty-dolphin #830). **Read as:** this entry waits for minty-quail and polite-tapir (the refactor) and for the
 escape's fixes, lilac-marten (its fuller escape, with that entry's other two items) and snowy-goose
 (explosions in the escape city), which its `after:` lines say.
 

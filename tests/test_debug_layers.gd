@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `DebugLayers` (M104, "the debug view") and the two pieces of it that sit outside that one class:
 ## `GroundShape.shadow_outline()`, which `draw_shadow()` now draws from directly, and
@@ -255,9 +254,9 @@ func _test_the_layer_keys_resolve_to_their_own_layer(t: TestRunner) -> void:
 	var routes := rig.readout.get_node("RouteLines") as RouteLines
 	var layers := rig.layers()
 	rig.readout.close_the_title()
-	for number in [1, 2, 3]:
+	for number: int in [1, 2, 3]:
 		UI.push(rig.readout, _key(KEY_1 + number - 1))
-		for other in [1, 2, 3]:
+		for other: int in [1, 2, 3]:
 			t.check(layers.layer_on(other) == (other == number),
 					"%d turns on layer %d and no other geometry layer" % [number, other])
 		UI.push(rig.readout, _key(KEY_1 + number - 1))
@@ -315,7 +314,7 @@ func _test_layer_keys_do_nothing_outside_a_debug_build(t: TestRunner) -> void:
 	var rig := Rig.new(t, _config([], false))
 	t.check(rig.layers() == null, "no layer node in a release build")
 	var readout_before := rig.readout.readout_on()
-	for code in [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6]:
+	for code: Key in [KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6]:
 		UI.push(rig.readout, _key(code))
 	t.check(rig.layers() == null and rig.readout.readout_on() == readout_before
 			and not rig.readout.graph_on(),
@@ -351,7 +350,7 @@ func _test_no_redraw_is_asked_with_every_layer_off(t: TestRunner) -> void:
 			"one layer on redraws every frame (%d draws, %d before)" % [layers.draws, settled])
 	layers.free()
 
-	for number in [2, 3]:
+	for number: int in [2, 3]:
 		var other := DrawCount.new()
 		t.add_child(other)
 		await UI.frames(t, 3)

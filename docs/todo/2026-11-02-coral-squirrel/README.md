@@ -26,7 +26,7 @@ none on a day's own time), the player: "do your research into my answer" (gentle
 reload breaks the time counter", "indicate that the displayed times are inaccurate due to
 reloading", inbox #965 in brisk-pelican), and it is not asked again. The work has started: draft
 pull request #1207, paused for the refactor, is built on the pick (the mark under "Time played" on
-the ending screen alone). When it resumes after minty-quail, the research into the player's words,
+the ending screen alone). When it resumes after the refactor (minty-quail and polite-tapir), the research into the player's words,
 with the whole entry and the records it names (gentle-owl #1244), goes into #1207 before it merges:
 it states the answer the words give and changes the build to it, the pick standing only as far as
 the words bear it out.

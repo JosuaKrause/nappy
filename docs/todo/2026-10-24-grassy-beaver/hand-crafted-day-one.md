@@ -38,7 +38,7 @@ his beat rather than walk wide of him.
 ## The tutorial route
 
 **Placed at dawn on the way to the park, ordinary placement elsewhere.** Said while placement by
-construction (minty-quail) was being built: "so for the day 1 tutorial we do static placement of
+construction (now polite-tapir's) was being built: "so for the day 1 tutorial we do static placement of
 obstacles at dawn to the park we want the player to go. the progression is authored to teach
 lessons. the player can at any time walk a different route and placement will happen normally for
 non-tutorial paths", and "let's sketch out the progression" (gentle-owl #1253). **Read as:** day 1's
