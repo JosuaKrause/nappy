@@ -14,13 +14,15 @@ const STEP_TILES := 4
 ## following frames; STEPPED spreads one region over frames, a renderer quadrant a frame. The
 ## values are the `--ground-mode` numbers (docs/playtests/2026-10-03-tawny-stork.md).
 enum Mode { ALL = 1, ONE = 2, STEPPED = 3 }
-## Handed in by the city before it builds (`--ground-mode`); a test sets it on an empty ground.
-var mode: Mode = Mode.ONE
+## Handed in by the city before it builds (`--ground-mode`, `use_mode()`); a test hands it to an
+## empty ground.
+var _mode: Mode = Mode.ONE
 @export var tile_set: TileSet
-var chunks: Dictionary = {}
+## The whole regions laid now, each a `TileMapLayer` keyed by its region (`key_for()`).
+var _chunks: Dictionary = {}
 ## Visible in-tree at their real off-screen coordinates; hidden TileMaps discard render data.
-## Only chunks owns complete regions. Each pending key owns exactly one unfinished layer.
-var pending: Dictionary = {}
+## Only `_chunks` owns complete regions. Each pending key owns exactly one unfinished layer.
+var _pending: Dictionary = {}
 var _map: CityMap
 ## Which source each tile is painted from, asked of the city that owns the answer
 ## (`City.scenery_ground_source()`), handed in by `configure()`.
@@ -37,7 +39,7 @@ var elapsed := 0.0
 
 func _process(delta: float) -> void:
 	elapsed += delta
-	for layer: TileMapLayer in chunks.values() + _pending_layers():
+	for layer: TileMapLayer in _chunks.values() + _pending_layers():
 		for child: Node in layer.get_children():
 			if child is SceneryWater:
 				(child as SceneryWater).set_clock(elapsed)
@@ -47,6 +49,23 @@ func configure(map: CityMap, source_of: Callable, composed: TileSet) -> void:
 	_map = map
 	_source_of = source_of
 	tile_set = composed
+
+## How a needed region's preparation is scheduled (`Mode`).
+func mode() -> Mode:
+	return _mode
+
+## Hands in how a needed region's preparation is scheduled, before the ground lays anything.
+func use_mode(scheduled: Mode) -> void:
+	_mode = scheduled
+
+## The whole regions laid now: a `TileMapLayer` for each, keyed by its region (`key_for()`).
+func chunks() -> Dictionary:
+	return _chunks
+
+## The regions STEPPED is still laying, keyed by region: each a job holding its unfinished layer
+## (`"layer"`) and the next quadrant step (`"step"`).
+func pending() -> Dictionary:
+	return _pending
 
 static func key_for(tile: Vector2i) -> Vector2i:
 	return Vector2i(floori(float(tile.x) / CHUNK_TILES),
@@ -73,10 +92,10 @@ func keys_in(view: Rect2) -> Array[Vector2i]:
 ## whichever way a region is reached; ALL and ONE build it as one layer with one renderer
 ## quadrant and one water surface, its renderer work deferred to the frame's end.
 func prepare(key: Vector2i) -> void:
-	if chunks.has(key):
+	if _chunks.has(key):
 		return
 	var started := Time.get_ticks_usec()
-	if mode == Mode.STEPPED:
+	if _mode == Mode.STEPPED:
 		while not prepare_step(key):
 			pass
 	else:
@@ -87,7 +106,7 @@ func _prepare_whole(key: Vector2i) -> void:
 	var layer := TileMapLayer.new()
 	layer.tile_set = tile_set
 	layer.name = "Chunk%d_%d" % [key.x, key.y]
-	chunks[key] = layer
+	_chunks[key] = layer
 	add_child(layer)
 	var water_cells: Array[Vector2i] = []
 	for y in range(key.y * CHUNK_TILES, (key.y + 1) * CHUNK_TILES):
@@ -111,17 +130,17 @@ func _prepare_whole(key: Vector2i) -> void:
 ## residency owner advances each region once per process frame; prepare() drains it for the
 ## safety guard.
 func prepare_step(key: Vector2i) -> bool:
-	if chunks.has(key):
+	if _chunks.has(key):
 		return true
 	var started := Time.get_ticks_usec()
-	if not pending.has(key):
+	if not _pending.has(key):
 		var created := TileMapLayer.new()
 		created.tile_set = tile_set
 		created.rendering_quadrant_size = STEP_TILES
 		created.name = "Chunk%d_%d" % [key.x, key.y]
 		add_child(created)
-		pending[key] = {"layer": created, "step": 0}
-	var job: Dictionary = pending[key]
+		_pending[key] = {"layer": created, "step": 0}
+	var job: Dictionary = _pending[key]
 	var layer: TileMapLayer = job.layer
 	var side := CHUNK_TILES / STEP_TILES
 	var step: int = job.step
@@ -149,31 +168,31 @@ func prepare_step(key: Vector2i) -> bool:
 	job.step = step + 1
 	var complete: bool = job.step == side * side
 	if complete:
-		chunks[key] = layer
-		pending.erase(key)
+		_chunks[key] = layer
+		_pending.erase(key)
 	worst_step_usec = maxi(worst_step_usec, Time.get_ticks_usec() - started)
 	return complete
 
 func _pending_layers() -> Array:
-	return pending.values().map(func(job: Dictionary) -> TileMapLayer: return job.layer)
+	return _pending.values().map(func(job: Dictionary) -> TileMapLayer: return job.layer)
 
 func cancel(key: Vector2i) -> void:
-	if pending.has(key):
-		(pending[key].layer as TileMapLayer).free()
-		pending.erase(key)
+	if _pending.has(key):
+		(_pending[key].layer as TileMapLayer).free()
+		_pending.erase(key)
 
 func release(key: Vector2i) -> void:
-	(chunks[key] as TileMapLayer).free()
-	chunks.erase(key)
+	(_chunks[key] as TileMapLayer).free()
+	_chunks.erase(key)
 
 func clear() -> void:
-	for key: Vector2i in pending.keys():
+	for key: Vector2i in _pending.keys():
 		cancel(key)
-	for key: Vector2i in chunks.keys():
+	for key: Vector2i in _chunks.keys():
 		release(key)
 
 func repaint() -> void:
-	var keys := chunks.keys()
+	var keys := _chunks.keys()
 	clear()
 	for key: Vector2i in keys:
 		prepare(key)

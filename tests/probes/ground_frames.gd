@@ -198,7 +198,7 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		if reverse_look_ahead and frame >= total_frames / 2:
 			view.position -= direction * 92
 		# Taken outside the timed span, like the classification after the draw below.
-		var resident_before := ground.chunks.duplicate()
+		var resident_before := ground.chunks().duplicate()
 		var relocating := _city.scenery.view.get_center().distance_to(view.get_center()) \
 				> SceneryResidency.GUARD_MARGIN
 		var tick := Time.get_ticks_usec()
@@ -212,16 +212,16 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 				or view.get_center().distance_to(_city.scenery.view.get_center()) >= 16:
 			_city.scenery.update(view)
 		updates.append(Time.get_ticks_usec() - tick)
-		for key: Vector2i in ground.pending:
+		for key: Vector2i in ground.pending():
 			if not pending_owners.has(key):
 				pending_owners[key] = frame
 			pending_frames += 1
 		for key: Vector2i in pending_owners.keys():
-			if ground.chunks.has(key):
+			if ground.chunks().has(key):
 				completed_across_frames += int(frame > pending_owners[key])
 				pending_owners.erase(key)
 		for key in ground.keys_in(view):
-			misses += int(not ground.chunks.has(key))
+			misses += int(not ground.chunks().has(key))
 		await _draw_frame()
 		frames.append(Time.get_ticks_usec() - tick)
 		# The guard's own regions are the new ones its rectangle reaches; the guard counter
@@ -230,7 +230,7 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		var guarded := 0
 		var ordinary := 0
 		var guard := _city.scenery.view.grow(SceneryResidency.GUARD_MARGIN)
-		for key: Vector2i in ground.chunks:
+		for key: Vector2i in ground.chunks():
 			prepared_regions += int(not resident_before.has(key))
 			if not relocating and not resident_before.has(key):
 				if guard.intersects(SceneryGround.bounds(key)):
@@ -241,13 +241,13 @@ func _coverage(rate: int, direction: Vector2, reverse_look_ahead := false) -> Di
 		ordinary_beside_guard += int(guarded > 0 and ordinary > 0)
 	if misses:
 		_failures.append("coverage gaps")
-	if ground.mode == SceneryGround.Mode.STEPPED and completed_across_frames == 0:
+	if ground.mode() == SceneryGround.Mode.STEPPED and completed_across_frames == 0:
 		_failures.append("no real-frame stepped completions")
-	if ground.mode == SceneryGround.Mode.ONE \
+	if ground.mode() == SceneryGround.Mode.ONE \
 			and (most_ordinary_in_a_frame > 1 or ordinary_beside_guard > 0):
 		_failures.append("mode 2 prepared a second region in one frame outside the guard")
 	camera.free()
-	return {"ground_mode": ground.mode, "modeled_hz": rate, "direction": str(direction),
+	return {"ground_mode": ground.mode(), "modeled_hz": rate, "direction": str(direction),
 		"look_ahead_reversal_px": 92 if reverse_look_ahead else 0,
 		"frames": frames.size(), "missing_regions": misses,
 		"pending_frame_observations": pending_frames, "completed_across_frames": completed_across_frames,

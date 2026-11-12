@@ -514,12 +514,12 @@ var neighbor_taken := false:
 
 ## Equips the building before the city adds it: its atlas and the roof and front drawers it draws
 ## through. The city registers it with the scenery itself, so it is not resident on its own
-## (`scenery_resident`). See `atlas`, `roof_drawer` and `front_drawer`.
+## (`residence()`). See `atlas`, `roof_drawer` and `front_drawer`.
 func equip(library: AtlasLibrary, roofs: RoofDrawer, fronts: FrontDrawer) -> void:
 	atlas = library
 	roof_drawer = roofs
 	front_drawer = fronts
-	scenery_resident = false
+	_residence = _new_residence(false)
 
 ## Sizes the building to its lot before the city adds it: `size` px wide and deep, `with_variant`
 ## picking the roof colour and windows, in a block that starts as `purpose`, `wall_height` px tall,
@@ -616,8 +616,9 @@ var shape: GroundShape
 
 var _collision: CollisionShape2D
 ## Identity and frontage facts remain live for collision and poster placement. Only windows,
-## roof descriptions and retained drawing are resident around the camera.
-var scenery_resident := true
+## roof descriptions and retained drawing are resident around the camera (`residence()`). An
+## unequipped building stands resident on its own; `equip()` hands it to the residency unprepared.
+var _residence := _new_residence(true)
 var scenery_clock: SceneryGround
 ## One entry per wall cell, row-major from the ground up: true where the light is on.
 var _windows: Array[bool] = []
@@ -728,15 +729,25 @@ func _rebuild() -> void:
 	_collision.position = Vector2(0.0, -shape.rect_half_extents().y)
 	_build_front()
 	_build_entrance()
-	if scenery_resident:
+	if _residence.is_resident():
 		_prepare_scenery()
 	else:
 		set_process(false)
 
-func set_scenery_resident(resident: bool) -> void:
-	if scenery_resident == resident:
-		return
-	scenery_resident = resident
+## What the scenery residency asks of this building: whether its windows, roof and retained drawing
+## are resident, the ground they cover, and the switch between the two.
+func residence() -> SceneryResidence:
+	return _residence
+
+## A standing with the residency that starts `resident` or not, counted as a building's job in the
+## frame record.
+func _new_residence(resident: bool) -> SceneryResidence:
+	return SceneryResidence.new(self, _scenery_bounds, _apply_residence, FrameTiming.Job.BUILDING,
+			resident)
+
+## Builds the windows, roof and furniture when the building turns resident, and clears them and
+## its retained drawing when it stops being.
+func _apply_residence(resident: bool) -> void:
 	if resident:
 		_prepare_scenery()
 	else:
@@ -748,7 +759,7 @@ func set_scenery_resident(resident: bool) -> void:
 		RenderingServer.canvas_item_clear(get_canvas_item())
 		queue_redraw()
 
-func scenery_bounds() -> Rect2:
+func _scenery_bounds() -> Rect2:
 	var extension := 0
 	for rows_above in roof_extension_rows:
 		extension = maxi(extension, rows_above)
@@ -1065,7 +1076,7 @@ func neighbor_window_row() -> int:
 	return 3
 
 func _draw() -> void:
-	if not scenery_resident:
+	if not _residence.is_resident():
 		return
 	var cols := columns()
 	var wall_rows := wall_tiles()
@@ -1845,6 +1856,6 @@ class StationStack extends ScenerySprite:
 		atlas.release(&"buildings")
 
 	func _draw() -> void:
-		if not scenery_resident:
+		if not residence().is_resident():
 			return
 		Sprites.draw_standing(self, atlas.region(Building.POWER_STATION_STACK), Vector2.ZERO)

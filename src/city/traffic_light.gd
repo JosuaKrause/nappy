@@ -72,13 +72,13 @@ func _enter_tree() -> void:
 func _exit_tree() -> void:
 	atlas.release(&"street_kit")
 
-## Overrides ScenerySprite.set_scenery_resident.
-func set_scenery_resident(resident: bool) -> void:
-	super.set_scenery_resident(resident)
+## Overrides ScenerySprite._apply_residence.
+func _apply_residence(resident: bool) -> void:
+	super._apply_residence(resident)
 	set_process(resident and not _faces_away)
 
-## Overrides ScenerySprite.scenery_bounds.
-func scenery_bounds() -> Rect2:
+## Overrides ScenerySprite._scenery_bounds.
+func _scenery_bounds() -> Rect2:
 	return Rect2(global_position - Vector2(16, 48), Vector2(32, 64))
 
 ## `_lamp()`'s answer while the power is out: no lamp at all, which is what a dead light looks like
@@ -122,7 +122,7 @@ func _lamp() -> int:
 	return 0
 
 func _draw() -> void:
-	if not scenery_resident:
+	if not residence().is_resident():
 		return
 	if arm_is_vertical and _faces_away:
 		drawer.draw_head(self, HEAD_BACK, false)
