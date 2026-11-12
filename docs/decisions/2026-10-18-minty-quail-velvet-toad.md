@@ -15,9 +15,11 @@ in gray-dolphin), and `field-reads.md` converts the readers layer by layer.
 - **Three fields the game now reads only by name** (`CityMap.absent_segments`, `power_station_door`,
   `BlockLayout.open_rect`, which `RecipeCityContext` captures and restores by string) stay public, and the suites that
   read or wrote them go through the game's own methods instead, so the test-only check does not list them.
-- **Left**: the region and seal planners' reads, which `field-reads.md` keeps with the lines
-  the placement rewrite and the third hand-ins pull request touch; `CityMap.fenced_park`, read by the day director,
-  which waits for the third hand-ins pull request.
+- **Left**: the region and seal planners' reads of the city map, outside this pass's four files, which
+  `field-reads.md`'s "The city's own classes" still lists, and their reads of an event plan and its row, which wait for
+  row 3a of `event-interface.md`; `CityMap.fenced_park`, read by the day director, which waits for the third hand-ins
+  pull request.
+- **The queue item's "The city's own classes" names only the region and seal planners among the routes' readers.**
 
 ## Verified
 

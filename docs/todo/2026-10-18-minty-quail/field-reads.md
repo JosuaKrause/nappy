@@ -103,8 +103,7 @@ Left, each its own design question:
   part's fields behind methods; the vars are renamed, and the files the third hand-ins pull
   request touches and the tests read them, so it waits for that pull request.
 - **The city's own classes** still have readers under `src/`, which `tools/field_reads.txt` lists
-  by class: the city map's (`CityMap`) in the routes (the closure, region and seal planners, the
-  route tree, the corridor), the blackout, the streamed ground and the city's generator, besides the
+  by class: the city map's (`CityMap`) in the routes (the region and seal planners), the blackout, the streamed ground and the city's generator, besides the
   events', the run flow's and the rigs'; a building's (`Building`) in the city scene, the city's fronts, the poster walls, the blackout, the roof
   previews and the scene recipes. Two groups have a home of their own:
   - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
