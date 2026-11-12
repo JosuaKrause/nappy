@@ -184,7 +184,7 @@ and `Buildings` in `city.tscn`.
 
 ### Guarantees
 
-Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 200 seeds:
+Checked by `CityGenerator.validation_problems()` and by `tests/test_generator.gd` across 200 seeds:
 
 - Every walkable tile is reachable from the home.
 - Every calm area is somewhere calm ground may go: clear of the home, clear of the map's outer
@@ -294,7 +294,8 @@ assigned, and **calm ground is kept a clearance of blocks away from it**
 than deciding where it goes. The clearance is derived from `MIN_HOME_TO_PARK_TILES` rather than
 authored beside it: a block `d` away starts `d × period()` tiles out, of which `BLOCK_SIZE` is the
 home's own lot, so the clearance is the smallest `d` clearing the guarantee. It is a floor, not the
-guarantee — walking is not straight-line — and `validate()` still checks the real thing.
+guarantee — walking is not straight-line — and `CityGenerator.validation_problems()` still checks
+the real thing.
 
 **And that is what the lattice size is for.** Both rules can only hold on a city whose centre is
 `MIN_HOME_TO_PARK_TILES` of walking from every park — a 7×7 lattice is not, and 11×11 is, with the
@@ -867,10 +868,11 @@ Because the door is outside the home's region, every way there crosses a region 
 door reachable, and finds it out of reach again with the doors shut. On every other day the tree
 ignores the station, so nothing leads her there before she is sent.
 
-A city where no candidate passes has no station, and `validate()` refuses it like any other broken
-guarantee, so `generate` rolls the next seed. `CityMap.power_station` is the pair,
-`power_station_door_tiles()` the pavement in front of the door, `power_station_door_street()` the street it
-faces and `power_station_door_position()` the point she stands on to reach it.
+A city where no candidate passes has no station, and `CityGenerator.validation_problems()` refuses
+it like any other broken guarantee, so `generate` rolls the next seed. `CityMap.power_station` is
+the pair, `power_station_door_tiles()` the pavement in front of the door,
+`power_station_door_street()` the street it faces and `power_station_door_position()` the point she
+stands on to reach it.
 
 **The station is where the city's power comes from, and the last night takes it away.** Once the
 sabotage is done (`run.resistance.sabotage_done`) and she is `Blackout.BLACKOUT_DISTANCE` (512px) from the
@@ -1795,9 +1797,9 @@ shortcut or invalidate a route the player learned on day 1. Per-day **closures**
 one deliberate exception, and they are per-day, sealed at both ends and validated against
 the route invariant before they are accepted — see "Road closures" above.
 
-`CityGenerator.validate()` also guarantees that at least `MIN_CALM_BLOCKS_AT_END` blocks stay calm
-for the whole run. A day can only be won on calm ground, so an arc set that requisitions everything
-makes an unwinnable run rather than a hard one.
+`CityGenerator.validation_problems()` also guarantees that at least `MIN_CALM_BLOCKS_AT_END` blocks
+stay calm for the whole run. A day can only be won on calm ground, so an arc set that requisitions
+everything makes an unwinnable run rather than a hard one.
 
 ### Where the state lives
 

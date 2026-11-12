@@ -1,7 +1,7 @@
 extends RefCounted
 ## What a `Building`'s front shows, read off the pictures it was drawn with.
 ##
-## A building paints its front through a `FrontDrawer` (`Building.front_drawer`), and
+## A building paints its front through the `FrontDrawer` it is handed (`Building.equip()`), and
 ## `RecordingFrontDrawer` records every picture it is told to paint instead of painting it. This reads
 ## the record by where each picture was put, in the building's own space: a wall cell's top-left
 ## corner is `(-columns() * TILE / 2 + col * TILE, -(row + 1) * TILE)`, rows counted north from the
@@ -25,24 +25,41 @@ var drawer: RecordingFrontDrawer
 ## What the front shows now, on its own canvas: the entries of `RecordingFrontDrawer.shown()`.
 var _shown: Array[Dictionary] = []
 
-## A building handed a recording drawer, not yet in the tree.
+## Where the recording drawer a building was handed here is kept on it (`Object.set_meta()`), for
+## `look()` to read.
+const _DRAWER_META := &"front_reads_drawer"
+
+## A building handed a recording drawer, not yet in the tree, equipped as the city equips one
+## (`Building.equip()`). An equipped building waits for the residency to stand its scenery up, so
+## this one has its scenery made resident once it is ready, as the residency makes a building in
+## view resident (a building draws nothing while it is not).
 static func new_building() -> Building:
 	var made := Building.new()
-	made.front_drawer = RecordingFrontDrawer.new()
+	_equip(made, AtlasLibrary.new())
+	made.ready.connect(func() -> void: made.residence().set_resident(true), CONNECT_ONE_SHOT)
 	return made
 
-## Hands a building a recording drawer in place of the real one a city gave it, has its scenery
-## resident (a building draws nothing while it is not), and asks for a redraw.
+## Hands a building a recording drawer in place of the real one a city gave it, the way the city
+## hands one (`Building.equip()`, over the building's own library, with a roof drawer of its own),
+## has its scenery resident, and asks for a redraw. `equip()` gives the building a standing of its
+## own, made resident here, which the city's residency does not hold: a suite that watches a
+## building does not move the view off it.
 static func watch(building: Building) -> void:
-	building.front_drawer = RecordingFrontDrawer.new()
+	_equip(building, building.atlas)
 	building.residence().set_resident(true)
 	building.queue_redraw()
+
+## Equips `building` over `library` with a recording front drawer, kept on it for `look()`.
+static func _equip(building: Building, library: AtlasLibrary) -> void:
+	var drawer := RecordingFrontDrawer.new()
+	building.equip(library, RoofDrawer.new(library), drawer)
+	building.set_meta(_DRAWER_META, drawer)
 
 ## The reads of `building`'s front as it was last drawn.
 static func look(building: Building) -> Reads:
 	var reads := Reads.new()
 	reads.building = building
-	reads.drawer = building.front_drawer as RecordingFrontDrawer
+	reads.drawer = building.get_meta(_DRAWER_META) as RecordingFrontDrawer
 	reads.refresh()
 	return reads
 

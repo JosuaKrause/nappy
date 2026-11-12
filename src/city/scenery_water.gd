@@ -12,7 +12,8 @@ var cells: Array[Vector2i] = []
 ## before the surface is added; a surface nobody handed one (a suite's) makes its own when it first
 ## enters the tree.
 var atlas: AtlasLibrary = null
-var elapsed := 0.0
+## The surface's clock, in seconds: the ripples' phase (`set_clock()`).
+var _elapsed := 0.0
 var _texture: AtlasTexture
 var _ripples: ShaderMaterial
 
@@ -34,7 +35,7 @@ func configure(water_cells: Array[Vector2i]) -> void:
 	if cells != water_cells:
 		cells.assign(water_cells)
 	_texture = atlas.region(&"tiles/water") as AtlasTexture
-	_ripples = material_for(_texture, elapsed)
+	_ripples = material_for(_texture, _elapsed)
 	material = _ripples
 	queue_redraw()
 
@@ -57,14 +58,14 @@ static func material_for(texture: AtlasTexture, at_elapsed: float = 0.0) -> Shad
 ## `_process()`. Before `configure()` there are no ripples yet, and the clock alone is set, for
 ## `configure()` to start them from.
 func set_clock(at_elapsed: float) -> void:
-	elapsed = at_elapsed
+	_elapsed = at_elapsed
 	if _ripples != null:
-		_ripples.set_shader_parameter("elapsed", elapsed)
+		_ripples.set_shader_parameter("elapsed", _elapsed)
 
 func _process(delta: float) -> void:
-	elapsed += delta
+	_elapsed += delta
 	if _ripples != null:
-		_ripples.set_shader_parameter("elapsed", elapsed)
+		_ripples.set_shader_parameter("elapsed", _elapsed)
 
 func _draw() -> void:
 	var extent := Vector2(Tuning.TILE_SIZE, Tuning.TILE_SIZE)

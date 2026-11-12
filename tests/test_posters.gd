@@ -14,8 +14,9 @@ extends RefCounted
 ## tears are made the way the game makes them: a real `Stroller` in the city, a held movement key
 ## (`Input.action_press()`) and real physics ticks (`tests/physics_ticks.gd`, one tick a frame), the
 ## city's buildings stopping her at the wall. What a test reads is what the game exposes: the run's
-## `PosterState`, what the fronts are handed to draw (`Building.posters`, `Building.neighbor_taken`),
-## the signals the counter listens to and the pursuer the events hold.
+## `PosterState`, what the fronts are handed to draw (`Building.posters`) and the sheets they draw
+## through the art they are handed, the signals the counter listens to and the pursuer the events
+## hold.
 ##
 ## **Its cities come from the cache of generated cities** (`tests/city_map_cache.gd`): each
 ## seed's city is generated once in the test process and every case is handed a copy of its own,
@@ -63,9 +64,11 @@ func run(t: TestRunner) -> void:
 ## A real city on `seed_value`'s map in the tree, over a run of its own on day `day`, and a real
 ## `Stroller` in it that the events are handed, as `main` hands them (`EventManager.use_player()`).
 ## The day is started with every dawn already pasted, so the walls hold what a test puts on them.
-func _open(t: TestRunner, seed_value: int, day := DAY) -> void:
+func _open(t: TestRunner, seed_value: int, day := DAY, art: PosterArt = null) -> void:
 	_map = MapCache.of(seed_value)
 	_city = RunCity.with_own_run(CITY_SCENE, seed_value)
+	if art != null:
+		_city.poster_art = art
 	_run = _city.run
 	t.add_child(_city)
 	_city.build(_map)
@@ -300,15 +303,16 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t: TestRunner) -
 	var art := PosterArt.new()
 	var other := PosterArt.new()
 	var kind := PosterArt.Kind.LEADER
-	t.check(art.texture_for(atlas, kind, 0, false) == PosterArt.sheet(atlas, kind, false),
+	var intact := atlas.region(PosterArt.SHEETS[kind])
+	t.check(art.texture_for(atlas, kind, 0, false) == intact,
 			"before it is prepared an art answers the intact sheet, never a missing picture")
 	art.prepare(atlas)
 	var composed := art.texture_for(atlas, kind, 0, false)
-	t.check(composed != PosterArt.sheet(atlas, kind, false) and composed is ImageTexture,
+	t.check(composed != intact and composed is ImageTexture,
 			"a prepared art answers its composed torn picture")
 	art.prepare(atlas)
 	t.check(art.texture_for(atlas, kind, 0, false) == composed, "preparing again composes nothing")
-	t.check(other.texture_for(atlas, kind, 0, false) == PosterArt.sheet(atlas, kind, false),
+	t.check(other.texture_for(atlas, kind, 0, false) == intact,
 			"another art holds none of the first's pictures")
 	_map = MapCache.of(SEEDS[0])
 	_city = RunCity.with_own_run(CITY_SCENE, SEEDS[0])
@@ -322,7 +326,7 @@ func _test_the_torn_pictures_belong_to_the_art_a_city_is_handed(t: TestRunner) -
 	for tile: Vector2i in fronts:
 		var building := _building_of(tile)
 		dressed = dressed and building != null and building.poster_art == art
-	t.check(_walls.art == art and dressed, "the city's art reaches its walls and every front they dress")
+	t.check(dressed, "the city's art reaches every front its walls dress")
 	_city.free()
 	atlas.release(PosterArt.ATLAS_GROUP)
 
@@ -336,28 +340,33 @@ func _test_the_wanted_notice_crosses_out_a_taken_neighbor(t: TestRunner) -> void
 	var plain := atlas.region(PosterArt.SHEETS[PosterArt.Kind.WANTED])
 	var crossed := atlas.region(PosterArt.WANTED_CROSSED)
 	t.check(plain != null and crossed != null, "both copies of the wanted notice are baked")
+	var art := PosterArt.new()
+	var intact := PosterState.INTACT
 	run.header.day = ResistanceHappenings.NEIGHBOR_DAY + 2
 	run.resistance.completed_steps = [ResistanceSteps.warning_step().index]
-	t.check(PosterArt.sheet(atlas, PosterArt.Kind.WANTED, run.neighbor_was_taken()) == plain,
+	t.check(art.texture_for(atlas, PosterArt.Kind.WANTED, intact, run.neighbor_was_taken()) == plain,
 			"a warned neighbor's face is not crossed out")
 	run.resistance.completed_steps = []
-	t.check(PosterArt.sheet(atlas, PosterArt.Kind.WANTED, run.neighbor_was_taken()) == crossed,
+	t.check(art.texture_for(atlas, PosterArt.Kind.WANTED, intact, run.neighbor_was_taken()) == crossed,
 			"a taken neighbor's face is crossed out")
-	t.check(PosterArt.sheet(atlas, PosterArt.Kind.LEADER, run.neighbor_was_taken()) == atlas.region(
-			PosterArt.SHEETS[PosterArt.Kind.LEADER]), "and no other kind changes")
+	t.check(art.texture_for(atlas, PosterArt.Kind.LEADER, intact, run.neighbor_was_taken())
+			== atlas.region(PosterArt.SHEETS[PosterArt.Kind.LEADER]), "and no other kind changes")
 	atlas.release(PosterArt.ATLAS_GROUP)
 
 ## **The crossed notice reaches the wall from the run's state.** No front holds a run:
 ## `PosterWalls` asks the run whether the neighbor was taken and hands each `Building` the answer
-## with its cells (`Building.neighbor_taken`), at dawn and after a tear, and the building draws its
-## sheets through `PosterArt.texture_for()` with that flag. So a taken neighbor in the run is a
-## crossed notice on the wall, intact at dawn and torn after a tear, and a warned one is the plain
-## notice. The tear is made by a push, on real ticks.
+## with its cells, at dawn and after a tear, and the building draws its sheets through
+## `PosterArt.texture_for()` with that flag. So a taken neighbor in the run is a crossed notice on
+## the wall, intact at dawn and torn after a tear, and a warned one is the plain notice. What the
+## fronts draw is read off an art that records what each sheet was drawn with, handed to the city as
+## `main` hands it its own (`City.poster_art`) and by the walls to every front. The tear is made by
+## a push, on real ticks.
 func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(PosterArt.ATLAS_GROUP)
 	var day := ResistanceHappenings.NEIGHBOR_DAY + 2
-	await _open(t, SEEDS[0], day)
+	var art := RecordingPosterArt.new()
+	await _open(t, SEEDS[0], day, art)
 	var tiles: Array = _walls.fronts().keys()
 	tiles.sort()
 	t.check(not tiles.is_empty(), "there is a front to paste the wanted notice on")
@@ -367,38 +376,82 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void
 		return
 	var tile: Vector2i = tiles[0]
 	var building := _building_of(tile)
+	# Its scenery stood up, as the residency stands a building in view up, so it draws.
+	building.residence().set_resident(true)
 	var plain := atlas.region(PosterArt.SHEETS[PosterArt.Kind.WANTED])
 	var crossed := atlas.region(PosterArt.WANTED_CROSSED)
-	var drawn := func() -> Texture2D:
-		var cell: Dictionary = _run.posters.sheet_at(tile)
-		return building.poster_art.texture_for(atlas, int(cell["kind"]), int(cell["tear"]),
-				building.neighbor_taken)
+	var intact := PosterState.INTACT
 	_run.posters.paste(tile, PosterArt.Kind.WANTED, false, 1)
 
 	_run.resistance.completed_steps = []
+	var from := art.asked.size()
 	_walls.start_day(day, null)
-	t.check(building.neighbor_taken, "at dawn, a taken neighbor in the run reaches the front")
-	t.check(drawn.call() == crossed, "and the front draws the crossed wanted notice")
+	await _frames(t, 2)
+	var drawn := _drawn_since(art, from)
+	t.check(not drawn.is_empty() and drawn.all(_drawn_taken),
+			"at dawn, a taken neighbor in the run reaches the fronts (%d sheets drawn)" % drawn.size())
+	t.check(_drew(drawn, PosterArt.Kind.WANTED, intact, crossed),
+			"and a front draws the crossed wanted notice")
 
 	_run.resistance.completed_steps = [ResistanceSteps.warning_step().index]
+	from = art.asked.size()
 	_walls.start_day(day, null)
-	t.check(not building.neighbor_taken and drawn.call() == plain,
+	await _frames(t, 2)
+	drawn = _drawn_since(art, from)
+	t.check(not drawn.is_empty() and not drawn.any(_drawn_taken)
+			and _drew(drawn, PosterArt.Kind.WANTED, intact, plain)
+			and not _drew(drawn, PosterArt.Kind.WANTED, intact, crossed),
 			"a warned neighbor's front draws the plain notice at dawn")
 
 	_run.resistance.completed_steps = []
+	from = art.asked.size()
 	_stand_at(tile, 1.0, Vector2.UP)
 	var torn := await _wait_until(t, func() -> bool: return _run.posters.is_torn(tile), 3.0)
 	t.check(torn, "a push tears the wanted notice")
+	await _frames(t, 2)
+	drawn = _drawn_since(art, from)
 	var which := int(_run.posters.sheet_at(tile)["tear"])
-	t.check(building.neighbor_taken, "after a tear, the run's taken neighbor reaches the front")
-	t.check(drawn.call() == building.poster_art.texture_for(atlas, PosterArt.Kind.WANTED, which, true)
-			and drawn.call() != building.poster_art.texture_for(atlas, PosterArt.Kind.WANTED, which, false),
+	t.check(not drawn.is_empty() and drawn.all(_drawn_taken),
+			"after a tear, the run's taken neighbor reaches the fronts")
+	var crossed_torn := art.texture_for(atlas, PosterArt.Kind.WANTED, which, true)
+	var plain_torn := art.texture_for(atlas, PosterArt.Kind.WANTED, which, false)
+	t.check(crossed_torn != plain_torn and _drew(drawn, PosterArt.Kind.WANTED, which, crossed_torn),
 			"and the torn sheet is the crossed notice torn")
 
 	_close()
 	atlas.release(PosterArt.ATLAS_GROUP)
 
-# ----------------------------------------------------------------- the state ---
+## Lets `count` process frames pass, so what was asked for is drawn.
+func _frames(t: TestRunner, count: int) -> void:
+	for i in count:
+		await t.get_tree().process_frame
+
+## The sheets `art` recorded from its `from`th on.
+func _drawn_since(art: RecordingPosterArt, from: int) -> Array[Dictionary]:
+	var drawn: Array[Dictionary] = []
+	drawn.assign(art.asked.slice(from))
+	return drawn
+
+## Whether a sheet recorded by `RecordingPosterArt` was drawn with the neighbor taken.
+func _drawn_taken(entry: Dictionary) -> bool:
+	return entry["taken"]
+
+## Whether `drawn` holds a sheet of `kind` torn the `tear`th way that was drawn as `picture`.
+func _drew(drawn: Array[Dictionary], kind: int, tear: int, picture: Texture2D) -> bool:
+	return drawn.any(func(entry: Dictionary) -> bool:
+		return entry["kind"] == kind and entry["tear"] == tear and entry["picture"] == picture)
+
+## An art that records each sheet a front draws through it (`texture_for()`): its kind, its tear,
+## whether the neighbor was taken and the picture answered, in order, as `{"kind", "tear", "taken",
+## "picture"}`. It answers what the real art answers.
+class RecordingPosterArt extends PosterArt:
+	var asked: Array[Dictionary] = []
+
+	## Overrides PosterArt.texture_for.
+	func texture_for(atlas: AtlasLibrary, kind: int, tear: int, neighbor_taken: bool) -> Texture2D:
+		var picture := super(atlas, kind, tear, neighbor_taken)
+		asked.append({"kind": kind, "tear": tear, "taken": neighbor_taken, "picture": picture})
+		return picture
 
 func _test_the_state_survives_a_round_trip_and_a_lost_day(t: TestRunner) -> void:
 	var state := PosterState.new()

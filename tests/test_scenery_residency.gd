@@ -78,7 +78,7 @@ class Scene extends RefCounted:
 
 ## The recording drawer each building was handed, building to drawer: what a building drew is read
 ## off its own, since a building's roof is placed by its own rolls and drawn through
-## `Building.roof_drawer`, as the city hands it.
+## the drawer `Building.equip()` handed it, as the city hands it.
 var _drawers := {}
 
 func run(t: TestRunner) -> void:
@@ -153,7 +153,7 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 			t.check(not building.is_processing(), "unprepared roofs run no animation callbacks")
 			t.check(_drawer_of(building).standing().is_empty() and _lit_windows(building) == 0,
 					"a distant building has no window/roof preparation")
-			t.check(_collision_shape(building) != null and building.shape != null,
+			t.check(_collision_shape(building) != null,
 					"a distant building keeps its complete collision")
 	t.check(unloaded > scene.buildings.size() / 2, "most buildings are unprepared at home")
 	var lit_in_view := 0
@@ -246,7 +246,10 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 			if child is SceneryWater:
 				var water: SceneryWater = child
 				water_count += 1
-				t.check(water.elapsed == scene.ground.elapsed and not water.is_processing(),
+				var ripples := water.material as ShaderMaterial
+				t.check(ripples != null
+						and float(ripples.get_shader_parameter("elapsed")) == scene.ground.elapsed
+						and not water.is_processing(),
 						"new water chunks share one pausable city phase")
 	t.check(water_count > 1, "the phase check covers multiple water chunks")
 	_free(scene)
@@ -274,9 +277,13 @@ func _test_roof_phase(t: TestRunner, seed_value: int) -> void:
 			scene.scenery.update(view, true)
 			t.check(not _rotors_of(building).is_empty(), "returning fan owner reconstructs actual rotors")
 			var expected_phase := int(scene.ground.elapsed / Building.VENT_FRAME_INTERVAL) % 2 == 1
-			for rotor in _rotors_of(building):
+			# The phase a rotor is stood at is what the building tells its drawer; that the drawer
+			# shows the phase it is told is `tests/test_roof_entities.gd`'s.
+			for entry in _drawer_of(building).standing():
+				if entry.texture != Building.VENT_HOUSING:
+					continue
 				observed += 1
-				t.check(rotor.frame_b == expected_phase,
+				t.check(entry.rotor_frame_b == expected_phase,
 						"reentered fan rotors resume the shared city clock's phase")
 			_check_roof_ownership(t, scene)
 		break

@@ -645,7 +645,7 @@ func _test_the_swing_task_sits_at_an_open_playground(t: TestRunner) -> void:
 	var park := CityGenerator.swing_park(_city.map)
 	var layout: BlockLayout = _city.map.block_layouts.get(park)
 	t.check(layout != null and _city.map.world_to_tile(_city.map.swing_position(
-			layout.playground)) == _city.map.world_to_tile(at),
+			layout.playground_rect())) == _city.map.world_to_tile(at),
 			"and it is the park the city chose for day 12")
 
 	director.free()
@@ -684,7 +684,8 @@ func _test_day_twelves_park_is_forced_open_whatever_its_state(t: TestRunner) -> 
 		var pool := ResistanceSteps.target_candidates(step, map, null)
 		var layout: BlockLayout = map.block_layouts[park]
 		t.check(pool.size() == 1 and pool[0] == map.world_to_tile(map.swing_position(
-				layout.playground)), "seed %d: its swing is the task's only place" % seed_value)
+				layout.playground_rect())), "seed %d: its swing is the task's only place" %
+				seed_value)
 		t.check(state.take(map.block_plans, park, day)
 				and state.purpose_of(map.block_plans, park) == GameEnums.BlockPurpose.REQUISITIONED,
 				"seed %d: reaching the swing takes it" % seed_value)

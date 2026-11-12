@@ -251,12 +251,15 @@ func _test_a_burnt_building_shows_nothing_intact(t: TestRunner) -> void:
 	for i in 12:
 		var building := Building.new()
 		var front := RecordingFrontDrawer.new()
-		building.front_drawer = front
+		var atlas := AtlasLibrary.new()
+		building.equip(atlas, RoofDrawer.new(atlas), front)
 		var purposes: Array[GameEnums.BlockPurpose] = [GameEnums.BlockPurpose.COMMERCIAL,
 				GameEnums.BlockPurpose.RESIDENTIAL, GameEnums.BlockPurpose.INDUSTRIAL]
 		building.stand_on(Rect2i(), Vector2(128.0, 128.0), 0, purposes[i % 3], 96.0)
 		building.position = Vector2(9000.0 + i * 173.0, 9100.0 + i * 61.0)
 		t.add_child(building)
+		# Equipped as the city equips it, it waits for the residency to stand it up.
+		building.residence().set_resident(true)
 		building.condition = Building.Condition.BURNT
 		building.day = Tuning.RUN_LENGTH_DAYS
 		buildings.append(building)

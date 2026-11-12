@@ -1153,7 +1153,7 @@ func _rng(day: int) -> RandomNumberGenerator:
 func _arc_signature(map: CityMap, trace: RunTrace = null) -> String:
 	var state := CityState.new()
 	if trace:
-		state.trace = trace
+		state.use_trace(trace)
 	var parts: Array[String] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		state.begin_day(map.block_plans, day)

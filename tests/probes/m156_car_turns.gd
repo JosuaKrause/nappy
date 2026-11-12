@@ -77,7 +77,7 @@ func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	for index in bodies.size():
 		var body: Dictionary = bodies[index]
 		var segment := map.network.segment_containing(body["at"])
-		if segment != null and map.is_held(segment):
+		if segment != null and map.held_streets().has(segment.key()):
 			segment_owner[segment.key()] = index
 
 	var at := map.doorstep_world_position()

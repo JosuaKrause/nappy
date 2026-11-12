@@ -3,8 +3,8 @@ extends RefCounted
 ## from the home, on industrial ground where the city has it, with a front door on a real street.
 ##
 ## `docs/CITY.md`, "The power station", is the design; `CityGenerator._place_power_station` is the
-## placement and `CityGenerator.validate()` the second opinion. This suite asks the cities that come
-## out, across a spread of seeds, rather than trusting either.
+## placement and `CityGenerator.validation_problems()` the second opinion. This suite asks the
+## cities that come out, across a spread of seeds, rather than trusting either.
 
 ## Seeds for the generation sweep. Generation is a quarter of a second a city and the guarantee is a
 ## per-seed refusal whose failures would be one-seed-in-many arrangements, so the sweep is wide.
@@ -41,8 +41,9 @@ func run(t: TestRunner) -> void:
 ## the rolled count still bounds the lot, and the station is the pair `power_station` names.
 func _test_every_city_has_exactly_one(t: TestRunner) -> void:
 	for map in _maps:
-		t.check(CityGenerator.validate(map) == "",
-				"seed %d: the city passes validation (%s)" % [map.seed_used, CityGenerator.validate(map)])
+		var problems := CityGenerator.validation_problems(map)
+		t.check(problems.is_empty(),
+				"seed %d: the city passes validation (%s)" % [map.seed_used, problems])
 		t.check(map.has_power_station(), "seed %d has a power station" % map.seed_used)
 		var matching := 0
 		for pair in map.big_buildings:
@@ -360,7 +361,8 @@ func _test_the_stacks_stand_in_the_entities_depth_order(t: TestRunner) -> void:
 func _test_the_hall_is_lit_only_on_the_last_night(t: TestRunner) -> void:
 	var hall := Building.new()
 	var front := RecordingFrontDrawer.new()
-	hall.front_drawer = front
+	var atlas := AtlasLibrary.new()
+	hall.equip(atlas, RoofDrawer.new(atlas), front)
 	hall.power_station = true
 	hall.station_door_col = 3
 	hall.station_yard_cols = Vector2i(14, 8)
@@ -368,6 +370,9 @@ func _test_the_hall_is_lit_only_on_the_last_night(t: TestRunner) -> void:
 	hall.day = Tuning.POWER_STATION_DAY
 	hall.powered = true
 	t.add_child(hall)
+	# Equipped as the city equips it, the hall waits for the residency, which stands a building in
+	# view up.
+	hall.residence().set_resident(true)
 	await UI.frames(t, 2)
 	var band := _clerestory_band(front)
 	var columns := hall.hall_cols().y - hall.hall_cols().x

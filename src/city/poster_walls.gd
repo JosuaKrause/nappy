@@ -134,16 +134,16 @@ var _run: RunState = null
 var posters: PosterState = null
 ## The torn pictures the fronts draw their sheets through, handed in by the city before `setup()` and
 ## on to every front (`Building.poster_art`).
-var art := PosterArt.new()
+var _art := PosterArt.new()
 ## The baked atlas pages the city draws from (`AtlasLibrary`), handed in by the city before
 ## `setup()`: the torn sheets are composed from its `buildings` page.
 var atlas: AtlasLibrary = null
 
 ## Hands the walls what they write to, what they take art from and what they draw from, before
-## `setup()`. See `trace`, `art` and `atlas`.
+## `setup()`. See `trace`, `_art` and `atlas`.
 func equip(sink: RunTrace, poster_art: PosterArt, library: AtlasLibrary) -> void:
 	trace = sink
-	art = poster_art
+	_art = poster_art
 	atlas = library
 
 ## The bag the run's tears draw from, rebuilt from `PosterState.tears` whenever it disagrees with
@@ -179,9 +179,9 @@ func setup(buildings: Array[Building], map: CityMap, run: RunState) -> void:
 			continue
 		for i in tiles.size():
 			_by_tile[tiles[i]] = Vector2i(_walls.size(), i)
-		building.poster_art = art
+		building.poster_art = _art
 		_walls.append({"building": building, "cols": cols, "tiles": tiles})
-	art.prepare(atlas)
+	_art.prepare(atlas)
 
 ## Whether `tile` is the sidewalk directly in front of a building's front: the frontage lane of an
 ## east-west street's north sidewalk, with the building's lot just north of it. A lot's south edge

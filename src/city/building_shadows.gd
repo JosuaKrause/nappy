@@ -63,15 +63,15 @@ var drawer: ShadowDrawer
 
 ## `--skip shadows`, handed in by the city before it builds. It controls drawing only: shadow
 ## geometry is still prepared per nearby chunk and reconstructed when a chunk returns.
-var skip_draw := false
+var _skip_draw := false
 
 ## Lays the shaded tiles through `through` (see `drawer`).
 func draw_through(through: ShadowDrawer) -> void:
 	drawer = through
 
-## Draws no shadows when `skipped` (see `skip_draw`).
+## Draws no shadows when `skipped` (see `_skip_draw`).
 func skip_drawing(skipped: bool) -> void:
-	skip_draw = skipped
+	_skip_draw = skipped
 
 ## Stores `rects` — a city's building footprints, in tile coordinates
 ## (`CityMap.building_rects`) — as the source for shadow geometry. Non-streamed use also computes
@@ -214,6 +214,6 @@ static func _compute(rects: Array[Rect2i]) -> Tiles:
 func _draw_chunk(canvas: CanvasItem, tiles: Tiles) -> void:
 	# `--skip shadows`'s own probe (docs/DECISIONS.md, M124, "the desktop half", row (c)): no chunk
 	# draws anything, so a frame under the flag differs from an ordinary one by drawing alone.
-	if skip_draw:
+	if _skip_draw:
 		return
 	drawer.draw(canvas, tiles)

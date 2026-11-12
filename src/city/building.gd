@@ -44,7 +44,7 @@ const TILE := float(Tuning.TILE_SIZE)
 ## of the wall in this projection, which is ground she may step a little way into rather than a
 ## wall she stops a tile short of. *(2026-09-11, the player, PLAYTEST-57.md: "also allow going in
 ## a little bit for northern edges of roofs.")* 6px, pinned here and open to overturn. The south
-## edge is untouched: `_rebuild()` shrinks `shape.half_extents.y` by half of this and shifts the
+## edge is untouched: `_rebuild()` shrinks `_shape.half_extents.y` by half of this and shifts the
 ## shape's centre south by the same half, so the south edge (the lot's own kerb, where the
 ## building meets the street) stays exactly where it was.
 const NORTH_EDGE_INSET := 6.0
@@ -507,18 +507,15 @@ var posters: Dictionary = {}:
 ## Whether the neighbor has been taken, which draws this front's wanted notices with her face
 ## crossed out (`PosterArt.texture_for()`). Handed over with `posters` by `PosterWalls.refresh()`,
 ## which asks the run; a front holds no run of its own.
-var neighbor_taken := false:
-	set(value):
-		neighbor_taken = value
-		queue_redraw()
+var _neighbor_taken := false
 
 ## Equips the building before the city adds it: its atlas and the roof and front drawers it draws
 ## through. The city registers it with the scenery itself, so it is not resident on its own
-## (`residence()`). See `atlas`, `roof_drawer` and `front_drawer`.
+## (`residence()`). See `atlas`, `_roof_drawer` and `_front_drawer`.
 func equip(library: AtlasLibrary, roofs: RoofDrawer, fronts: FrontDrawer) -> void:
 	atlas = library
-	roof_drawer = roofs
-	front_drawer = fronts
+	_roof_drawer = roofs
+	_front_drawer = fronts
 	_residence = _new_residence(false)
 
 ## Sizes the building to its lot before the city adds it: `size` px wide and deep, `with_variant`
@@ -562,9 +559,9 @@ func put_roof_objects_in(parent: Node2D) -> void:
 	roof_object_parent = parent
 
 ## Hands this front the cells it draws and whether the neighbor was taken (see `posters` and
-## `neighbor_taken`): `PosterWalls.refresh()`'s one hand-over.
+## `_neighbor_taken`): `PosterWalls.refresh()`'s one hand-over, which redraws the front.
 func hand_over_posters(cells: Dictionary, taken: bool) -> void:
-	neighbor_taken = taken
+	_neighbor_taken = taken
 	posters = cells
 
 @export var condition := Condition.LIVED_IN:
@@ -612,7 +609,7 @@ var lot := Rect2i()
 ## can still reassign it. Read for its body alone: the one-tile shadow every building casts is
 ## computed from the whole city's lot rectangles at once (`BuildingShadows`, so two buildings that
 ## share an edge shade as one), not from this shape.
-var shape: GroundShape
+var _shape: GroundShape
 
 var _collision: CollisionShape2D
 ## Identity and frontage facts remain live for collision and poster placement. Only windows,
@@ -668,12 +665,12 @@ var roof_object_parent: Node2D
 ## handed by the city before the building enters the tree, the same one to every building it
 ## builds; a building nobody handed one makes its own over its `atlas` when it first enters the
 ## tree.
-var roof_drawer: RoofDrawer = null
+var _roof_drawer: RoofDrawer = null
 ## What the front's pictures are painted through (`FrontDrawer`), one call per picture `_draw()`
 ## puts on the wall and the roof: handed by the city before the building enters the tree, the same
 ## one to every building it builds; a building nobody handed one makes its own over its `atlas`
 ## when it first enters the tree.
-var front_drawer: FrontDrawer = null
+var _front_drawer: FrontDrawer = null
 ## The baked atlas pages this front draws from (`AtlasLibrary`), handed by the city before the
 ## building enters the tree and handed on to its roof objects; a building nobody handed one (a
 ## suite's) makes its own when it first enters the tree.
@@ -686,10 +683,10 @@ var atlas: AtlasLibrary = null
 func _enter_tree() -> void:
 	if atlas == null:
 		atlas = AtlasLibrary.new()
-	if roof_drawer == null:
-		roof_drawer = RoofDrawer.new(atlas)
-	if front_drawer == null:
-		front_drawer = FrontDrawer.new(atlas)
+	if _roof_drawer == null:
+		_roof_drawer = RoofDrawer.new(atlas)
+	if _front_drawer == null:
+		_front_drawer = FrontDrawer.new(atlas)
 	atlas.acquire(&"buildings")
 
 func _exit_tree() -> void:
@@ -719,14 +716,14 @@ func _rebuild() -> void:
 	# Collision is the whole lot, including the strip the roof is drawn over, so the player
 	# can never walk into the space the building's mass occupies on screen — except a few pixels
 	# of the north edge, `NORTH_EDGE_INSET`, ground she may step into rather than a wall she stops
-	# a tile short of. Built from `shape` rather than a `RectangleShape2D` sized separately, so the
+	# a tile short of. Built from `_shape` rather than a `RectangleShape2D` sized separately, so the
 	# body and the shape cannot disagree. The south-north half-extent shrinks by half the inset and
 	# the shape's centre (`_collision.position`) shifts south by the same half, which is what keeps
 	# the south edge — the lot's own kerb — exactly where it was.
 	var depth := maxf(footprint.y - NORTH_EDGE_INSET, TILE)
-	shape = GroundShape.rect(Vector2(footprint.x * 0.5, depth * 0.5))
-	_collision.shape = shape.collision_shape()
-	_collision.position = Vector2(0.0, -shape.rect_half_extents().y)
+	_shape = GroundShape.rect(Vector2(footprint.x * 0.5, depth * 0.5))
+	_collision.shape = _shape.collision_shape()
+	_collision.position = Vector2(0.0, -_shape.rect_half_extents().y)
 	_build_front()
 	_build_entrance()
 	if _residence.is_resident():
@@ -1100,7 +1097,7 @@ func _draw() -> void:
 			if _is_covered(col):
 				continue
 			var at := _cell(col, row)
-			front_drawer.paint(self, WALL, at, wall_colour)
+			_front_drawer.paint(self, WALL, at, wall_colour)
 			if _draws_window_at(row, col):
 				var index := row * cols + col
 				var window_at := at
@@ -1108,16 +1105,16 @@ func _draw() -> void:
 					# A 36px storefront or door rises four pixels into this row; lift every upper
 					# window two pixels so its sill remains visible, the whole row alike.
 					window_at.y -= 2.0
-				front_drawer.paint(self, window_texture(index), window_at)
+				_front_drawer.paint(self, window_texture(index), window_at)
 				if col == neighbor_window_col and row == neighbor_window_row():
-					front_drawer.paint(self, NEIGHBOR_WINDOW_SEALED, window_at)
+					_front_drawer.paint(self, NEIGHBOR_WINDOW_SEALED, window_at)
 			if col == hall.x:
-				front_drawer.paint(self, WALL_EDGE_W, at)
+				_front_drawer.paint(self, WALL_EDGE_W, at)
 			if col == hall.y - 1:
-				front_drawer.paint(self, WALL_EDGE_E, at)
+				_front_drawer.paint(self, WALL_EDGE_E, at)
 			# With no roof at all, the parapet is what stops the wall.
 			if roof_rows == 0 and row == wall_rows - 1:
-				front_drawer.paint(self, ROOF_EDGE_N, at)
+				_front_drawer.paint(self, ROOF_EDGE_N, at)
 
 	# Ground-floor substitutions are drawn after every wall cell, so a 64px storefront cannot be
 	# painted over by the neighboring half of its pair. A 36px source is offset four pixels north
@@ -1127,7 +1124,7 @@ func _draw() -> void:
 		var ground_name := _ground_floor_texture(col)
 		if ground_name != &"":
 			var y_offset := TILE - atlas.region(ground_name).get_height()
-			front_drawer.paint(self, ground_name, _cell(col, 0) + Vector2(0.0, y_offset))
+			_front_drawer.paint(self, ground_name, _cell(col, 0) + Vector2(0.0, y_offset))
 
 	_draw_posters()
 	_draw_front_overlay()
@@ -1144,16 +1141,16 @@ func _draw() -> void:
 			if row >= roof_rows + _extension_rows(col):
 				continue
 			var at := _cell(col, wall_rows + row)
-			front_drawer.paint(self, ROOF, at, roof_colour)
+			_front_drawer.paint(self, ROOF, at, roof_colour)
 			var edges := _roof_cell_edges(col, row)
 			if edges & ROOF_EDGE_BIT_S:
-				front_drawer.paint(self, _front_parapet_texture(col), at)
+				_front_drawer.paint(self, _front_parapet_texture(col), at)
 			if edges & ROOF_EDGE_BIT_N:
-				front_drawer.paint(self, ROOF_EDGE_N, at)
+				_front_drawer.paint(self, ROOF_EDGE_N, at)
 			if edges & ROOF_EDGE_BIT_W:
-				front_drawer.paint(self, ROOF_EDGE_W, at)
+				_front_drawer.paint(self, ROOF_EDGE_W, at)
 			if edges & ROOF_EDGE_BIT_E:
-				front_drawer.paint(self, ROOF_EDGE_E, at)
+				_front_drawer.paint(self, ROOF_EDGE_E, at)
 
 	if _station_layer != null:
 		_station_layer.queue_redraw()
@@ -1208,14 +1205,14 @@ func _draw_station_facade(wall_rows: int, hall: Vector2i) -> void:
 			var tile := POWER_STATION_WALL
 			if row == 0:
 				tile = POWER_STATION_BASE
-			front_drawer.paint(self, tile, at)
+			_front_drawer.paint(self, tile, at)
 	if has_band:
 		var band := _clerestory_texture()
 		for col in range(hall.x, hall.y):
-			front_drawer.paint(self, band, _cell(col, wall_rows - 1))
+			_front_drawer.paint(self, band, _cell(col, wall_rows - 1))
 	for row in wall_rows:
-		front_drawer.paint(self, WALL_EDGE_W, _cell(hall.x, row))
-		front_drawer.paint(self, WALL_EDGE_E, _cell(hall.y - 1, row))
+		_front_drawer.paint(self, WALL_EDGE_W, _cell(hall.x, row))
+		_front_drawer.paint(self, WALL_EDGE_E, _cell(hall.y - 1, row))
 
 ## The hall's high windows: dimly lit on the last night while the city still has power, unlit
 ## otherwise. The last night only, because that is the night the hall is watched going out — the
@@ -1247,7 +1244,7 @@ func _draw_station_yard(hall: Vector2i, canvas: CanvasItem = self) -> void:
 	var left := _cell(station_yard_cols.x, 0).x
 	var foot := Vector2(left + station_yard_cols.y * TILE * 0.5, 0.0)
 	var mirrored := station_yard_cols.x < hall.x
-	front_drawer.stand(canvas, POWER_STATION_YARD, foot, mirrored)
+	_front_drawer.stand(canvas, POWER_STATION_YARD, foot, mirrored)
 
 ## Where the power station's stacks stand, in this building's own coordinates: the foot of each, at
 ## its roof cell's bottom centre (`_STACK_CELLS`, clamped to the hall and its roof). Empty for every
@@ -1377,11 +1374,11 @@ func _draw_posters() -> void:
 		var over := Vector2.ZERO
 		if int(cell["under"]) != PosterState.NONE:
 			draw_texture(poster_art.texture_for(atlas, int(cell["under"]), int(cell["under_tear"]),
-					neighbor_taken),
+					_neighbor_taken),
 					at + PosterArt.UNDER_OFFSET * Vector2(side, 1.0))
 			over = PosterArt.OVER_OFFSET * Vector2(side, 1.0)
-		draw_texture(poster_art.texture_for(atlas, int(cell["kind"]), int(cell["tear"]), neighbor_taken),
-				at + over)
+		draw_texture(poster_art.texture_for(atlas, int(cell["kind"]), int(cell["tear"]),
+				_neighbor_taken), at + over)
 
 ## The column(s) `civic_portico.svg` actually paints over, read back from `_cell()` rather than
 ## assumed: the portico is a fixed 32px overlay centred on the facade (`_draw_front_overlay()`),
@@ -1422,14 +1419,14 @@ func _draw_front_overlay() -> void:
 	var door_col := _entrance_door_col()
 	if door_col >= 0:
 		var door_x := _cell(door_col, 0).x + TILE * 0.5
-		front_drawer.stand(self, _entrance_door_texture(), Vector2(door_x, 0.0))
+		_front_drawer.stand(self, _entrance_door_texture(), Vector2(door_x, 0.0))
 	if not _fire_escape_cols.is_empty():
 		_draw_fire_escape()
 	if _portico_is_drawn():
-		front_drawer.stand(self, CIVIC_PORTICO, Vector2(0.0, 0.0))
+		_front_drawer.stand(self, CIVIC_PORTICO, Vector2(0.0, 0.0))
 	if power_station:
 		var x := _cell(station_door_col, 0).x + TILE * CityMap.POWER_STATION_DOOR_TILES * 0.5
-		front_drawer.stand(self, POWER_STATION_DOOR, Vector2(x, 0.0))
+		_front_drawer.stand(self, POWER_STATION_DOOR, Vector2(x, 0.0))
 
 ## The rows whose floor line carries one of this front's fire-escape balconies, lowest first, or
 ## empty for a front with none. The same rows for every escape the front has — a floor's height
@@ -1476,7 +1473,7 @@ func _draw_fire_escape() -> void:
 		for i in range(landings.size() - 1, -1, -1):
 			var row := landings[i]
 			var foot := Vector2(x, _cell(col, row - 1).y + TILE)
-			front_drawer.stand(self, _fire_escape_texture(col, row), foot)
+			_front_drawer.stand(self, _fire_escape_texture(col, row), foot)
 
 # ------------------------------------------------------------- roof furniture ---
 
@@ -1491,7 +1488,7 @@ func _build_roof_furniture() -> void:
 
 ## Where this building's roof units stand and what each one shows, farthest (highest row) first,
 ## so they draw back to front: the layout its roof layers draw (`_prepare_scenery()` caches it and
-## `_build_roof_layers()` hands each unit to the `roof_drawer`). One entry per unit:
+## `_build_roof_layers()` hands each unit to the `_roof_drawer`). One entry per unit:
 ## `{"cell": Vector2i, "cells": Array[Vector2i], "span": int, "kind": _Furniture, "texture":
 ## StringName}`, and on a duct section `"links"`, its west, east, south and north neighbours as
 ## bits 0 to 3. `cell` is the west cell of the unit's base, `cells` every roof cell its base
@@ -1698,7 +1695,7 @@ static func _shuffle(cells: Array[Vector2i], rng: RandomNumberGenerator) -> void
 		cells[i] = cells[j]
 		cells[j] = tmp
 
-## Hands each unit of the cached roof layout to the `roof_drawer`, foot first: a unit stands
+## Hands each unit of the cached roof layout to the `_roof_drawer`, foot first: a unit stands
 ## centred across its span of columns with its foot on the floor line of its cell's row. A live
 ## City supplies `roof_object_parent`, so each roof unit becomes a feet-anchored entity and
 ## y-sorts against street actors. A standalone fixture parents the same visual-only objects to the
@@ -1714,7 +1711,7 @@ func _build_roof_layers() -> void:
 		var anchor := at + Vector2(TILE * span * 0.5, TILE)
 		# The picture comes from `kind`, not the entry's `texture`: the roof preview rig
 		# (`src/dev/roof_network_preview.gd`) writes cache entries of its own that carry no texture.
-		var object := roof_drawer.draw(parent, cell, _furniture_texture(entry["kind"]),
+		var object := _roof_drawer.draw(parent, cell, _furniture_texture(entry["kind"]),
 				parent.to_local(to_global(anchor)) if parent != self else anchor,
 				entry.get("links", -1), _vent_frame_b)
 		_roof_objects.append(object)

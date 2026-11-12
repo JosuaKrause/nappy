@@ -99,8 +99,8 @@ func _test_a_map_with_no_calm_ground_says_none(t: TestRunner) -> void:
 	t.check(map.calm_blocks_now().is_empty() and map.calm_summary(CityState.new()) == "none",
 			"a map with no calm blocks summarizes its calm ground as none")
 
-## The copy of a generated city is one `CityGenerator.validate()` passes, every guarantee of it: the
-## calm blocks, the home, the routes to the parks.
+## The copy of a generated city is one `CityGenerator.validation_problems()` passes, every guarantee
+## of it: the calm blocks, the home, the routes to the parks.
 func _test_a_copy_keeps_the_generators_guarantees(t: TestRunner, original: CityMap, seed_value: int) -> void:
 	var problems := CityGenerator.validation_problems(original.copy())
 	t.check(problems.is_empty(), "seed %d: the copy passes every guarantee (%s)" % [seed_value, problems])
@@ -311,8 +311,8 @@ func _answers(map: CityMap) -> Dictionary:
 	var segments := []
 	for segment in map.street_network().segments():
 		var key := segment.key()
-		segments.append([key, map.has_street(key), map.is_hard_blocker(key), map.is_held(segment),
-				RegionPlanner.ground_region_of(map, segment)])
+		segments.append([key, map.has_street(key), map.is_hard_blocker(key),
+				map.held_streets().has(key), RegionPlanner.ground_region_of(map, segment)])
 	found["segments"] = segments
 	var corridors := []
 	for corridor in Tuning.CITY_BLOCKS.x + 1:

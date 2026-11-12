@@ -322,13 +322,18 @@ func _test_a_built_building_carries_its_own_footprint_as_its_body(t: TestRunner)
 	var building := Building.new()
 	building.footprint = footprint
 	t.add_child(building)
-	t.check(building.shape != null and building.shape.kind == GroundShape.Kind.RECT,
-			"a built building's own shape is a rectangle")
-	t.check(is_equal_approx(building.shape.half_extents.x, footprint.x * 0.5),
+	# The body the physics engine reads: the building's collision child.
+	var body: RectangleShape2D = null
+	for child in building.get_children():
+		if child is CollisionShape2D:
+			body = (child as CollisionShape2D).shape as RectangleShape2D
+	t.check(body != null, "a built building's body is a rectangle")
+	var size := body.size if body != null else Vector2.ZERO
+	t.check(is_equal_approx(size.x, footprint.x),
 			"sized off its own footprint on the east-west axis, unchanged")
 	var inset_depth := footprint.y - Building.NORTH_EDGE_INSET
-	t.check(is_equal_approx(building.shape.half_extents.y, inset_depth * 0.5),
-			"the north-south half-extent is the footprint's, short by the north edge's own inset")
+	t.check(is_equal_approx(size.y, inset_depth),
+			"the north-south extent is the footprint's, short by the north edge's own inset")
 	await PhysicsTicks.pass_ticks(t, 1)
 	# The world's answer for the body, asked at probes off each edge: x from the node's centre, y
 	# up from its south edge (negative is north).

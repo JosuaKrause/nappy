@@ -14,13 +14,15 @@ func run(t: TestRunner) -> void:
 	await _test_water_surfaces(t)
 
 ## A roof that is told what to stand through a recording drawer (`tests/recording_roof_drawer.gd`,
-## standing each unit for real so a vent has its rotor), and whose own process frames run in the
-## tree. Its rotors are read off the units it was told to stand (`RoofObject.rotor`), never off what
-## the building holds, and the picture each rotor stands off the scenery drawer the real roof drawer
-## hands every rotor (`tests/recording_scenery_drawer.gd`), as the city hands its own. Time is the engine's `time_scale`, which scales the delta the building's
-## process frame is given: a frame at a hundredth of its length cannot reach the interval, and one at
-## a hundred thousand times its length always crosses it, so no check depends on how long a frame
-## takes.
+## standing each unit for real so a vent has its rotor), handed in as the city hands its own
+## (`Building.equip()`), and whose own process frames run in the tree. Its rotors are read off the
+## units it was told to stand (`RoofObject.rotor`), never off what the building holds, and the
+## phase each rotor shows is the picture it stands, read off the scenery drawer the real roof drawer
+## hands every rotor (`tests/recording_scenery_drawer.gd`), as the city hands its own. Its body is
+## the collision shape it stands, which the physics engine reads. Time is the engine's
+## `time_scale`, which scales the delta the building's process frame is given: a frame at a
+## hundredth of its length cannot reach the interval, and one at a hundred thousand times its length
+## always crosses it, so no check depends on how long a frame takes.
 func _test_roof_rotors(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	var pages := PageLog.new(atlas)
@@ -28,35 +30,37 @@ func _test_roof_rotors(t: TestRunner) -> void:
 	var scenery := RecordingSceneryDrawer.new()
 	drawer.real = RoofDrawer.new(atlas, scenery)
 	var building := Building.new()
-	building.atlas = atlas
-	building.roof_drawer = drawer
+	building.equip(atlas, drawer, FrontDrawer.new(atlas))
 	building.footprint = Vector2(256, 256)
 	building.height = 64
 	building.district = GameEnums.BlockPurpose.INDUSTRIAL
 	t.add_child(building)
+	# Equipped as the city equips it, the building waits for the residency, which stands a building
+	# in view up.
+	building.residence().set_resident(true)
 	for variant in 200:
 		if not _rotors(drawer).is_empty():
 			break
 		building.variant = variant + 1
 	t.check(not _rotors(drawer).is_empty(), "the roof fixture actually has moving vents")
-	var shape := building.shape
+	var body := _collision_shape(building)
 	var drawn := drawer.draws.size()
 	var objects: Array[Building.RoofObject] = []
 	for entry in drawer.standing():
 		objects.append(entry.object)
 	var rotors := _rotors(drawer)
-	var first_phase: bool = rotors[0].frame_b
 	t.check(building.is_processing(), "a roof with a vent takes its process frames")
 	var clock := Engine.time_scale
 	Engine.time_scale = 0.01
+	# The rotors are drawn on the frame they were stood up in.
+	await t.get_tree().process_frame
+	var first_phase := _picture_on(scenery, rotors[0]) == _rotor_picture(atlas, true)
 	for frame in 3:
-		await t.get_tree().process_frame
+		if frame > 0:
+			await t.get_tree().process_frame
 		for rotor in _rotors(drawer):
-			t.check(rotor.frame_b == first_phase,
-					"rotor holds its first phase until the existing interval")
-	for rotor in rotors:
-		t.check(_picture_on(scenery, rotor) == _rotor_picture(atlas, first_phase),
-				"a rotor stands the picture of its first phase")
+			t.check(_picture_on(scenery, rotor) == _rotor_picture(atlas, first_phase),
+					"a rotor stands the picture of its first phase until the existing interval")
 	Engine.time_scale = clock
 	# The frame after this one is given a delta a hundred thousand times its length, so it crosses
 	# the interval once; the scale is back before the frame after that.
@@ -65,21 +69,20 @@ func _test_roof_rotors(t: TestRunner) -> void:
 	Engine.time_scale = clock
 	await t.get_tree().process_frame
 	var turned := _rotors(drawer)
-	t.check(turned[0].frame_b != first_phase,
+	t.check(_picture_on(scenery, turned[0]) == _rotor_picture(atlas, not first_phase),
 			"the building's own process frames turn its rotors once the interval has passed")
-	var phase: bool = turned[0].frame_b
+	var phase := not first_phase
 	for rotor in turned:
-		t.check(rotor.frame_b == phase, "the small rotors advance together")
 		# One of the two phases is the alternate frame, so between this and the first phase's check
 		# every rotor has stood both its pictures.
 		t.check(_picture_on(scenery, rotor) == _rotor_picture(atlas, phase),
-				"the turned rotor stands the picture of its new phase, drawn again on the turn")
+				"the small rotors advance together, each drawn again on the turn with its new picture")
 	for object in objects:
 		if object.texture_key != Building.VENT_HOUSING:
 			t.check(object.get_child_count() == 0,
 					"stationary roof objects own no independently redrawn child")
 	t.check(drawer.draws.size() == drawn, "animation does not redraw or reroll the roof's furniture")
-	t.check(building.shape == shape, "animation does not rebuild collision")
+	t.check(_collision_shape(building) == body, "animation does not rebuild collision")
 	# A rebuild from the property the city's own height and footprint changes assign.
 	building.footprint = building.footprint
 	for object in objects:
@@ -87,11 +90,13 @@ func _test_roof_rotors(t: TestRunner) -> void:
 	t.check(drawer.standing().size() == objects.size()
 			and drawer.draws.size() == drawn + objects.size(),
 			"rebuild draws the roof again, once")
-	for rotor in _rotors(drawer):
-		t.check(rotor.frame_b == phase, "rebuilding the roof preserves the current phase")
 	for entry in drawer.standing():
 		if entry.texture == Building.VENT_HOUSING:
 			t.check(entry.rotor_frame_b == phase, "the rebuilt roof is told the current phase")
+	await _a_still_frame(t)
+	for rotor in _rotors(drawer):
+		t.check(_picture_on(scenery, rotor) == _rotor_picture(atlas, phase),
+				"rebuilding the roof preserves the current phase")
 	var old_rotor: WeakRef = weakref(atlas.region(Building.VENT_ROTOR))
 	t.remove_child(building)
 	t.check(drawer.standing().is_empty(),
@@ -100,13 +105,30 @@ func _test_roof_rotors(t: TestRunner) -> void:
 		t.check(old_rotor.get_ref() == null, "the last building retains no atlas texture after exit")
 	t.add_child(building)
 	var reentered := _rotors(drawer)
-	t.check(not reentered.is_empty() and reentered[0].frame_b == phase,
+	await _a_still_frame(t)
+	t.check(not reentered.is_empty()
+			and _picture_on(scenery, reentered[0]) == _rotor_picture(atlas, phase),
 			"reentry acquires fresh regions and preserves the animation phase")
 	building.footprint = Vector2(32, 32)
 	t.check(_rotors(drawer).is_empty() and not building.is_processing(),
 			"a roof without vents releases them and stops its animation callback")
 	building.free()
 	pages.stop()
+
+## One process frame at a hundredth of its length, which no rotor's interval fits in, so what was
+## stood up before it is drawn and nothing turns while it passes.
+func _a_still_frame(t: TestRunner) -> void:
+	var clock := Engine.time_scale
+	Engine.time_scale = 0.01
+	await t.get_tree().process_frame
+	Engine.time_scale = clock
+
+## The shape of `building`'s body as the physics engine reads it, its collision child's.
+func _collision_shape(building: Building) -> Shape2D:
+	for child in building.get_children():
+		if child is CollisionShape2D:
+			return (child as CollisionShape2D).shape
+	return null
 
 ## The turning rotor of every vent the drawer was told to stand and the building has not released.
 func _rotors(drawer: RecordingRoofDrawer) -> Array[SceneryLayer]:
@@ -170,24 +192,28 @@ func _test_event_parts(t: TestRunner) -> void:
 			await t.get_tree().process_frame
 			instance.step(instance.def.telegraph_time + 0.01)
 			var sceneries := _sceneries_of(instance)
+			var first_ask := instance.look.redraw_if_the_picture_changed()
+			# The layers are drawn on the frame after they are made.
+			await t.get_tree().process_frame
 			var moving: Array[SceneryLayer] = []
 			var still: Array[SceneryLayer] = []
+			# The instance's own process frame shows its clock's frame on every scenery, so it is
+			# held while each frame is shown in turn.
+			instance.set_process(false)
 			for scenery: EventScenery in sceneries:
-				var split := _split_by_animation(scenery)
+				var split: Array = await _split_by_animation(t, scenery, laid)
 				moving.append_array(split[0])
 				still.append_array(split[1])
+			instance.set_process(true)
 			t.check(sceneries.size() > 1 and not moving.is_empty(),
 					"%s/%s has independently moving detail across its slices" % [id, vertical])
 			var body := _body_of(instance)
 			var centers := instance.solid_part_centres()
 			t.check(body != null and instance.is_solid(), "%s/%s stands a solid body" % [id, vertical])
-			t.check(instance.look.redraw_if_the_picture_changed(),
+			t.check(first_ask,
 					"the event's first drawn frame asks for its draw, so the gate is live for the check below")
-			var initial: bool = moving[0].frame_b
 			var period := EventPictures.CAR_ACCIDENT_SMOKE_PERIOD if id == "car_accident" \
 					else EventPictures.BURST_MAIN_SPLASH_PERIOD
-			# The layers are drawn on the frame after they are made.
-			await t.get_tree().process_frame
 			var before := {}
 			for layer: SceneryLayer in moving + still:
 				before[layer] = _pictures_on(laid, layer)
@@ -196,18 +222,19 @@ func _test_event_parts(t: TestRunner) -> void:
 			var asked := instance.look.redraw_if_the_picture_changed()
 			await t.get_tree().process_frame
 			for layer in moving:
-				t.check(layer.frame_b != initial, "the existing event clock advances each detail")
 				var turned := _pictures_on(laid, layer)
 				var earlier: Array[Texture2D] = before[layer]
 				t.check(not turned.is_empty() and turned.size() == earlier.size()
 						and _all_differ(turned, earlier),
-						"every moving detail stands its alternate picture once its frame flips")
-			# Nothing flips a stationary layer's frame; flipped here through the member its scenery
-			# flips a moving one's by, it is drawn again with the same pictures.
+						"the existing event clock advances each detail: every moving detail stands"
+						+ " its alternate picture once its frame flips")
+			# Nothing flips a stationary layer's frame, so each shows its first; turned to its
+			# alternate here through the call its scenery turns a moving one's with, it is drawn
+			# again with the same pictures.
 			var passes := {}
 			for layer in still:
 				passes[layer] = laid.passes_of(layer)
-				layer.frame_b = not layer.frame_b
+				layer.show_frame_b(true)
 			await t.get_tree().process_frame
 			for layer in still:
 				var earlier: Array[Texture2D] = before[layer]
@@ -215,7 +242,7 @@ func _test_event_parts(t: TestRunner) -> void:
 						and not earlier.is_empty()
 						and _pictures_on(laid, layer) == earlier,
 						"stationary surroundings have no alternate picture")
-				layer.frame_b = not layer.frame_b
+				layer.show_frame_b(false)
 			t.check(not asked, "animation leaves the static event key alone")
 			t.check(_body_of(instance) == body and instance.solid_part_centres() == centers,
 					"animation preserves both collision resource and placement")
@@ -235,10 +262,12 @@ func _test_event_parts(t: TestRunner) -> void:
 			t.add_child(instance)
 			await t.get_tree().process_frame
 			var rebound := false
+			instance.set_process(false)
 			for scenery in _sceneries_of(instance):
-				var split := _split_by_animation(scenery)
+				var split: Array = await _split_by_animation(t, scenery, laid)
 				var animated: Array = split[0]
 				rebound = rebound or not animated.is_empty()
+			instance.set_process(true)
 			t.check(rebound, "reentry rebinds event scenery regions")
 			var again := _sceneries_of(instance)
 			instance.free()
@@ -262,29 +291,35 @@ func _all_differ(a: Array[Texture2D], b: Array[Texture2D]) -> bool:
 			return false
 	return true
 
-## The scenery behind each of `instance`'s slices, in the slices' order.
-## The layers `scenery` holds as `[moving, still]`: the moving ones are the layers its `set_frame()`
-## turns to their alternate frame, the still ones the rest (its contact shadow and its static spans).
-## The frame it had is put back.
-func _split_by_animation(scenery: EventScenery) -> Array:
+## The layers `scenery` holds as `[moving, still]`: the moving ones are the layers whose pictures
+## its `set_frame()` turns to their alternate, read off what each stands through `laid`; the still
+## ones the rest (its contact shadow and its static spans). Each frame is shown and drawn in turn,
+## and the frame it showed is put back and drawn; the event's own process frame, which shows its
+## clock's frame, is held by the caller meanwhile.
+func _split_by_animation(t: TestRunner, scenery: EventScenery, laid: RecordingSceneryDrawer) -> Array:
 	var layers: Array[SceneryLayer] = []
 	for child in scenery.get_children():
 		if child is SceneryLayer:
 			layers.append(child)
 	var had := {}
 	for layer in layers:
-		had[layer] = layer.frame_b
+		had[layer] = _pictures_on(laid, layer)
 	scenery.set_frame(true)
-	var turned_on: Array[SceneryLayer] = []
-	turned_on.assign(layers.filter(func(l: SceneryLayer) -> bool: return l.frame_b))
+	await t.get_tree().process_frame
+	var on := {}
+	for layer in layers:
+		on[layer] = _pictures_on(laid, layer)
 	scenery.set_frame(false)
+	await t.get_tree().process_frame
 	var moving: Array[SceneryLayer] = []
-	moving.assign(turned_on.filter(func(l: SceneryLayer) -> bool: return not l.frame_b))
+	moving.assign(layers.filter(func(l: SceneryLayer) -> bool: return _pictures_on(laid, l) != on[l]))
 	var still: Array[SceneryLayer] = []
 	still.assign(layers.filter(func(l: SceneryLayer) -> bool: return not moving.has(l)))
-	scenery.set_frame(not moving.is_empty() and had[moving[0]])
+	scenery.set_frame(not moving.is_empty() and had[moving[0]] == on[moving[0]])
+	await t.get_tree().process_frame
 	return [moving, still]
 
+## The scenery behind each of `instance`'s slices, in the slices' order.
 func _sceneries_of(instance: EventInstance) -> Array[EventScenery]:
 	var found: Array[EventScenery] = []
 	for slice in (instance.look as SpreadLook).slices():
@@ -316,13 +351,11 @@ func _test_water_surfaces(t: TestRunner) -> void:
 	var ripples := water.material as ShaderMaterial
 	t.check(ripples != null and ripples.shader == SceneryWater.RIPPLE_SHADER,
 			"a surface with cells has the shared ripple shader")
-	var before := water.elapsed
+	var before := _ripple_clock(water)
 	await t.get_tree().process_frame
 	await t.get_tree().process_frame
-	t.check(water.elapsed > before and water.cells == cells,
+	t.check(_ripple_clock(water) > before and water.cells == cells,
 			"ripple time advances without repainting any ground cell")
-	t.check(float(ripples.get_shader_parameter("elapsed")) == water.elapsed,
-			"the shader's clock is the surface's")
 	water.configure(cells)
 	t.check(water.material != ripples
 			and (water.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
@@ -343,19 +376,22 @@ func _test_water_surfaces(t: TestRunner) -> void:
 			and (other.material as ShaderMaterial).shader
 			== (water.material as ShaderMaterial).shader,
 			"two water surfaces share the shader but keep independent materials")
-	t.check(other.elapsed > 0.0 and other.elapsed < water.elapsed
-			and float((other.material as ShaderMaterial).get_shader_parameter("elapsed"))
-			== other.elapsed,
+	t.check(_ripple_clock(other) > 0.0 and _ripple_clock(other) < _ripple_clock(water),
 			"two water surfaces keep independent animation clocks")
 	t.check(pages.held(&"ground"), "a surface holds the ground page while it stands")
+	var kept := _ripple_clock(other)
 	parent.remove_child(other)
 	t.check(other.material == null and not pages.held(&"ground"),
 			"detaching water releases its atlas region and shader material")
-	var kept := other.elapsed
 	parent.add_child(other)
-	t.check(pages.held(&"ground") and other.elapsed >= kept
+	t.check(pages.held(&"ground") and _ripple_clock(other) >= kept
 			and (other.material as ShaderMaterial).shader == SceneryWater.RIPPLE_SHADER,
 			"reentry rebinds the region and shared shader without resetting its clock")
 	other.free()
 	pages.stop()
 	parent.free()
+
+## Where `water`'s ripples are in their animation: the clock its shader is drawing with, what the
+## surface shows.
+func _ripple_clock(water: SceneryWater) -> float:
+	return float((water.material as ShaderMaterial).get_shader_parameter("elapsed"))

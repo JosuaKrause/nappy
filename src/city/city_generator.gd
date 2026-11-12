@@ -140,7 +140,7 @@ const MIN_BIG_BUILDINGS := 1
 
 ## The hard floor: this many blocks must still be calm on the last day. A day can only be
 ## won on calm ground, so an arc set that takes all of it makes an unwinnable run rather
-## than a hard one. `CityGenerator.validate()` enforces it.
+## than a hard one. `CityGenerator._validate()` enforces it.
 const MIN_CALM_BLOCKS_AT_END := 2
 
 ## How many of a city's calm areas are multi-block. At least one, because a city of nothing but
@@ -180,10 +180,10 @@ static func generate(seed_value: int) -> CityMap:
 	for attempt in MAX_ATTEMPTS:
 		var map := _attempt(seed_value + attempt)
 		last = map
-		if validate(map) == "":
+		if _validate(map) == "":
 			return map
 	push_warning("CityGenerator: no seed near %d satisfied every guarantee (%s)"
-			% [seed_value, validate(last)])
+			% [seed_value, _validate(last)])
 	return last
 
 static func _attempt(seed_value: int, choices: Dictionary = {}) -> CityMap:
@@ -527,8 +527,9 @@ static func home_block() -> Vector2i:
 ## the smallest `d` that clears the guarantee.
 ##
 ## It is a floor rather than the guarantee itself: walking distance is not straight-line, and the
-## home sits in the *south* edge of its block, so real distances come out longer. `validate()` still
-## checks the tile guarantee, which is what catches the case this approximation is wrong about.
+## home sits in the *south* edge of its block, so real distances come out longer. `_validate()`
+## still checks the tile guarantee, which is what catches the case this approximation is wrong
+## about.
 static func _too_near_the_home(footprint: Rect2i) -> bool:
 	var home := home_block()
 	var clearance := ceili(float(MIN_HOME_TO_PARK_TILES + Tuning.BLOCK_SIZE)
@@ -652,7 +653,7 @@ static func _record_zones(map: CityMap, purposes: Dictionary, zones: Dictionary)
 ## courtyard is hidden calm, but it is still one of the outlines on the map and still somewhere she
 ## can settle, so a court in the outer ring is a calm area at the edge of the map. The home
 ## clearance comes with it for a plainer reason: a courtyard is calm ground, so
-## `validate()`'s `MIN_HOME_TO_PARK_TILES` check can fail a whole city for one cut beside the front
+## `_validate()`'s `MIN_HOME_TO_PARK_TILES` check can fail a whole city for one cut beside the front
 ## door — refusing the block is cheaper than rolling the map again.
 static func _cut_courtyards(purposes: Dictionary, remaining: Array[Vector2i],
 		rng: RandomNumberGenerator, main_road: int, existing: int = 0) -> void:
@@ -795,11 +796,11 @@ static func _plan_arcs(map: CityMap, purposes: Dictionary,
 ## had planned anyway and the calm left at the end of the run is what `_plan_arcs()` decided. Only
 ## a city whose arcs take no park gives one a step of its own, `REQUISITIONED` from the task's day
 ## on `BlockCause.TAKEN`, which waits for her to reach the swing and happens on no other cause;
-## `validate()` then counts that park out of the calm that lasts, as it counts every requisition.
+## `_validate()` then counts that park out of the calm that lasts, as it counts every requisition.
 ##
 ## **Drawn from the seed without touching the generator's stream**, so every draw after this one
 ## lands where it always did: the candidates in the lattice's own order, one picked by the seed's
-## hash. A city with no park at all has no swing to send her to and `validate()` refuses it.
+## hash. A city with no park at all has no swing to send her to and `_validate()` refuses it.
 static func _plan_the_swing_park(map: CityMap) -> void:
 	var day := ResistanceSteps.swing_day()
 	if day <= 0:
@@ -1065,7 +1066,7 @@ static func _subtract(outer: Rect2i, hole: Rect2i) -> Array[Rect2i]:
 ##
 ## The `MIN_HOME_TO_PARK_TILES` distance guarantee is settled in `_assign_purposes` instead, by
 ## keeping calm ground away from the middle (`_too_near_the_home`) — so the guarantee holds because
-## of where calm ground is allowed to go, not because of where the home goes. `validate()` still
+## of where calm ground is allowed to go, not because of where the home goes. `_validate()` still
 ## checks it, because a clearance stated in blocks is an approximation of a guarantee stated in
 ## tiles.
 static func _place_home(map: CityMap, block_rects: Dictionary) -> void:
@@ -1289,7 +1290,7 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 # ------------------------------------------------------------- power station ---
 
 ## The one big building that is the power station, guaranteed on every city that passes
-## `validate()`. The last day's task is its front door, so what is guaranteed is not only that it
+## `_validate()`. The last day's task is its front door, so what is guaranteed is not only that it
 ## stands but where, and every clause is **checked when the footprint is accepted, never repaired
 ## afterwards**:
 ##
@@ -1317,7 +1318,7 @@ static func _place_big_buildings(map: CityMap, purposes: Dictionary, block_rects
 ## `INDUSTRIAL`, then one, then the pair nearest industrial ground — and the pool's own shuffle
 ## breaks ties, so a seed with an eligible industrial pair gets one.
 ##
-## A city where no candidate passes has no station, which `validate()` refuses, so `generate` rolls
+## A city where no candidate passes has no station, which `_validate()` refuses, so `generate` rolls
 ## the next seed — the failure direction every other guarantee here already has.
 static func _place_power_station(map: CityMap, purposes: Dictionary, block_rects: Dictionary,
 		home: StreetNetwork.Segment, areas: Array[ClosurePlanner.CalmArea], reference: RouteTree,
@@ -1623,7 +1624,7 @@ static func _wall_off_one_end(map: CityMap, segment: StreetNetwork.Segment,
 # --------------------------------------------------------------- validation ---
 
 ## Returns "" when the map satisfies every guarantee in docs/CITY.md, else why it does not.
-static func validate(map: CityMap) -> String:
+static func _validate(map: CityMap) -> String:
 	var problems := validation_problems(map, false)
 	return problems[0] if not problems.is_empty() else ""
 

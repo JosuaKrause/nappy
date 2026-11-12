@@ -41,15 +41,15 @@ func _test_a_bag_in_front_leaves_the_one_it_interrupted_as_it_was(t: TestRunner)
 	var bag := MarbleBag.new([], ordinary, 7)
 	var first: Array = [bag.draw(), bag.draw()]
 	bag.rig(["x", "y"], 2)
-	t.check(bag.sizes() == [2, 3], "the special bag is in front of the three marbles left (%s)"
-			% [bag.sizes()])
+	t.check(bag.left() == 2, "the special bag of two is in front (%d)" % bag.left())
 	var special: Array = [bag.draw(), bag.draw()]
 	special.sort()
 	t.check(special == ["x", "y"], "the special bag is drawn whole first (%s)" % [special])
+	t.check(bag.left() == 3, "and behind it are the three marbles left (%d)" % bag.left())
 	var rest: Array = first + [bag.draw(), bag.draw(), bag.draw()]
 	rest.sort()
 	t.check(rest == ordinary, "and the interrupted bag carries on with what it had left (%s)" % [rest])
-	t.check(bag.left() == 0 and bag.sizes().is_empty(), "every bag is empty after its last marble")
+	t.check(bag.left() == 0, "every bag is empty after its last marble")
 	t.check(ordinary.has(bag.draw()), "and an empty queue is filled with the ordinary set again")
 
 ## Rigging takes `x - 1` marbles out of the bag being drawn from and puts them, with the ensured one,
@@ -67,12 +67,16 @@ func _test_a_rig_makes_and_loses_no_marble_but_the_ensured_one(t: TestRunner) ->
 			var n := ordinary.size() - drawn_first
 			var before := bag.bag_in_front() if drawn_first > 0 else ordinary.duplicate()
 			bag.rig(["yeller"], x)
-			t.check(bag.sizes() == [x, n - x + 1],
-					"seed %d, %d drawn: the rig leaves a bag of %d and one of %d (%s)"
-					% [seed_value, drawn_first, x, n - x + 1, bag.sizes()])
+			var in_front := bag.left()
 			var after: Array = []
-			for _i in n + 1:
+			var behind := -1
+			for i in n + 1:
+				if i == x:
+					behind = bag.left()
 				after.append(bag.draw())
+			t.check(in_front == x and behind == n - x + 1,
+					"seed %d, %d drawn: the rig leaves a bag of %d and one of %d (%d, %d)"
+					% [seed_value, drawn_first, x, n - x + 1, in_front, behind])
 			var expected: Array = before + ["yeller"]
 			expected.sort()
 			var rigged := after.slice(0, x)
@@ -91,20 +95,35 @@ func _test_a_rig_bigger_than_the_ordinary_set_gets_its_size(t: TestRunner) -> vo
 	for seed_value: int in [1, 2, 3]:
 		var empty := MarbleBag.new([], ordinary, seed_value)
 		empty.rig(["x"], 4)
-		t.check(empty.sizes() == [4, 1],
+		var empty_sizes := _bag_sizes(empty)
+		t.check(empty_sizes == [4, 1],
 				"seed %d: a rig of 4 over an empty queue fills it twice and is a bag of 4 (%s)"
-				% [seed_value, empty.sizes()])
+				% [seed_value, empty_sizes])
 		var part_drawn := MarbleBag.new([], ordinary, seed_value)
 		part_drawn.draw()
 		part_drawn.rig(["x"], 4)
-		t.check(part_drawn.sizes() == [4],
+		var part_drawn_sizes := _bag_sizes(part_drawn)
+		t.check(part_drawn_sizes == [4],
 				"seed %d: a rig of 4 over one marble left fills one more bag and is a bag of 4 (%s)"
-				% [seed_value, part_drawn.sizes()])
+				% [seed_value, part_drawn_sizes])
 		var too_big := MarbleBag.new([], ordinary, seed_value)
 		too_big.rig(["x"], 7)
-		t.check(too_big.sizes() == [5],
+		var too_big_sizes := _bag_sizes(too_big)
+		t.check(too_big_sizes == [5],
 				"seed %d: and no more than the two fills an empty queue has are taken (%s)"
-				% [seed_value, too_big.sizes()])
+				% [seed_value, too_big_sizes])
+
+## The size of every bag in `bag`'s queue, the one being drawn from first, read the way a run reads
+## a bag: how many marbles the bag in front holds (`MarbleBag.left()`), then drawn empty to find the
+## next. Draws the whole queue, so it is the last thing asked of a bag.
+func _bag_sizes(bag: MarbleBag) -> Array[int]:
+	var sizes: Array[int] = []
+	while bag.left() > 0:
+		var size := bag.left()
+		sizes.append(size)
+		for _i in size:
+			bag.draw()
+	return sizes
 
 ## Asking which marble comes next does not change it: a bag peeked at before every draw draws what
 ## the same bag drawn straight would, and a bag put in front after a peek leaves the peeked marble in
@@ -122,9 +141,9 @@ func _test_a_marble_peeked_at_is_the_marble_drawn(t: TestRunner) -> void:
 	var interrupted := MarbleBag.new([], ordinary, 5)
 	interrupted.peek()
 	interrupted.rig(["z"], 1)
-	t.check(interrupted.sizes() == [1, ordinary.size()],
-			"a bag put in front after a peek leaves the peeked marble where it was (%s)"
-			% [interrupted.sizes()])
+	var sizes := _bag_sizes(interrupted)
+	t.check(sizes == [1, ordinary.size()],
+			"a bag put in front after a peek leaves the peeked marble where it was (%s)" % [sizes])
 
 ## A marble that is itself a bag *(inbox #561 in coral-bunny; asked whether a drawn bag marble goes back at once or
 ## with the next outer fill: "The inner bag becomes empty after n draws")*: drawing it draws from
@@ -291,9 +310,9 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 		rng.seed = hash("route-bag:lesson:ahead:%d" % seed_value)
 		director.start_day(day, plans, rng)
 		var bag := director.route_bag()
-		t.check(bag.sizes() == [1] and bag.bag_in_front() == ["charging_dog"],
-				"seed %d: the lesson is a bag of one dog in front of the route's bag (%s, %s)"
-				% [seed_value, bag.sizes(), bag.bag_in_front()])
+		t.check(bag.bag_in_front() == ["charging_dog"],
+				"seed %d: the lesson is a bag of one dog in front of the route's bag (%s)"
+				% [seed_value, bag.bag_in_front()])
 		var first := ""
 		var first_at := 0.0
 		var at := CrowdLanes.arterial_pavement(map)

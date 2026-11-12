@@ -31,18 +31,18 @@ const DECORATION_ATLAS := &"decoration"
 
 ## The city's library (`AtlasLibrary`), handed by the city before it builds: the city holds the
 ## decoration group on it, and the decals draw their regions from it.
-var atlas: AtlasLibrary
+var _atlas: AtlasLibrary
 ## What every decal is laid through (`SceneryDrawer`), handed by the city before it builds: on this
 ## node's own canvas when it is not streamed, and handed on to each chunk's layer when it is.
-var drawer: SceneryDrawer
+var _drawer: SceneryDrawer
 
-## Hands the decals the library they draw from (see `atlas`).
+## Hands the decals the library they draw from (see `_atlas`).
 func use_atlas(library: AtlasLibrary) -> void:
-	atlas = library
+	_atlas = library
 
-## Hands the decals what they are laid through (see `drawer`).
+## Hands the decals what they are laid through (see `_drawer`).
 func draw_through(through: SceneryDrawer) -> void:
-	drawer = through
+	_drawer = through
 
 ## Has the decals stream in chunks as they come into view (see `streamed`).
 func stream_in_chunks() -> void:
@@ -106,27 +106,27 @@ func update_view(load_view: Rect2, retained: Rect2, enqueue := Callable()) -> vo
 
 func _prepare_chunk(key: Vector2i) -> void:
 	var layer := SceneryLayer.new()
-	layer.draw_through(drawer)
+	layer.draw_through(_drawer)
 	add_child(layer)
 	_resident[key] = layer
 	for entry: Litter.Placed in _litter_chunks.get(key, []):
-		var texture := atlas.region(Litter.TEXTURES[entry.texture_index])
+		var texture := _atlas.region(Litter.TEXTURES[entry.texture_index])
 		layer.append(texture, Rect2(entry.position - texture.get_size() * 0.5, texture.get_size()))
 	for entry: StreetTrees.Planted in _pit_chunks.get(key, []):
 		if not _map.is_tree_pit_emptied(entry.tile):
-			var texture := atlas.region(TREE_PIT)
+			var texture := _atlas.region(TREE_PIT)
 			layer.append(texture, Rect2(entry.position - texture.get_size() * 0.5, texture.get_size()))
 
 func _draw() -> void:
 	if streamed:
 		return
 	for entry in _placed:
-		var texture := atlas.region(Litter.TEXTURES[entry.texture_index])
-		drawer.draw(self, texture, Rect2(entry.position - texture.get_size() * 0.5,
+		var texture := _atlas.region(Litter.TEXTURES[entry.texture_index])
+		_drawer.draw(self, texture, Rect2(entry.position - texture.get_size() * 0.5,
 				texture.get_size()), Rect2())
-	var pit := atlas.region(TREE_PIT)
+	var pit := _atlas.region(TREE_PIT)
 	for entry in _street_tree_pits:
 		if _map and _map.is_tree_pit_emptied(entry.tile):
 			continue
-		drawer.draw(self, pit, Rect2(entry.position - pit.get_size() * 0.5, pit.get_size()),
+		_drawer.draw(self, pit, Rect2(entry.position - pit.get_size() * 0.5, pit.get_size()),
 				Rect2())

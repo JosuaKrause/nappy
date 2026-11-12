@@ -33,14 +33,16 @@ func _ready() -> void:
 	add_child(_fixtures)
 	_roof.real = RoofDrawer.new(_atlas)
 	_building = Building.new()
-	_building.atlas = _atlas
-	_building.roof_drawer = _roof
+	_building.equip(_atlas, _roof, FrontDrawer.new(_atlas))
 	_building.footprint = Vector2(192, 192)
 	_building.height = 64
 	_building.district = GameEnums.BlockPurpose.INDUSTRIAL
 	_building.position = Vector2(205, 438)
 	_building.scale = Vector2.ONE * 1.7
 	_fixtures.add_child(_building)
+	# Equipped as the city equips it, the building waits for the residency, which stands a building
+	# in view up.
+	_building.residence().set_resident(true)
 	for variant in 200:
 		if not _rotors().is_empty():
 			break
@@ -55,6 +57,7 @@ func _ready() -> void:
 	_event("car_accident", false, Vector2(670, 410), 2.0)
 	_event("burst_water_main", true, Vector2(1000, 380), 1.6)
 	_event("car_accident", true, Vector2(1160, 380), 1.6)
+	_watch_the_events()
 	_water = SceneryWater.new()
 	_water.position = Vector2(40, 495)
 	_water.scale = Vector2.ONE * 1.3
@@ -94,36 +97,52 @@ func _event(id: String, vertical: bool, at: Vector2, factor: float) -> void:
 	_fixtures.add_child(event)
 	_events.append(event)
 	_watch(event, id + "_owner")
-	# The scene is drawn in slices beside the event, each with its part's scenery.
-	for slice in (event.look as SpreadLook).slices():
-		for scenery in slice.get_children():
-			if not scenery is EventScenery:
-				continue
-			var split := _split_by_animation(scenery as EventScenery)
-			for layer: SceneryLayer in split[1]:
-				_watch(layer, id + "_static")
-			for layer: SceneryLayer in split[0]:
-				_watch(layer, id + "_motion")
 
-## The layers `scenery` holds as `[moving, still]`: the moving ones are the layers its `set_frame()`
-## turns to their alternate frame, the still ones the rest. The frame it had is put back.
-func _split_by_animation(scenery: EventScenery) -> Array:
+## Watches every scenery layer of the events, by kind: the scene is drawn in slices beside each
+## event, each with its part's scenery, and the slices go into the world on the idle frame after the
+## event is made, so this waits a frame and a drawn frame for them before it looks.
+func _watch_the_events() -> void:
+	await get_tree().process_frame
+	await get_tree().process_frame
+	for event in _events:
+		var id := event.row_id()
+		for slice in (event.look as SpreadLook).slices():
+			for scenery in slice.get_children():
+				if not scenery is EventScenery:
+					continue
+				var split: Array = await _split_by_animation(event, scenery as EventScenery)
+				for layer: SceneryLayer in split[1]:
+					_watch(layer, id + "_static")
+				for layer: SceneryLayer in split[0]:
+					_watch(layer, id + "_motion")
+
+## The layers `scenery` holds as `[moving, still]`: the moving ones are the layers its
+## `set_frame()` draws again when it turns them, counted off each layer's `draw` signal; the still
+## ones the rest. `event`'s own process frame, which shows its clock's frame, is held meanwhile, and
+## its next one puts its frame back.
+func _split_by_animation(event: EventInstance, scenery: EventScenery) -> Array:
 	var layers: Array[SceneryLayer] = []
 	for child in scenery.get_children():
 		if child is SceneryLayer:
 			layers.append(child)
-	var had := {}
-	for layer in layers:
-		had[layer] = layer.frame_b
+	event.set_process(false)
 	scenery.set_frame(true)
-	var turned_on: Array[SceneryLayer] = []
-	turned_on.assign(layers.filter(func(l: SceneryLayer) -> bool: return l.frame_b))
+	await get_tree().process_frame
+	var drawn := {}
+	var counters := {}
+	for layer in layers:
+		drawn[layer] = 0
+		counters[layer] = func() -> void: drawn[layer] += 1
+		layer.draw.connect(counters[layer])
 	scenery.set_frame(false)
+	await get_tree().process_frame
+	for layer in layers:
+		layer.draw.disconnect(counters[layer])
+	event.set_process(true)
 	var moving: Array[SceneryLayer] = []
-	moving.assign(turned_on.filter(func(l: SceneryLayer) -> bool: return not l.frame_b))
+	moving.assign(layers.filter(func(l: SceneryLayer) -> bool: return drawn[l] > 0))
 	var still: Array[SceneryLayer] = []
 	still.assign(layers.filter(func(l: SceneryLayer) -> bool: return not moving.has(l)))
-	scenery.set_frame(not moving.is_empty() and had[moving[0]])
 	return [moving, still]
 
 func _watch(item: CanvasItem, key: String) -> void:
@@ -160,13 +179,13 @@ func _capture() -> void:
 
 func _finish(duration: float) -> void:
 	_recording = false
-	var before := [_building._vent_timer, _water.elapsed, _events[0].clock()]
+	var before := [_building._vent_timer, _ripple_clock(), _events[0].clock()]
 	get_tree().paused = true
 	await get_tree().create_timer(0.25, true).timeout
-	var paused := [_building._vent_timer, _water.elapsed, _events[0].clock()]
+	var paused := [_building._vent_timer, _ripple_clock(), _events[0].clock()]
 	get_tree().paused = false
 	await get_tree().create_timer(0.15, true).timeout
-	var resumed := [_building._vent_timer, _water.elapsed, _events[0].clock()]
+	var resumed := [_building._vent_timer, _ripple_clock(), _events[0].clock()]
 	var static_held := true
 	for key: String in _counts:
 		if key.ends_with("static") or key.ends_with("owner") or key == "water_surface":
@@ -184,6 +203,10 @@ func _finish(duration: float) -> void:
 	file.close()
 	print("SCENERY_RUNTIME " + JSON.stringify(metadata.duplicate().merged({"frames": _frames.size()}, true)))
 	get_tree().quit(0 if static_held and animated and before == paused and resumed != paused else 1)
+
+## Where the water's ripples are in their animation: the clock its shader is drawing with.
+func _ripple_clock() -> float:
+	return float((_water.material as ShaderMaterial).get_shader_parameter("elapsed"))
 
 func _draw() -> void:
 	draw_rect(Rect2(0, 0, 1280, 720), Color("292f35"))

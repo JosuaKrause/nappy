@@ -107,9 +107,12 @@ func _test_a_rig_taking_from_a_bag_holding_a_shared_marble_draws_it_and_spends_i
 	t.check(shared.drawn == from_shared and not front.any(func(m: Variant) -> bool: return m is MarbleBag),
 			"the shared marbles it took were draws of the shared bag, none left as a bag marble "
 			+ "(%d drawn, %d in the rig)" % [shared.drawn, from_shared])
-	t.check(regular.sizes() == [4, 1],
+	var in_front := regular.left()
+	for _i in in_front:
+		regular.draw()
+	t.check(in_front == 4 and regular.left() == 1,
 			"and the regular bag keeps one slot of its four: three were taken, the shared ones "
-			+ "spent like plain ones (%s)" % [regular.sizes()])
+			+ "spent like plain ones (%d in front, %d behind)" % [in_front, regular.left()])
 
 ## Rebuilding both bags from their seeds and skipping to a count draws what the first run drew next.
 func _test_a_shared_bag_draws_the_same_from_the_same_seed(t: TestRunner) -> void:

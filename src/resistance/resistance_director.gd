@@ -2000,7 +2000,7 @@ var _walked_under_the_door := false
 ## (`CityState.purpose_of()`), at the same point `City._dress_block()` draws the swing frame at
 ## (`CityMap.swing_position()`). The pool is `ResistanceSteps.target_candidates()`, one tile, which
 ## the day's planning keeps reachable from home; `Vector2.INF` only on a day that park is not open,
-## which on its own day is a city `CityGenerator.validate()` refused.
+## which on its own day is a city `CityGenerator.validation_problems()` refused.
 func _place_at_a_swing(rng: RandomNumberGenerator) -> Vector2:
 	if not _map:
 		return Vector2.INF
