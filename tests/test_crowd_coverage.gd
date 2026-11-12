@@ -2,46 +2,47 @@ extends RefCounted
 ## A city overview retains ordinary crowd density and real traffic in every quadrant,
 ## while the normal player-following field keeps its population and movement behavior.
 ##
-## **Builds a real `City`, a stated exception to "a suite builds no real object it does not test"**: what is
-## asked is the crowd's coverage of a generated city (`Crowd.recipe_coverage()`) and its motion under the
-## production signals and queue updates, which exist only against a city's own map, streets and signals.
+## A crowd on a real generated map with **no city around it**: `Crowd.setup()` is handed a bare world, the map
+## and its lights, as a task scene's rig hands it (`tests/crowd_street_rig.gd`'s `a_crowd()`), so this suite
+## tests the crowd.
 
-const CITY_SCENE := preload("res://scenes/world/city.tscn")
-## The seed of the run the city is handed (`RunCity.with_own_run()`).
-const RUN_SEED := 2
+const Rig := preload("res://tests/crowd_street_rig.gd")
+## The seed of the map the crowd is built on.
+const MAP_SEED := 1917501
+
+var _rig := Rig.new()
 
 func run(t: TestRunner) -> void:
-	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
-	t.add_child(city)
-	city.build(CityGenerator.generate(1917501))
+	var map := CityGenerator.generate(MAP_SEED)
+	var crowd := _rig.a_crowd(t, map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 11
-	var focus := city.map.doorstep_world_position()
-	city.crowd.start_day(1, rng, focus, true, true)
-	var field := city.crowd.field()
-	var middle := city.map.world_size() * 0.5
+	var focus := map.doorstep_world_position()
+	crowd.start_day(1, rng, focus, true, true)
+	var field := crowd.field()
+	var middle := map.world_size() * 0.5
 	var bounds_x := field.along_bounds(false)
 	var bounds_y := field.along_bounds(true)
-	city.crowd.set_focus(Vector2.ZERO)
-	field.centre = city.map.world_size()
+	crowd.set_focus(Vector2.ZERO)
+	field.centre = map.world_size()
 	t.check(field.centre == middle and field.along_bounds(false) == bounds_x
 			and field.along_bounds(true) == bounds_y, "city crowd bounds stay fixed as the player moves")
-	t.check(bounds_x == Vector2(0, city.map.world_size().x)
-			and bounds_y == Vector2(0, city.map.world_size().y), "city crowd field covers the entire map")
-	var area_scale := city.map.world_size().x * city.map.world_size().y \
+	t.check(bounds_x == Vector2(0, map.world_size().x)
+			and bounds_y == Vector2(0, map.world_size().y), "city crowd field covers the entire map")
+	var area_scale := map.world_size().x * map.world_size().y \
 			/ pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0)
-	var initial := city.crowd.recipe_coverage()
+	var initial := crowd.recipe_coverage()
 	t.check(initial.walkers == roundi(Tuning.crowd_pedestrians(1) * area_scale)
 			and initial.cars == roundi(Tuning.crowd_cars(1) * area_scale),
 			"city crowd preserves the existing population per covered field area")
 	var positions := {}
-	for agent in city.crowd.agents():
+	for agent in crowd.agents():
 		positions[agent] = agent.global_position
 	for frame in 90:
-		city.crowd.step(1.0 / 30.0)
+		crowd.step(1.0 / 30.0)
 	var measured := {"nw": {"moving": 0, "moving_cars": 0}, "ne": {"moving": 0, "moving_cars": 0},
 			"sw": {"moving": 0, "moving_cars": 0}, "se": {"moving": 0, "moving_cars": 0}}
-	for agent in city.crowd.agents():
+	for agent in crowd.agents():
 		var at := agent.global_position
 		var moved: float = at.distance_to(positions[agent])
 		# Recycling is not evidence of motion. Only a plausible physical displacement
@@ -52,7 +53,7 @@ func run(t: TestRunner) -> void:
 		measured[quadrant].moving += 1
 		if agent.kind == CrowdAgent.Kind.CAR:
 			measured[quadrant].moving_cars += 1
-	var coverage := city.crowd.recipe_coverage()
+	var coverage := crowd.recipe_coverage()
 	for quadrant: String in coverage.quadrants:
 		var counts: Dictionary = coverage.quadrants[quadrant]
 		t.check(counts.walkers > 0 and counts.cars > 0,
@@ -62,13 +63,13 @@ func run(t: TestRunner) -> void:
 		t.check(measured[quadrant].moving > 0 and measured[quadrant].moving_cars > 0,
 				"%s actors and cars physically move under production signals and queue updates" % quadrant)
 	print("RECIPE_CROWD_COVERAGE ", JSON.stringify(coverage), " displacement ", JSON.stringify(measured))
-	city.crowd.start_day(1, rng, focus)
+	crowd.start_day(1, rng, focus)
 	t.check(not field.city_view and field.centre == focus,
 			"a normal day restores the moving field after a city-view recipe")
-	t.check(city.crowd.agent_count() == Tuning.crowd_pedestrians(1) + Tuning.crowd_cars(1),
+	t.check(crowd.agent_count() == Tuning.crowd_pedestrians(1) + Tuning.crowd_cars(1),
 			"normal population is unchanged by the optional city view")
-	city.crowd.set_focus(middle)
+	crowd.set_focus(middle)
 	t.check(field.centre == middle, "normal field follows focus again")
-	city.crowd.start_day(1, rng, focus, false, true)
-	t.check(city.crowd.agent_count() == 0, "city-view extent does not enable unrequested population")
-	city.free()
+	crowd.start_day(1, rng, focus, false, true)
+	t.check(crowd.agent_count() == 0, "city-view extent does not enable unrequested population")
+	_rig.free_crowd(crowd)
