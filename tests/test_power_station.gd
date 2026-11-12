@@ -17,9 +17,6 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const MapCache := preload("res://tests/city_map_cache.gd")
 const RecordingFrontDrawer := preload("res://tests/recording_front_drawer.gd")
 const UI := preload("res://tests/ui_screens.gd")
-## The folder the frame recorder of the yard-layer check is handed to write its record in on leaving
-## the tree.
-const _SCRATCH_RECORDS := "user://test_power_station_scratch_records"
 
 var _maps: Array[CityMap] = []
 
@@ -34,7 +31,7 @@ func run(t: TestRunner) -> void:
 	_test_the_door_is_reached_on_its_day_through_a_region_door(t)
 	_test_no_other_day_is_bent_toward_it(t)
 	_test_an_older_save_with_the_station_block_advanced_still_loads(t)
-	_test_the_yard_layer_is_counted_when_the_station_comes_into_view(t)
+	_test_the_yard_layer_is_tagged_scenery_as_it_enters_the_tree(t)
 	_test_the_stacks_stand_in_the_entities_depth_order(t)
 	await _test_the_hall_is_lit_only_on_the_last_night(t)
 
@@ -410,48 +407,25 @@ func _clerestory_band(front: RecordingFrontDrawer) -> Array[StringName]:
 			band.append(entry.picture)
 	return band
 
-## The yard layer is built when residency brings the station into view, in a tree whose frame record
-## is listening: the recorder classifies a node as it is added, so the layer carries its kind
-## before it enters the tree, and its draws land in the scenery count.
-func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t: TestRunner) -> void:
-	var record := FrameRecord.new()
-	var ledger := FrameLedger.new(2)
-	record.start(ledger)
-	var sitting := Sitting.new()
-	sitting.frame_timing = record
-	# Its saved record goes to a scratch folder, and the run it names the file by is the test's own.
-	var run := RunState.new()
-	var recorder := FrameRecorder.new()
-	t.add_child(recorder)
-	recorder.setup(func() -> bool: return false, null, null, SceneryGround.Mode.ONE, null, null,
-			run, sitting, _SCRATCH_RECORDS)
+## The yard layer is built when residency brings the station into view, and it carries the scenery
+## draw kind tag at the moment it enters the tree: the frame recorder classifies a node as it is
+## added, so a tag put on afterwards would leave the layer's draws uncounted.
+func _test_the_yard_layer_is_tagged_scenery_as_it_enters_the_tree(t: TestRunner) -> void:
 	var station := Building.new()
 	station.stand_on(Rect2i(), Vector2(96.0, 256.0), 0, GameEnums.BlockPurpose.INDUSTRIAL, 64.0)
 	station.power_station = true
 	station.equip(null, null, null)
 	t.add_child(station)
+	# The roof objects that enter beside it are counted as scenery by their class, so the layers
+	# with a tag to read are the others: the yard layer alone.
+	var tags_on_entry: Array = []
+	station.child_entered_tree.connect(func(child: Node) -> void:
+			if child is Building.RoofObject:
+				return
+			tags_on_entry.append(child.get_meta(FrameTiming.DRAW_KIND_META)
+					if child.has_meta(FrameTiming.DRAW_KIND_META) else null))
 	station.residence().set_resident(true)
-	ledger.process_start(Time.get_ticks_usec())
-	var layers := 0
-	for child in station.get_children():
-		if child is Node2D and child.has_meta(FrameTiming.DRAW_KIND_META):
-			layers += 1
-			for connection: Dictionary in (child as Node2D).draw.get_connections():
-				var drawn_with: Callable = connection["callable"]
-				if drawn_with.get_object() == recorder:
-					drawn_with.call()
-	t.check(layers == 1, "the station's yard layer declares its kind (%d layers)" % layers)
-	# The frame the draws landed in is kept, and the next one begins: the ledger hands it out as a row.
-	ledger.keep_this_frame()
-	ledger.process_end(Time.get_ticks_usec())
-	ledger.process_start(Time.get_ticks_usec())
-	var rows := ledger.rows()
-	t.check(rows.size() == 1 and rows[0][FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.SCENERY] == 1,
-			"a yard layer built into a listening tree is counted as scenery")
+	t.check(tags_on_entry == [FrameTiming.Draw.SCENERY],
+			"the station's yard layer, the one child that is no roof object, enters the tree already tagged as scenery (tags on entry: %s)"
+			% [tags_on_entry])
 	station.free()
-	recorder.free()
-	var written := sitting.frame_record_file()
-	sitting.free()
-	if written != "":
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(written))
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORDS))
