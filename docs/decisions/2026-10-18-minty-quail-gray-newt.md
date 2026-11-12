@@ -26,7 +26,11 @@ olive-ferret), and a test reads its subject only through methods (inbox #1182 in
 `tools/field_answers.py --counts` on the eight files, as it prints them at 050fdc4e9, each named method read in
 its class. Of these, the pass converts the three `DayController` reads above; every other field is left, the
 searched classes' for the reasons above, the rest for their own modules' passes. The lines whose receiver's
-class is not told read `test_invincible`'s own rig's members.
+class is not told are `test_invincible`'s reads through its own helper class `_MeterRig`: `rig.baby` and `rig.world` are
+the rig's own fields, but `rig.baby.excitement` (written at line 195, read at 200, 202 and 219) is `Baby.excitement`,
+the baby's excitement meter, which the tool cannot type through the rig: its read is answered by
+`excitement_level()` (the HUD and the run log's observer call it), its write by no method, and it is left because
+`Baby` is outside the search.
 
 - `AttemptSpendState`: `city_state` read (`tests/test_day_loop.gd` on 4 lines, `tests/test_run_checkpoints.gd` on 1 line): `block_arcs()` (7 calls); `consumed_one_shots` read (`tests/test_day_loop.gd` on 5 lines, `tests/test_run_checkpoints.gd` on 1 line, `tests/test_run_state.gd` on 1 line): no method; `scars` read (`tests/test_day_loop.gd` on 4 lines): no method
 - `Baby`: `state` read (`tests/test_park_return.gd` on 3 lines): `condition()` (1 call); of it alone, `is_awake()` returns `state == GameEnums.BabyState.AWAKE` (1 call), `is_asleep()` returns `state == GameEnums.BabyState.ASLEEP` (1 call)
