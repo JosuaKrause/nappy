@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Nothing off screen is redrawn, and every cue is back on the frame it can be seen.
 ## *(velvet-marten, #700, the player: "Skipping redraws for of screen elements. Also we don't really
@@ -89,9 +88,9 @@ func _test_a_car_reach_holds_everything_it_draws(t: TestRunner) -> void:
 	car.kind = CrowdAgent.Kind.CAR
 	for i in 16:
 		var heading := Vector2.RIGHT.rotated(TAU * float(i) / 16.0)
-		for view in CarLook.BODY_BY_VIEW:
+		for view: String in CarLook.BODY_BY_VIEW:
 			var anchor := CarLook.body_anchor(view, heading)
-			for path in [CarLook.BODY_BY_VIEW[view], CarLook.TRIM_BY_VIEW[view],
+			for path: String in [CarLook.BODY_BY_VIEW[view], CarLook.TRIM_BY_VIEW[view],
 					CarLook.WHEELS_BY_VIEW[view]]:
 				var extent := Vector2(AtlasTable.baked().native_size(StringName(path)))
 				var drawn := Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent) \
@@ -109,7 +108,7 @@ func _test_a_car_reach_holds_everything_it_draws(t: TestRunner) -> void:
 			.grow(1.0)
 	t.check(reach.encloses(caret), "and its doubled caret at full swell (%s)" % caret)
 	car.free()
-	for view in WalkerLook.BODY_BY_VIEW:
+	for view: String in WalkerLook.BODY_BY_VIEW:
 		for paths: Dictionary in [WalkerLook.BODY_BY_VIEW, WalkerLook.BODY_BY_VIEW_B,
 				WalkerLook.TRIM_BY_VIEW, WalkerLook.TRIM_BY_VIEW_B]:
 			var extent := Vector2(AtlasTable.baked().native_size(StringName(paths[view])))
@@ -137,8 +136,8 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 	var projected_off_screen := false
 	while x < 200.0 and not seen:
 		car.position = Vector2(x, 180.0)
-		car.excitement.set_player_at(car.position + Vector2(60.0, 0.0))
-		car.excitement.advance(STEP)
+		car.mood().set_player_at(car.position + Vector2(60.0, 0.0))
+		car.mood().advance(STEP)
 		var asked := car.end_the_frame(0.0)
 		var in_box := DrawnView.box_of(screen).intersects(
 				Rect2(car.position + CrowdAgent.DRAWN_REACH.position, CrowdAgent.DRAWN_REACH.size))
@@ -156,14 +155,14 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 	# The probe's positive control: the car on screen, redrawn with its picture changed, projects
 	# the caret in that frame, and the probe says so.
 	car.position = Vector2(200.0, 180.0)
-	car.excitement.set_player_at(car.position + Vector2(60.0, 0.0))
-	car.excitement.advance(STEP)
+	car.mood().set_player_at(car.position + Vector2(60.0, 0.0))
+	car.mood().advance(STEP)
 	car.end_the_frame(0.0)
 	t.check(_the_gate_projected_her_caret(car),
 			"the probe sees a caret the gate did project, on screen")
 	t.check(seen and first_seen_asked,
 			"it asked for its redraw no later than the first frame any of it shows")
-	t.check(car.excitement.caret_strength() == 2,
+	t.check(car.mood().caret_strength() == 2,
 			"and the redraw it asked for draws the doubled red caret it is owed")
 	screen.free()
 
@@ -173,10 +172,10 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 ## caret the gate had projected answers what it was projected as (the doubled red the rig owes it),
 ## while one it had not answers afresh, for a car she is far from (none). She is put back as she was.
 func _the_gate_projected_her_caret(car: CrowdAgent) -> bool:
-	var at := car.excitement.player_at
-	car.excitement.set_player_at(at + Vector2(5000.0, 0.0))
-	var answered := car.excitement.caret_strength()
-	car.excitement.set_player_at(at)
+	var at := car.mood().player_at
+	car.mood().set_player_at(at + Vector2(5000.0, 0.0))
+	var answered := car.mood().caret_strength()
+	car.mood().set_player_at(at)
 	return answered != 0
 
 ## A walker whose picture did not change while it was off screen — covering no ground (nothing steps
@@ -216,7 +215,7 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]))
 	cyclist.set_process(false)
 	screen.add_child(cyclist)
-	cyclist.excitement.set_player_at(cyclist.global_position + Vector2(def.outer_radius, 0.0))
+	cyclist.source().set_player_at(cyclist.global_position + Vector2(def.outer_radius, 0.0))
 	# A twin it is asked of first: whether the gate worked out the caret is read off what it left
 	# cached (below), and reading it works the caret out.
 	var twin := EventInstance.new()
@@ -224,18 +223,18 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]))
 	twin.set_process(false)
 	screen.add_child(twin)
-	twin.excitement.set_player_at(twin.global_position + Vector2(def.outer_radius, 0.0))
+	twin.source().set_player_at(twin.global_position + Vector2(def.outer_radius, 0.0))
 	t.check(not twin.look.redraw_if_the_picture_changed(), "off screen its twin asks for no redraw")
 	# The caret is cached on the age and where she stands, so a change to whether the event may carry
 	# one at all (`leave_for_a_completed_task()`, which no key term names) is answered afresh by a
 	# gate that left nothing cached, and with the doubled red it was owed by one that worked it out.
 	twin.leave_for_a_completed_task()
-	t.check(twin.is_leaving and twin.excitement.caret_strength() == 0,
+	t.check(twin.is_leaving and twin.source().caret_strength() == 0,
 			"and works out neither its key nor its caret")
 	twin.free()
 	t.check(not cyclist.look.redraw_if_the_picture_changed(), "off screen it asks for no redraw")
 	var drawn := cyclist.look.drawn_rect_now()
-	t.check(cyclist.look.mark_rect().has_area() and cyclist.excitement.caret_strength() == 2,
+	t.check(cyclist.look.mark_rect().has_area() and cyclist.source().caret_strength() == 2,
 			"the caret it is owed is the doubled red")
 	var left := -2000.0
 	var asked_since_off := false

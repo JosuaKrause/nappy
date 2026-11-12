@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Excitement does not go through a wall — `CityMap.wall_between()`, the line every source's
 ## `contribution_at()` asks — *(plaid-wombat, inbox #554: "Excitement should not go through any
@@ -216,7 +215,7 @@ func _depth(map: CityMap, at: Vector2) -> float:
 ## the only places in a tile that can be. Stated over the sampled depth rather than over the tile
 ## pattern `CityMap` reads, so the two are independent.
 func _is_thick(map: CityMap, tile: Vector2i) -> bool:
-	for corner in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
+	for corner: Vector2i in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
 		var at := Vector2(tile + corner) * _SIZE
 		# A point on a tile edge belongs to every tile it touches; the nudge reads it from inside.
 		var inside := at + (Vector2(0.5, 0.5) - Vector2(corner)) * 0.001
@@ -300,14 +299,14 @@ func _test_an_event_is_silent_behind_a_wall(t: TestRunner) -> void:
 	var open := _map_with([])
 	var behind := _musician(def, at, walled)
 	var beside := _musician(def, at, open)
-	t.check(beside.excitement.contribution_at(her) > 0.0,
-			"on open ground the musician's field reaches her (%.2f/s)" % beside.excitement.contribution_at(her))
-	t.check(behind.excitement.contribution_at(her) == 0.0,
+	t.check(beside.source().contribution_at(her) > 0.0,
+			"on open ground the musician's field reaches her (%.2f/s)" % beside.source().contribution_at(her))
+	t.check(behind.source().contribution_at(her) == 0.0,
 			"with a building between them it does not")
-	t.check(behind.field_at(her, -1.0, Vector2.INF) == beside.excitement.contribution_at(her),
+	t.check(behind.field_at(her, -1.0, Vector2.INF) == beside.source().contribution_at(her),
 			"the field itself is unchanged; only what reaches her is")
-	var picked := await HaloRig.lit_among(t, [behind.excitement, beside.excitement], her)
-	t.check(picked.size() == 1 and picked[0] == beside.excitement,
+	var picked := await HaloRig.lit_among(t, [behind.source(), beside.source()], her)
+	t.check(picked.size() == 1 and picked[0] == beside.source(),
 			"the halo picks the one that reaches her and not the one behind the wall")
 	behind.free()
 	beside.free()
@@ -327,15 +326,15 @@ func _test_a_crowd_body_is_silent_behind_a_wall(t: TestRunner) -> void:
 	var her := Vector2(176.0, 208.0)
 	var open := _map_with([])
 	var in_the_open := _a_car(t, open, Vector2(176.0, 112.0))
-	t.check(in_the_open.excitement.contribution_at(her) > 0.0,
+	t.check(in_the_open.mood().contribution_at(her) > 0.0,
 			"on open ground the car is heard at her distance (%.2f/s)"
-			% in_the_open.excitement.contribution_at(her))
+			% in_the_open.mood().contribution_at(her))
 	var car := _a_car(t, walled, Vector2(176.0, 112.0))
-	t.check(car.excitement.contribution_at(her) == 0.0, "but not through the building between them")
-	car.excitement.startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
-	t.check(car.excitement.contribution_at(her) == 0.0, "nor does its horn")
-	in_the_open.excitement.startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
-	t.check(in_the_open.excitement.contribution_at(her) > 0.0,
+	t.check(car.mood().contribution_at(her) == 0.0, "but not through the building between them")
+	car.mood().startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
+	t.check(car.mood().contribution_at(her) == 0.0, "nor does its horn")
+	in_the_open.mood().startle(18.0, 0.9, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
+	t.check(in_the_open.mood().contribution_at(her) > 0.0,
 			"while on open ground the same horn is heard")
 	car.free()
 	in_the_open.free()
@@ -363,19 +362,19 @@ func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t: TestRunner) -> vo
 	var open := _map_with([], 24, 12)
 	var ending := _map_with(_rect_tiles(Rect2i(0, 4, 10, 2)), 24, 12)
 	var coming_out := _a_car(t, ending, Vector2(80.0, 112.0))
-	coming_out.excitement.set_player_at(Vector2(400.0, 200.0))
-	t.check(coming_out.excitement.contribution_at(Vector2(400.0, 200.0)) == 0.0
-			and coming_out.excitement.expected_gross_at(Vector2(400.0, 200.0)) > 0.0,
+	coming_out.mood().set_player_at(Vector2(400.0, 200.0))
+	t.check(coming_out.mood().contribution_at(Vector2(400.0, 200.0)) == 0.0
+			and coming_out.mood().expected_gross_at(Vector2(400.0, 200.0)) > 0.0,
 			"a car about to clear the building's end expects what it lands once out (%.2f)"
-			% coming_out.excitement.expected_gross_at(Vector2(400.0, 200.0)))
+			% coming_out.mood().expected_gross_at(Vector2(400.0, 200.0)))
 	coming_out.free()
 	var at := Vector2(400.0, 80.0)
 	var her := Vector2(240.0, 208.0)
 	var walk := Vector2(Tuning.WALK_SPEED, 0.0)
 	for map: CityMap in [walled, open]:
 		var musician := _musician(def, at, map)
-		musician.excitement.set_player_at(her, walk)
-		var expected := musician.excitement.expected_gross_at(her)
+		musician.source().set_player_at(her, walk)
+		var expected := musician.source().expected_gross_at(her)
 		if map == walled:
 			t.check(expected == 0.0, "walking past behind a building expects nothing (%.2f)"
 					% expected)
@@ -385,8 +384,8 @@ func _test_the_caret_asks_the_wall_where_the_bodies_will_be(t: TestRunner) -> vo
 		musician.free()
 	for map: CityMap in [walled, open]:
 		var car := _a_car(t, map, Vector2(80.0, 112.0))
-		car.excitement.set_player_at(Vector2(400.0, 200.0))
-		var expected := car.excitement.expected_gross_at(Vector2(400.0, 200.0))
+		car.mood().set_player_at(Vector2(400.0, 200.0))
+		var expected := car.mood().expected_gross_at(Vector2(400.0, 200.0))
 		if map == walled:
 			t.check(expected == 0.0, "a car on the far side of a building expects nothing (%.2f)"
 					% expected)
@@ -438,7 +437,7 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t: TestRunner) -> void:
 				var field := man.field_at(her, -1.0, Vector2.INF)
 				if field <= 0.0:
 					continue
-				var landed := man.excitement.contribution_at(her)
+				var landed := man.source().contribution_at(her)
 				var walled := grid.wall_between(man.global_position, her)
 				if walled:
 					stopped += 1
@@ -485,14 +484,14 @@ func _test_the_building_inside_stops_it_at_its_own_walls(t: TestRunner) -> void:
 	t.check(burst != null and burst.global_position == stands,
 			"an explosion goes off where she stands")
 	if burst and behind != Vector2.INF:
-		t.check(burst.excitement.contribution_at(behind) > 0.0,
+		t.check(burst.source().contribution_at(behind) > 0.0,
 				"and the bang reaches her behind the wall: it came through the walls from outside"
-				+ " (%.1f)" % burst.excitement.contribution_at(behind))
-		t.check(not burst.excitement.wall_grid().wall_between(burst.global_position, behind),
+				+ " (%.1f)" % burst.source().contribution_at(behind))
+		t.check(not burst.source().wall_grid().wall_between(burst.global_position, behind),
 				"and the debug view's fields layer cuts it at no wall either, as the meter does")
 		var outline := GroundShape.field_outline_at(burst.global_position, Vector2.ZERO,
 				burst.def.outer_radius)
-		var runs := DebugLayers.open_runs(outline, burst.global_position, burst.excitement.wall_grid())
+		var runs := DebugLayers.open_runs(outline, burst.global_position, burst.source().wall_grid())
 		t.check(runs.size() == 1 and runs[0].size() == outline.size() + 1,
 				"so its outline is drawn whole, in one closed run (%d runs)" % runs.size())
 	player.free()
@@ -511,14 +510,14 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t: TestRunner) -
 	var behind := _musician(def, at, _map_with(_rect_tiles(Rect2i(11, 0, 2, 24)), 24, 24))
 	var beside := _musician(def, at, _map_with([], 24, 24))
 	var outline := GroundShape.field_outline_at(at, Vector2.ZERO, def.outer_radius)
-	var whole := DebugLayers.open_runs(outline, at, beside.excitement.wall_grid())
+	var whole := DebugLayers.open_runs(outline, at, beside.source().wall_grid())
 	t.check(whole.size() == 1 and whole[0].size() == outline.size() + 1
 			and whole[0][0] == whole[0][whole[0].size() - 1],
 			"on open ground the outline is drawn whole, closed")
-	var runs := DebugLayers.open_runs(outline, at, behind.excitement.wall_grid())
+	var runs := DebugLayers.open_runs(outline, at, behind.source().wall_grid())
 	var kept := 0
 	for point in outline:
-		if not behind.excitement.wall_grid().wall_between(at, point):
+		if not behind.source().wall_grid().wall_between(at, point):
 			kept += 1
 	t.check(kept > 0 and kept < outline.size(),
 			"the musician's outline runs both sides of the building (%d of %d points open)"
@@ -533,12 +532,12 @@ func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t: TestRunner) -
 	for run in runs:
 		for i in run.size() - 1:
 			for step in 5:
-				if behind.excitement.wall_grid().wall_between(at, run[i].lerp(run[i + 1], float(step) / 4.0)):
+				if behind.source().wall_grid().wall_between(at, run[i].lerp(run[i + 1], float(step) / 4.0)):
 					through += 1
 		var past_end := run[run.size() - 1] \
 				+ (run[run.size() - 1] - run[run.size() - 2]).normalized()
 		var past_start := run[0] + (run[0] - run[1]).normalized()
-		var grid := behind.excitement.wall_grid()
+		var grid := behind.source().wall_grid()
 		if not grid.wall_between(at, past_end) or not grid.wall_between(at, past_start):
 			loose += 1
 	t.check(runs.size() == 1, "behind one building it is one open stretch (%d)" % runs.size())
@@ -646,7 +645,7 @@ func _test_the_fields_layer_follows_the_wall_along_the_whole_outline(t: TestRunn
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 642
 	var allowed := _MISDRAWN_AT_MOST
-	for radius in [120.0, 260.0, 340.0]:
+	for radius: float in [120.0, 260.0, 340.0]:
 		var cut := 0
 		var worst_through := 0.0
 		var worst_missing := 0.0
@@ -696,7 +695,8 @@ func _run_buckets(runs: Array[PackedVector2Array]) -> Dictionary:
 						var key := cell + Vector2i(dx, dy)
 						if not buckets.has(key):
 							buckets[key] = []
-						buckets[key].append(segment)
+						var bucket: Array = buckets[key]
+						bucket.append(segment)
 	return buckets
 
 func _on_a_run(buckets: Dictionary, at: Vector2) -> bool:
