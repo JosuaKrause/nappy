@@ -1,4 +1,4 @@
-# minty-quail — The route's ground rule replaces the flood · 2026-11-11
+# polite-tapir — The route's ground rule replaces the flood · 2026-11-11
 
 **The ask.** A route stays open by the street's own rules, never by a flood: "there is no reason to
 check whether a route is open during game play because it cannot be closed to begin with"
@@ -16,8 +16,13 @@ check whether a route is open during game play because it cannot be closed to be
   `StreetInvalidation` also asks.
 - **`StreetInvalidation` composes it with the three line rules** and loses its reach parameter, so
   every judge asks it: the dawn's phases and draw, the walk's sitings and the authored scenes.
-- **The scars and the park spoilers ask it with the streets counted**: none stands on any route
-  tile, nor on the street she starts on.
+- **The scars and the park spoilers ask it with the streets counted**: no body of one covers any
+  route tile, nor the street she starts on, which `EventScheduler` works out once and hands the
+  rule. A refused scar is not stood that day; a refused spoiler stands on the open tile of its own
+  cell of the park nearest the cell's centre that the rule allows, so a used park the day could not
+  shut keeps its spoilers (PLAYTEST-140 8: "a used park is shut by the events placed in it, as
+  before"). A hand-drawn park in `tests/test_events_scheduler.gd` holds it, and fails with the
+  spoiler dropped.
 - **`RouteReachRule` is deleted.** `tests/probes/walk_rows.gd` counts, per day and summed, the route
   tiles home reached among the day's closures that the day's bodies cut off, after the dawn and at the
   end of her walk, and names the bodies behind any; the count is none on every day.
@@ -32,18 +37,27 @@ check whether a route is open during game play because it cannot be closed to be
   sealing the home in where the flood had refused them. Drawn rows and sitings were already kept off
   that street.
 - **Every judge asks the rule**, the walk's sitings, the escape's draw and the scene recipes included
-  (the planner's). The escape's draw is handed no corridor and so is asked nothing; the walk's sitings
-  stand on streets; what is newly refused is a route-bag place or a scene's row with a body on a
-  route's park, square or alley (the street musician, the leaf blower, the market stall, the poster
-  crew on a square, the protest, the firefight, and the alley robbery by its inner disc).
-- **A refused scar or spoiler is not stood that day** (the planner's), as one that cut a route off was
-  not.
+  (the planner's). The escape's draw is handed no corridor and so is asked nothing. The refusal goes
+  by the disc, not by the tile a row stands on, so a row standing on a sidewalk beside a route's park
+  cut, square or alley mouth is refused as well as one standing on that ground. Measured with the
+  rule alone over every tile the placement offers each row (`EventScheduler.open_ground_for()`, a
+  wall's route cells left out), on cities 90210, 90365 and 90551 on days 6 and 13, in the pull
+  request's review: from a street, the construction site (80 of 42,453 tiles), the abduction (46 of
+  33,367, its 54px lethal inner disc reaching the ground beside its sidewalk) and the reversing lorry
+  (10 of 9,662); off one, the street musician (451 of 2,181), the poster crew on a square (40 of
+  736), the protest (39 of 6,192) and the firefight (20 of 5,416). The leaf blower, the market stall
+  and the alley robbery were refused nowhere there. The walk's own sitings (the fires, the poster
+  crews, day 7's van, day 11's mast) stand on streets; a route-bag place or a scene's row of these
+  rows is what they lose.
+- **A refused scar is not stood that day** (the planner's), as one that cut a route off was not. A
+  refused spoiler is stood beside the route instead (above), the player's words deciding it.
 
 ## For the end remeasure
 
 No body stands on a route's ground off the streets, at dawn or on her walk, which is stricter than the
-flood; the scars and the spoilers refused on any route tile and the street she starts on, which no
-probe plans and the suites witness; and the probe's `WD`, `WV` and `WK` lines, listed in pull request
+flood, the rows above losing the tiles named; the scars refused on any route tile and the street she
+starts on, and the spoilers moved off them within their cells, which no probe plans and the suites
+witness; and the probe's `WD`, `WV` and `WK` lines, listed in pull request
 #1380's description, unread.
 
 ## Verified

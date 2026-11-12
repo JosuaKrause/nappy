@@ -1318,9 +1318,10 @@ Each item quotes the code on this branch.
    (`StreetLocations.close_the_section_of()`), as any event a dawn phase puts on a sidewalk does.
    The ambient rows stand where their planners put them; a playground's ground is in no location,
    so it holds none. The spoilers
-   in a park she used go through their own grid and the run's scars stand where they happened, each
-   left out where a body of it would cover a tile a route runs along (`RouteGroundRule`, the
-   streets' route tiles counted).
+   in a park she used go through their own grid, a spoiler whose body would cover a tile a route
+   runs along standing on the nearest tile of its cell that covers none, and the run's scars stand
+   where they happened, each left out where a body of it would cover a route tile or the street she
+   starts on (`RouteGroundRule`, the streets counted).
 3. **Not every bag is a view's.**
    - **The walk's route bag** (`EventDirector._route`, a `MarbleBag`) hands out the places the day
      owes her walk, each sited ahead of her on the branch she walks (`WalkSiting.ahead_of()`).
@@ -2310,8 +2311,10 @@ as bodies for this rule, by their lethal inner disc: an abduction in progress is
 walk through to reach the park behind it. The run's scars and the park spoilers, which the line
 rules are not asked of, are asked `RouteGroundRule` alone with a street's route tiles counted too,
 and the street she starts on, every route's first stretch, which the tree does not carry: a
-barricade the run left across a route's sidewalk or across her own street is not stood that day. Nothing is dropped
-after planning, so the day is never illegal on the way. A walk's sitings (the dusk fire, day 7's
+barricade the run left across a route's sidewalk or across her own street is not stood that day,
+and a spoiler whose body would cover a route tile stands on the nearest tile of its own cell of the
+park that covers none, since a used park is shut by the events placed in it (PLAYTEST-140 8).
+Nothing is dropped after planning, so the day is never illegal on the way. A walk's sitings (the dusk fire, day 7's
 route van, day 11's added mast and the rest) and an authored scene's row are asked the same rules.
 The escape's draw asks none of the route rules, since its walk grows no corridor
 (`RouteSource.corridor()`), and its walk is kept open by its own rule (`WalkOpenRule`).

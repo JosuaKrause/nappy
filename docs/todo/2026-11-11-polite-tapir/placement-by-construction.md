@@ -38,8 +38,8 @@ by line; its numbered list says where the code differs.
   the seals, the masts, the ambient rows, day 13's roadblock phase, the scripted rows), and every
   other location is drawn as she walks, the rows with a body among them.
 - **A route stays open by the street's own rules, never by a flood.** The orchestrator's earlier
-  ruling, that every row with a body is drawn at dawn so the reach rule (`RouteReachRule`, a flood
-  of the whole city from home) can judge it (stated on the walk draw's pull request, #1262, after
+  ruling, that every row with a body is drawn at dawn so a flood of the whole city from home can
+  judge it (stated on the walk draw's pull request, #1262, after
   its first review), is overturned by the player's question above; it
   rested on "no live reachability check" (inbox #1173 in gray-dolphin), which the design satisfies by needing no
   check at all: "there is no reason to check whether a route is open during game play because it
@@ -70,7 +70,7 @@ and a pacing beat's opening, the route's ground rule (`RouteGroundRule`) keeps e
 every lethal row's inner disc off a tile a route runs along off the streets (an alley, a park cut, a
 square), and keeps the scars and the park spoilers off every route tile and off the street she starts
 on. The whole-city flood is no rule of the game; `tests/probes/walk_rows.gd` counts the route tiles a
-day's bodies cut off from home, expected to be none (record 2026-10-18-minty-quail-velvet-ferret).
+day's bodies cut off from home, expected to be none (record 2026-11-11-polite-tapir).
 
 ## What is left, in order
 

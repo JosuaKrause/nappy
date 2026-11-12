@@ -20,11 +20,12 @@ extends RefCounted
 ## - **The route's ground:** a barricade (a body 62px each way) on the alley a route runs down is
 ##   refused, and the same barricade on the same alley four tiles beside the route stands; an
 ##   abduction, whose 22px body stops short of the route a tile away and whose 54px lethal inner
-##   disc reaches it, standing there is refused;
-##   a man shouting, who has no body, stands on the route itself. With the streets counted, the
-##   barricade across the sidewalk a route walks is refused and on the far sidewalk stands, and on
-##   the street she starts on, which the tree does not carry, it is refused too; with them not
-##   counted, the line rules' ground and the home street's hold, it stands on both.
+##   disc reaches it, standing there is refused; a man shouting, who has no body, stands on the
+##   route itself, and so does a region door's post, whose body does not block the way. With the
+##   streets counted, the barricade across the sidewalk a route walks is refused and on the far
+##   sidewalk stands, and on the street she starts on, which the tree does not carry, it is refused
+##   too; with them not counted, the line rules' ground and the home street's hold, it stands on
+##   both.
 
 const MapCache := preload("res://tests/city_map_cache.gd")
 const SEED := 4242
@@ -137,7 +138,7 @@ const ROUTE_COLUMNS: Array[int] = [35, 36]
 ## The row of the alley the bodies are stood on, in the block's middle.
 const ALLEY_ROW := 38
 ## The street north of the block: its far (north) sidewalk's outer row, and the south sidewalk band
-## the route walks, whose kerb-side row the body is stood on.
+## the route walks, whose frontage row (against the alley block) the body is stood on.
 const FAR_SIDEWALK_ROW := 28
 const ROUTE_SIDEWALK_ROWS: Array[int] = [32, 33]
 ## The home, against the south edge of a block well east of the alley, so its door opens onto the
@@ -181,6 +182,10 @@ static func _alley_route() -> _Route:
 			tiles.append(Vector2i(x, y))
 	return _Route.new(tiles)
 
+## The tiles of the street she starts on, as the day hands them to the rule.
+static func _home_street(map: CityMap) -> Rect2i:
+	return ClosurePlanner.home_street(map).tile_rect()
+
 ## `id`, standing at the middle of `tile`.
 static func _standing(map: CityMap, id: String, tile: Vector2i) -> EventPlan:
 	return EventPlan.new(EventCatalogue.by_id(id), map.tile_to_world(tile))
@@ -207,11 +212,17 @@ func _test_a_body_on_a_routes_ground_off_the_streets_is_refused(t: TestRunner) -
 	var man := _standing(map, "homeless_yeller", on_it)
 	t.check(not man.obstructs(), "the man shouting has no body")
 	t.check(rule.allows(man, on_it, NONE, NONE), "a row with no body stands on the route itself")
+	var door := _standing(map, "checkpoint_post", on_it)
+	door.stand_as_a_door()
+	t.check(door.blocking_radius() >= Tuning.TILE_SIZE * 0.5 and not door.obstructs(),
+			"a region door's post has a body that covers its own tile and does not block the way")
+	t.check(rule.allows(door, on_it, NONE, NONE),
+			"a region door's body on the route's alley stands: she walks through a door")
 
 func _test_a_body_on_a_routes_street_is_refused_where_the_streets_count(t: TestRunner) -> void:
 	var map := _alley_map()
 	var route := _alley_route()
-	var counting := RouteGroundRule.new(map, route, true)
+	var counting := RouteGroundRule.new(map, route, true, _home_street(map))
 	var origin := ALLEY_BLOCK * CityMap.period() + Vector2i.ONE * Tuning.STREET_WIDTH
 	var middle := origin.x + Tuning.BLOCK_SIZE / 2
 	var across := Vector2i(middle, ROUTE_SIDEWALK_ROWS[1])

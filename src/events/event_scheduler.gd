@@ -283,7 +283,7 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	# a route runs along, the streets' included (`RouteGroundRule`, counting the streets). Every
 	# other judge below asks the day's rules (`StreetInvalidation`), which hold the same rule off
 	# the streets and the line rules on them.
-	var route_ground := RouteGroundRule.new(map, corridor, true)
+	var route_ground := RouteGroundRule.new(map, corridor, true, _the_street_she_starts_on(map))
 
 	# **The fixed parts' phases** (the design's "the city's fixed parts have phases of their own"):
 	# the ambient rows and the masts stand where their planners put them, and each is recorded on
@@ -991,21 +991,63 @@ static func _spoil_one_park(day: int, rng: RandomNumberGenerator, map: CityMap,
 		return
 
 	var placed: Array[String] = []
-	for cell in _spoiling_grid(ground, pool):
+	var cells := _spoiling_grid(ground, pool)
+	for cell in cells:
 		var def := _pick_by_what_it_denies(pool, rng)
 		# Snapped to the nearest open tile of the lot, so nothing lands on a closed street or
 		# outside the calm ground the cell was measured from.
 		var at := map.tile_to_world(_nearest_of(open, map.world_to_tile(cell)))
 		var plan := EventPlan.new(def, at)
-		# A body on a tile a route runs along is not stood: the park stays busy without it.
+		# A body on a tile a route runs along stands beside the route instead, in its own cell:
+		# the park is shut by what is placed in it (PLAYTEST-140 8), so a cell keeps its spoiler.
 		if not _keeps_the_routes(plan, map, route_ground):
-			continue
+			plan = _beside_the_routes(def, cell, cells, open, map, route_ground)
+			if plan == null:
+				continue
 		events.add(plan)
 		placed.append(def.id)
 	if placed.is_empty():
 		return
 	_note(trace, "roll", "%s in the park she used yesterday, %s"
 			% [", ".join(placed), RunTrace.tile(block)])
+
+## **`def` stood on the open tile of `cell`'s own ground nearest its centre that leaves the day's
+## routes their ground** (`_keeps_the_routes()`), or null where every tile of the cell is refused.
+## A spoiler whose first tile puts its body on a route stands beside the route rather than not at
+## all, since a used park the day could not shut is shut by its spoilers alone (PLAYTEST-140 8:
+## "a used park is shut by the events placed in it, as before"). The tiles are asked in order of
+## distance from the cell's centre, so the body is checked before it is accepted and nothing is
+## repaired after. A tile is the cell's own when no other cell of the grid (`cells`) has a centre
+## nearer it, which keeps the spoilers spread as the grid spreads them. A route is a chain of
+## two-tile cells and a grid cell is several times wider, so only a park the routes fill leaves a
+## cell no such tile.
+static func _beside_the_routes(def: EventDef, cell: Vector2, cells: Array[Vector2],
+		open: Array[Vector2i], map: CityMap, route_ground: RouteGroundRule) -> EventPlan:
+	var centre := map.world_to_tile(cell)
+	var order := open.duplicate()
+	# Nearest first, and the same order on every run: ties go by row, then column.
+	order.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		var to_a := (a - centre).length_squared()
+		var to_b := (b - centre).length_squared()
+		if to_a != to_b:
+			return to_a < to_b
+		return a.y < b.y if a.y != b.y else a.x < b.x)
+	for tile: Vector2i in order:
+		var at := map.tile_to_world(tile)
+		if not _is_nearest_to(cell, at, cells):
+			continue
+		var plan := EventPlan.new(def, at)
+		if _keeps_the_routes(plan, map, route_ground):
+			return plan
+	return null
+
+## Whether no point of `cells` is nearer `at` than `cell` is.
+static func _is_nearest_to(cell: Vector2, at: Vector2, cells: Array[Vector2]) -> bool:
+	var own := at.distance_squared_to(cell)
+	for other in cells:
+		if at.distance_squared_to(other) < own:
+			return false
+	return true
 
 ## Rolls one of the pool, weighted by how much ground it can actually take.
 ##
@@ -2713,7 +2755,8 @@ static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.Block
 ##
 ## Nothing else needs the exemption: the spoiler grid places on calm ground, a scar is where
 ## something already happened (and its body is kept off this street by `RouteGroundRule`, which
-## counts it as the routes' first stretch), and an ambient event has no tile.
+## `_plan_the_dawn()` hands this street as the routes' first stretch), and an ambient event has no
+## tile.
 static func _the_street_she_starts_on(map: CityMap) -> Rect2i:
 	var segment := ClosurePlanner.home_street(map)
 	return segment.tile_rect() if segment else Rect2i()

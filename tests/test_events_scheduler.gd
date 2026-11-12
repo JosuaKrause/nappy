@@ -33,6 +33,7 @@ func run(t: TestRunner) -> void:
 	_test_a_wall_body_holds_its_location_and_a_seal_none(t)
 	_test_a_scripted_row_takes_a_location_of_its_own(t)
 	_test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t)
+	_test_a_spoiler_on_a_route_stands_beside_it(t)
 	_test_calm_she_has_not_used_is_left_alone(t)
 	_test_successors_resolve(t)
 	_test_sighted_successors_resolve(t)
@@ -848,6 +849,85 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 	t.check(grid.reaches(calm_tile.call(clean_block), blocked, reached),
 			"with every body the day stands, the clean calm area is still reached from home")
 	map.close_streets([])
+
+# ------------------------------------------------------- a spoiler beside a route ---
+
+## The park she used, a second park she has not, and the day the spoilers are rolled on.
+const _USED_PARK := Vector2i(2, 2)
+const _OTHER_PARK := Vector2i(6, 6)
+const _SPOILER_DAY := 4
+
+## A corridor whose routes run along exactly `tiles`, the one question the ground rule asks of it.
+class _Route extends Corridor:
+	var _tiles := {}
+
+	func _init(tiles: Array[Vector2i]) -> void:
+		for tile in tiles:
+			_tiles[tile] = true
+
+	## Overrides Corridor.carries_a_route.
+	func carries_a_route(tile: Vector2i) -> bool:
+		return _tiles.has(tile)
+
+## A walk whose corridor is `corridor` and nothing else.
+class _Walk extends RouteSource:
+	var _corridor: Corridor
+
+	func _init(corridor: Corridor) -> void:
+		_corridor = corridor
+
+	## Overrides RouteSource.corridor.
+	func corridor() -> Corridor:
+		return _corridor
+
+## **A spoiler whose first tile puts its body on a route stands beside the route, in its own cell.**
+## A used park the day could not shut is shut by its spoilers alone (PLAYTEST-140 8: "a used park is
+## shut by the events placed in it, as before"), so a spoiler the route's ground refuses is not
+## dropped. On the streets of a full map (`StreetMap.full()`) two blocks are painted park, one of
+## them used, and a stand-in route runs over every tile of the used park but its outer ring, so the
+## tile nearest the centre of every cell of its spoiler grid is a route tile. The day's roll still
+## stands a spoiler with a body (the run log's `roll` line names it), and no body the day places
+## covers a route tile, so that spoiler stands off the route.
+func _test_a_spoiler_on_a_route_stands_beside_it(t: TestRunner) -> void:
+	var map := StreetMap.full()
+	for block: Vector2i in [_USED_PARK, _OTHER_PARK]:
+		for tile in map.rect_tiles(CityMap.block_rect(block)):
+			map.set_tile(tile, GameEnums.TileType.PARK)
+	map.calm_blocks = [_USED_PARK, _OTHER_PARK] as Array[Vector2i]
+	var park := CityMap.block_rect(_USED_PARK)
+	var inside := park.grow(-1)
+	var route_tiles: Array[Vector2i] = []
+	for tile in map.rect_tiles(inside):
+		route_tiles.append(tile)
+	var route := _Route.new(route_tiles)
+	var calm := CalmAreas.of(map, [_USED_PARK] as Array[Vector2i])
+	var lines: Array[String] = []
+	var rng := RandomNumberGenerator.new()
+	rng.seed = _CHOICE_DRAW_SEED
+	var consumed: Array[String] = []
+	var events := EventScheduler.build_day(DaySpec.for_day(_SPOILER_DAY), rng, map, calm,
+			[] as Array[MastSites.Site], consumed, [], _Walk.new(route), 0, PackedVector2Array(),
+			[], RunTrace.recording(lines))
+	var with_a_body := 0
+	for line in lines:
+		if not line.begins_with("roll ") or not line.contains("in the park she used"):
+			continue
+		for id in line.trim_prefix("roll ").get_slice(" in the park", 0).split(", "):
+			if EventCatalogue.by_id(id).obstructs_within() > 0.0:
+				with_a_body += 1
+	t.check(with_a_body > 0,
+			"the used park's roll stands a spoiler with a body though every cell's first tile is the route's (%d)"
+			% with_a_body)
+	var on_the_route := 0
+	for plan in events.placements():
+		if not plan.obstructs():
+			continue
+		var covered := {}
+		EventScheduler.block_a_disc(map, covered, plan.placed_at(), plan.blocking_radius())
+		for tile: Vector2i in covered:
+			if route.carries_a_route(tile):
+				on_the_route += 1
+	t.check(on_the_route == 0, "no body the day places covers a route tile (%d)" % on_the_route)
 
 ## Marks in `keep` (by key) every street segment on the shortest walk from the doorstep to `to`.
 ## False when no walk exists.
