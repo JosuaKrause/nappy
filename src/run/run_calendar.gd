@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name RunCalendar
 extends RefCounted
 ## The run's calendar: which day and act it is, what a day's attempt begins with and ends in, the
@@ -306,7 +305,7 @@ func _end_run(which: GameEnums.Ending) -> void:
 	# exactly the question a run's own length answers alongside, and the telemetry skill's own
 	# "a kind reused from that table, not a synonym for one" does not want a second line for it.
 	_trace.note("ending", "%s on day %d — resistance %d/%d, sabotage %s, played %s" % [
-		GameEnums.Ending.keys()[which].to_lower(), header.day,
+		String(GameEnums.Ending.keys()[which]).to_lower(), header.day,
 		resistance.progress, Tuning.RESISTANCE_GOAL,
 		"done" if resistance.sabotage_done else "not done",
 		RunState.format_clock(header.play_seconds())])
