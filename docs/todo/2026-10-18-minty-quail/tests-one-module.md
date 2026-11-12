@@ -25,7 +25,11 @@ step 3c, open to overturn). Each module's pass hoists them as it touches the sui
 
 **The order** is by module, those whose suites build a city before those that boot `main`, one
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
-`booted_main` and `build_day`/`start_day`/`begin_day` first:
+`booted_main` and `build_day`/`start_day`/`begin_day` first. Entries 1 to 6 and 9 have had their
+pass (the records 2026-10-18-minty-quail-fluffy-newt and 2026-10-18-minty-quail-dotted-stork,
+-teal-toad, -tall-lynx, -spotted-owl, -quiet-swan, -curly-hawk and -merry-goose), and what each lists
+is what is left of it; entry 7 is row 5 of `event-interface.md`, after its row 4b; entry 8 has had
+no pass:
 
 1. telemetry: `test_frame_record_wiring` checks that `main` hands the sitting's record to every
    timed system by what each records into the record it was handed, not by reading its hand-in back
