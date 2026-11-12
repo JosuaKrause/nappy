@@ -266,8 +266,8 @@ var _closed_at := -1.0
 var last_gap := Vector2.INF
 ## The stretches the last gap is, with their tiles and the side of the park they face. Public for
 ## the same reason as `last_gap`: the sweep checks the chosen gap against the map, and a test stands
-## her square before it, before any tape shows it. The CI list of test-only members cannot hold it,
-## since other classes have a member of the same name.
+## her square before it, before any tape shows it. Its line in the CI list of test-only members
+## (`tools/test_only_members.txt`) keeps it public with that reason.
 var gap: Array[Stretch] = []
 ## The way out for the park's people and their escorts: from inside the last gap, through it and
 ## along the ground outside to a place out of her sight, in world points.

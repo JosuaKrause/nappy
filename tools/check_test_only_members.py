@@ -7,19 +7,20 @@ at the top level of a `.gd` file under `src/`, its name not starting with `_` --
 
 - **read by a test**: a file under `tests/` calls a function as `.name(`, or reads a var, const or
   signal as `.name`, in code (comments and string contents blanked first, as `check_layers.py` blanks
-  them). The names in `ENGINE_MEMBERS` (`enabled`, `size`, `text` and the like, which the engine's own
-  classes carry and a test reads on a node it holds) are never taken as a read;
-- **read by the game**: a word occurrence of the name in code in another file under `src/`, counting
-  every other file's uses less its own definitions of the name. A caller under `src/dev` (the rigs and
-  the scene-recipe runtime are the composition root) counts, so does an assignment to it or an emit of
-  it. A use in the member's own defining file does not count (inbox #1098 in curly-rabbit), and in that file only a use
-  that is not a member of another object counts: a call `other.name()` on a namesake is not a use of
-  this member, a plain `name` or `self.name` or the file's own `ClassName.name` is.
+  them), on a receiver that can be the member's class (below). The names in `ENGINE_MEMBERS` (`enabled`,
+  `size`, `text` and the like, which the engine's own classes carry and a test reads on a node it holds) are
+  never taken as a read;
+- **read by the game**: a use in code in another file under `src/` that reaches the member (below). A caller
+  under `src/dev` (the rigs and the scene-recipe runtime are the composition root) counts, so does an
+  assignment to it or an emit of it. A use in the member's own defining file does not count (inbox #1098 in
+  curly-rabbit), and in that file only a use that is not a member of another object counts: a call
+  `other.name()` on a namesake is not a use of this member, a plain `name` or `self.name` or the file's own
+  `ClassName.name` is.
 
 A member read by a test is test-only, and belongs to one of two groups of the list: **no reader**
 (no use in its own file either; inbox #1095 in curly-rabbit) or **own file only** (used by its own file, so
 internal: it gets the underscore and its tests go through what the class does outward; inbox
-#1098). The group, like the test, is a word count. The own-file rule applies to functions, vars and
+#1098). The group is a word count in the member's own file. The own-file rule applies to functions, vars and
 signals, **not to constants**: the player's words on it are about functions, and a test reading a
 constant to assert a relationship is what writing-tests wants, so a constant used in its own file is
 exempt and one is test-only only with no use anywhere under `src/`. Reaching vars, signals and the exemption
@@ -51,42 +52,48 @@ inbox #1098 in curly-rabbit; a hand-in; a member the check misreads). The check 
   same diff (a file move carries its lines, each removed line pairing with one added line; a renamed member is
   fixed or kept, not carried). A `REV` without the list yet compares nothing.
 
-**A name more than one file defines** (`CarStrategy.speed_range` and `WalkerStrategy.speed_range`) is judged by its
-class, so another class's own uses do not hide it. A `.name` is qualified by its receiver where the file shows the
-receiver's type: a name declared `x: Foo` or built `x := Foo.new()` (one class for the name in the file; `x: Foo.Inner`
-and a one-line `if c: Foo.f()` declare nothing), `self`, or a `ClassName.name` static use. A reader typed as the
-member's class, a class it extends or a class that extends it reaches it (a call dispatches on the object, so a reader
-typed as the base reaches the override); one typed as another src class does not; one not typed (a call result, a
-chain `a.b.name`, an autoload, an untyped parameter) reaches every class with the name, in the game's files and the
-tests' alike. In a file that defines the name too, only such a `.name` counts, a plain use being that file's own
-member, except in an ancestor's file, where a plain use is a call the override answers (a template method). A `[kept]`
-line for such a member stands while every use of it elsewhere is untyped (the check cannot tell whose it is, and the
-line says it is not the game's) and is a `REMOVE` line once a typed reader reads it. A name defined once is judged by
-its word as before, which hides `ParkCordon.gap` (other files have a local `gap`) and `RouteTree.grow` (`Rect2.grow`
-calls): a plain word in another file counts as a read, a local or an engine method of the name included. A
-declaration is taken for the whole file, not per function, so a name typed in one function and rebound untyped in
-another carries the first type.
+**Every member is judged by its class**, so another class's member of the same name, a local of the name and an
+engine method of the name do not hide it (`ParkCordon.gap` beside other files' locals named `gap`, `RouteTree.grow`
+beside `Rect2.grow`). A `.name` is typed by its receiver with the receiver typing of `tools/check_field_reads.py` (its
+`Tree`), run over the game's and the tests' files: a chain resolved from its head through declared types, a method's
+declared `-> Type`, a preloaded script, an autoload's script or a `ClassName`, with one type for a name in its top-level
+block (a function, or an inner class whole), so a declaration in one function does not type a name in another. Here a
+suite's parent named by its path (`extends "res://tests/rig.gd"`) is followed too, a preloaded script with no
+`class_name` is its file, through another class's constant too (`Boot.MainScript`), and `self` and `super` are the
+line's own class, an inner class's included. A receiver typed as the member's class, a class it extends or a class
+that extends it reaches it (a call dispatches on the object, so a reader typed as the base reaches the override). One
+typed as another class, or as a value of no class under `src/` (an engine class, a builtin, an array: `Rect2(...)`, a
+`Rect2` a method returns), does not, except in a file whose opt-out line names the engine's warning for that access
+(`unsafe_method_access` for a call, `unsafe_property_access` for a read), where an engine-typed value may still hold a
+game object. One the typing cannot tell (an untyped parameter, a Variant) reaches every class with the name, in the
+game's files and the tests' alike. A static function is reached only through its class (`RouteTree.grow()`, a
+preloaded script), never through a value, since the engine warns on a static function called on a value and no
+warning it prints is left standing (woolly-finch 19). A plain word in another file reads a member only where the
+line's class extends the member's class and does not define the name again, and no local of the name is declared on
+the line or in scope there: an inherited member used bare. In an ancestor's file that defines the name too, a plain
+use is a call the override answers (a template method). A `[kept]` line stands while every use of its member elsewhere
+is a `.name` on a receiver the typing cannot tell (the check cannot tell whose it is, and the line says it is not the
+game's), and is a `REMOVE` line once a told reader reads it.
 
-**What it can miss and where it can accuse falsely.** A name defined once is judged by its word, never by its
-class; `docs/todo/2026-10-18-minty-quail/tests-unseen-reads.md` section 3, whose method this
-reproduces for a name defined once, spot-checked names by hand for the same reason. It can *miss* a test-only
-member when an unrelated word of the same name is used in another file (a namesake, a local, a parameter) or is one
-of `ENGINE_MEMBERS`, when a function is passed as a callable (`.name`) rather than called, and it
-does not see members of an inner class. A base class's plain call of the name reads a subclass's override, so an
-override whose subclass also overrides the base method that makes the call, without calling `super`, is read by
-that plain call although the game never reaches it. Because the own-file count is a word count, a call `.name(` on a
-namesake is not an own use either, so a member only that call and a test use lands in `[no reader]` although its
-own class does call it (a call on another instance of the file's own class, `other.name()`); the remedy is then
-the underscore of inbox #1098 (it is not dead code), not deleting it. It can *accuse falsely* in three ways:
-a test calling `.name`
-on its own fake (an inner class of the test with a method of that name) reads as a test reading the
-member; a test reading an engine member of the same name that `ENGINE_MEMBERS` does not list (a
-`.size` on a Control, a `.enabled` on a camera) does too, and a function is told apart only by the
-call parenthesis; and a game reader that goes through a string (`call("name")`, `has_method("name")`,
-`Callable(self, "name")`, a scene's `.tscn`) is blanked out and not seen. On such a false failure the
-builder adds the line to a kept group with the reason as a comment (a member name an engine class carries,
-which a test reads on an engine node it holds, is the only reason to add to `ENGINE_MEMBERS`; never a way to
-exempt a game member).
+**What it can miss and where it can accuse falsely.** It can *miss* a test-only member when a game reader the typing
+cannot tell uses a word of its name (a namesake reached through an untyped value or a Variant), when a file's opt-out
+line lets an engine-typed value count, when its name is one of `ENGINE_MEMBERS`, when a function is passed as a
+callable (`.name`) rather than called, and it does not see members of an inner class. A base class's plain call of the
+name reads a subclass's override, so an override whose subclass also overrides the base method that makes the call,
+without calling `super`, is read by that plain call although the game never reaches it. Because the own-file count is a
+word count, a call `.name(` on a namesake is not an own use either, so a member only that call and a test use lands in
+`[no reader]` although its own class does call it (a call on another instance of the file's own class,
+`other.name()`); the remedy is then the underscore of inbox #1098 (it is not dead code), not deleting it. It can
+*accuse falsely* in four ways: a test calling `.name` on its own fake (an inner class of the test with a method of that
+name) reads as a test reading the member; a test reading an engine member of the same name on a receiver the typing
+cannot tell, a name `ENGINE_MEMBERS` does not list, does too, and a function is told apart only by the call
+parenthesis; a game reader that goes through a string (`call("name")`, `has_method("name")`, `Callable(self, "name")`,
+a scene's `.tscn`) is blanked out and not seen; and a reader the typing tells wrongly is not seen: a name a block never
+declares is taken for an engine property of the file's own class, as `check_field_reads` takes it, a chain from
+`self` inside an inner class (`self.a.name`) for an engine value, and a static function called on a value (a warning
+left standing) for no read. On such a false failure the builder adds the line to a kept group with the reason as a
+comment (a member name an engine class carries, which a test reads on an engine node it holds, is the only reason to
+add to `ENGINE_MEMBERS`; never a way to exempt a game member).
 `shared_state.gd` and `test_prediction_reuse.gd` read by reflection and are skipped, as the item skipped
 them. `--rev` and `--root` read the tree of that commit or checkout, and the list file of that same tree. A local
 `--base` run on a branch that is behind a checker change on main sees that change reversed (the diff to the base shows
@@ -102,36 +109,43 @@ import sys
 from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import check_layers
+
+if TYPE_CHECKING:
+    import check_field_reads
 
 ROOT = Path(__file__).resolve().parent.parent
 ALLOWLIST_NAME = "test_only_members.txt"
 ALLOWLIST = f"tools/{ALLOWLIST_NAME}"
 SRC = "src"
 TESTS = "tests"
+PROJECT = "project.godot"
 # Read every field by reflection, so a `.name` in them is not a reader of one member.
 SKIPPED_TESTS = frozenset({"tests/shared_state.gd", "tests/test_prediction_reuse.gd"})
 
 # A top-level member: at the margin, after any annotations (`@export`, `@onready var`).
-DEFINITION = re.compile(r"^(?:@\w+(?:\([^)]*\))?[ \t]+)*(?:static[ \t]+)?(func|var|const|signal)[ \t]+([A-Za-z]\w*)")
+DEFINITION = re.compile(
+    r"^(?:@\w+(?:\([^)]*\))?[ \t]+)*(?P<static>static[ \t]+)?(?P<kind>func|var|const|signal)[ \t]+(?P<name>[A-Za-z]\w*)"
+)
 WORD = re.compile(r"\w+")
 GROUP_TAG = re.compile(r"^#\s*\[([a-z ]+)\]")
 KEPT = "kept"
 GROUPS = frozenset({"no reader", "own file only", KEPT})
 # A `.name` use, and whether a call parenthesis follows.
 USE = re.compile(r"\.\s*([A-Za-z]\w*)(\s*\()?")
-# The word right before a dot, not itself a member of something (`a.b.name` has no known receiver).
-RECEIVER = re.compile(r"(?<![\w.])(\w+)$")
-# A name typed where it is declared (`var x: Foo`, a parameter, a `for x: Foo in`) or built (`x := Foo.new()`).
-TYPED = re.compile(r"\b(\w+)\s*:\s*([A-Z]\w*)\b(?!\s*\.)")
-BUILT = re.compile(r"\b(\w+)\s*:?=\s*([A-Z]\w*)\s*\.\s*new\s*\(")
-EXTENDS = re.compile(r"^extends[ \t]+(\w+)", re.MULTILINE)
-# A word used in its own file other than as a member of another object: not after a `.`; `self.name` and the
+# A word used other than as a member of another object: not after a `.`. In a member's own file `self.name` and the
 # file's own `ClassName.name` are added where the file is read.
 OWN_USE = re.compile(r"(?<![\w.])(\w+)")
+# A file's parent named by its path (`extends "res://tests/rig.gd"`, as the suites extend their rigs), which the
+# receiver typing of check_field_reads, written for `src/`, does not follow.
+EXTENDS_PATH = re.compile(r'^extends[ \t]+"res://([^"]+)"', re.MULTILINE)
+INNER_HEAD = re.compile(r"^class[ \t]+([A-Za-z_]\w*)")
+# A receiver that names a class rather than a value: a word, or words joined by dots (`Boot.MainScript`).
+CLASS_REFERENCE = re.compile(r"([A-Za-z_]\w*)(?:[ \t]*\.[ \t]*[A-Za-z_]\w*)*")
 # Names the engine's own classes carry, which a test reads on a node it holds (`camera.enabled`, a
 # Control's `.size`): a `.name` read of these is taken as the engine's, never as the game's member.
 ENGINE_MEMBERS: frozenset[str] = frozenset(
@@ -179,6 +193,7 @@ class Member:
     line: int
     kind: str
     name: str
+    static: bool = False
 
     @property
     def key(self) -> tuple[str, str]:
@@ -196,61 +211,54 @@ class Reading:
 
 @dataclass(frozen=True)
 class Use:
-    """One `.name` in a file: its line, the class its receiver is known to be (None when the receiver is not
-    typed where the file shows it), and whether a call parenthesis follows."""
+    """One `.name` in a file: its line, the kind of its receiver as `check_field_reads` tells it (a class's file, an
+    inner class, a value of no class here such as an engine one, or None where it cannot tell), whether a call
+    parenthesis follows, and whether the receiver names the class itself."""
 
     path: str
     line: int
-    klass: str | None
+    kind: str | None
     call: bool
+    on_class: bool = False  # the receiver names a class (`RouteTree.grow()`), not a value of it
 
 
 @dataclass(frozen=True)
 class World:
-    """What qualifies a member by its class: each `class_name` and what it extends, the class of each file, and the
-    names that more than one file defines as a public member (the only names a reader's type is asked about)."""
+    """What tells a member from another class's member of the same name: the receiver typing of `check_field_reads`
+    over the game's and the tests' files (each class, what it extends, the kind of a receiver), and the names each
+    file and inner class defines."""
 
-    extends: dict[str, str | None]
-    class_of: dict[str, str | None]
-    colliding: frozenset[str]
+    tree: check_field_reads.Tree
+    defines: dict[str, frozenset[str]]
 
-    def ancestors(self, klass: str) -> list[str]:
-        """`klass` and every class it extends, nearest first."""
-        chain: list[str] = []
-        current: str | None = klass
-        while current and current not in chain:
-            chain.append(current)
-            current = self.extends.get(current)
-        return chain
+    def hits(self, kind: str | None, path: str) -> bool:
+        """Whether a receiver of `kind` can reach the member defined in `path`: one not told can; a class can when it
+        is that file's class, extends it, or is extended by it (a reader typed as the base reaches the override, since
+        a call dispatches on the object); a value of no class here (an engine class, a builtin, an array) cannot."""
+        return kind is None or (kind in self.tree.files and self.tree.related(kind, path))
 
-    def hits(self, klass: str | None, path: str) -> bool:
-        """Whether a reader of static type `klass` can reach the member defined in `path`: an unknown type can;
-        a known one can when it is that file's class, extends it, or is extended by it (a reader typed as the
-        base reaches the override, since a call dispatches on the object)."""
-        if klass is None:
-            return True
-        mine = self.class_of.get(path)
-        return mine is not None and (mine in self.ancestors(klass) or klass in self.ancestors(mine))
+    def reaches(self, use: Use, member: Member) -> bool:
+        """Whether a `.name` use reaches `member`: its receiver can be the member's class (`hits`), and for a static
+        function the receiver names that class, since the engine warns on a static function called on a value and no
+        warning is left standing."""
+        return self.hits(use.kind, member.path) and (use.on_class or not (member.static and member.kind == "func"))
 
-    def is_ancestor_file(self, path: str, of: str) -> bool:
-        """Whether the class defined in `path` is a proper ancestor of the class defined in `of`."""
-        mine, theirs = self.class_of.get(path), self.class_of.get(of)
-        return mine is not None and theirs is not None and mine in self.ancestors(theirs)[1:]
+    def definer(self, owner: str, name: str) -> str | None:
+        """The nearest of `owner` and the classes it extends that defines `name`."""
+        return next((a for a in self.tree.ancestors(owner) if name in self.defines.get(a, frozenset())), None)
 
 
 @dataclass(frozen=True)
 class Readings:
-    """Every `.name` use in the tests by name. A name that more than one file defines is read by a member only
-    through the uses whose receiver can be its class (`World.hits`)."""
+    """Every `.name` use in the tests by name, read by a member only through the uses whose receiver can be its class
+    (`World.hits`)."""
 
     uses: dict[str, tuple[Use, ...]]
     world: World
 
     def of(self, member: Member) -> tuple[Reading | None, bool]:
         """The first test line reading `member` as `.name` and how many lines do, and whether one calls it."""
-        uses = self.uses.get(member.name, ())
-        if member.name in self.world.colliding:
-            uses = tuple(u for u in uses if self.world.hits(u.klass, member.path))
+        uses = tuple(u for u in self.uses.get(member.name, ()) if self.world.reaches(u, member))
         if not uses:
             return None, False
         lines = sorted({(u.path, u.line) for u in uses})
@@ -262,15 +270,17 @@ class Files:
     src: dict[str, str]
     tests: dict[str, str]
     allowlist: str = ""
+    project: str = ""
 
 
-def members_of(path: str, text: str) -> list[Member]:
-    bare = bare_of(text)
+def members_of(path: str, text: str, bare: str | None = None) -> list[Member]:
+    """The public members `text` defines at its top level, read from its blanked code (`bare`, where already made)."""
+    bare = bare if bare is not None else bare_of(text)
     found: list[Member] = []
     for index, line in enumerate(bare.split("\n"), start=1):
         match = DEFINITION.match(line)
-        if match and not match.group(2).startswith("_"):
-            found.append(Member(path, index, match.group(1), match.group(2)))
+        if match and not match.group("name").startswith("_"):
+            found.append(Member(path, index, match.group("kind"), match.group("name"), bool(match.group("static"))))
     return found
 
 
@@ -279,134 +289,176 @@ def bare_of(text: str) -> str:
     return check_layers.blank(text).bare
 
 
-def world_of(src: dict[str, str]) -> World:
-    extends: dict[str, str | None] = {}
-    class_of: dict[str, str | None] = {}
-    defining: Counter[str] = Counter()
-    for path, text in src.items():
-        bare = bare_of(text)
-        named = check_layers.CLASS_NAME.search(bare)
-        class_of[path] = named.group(1) if named else None
-        if named:
-            parent = EXTENDS.search(bare)
-            extends[named.group(1)] = parent.group(1) if parent else None
-        defining.update({m.name for m in members_of(path, text)})
-    return World(extends, class_of, frozenset(name for name, count in defining.items() if count > 1))
+def world_of(files: Files) -> World:
+    """The receiver typing over the game's and the tests' files. It is `check_field_reads.Tree`, a suite's parent
+    named by its path followed too, and a preloaded script taken as its file where it has no `class_name`, through
+    another class's constant too; imported here rather than at the top, since `check_field_reads` imports this
+    file's `read_renames`."""
+    import check_field_reads
+
+    class Typing(check_field_reads.Tree):
+        def parent_of(self, path: str) -> str | None:
+            named = super().parent_of(path)
+            by_path = EXTENDS_PATH.search(self.src[path])
+            return named or (by_path.group(1) if by_path and by_path.group(1) in self.src else None)
+
+        def script_kind(self, target: str) -> str:
+            # A script a `const` preloads is its file, a class or not (`main.gd` has no `class_name`).
+            return target if target in self.files else check_field_reads.UNTRACKED
+
+        def annotation(self, text: str, path: str) -> str | None:
+            # A type through another class's preload (`Boot.MainScript`) is the preloaded script.
+            kind = super().annotation(text, path)
+            first, _, rest = text.strip().partition(".")
+            outer = path.split(check_field_reads.INNER)[0]
+            owner = self.by_name.get(first) or self.preloads.get(outer, {}).get(first)
+            if kind == check_field_reads.UNTRACKED and owner and rest in self.preloads.get(owner, {}):
+                return self.preloads[owner][rest]
+            return kind
+
+    tree = Typing(files.src | files.tests, check_field_reads.autoloads_of(files.project))
+    defines: dict[str, frozenset[str]] = {}
+    for key, klass in tree.files.items():
+        if check_field_reads.INNER in key:
+            defines[key] = frozenset(klass.methods | set(klass.fields))
+        else:
+            defines[key] = frozenset(m.group("name") for m in map(DEFINITION.match, tree.bare[key].split("\n")) if m)
+    return World(tree, defines)
 
 
-def declared_types(bare: str) -> dict[str, set[str]]:
-    declared: dict[str, set[str]] = {}
-    for pattern in (TYPED, BUILT):
-        for name, klass in pattern.findall(bare):
-            declared.setdefault(name, set()).add(klass)
-    return declared
+@dataclass(frozen=True)
+class Found:
+    """What one file says of the members of other files: each `.name` use, and each plain word of a member's name
+    that reaches it because the line's class extends the member's (counted by the member's file and name)."""
+
+    uses: list[tuple[str, Use]]
+    plain: Counter[tuple[str, str]]
 
 
-def uses_of(path: str, text: str, world: World) -> list[tuple[int, str, Use]]:
-    """Every `.name` use in a file, the class of its receiver where a typed name, `self` or a `ClassName` shows it."""
-    bare = bare_of(text)
-    own = world.class_of.get(path)
-    found: list[tuple[int, str, Use]] = []
-    declared = declared_types(bare) if any(name in bare for name in world.colliding) else {}
-    for index, line in enumerate(bare.split("\n"), start=1):
-        if "." not in line:
+def found_in(path: str, world: World, names: frozenset[str]) -> Found:
+    """Every `.name` use of a member's name in a file, typed by its receiver (`self` and `super` being the line's own
+    class), and every plain word of one that the line's class inherits from a class it extends and does not define
+    again, where no local of the name is declared on the line or in scope there."""
+    import check_field_reads
+
+    tree = world.tree
+    bare = tree.bare[path]
+    blocks = check_field_reads.block_index(bare)
+    inner = check_field_reads.inner_lines(bare)
+    opt_out = check_field_reads.opt_out_of(tree.src[path])
+    ignored = opt_out.warnings if opt_out else ()
+    classes = set(tree.by_name) | set(tree.preloads.get(path, {}))
+    uses: list[tuple[str, Use]] = []
+    plain: Counter[tuple[str, str]] = Counter()
+    for index, line in enumerate(bare.split("\n")):
+        if not any(word in names for word in WORD.findall(line)):
             continue
+        owner = path
+        if inner[index]:
+            head = INNER_HEAD.match(tree.blocks[path][blocks[index]])
+            owner = f"{path}{check_field_reads.INNER}{head.group(1)}" if head else path
+        scope = check_field_reads.Scope(tree, path, blocks[index], index)
         for match in USE.finditer(line):
-            if match.group(1) not in world.colliding:
-                found.append((index, match.group(1), Use(path, index, None, bool(match.group(2)))))
+            name = match.group(1)
+            if name not in names:
                 continue
-            receiver = RECEIVER.search(line[: match.start()].rstrip())
-            klass: str | None = None
-            if receiver:
-                word = receiver.group(1)
-                if word == "self":
-                    klass = own
-                elif word in world.extends:
-                    klass = word
-                elif len(declared.get(word, ())) == 1:
-                    (typed,) = declared[word]
-                    klass = typed if typed in world.extends else None
-            found.append((index, match.group(1), Use(path, index, klass, bool(match.group(2)))))
-    return found
+            receiver = check_field_reads.receiver_text(line, match.start())
+            call = bool(match.group(2))
+            kind: str | None
+            if receiver is None:
+                kind = None
+            elif receiver.strip() in ("self", "super"):
+                kind = owner
+            else:
+                kind = tree.chain_class(receiver, path, scope, inner[index])
+            # A value of no class here, which in a file whose opt-out line silences the engine's warning for the access
+            # (`var _hud: CanvasLayer`, then `_hud.configure()`) may still hold a game object.
+            silenced = ("unsafe_method_access" if call else "unsafe_property_access") in ignored
+            if kind is not None and kind not in tree.files and silenced:
+                kind = None
+            reference = CLASS_REFERENCE.fullmatch(receiver.strip()) if receiver else None
+            on_class = bool(reference and reference.group(1) in classes and kind in tree.files)
+            uses.append((name, Use(path, index + 1, kind, call, on_class)))
+        for match in OWN_USE.finditer(line):
+            name = match.group(1)
+            if name not in names:
+                continue
+            definer = world.definer(owner, name)
+            if definer is None or definer in (path, owner) or name in scope:
+                continue
+            # The word that declares a local of the name (`var gap := 2`) is the local, not the member.
+            if not any(d.line == index for d in tree.decls[path][blocks[index]].get(name, [])):
+                plain[(definer, name)] += 1
+    return Found(uses, plain)
 
 
-def readings_of(tests: dict[str, str], world: World) -> Readings:
-    """For each name a test reads as `.name`, its uses (a test's own `self` is no known class)."""
+def readings_of(tests: dict[str, str], world: World, names: frozenset[str]) -> Readings:
+    """For each member's name a test reads as `.name`, its uses."""
     uses: dict[str, list[Use]] = {}
     for path in sorted(tests):
         if path in SKIPPED_TESTS:
             continue
-        for _, name, use in uses_of(path, tests[path], world):
+        for name, use in found_in(path, world, names).uses:
             uses.setdefault(name, []).append(use)
     return Readings({name: tuple(found) for name, found in uses.items()}, world)
 
 
 @dataclass(frozen=True)
 class Stand:
-    """What a member stands on: word uses in the other files of `src/`, and uses in its own file other than as
-    a member of another object (`other.name` is a call on a namesake, not a use of this member)."""
+    """What a member stands on: uses in the other files of `src/` that reach it, and uses in its own file other than
+    as a member of another object (`other.name` is a call on a namesake, not a use of this member)."""
 
     elsewhere: int
     own: int
-    unsure: int = 0  # of `elsewhere`, the `.name` uses whose receiver is not typed, so may be another class's
+    unsure: int = 0  # of `elsewhere`, the `.name` uses whose receiver is not told, so may be another class's
 
 
-def scan(files: Files) -> tuple[list[Member], dict[tuple[str, str], Stand]]:
-    """Every public member defined under `src/`, with the uses of its name in every other file (each file's
-    count less its own definitions of the name) and in its own file (less its definitions there)."""
+@dataclass(frozen=True)
+class Scanned:
+    """Every public member defined under `src/`, what each stands on, and what the tests read."""
+
+    members: list[Member]
+    stands: dict[tuple[str, str], Stand]
+    readings: Readings
+
+
+def scan(files: Files) -> Scanned:
+    """Every public member defined under `src/`, with the uses in other files that reach it (`found_in`) and the uses
+    in its own file (less its definitions there), and the tests' readings."""
+    world = world_of(files)
     members: list[Member] = []
-    words: dict[str, Counter[str]] = {}
-    own_words: dict[str, Counter[str]] = {}
-    defined: dict[str, Counter[str]] = {}
+    own_uses: dict[str, dict[str, int]] = {}
     for path, text in sorted(files.src.items()):
-        found = members_of(path, text)
+        bare = world.tree.bare[path]
+        found = members_of(path, text, bare)
         members.extend(found)
-        bare = bare_of(text)
-        words[path] = Counter(WORD.findall(bare))
         own = Counter(OWN_USE.findall(bare))
         class_name = check_layers.CLASS_NAME.search(bare)
         qualifier = rf"(?<![\w.])(?:self{'|' + re.escape(class_name.group(1)) if class_name else ''})\s*\.\s*(\w+)"
         own.update(re.findall(qualifier, bare))
-        own_words[path] = own
-        defined[path] = Counter(member.name for member in found)
-    uses = {path: {name: words[path][name] - defined[path][name] for name in defined[path]} for path in words}
-    own_uses = {path: {name: own_words[path][name] - defined[path][name] for name in defined[path]} for path in words}
-    totals: Counter[str] = Counter()
-    for path in words:
-        totals.update({name: words[path][name] - defined[path][name] for name in {m.name for m in members}})
-    world = world_of(files.src)
-    dotted: dict[str, dict[str, list[str | None]]] = {path: {} for path in words}
-    for path in words:
-        for _, name, use in uses_of(path, files.src[path], world):
-            if name in world.colliding:
-                dotted[path].setdefault(name, []).append(use.klass)
+        defined = Counter(member.name for member in found)
+        own_uses[path] = {name: own[name] - defined[name] for name in defined}
+    names = frozenset(member.name for member in members)
+    dotted: dict[str, list[Use]] = {}
+    plain: Counter[tuple[str, str]] = Counter()
+    for path in files.src:
+        found_here = found_in(path, world, names)
+        for name, use in found_here.uses:
+            dotted.setdefault(name, []).append(use)
+        plain.update(found_here.plain)
     stands: dict[tuple[str, str], Stand] = {}
     for member in members:
-        own_count = own_uses[member.path][member.name]
-        if member.name not in world.colliding:
-            elsewhere = totals[member.name] - uses[member.path][member.name]
-            stands[member.key] = Stand(elsewhere=elsewhere, own=own_count)
-            continue
-        # A name more than one file defines: in a file that defines it too, a plain use is that file's own member,
-        # and only a `.name` whose receiver can be this class counts (a plain use in an ancestor's file counts too:
-        # it is a call the override answers); elsewhere a `.name` on a known other class is taken off the word
-        # count. A receiver not typed counts, and is counted as unsure.
-        elsewhere = unsure = 0
-        for path in words:
-            if path == member.path:
-                continue
-            dots = dotted[path].get(member.name, [])
-            reaching = [klass for klass in dots if world.hits(klass, member.path)]
-            unsure += sum(1 for klass in reaching if klass is None)
-            if member.name in defined[path]:
-                elsewhere += len(reaching)
-                if world.is_ancestor_file(path, member.path):
-                    # A plain use in an ancestor's own file dispatches to this override (a template method).
-                    elsewhere += own_uses[path][member.name]
-            else:
-                elsewhere += words[path][member.name] - (len(dots) - len(reaching))
-        stands[member.key] = Stand(elsewhere=elsewhere, own=own_count, unsure=unsure)
-    return members, stands
+        # A `.name` in another file reaches the member where its receiver can be the member's class, a receiver not
+        # told counting (as unsure); a plain word reaches it in a class that extends the member's and does not define
+        # it again (`found_in` counts those), and in an ancestor's file that defines it too (a call the override
+        # answers: a template method).
+        reaching = [u for u in dotted.get(member.name, []) if u.path != member.path and world.reaches(u, member)]
+        elsewhere = len(reaching) + plain[member.key]
+        for ancestor in world.tree.ancestors(member.path)[1:]:
+            elsewhere += own_uses.get(ancestor, {}).get(member.name, 0)
+        unsure = sum(1 for use in reaching if use.kind is None)
+        stands[member.key] = Stand(elsewhere=elsewhere, own=own_uses[member.path][member.name], unsure=unsure)
+    return Scanned(members, stands, readings_of(files.tests, world, names))
 
 
 def is_test_only(member: Member, stand: Stand, readings: Readings) -> bool:
@@ -426,9 +478,8 @@ def group_of(stand: Stand) -> str:
 
 def test_only(files: Files) -> tuple[list[Member], Readings]:
     """The test-only members, with the readings of every name a test reads."""
-    members, stands = scan(files)
-    readings = readings_of(files.tests, world_of(files.src))
-    return [m for m in members if is_test_only(m, stands[m.key], readings)], readings
+    scanned = scan(files)
+    return [m for m in scanned.members if is_test_only(m, scanned.stands[m.key], scanned.readings)], scanned.readings
 
 
 @dataclass(frozen=True)
@@ -532,13 +583,13 @@ def check(
     files: Files,
     allowed: set[tuple[str, str]],
     kept: frozenset[tuple[str, str]] = frozenset(),
-    scanned: tuple[list[Member], dict[tuple[str, str], Stand]] | None = None,
+    scanned: Scanned | None = None,
 ) -> tuple[list[str], list[Member]]:
     """The failures (a test-only member not listed, a listed line gone stale) and every test-only member. A listed
-    line in `kept` for a name more than one file defines stands while every other use of it is a `.name` whose
-    receiver is not typed: the check cannot tell whose it is, and the line says it is not the game's."""
-    members, stands = scanned or scan(files)
-    readings = readings_of(files.tests, world_of(files.src))
+    line in `kept` stands while every use of it in another file is a `.name` whose receiver is not told: the check
+    cannot tell whose it is, and the line says it is not the game's."""
+    scanned = scanned or scan(files)
+    members, stands, readings = scanned.members, scanned.stands, scanned.readings
     only = [m for m in members if is_test_only(m, stands[m.key], readings)]
     failures: list[str] = []
     for member in only:
@@ -586,19 +637,21 @@ def read_checkout(root: Path) -> Files:
         }
 
     listing = root / ALLOWLIST
+    project = root / PROJECT
     return Files(
         src=folder(SRC),
         tests=folder(TESTS),
         allowlist=listing.read_text(encoding="utf-8") if listing.exists() else "",
+        project=project.read_text(encoding="utf-8") if project.exists() else "",
     )
 
 
 def read_rev(rev: str, root: Path = ROOT) -> Files:
-    listing = check_layers.git("ls-tree", "-r", "-z", rev, "--", SRC, TESTS, ALLOWLIST, cwd=root).decode()
+    listing = check_layers.git("ls-tree", "-r", "-z", rev, "--", SRC, TESTS, ALLOWLIST, PROJECT, cwd=root).decode()
     blobs: dict[str, str] = {}
     for record in listing.split("\0"):
         meta, _, path = record.partition("\t")
-        if record and (path.endswith(".gd") or path == ALLOWLIST):
+        if record and (path.endswith(".gd") or path in (ALLOWLIST, PROJECT)):
             blobs[path] = meta.split()[2]
     batch = check_layers.git(
         "cat-file", "--batch", cwd=root, data="".join(f"{blob}\n" for blob in blobs.values()).encode()
@@ -614,6 +667,7 @@ def read_rev(rev: str, root: Path = ROOT) -> Files:
         src={p: t for p, t in texts.items() if p.startswith(SRC + "/")},
         tests={p: t for p, t in texts.items() if p.startswith(TESTS + "/")},
         allowlist=texts.get(ALLOWLIST, ""),
+        project=texts.get(PROJECT, ""),
     )
 
 
@@ -652,11 +706,12 @@ def parse(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="tools/check_test_only_members.py",
         description=(
-            "Fails when a test reads a public func, var, const or signal defined under src/ that no other word under"
-            " src/ names, unless tools/test_only_members.txt lists it, and fails on a listed line that has gone"
+            "Fails when a test reads a public func, var, const or signal defined under src/ that no other file under"
+            " src/ reaches, unless tools/test_only_members.txt lists it, and fails on a listed line that has gone"
             " stale (the member has a reader in another file, no test reads it, or it is gone). A caller in the"
-            " member's own file is not a reader; a name more than one file defines is told by the reader's type where"
-            " it is known; constants are exempt unless used nowhere."
+            " member's own file is not a reader; a reader is told by its receiver's type where it is known (another"
+            " class, a local, an engine value or a static function called on a value is no reader); constants are"
+            " exempt unless used nowhere."
             " A caller under src/dev counts as a reader; a function is read only as a call, not passed as a"
             " callable; a short set of engine member names (ENGINE_MEMBERS) is never taken as a read. The list's"
             " [no reader] and [own file only] groups only shrink."
@@ -701,7 +756,7 @@ def main(argv: list[str]) -> int:
         renames = read_renames(args.base, root, args.rev) if args.base and base is not None else None
         changed = read_checker_changed(args.base, root, args.rev) if args.base and base is not None else False
         failures.extend(list_failures(entries, base, renames, changed))
-        stands = scanned[1]
+        stands = scanned.stands
     except (check_layers.LayerError, MembersError, OSError) as error:
         print(f"tools/check_test_only_members.py: {error}", file=sys.stderr)
         return 1
