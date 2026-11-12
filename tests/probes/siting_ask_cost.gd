@@ -1,10 +1,11 @@
 extends RefCounted
 ## What one `SpawnSiting.ask_of_ground()` costs at each day the region wall stands on, the call
 ## `ResistanceDirector._nearest_alley_within()` makes for every candidate tile of a relocation, and
-## `region()`'s part of it: the median per-call time over a few thousand calls per day, one line a
-## day (`SITING_ASK_COST_JSON`). Run in each revision's checkout and compare the times; the
+## the day's region's part of it: the median per-call time over a few thousand calls per day, one
+## line a day (`SITING_ASK_COST_JSON`). Run in each revision's checkout and compare the times; the
 ## `bodies` count is what the day's region holds, and `same` that two asks in a row are handed the
-## very same region (what a cache keeps), which is always false before there is one.
+## very same region (what a cache keeps), asked of the streets that hand the siting its region
+## (`DayStreets.siting_region()`), which is always false before there is one.
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
@@ -31,10 +32,10 @@ func run(t: TestRunner) -> void:
 				siting.ask_of_ground()
 			per_call.append(float(Time.get_ticks_usec() - began) / float(CALLS))
 		per_call.sort()
-		var region := siting.region()
+		var region := city.streets().siting_region()
 		print("SITING_ASK_COST_JSON " + JSON.stringify({"day": day,
 				"bodies": region.centres.size() if region else 0,
-				"same": is_same(siting.region(), siting.region()),
+				"same": is_same(city.streets().siting_region(), city.streets().siting_region()),
 				"us_per_call": snappedf(per_call[ROUNDS / 2], 0.001)}))
 	city.free()
 	t.check(true, "ran")

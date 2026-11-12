@@ -177,8 +177,8 @@ func _test_a_sliver_at_the_edge_is_not_seen(t: TestRunner) -> void:
 ## reaches no higher than the ring's top; in the joystick scheme what lies in a corner is not
 ## visible, in the tap scheme it is, and the middle of the view is visible in both.
 func _test_the_joystick_corners_are_not_visible(t: TestRunner) -> void:
-	var left := TouchCover.joystick().left
-	var right := TouchCover.joystick().right
+	var left := TouchCover.joystick().left_corner()
+	var right := TouchCover.joystick().right_corner()
 	var ring := Vector2(TouchControls.RING_RADIUS, TouchControls.RING_RADIUS)
 	var button := Vector2(TouchControls.RUN_RADIUS, TouchControls.RUN_RADIUS)
 	t.check(left.encloses(Rect2(TouchControls.FOCUS_LEFT - ring, ring * 2.0))
@@ -226,7 +226,7 @@ func _test_a_thing_under_the_joystick_controls_is_not_seen(t: TestRunner) -> voi
 	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
 	var instances: Array[EventInstance] = [yeller]
 	var view := _view(Vector2.ZERO)
-	var corner := view.position + TouchCover.joystick().left.get_center() \
+	var corner := view.position + TouchCover.joystick().left_corner().get_center() \
 			* (view.size / ScreenOrientation.DESIGN_SIZE)
 	# The view's centre that puts the yeller's drawn box in the middle of that corner.
 	var centre := yeller.drawn_box().get_center() - corner
@@ -593,11 +593,11 @@ func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 	events.use_controls(controls.covering)
 	var view := _view(stroller.camera_screen_center())
 	var scale := view.size / ScreenOrientation.DESIGN_SIZE
-	var corner := view.position + TouchCover.joystick().left.get_center() * scale
+	var corner := view.position + TouchCover.joystick().left_corner().get_center() * scale
 	var def := EventCatalogue.by_id("homeless_yeller")
 	var yeller := events.spawn_extra(def, her)
 	yeller.global_position = corner - yeller.drawn_box().get_center()
-	var right_corner := view.position + TouchCover.joystick().right.get_center() * scale
+	var right_corner := view.position + TouchCover.joystick().right_corner().get_center() * scale
 	var cyclist := EventCatalogue.by_id("cyclist")
 	# Warned of as a pelican, as the director's rider is (`spawn_warned()` makes the pelican of the
 	# roll its warning made).

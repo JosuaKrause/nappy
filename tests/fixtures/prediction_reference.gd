@@ -1,8 +1,9 @@
 extends RefCounted
 ## Independent pre-reuse gross projection, kept for bitwise behavioral comparisons.
 ## The sampling loops and arithmetic follow the stacked baseline; no new cache path is used.
+## `sensitivity` is the baby's, as the halo last told the source (`ExcitementSource.set_player_at()`).
 
-static func event_gross(source: EventInstance, player_position: Vector2) -> float:
+static func event_gross(source: EventInstance, player_position: Vector2, sensitivity: float) -> float:
 	if source.is_finished or source.is_leaving or source.excitement.is_outranked():
 		return 0.0
 	var velocity := source.caret_velocity()
@@ -25,9 +26,9 @@ static func event_gross(source: EventInstance, player_position: Vector2) -> floa
 			rate = 0.0
 		landed += rate * dt
 	var gross := landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	return maxf(gross * source.excitement.player_sensitivity, 0.0)
+	return maxf(gross * sensitivity, 0.0)
 
-static func crowd_gross(source: CrowdAgent, player_position: Vector2) -> float:
+static func crowd_gross(source: CrowdAgent, player_position: Vector2, sensitivity: float) -> float:
 	var vel := source.velocity()
 	var closing := source.excitement.player_velocity - vel
 	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON \
@@ -45,4 +46,4 @@ static func crowd_gross(source: CrowdAgent, player_position: Vector2) -> float:
 		landed += source.excitement.contribution_at(
 				player_position + source.excitement.player_velocity * time - vel * time) * dt
 	var gross := landed - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	return maxf(gross * source.excitement.player_sensitivity, 0.0)
+	return maxf(gross * sensitivity, 0.0)

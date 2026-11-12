@@ -151,14 +151,15 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 	var projected_off_screen := false
 	while x < 200.0 and not seen:
 		car.position = Vector2(x, 180.0)
-		car.mood().set_player_at(car.position + Vector2(60.0, 0.0))
+		var her := car.position + Vector2(60.0, 0.0)
+		car.mood().set_player_at(her)
 		car.mood().advance(STEP)
 		var asked := car.end_the_frame(0.0)
 		var in_box := DrawnView.box_of(screen).intersects(
 				Rect2(car.position + CrowdAgent.DRAWN_REACH.position, CrowdAgent.DRAWN_REACH.size))
 		if not in_box:
 			skipped += 0 if asked else 1
-			projected_off_screen = projected_off_screen or _the_gate_projected_her_caret(car)
+			projected_off_screen = projected_off_screen or _the_gate_projected_her_caret(car, her)
 		asked_since_off = asked_since_off or asked
 		# Where the car's own drawing reaches: its body about its feet and the caret above it.
 		if shown.intersects(Rect2(car.position + Vector2(-41.0, -66.0), Vector2(82.0, 100.0))):
@@ -170,10 +171,11 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 	# The probe's positive control: the car on screen, redrawn with its picture changed, projects
 	# the caret in that frame, and the probe says so.
 	car.position = Vector2(200.0, 180.0)
-	car.mood().set_player_at(car.position + Vector2(60.0, 0.0))
+	var her_on_screen := car.position + Vector2(60.0, 0.0)
+	car.mood().set_player_at(her_on_screen)
 	car.mood().advance(STEP)
 	car.end_the_frame(0.0)
-	t.check(_the_gate_projected_her_caret(car),
+	t.check(_the_gate_projected_her_caret(car, her_on_screen),
 			"the probe sees a caret the gate did project, on screen")
 	t.check(seen and first_seen_asked,
 			"it asked for its redraw no later than the first frame any of it shows")
@@ -185,9 +187,9 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 ## excitement's clock, which the gate has not moved since, and the answer reads where she stands,
 ## which is no part of that key: so she is moved far from the car and asked about, and a car whose
 ## caret the gate had projected answers what it was projected as (the doubled red the rig owes it),
-## while one it had not answers afresh, for a car she is far from (none). She is put back as she was.
-func _the_gate_projected_her_caret(car: CrowdAgent) -> bool:
-	var at := car.mood().player_at
+## while one it had not answers afresh, for a car she is far from (none). She is put back where the
+## frame told the car she was, `at`.
+func _the_gate_projected_her_caret(car: CrowdAgent, at: Vector2) -> bool:
 	car.mood().set_player_at(at + Vector2(5000.0, 0.0))
 	var answered := car.mood().caret_strength()
 	car.mood().set_player_at(at)
