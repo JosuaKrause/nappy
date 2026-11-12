@@ -388,8 +388,10 @@ func _test_a_set_piece_is_one_plan_owed_to_her_walk(t: TestRunner) -> void:
 ## (`EventManager.setup()`, the city's `DayStreets`), never against a tree of its own: after the
 ## city's own dawn (`City.start_day()`), the walk the manager planned is the dawn's route tree, and
 ## every street the dawn closed and every segment of its region wall is held before the catalogue
-## rolls a candidate (`CityMap.held_streets()`). A planner that grew its own tree would plan a walk
-## that is not the dawn's, and one that read no closures would leave a closed street unheld.
+## rolls a candidate (`CityMap.held_streets()`), and the day's plans are the dawn's own wall and door
+## bodies. A planner that grew its own tree would plan a walk that is not the dawn's, one that read
+## no closures would leave a closed street unheld, and one that grew its own region plan would place
+## bodies of its own beside the ones the siting and the crowd read.
 func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRunner) -> void:
 	var day := Tuning.REGION_WALL_FIRST_DAY  # so a region wall is in play, not only seals.
 	var state := CityState.new()
@@ -412,6 +414,18 @@ func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRu
 			"the dawn grew a region wall to hold (%d segments)" % streets.region_plan().walls.size())
 	for segment in streets.region_plan().walls:
 		t.check(held.has(segment.key()), "the region wall's segment %s is held" % segment.key())
+	# The very bodies of the dawn's region plan are the day's, not those of a plan grown again from
+	# the same tree: the siting's region and the crowd's gates read the streets' plan.
+	var bodies: Array[EventPlan] = streets.region_plan().wall_bodies + streets.region_plan().door_bodies
+	var plans := _city.events.plans()
+	var among := 0
+	for body in bodies:
+		if plans.has(body):
+			among += 1
+	t.check(not bodies.is_empty(), "the dawn's region plan has bodies to find (%d)" % bodies.size())
+	t.check(among == bodies.size(),
+			"every wall and door body of the dawn's region plan is among the day's plans (%d of %d)"
+			% [among, bodies.size()])
 
 
 ## M100, small, real, and nobody's: the wiring half of "a pursuer streamed out mid-chase comes

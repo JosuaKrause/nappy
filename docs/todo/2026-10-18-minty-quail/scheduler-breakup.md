@@ -40,8 +40,7 @@ the line counts are its estimates. All under `src/events/`:
 Three blocks are not moved, because `placement-by-construction.md` deletes them in place: the old
 siting roll, the fitted tables, and the escape's own draw loop. The fallback that grows a route tree
 when none is handed in goes with `DawnContext` below, whose shared test helper hands a route to every
-call under `tests/` that hands none today; the day planner's own went with the event manager's hand-in
-(record 2026-10-18-minty-quail-crisp-otter).
+call under `tests/` that hands none today.
 
 **The pull requests, interleaved with placement.** Each move regenerates `tools/field_reads.txt`
 with `--write`: `--base` passes code reading listed fields moved into a new file with no more uses,

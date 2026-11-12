@@ -24,8 +24,12 @@ day planner's fallback that grows a route tree when dawn grew none.
   error on a null tree over the 78 suites that start a manager's day (none fired; removing one rig's
   streets made it fire). The escape city rig's three repeated `setup()` calls, which only swapped in
   equal parts, are deleted.
-- **The event manager's suite holds** that a day started through the manager is planned on the tree
-  and the closures its streets hold.
+- **The event manager's suite holds** that a day started through the manager is planned on the tree,
+  the closures and the region plan its streets hold: the dawn's own wall and door bodies are among
+  the day's plans, which a region plan grown again from the same tree fails ("0 of 98").
+- **`setup()` connects to the return phase plainly**: no caller sets one manager up twice, so its
+  connect-once guard is gone, and `tools/layer_map.py` counts four `EventBus` uses in
+  `event_manager.gd`, one fewer.
 - **`tools/field_reads.txt` loses six lines** (`[EventWorld]` `city` three times, `[City]` `run` and
   `signals` for the manager, `[WorldMap]` `world` for the manager) and gains none.
 

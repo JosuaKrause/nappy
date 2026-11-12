@@ -384,8 +384,9 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 	# `city.start_day()` first, unlike `test_event_manager.gd`'s own rigs, which begin the city's
 	# streets themselves (`RigStreets.begin()`) — this test is specifically about
 	# `EventManager.start_day()` placing the doors off the region plan the city's own dawn grew
-	# (`DayStreets.region_plan()`), as real play does, since `main._start()` always calls
-	# `_city.start_day()` first.
+	# (`DayStreets.region_plan()`), as real play does: the day director's dawn
+	# (`DayDirector._dress_the_city()`) calls `city.start_day()` before its `_plan_the_walk()`
+	# calls `events.start_day()`.
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
 	var closures_rng := RandomNumberGenerator.new()

@@ -192,12 +192,7 @@ func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = n
 	ahead.use_director(director, spawn_siting if spawn_siting
 			else SpawnSiting.new(map, world.navigator(), visible_view,
 					streets.siting_region if streets else Callable()))
-	# **Connected once however often this is called.** A second call on the same manager would
-	# connect it again, which Godot answers with an `ERROR: Signal ... is already connected` — an
-	# error line in a headless run is a failed `check.sh`, and a second connection would fire the
-	# same forward twice besides.
-	if not EventBus.return_phase_started.is_connected(_owe_the_return):
-		EventBus.return_phase_started.connect(_owe_the_return)
+	EventBus.return_phase_started.connect(_owe_the_return)
 
 ## Hands the manager a world that is not the city — the escape's building — whose events stand on
 ## `map` and move by its navigator, belonging to `run`: no city to plan a day over, no director
