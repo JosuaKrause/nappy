@@ -93,8 +93,8 @@ own:
 
 **What is left: the conversion**, one pull request per area, each deleting the lines it converts
 from `tools/field_reads.txt` (its `# [Class] path` groups say which class's fields are read and
-from where; `--summary` prints the counts). The reads are heaviest on the event definition and
-the event instance, then the city map and the city, so the events go first, as the ask says.
+from where; `--summary` prints the counts and the classes read most). The event definition's
+fields are the most read, so the events go first, as the ask says.
 
 Left, each its own design question:
 
@@ -103,15 +103,23 @@ Left, each its own design question:
   `ResistanceRunState`, `RunFacts`, `SettledState`): the parts reached through methods and each
   part's fields behind methods; the vars are renamed, and the files the third hand-ins pull
   request touches and the tests read them, so it waits for that pull request.
-- **The city's own classes** have their readers converted except two groups, each with a home:
+- **The city's own classes** still have readers under `src/`, which `tools/field_reads.txt` lists
+  by class: the city map's (`CityMap`) in the routes (the closure, region and seal planners, the
+  route tree, the corridor), the blackout, the streamed ground and the city's generator, besides the
+  events', the run flow's and the rigs'; a building's (`Building`) in the city scene, the city's fronts, the poster walls, the blackout, the roof
+  previews and the scene recipes. Two groups have a home of their own:
   - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
     (`RecipeCityContext`) are the scene recipes' city. The scene recipes are placed by location (polite-tapir's `placement-by-construction.md`, "What is built"), so they wait
     for nothing there; what is left is a design for the map capturing and restoring itself.
-  - A field only a test still reads (`CityMap.home_rect`, `home_block`, `courtyard_rects`,
-    `Building.scenery_clock`, `door_world_x_range`, `power_station`, `station_door_col`,
-    `station_yard_cols`, `BuildingShadows.streamed`, `falls_on`, `PosterState.pasted_through`) keeps its
-    direct write in the city and goes with the tests-one-module item (`tests-one-module.md`), when its
-    tests read through a method the game also calls.
+  - A field only a test still reads outside its own class and the code that writes it
+    (`CityMap.home_rect`, which the map's capture and restore also reads by name, `courtyard_rects`,
+    `Building.scenery_clock`, `door_world_x_range`, `station_door_col`, `station_yard_cols`,
+    `BuildingShadows.streamed`, `falls_on`) keeps its direct write in the city and goes with the
+    tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
+    also calls. Three fields once counted with them have game readers and are converted with those
+    readers: `CityMap.home_block` (the day planner, the map's capture and restore, the scene recipe
+    runtime), `Building.power_station` (the city scene, where it dresses the station's fronts) and
+    `PosterState.pasted_through` (the poster walls, which read and write it).
 - **Her and the baby's parts that only tests read.** `Stroller.atlas` and `Baby.timing` are handed in
   through `use_atlas()` and `use_frame_timing()` and read by their own file and two suites:
   `tests/test_atlas_boot.gd` finds every node holding an atlas by the field's name (`"atlas" in node`,
