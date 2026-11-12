@@ -35,6 +35,7 @@ const TITLE := preload("res://scenes/ui/title_screen.tscn")
 ## on it.
 const RUN_SEED := 2
 const TOUCH_CONTROLS := preload("res://scenes/ui/touch_controls.tscn")
+const RecordingAtlas := preload("res://tests/recording_atlas.gd")
 
 func run(t: TestRunner) -> void:
 	var was_paused: bool = t.get_tree().paused
@@ -86,12 +87,15 @@ func _fresh_run() -> RunState:
 
 ## A pause screen on a platform, in the tree and closed, standing over `run`, or over a fresh run of
 ## its own.
-func _pause(t: TestRunner, touch := false, can_quit := true, run: RunState = null) -> PauseScreen:
+func _pause(t: TestRunner, touch := false, can_quit := true, run: RunState = null,
+		atlas: AtlasLibrary = null) -> PauseScreen:
 	var pause: PauseScreen = PAUSE.instantiate()
 	if run == null:
 		run = _fresh_run()
 	pause.use_run(run)
 	pause.use_platform(touch, can_quit)
+	if atlas != null:
+		pause.use_atlas(atlas)
 	t.add_child(pause)
 	return pause
 
@@ -865,11 +869,11 @@ func _test_the_pause_hint_and_body_match_the_platform(t: TestRunner) -> void:
 	pause.open()
 	t.check(hint.text == "",
 			"the hint says nothing at all, even on a keyboard-and-mouse desktop ('%s')" % hint.text)
-	t.check(not "Shift" in body.line and not "Arrows" in body.line,
+	t.check(not "Shift" in body.get_parsed_text() and not "Arrows" in body.get_parsed_text(),
 			"no key is named")
 	# *(2026-09-07: "the movement tutorial should just say 'Tap to walk' and 'Double tap to run'.
 	# no mention of tapping her or 'that way'".)*
-	t.check(not "that way" in body.line and not "tap her" in body.line,
+	t.check(not "that way" in body.get_parsed_text() and not "tap her" in body.get_parsed_text(),
 			"no mention of tapping her or 'that way' — stopping still works, it just is not taught")
 	pause.close()
 
@@ -1425,19 +1429,26 @@ func _left_click() -> InputEventMouseButton:
 
 ## The pause screen's run line shows the run button where the chosen scheme draws one (inbox #533),
 ## and is re-read on every open, since the title screen can choose the scheme after the screen was
-## built.
+## built. The line is read as its label shows it (`RichTextLabel.get_parsed_text()`, where the
+## button's symbol stands as the one space a picture takes), and the symbol as the picture it asks
+## of the atlas the screen is handed (`use_atlas()`, as `main` hands it one).
 func _test_the_pause_body_names_the_run_button_in_the_joystick_scheme(t: TestRunner) -> void:
 	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
 	t.add_child(controls)
-	var pause := _pause(t)
+	var atlas := RecordingAtlas.new()
+	var pause := _pause(t, false, true, null, atlas)
 	var body := UI.control(pause, "Body") as HelpText
 	pause.open()
 	pause.close()
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
+	# Forgets what was asked before this open: the buttons' glyphs, and the tap scheme's line.
+	atlas.pictures_asked()
 	pause.open()
-	t.check(body.line.begins_with("Tap to walk, hold {run} or double tap to run."),
+	t.check(body.get_parsed_text().begins_with(
+			"Tap to walk, hold {run} or double tap to run.".replace(HelpText.RUN_TOKEN, " "))
+			and atlas.pictures_asked() == [&"ui/run"],
 			"joystick scheme: the line is read again on this open and shows the run button, got '%s'"
-			% body.line)
+			% body.get_parsed_text())
 	pause.close()
 	pause.free()
 	controls.free()

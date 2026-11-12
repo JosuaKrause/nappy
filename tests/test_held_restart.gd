@@ -378,7 +378,7 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t: TestRu
 		t.check(restarts[0] == 1,
 				"the %s does not restart it a second time" % release_name)
 		# The pause carries on by closing; the summary by `continued`.
-		var stayed := (screen as PauseScreen).is_open() if is_pause else carried_on[0] == 0
+		var stayed: bool = (screen as PauseScreen).is_open() if is_pause else carried_on[0] == 0
 		t.check(stayed, "and never reads as %s" % ("carrying on" if is_pause else "continuing"))
 
 		if screen is PauseScreen:

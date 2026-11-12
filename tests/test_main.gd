@@ -652,7 +652,8 @@ func _test_the_run_configuration_starts_the_graph(t: TestRunner) -> void:
 ## Pressing `6` twice must leave the ring empty rather than merely hidden, so a graph turned back on
 ## fills from that moment instead of picking up a stale window. *(2026-09-15: "spike recording
 ## should only be on while the layer is on. that means toggling the layer twice will lead to a
-## blank frame array".)* The ring is fed by the readout's own frames.
+## blank frame array".)* The ring is fed by the readout's own frames, and read as the bars' classes,
+## one per frame it holds.
 func _test_key_six_twice_empties_the_ring(t: TestRunner) -> void:
 	var rig := ReadoutRig.new(t, _config([]))
 	var graph := rig.graph()
@@ -660,12 +661,13 @@ func _test_key_six_twice_empties_the_ring(t: TestRunner) -> void:
 	var frames := 10
 	for i in frames:
 		await rig.readout.get_tree().process_frame
-	t.check(graph.frames().size() == frames,
-			"the ring holds what the layer saw while it was on (%d of %d)" % [graph.frames().size(), frames])
+	t.check(graph.classes().size() == frames,
+			"the ring holds what the layer saw while it was on (%d of %d)"
+			% [graph.classes().size(), frames])
 	UI.push(rig.readout, _key(KEY_6))
-	t.check(graph.frames().is_empty(), "turning the layer back off empties the ring")
+	t.check(graph.classes().is_empty(), "turning the layer back off empties the ring")
 	UI.push(rig.readout, _key(KEY_6))
-	t.check(graph.frames().is_empty(),
+	t.check(graph.classes().is_empty(),
 			"and turning it back on again starts from empty, not from what the ring held before")
 	rig.free_all()
 
@@ -680,12 +682,12 @@ func _test_the_title_hides_the_graph_and_keeps_its_ring(t: TestRunner) -> void:
 	UI.push(rig.readout, _key(KEY_6))
 	for i in 2:
 		graph.push(0.010)
-	t.check(graph.visible and graph.frames().size() == 2,
+	t.check(graph.visible and graph.classes().size() == 2,
 			"the graph is on and holds two frames before the title opens")
 
 	rig.readout.open_the_title()
 	t.check(not graph.visible, "opening the title hides the graph")
-	t.check(graph.frames().size() == 2,
+	t.check(graph.classes().size() == 2,
 			"but does not clear the ring — only a 6 toggle-off does that")
 
 	UI.push(rig.readout, _key(KEY_4))
@@ -694,7 +696,7 @@ func _test_the_title_hides_the_graph_and_keeps_its_ring(t: TestRunner) -> void:
 	rig.readout.close_the_title()
 	rig.readout.show_for_the_walk()
 	t.check(graph.visible, "closing the title shows the graph again")
-	t.check(graph.frames().size() == 2, "with the ring exactly as it was left")
+	t.check(graph.classes().size() == 2, "with the ring exactly as it was left")
 
 	UI.push(rig.readout, _key(KEY_4))
 	t.check(graph.visible, "and 4 still does not move it once the title is closed again")
