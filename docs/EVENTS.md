@@ -1034,7 +1034,7 @@ zero and nothing is earned back, so what the strongest barrier charges per secon
 standing in a door costs. The rates are in [COSTS.md](COSTS.md). `EventSources.sources_at()` keeps the strongest of them at her position and drops
 the rest from the pairs entirely, so what lands on the bar is attributed to the body that was the
 maximum, and the halo's colour — traced from that same sum — follows without a second rule.
-`ExcitementSource.outranked`, told once a frame by `EventManager` from
+`ExcitementSource.is_outranked()`, told once a frame by `EventManager` through `set_outranked()` from
 `EventSources.strongest_barrier_at()`, is how the caret and the halo's own rim selection learn the
 same answer, so a corner draws one mark on the barrier that is charging her rather than
 five promising the cost over again. Everything else in the catalogue still sums.

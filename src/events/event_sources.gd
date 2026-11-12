@@ -62,8 +62,8 @@ func holds_her_alone(at: Vector2) -> bool:
 
 ## The one barrier structure that lands at `at` — the strongest, the same answer `sources_at()`
 ## keeps — or `null` when none reaches. `EventManager` tells the others they are outranked once a
-## frame (`ExcitementSource.outranked`), so the caret and the halo agree with the meter about which
-## body is charging her.
+## frame (`ExcitementSource.set_outranked()`, read back through `is_outranked()`), so the caret and
+## the halo agree with the meter about which body is charging her.
 func strongest_barrier_at(at: Vector2) -> EventInstance:
 	var strongest: EventInstance = null
 	var strongest_rate := 0.0

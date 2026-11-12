@@ -571,7 +571,8 @@ func _step_them(delta: float) -> void:
 ## **Then each instance is told which barrier structure is the one charging her**, here because
 ## this is already the once-a-frame visit to every instance that knows where she is.
 ## `EventSources` keeps only the strongest of the boundary kit, so a caret or a halo rim on one of
-## the others would be promising a cost the meter is not taking (`ExcitementSource.outranked`).
+## the others would be promising a cost the meter is not taking (`ExcitementSource.set_outranked()`,
+## which `is_outranked()` answers).
 func _tell_them_where_she_is() -> void:
 	var stroller := world.player as Stroller
 	var running: bool = stroller != null and stroller.run_excess_ratio() > 0.0
