@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name InteriorScene
 extends WorldContext
 ## The escape scene's building, as one persistent map — `art/interior`'s floor plan and stair
@@ -484,7 +483,7 @@ func _is_edge_threshold(door_id: String) -> bool:
 ## A chandelier at each hallway midpoint. The lobby's entrance has the same central column, so its
 ## chandelier would overlap the barricade that needs to read as the closed main way out.
 func _add_chandeliers() -> void:
-	for id in ["hallway_third", "hallway_second", "hallway_first"]:
+	for id: String in ["hallway_third", "hallway_second", "hallway_first"]:
 		if not map.has_waypoint(id):
 			continue
 		var chandelier := Sprite2D.new()
@@ -533,7 +532,7 @@ func _add_threshold(tile: Vector2i, name: StringName) -> void:
 func _rebuild_stairwell_backdrops() -> void:
 	var segment_texture := atlas.region(STAIRWELL_SEGMENT_BACKDROP)
 	var cap_texture := atlas.region(STAIRWELL_SHAFT_CAP_TOP)
-	for side in ["left", "right"]:
+	for side: String in ["left", "right"]:
 		var top_landing: Vector2i = map.waypoint("stairwell_%s" % side)
 		var origin := top_landing - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 		for panel in 4:

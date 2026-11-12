@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name ModeButton
 extends Button
 ## A circular, icon-only button: a round disc with a tinted glyph for what it does and no text
@@ -182,7 +181,7 @@ func _ready() -> void:
 	icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vertical_icon_alignment = VERTICAL_ALIGNMENT_CENTER
 	expand_icon = true
-	for state in ["icon_normal_color", "icon_hover_color", "icon_pressed_color",
+	for state: String in ["icon_normal_color", "icon_hover_color", "icon_pressed_color",
 			"icon_hover_pressed_color", "icon_focused_color", "icon_disabled_color"]:
 		add_theme_color_override(state, Palette.BUTTON_SYMBOL)
 	# **The bug, and the fix.** *(Playtest 29 finding 2: "the buttons do *not* work at all... the
@@ -201,7 +200,7 @@ func use_letter(mark: String) -> void:
 	letter = mark
 
 func _refresh_letter() -> void:
-	var old := get_node_or_null("Letter")
+	var old := get_node_or_null("Letter") as Label
 	if old:
 		remove_child(old)
 		old.queue_free()

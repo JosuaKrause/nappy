@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access")
 class_name TouchControls
 extends Control
 ## Pointer steering, a hold-to-run half opposite the steering side, and pause.
@@ -381,7 +380,8 @@ func _input(event: InputEvent) -> void:
 		var motion := event as InputEventMouseMotion
 		if motion.button_mask & MOUSE_BUTTON_MASK_LEFT:
 			_on_drag(motion.position, _MOUSE_POINTER_INDEX)
-	elif event is InputEventKey and event.pressed and not (event as InputEventKey).echo:
+	elif event is InputEventKey and (event as InputEventKey).pressed \
+			and not (event as InputEventKey).echo:
 		_yield_to_the_keyboard(event as InputEventKey)
 
 ## Stands in for the touch index a mouse event carries none of — the same role `PauseScreen
@@ -709,7 +709,7 @@ func _yield_to_the_keyboard(key: InputEventKey) -> void:
 	if get_tree().paused:
 		return
 	var pressed_action: StringName = &""
-	for action in [&"move_left", &"move_right", &"move_up", &"move_down"]:
+	for action: StringName in [&"move_left", &"move_right", &"move_up", &"move_down"]:
 		if key.is_action(action, true):
 			pressed_action = action
 			break

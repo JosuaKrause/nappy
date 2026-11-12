@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name FinalePlanner
 extends RefCounted
 ## The escape's route through the city: **two ordered chains, not a tree.**
@@ -347,7 +346,7 @@ static func _flood_calm(map: CityMap, grid: ReachabilityGrid, from: Vector2i,
 		var node := grid.node_at(tile)
 		if node >= 0:
 			nodes[node] = true
-		for step in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+		for step: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
 			var next: Vector2i = tile + step
 			if seen.has(next) or not map.in_bounds(next) or not Tile.is_calm(map.tile_at(next)):
 				continue

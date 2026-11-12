@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name InteriorMapPlan
 extends WorldMap
 ## The escape scene's whole building as **one** map: a sparse grid of `InteriorTile.Kind` cells
@@ -394,8 +393,8 @@ func flight_bands() -> Array[Dictionary]:
 			var cell: Vector2i = queue.pop_back()
 			total += normal.dot(Vector2(cell) + Vector2(0.5, 0.5))
 			count += 1
-			for dy in [-1, 0, 1]:
-				for dx in [-1, 0, 1]:
+			for dy: int in [-1, 0, 1]:
+				for dx: int in [-1, 0, 1]:
 					var next := cell + Vector2i(dx, dy)
 					if next == cell:
 						continue
