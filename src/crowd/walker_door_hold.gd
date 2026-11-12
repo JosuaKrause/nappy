@@ -26,7 +26,7 @@ var position := Vector2.ZERO
 
 ## The walker inside the hut right now, or `null`. One at a time, so the queue behind it is the
 ## whole of what a door's line ever is.
-var inside: Node2D = null
+var _inside: Node2D = null
 
 ## The walkers that have committed to this hut and have not been let in yet, in the order they
 ## committed — which is the order they stand in, since each is given a stopping place one spacing
@@ -45,7 +45,7 @@ func stand_at(at: Vector2) -> void:
 
 ## Puts a walker at the back of the line, if it is not already in it or inside.
 func join(walker: Node2D) -> void:
-	if walker == inside or queue.has(walker):
+	if walker == _inside or queue.has(walker):
 		return
 	queue.append(walker)
 
@@ -57,10 +57,10 @@ func place_of(walker: Node2D) -> int:
 ## refused to anybody who is not at the front, which is the two halves of *one at a time, in order*
 ## in the one place both are decided.
 func admit(walker: Node2D) -> bool:
-	if inside != null or queue.is_empty() or queue[0] != walker:
+	if _inside != null or queue.is_empty() or queue[0] != walker:
 		return false
 	queue.remove_at(0)
-	inside = walker
+	_inside = walker
 	return true
 
 ## Lets go of a walker, wherever it stood. **Called for every way a walker can stop existing where
@@ -68,8 +68,8 @@ func admit(walker: Node2D) -> bool:
 ## — because a hut left occupied by somebody who is no longer there never takes anybody again, and
 ## nothing about a walker walking away from a door would say so.
 func release(walker: Node2D) -> void:
-	if inside == walker:
-		inside = null
+	if _inside == walker:
+		_inside = null
 	var at := queue.find(walker)
 	if at >= 0:
 		queue.remove_at(at)
@@ -83,11 +83,11 @@ func waiting() -> int:
 ## *is* everybody, and a cap that only counted the waiters would let an unbounded number commit in
 ## the first frame a door is seen and then discover the crowd afterwards.
 func committed() -> int:
-	return queue.size() + (1 if inside != null else 0)
+	return queue.size() + (1 if _inside != null else 0)
 
 ## Lets go of everybody at once — what `Crowd.clear()` does when a day's whole crowd stops
 ## existing. Without it a hut holds references to freed nodes, which are not `null` and are not
 ## valid either, and the first thing that asks whether somebody is inside gets the worst of both.
 func empty() -> void:
-	inside = null
+	_inside = null
 	queue.clear()

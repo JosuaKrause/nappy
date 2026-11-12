@@ -91,8 +91,9 @@ func _test_the_contribution_matches_the_unfiltered_kernel(t: TestRunner, crowd: 
 	crowd.clear()
 	var turner: CrowdAgent = _rig.place_on(crowd, map, CrowdAgent.Kind.CAR, street.x, car_lane,
 			along, 1.0)
-	var arc := CarTurn.new()
-	arc.radius = 48.0
+	# A quarter turn into the far-side arm (`CarTurn.into_an_arm()`), a little way round.
+	var arc := CarTurn.into_an_arm(false, 1.0, 0, CrowdLanes.lane_centre(0, CrowdLanes.road_lane(false,
+			1.0)), 0, CrowdLanes.ROAD_OFFSETS[1], 1.0, Vector2i.ZERO)
 	arc.travel_on(23.0)
 	turner.take_the_turn(arc, 0.0)
 	turner.position = Vector2(700.0, -320.0)
@@ -125,7 +126,9 @@ func _rng() -> RandomNumberGenerator:
 ## the same order, with the same contributions, at points among a day's crowd of walkers and cars near
 ## and far — a horn-startled car among them, heard from further than any unstartled body reaches.
 func _test_the_sweep_matches_the_unfiltered_loop(t: TestRunner, crowd: Crowd, map: CityMap) -> void:
-	crowd.start_day(1, _rng())
+	# The day's crowd is built round the middle of the map, which the points below are sampled round.
+	var centre := map.world_size() * 0.5
+	crowd.start_day(1, _rng(), centre)
 	var agents := crowd.agents()
 	var loud: CrowdAgent = null
 	for i in agents.size():
@@ -141,7 +144,6 @@ func _test_the_sweep_matches_the_unfiltered_loop(t: TestRunner, crowd: Crowd, ma
 	var skipped := 0
 	var differed := 0
 	var reach := sources.silent_beyond()
-	var centre := crowd.field().centre_point()
 	# Points among the crowd, and points a loud car's jolt alone reaches, beyond what an unstartled
 	# body is heard from.
 	var points: Array[Vector2] = []

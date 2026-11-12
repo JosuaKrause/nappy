@@ -38,8 +38,8 @@ else global_position`); or a method whose test is a truth test of a prefix not t
 than `null` (`loud if loud else 1.0`, which returns `1.0` where `loud` is zero). Its chain is listed under the class
 that holds the guard only where no method answers the field itself; `on its view`, a method of an inner class of the
 same file that holds a reference to the class and returns the field through it, looked for where the class itself
-has no answer (`lane().strategy()`, where `Lane.strategy()` returns `_of.strategy` and `lane()` hands the view out;
-a view only a private method or none hands out is named with its class); `of it alone`, a yes-or-no method (`->
+has no answer (`lane().door_ahead()`, where `Lane.door_ahead()` returns `_of.door_ahead` and `lane()` hands the view
+out; a view only a private method or none hands out is named with its class); `of it alone`, a yes-or-no method (`->
 bool`, no parameters) whose one `return` names that field and no other member (`is_in_the_world()` returns `live !=
 null`). `no method` is printed only where there is no answer, no guarded return and no view's method.
 
@@ -772,8 +772,8 @@ class Answers:
 
     def on_views(self, owner: str, name: str) -> list[tuple[str, str, str]]:
         """The public methods that return field `name` of class `owner` from a view of it: an inner class of the
-        same file that holds a reference to the class and reads the field back through it (`Lane.strategy()`
-        returning `_of.strategy`). Each with the view's class and the public method of `owner` that hands the view
+        same file that holds a reference to the class and reads the field back through it (`Lane.door_ahead()`
+        returning `_of.door_ahead`). Each with the view's class and the public method of `owner` that hands the view
         out, empty where none does."""
         direct = self.field_value(owner, name)
         files = self.tree.files

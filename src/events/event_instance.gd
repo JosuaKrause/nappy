@@ -1637,7 +1637,7 @@ func is_telegraphing_still() -> bool:
 
 # ------------------------------------------------------------------- the gait ---
 # The event half of "every living thing that moves has a stride" — the walker's own two-frame
-# alternation (`WalkerLook.advance()`/`gait_frame()`): the stride is kept here, by the ground the
+# alternation (`WalkerLook.advance()`/`gait_frame_at()`): the stride is kept here, by the ground the
 # event covers, and read by whichever look draws a second frame (`EventLook.gait_is_stepping()`).
 
 ## The mother's and the walker's own rate, in radians of gait phase per pixel walked. Pinned again

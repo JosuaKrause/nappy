@@ -16,9 +16,11 @@ extends RefCounted
 ## (`Boot.home_playing()`).
 ##
 ## **That the crowd has been handed her is read off what the crowd does with her.** Each of its
-## ticks centres the patch of city it simulates on her (`CrowdField.centre`, `Crowd._meet_the_player()`)
-## when it has her, and leaves it where the day's start put it when it has not. She is carried away
-## from the doorstep to tell the two apart, since the patch stands on her at the doorstep either way.
+## ticks centres the patch of city it simulates on her (`Crowd._meet_the_player()`) when it has her,
+## and leaves it where the day's start put it when it has not; a body the patch leaves behind is
+## recycled into it, so every body stands within a patch's reach of wherever the patch stands. She is
+## carried away from the doorstep to tell the two apart, since the patch stands on her at the
+## doorstep either way.
 
 const Boot := preload("res://tests/booted_main.gd")
 const MapCache := preload("res://tests/city_map_cache.gd")
@@ -58,22 +60,35 @@ func _test_the_crowd_does_not_meet_her_behind_the_title(t: TestRunner) -> void:
 	var main := played.booted.main
 	var city := Boot.city(main)
 	var player := Boot.player(main)
-	var field := city.crowd.field()
 	t.check(Boot.title(main).is_open(), "the boot opens on the title")
 	var doorstep: Vector2 = player.global_position
 	# Behind the title she is carried off, and the crowd, if it had her, would follow her there.
 	var carried := doorstep + CARRIED_AWAY
 	player.global_position = carried
 	await PhysicsTicks.pass_ticks(t, BEHIND_THE_TITLE_TICKS)
-	t.check(field.centre.distance_to(doorstep) < Tuning.TILE_SIZE,
-			"behind the title the crowd's patch has not followed her")
+	t.check(_all_round(city, doorstep),
+			"behind the title the crowd's patch has not followed her: its bodies all stand round the "
+			+ "doorstep")
 	t.check(player.global_position == carried,
 			"and its ticks do not touch her")
 	await Boot.press_title(t, main, "Tap")
 	await PhysicsTicks.pass_ticks(t, BEHIND_THE_TITLE_TICKS)
-	t.check(field.centre.distance_to(player.global_position) < 1.0,
-			"the day's start hands the crowd her: its patch stands on her wherever she is")
+	t.check(_all_round(city, player.global_position),
+			"the day's start hands the crowd her: its patch stands on her wherever she is, its bodies "
+			+ "all round her")
 	played.end()
+
+## Whether every body of the city's crowd stands within a patch's reach of `at`: the half extent a
+## patch over the city's map has there (`CrowdField.half_extent()`), plus the depth of the band bodies
+## enter it through, plus a tile of slack, as `tests/crowd_rig.gd` measures the patch she walks.
+static func _all_round(city: City, at: Vector2) -> bool:
+	var reach := CrowdField.new(city.map, at).half_extent() + CrowdAgent.ENTRY_SPREAD \
+			+ Tuning.TILE_SIZE
+	for agent in city.crowd.agents():
+		var away := agent.global_position - at
+		if maxf(absf(away.x), absf(away.y)) > reach:
+			return false
+	return not city.crowd.agents().is_empty()
 
 func _test_the_escapes_city_is_handed_the_controls_cover(t: TestRunner) -> void:
 	var played := await _boot(t, func(run: RunState) -> void:

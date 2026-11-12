@@ -27,7 +27,7 @@ extends RefCounted
 ##   a fresh lane by `LaneMover._recycle()`, or none of those, which leaves the separation pass;
 ## - every reversal on the spot (`CrowdAgent._turn_round()`), **with the reason**: which of the
 ##   planner's two ways out fired, what state the car was in, and what refused each of the four
-##   arcs it tried on that frame. `CrowdAgent.strategy._turn_refusals` and `_turn_round_cause` are the
+##   arcs it tried on that frame. `CrowdAgent.lane().strategy()._turn_refusals` and `_turn_round_cause` are the
 ##   planner's own record and this is what reads them;
 ## - every episode of a car swaying across its lane without going anywhere;
 ## - for every `spacing` jump — a car the queue's resolve moved backwards — what put it inside the
@@ -36,7 +36,7 @@ extends RefCounted
 ##   `_why_it_was_shunted()`;
 ## - whether either end of the jump was inside `Tuning.VIEW_HALF_EXTENT` (320 × 180 px, the
 ##   1280×720 viewport at the play zoom of 2) around the crowd field's centre, which is where the
-##   camera is — `CrowdField.centre` is what `CrowdAgent._out_of_view()` measures against, and
+##   camera is — `CrowdField.centre_point()` is what `CrowdAgent._out_of_view()` measures against, and
 ##   `Tuning.OUT_OF_SIGHT` (420px) is the radius outside that box's own far corner (367px).
 ##
 ## The rig is a real generated city on a real day — closures planned, the day's events placed, so
@@ -231,7 +231,7 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 			# The numbers the planner reads, taken before the step rather than after it: a flip
 			# reverses `_direction`, so `CarStrategy._distance_to_the_blockage()` asked afterwards answers about
 			# the road the car has just turned to face rather than the one that stopped it.
-			var car: CarStrategy = agent.strategy
+			var car: CarStrategy = agent.lane().strategy()
 			before[id] = [agent.position, agent.is_turning(), agent._cruise,
 					car.is_in_a_pocket(), agent._direction, agent._vertical,
 					agent._speed, car._room_to_stop_in(), car._distance_to_the_blockage(),
@@ -349,13 +349,13 @@ func _places_cars_turn(city: City, map: CityMap, doorstep: Vector2) -> Array[Vec
 
 ## Why one reversal on the spot happened, as a line a report can count identical copies of.
 ##
-## Everything in it is read off the planner's own record — `CrowdAgent.strategy._turn_round_cause` for which
+## Everything in it is read off the planner's own record — `CrowdAgent.lane().strategy()._turn_round_cause` for which
 ## of the two calls fired and `_turn_refusals` for what each of the four candidate arcs met — plus
 ## the state the car was in on the frame before, which is where the question *should this have been
 ## an arc* is actually settled: a car stopped with its aim point reached has the road it needs and
 ## a car nose to a barrier does not.
 func _why_it_reversed(agent: CrowdAgent, was: Array, in_view: bool) -> String:
-	var car: CarStrategy = agent.strategy
+	var car: CarStrategy = agent.lane().strategy()
 	var cause := car._turn_round_cause
 	var line := "%-16s" % _cause_name(cause)
 	if cause == CarStrategy.TurnRoundCause.STOPPED_NO_ROOM:
@@ -594,6 +594,6 @@ func _classify(was: Array, agent: CrowdAgent) -> String:
 		return "turn-arc"
 	if agent.is_turning():
 		return "turn-started"
-	if was_pocketed or agent.strategy.is_in_a_pocket():
+	if was_pocketed or agent.lane().strategy().is_in_a_pocket():
 		return "pocket"
 	return "spacing"

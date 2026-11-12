@@ -244,7 +244,7 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 		# A yield and a door hold are a walker's, kept by its strategy; a car has neither.
 		var walking := kind == CrowdAgent.Kind.WALKER
 		if walking:
-			(source.strategy as WalkerStrategy)._yield_left += 1.25
+			(source.lane().strategy() as WalkerStrategy)._yield_left += 1.25
 			_crowd_parity(t, source, at, "crowd external _yield_left")
 		source.mood().startle(80.0, 2.0, 30.0, 170.0)
 		_crowd_parity(t, source, at, "crowd new horn/bump")
@@ -253,15 +253,15 @@ func _test_crowd_mutations(t: TestRunner) -> void:
 		source._vertical = not source._vertical
 		_crowd_parity(t, source, at, "crowd heading")
 		if walking:
-			var walker := source.strategy as WalkerStrategy
+			var walker := source.lane().strategy() as WalkerStrategy
 			walker._yield_left = 0.0
 			walker._door_state = WalkerStrategy.DoorState.INSPECTION
 			_crowd_parity(t, source, at, "crowd door hold")
 			walker._door_state = WalkerStrategy.DoorState.WALKING
 			_crowd_parity(t, source, at, "crowd door release")
-		var turn := CarTurn.new()
-		turn.radius = 16.0
-		turn.sweep = PI
+		# An about-face, the half turn of 16px radius between the two lanes of one carriageway.
+		var turn := CarTurn.about_face(false, 1.0, 0, CrowdLanes.road_lane(false, 1.0), 0.0, 0.0,
+				CrowdLanes.road_lane(false, -1.0), Vector2i(-1, -1))
 		source.take_the_turn(turn, 0.0)
 		for distance: float in [0.0, 3.0, 9.0, 15.0]:
 			turn.travelled = distance

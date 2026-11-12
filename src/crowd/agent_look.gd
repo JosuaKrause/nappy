@@ -38,10 +38,6 @@ func restart() -> void:
 func advance(_moving: Vector2, _delta: float) -> void:
 	pass
 
-## The sector this look draws in now, advanced from the agent's heading first.
-func sector() -> int:
-	return view
-
 ## Whether the picture is mirrored for the sector drawn.
 func flipped() -> bool:
 	return EightDirection.is_mirrored(view)
