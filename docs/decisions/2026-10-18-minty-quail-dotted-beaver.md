@@ -11,15 +11,20 @@ check of test-only members is what lists them; the queue item named what that ch
   class names) over the game's and the tests' files, scoped per top-level block (a function, or a whole inner class).
   Before, a member whose name only one file defined was judged by the bare word, so a local or an engine method of that
   name counted as a game reader.
-- **A receiver of another class, or of an engine or builtin type, no longer counts**, except in a file whose opt-out line
+- **A game file's receiver of another class, or of an engine or builtin type, no longer counts**, except in a file whose opt-out line
   silences that access's warning, where an engine-typed value can hold a game object (`main.gd`'s
   `var _hud: CanvasLayer`). An untyped receiver still counts. A static function counts only when called through its
   class.
-- **The list grows by 139 lines and loses none**, as its header allows for a change to the checker: members the check
-  newly sees, under `[own file only]` and `[no reader]`, and two `[kept]` lines, `ParkCordon.gap` with the reason record
-  minty-quail-grassy-squirrel gave it, and `RouteTree.grow()` with the reason `tests-unseen-reads.md` gives it.
-  `EventInstance.look` and `EventInstance.phase` are among the `[own file only]` lines; the comments on them and on
-  `ParkCordon.gap` now say the list holds them.
+- **The list grows by 127 lines and loses none**, as its header allows for a change to the checker: members the check
+  newly sees, 105 under `[own file only]` and 17 under `[no reader]`, and five `[kept]` lines. `ParkCordon.gap` keeps
+  the reason record minty-quail-grassy-squirrel gave it, `RouteTree.grow()` the reason `tests-unseen-reads.md` gives it
+  ("How a test writes game state"), and three members no test reads stand in the group for lines the check misreads,
+  each with its cause: `CarTurn.centre`, `CrowdField.radius` and `FrameLedger.count`. `EventInstance.look` and
+  `EventInstance.phase` are among the `[own file only]` lines; the comments on them and on `ParkCordon.gap` now say the
+  list holds them.
+- **A test's receiver the typing gives up on counts as one the check cannot tell**, never as reaching nothing, and the
+  typing finds a test's fakes: an inner class named with a leading underscore, one reached through its outer class, a
+  value through `await`.
 - **Two skills' sentences are made true**: the using-tools row says the check fails a member nothing else under `src/`
   reaches, and pr-review's `references/test-only-members.md` says what the check cannot see is a member another file
   uses on a receiver the check cannot type.
