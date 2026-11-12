@@ -18,7 +18,7 @@ const PARTIAL_COURTYARD_SCENE := "res://scene-recipes/task-14-last-night.json"
 const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
 
 ## The diagnostics a builder's answer carries.
-func _diagnostics(result: Dictionary) -> Array:
+func _diagnostics(result: Dictionary) -> Array[String]:
 	return result.errors
 
 ## Where each recipe is written and loaded, and what loading it answers.

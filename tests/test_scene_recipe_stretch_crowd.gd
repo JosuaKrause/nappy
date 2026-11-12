@@ -66,7 +66,7 @@ func run(t: TestRunner) -> void:
 ## are what checking the final placement keeps out.
 func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: String) -> void:
 	var loaded := SceneRecipeRuntime.load_recipe(path, PackedStringArray())
-	var errors: Array = loaded.errors
+	var errors: Array[String] = loaded.errors
 	if not errors.is_empty():
 		t.check(false, "%s loads for forced crowd entries" % label)
 		return

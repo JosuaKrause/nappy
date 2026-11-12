@@ -11,7 +11,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const RUN_SEED := 2
 
 ## The diagnostics a builder's answer carries.
-func _errors(result: Dictionary) -> Array:
+func _errors(result: Dictionary) -> Array[String]:
 	return result.errors
 
 func _recipe() -> Dictionary:

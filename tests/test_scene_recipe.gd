@@ -3,7 +3,7 @@ extends RefCounted
 ## real `City` drawing a built map is `tests/test_recipe_city_drawing.gd`.
 
 ## The diagnostics a builder's or loader's answer carries.
-func _errors(result: Dictionary) -> Array:
+func _errors(result: Dictionary) -> Array[String]:
 	return result.errors
 
 func _recipe() -> Dictionary:

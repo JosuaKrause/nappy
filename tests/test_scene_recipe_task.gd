@@ -101,7 +101,7 @@ func _test_the_task_observations_ask_about_the_task(t: TestRunner) -> void:
 func _day(t: TestRunner, day: int) -> Array:
 	var built := RecipeCityBuilder.build({"version": 1, "name": "task", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
-	var errors: Array = built.errors
+	var errors: Array[String] = built.errors
 	t.check(errors.is_empty(), "the context city builds: %s" % [errors])
 	var map: CityMap = built.map
 	var own_run := RunState.new()

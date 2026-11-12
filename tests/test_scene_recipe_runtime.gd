@@ -555,7 +555,7 @@ func _test_arguments(t: TestRunner) -> void:
 		PackedStringArray(["--recipe-mode", "free", "--after", "1"]),
 	]:
 		var loaded := SceneRecipeRuntime.load_recipe(EXAMPLE, args)
-		var errors: Array = loaded.errors
+		var errors: Array[String] = loaded.errors
 		t.check(not errors.is_empty(), "conflicting or unknown recipe arguments fail: %s" % [args])
 	var output: Array = []
 	var status := OS.execute("bash", PackedStringArray([

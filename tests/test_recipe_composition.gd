@@ -9,7 +9,7 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const LANE_KEYS := preload("res://tests/lane_key_search.gd")
 
 ## The diagnostics a builder's answer carries.
-func _errors(result: Dictionary) -> Array:
+func _errors(result: Dictionary) -> Array[String]:
 	return result.errors
 
 func run(t: TestRunner) -> void:

@@ -87,7 +87,7 @@ func _displayed_reservations(t: TestRunner) -> void:
 		t.check(building.author_roof_furniture(valid).is_empty(),
 				"wide fixture fits the last two interior columns")
 		var authored := RoofReads.units_of(building)
-		var cells: Array[Vector2i] = authored[0].cells if authored.size() == 1 else []
+		var cells: Array[Vector2i] = authored[0].cells if authored.size() == 1 else [] as Array[Vector2i]
 		t.check(authored.size() == 1 and authored[0].span == 2 and cells.has(Vector2i(6, 1)),
 				"displayed fixture reserves its full base including the east cell")
 		var object: Building.RoofObject = _roof_objects_on(building)[0]

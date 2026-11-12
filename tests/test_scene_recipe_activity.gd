@@ -16,7 +16,7 @@ func _ready() -> void:
 	var main := packed.instantiate()
 	add_child(main)
 	var city := BootedMain.city(main)
-	var load_errors: Array = loaded.errors
+	var load_errors: Array[String] = loaded.errors
 	var loaded_data: Dictionary = loaded.data
 	var anchors: Dictionary = loaded.anchors
 	if not load_errors.is_empty() or not city:
