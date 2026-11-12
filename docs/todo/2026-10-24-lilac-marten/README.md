@@ -1,5 +1,6 @@
 priority: now
 after: 2026-10-18-minty-quail
+after: 2026-11-11-polite-tapir
 
 # lilac-marten — After the refactor: a fuller escape, every charger warning shorter with a larger radius, total time on the ending screens · filed 2026-10-24
 
@@ -14,7 +15,7 @@ screens *not* day/scene completion screens (those keep their segment's time)"; t
 roadblock guard notices her within 180px and warns for 2.0s, "yes 180px is way too small and 2s is
 too long -- *in general*" (curly-moose #803).
 
-**Items, after minty-quail (one engine):** `fuller-escape.md`, `charger-timing.md`,
+**Items, after minty-quail (one engine) and polite-tapir (its design review):** `fuller-escape.md`, `charger-timing.md`,
 `total-time.md`.
 
 **A minor release follows.** The player: "After the refactor and the fixes from the last playtest
@@ -26,7 +27,7 @@ minty-quail (the refactor), the escape fix and grassy-beaver (a day one that tea
 "Yes that is the correct interpretation"; of whether "the escape fix" means snowy-goose's explosions
 and this entry's fuller escape or only one, "Both escape fixes are the fixes"; and of whether the
 release also waits for this entry's charger timing and total time, "yes, of course"
-(gentle-owl #1231). **Read as:** v0.30.0 waits for all of minty-quail, snowy-goose (explosions in
+(gentle-owl #1231). **Read as:** v0.30.0 waits for all of minty-quail and polite-tapir (the refactor), snowy-goose (explosions in
 the escape city), every item of this entry (the fuller escape, the shorter charger warnings with a
 larger radius, the total time) and grassy-beaver. The release itself is cut only on the player's
 go-ahead in the session that cuts it (**committing**).

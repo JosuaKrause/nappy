@@ -11,7 +11,7 @@ to whoever asks (designing-classes). The dawn cases were built with `DayEvents` 
 (#1158); the after-dawn ones with `WalkEvents` and `DayReach` (#1169).
 
 **What is left: one case, as the orchestrator's notes name it,** found again with its places in the
-code before it is designed; placement by construction (`placement-by-construction.md`) replaces the
+code before it is designed; placement by construction (polite-tapir's `placement-by-construction.md`) replaces the
 code it sits in, so it is done there or after:
 
 - **The ground cache:** which tiles each row may stand on (`EventScheduler.open_ground_for()`), a

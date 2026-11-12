@@ -1,5 +1,6 @@
 priority: next
 after: 2026-10-18-minty-quail
+after: 2026-11-11-polite-tapir
 
 # golden-newt — Road closures from a bag, planned after the refactor · filed 2026-11-09
 
@@ -20,7 +21,7 @@ of the city's fixed parts, with a phase of their own (`docs/EVENTS.md`, "The thr
 placement order").
 
 **Read as:** road closures are to come from a bag, as the route events do, in place of a fixed
-quota. Nothing about it is designed or built until minty-quail (the refactor) is done; it is planned
+quota. Nothing about it is designed or built until minty-quail and polite-tapir (the refactor) are done; it is planned
 then, with the player.
 
 **Open, for that planning:** what "a bag" means here: either the count of closures a day is drawn
@@ -30,5 +31,5 @@ their own (gentle-owl #1185). Also whether the closures' kinds come from the bag
 independent roll (the orchestrator's pick on the board, closures-bag, was the count and the kinds
 both); what the bag holds; and how it sits with the closures' dawn phase.
 
-*Proposed, not asked for:* the band `next`, after minty-quail, since the player tied the planning to
+*Proposed, not asked for:* the band `next`, after minty-quail and polite-tapir, since the player tied the planning to
 the refactor's end and named no band.

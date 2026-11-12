@@ -1,5 +1,6 @@
 priority: now
 after: 2026-10-18-minty-quail
+after: 2026-11-11-polite-tapir
 
 # tawny-wombat — The army truck and the stairwell masked man are placed after their badge · filed 2026-10-31
 
@@ -25,5 +26,5 @@ of the measuring, in whichever of the two lands second.
 
 *Proposed, not asked for:* one entry with two items rather than the "two queue entries after the
 refactor" the orchestrator named when it settled the board question badge-before-placing; the band
-`now`, after minty-quail, since the refactor reshapes the events and badges it touches. Open to the
+`now`, after minty-quail and polite-tapir, since the refactor reshapes the events and badges it touches. Open to the
 player's correction.

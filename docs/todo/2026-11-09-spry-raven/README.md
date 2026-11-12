@@ -1,5 +1,6 @@
 priority: now
 after: 2026-10-18-minty-quail
+after: 2026-11-11-polite-tapir
 
 # spry-raven — The main road is never closed: a region line crossing it is a guardhouse whose boom stays up · filed 2026-11-09
 
@@ -31,7 +32,7 @@ at the corner would not be taken in, the player answered "move it in so she does
 trigger it" (gentle-owl #1186). **Read as:** two tiles in, so crossing the main road at the corner
 never triggers its two-second inspection; an alley mouth's body beside it stands a tile deeper.
 
-**Already built elsewhere:** placement by construction (minty-quail) never offers the main road a
+**Already built elsewhere:** placement by construction (polite-tapir) never offers the main road a
 roadblock, neither one day 13's roadblock phase places nor one the task swaps in
 (`EventScheduler._is_on_the_main_road()`), and no convoy drops a barricade any more (gentle-owl #1183,
 the record minty-quail-crisp-koala).
@@ -41,5 +42,5 @@ refactor closes (the minty-quail `README.md`: nothing else is worked on until it
 gentle-owl #1210).
 
 *Proposed, not asked for:* the band `now`, since the player named none and the work is a broken
-guarantee of the player's that is mostly built already; waiting for minty-quail, since #1188 is
+guarantee of the player's that is mostly built already; waiting for minty-quail and polite-tapir, since #1188 is
 paused for it and its region wall and closures now sit on code the refactor rewrote.

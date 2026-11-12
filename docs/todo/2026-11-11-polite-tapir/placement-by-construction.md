@@ -132,7 +132,7 @@ Steps 3, 4 and 5 touch different files and run in parallel once step 2 is in. Th
 breakup (`scheduler-breakup.md`) is interleaved: its moves beside step 1, and its dawn context
 before step 2, so step 2 edits a small file.
 
-**How a step is accepted.** Its suites pass, as for every step of this entry ("for the refactor
+**How a step is accepted.** Its suites pass, as for every step of the refactor ("for the refactor
 test parity is enough", inbox #813 in curly-moose), with the tests that held main's exact counts changed to hold
 the rule instead. One probe run checks the step's own guarantee: `tests/probes/walk_rows.gd` draws
 every unit over its cities and prints the route tiles cut off from home, which is none or the step

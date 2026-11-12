@@ -21,7 +21,7 @@ residency and ground, the blackout and the poster walls since the record
 2026-10-18-minty-quail-quiet-ibis, the still watch, the debug readout, the frame recorder and the
 frame trace since the record 2026-10-18-minty-quail-calm-wombat, and the developer's rig, the
 route rig and its planner since the record 2026-10-18-minty-quail-plush-chipmunk); and last, who
-builds the event manager and the crowd (`standing-layer-breaks.md`).
+builds the event manager and the crowd (polite-tapir's `standing-layer-breaks.md`).
 
 **Which map a test uses** is writing-tests' rule (inbox #1172 in gray-dolphin): the shared writer's map is for a test
 of one interaction or edge case, never for a booted day or a measurement.
