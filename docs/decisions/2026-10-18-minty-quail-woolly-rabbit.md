@@ -10,10 +10,13 @@ olive-ferret), and a test reads its subject only through methods (inbox #1182 in
 - **Eight files parse without their file-level opt-out line** (`untyped_declaration`, the only warning each
   tripped): `tests/routes_closures_rig.gd`, `test_routes_closures_a.gd`, `_b.gd`, `_c.gd`, `test_route_tree.gd`,
   `test_reachability_grid.gd`, `test_seals.gd` and `test_spent_park.gd`. Every trip was an untyped loop variable
-  or one local; the rig keeps every function's name, argument order and answer, and the three other suites that
-  load it (`test_routes_fallen_trees`, `test_routes_lattice`, `test_day_spec`) pass unedited.
-- **No read converted**: `RouteTree`'s `branches` and `grid` and `RoadClosure`'s `kind` and `segment` (read
-  through `ParkClosure`) are read and no method answers them; no field of `ReachabilityGrid` is read. No check
+  or one local; the rig keeps every function's name, argument order and answer. The rig is loaded (a `preload`)
+  only by `test_routes_closures_a`, `_b` and `_c`, all in the pass; `test_routes_fallen_trees`,
+  `test_routes_lattice` and `test_day_spec` name it in doc comments only, and pass unedited.
+- **No read converted**: `RouteTree`'s `branches` and `grid`, its inner `RouteTree.Branch`'s `area` and
+  `routes` (`on_it()`, its one method, answers cells worked out from the routes), and `RoadClosure`'s `kind` and
+  `segment` (off receivers typed `RoadClosure`, and in `test_spent_park` off a `ParkClosure`) are read and no
+  method answers them; no field of `ReachabilityGrid` is read. No check
   deleted or moved; nothing under `src/` or `tools/test_only_members.txt` changed.
 
 ## Fields read and written, by class
@@ -44,5 +47,5 @@ answered or not, are left for their own modules' passes.
 
 ## Verified
 
-At test parity: the seven changed suites and the three that load the rig pass; the typing census and
+At test parity: the seven changed suites pass, and the three that name the rig in comments; the typing census and
 `./tools/check.sh` pass.
