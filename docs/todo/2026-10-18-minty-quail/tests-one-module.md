@@ -44,15 +44,13 @@ no pass:
 4. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
    and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
    what it reads from the city (its map, streets, events and poster walls) instead of the whole
-   `City`, so a stand-in can be handed in; `test_recipe_crowd`'s `Crowd.recipe_coverage` check moves
-   to a crowd suite;
+   `City`, so a stand-in can be handed in;
 5. the night group: `test_heat` reads the event
    instance's vars (`age`, `is_leaving`, `is_finished`, `barrier_post`) until they have methods, and
    it and `test_dark_spine` hold the scheduler's and the crowd's answers in a day-planning case each,
    to move to those modules' suites; `test_power_station`'s yard-layer frame-record case belongs in
    `test_frame_record`; `test_masts` waits for the events;
-6. the crowd: a crowd suite takes `test_recipe_crowd`'s `Crowd.recipe_coverage` check (entry 4);
-   the events' answers still held in the crowd's suites move with the events (entry 7):
+6. the crowd: the events' answers still held in the crowd's suites move with the events (entry 7):
    `test_crowd_yields`' four checks of the event instance and manager (stands as, parked, the list
    of moves, placement) and `test_crowd_bodies_on_a_real_day`'s check that a crash's cars stand on
    recorded ground. `test_danger` (the danger vocabulary) and `test_wall_shield`
