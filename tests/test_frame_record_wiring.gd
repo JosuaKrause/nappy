@@ -149,10 +149,12 @@ func _check_every_timed_system_records(t: TestRunner, main: Node, ledger: FrameL
 	t.check(halo_alone > 0, "the halo charges its picks and predictions to it")
 	t.check(neither == 0, "and no other system charges the cues (%d µs with both off)" % neither)
 
-## Walks her south from her doorstep, the one way it opens, until the stored frames hold an update
-## of the scenery queue, which updates only once the camera's view has moved, and `TICKS_WALKED`
-## physics ticks, the baby's and the event manager's steps being physics ticks; answers the rows
-## stored meanwhile. Stops after `WALK_FRAMES` whatever they hold.
+## Walks her south from her doorstep, away from her front door, until the stored frames hold an
+## update of the scenery queue and `TICKS_WALKED` physics ticks. The queue updates while it has jobs
+## pending, which it does for a while after the day starts, or once the camera's view has moved
+## 16px; the walk makes the second certain, should the jobs be done before this case starts. The
+## ticks are wanted since the baby's and the event manager's steps are physics ticks. Answers the
+## rows stored meanwhile, and stops after `WALK_FRAMES` whatever they hold.
 func _walk_until_the_scenery_updates(t: TestRunner, ledger: FrameLedger) -> Array[PackedInt64Array]:
 	var before := ledger.rows().size()
 	var walked: Array[PackedInt64Array] = []
