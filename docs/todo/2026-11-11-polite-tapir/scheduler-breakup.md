@@ -32,8 +32,9 @@ the line counts are its estimates. All under `src/events/`:
 - **`RowGround`** (`row_ground.gd`): which tiles a row may stand on, as an object holding its own
   per-day cache. This is the last re-derived case (minty-quail's `re-derived-cases.md`, the ground cache).
 - **`PlanBuilder`** (`plan_builder.gd`): builds a plan at a tile: the side and band offsets, the
-  along-street paths, the body's disc, an authored scene's placing. The resistance's happenings
-  stop calling a private function of the scheduler.
+  along-street paths, the body's disc. It is an object handed the map and the three questions it
+  asks other classes, and its callers are handed it (inbox #1392 in dappled-wombat); an authored
+  scene's placing stays the scheduler's `recipe_placement()`, which is handed the builder.
 - **`RuledLocationGround`** in a file of its own: the judge that offers a row at a location.
 - **`event_scheduler.gd`** keeps `build_day(context)` as an ordered list of phases.
 
@@ -48,7 +49,7 @@ and fails a read that is new; a read that only moved may add its line to the lis
 grassy-trout), and review reads a moving diff for the cases the check cannot count
 (minty-quail-breezy-bison).
 
-- **`RowGround`**, after both: it is a seam, no pure move, since the object with its own per-day
+- **`RowGround`**: it is a seam, no pure move, since the object with its own per-day
   cache replaces the `ground: Dictionary` threaded through `StreetInvalidation`,
   `RouteJunctionsRule`, `LocationFit`, both ground judges, `_weight_in()`, `_best_of()` and
   `WalkSiting`.
