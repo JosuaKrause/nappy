@@ -9,7 +9,6 @@ extends RefCounted
 
 const Boot := preload("res://tests/booted_main.gd")
 const UI := preload("res://tests/ui_screens.gd")
-const MainScript := preload("res://src/main.gd")
 ## How long a test holds the clock inside a bucket it wants to read back, in microseconds: long
 ## enough that the bucket's time cannot read as zero, whatever the timer's resolution.
 const SPENT_US := 2000
@@ -45,7 +44,7 @@ func _test_the_recorder_in_a_real_main(t: TestRunner) -> void:
 	var sitting: Sitting = home.get_node(Sitting.NODE_NAME)
 	sitting.use_frame_timing(record)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--frame-record"]),
-			func(unbooted: MainScript) -> void:
+			func(unbooted: Boot.MainScript) -> void:
 				unbooted.use_sitting_home(home)
 				unbooted.use_frame_records_dir(_SCRATCH_RECORDS))
 	var main := booted.main
@@ -70,7 +69,7 @@ func _test_the_recorder_in_a_real_main(t: TestRunner) -> void:
 		drew_her = drew_her or row[FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.PLAYER] >= 1
 	t.check(drew_her and drawn_in.size() >= 2,
 			"her stroller's drawn frame is counted by the recorder's listening")
-	var end := recorder.get_node("ProcessEnd")
+	var end: FrameRecorder.ProcessEnd = recorder.get_node("ProcessEnd")
 	var nodes := 0
 	var first := true
 	var last := true

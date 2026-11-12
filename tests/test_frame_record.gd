@@ -61,7 +61,7 @@ func _test_a_frame_adds_up(t: TestRunner) -> void:
 	t.check(row.size() == FrameLedger.columns().size(), "a row has one value per column")
 	t.check(row[FrameLedger.START] == 1000 and row[FrameLedger.FRAME] == 16000,
 			"a frame runs from its first callback to the next frame's first callback")
-	var expected := {FrameRecord.PHYSICS_REST: 500, FrameRecord.CROWD: 500,
+	var expected: Dictionary[int, int] = {FrameRecord.PHYSICS_REST: 500, FrameRecord.CROWD: 500,
 		FrameRecord.PROCESS_REST: 200, FrameRecord.SCENERY: 700, FrameRecord.EVENTS: 100,
 		FrameRecord.DRAW: 500, FrameRecord.RENDER: 500, FrameRecord.WAIT: 13000, FrameRecord.INFLUENCE: 0,
 		FrameRecord.CUES: 0}
@@ -350,7 +350,7 @@ func _test_draws_are_counted_by_listening(t: TestRunner) -> void:
 		t.remove_child(node)
 		node.free()
 	rig.free_all()
-	for node: Node in [prop, label, chunk, marker]:
+	for node: CanvasItem in [prop, label, chunk, marker]:
 		node.free()
 
 ## The flag and its page word, read the way the game reads them: off the configuration
@@ -373,7 +373,7 @@ func _page(query: String) -> RunConfig:
 	return RunConfig.parse(PackedStringArray(), query, false)
 
 ## The configuration a debug build started with `words` runs on.
-func _debug_build(words: Array) -> RunConfig:
+func _debug_build(words: Array[String]) -> RunConfig:
 	return RunConfig.parse(PackedStringArray(words), "", true)
 
 ## The scenery queue's deferred window: what its update left to the engine's flush is charged to

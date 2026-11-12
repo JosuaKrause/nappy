@@ -11,9 +11,9 @@ olive-ferret), and a test reads its subject only through methods (inbox #1182 in
   (`untyped_declaration`, `unsafe_property_access`, `unsafe_method_access`), and `test_frame_record_wiring.gd`,
   `test_frame_trace.gd` and `test_encounters.gd` (`unsafe_method_access`).
 - **Typing**: report dictionaries are read through typed locals and loops take their types; the draw-kinds table
-  is an `Array[CanvasItem]` beside an `Array[int]` (a `Dictionary` keyed by the nodes fails at run time, since the
-  loop frees its keys); the wiring suite's `before` callback takes the main scene's script type, the type
-  `Boot.Booted.main` already has; `test_encounters` instances its scenes through typed `PackedScene` constants.
+  is an `Array[CanvasItem]` beside an `Array[int]` (a typed `Dictionary[CanvasItem, int]` keyed by the nodes stops
+  after the first freed key, since the loop frees them; an untyped one does not); the wiring suite's `before` callback
+  takes `Boot.MainScript`, the type `Boot.Booted.main` already has; `test_encounters` instances its scenes through typed `PackedScene` constants.
 - **No read converted**: none of these suites reads a field of a searched class. The one field written,
   `EncounterWatch.day` (twice in `test_encounters`), has no method, and the game writes it the same way
   (`EventManager`). No check deleted or moved; nothing under `src/`, the rigs or `tools/test_only_members.txt`
