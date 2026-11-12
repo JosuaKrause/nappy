@@ -19,8 +19,9 @@ types and deletes lines and converts no read.
   and read collision nodes and shapes through a cast to the class each branch has just tested with `is`.
 - **The debug layers take an `EventManager`.** Their event source (`_events` and `setup()`'s parameter) was a `Node`
   they duck-typed; every game caller hands an `EventManager` (`DebugReadout.show_the_world()` already takes one, and
-  `main._event_source()` answers the city's or the building's manager), and the class's and `_live()`'s doc comments
-  name it as one, where the class doc spoke of anything answering `instances()` and `_live()`'s called it duck-typed. The one stand-in that handed a bare `Node`, `_Source` in `tests/test_wall_shield.gd`, extends
+  `main._event_source()` answers the city's or the building's manager), and the class doc names the world's
+  `EventManager` where it spoke of anything answering `instances()`, while `_live()`'s calls `instances()` the one
+  question the layer asks its event source, where it called that source duck-typed. The one stand-in that handed a bare `Node`, `_Source` in `tests/test_wall_shield.gd`, extends
   `FakeEventManager` and says it overrides `EventManager.instances`, as a fake extends the class it stands in for
   (writing-tests) and as the telemetry pass did for its observer's source; it is the one file outside the list this
   pass changes, the builder's choice over keeping `unsafe_method_access` on the file.
