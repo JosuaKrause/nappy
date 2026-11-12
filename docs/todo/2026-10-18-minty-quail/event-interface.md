@@ -730,7 +730,7 @@ the field-read check see every read (`field-reads.md`: untyped access as an erro
 ignore per file not yet converted). Every pull request below types the receivers in the files it owns, deletes those
 files' ignore lines and their lines in `tools/field_reads.txt`, answers the architecture
 questions, and is at test parity with the run log and GoatCounter's names unchanged. Where it puts a field behind a method, its description
-also shows a search for the field's old name read without parentheses coming back empty (inbox #1385 in silver-tapir).
+also shows a search for the field's old name read without parentheses, every remaining hit listed with its reason (another class's field, a write, a read inside the class's file, a comment) and only a read of this class's field from outside its file failing (inbox #1385 in silver-tapir).
 
 | # | What | Files it owns | When |
 |---|---|---|---|

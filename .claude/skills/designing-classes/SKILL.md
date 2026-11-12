@@ -10,6 +10,8 @@ description: How a class and its collaborators are shaped — the player's princ
 - **A component is handed what it depends on**, never fetching it from an autoload, a group or a static, so a test hands it a fake.
 - **A mode is a configuration of the shared code, never a copy of it.**
 - **Fields are not API**: one object reaches another only through its methods.
+- **A conversion of a field to a method shows a search for the field's old name in its pull request**, every remaining hit listed with its reason.
+- **A method that replaces a yes-or-no field takes a name the field did not have.**
 - **A receiver has a class the engine and the field-read check can tell**: a new file is typed from its first line.
 - **An event is asked through one interface**, and an ability is a part it is composed of, never a subclass.
 - **A fact derived from stored data lives in one object that derives it once** and is handed around.
@@ -105,7 +107,10 @@ yes-or-no field's name, `EventDef.investigates()`, with no read of it left witho
 **Every conversion of a field to a method, of whatever kind, shows one search in its pull request's
 description** (inbox #1385 in silver-tapir): the field's old name read without parentheses, across
 `src/`, `tests/` and `tools/` (`rg -P '\.old_name\b(?!\()' src tests tools`, or the equivalent), coming
-back empty. It finds the read a conversion missed at the cost of one command. A yes-or-no field's new
+back with no hit that reads this class's field from outside its file. The description lists every remaining
+hit with its reason (another class's field of the same name, a write, a read inside the class's own file, a
+comment), and only a read of this class's field from outside its file fails the step (the filer's proposal,
+below). It finds the read a conversion missed at the cost of one command. A yes-or-no field's new
 name makes the compiler find such a read; a field of another kind keeps its name, so a read left
 behind is the silent function reference above and nothing else reports it.
 
@@ -209,6 +214,10 @@ that proposes it, and says so where the player's words name nothing on the point
 - **Every conversion's pull request shows a search for the field's old name read without
   parentheses, coming back empty, whatever the field's kind** ("Fields are not API"): the player's
   (inbox #1385 in silver-tapir); the new-name rule above stays at yes-or-no fields.
+- **What a hit of the search means**: every remaining hit is listed with its reason, and only a read of
+  this class's field from outside its file fails the step. The filer's proposal (inbox #1385 in silver-tapir),
+  since the player's "yes" answered the step as "coming back empty", which a name shared by several classes
+  cannot do.
 - **New code reads no field across objects, and a touched read moves behind a method**
   (inbox #1173 in gray-dolphin).
 - **The check fails an unknown receiver file by file, from the day a file loses its opt-out line**,
