@@ -22,9 +22,11 @@ olive-ferret), and a test reads its subject only through methods (inbox #1182 in
   becoming `if`/`else`; enum parameters that took an `int` take the enum.
 - **Nothing is read by name**: every `.get("…")` is a Dictionary's, and no probe writes a script out from a string.
   The probes' calls to the game's private methods (`EventScheduler._place_ambient()`,
-  `CarStrategy._room_to_stop_in()` and others) stay as they were. Of the methods paired with a write, only
-  `Crowd.use_player()` sets the value a probe chooses (`_player = player`), and could stand in for the probes'
-  `crowd._player` writes in a later conversion.
+  `CarStrategy._room_to_stop_in()` and others) stay as they were. Of the methods paired with a write, the one
+  plain setter is `Crowd.use_player()` (`_player = player`), which could stand in for the probes' `crowd._player`
+  writes in a later conversion; `ResistanceDirector.start_day()` also sets the `_day` and `_rng` that
+  `m213_far_end` writes, among much else (`_clear()`, the guards reset).
+- **Loaded elsewhere**: `M207Lead` (`m207_warning_lead`) is loaded by `tests/test_events_pursuit.gd`, which iterates its `ANSWERS` and `GOLD_ANSWERS`, now `Array[Answer]`, and by the probe `m226_arrival_timing`; `M174Pass` (`m174_pass`) by `tests/test_events_emission.gd`, `tests/test_events_scenery.gd`, `tools/cost_table.gd`, which reads its `OFFSETS`, now `Array[float]`, into an `Array`, and the probe `m205_note_handover`. Both keep every function's name, arguments and answer; the three suites pass at the head, and CI's cost-table job is green.
 
 ## Parity
 
