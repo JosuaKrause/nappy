@@ -164,27 +164,23 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 					else [EventPictures.CYCLIST_BY_VIEW, EventPictures.CYCLIST_BY_VIEW_B]
 			picture = rider[1 if instance.look.gait_is_stepping() else 0][view]
 		EventDef.Look.LOOSE_DOG:
-			# EventInstance declares none of the pictures and sizes asked of it by name here and in
-			# _picture_rect() (they are EventPictures' and the atlas'), so this probe stops with a
-			# script error on each of them: it is stale, and parked as it stands.
-			picture = instance.call("dog_picture", view, instance.look.gait_is_stepping(), instance.look.gait_is_second_half())
+			picture = EventPictures.dog_picture(view, instance.look.gait_is_stepping(), instance.look.gait_is_second_half())
 			# Both revisions' _draw_loose_dog draws this 26px trailing, 2px-wide line.
 			var behind := 26.0 if instance.look._heading_is_west() else -26.0
 			parts.append(Rect2(minf(behind, 0.0) - 1.0, -9.0 + bob, absf(behind) + 2.0, 8.0))
 		EventDef.Look.FIRE_ENGINE:
-			picture = instance.get("FIRE_ENGINE_BY_VIEW")[view]
+			picture = EventPictures.FIRE_ENGINE_BY_VIEW[view]
 		EventDef.Look.ARMY_TRUCK:
-			picture = instance.get("ARMY_TRUCK_BY_VIEW")[view]
+			picture = EventPictures.ARMY_TRUCK_BY_VIEW[view]
 		EventDef.Look.CHARGING_DOG:
-			picture = (instance.get("CHARGING_DOG_BY_VIEW_B") if instance.look.gait_is_stepping()
-					else instance.get("CHARGING_DOG_BY_VIEW"))[view]
+			picture = (EventPictures.CHARGING_DOG_BY_VIEW_B if instance.look.gait_is_stepping()
+					else EventPictures.CHARGING_DOG_BY_VIEW)[view]
 		_:
 			assert(false, "arrival collector has no drawing observer for this look")
-	parts.append(_picture_rect(instance, picture, bob))
-	var wheels_by_look: Dictionary = instance.get("WHEELS_BY_LOOK")
-	var wheels: Dictionary = wheels_by_look.get(def.look, {})
+	parts.append(_picture_rect(picture, bob))
+	var wheels: Dictionary = EventPictures.WHEELS_BY_LOOK.get(def.look, {})
 	if not wheels.is_empty():
-		parts.append(_picture_rect(instance, wheels[view], 0.0))
+		parts.append(_picture_rect(wheels[view], 0.0))
 	if def.draws_body_shadow:
 		for piece in def.parts():
 			var points: PackedVector2Array = piece.shape.shadow_outline(Vector2.ZERO)
@@ -199,6 +195,6 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 		parts.append(mark)
 	return parts
 
-static func _picture_rect(instance: EventInstance, picture: String, bob: float) -> Rect2:
-	var size: Vector2 = instance.call("_native_size", picture)
+static func _picture_rect(picture: String, bob: float) -> Rect2:
+	var size: Vector2 = EventPictures.native_size(picture)
 	return Rect2(-size.x * 0.5, -size.y + bob, size.x, size.y)
