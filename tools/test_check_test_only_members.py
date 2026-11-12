@@ -323,7 +323,9 @@ class ClassTests(unittest.TestCase):
             self.assertEqual(only(main, boot | {"tests/test_m.gd": suite}), {("src/main.gd", "use_save")}, msg=suite)
 
     STROLLER: ClassVar[dict[str, str]] = {
-        "src/stroller.gd": "class_name Stroller\nfunc probe_only() -> void:\n\tpass\nfunc f() -> void:\n\tprobe_only()\n"
+        "src/stroller.gd": (
+            "class_name Stroller\nfunc probe_only() -> void:\n\tpass\nfunc f() -> void:\n\tprobe_only()\n"
+        )
     }
     RIG: ClassVar[dict[str, str]] = {"tests/rig.gd": "class_name Rig\nclass Fake extends Stroller:\n\tpass\n"}
 
