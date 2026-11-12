@@ -657,8 +657,8 @@ func _stands_on_a_street() -> bool:
 
 ## Whether this agent is far enough from the camera that taking it away cannot be seen.
 ##
-## **`CrowdField.centre` is the camera.** `Crowd._physics_process()` puts it on the player every
-## frame and a rig puts it wherever it is looking, so the distance from it is the distance from the
+## **`CrowdField.centre_point()` is the camera.** `Crowd._physics_process()` puts it on the player
+## every frame and a rig puts it wherever it is looking, so the distance from it is the distance from the
 ## middle of the screen — and `Tuning.OUT_OF_SIGHT` (420px) is the round number outside the
 ## viewport's own far corner at this zoom, which is what *nothing vanishes while you are looking at
 ## it* has always been measured against.
@@ -838,7 +838,7 @@ func speed() -> float:
 ## How fast and which way it is actually travelling, for anything predicting where it will be.
 ##
 ## **A walker held at a checkpoint is travelling at nothing**, which is what makes the stopped pose
-## come out right for free: `WalkerLook._gait_frame()` and `WalkerLook._sector()` both read this,
+## come out right for free: `WalkerLook.gait_frame_at()` and `WalkerLook.picture()` both read this,
 ## so a walker standing in a door's line holds its last facing and frame the way every stopped
 ## walker in the crowd already does, and its own field stops being stretched forward by
 ## `Field.scale()`.
@@ -1133,7 +1133,7 @@ func _turn_round() -> void:
 ## about-face commits its new heading for.
 ##
 ## **A stride is a distance, and each kind already has one.** A walker's is the gait's own: it draws
-## two frames and `WalkerLook._gait_frame()` carries it through both of them over half a turn of
+## two frames and `WalkerLook.gait_frame_at()` carries it through both of them over half a turn of
 ## the walker's stride phase, which `WalkerLook.GAIT_RATE` prices at 0.09 radians per pixel walked — so a
 ## stride is `PI / 0.09`, about 35px, and at `Tuning.PEDESTRIAN_SPEED` (46–74px/s) that is half a
 ## second or so. A car has no gait and its stride is its own length, the same 52px the body is

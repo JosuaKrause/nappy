@@ -83,29 +83,21 @@ func restart() -> void:
 func advance(moving: Vector2, delta: float) -> void:
 	_gait_phase = wrapf(_gait_phase + moving.length() * delta * GAIT_RATE, 0.0, TAU)
 
-## Which of the two gait frames to draw: frame 1 (feet passing) for half of every stride while
-## moving, frame 0 (the rest pose) otherwise — `Stroller._draw_mother()`'s own `stepping` test,
-## read off `IDLE_SPEED`.
-func _gait_frame() -> int:
-	return gait_frame_at(_agent.velocity())
-
-## `_gait_frame()` for a `velocity()` the caller already holds.
+## Which of the two gait frames to draw at `along`, a `velocity()` the caller already holds: frame 1
+## (feet passing) for half of every stride while moving, frame 0 (the rest pose) otherwise —
+## `Stroller._draw_mother()`'s own `stepping` test, read off `IDLE_SPEED`.
 func gait_frame_at(along: Vector2) -> int:
 	if along.length() <= IDLE_SPEED:
 		return 0
 	return 1 if sin(_gait_phase * 2.0) > 0.0 else 0
 
-## The walker's heading this frame: its along-lane velocity plus whatever its steering is doing
-## across the lane right now, which swings a walker rounding a corner, or nudged aside by
-## `step_aside()`, onto a diagonal view a moment before its lane assignment turns. The cross term is
-## the steering target (`_lane_centre + _detour`) minus where the walker is, signed and capped at
-## `LaneMover.STEER_SPEED`, the rate the mover steers at while it has not arrived. Zero once it has
-## arrived with no detour running, which a stopped walker always has, since
-## `WalkerStrategy._yield_factor()` zeroes the along term then.
-func _heading_now() -> Vector2:
-	return heading_at(_agent.velocity())
-
-## `_heading_now()` for a `velocity()` the caller already holds.
+## The walker's heading this frame, for `along`, a `velocity()` the caller already holds: its
+## along-lane velocity plus whatever its steering is doing across the lane right now, which swings a
+## walker rounding a corner, or nudged aside by `step_aside()`, onto a diagonal view a moment before
+## its lane assignment turns. The cross term is the steering target (`_lane_centre + _detour`) minus
+## where the walker is, signed and capped at `LaneMover.STEER_SPEED`, the rate the mover steers at
+## while it has not arrived. Zero once it has arrived with no detour running, which a stopped walker
+## always has, since `WalkerStrategy._yield_factor()` zeroes the along term then.
 func heading_at(along: Vector2) -> Vector2:
 	var at: Vector2 = _agent.position
 	var cross_gap: float = _agent.lane().lane_centre() + _agent.lane().detour() - (at.x if _agent.lane().is_vertical() else at.y)
@@ -114,16 +106,12 @@ func heading_at(along: Vector2) -> Vector2:
 	var cross_speed := signf(cross_gap) * LaneMover.STEER_SPEED
 	return along + (Vector2(cross_speed, 0.0) if _agent.lane().is_vertical() else Vector2(0.0, cross_speed))
 
-## Advances the sector from the heading, held through the boundary and the idle speed. A placement
-## leaves no cross-lane steering running, so the heading is exactly along the new lane axis, a
-## sector centre 45 degrees clear of its neighbours and twice the hold's reach, and the ordinary
-## test replaces the sector drawn before with no reset.
-func _sector() -> int:
-	view = EightDirection.update(view, _heading_now(), IDLE_SPEED)
-	return view
-
-## One `velocity()` serves the gait and the sector: the value `_gait_frame()` and `_heading_now()`
-## would each have computed, since nothing between them moves it.
+## What the walker draws at `moving`, its `velocity()`: the sector, advanced from the heading and
+## held through the boundary and the idle speed, the mirror, and the gait frame. One `velocity()`
+## serves the gait and the sector, since nothing between them moves it, and `draw_body()` draws
+## exactly what this answers. A placement leaves no cross-lane steering running, so the heading is
+## exactly along the new lane axis, a sector centre 45 degrees clear of its neighbours and twice the
+## hold's reach, and the ordinary update replaces the sector drawn before with no reset.
 ##
 ## Overrides AgentLook.picture.
 func picture(moving: Vector2) -> Vector3i:
@@ -148,13 +136,13 @@ func palette() -> Array:
 
 ## Overrides AgentLook.draw_body.
 func draw_body(canvas: CanvasItem) -> void:
-	var frame := _sector()
-	var flip := flipped()
+	var drawn := picture(_agent.velocity())
+	var flip := drawn.y == 1
 	_agent.draw_shadow(canvas, Vector2.ZERO, Vector2.RIGHT)
-	var view_name: String = VIEW_BY_SECTOR[frame]
+	var view_name: String = VIEW_BY_SECTOR[drawn.x]
 	# One lookup decides both layers, so the coat and the legs can never show two different
 	# instants of the same stride.
-	var stepping := _gait_frame() == 1
+	var stepping := drawn.z == 1
 	var body_paths: Dictionary = BODY_BY_VIEW_B if stepping else BODY_BY_VIEW
 	var trim_paths: Dictionary = TRIM_BY_VIEW_B if stepping else TRIM_BY_VIEW
 	var body := _agent.picture_region(region_of(body_paths[view_name]))

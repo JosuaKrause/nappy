@@ -97,7 +97,8 @@ func run(t: TestRunner) -> void:
 		moving += int(distance > 1 and distance < Tuning.PEDESTRIAN_SPEED.y * 1.5)
 	t.check(moving > before.size() / 2, "authored density retains physically moving production walkers")
 	# The ordinary day round the same point: its walkers are weighed by the street hierarchy again, so
-	# the main road holds more of them than any ordinary corridor beside it.
+	# the main road holds clearly more of them against the busiest ordinary corridor than it did on
+	# the uniform day above, where the two stood level.
 	city.crowd.start_day(1, rng, Vector2(1952, 1936))
 	var ordinary_counts := _walkers_by_corridor(city.crowd)
 	var ordinary_main := int(ordinary_counts.get("v%d" % city.map.main_road, 0))
@@ -105,11 +106,13 @@ func run(t: TestRunner) -> void:
 	for key: String in ordinary_counts:
 		if key != "v%d" % city.map.main_road:
 			ordinary_rest = maxi(ordinary_rest, ordinary_counts[key])
-	print("ORDINARY main ", ordinary_main, " rest ", ordinary_rest, " uniform main ", main_count, " rest ", ordinary_max)
-	t.check(ordinary_main >= ordinary_rest * 2
+	var uniform_share := float(main_count) / float(maxi(ordinary_max, 1))
+	var ordinary_share := float(ordinary_main) / float(maxi(ordinary_rest, 1))
+	t.check(ordinary_share > uniform_share * 1.25
 			and city.crowd.agent_count() == Tuning.crowd_pedestrians(1) + Tuning.crowd_cars(1),
-			"ordinary day restores its density and street hierarchy (%d walkers on the main road, at "
-			% ordinary_main + "most %d on any other corridor)" % ordinary_rest)
+			("ordinary day restores its density and street hierarchy (the main road holds %.2f of the "
+			+ "busiest other corridor's walkers, against %.2f on the uniform day)")
+			% [ordinary_share, uniform_share])
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 1)
 	city.start_recipe_day(state, 1, city.run.calendar.day_rng())

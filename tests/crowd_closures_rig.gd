@@ -487,8 +487,8 @@ static func _drivable_step() -> float:
 	return 2.0 * Tuning.CAR_SPEED.y * STEP
 
 ## The play viewport around the field's centre — 1280x720 design pixels at the play zoom of 2, which
-## is `Tuning.VIEW_HALF_EXTENT` of world either way. `CrowdField.centre` is the camera, which is what
-## `CrowdAgent._out_of_view()` already measures against, and `Tuning.OUT_OF_SIGHT` (420px) is the
+## is `Tuning.VIEW_HALF_EXTENT` of world either way. `CrowdField.centre_point()` is the camera, which is
+## what `CrowdAgent._out_of_view()` already measures against, and `Tuning.OUT_OF_SIGHT` (420px) is the
 ## radius outside this box's own far corner (367px) — so a legal recycle is always outside it.
 func _on_screen(at: Vector2, focus: Vector2) -> bool:
 	var offset := at - focus

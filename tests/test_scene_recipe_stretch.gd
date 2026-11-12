@@ -436,8 +436,8 @@ func _test_the_crowd_enters_at_the_ends(t: TestRunner, map: CityMap) -> void:
 		sound = sound and lane_end
 	t.check(sound, "each end is a lane end with void beyond it and more than a junction behind it")
 	var looking := Vector2(123, 456)
-	field.centre = looking
-	t.check(field.has_stretch() and field.looking_at() == looking and field.centre != looking,
+	field.centre_on(looking)
+	t.check(field.has_stretch() and field.looking_at() == looking and field.centre_point() != looking,
 			"the field stays over the whole stretch while the camera moves")
 
 ## Drafting is the one place a stretch meets generation: the draft walks the whole city its

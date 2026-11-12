@@ -305,7 +305,7 @@ func current_bob() -> float:
 
 ## Which of a family's two gait frames to draw right now: frame b (mid-stride) for half of every
 ## stride while `EventInstance._advance_gait()` last saw ground covered, frame a (rest) otherwise —
-## the walker's own `WalkerLook._gait_frame()` test, `sin(phase * 2.0) > 0.0`, gated on "did anything
+## the walker's own `WalkerLook.gait_frame_at()` test, `sin(phase * 2.0) > 0.0`, gated on "did anything
 ## move this tick" instead of a speed floor, since an event's own stop states (`is_waiting()`,
 ## `is_chatting()`, `is_telegraphing_still()`) already read as zero distance covered rather than a
 ## small residual speed to floor against. A pure query on state the event's tick already settled, so
@@ -628,7 +628,7 @@ func _heading_is_west() -> bool:
 	return event.facing_now().x < 0.0
 
 ## Advances `_view_sector` from `heading` and returns the view name to read out of whichever
-## family's own `_BY_VIEW` table is live — `WalkerLook._sector()`'s own shape, copied
+## family's own `_BY_VIEW` table is live — `WalkerLook.picture()`'s own shape, copied
 ## rather than shared since an event and a walker have no common base to hang one field on. No
 ## idle floor of its own: every `heading` a caller below feeds in is already a unit vector that is
 ## never actually zero — a moving actor's heading is only ever overwritten by an actual step or

@@ -36,7 +36,7 @@ extends RefCounted
 ##   `_why_it_was_shunted()`;
 ## - whether either end of the jump was inside `Tuning.VIEW_HALF_EXTENT` (320 × 180 px, the
 ##   1280×720 viewport at the play zoom of 2) around the crowd field's centre, which is where the
-##   camera is — `CrowdField.centre` is what `CrowdAgent._out_of_view()` measures against, and
+##   camera is — `CrowdField.centre_point()` is what `CrowdAgent._out_of_view()` measures against, and
 ##   `Tuning.OUT_OF_SIGHT` (420px) is the radius outside that box's own far corner (367px).
 ##
 ## The rig is a real generated city on a real day — closures planned, the day's events placed, so

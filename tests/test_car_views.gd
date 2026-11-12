@@ -161,7 +161,7 @@ func _test_a_stopped_car_keeps_its_view(t: TestRunner) -> void:
 ## `setup()` and `_recycle()` both call `LaneMover._choose_lane()`, which drops any turn and leaves the car
 ## exactly on a lane axis with a rolled speed — a sector centre 45 degrees clear of its neighbours,
 ## twice the hold's own reach — so no reset call into `CarLook.view` is needed for the same reason
-## `WalkerLook._sector()`'s own doc gives for the walker: the ordinary update on the very next
+## `WalkerLook.picture()`'s own doc gives for the walker: the ordinary update on the very next
 ## frame already replaces whatever was drawn before. The car is placed again for real
 ## (`CrowdAgent.setup()`).
 func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t: TestRunner) -> void:

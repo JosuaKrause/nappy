@@ -186,7 +186,7 @@ func _stop(agent: CrowdAgent) -> void:
 	agent.step_aside(behind, SIDESTEP, 1.0)
 
 ## `LaneMover.setup()` places a walker with no cross-lane steering yet running
-## (`WalkerLook._sector()`'s own doc), so this pins the property through the real placement: a walker
+## (`WalkerLook.picture()`'s own doc), so this pins the property through the real placement: a walker
 ## drawn as one sector, then placed again, shows the new lane's own heading on the very next frame,
 ## because that heading is exactly on a sector centre, 45 degrees clear of its neighbours — twice the
 ## hold's own 27.5 degree reach — the same "no prior-view hold" guarantee `Stroller.reset_at()`

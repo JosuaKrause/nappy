@@ -109,19 +109,15 @@ func bob() -> float:
 func carets() -> bool:
 	return true
 
-## Advances the sector from the car's velocity alone. There is no cross term the way a walker has
-## one: `velocity()` is already the instantaneous line of travel, cardinal in a lane and the tangent
-## of the arc mid-turn, so the sector runs through the diagonal for exactly the length of a turn and
-## holds at whichever cardinal or diagonal it last pointed while the car is at or under
-## `IDLE_SPEED`. A placement leaves the heading exactly on a lane axis, a sector centre 45 degrees
-## clear of its neighbours and twice the hold's reach, so the ordinary update replaces the sector
-## drawn before with no reset.
-func _sector() -> int:
-	view = EightDirection.update(view, _agent.velocity(), IDLE_SPEED)
-	return view
-
-## One `velocity()` serves the bob and the sector, the value `bob()` and `_sector()` would each have
-## computed.
+## What the car draws at `moving`, its `velocity()`: the sector, the mirror, and the bob quantised
+## by `BOB_STEPS_PER_PX`, one `velocity()` serving the bob and the sector, and the sector
+## `draw_body()` draws. The sector is advanced from the car's velocity alone. There is no cross term
+## the way a walker has one: `velocity()` is already the instantaneous line of travel, cardinal in a
+## lane and the tangent of the arc mid-turn, so the sector runs through the diagonal for exactly the
+## length of a turn and holds at whichever cardinal or diagonal it last pointed while the car is at
+## or under `IDLE_SPEED`. A placement leaves the heading exactly on a lane axis, a sector centre 45
+## degrees clear of its neighbours and twice the hold's reach, so the ordinary update replaces the
+## sector drawn before with no reset.
 ##
 ## Overrides AgentLook.picture.
 func picture(moving: Vector2) -> Vector3i:
@@ -188,12 +184,12 @@ static func body_anchor(view_name: String, forward: Vector2) -> Vector2:
 ##
 ## Overrides AgentLook.draw_body.
 func draw_body(canvas: CanvasItem) -> void:
-	var frame := _sector()
-	var flip := flipped()
+	var drawn := picture(_agent.velocity())
+	var flip := drawn.y == 1
 	var forward := _agent.heading()
 	var grounded := Vector2(0.0, -bob())
 	_agent.draw_shadow(canvas, grounded, forward)
-	var view_name: String = VIEW_BY_SECTOR[frame]
+	var view_name: String = VIEW_BY_SECTOR[drawn.x]
 	# The same heading the shadow above and the debug view's bounding box are drawn on, so the
 	# picture cannot register against a car that is not there.
 	var anchor := body_anchor(view_name, forward)
