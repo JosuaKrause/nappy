@@ -37,18 +37,17 @@ skips about two thirds of reads because it cannot tell the receiver's class", th
 that the point of a class hierarchy? it should be made working". **What is left of it** is the
 typing itself: the files that carry the opt-out line (godot's "Types" gives its one form) are a
 second list that only shrinks (`tools/check_field_reads.py --summary` counts them by folder and by
-warning). A module's typing pass types the receivers in its files and deletes their line, either
-inside its area's conversion below or ahead of it, as a pass of its own that converts no read (the
-records 2026-10-18-minty-quail-merry-marten, the routes, and 2026-10-18-minty-quail-tawny-lemur, the
-developer's rigs, are two). A read the field-read check sees only once a file is typed never gains a
-line in `tools/field_reads.txt`, which may gain only a read that moved (inbox #1350 in grassy-trout):
-the pass converts it, widening its search to that read's class, as the scenery's pass did for the
-animated water (`SceneryWater`, the record 2026-10-18-minty-quail-sandy-hedgehog) and the danger
-vocabulary's for the excitement source (`ExcitementSource`, the record
-2026-10-18-minty-quail-tawny-toad), or the file keeps its line until the pass that owns that read.
-`tests/` was typed ahead of its suites' conversion (`tests-one-module.md`), all but the two files
-that wait for polite-tapir's placement step 4 (`typed-everywhere.md`), and the two scripts under
-`tools/` that carry it (`tools/cost_table.gd`, `tools/split-scenes-crop.gd`) are typed by the pull
+warning). A file is typed either inside its area's conversion below or ahead of it, by a pass that
+types its receivers, deletes its line and converts no read. **The check fails a read it newly sees
+once a file is typed**: `tools/field_reads.txt` only shrinks (inbox #1182 in gray-dolphin), and the
+one growth the player allowed is a read that moved (inbox #1350 in grassy-trout). *Open, not asked:*
+whether that allowance also covers a read the typing reveals. So far a typing pass that met such a
+read converted it, widening its search to that read's class, as for the animated water
+(`SceneryWater`, the record 2026-10-18-minty-quail-sandy-hedgehog) and the excitement source
+(`ExcitementSource`, the record 2026-10-18-minty-quail-tawny-toad), or left the file its line.
+Every file under `tests/` is typed but the two that wait for polite-tapir's placement step 4
+(`typed-everywhere.md`); the suites' conversion (`tests-one-module.md`) is still to come. The two
+scripts under `tools/` that carry it (`tools/cost_table.gd`, `tools/split-scenes-crop.gd`) are typed by the pull
 request that next changes each, or with the suites' conversion if none does first. The engine warns of nothing on a property read off a value it types as
 Variant (an untyped array's element, what `back()` or `get()` returns), so such a value is read
 through a typed name, and the check, not the engine, is what holds that. This paragraph is the
@@ -116,10 +115,12 @@ Left, each its own design question:
     `Building.scenery_clock`, `door_world_x_range`, `station_door_col`, `station_yard_cols`,
     `BuildingShadows.streamed`, `falls_on`) keeps its direct write in the city and goes with the
     tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
-    also calls. Three fields once counted with them have game readers and are converted with those
-    readers: `CityMap.home_block` (the day planner, the map's capture and restore, the scene recipe
-    runtime), `Building.power_station` (the city scene, where it dresses the station's fronts) and
-    `PosterState.pasted_through` (the poster walls, which read and write it).
+    also calls. `CityMap.home_block`, `Building.power_station` and `PosterState.pasted_through` are
+    not in this group, since game code reads them outside their class, and they are converted with
+    those readers: `home_block` by the day planner, the map's capture and restore and the scene
+    recipe runtime; `power_station` by the city scene's `assign_roof_extensions()`, which skips the
+    station's yard columns when it extends a roof; `pasted_through` by the poster walls, which read
+    and write it.
 - **Her and the baby's parts that only tests read.** `Stroller.atlas` and `Baby.timing` are handed in
   through `use_atlas()` and `use_frame_timing()` and read by their own file and two suites:
   `tests/test_atlas_boot.gd` finds every node holding an atlas by the field's name (`"atlas" in node`,
@@ -152,11 +153,12 @@ Left, each its own design question:
   - the readers already handed their parts in place of the city (the records
     2026-10-18-minty-quail-crisp-otter, 2026-10-18-minty-quail-calm-wombat and
     2026-10-18-minty-quail-plush-chipmunk), whose reads of an event wait for the events' interface
-    (`event-interface.md`): the day planner's and the region and seal planners' (`src/routes/`) reads
-    of a plan and its row with row 3a; the event manager's and `EventWorld`'s with row 3b; and with
-    row 3c the developer's rigs' (the still watch, the debug readout, the developer's rig, the route
-    rig and its planner). Their reads of other classes' fields wait for those classes' passes, as
-    their typing records list them;
+    (`event-interface.md`): the day planner's reads of a plan and its row with row 3a; the event
+    manager's and `EventWorld`'s with row 3b; and with row 3c the developer's rigs' (the still
+    watch, the debug readout, the developer's rig, the route rig and its planner). Their reads of
+    other classes' fields wait for those classes' passes, as their typing records list them;
+  - the region and seal planners' (`src/routes/`) reads of a plan and its row, with row 3a, which
+    names both files;
   - the scene recipes' (`scene_recipe*`) reads of an event, with row 3c, and of the map, with the
     map's capture and restore above.
 

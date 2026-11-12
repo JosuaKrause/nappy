@@ -11,8 +11,10 @@ from the route's bag whose row is decided when it is handed out (the comment on 
 `src/events/event_director.gd`), so the probe's `queued.id` is read on a null and the run stops on
 the first day that owes her route anything (the record 2026-10-18-minty-quail-lilac-chipmunk).
 
-*Proposed, not asked for:* fixed, if the sprinkle's rate is still worth measuring, by counting what
-the director hands out (`due()`), which the probe already counts as met, and by asking the queue
-through a method a game class also calls in place of its private field (`tests-public-seams.md`'s
-rule); or deleted, the rate's measurement and the reason it was chosen standing in
-M96's records (the teaching day and the dog after it, `tools/decisions.sh M96`).
+*Proposed, not asked for:* the plainest fix skips the nulls (`queued != null` before `queued.id`),
+which keeps "offered" (the die rolled a hit, read off the queue at dawn) apart from "met" (the
+director handed the dog out through `due()` before the day ended), the gap the probe measures, but
+keeps its read of the director's private queue. A fix that reads no private member needs the
+director to say what it owes through a method a game class also calls, which none does today, so
+that half is open. Or the probe is deleted, the rate's measurement and the reason it was chosen
+standing in M96's records (the teaching day and the dog after it, `tools/decisions.sh M96`).

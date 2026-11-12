@@ -26,10 +26,10 @@ engine hold a file to that.
 
 **Build.**
 
-- **The tests were typed ahead of their conversion** to public seams and to one module
-  (`tests-public-seams.md`, `tests-one-module.md`): the test layer's typing passes typed every file
-  under `tests/` and deleted its file-level ignore, but for the two files below, while their reads of
-  other modules' fields wait for those modules' passes and the suites' conversion. *Proposed, not asked
+- **Every file under `tests/` is typed and carries no file-level ignore but the two below**, ahead
+  of the suites' conversion to public seams and to one module (`tests-public-seams.md`,
+  `tests-one-module.md`), which is still to come; their reads of other modules' fields wait for
+  those modules' passes and that conversion. *Proposed, not asked
   for:* the fields of a module whose pass has merged are converted in the other suites by one sweep
   after the last typing pass, from the reads its record lists with their methods; the plainer
   alternative is to leave them to each suite's later conversion to one module.
