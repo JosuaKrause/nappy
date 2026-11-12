@@ -40,8 +40,7 @@ detail, which the player approved.
 
 - **Placement:** `placement-by-construction.md`'s steps with `scheduler-breakup.md` interleaved.
   Nothing else changes where events go until it is done (inbox #1185 in gentle-owl). Where it meets
-  minty-quail: the scheduler's dawn context comes after the event manager's own city, the first
-  part of the third hand-ins pull request (minty-quail's `city-hand-ins.md`); the first steps of minty-quail's
+  minty-quail: the first steps of minty-quail's
   `event-interface.md` (the callers outside the events folder, the live event's behaviours and
   looks) run beside placement, and its dawn, the event manager's parts, the resistance and the
   scene recipes follow placement and the scheduler's breakup; minty-quail's `re-derived-cases.md`

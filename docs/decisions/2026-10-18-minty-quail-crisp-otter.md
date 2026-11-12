@@ -2,7 +2,7 @@
 
 **The ask.** The city scene is no longer handed whole to whoever reads a few of its parts: each
 consumer is handed what it reads (`city-hand-ins.md`, on the design in #1166's description,
-inbox #1173 in gray-dolphin), and the third step is cut into several pull requests (inbox #1381, the
+inbox #1173 in gray-dolphin), and the third step is cut into several pull requests (inbox #1381 in gray-moose, the
 player's yes on the board's hand-ins-third-cut). This one is the event manager's own city and the
 day planner's fallback that grows a route tree when dawn grew none.
 
