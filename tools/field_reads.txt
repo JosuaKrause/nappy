@@ -911,8 +911,6 @@ src/main.gd timing
 
 # [ExcitementSource] src/world/excitement_source.gd
 src/events/encounter_watch.gd landed_ever
-src/events/event_instance.gd rim
-src/events/event_manager.gd outranked
 src/events/event_spawner.gd on_first_landing
 
 # [FrameGraph] src/ui/frame_graph.gd

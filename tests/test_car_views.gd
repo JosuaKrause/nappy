@@ -286,8 +286,8 @@ func _lit_and_traced(t: TestRunner, agent: CrowdAgent) -> TracingAtlas:
 	atlas.acquire(Crowd.ATLAS_GROUP)
 	agent.use_atlas(atlas)
 	t.add_child(agent)
-	agent.mood().rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
-	atlas.watch(agent.mood().rim.entity_halo())
+	agent.mood().rim().set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	atlas.watch(agent.mood().rim().entity_halo())
 	return atlas
 
 ## The copies the halo traced in a whole draw pass begun after this call: the second pass from now,
@@ -361,8 +361,8 @@ func _test_the_rim_is_re_traced_under_a_steady_glow(t: TestRunner) -> void:
 	var look := ViewRig.car_look(agent)
 	# In the tree, so the halo's own `_process()` runs on real frames and the glow eases in.
 	t.add_child(agent)
-	agent.mood().rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
-	var halo: EntityHalo = agent.mood().rim.entity_halo()
+	agent.mood().rim().set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	var halo: EntityHalo = agent.mood().rim().entity_halo()
 	var started := Time.get_ticks_msec()
 	while not _glow_has_arrived(halo) and Time.get_ticks_msec() - started < 10_000:
 		await t.get_tree().process_frame

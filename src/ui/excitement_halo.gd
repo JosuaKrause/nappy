@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name ExcitementHalo
 extends Node2D
 ## Which live sources are actively charging the meter right now, and how much each is actually
@@ -20,7 +19,7 @@ extends Node2D
 ## **It draws nothing itself** *(2026-09-07, the player: "it should use the outline of the
 ## sprite")*: a shape drawn here could only ever be a picture of a *number*, and the licence this
 ## cue has is that it draws the *thing*. Each source's body draws its own rim (`SourceRim`, handed
-## to the source as `ExcitementSource.rim`), told a *target* alpha and colour that it eases toward
+## to the source as `ExcitementSource.rim()`), told a *target* alpha and colour that it eases toward
 ## on its own clock (`EntityHalo.FADE_IN_SECONDS`/`FADE_OUT_SECONDS`).
 ##
 ## **It accumulates nothing itself.** What has landed on her is traced from the meter's own sum:
@@ -60,17 +59,17 @@ const MAX_SOURCES := 8
 ## never "every source that exists" — it is `contribution_at(at)` above the floor, capped at the
 ## eight strongest, which keeps a busy pavement legible.
 ##
-## **A source outranked by another is excluded on the same line** (`ExcitementSource.outranked`).
-## The region boundary's own pieces — a door's hut, boom and post, and the `roadblock` a wall stands
-## as — charge as one source, the strongest at her position, so the others land nothing and a rim on
-## one of them would be a cue marking a thing that is costing her nothing while its neighbour reads
-## red.
+## **A source outranked by another is excluded on the same line**
+## (`ExcitementSource.is_outranked()`). The region boundary's own pieces — a door's hut, boom and
+## post, and the `roadblock` a wall stands as — charge as one source, the strongest at her position,
+## so the others land nothing and a rim on one of them would be a cue marking a thing that is costing
+## her nothing while its neighbour reads red.
 ##
 ## A static function of the candidates and her position, so the selection reads without a scene.
 static func _select_sources(candidates: Array, at: Vector2) -> Array:
 	var ranked: Array = []
-	for source in candidates:
-		if source.outranked:
+	for source: ExcitementSource in candidates:
+		if source.is_outranked():
 			continue
 		var contribution: float = source.contribution_at(at)
 		if contribution > CONTRIBUTION_FLOOR:
@@ -218,32 +217,32 @@ func _pick_and_predict() -> void:
 	# `MAX_SOURCES`) picked set, so the loop below tests membership in O(1) rather than a linear
 	# scan of `picked` for every one of up to ~275 candidates.
 	var picked_set := {}
-	for source in picked:
+	for source: ExcitementSource in picked:
 		picked_set[source] = true
 	var total_landed := 0.0
-	for source in _candidates:
+	for source: ExcitementSource in _candidates:
 		total_landed += source.landed()
 	var decay := _baby.decay_in_window()
 	var total_expected_gross := 0.0
-	for source in _candidates:
+	for source: ExcitementSource in _candidates:
 		# Every candidate, picked or not — a source below the halo's own floor can still be worth
 		# a caret, since the two cues answer different questions over different sets.
 		source.set_player_at(here, player_velocity, player_decay_rate, player_sensitivity)
 		total_expected_gross += source.expected_gross_at(here)
 	# Every block that can come back this frame comes back before any unserved pick is served —
 	# see this function's doc. First the rims of last frame's holders whose bodies are going anyway.
-	for source in _holders:
-		if is_instance_valid(source.body) and source.body.is_queued_for_deletion():
-			var going = source.rim
+	for source: ExcitementSource in _holders:
+		if is_instance_valid(source.body()) and source.body().is_queued_for_deletion():
+			var going := source.rim()
 			if going:
 				going.release()
 	var holders := {}
-	for source in _candidates:
+	for source: ExcitementSource in _candidates:
 		source.set_expected_total_gross(total_expected_gross)
 		if picked_set.has(source):
 			continue
 		# A rim not held has nothing to fade, so only a held one is told zero.
-		var rim = source.rim
+		var rim := source.rim()
 		if rim == null or not rim.is_held():
 			continue
 		rim.set_strength(0.0, Palette.HALO_WEAK)
@@ -251,10 +250,10 @@ func _pick_and_predict() -> void:
 			holders[source] = true
 	# A holder that is no longer a candidate at all still holds its block; told zero like any other
 	# unpicked source, so it fades and gives it back rather than counting against the budget forever.
-	for source in _holders:
-		if not is_instance_valid(source.body) or picked_set.has(source) or holders.has(source):
+	for source: ExcitementSource in _holders:
+		if not is_instance_valid(source.body()) or picked_set.has(source) or holders.has(source):
 			continue
-		var rim = source.rim
+		var rim := source.rim()
 		if rim == null:
 			continue
 		rim.set_strength(0.0, Palette.HALO_WEAK)
@@ -263,15 +262,15 @@ func _pick_and_predict() -> void:
 	# Picks that already hold a rim are lit at once, in place: relighting needs no new block. Picks
 	# with no rim are served strongest first (`picked` is in that order) while blocks remain; the
 	# rest are told zero and show nothing yet.
-	for source in picked:
-		var rim = source.rim
-		if rim == null or source.body.is_queued_for_deletion():
+	for source: ExcitementSource in picked:
+		var rim := source.rim()
+		if rim == null or source.body().is_queued_for_deletion():
 			continue
 		if rim.is_held():
 			holders[source] = true
-	for source in picked:
-		var rim = source.rim
-		if rim == null or source.body.is_queued_for_deletion():
+	for source: ExcitementSource in picked:
+		var rim := source.rim()
+		if rim == null or source.body().is_queued_for_deletion():
 			continue
 		if not rim.is_held():
 			if holders.size() >= EntityHalo.RIM_BUDGET:

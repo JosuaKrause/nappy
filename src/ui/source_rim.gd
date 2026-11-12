@@ -9,7 +9,8 @@ extends RefCounted
 ## `EntityHalo.FADE_OUT_SECONDS`. A rim held by every live source would take every block the web's
 ## renderer can read (`EntityHalo`'s class doc), so a rim exists only while it is lit or fading.
 ##
-## Handed to the source it draws (`ExcitementSource.rim`) by the body that owns the picture.
+## Handed to the source it draws (`ExcitementSource.use_rim()`, read back through `rim()`) by the
+## body that owns the picture.
 
 ## Builds the body's `EntityHalo`, already in the tree, and answers it.
 var _build: Callable

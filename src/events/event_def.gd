@@ -956,7 +956,7 @@ func detain_distance() -> float:
 ## **The maximum is taken over every flagged instance at once, not per cluster**: two barriers far
 ## enough apart not to overlap already contribute nothing to each other's ground.
 ## `EventSources.sources_at()` is the one place that does it, and the halo, the caret and the meter
-## all read that same answer (see `ExcitementSource.outranked`).
+## all read that same answer (see `ExcitementSource.is_outranked()`).
 @export var barrier_structure := false
 
 ## Whether a placement of this row takes a whole section of its street rather than one sidewalk

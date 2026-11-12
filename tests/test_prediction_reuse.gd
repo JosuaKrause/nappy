@@ -12,7 +12,7 @@ class CountedEvent extends EventInstance:
 
 	func _init() -> void:
 		super()
-		var rim: SourceRim = excitement.rim
+		var rim: SourceRim = excitement.rim()
 		excitement = Source.new(self)
 		excitement.use_rim(rim)
 
@@ -32,7 +32,7 @@ class CountedCrowd extends CrowdAgent:
 
 	func _init() -> void:
 		super()
-		var rim: SourceRim = excitement.rim
+		var rim: SourceRim = excitement.rim()
 		excitement = Source.new(self)
 		excitement.use_rim(rim)
 
@@ -48,7 +48,7 @@ class CountedCrowd extends CrowdAgent:
 class ReferenceEvent extends EventInstance:
 	func _init() -> void:
 		super()
-		var rim: SourceRim = excitement.rim
+		var rim: SourceRim = excitement.rim()
 		excitement = Source.new(self)
 		excitement.use_rim(rim)
 
@@ -61,7 +61,7 @@ class ReferenceEvent extends EventInstance:
 class ReferenceCrowd extends CrowdAgent:
 	func _init() -> void:
 		super()
-		var rim: SourceRim = excitement.rim
+		var rim: SourceRim = excitement.rim()
 		excitement = Source.new(self)
 		excitement.use_rim(rim)
 
@@ -158,9 +158,9 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 		_event_parity(t, source, at, definition.id + " sleep")
 		if source.hold:
 			source.hold.stop()
-		source.source().outranked = true
+		source.source().set_outranked(true)
 		_event_parity(t, source, at, definition.id + " outranked")
-		source.source().outranked = false
+		source.source().set_outranked(false)
 		for field: String in ["intensity", "inner_radius", "outer_radius", "core_intensity",
 				"core_radius", "falloff_power", "pulse_period", "speed"]:
 			source.def.set(field, float(source.def.get(field)) + 3.0)
