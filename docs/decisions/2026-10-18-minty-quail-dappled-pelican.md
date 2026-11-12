@@ -13,11 +13,11 @@ down (curly-rabbit #1098). This pass takes the world's and the player's twelve l
   the frozen projection reference is handed the sensitivity); the spawn siting's `region()`, now `_region_today()` (the
   suite checks what the siting refuses on day 10 instead).
 - **Deleted**: `Baby.world()`, which nothing in the game called; `test_main` reads which world `main` handed her from her
-  decay rate, and two checks that held nothing without it are gone.
+  decay rate, one check that held nothing without it is gone, and another loses that half.
 - **Kept, with reasons on their lines**: `ExcitementSource.clock()`, since an agent's outward signs move on the same
   tick for other reasons and cannot count its steps; `Stroller.pose()`, what she is drawn as, which a headless run draws
-  to nothing. A drawer handed to her would let suites record it, but the game has no second drawer to hand, so it would
-  exist only for tests.
+  to nothing and no node exposes. A drawer handed to her, as the event manager hands the events theirs, would let suites
+  record it instead; that is a redesign beyond this pass.
 - **Each new outward check fails when its behavior breaks**: the builder broke each in turn and saw it fail.
 
 ## Verified
