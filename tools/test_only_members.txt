@@ -51,12 +51,12 @@ src/ui/frame_graph.gd frames
 # the class does outward (inbox #1098 in curly-rabbit; vars and signals are the orchestrator's extension). The pass
 # that adds the underscores deletes these lines.
 src/autoload/sitting.gd restarted_at_msec
+src/city/block_layout.gd has
 src/city/block_layout.gd playground
 src/city/block_plan.gd forced_open_on
 src/city/building.gd front_drawer
 src/city/building.gd neighbor_taken
 src/city/building.gd roof_drawer
-src/city/building.gd scenery_resident
 src/city/building.gd shape
 src/city/building_shadows.gd skip_draw
 src/city/city_decals.gd atlas
@@ -112,7 +112,6 @@ src/events/events_ahead.gd director
 src/events/location.gd section
 src/events/pending_warning.gd place
 src/events/views/event_look.gd drawn_heading
-src/player/baby.gd timing
 src/player/baby.gd world
 src/player/stroller.gd pose
 src/player/stroller.gd steering
@@ -213,7 +212,7 @@ src/city/building.gd window_texture  # the picture each wall cell's window shows
 src/city/scenery_ground.gd worst_step_usec  # the slowest single quadrant step of the stepped ground mode, in microseconds, which the frame-timing probes (tests/probes/ground_frames.gd, run by tools/measure-ground-frames.sh) zero and read after a traversal; it is a wall-clock measurement of the work, which no tile the ground lays and no picture it shows carries
 src/resistance/contact_point.gd draws_a_mark  # whether the chalk picture is drawn at all, `_draw()`'s one question: a pickup is a chalk mark, a perform's contact is invisible untouched or done so that a rider looks like the ordinary row it rides on; it exists only as the guard before `draw_texture()` in `_draw()`, which a headless run draws to nothing and no node exposes, so nothing outward can read what a contact draws (tests/test_destination_drawing.gd asks it for every day's mark and task)
 src/resistance/happenings.gd cordon  # the handle on day 12's police cordon (`ParkCordon`) that tests/test_park_cordon.gd and tests/test_park_return.gd take from the happenings the director's swing touch (or the suite) started, so the cordon they read is the one the happenings run; they stand her at its `last_gap` (kept public: the world shows the gap only once the tapers meet at it) and ask whether it has closed; tests/park_cordon_sweep.gd builds cordons of its own and reads this one only to compare, so it could move off it, as could the two suites by building `ParkCordon` themselves (open to overturn)
-src/crowd/car_turn.gd centre  # the check misreads it: the one test reading is `section.centre()` in tests/test_day13_guard.gd, a `Location`'s centre(), where `section` is declared twice in one function (a typed and an untyped `for`) and so is a receiver it cannot tell
+src/crowd/car_turn.gd centre  # the check misreads it: the one test reading is `section.centre()` in tests/test_day13_guard.gd, a `Location`'s centre(), where `section` is declared twice in one function, by two untyped `for`s, one over a list the check can type and one over a list it cannot, and so is a receiver it cannot tell
 src/crowd/crowd_field.gd radius  # the check misreads it: the test readings are `CarTurn.into_an_arm(...).radius` in tests/test_turns.gd, `CarTurn.radius` on a call written across two lines, whose receiver it cannot tell
 src/telemetry/frame_ledger.gd count  # the check misreads it: the one test reading is `day_dir.count("-")` in tests/test_telemetry.gd, a String's count() on a name inferred from a call it cannot type
 src/resistance/park_cordon.gd gap  # the stretches the last gap is, with their tiles and the side of the park they face, chosen on the first tick; the sweep checks the chosen gap's stretches against the map, and the pram and slow-leaver tests stand her square before the gap and need its tiles, while the world shows the gap only once the tapers meet at it, by which time its stretches are taped (record minty-quail-grassy-squirrel)

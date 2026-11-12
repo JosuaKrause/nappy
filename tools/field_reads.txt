@@ -52,9 +52,6 @@ src/dev/scene_recipe_runtime.gd sleepiness
 src/city/city.gd dark_from_the_start
 src/city/city.gd forced
 
-# [BlockLayout] src/city/block_layout.gd
-src/routes/closure_planner.gd open_rect
-
 # [Building] src/city/building.gd
 src/city/blackout.gd powered
 src/city/city.gd condition
@@ -227,13 +224,6 @@ src/events/mast_sites.gd calm_blocks
 src/events/mast_sites.gd main_road
 src/events/mast_sites.gd square_rects
 src/main.gd seed_used
-src/routes/closure_planner.gd absent_segments
-src/routes/closure_planner.gd block_layouts
-src/routes/closure_planner.gd calm_blocks
-src/routes/closure_planner.gd closed_tiles
-src/routes/closure_planner.gd fenced_park
-src/routes/closure_planner.gd network
-src/routes/corridor.gd network
 src/routes/region_planner.gd alley_rects
 src/routes/region_planner.gd boundary_wall_at_a
 src/routes/region_planner.gd network
@@ -241,11 +231,6 @@ src/routes/region_planner.gd precinct_spans
 src/routes/region_planner.gd region_has_calm
 src/routes/region_planner.gd region_of_junction
 src/routes/region_planner.gd square_rects
-src/routes/route_tree.gd main_road
-src/routes/route_tree.gd network
-src/routes/route_tree.gd power_station_door
-src/routes/route_tree.gd seed_used
-src/routes/route_tree.gd shut_calm
 src/routes/seal_planner.gd alley_rects
 src/routes/seal_planner.gd network
 src/run/day_director.gd block_plans
@@ -917,7 +902,6 @@ src/events/event_spawner.gd on_first_landing
 src/dev/debug_readout.gd text_colour
 
 # [FrameTiming] src/frame_timing.gd
-src/city/scenery_residency.gd on
 src/events/event_instance.gd on
 src/events/event_manager.gd on
 
@@ -1113,7 +1097,6 @@ src/main.gd trace
 src/dev/route_lines.gd branches
 src/events/event_scheduler.gd branches
 src/events/event_scheduler.gd grid
-src/routes/corridor.gd grid
 
 # [RunCalendar] src/run/run_calendar.gd
 src/autoload/game_save.gd checkpoint
@@ -1303,11 +1286,7 @@ src/main.gd atlas
 # [SceneryGround] src/city/scenery_ground.gd
 src/city/building.gd elapsed
 src/city/city.gd atlas
-src/city/city.gd mode
 src/city/city.gd tile_set
-src/city/scenery_residency.gd chunks
-src/city/scenery_residency.gd mode
-src/city/scenery_residency.gd pending
 
 # [SceneryResidency] src/city/scenery_residency.gd
 src/city/city.gd frame_locked
@@ -1397,8 +1376,6 @@ src/main.gd world
 src/resistance/park_cordon.gd moves
 src/resistance/resistance_director.gd day_record_version
 src/resistance/resistance_director.gd obstruction_version
-src/routes/closure_planner.gd size
-src/routes/reachability_grid.gd size
 src/world/chase_way.gd day_record_version
 src/world/chase_way.gd obstruction_version
 

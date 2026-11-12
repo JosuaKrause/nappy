@@ -377,7 +377,7 @@ func _test_calm_zones_are_one_lot_of_one_thing(t: TestRunner) -> void:
 		# had east and west exits opening onto that corridor; playtest 14 deleted them, and what was
 		# left was a rule nobody had taken, asserted here against a constant rather than against the
 		# map. It is gone from `_zone_fits` and gone from here with it.
-		for key: Vector3i in map.absent_segments:
+		for key: Vector3i in map.blocked_segments():
 			# Zone-absorbed streets only. `absent_segments` stopped being the zone set in M50 —
 			# a dead end is absent too, for the opposite reason, and so is an apartment complex's
 			# — and this sentence is about zones. Asserting it over the whole set was the identity
@@ -420,7 +420,7 @@ func _check_apartment_complex(t: TestRunner, map: CityMap, anchor: Vector2i, see
 	var span := footprint.size
 	var absorbed := span.x * (span.y - 1) + span.y * (span.x - 1)
 	var built := 0
-	for key: Vector3i in map.absent_segments:
+	for key: Vector3i in map.blocked_segments():
 		if not CityMap.blocks_tile_rect(footprint).encloses(map.street_network().by_key(key).tile_rect()):
 			continue
 		built += 1
@@ -576,7 +576,7 @@ func _test_a_dead_end_is_a_dead_end(t: TestRunner) -> void:
 
 		for key: Vector3i in map.dead_ends:
 			var segment := map.street_network().by_key(key)
-			t.check(map.absent_segments.has(key),
+			t.check(not map.has_street(key),
 					"seed %d: dead end %s is out of the lattice too" % [_seed(i), key])
 			t.check(key != home.key(),
 					"seed %d: and is not the street outside the front door" % _seed(i))

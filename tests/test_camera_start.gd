@@ -103,7 +103,7 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t: TestRunner)
 		var home_view := Rect2(city.map.doorstep_world_position() - Tuning.VIEW_HALF_EXTENT,
 				Tuning.VIEW_HALF_EXTENT * 2)
 		for key in city.scenery_ground.keys_in(home_view):
-			t.check(city.scenery_ground.chunks.has(key),
+			t.check(city.scenery_ground.chunks().has(key),
 					"real day reset prepares the home viewport before its first frame")
 	EventBus.hard_fail_triggered.emit("car_strike")
 	EventBus.day_time_changed.connect(at_dawn)

@@ -57,9 +57,9 @@ func _test_authored_fixtures_replace_the_roll(t: TestRunner) -> void:
 	t.check(_errors.errors_of(t, {"setup": {"roof_fixtures": [
 		{"lot": [1, 2, 8, 8], "fixtures": fixtures}]}}).is_empty(),
 			"saved public duct names pass the runtime schema before production placement")
-	building.set_scenery_resident(false)
+	building.residence().set_resident(false)
 	t.check(drawer.standing().is_empty(), "an evicted roof leaves nothing drawn")
-	building.set_scenery_resident(true)
+	building.residence().set_resident(true)
 	t.check(drawer.layout() == authored and drawer.drawn() == drawn,
 			"streaming restores the authored fixtures exactly")
 	for invalid: Array in [
@@ -101,8 +101,8 @@ func _displayed_reservations(t: TestRunner) -> void:
 					"wide fixtures reject edge overflow and east-cell overlap")
 			t.check(RoofReads.units_of(building) == authored,
 					"failed width validation leaves the complete authored roof unchanged")
-		building.set_scenery_resident(false)
-		building.set_scenery_resident(true)
+		building.residence().set_resident(false)
+		building.residence().set_resident(true)
 		var standing := _roof_objects_on(building)
 		t.check(RoofReads.units_of(building) == authored and standing.size() == 1
 				and standing[0].texture_key == authored[0].texture,

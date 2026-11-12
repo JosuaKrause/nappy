@@ -525,7 +525,7 @@ are in `docs/EVENTS.md`, "The city remembers where she went".
 
 **And the day's route tree plans around every one of them.** `ClosurePlanner.calm_to_shut()`, called
 from `CityMap.repaint()` before the day's route tree is grown, decides which used areas the tree
-neither grows a branch to nor routes through — `CityMap.shut_calm` records which, `CityMap.is_shut()`
+neither grows a branch to nor routes through — `CityMap.shut_calm()` names which, `CityMap.is_shut()`
 which tiles — so the tree, the region plan and the street closures all plan around them. *(PLAYTEST-
 140, statement 8: "no route of the day goes through it".)* This costs the area nothing physical: it
 stays exactly as open as any other calm ground, in `CityMap.calm_blocks`, reachable by anyone who

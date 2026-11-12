@@ -116,10 +116,10 @@ func _coverage(city: City) -> void:
 		# objects stand, the building made resident for the read and handed back as it was): its
 		# picture rises from the floor line of its row by the region's height at the equipment's
 		# scale, and how far that clears the lot's north edge (-footprint.y) is the overhang.
-		var was_resident := building.scenery_resident
-		building.set_scenery_resident(true)
+		var was_resident := building.residence().is_resident()
+		building.residence().set_resident(true)
 		var units := RoofReads.units_of(building)
-		building.set_scenery_resident(was_resident)
+		building.residence().set_resident(was_resident)
 		for unit: Dictionary in units:
 			roof_layers += 1
 			var picture := _atlas.region(unit["texture"])

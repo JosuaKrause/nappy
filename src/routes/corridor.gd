@@ -64,8 +64,8 @@ extends RefCounted
 ## The grid the tree this corridor answers for was grown on. `null` for an empty tree, which
 ## answers `AWAY` everywhere without needing a special case anywhere below.
 var _grid: ReachabilityGrid
-## The lattice of the map the tree was grown on (`CityMap.network`), which names the street a tile
-## is on. Set with `_grid`, so an empty tree's corridor needs none.
+## The lattice of the map the tree was grown on (`CityMap.street_network()`), which names the
+## street a tile is on. Set with `_grid`, so an empty tree's corridor needs none.
 var _network: StreetNetwork
 ## Node id -> how many grid steps off the tree it is, `DEEP` where the grid never reached it from
 ## the tree at all. A `PackedByteArray` indexed by node id rather than a `Dictionary`: node ids are
@@ -91,12 +91,12 @@ var _walked_for: CityMap = null
 ## anything to be inside or outside of.
 static func of(tree: RouteTree) -> Corridor:
 	var corridor := Corridor.new()
-	if not tree or not tree.grid:
+	if not tree or not tree.reachability_grid():
 		return corridor
-	corridor._grid = tree.grid
+	corridor._grid = tree.reachability_grid()
 	corridor._network = tree.network()
 	corridor._node_depth = PackedByteArray()
-	corridor._node_depth.resize(tree.grid.node_count())
+	corridor._node_depth.resize(corridor._grid.node_count())
 	corridor._node_depth.fill(DEEP)
 	var depths := tree.node_depths()
 	for node: int in depths:
@@ -165,7 +165,7 @@ func carries_a_route(tile: Vector2i) -> bool:
 func walked_sidewalks(map: CityMap) -> Array:
 	if _walked_for != map:
 		var found: Array = []
-		for segment in map.network.segments():
+		for segment in map.street_network().segments():
 			var rect := segment.tile_rect()
 			if depth(rect.position) != 0:
 				continue
