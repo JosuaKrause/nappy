@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## What she can see (`VisibleView`), the one answer every "is it visible" question in the game asks
 ## *(feathery-lynx, inbox #581, the player: "use that everywhere where visibility is concerned -- for
@@ -31,7 +30,8 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t: Test
 	player.add_to_group("player")
 	t.add_child(player)
 	player.global_position = Vector2(2000.0, 2000.0)
-	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	var controls_scene: PackedScene = load("res://scenes/ui/touch_controls.tscn")
+	var controls: TouchControls = controls_scene.instantiate()
 	t.add_child(controls)
 	var source := _Source.new()
 	source.view.controls = controls.covering
@@ -200,7 +200,8 @@ func _test_the_view_follows_the_camera_and_the_scheme(t: TestRunner) -> void:
 			"a body with no camera and no controls is the tap scheme's view about her")
 	# With the game's own controls handed in, the scheme they are in decides the corners.
 	t.add_child(body)
-	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	var controls_scene: PackedScene = load("res://scenes/ui/touch_controls.tscn")
+	var controls: TouchControls = controls_scene.instantiate()
 	t.add_child(controls)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 	var joystick_view := VisibleView.new()

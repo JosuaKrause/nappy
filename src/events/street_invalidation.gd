@@ -4,7 +4,7 @@ extends RefCounted
 ## invalidation the design's draw leaves a refused row out by (inbox #1185 in gentle-owl, `docs/EVENTS.md`, "The
 ## three views and the placement order"), and the judge every other placement asks too, so the rules
 ## are stated once. A walk composes them from its spec: every walk's route rules (its junctions, its
-## walked sidewalk, a beat's opening, and at dawn no body cutting a route off from home), the calm
+## walked sidewalk, a beat's opening, and no body on a route's ground off the streets), the calm
 ## she has not used and the doors' clear ground; the escape's on top, one notice at a time
 ## (`DaySpec.one_notice_at_a_time`) and its walk kept open (`DaySpec.keeps_the_walk_open`).
 ##
@@ -19,14 +19,10 @@ var _rules: Array[StreetRule] = []
 ## The rules for a walk on `map` routed by `corridor` (null for a walk with no route tree, which
 ## asks none of the route rules): `ground` the day's ground cache, `leave_alone` the calm ground she
 ## has not used, `doors` where the region doors' bodies stand, `one_notice` whether the spec keeps
-## one waiting guard's notice at a time, `walk` the walk's ground where the spec keeps the walk
-## open, else null, and `reach` the dawn's `RouteReachRule`, handed in so the reach it keeps in step
-## is worked out once for every judge of the day. A walk's siting hands none: the reach is a dawn
-## rule, asked of every body the day plans and not of what the walk sites ahead of her. The walk is
-## asked last, since it is the expensive question.
+## one waiting guard's notice at a time, and `walk` the walk's ground where the spec keeps the walk
+## open, else null. The walk is asked last, since it is the expensive question.
 func _init(map: CityMap, corridor: Corridor, ground: Dictionary, leave_alone: Array[Rect2],
-		doors: PackedVector2Array, one_notice: bool, walk: WalkGround = null,
-		reach: RouteReachRule = null) -> void:
+		doors: PackedVector2Array, one_notice: bool, walk: WalkGround = null) -> void:
 	_map = map
 	_corridor = corridor
 	_rules.append(UnusedCalmRule.new(leave_alone))
@@ -34,8 +30,7 @@ func _init(map: CityMap, corridor: Corridor, ground: Dictionary, leave_alone: Ar
 	_rules.append(RouteJunctionsRule.new(map, corridor, ground))
 	_rules.append(RouteSidewalkRule.new(map, corridor))
 	_rules.append(PacingOpeningRule.new(map, corridor))
-	if reach:
-		_rules.append(reach)
+	_rules.append(RouteGroundRule.new(map, corridor))
 	if one_notice:
 		_rules.append(OneNoticeRule.new(map))
 	if walk:
@@ -126,13 +121,8 @@ static func _a_side_route_opens_off(map: CityMap, tile: Vector2i) -> bool:
 		at += inward
 		if map.tile_at(at) != GameEnums.TileType.SIDEWALK:
 			break
-	return _is_ground_off_the_street(map, at) and _is_ground_off_the_street(map, at + inward)
-
-## Walkable today and not part of a street: a park, a square, an alley, a courtyard, a precinct's
-## own ground. A carriageway is walkable and is not a way off a street, which is why this asks
-## `is_street` rather than only `is_open`.
-static func _is_ground_off_the_street(map: CityMap, tile: Vector2i) -> bool:
-	return map.is_open(tile) and not map.is_street(tile)
+	return RouteGroundRule.is_ground_off_the_street(map, at) \
+			and RouteGroundRule.is_ground_off_the_street(map, at + inward)
 
 ## How much room a candidate has. `INF` means it satisfies every rule and can be taken at once;
 ## `-INF` means it is illegal at any price; anything between is how far it got towards

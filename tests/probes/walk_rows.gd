@@ -22,6 +22,16 @@ extends RefCounted
 ## planning of each (`EventScheduler.build_day()`). Each day is planned as the game plans it: its
 ## closures, holds, region wall and seals first, the seals and the wall's bodies handed in as
 ## standing.
+##
+## **And whether the day's routes stay open, which no rule floods the city to keep** (`RouteGroundRule`
+## and the line rules of `StreetInvalidation` keep them by construction): per day, summed over the
+## seeds, `WC day dawn walk`, the route tiles (`Corridor.carries_a_route()`) home reached among the
+## day's closures that it no longer reaches among the day's obstructing bodies (`EventPlan.obstructs()`)
+## and that no body's disc covers, counted once after the dawn's plan (its rows, the seals and the
+## region wall's bodies) and once at the end of her walk (everything the walk then holds, what it
+## sited included), so a tile cut off names which half placed the body; `WC all dawn walk` sums the
+## days. Each such tile prints `WX day seed half tile kind rows`, the rows being the bodies whose
+## taking away alone gives it back (`jointly` where none does). The expected count is none.
 
 const SEEDS := 18
 const BASE := 90210
@@ -34,6 +44,8 @@ const CAPPED := ["abduction", "alley_mouse", "charging_dog", "chatting_mother", 
 		"roadblock"]
 
 func run(t: TestRunner) -> void:
+	var all_cut_at_dawn := 0
+	var all_cut_after_walk := 0
 	for day in range(1, 15):
 		var by_view := {}
 		var by_kind := {}
@@ -43,6 +55,9 @@ func run(t: TestRunner) -> void:
 		var capped_met := 0
 		var capped_at_the_door := 0
 		var capped_late_out := 0
+		# Route tiles cut off from home, after the dawn's plan and at the end of her walk.
+		var cut_at_dawn := 0
+		var cut_after_walk := 0
 		for i in SEEDS:
 			var map := CityGenerator.generate(BASE + i * STEP)
 			# The run's mast sites, worked out once on the city as built, as the game does.
@@ -106,6 +121,14 @@ func run(t: TestRunner) -> void:
 			var plans: Array[EventPlan] = events.placements()
 			plans.append_array(seals)
 			plans.append_array(region_plan.wall_bodies)
+			var grid := ReachabilityGrid.build(map)
+			var routes: Array[Vector2i] = []
+			for y in map.size.y:
+				for x in map.size.x:
+					if corridor.carries_a_route(Vector2i(x, y)):
+						routes.append(Vector2i(x, y))
+			var reached_bare := grid.flood([map.home_tile()], map.closed_tiles)
+			cut_at_dawn += _report_cut_off(map, grid, routes, reached_bare, plans, day, i, "dawn")
 			var walk := WalkEvents.new()
 			walk.take(plans, CalmAreas.of(map), doors)
 			# The walk's sitings are judged against the walk itself, as the game's are.
@@ -171,14 +194,62 @@ func run(t: TestRunner) -> void:
 				by_view[kv] = int(by_view.get(kv, 0)) + 1
 				var kk := "%s %s" % [plan.row_id(), _kind_of(map, tile)]
 				by_kind[kk] = int(by_kind.get(kk, 0)) + 1
+			cut_after_walk += _report_cut_off(map, grid, routes, reached_bare, walk.plans(), day, i,
+					"walk")
 			print("WT %d %d siting %s" % [day, i, _costs(siting_ticks)])
 		print("WD %d %d %d" % [day, SEEDS, placed])
+		print("WC %d %d %d" % [day, cut_at_dawn, cut_after_walk])
+		all_cut_at_dawn += cut_at_dawn
+		all_cut_after_walk += cut_after_walk
 		print("WM %d %d %d %d" % [day, capped_met, capped_at_the_door, capped_late_out])
 		for key: String in by_view:
 			print("WV %d %s %d" % [day, key, by_view[key]])
 		for key: String in by_kind:
 			print("WK %d %s %d" % [day, key, by_kind[key]])
+	print("WC all %d %d" % [all_cut_at_dawn, all_cut_after_walk])
 	t.check(true, "walk probe ran")
+
+## How many of `routes` home reached among the day's closures (`reached_bare`) that it no longer
+## reaches among the bodies of `plans` and that no body's disc covers, each printed as a `WX` line
+## with the kind of ground it is and the rows whose taking away alone gives it back.
+static func _report_cut_off(map: CityMap, grid: ReachabilityGrid, routes: Array[Vector2i],
+		reached_bare: Dictionary, plans: Array[EventPlan], day: int, seed_index: int,
+		half: String) -> int:
+	var bodies: Array[EventPlan] = []
+	for plan in plans:
+		if plan.obstructs():
+			bodies.append(plan)
+	var cut := _cut_off(map, grid, routes, reached_bare, bodies)
+	if cut.is_empty():
+		return 0
+	var restores := {}
+	for body in bodies:
+		var others: Array[EventPlan] = bodies.duplicate()
+		others.erase(body)
+		var still := _cut_off(map, grid, cut, reached_bare, others)
+		for tile in cut:
+			if not still.has(tile):
+				var names: Array = restores.get(tile, [])
+				names.append("%s@%s" % [body.row_id(), map.world_to_tile(body.placed_at())])
+				restores[tile] = names
+	for tile in cut:
+		var names: Array = restores.get(tile, ["jointly"])
+		print("WX %d %d %s %s %s %s" % [day, seed_index, half, tile, _kind_of(map, tile),
+				" ".join(names)])
+	return cut.size()
+
+## The tiles of `routes` home reached among the day's closures (`reached_bare`) that it does not
+## reach among `bodies` and that no body's disc covers.
+static func _cut_off(map: CityMap, grid: ReachabilityGrid, routes: Array[Vector2i],
+		reached_bare: Dictionary, bodies: Array[EventPlan]) -> Array[Vector2i]:
+	var blocked := EventScheduler.blocked_by(map, bodies)
+	var reached := grid.flood([map.home_tile()], blocked)
+	var cut: Array[Vector2i] = []
+	for tile in routes:
+		if not blocked.has(tile) and grid.reaches(tile, map.closed_tiles, reached_bare) \
+				and not grid.reaches(tile, blocked, reached):
+			cut.append(tile)
+	return cut
 
 ## The day's longest route as the line she walks, out from the doorstep: a route is grown from the
 ## area to the doorstep, so the walk out is the route reversed.
