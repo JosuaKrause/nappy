@@ -743,7 +743,7 @@ also shows a search for the field's old name read without parentheses, every rem
 | **3c** | **The resistance, the scene recipes and the rigs.** | `src/resistance/*`, `src/dev/*`, `src/city/city.gd` | After the third hand-ins pull request. Beside 3a and 3b |
 | **4a** | **The tests, the probes and the cost table read through the methods.** One scripted rewrite, each replacement a line of section 4's tables, the script in the description so a branch merging main reruns it. No line under `src/` changes | `tests/**`, `tools/cost_table.gd` | After 3a to 3c |
 | **4b** | **A row is written as its parts.** `EventDraft`, the eight new specs, the row with no public field and no `Resource` base, the catalogue rewritten row by row, every variant made from a draft, `validate()` without the pairings a part makes unwritable; the tests that build or change a row use a draft. `docs/EVENTS.md`'s "Adding a new event" and the events skill's "Adding a row" say the new form | `event_def.gd`, `event_catalogue.gd`, `event_draft.gd` and the spec files, the variant sites in `seal_planner.gd`, `region_planner.gd`, `happenings.gd`, `event_director.gd`, `event_spawner.gd`; the tests that write a row | After 4a |
-| **5** | **The events' and the resistance's suites test one module each** (`tests-one-module.md`, entry 7), in the groups below | `tests/**` | After 4b; its groups beside each other |
+| **5** | **The events' and the resistance's suites test one module each** (`tests-one-module.md`, entry 6), in the groups below | `tests/**` | After 4b; its groups beside each other |
 
 **What runs beside the placement track and the scheduler's breakup**: 1, 2a and 2b. They own no
 file either of those owns; 1 and 2a add methods to `event_def.gd`, where placement has been

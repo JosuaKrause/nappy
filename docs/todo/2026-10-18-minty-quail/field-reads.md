@@ -121,13 +121,11 @@ Left, each its own design question:
     recipe runtime; `power_station` by the city scene's `assign_roof_extensions()`, which skips the
     station's yard columns when it extends a roof; `pasted_through` by the poster walls, which read
     and write it.
-- **Her and the baby's parts that only tests read.** `Stroller.atlas` and `Baby.timing` are handed in
-  through `use_atlas()` and `use_frame_timing()` and read by their own file and two suites:
-  `tests/test_atlas_boot.gd` finds every node holding an atlas by the field's name (`"atlas" in node`,
-  `node.get("atlas")`), so renaming `Stroller.atlas` would make that walk skip her with no failure,
-  and `tests/test_frame_record_wiring.gd` reads `Baby.timing`. They become underscore-private with
-  the tests-one-module item (`tests-one-module.md`), when those suites read through a method the game
-  also calls.
+- **Her part that only tests read.** `Stroller.atlas` is handed in through `use_atlas()` and read by
+  its own file and `tests/test_atlas_boot.gd`, which finds every node holding an atlas by the field's
+  name (`"atlas" in node`, `node.get("atlas")`), so renaming it would make that walk skip her with no
+  failure. It becomes underscore-private with the tests-one-module item (`tests-one-module.md`), when
+  that suite reads through a method the game also calls.
 - **Three public fields with no reader under `src/` outside their own class.**
   `SpreadLook.Slice.index` is read only by the look probe, by string (`canvas.get(&"index")` in
   `tests/probes/look_fingerprint.gd`), which row 4a's scripted rewrite of `event-interface.md` would

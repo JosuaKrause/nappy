@@ -31,7 +31,7 @@ builds the event manager and the crowd (polite-tapir's `standing-layer-breaks.md
   too.
 - The scene recipes take the city whole: `SceneRecipeRuntime.install()` (and the `AuthoredScene`
   it extends, `src/run/authored_scene.gd`), and `SceneRecipeDraft.record()` and `compose()`
-  (`src/dev/scene_recipe_draft.gd`). `tests-one-module.md`'s entry 4 waits for `install()` to take a
+  (`src/dev/scene_recipe_draft.gd`). `tests-one-module.md`'s entry 3 waits for `install()` to take a
   narrow interface instead.
 - The debug layers (`src/dev/debug_layers.gd`) ask the world they are handed whether it is a `City`
   and read its props through `City.props()`.

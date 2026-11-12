@@ -25,43 +25,36 @@ step 3c, open to overturn). Each module's pass hoists them as it touches the sui
 
 **The order** is by module, those whose suites build a city before those that boot `main`, one
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
-`booted_main` and `build_day`/`start_day`/`begin_day` first. Entries 1 to 6 and 9 have had their
-pass (the records 2026-10-18-minty-quail-fluffy-newt and 2026-10-18-minty-quail-dotted-stork,
--teal-toad, -tall-lynx, -spotted-owl, -quiet-swan, -curly-hawk and -merry-goose), and what each lists
-is what is left of it; entry 7 is row 5 of `event-interface.md`, after its row 4b; entry 8 has had
-no pass:
+`booted_main` and `build_day`/`start_day`/`begin_day` first. Entries 1 to 5 and 8 have had their
+pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -quiet-swan,
+-curly-hawk and -merry-goose), and what each lists is what is left of it; entry 6 is row 5 of
+`event-interface.md`, after its row 4b; entry 7 has had no pass:
 
-1. telemetry: `test_frame_record_wiring` checks that `main` hands the sitting's record to every
-   timed system by what each records into the record it was handed, not by reading its hand-in back
-   (`city.frame_timing`, `scenery.timing`, `events.timing`, the baby's, the screen edge's and the
-   halo's `timing`), since a getter only this suite read would fail
-   `tools/check_test_only_members.py`. *Read as:* the sentence above that a var a test reads gets a
-   method holds where a game file asks too; where none would, the test reads the public effect;
-2. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
+1. the player and the baby: `test_tutorial_dog`'s case asking where the scheduler places the dog
    (`EventScheduler.build_day`, still on generated maps) moves to the scheduler's suite with the
    events;
-3. atlas and scenery: `test_events_scenery` waits for the events;
-4. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
+2. atlas and scenery: `test_events_scenery` waits for the events;
+3. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
    and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
    what it reads from the city (its map, streets, events and poster walls) instead of the whole
    `City`, so a stand-in can be handed in;
-5. the night group: `test_heat` reads the event
+4. the night group: `test_heat` reads the event
    instance's vars (`age`, `is_leaving`, `is_finished`, `barrier_post`) until they have methods, and
    it and `test_dark_spine` hold the scheduler's and the crowd's answers in a day-planning case each,
    to move to those modules' suites; `test_power_station`'s yard-layer frame-record case belongs in
    `test_frame_record`; `test_masts` waits for the events;
-6. the crowd: the events' answers still held in the crowd's suites move with the events (entry 7):
+5. the crowd: the events' answers still held in the crowd's suites move with the events (entry 6):
    `test_crowd_yields`' four checks of the event instance and manager (stands as, parked, the list
    of moves, placement) and `test_crowd_bodies_on_a_real_day`'s check that a crash's cars stand on
    recorded ground. `test_danger` (the danger vocabulary) and `test_wall_shield`
    (`CityMap.wall_between()`) are not the crowd's suites though each holds a crowd half; their
    events half (in `test_danger`, about twenty tests of events, the baby, the badge and the screen
    edge) moves with the events too;
-7. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
+6. the events (`event_manager*`, `events_*`, `fire_truck_body`, `police_car`, `car_front`,
    `protest`, the day 6, 7 and 13 suites) and the resistance (`resistance_*`, `spent_park`,
    `park_cordon`, `burnt_door`);
-8. the routes, city and regions suites that test something other than the city itself;
-9. run flow, save and pause: `test_day_loop`'s retry case (the same mark in the same alley from the
+7. the routes, city and regions suites that test something other than the city itself;
+8. run flow, save and pause: `test_day_loop`'s retry case (the same mark in the same alley from the
    same seed) is the resistance director's placement answer, to move to the resistance suites
    after placement by construction; `test_dev_rig`'s `--spawn` event, closure and door cases read
    event placement, closures and the checkpoint huts, to move with those modules; `test_save`'s
