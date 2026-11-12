@@ -30,6 +30,14 @@ func run(t: TestRunner) -> void:
 	_test_a_silenced_fixed_mast_stays_silenced_the_next_day(t)
 	_teardown()
 
+## Starts day `day` through the manager, which plans it against the city's streets: the suite runs
+## no dawn of the city's own (`City.start_day()`), so it begins them for the day first
+## (`RigStreets.begin()`).
+func _start(day: int) -> void:
+	var spec := DaySpec.for_day(day)
+	RigStreets.begin(_city.streets(), _city.map, spec)
+	_city.events.start_day(spec, _rng(day), [])
+
 func _rng(day: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [SEED, day])
@@ -189,7 +197,7 @@ func _plan_for(mast_id: String, row_id: String = "loudspeaker") -> EventPlan:
 ## streams in (`EventStreaming.stream_in()`'s own doc), not from zero, so a mast met later in the day is not a
 ## mast that is "younger" — it is telling the same time as every other one.
 func _test_they_all_speak_together(t: TestRunner) -> void:
-	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
+	_start(Tuning.MAST_FIRST_DAY)
 	var sites := _sites()
 	t.check(sites.size() >= 2, "there are at least two masts to compare")
 	if sites.size() < 2:
@@ -222,7 +230,7 @@ func _test_they_all_speak_together(t: TestRunner) -> void:
 				"they were not both stamped the instant they happened to stream in")
 
 func _test_mast_foot_answers_a_stable_id(t: TestRunner) -> void:
-	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
+	_start(Tuning.MAST_FIRST_DAY)
 	var site := _sites()[0]
 	t.check(_city.events.mast_foot(site.id).distance_to(site.foot) < 0.01,
 			"mast_foot() answers the same point MastSites named for this id")
@@ -232,7 +240,7 @@ func _test_mast_foot_answers_a_stable_id(t: TestRunner) -> void:
 # -------------------------------------------------------------- silencing ---
 
 func _test_silencing_one_mast_works_for_the_rest_of_the_day(t: TestRunner) -> void:
-	_city.events.start_day(DaySpec.for_day(Tuning.MAST_FIRST_DAY), _rng(Tuning.MAST_FIRST_DAY), [])
+	_start(Tuning.MAST_FIRST_DAY)
 	var target := _sites()[0]
 	_city.events.stream_around(target.foot)
 	var plan := _plan_for(target.id)
@@ -263,7 +271,7 @@ func _test_silencing_one_mast_works_for_the_rest_of_the_day(t: TestRunner) -> vo
 		t.check(is_zero_approx(plan.live.current_intensity()), "still no field")
 
 func _test_silencing_every_mast_works_for_the_rest_of_the_day(t: TestRunner) -> void:
-	_city.events.start_day(DaySpec.for_day(EventScheduler.CURFEW_ANNOUNCE_DAY), _rng(EventScheduler.CURFEW_ANNOUNCE_DAY), [])
+	_start(EventScheduler.CURFEW_ANNOUNCE_DAY)
 	for site in _sites():
 		_city.events.stream_around(site.foot)
 	# Today's own count of *standing* masts, not `Tuning.MAST_COUNT` — `_place_masts()` skips a
@@ -303,7 +311,7 @@ func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t: TestRunner) -> v
 	var first := Tuning.MAST_FIRST_DAY
 	var run := _city.run
 	run.header.day = first
-	_city.events.start_day(DaySpec.for_day(first), _rng(first), [])
+	_start(first)
 	var target: MastSites.Site = null
 	for site in _sites():
 		if _plan_for(site.id) != null:
@@ -318,7 +326,7 @@ func _test_a_silenced_fixed_mast_stays_silenced_the_next_day(t: TestRunner) -> v
 	run.add_scar(EventScheduler.SILENCED_MAST, foot)
 
 	run.header.day = first + 1
-	_city.events.start_day(DaySpec.for_day(first + 1), _rng(first + 1), [])
+	_start(first + 1)
 	var tomorrow := _plan_for(target.id)
 	t.check(tomorrow != null and tomorrow.silenced,
 			"the next day the same site stands silenced, lamp out and no field")

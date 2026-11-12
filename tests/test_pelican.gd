@@ -55,8 +55,11 @@ func run(t: TestRunner) -> void:
 	_test_the_dev_flag_makes_every_cyclist_a_pelican(t)
 	_test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t)
 	_map = MapCache.of(SEED)
-	_events = StreetEvents.over(t, _map, _run)
-	_events.start_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), _day_rng(), [] as Array[String])
+	var streets := DayStreets.new()
+	_events = StreetEvents.over(t, _map, _run, streets)
+	var spec := DaySpec.for_day(Tuning.RUN_TAUGHT_DAY)
+	RigStreets.begin(streets, _map, spec)
+	_events.start_day(spec, _day_rng(), [] as Array[String])
 	# The rides run on a quiet day: a body the day's draw stands on the arterial's sidewalk would turn
 	# the rider off the line these checks ride, and what the draw stands there is not theirs to ask.
 	_quiet_day(_events)

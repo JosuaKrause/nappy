@@ -577,7 +577,9 @@ func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 	city.build(CityGenerator.generate(SEED))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
-	city.events.start_day(DaySpec.for_day(DAY), rng, [] as Array[String])
+	var spec := DaySpec.for_day(DAY)
+	RigStreets.begin(city.streets(), city.map, spec)
+	city.events.start_day(spec, rng, [] as Array[String])
 	var events := city.events
 	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
 	t.add_child(stroller)
@@ -635,7 +637,9 @@ func _test_the_manager_tells_the_encounter_under_its_day(t: TestRunner) -> void:
 	city.build(CityGenerator.generate(SEED))
 	var rng := RandomNumberGenerator.new()
 	rng.seed = SEED
-	city.events.start_day(DaySpec.for_day(DAY), rng, [] as Array[String])
+	var spec := DaySpec.for_day(DAY)
+	RigStreets.begin(city.streets(), city.map, spec)
+	city.events.start_day(spec, rng, [] as Array[String])
 	var events := city.events
 	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
 	t.add_child(stroller)

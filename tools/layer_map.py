@@ -466,7 +466,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             ("src/city/blackout.gd", 2),
             ("src/events/encounter_watch.gd", 5),
             ("src/events/event_instance.gd", 3),
-            ("src/events/event_manager.gd", 5),
+            ("src/events/event_manager.gd", 4),
             ("src/events/event_spawner.gd", 4),
             ("src/events/events_ahead.gd", 2),
             ("src/resistance/resistance_director.gd", 2),

@@ -124,8 +124,6 @@ src/dev/scene_recipe_runtime.gd run
 src/dev/scene_recipe_runtime.gd signals
 src/dev/scene_recipe_runtime.gd spawn_siting
 src/dev/scene_recipe_runtime.gd trace
-src/events/event_manager.gd run
-src/events/event_manager.gd signals
 src/main.gd all_cyclists_pelicans
 src/main.gd atlas
 src/main.gd blackout_forced
@@ -850,13 +848,11 @@ src/events/checkpoint_controller.gd instances
 src/events/checkpoint_controller.gd map
 src/events/checkpoint_controller.gd player
 src/events/checkpoint_controller.gd trace
-src/events/day_planner.gd city
 src/events/day_planner.gd city_map
 src/events/day_planner.gd map
 src/events/day_planner.gd run
 src/events/day_planner.gd trace
 src/events/event_manager.gd atlas
-src/events/event_manager.gd city
 src/events/event_manager.gd city_map
 src/events/event_manager.gd day
 src/events/event_manager.gd drawer
@@ -887,7 +883,6 @@ src/events/event_spawner.gd visible
 src/events/event_streaming.gd instances
 src/events/event_streaming.gd map
 src/events/event_streaming.gd player
-src/events/events_ahead.gd city
 src/events/events_ahead.gd city_map
 src/events/events_ahead.gd day
 src/events/events_ahead.gd instances
@@ -1389,7 +1384,6 @@ src/dev/route_rig_planner.gd size
 src/dev/scene_recipe_draft.gd size
 src/dev/scene_recipe_runtime.gd size
 src/events/event_instance.gd moves
-src/events/event_manager.gd world
 src/events/event_scheduler.gd size
 src/events/event_spawner.gd world
 src/events/views/spread_look.gd world

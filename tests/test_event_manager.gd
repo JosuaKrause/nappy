@@ -24,7 +24,7 @@ func run(t: TestRunner) -> void:
 		_test_an_event_that_has_run_does_not_run_again,
 		_test_a_running_event_comes_back_where_it_got_to,
 		_test_a_set_piece_is_one_plan_owed_to_her_walk,
-		_test_a_day_started_through_the_manager_alone_still_carries_seals,
+		_test_a_day_started_through_the_manager_is_planned_on_its_streets,
 		_test_a_streamed_pursuer_resumes_the_chase,
 		_test_a_row_warned_down_her_line_arrives_at_its_own_intensity,
 		_test_the_first_dog_of_the_run_day_is_the_lesson,
@@ -384,43 +384,48 @@ func _test_a_set_piece_is_one_plan_owed_to_her_walk(t: TestRunner) -> void:
 			"a run has a set piece to check at all (%d owed to her walk, over fourteen days)"
 			% owed_to_her_walk)
 
-## M100: "a rig driving `EventManager` before `City.start_day` seals nothing." Every rig in this
-## suite, this one included, drives `EventManager.start_day` before `_city.start_day()` has grown a
-## tree, so `_city.streets().route_tree()` and `region_plan()` answer null; `DayPlanner._plan_a_day()`
-## then grows its own tree and plan from the same `RouteTree.for_day(map, day)` the city grows at
-## dawn, so `SealPlanner.plan_day` and `RegionPlanner.plan_day` are handed a real tree and the
-## catalogue's placements are stated against the same one: one tree for the day, and its seals and
-## walls planned.
-##
-## Comparing "the manager alone" against "the manager after the city's own `start_day`" is the
-## check, rather than counting seals directly: `RouteTree.for_day(map, day)` is deterministic and
-## `SealPlanner`'s own RNG stream (`RunState.calendar.day_rng(day, "seals")`) does not depend on `_city`
-## either, so every segment the fallback holds has to be held the real way too — a rig that skips
-## `City.start_day` must not come out with less of it. **Not exact equality**: `_city.streets().closures()`
-## only ever has something to read once `City.start_day()` has run (see the comment in
-## `EventManager.start_day` above `_map.clear_day_holds()`), so the "after" run legitimately holds
-## a little more, one closure's own segment. See `tests/test_checkpoints.gd`'s
-## `_test_the_manager_actually_places_the_door_structure()` for the same `City.start_day` calling
-## convention, written against this exact gap before it had a fix.
-func _test_a_day_started_through_the_manager_alone_still_carries_seals(t: TestRunner) -> void:
-	var day := Tuning.REGION_WALL_FIRST_DAY  # so a region wall or door is in play, not only seals.
-	_start(day)
-	var alone := _city.map.held_streets().keys()
-	t.check(alone.size() > 0,
-			"a day started through the manager alone still holds some ground (%d segments)"
-			% alone.size())
-
+## **A day started through the manager is planned against the streets it was handed**
+## (`EventManager.setup()`, the city's `DayStreets`), never against a tree of its own: after the
+## city's own dawn (`City.start_day()`), the walk the manager planned is the dawn's route tree, and
+## every street the dawn closed and every segment of its region wall is held before the catalogue
+## rolls a candidate (`CityMap.held_streets()`), and the day's plans are the dawn's own wall and door
+## bodies. A planner that grew its own tree would plan a walk that is not the dawn's, one that read
+## no closures would leave a closed street unheld, and one that grew its own region plan would place
+## bodies of its own beside the ones the siting and the crowd read.
+func _test_a_day_started_through_the_manager_is_planned_on_its_streets(t: TestRunner) -> void:
+	var day := Tuning.REGION_WALL_FIRST_DAY  # so a region wall is in play, not only seals.
 	var state := CityState.new()
 	state.begin_day(_city.map.block_plans, day)
 	var closures_rng := RandomNumberGenerator.new()
 	closures_rng.seed = hash("m100-seals:closures:%d" % day)
 	_city.start_day(state, day, closures_rng)
-	_start(day)
-	var after_city := _city.map.held_streets()
-
-	for key: Vector3i in alone:
-		t.check(after_city.has(key),
-				"everything the manager's own fallback tree holds, City.start_day holds too")
+	var consumed: Array[String] = []
+	_city.events.start_day(DaySpec.for_day(day), Rig.rng(day), consumed)
+	var streets := _city.streets()
+	t.check(streets.route_tree() != null and _city.events.walk() == streets.route_tree(),
+			"the day the manager planned walks the tree the city's dawn grew")
+	var held := _city.map.held_streets()
+	t.check(not streets.closures().is_empty(),
+			"the dawn closed streets to hold (%d)" % streets.closures().size())
+	for closure in streets.closures():
+		t.check(held.has(closure.segment.key()), "the street the dawn closed (%s) is held"
+				% closure.segment.key())
+	t.check(not streets.region_plan().walls.is_empty(),
+			"the dawn grew a region wall to hold (%d segments)" % streets.region_plan().walls.size())
+	for segment in streets.region_plan().walls:
+		t.check(held.has(segment.key()), "the region wall's segment %s is held" % segment.key())
+	# The very bodies of the dawn's region plan are the day's, not those of a plan grown again from
+	# the same tree: the siting's region and the crowd's gates read the streets' plan.
+	var bodies: Array[EventPlan] = streets.region_plan().wall_bodies + streets.region_plan().door_bodies
+	var plans := _city.events.plans()
+	var among := 0
+	for body in bodies:
+		if plans.has(body):
+			among += 1
+	t.check(not bodies.is_empty(), "the dawn's region plan has bodies to find (%d)" % bodies.size())
+	t.check(among == bodies.size(),
+			"every wall and door body of the dawn's region plan is among the day's plans (%d of %d)"
+			% [among, bodies.size()])
 
 
 ## M100, small, real, and nobody's: the wiring half of "a pursuer streamed out mid-chase comes

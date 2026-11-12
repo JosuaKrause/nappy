@@ -381,11 +381,12 @@ func _test_the_manager_actually_places_the_door_structure(t: TestRunner) -> void
 	# No player in this rig, so nothing would ever stream in on its own — see
 	# `test_event_manager.gd`'s own `_build_city()` for the same reasoning.
 	city.events.stream_radius = INF
-	# `city.start_day()` first, unlike `test_event_manager.gd`'s own rigs — this test is
-	# specifically about `EventManager.start_day()` reading a real `DayStreets.region_plan()` rather
-	# than growing its own fallback one (`_city.streets().route_tree()` reads null before `City.start_day()`
-	# has ever run, which silently empties `RegionPlanner.plan_day()` — a gap real play never
-	# hits, since `main._start()` always calls `_city.start_day()` first).
+	# `city.start_day()` first, unlike `test_event_manager.gd`'s own rigs, which begin the city's
+	# streets themselves (`RigStreets.begin()`) — this test is specifically about
+	# `EventManager.start_day()` placing the doors off the region plan the city's own dawn grew
+	# (`DayStreets.region_plan()`), as real play does: the day director's dawn
+	# (`DayDirector._dress_the_city()`) calls `city.start_day()` before its `_plan_the_walk()`
+	# calls `events.start_day()`.
 	var state := CityState.new()
 	state.begin_day(map.block_plans, day)
 	var closures_rng := RandomNumberGenerator.new()

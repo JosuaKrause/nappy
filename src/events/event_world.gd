@@ -17,17 +17,15 @@ var map: WorldMap = WorldMap.open_ground()
 ## The city's own map, for planning a day over it — its holds, its route tree, its blocks — or null
 ## where the world is not the city (`EventManager.setup_world()`).
 var city_map: CityMap
-## The city these events stand in, or null where the world is not the city.
-var city: City
-## The lights a car that drives stops at, the crowd's own (`EventInstance.signals`): handed over by
-## the city; none in a world with no streets.
+## The lights a car that drives stops at, the crowd's own (`EventInstance.signals`): handed in by
+## `EventManager.setup()`; none in a world with no streets.
 var signals: TrafficSignals
 ## Where the manager, the day's planning and every instance it creates write their own account for
 ## the run log — the city's, set before `EventManager.setup()`; silent until then.
 var trace := RunTrace.new()
 ## The run these events belong to (`RunState`): its seed and day streams, its scars, its heat, the
-## calm she has used this act and the pelican bag's draws. Handed in with the city
-## (`City.run`), or by `EventManager.use_run()` for a world that is not the city.
+## calm she has used this act and the pelican bag's draws. Handed in with the map
+## (`EventManager.setup()`), or by `EventManager.use_run()` for a rig that never calls `setup()`.
 var run: RunState
 ## The player, handed in by `EventManager.use_player()`, or null for none in the world.
 var player: Node2D
@@ -62,6 +60,13 @@ var points_at := Callable()
 ## `EventManager._look_through_the_camera()`.
 var visible := VisibleView.new()
 
+## Today's streets (`streets()`), handed in by `EventManager.setup()`; null where the world is
+## not the city.
+var _streets: DayStreets
+## The city's poster walls (`poster_walls()`), handed in by `EventManager.setup()`; null where there
+## are none.
+var _poster_walls: PosterWalls
+
 ## How every figure made here moves over `map` (`Navigator`): the one handed in by
 ## `EventManager.setup()`, or the map's own (`WorldMap.navigator()`) where none was handed for it —
 ## a rig that sets the map itself.
@@ -76,6 +81,28 @@ var _where_she_is := WhereSheIs.nowhere()
 ## Where she is this tick, the one every instance made here is handed.
 func where_she_is() -> WhereSheIs:
 	return _where_she_is
+
+## **Today's streets as dawn left them** (`DayStreets`): the route tree, the region wall and doors
+## and the closures a day is planned against (`DayPlanner`), and the region a siting reads. The
+## city's own, handed in once and begun again every dawn; a rig that builds no city hands one it
+## began itself. Null where the world is not the city (`EventManager.setup_world()`).
+func streets() -> DayStreets:
+	return _streets
+
+## Hands the world today's streets. See `streets()`.
+func use_streets(streets: DayStreets) -> void:
+	_streets = streets
+
+## **The city's poster walls** (`PosterWalls`), whose blank fronts a crew may paste on: asked for
+## its fronts when a walk's siting is made (`EventsAhead`), never copied at setup, since the walls
+## paste every dawn and the fronts are today's on each ask. Null where the world has none (the
+## building, a rig that hands none).
+func poster_walls() -> PosterWalls:
+	return _poster_walls
+
+## Hands the world the city's poster walls. See `poster_walls()`.
+func use_poster_walls(walls: PosterWalls) -> void:
+	_poster_walls = walls
 
 func use_navigator(navigator: Navigator) -> void:
 	_navigator = navigator

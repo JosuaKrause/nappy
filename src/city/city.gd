@@ -389,7 +389,7 @@ func build(city_map: CityMap) -> void:
 		events.pelican_rig = EventSpawner.PelicanRig.ALWAYS
 	add_child(events)
 	spawn_siting = SpawnSiting.new(map, navigator, events.visible_view, _streets.siting_region)
-	events.setup(self, map, navigator, spawn_siting)
+	events.setup(map, _streets, signals, run, navigator, spawn_siting, _posters)
 	events.force(forced_row, forced_interval)
 	_posters.watch_events(events)
 	crowd = Crowd.new()

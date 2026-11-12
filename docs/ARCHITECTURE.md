@@ -267,8 +267,9 @@ src/
 	                       her (`sources`); hands its work to the parts below,
 	                       all working over one `EventWorld` (event_world.gd)
 	day_planner.gd        what a walk places before she sets off, chosen by its spec: a day's
-	                       holds, seals, rows and doors; the escape city's seals and rows on its
-	                       chains; the building's own placements
+	                       holds, seals, rows and doors, against the day's streets the manager is
+	                       handed (`DayStreets`); the escape city's seals and rows on its chains;
+	                       the building's own placements
 	event_streaming.gd    the day's plan and the live instance each plan streams in as, carrying
 	                       its state out and back; the repeats, the masts, a finished plan spent
 	event_spawner.gd      every instance made, with its scar, its body and the bang outside;

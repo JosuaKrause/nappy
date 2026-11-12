@@ -17,9 +17,9 @@ extends RefCounted
 ## escape: the building is the spec's world, and a city walk whose streets are not closed off a tree
 ## is planned on the walk handed in with it.
 ##
-## Handed the world the walk is planned over (`EventWorld`: its map, the city and the city's map
-## where the world is the city, the run its streams and scars come from, the trace a day's planning
-## writes to); the spec, the stream and the one-shots already spent come with each plan.
+## Handed the world the walk is planned over (`EventWorld`: its map, the city's map and today's
+## streets where the world is the city, the run its streams and scars come from, the trace a day's
+## planning writes to); the spec, the stream and the one-shots already spent come with each plan.
 
 ## **One walk's plan**: what it places, the walk it was placed against, and what of it is kept
 ## past dawn.
@@ -81,47 +81,25 @@ func plan(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[String]) ->
 func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[String]) -> Plan:
 	var day := spec.number
 	var city_map := world.city_map
-	# The corridor the city grew this morning, before it placed its closures off it. Passed rather
-	# than grown again so that the walls, the friction and the picture are all stated against one
-	# tree; `RouteTree.for_day` would give the same answer, and two places agreeing by arithmetic
-	# is a thing that stops being true the first time one of them takes an argument. Kept as a local
-	# rather than re-read from `world.city` below, for the same reason — `SealPlanner` needs the same
-	# tree the catalogue's own placements were just stated against.
-	#
-	# **`world.city.streets().route_tree()` can itself be null even when `world.city` is not** — a
-	# live `world.city` whose own `start_day` was never called for this day, which is the whole rig
-	# `tests/test_event_manager.gd` and `tests/test_balance.gd` drive: `EventManager.start_day` on its
-	# own, with no `City.start_day` first. The explicit null check grows one the same way
-	# `City._close_streets` does, from the same `RouteTree.for_day(map, day)`, so the fallback and the
-	# real thing can never disagree.
-	var tree: RouteTree = world.city.streets().route_tree() if world.city else null
-	if not tree:
-		tree = RouteTree.for_day(city_map, day)
-	# Grown the same way `tree` was, so the two never answer for two different days — see
-	# `City._close_streets`. `world.city.streets().region_plan()` can itself be null for the same
-	# reason as `tree` above, and the explicit null check here falls through to growing one the same
-	# way.
-	var region_plan: RegionPlanner.RegionPlan = \
-			world.city.streets().region_plan() if world.city else null
-	if not region_plan:
-		region_plan = RegionPlanner.plan_day(city_map, spec, tree)
+	# Today's streets as dawn left them (`EventWorld.streets()`): the corridor the city grew this
+	# morning, the region wall and doors grown from it, and the closures placed off both. Read
+	# rather than grown again so that the walls, the friction and the picture are all stated against
+	# one tree; `RouteTree.for_day` would give the same answer, and two places agreeing by arithmetic
+	# is a thing that stops being true the first time one of them takes an argument. Kept as locals
+	# for the same reason — `SealPlanner` needs the same tree the catalogue's own placements were
+	# just stated against. A rig that starts the day with no dawn before it hands streets whose day
+	# it began itself.
+	var streets: DayStreets = world.streets()
+	var tree: RouteTree = streets.route_tree()
+	var region_plan: RegionPlanner.RegionPlan = streets.region_plan()
 
 	# Held ground, before `EventScheduler.build_day` rolls a single candidate — see
 	# `CityMap.held`. Closures, the region's own wall and door segments, and the
 	# streets around the home block are all known already; the hard seals are not, which is
 	# why `SealPlanner.plan_day` is planned ahead of `build_day` below (see that call's own note).
-	#
-	# A rig driving `EventManager` off a `City` that has not run its own `start_day` yet still
-	# gets no closures held: `world.city.streets().closures()` is empty until `City.start_day()`
-	# first closes streets, and there is no fallback for it the way `tree` and `region_plan`
-	# grow their own just above — closures are `ClosurePlanner`'s to plan, not this planner's,
-	# so a rig that wants them run has to run `City.start_day()` first. The wall, the doors and
-	# the home block are still held, because all three come from `region_plan` and the map
-	# alone.
 	city_map.clear_day_holds()
-	if world.city:
-		for closure in world.city.streets().closures():
-			city_map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
+	for closure in streets.closures():
+		city_map.hold_segment(closure.segment.key(), HeldStreets.Why.CLOSURE)
 	for segment in region_plan.walls:
 		city_map.hold_segment(segment.key(), HeldStreets.Why.WALL)
 	for segment in region_plan.doors:

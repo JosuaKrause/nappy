@@ -32,6 +32,8 @@ const RUN_AWAY_FOR := 10.0
 var _events: EventManager
 var _map: CityMap
 var _run: RunState
+## Today's streets the manager plans each day against, begun before each (`RigStreets.begin()`).
+var _streets := DayStreets.new()
 var _rig: Stroller
 
 func run(t: TestRunner) -> void:
@@ -39,7 +41,7 @@ func run(t: TestRunner) -> void:
 	_run = RunState.new()
 	_run.start_run(RUN_SEED)
 	_map = MapCache.of(4242)
-	_events = StreetEvents.over(t, _map, _run)
+	_events = StreetEvents.over(t, _map, _run, _streets)
 	_rig = Stroller.new()
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
@@ -80,7 +82,9 @@ func _start_the_day(forced: bool) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 	var consumed: Array[String] = []
-	_events.start_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY + 2), rng, consumed)
+	var spec := DaySpec.for_day(Tuning.RUN_TAUGHT_DAY + 2)
+	RigStreets.begin(_streets, _map, spec)
+	_events.start_day(spec, rng, consumed)
 	_rig.global_position = CrowdLanes.arterial_pavement(_map)
 	_rig.velocity = Vector2.ZERO
 
