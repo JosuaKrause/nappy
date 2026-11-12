@@ -249,8 +249,8 @@ src/
 	street_rule.gd        one of the day's placement rules, as the invalidation: whether a candidate
 	                      may stand, given what the walk placed and what stands round it
 	street_rules/         one file per rule: the unused calm, a door's clear ground, a route's
-	                      junctions, its walked sidewalk, a pacing beat's opening, its tiles kept
-	                      reached from home, the escape's one notice at a time and its walk kept open
+	                      junctions, its walked sidewalk, a pacing beat's opening, its ground off
+	                      the streets kept free of bodies, the escape's one notice at a time and its walk kept open
 	street_invalidation.gd the rules a walk composes from its spec, asked of a candidate: no room
 	                      where one refuses, else the room round it
 	roadblock_ground.gd   what the roadblock phase asks of the day: route tiles, a section's roadblock
