@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## A scene recipe's `setup.task`: what the schema accepts, and what the director does with a pinned
 ## mark and a pinned neighbor — stands the mark unread, places the task with its own placement when
@@ -102,7 +101,8 @@ func _test_the_task_observations_ask_about_the_task(t: TestRunner) -> void:
 func _day(t: TestRunner, day: int) -> Array:
 	var built := RecipeCityBuilder.build({"version": 1, "name": "task", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
-	t.check(built.errors.is_empty(), "the context city builds: %s" % [built.errors])
+	var errors: Array = built.errors
+	t.check(errors.is_empty(), "the context city builds: %s" % [errors])
 	var map: CityMap = built.map
 	var own_run := RunState.new()
 	own_run.start_run(RECIPE_SEED)

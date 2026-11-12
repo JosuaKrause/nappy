@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The real `City` draws the maps a recipe builds**: the power station recipes' bounded context and
 ## their two examples are built by `RecipeCityBuilder` (`tests/test_scene_recipe.gd`'s) and handed to
@@ -10,6 +9,10 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed of the run the city is handed (`RunCity.with_own_run()`).
 const RUN_SEED := 2
+
+## The diagnostics a builder's answer carries.
+func _errors(result: Dictionary) -> Array:
+	return result.errors
 
 func _recipe() -> Dictionary:
 	return {"version": 1, "name": "construction check", "seed": 7,
@@ -24,8 +27,8 @@ func _test_the_bounded_context(t: TestRunner) -> void:
 	var input := _recipe()
 	input.extent = {"scope": "bounded", "bounds": [112, 0, 34, 56]}
 	var bounded := RecipeCityBuilder.build(input)
-	t.check(bounded.errors.is_empty(), "bounded context retains whole footprints: %s" % [bounded.errors])
-	if not bounded.errors.is_empty():
+	t.check(_errors(bounded).is_empty(), "bounded context retains whole footprints: %s" % [bounded.errors])
+	if not _errors(bounded).is_empty():
 		return
 	var local: CityMap = bounded.map
 	var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
@@ -46,10 +49,10 @@ func _test_the_bounded_context(t: TestRunner) -> void:
 	city.free()
 
 func _test_the_examples(t: TestRunner) -> void:
-	for side in ["hall", "yard"]:
+	for side: String in ["hall", "yard"]:
 		var loaded := SceneRecipe.load_file("res://scene-recipes/power-station-%s.json" % side)
 		var built := RecipeCityBuilder.build(loaded.data)
-		if not built.errors.is_empty():
+		if not _errors(built).is_empty():
 			t.check(false, "%s example builds: %s" % [side, built.errors])
 			continue
 		var map: CityMap = built.map

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Exercise the actual runtime and argv readers. A tiny child scene isolates exit-status
 ## assertions without booting Main, constructing another city or quitting the suite's tree.
@@ -6,8 +5,7 @@ extends RefCounted
 const AlleyMarks := preload("res://tests/alley_marks.gd")
 const EXAMPLE := "res://scene-recipes/power-station-hall.json"
 const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
-const PROBE := """@warning_ignore_start("unsafe_method_access")
-extends Node
+const PROBE := """extends Node
 class World extends Node2D:
 	var frames := 0
 	func _physics_process(_delta: float) -> void:
@@ -107,14 +105,16 @@ func _probe_the_camera() -> void:
 			PackedStringArray())
 	loaded.data.playback = {"duration": 5, "walk": "5p", "settled_camera": true,
 		"camera": {"fixed": true, "fixed_offset": [200, 0], "zoom_out": 4, "zoom_delay": 0}}
-	var city: City = load("res://scenes/world/city.tscn").instantiate()
+	var city_scene: PackedScene = load("res://scenes/world/city.tscn")
+	var city: City = city_scene.instantiate()
 	city.run = _run
 	add_child(city)
 	city.build(loaded.map)
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 1)
 	city.start_recipe_day(state, 1, _run.calendar.day_rng())
-	var player: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
+	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var player: Stroller = stroller_scene.instantiate()
 	add_child(player)
 	var runtime := SceneRecipeRuntime.new()
 	runtime.configure(loaded, _scripted(), _run)
@@ -413,16 +413,16 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 func _test_a_task_gone_after_the_read(t: TestRunner) -> void:
 	var placed := _task_scene(t, 7, {})
 	t.check(placed.errors.is_empty(), "the task scene is installed: %s" % [placed.errors])
-	var runtime: SceneRecipeRuntime = placed.runtime
-	var director: ResistanceDirector = placed.director
+	var runtime := placed.runtime
+	var director := placed.director
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(runtime.named.has("mark") and not runtime.manifest.task.has("read_tick"),
+	t.check(runtime.named.has("mark") and not _task_record(runtime).has("read_tick"),
 			"before she reads it the mark stands unread and no task is named")
 	director.contact().complete_now()
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(runtime.named.has("task") and runtime.manifest.task.get("read_tick") == runtime.tick,
+	t.check(runtime.named.has("task") and _task_record(runtime).get("read_tick") == runtime.tick,
 			"the tick after she reads it, the task is named and the read is recorded: %s"
-			% [runtime.manifest.task])
+			% [_task_record(runtime)])
 	# The thing the task rides on finishes before she gets there.
 	var rider := director.rider()
 	t.check(rider != null, "the task rides on a live event")
@@ -430,9 +430,9 @@ func _test_a_task_gone_after_the_read(t: TestRunner) -> void:
 		placed.city.events.retire(rider)
 	director.tick(1.0 / Engine.physics_ticks_per_second)
 	await PhysicsTicks.pass_ticks(t, 1)
-	t.check(runtime.manifest.task.get("expired_tick") == runtime.tick and not runtime.named.has("task")
+	t.check(_task_record(runtime).get("expired_tick") == runtime.tick and not runtime.named.has("task")
 			and not runtime.manifest.get("setup_failed", false),
-			"a placed task that is gone expired at the tick it went: %s" % [runtime.manifest.task])
+			"a placed task that is gone expired at the tick it went: %s" % [_task_record(runtime)])
 	_free_task_scene(placed)
 	# Played by hand, the runtime's own tick is what notices the read, as it does in play. Day 10's
 	# neighbor is pinned to a start the day could not draw, which the read refuses.
@@ -446,12 +446,16 @@ func _test_a_task_gone_after_the_read(t: TestRunner) -> void:
 	await PhysicsTicks.pass_ticks(t, 1)
 	OS.remove_logger(printed)
 	t.check(runtime.tick == 1 and runtime.manifest.get("setup_failed", false)
-			and not runtime.manifest.task.has("expired_tick"),
+			and not _task_record(runtime).has("expired_tick"),
 			"a task refused at the read fails the setup, noticed by a scene played by hand too")
 	var reason := "is not a start the day could draw"
 	t.check(Array(printed.lines).any(func(line: String) -> bool: return line.contains(reason)),
 			"and the director's reasons are printed: %s" % [printed.lines])
 	_free_task_scene(refused)
+
+## The manifest's record of the scene's task: when she read it, when it expired.
+func _task_record(runtime: SceneRecipeRuntime) -> Dictionary:
+	return runtime.manifest.task
 
 ## Every line printed while it is attached (`OS.add_logger()`), so a test reads what a run prints.
 class PrintedLines extends Logger:
@@ -478,7 +482,7 @@ const NEAR_HOME := Vector2i(62, 84)
 ## hands it, a stroller at the alley mouth, and the free-play runtime begun. `task` is the recipe's
 ## `setup.task`: a day-7 mark at the alley's mark tile, or (`"neighbor": true`) a day-10 mark with the
 ## neighbor pinned near home. `errors` are what `install()` returned. `_free_task_scene()` frees it.
-func _task_scene(t: TestRunner, day: int, task: Dictionary) -> Dictionary:
+func _task_scene(t: TestRunner, day: int, task: Dictionary) -> TaskScene:
 	var built := RecipeCityBuilder.build({"version": 1, "name": "task", "seed": 11,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
 	var map: CityMap = built.map
@@ -488,7 +492,8 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> Dictionary:
 	var state := CityState.new()
 	own_run.attempt_spend.city_state = state
 	state.begin_day(map.block_plans, day)
-	var city: City = load("res://scenes/world/city.tscn").instantiate()
+	var city_scene: PackedScene = load("res://scenes/world/city.tscn")
+	var city: City = city_scene.instantiate()
 	city.run = own_run
 	t.add_child(city)
 	city.build(map)
@@ -498,7 +503,8 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> Dictionary:
 	director.set_process(false)
 	director.setup(map, city.run, city.events, city.streets(), city.fronts(), city, null,
 			city.spawn_siting)
-	var player: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
+	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var player: Stroller = stroller_scene.instantiate()
 	t.add_child(player)
 	var mark := map.tile_to_world(MARK)
 	var pinned := {"mark": [mark.x, mark.y]}
@@ -516,10 +522,23 @@ func _task_scene(t: TestRunner, day: int, task: Dictionary) -> Dictionary:
 			DaySpec.for_day(day, Tuning.DAY_LENGTH_SECONDS), director)
 	if errors.is_empty():
 		runtime.begin()
-	return {"errors": errors, "runtime": runtime, "director": director, "city": city,
-			"player": player, "run": own_run}
+	var made := TaskScene.new()
+	made.errors = errors
+	made.runtime = runtime
+	made.director = director
+	made.city = city
+	made.player = player
+	return made
 
-func _free_task_scene(made: Dictionary) -> void:
+## What `_task_scene()` made: what `install()` returned and the parts it stands on.
+class TaskScene:
+	var errors: Array[String] = []
+	var runtime: SceneRecipeRuntime
+	var director: ResistanceDirector
+	var city: City
+	var player: Stroller
+
+func _free_task_scene(made: TaskScene) -> void:
 	for node: Node in [made.runtime, made.player, made.director, made.city]:
 		node.free()
 
@@ -536,7 +555,8 @@ func _test_arguments(t: TestRunner) -> void:
 		PackedStringArray(["--recipe-mode", "free", "--after", "1"]),
 	]:
 		var loaded := SceneRecipeRuntime.load_recipe(EXAMPLE, args)
-		t.check(not loaded.errors.is_empty(), "conflicting or unknown recipe arguments fail: %s" % [args])
+		var errors: Array = loaded.errors
+		t.check(not errors.is_empty(), "conflicting or unknown recipe arguments fail: %s" % [args])
 	var output: Array = []
 	var status := OS.execute("bash", PackedStringArray([
 		ProjectSettings.globalize_path("res://tools/run.sh"), "--recipe", EXAMPLE,
@@ -587,7 +607,7 @@ func _test_real_argv_and_failure(t: TestRunner) -> void:
 	var scene := FileAccess.open(scene_path, FileAccess.WRITE)
 	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % script_path)
 	scene.close()
-	for mode in ["free", "scripted", "failure", "boundary", "camera"]:
+	for mode: String in ["free", "scripted", "failure", "boundary", "camera"]:
 		var args := PackedStringArray(["--headless", "--path", ProjectSettings.globalize_path("res://"),
 				"--quit-after", "120", scene_path, "--", "--recipe", EXAMPLE,
 				"--recipe-mode", "free" if mode == "free" else "scripted"])

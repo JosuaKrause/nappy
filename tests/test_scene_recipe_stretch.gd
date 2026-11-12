@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## A task scene's stretch (`docs/SCENE_RECIPES.md`, "The task scenes"): the recipe's tiles are the
 ## only ground, the void beyond is no ground and a wall, authored edits survive save/load and daily
@@ -18,6 +17,10 @@ const SCENE := "res://scene-recipes/task-07-package.json"
 const PARTIAL_COURTYARD_SCENE := "res://scene-recipes/task-14-last-night.json"
 const RecipeErrors := preload("res://tests/recipe_runtime_errors.gd")
 
+## The diagnostics a builder's answer carries.
+func _diagnostics(result: Dictionary) -> Array:
+	return result.errors
+
 ## Where each recipe is written and loaded, and what loading it answers.
 var _errors := RecipeErrors.new()
 
@@ -25,8 +28,8 @@ func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	var data: Dictionary = SceneRecipe.load_file(SCENE).data
 	var built := RecipeCityBuilder.build(data)
-	t.check(built.errors.is_empty(), "day 7's stretch loads explicit context: %s" % [built.errors])
-	if not built.errors.is_empty():
+	t.check(_diagnostics(built).is_empty(), "day 7's stretch loads explicit context: %s" % [built.errors])
+	if not _diagnostics(built).is_empty():
 		return
 	var map: CityMap = built.map
 	_test_the_stretch_is_the_only_ground(t, map, data)
@@ -98,7 +101,8 @@ func _sight(t: TestRunner, zoom: float, tiles: int) -> Array[int]:
 	# A walker pinned on a sidewalk stands exactly on its lane (`SceneRecipeRuntime` never snaps it).
 	there.y = CrowdLanes.walker_lane_centre(CrowdLanes.corridor_at(there.y),
 			CityMap.corridor_offset(from.y), CrowdLanes.SIDEWALK_OFFSETS)
-	var player: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
+	var stroller_scene: PackedScene = load("res://scenes/player/stroller.tscn")
+	var player: Stroller = stroller_scene.instantiate()
 	# The zoom is fixed before her camera enters the tree: a Camera2D applies a zoom it is changed to
 	# on its next process step, and `appeared` is asked of every tick from the first.
 	(player.get_node("Camera2D") as Camera2D).zoom = Vector2.ONE * zoom
@@ -141,10 +145,10 @@ func _test_the_stretch_is_the_only_ground(t: TestRunner, map: CityMap, data: Dic
 	(edited.stretch.tiles.sidewalk as Array).append(moved)
 	var tile := Vector2i(int(moved[1]), int(moved[0]))
 	var rebuilt := RecipeCityBuilder.build(edited)
-	t.check(rebuilt.errors.is_empty() and context.tile_at(tile) == GameEnums.TileType.ROAD,
+	t.check(_diagnostics(rebuilt).is_empty() and context.tile_at(tile) == GameEnums.TileType.ROAD,
 			"the hand-edited copy builds, its edit at %s differing from the saved context: %s"
 			% [tile, rebuilt.errors])
-	if rebuilt.errors.is_empty():
+	if _diagnostics(rebuilt).is_empty():
 		_check_the_ground(t, rebuilt.map, edited, context, "the hand-edited copy")
 	var edges := map.witness_only()
 	var outside := Vector2i(0, 0)
@@ -260,11 +264,11 @@ func _test_saved_layout_is_independent(t: TestRunner, data: Dictionary) -> void:
 	changed_seed.city.context_seed = 1
 	changed_seed.city.layouts = []
 	var independent := RecipeCityBuilder.build(changed_seed)
-	t.check(independent.errors.is_empty() and independent.map.tiles == original.map.tiles,
+	t.check(_diagnostics(independent).is_empty() and independent.map.tiles == original.map.tiles,
 			"changing drafting inputs cannot regenerate or reject a saved layout")
 	var malformed := data.duplicate(true)
 	malformed.context.tiles[0] = [["sidewalk", -1]]
-	t.check(not RecipeCityBuilder.build(malformed).errors.is_empty(),
+	t.check(not _diagnostics(RecipeCityBuilder.build(malformed)).is_empty(),
 			"a malformed context fails before restoring its tile array")
 	var drifted := data.duplicate(true)
 	var runs: Dictionary = drifted.stretch.tiles
@@ -275,8 +279,8 @@ func _test_saved_layout_is_independent(t: TestRunner, data: Dictionary) -> void:
 	var parser := JSON.new()
 	t.check(parser.parse(SceneRecipeDraft.to_json(drifted)) == OK, "manual edit serializes")
 	var edited := RecipeCityBuilder.build(parser.data)
-	t.check(edited.errors.is_empty(), "manual tile edit loads: %s" % [edited.errors])
-	if edited.errors.is_empty():
+	t.check(_diagnostics(edited).is_empty(), "manual tile edit loads: %s" % [edited.errors])
+	if _diagnostics(edited).is_empty():
 		var map: CityMap = edited.map
 		var tile := Vector2i(int(moved[1]), int(moved[0]))
 		var state := CityState.new()
@@ -298,7 +302,8 @@ func _test_saved_layout_is_independent(t: TestRunner, data: Dictionary) -> void:
 	first.lot[3] = int(first.lot[3]) - 1
 	first.height = int(first.height) + 1
 	var rebuilt := RecipeCityBuilder.build(building)
-	t.check(rebuilt.errors.is_empty() and rebuilt.map.building_rects.has(SceneRecipe.rect(first.lot)),
+	var rebuilt_map: CityMap = rebuilt.map
+	t.check(_diagnostics(rebuilt).is_empty() and rebuilt_map.building_rects.has(SceneRecipe.rect(first.lot)),
 			"a resized lot becomes the live building footprint without matching a generator: %s" % [rebuilt.errors])
 	var tree := data.duplicate(true)
 	var run: Array = tree.stretch.tiles.sidewalk[0]
@@ -308,15 +313,16 @@ func _test_saved_layout_is_independent(t: TestRunner, data: Dictionary) -> void:
 		planted.x += 1
 	tree.stretch.trees = [[planted.x, planted.y]]
 	var treed := RecipeCityBuilder.build(tree)
-	t.check(treed.errors.is_empty(), "manually planted tree loads: %s" % [treed.errors])
-	if treed.errors.is_empty():
-		var shown := StreetTrees.planted(treed.map).filter(func(item: StreetTrees.Planted) -> bool:
-			return treed.map.in_stretch(item.tile))
+	t.check(_diagnostics(treed).is_empty(), "manually planted tree loads: %s" % [treed.errors])
+	if _diagnostics(treed).is_empty():
+		var treed_map: CityMap = treed.map
+		var shown := StreetTrees.planted(treed_map).filter(func(item: StreetTrees.Planted) -> bool:
+			return treed_map.in_stretch(item.tile))
 		t.check(shown.size() == 1 and shown[0].tile == planted,
 				"the authored tree list supplies the same placement used by drawing and clearance")
 	var twice := data.duplicate(true)
 	(twice.stretch.tiles.road as Array).append((twice.stretch.tiles.road as Array)[0])
-	t.check("\n".join(RecipeCityBuilder.build(twice).errors).contains("listed twice"),
+	t.check("\n".join(_diagnostics(RecipeCityBuilder.build(twice))).contains("listed twice"),
 			"a tile listed twice is refused")
 
 ## Authored values are construction inputs, not a visual override applied after construction. The
@@ -330,8 +336,8 @@ func _test_authored_building_values_drive_live_joins(t: TestRunner, day_seven: D
 		if SceneRecipe.rect(spec.lot) == back_lot:
 			spec.height = 4
 	var built := RecipeCityBuilder.build(edited)
-	t.check(built.errors.is_empty(), "the adjacent-height edit builds: %s" % [built.errors])
-	if built.errors.is_empty():
+	t.check(_diagnostics(built).is_empty(), "the adjacent-height edit builds: %s" % [built.errors])
+	if _diagnostics(built).is_empty():
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(built.map)
@@ -355,7 +361,8 @@ func _test_authored_building_values_drive_live_joins(t: TestRunner, day_seven: D
 ## The first visible task-14 member therefore supplies their shared tint; the hidden context's
 ## earlier member cannot override it, and the second visible member retains its own authored roll.
 func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
-	var edited: Dictionary = SceneRecipe.load_file(PARTIAL_COURTYARD_SCENE).data.duplicate(true)
+	var courtyard_data: Dictionary = SceneRecipe.load_file(PARTIAL_COURTYARD_SCENE).data
+	var edited := courtyard_data.duplicate(true)
 	var tint_source_lot := Rect2i(118, 34, 13, 4)
 	var visible_sibling_lot := Rect2i(132, 34, 8, 4)
 	var authored_variant := 123456789
@@ -367,8 +374,8 @@ func _test_authored_partial_courtyard_controls_live_tint(t: TestRunner) -> void:
 		elif lot == visible_sibling_lot:
 			sibling_variant = int(spec.variant)
 	var built := RecipeCityBuilder.build(edited)
-	t.check(built.errors.is_empty(), "the partial-courtyard edit builds: %s" % [built.errors])
-	if built.errors.is_empty():
+	t.check(_diagnostics(built).is_empty(), "the partial-courtyard edit builds: %s" % [built.errors])
+	if _diagnostics(built).is_empty():
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(built.map)
