@@ -1119,7 +1119,7 @@ class ChurnSource extends Node2D:
 
 ## The one set `ExcitementHalo.setup()` is handed, over a list of bodies a test edits.
 class ChurnEvents extends Node:
-	var list: Array = []
+	var list: Array[ChurnSource] = []
 	var _set := ChurnSet.new(self)
 
 	func sets() -> Array[ExcitementSources]:
@@ -1430,7 +1430,7 @@ func _test_a_holder_dropped_from_the_candidates_fades_and_gives_its_block_back(t
 	events.add_child(instance)
 	events.list.append(instance)
 	var rim := instance.rim
-	var others: Array = []
+	var others: Array[ChurnSource] = []
 	for i in EntityHalo.RIM_BUDGET - 1:
 		var source := ChurnSource.new()
 		events.add_child(source)

@@ -204,7 +204,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 	retiring.free()
 
 func _test_crowd_mutations(t: TestRunner) -> void:
-	for kind: int in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
+	for kind: LaneMover.Kind in [CrowdAgent.Kind.WALKER, CrowdAgent.Kind.CAR]:
 		var source := CountedCrowd.new()
 		source.kind = kind
 		source._speed = 60.0

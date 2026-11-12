@@ -78,7 +78,7 @@ class DecayedBaby extends Baby:
 ## The one set a halo is handed, over a list of sources a test edits: the stand-in for a world's
 ## own set (`EventManager.sources`, `Crowd.sources`), handed in where the game hands those.
 class ListSet extends ExcitementSources:
-	var sources: Array = []
+	var sources: Array[ExcitementSource] = []
 
 	## Overrides ExcitementSources.every_source.
 	func every_source(into: Array) -> void:
@@ -94,7 +94,7 @@ class ListSet extends ExcitementSources:
 static func lit_among(t: TestRunner, sources: Array, at: Vector2) -> Array:
 	var set := ListSet.new()
 	for source: ExcitementSource in sources:
-		var body: Node = source.body
+		var body: Node2D = source.body
 		source.use_rim(ToldRim.new(SourceRim.new(func() -> EntityHalo:
 				var halo := EntityHalo.new(func(_canvas: CanvasItem) -> void: pass,
 						func() -> float: return 0.0)
@@ -111,7 +111,7 @@ static func lit_among(t: TestRunner, sources: Array, at: Vector2) -> Array:
 	t.add_child(halo)
 	for _frame in 3:
 		await t.get_tree().process_frame
-	var lit: Array = []
+	var lit: Array[ExcitementSource] = []
 	for source: ExcitementSource in sources:
 		if (source.rim as ToldRim).strength > 0.0:
 			lit.append(source)
