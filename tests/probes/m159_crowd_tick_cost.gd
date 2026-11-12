@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access")
 extends RefCounted
 ## What the crowd's physics tick (`Crowd._physics_process()`) costs, split by the call that pays it,
 ## on fixed seeds — a headless workload on this machine, not a phone frame.
@@ -64,7 +63,7 @@ func run(t: TestRunner) -> void:
 			for walk in WALKS:
 				for repetition in REPETITIONS:
 					var chains := {}
-					for mode in ["whole", "split"]:
+					for mode: String in ["whole", "split"]:
 						var report := _run_once(city, rig, city_seed, day, mode, walk)
 						report["repetition"] = repetition
 						chains[mode] = report.chain
@@ -118,7 +117,8 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 			if agent.kind == CrowdAgent.Kind.WALKER:
 				if agent.is_touched():
 					contact_ticks += 1
-				if agent.strategy._door_state != WalkerStrategy.DoorState.WALKING:
+				var walker: WalkerStrategy = agent.strategy
+				if walker._door_state != WalkerStrategy.DoorState.WALKING:
 					held_ticks += 1
 		if tick >= WARMUP:
 			rows.append(row)

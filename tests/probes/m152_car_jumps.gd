@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Every frame-to-frame jump a car makes that it could not have driven, every reversal on the spot
 ## and what refused the arc that would have replaced it, and whether the player could see any of it
@@ -232,10 +231,11 @@ func _watch(city: City, map: CityMap, city_seed: int, day: int) -> Dictionary:
 			# The numbers the planner reads, taken before the step rather than after it: a flip
 			# reverses `_direction`, so `CarStrategy._distance_to_the_blockage()` asked afterwards answers about
 			# the road the car has just turned to face rather than the one that stopped it.
+			var car: CarStrategy = agent.strategy
 			before[id] = [agent.position, agent.is_turning(), agent._cruise,
-					agent.strategy.is_in_a_pocket(), agent._direction, agent._vertical,
-					agent._speed, agent.strategy._room_to_stop_in(), agent.strategy._distance_to_the_blockage(),
-					agent._blocked_in, agent.strategy._turned_on_this_approach]
+					car.is_in_a_pocket(), agent._direction, agent._vertical,
+					agent._speed, car._room_to_stop_in(), car._distance_to_the_blockage(),
+					agent._blocked_in, car._turned_on_this_approach]
 
 		city.crowd.set_focus(focus)
 		city.crowd.step(STEP)
@@ -330,7 +330,7 @@ func _places_cars_turn(city: City, map: CityMap, doorstep: Vector2) -> Array[Vec
 		var segment := map.network.by_key(key)
 		if segment == null:
 			continue
-		for at_a in [true, false]:
+		for at_a: bool in [true, false]:
 			var mouth := map.tile_rect_to_world(segment.mouth_rect(at_a)).get_center()
 			if seen.has(mouth.snapped(Vector2.ONE)):
 				continue
@@ -355,16 +355,17 @@ func _places_cars_turn(city: City, map: CityMap, doorstep: Vector2) -> Array[Vec
 ## an arc* is actually settled: a car stopped with its aim point reached has the road it needs and
 ## a car nose to a barrier does not.
 func _why_it_reversed(agent: CrowdAgent, was: Array, in_view: bool) -> String:
-	var cause: int = agent.strategy._turn_round_cause
+	var car: CarStrategy = agent.strategy
+	var cause := car._turn_round_cause
 	var line := "%-16s" % _cause_name(cause)
 	if cause == CarStrategy.TurnRoundCause.STOPPED_NO_ROOM:
-		line += " arcs[%s]" % _refusal_names(agent.strategy._turn_refusals)
+		line += " arcs[%s]" % _refusal_names(car._turn_refusals)
 	line += " blocked_in=%d room=%s gap=%s speed=%s turned_before=%s %s" % [
 			int(was[9]), _bucket(float(was[7])), _bucket(float(was[8])), _bucket(float(was[6])),
 			"yes" if bool(was[10]) else "no", "in-view" if in_view else "off-camera"]
 	return line
 
-static func _cause_name(cause: int) -> String:
+static func _cause_name(cause: CarStrategy.TurnRoundCause) -> String:
 	match cause:
 		CarStrategy.TurnRoundCause.OFF_THE_STREET:
 			return "off-the-street"

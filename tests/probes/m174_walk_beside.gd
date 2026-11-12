@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for M174, "the man shouting costs nothing to walk beside": the net rate the
 ## bar rises while walking beside a row, inside its own `inner_radius`, averaged over its own
@@ -36,10 +35,10 @@ const PULSE_MEAN := 0.625
 
 ## Ids priced at zero on purpose — `tests/test_events.gd`'s own list, so a row deliberately given
 ## no field is not reported as a defect here.
-const _SCENERY := ["burnt_shell", "poster_crew", "poster_crew_square"]
+const _SCENERY: Array[String] = ["burnt_shell", "poster_crew", "poster_crew_square"]
 ## Ids priced through their own capture rather than a field — see the **balance** skill,
 ## "Two short lists hold every row that is allowed to be free."
-const _DETAINERS := ["chatting_mother", "checkpoint_hut", "checkpoint_post"]
+const _DETAINERS: Array[String] = ["chatting_mother", "checkpoint_hut", "checkpoint_post"]
 
 func run(t: TestRunner) -> void:
 	print("\n== walk-beside net rate, at inner_radius, averaged over the pulse ==")
@@ -47,7 +46,7 @@ func run(t: TestRunner) -> void:
 			% Tuning.EXCITEMENT_DECAY_WALKING)
 	print("%-22s %8s %10s %10s %10s %10s" % [
 			"id", "rate/s", "awake@3.5", "awake@6.0", "asleep@3.5", "asleep@6.0"])
-	var flagged: Array = []
+	var flagged: Array[String] = []
 	for def in EventCatalogue.all():
 		if not _walkable_beside(def):
 			continue

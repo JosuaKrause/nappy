@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What the baby's influence sweep (`Baby._physics_process()`) and the events' physics step
 ## (`EventManager._physics_process()`) cost per 30/s tick, on fixed seeds and days — a headless
@@ -71,7 +70,7 @@ func run(t: TestRunner) -> void:
 			for walk in WALKS:
 				for repetition in REPETITIONS:
 					var chains := {}
-					for mode in ["whole", "split"]:
+					for mode: String in ["whole", "split"]:
 						var report := _run_once(city, rig, city_seed, day, mode, walk)
 						report["repetition"] = repetition
 						chains[mode] = report.chain

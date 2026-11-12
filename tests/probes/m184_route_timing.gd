@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Whether days 6 to 14 fit their clock, walked mark → task → calm → home by `RouteRig`
 ## (`src/dev/route_rig.gd`, `--route`) rather than guessed at with `--walk`'s own timed headings.
@@ -37,10 +36,10 @@ extends RefCounted
 ## (`Tuning.RESISTANCE_GOAL` earlier tasks done), which a bare `--day 14` subprocess with nothing
 ## played first never carries. `calm` and `home` still time normally on that day.
 
-const DAYS := [6, 7, 8, 9, 10, 11, 12, 13, 14]
+const DAYS: Array[int] = [6, 7, 8, 9, 10, 11, 12, 13, 14]
 ## The same spread `tests/test_full_run_a.gd`, `_b.gd` and `_c.gd` already use, for the same reason: a single city can
 ## be lucky, and a fact about one seed is not yet a fact about the day.
-const SEEDS := [4242, 90210, 1234567]
+const SEEDS: Array[int] = [4242, 90210, 1234567]
 const _TIMEOUT_SECONDS := 220.0
 const _POLL_MSEC := 250
 

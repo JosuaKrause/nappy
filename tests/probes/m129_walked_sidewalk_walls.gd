@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Does a **solid body** ever close the walked sidewalk of a route street? Printed rather than
 ## asserted. Not a suite: it lives under `tests/probes/`, where the runner never discovers it, and
@@ -150,7 +149,7 @@ class ClosedBand extends RefCounted:
 	var segment_key := Vector3i.ZERO
 	var horizontal := true
 	var band := Rect2i()
-	var culprits: Array = []   # Array[Body]
+	var culprits: Array[Body] = []
 	var ground_only := false   # closed by a closure tile / the ground alone, no body responsible
 
 func run(t: TestRunner) -> void:
@@ -167,10 +166,10 @@ func _measure() -> void:
 			% [HER_CLEARANCE, Tuning.PLAYER_BODY_RADIUS])
 
 	var tally := {}   # act -> [bands closed, bands measured]
-	for act in [1, 2, 3, 4]:
+	for act: int in [1, 2, 3, 4]:
 		tally[act] = [0, 0]
 	var by_row := {}   # id -> {source -> count}
-	var closed_examples: Array = []   # Array[ClosedBand]
+	var closed_examples: Array[ClosedBand] = []
 	var days_measured := 0
 	var ground_only_bands := 0
 	var rule_scope_singles := 0
@@ -185,7 +184,7 @@ func _measure() -> void:
 			var act: int = Tuning.act_for_day(day)
 			var tree := _plan_the_day(map, day)
 			var gathered := _gather_bodies(map, day, tree)
-			var bodies: Array = gathered["bodies"]
+			var bodies: Array[Body] = gathered["bodies"]
 			var corridor: Corridor = gathered["corridor"]
 			days_measured += 1
 
@@ -364,7 +363,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		provenance[plan.get_instance_id()] = Source.REGION
 	planned.append_array(region_plan.door_bodies)
 
-	var bodies: Array = []   # Array[Body]
+	var bodies: Array[Body] = []
 	for plan: EventPlan in planned:
 		if not plan.is_placed():
 			continue
@@ -413,8 +412,8 @@ func _stands_on_a_route_streets_far_sidewalk(map: CityMap, corridor: Corridor,
 
 ## Every body whose physical reach could plausibly cover part of this band — the cheap filter
 ## before the tile work, the same shape as `EventPlan.reach_touches()`.
-func _bodies_touching(world: Rect2, bodies: Array) -> Array:
-	var found: Array = []   # Array[Body]
+func _bodies_touching(world: Rect2, bodies: Array[Body]) -> Array[Body]:
+	var found: Array[Body] = []
 	for body: Body in bodies:
 		if world.grow(body.radius + Tuning.PLAYER_BODY_RADIUS).has_point(body.position):
 			found.append(body)
@@ -422,7 +421,7 @@ func _bodies_touching(world: Rect2, bodies: Array) -> Array:
 
 ## `Body` instances as `[position.x, position.y, radius]`, the shape
 ## `RouteSidewalkRule.closes_a_walked_sidewalk_band()` asks for.
-func _as_vectors(bodies: Array) -> Array:
+func _as_vectors(bodies: Array[Body]) -> Array:
 	var found: Array = []
 	for body: Body in bodies:
 		found.append(Vector3(body.position.x, body.position.y, body.radius))
@@ -432,14 +431,15 @@ func _as_vectors(bodies: Array) -> Array:
 ## the whole touching set. The same order `tests/probes/m129_zero_cost_line.gd`'s `_barrier_of`
 ## tries in, and for the same reason: a body on each of two lanes closes the band between them
 ## while neither closes it alone, and the smallest-removal answer would blame only one of the pair.
-func _culprits_of(map: CityMap, band: Rect2i, horizontal: bool, candidates: Array) -> Array:
+func _culprits_of(map: CityMap, band: Rect2i, horizontal: bool,
+		candidates: Array[Body]) -> Array[Body]:
 	for body: Body in candidates:
 		if RouteSidewalkRule.closes_a_walked_sidewalk_band(
 				map, band, horizontal, _as_vectors([body])):
 			return [body]
 	for i in candidates.size():
 		for j in range(i + 1, candidates.size()):
-			var pair: Array = [candidates[i], candidates[j]]
+			var pair: Array[Body] = [candidates[i], candidates[j]]
 			if RouteSidewalkRule.closes_a_walked_sidewalk_band(
 					map, band, horizontal, _as_vectors(pair)):
 				return pair
@@ -450,13 +450,13 @@ func _culprits_of(map: CityMap, band: Rect2i, horizontal: bool, candidates: Arra
 
 # ---------------------------------------------------------------------- the report ---
 
-func _report(tally: Dictionary, by_row: Dictionary, closed_examples: Array, days: int,
+func _report(tally: Dictionary, by_row: Dictionary, closed_examples: Array[ClosedBand], days: int,
 		ground_only_bands: int, single_culprit_bands: int, rule_scope_singles: int,
 		van_placed: int, van_far_sidewalk: int, elapsed: int) -> void:
 	print("\n-- walked-sidewalk bands with a lane she fits through --")
 	var closed_total := 0
 	var measured_total := 0
-	for act in [1, 2, 3, 4]:
+	for act: int in [1, 2, 3, 4]:
 		var counts: Array = tally[act]
 		var closed: int = counts[0]
 		var measured: int = counts[1]
@@ -483,7 +483,7 @@ func _report(tally: Dictionary, by_row: Dictionary, closed_examples: Array, days
 		var per_source: Dictionary = by_row[id]
 		var total := _row_total(per_source)
 		var parts: Array[String] = []
-		for source in per_source:
+		for source: Source in per_source:
 			parts.append("%s: %d" % [_SOURCE_NAMES[source], int(per_source[source])])
 		print("   %6d  %-20s  %s" % [total, id, ", ".join(parts)])
 	if ranked.is_empty():
@@ -536,7 +536,7 @@ func _report(tally: Dictionary, by_row: Dictionary, closed_examples: Array, days
 
 func _row_total(per_source: Dictionary) -> int:
 	var total := 0
-	for source in per_source:
+	for source: Source in per_source:
 		total += int(per_source[source])
 	return total
 

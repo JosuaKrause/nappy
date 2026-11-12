@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Does a **zero-cost line** exist along every route the day plans? Printed rather than asserted.
 ## Not a suite: it lives under `tests/probes/`, where the runner never discovers it, and runs only
@@ -218,7 +217,7 @@ class Verdict extends RefCounted:
 	## How many separate stretches have to be cleared before a line exists.
 	var cuts := 0
 	## The shape of each of them, in the order the line meets them. `shape` above is the first.
-	var shapes: Array[int] = []
+	var shapes: Array[Shape] = []
 
 func run(t: TestRunner) -> void:
 	_measure()
@@ -228,22 +227,24 @@ func run(t: TestRunner) -> void:
 
 func _measure() -> void:
 	var started := Time.get_ticks_msec()
+	var used_parks: String = UsedParks.keys()[_used_parks()]
 	print("\n== M129: the zero-cost line, %d seeds x one day per act %s, used parks: %s ==" % [
-			SEEDS, DAYS, UsedParks.keys()[_used_parks()].to_lower()])
+			SEEDS, DAYS, used_parks.to_lower()])
 
-	var readings := [Reading.BEAT_OPENING, Reading.BEAT_UNION, Reading.CATALOGUE_ONLY]
+	var readings: Array[Reading] = [Reading.BEAT_OPENING, Reading.BEAT_UNION,
+			Reading.CATALOGUE_ONLY]
 	# reading -> act -> [clear, total]
 	var tally := {}
 	for reading in readings:
 		tally[reading] = {}
-		for act in [1, 2, 3, 4]:
+		for act: int in [1, 2, 3, 4]:
 			tally[reading][act] = [0, 0]
 	# The first cut of each broken route, and every cut of every broken route: the first says what
 	# a walk actually runs into, the second what a rule would have to cover.
 	var shapes := {}
 	var cut_shapes := {}
 	var examples := {}
-	for shape in SHAPE_NAMES:
+	for shape: Shape in SHAPE_NAMES:
 		shapes[shape] = 0
 		cut_shapes[shape] = 0
 		examples[shape] = []
@@ -456,8 +457,8 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 ## a pursuer (`alley_robbery`, `charging_dog`, `door_guard`) follows her rather than sitting on a
 ## tile; and a mobile row that does not pace is passed by crossing, waiting and crossing back,
 ## never by routing around it.
-func _rows_of(plans: Array[EventPlan]) -> Array:
-	var rows: Array = []
+func _rows_of(plans: Array[EventPlan]) -> Array[Row]:
+	var rows: Array[Row] = []
 	for plan: EventPlan in plans:
 		if not plan.is_placed() or plan.mast_id != "":
 			continue
@@ -505,7 +506,7 @@ func _samples_along(plan: EventPlan) -> PackedVector2Array:
 ## take one row away and ask whether the line opens, and subtracting its disc from a flat mask
 ## would take its neighbours' overlapping ground with it — which on a street where three fields
 ## overlap reports one row as the whole cause of a cut that needed two.
-func _blocked_counts(map: CityMap, rows: Array, reading: int) -> PackedInt32Array:
+func _blocked_counts(map: CityMap, rows: Array[Row], reading: Reading) -> PackedInt32Array:
 	var counts := PackedInt32Array()
 	counts.resize(map.size.x * map.size.y)
 	counts.fill(0)
@@ -526,7 +527,7 @@ func _blocked_counts(map: CityMap, rows: Array, reading: int) -> PackedInt32Arra
 ## Tile -> the rows whose own ground covers it, under the primary reading. Built once a day, so
 ## that asking *what is standing in this cut* is a lookup rather than a sweep over every row in
 ## the city — which is the difference between a probe that runs in minutes and one that does not.
-func _owners_of(map: CityMap, rows: Array) -> Array:
+func _owners_of(map: CityMap, rows: Array[Row]) -> Array:
 	var owners: Array = []
 	owners.resize(map.size.x * map.size.y)
 	for row: Row in rows:
@@ -540,7 +541,7 @@ func _owners_of(map: CityMap, rows: Array) -> Array:
 
 ## The tiles one row denies under one reading, each named once. Every row still here paces or
 ## stands still — a mobile row that does not pace never reaches `_rows_of`'s result at all.
-func _row_tiles(map: CityMap, row: Row, reading: int) -> PackedInt32Array:
+func _row_tiles(map: CityMap, row: Row, reading: Reading) -> PackedInt32Array:
 	if _scratch.size() != map.size.x * map.size.y:
 		_scratch.resize(map.size.x * map.size.y)
 		_scratch.fill(0)
@@ -695,7 +696,7 @@ func _reach_from_home(map: CityMap, ground: PackedByteArray,
 	while head < queue.size():
 		var at := queue[head]
 		head += 1
-		for step in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+		for step: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
 			var next: Vector2i = at + step
 			if not map.in_bounds(next):
 				continue
@@ -777,7 +778,7 @@ func _diagnose(map: CityMap, route: Array, area_rect: Rect2i, ground: PackedByte
 		if _arrives(map, reached, area_rect):
 			break
 		var frontier := _frontier(map, here, still, reached)
-		var culprits: Array = []
+		var culprits: Array[Row] = []
 		for row: Row in _rows_covering(owners, frontier, map.size.x):
 			if not gone.has(row.get_instance_id()):
 				culprits.append(row)
@@ -807,7 +808,7 @@ const _CUTS_CAP := 12
 ## wrong question for the shapes M129 names: with a van on one pavement and a café on the other,
 ## taking either away opens the street, so a minimal-removal answer calls each of them the whole
 ## cause and never finds the pair the rule is about.
-func _shape_of_a_cut(map: CityMap, frontier: Array[Vector2i], culprits: Array,
+func _shape_of_a_cut(map: CityMap, frontier: Array[Vector2i], culprits: Array[Row],
 		owners: Array) -> Verdict:
 	var cut := Verdict.new()
 	var ids := {}
@@ -842,7 +843,9 @@ func _shape_of_a_cut(map: CityMap, frontier: Array[Vector2i], culprits: Array,
 		return cut
 
 	var segment := _segment_of(map, frontier)
-	var barrier := _barrier_of(map, segment, culprits, owners) if segment else []
+	var barrier: Array[Row] = []
+	if segment:
+		barrier = _barrier_of(map, segment, culprits, owners)
 	if barrier.is_empty():
 		cut.shape = Shape.NOT_A_BAND
 		cut.detail = "%s, held by [%s], none of which closes that street on its own" % [where, named]
@@ -873,7 +876,7 @@ func _shape_of_a_cut(map: CityMap, frontier: Array[Vector2i], culprits: Array,
 
 ## The row that covers a whole junction box by itself, or "" — the reach that closes a crossing
 ## rather than a pavement, which is the number the pacing rule has to be chosen against.
-func _covers_the_crossing(map: CityMap, frontier: Array[Vector2i], culprits: Array,
+func _covers_the_crossing(map: CityMap, frontier: Array[Vector2i], culprits: Array[Row],
 		owners: Array) -> String:
 	var junction := Vector2i(-1, -1)
 	for tile in frontier:
@@ -913,24 +916,26 @@ func _covers_the_crossing(map: CityMap, frontier: Array[Vector2i], culprits: Arr
 ## shapes are asked in: *is this one thing reaching across the street, or one thing on each side of
 ## it?* Empty when even all of them together do not close that street — the cut is then somewhere
 ## the street's own two ends are not the geometry, which `NOT_A_BAND` records.
-func _barrier_of(map: CityMap, segment: StreetNetwork.Segment, culprits: Array,
-		owners: Array) -> Array:
+func _barrier_of(map: CityMap, segment: StreetNetwork.Segment, culprits: Array[Row],
+		owners: Array) -> Array[Row]:
 	for row: Row in culprits:
 		if _closes_the_street(map, segment, [row], owners):
 			return [row]
 	for i in culprits.size():
 		for j in range(i + 1, culprits.size()):
-			var pair: Array = [culprits[i], culprits[j]]
+			var pair: Array[Row] = [culprits[i], culprits[j]]
 			if _closes_the_street(map, segment, pair, owners):
 				return pair
-	return culprits if _closes_the_street(map, segment, culprits, owners) else []
+	if _closes_the_street(map, segment, culprits, owners):
+		return culprits
+	return []
 
 ## Whether these rows alone leave no walk from one end of a street to the other.
 ##
 ## Stated over the street's own ground — both pavements, the carriageway left out because a line
 ## may not cross there anyway — and over a 4-connected walk, so a barrier laid diagonally counts
 ## as closing it exactly as a straight band does.
-func _closes_the_street(map: CityMap, segment: StreetNetwork.Segment, rows: Array,
+func _closes_the_street(map: CityMap, segment: StreetNetwork.Segment, rows: Array[Row],
 		owners: Array) -> bool:
 	var wall := {}
 	for row: Row in rows:
@@ -968,7 +973,7 @@ func _closes_the_street(map: CityMap, segment: StreetNetwork.Segment, rows: Arra
 		head += 1
 		if (at.x if segment.horizontal else at.y) == last:
 			return false
-		for step in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+		for step: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
 			var next: Vector2i = at + step
 			if free.has(next) and not seen.has(next):
 				seen[next] = true
@@ -1002,7 +1007,7 @@ func _frontier(map: CityMap, here: PackedInt32Array, blocked: PackedInt32Array,
 		if reached[index] == 1 or blocked[index] <= 0:
 			continue
 		var tile := Vector2i(index % map.size.x, index / map.size.x)
-		for step in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+		for step: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
 			var beside: Vector2i = tile + step
 			if not map.in_bounds(beside):
 				continue
@@ -1012,9 +1017,9 @@ func _frontier(map: CityMap, here: PackedInt32Array, blocked: PackedInt32Array,
 	return found
 
 ## Every row standing in a cut, read off the per-tile owner list rather than re-measured.
-func _rows_covering(owners: Array, frontier: Array[Vector2i], width: int) -> Array:
+func _rows_covering(owners: Array, frontier: Array[Vector2i], width: int) -> Array[Row]:
 	var seen := {}
-	var found: Array = []
+	var found: Array[Row] = []
 	for tile in frontier:
 		var here: Variant = owners[tile.y * width + tile.x]
 		if here == null:
@@ -1052,7 +1057,7 @@ func _stretch_of(map: CityMap, frontier: Array[Vector2i]) -> String:
 
 ## Whether the rows of a barrier stand on opposite pavements of the street they close — the
 ## difference between *one thing across the street* and *one thing on each side of it*.
-func _on_facing_pavements(map: CityMap, culprits: Array,
+func _on_facing_pavements(map: CityMap, culprits: Array[Row],
 		segment: StreetNetwork.Segment) -> bool:
 	var sides := {}
 	for row: Row in culprits:
@@ -1084,8 +1089,8 @@ func _road_cells_of(map: CityMap, route: Array) -> int:
 
 ## Every place the route steps pavement → carriageway → far pavement inside one street, as the
 ## kind of street it happened on. This is the finding M129's fourth item asks to be named.
-func _mid_block_crossings_of(map: CityMap, route: Array) -> Array:
-	var found: Array = []
+func _mid_block_crossings_of(map: CityMap, route: Array) -> Array[GameEnums.StreetKind]:
+	var found: Array[GameEnums.StreetKind] = []
 	for i in range(1, route.size() - 1):
 		var before: Vector2i = route[i - 1]
 		var middle: Vector2i = route[i]
@@ -1150,11 +1155,11 @@ func _report(tally: Dictionary, shapes: Dictionary, cut_shapes: Dictionary, exam
 		Reading.BEAT_UNION: "pacing rows over their whole beat",
 		Reading.CATALOGUE_ONLY: "primary, the day's own catalogue rows only (no seals or region wall)",
 	}
-	for reading in [Reading.BEAT_OPENING, Reading.BEAT_UNION, Reading.CATALOGUE_ONLY]:
+	for reading: Reading in [Reading.BEAT_OPENING, Reading.BEAT_UNION, Reading.CATALOGUE_ONLY]:
 		print("\n-- routes with a zero-cost line: %s --" % labels[reading])
 		var clear := 0
 		var total := 0
-		for act in [1, 2, 3, 4]:
+		for act: int in [1, 2, 3, 4]:
 			var counts: Array = tally[reading][act]
 			clear += int(counts[0])
 			total += int(counts[1])
@@ -1166,11 +1171,11 @@ func _report(tally: Dictionary, shapes: Dictionary, cut_shapes: Dictionary, exam
 	print("   routes = the first cut a walk out of the door runs into; cuts = every stretch on")
 	print("   every broken route, which is what a rule would have to cover.")
 	print("   %6s %6s  %s" % ["routes", "cuts", "shape"])
-	for shape in SHAPE_NAMES:
+	for shape: Shape in SHAPE_NAMES:
 		if int(shapes[shape]) == 0 and int(cut_shapes[shape]) == 0:
 			continue
 		print("   %6d %6d  %s" % [shapes[shape], cut_shapes[shape], SHAPE_NAMES[shape]])
-		for line in examples[shape]:
+		for line: String in examples[shape]:
 			print("        e.g. %s" % line)
 
 	print("\n-- how much of a route is blocked (primary reading, %d broken routes) --" % broken)
@@ -1194,7 +1199,7 @@ func _report(tally: Dictionary, shapes: Dictionary, cut_shapes: Dictionary, exam
 			% routes_with_road_cells)
 	print("   complete mid-block crossings (pavement -> road -> far pavement): %d"
 			% mid_block_crossings)
-	for kind in crossings_by_kind:
+	for kind: GameEnums.StreetKind in crossings_by_kind:
 		print("      on %s streets: %d"
 				% [GameEnums.StreetKind.keys()[kind], crossings_by_kind[kind]])
 	print("   routes with any cell on the spine at all: %d" % routes_on_the_spine)

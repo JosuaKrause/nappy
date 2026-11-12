@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name M207Lead
 extends RefCounted
 ## Measurement probe for M207, "a warning comes shortly before its danger, and comes by itself":
@@ -65,10 +64,10 @@ const LIMIT := 30.0
 const ZOOM := 2.0
 
 enum Answer { TOWARD, STAND, AWAY, RUN }
-const ANSWERS := [Answer.TOWARD, Answer.STAND, Answer.AWAY]
+const ANSWERS: Array[Answer] = [Answer.TOWARD, Answer.STAND, Answer.AWAY]
 ## The gold timing's answers: her three, and running away the moment she is warned, the one that has
 ## to escape a pursuer (amendment 8 of M226).
-const GOLD_ANSWERS := [Answer.TOWARD, Answer.STAND, Answer.AWAY, Answer.RUN]
+const GOLD_ANSWERS: Array[Answer] = [Answer.TOWARD, Answer.STAND, Answer.AWAY, Answer.RUN]
 
 func run(t: TestRunner) -> void:
 	var edge := DangerEdge.new()
@@ -79,7 +78,8 @@ func run(t: TestRunner) -> void:
 	for encounter in encounters():
 		var cells: Array[String] = []
 		var overs: Array[String] = []
-		var floor_s: float = encounter["def"].minimum_telegraph()
+		var def: EventDef = encounter["def"]
+		var floor_s := def.minimum_telegraph()
 		var exists := "—"
 		for answer: Answer in ANSWERS:
 			var result := measure(encounter, answer, edge)
@@ -88,8 +88,8 @@ func run(t: TestRunner) -> void:
 			if answer == Answer.TOWARD and result["created_at"] != INF:
 				exists = "%.2f" % result["created_at"]
 		# A row that does not telegraph (`EventDef.telegraphs`) is outside the contract: no floor.
-		var telegraphs: bool = encounter["def"].telegraphs
-		print("| `%s` | %s | %s | %s | %s | %s | %s | %s |" % [encounter["def"].id,
+		var telegraphs := def.telegraphs
+		print("| `%s` | %s | %s | %s | %s | %s | %s | %s |" % [def.id,
 				encounter["how"], cells[0], cells[1], cells[2], exists,
 				"%.2f" % floor_s if telegraphs else "outside",
 				" / ".join(overs) if telegraphs else "—"])
@@ -116,10 +116,11 @@ static func _print_the_gold_timing(edge: DangerEdge) -> void:
 	print("| pursuer | answer | visible | lunges | catches her | warning | chase |")
 	print("|---|---|---|---|---|---|---|")
 	for encounter in gold_encounters():
+		var def: EventDef = encounter["def"]
 		for answer: Answer in GOLD_ANSWERS:
 			var result := gold(encounter, answer, edge)
 			var caught: bool = result["caught"]
-			print("| `%s`, %s | %s | %s | %s | %s | %s | %s |" % [encounter["def"].id,
+			print("| `%s`, %s | %s | %s | %s | %s | %s | %s |" % [def.id,
 					encounter["how"], ["walking toward", "standing", "walking away", "running away"][answer],
 					_seconds(result["seen_at"]), _seconds(result["chase_at"]),
 					_seconds(result["caught_at"]) if caught else str(result["ends"]),
