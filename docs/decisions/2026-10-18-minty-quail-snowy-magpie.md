@@ -29,8 +29,8 @@ olive-ferret), and a test reads its subject only through methods (inbox #1182 in
 ## Parity
 
 Each probe ran by path at `origin/main` (da510b555) and at the head, one at a time, timing lines set aside. Eight
-print the same lines (`m213_far_end` and `m128_park_beats` but for the engine's `Camera2D` warning's backtrace,
-one line higher without the opt-out line). `m159_crowd_tick_cost`'s 72 records are equal at both, their hash
+print the same lines (`m213_far_end` but for the engine's `Camera2D` warning's backtrace, one line
+higher without the opt-out line, which `m128_park_beats` below shows too). `m159_crowd_tick_cost`'s 72 records are equal at both, their hash
 chains included, with its 36 checks passing. `m184_route_timing` times real games it launches as subprocesses and
 differs between two runs of main as much as between main and the head, every one of its 27 runs won at both.
 
