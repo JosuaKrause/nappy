@@ -134,7 +134,7 @@ func _walk(scene: InteriorScene, player: Stroller, tile: Vector2i, press: Vector
 	for i in STEPS:
 		player._physics_process(STEP)
 		if i == 0:
-			steer = player.steering
+			steer = player.steering_direction()
 		_move(player, player.velocity * STEP)
 	for action: String in ["move_left", "move_right", "move_up", "move_down"]:
 		Input.action_release(action)

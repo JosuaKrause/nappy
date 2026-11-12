@@ -368,7 +368,7 @@ func _test_a_built_building_carries_its_own_footprint_as_its_body(t: TestRunner)
 func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t: TestRunner) -> void:
 	var car := CrowdAgent.new()
 	car.kind = CrowdAgent.Kind.CAR
-	var shape: GroundShape = car.strategy.ground_shape()
+	var shape: GroundShape = car.lane().strategy().ground_shape()
 	car.free()
 	t.check(shape.reach() >= Tuning.CAR_STRIKE_HALF_LENGTH,
 			"a car's noise shape reaches at least as far as its strike box's half-length (%.1f >= %.1f)"

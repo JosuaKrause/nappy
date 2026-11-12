@@ -10,6 +10,7 @@ extends RefCounted
 const DaySummary := preload("res://src/ui/day_summary.gd")
 const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCENE := preload("res://scenes/ui/pause_screen.tscn")
+const RecordingAtlas := preload("res://tests/recording_atlas.gd")
 
 func run(t: TestRunner) -> void:
 	var was_paused: bool = t.get_tree().paused
@@ -158,6 +159,9 @@ func _test_the_resumed_day_note_breaks_only_between_sentences(t: TestRunner) -> 
 			"the resumed-day note")
 	summary.queue_free()
 
+## The body is read as its label shows it (`RichTextLabel.get_parsed_text()`, where the run button's
+## symbol stands as the one space a picture takes), and the symbol as the picture its line asks of
+## the atlas the screen is handed (`use_atlas()`, as `main` hands it one).
 func _test_the_pause_screens_body_breaks_only_between_sentences(t: TestRunner) -> void:
 	# The touch layer holds the control scheme, and the screen words its body again on every open.
 	var controls_scene: PackedScene = load("res://scenes/ui/touch_controls.tscn")
@@ -166,19 +170,25 @@ func _test_the_pause_screens_body_breaks_only_between_sentences(t: TestRunner) -
 	var pause: PauseScreen = PAUSE_SCENE.instantiate()
 	var run := RunState.new()
 	pause.use_run(run)
+	var atlas := RecordingAtlas.new()
+	pause.use_atlas(atlas)
 	t.add_child(pause)
 	var body: HelpText = pause.get_node("Root/Center/Lines/Body")
 	for joystick: bool in [false, true]:
 		controls.set_mode(ControlsMode.Mode.JOYSTICK if joystick else ControlsMode.Mode.TAP)
+		# Forgets what was asked before this open: the buttons' glyphs as they entered the tree.
+		atlas.pictures_asked()
 		pause.open()
+		var symbols := atlas.pictures_asked()
 		var source: String = Texts.WALKING_LESSON_PAUSE % (
 				Texts.RUN_JOYSTICK if joystick else Texts.RUN_TAP)
-		var lines := body.line.split("\n")
+		var lines := body.get_parsed_text().split("\n")
 		for i in range(lines.size() - 1):
 			t.check(lines[i].ends_with(".") or lines[i].ends_with("?") or lines[i].ends_with("!"),
 					"the pause screen's instructions (joystick %s) break only after a sentence's end"
 							% joystick)
-		t.check(" ".join(lines) == source,
+		t.check(" ".join(lines) == source.replace(HelpText.RUN_TOKEN, " ")
+				and symbols == ([&"ui/run"] if joystick else []),
 				"the pause screen's instructions (joystick %s) keep every word" % joystick)
 		pause.close()
 	pause.free()

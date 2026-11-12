@@ -8,7 +8,10 @@ extends RefCounted
 ## `use_run()`), put in the tree, and driven by the signals the game sends it
 ## (`EventBus.event_telegraphed`, `resistance_contact_available`, ...), by the day the run flow
 ## hands it (`use_the_day()`, which `main` connects to `RunFlow.day_started`) and by real frames;
-## what is read back is what it draws, found by the names the scene gives its labels. The release
+## what is read back is what it draws, found by the names the scene gives its labels. The teaching
+## line is read as its label shows it (`RichTextLabel.get_parsed_text()`, where a button's symbol
+## stands as the one space a picture takes), and which symbol it is as the picture it asks of the
+## atlas the HUD is handed (`use_atlas()`, as `main` hands it one; `tests/recording_atlas.gd`). The release
 ## shape is a HUD configured with `debug` false: a test is itself a debug process, so the
 ## default would otherwise leave the release shape asserted by nothing.
 ##
@@ -18,6 +21,7 @@ extends RefCounted
 const Hud := preload("res://src/ui/hud.gd")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 const UIScreens := preload("res://tests/ui_screens.gd")
+const RecordingAtlas := preload("res://tests/recording_atlas.gd")
 
 ## How fast the long stands run (`Engine.time_scale` for the stretch, put back after it).
 const FAST_SCALE := 21.0
@@ -47,13 +51,17 @@ func run(t: TestRunner) -> void:
 	_release_actions()
 
 ## A HUD configured as `main` configures it, before it enters the tree: `debug` false is the release
-## shape, `touch` the device answer, `learned` an authored mid-game scene's `tutorial_complete`.
+## shape, `touch` the device answer, `learned` an authored mid-game scene's `tutorial_complete`, and
+## `atlas` the pages its teaching line draws its symbols from (none: the line makes its own).
 ## It reads `run`, which the test owns.
-func _hud(t: TestRunner, run: RunState, debug := true, touch := false, learned := false) -> Hud:
+func _hud(t: TestRunner, run: RunState, debug := true, touch := false, learned := false,
+		atlas: AtlasLibrary = null) -> Hud:
 	var hud: Hud = HUD_SCENE.instantiate()
 	hud.configure(debug, false, learned)
 	hud.use_touch(touch)
 	hud.use_run(run)
+	if atlas != null:
+		hud.use_atlas(atlas)
 	t.add_child(hud)
 	return hud
 
@@ -65,6 +73,15 @@ func _run_on(day: int) -> RunState:
 
 func _teach(hud: Hud) -> HelpText:
 	return hud.find_child("Teach", true, false) as HelpText
+
+## What the HUD's teaching line shows, as its label lays it out: each button's symbol is a picture,
+## which stands in the label's text as one space.
+func _shown(hud: Hud) -> String:
+	return _teach(hud).get_parsed_text()
+
+## `line`, written with its button tokens, as the teaching line shows it (`_shown()`).
+static func _as_shown(line: String) -> String:
+	return line.replace(HelpText.PAUSE_TOKEN, " ").replace(HelpText.RUN_TOKEN, " ")
 
 func _label(hud: Hud, node_name: String) -> Label:
 	return hud.find_child(node_name, true, false) as Label
@@ -143,7 +160,7 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t: TestRunner) -> void:
 
 	var first := _pursuer()
 	EventBus.event_telegraphed.emit(first)
-	t.check(_teach(hud).line == "Double tap to run",
+	t.check(_shown(hud) == "Double tap to run",
 			"the first pursuit of the teaching day shows the hint")
 
 	# A second pursuit the same day — the day the lesson is repeated most, since `charging_dog` can
@@ -151,7 +168,7 @@ func _test_the_run_hint_fires_once_on_the_teaching_day(t: TestRunner) -> void:
 	_teach(hud).show_line("")
 	var second := _pursuer()
 	EventBus.event_telegraphed.emit(second)
-	t.check(_teach(hud).line == "", "a second pursuit the same day says nothing new: the day is marked taught")
+	t.check(_shown(hud) == "", "a second pursuit the same day says nothing new: the day is marked taught")
 
 	first.free()
 	second.free()
@@ -168,7 +185,7 @@ func _test_the_run_hint_names_a_double_tap_on_a_touch_device(t: TestRunner) -> v
 
 	var first := _pursuer()
 	EventBus.event_telegraphed.emit(first)
-	t.check(_teach(hud).line == "Double tap to run",
+	t.check(_shown(hud) == "Double tap to run",
 			"a keyboard-and-mouse desktop gets the same wording — no key is named for it either")
 
 	first.free()
@@ -183,7 +200,7 @@ func _test_the_walk_hint_names_a_tap_on_a_touch_device(t: TestRunner) -> void:
 	var hud := _hud(t, run, true, false)
 
 	hud.use_the_day(DaySpec.for_day(1, 210.0))
-	t.check(_teach(hud).line == "Tap to walk, double tap to run",
+	t.check(_shown(hud) == "Tap to walk, double tap to run",
 			"day 1 tells every device to tap — no key is named for a keyboard either")
 
 	hud.free()
@@ -200,13 +217,13 @@ func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t: TestRunner) -> 
 
 	var first := _pursuer()
 	EventBus.event_telegraphed.emit(first)
-	t.check(_teach(hud).line == "Double tap to run", "the first attempt teaches the run")
+	t.check(_shown(hud) == "Double tap to run", "the first attempt teaches the run")
 
 	# The day restarts on the same HUD, exactly as a spent nerve does.
 	hud.use_the_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY, 210.0))
 	var second := _pursuer()
 	EventBus.event_telegraphed.emit(second)
-	t.check(_teach(hud).line == "Double tap to run",
+	t.check(_shown(hud) == "Double tap to run",
 			"a fresh attempt at the teaching day has not been taught yet, so the lesson fires "
 			+ "again on the second attempt")
 
@@ -214,7 +231,7 @@ func _test_the_run_hint_fires_again_on_a_retried_teaching_day(t: TestRunner) -> 
 	_teach(hud).show_line("")
 	var third := _pursuer()
 	EventBus.event_telegraphed.emit(third)
-	t.check(_teach(hud).line == "", "and still only once within one attempt")
+	t.check(_shown(hud) == "", "and still only once within one attempt")
 
 	first.free()
 	second.free()
@@ -261,14 +278,16 @@ func _test_the_meters_move_to_the_top_on_a_touch_device(t: TestRunner) -> void:
 func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var stroller := _stroller(t)
-	var hud := _hud(t, run, true, false)
+	var atlas := RecordingAtlas.new()
+	var hud := _hud(t, run, true, false, false, atlas)
 	var watch := Stopwatch.new()
 	t.add_child(watch)
 
 	await _walk_then_stop(t, stroller)
 	await _stand(t, watch, 4.0 * 2.0,
-			func() -> bool: return _teach(hud).line != "")
-	t.check(_teach(hud).line == "Press {pause} to pause",
+			func() -> bool: return _shown(hud) != "")
+	t.check(_shown(hud) == _as_shown("Press {pause} to pause")
+			and atlas.pictures_asked() == [&"ui/pause"],
 			"a keyboard-and-mouse desktop is shown the pause button too — Esc is not named")
 
 	# `.free()`, not `queue_free()`: `Stroller._exit_tree()` removes it from the "player" group
@@ -289,27 +308,29 @@ func _test_the_pause_hint_names_the_touch_button_on_a_touch_device(t: TestRunner
 func _test_the_pause_hint_waits_out_a_detention(t: TestRunner) -> void:
 	var run := _run_on(1)
 	var stroller := _stroller(t)
-	var hud := _hud(t, run)
+	var atlas := RecordingAtlas.new()
+	var hud := _hud(t, run, true, false, false, atlas)
 	var watch := Stopwatch.new()
 	t.add_child(watch)
 
 	await _walk_then_stop(t, stroller)
 	# Part of the stand is already earned when the detention begins: the lesson must not keep it.
-	await _stand(t, watch, 2.0, func() -> bool: return _teach(hud).line != "")
-	t.check(_teach(hud).line == "", "two seconds of her own stillness is not yet the lesson")
+	await _stand(t, watch, 2.0, func() -> bool: return _shown(hud) != "")
+	t.check(_shown(hud) == "", "two seconds of her own stillness is not yet the lesson")
 	var held_for: float = hud.TEACH_PAUSE_AFTER * 2.0
 	stroller.detain(held_for)
-	await _stand(t, watch, held_for * 0.9, func() -> bool: return _teach(hud).line != "")
-	t.check(stroller.is_detained() and _teach(hud).line == "",
+	await _stand(t, watch, held_for * 0.9, func() -> bool: return _shown(hud) != "")
+	t.check(stroller.is_detained() and _shown(hud) == "",
 			"held past the usual wait teaches nothing")
 
 	await _stand(t, watch, held_for, func() -> bool: return not stroller.is_detained())
 	var released_at := watch.seconds
-	t.check(_teach(hud).line == "", "the moment she is let go, none of the held time has been banked "
+	t.check(_shown(hud) == "", "the moment she is let go, none of the held time has been banked "
 			+ "towards the lesson")
 	await _stand(t, watch, hud.TEACH_PAUSE_AFTER * 4.0,
-			func() -> bool: return _teach(hud).line != "")
-	t.check(_teach(hud).line == "Press {pause} to pause",
+			func() -> bool: return _shown(hud) != "")
+	t.check(_shown(hud) == _as_shown("Press {pause} to pause")
+			and atlas.pictures_asked() == [&"ui/pause"],
 			"released, she still earns the lesson on her own stand, and says the actual line, the "
 			+ "pause symbol in it — no key named, even on this default (non-touch) device")
 	t.check(watch.seconds - released_at >= hud.TEACH_PAUSE_AFTER - 1.0,
@@ -330,7 +351,7 @@ func _test_the_run_hint_never_fires_off_the_teaching_day(t: TestRunner) -> void:
 	var hud_before := _hud(t, run_before)
 	var early := _pursuer()
 	EventBus.event_telegraphed.emit(early)
-	t.check(_teach(hud_before).line == "", "a pursuit before the teaching day says nothing")
+	t.check(_shown(hud_before) == "", "a pursuit before the teaching day says nothing")
 	early.free()
 	hud_before.free()
 
@@ -341,7 +362,7 @@ func _test_the_run_hint_never_fires_off_the_teaching_day(t: TestRunner) -> void:
 	var hud_after := _hud(t, run_after)
 	var late := _pursuer()
 	EventBus.event_telegraphed.emit(late)
-	t.check(_teach(hud_after).line == "", "a pursuit well after the teaching day says nothing")
+	t.check(_shown(hud_after) == "", "a pursuit well after the teaching day says nothing")
 	late.free()
 	hud_after.free()
 
@@ -516,9 +537,9 @@ func _test_a_touched_marks_message_breaks_between_sentences(t: TestRunner) -> vo
 	var saved_brief := step.brief
 	step.brief = "A van is waiting on the sidewalk by the old market. Do not come home empty-handed tonight."
 	EventBus.resistance_step_completed.emit(3)
-	t.check(teach.line == "A van is waiting on the sidewalk by the old market.\n"
+	t.check(teach.get_parsed_text() == "A van is waiting on the sidewalk by the old market.\n"
 			+ "Do not come home empty-handed tonight.",
-			"a touched mark's long message breaks after its first sentence, got '%s'" % teach.line)
+			"a touched mark's long message breaks after its first sentence, got '%s'" % teach.get_parsed_text())
 	step.brief = saved_brief
 	hud.free()
 
@@ -556,12 +577,12 @@ func _test_a_completed_step_puts_no_text_on_screen(t: TestRunner) -> void:
 	var hud := _hud(t, run)
 	_teach(hud).show_line("")
 	EventBus.resistance_step_completed.emit(1)
-	t.check(_teach(hud).line == ResistanceSteps.by_index(1).brief,
+	t.check(_shown(hud) == ResistanceSteps.by_index(1).brief,
 			"a completed mark announces its own words on the teaching line — the mark and " +
 			"nowhere else — rather than staying silent")
 	_teach(hud).show_line("")
 	EventBus.resistance_step_completed.emit(2)
-	t.check(_teach(hud).line == "", "a completed perform step puts no text on screen")
+	t.check(_shown(hud) == "", "a completed perform step puts no text on screen")
 
 	hud.free()
 
@@ -639,16 +660,20 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t: TestRunn
 	var controls: TouchControls = controls_scene.instantiate()
 	t.add_child(controls)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
-	var hud := _hud(t, run)
+	var atlas := RecordingAtlas.new()
+	var hud := _hud(t, run, true, false, false, atlas)
 	var teach := _teach(hud)
 
 	hud.use_the_day(DaySpec.for_day(1, 210.0))
-	t.check(teach.line == "Tap to walk, hold {run} or double tap to run",
+	t.check(teach.get_parsed_text() == _as_shown("Tap to walk, hold {run} or double tap to run")
+			and atlas.pictures_asked() == [&"ui/run"],
 			"joystick, day 1: walking by tap, running by the run button or a double tap")
 	var p1 := _pursuer()
 	EventBus.event_telegraphed.emit(p1)
-	t.check(teach.line == "Hold {run} or double tap to run",
-			"joystick, first pursuit: the run button's symbol in the line, got '%s'" % teach.line)
+	t.check(teach.get_parsed_text() == _as_shown("Hold {run} or double tap to run")
+			and atlas.pictures_asked() == [&"ui/run"],
+			"joystick, first pursuit: the run button's symbol in the line, got '%s'"
+			% teach.get_parsed_text())
 	var with_symbol: int = teach.get_content_width()
 	teach.show_line("Hold  or double tap to run")
 	t.check(with_symbol >= teach.get_content_width() + 20,
@@ -657,22 +682,24 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t: TestRunn
 
 	controls.set_mode(ControlsMode.Mode.TAP)
 	hud.use_the_day(DaySpec.for_day(1, 210.0))
-	t.check(teach.line == "Tap to walk, double tap to run",
+	t.check(teach.get_parsed_text() == "Tap to walk, double tap to run",
 			"tap, day 1: no run button on screen, so none in the line")
 
 	hud.use_the_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY, 210.0))
 	var p2 := _pursuer()
 	EventBus.event_telegraphed.emit(p2)
-	t.check(teach.line == "Double tap to run", "tap, first pursuit: unchanged")
+	t.check(teach.get_parsed_text() == "Double tap to run", "tap, first pursuit: unchanged")
 
 	# The title chooses the scheme after day 1 began, and `main` emits the choice before it sets
 	# the scheme on `TouchControls`, which still answers TAP here.
 	run.header.day = 1
 	EventBus.controls_chosen.emit(true, false)
-	t.check(teach.line == "Tap to walk, hold {run} or double tap to run",
+	t.check(teach.get_parsed_text() == _as_shown("Tap to walk, hold {run} or double tap to run")
+			and atlas.pictures_asked() == [&"ui/run"],
 			"choosing joystick on the title says day 1's line in the joystick wording")
 	EventBus.controls_chosen.emit(false, false)
-	t.check(teach.line == "Tap to walk, double tap to run", "and choosing tap says the tap one")
+	t.check(teach.get_parsed_text() == "Tap to walk, double tap to run",
+			"and choosing tap says the tap one")
 
 	teach.show_line("a [b]bracket[/b] line")
 	t.check(teach.get_parsed_text().contains("[b]"), "a line is shown literally, never parsed as BBCode")
@@ -693,22 +720,22 @@ func _test_learned_lessons_say_no_control_lesson(t: TestRunner) -> void:
 	var hud := _hud(t, run, true, false, true)
 	var teach := _teach(hud)
 	hud.use_the_day(DaySpec.for_day(1, 210.0))
-	t.check(teach.line == "", "learned: day 1 says no walking lesson at dawn")
+	t.check(teach.get_parsed_text() == "", "learned: day 1 says no walking lesson at dawn")
 	EventBus.controls_chosen.emit(true, false)
-	t.check(teach.line == "", "learned: choosing the controls says no walking lesson")
+	t.check(teach.get_parsed_text() == "", "learned: choosing the controls says no walking lesson")
 	hud.use_the_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY, 210.0))
 	run.header.day = Tuning.RUN_TAUGHT_DAY
 	var pursuer := _pursuer()
 	EventBus.event_telegraphed.emit(pursuer)
-	t.check(teach.line == "",
+	t.check(teach.get_parsed_text() == "",
 			"learned: the teaching day does not reset the run lesson, so a pursuit says none")
 
 	var watch := Stopwatch.new()
 	t.add_child(watch)
 	await _walk_then_stop(t, stroller)
 	var stood := await _stand(t, watch, hud.TEACH_PAUSE_AFTER * 3.0,
-			func() -> bool: return teach.line != "")
-	t.check(stood >= hud.TEACH_PAUSE_AFTER * 3.0 and teach.line == "",
+			func() -> bool: return teach.get_parsed_text() != "")
+	t.check(stood >= hud.TEACH_PAUSE_AFTER * 3.0 and teach.get_parsed_text() == "",
 			"learned: the pause lesson starts taught, so a long stand says nothing")
 
 	watch.free()
@@ -725,15 +752,15 @@ func _test_unlearned_lessons_are_all_said(t: TestRunner) -> void:
 	var hud := _hud(t, run, true, false, false)
 	var teach := _teach(hud)
 	hud.use_the_day(DaySpec.for_day(1, 210.0))
-	t.check(teach.line != "", "unlearned: day 1 says the walking lesson at dawn")
+	t.check(teach.get_parsed_text() != "", "unlearned: day 1 says the walking lesson at dawn")
 	teach.show_line("")
 	EventBus.controls_chosen.emit(true, false)
-	t.check(teach.line != "", "unlearned: choosing the controls says it again")
+	t.check(teach.get_parsed_text() != "", "unlearned: choosing the controls says it again")
 	hud.use_the_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY, 210.0))
 	run.header.day = Tuning.RUN_TAUGHT_DAY
 	var pursuer := _pursuer()
 	EventBus.event_telegraphed.emit(pursuer)
-	t.check(teach.line != "",
+	t.check(teach.get_parsed_text() != "",
 			"unlearned: the teaching day opens the run lesson, so a pursuit says it")
 
 	teach.show_line("")
@@ -741,8 +768,8 @@ func _test_unlearned_lessons_are_all_said(t: TestRunner) -> void:
 	t.add_child(watch)
 	await _walk_then_stop(t, stroller)
 	await _stand(t, watch, hud.TEACH_PAUSE_AFTER * 4.0,
-			func() -> bool: return teach.line != "")
-	t.check(teach.line != "", "unlearned: the pause lesson is still to come, and a stand says it")
+			func() -> bool: return teach.get_parsed_text() != "")
+	t.check(teach.get_parsed_text() != "", "unlearned: the pause lesson is still to come, and a stand says it")
 
 	watch.free()
 	pursuer.free()

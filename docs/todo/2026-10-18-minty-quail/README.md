@@ -166,7 +166,7 @@ item here. `tests-public-seams.md`'s open list holds two kinds: test gaps, which
 refactor nothing and move to such an entry when this one closes; and members the game does not
 need, `PlanBuilder._cross_street_path` (which no catalogue row uses) and those only tests read
 (`EventsAhead.walk_siting()`, `WalkSiting.offers_worked_out`, `RouteLines.routes()`,
-`TouchControls._FOCUS_KNOB_OFFSET` and `_FOCUS_KNOB_RADIUS`, `HelpText.line`), whose removal or game
+`TouchControls._FOCUS_KNOB_OFFSET` and `_FOCUS_KNOB_RADIUS`), whose removal or game
 reader is a change to `src/`, a refactor rather than a test gap.
 
 The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer", whose

@@ -29,6 +29,7 @@ func run(t: TestRunner) -> void:
 	_test_the_readout_line(t)
 	_test_the_readout_says_the_view(t)
 	_test_the_environment_carries_the_view_and_the_clock(t)
+	_test_a_sittings_recorders_write_one_file(t)
 	_test_the_report_round_trips(t)
 	_test_the_record_charges_its_ledger(t)
 	_test_draws_are_counted_by_listening(t)
@@ -58,7 +59,8 @@ func _test_a_frame_adds_up(t: TestRunner) -> void:
 	var rows := ledger.rows()
 	t.check(rows.size() == 1, "a kept frame closes when the next one begins")
 	var row: PackedInt64Array = rows[0]
-	t.check(row.size() == FrameLedger.columns().size(), "a row has one value per column")
+	var named: Array = ledger.report()["columns"]
+	t.check(row.size() == named.size(), "a row has one value per column the file names")
 	t.check(row[FrameLedger.START] == 1000 and row[FrameLedger.FRAME] == 16000,
 			"a frame runs from its first callback to the next frame's first callback")
 	var expected: Dictionary[int, int] = {FrameRecord.PHYSICS_REST: 500, FrameRecord.CROWD: 500,
@@ -556,10 +558,10 @@ func _fits_the_readout(line: String) -> bool:
 
 ## The record's environment carries the pixels the page draws, as the file a phone hands over, and
 ## what the timer costs on the device: the smallest step its clock takes and what a timing pair
-## costs. Read off the file a save writes.
+## costs. Read off the file the recorder writes on the desktop as it leaves the tree.
 func _test_the_environment_carries_the_view_and_the_clock(t: TestRunner) -> void:
 	var rig := _rig(t, FrameRecord.new())
-	rig.recorder.save()
+	t.remove_child(rig.recorder)
 	var environment: Dictionary = JSON.parse_string(
 			FileAccess.get_file_as_string(rig.sitting.frame_record_file()))["environment"]
 	for key: String in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
@@ -569,6 +571,32 @@ func _test_the_environment_carries_the_view_and_the_clock(t: TestRunner) -> void
 	var step: float = environment["timer_resolution_usec"]
 	t.check(step >= 1 and step < 2000, "the clock's smallest step is measured (%.0fus)" % step)
 	t.check(environment["timer_pair_usec"] >= 0.0, "and so is what a timing pair costs")
+	rig.free_all()
+
+## Where the desktop record goes, written as a recorder leaves the tree: the first recorder of a
+## sitting chooses a file in the folder it was handed and the sitting keeps it, and a recorder set up
+## on a sitting that already keeps one, as the held restart's reload sets up the next, rewrites that
+## file rather than starting a second, so a restart leaves one whole record.
+func _test_a_sittings_recorders_write_one_file(t: TestRunner) -> void:
+	var rig := _rig(t, FrameRecord.new())
+	t.remove_child(rig.recorder)
+	var chosen := rig.sitting.frame_record_file()
+	t.check(chosen.begins_with(_SCRATCH_RECORDERS + "/") and FileAccess.file_exists(chosen),
+			"the first recorder of a sitting writes its record in the folder it was handed (%s)"
+			% chosen)
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(chosen))
+	# The file a recorder before the reload chose, named apart from any the clock could name.
+	var kept := _SCRATCH_RECORDERS + "/kept-before-the-restart.json"
+	rig.sitting.keep_frame_record_file(kept)
+	rig.recorder.free()
+	rig.recorder = FrameRecorder.new()
+	t.add_child(rig.recorder)
+	rig.recorder.setup(func() -> bool: return false, null, null, SceneryGround.Mode.ONE, null, null,
+			RunState.new(), rig.sitting, _SCRATCH_RECORDERS)
+	t.remove_child(rig.recorder)
+	t.check(rig.sitting.frame_record_file() == kept
+			and FileAccess.get_file_as_string(kept).contains("nappy-frame-record"),
+			"and the next recorder of the sitting rewrites the file it keeps")
 	rig.free_all()
 
 ## A recorder in the tree on `record`, set up as `main` sets one up with no world to count, and its

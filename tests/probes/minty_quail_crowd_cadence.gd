@@ -168,8 +168,8 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, walk: String
 					car_startles += 1
 				if in_box and boxed.get(agent, Vector2i(-1, -1)) != box:
 					box_entries += 1
-				if agent.speed() > 1.0 and is_finite(agent.gap_ahead):
-					gaps.append(agent.gap_ahead)
+				if agent.speed() > 1.0 and is_finite(agent.lane().gap_ahead()):
+					gaps.append(agent.lane().gap_ahead())
 				speeds += agent.speed()
 				speed_samples += 1
 			startled[agent] = now_startled

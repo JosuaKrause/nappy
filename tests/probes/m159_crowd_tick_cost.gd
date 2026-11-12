@@ -117,7 +117,7 @@ func _run_once(city: City, rig: Stroller, city_seed: int, day: int, mode: String
 			if agent.kind == CrowdAgent.Kind.WALKER:
 				if agent.is_touched():
 					contact_ticks += 1
-				var walker: WalkerStrategy = agent.strategy
+				var walker: WalkerStrategy = agent.lane().strategy()
 				if walker._door_state != WalkerStrategy.DoorState.WALKING:
 					held_ticks += 1
 		if tick >= WARMUP:

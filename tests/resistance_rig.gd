@@ -109,9 +109,10 @@ func _watch_the_screen_round(director: ResistanceDirector, her: Vector2) -> void
 	_look_at(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0))
 	director.set_sight(_city.events.sees)
 
-## Today's walled-off crossing alleys, as the city's siting has them.
+## Today's walled-off crossing alleys, as the city's streets derive them and hand them to its siting
+## (`tests/test_resistance_replacement.gd` holds the handing).
 func _walled_alleys() -> Array[Rect2i]:
-	var region := _city.spawn_siting.region()
+	var region := _city.streets().siting_region()
 	return region.walled_alleys if region else ([] as Array[Rect2i])
 
 ## Whether a drawing of `box` about its feet, standing at `at`, would be drawn in the camera's view.

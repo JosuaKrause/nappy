@@ -104,9 +104,7 @@ func _test_the_pause_restart_survives_its_own_emulated_mouse_click(t: TestRunner
 	var pause := await _open_pause(t, true, clock)
 	var restart := UI.button(pause, "Restart")
 	var restarts := [0]
-	var resumed := [0]
 	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
-	pause.resumed.connect(func() -> void: resumed[0] += 1)
 	var at := UI.centre(restart)
 
 	_send(UI.touch_at(at, true, 0))
@@ -135,7 +133,7 @@ func _test_the_pause_restart_survives_its_own_emulated_mouse_click(t: TestRunner
 	t.check(restarts[0] == 1,
 			"and the matching release does not restart the pause a second time (got %d)"
 					% restarts[0])
-	t.check(resumed[0] == 0,
+	t.check(pause.is_open(),
 			"and the click the engine emulates ahead of the real press never resumes the day instead")
 
 	pause.close()
@@ -152,9 +150,7 @@ func _test_the_pause_restart_ignores_a_second_touch_mid_hold(t: TestRunner) -> v
 	var pause := await _open_pause(t, true, clock)
 	var restart := UI.button(pause, "Restart")
 	var restarts := [0]
-	var resumed := [0]
 	pause.restart_requested.connect(func() -> void: restarts[0] += 1)
-	pause.resumed.connect(func() -> void: resumed[0] += 1)
 	var at := UI.centre(restart)
 
 	UI.push(pause, UI.touch_at(at, true, 0))
@@ -167,8 +163,8 @@ func _test_the_pause_restart_ignores_a_second_touch_mid_hold(t: TestRunner) -> v
 	# finger's hold by closing the screen, before this asks.
 	UI.push(pause, UI.touch_at(Vector2(20.0, 20.0), true, 1))
 	await UI.frames(t)
-	t.check(resumed[0] == 0, "the stray second finger does not read as carrying on")
-	t.check(pause.is_open(), "and the screen stays open")
+	t.check(pause.is_open(),
+			"the stray second finger does not read as carrying on: the screen stays open")
 	t.check(restart.is_held_by(0), "the original hold is undisturbed")
 
 	clock.now += ModeButton.RESTART_HOLD_SECONDS
@@ -176,7 +172,7 @@ func _test_the_pause_restart_ignores_a_second_touch_mid_hold(t: TestRunner) -> v
 	t.check(restarts[0] == 1, "and the first finger's own hold still fires once it fills")
 	UI.push(pause, UI.touch_at(at, false, 0))
 	t.check(restarts[0] == 1, "and the eventual release does not restart it a second time")
-	t.check(resumed[0] == 0, "never having resumed along the way")
+	t.check(pause.is_open(), "never having resumed along the way")
 
 	pause.close()
 	t.get_tree().paused = false
@@ -341,7 +337,7 @@ func _test_the_restart_disc_lights_up_the_same_for_a_touch_hold_as_a_mouse_one(t
 ## (`Input.parse_input_event()` + `Input.flush_buffered_events()`) on both screens and both pointer
 ## kinds, asserting `restarts[0] == 1` **before** the release event is ever sent — the release is
 ## then sent anyway and checked not to raise it a second time, and not to read as *carry on*
-## (`resumed`/`continued` stay `0`) either.
+## (the pause stays open, the summary's `continued` stays `0`) either.
 func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t: TestRunner) -> void:
 	var original_window_size: Vector2i = t.get_window().size
 	t.get_window().size = Vector2i(ScreenOrientation.DESIGN_SIZE)
@@ -360,7 +356,6 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t: TestRu
 		if is_pause:
 			var pause := await _open_pause(t, touch, clock)
 			pause.restart_requested.connect(func() -> void: restarts[0] += 1)
-			pause.resumed.connect(func() -> void: carried_on[0] += 1)
 			screen = pause
 		else:
 			var summary := await _open_summary(t, touch, clock)
@@ -382,7 +377,9 @@ func _test_the_restart_fires_the_instant_the_disc_fills_not_on_release(t: TestRu
 				"real mouse hold", "mouse release")
 		t.check(restarts[0] == 1,
 				"the %s does not restart it a second time" % release_name)
-		t.check(carried_on[0] == 0, "and never reads as %s" % ("carrying on" if is_pause else "continuing"))
+		# The pause carries on by closing; the summary by `continued`.
+		var stayed: bool = (screen as PauseScreen).is_open() if is_pause else carried_on[0] == 0
+		t.check(stayed, "and never reads as %s" % ("carrying on" if is_pause else "continuing"))
 
 		if screen is PauseScreen:
 			(screen as PauseScreen).close()

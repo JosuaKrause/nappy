@@ -40,9 +40,9 @@ func run(t: TestRunner) -> void:
 
 	var run := RunState.new()
 	var was_paused: bool = t.get_tree().paused
-	# The touch layer holds the control scheme, and the screen words its body again on every open;
-	# what it shows has its sentences on separate lines, so the text it was laid out from is the
-	# shown lines joined by the spaces they stand for.
+	# The touch layer holds the control scheme, and the screen words its body again on every open,
+	# from the walking lesson with the scheme's run half (`tests/test_sentence_lines.gd` holds that
+	# the body shows every word of it); that text, button token and all, is what is laid out here.
 	var controls_scene: PackedScene = load("res://scenes/ui/touch_controls.tscn")
 	var controls: TouchControls = controls_scene.instantiate()
 	t.add_child(controls)
@@ -53,7 +53,8 @@ func run(t: TestRunner) -> void:
 	for joystick: bool in [false, true]:
 		controls.set_mode(ControlsMode.Mode.JOYSTICK if joystick else ControlsMode.Mode.TAP)
 		pause.open()
-		var shown := pause_body.line.replace("\n", " ")
+		var shown: String = Texts.WALKING_LESSON_PAUSE % (
+				Texts.RUN_JOYSTICK if joystick else Texts.RUN_TAP)
 		pause.close()
 		_check_help(t, shown, pause_body, "the pause body (joystick %s)" % joystick)
 	pause.free()

@@ -42,6 +42,12 @@ func _car(t: TestRunner, heading: Vector2 = Vector2.RIGHT) -> CrowdAgent:
 	t.check(agent != null, "a car is placed heading %s" % heading)
 	return agent
 
+## The sector `look` draws `agent` in now: the first term of the picture it hands the car's redraw
+## gate (`AgentLook.picture()`), read at the car's own `velocity()` as `CrowdAgent` reads it, which is
+## the sector `CarLook.draw_body()` draws.
+static func _drawn_sector(look: CarLook, agent: CrowdAgent) -> int:
+	return look.picture(agent.velocity()).x
+
 ## `AgentLook.draw_body()` looks the view up once and indexes both dictionaries with it, but this pins the
 ## invariant structurally too: nothing can add a body without its trim, or the two could draw two
 ## different cars' worth of paint and glass. And it pins the tint split: body and trim have to be
@@ -78,7 +84,7 @@ func _test_cardinal_headings_select_the_expected_view(t: TestRunner) -> void:
 		# Started from the opposite sector every time, so the assertion below never passes because
 		# the previous iteration's hold happened to already agree.
 		look.view = (sector + 4) % 8
-		var frame := look.sector()
+		var frame := _drawn_sector(look, agent)
 		t.check(frame == sector, "heading %d degrees selects sector %d (got %d)"
 				% [sector * 45, sector, frame])
 		t.check(look.flipped() == EXPECTED_MIRRORED[sector],
@@ -94,7 +100,7 @@ func _arc_turned(degrees: float, direction := 1.0, turning := 1.0) -> CarTurn:
 	var lane := CrowdLanes.road_lane(false, direction)
 	var turn := CarTurn.into_an_arm(false, direction, 0, CrowdLanes.lane_centre(0, lane), 0,
 			CrowdLanes.ROAD_OFFSETS[0], turning, Vector2i.ZERO)
-	turn.travel_on(turn.radius * deg_to_rad(degrees))
+	turn.travel_on(turn.length() * degrees / 90.0)
 	return turn
 
 ## A turn whose tangent is exactly `sector`'s own 45-degree-multiple centre: halfway round a quarter
@@ -123,7 +129,7 @@ func _test_a_turn_sweeps_through_the_diagonal_views(t: TestRunner) -> void:
 		t.check(is_equal_approx(rad_to_deg(heading.angle()) + 360.0 if heading.angle() < 0.0 \
 				else rad_to_deg(heading.angle()), float(sector) * 45.0),
 				"the synthetic turn's own tangent lands on sector %d's centre angle" % sector)
-		var frame := look.sector()
+		var frame := _drawn_sector(look, agent)
 		t.check(frame == sector, "mid-turn heading selects diagonal sector %d (got %d)"
 				% [sector, frame])
 		t.check(CarLook.VIEW_BY_SECTOR[frame] in ["front_diagonal", "back_diagonal"],
@@ -141,12 +147,12 @@ func _test_a_stopped_car_keeps_its_view(t: TestRunner) -> void:
 		return
 	var look := ViewRig.car_look(agent)
 	look.view = 6  # start from the opposite sector so the frame below cannot pass by luck
-	var moving_frame := look.sector()
+	var moving_frame := _drawn_sector(look, agent)
 	t.check(moving_frame == 0, "driving east settles on the east view first")
 
 	agent.crashed_into()
 	t.check(agent.velocity() == Vector2.ZERO, "a stopped car's own velocity is exactly zero")
-	var stopped_frame := look.sector()
+	var stopped_frame := _drawn_sector(look, agent)
 	t.check(stopped_frame == moving_frame,
 			"a stopped car keeps the view it was last drawn with (%d, still %d)"
 			% [moving_frame, stopped_frame])
@@ -155,7 +161,7 @@ func _test_a_stopped_car_keeps_its_view(t: TestRunner) -> void:
 ## `setup()` and `_recycle()` both call `LaneMover._choose_lane()`, which drops any turn and leaves the car
 ## exactly on a lane axis with a rolled speed — a sector centre 45 degrees clear of its neighbours,
 ## twice the hold's own reach — so no reset call into `CarLook.view` is needed for the same reason
-## `WalkerLook.sector()`'s own doc gives for the walker: the ordinary update on the very next
+## `WalkerLook.picture()`'s own doc gives for the walker: the ordinary update on the very next
 ## frame already replaces whatever was drawn before. The car is placed again for real
 ## (`CrowdAgent.setup()`).
 func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t: TestRunner) -> void:
@@ -164,20 +170,20 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t: TestRunner) -
 		return
 	var look := ViewRig.car_look(agent)
 	look.view = 0
-	t.check(look.sector() == 0, "settled on east before the placement")
+	t.check(_drawn_sector(look, agent) == 0, "settled on east before the placement")
 
 	# A fresh placement: a new axis and direction, no turn running. Placed again until it points north.
 	var placed_north := false
 	for seed_value in range(1, ViewRig.ROLLS):
 		look.view = 0
-		agent.setup(CrowdAgent.Kind.CAR, _rig.city.map, _rig.city.crowd.field(), seed_value,
+		agent.setup(CrowdAgent.Kind.CAR, _rig.city.map, _rig.field, seed_value,
 				0.5 * float(seed_value % 2))
 		if agent.heading().is_equal_approx(Vector2.UP):
 			placed_north = true
 			break
 	t.check(placed_north, "a car is placed again heading north")
-	t.check(look.sector() == 6,
-			"the new north heading already wins over the stale east view (got %d)" % look.sector())
+	t.check(_drawn_sector(look, agent) == 6,
+			"the new north heading already wins over the stale east view (got %d)" % _drawn_sector(look, agent))
 	agent.free()
 
 ## The pin the M110 footprint test made for the old two-view end/side family, generalised to all
@@ -317,7 +323,7 @@ func _test_the_halo_redraws_the_same_body(t: TestRunner) -> void:
 	var look := ViewRig.car_look(agent)
 	var atlas := _lit_and_traced(t, agent)
 	var copies: Array = await _next_whole_pass(t, atlas)
-	var view: String = CarLook.VIEW_BY_SECTOR[look.sector()]
+	var view: String = CarLook.VIEW_BY_SECTOR[_drawn_sector(look, agent)]
 	var body := {
 		CarLook.region_of(CarLook.BODY_BY_VIEW[view]): 0,
 		CarLook.region_of(CarLook.TRIM_BY_VIEW[view]): 0,
@@ -388,7 +394,7 @@ func _test_the_rim_is_re_traced_under_a_steady_glow(t: TestRunner) -> void:
 ## looks up, whether it is mirrored, and where it is anchored. `AgentLook.draw_body()` reads exactly these
 ## three and nothing else, so two different answers here are two different silhouettes.
 func _silhouette(agent: CrowdAgent, look: CarLook) -> Array:
-	var view: String = CarLook.VIEW_BY_SECTOR[look.sector()]
+	var view: String = CarLook.VIEW_BY_SECTOR[_drawn_sector(look, agent)]
 	return [view, look.flipped(), CarLook.body_anchor(view, agent.heading())]
 
 ## The picture `AgentLook.draw_body()` would actually put on the canvas for one view and heading: the body's
@@ -492,7 +498,7 @@ func _test_the_redraw_gate_carries_the_live_anchor(t: TestRunner) -> void:
 	for sample in range(10):
 		var degrees := float(sample) * 5.0
 		agent.take_the_turn(_turn_at(degrees), 0.0)
-		var view: String = CarLook.VIEW_BY_SECTOR[look.sector()]
+		var view: String = CarLook.VIEW_BY_SECTOR[_drawn_sector(look, agent)]
 		var anchor := CarLook.body_anchor(view, agent.heading()).y
 		var picture := look.picture(agent.velocity())
 		var asked := agent.end_the_frame(0.0)
@@ -526,12 +532,12 @@ func _test_the_redraw_gate_carries_the_live_anchor(t: TestRunner) -> void:
 	lander_look.picture(lander.velocity())
 	lander.end_the_frame(0.0)
 	lander.take_the_turn(_turn_at(20.0), 0.0)
-	var turning_view: String = CarLook.VIEW_BY_SECTOR[lander_look.sector()]
+	var turning_view: String = CarLook.VIEW_BY_SECTOR[_drawn_sector(lander_look, lander)]
 	var turning := CarLook.body_anchor(turning_view, lander.heading()).y
 	var mid_turn := lander_look.picture(lander.velocity())
 	lander.end_the_frame(0.0)
 	lander.drop_the_turn()
-	var landed_view: String = CarLook.VIEW_BY_SECTOR[lander_look.sector()]
+	var landed_view: String = CarLook.VIEW_BY_SECTOR[_drawn_sector(lander_look, lander)]
 	var landed := CarLook.body_anchor(landed_view, lander.heading()).y
 	var landed_picture := lander_look.picture(lander.velocity())
 	var asked_after_landing := lander.end_the_frame(0.0)
@@ -588,7 +594,7 @@ func _test_a_moving_car_bobs_and_a_stopped_car_sits_still(t: TestRunner) -> void
 	var lowest := 0.0
 	var highest := -INF
 	var ticks := int(ceil(1.5 * WheelBob.WAVELENGTH / (Tuning.CAR_SPEED.x * step)))
-	var highest_travelled := 0.0
+	var top_tick := 0
 	for i in ticks:
 		look.advance(agent.velocity(), step)
 		var bob := look.bob()
@@ -596,19 +602,26 @@ func _test_a_moving_car_bobs_and_a_stopped_car_sits_still(t: TestRunner) -> void
 				"tick %d's bob %.3f stays between the wheels and one height above them" % [i, bob])
 		if bob < lowest:
 			lowest = bob
-			highest_travelled = look.travelled
+			top_tick = i
 		highest = maxf(highest, bob)
 	t.check(lowest < -0.9 * WheelBob.HEIGHT,
 			"a cruising car's body reaches the top of its rise (%.3f)" % lowest)
 	t.check(highest > -0.1 * WheelBob.HEIGHT,
 			"and comes back down onto its wheels (%.3f)" % highest)
-	# Stopped at the top of the rise: the phase stays where it was, the body does not.
-	look.travelled = highest_travelled
+	# Stopped at the top of the rise: the phase stays where it was, the body does not. A look over the
+	# same car driven the same ticks to the top, then handed a tick of the zero `velocity()` a stopped
+	# car hands it, still rides the same lift while the car is moving; once the car stops it sits on
+	# its wheels.
+	var topped := ViewRig.car_look(agent)
+	for i in top_tick + 1:
+		topped.advance(agent.velocity(), step)
+	var top := topped.bob()
+	topped.advance(Vector2.ZERO, step)
+	t.check(is_equal_approx(top, lowest) and is_equal_approx(topped.bob(), top),
+			"a tick that covers no ground does not move its phase (%.4f, then %.4f)"
+			% [top, topped.bob()])
 	agent.crashed_into()
-	t.check(look.bob() == 0.0, "a stopped car sits on its wheels (%.3f)" % look.bob())
-	look.advance(agent.velocity(), step)
-	t.check(is_equal_approx(look.travelled, highest_travelled),
-			"and a tick that covers no ground does not move its phase")
+	t.check(topped.bob() == 0.0, "and a stopped car sits on its wheels (%.3f)" % topped.bob())
 	agent.free()
 
 ## **The bob is a function of ground covered, not of time**: a slow car and a fast one that have

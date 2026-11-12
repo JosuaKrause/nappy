@@ -318,7 +318,7 @@ func _report_text() -> String:
 ## Saves the record: through the browser's download on the web, into the folder `setup()` was
 ## handed on the desktop. Answers where it went. The frame this runs in is not kept, since building the
 ## file is the slowest thing in it.
-func save() -> String:
+func _save() -> String:
 	var text := _report_text()
 	ledger.keep_this_frame(false)
 	if OS.get_name() == "Web":
@@ -365,7 +365,7 @@ func _exit_tree() -> void:
 		if window != null:
 			window.call("nappyFrameRecordHide")
 	else:
-		save()
+		_save()
 
 ## The page's own button, added once per page: a reload of the scene hands the button the new
 ## recorder's callback and shows it again rather than adding a second button; leaving the day
@@ -424,7 +424,7 @@ window.nappyFrameRecordButton = function (save) {
 ## The tap's answer: the button's label says the file was handed to the browser, with its name,
 ## for six seconds. It does not say the download finished, which the page cannot observe.
 func _on_page_save(_arguments: Array) -> void:
-	var file_name := save()
+	var file_name := _save()
 	var window := JavaScriptBridge.get_interface("window")
 	if window != null and file_name != "":
 		window.call("nappyFrameRecordSent", file_name)

@@ -89,7 +89,11 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 	var crowd := city.crowd
 	crowd.start_day(1, run.calendar.day_rng(1, "crowd"), map.world_size() * 0.5, false)
 	crowd.use_stretch()
-	var ends := crowd.field().ends_of_the_stretch()
+	# The stretch's ends as the crowd enters it, which a field over the same map reads off the map's
+	# stretch the way the crowd's own does (`CrowdField.use_stretch()`).
+	var stretch := CrowdField.new(city.map)
+	stretch.use_stretch()
+	var ends := stretch.ends_of_the_stretch()
 	var watch := {"stays": true, "ends_seen": true, "safe": true, "entries": 0, "placed": 0,
 			"in_view": 0, "unsafe": [] as Array[String]}
 	for end: Dictionary in ends:
@@ -108,7 +112,7 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 			crowd.set_focus(looking)
 			watch.ends_seen = watch.ends_seen and aside < 4096.0 and (looking != middle
 					or not view.beyond_every_view(middle, CrowdAgent.ENTRY_PICTURE_ROOM, looking))
-			await _walk_every_end_off(crowd, camera, view, ends, looking, label, watch)
+			await _walk_every_end_off(crowd, city.map, camera, view, ends, looking, label, watch)
 	t.check(watch.placed > 0, "%s: bodies are set walking off its ends (%d)" % [label, watch.placed])
 	t.check(watch.in_view > 0, "%s: some of them walk off an end in view (%d)" % [label, watch.in_view])
 	t.check(watch.stays, "%s: a body walking off an end in view turns round, it does not jump" % label)
@@ -121,9 +125,9 @@ func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: Strin
 
 ## A walker and a car set walking off each end of the stretch, with the camera where it is, and the
 ## crowd's own physics frames let pass; then the crowd emptied. Every landing of a body (the frame its
-## drawing is reset, `_Landings`) is judged and added to `watch`.
-func _walk_every_end_off(crowd: Crowd, camera: Camera2D, view: CrowdView, ends: Array[Dictionary],
-		looking: Vector2, label: String, watch: Dictionary) -> void:
+## drawing is reset, `_Landings`) is judged against the crowd's map and added to `watch`.
+func _walk_every_end_off(crowd: Crowd, map: CityMap, camera: Camera2D, view: CrowdView,
+		ends: Array[Dictionary], looking: Vector2, label: String, watch: Dictionary) -> void:
 	var bodies: Array[Dictionary] = []
 	for end: Dictionary in ends:
 		var outward := -float(end.direction)
@@ -164,8 +168,8 @@ func _walk_every_end_off(crowd: Crowd, camera: Camera2D, view: CrowdView, ends: 
 		for landed: Vector2 in landings.at:
 			if landed.distance_to(body.from) > Tuning.TILE_SIZE:
 				watch.entries += 1
-			var tile := crowd.field().map.world_to_tile(landed)
-			var safe := crowd.field().map.in_stretch(tile) and crowd.field().map.is_street(tile) \
+			var tile := map.world_to_tile(landed)
+			var safe := map.in_stretch(tile) and map.is_street(tile) \
 					and _out_of_the_real_view(camera, landed)
 			watch.safe = watch.safe and safe
 			var unsafe: Array[String] = watch.unsafe

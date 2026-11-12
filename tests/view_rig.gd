@@ -1,7 +1,7 @@
 extends RefCounted
-## One generated city and its crowd's field, for a suite that needs crowd members standing on real
-## lanes: `CrowdAgent`s placed the way the game places them (`setup()`, `setup_at()`), then driven
-## through their public API. `tests/test_walker_views.gd` and `tests/test_car_views.gd` use it.
+## One generated city and a crowd's field over it, for a suite that needs crowd members standing on
+## real lanes: `CrowdAgent`s placed the way the game places them (`setup()`, `setup_at()`), then
+## driven through their public API. `tests/test_walker_views.gd` and `tests/test_car_views.gd` use it.
 ##
 ## Placement is the game's own: `setup()` rolls a lane, a direction and a speed, so a suite that
 ## wants an agent heading one particular way asks `place()`, which rolls placements until one does.
@@ -16,11 +16,16 @@ const SEED := 4242
 const ROLLS := 400
 
 var city: City
+## The box every agent placed here lives in, made over the city's map the way `Crowd.setup()` makes
+## the crowd's own: centred on the middle of the map.
+var field: CrowdField
 
 func _init(host: Node) -> void:
 	city = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 	host.add_child(city)
 	city.build(CityGenerator.generate(SEED))
+	field = CrowdField.new(city.map, city.map.tile_rect_to_world(
+			Rect2i(Vector2i.ZERO, city.map.size_in_tiles())).get_center())
 	# The atlas page every crowd picture is drawn from, held on the city's library the way
 	# `Crowd.start_day()` holds it for the day and handed to every agent placed here, so a halo or a
 	# drawn frame of one finds its regions.
@@ -44,7 +49,7 @@ static func car_look(agent: CrowdAgent) -> CarLook:
 func rolled(kind: CrowdAgent.Kind, seed_value: int) -> CrowdAgent:
 	var agent := CrowdAgent.new()
 	agent.use_atlas(city.atlas)
-	agent.setup(kind, city.map, city.crowd.field(), seed_value, 0.5 * float(seed_value % 2))
+	agent.setup(kind, city.map, field, seed_value, 0.5 * float(seed_value % 2))
 	return agent
 
 ## An agent of `kind` that `setup()` placed travelling along `heading` (a cardinal unit vector), or
@@ -67,7 +72,7 @@ func place_at_speed(kind: CrowdAgent.Kind, heading: Vector2, speed: float) -> Cr
 	scout.free()
 	var agent := CrowdAgent.new()
 	agent.use_atlas(city.atlas)
-	var problem := agent.setup_at(kind, city.map, city.crowd.field(), 1, at, heading, speed)
+	var problem := agent.setup_at(kind, city.map, field, 1, at, heading, speed)
 	if not problem.is_empty():
 		agent.free()
 		return null

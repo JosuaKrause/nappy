@@ -1762,7 +1762,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 		# game" — read here as the hint showing every time the section's clock starts, a fast click
 		# through the brief included, not only on a first entry.)*
 		var teach: HelpText = Boot.hud(main).get_node("Root/Teach")
-		t.check(teach.line == words,
+		t.check(teach.get_parsed_text() == words,
 				"section %d: and the section's own words said once she is walking it" % section)
 
 		Boot.day(main).time_remaining -= 30.0
@@ -1792,7 +1792,7 @@ func _test_each_section_opens_on_its_brief_and_a_loss_on_its_outcome(t: TestRunn
 		t.check(not summary.is_showing() and not t.get_tree().paused
 				and Boot.day(main).is_running(),
 				"section %d: the brief's continue is the walk" % section)
-		t.check(teach.line == words,
+		t.check(teach.get_parsed_text() == words,
 				"section %d: and its words said again on the retry, not only the first entry"
 				% section)
 

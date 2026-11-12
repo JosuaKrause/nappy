@@ -21,28 +21,43 @@ const SCREEN := Vector2(1280.0, 720.0)
 const ZOOM := 2.0
 
 func run(t: TestRunner) -> void:
-	_test_the_box_is_the_screen_grown_by_the_margin(t)
+	await _test_the_box_is_the_screen_grown_by_the_margin(t)
 	_test_a_hand_built_agent_with_no_screen_is_always_drawn(t)
 	_test_a_car_reach_holds_everything_it_draws(t)
 	_test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t)
-	_test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t)
-	_test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_shows(t)
+	await _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t)
+	await _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_shows(t)
 	await _test_a_wide_burning_front_redraws_while_any_of_it_shows(t)
 	await _test_the_edge_redraws_only_while_a_badge_is_up_or_coming_down(t)
 	_test_a_hidden_arrow_redraws_once(t)
 
 ## A screen of its own for the gates to ask about: a `SubViewport` the size of the design box whose
 ## canvas shows the world from `top_left` at the game's zoom, so no other suite's camera moves it.
+## A screen nothing has asked about yet has no box worked out, so it needs no frame to pass.
 func _screen(t: TestRunner, top_left := Vector2.ZERO) -> SubViewport:
 	var screen := SubViewport.new()
 	screen.size = Vector2i(SCREEN)
 	t.add_child(screen)
-	_look_from(screen, top_left)
+	_aim(screen, top_left)
 	return screen
 
-func _look_from(screen: SubViewport, top_left: Vector2) -> void:
+func _aim(screen: SubViewport, top_left: Vector2) -> void:
 	screen.canvas_transform = Transform2D(0.0, Vector2.ONE * ZOOM, 0.0, -top_left * ZOOM)
-	DrawnView.forget(screen)
+
+## Moves `screen` to show the world from `top_left`, then lets the next process frame begin: the
+## box is worked out once a process frame per viewport (`DrawnView.box_of()`), as the camera moves
+## in the physics step before any gate asks, so a view moved between two asks in one frame is a
+## screen the game never shows.
+func _look_from(t: TestRunner, screen: SubViewport, top_left: Vector2) -> void:
+	_aim(screen, top_left)
+	await _next_frame(t)
+
+## Waits until the process frame count moves on: the first frame of a process can be awaited without
+## the count moving, so one `process_frame` alone is not always a new frame.
+static func _next_frame(t: TestRunner) -> void:
+	var asked_in := Engine.get_process_frames()
+	while Engine.get_process_frames() == asked_in:
+		await t.get_tree().process_frame
 
 func _world_shown(top_left: Vector2) -> Rect2:
 	return Rect2(top_left, SCREEN / ZOOM)
@@ -60,7 +75,7 @@ func _test_the_box_is_the_screen_grown_by_the_margin(t: TestRunner) -> void:
 	var centre := SCREEN * 0.5
 	screen.canvas_transform = Transform2D(PI * 0.5, Vector2.ONE * ZOOM, 0.0, centre) \
 			* Transform2D(0.0, -centre / ZOOM)
-	DrawnView.forget(screen)
+	await _next_frame(t)
 	var turned := DrawnView.box_of(screen)
 	t.check(is_equal_approx(turned.size.x, SCREEN.y / ZOOM + DrawnView.MARGIN * 2.0)
 			and is_equal_approx(turned.size.y, SCREEN.x / ZOOM + DrawnView.MARGIN * 2.0),
@@ -136,14 +151,15 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 	var projected_off_screen := false
 	while x < 200.0 and not seen:
 		car.position = Vector2(x, 180.0)
-		car.mood().set_player_at(car.position + Vector2(60.0, 0.0))
+		var her := car.position + Vector2(60.0, 0.0)
+		car.mood().set_player_at(her)
 		car.mood().advance(STEP)
 		var asked := car.end_the_frame(0.0)
 		var in_box := DrawnView.box_of(screen).intersects(
 				Rect2(car.position + CrowdAgent.DRAWN_REACH.position, CrowdAgent.DRAWN_REACH.size))
 		if not in_box:
 			skipped += 0 if asked else 1
-			projected_off_screen = projected_off_screen or _the_gate_projected_her_caret(car)
+			projected_off_screen = projected_off_screen or _the_gate_projected_her_caret(car, her)
 		asked_since_off = asked_since_off or asked
 		# Where the car's own drawing reaches: its body about its feet and the caret above it.
 		if shown.intersects(Rect2(car.position + Vector2(-41.0, -66.0), Vector2(82.0, 100.0))):
@@ -155,10 +171,11 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 	# The probe's positive control: the car on screen, redrawn with its picture changed, projects
 	# the caret in that frame, and the probe says so.
 	car.position = Vector2(200.0, 180.0)
-	car.mood().set_player_at(car.position + Vector2(60.0, 0.0))
+	var her_on_screen := car.position + Vector2(60.0, 0.0)
+	car.mood().set_player_at(her_on_screen)
 	car.mood().advance(STEP)
 	car.end_the_frame(0.0)
-	t.check(_the_gate_projected_her_caret(car),
+	t.check(_the_gate_projected_her_caret(car, her_on_screen),
 			"the probe sees a caret the gate did project, on screen")
 	t.check(seen and first_seen_asked,
 			"it asked for its redraw no later than the first frame any of it shows")
@@ -170,9 +187,9 @@ func _test_an_off_screen_car_is_not_redrawn_and_is_back_before_it_shows(t: TestR
 ## excitement's clock, which the gate has not moved since, and the answer reads where she stands,
 ## which is no part of that key: so she is moved far from the car and asked about, and a car whose
 ## caret the gate had projected answers what it was projected as (the doubled red the rig owes it),
-## while one it had not answers afresh, for a car she is far from (none). She is put back as she was.
-func _the_gate_projected_her_caret(car: CrowdAgent) -> bool:
-	var at := car.mood().player_at
+## while one it had not answers afresh, for a car she is far from (none). She is put back where the
+## frame told the car she was, `at`.
+func _the_gate_projected_her_caret(car: CrowdAgent, at: Vector2) -> bool:
 	car.mood().set_player_at(at + Vector2(5000.0, 0.0))
 	var answered := car.mood().caret_strength()
 	car.mood().set_player_at(at)
@@ -185,6 +202,9 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t: TestRu
 	var walker := CrowdAgent.new()
 	walker.kind = CrowdAgent.Kind.WALKER
 	walker.set_process(false)
+	# Hidden, so the frames the view moves through never draw it (it was handed no atlas): the gate
+	# asks for a redraw whatever the agent's visibility, and that answer is what is checked.
+	walker.visible = false
 	screen.add_child(walker)
 	# The crowd hands every agent it makes the screen; a rig that adds one to a tree hands it itself.
 	walker.view = ScreenCrowdView.new(screen)
@@ -192,9 +212,9 @@ func _test_a_walker_is_redrawn_on_entry_even_with_an_unchanged_picture(t: TestRu
 	walker.end_the_frame(0.0)
 	t.check(not walker.end_the_frame(0.0),
 			"on screen, a walker whose picture did not change asks for nothing")
-	_look_from(screen, Vector2(2000.0, 0.0))
+	await _look_from(t, screen, Vector2(2000.0, 0.0))
 	t.check(not walker.end_the_frame(0.0), "off screen it asks for nothing either")
-	_look_from(screen, Vector2.ZERO)
+	await _look_from(t, screen, Vector2.ZERO)
 	t.check(walker.end_the_frame(0.0),
 			"back on screen it redraws once, though nothing in its key moved")
 	t.check(not walker.end_the_frame(0.0), "and then only on a change again")
@@ -214,6 +234,9 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	cyclist.setup(def, Vector2(320.0, 180.0),
 			PackedVector2Array([Vector2(320.0, 180.0), Vector2(1320.0, 180.0)]))
 	cyclist.set_process(false)
+	# Hidden, so the frames the view pans through never draw it (it was handed no atlas): the gate
+	# asks for a redraw whatever the event's visibility, and that answer is what is checked.
+	cyclist.visible = false
 	screen.add_child(cyclist)
 	cyclist.source().set_player_at(cyclist.global_position + Vector2(def.outer_radius, 0.0))
 	# A twin it is asked of first: whether the gate worked out the caret is read off what it left
@@ -241,7 +264,7 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	var first_seen_asked := false
 	var seen := false
 	while left < 320.0 and not seen:
-		_look_from(screen, Vector2(left, 0.0))
+		await _look_from(t, screen, Vector2(left, 0.0))
 		asked_since_off = cyclist.look.redraw_if_the_picture_changed() or asked_since_off
 		if _world_shown(Vector2(left, 0.0)).intersects(
 				Rect2(cyclist.global_position + drawn.position, drawn.size)):
@@ -253,13 +276,13 @@ func _test_an_off_screen_event_skips_its_key_and_its_caret_is_back_before_it_sho
 	t.check(cyclist.look.mark_rect().has_area(), "and that redraw carries its caret")
 	# The same picture off screen and back: nothing in its key moved, and it redraws all the same,
 	# since nothing kept what it shows current while it was away.
-	_look_from(screen, Vector2.ZERO)
+	await _look_from(t, screen, Vector2.ZERO)
 	cyclist.look.redraw_if_the_picture_changed()
 	t.check(not cyclist.look.redraw_if_the_picture_changed(),
 			"on screen and unchanged, it asks for nothing")
-	_look_from(screen, Vector2(-2000.0, 0.0))
+	await _look_from(t, screen, Vector2(-2000.0, 0.0))
 	cyclist.look.redraw_if_the_picture_changed()
-	_look_from(screen, Vector2.ZERO)
+	await _look_from(t, screen, Vector2.ZERO)
 	t.check(cyclist.look.redraw_if_the_picture_changed(),
 			"back on screen with the same key, it redraws once")
 	screen.free()
@@ -324,7 +347,7 @@ func _test_a_wide_burning_front_redraws_while_any_of_it_shows(t: TestRunner) -> 
 	var shown_point_outside := 0
 	var left := 1200.0
 	while left > -700.0:
-		_look_from(screen, Vector2(left, 0.0))
+		await _look_from(t, screen, Vector2(left, 0.0))
 		var asked := fire.look.redraw_if_the_picture_changed()
 		var on_screen := _world_shown(Vector2(left, 0.0)).intersects(
 				Rect2(fire.global_position + drawn.position, drawn.size))

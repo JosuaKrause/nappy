@@ -17,10 +17,10 @@ extends CanvasLayer
 ## symbol would stay fully shown for good. So one place decides when the symbol begins and is
 ## answered, and a change begins it exactly once.
 ## Every change carries its operation id from `GameSave`, on its announcement and on its answer, so
-## an answer settles the change it belongs to and nothing else. `begin()` raises it, and it is fully
+## an answer settles the change it belongs to and nothing else. `_begin()` raises it, and it is fully
 ## shown for at least `MIN_SHOWN_SECONDS`, counted from when it appears, and for as long as **any**
 ## change it began is still unanswered, so nothing still being written looks finished —
-## `settle()` answers one, on the web only once the browser has said whether IndexedDB kept it, see
+## `_settle()` answers one, on the web only once the browser has said whether IndexedDB kept it, see
 ## `GameSave.write()` and `GameSave.clear()` — and then fades over `FADE_SECONDS`. There is no hold
 ## after the answer and no delay before the symbol shows.
 ##
@@ -228,9 +228,9 @@ func _ready() -> void:
 	# For the life of the node, which is the process once `outlive_the_scene()` has run: a signal
 	# disconnects on its own when its object is freed, so a symbol a test frees listens to nothing.
 	EventBus.save_written.connect(_on_save_changed)
-	EventBus.save_write_settled.connect(settle)
+	EventBus.save_write_settled.connect(_settle)
 	EventBus.save_deleted.connect(_on_save_changed)
-	EventBus.save_deletion_settled.connect(settle)
+	EventBus.save_deletion_settled.connect(_settle)
 	var root := Control.new()
 	root.name = "Root"
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -262,15 +262,15 @@ func _ready() -> void:
 ## the symbol is drawn on exactly the runs that save at all. Fully shown from here until every change
 ## begun is settled and for at least `MIN_SHOWN_SECONDS`, even mid-fade; a symbol already fully
 ## shown keeps its own clock.
-func begin(operation: int) -> void:
+func _begin(operation: int) -> void:
 	_showing.begin(operation)
 	_apply()
 
-## Answers the `begin()` with the same `operation`: `kept` is whether the change was confirmed.
+## Answers the `_begin()` with the same `operation`: `kept` is whether the change was confirmed.
 ## Struck through if it is the newest change begun and was not kept, plain if it is the newest and
 ## was; an older change's answer leaves the picture as it is. The fade starts once every change
 ## begun is answered and the minimums have run out.
-func settle(operation: int, kept: bool) -> void:
+func _settle(operation: int, kept: bool) -> void:
 	_showing.settle(operation, kept)
 	_apply()
 
@@ -279,9 +279,9 @@ func settle(operation: int, kept: bool) -> void:
 ## `EventBus.save_write_settled` or `EventBus.save_deletion_settled` with the same id, anything else
 ## is the answer already, and is answered at once the way a desktop write is.
 func _on_save_changed(operation: int, result: int) -> void:
-	begin(operation)
+	_begin(operation)
 	if result != GameSave.Result.PENDING:
-		settle(operation, result == GameSave.Result.CONFIRMED)
+		_settle(operation, result == GameSave.Result.CONFIRMED)
 
 ## Whether the symbol is up at all — fully shown or fading.
 func is_showing() -> bool:

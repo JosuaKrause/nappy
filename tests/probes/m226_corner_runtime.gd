@@ -29,6 +29,8 @@ func _process(delta: float) -> void:
 	if player == null or city == null or edge == null:
 		return
 	var view := city.events.visible_view()
+	# The scheme the view was last looked through in: the controls it is handed, while in force.
+	var joystick := view.controls != null and view.controls.is_in_force()
 	for instance in city.events.instances():
 		if instance.def.id != "charging_dog":
 			continue
@@ -45,10 +47,10 @@ func _process(delta: float) -> void:
 		var id := instance.get_instance_id()
 		if states.get(id, "") != state:
 			print("CORNER %.3f camera=%s visible=%s badge=%s joystick=%s relative=%s age=%.3f" % [
-					elapsed, on_camera, in_visible_area, badge, view.joystick,
+					elapsed, on_camera, in_visible_area, badge, joystick,
 					instance.global_position - view.view.get_center(), instance.age])
 			states[id] = state
-		if on_camera and not in_visible_area and badge and view.joystick:
+		if on_camera and not in_visible_area and badge and joystick:
 			covered = true
 		if covered and in_visible_area and not badge:
 			emerged = true

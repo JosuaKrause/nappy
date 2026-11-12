@@ -561,7 +561,7 @@ func _test_frame_record(t: TestRunner, seed_value: int) -> void:
 	scenery.update(view)
 	scenery.budget_usec = SceneryResidency.BUDGET_USEC
 	# The frame is kept, then the next one begins: the ledger hands a kept frame out as a row.
-	ledger.keep = true
+	ledger.keep_this_frame()
 	ledger.process_end(Time.get_ticks_usec())
 	record.stop()
 	scenery.timing = FrameTiming.new()
