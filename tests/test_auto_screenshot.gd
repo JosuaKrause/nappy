@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `AutoScreenshot`'s `--walk` parsing: the scripted walk `1s5e` beside the bare direction it
 ## already understood, and the angled step `3@45@2e` beside `1s5e` — a duration and a bearing
@@ -95,7 +94,7 @@ const _MOVES: Array[StringName] = [&"move_left", &"move_right", &"move_up", &"mo
 ## A rig for the words a player types after `--walk` (and `--flee`), built by the game's own
 ## `from_config()` and standing in the tree on `clock`. `--after 600` keeps it from ever reaching
 ## its capture, which quits a headless process.
-func _rig(t: TestRunner, clock, words: Array, flee := false) -> AutoScreenshot:
+func _rig(t: TestRunner, clock: UI.FakeClock, words: Array[String], flee := false) -> AutoScreenshot:
 	var args := ["--screenshot", "scratch_unused.png", "--after", "600", "--walk"] + words
 	if flee:
 		args.append("--flee")
@@ -105,7 +104,7 @@ func _rig(t: TestRunner, clock, words: Array, flee := false) -> AutoScreenshot:
 	return node
 
 ## Moves the clock to `seconds` and lets the rig's frames read it.
-func _at(t: TestRunner, clock, seconds: float) -> void:
+func _at(t: TestRunner, clock: UI.FakeClock, seconds: float) -> void:
 	clock.now = seconds
 	await UI.frames(t)
 

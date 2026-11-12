@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `WalkPlan`, a movement script's smooth option: a turn sweeps her heading gradually from one
 ## step's direction to the next and still leaves her exactly where the abrupt script does.
@@ -124,10 +123,10 @@ func _check_same_place(t: TestRunner, script: String, smoothed: int) -> Dictiona
 	var abrupt: Dictionary = await _walk(t, script, false)
 	var smooth: Dictionary = await _walk(t, script, true)
 	var plan: WalkPlan = smooth.plan
-	var turns := _turns_blended(plan, smooth.positions.size())
-	t.check(turns == smoothed, "'%s' smooths %d turn(s) (got %d)" % [script, smoothed, turns])
 	var a_positions: Array[Vector2] = abrupt.positions
 	var s_positions: Array[Vector2] = smooth.positions
+	var turns := _turns_blended(plan, s_positions.size())
+	t.check(turns == smoothed, "'%s' smooths %d turn(s) (got %d)" % [script, smoothed, turns])
 	var a_velocities: Array[Vector2] = abrupt.velocities
 	var s_velocities: Array[Vector2] = smooth.velocities
 	var last := a_positions.size() - 1
@@ -165,23 +164,23 @@ func _test_west_then_north_ends_where_the_abrupt_script_does(t: TestRunner) -> v
 ## the abrupt one only crosses in the few ticks its velocity takes to swing.
 func _test_the_turn_sweeps_through_the_bearings_between(t: TestRunner) -> void:
 	var walks: Dictionary = await _check_same_place(t, "1w1n", 1)
-	var smooth_between := 0
-	var abrupt_between := 0
-	for pair in [["smooth", walks.smooth], ["abrupt", walks.abrupt]]:
-		var velocities: Array[Vector2] = pair[1].velocities
-		var count := 0
-		for velocity in velocities:
-			# Bearing clockwise from north: west is 270, north is 0/360.
-			var bearing := fposmod(rad_to_deg(atan2(velocity.x, -velocity.y)), 360.0)
-			if velocity.length() > 1.0 and bearing > 280.0 and bearing < 350.0:
-				count += 1
-		if pair[0] == "smooth":
-			smooth_between = count
-		else:
-			abrupt_between = count
+	var smooth_walk: Dictionary = walks.smooth
+	var abrupt_walk: Dictionary = walks.abrupt
+	var smooth_between := _ticks_between_west_and_north(smooth_walk.velocities)
+	var abrupt_between := _ticks_between_west_and_north(abrupt_walk.velocities)
 	t.check(smooth_between >= 3 * maxi(abrupt_between, 1),
 			"the smooth turn spends several times as long between west and north as the abrupt one (%d ticks against %d)"
 					% [smooth_between, abrupt_between])
+
+## How many of `velocities` head strictly between west and north while moving.
+func _ticks_between_west_and_north(velocities: Array[Vector2]) -> int:
+	var count := 0
+	for velocity in velocities:
+		# Bearing clockwise from north: west is 270, north is 0/360.
+		var bearing := fposmod(rad_to_deg(atan2(velocity.x, -velocity.y)), 360.0)
+		if velocity.length() > 1.0 and bearing > 280.0 and bearing < 350.0:
+			count += 1
+	return count
 
 ## Two bearings neither of which is an axis, through an angle that is not a right angle.
 func _test_an_oblique_bearing_turn_ends_where_the_abrupt_script_does(t: TestRunner) -> void:
@@ -228,7 +227,7 @@ func _test_smooth_off_presses_exactly_the_abrupt_script(t: TestRunner) -> void:
 ## A stand, a change between walking and running, and a turn with no room on either side are left
 ## abrupt: the smooth plan presses on every tick what the abrupt one does.
 func _test_what_is_never_smoothed_presses_exactly_the_abrupt_script(t: TestRunner) -> void:
-	for script in ["1e1W", "1e0.5p1w", "1e0.1n1w"]:
+	for script: String in ["1e1W", "1e0.5p1w", "1e0.1n1w"]:
 		var steps := AutoScreenshot.parse_script(script)
 		var abrupt := WalkPlan.make(steps, Engine.physics_ticks_per_second, false)
 		var smooth := WalkPlan.make(steps, Engine.physics_ticks_per_second, true)

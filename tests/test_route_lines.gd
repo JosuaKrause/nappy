@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `RouteLines` (M135, "the day's routes drawn as a debug layer") and the `--layers`/`?layers=`
 ## parsing that reaches its own key, `5`.
@@ -134,7 +133,7 @@ func _test_key_five_is_the_route_lines_layer(t: TestRunner) -> void:
 	UI.push(rig.readout, _key(KEY_5, true, true))
 	t.check(not routes.visible,
 			"an echo does nothing — a held key is one request, not a flood of them")
-	for code in [KEY_1, KEY_2, KEY_3, KEY_4, KEY_6, KEY_7]:
+	for code: Key in [KEY_1, KEY_2, KEY_3, KEY_4, KEY_6, KEY_7]:
 		UI.push(rig.readout, _key(code))
 		t.check(not routes.visible, "key %s is not the day's routes" % OS.get_keycode_string(code))
 	UI.push(rig.readout, _key(KEY_5))
@@ -197,7 +196,7 @@ func _test_a_planned_day_yields_one_polyline_per_route_from_its_first_cell_to_ca
 	var routes_checked := 0
 	var days_with_routes := 0
 	for i in SEEDS:
-		for day in DAYS:
+		for day: int in DAYS:
 			var built := _plan(BASE_SEED + i * 31, day)
 			var expected_routes := 0
 			for branch in built.tree.branches:
