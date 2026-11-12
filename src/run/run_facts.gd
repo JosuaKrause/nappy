@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name RunFacts
 extends RunSubState
 ## The run's facts that ride beside the `"state"` snapshot, each read with a default for its
@@ -72,7 +71,8 @@ func restore(data: Dictionary) -> void:
 		completed_resistance_alley_tiles.append(Vector2i(int(raw["x"]), int(raw["y"])))
 	var fenced: Variant = data.get("fenced_park", null)
 	if fenced is Dictionary:
-		fenced_park = Vector2i(int(fenced.get("x", -1)), int(fenced.get("y", -1)))
+		var at: Dictionary = fenced
+		fenced_park = Vector2i(int(at.get("x", -1)), int(at.get("y", -1)))
 	else:
 		fenced_park = Vector2i(-1, -1)
 	fenced_park_act = int(data.get("fenced_park_act", 0))
