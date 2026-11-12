@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name InteriorMap
 extends RefCounted
 ## Builds the escape scene's one building-wide map, from the player's four sketches
@@ -312,7 +311,7 @@ static func _build_basement(f: InteriorMapPlan, origin: Vector2i) -> void:
 	# Band A, nearest the entry.
 	_lay_basement_band(f, origin, 0, 10, 4)
 	# The jog right, into band B.
-	for y in [8, 9]:
+	for y: int in [8, 9]:
 		f.paint_floor(origin + Vector2i(4, y), InteriorTile.Kind.BASEMENT_FLOOR)
 	# This is an open mouth between the two bands, not a brick wall across a walkable passage.
 	f.open_wall(origin + Vector2i(4, 10))
@@ -322,7 +321,7 @@ static func _build_basement(f: InteriorMapPlan, origin: Vector2i) -> void:
 	# else, and the narrowing is part of what the basement *is*.
 	_lay_basement_band(f, origin, 2, 6, 6, BASEMENT_PINCH)
 	# The jog left, into band C.
-	for y in [2, 3, 4, 5]:
+	for y: int in [2, 3, 4, 5]:
 		f.paint_floor(origin + Vector2i(2, y), InteriorTile.Kind.BASEMENT_FLOOR)
 	# The second jog enters band B through another open mouth.
 	f.open_wall(origin + Vector2i(2, 6))
