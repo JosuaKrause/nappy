@@ -47,7 +47,6 @@ func run(t: TestRunner) -> void:
 
 func _test_a_baby_with_no_world_is_neutral(t: TestRunner) -> void:
 	var baby := Baby.new()
-	t.check(baby.world() == null, "a baby never placed in a world holds none")
 	t.check(baby.decay_rate() == 0.0, "a baby never placed in a world has no decay rate")
 	baby.free()
 
@@ -90,8 +89,7 @@ func _test_a_baby_answers_from_the_world_she_was_last_handed(t: TestRunner) -> v
 			% [baby.last_frame_incoming(), STREET_NOISE])
 
 	baby.set_world(null)
-	t.check(baby.world() == null and baby.decay_rate() == 0.0,
-			"handed no world again, she has no decay rate")
+	t.check(baby.decay_rate() == 0.0, "handed no world again, she has no decay rate")
 	rig.free()
 	building.free()
 	street.free()

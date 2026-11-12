@@ -254,7 +254,7 @@ func _test_the_arrow_stays_on_the_stretch(t: TestRunner, map: CityMap) -> void:
 ## A finished sweep from `targets` over `ground`.
 func _swept(map: CityMap, targets: Array[Dictionary], ground: PackedInt32Array) -> WalkField:
 	var field := WalkField.start(map, targets, Vector2i.ZERO)
-	while not field.done:
+	while not field.is_done():
 		field.advance(map, ground, map.tiles.size())
 	return field
 

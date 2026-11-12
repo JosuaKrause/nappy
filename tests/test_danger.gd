@@ -400,11 +400,13 @@ func _test_a_car_on_course_is_red_one_beside_her_line_is_not(t: TestRunner) -> v
 	var car: CrowdAgent = _street_rig.place_on(crowd, street.map, CrowdAgent.Kind.CAR, street.corridor,
 			CrowdLanes.road_lane(true, 1.0), street.along, 1.0, true, CrowdLanes.SIDEWALK_OFFSETS,
 			Tuning.CAR_SPEED.x)
-	car.excitement.set_player_at(car.global_position + Vector2(0.0, 60.0))
-	t.check(car.excitement.will_be_lethal(car.excitement.player_at),
+	var in_its_lane := car.global_position + Vector2(0.0, 60.0)
+	car.excitement.set_player_at(in_its_lane)
+	t.check(car.excitement.will_be_lethal(in_its_lane),
 			"a car whose strike box reaches the lane she is standing in front of is red")
-	car.excitement.set_player_at(car.global_position + Vector2(50.0, 60.0))
-	t.check(not car.excitement.will_be_lethal(car.excitement.player_at),
+	var beside_its_line := car.global_position + Vector2(50.0, 60.0)
+	car.excitement.set_player_at(beside_its_line)
+	t.check(not car.excitement.will_be_lethal(beside_its_line),
 			"the same car passing beside her — she would have to step into it herself — is not")
 	_street_rig.free_crowd(crowd)
 

@@ -77,14 +77,16 @@ func _visible_view(t: TestRunner) -> void:
 				controls.rotated = rotated
 				controls.set_mode(scheme[1], scheme[2])
 				var label := "%s rotated=%s at=%s" % [scheme[0], rotated, centre]
-				_print_view("through " + label, _view_through(rig, controls))
-				_print_view("about " + label, _view_about(centre + Vector2(13.0, 7.0),
-						scheme[1] == ControlsMode.Mode.JOYSTICK, controls))
+				var joystick: bool = scheme[1] == ControlsMode.Mode.JOYSTICK
+				_print_view("through " + label, _view_through(rig, controls), joystick)
+				_print_view("about " + label, _view_about(centre + Vector2(13.0, 7.0), joystick,
+						controls), joystick)
 	controls.free()
 	rig.free()
 
-func _print_view(label: String, view: VisibleView) -> void:
-	print("SR_VV %s | view %s | joystick %s" % [label, _rect_hex(view.view), view.joystick])
+## Prints what `view` sees, `joystick` being whether it was looked through in the joystick scheme.
+func _print_view(label: String, view: VisibleView, joystick: bool) -> void:
+	print("SR_VV %s | view %s | joystick %s" % [label, _rect_hex(view.view), joystick])
 	var origin := view.view.position
 	var seen: Array[String] = []
 	var y := -POINTS_STEP

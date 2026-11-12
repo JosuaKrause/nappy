@@ -112,9 +112,6 @@ src/events/events_ahead.gd director
 src/events/location.gd section
 src/events/pending_warning.gd place
 src/events/views/event_look.gd drawn_heading
-src/player/baby.gd world
-src/player/stroller.gd pose
-src/player/stroller.gd steering
 src/resistance/cordon_tape.gd across
 src/resistance/cordon_tape.gd piece
 src/resistance/happenings.gd spine_x
@@ -145,15 +142,6 @@ src/ui/mode_button.gd symbol
 src/ui/pause_screen.gd resumed
 src/ui/save_indicator.gd begin
 src/ui/save_indicator.gd settle
-src/world/excitement_source.gd clock
-src/world/excitement_source.gd player_at
-src/world/excitement_source.gd player_sensitivity
-src/world/screen_cover.gd in_force
-src/world/screen_cover.gd left
-src/world/screen_cover.gd right
-src/world/spawn_siting.gd region
-src/world/visible_view.gd joystick
-src/world/walk_field.gd done
 
 # [kept] Kept public (inbox #1095 in curly-rabbit): the information cannot be had another way and the test needs it to
 # confirm the behavior; such a case may hint its module's design is suboptimal. The reason is on each
@@ -196,6 +184,7 @@ src/crowd/lane_mover.gd end_the_frame  # the hook every agent's step ends on, wh
 src/events/views/event_look.gd victim_gait_is_stepping  # whether the unmarked van's victim is mid-stride on her walk to it; the base answers false and EventVehicleLook overrides it and draws her stride frame from it in _draw_abduction(), a reader the check does not count since that file declares the name too, so the check sees only the base's own call in the redraw key; tests/test_event_strides.gd reads it on 3 lines, and it goes from this group when that suite reads the victim's frame off a recording drawer instead
 src/crowd/walker_strategy.gd door_answer_for  # the cut of a walker's first roll into what it does at a region door (walks through, turns back, is held), which draw_the_door_answer() calls; of the three only turning back shows outside a hut (a walker that turns back treats every door's street as shut, which the suite reads off door_is_shut()), so the walks-through and held shares and the suites' search for a seed that draws the answer they want (tests/crowd_rig.gd, tests/test_crowd_bodies.gd) can be read only off the cut itself
 src/world/chase_way.gd sweep_under_way  # the guard's frame-timing probe (tests/probes/velvet_stork_guard_path_cost.gd) reads whether a sweep is under way, before and after a step, to count the frames that carry a sweep's slice and the sweeps begun; a sweep is internal work that no tile, picture or move of the guard shows, so only this answer says when one begins (a wall-clock measurement of the work, like scenery_ground worst_step_usec)
+src/world/excitement_source.gd clock  # the source's own simulation clock, which landed() measures its window on, overridden by EventExcitement and CrowdExcitement (files of other owners, so the check sees only the base's own calls in landed() and _caret_key()); tests/test_frame_record_wiring.gd reads each crowd agent's clock to hold that a physics tick steps every agent exactly once under the frame record, not twice and not none, and an agent's outward signs of a step, where it stands and how long a startle lasts, are moved on the same tick by the crowd's separation, contacts and horns, so they cannot count its steps
 src/world/excitement_source.gd expected_impact_at  # the net points the caret projects over the horizon; the caret draws only three levels (none, amber, doubled), so nothing outward carries the number, and tests/test_danger.gd checks it against what the bar then gains over the same horizon, tests/test_prediction_reuse.gd that the cached answer is bit-for-bit the uncached one
 src/world/excitement_source.gd will_be_lethal  # the doubled caret's question, overridden by EventExcitement and CrowdExcitement (files of other owners, so the check sees only the base's own call in caret_strength()); tests/test_danger.gd and tests/test_car_front.gd hold a car's lethal reach with it, the fairness promise that a lethal course is shown before it lands
 src/world/excitement_sources.gd sources_at  # the one question every set answers, overridden by EventSources and CrowdSources (files of other owners, so the check sees only the base's own calls in total_at() and all_at()); the suites read each set's pairs with it, the checkpoint suite the door rule off the events' set
@@ -204,6 +193,7 @@ src/world/spawn_siting.gd seen_from  # the camera's whole view that is_out_of_si
 src/autoload/game_save.gd moment_result  # what a save moment comes to on the web (PENDING while the browser has not answered, FAILED where storage was refused): a desktop run's write() never takes those branches, since OS.has_feature("web") and OS.is_userfs_persistent() are the engine's own answers and not a hand-in, so tests/test_save.gd asks the pure function for them
 src/player/stroller.gd baby_cue_aside  # how far to one side the baby's cue is drawn so it steps out of the exclamation mark's column; it exists only as part of the anchor handed to Sprites.draw_standing() in _draw_baby_cue(), which a headless run draws to nothing and no node exposes (tests/test_danger.gd: "nothing in this suite could see a _draw, so the decision is a function"), so the facings it is held for are read off the function
 src/player/stroller.gd baby_cue_lift  # how far above the pram's ground point (or above her feet, carrying or walking due south) the baby's cue is drawn; it exists only as part of the anchor handed to Sprites.draw_standing() in _draw_baby_cue(), which a headless run draws to nothing and no node exposes, so the facings it is held for are read off the function
+src/player/stroller.gd pose  # what she is drawn as this frame (the view sector, the mirror, the stride's phase and frame, the mother's and the pram's pictures, the pram's offset and size), which _draw() hands to Sprites.draw_standing() and a headless run draws to nothing, and no node exposes; a drawer handed in for a recording one to stand in would be a hand-in only the tests use, since the game has no second drawer to hand her, so the facing, gait, father-or-mother and atlas suites (tests/test_stroller.gd, test_stroller_gait.gd, test_player_presentation.gd, test_main.gd, test_escape_invisible_wall.gd, test_atlas_stroller_crowd.gd, test_atlas_loading.gd) read it off the function, as they read baby_cue_aside and baby_cue_lift
 src/ui/meter_bar.gd displayed_fraction  # the fraction of the bar's width the fill is drawn at, held under full until the value is the max; it exists only as the argument to draw_rect() in _draw(), which a headless run draws to nothing and no node exposes, so nothing outward can read it (tests/test_hud.gd's header says the same of the number printed beside it)
 src/ui/meter_bar.gd displayed_value  # the number the bar prints, floored so 99.5 does not read 100 while the day is live; it exists only as the argument to draw_string() in _draw(), which a headless run draws to nothing and no node exposes, so nothing outward can read it
 src/ui/mode_button.gd hold_progress  # the fraction of the restart disc's radial sweep, which is all _draw() paints of the hold; a headless run draws to nothing and no node exposes the sweep, so the value is the only thing a test can read of what the disc shows (and the one-line clamp its setter owns)

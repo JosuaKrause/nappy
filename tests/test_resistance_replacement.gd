@@ -142,8 +142,12 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t: TestRunne
 
 ## **The siting the director relocates by reads today's region off the city's streets**: the city
 ## hands its spawn siting the region its `DayStreets` derives (`City.streets()`), and the director
-## is handed that siting, so a relocation keeps clear of the day's wall and doors. How the region is
-## built and handed again is `tests/test_day_streets.gd`'s.
+## is handed that siting, so a relocation keeps clear of the day's wall and doors. Read off what the
+## siting answers: a run at her standing on a body of the wall passes through that body from
+## anywhere, so the siting refuses every start for it (`CLEAR_OF_THE_BOUNDARY`) only when it holds
+## the body; and a tile of a walled-off alley that is ground on any other day is refused as ground
+## (`LEGAL_GROUND`) only when it holds the alley. How the region is built and handed again is
+## `tests/test_day_streets.gd`'s.
 func _test_the_siting_reads_the_days_region_off_the_streets(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var state := CityState.new()
@@ -151,8 +155,24 @@ func _test_the_siting_reads_the_days_region_off_the_streets(t: TestRunner) -> vo
 	_city.start_day(state, 10, RandomNumberGenerator.new())
 	var region := _city.streets().siting_region()
 	t.check(region != null and region.centres.size() > 0, "day 10 has a region wall and doors")
-	t.check(_city.spawn_siting.region() == region,
-			"the city's spawn siting hands out the region its streets derive")
+	t.check(region != null and not region.walled_alleys.is_empty(), "and walls off an alley")
+	if region == null or region.centres.is_empty() or region.walled_alleys.is_empty():
+		return
+	var siting := _city.spawn_siting
+	var on_the_wall := region.centres[0]
+	var asked := siting.ask(Rect2(), Mover.on_foot(), on_the_wall)
+	t.check(not siting.allows(SpawnSiting.Rule.CLEAR_OF_THE_BOUNDARY, asked,
+			on_the_wall + Vector2(asked.beside + region.radii[0], 0.0)),
+			"the city's spawn siting refuses a run through a body of the wall its streets derive")
+	var walled := Vector2i(-1, -1)
+	var alley := region.walled_alleys[0]
+	for x in range(alley.position.x, alley.end.x):
+		for y in range(alley.position.y, alley.end.y):
+			if walled.x < 0 and SpawnSiting.is_legal_ground(_city.map, Vector2i(x, y), []):
+				walled = Vector2i(x, y)
+	t.check(walled.x >= 0 and not siting.allows(SpawnSiting.Rule.LEGAL_GROUND,
+			siting.ask_of_ground(), _city.map.tile_to_world(walled)),
+			"and refuses as ground a tile of the alley the region walls off (%s)" % walled)
 
 ## brisk-wombat, "the mark and its robber never appear in front of her" — the mark's own half:
 ## *"I just had one appear out of nowhere while I was walking through an alley."* The search for
@@ -330,7 +350,7 @@ func _test_nothing_appears_under_a_covered_corner(t: TestRunner) -> void:
 	director.use_player(player)
 	director.set_sight(events.sees)
 	var scale := Tuning.VIEW_HALF_EXTENT * 2.0 / ScreenOrientation.DESIGN_SIZE
-	var corner := TouchCover.joystick().left
+	var corner := TouchCover.joystick().left_corner()
 	var corner_at := corner.position * scale
 	var corner_size := corner.size * scale
 	var away: Array[Vector2] = []
@@ -383,7 +403,7 @@ func _test_the_neighbor_is_not_taken_under_a_covered_corner(t: TestRunner) -> vo
 	_build_city_in_a_new_run(t)
 	var events := _city.events
 	var scale := Tuning.VIEW_HALF_EXTENT * 2.0 / ScreenOrientation.DESIGN_SIZE
-	var corner := TouchCover.joystick().left
+	var corner := TouchCover.joystick().left_corner()
 	var corner_at := corner.position * scale
 	var corner_size := corner.size * scale
 	var late := _director_on_the_neighbor(t)

@@ -23,7 +23,7 @@ extends RefCounted
 ##
 ## **Built a slice at a time** (`advance()`), because one whole sweep of a city's open ground is
 ## a long frame (`tests/probes/plush_moose_arrow_cost.gd` measures it). A field is only read
-## once `done`; until then the arrow keeps reading the one it replaces.
+## once `is_done()`; until then the arrow keeps reading the one it replaces.
 
 const UNREACHED := -1
 const BLOCKED := -2
@@ -36,7 +36,8 @@ var anchors := {}
 ## The two versions of what blocks her that this field was started under
 ## (`WorldMap.day_record_version`, `WorldMap.obstruction_version`).
 var versions := Vector2i(-1, -1)
-var done := false
+## Whether the sweep is finished (`is_done()`).
+var _done := false
 
 var _targets: Array[Dictionary] = []
 var _begun := false
@@ -127,8 +128,8 @@ func _seed_around(map: WorldMap, at: Vector2, within: float, label: int) -> void
 			_tail += 1
 
 ## Sweeps up to `budget` more tiles over `ground` (read on the first call only) and answers how
-## much of `budget` it used; `done` once nothing is left. The first call only lays the field out
-## and seeds it, and answers the whole budget used.
+## much of `budget` it used; done (`is_done()`) once nothing is left. The first call only lays the
+## field out and seeds it, and answers the whole budget used.
 func advance(map: WorldMap, ground: PackedInt32Array, budget: int) -> int:
 	if not _begun:
 		# Laying the field out and seeding it is a frame's work of its own, so it never shares one
@@ -190,7 +191,7 @@ func advance(map: WorldMap, ground: PackedInt32Array, budget: int) -> int:
 	_head = head
 	_tail = tail
 	if head >= tail:
-		done = true
+		_done = true
 	else:
 		# The queue is only needed while sweeping; a finished field keeps its answer alone.
 		_queue = queue
@@ -198,7 +199,7 @@ func advance(map: WorldMap, ground: PackedInt32Array, budget: int) -> int:
 
 ## Whether the sweep is finished: nothing is left to measure.
 func is_done() -> bool:
-	return done
+	return _done
 
 ## The two versions of what blocks her that this field was started under.
 func started_under() -> Vector2i:

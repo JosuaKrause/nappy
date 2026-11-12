@@ -202,10 +202,10 @@ class LoudWorld extends WorldContext:
 		return [[_noise, NOISE]]
 
 ## Whether `baby`'s excitement rises over a few physics ticks against a `LoudWorld`, her meter
-## ticking whether or not the title holds the game paused, and her own world handed back after:
-## what `Baby.freeze_excitement()`, which `main` tells her on an invincible run, stops.
-func _her_excitement_rises(t: TestRunner, baby: Baby) -> bool:
-	var own := baby.world()
+## ticking whether or not the title holds the game paused, and her own world, `own` (the city
+## `main` put her in), handed back after: what `Baby.freeze_excitement()`, which `main` tells her on
+## an invincible run, stops.
+func _her_excitement_rises(t: TestRunner, baby: Baby, own: WorldContext) -> bool:
 	var loud := LoudWorld.new()
 	t.add_child(loud)
 	var mode := baby.process_mode
@@ -253,7 +253,7 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 		var baby := Boot.baby(booted.main)
 		var rises := false
 		if baby:
-			rises = await _her_excitement_rises(t, baby)
+			rises = await _her_excitement_rises(t, baby, Boot.city(booted.main))
 		t.check(baby != null and rises != invincible,
 				"the baby's meter is frozen exactly when the run is invincible (%s)" % invincible)
 		var f: Dictionary = entered.get("flags", {})

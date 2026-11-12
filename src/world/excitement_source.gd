@@ -90,12 +90,12 @@ func _init(the_body: Node2D) -> void:
 
 ## Where she is, in world space, or `Vector2.INF` before anybody has said, told once a frame by
 ## `ExcitementHalo` through `set_player_at()`.
-var player_at := Vector2.INF
+var _player_at := Vector2.INF
 
-## Where the caret measures her from (`caret_strength()`): `player_at`, unless the body keeps its
+## Where the caret measures her from (`caret_strength()`): `_player_at`, unless the body keeps its
 ## own account of where she is that more than the halo writes.
 func _her_at() -> Vector2:
-	return player_at
+	return _player_at
 
 ## Her current velocity, her decay rate (`Baby.decay_rate()`) and the baby's sensitivity
 ## (`Baby.current_sensitivity()`): everything `expected_impact_at()` needs to answer "if she keeps
@@ -103,7 +103,7 @@ func _her_at() -> Vector2:
 ## for any caller — a data-level test among them — that has not said otherwise.
 var player_velocity := Vector2.ZERO
 var player_decay_rate := 0.0
-var player_sensitivity := 1.0
+var _player_sensitivity := 1.0
 
 ## The sum of `expected_gross_at()` over every source `ExcitementHalo` runs this frame, told once a
 ## frame through `set_expected_total_gross()`. `-1.0`, the default, means nobody has, and
@@ -115,10 +115,10 @@ var player_expected_total_gross := -1.0
 ## worth a caret.
 func set_player_at(at: Vector2, velocity: Vector2 = Vector2.ZERO, decay_rate: float = 0.0,
 		sensitivity: float = 1.0) -> void:
-	player_at = at
+	_player_at = at
 	player_velocity = velocity
 	player_decay_rate = decay_rate
-	player_sensitivity = sensitivity
+	_player_sensitivity = sensitivity
 
 ## Told once a frame by `ExcitementHalo`, after every candidate's `expected_gross_at()` has been
 ## asked at the same position: the total has to be gathered before any one source's share of the
@@ -277,7 +277,7 @@ var _expected_landed_cache := 0.0
 ## projection as the source's own `_projection_velocity()` moves it.
 ##
 ## **Skipped without sampling once neither body is moving, or the pair's closing speed cannot cross
-## the reach inside the horizon.** Floored at zero and scaled by `player_sensitivity` here, so the
+## the reach inside the horizon.** Floored at zero and scaled by `_player_sensitivity` here, so the
 ## total the halo sums is already in the units the shared decay is taken out of. The present rate
 ## subtracted is the real `contribution_at()` — what she is charged right now — so the answer is the
 ## approach minus the honest present.
@@ -308,7 +308,7 @@ func expected_gross_at(player_position: Vector2) -> float:
 			_expected_landed_key = key
 		future_integral = _expected_landed_cache
 	var gross := future_integral - current_rate * Tuning.EXPECTED_IMPACT_HORIZON
-	return maxf(gross * player_sensitivity, 0.0)
+	return maxf(gross * _player_sensitivity, 0.0)
 
 ## Only the future integral is reusable. Projecting the source forward by `velocity * t` and asking
 ## its field at her own projected place is the same number as holding the source still and asking

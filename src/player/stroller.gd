@@ -250,15 +250,15 @@ var facing := Vector2.DOWN
 func facing_direction() -> Vector2:
 	return facing
 
+## The direction she is being steered this physics frame (`steering_direction()`).
+var _steering := Vector2.ZERO
+
 ## The direction she is being steered this physics frame — the movement input after a capture's
 ## lock and a flight's redirection, zero when nothing is pressed. Unlike `velocity`, it still says
-## where she is going when a wall stops her, which is what a push is: `PosterWalls` reads it to tell
+## where she is going when a wall stops her, which is what a push is: `PosterWalls` asks it to tell
 ## a heading pressed into a postered wall from one walking past it.
-var steering := Vector2.ZERO
-
-## `steering`, asked: the direction she is being steered this physics frame.
 func steering_direction() -> Vector2:
-	return steering
+	return _steering
 
 ## Bound by Main before the first drawing (`draw_as_father()`); reset, pause and carrying never
 ## choose it again.
@@ -457,7 +457,7 @@ func _physics_process(delta: float) -> void:
 		# for free, since `top_speed` below is only ever reached through a nonzero `input_dir`.
 		input_dir = Vector2.ZERO
 	input_dir = _redirect_along_a_flight(input_dir)
-	steering = input_dir
+	_steering = input_dir
 	var top_speed := Tuning.RUN_SPEED if Input.is_action_pressed("run") else Tuning.WALK_SPEED
 
 	if input_dir != Vector2.ZERO:
