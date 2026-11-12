@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name RegionPlanner
 extends RefCounted
 ## Partitions the lattice's junctions into `Tuning.REGION_COUNT` regions, once per run, and turns
@@ -170,8 +169,8 @@ static func _union_atoms(map: CityMap, dsu: _DSU) -> void:
 ## commercial square's own rect.
 static func _union_touch_points(map: CityMap, rect: Rect2i, dsu: _DSU) -> void:
 	var first := -1
-	for pair in _area_touch_points(map, rect):
-		for junction in pair:
+	for pair: Array in _area_touch_points(map, rect):
+		for junction: Vector2i in pair:
 			var node := StreetNetwork.node_of(junction)
 			if first < 0:
 				first = node
@@ -331,7 +330,7 @@ static func _assign_wall_ends(map: CityMap) -> Dictionary:
 			var a_ends := [region_of_junction(map, segment_a.a), region_of_junction(map, segment_a.b)]
 			var b_ends := [region_of_junction(map, segment_b.a), region_of_junction(map, segment_b.b)]
 			var shared := -1
-			for r in a_ends:
+			for r: int in a_ends:
 				if b_ends.has(r):
 					shared = r
 					break
@@ -743,7 +742,7 @@ static func _add_alley_door_bodies(map: CityMap, rect: Rect2i, plan: RegionPlan)
 	var vertical := rect.size.x < rect.size.y
 	var axis := _along_axis(not vertical)
 	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("checkpoint_post"), true)
-	for at_start in [true, false]:
+	for at_start: bool in [true, false]:
 		var mouth := SealPlanner.alley_mouth_rect(rect, vertical, at_start)
 		var body := EventPlan.new(def, map.tile_rect_to_world(mouth).get_center())
 		body.facing = axis

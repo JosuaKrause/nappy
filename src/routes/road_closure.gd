@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name RoadClosure
 extends RefCounted
 ## One street closed for one day, and what closed it.
@@ -82,7 +81,7 @@ func tiles(map: CityMap) -> Array[Vector2i]:
 ## Where the two barriers stand: the middle of each mouth, on the ground plane.
 func mouth_centres(map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
-	for at_a in [true, false]:
+	for at_a: bool in [true, false]:
 		found.append(map.tile_rect_to_world(segment.mouth_rect(at_a)).get_center())
 	return found
 

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name RouteTree
 extends RouteSource
 ## The day's corridor: one branch from the doorstep to every calm area still worth reaching, and
@@ -361,7 +360,7 @@ func _access_nodes(map: CityMap, area: ClosurePlanner.CalmArea) -> Array[int]:
 			if node >= 0:
 				found[node] = true
 	var result: Array[int] = []
-	for node in found:
+	for node: int in found:
 		result.append(node)
 	return result
 
@@ -922,14 +921,14 @@ func rim() -> Array[Vector3i]:
 		var segment := _map.network.by_key(key)
 		if not segment:
 			continue
-		for junction in [segment.a, segment.b]:
+		for junction: Vector2i in [segment.a, segment.b]:
 			for candidate in _map.network.at_junction(junction):
 				var beside := candidate.key()
 				if _street_keys.has(beside) or _absent.has(beside):
 					continue
 				found[beside] = true
 	var result: Array[Vector3i] = []
-	for key in found:
+	for key: Vector3i in found:
 		result.append(key)
 	return result
 
@@ -983,7 +982,7 @@ func segment_depths() -> Dictionary:
 			var segment := _map.network.by_key(key)
 			if not segment:
 				continue
-			for junction in [segment.a, segment.b]:
+			for junction: Vector2i in [segment.a, segment.b]:
 				for candidate in _map.network.at_junction(junction):
 					var beside := candidate.key()
 					if found.has(beside):

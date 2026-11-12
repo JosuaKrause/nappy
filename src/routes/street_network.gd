@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name StreetNetwork
 extends RefCounted
 ## The street lattice as a graph: junctions, and the segments of street between them.
@@ -115,7 +114,7 @@ func by_key(key: Vector3i) -> Segment:
 ## The four streets that meet at a junction — three at an edge, two at a corner.
 func at_junction(junction: Vector2i) -> Array[Segment]:
 	var found: Array[Segment] = []
-	for candidate in [
+	for candidate: Vector3i in [
 			Vector3i(junction.x, junction.y, 0), Vector3i(junction.x - 1, junction.y, 0),
 			Vector3i(junction.x, junction.y, 1), Vector3i(junction.x, junction.y - 1, 1)]:
 		var segment: Segment = _by_key.get(candidate)
@@ -219,7 +218,7 @@ func route_count(from: Segment, access: Array[Segment], closed: Dictionary,
 		capacity[v * total + u] = 1
 	links.resize(total)
 	var out_of_source: Array[int] = []
-	for junction in [from.a, from.b]:
+	for junction: Vector2i in [from.a, from.b]:
 		var node := node_of(junction)
 		capacity[source * total + node] = 1
 		out_of_source.append(node)
@@ -228,7 +227,7 @@ func route_count(from: Segment, access: Array[Segment], closed: Dictionary,
 	for segment in access:
 		if closed.has(segment.key()):
 			continue
-		for junction in [segment.a, segment.b]:
+		for junction: Vector2i in [segment.a, segment.b]:
 			var node := node_of(junction)
 			if int(capacity.get(node * total + sink, 0)) > 0:
 				continue

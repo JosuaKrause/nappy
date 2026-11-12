@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name ClosurePlanner
 extends RefCounted
 ## Chooses which streets are closed today, and refuses to close so many that the day stops
@@ -260,7 +259,7 @@ static func _access_segments(map: CityMap, rect: Rect2i) -> Array[StreetNetwork.
 			continue
 		_queue_walkable_neighbours(map, tile, visited, queue)
 	var result: Array[StreetNetwork.Segment] = []
-	for key in found:
+	for key: Vector3i in found:
 		result.append(found[key])
 	return result
 
@@ -460,7 +459,7 @@ static func _barrier_tiles(map: CityMap, closed: Dictionary) -> Dictionary:
 		var segment := map.network.by_key(key)
 		if not segment:
 			continue
-		for at_a in [true, false]:
+		for at_a: bool in [true, false]:
 			for tile in map.rect_tiles(segment.mouth_rect(at_a)):
 				tiles[tile] = true
 	return tiles
