@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Day 12's park closed by a police cordon (`ParkCordon`) once she has reached its swing.
 ##
@@ -160,7 +159,7 @@ func _ground() -> Rect2:
 func _line() -> Rect2:
 	return _line_rect
 
-static func _look(city: City, at) -> void:
+static func _look(city: City, at: Variant) -> void:
 	var view := city.events.visible_view()
 	if at == null:
 		view.look(Rect2(), null)
@@ -210,7 +209,7 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t: TestRunner) 
 	happenings.cordon.clear()
 	var box := EventFootprints.footprint_of(EventCatalogue.by_id(ParkCordon.OFFICER_ROW))
 	var distances: Array[float] = []
-	for scale in [1.0, 3.0]:
+	for scale: float in [1.0, 3.0]:
 		var view := VisibleView.new()
 		view.look(Rect2(swing - Tuning.VIEW_HALF_EXTENT * scale,
 				Tuning.VIEW_HALF_EXTENT * 2.0 * scale), null)
@@ -253,8 +252,9 @@ func _test_the_cordons_figures_ask_the_library_it_is_handed(t: TestRunner) -> vo
 			fixture.park, _city.spawn_siting, ResistanceReads.day_reachability(_city)[1])
 	var posts := func() -> int:
 		var found := 0
-		for piece in _city.get_node("Entities").get_children():
-			found += 1 if piece is CordonTape and piece.piece == CordonTape.Piece.POST \
+		for node in _city.get_node("Entities").get_children():
+			var piece := node as CordonTape
+			found += 1 if piece != null and piece.piece == CordonTape.Piece.POST \
 					and not piece.is_queued_for_deletion() else 0
 		return found
 	var waited := 0.0
@@ -411,7 +411,7 @@ func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstructio
 	var side := {}
 	var seal := func() -> void:
 		var park := CityGenerator.swing_park(_city.map)
-		var by_side := {}
+		var by_side: Dictionary[Vector2i, Array] = {}
 		for entry: Array in CordonInTheWorld.edge_tiles_to_tape(_city.map, park):
 			var run: Array = by_side.get(entry[1], [])
 			run.append(entry[0])
@@ -434,7 +434,7 @@ func _test_the_last_gap_is_on_ground_that_reaches_home_under_the_days_obstructio
 		while tile != last + along * 2:
 			_city.map.closed_tiles[tile + outward * 2] = true
 			tile += along
-		for end in [first - along, last + along]:
+		for end: Vector2i in [first - along, last + along]:
 			_city.map.closed_tiles[end + outward] = true
 			if not rect.has_point(end):
 				_city.map.closed_tiles[end] = true
@@ -610,7 +610,7 @@ func _test_a_taped_stretch_is_solid_and_no_tape_goes_up_through_her(t: TestRunne
 	t.check(points > 0 and covered == points, "along the whole of it (%d of %d points)"
 			% [covered, points])
 	var obstructed := 0
-	for tile in needed_tiles:
+	for tile: Vector2i in needed_tiles:
 		if _city.map.is_obstructed(tile):
 			obstructed += 1
 	t.check(obstructed == needed_tiles.size(), "and its edge tiles are obstructed (%d of %d)"

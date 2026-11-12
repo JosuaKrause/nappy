@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends "res://tests/resistance_rig.gd"
 ## M188: a mark is never placed in an alley she cannot reach.
 
@@ -25,7 +24,7 @@ func _test_a_mark_is_never_placed_in_an_alley_she_cannot_reach(t: TestRunner) ->
 		# used on that run, so no day leans on what the day before did.
 		var this_run := _build_city_in_a_new_run(t, seed_value)
 		var city := _city
-		for day in REACHABILITY_SWEEP_DAYS:
+		for day: int in REACHABILITY_SWEEP_DAYS:
 			this_run.resistance.completed_steps = []
 			this_run.resistance.failed_steps = []
 			this_run.facts.completed_resistance_alley_tiles.clear()

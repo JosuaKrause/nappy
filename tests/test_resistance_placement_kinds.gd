@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access")
 extends "res://tests/resistance_rig.gd"
 ## The four placement kinds a perform step may use, each task's own site, and the days built in order.
 
@@ -174,14 +173,14 @@ func _check_a_touch_from_the_near_half_of_the_sidewalk(t: TestRunner, director: 
 	var player := _rig_player(t, past)
 	director.use_player(player)
 	await _step_a_frame(t)
-	t.check(not contact.is_done, "a touch from past the sidewalk, %.0fpx from the door, does not"
+	t.check(not contact.is_finished(), "a touch from past the sidewalk, %.0fpx from the door, does not"
 			% door.distance_to(past))
 	player.global_position = far
 	await _step_a_frame(t)
-	t.check(not contact.is_done, "nor one from the far half, %.0fpx from the door"
+	t.check(not contact.is_finished(), "nor one from the far half, %.0fpx from the door"
 			% door.distance_to(far))
 	var corners: Array[Vector2] = []
-	for side in [-1.0, 1.0]:
+	for side: float in [-1.0, 1.0]:
 		corners.append(foot + Vector2(side * (Tuning.TILE_SIZE * 0.5 - 1.0), sidewalk * 0.5 - 1.0))
 	var touched := ContactTouches.touches_from(director, corners)
 	for k in corners.size():
@@ -190,7 +189,7 @@ func _check_a_touch_from_the_near_half_of_the_sidewalk(t: TestRunner, director: 
 				"completes it") % door.distance_to(corners[k]))
 	player.global_position = near
 	await _step_a_frame(t)
-	t.check(contact.is_done, "a touch from the near half, %.0fpx from the door, completes it"
+	t.check(contact.is_finished(), "a touch from the near half, %.0fpx from the door, completes it"
 			% door.distance_to(near))
 	player.free()
 
@@ -481,14 +480,14 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t: Tes
 	t.check(mark_contact != null, "day 9's mark has its own contact before it is touched")
 
 	# The same signal a real touch fires (`ContactPoint._complete()`, already connected to
-	# `_on_contact_completed()` by `_begin_step()`), so `is_done` is set the way play sets it.
+	# `_on_contact_completed()` by `_begin_step()`), so `is_finished()` answers the way play sets it.
 	mark_contact.complete_now()
 	t.check(director.current_step() == timed,
 			"touching it activates the door perform the same day")
 
 	t.check(not mark_contact.is_queued_for_deletion() and is_instance_valid(mark_contact),
 			"the mark's own touched ContactPoint stays standing, crossed through")
-	t.check(mark_contact.is_done, "showing chalk_mark_touched.svg")
+	t.check(mark_contact.is_finished(), "showing chalk_mark_touched.svg")
 	t.check(director.read_mark() == mark_contact, "tracked as the day's own read mark")
 	t.check(director.contact() != mark_contact, "the perform's own contact is a fresh one")
 
@@ -535,7 +534,7 @@ func _test_a_read_mark_does_not_pile_up_across_several_ordinary_days(t: TestRunn
 	var director := _director(t)
 	# Day 6's mark is index 1, day 7's is 3, day 8's is 5 (`_test_step_selection`'s own
 	# numbering) — each is a pickup, activated and then completed in turn.
-	for day in [6, 7, 8]:
+	for day: int in [6, 7, 8]:
 		director.start_day(day, _rng(day, "resistance"), 300.0)
 		var before := _live_chalk_marks()
 		t.check(before == 1, "day %d: exactly one mark stands before it is read (%d)"
@@ -553,8 +552,8 @@ func _test_a_read_mark_does_not_pile_up_across_several_ordinary_days(t: TestRunn
 func _live_chalk_marks() -> int:
 	var count := 0
 	for child in _city.find_children("*", "", true, false):
-		if child is ContactPoint and child.step != null and child.step.is_pickup \
-				and not child.is_queued_for_deletion():
+		var contact := child as ContactPoint
+		if contact != null and contact.draws_a_mark() and not contact.is_queued_for_deletion():
 			count += 1
 	return count
 
@@ -660,7 +659,7 @@ func _test_day_twelves_park_is_forced_open_whatever_its_state(t: TestRunner) -> 
 	var day := ResistanceSteps.swing_day()
 	t.check(day == 12, "the swing is day 12's task")
 	var forced := 0
-	for seed_value in [SEED, 181000, 283947, 299785, 307704]:
+	for seed_value: int in [SEED, 181000, 283947, 299785, 307704]:
 		var map := CityGenerator.generate(seed_value)
 		var park := CityGenerator.swing_park(map)
 		t.check(park.x >= 0, "seed %d: the city chose a park for the swing" % seed_value)
@@ -859,7 +858,7 @@ func _two_masts_round_a_mark(map: CityMap) -> Array:
 func _test_the_neighbor_leaves_for_work_until_the_raid(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var door := _city.map.doorstep_world_position()
-	for day in [1, 5, ResistanceHappenings.NEIGHBOR_DAY - 1]:
+	for day: int in [1, 5, ResistanceHappenings.NEIGHBOR_DAY - 1]:
 		var director := _director(t)
 		var before := _live("neighbor")
 		director.start_day(day, _rng(day, "resistance"), 300.0)
@@ -876,7 +875,7 @@ func _test_the_neighbor_leaves_for_work_until_the_raid(t: TestRunner) -> void:
 					"day %d: and nothing points at them" % day)
 			_city.events.retire(neighbor)
 		director.free()
-	for day in [ResistanceHappenings.NEIGHBOR_DAY, ResistanceHappenings.NEIGHBOR_DAY + 1, 13]:
+	for day: int in [ResistanceHappenings.NEIGHBOR_DAY, ResistanceHappenings.NEIGHBOR_DAY + 1, 13]:
 		var director := _director(t)
 		var before := _live("neighbor")
 		director.start_day(day, _rng(day, "resistance"), 300.0)

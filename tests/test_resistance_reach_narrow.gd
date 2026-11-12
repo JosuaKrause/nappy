@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## M188: the narrow targets are reachable on their day, and a task is placed near its mark.
 
@@ -44,6 +43,8 @@ func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 				var target := director.contact_position() if mast or director.rider() == null \
 						else director.rider().global_position
 				var circle := _edge_of_her_circle(director, mark)
+				var edge: Dictionary = circle[0]
+				var inside: Dictionary = circle[1]
 				# Day 13's roadblock is the nearest the day placed, or one swapped in, that her paths
 				# reach within the widest of `ROADBLOCK_WIDER_REACH` (`_place_the_roadblock_near()`),
 				# touched from ground within a tile and a half of its body; that is not a fallback.
@@ -54,7 +55,7 @@ func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 				for step_to: Vector2i in [Vector2i.ZERO, Vector2i.LEFT, Vector2i.RIGHT,
 						Vector2i.UP, Vector2i.DOWN]:
 					var tile := centre + step_to
-					if circle[0].has(tile) or (mast and circle[1].has(tile)):
+					if edge.has(tile) or (mast and inside.has(tile)):
 						on_it = true
 				var touch := EventPlan.new(EventCatalogue.by_id("roadblock"),
 						Vector2.ZERO).blocking_radius() + Tuning.TILE_SIZE * 1.5
