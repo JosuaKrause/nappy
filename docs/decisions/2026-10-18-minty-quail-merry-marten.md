@@ -11,13 +11,15 @@ olive-ferret): `field-reads.md` with `typed-everywhere.md`, one pass per module.
   `route_tree.gd`, `closure_planner.gd` and `region_planner.gd` (`untyped_declaration`), and `reachability_grid.gd`
   (`untyped_declaration`, `unsafe_method_access`); none after. No method, call or signature changes, and no other
   file changes.
-- **Typing**: loops over literal arrays take their element's type (a mouth's or an alley's two sides as `bool`, a
-  segment's two ends as `Vector2i`, the candidate segment keys in `StreetNetwork.at_junction()` as `Vector3i`); loops
-  over a dictionary's keys take the type of what writes them (segment keys from `Segment.key()` as `Vector3i`, grid
-  nodes from `ReachabilityGrid.node_at()` as `int`, region ids from `region_of_junction()` as `int`); nested
-  collections are read through typed locals (`_ADJACENT_LOCAL`'s pairs and the junction pairs as `Array` of
-  `Vector2i`, a mask's components as the `Array[int]` `_compute_components()` builds); `_maybe_edge()` appends
-  through `(_edges[na] as Array)`, the same array by reference.
+- **Typing**, every change a loop variable or an append: loops over literal arrays take their element's type (a
+  mouth's or an alley's two sides as `bool`, a segment's two ends as `Vector2i`, the candidate segment keys in
+  `StreetNetwork.at_junction()` as `Vector3i`); loops over a dictionary's keys take the type of what writes them
+  (segment keys from `Segment.key()` as `Vector3i`, grid nodes from `ReachabilityGrid.node_at()` as `int`);
+  `RegionPlanner._assign_wall_ends()` loops over its two region ids, from `region_of_junction()`, as `int`; loops over
+  nested collections take their element's type (`_ADJACENT_LOCAL`'s pairs of touching slot numbers in
+  `ReachabilityGrid._compute_components()` as `Array`, the region planner's junction pairs as `Array` with each
+  junction a `Vector2i`, a mask's components as the `Array[int]` `_compute_components()` builds); `_maybe_edge()`
+  appends through `(_edges[na] as Array)`, the same array by reference.
 - **`ReachabilityGrid.flood()` keeps its `sources: Array` parameter** and types only its loop variable `Vector2i`:
   every caller under `src/` and `tests/` passes `Vector2i`s, and a parameter typed `Array[Vector2i]` would fail at run
   time for each caller handing a literal `[tile]`.
