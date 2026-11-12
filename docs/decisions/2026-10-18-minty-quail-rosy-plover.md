@@ -8,7 +8,7 @@ the sitting's, and the run flow's summary model and calendar.
 
 ## What was built
 
-- **Deleted**: `GroundShape.across()` (two checks that only restated it go, the rest read `rounding_radius()`),
+- **Deleted**: `GroundShape.across()` (three checks that only restated it go, the rest read `rounding_radius()`),
   `RouteTree.streets()` (the suite walks `streets_on_the_walk()`, the method the game calls), and `RunTrace.recording()`,
   a factory only tests called, replaced by a test fake extending the run trace and handed in where the game hands it.
 - **Private**: the sitting's `restarted_at_msec` (`restart_requested_at_msec()`), the cordon tape's `piece` and `across`
