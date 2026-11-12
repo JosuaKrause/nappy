@@ -201,7 +201,7 @@ Checked by `CityGenerator.validate()` and by `tests/test_generator.gd` across 20
   `CityGenerator.POWER_STATION_MIN_BLOCKS_FROM_HOME` blocks from the home and outside the home's region.
   See "The power station".
 - One **park with a playground is day 12's**, the park that day's task sends her to the swing of
-  (`CityGenerator._plan_the_swing_park`, `BlockPlan.forced_open_on`). A park whose arc already
+  (`CityGenerator._plan_the_swing_park`, `BlockPlan.forced_open_day()`). A park whose arc already
   requisitions it is preferred; in a city whose arcs take no park, the chosen one gets a
   `REQUISITIONED` step of its own on `BlockCause.TAKEN`, and the calm that lasts to the end is
   counted without it. Drawn from the seed's hash rather than the generator's stream, so no other
@@ -452,8 +452,8 @@ calm area obeys, asked of the whole footprint:
   so this needs no guard of its own.
 - **Never beside other calm**, the same rule a single calm block obeys.
 
-The streets it absorbed live in `CityMap.absent_segments`, and `CityMap.blocked_segments()` adds
-them to whatever a day has closed. Every route search takes that set, so the graph half of
+The streets it absorbed are absent from the map (`CityMap.has_street()` answers false for each), and
+`CityMap.blocked_segments()` adds them to whatever a day has closed. Every route search takes that set, so the graph half of
 `StreetNetwork` — route counting, the invariant, the doorway exemptions — needs no special case: a
 street that is not there is a street that is permanently shut, as far as a search is concerned.
 What is *not* true of a closure is true here and matters: **the ground is calm and
@@ -750,7 +750,7 @@ player learns while the closures re-cut the map every morning.
 **The ground stops, and that is the whole difference from a zone's absorbed street.** An absorbed
 corridor is *calm ground rather than a closure* — the tiles are park and she walks over them, which
 is exactly right for a shortcut and exactly wrong for a hard blocker.
-`CityMap.dead_ends` is kept separate from `absent_segments` for that reason: the two are absent
+`CityMap.dead_ends` is kept separate from the absent streets for that reason: the two are absent
 for opposite reasons, and anything reasoning about **why** a street is missing has to tell them
 apart. Anything asking *can a route go this way* wants `blocked_segments()`, which is both and
 does not care.
@@ -869,7 +869,7 @@ ignores the station, so nothing leads her there before she is sent.
 
 A city where no candidate passes has no station, and `validate()` refuses it like any other broken
 guarantee, so `generate` rolls the next seed. `CityMap.power_station` is the pair,
-`power_station_door` the pavement in front of the door, `power_station_door_street()` the street it
+`power_station_door_tiles()` the pavement in front of the door, `power_station_door_street()` the street it
 faces and `power_station_door_position()` the point she stands on to reach it.
 
 **The station is where the city's power comes from, and the last night takes it away.** Once the
@@ -1614,8 +1614,8 @@ growth always takes a whole atom at once, so no boundary segment ever borders ca
 square, is the home street, or cuts a precinct.
 
 **Regions are grown by a round-robin flood.** `Tuning.REGION_COUNT` seed junctions are chosen by
-farthest-point sampling over the real-segment graph — `absent_segments`, both the zone-absorbed and
-the built-over kind, is never traversed — with the graph's own seed deciding only the first pick and
+farthest-point sampling over the real-segment graph — an absent street, of the zone-absorbed and
+the built-over kind alike, is never traversed — with the graph's own seed deciding only the first pick and
 never choosing two seeds from the same atom. Growth then proceeds one step per region in turn, each
 claim taking a junction's whole atom, so the regions come out comparable in size rather than the
 first seed's flood eating the map before the others start.
@@ -1653,7 +1653,7 @@ walled at both ends where she can never reach (`RegionPlanner._alley_mouth_wall_
 `_alley_mouth_street_side`). Wall guards never chase, on a street or an alley alike — a wall body
 is never `EventCatalogue.heated()` — so this is drawing only.
 
-**The wall is the day's, not `absent_segments`.** From `Tuning.REGION_WALL_FIRST_DAY` every morning,
+**The wall is the day's, not the absent streets'.** From `Tuning.REGION_WALL_FIRST_DAY` every morning,
 a crossing — a boundary segment or a crossing alley — the day's `RouteTree` uses is a **door**;
 every other crossing is **wall**, placed as hard seals of the roadblock row. Before that day nothing
 is drawn at all — the partition exists from generation, but the milestone's own words are
@@ -1759,7 +1759,7 @@ Causes fire during the day; the city presents the result the **next morning**.
 ashes tomorrow.
 
 **Day 12's park is the one block whose purpose is not its arc's for a day.** It is a park on its
-day whatever its arc has reached (`BlockPlan.forced_open_on`, `CityState.purpose_of`), and when she
+day whatever its arc has reached (`BlockPlan.forced_open_day()`, `CityState.purpose_of`), and when she
 reaches its swing `CityState.take()` takes its `REQUISITIONED` step there and then, whatever the
 step's own day or cause — a requisition scheduled for day 13 comes a day early. Park and
 requisitioned park are the same walkable ground, so neither half moves a walkable tile.

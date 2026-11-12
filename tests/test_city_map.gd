@@ -1,7 +1,9 @@
 extends RefCounted
 ## A city map's copy (`CityMap.copy()`): that it is a city the generator's guarantees hold on, that
 ## it answers every question the map it was copied from answers, and that nothing either map is
-## then handed reaches the other.
+## then handed reaches the other. And its capture (`CityMap.capture()`, `restored()`): that a map
+## restored from what a map captured captures the same facts again, for a generated map, its copy
+## and an authored scene's saved context.
 ##
 ## **Real generated maps, because a copy is only as lossless as the fields generation fills**: a
 ## hand-drawn map leaves the block plans, the zones, the regions and the landmarks empty, and an
@@ -44,8 +46,52 @@ func run(t: TestRunner) -> void:
 		_test_a_copy_taken_during_a_day_carries_the_days_record(t, original, seed_value)
 		_test_what_one_map_is_handed_leaves_the_other_alone(t, original, seed_value)
 		_test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t, original, seed_value)
+		_test_a_restored_map_captures_what_it_was_restored_from(t, original, seed_value)
 	_test_a_copy_of_an_authored_scene_map_carries_its_recipe(t)
+	_test_a_saved_context_restores_and_captures_the_same(t)
 	_test_a_map_with_no_calm_ground_says_none(t)
+
+## A generated map, and its copy, capture the same facts, and the map restored from them captures
+## them again: a fact `capture()` names and `restored()` drops, or reads under another name, fails
+## here rather than in the draft tool that saves a scene.
+func _test_a_restored_map_captures_what_it_was_restored_from(t: TestRunner, original: CityMap,
+		seed_value: int) -> void:
+	var facts := _comparable(original.capture())
+	t.check(not (facts["block_plans"] as Dictionary).is_empty(),
+			"seed %d: the capture holds the block arcs" % seed_value)
+	t.check(_comparable(original.copy().capture()) == facts,
+			"seed %d: the copy captures what the map captures" % seed_value)
+	var restored := CityMap.restored(original.capture())
+	t.check(_comparable(restored.capture()) == facts,
+			"seed %d: the restored map captures what it was restored from" % seed_value)
+
+## An authored scene's saved context restored, saved again and restored once more saves the same
+## context, through the recipe file's form (`RecipeCityContext`) as well as the map's own.
+func _test_a_saved_context_restores_and_captures_the_same(t: TestRunner) -> void:
+	var data: Dictionary = SceneRecipe.load_file(SCENE).data
+	var map := RecipeCityContext.restore(data["context"])
+	var facts := _comparable(map.capture())
+	t.check(_comparable(CityMap.restored(map.capture()).capture()) == facts,
+			"the scene's restored map captures what it was restored from")
+	var saved := RecipeCityContext.capture(map)
+	t.check(RecipeCityContext.validate(saved).is_empty(), "the saved context passes validation")
+	t.check(RecipeCityContext.capture(RecipeCityContext.restore(saved)) == saved,
+			"the saved context restores and saves the same")
+
+## A capture with each block's arc written out as its steps, so two captures compare by value
+## rather than by which `BlockPlan` each holds.
+func _comparable(facts: Dictionary) -> Dictionary:
+	var arcs := {}
+	var plans: Dictionary = facts["block_plans"]
+	for block: Vector2i in plans:
+		var plan: BlockPlan = plans[block]
+		var steps: Array = [plan.forced_open_day()]
+		for step in plan.steps_in_order():
+			steps.append([step.purpose, step.from_day, step.cause])
+		arcs[block] = steps
+	var comparable := facts.duplicate()
+	comparable["block_plans"] = arcs
+	return comparable
 
 ## A map no day has marked calm ground on has nothing to count, so its summary says none.
 func _test_a_map_with_no_calm_ground_says_none(t: TestRunner) -> void:

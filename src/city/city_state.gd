@@ -12,13 +12,13 @@ extends RefCounted
 ## far along each one the run has got, which is why a day can be reconstructed from a seed
 ## and a day number plus the causes that have fired.
 
-## Block -> index into that block's `BlockPlan.steps`.
+## Block -> index into that block's arc (`BlockPlan.step_at()`).
 var _stage := {}
 ## Block -> the day it last moved. Day 1 for a block that has never changed, which is what
 ## the route map wants to shade "this is new".
 var _changed_on := {}
 ## The park that is open today whatever its arc has reached — day 12's, the one its task sends her
-## to (`BlockPlan.forced_open_on`) — as `block -> true`, until she takes it. Derived by
+## to (`BlockPlan.forced_open_day()`) — as `block -> true`, until she takes it. Derived by
 ## `begin_day()` from the plans and the day, never saved: a retried day derives it again.
 var _open_today := {}
 ## Where a block's step along its arc is written down for the run log — the run's trace, handed
