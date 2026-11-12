@@ -51,6 +51,13 @@ static func material_for(texture: AtlasTexture, at_elapsed: float = 0.0) -> Shad
 	ripples.set_shader_parameter("elapsed", at_elapsed)
 	return ripples
 
+## Sets this surface's clock, and its ripples' phase with it, to `at_elapsed`. The ground calls it
+## every frame with its one city clock, so the chunks it streams in stay in phase with each other;
+## a surface the ground stands up does not run its own `_process()`.
+func set_clock(at_elapsed: float) -> void:
+	elapsed = at_elapsed
+	_ripples.set_shader_parameter("elapsed", elapsed)
+
 func _process(delta: float) -> void:
 	elapsed += delta
 	if _ripples != null:
