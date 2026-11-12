@@ -91,11 +91,11 @@ func _play_a_run(t: TestRunner, seed_value: int) -> void:
 		# that shut the wrong area fails on the day it does. Whether any day shuts one at all is
 		# counted apart and checked once the run is over.
 		var used := run.calendar.settled_this_act()
-		for block: Vector2i in city.map.shut_calm:
+		for block: Vector2i in city.map.shut_calm():
 			t.check(used.has(block),
 					"seed %d day %d: calm area %s off the tree is one she used this act %s"
 					% [seed_value, day, block, used])
-		if not city.map.shut_calm.is_empty():
+		if not city.map.shut_calm().is_empty():
 			days_with_a_used_area_shut += 1
 		if city.crowd.agent_count() > 0:
 			days_with_a_crowd += 1
@@ -200,7 +200,7 @@ func _settle(city: City, run: RunState, player: Stroller, baby: Baby) -> void:
 	var best := Vector2.INF
 	for block: Vector2i in map.calm_blocks:
 		var anchor := map.anchor_of(block)
-		if used.has(anchor) or map.shut_calm.has(anchor) or anchor == map.fenced_park:
+		if used.has(anchor) or map.shut_calm().has(anchor) or anchor == map.fenced_park:
 			continue
 		var spot := CalmSpot.of(map, block)
 		if spot != Vector2.INF and spot.distance_to(home) < best.distance_to(home):

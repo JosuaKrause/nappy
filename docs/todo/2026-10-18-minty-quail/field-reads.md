@@ -57,7 +57,7 @@ errors. What remains is this item's own conversion, which predates the review, s
 minty-quail rather than polite-tapir.
 
 **What is left of the typing under `src/`** (`rg -l '@warning_ignore_start' src` lists the files)
-is the files open work rewrites, typed by that work or after it, and four kept for a reason of their
+is the files open work rewrites, typed by that work or after it, and three kept for a reason of their
 own:
 
 - The event scheduler, the walk's ground and the event director (`src/events/event_scheduler.gd`,
@@ -70,12 +70,6 @@ own:
 - The scene recipes' draft and runtime (`src/dev/scene_recipe_draft.gd`, `scene_recipe_runtime.gd`),
   row 3c's, and the map's capture and restore (`src/city/recipe_city_context.gd`), the design "The
   city's own classes" names below.
-- **The scenery residency** (`src/city/scenery_residency.gd`), which stands scenery up near the view
-  and frees it far away, is a design of its own (the record 2026-10-18-minty-quail-sandy-hedgehog):
-  its items, a `Building`, the city's home door (`City.HomeDoor`) and every `ScenerySprite`, share
-  no class below `Node2D`, so typing it needs an interface they share, with `scenery_resident`
-  behind a method; and its `update()` loops over a copy of its list that can hold items already
-  freed, which the typed loop has to allow for.
 - **The screen-edge badge** (`src/ui/danger_edge.gd`, the record 2026-10-18-minty-quail-tawny-toad)
   holds its event source as a `Node` and asks it with `has_method()`, since three stand-ins for it
   extend a bare `Node`: `_Source` in `tests/test_badge_model.gd` and `tests/test_visible_view.gd`, and
@@ -103,8 +97,7 @@ Left, each its own design question:
   part's fields behind methods; the vars are renamed, and the files the third hand-ins pull
   request touches and the tests read them, so it waits for that pull request.
 - **The city's own classes** still have readers under `src/`, which `tools/field_reads.txt` lists
-  by class: the city map's (`CityMap`) in the routes (the closure, region and seal planners, the
-  route tree, the corridor), the blackout, the streamed ground and the city's generator, besides the
+  by class: the city map's (`CityMap`) in the routes (the region and seal planners), the blackout, the streamed ground and the city's generator, besides the
   events', the run flow's and the rigs'; a building's (`Building`) in the city scene, the city's fronts, the poster walls, the blackout, the roof
   previews and the scene recipes. Two groups have a home of their own:
   - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore

@@ -103,7 +103,7 @@ func _closure_rng(map: CityMap, day: int) -> RandomNumberGenerator:
 
 func _shut_rect_tiles(map: CityMap) -> Dictionary:
 	var found := {}
-	for block in map.shut_calm:
+	for block in map.shut_calm():
 		for tile in map.rect_tiles(ClosurePlanner.calm_area_rect(map, block)):
 			found[tile] = true
 	return found
@@ -141,7 +141,7 @@ func _test_the_one_fence_is_remembered_after_its_act(t: TestRunner) -> void:
 		elif day >= 9:
 			t.check(map.fenced_park == first, "the original fence stands for the rest of act III")
 		if day == 13:
-			t.check(not map.shut_calm.is_empty(), "act IV still excludes used areas from its routes")
+			t.check(not map.shut_calm().is_empty(), "act IV still excludes used areas from its routes")
 	# A run with no earlier choice is still allowed its first fence in act IV.
 	var used := _used_by(map, 13)
 	_repaint(map, 13, used)
@@ -164,10 +164,10 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t: TestRunner) -> vo
 			fenced = result[0]
 			fenced_act = result[1]
 			offered += used.size()
-			shut += map.shut_calm.size()
+			shut += map.shut_calm().size()
 			if map.fenced_park.x >= 0:
 				fenced_days += 1
-			for block in map.shut_calm:
+			for block in map.shut_calm():
 				var is_fenced := block == map.fenced_park
 				# The fenced park stays off the tree by carrying over from the day it was chosen
 				# (`CityMap._shut_the_spent_calm()`), not by being in every later day's own `used` —
@@ -202,7 +202,7 @@ func _test_a_used_area_is_taken_off_the_tree_and_stays_open(t: TestRunner) -> vo
 			t.check(through == 0, "seed %d day %d: no route of the day runs through a used area "
 					% [map.seed_used, day] + "taken off the tree (%d tiles)" % through)
 			for branch in tree.branches:
-				t.check(not branch.area in map.shut_calm,
+				t.check(not branch.area in map.shut_calm(),
 						"seed %d day %d: no branch goes to shut %s" % [map.seed_used, day, branch.area])
 	t.check(shut > 0, "the sweep took some used areas off the tree (%d of %d used)"
 			% [shut, offered])
@@ -414,7 +414,7 @@ func _test_a_never_used_park_is_unaffected(t: TestRunner) -> void:
 				plain[branch.area] = true
 			var used := _used_by(map, day)
 			_repaint(map, day, used)
-			if map.shut_calm.is_empty():
+			if map.shut_calm().is_empty():
 				continue
 			var shut_tree := {}
 			for branch in RouteTree.for_day(map, day).branches:
@@ -422,7 +422,7 @@ func _test_a_never_used_park_is_unaffected(t: TestRunner) -> void:
 			var all_calm: Array[Vector2i] = map.calm_blocks.duplicate()
 			if map.fenced_park.x >= 0:
 				all_calm.append(map.fenced_park)
-			all_calm.append_array(map.shut_calm)
+			all_calm.append_array(map.shut_calm())
 			for block in all_calm:
 				if block in used:
 					continue
@@ -578,9 +578,9 @@ func _test_shutting_is_refused_rather_than_breaking_a_guarantee(t: TestRunner) -
 		for day: int in [1, 5, 9, 12, 14]:
 			var calm := _calm_on(map, day)
 			_repaint(map, day, calm, Vector2i(-1, -1), 0)
-			t.check(calm.size() - map.shut_calm.size() >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
+			t.check(calm.size() - map.shut_calm().size() >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
 					"seed %d day %d: %d of %d calm areas kept fully on the tree, need %d"
-					% [map.seed_used, day, calm.size() - map.shut_calm.size(), calm.size(),
+					% [map.seed_used, day, calm.size() - map.shut_calm().size(), calm.size(),
 					ClosurePlanner.MIN_CALM_AREAS_REACHABLE])
 			var fenced_count := 1 if map.fenced_park.x >= 0 else 0
 			t.check(map.calm_blocks.size() == calm.size() - fenced_count,
@@ -599,7 +599,7 @@ func _test_the_swing_park_is_never_shut_or_fenced_on_its_day(t: TestRunner) -> v
 		var park := CityGenerator.swing_park(map)
 		var used: Array[Vector2i] = [park]
 		_force_a_fence(map, day, used)
-		t.check(not park in map.shut_calm and park != map.fenced_park and park in map.calm_blocks,
+		t.check(not park in map.shut_calm() and park != map.fenced_park and park in map.calm_blocks,
 				"seed %d: the swing park %s stays open and unfenced on day %d"
 				% [map.seed_used, park, day])
 
@@ -611,17 +611,17 @@ func _test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t: TestRu
 		for day: int in [3, 7, 11]:
 			var used := _used_by(cmap, day)
 			_repaint(cmap, day, used)
-			var first: Array[Vector2i] = cmap.shut_calm.duplicate()
+			var first: Array[Vector2i] = cmap.shut_calm().duplicate()
 			var first_fenced := cmap.fenced_park
 			_repaint(cmap, day, used)
-			t.check(first == cmap.shut_calm, "seed %d day %d shuts the same parks twice"
+			t.check(first == cmap.shut_calm(), "seed %d day %d shuts the same parks twice"
 					% [cmap.seed_used, day])
 			t.check(first_fenced == cmap.fenced_park, "seed %d day %d fences the same park twice"
 					% [cmap.seed_used, day])
 			var state := CityState.new()
 			state.begin_day(cmap.block_plans, day)
 			cmap.repaint(state)
-			t.check(cmap.shut_calm.is_empty() and cmap.closed_tiles.is_empty() \
+			t.check(cmap.shut_calm().is_empty() and cmap.closed_tiles.is_empty() \
 					and cmap.fenced_park == Vector2i(-1, -1),
 					"seed %d day %d: a repaint with nothing handed over shuts and fences nothing"
 					% [cmap.seed_used, day])

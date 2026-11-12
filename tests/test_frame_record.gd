@@ -4,15 +4,13 @@ extends RefCounted
 ## the last slow frame's three largest costs; and the flag and its page word open only where the
 ## rest of the `?debug=1` bundle does, keeping the run off the save.
 ##
-## The recorder in a real boot of `main` is `tests/test_frame_record_wiring.gd`'s. Three tests here
+## The recorder in a real boot of `main` is `tests/test_frame_record_wiring.gd`'s. Two tests here
 ## still build a real object that is not the record: `_test_draws_are_counted_by_listening` makes one
 ## of each node class the record sorts a draw by (the sorting is by the node's class, so only the
 ## class itself can be listened to), and `_test_a_timed_body_runs_once` runs a real event instance
 ## on real frames under the record; that one is the event's own check (an instance handed a record
 ## times itself once a frame) and moves to the events' suites with them, which two live pull
-## requests own. The third, `_test_the_yard_layer_is_counted_when_the_station_comes_into_view`, builds
-## a real station building: the record classifies a node as it is added, and the yard layer the
-## building adds comes into being only inside a building.
+## requests own.
 
 const STEP := 1.0 / 60.0
 ## How long a test holds the clock inside a bucket it wants to read back, in microseconds: long
@@ -20,9 +18,6 @@ const STEP := 1.0 / 60.0
 const SPENT_US := 2000
 ## The folder the other recorders of this suite are handed, saved or on leaving the tree.
 const _SCRATCH_RECORDERS := "user://test_frame_record_scratch_recorders"
-## The folder the frame recorder of the yard-layer check is handed to write its record in on leaving
-## the tree.
-const _SCRATCH_YARD_RECORDS := "user://test_frame_record_scratch_yard_records"
 
 func run(t: TestRunner) -> void:
 	_test_a_frame_adds_up(t)
@@ -40,7 +35,6 @@ func run(t: TestRunner) -> void:
 	_test_the_flag_and_its_page_word(t)
 	_test_the_deferred_scenery_window(t)
 	_test_slow_frames_outside_callbacks_and_with_scenery(t)
-	_test_the_yard_layer_is_counted_when_the_station_comes_into_view(t)
 	await _test_a_timed_body_runs_once(t)
 
 ## One frame driven through every phase, with a timed system nested inside another: the inner
@@ -602,49 +596,3 @@ class _Rig extends RefCounted:
 		if written != "":
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(written))
 		DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_frame_record_scratch_recorders"))
-
-## The yard layer is built when residency brings the station into view, in a tree whose frame record
-## is listening: the recorder classifies a node as it is added, so the layer carries its kind
-## before it enters the tree, and its draws land in the scenery count.
-func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t: TestRunner) -> void:
-	var record := FrameRecord.new()
-	var ledger := FrameLedger.new(2)
-	record.start(ledger)
-	var sitting := Sitting.new()
-	sitting.frame_timing = record
-	# Its saved record goes to a scratch folder, and the run it names the file by is the test's own.
-	var run := RunState.new()
-	var recorder := FrameRecorder.new()
-	t.add_child(recorder)
-	recorder.setup(func() -> bool: return false, null, null, SceneryGround.Mode.ONE, null, null,
-			run, sitting, _SCRATCH_YARD_RECORDS)
-	var station := Building.new()
-	station.stand_on(Rect2i(), Vector2(96.0, 256.0), 0, GameEnums.BlockPurpose.INDUSTRIAL, 64.0)
-	station.power_station = true
-	station.equip(null, null, null)
-	t.add_child(station)
-	station.set_scenery_resident(true)
-	ledger.process_start(Time.get_ticks_usec())
-	var layers := 0
-	for child in station.get_children():
-		if child is Node2D and child.has_meta(FrameTiming.DRAW_KIND_META):
-			layers += 1
-			for connection: Dictionary in (child as Node2D).draw.get_connections():
-				var drawn_with: Callable = connection["callable"]
-				if drawn_with.get_object() == recorder:
-					drawn_with.call()
-	t.check(layers == 1, "the station's yard layer declares its kind (%d layers)" % layers)
-	# The frame the draws landed in is kept, and the next one begins: the ledger hands it out as a row.
-	ledger.keep = true
-	ledger.process_end(Time.get_ticks_usec())
-	ledger.process_start(Time.get_ticks_usec())
-	var rows := ledger.rows()
-	t.check(rows.size() == 1 and rows[0][FrameLedger.FIRST_COUNTER + FrameLedger.DRAWS_CROWD + FrameTiming.Draw.SCENERY] == 1,
-			"a yard layer built into a listening tree is counted as scenery")
-	station.free()
-	recorder.free()
-	var written := sitting.frame_record_file()
-	sitting.free()
-	if written != "":
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(written))
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_YARD_RECORDS))

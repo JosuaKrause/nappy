@@ -173,7 +173,7 @@ func _test_every_home_block_building_is_the_same_across_two_seeds(t: TestRunner)
 		t.check(a.look_variant() == b.look_variant(), "lot %s: colour variant matches across seeds" % lot)
 		t.check(not _window_pictures(a).is_empty() and _window_pictures(a) == _window_pictures(b),
 				"lot %s: window style and lit-window pattern match across seeds" % lot)
-		t.check(a.scenery_resident and b.scenery_resident,
+		t.check(a.residence().is_resident() and b.residence().is_resident(),
 				"lot %s: the scenery is built on both seeds, so the roof is drawn" % lot)
 		# Every home-block roof is empty (see the class doc), so comparing the two seeds' lists would
 		# compare empty with empty; each is asked to be empty instead.

@@ -27,6 +27,6 @@ gameplay reads no evictable visual data, and no half-prepared ground is ever dra
 - `tests/test_scenery_residency.gd` (the stepped preparation is mode 3 of `--ground-mode`, breezy-walrus): the check "camera relocation completes pending destination
   ground before returning" never starts from a pending region, so nothing covers what keeps a half-built region off screen. A mutation that lets the
   guard skip pending regions passes the whole suite. Make the region pending with `prepare_step`
-  before the relocation and assert the same layer lands in `chunks`; add a case for the guard
+  before the relocation and assert the same layer lands in `chunks()`; add a case for the guard
   without a relocation. The check "synchronous guard completion promotes the existing pending
-  owner" never compares the layer; assert `ground.chunks[key] == owner`.
+  owner" never compares the layer; assert `ground.chunks()[key] == owner`.

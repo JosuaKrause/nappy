@@ -101,7 +101,7 @@ func occludes() -> bool:
 	return kind == Kind.TUNNEL
 
 func _draw() -> void:
-	if not scenery_resident:
+	if not residence().is_resident():
 		return
 	match kind:
 		Kind.TUNNEL:
@@ -128,10 +128,10 @@ func _lay_the_deck() -> void:
 ## The deck's own stretch for the residency test, in place of the 512px square every other
 ## structure uses: without it the deck would unload while its far end is still in view.
 ##
-## Overrides ScenerySprite.scenery_bounds.
-func scenery_bounds() -> Rect2:
+## Overrides ScenerySprite._scenery_bounds.
+func _scenery_bounds() -> Rect2:
 	if kind != Kind.BRIDGE:
-		return super.scenery_bounds()
+		return super._scenery_bounds()
 	return Rect2(global_position + Vector2(-128.0, -256.0), Vector2(256.0, BRIDGE_DECK_PX + 256.0))
 
 ## The carriageway darkening a step at a time as it runs into the portal's opening.

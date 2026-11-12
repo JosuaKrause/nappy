@@ -3,7 +3,7 @@ extends RoadClosure
 ## One fenced run of `CityMap.fenced_park`'s edge — the one calm area this run ever physically
 ## closes, at most once, in act III or later. *(PLAYTEST-140, statement 9: "doing it for one park,
 ## sure, more towards the later stages of the game once but not for regular".)* Every other used
-## area is off the route tree the same way (`CityMap.shut_calm`) but carries no fence at all: this
+## area is off the route tree the same way (`CityMap.shut_calm()`) but carries no fence at all: this
 ## class only ever draws the one area `CityMap.fenced_park` names.
 ##
 ## **It is a `RoadClosure` so that it is drawn, and stands in her way, exactly as a closed street's

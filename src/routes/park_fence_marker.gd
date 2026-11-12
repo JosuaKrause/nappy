@@ -20,7 +20,7 @@ var sign_offset := Vector2.ZERO
 
 ## Overrides ClosureMarker._draw.
 func _draw() -> void:
-	if not scenery_resident:
+	if not residence().is_resident():
 		return
 	if piece == Piece.POST:
 		Sprites.draw_standing(self, atlas.region(JOINT), Vector2.ZERO)

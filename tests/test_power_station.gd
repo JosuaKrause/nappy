@@ -31,6 +31,7 @@ func run(t: TestRunner) -> void:
 	_test_the_door_is_reached_on_its_day_through_a_region_door(t)
 	_test_no_other_day_is_bent_toward_it(t)
 	_test_an_older_save_with_the_station_block_advanced_still_loads(t)
+	_test_the_yard_layer_is_tagged_scenery_as_it_enters_the_tree(t)
 	_test_the_stacks_stand_in_the_entities_depth_order(t)
 	await _test_the_hall_is_lit_only_on_the_last_night(t)
 
@@ -88,7 +89,7 @@ func _test_the_front_door_is_on_its_long_south_side(t: TestRunner) -> void:
 		t.check(pair.size == Vector2i(2, 1),
 				"seed %d: the station is two blocks wide and one deep (%s)" % [map.seed_used, pair])
 		var mass := CityMap.blocks_tile_rect(pair)
-		var door := map.power_station_door
+		var door := map.power_station_door_tiles()
 		t.check(door.size == Vector2i(CityMap.POWER_STATION_DOOR_TILES, 1),
 				"seed %d: the door is %d tiles wide (%s)"
 				% [map.seed_used, CityMap.POWER_STATION_DOOR_TILES, door])
@@ -204,7 +205,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 		for item in region_plan.wall_bodies:
 			_add_circle(map, blocked, item.position, item.def.obstructs_radius)
 		var grid := ReachabilityGrid.build(map)
-		var door := map.rect_tiles(map.power_station_door)
+		var door := map.rect_tiles(map.power_station_door_tiles())
 		var reached := grid.flood([map.home_rect.position], blocked)
 		t.check(_reaches_any(grid, reached, blocked, door),
 				"seed %d day %d: the front door is reachable with the day's walls, seals and "
@@ -405,3 +406,21 @@ func _clerestory_band(front: RecordingFrontDrawer) -> Array[StringName]:
 		if entry.picture in [Building.POWER_STATION_CLERESTORY, Building.POWER_STATION_CLERESTORY_LIT]:
 			band.append(entry.picture)
 	return band
+
+## The yard layer is built when residency brings the station into view, and it carries the scenery
+## draw kind tag at the moment it enters the tree: the frame recorder classifies a node as it is
+## added, so a tag put on afterwards would leave the layer's draws uncounted.
+func _test_the_yard_layer_is_tagged_scenery_as_it_enters_the_tree(t: TestRunner) -> void:
+	var station := Building.new()
+	station.stand_on(Rect2i(), Vector2(96.0, 256.0), 0, GameEnums.BlockPurpose.INDUSTRIAL, 64.0)
+	station.power_station = true
+	station.equip(null, null, null)
+	t.add_child(station)
+	var tags_on_entry: Array = []
+	station.child_entered_tree.connect(func(child: Node) -> void:
+			tags_on_entry.append(child.get_meta(FrameTiming.DRAW_KIND_META, null)))
+	station.residence().set_resident(true)
+	t.check(tags_on_entry.count(FrameTiming.Draw.SCENERY) == 1,
+			"exactly one child of the station, its yard layer, enters the tree already tagged as scenery (tags on entry: %s)"
+			% [tags_on_entry])
+	station.free()

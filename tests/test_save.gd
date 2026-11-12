@@ -540,7 +540,7 @@ func _test_an_expired_fence_survives_a_round_trip(t: TestRunner) -> void:
 	map.set_spent_calm(used)
 	map.set_fenced_park_state(run.facts.fenced_park, run.facts.fenced_park_act, 4)
 	map.repaint(state)
-	t.check(not map.shut_calm.is_empty(), "the resumed act has an accepted used area")
+	t.check(not map.shut_calm().is_empty(), "the resumed act has an accepted used area")
 	t.check(map.fenced_park == Vector2i(-1, -1),
 			"the resumed run cannot select a second fence in act IV")
 	_save.clear()
