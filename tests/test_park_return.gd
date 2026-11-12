@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## Day 12's walk home after the park is taken, played through the real transitions: the swing
 ## touched on a booted `Main`, the cordon closing round the park, the baby asleep, the day won or
@@ -86,7 +85,7 @@ func _day_twelve(t: TestRunner, seed_value: int) -> Node2D:
 	# process's own command line says: any dev flag would refuse the save the resume reads.
 	_booted = await Boot.boot(t, _SCRATCH_PATH,
 			RunConfig.parse(PackedStringArray(["--no-telemetry"]), "", false, false, {}, false),
-			func(unbooted: Node) -> void: unbooted.use_sitting_home(_home), false, MapCache.source())
+			func(unbooted: Boot.MainScript) -> void: unbooted.use_sitting_home(_home), false, MapCache.source())
 	var main := _booted.main
 	await Boot.press_title(t, main, "Right")
 	t.check(Boot.city(main).map.seed_used == seed_value, "seed %d is the city under test (%d)"
@@ -204,9 +203,9 @@ func _check_the_next_morning(t: TestRunner, main: Node2D, label: String) -> void
 	t.check(here.distance_to(map.doorstep_world_position()) < Tuning.TILE_SIZE * 3.0,
 			"%s: she stands at her own door (%s)" % [label, here])
 	# And the day moves: a second of it ticks the clock down.
-	var before: float = Boot.day(main).time_remaining
+	var before: float = Boot.day(main).seconds_left()
 	Boot.day(main).tick(1.0)
-	t.check(Boot.day(main).time_remaining < before, "%s: the clock runs" % label)
+	t.check(Boot.day(main).seconds_left() < before, "%s: the clock runs" % label)
 
 ## Nothing of yesterday's cordon is left in the world: no officer on the city's entities, and the
 ## park no longer shut to anyone walking.

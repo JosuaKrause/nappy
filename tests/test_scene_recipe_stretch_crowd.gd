@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## **Every stretch scene, played through: nothing in its crowd appears or vanishes where she can see
 ## it, and she sees the event its rigged bag sends** *(the player's rule, PR #597; polite-dolphin,
@@ -19,7 +18,8 @@ func run(t: TestRunner) -> void:
 			continue
 		var path := "res://scene-recipes/" + filename
 		var data: Dictionary = SceneRecipe.load_file(path).data
-		if data.get("extent", {}).get("scope") != "stretch":
+		var extent: Dictionary = data.get("extent", {})
+		if extent.get("scope") != "stretch":
 			continue
 		await _force_recycles(t, path, data, filename)
 		var manifest_path := "user://stretch_crowd_%d_%s" % [OS.get_process_id(), filename]
@@ -44,7 +44,8 @@ func run(t: TestRunner) -> void:
 					"\n".join(output) if status != 0 else str(manifest.get("playback_error", ""))])
 		var jumps: Array = manifest.get("seen_to_jump", [])
 		t.check(jumps.is_empty(), "%s: nobody appears or vanishes in her view: %s" % [filename, jumps])
-		t.check(manifest.get("in_the_void", []).is_empty(),
+		var in_the_void: Array = manifest.get("in_the_void", [])
+		t.check(in_the_void.is_empty(),
 				"%s: no waiting body is left outside authored ground" % filename)
 		var asks_an_event := (data.playback.observations as Array).any(
 				func(check: Dictionary) -> bool: return check.condition == "appeared")
@@ -65,7 +66,8 @@ func run(t: TestRunner) -> void:
 ## are what checking the final placement keeps out.
 func _force_recycles(t: TestRunner, path: String, data: Dictionary, label: String) -> void:
 	var loaded := SceneRecipeRuntime.load_recipe(path, PackedStringArray())
-	if not loaded.errors.is_empty():
+	var errors: Array[String] = loaded.errors
+	if not errors.is_empty():
 		t.check(false, "%s loads for forced crowd entries" % label)
 		return
 	var map: CityMap = loaded.map
@@ -147,8 +149,10 @@ func _walk_every_end_off(crowd: Crowd, camera: Camera2D, view: CrowdView, ends: 
 				break
 	# Marked once all are placed: placing a body resets every drawing in the crowd.
 	for body: Dictionary in bodies:
-		body.landings = _Landings.new()
-		body.agent.add_child(body.landings)
+		var landings := _Landings.new()
+		body.landings = landings
+		var agent: CrowdAgent = body.agent
+		agent.add_child(landings)
 	watch.placed += bodies.size()
 	await _let_the_physics_run(crowd, 0.5)
 	for body: Dictionary in bodies:
@@ -164,8 +168,9 @@ func _walk_every_end_off(crowd: Crowd, camera: Camera2D, view: CrowdView, ends: 
 			var safe := crowd.field().map.in_stretch(tile) and crowd.field().map.is_street(tile) \
 					and _out_of_the_real_view(camera, landed)
 			watch.safe = watch.safe and safe
-			if not safe and watch.unsafe.size() < 4:
-				watch.unsafe.append("%s landed at %s, camera on %s" % [body.agent.name, landed, looking])
+			var unsafe: Array[String] = watch.unsafe
+			if not safe and unsafe.size() < 4:
+				unsafe.append("%s landed at %s, camera on %s" % [body.agent.name, landed, looking])
 	crowd.clear()
 	await crowd.get_tree().physics_frame
 

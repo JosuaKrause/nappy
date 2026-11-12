@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Real runtime installation rejects incomplete structures and refreshes a felled tree's source, and
 ## runs the scene's events under the one spec the run flow hands it.
@@ -15,8 +14,10 @@ func run(t: TestRunner) -> void:
 	own_run.start_run(11)
 	own_run.header.day = 13
 	var loaded := SceneRecipe.load_file("res://scene-recipes/trailer-trucks.json")
-	var data: Dictionary = loaded.data.duplicate(true)
-	data.setup = {"day": 13, "player": {"at": [16, 16]}}
+	var loaded_data: Dictionary = loaded.data
+	var data: Dictionary = loaded_data.duplicate(true)
+	var setup := {"day": 13, "player": {"at": [16, 16]}}
+	data.setup = setup
 	var built := RecipeCityBuilder.build(data)
 	built.data = data
 	var packed: PackedScene = load("res://scenes/world/city.tscn")
@@ -41,7 +42,7 @@ func run(t: TestRunner) -> void:
 			break
 	t.check(selected.x >= 0, "tree regression has a real eligible off-route street")
 	if selected.x >= 0:
-		data.setup.seals = [{"segment": [selected.x, selected.y, selected.z], "candidate": "fallen_tree_seal"}]
+		setup.seals = [{"segment": [selected.x, selected.y, selected.z], "candidate": "fallen_tree_seal"}]
 		var errors := runtime.install(city, player, baby, DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
 		t.check(errors.is_empty(), "authored fallen tree installs through production siting: %s" % [errors])
 		var emptied := _emptied_pits(city.map)
@@ -50,24 +51,24 @@ func run(t: TestRunner) -> void:
 			var tree := _street_tree_at(city, pit.position)
 			t.check(tree != null and not tree.visible,
 					"runtime hides the standing source tree after installing its fallen seal")
-		data.setup.erase("seals")
+		setup.erase("seals")
 		errors = runtime.install(city, player, baby, DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
 		t.check(errors.is_empty() and _emptied_pits(city.map).is_empty(), "reinstallation clears unselected fallen-tree state")
 		for tree in _street_trees(city):
 			t.check(tree.visible, "standing source trees return when no authored fallen tree selects them")
 	var authored_bounds := city.map.recipe_bounds
 	city.map.recipe_bounds = Rect2i(0, 0, 14, 14)
-	for collection in ["gates", "barriers", "seals"]:
+	for collection: String in ["gates", "barriers", "seals"]:
 		var entry := {"segment": [7, 6, 0]} if collection == "gates" else {"segment": [3, 5, 0]}
 		if collection == "barriers":
 			entry.end = "b"
 		elif collection == "seals":
 			entry.candidate = "cafe_pair"
-		data.setup[collection] = [entry]
+		setup[collection] = [entry]
 		var errors := runtime.install(city, player, baby, DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
 		t.check("\n".join(errors).contains("leaves the authored extent"),
 				"%s outside a bounded scene rejects instead of silently dropping bodies" % collection)
-		data.setup.erase(collection)
+		setup.erase(collection)
 	city.map.recipe_bounds = authored_bounds
 	_test_an_authored_door_stands_as_the_days(t, runtime, city, player, baby, own_run, data)
 	_test_an_authored_soft_seal_stands_as_the_days(t, runtime, city, player, baby, own_run, data)
@@ -86,11 +87,12 @@ func _test_an_authored_door_stands_as_the_days(t: TestRunner, runtime: SceneReci
 	t.check(not days.doors.is_empty(), "the day has a street door to author")
 	if days.doors.is_empty():
 		return
+	var setup: Dictionary = data.setup
 	var door: StreetNetwork.Segment = days.doors[0]
 	var bodies := days.door_bodies.slice(0, 3)
 	city.streets().replace_region_plan(days)
 	var key := door.key()
-	data.setup.gates = [{"segment": [key.x, key.y, key.z]}]
+	setup.gates = [{"segment": [key.x, key.y, key.z]}]
 	var errors := runtime.install(city, player, baby, DaySpec.for_day(own_run.header.day, Tuning.DAY_LENGTH_SECONDS))
 	var authored := city.streets().region_plan()
 	t.check(errors.is_empty() and authored.doors.size() == 1 and authored.doors[0].key() == key
@@ -103,7 +105,7 @@ func _test_an_authored_door_stands_as_the_days(t: TestRunner, runtime: SceneReci
 		same = same and mine.position == theirs.position and mine.def.id == theirs.def.id \
 				and mine.facing == theirs.facing
 	t.check(same, "and each body stands where the day's does, as the same row")
-	data.setup.erase("gates")
+	setup.erase("gates")
 
 ## **An authored soft seal stands as the day's own would**: on an off-walk street the day may seal
 ## (`SealPlanner.may_seal()`), its two bodies stand where the day's pass sites the same picture
@@ -128,7 +130,8 @@ func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, runtime: Scen
 	var expected := SealPlanner.seal_street(city.map, street, cafe, city.streets().route_tree(),
 			StreetTrees.footprint_tiles(city.map), [] as Array[Vector2i])
 	var key := street.key()
-	data.setup.seals = [{"segment": [key.x, key.y, key.z], "candidate": "cafe_pair"}]
+	var setup: Dictionary = data.setup
+	setup.seals = [{"segment": [key.x, key.y, key.z], "candidate": "cafe_pair"}]
 	var errors := runtime.install(city, player, baby, spec)
 	t.check(errors.is_empty(), "the café pair installs: %s" % [errors])
 	# Compared at the grain the placement decides — how far along the street, and which sidewalk —
@@ -152,7 +155,7 @@ func _test_an_authored_soft_seal_stands_as_the_days(t: TestRunner, runtime: Scen
 			shut += 1
 	t.check(shut == 2 * Tuning.SIDEWALK_WIDTH,
 			"and both its sidewalks are shut to walkers there (%d tiles)" % shut)
-	data.setup.erase("seals")
+	setup.erase("seals")
 
 ## Where `at` stands on `street`: how far along it, and which side of its centre line (-1 or 1).
 func _along_and_side(street: StreetNetwork.Segment, centre: Vector2, at: Vector2) -> Vector2:

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Authored units remain real production roof furniture through residency changes.
 ##
@@ -63,7 +62,7 @@ func _test_authored_fixtures_replace_the_roll(t: TestRunner) -> void:
 	building.set_scenery_resident(true)
 	t.check(drawer.layout() == authored and drawer.drawn() == drawn,
 			"streaming restores the authored fixtures exactly")
-	for invalid in [
+	for invalid: Array in [
 		[{"cell": [0, 1], "kind": "vent"}],
 		[{"cell": [6, 2], "kind": "duct_straight"}],
 		[{"cell": [2, 2], "kind": "vent"}, {"cell": [2, 2], "kind": "hvac_a"}],
@@ -75,7 +74,7 @@ func _test_authored_fixtures_replace_the_roll(t: TestRunner) -> void:
 	building.free()
 
 func _displayed_reservations(t: TestRunner) -> void:
-	for fixture in [
+	for fixture: Array in [
 		[GameEnums.BlockPurpose.CIVIC, "service_bulkhead"],
 		[GameEnums.BlockPurpose.CIVIC, "skylight_a"],
 		[GameEnums.BlockPurpose.RESIDENTIAL, "water_tank"],
@@ -88,14 +87,15 @@ func _displayed_reservations(t: TestRunner) -> void:
 		t.check(building.author_roof_furniture(valid).is_empty(),
 				"wide fixture fits the last two interior columns")
 		var authored := RoofReads.units_of(building)
-		t.check(authored.size() == 1 and authored[0].span == 2 and authored[0].cells.has(Vector2i(6, 1)),
+		var cells: Array[Vector2i] = authored[0].cells if authored.size() == 1 else ([] as Array[Vector2i])
+		t.check(authored.size() == 1 and authored[0].span == 2 and cells.has(Vector2i(6, 1)),
 				"displayed fixture reserves its full base including the east cell")
 		var object: Building.RoofObject = _roof_objects_on(building)[0]
 		var width := AtlasTable.baked().native_size(object.texture_key).x * object.scale.x
 		# Node2D stores the 4/3 room transform in Vector2 float precision.
 		t.check(width <= 64.0 or is_equal_approx(width, 64.0),
 				"rendered width fits the accepted two-cell reservation")
-		for invalid in [[{"cell": [6, 1], "kind": fixture[1]}],
+		for invalid: Array in [[{"cell": [6, 1], "kind": fixture[1]}],
 			[valid[0], {"cell": [6, 1], "kind": fixture[1]}]]:
 			t.check(not building.author_roof_furniture(invalid).is_empty(),
 					"wide fixtures reject edge overflow and east-cell overlap")
@@ -126,12 +126,12 @@ func _joined_authored_ducts(t: TestRunner) -> void:
 	building.free()
 
 func _test_malformed_recipes_fail_before_construction(t: TestRunner) -> void:
-	for roof in [true, [{"lot": [1, 2], "fixtures": []}],
+	for roof: Variant in [true, [{"lot": [1, 2], "fixtures": []}],
 		[{"lot": [1, 2, 8, 8], "fixtures": [{"cell": [1.5, 2], "kind": "vent"}]}],
 		[{"lot": [1, 2, 8, 8], "fixtures": [{"cell": [1, 2], "kind": "unknown"}]}]]:
 		t.check(not _errors.errors_of(t, {"setup": {"roof_fixtures": roof}}).is_empty(),
 				"malformed roof recipes fail before runtime construction")
-	for kind in ["duct_run", "_unused_duct_corner"]:
+	for kind: String in ["duct_run", "_unused_duct_corner"]:
 		t.check(not _errors.errors_of(t, {"setup": {"roof_fixtures": [
 			{"lot": [1, 2, 8, 8], "fixtures": [{"cell": [1, 2], "kind": kind}]}]}}).is_empty(),
 				"internal duct enum values are not leaked into the public recipe schema")
