@@ -105,7 +105,8 @@ func has_joined_resistance() -> bool:
 ## Whether the neighbor was taken in day 10's raid: the raid's day is behind her and its warning is
 ## not among the steps she completed on a day she won — skipped, failed or never offered, "the same
 ## sealed door, for the worse reason". Read by the wanted notice, which crosses out the neighbor's
-## face (`PosterArt.texture_for()`). Derived rather than saved, so a lost day gives it back with the step.
+## face (`PosterArt.texture_for()`). Derived rather than saved, so a lost day gives it back with the
+## step.
 func neighbor_was_taken() -> bool:
 	if header.day <= ResistanceHappenings.NEIGHBOR_DAY:
 		return false

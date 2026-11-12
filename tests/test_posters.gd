@@ -378,8 +378,10 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void
 	var building := _building_of(tile)
 	# Its scenery stood up, as the residency stands a building in view up, so it draws.
 	building.residence().set_resident(true)
-	var plain := atlas.region(PosterArt.SHEETS[PosterArt.Kind.WANTED])
-	var crossed := atlas.region(PosterArt.WANTED_CROSSED)
+	# The fronts draw from the city's library, whose regions are its own pictures.
+	var drawn_from := _city.atlas
+	var plain := drawn_from.region(PosterArt.SHEETS[PosterArt.Kind.WANTED])
+	var crossed := drawn_from.region(PosterArt.WANTED_CROSSED)
 	var intact := PosterState.INTACT
 	_run.posters.paste(tile, PosterArt.Kind.WANTED, false, 1)
 
@@ -413,8 +415,8 @@ func _test_the_wall_draws_the_crossed_notice_from_the_run(t: TestRunner) -> void
 	var which := int(_run.posters.sheet_at(tile)["tear"])
 	t.check(not drawn.is_empty() and drawn.all(_drawn_taken),
 			"after a tear, the run's taken neighbor reaches the fronts")
-	var crossed_torn := art.texture_for(atlas, PosterArt.Kind.WANTED, which, true)
-	var plain_torn := art.texture_for(atlas, PosterArt.Kind.WANTED, which, false)
+	var crossed_torn := art.texture_for(drawn_from, PosterArt.Kind.WANTED, which, true)
+	var plain_torn := art.texture_for(drawn_from, PosterArt.Kind.WANTED, which, false)
 	t.check(crossed_torn != plain_torn and _drew(drawn, PosterArt.Kind.WANTED, which, crossed_torn),
 			"and the torn sheet is the crossed notice torn")
 

@@ -264,6 +264,13 @@ func _test_event_parts(t: TestRunner) -> void:
 			var rebound := false
 			instance.set_process(false)
 			for scenery in _sceneries_of(instance):
+				# The event is finished, so its look hides its slices' scenery; shown here, up to the
+				# event, with the look's frame held, so its layers are drawn and their pictures read.
+				var shown: Node = scenery
+				while shown != null and shown != t:
+					if shown is CanvasItem:
+						(shown as CanvasItem).visible = true
+					shown = shown.get_parent()
 				var split: Array = await _split_by_animation(t, scenery, laid)
 				var animated: Array = split[0]
 				rebound = rebound or not animated.is_empty()
