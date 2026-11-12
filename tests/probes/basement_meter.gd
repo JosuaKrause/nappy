@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the basement's cost (inbox #765 in minty-lemur): from an empty meter, awake and asleep,
 ## what walking the corridor past its three vents does to the meter, over many arrival phases.
@@ -20,8 +19,8 @@ const DELAY_STEP := 0.5
 
 func run(t: TestRunner) -> void:
 	var rig := Rig.new(t)
-	for asleep in [false, true]:
-		var straight: Array = []
+	for asleep: bool in [false, true]:
+		var straight: Array[Dictionary] = []
 		var best := {}
 		var worst := {}
 		var phases_with := {}
@@ -38,24 +37,25 @@ func run(t: TestRunner) -> void:
 				best[key]["hi"] = maxf(best[key]["hi"], r["peak"])
 				best[key]["lost_all"] = best[key]["lost_all"] and r["lost"]
 				seen[key] = true
-			for key in seen:
+			for key: String in seen:
 				phases_with[key] = phases_with.get(key, 0) + 1
 		var lost := 0
 		var mean := 0.0
 		var lo := 1000.0
-		for r in straight:
+		for r: Dictionary in straight:
 			lost += 1 if r["lost"] else 0
 			mean += r["peak"] / float(PHASES)
 			lo = minf(lo, r["peak"])
 		var held_none := 0
-		for r in straight:
-			held_none += 1 if r["held"].is_empty() else 0
+		for r: Dictionary in straight:
+			var held: Array[int] = r["held"]
+			held_none += 1 if held.is_empty() else 0
 		var tag := "asleep" if asleep else "awake "
 		print("BASEMENT %s | straight, no delay | peak mean %5.1f min %5.1f | lost %2d of %d | never held %d"
 				% [tag, mean, lo, lost, PHASES, held_none])
 		var keys := best.keys()
 		keys.sort()
-		for key in keys:
+		for key: String in keys:
 			print("BASEMENT %s | held %-10s | in %2d of %d phases | best peak %5.1f worst peak %5.1f%s"
 					% [tag, key, phases_with[key], PHASES, best[key]["lo"], best[key]["hi"],
 					" (all lost)" if best[key]["lost_all"] else ""])

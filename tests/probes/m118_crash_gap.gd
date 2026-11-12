@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What walking past a car crash costs, measured rather than derived — the number
 ## `EventCatalogue.CAR_ACCIDENT_INTENSITY` is set from.
@@ -27,7 +26,7 @@ func run(t: TestRunner) -> void:
 	var lanes_found := 0
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 97)
-		for vertical in [false, true]:
+		for vertical: bool in [false, true]:
 			var at := _a_street_of(map, vertical)
 			if at == Vector2.INF:
 				continue

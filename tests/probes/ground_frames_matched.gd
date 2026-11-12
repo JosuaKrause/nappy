@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends Node
 ## Common rendered-city collector for the three ground modes of one clean runtime checkout; the
 ## mode is the launch's own --ground-mode. Timing starts at process_frame and ends at
@@ -47,11 +46,12 @@ func _start_frame() -> void:
 	_city.scenery_ground._process(float(_request.delta))
 	# Roof animation shares the modeled clock too; actual uncapped FPS must not change
 	# frame selection or redraw cadence between strategies. Keep its work inside the span.
-	for item in _city.scenery._items:
+	for item: Node2D in _city.scenery._items:
 		if item is Building:
-			item.set_process(false)
-			if item.scenery_resident and item._has_vent:
-				item._process(float(_request.delta))
+			var building := item as Building
+			building.set_process(false)
+			if building.scenery_resident and building._has_vent:
+				building._process(float(_request.delta))
 
 func _process(_delta: float) -> void:
 	if Time.get_ticks_msec() - _started > 120000:
@@ -87,19 +87,23 @@ func _finish_frame() -> void:
 	for key in ground.keys_in(_request.view):
 		gaps += int(not ground.chunks.has(key))
 	var after := _snapshot()
+	var after_pending: Dictionary = after.pending
+	var after_chunks: Dictionary = after.chunks
+	var before_pending: Dictionary = _before.pending
+	var before_chunks: Dictionary = _before.chunks
 	var sections := 0
 	var canceled := 0
-	for key: Vector2i in after.pending:
-		sections += int(after.pending[key]) - int(_before.pending.get(key, 0))
+	for key: Vector2i in after_pending:
+		sections += int(after_pending[key]) - int(before_pending.get(key, 0))
 	var guard := _city.scenery.view.grow(SceneryResidency.GUARD_MARGIN)
 	var ordinary := 0
 	var guarded := 0
 	var evictions := 0
-	for key: Vector2i in _before.chunks:
-		evictions += int(after.chunks.get(key, 0) != _before.chunks[key])
-	for key: Vector2i in after.chunks:
-		if after.chunks[key] != _before.chunks.get(key, 0):
-			sections += (4 if _stepped else 1) - int(_before.pending.get(key, 0))
+	for key: Vector2i in before_chunks:
+		evictions += int(after_chunks.get(key, 0) != before_chunks[key])
+	for key: Vector2i in after_chunks:
+		if after_chunks[key] != before_chunks.get(key, 0):
+			sections += (4 if _stepped else 1) - int(before_pending.get(key, 0))
 			if guard.intersects(SceneryGround.bounds(key)):
 				guarded += 1
 			else:
@@ -108,14 +112,14 @@ func _finish_frame() -> void:
 	# the guard. The traversal moves under the relocation distance, so no frame relocates.
 	if _city_mode == SceneryGround.Mode.ONE and (ordinary > 1 or (ordinary > 0 and guarded > 0)):
 		_failures.append("mode 2 prepared a second region in one frame outside the guard")
-	for key: Vector2i in _before.pending:
-		canceled += int(not after.pending.has(key) and not after.chunks.has(key))
+	for key: Vector2i in before_pending:
+		canceled += int(not after_pending.has(key) and not after_chunks.has(key))
 	var row := {"span_usec": ended - _begin, "queue_usec": _queue_usec,
 		"regions": ordinary + guarded,
 		"guards": _city.scenery.ordinary_guard_preparations - int(_before.guards),
 		"evictions": evictions, "gaps": gaps,
 		"observed_sections": sections, "canceled_pending": canceled,
-		"pending": after.pending.size(), "resident": after.chunks.size(),
+		"pending": after_pending.size(), "resident": after_chunks.size(),
 		"draw_calls": RenderingServer.get_rendering_info(
 			RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME)}
 	_before = after
@@ -134,10 +138,12 @@ func _snapshot() -> Dictionary:
 	if _stepped:
 		var jobs: Dictionary = _city.scenery_ground.get("pending")
 		for key: Vector2i in jobs:
-			pending[key] = jobs[key].step
+			var job: Dictionary = jobs[key]
+			pending[key] = job.step
 	var chunks := {}
 	for key: Vector2i in _city.scenery_ground.chunks:
-		chunks[key] = _city.scenery_ground.chunks[key].get_instance_id()
+		var layer: TileMapLayer = _city.scenery_ground.chunks[key]
+		chunks[key] = layer.get_instance_id()
 	return {"pending": pending, "chunks": chunks,
 		"guards": _city.scenery.ordinary_guard_preparations}
 
@@ -222,7 +228,7 @@ func _run() -> void:
 		"ground_mode": _city_mode, "seed": 4242, "warmup_frames": 120, "traversal_seconds": 30,
 		"steady_frames": 240, "vsync_disabled": true, "elapsed_ms": Time.get_ticks_msec() - _started,
 		"collector_sha256": FileAccess.get_sha256("res://tests/probes/ground_frames_matched.gd")}
-	for key in ["STRATEGY", "TRIAL", "RUN_ORDER", "SOURCE_REVISION", "COLLECTOR_REVISION", "RUNTIME_DIGEST"]:
+	for key: String in ["STRATEGY", "TRIAL", "RUN_ORDER", "SOURCE_REVISION", "COLLECTOR_REVISION", "RUNTIME_DIGEST"]:
 		result[key.to_lower()] = OS.get_environment("GROUND_MATCH_" + key)
 	var output := FileAccess.open(OS.get_environment("GROUND_MATCH_OUTPUT"), FileAccess.WRITE)
 	output.store_string(JSON.stringify(result, "  ") + "\n")
@@ -240,7 +246,7 @@ func _workload() -> Dictionary:
 		for child in layer.get_children():
 			if child is SceneryWater:
 				water_surfaces += 1
-				for cell: Vector2i in child.cells:
+				for cell: Vector2i in (child as SceneryWater).cells:
 					water_cells += 1
 					records.append("water:%s" % cell)
 	records.sort()
@@ -250,7 +256,7 @@ func _workload() -> Dictionary:
 
 func _summarize(rows: Array[Dictionary]) -> Dictionary:
 	var result := {}
-	for key in rows[0]:
+	for key: String in rows[0]:
 		var values: Array[int] = []
 		for row in rows:
 			values.append(int(row[key]))
@@ -281,7 +287,7 @@ func _write_rows(label: String, rows: Array[Dictionary]) -> void:
 	output.store_csv_line(PackedStringArray(keys))
 	for row in rows:
 		var values := PackedStringArray()
-		for key in keys:
+		for key: String in keys:
 			values.append(str(row[key]))
 		output.store_csv_line(values)
 	output.close()

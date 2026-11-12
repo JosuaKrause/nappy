@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## Coverage of the actual daily offered route graph, after Main plans closures and events.
 ## This inspects generated options; it does not run a player or choose a new route.
@@ -35,6 +34,7 @@ func run(t: TestRunner) -> void:
 	var network_closed := _closed_count(network_tiles)
 	var offered := network_tiles.duplicate()
 	offered.merge(home_tiles)
+	var routes: Array[Dictionary] = []
 	var row := {"seed": _city.map.seed_used, "day": seat.run.header.day,
 		"branches": tree.branches.size(), "generated_nodes": tree._colours.size(),
 		"generated_candidate_tiles": network_tiles.size(),
@@ -45,7 +45,7 @@ func run(t: TestRunner) -> void:
 		"buildings_prepared": _city.buildings().size(),
 		"network": _coverage(network_tiles, 0), "network_and_home": _coverage(offered, 0),
 		"network_and_home_lookahead_envelope": _coverage(offered, Stroller.CAMERA_LOOK_AHEAD),
-		"routes": []}
+		"routes": routes}
 	var lines := RouteLines.new()
 	lines._map = _city.map
 	var areas := ClosurePlanner.calm_areas(_city.map)
@@ -59,7 +59,8 @@ func run(t: TestRunner) -> void:
 			var cells: Array = branch.routes[option]
 			var nodes := {}
 			for node: int in tree._colours:
-				if tree._colours[node].has(index) and cells.has(tree.grid.cell_of(node)):
+				var colours: Dictionary = tree._colours[node]
+				if colours.has(index) and cells.has(tree.grid.cell_of(node)):
 					nodes[node] = true
 			var tiles := _tiles_for_nodes(tree, nodes)
 			var closed := _closed_count(tiles)
@@ -68,12 +69,12 @@ func run(t: TestRunner) -> void:
 				tiles[lines._calm_endpoint_tile(cells[0], area)] = true
 			tiles.merge(home_tiles)
 			all_options.merge(tiles)
-			row.routes.append({"area": str(branch.area), "option": option,
+			routes.append({"area": str(branch.area), "option": option,
 				"generated_cells": cells.size(), "closed_generated_tiles": closed,
 				"coverage_with_home_and_calm_entry": _coverage(tiles, 0)})
 	lines.free()
 	row["all_options_and_home_and_calm_entries"] = _coverage(all_options, 0)
-	t.check(row.routes.size() >= tree.branches.size(), "every branch supplies a measured option")
+	t.check(routes.size() >= tree.branches.size(), "every branch supplies a measured option")
 	t.check(network_closed == 0, "daily closures leave sampled generated network tiles open")
 	t.check(row.network_and_home.ground_cells > 0, "generated-route coverage is nonempty")
 	print("LAZY_ROUTES " + JSON.stringify(row))

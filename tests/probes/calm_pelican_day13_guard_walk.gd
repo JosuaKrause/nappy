@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## Measurement probe for calm-pelican's day-13 guard (the-arrow-and-the-day-13-guard): walked from
 ## the mark to each of the nearest live roadblocks, **does the task's waiting guard stand over the
@@ -62,9 +61,11 @@ func run(t: TestRunner) -> void:
 			print("DAY13_GUARD seed %d: no roadblock task" % seed_value)
 			continue
 		var targets := _nearest_on_foot(day)
-		var placed := _task_guard(day["city"])
-		var own: EventInstance = day["director"].rider()
-		var way := _a_way_past_from(day["city"].map, placed, own, day["mark"])
+		var city: City = day["city"]
+		var director: ResistanceDirector = day["director"]
+		var placed := _task_guard(city)
+		var own: EventInstance = director.rider()
+		var way := _a_way_past_from(city.map, placed, own, day["mark"])
 		totals["placed"] += 1
 		totals["placed_without_a_way"] += 0 if way else 1
 		_tear_down(day)
@@ -133,7 +134,8 @@ static func _view_of(player: Stroller) -> Rect2:
 ## The tiles of the `NEAREST` live roadblocks nearest the mark on foot, by their body's tile.
 func _nearest_on_foot(day: Dictionary) -> Array[Vector2i]:
 	var director: ResistanceDirector = day["director"]
-	var map: CityMap = day["city"].map
+	var city: City = day["city"]
+	var map: CityMap = city.map
 	var by_length: Array = []
 	for target: Dictionary in _arrow_targets(director):
 		var roadblock := _live_instance(target["key"])

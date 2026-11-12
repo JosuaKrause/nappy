@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Synchronous headless preparation and geometric coverage experiment. No rendered-frame claims.
 ## Run with tools/test.sh probes/lazy_scenery_measure.gd; external timeout belongs to the caller.
@@ -14,6 +13,7 @@ const SEEDS := [4242, 3265820891]
 const HALF_VIEW := Vector2(320, 180)
 const Boot := preload("res://tests/booted_main.gd")
 const Seat := preload("res://tests/seat.gd")
+const MainScript := preload("res://src/main.gd")
 ## The save the boot is handed, so the player's own is never touched.
 const SCRATCH_SAVE := "user://lazy_scenery_measure_scratch.json"
 
@@ -52,7 +52,8 @@ func _measure(t: TestRunner, seed_value: int, trial: int) -> void:
 	var memory_before := OS.get_static_memory_usage()
 	started = Time.get_ticks_usec()
 	city.build(map)
-	var row: Dictionary = city.get("spans").duplicate()
+	var built_spans: Dictionary = city.get("spans")
+	var row := built_spans.duplicate()
 	row.merge({"seed": seed_value, "trial": trial, "stage": "build",
 		"generation_ms": generation_ms, "total_ms": (Time.get_ticks_usec() - started) / 1000.0,
 		"static_memory_delta": OS.get_static_memory_usage() - memory_before,
@@ -68,7 +69,8 @@ func _measure(t: TestRunner, seed_value: int, trial: int) -> void:
 		city.set("spans", {})
 		started = Time.get_ticks_usec()
 		city.start_day(state, day, own_run.calendar.day_rng())
-		row = city.get("spans").duplicate()
+		var day_spans: Dictionary = city.get("spans")
+		row = day_spans.duplicate()
 		row.merge({"seed": seed_value, "trial": trial, "stage": "day", "day": day,
 			"total_ms": (Time.get_ticks_usec() - started) / 1000.0,
 			"nodes_including_pending_free": _nodes(city), "props": city.props().size()})
@@ -256,7 +258,7 @@ func _actual_boot(t: TestRunner) -> void:
 	# but not waited on: the point is the first frame, before the warm-up awaits complete.
 	var seat := Seat.new(t)
 	var save := GameSave.new(SCRATCH_SAVE)
-	var main: Node2D = Boot.MAIN_SCENE.instantiate()
+	var main: MainScript = Boot.MAIN_SCENE.instantiate()
 	main.use_save(save)
 	main.configure(Boot.config([]))
 	main.use_sitting_home(seat.home)

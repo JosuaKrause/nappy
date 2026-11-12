@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for the stairwell guard's charge distance (inbox #782 in minty-lemur, inbox #764 in minty-lemur): where in
 ## the right shaft the masked man starts his run, by the way she comes down to the first floor, and
@@ -44,8 +43,8 @@ const StrollerSteer := preload("res://tests/probes/stroller_velocity_step.gd")
 
 func run(t: TestRunner) -> void:
 	for s: int in SEEDS:
-		for route in ["turn-10", "turn-11", "turn-9", "turn-9-left", "door"]:
-			for pace in ["walk", "run", "walk-run"]:
+		for route: String in ["turn-10", "turn-11", "turn-9", "turn-9-left", "door"]:
+			for pace: String in ["walk", "run", "walk-run"]:
 				_once(t, s, route, pace)
 
 func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
@@ -132,7 +131,7 @@ func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
 	scene.free()
 
 func _hold(actions: Array, running: bool) -> void:
-	for a in ["move_left", "move_right", "move_up", "move_down", "run"]:
+	for a: String in ["move_left", "move_right", "move_up", "move_down", "run"]:
 		Input.action_release(a)
 	for a: String in actions:
 		Input.action_press(a)

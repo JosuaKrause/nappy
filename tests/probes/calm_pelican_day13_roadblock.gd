@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for calm-pelican's day-13 roadblock (the-arrow-and-the-day-13-guard): with the
 ## task's own roadblock placed the way the day places one, near where she read the mark
@@ -41,7 +40,7 @@ class FallbackDirector extends ResistanceDirector:
 		return null
 
 func run(t: TestRunner) -> void:
-	for fallback in [true, false]:
+	for fallback: bool in [true, false]:
 		_measure(t, fallback)
 
 func _measure(t: TestRunner, fallback: bool) -> void:

@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends Node
 ## Records population and motion in late _process, matched by engine process-frame ID.
 ## Visibility means an entity's origin is inside the viewport, not occlusion-tested pixels.
@@ -16,13 +15,15 @@ func _ready() -> void:
 	var scene: PackedScene = load("res://scenes/main.tscn")
 	main = scene.instantiate()
 	add_child(main)
+	var readout: DebugReadout = main.get("_readout")
+	var run_log: Telemetry = main.get("_run_log")
 	metadata = {"engine": Engine.get_version_info(), "processor": OS.get_processor_name(),
 		"display": DisplayServer.get_name(),
 		"renderer": RenderingServer.get_current_rendering_method(),
 		"adapter": RenderingServer.get_video_adapter_name(),
 		"render_on_main_thread": RenderingServer.is_on_render_thread(),
-		"readout": main.get("_readout").readout_on(), "graph": main.get("_readout").graph_on(),
-		"telemetry": main.get("_run_log").is_active(), "physics_hz": Engine.physics_ticks_per_second,
+		"readout": readout.readout_on(), "graph": readout.graph_on(),
+		"telemetry": run_log.is_active(), "physics_hz": Engine.physics_ticks_per_second,
 		"profiler_max_functions": ProjectSettings.get_setting("debug/settings/profiler/max_functions"),
 		"viewport": [get_viewport().get_visible_rect().size.x,
 			get_viewport().get_visible_rect().size.y],

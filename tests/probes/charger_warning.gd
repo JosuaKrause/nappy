@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for the one-radius charger (inbox #788 in minty-lemur): every charger that waits for her, warns
 ## while she is inside its one radius and charges once its warning has run with her still inside.
@@ -31,7 +30,7 @@ func run(t: TestRunner) -> void:
 			copy.pursuit = def.pursuit.duplicate() as PursuitSpec
 			copy.pursuit.warns_for = warns_for
 			var said: Array[String] = []
-			for walk in ["back", "stand", "bait", "on"]:
+			for walk: String in ["back", "stand", "bait", "on"]:
 				var r := _walk(t, copy, walk)
 				said.append("%s: %s%s" % [walk,
 						"caught" if r["caught"] else ("charged, got away" if r["charged"]
