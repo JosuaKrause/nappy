@@ -11,14 +11,14 @@ build a city. `DayStreets`, `CityFronts` and the hand-ins for the resistance dir
 happenings, day 12's park cordon, the crowd and the run log's observer are built; the design is in
 #1166's description, under "The step's design".
 
-**What is left, the third pull request.** *Proposed, not asked for, and on the board as
-hand-ins-third-cut, built on the orchestrator's pick since it drops nothing the player asked for:*
-one pull request cannot hold it, so cut it: the event manager's own city and the day planner's
-fallback below go before the dawn's context rewrites `build_day()`'s call (`scheduler-breakup.md`),
-the smaller cases when they are ready, and who builds the event manager and
-the crowd last (`standing-layer-breaks.md`). The player's answer was three pull requests
-("yes three prs is fine", inbox #1173 in gray-dolphin), so the plainer alternative is one large
-third pull request:
+**What is left, the third pull request.** One pull request cannot hold it, so it goes in as several
+small pull requests, each reviewed and merged on its own, the player's answer to the cut
+(inbox #1381 in gray-moose): the four developer tools, the run log's summary lines off the city
+scene and the developer's rigs have merged (#1364, #1365, #1374); the event manager's own city is
+in review (#1378), and goes before the dawn's context rewrites `build_day()`'s call
+(`scheduler-breakup.md`); the smaller cases go when they are ready, and who
+builds the event manager and the crowd is last (`standing-layer-breaks.md`). The earlier answer was
+three pull requests ("yes three prs is fine", inbox #1173 in gray-dolphin):
 
 - the event manager's own city: `EventManager.setup(city, …)` and `EventWorld.city`;
 - the smaller cases: `day_director.gd`, `main.gd` and `day_planner.gd`, as 3c's row in #1166's
