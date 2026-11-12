@@ -70,14 +70,6 @@ func holds(tile: Vector2i) -> bool:
 		return false
 	return _cars[tile.y * _size.x + tile.x] == 1
 
-## How many tiles are pocketed. The guard a test needs against a sweep that found nothing: an
-## assertion that no car stands in a pocket passes on its own when there is no pocket.
-func tile_count() -> int:
-	var total := 0
-	for value in _cars:
-		total += value
-	return total
-
 # ------------------------------------------------------------------- the flood ---
 
 ## Paint the carriageway, take away what today has shut, and label every connected piece that

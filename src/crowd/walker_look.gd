@@ -86,10 +86,10 @@ func advance(moving: Vector2, delta: float) -> void:
 ## Which of the two gait frames to draw: frame 1 (feet passing) for half of every stride while
 ## moving, frame 0 (the rest pose) otherwise — `Stroller._draw_mother()`'s own `stepping` test,
 ## read off `IDLE_SPEED`.
-func gait_frame() -> int:
+func _gait_frame() -> int:
 	return gait_frame_at(_agent.velocity())
 
-## `gait_frame()` for a `velocity()` the caller already holds.
+## `_gait_frame()` for a `velocity()` the caller already holds.
 func gait_frame_at(along: Vector2) -> int:
 	if along.length() <= IDLE_SPEED:
 		return 0
@@ -118,13 +118,11 @@ func heading_at(along: Vector2) -> Vector2:
 ## leaves no cross-lane steering running, so the heading is exactly along the new lane axis, a
 ## sector centre 45 degrees clear of its neighbours and twice the hold's reach, and the ordinary
 ## test replaces the sector drawn before with no reset.
-##
-## Overrides AgentLook.sector.
-func sector() -> int:
+func _sector() -> int:
 	view = EightDirection.update(view, _heading_now(), IDLE_SPEED)
 	return view
 
-## One `velocity()` serves the gait and the sector: the value `gait_frame()` and `_heading_now()`
+## One `velocity()` serves the gait and the sector: the value `_gait_frame()` and `_heading_now()`
 ## would each have computed, since nothing between them moves it.
 ##
 ## Overrides AgentLook.picture.
@@ -150,13 +148,13 @@ func palette() -> Array:
 
 ## Overrides AgentLook.draw_body.
 func draw_body(canvas: CanvasItem) -> void:
-	var frame := sector()
+	var frame := _sector()
 	var flip := flipped()
 	_agent.draw_shadow(canvas, Vector2.ZERO, Vector2.RIGHT)
 	var view_name: String = VIEW_BY_SECTOR[frame]
 	# One lookup decides both layers, so the coat and the legs can never show two different
 	# instants of the same stride.
-	var stepping := gait_frame() == 1
+	var stepping := _gait_frame() == 1
 	var body_paths: Dictionary = BODY_BY_VIEW_B if stepping else BODY_BY_VIEW
 	var trim_paths: Dictionary = TRIM_BY_VIEW_B if stepping else TRIM_BY_VIEW
 	var body := _agent.picture_region(region_of(body_paths[view_name]))

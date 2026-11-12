@@ -110,6 +110,17 @@ func _walker_facing(t: TestRunner, sector: int) -> CrowdAgent:
 		agent.step_aside(lane[1], SIDESTEP, 1.0)
 	return agent
 
+## The sector `look` draws `agent` in now: the first term of the picture it hands the walker's
+## redraw gate (`AgentLook.picture()`), read at the walker's own `velocity()` as `CrowdAgent` reads
+## it, which is the sector `WalkerLook.draw_body()` draws.
+static func _drawn_sector(look: WalkerLook, agent: CrowdAgent) -> int:
+	return look.picture(agent.velocity()).x
+
+## The gait frame `look` draws `agent` in now, the picture's third term the same way: 1 for feet
+## passing, 0 for the rest pose, the frame `WalkerLook.draw_body()` picks its tables by.
+static func _drawn_gait_frame(look: WalkerLook, agent: CrowdAgent) -> int:
+	return look.picture(agent.velocity()).z
+
 func _test_walker_headings_select_the_expected_view(t: TestRunner) -> void:
 	for sector in range(8):
 		var agent := _walker_facing(t, sector)
@@ -119,7 +130,7 @@ func _test_walker_headings_select_the_expected_view(t: TestRunner) -> void:
 		# Started from the opposite sector every time, so the assertion below is never passing
 		# because the previous iteration's hold happened to already agree.
 		look.view = (sector + 4) % 8
-		var frame := look.sector()
+		var frame := _drawn_sector(look, agent)
 		t.check(frame == sector,
 				"heading %d degrees selects sector %d (got %d)" % [sector * 45, sector, frame])
 		agent.free()
@@ -156,13 +167,13 @@ func _test_a_stopped_walker_keeps_its_view(t: TestRunner) -> void:
 		return
 	var look := ViewRig.walker_look(agent)
 	look.view = 6  # start from the opposite sector so the frame below cannot pass by luck
-	var moving_frame := look.sector()
+	var moving_frame := _drawn_sector(look, agent)
 	t.check(moving_frame == 0, "walking east settles on the east view first")
 
 	# Stopped: no cross-lane gap, and the along term reads zero through the same yield the crowd
 	# actually stops a walker with.
 	_stop(agent)
-	var stopped_frame := look.sector()
+	var stopped_frame := _drawn_sector(look, agent)
 	t.check(stopped_frame == moving_frame,
 			"a stopped walker keeps the view it was last drawn with (%d, still %d)"
 			% [moving_frame, stopped_frame])
@@ -175,7 +186,7 @@ func _stop(agent: CrowdAgent) -> void:
 	agent.step_aside(behind, SIDESTEP, 1.0)
 
 ## `LaneMover.setup()` places a walker with no cross-lane steering yet running
-## (`WalkerLook.sector()`'s own doc), so this pins the property through the real placement: a walker
+## (`WalkerLook._sector()`'s own doc), so this pins the property through the real placement: a walker
 ## drawn as one sector, then placed again, shows the new lane's own heading on the very next frame,
 ## because that heading is exactly on a sector centre, 45 degrees clear of its neighbours — twice the
 ## hold's own 27.5 degree reach — the same "no prior-view hold" guarantee `Stroller.reset_at()`
@@ -186,7 +197,7 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t: TestRunner) -
 		return
 	var look := ViewRig.walker_look(agent)
 	look.view = 1
-	t.check(look.sector() == 1, "settled on southeast before the placement")
+	t.check(_drawn_sector(look, agent) == 1, "settled on southeast before the placement")
 
 	# A fresh placement: a new lane and direction, no detour or yield left running, sitting exactly
 	# on its own lane centre. Placed again until it points north, an adjacent-ish sector to the
@@ -194,19 +205,19 @@ func _test_a_fresh_heading_clears_the_previous_hold_in_one_step(t: TestRunner) -
 	var placed_north := false
 	for seed_value in range(1, ViewRig.ROLLS):
 		look.view = 1
-		agent.setup(CrowdAgent.Kind.WALKER, _rig.city.map, _rig.city.crowd.field(), seed_value,
+		agent.setup(CrowdAgent.Kind.WALKER, _rig.city.map, _rig.field, seed_value,
 				0.5 * float(seed_value % 2))
 		if agent.heading().is_equal_approx(Vector2.UP):
 			placed_north = true
 			break
 	t.check(placed_north, "a walker is placed again heading north")
-	t.check(look.sector() == 6,
+	t.check(_drawn_sector(look, agent) == 6,
 			"the new north heading already wins over the stale southeast view (got %d)"
-			% look.sector())
+			% _drawn_sector(look, agent))
 	agent.free()
 
 # ---------------------------------------------------------------------- gait ---
-# `WalkerLook.advance()`/`WalkerLook.gait_frame()`, the walker's own two-frame stride —
+# `WalkerLook.advance()` and the gait frame it draws, the walker's own two-frame stride —
 # `Stroller._walk_phase`/`_draw_mother()`'s pattern, extended to the crowd (M108, "every living
 # thing that moves has a stride"). The stride phase is internal: it is reached by walking the look
 # a distance (`advance()` adds `distance * GAIT_RATE`) and read as the frame drawn. The frame is
@@ -229,7 +240,8 @@ func _test_advancing_the_gait_tracks_distance_not_time(t: TestRunner) -> void:
 	var look := ViewRig.walker_look(agent)
 	look.restart()
 	look.advance(Vector2.RIGHT * (PI / 4.0) / WalkerLook.GAIT_RATE, 1.0)
-	t.check(look.gait_frame() == 1, "a walker that covered ground has moved on in its stride")
+	t.check(_drawn_gait_frame(look, agent) == 1,
+			"a walker that covered ground has moved on in its stride")
 
 	# The same ground in two ticks of different lengths is the same stride: distance, not time.
 	var other := WalkerLook.new(agent)
@@ -238,12 +250,12 @@ func _test_advancing_the_gait_tracks_distance_not_time(t: TestRunner) -> void:
 	other.advance(step, 0.25)
 	other.advance(step, 0.75)
 	_stride_to(look, PI / 4.0)
-	t.check(other.gait_frame() == look.gait_frame(),
+	t.check(_drawn_gait_frame(other, agent) == _drawn_gait_frame(look, agent),
 			"the same ground in two ticks lands where one tick of it does")
 
 	_stride_to(look, PI / 4.0)
 	look.advance(Vector2.ZERO, 1.0)
-	t.check(look.gait_frame() == 1,
+	t.check(_drawn_gait_frame(look, agent) == 1,
 			"a walker covering no distance advances no stride at all")
 	agent.free()
 
@@ -253,13 +265,13 @@ func _test_a_moving_walker_alternates_gait_frames(t: TestRunner) -> void:
 		return
 	var look := ViewRig.walker_look(agent)
 	_stride_to(look, 0.0)
-	t.check(look.gait_frame() == 0, "phase zero draws the rest pose")
+	t.check(_drawn_gait_frame(look, agent) == 0, "phase zero draws the rest pose")
 	_stride_to(look, PI / 4.0)
-	t.check(look.gait_frame() == 1, "a quarter into the cycle draws feet passing")
+	t.check(_drawn_gait_frame(look, agent) == 1, "a quarter into the cycle draws feet passing")
 	_stride_to(look, 3.0 * PI / 4.0)
-	t.check(look.gait_frame() == 0, "past the half turn it returns to the rest pose")
+	t.check(_drawn_gait_frame(look, agent) == 0, "past the half turn it returns to the rest pose")
 	_stride_to(look, 5.0 * PI / 4.0)
-	t.check(look.gait_frame() == 1, "the second half of the cycle passes feet again")
+	t.check(_drawn_gait_frame(look, agent) == 1, "the second half of the cycle passes feet again")
 	agent.free()
 
 ## The same give-way/queue/halt zeroing `_test_a_stopped_walker_keeps_its_view()` already reaches
@@ -271,9 +283,9 @@ func _test_a_stopped_walker_holds_gait_frame_a(t: TestRunner) -> void:
 		return
 	var look := ViewRig.walker_look(agent)
 	_stride_to(look, PI / 4.0)
-	t.check(look.gait_frame() == 1, "moving, this phase draws frame b (sanity check)")
+	t.check(_drawn_gait_frame(look, agent) == 1, "moving, this phase draws frame b (sanity check)")
 	_stop(agent)
-	t.check(look.gait_frame() == 0,
+	t.check(_drawn_gait_frame(look, agent) == 0,
 			"a yielding walker holds frame a regardless of its own stride phase")
 	agent.free()
 

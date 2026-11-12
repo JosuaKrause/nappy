@@ -85,14 +85,14 @@ const CANVAS_BOTTOM_MARGIN := {
 ## How much ground this car has covered, wrapped to one `WheelBob.WAVELENGTH`, which is the phase of
 ## the rise and fall its body rides over its wheels. Advanced by distance actually covered, once per
 ## tick, the way a walker's stride is.
-var travelled := 0.0
+var _travelled := 0.0
 
 ## Adds the ground this tick covered. Called once per tick, never from the drawing, which a halo
 ## ring calls several times a frame.
 ##
 ## Overrides AgentLook.advance.
 func advance(moving: Vector2, delta: float) -> void:
-	travelled = wrapf(travelled + moving.length() * delta, 0.0, WheelBob.WAVELENGTH)
+	_travelled = wrapf(_travelled + moving.length() * delta, 0.0, WheelBob.WAVELENGTH)
 
 ## The lift this car's body rides right now, the `bob()` `EntityHalo` asks every owner for:
 ## `WheelBob.lift()` over the ground it has covered, at full height from `BOB_FULL_SPEED` up and
@@ -103,7 +103,7 @@ func advance(moving: Vector2, delta: float) -> void:
 ##
 ## Overrides AgentLook.bob.
 func bob() -> float:
-	return WheelBob.lift(travelled, _agent.velocity().length() / BOB_FULL_SPEED)
+	return WheelBob.lift(_travelled, _agent.velocity().length() / BOB_FULL_SPEED)
 
 ## Overrides AgentLook.carets.
 func carets() -> bool:
@@ -116,18 +116,16 @@ func carets() -> bool:
 ## `IDLE_SPEED`. A placement leaves the heading exactly on a lane axis, a sector centre 45 degrees
 ## clear of its neighbours and twice the hold's reach, so the ordinary update replaces the sector
 ## drawn before with no reset.
-##
-## Overrides AgentLook.sector.
-func sector() -> int:
+func _sector() -> int:
 	view = EightDirection.update(view, _agent.velocity(), IDLE_SPEED)
 	return view
 
-## One `velocity()` serves the bob and the sector, the value `bob()` and `sector()` would each have
+## One `velocity()` serves the bob and the sector, the value `bob()` and `_sector()` would each have
 ## computed.
 ##
 ## Overrides AgentLook.picture.
 func picture(moving: Vector2) -> Vector3i:
-	var third := roundi(WheelBob.lift(travelled, moving.length() / BOB_FULL_SPEED) * BOB_STEPS_PER_PX)
+	var third := roundi(WheelBob.lift(_travelled, moving.length() / BOB_FULL_SPEED) * BOB_STEPS_PER_PX)
 	view = EightDirection.update(view, moving, IDLE_SPEED)
 	return Vector3i(view, 1 if flipped() else 0, third)
 
@@ -190,7 +188,7 @@ static func body_anchor(view_name: String, forward: Vector2) -> Vector2:
 ##
 ## Overrides AgentLook.draw_body.
 func draw_body(canvas: CanvasItem) -> void:
-	var frame := sector()
+	var frame := _sector()
 	var flip := flipped()
 	var forward := _agent.heading()
 	var grounded := Vector2(0.0, -bob())

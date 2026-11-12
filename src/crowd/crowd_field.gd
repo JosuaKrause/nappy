@@ -22,15 +22,15 @@ extends RefCounted
 
 ## Where the box is centred — the player, once there is one. Moving it re-sizes the box, which
 ## is the whole of `_grown_for` below.
-var centre := Vector2.ZERO:
+var _centre := Vector2.ZERO:
 	set(at):
 		_looking_at = at
 		if not _stretch_box.has_area():
-			centre = map.world_size() * 0.5 if city_view and map else at
+			_centre = map.world_size() * 0.5 if _city_view and map else at
 			radius = maxf(map.world_size().x, map.world_size().y) * 0.5 \
-					if city_view and map else _grown_for(at)
+					if _city_view and map else _grown_for(at)
 			return
-		centre = _stretch_box.get_center()
+		_centre = _stretch_box.get_center()
 		radius = maxf(_stretch_box.size.x, _stretch_box.size.y) * 0.5 + Tuning.TILE_SIZE
 ## Half-extent of the box. Read by everything that places or recycles an agent; never set from
 ## outside, because it is a function of where the centre is.
@@ -38,9 +38,9 @@ var radius := Tuning.CROWD_FIELD_RADIUS
 var map: CityMap
 ## A recipe's city overview simulates every visible street at the ordinary field density.
 ## The normal moving field remains the default, including after another day is started.
-var city_view := false
+var _city_view := false
 ## Authored scenes may give every pedestrian corridor equal weight; cars keep the street hierarchy.
-var uniform_walkers := false
+var _uniform_walkers := false
 ## Where the camera is looking: the point the box is asked to centre on, which a stretch's box
 ## does not follow. See `looking_at()`.
 var _looking_at := Vector2.ZERO
@@ -56,15 +56,15 @@ var stretch_ends: Array[Dictionary] = []
 
 func _init(city_map: CityMap, at := Vector2.ZERO) -> void:
 	map = city_map
-	centre = at
+	_centre = at
 
-## Centres the box on `at`, which re-sizes it (`centre`).
+## Centres the box on `at`, which re-sizes it (`_centre`).
 func centre_on(at: Vector2) -> void:
-	centre = at
+	_centre = at
 
 ## Where the box is centred.
 func centre_point() -> Vector2:
-	return centre
+	return _centre
 
 ## Half the box's extent: how far from its centre an agent is placed or recycled.
 func half_extent() -> float:
@@ -72,19 +72,19 @@ func half_extent() -> float:
 
 ## Whether the box covers the whole city, as a recipe's overview asks.
 func is_city_view() -> bool:
-	return city_view
+	return _city_view
 
 ## Whether every pedestrian corridor weighs the same.
 func weighs_walkers_uniformly() -> bool:
-	return uniform_walkers
+	return _uniform_walkers
 
 ## Makes the box the whole city or the moving field.
 func use_city_view(now: bool) -> void:
-	city_view = now
+	_city_view = now
 
 ## Gives every pedestrian corridor equal weight, or the street hierarchy's.
 func use_uniform_walkers(now: bool) -> void:
-	uniform_walkers = now
+	_uniform_walkers = now
 
 ## Where a stretch's streets run into the void, as the places the crowd enters it.
 func ends_of_the_stretch() -> Array[Dictionary]:
@@ -104,12 +104,12 @@ func use_stretch() -> void:
 						.expand(Vector2i(x + 1, y + 1))
 	_stretch_box = map.tile_rect_to_world(box)
 	stretch_ends = _stretch_ends_of(map)
-	centre = _looking_at
+	_centre = _looking_at
 
 ## Where the camera is looking: the box's own centre, except on a stretch, whose box stays put while
 ## the camera follows her. What "out of view" is measured from (`CrowdAgent._out_of_view()`).
 func looking_at() -> Vector2:
-	return _looking_at if has_stretch() else centre
+	return _looking_at if has_stretch() else _centre
 
 ## **The places a stretch's crowd enters it: every lane end where one of its streets runs into the
 ## void.** *(azure-beaver: "walkers and cars recycled at the stretch's ends".)* A row of a corridor
@@ -191,7 +191,7 @@ func _city_area(at: Vector2, half: float) -> float:
 ## enter at one of these and leave at the other.
 func along_bounds(vertical: bool) -> Vector2:
 	var extent := map.world_size()
-	var here: float = centre.y if vertical else centre.x
+	var here: float = _centre.y if vertical else _centre.x
 	var limit: float = extent.y if vertical else extent.x
 	return Vector2(maxf(0.0, here - radius), minf(limit, here + radius))
 
@@ -210,7 +210,7 @@ func corridor_range(vertical: bool) -> Vector2i:
 	var blocks: int = Tuning.CITY_BLOCKS.x if vertical else Tuning.CITY_BLOCKS.y
 	var last := CrowdLanes.corridor_count(blocks) - 1
 	# The cross-axis coordinate is what picks a corridor: a vertical corridor is a range of x.
-	var here: float = centre.x if vertical else centre.y
+	var here: float = _centre.x if vertical else _centre.y
 	var lo := floori((here - radius) / float(CityMap.period() * Tuning.TILE_SIZE))
 	var hi := floori((here + radius) / float(CityMap.period() * Tuning.TILE_SIZE))
 	return Vector2i(clampi(lo, 0, last), clampi(hi, 0, last))

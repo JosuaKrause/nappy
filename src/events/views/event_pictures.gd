@@ -154,7 +154,7 @@ const BURST_MAIN_SPLASH_PERIOD := 0.5
 # front_diagonal, S front, the three west sectors mirroring their east-authored partner about the
 # feet anchor (`EightDirection.is_mirrored()`). `EIGHT_VIEW_BY_SECTOR` is that same table, copied
 # rather than shared — an event and a walker have no common base to hang one array on — and
-# `EventLook.select_view()` below is `WalkerLook.sector()`'s own shape applied generally: one
+# `EventLook.select_view()` below is `WalkerLook._sector()`'s own shape applied generally: one
 # held sector per instance, since only one `Look` is ever live on a given instance.
 const EIGHT_VIEW_BY_SECTOR: Array[String] = [
 	"side", "front_diagonal", "front", "front_diagonal", "side",

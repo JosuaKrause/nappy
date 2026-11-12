@@ -12,6 +12,18 @@ const LANE_KEYS := preload("res://tests/lane_key_search.gd")
 func _errors(result: Dictionary) -> Array[String]:
 	return result.errors
 
+## How many of the crowd's walkers stand on each corridor, keyed `v<n>` or `h<n>` by the axis and
+## the corridor their own lane key names.
+static func _walkers_by_corridor(crowd: Crowd) -> Dictionary:
+	var counts := {}
+	for agent in crowd.agents():
+		if agent.kind == CrowdAgent.Kind.CAR:
+			continue
+		var parts := LANE_KEYS.parts_of(agent.lane_key())
+		var key := "%s%d" % ["v" if parts[0] else "h", parts[1]]
+		counts[key] = int(counts.get(key, 0)) + 1
+	return counts
+
 func run(t: TestRunner) -> void:
 	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
 	var built := RecipeCityBuilder.build(recipe)
@@ -84,10 +96,20 @@ func run(t: TestRunner) -> void:
 		var distance := agent.position.distance_to(before[agent])
 		moving += int(distance > 1 and distance < Tuning.PEDESTRIAN_SPEED.y * 1.5)
 	t.check(moving > before.size() / 2, "authored density retains physically moving production walkers")
-	city.crowd.start_day(1, rng)
-	t.check(not city.crowd.field().uniform_walkers
+	# The ordinary day round the same point: its walkers are weighed by the street hierarchy again, so
+	# the main road holds more of them than any ordinary corridor beside it.
+	city.crowd.start_day(1, rng, Vector2(1952, 1936))
+	var ordinary_counts := _walkers_by_corridor(city.crowd)
+	var ordinary_main := int(ordinary_counts.get("v%d" % city.map.main_road, 0))
+	var ordinary_rest := 0
+	for key: String in ordinary_counts:
+		if key != "v%d" % city.map.main_road:
+			ordinary_rest = maxi(ordinary_rest, ordinary_counts[key])
+	print("ORDINARY main ", ordinary_main, " rest ", ordinary_rest, " uniform main ", main_count, " rest ", ordinary_max)
+	t.check(ordinary_main >= ordinary_rest * 2
 			and city.crowd.agent_count() == Tuning.crowd_pedestrians(1) + Tuning.crowd_cars(1),
-			"ordinary day restores its density and street hierarchy")
+			"ordinary day restores its density and street hierarchy (%d walkers on the main road, at "
+			% ordinary_main + "most %d on any other corridor)" % ordinary_rest)
 	var state := CityState.new()
 	state.begin_day(city.map.block_plans, 1)
 	city.start_recipe_day(state, 1, city.run.calendar.day_rng())

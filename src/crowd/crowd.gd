@@ -432,9 +432,6 @@ func add_recipe_actor(actor_name: String, kind: int, at: Vector2, heading: Vecto
 	_resolve_and_settle()
 	return {"actor": agent, "error": ""}
 
-func field() -> CrowdField:
-	return _field
-
 ## Makes today's crowd a task scene's: the field is the whole stretch and the crowd enters and
 ## leaves it at its ends (`CrowdField.use_stretch()`). Called by the scene once its starting
 ## population is placed.
@@ -468,11 +465,6 @@ func recipe_coverage() -> Dictionary:
 				result.moving_cars += 1
 				local.moving_cars += 1
 	return result
-
-## Where the traffic cannot get out of today. Public so a suite can ask whether the pocket it has
-## just sealed is actually a pocket before asserting anything about who is standing in it.
-func pockets() -> CrowdPockets:
-	return _pockets
 
 func clear() -> void:
 	for agent in _agents:
@@ -732,7 +724,7 @@ func _index_the_queues(lanes: Dictionary) -> void:
 ## "a car doing a u-turn into a lane with traffic reset the other lane".
 ##
 ## The fix is the lane's **own following rule** rather than a second correction. The booking is
-## treated as a stopped leader — `gap_ahead` to it, `leader_speed` zero, since a spot on the road is
+## treated as a stopped leader — `gap_ahead()` to it, `leader_speed` zero, since a spot on the road is
 ## not driving away — so the nearest follower eases off exactly the way it would for any car in
 ## front of it, and by the time the turn lands the gap is there. Only the car immediately behind the
 ## landing is told, because that is what a queue is: the ones behind *it* get their headway from it
@@ -1094,7 +1086,7 @@ func _consider_the_hut(agent: CrowdAgent, forward: Vector2, vertical: bool, inde
 ## side of it with it. Measured before this rule: five of forty-six cars parked in a box at any
 ## instant and over half the traffic stationary.
 ##
-## `gap_ahead` is to the car in front in this car's own lane, so the room it needs is the distance
+## `gap_ahead()` is to the car in front in this car's own lane, so the room it needs is the distance
 ## to the box, plus the box, plus a car's length of road beyond it. `distance` is the car's own
 ## `distance_to_junction()`, which its caller has already read.
 func _can_clear_the_box(agent: CrowdAgent, distance: float) -> bool:

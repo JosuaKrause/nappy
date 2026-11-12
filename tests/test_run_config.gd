@@ -267,9 +267,24 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 		booted.free_all()
 		home.free()
 
+## **An atlas library that counts the crowd's pictures it hands out**, the `crowd/` regions a walker's
+## or a car's look asks for as it draws (`CrowdAgent.picture_region()`). Handed to the city the way
+## `main` hands it the sitting's library (`City.atlas`), which the city hands its crowd and the crowd
+## every agent it makes.
+class CrowdPictureCount extends AtlasLibrary:
+	var asked := 0
+
+	## Overrides AtlasLibrary.region.
+	func region(name: StringName) -> AtlasTexture:
+		if String(name).begins_with("crowd/"):
+			asked += 1
+		return super.region(name)
+
 ## What the city is handed reaches the part it belongs to, and the crowd's agents get theirs.
 func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	var city: City = RunCity.with_own_run(CITY_SCENE, SEED)
+	var pictures := CrowdPictureCount.new()
+	city.atlas = pictures
 	city.ground_mode = SceneryGround.Mode.STEPPED
 	city.scenery_frame_locked = true
 	city.skip_shadows = true
@@ -304,21 +319,25 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	rng.seed = SEED
 	city.crowd.start_day(1, rng)
 	var agents := city.crowd.agents()
-	t.check(not agents.is_empty() and agents[0].skip_draw,
-			"and every agent the crowd makes skips its drawing")
 	var at: Array[Vector2] = []
 	for agent in agents:
 		at.append(agent.global_position)
 	for i in 30:
 		await t.get_tree().physics_frame
+	t.check(not agents.is_empty() and pictures.asked == 0,
+			"and every agent the crowd makes skips its drawing (%d of %d agents' pictures asked for)"
+			% [pictures.asked, agents.size()])
 	var moved := 0
 	for i in agents.size():
 		if agents[i].global_position != at[i]:
 			moved += 1
 	t.check(moved == 0, "and the crowd's physics frames under its skip_motion move none of them (%d moved)" % moved)
-	# The control: the same crowd without the flag does move on the same frames, so the frames above
-	# really ran the crowd.
+	# The control: the same crowd without the flags does move and draw on the same frames, so the
+	# frames above really ran the crowd and would have drawn it.
 	city.crowd.skip_motion = false
+	for agent in agents:
+		agent.skip_drawing(false)
+		agent.queue_redraw()
 	for i in 30:
 		await t.get_tree().physics_frame
 	moved = 0
@@ -326,6 +345,8 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 		if agents[i].global_position != at[i]:
 			moved += 1
 	t.check(moved > 0, "and without the flag the same frames do move them (%d moved)" % moved)
+	t.check(pictures.asked > 0,
+			"and draw them once they are told to draw (%d pictures asked for)" % pictures.asked)
 	city.free()
 
 ## `--force <row> <seconds>` reaches the director that sites what she meets: a city handed the flag

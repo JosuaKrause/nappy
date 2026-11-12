@@ -29,10 +29,6 @@ src/main.gd configure  # a hand-in: the game's boot reads the process's own flag
 # deleted.
 src/city/city_map.gd copy
 src/city/marble_bag.gd sizes
-src/crowd/agent_look.gd sector
-src/crowd/crowd.gd field
-src/crowd/crowd.gd pockets
-src/crowd/crowd_pockets.gd tile_count
 src/dev/route_lines.gd routes
 src/events/behaviours/event_abduction.gd stop
 src/events/event_manager.gd on_screen
@@ -74,20 +70,6 @@ src/city/scenery_water.gd cells
 src/city/scenery_water.gd elapsed
 src/city/street_trees.gd runs
 src/city/traffic_light.gd atlas
-src/crowd/car_look.gd body_anchor
-src/crowd/car_look.gd sector
-src/crowd/car_look.gd travelled
-src/crowd/car_turn.gd radius
-src/crowd/crowd_agent.gd colour
-src/crowd/crowd_agent.gd skip_draw
-src/crowd/crowd_field.gd centre
-src/crowd/crowd_field.gd city_view
-src/crowd/crowd_field.gd uniform_walkers
-src/crowd/lane_mover.gd gap_ahead
-src/crowd/lane_mover.gd strategy
-src/crowd/walker_door_hold.gd inside
-src/crowd/walker_look.gd gait_frame
-src/crowd/walker_look.gd sector
 src/dev/scene_recipe_runtime.gd manifest
 src/dev/scene_recipe_runtime.gd named
 src/dev/scene_recipe_runtime.gd start_position
@@ -212,8 +194,8 @@ src/city/building.gd window_texture  # the picture each wall cell's window shows
 src/city/scenery_ground.gd worst_step_usec  # the slowest single quadrant step of the stepped ground mode, in microseconds, which the frame-timing probes (tests/probes/ground_frames.gd, run by tools/measure-ground-frames.sh) zero and read after a traversal; it is a wall-clock measurement of the work, which no tile the ground lays and no picture it shows carries
 src/resistance/contact_point.gd draws_a_mark  # whether the chalk picture is drawn at all, `_draw()`'s one question: a pickup is a chalk mark, a perform's contact is invisible untouched or done so that a rider looks like the ordinary row it rides on; it exists only as the guard before `draw_texture()` in `_draw()`, which a headless run draws to nothing and no node exposes, so nothing outward can read what a contact draws (tests/test_destination_drawing.gd asks it for every day's mark and task)
 src/resistance/happenings.gd cordon  # the handle on day 12's police cordon (`ParkCordon`) that tests/test_park_cordon.gd and tests/test_park_return.gd take from the happenings the director's swing touch (or the suite) started, so the cordon they read is the one the happenings run; they stand her at its `last_gap` (kept public: the world shows the gap only once the tapers meet at it) and ask whether it has closed; tests/park_cordon_sweep.gd builds cordons of its own and reads this one only to compare, so it could move off it, as could the two suites by building `ParkCordon` themselves (open to overturn)
+src/crowd/car_look.gd body_anchor  # where a crowd car's picture is registered for Sprites.draw_standing(), read off the live heading; it exists only as the anchor draw_body() hands Sprites with the canvas it draws on, which a headless run draws to nothing and no drawer handed in records, so tests/test_car_views.gd, test_drawn_view.gd and crowd_rig.gd hold the drawn picture's ground line against the strike box's south point (the strike box and the picture share one footprint, crowd-traffic skill), its continuity across a sector boundary and the drawn reach through it; a drawer handed to the crowd's looks, as the buildings' front and roof drawers are, would let it go
 src/crowd/car_turn.gd centre  # the check misreads it: the one test reading is `section.centre()` in tests/test_day13_guard.gd, a `Location`'s centre(), where `section` is declared twice in one function, by two untyped `for`s, one over a list the check can type and one over a list it cannot, and so is a receiver it cannot tell
-src/crowd/crowd_field.gd radius  # the check misreads it: the test readings are `CarTurn.into_an_arm(...).radius` in tests/test_turns.gd, `CarTurn.radius` on a call written across two lines, whose receiver it cannot tell
 src/telemetry/frame_ledger.gd count  # the check misreads it: the one test reading is `day_dir.count("-")` in tests/test_telemetry.gd, a String's count() on a name inferred from a call it cannot type
 src/resistance/park_cordon.gd gap  # the stretches the last gap is, with their tiles and the side of the park they face, chosen on the first tick; the sweep checks the chosen gap's stretches against the map, and the pram and slow-leaver tests stand her square before the gap and need its tiles, while the world shows the gap only once the tapers meet at it, by which time its stretches are taped (record minty-quail-grassy-squirrel)
 src/resistance/park_cordon.gd is_closed  # the moment the cordon closes, which its suites hold her outside of (TRAPPED) and the sweep waits on; nothing outside confirms that moment but the tapers leaving and a run-log line, and only the cordon's own tick() asks it in the game

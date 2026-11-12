@@ -19,16 +19,13 @@ func run(t: TestRunner) -> void:
 	rng.seed = 11
 	var focus := map.doorstep_world_position()
 	crowd.start_day(1, rng, focus, true, true)
-	var field := crowd.field()
 	var middle := map.world_size() * 0.5
-	var bounds_x := field.along_bounds(false)
-	var bounds_y := field.along_bounds(true)
+	t.check(_spans_the_map(crowd, map), "city crowd field covers the entire map")
+	# The player moves to the far corner and the overview stays where it is: the frames below still
+	# find the crowd spread over the whole map and moving in every quadrant, where a field that
+	# followed her would recycle everybody into a box round the corner.
 	crowd.set_focus(Vector2.ZERO)
-	field.centre = map.world_size()
-	t.check(field.centre == middle and field.along_bounds(false) == bounds_x
-			and field.along_bounds(true) == bounds_y, "city crowd bounds stay fixed as the player moves")
-	t.check(bounds_x == Vector2(0, map.world_size().x)
-			and bounds_y == Vector2(0, map.world_size().y), "city crowd field covers the entire map")
+	crowd.set_focus(map.world_size())
 	var area_scale := map.world_size().x * map.world_size().y \
 			/ pow(Tuning.CROWD_FIELD_RADIUS * 2.0, 2.0)
 	var initial := crowd.recipe_coverage()
@@ -53,7 +50,9 @@ func run(t: TestRunner) -> void:
 		measured[quadrant].moving += 1
 		if agent.kind == CrowdAgent.Kind.CAR:
 			measured[quadrant].moving_cars += 1
+	t.check(_spans_the_map(crowd, map), "city crowd bounds stay fixed as the player moves")
 	var coverage := crowd.recipe_coverage()
+	t.check(coverage.scope == "city", "and the capture reports the city view it covers")
 	for quadrant: String in coverage.quadrants:
 		var counts: Dictionary = coverage.quadrants[quadrant]
 		t.check(counts.walkers > 0 and counts.cars > 0,
@@ -64,12 +63,57 @@ func run(t: TestRunner) -> void:
 				"%s actors and cars physically move under production signals and queue updates" % quadrant)
 	print("RECIPE_CROWD_COVERAGE ", JSON.stringify(coverage), " displacement ", JSON.stringify(measured))
 	crowd.start_day(1, rng, focus)
-	t.check(not field.city_view and field.centre == focus,
+	t.check(crowd.recipe_coverage().scope == "local" and _all_round(crowd, map, focus),
 			"a normal day restores the moving field after a city-view recipe")
 	t.check(crowd.agent_count() == Tuning.crowd_pedestrians(1) + Tuning.crowd_cars(1),
 			"normal population is unchanged by the optional city view")
-	crowd.set_focus(middle)
-	t.check(field.centre == middle, "normal field follows focus again")
+	# Somewhere a field round the doorstep does not reach, so a field that stayed put keeps people a
+	# field round there would have recycled.
+	var away := _farthest_quarter(map, focus)
+	t.check(_offset(away, focus) > _reach(map, away), "the field has somewhere else to go")
+	crowd.set_focus(away)
+	for frame in 3:
+		crowd.step(1.0 / 30.0)
+	t.check(_all_round(crowd, map, away), "normal field follows focus again")
 	crowd.start_day(1, rng, focus, false, true)
 	t.check(crowd.agent_count() == 0, "city-view extent does not enable unrequested population")
 	_rig.free_crowd(crowd)
+
+## Whether the crowd stands over the whole map: its bodies reach within a block of every edge.
+static func _spans_the_map(crowd: Crowd, map: CityMap) -> bool:
+	var lo := map.world_size()
+	var hi := Vector2.ZERO
+	for agent in crowd.agents():
+		lo = lo.min(agent.global_position)
+		hi = hi.max(agent.global_position)
+	var block := float(CityMap.period() * Tuning.TILE_SIZE)
+	return lo.x < block and lo.y < block and hi.x > map.world_size().x - block \
+			and hi.y > map.world_size().y - block
+
+## How far from `at` a body of a field centred there may legitimately be: the field's half extent
+## there (`CrowdField.half_extent()`), plus the depth of the band bodies enter through, plus a tile
+## of slack, as `tests/crowd_rig.gd` measures the field she walks.
+static func _reach(map: CityMap, at: Vector2) -> float:
+	return CrowdField.new(map, at).half_extent() + CrowdAgent.ENTRY_SPREAD + Tuning.TILE_SIZE
+
+## The larger of the two axis distances between two points, the distance the field's box measures.
+static func _offset(a: Vector2, b: Vector2) -> float:
+	return maxf(absf(a.x - b.x), absf(a.y - b.y))
+
+## Whether every body of the crowd stands within a field's reach of `at`.
+static func _all_round(crowd: Crowd, map: CityMap, at: Vector2) -> bool:
+	var reach := _reach(map, at)
+	for agent in crowd.agents():
+		if _offset(agent.global_position, at) > reach:
+			return false
+	return not crowd.agents().is_empty()
+
+## The quarter point of the map, half way from its middle to a corner, farthest from `from`.
+static func _farthest_quarter(map: CityMap, from: Vector2) -> Vector2:
+	var best := map.world_size() * 0.25
+	for x: float in [0.25, 0.75]:
+		for y: float in [0.25, 0.75]:
+			var at := map.world_size() * Vector2(x, y)
+			if _offset(at, from) > _offset(best, from):
+				best = at
+	return best

@@ -1276,25 +1276,27 @@ func _test_the_crowd_stays_in_the_field(t: TestRunner) -> void:
 	var start := CrowdLanes.arterial_pavement(_city.map)
 	start.y = _city.map.world_size().y * 0.2
 	_city.crowd.start_day(1, _rng(1), start)
-	var field := _city.crowd.field()
 
 	# Walk the field down the city at running pace, the way a player who has decided the park
 	# is that way does.
-	# The furthest anybody may legitimately be: the far edge of the field, plus the depth of the
-	# band agents enter through, plus the tile of slack the boundary test allows.
-	var reach := field.half_extent() + CrowdAgent.ENTRY_SPREAD + Tuning.TILE_SIZE
+	# The furthest anybody may legitimately be: the far edge of the field (the half extent a field
+	# over this map has here, `CrowdField.half_extent()`), plus the depth of the band agents enter
+	# through, plus the tile of slack the boundary test allows.
+	var reach := CrowdField.new(_city.map, start).half_extent() + CrowdAgent.ENTRY_SPREAD \
+			+ Tuning.TILE_SIZE
 	var stragglers := 0
 	var worst := 0.0
 	var ahead := 0
 	for step in 15:
-		field.centre_on(start + Vector2(0.0, Tuning.RUN_SPEED * step))
+		var focus := start + Vector2(0.0, Tuning.RUN_SPEED * step)
+		_city.crowd.set_focus(focus)
 		_advance(1.0)
 		for agent in _city.crowd.agents():
-			var offset := agent.global_position - field.centre_point()
+			var offset := agent.global_position - focus
 			worst = maxf(worst, maxf(absf(offset.x), absf(offset.y)))
 			if absf(offset.x) > reach or absf(offset.y) > reach:
 				stragglers += 1
-		if step > 5 and _agents_in_front_of(field) < 8:
+		if step > 5 and _agents_in_front_of(focus) < 8:
 			ahead += 1
 	t.check(stragglers == 0,
 			"nobody is left behind when the field moves (%d were, worst %.0fpx of %.0f)"
@@ -1308,11 +1310,11 @@ func _test_the_crowd_stays_in_the_field(t: TestRunner) -> void:
 			== Tuning.crowd_pedestrians(act) + Tuning.crowd_cars(act),
 			"the act's population is what is around her, not what is scattered over the map")
 
-## How many agents are in the half of the field she is walking into.
-func _agents_in_front_of(field: CrowdField) -> int:
+## How many agents are in the half of the field she is walking into, the field centred on `focus`.
+func _agents_in_front_of(focus: Vector2) -> int:
 	var found := 0
 	for agent in _city.crowd.agents():
-		if agent.global_position.y > field.centre_point().y:
+		if agent.global_position.y > focus.y:
 			found += 1
 	return found
 
@@ -1334,7 +1336,7 @@ func _agents_in_front_of(field: CrowdField) -> int:
 ## fails — measured, not guessed. It is still not enough to pin a value, and pinning a value is not
 ## what it is for.
 func _test_the_crowd_does_not_bunch_against_the_wall(t: TestRunner) -> void:
-	var field := _city.crowd.field()
+	var field := CrowdField.new(_city.map)
 	var extent := _city.map.world_size()
 	var middle := extent * 0.5
 	var corner := Vector2(Tuning.TILE_SIZE, Tuning.TILE_SIZE)
