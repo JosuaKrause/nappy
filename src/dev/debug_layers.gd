@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 class_name DebugLayers
 extends Node2D
 ## Three world-space overlays over the live game state — fields, shadows and bounding boxes — each
@@ -38,9 +37,9 @@ extends Node2D
 ## building, where the meter receives nothing, there is no line either, to within one `CUT_PIECE`. `_draw_fields()` is where the
 ## shape-per-emitter decision is made, and `open_runs()` where the cut is.
 ##
-## **The building shows what the city shows.** Nothing here needs a day: the events are an event
-## source (anything answering `instances() -> Array[EventInstance]`, which the city's
-## `EventManager` and the building's answer alike), the crowd may be null, and the world is any `Node2D` whose subtree holds
+## **The building shows what the city shows.** Nothing here needs a day: the events are the
+## world's `EventManager`, the city's or the building's alike, asked only for `instances()`, the
+## crowd may be null, and the world is any `Node2D` whose subtree holds
 ## the bodies — `City` or `InteriorScene`. Only the props are a city's, and a building has none.
 
 ## The falloff's own outline colour for a merely costly field — `Palette.MARK_COSTLY`, the same
@@ -67,8 +66,8 @@ var bodies_on := false
 ## it has queued the redraw the change owed. See `_wants_a_redraw()`.
 var _redraw_owed := false
 
-## The event source — see the class doc.
-var _events: Node
+## The world's events — see the class doc.
+var _events: EventManager
 ## Null where there is no crowd: the escape's building.
 var _crowd: Crowd
 ## Whose subtree the bodies are walked from: the `City`, or the escape's `InteriorScene`.
@@ -77,14 +76,13 @@ var _player: Stroller
 
 ## **Called again when the escape walks out of the service door**, with the city in place of the
 ## building, so the one node and the state of its three switches carry across the section change.
-func setup(events: Node, crowd: Crowd, world: Node2D, player: Stroller) -> void:
+func setup(events: EventManager, crowd: Crowd, world: Node2D, player: Stroller) -> void:
 	_events = events
 	_crowd = crowd
 	_world = world
 	_player = player
 
-## The live instances, typed — see `DangerEdge._live()` for why the duck-typed source is read
-## through one function.
+## The live instances: the one question this layer asks its event source.
 func _live() -> Array[EventInstance]:
 	return _events.instances()
 
@@ -160,7 +158,7 @@ func _draw() -> void:
 ## field wider than what the birds actually emit. Each outline is cut wherever the emitter's own
 ## walls keep the field from that point — see `open_runs()`.
 func _draw_fields() -> void:
-	for drawn in field_runs(_view_rect()):
+	for drawn: Array in field_runs(_view_rect()):
 		for run: PackedVector2Array in drawn[0]:
 			draw_polyline(run, drawn[1], LINE_WIDTH, true)
 
@@ -407,7 +405,9 @@ func _draw_shadows() -> void:
 	for agent in _agents():
 		var axis := agent.heading() if agent.kind == CrowdAgent.Kind.CAR else Vector2.RIGHT
 		_draw_shadow_outline(agent.shape, agent.global_position, axis)
-	var props: Array = (_world as City).props() if _world is City else []
+	var props: Array[Node2D] = []
+	if _world is City:
+		props = (_world as City).props()
 	for prop in props:
 		if prop is Prop:
 			_draw_shadow_outline((prop as Prop).shape, prop.global_position, Vector2.RIGHT)
@@ -475,9 +475,10 @@ static func _collect_collision_nodes_into(root: Node, into: Array[Node]) -> void
 		return
 	if root is StaticBody2D or root is CharacterBody2D:
 		for child in root.get_children():
-			if child is CollisionShape2D and not child.disabled and child.shape != null:
+			if child is CollisionShape2D and not (child as CollisionShape2D).disabled \
+					and (child as CollisionShape2D).shape != null:
 				into.append(child)
-			elif child is CollisionPolygon2D and not child.disabled:
+			elif child is CollisionPolygon2D and not (child as CollisionPolygon2D).disabled:
 				into.append(child)
 	for child in root.get_children():
 		_collect_collision_nodes_into(child, into)
@@ -487,20 +488,23 @@ static func _collect_collision_nodes_into(root: Node, into: Array[Node]) -> void
 func _draw_collision_node(node: Node) -> void:
 	var at: Vector2 = (node as Node2D).global_position
 	if node is CollisionPolygon2D:
-		_draw_closed_polyline(_polygon_world_points(node), BODY_COLOUR)
+		_draw_closed_polyline(_polygon_world_points(node as CollisionPolygon2D), BODY_COLOUR)
 		return
 	var shape: Shape2D = (node as CollisionShape2D).shape
 	if shape is CircleShape2D:
-		draw_arc(at, shape.radius, 0.0, TAU, _CIRCLE_SEGMENTS, BODY_COLOUR, LINE_WIDTH, true)
+		draw_arc(at, (shape as CircleShape2D).radius, 0.0, TAU, _CIRCLE_SEGMENTS, BODY_COLOUR,
+				LINE_WIDTH, true)
 	elif shape is RectangleShape2D:
 		var axis := Vector2.RIGHT.rotated((node as Node2D).global_rotation)
-		_draw_closed_polyline(_rect_corners(at, axis, shape.size * 0.5), BODY_COLOUR)
+		_draw_closed_polyline(_rect_corners(at, axis, (shape as RectangleShape2D).size * 0.5),
+				BODY_COLOUR)
 	elif shape is CapsuleShape2D:
 		# Godot's capsule stands along local Y (`GroundShape.collision_shape()`'s own doc), so the
 		# spine's world axis is the node's rotated +Y, not its +X.
 		var axis := Vector2.UP.rotated((node as Node2D).global_rotation)
-		var half_length := maxf(0.0, shape.height * 0.5 - shape.radius)
-		_draw_closed_polyline(_capsule_outline(at, axis, half_length, shape.radius), BODY_COLOUR)
+		var capsule := shape as CapsuleShape2D
+		var half_length := maxf(0.0, capsule.height * 0.5 - capsule.radius)
+		_draw_closed_polyline(_capsule_outline(at, axis, half_length, capsule.radius), BODY_COLOUR)
 
 func _polygon_world_points(node: CollisionPolygon2D) -> PackedVector2Array:
 	var points := PackedVector2Array()

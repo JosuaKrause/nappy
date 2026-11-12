@@ -708,8 +708,10 @@ func _on_a_run(buckets: Dictionary, at: Vector2) -> bool:
 	return false
 
 ## Event source for the layer's own loop: the instances it is handed, under the name it reads.
-class _Source extends Node:
+class _Source extends FakeEventManager:
 	var live: Array[EventInstance] = []
+
+	## Overrides EventManager.instances.
 	func instances() -> Array[EventInstance]:
 		return live
 

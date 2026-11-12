@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name DevFlags
 extends RefCounted
 ## The parser behind `RunConfig`: every developer flag, read from a command line and a page query
@@ -298,7 +297,8 @@ static func _seed_from_query(query: String) -> int:
 ## the default. A recipe's own day wins.
 func day_override() -> int:
 	if not _recipe.is_empty():
-		return int(_recipe.get("setup", {}).get("day", 1))
+		var setup: Dictionary = _recipe.get("setup", {})
+		return int(setup.get("day", 1))
 	var args := active_args()
 	var index := args.find("--day")
 	if index != -1 and index + 1 < args.size():
@@ -482,7 +482,9 @@ static func _escape_from_query(query: String) -> bool:
 ## `--start-escape`, and never a word that starts with `--`, so the next flag is not swallowed.
 func start_escape_at() -> String:
 	if not _recipe.is_empty():
-		return str(_recipe.get("setup", {}).get("progression", {}).get("escape_part", "city"))
+		var setup: Dictionary = _recipe.get("setup", {})
+		var progression: Dictionary = setup.get("progression", {})
+		return str(progression.get("escape_part", "city"))
 	var word := _word_after("--start-escape")
 	return "" if word.begins_with("--") else word
 
@@ -765,7 +767,8 @@ func player_view_requested() -> bool:
 ## would be the one failure the shot list exists to rule out. A recipe's own parent wins.
 func parent_override() -> String:
 	if not _recipe.is_empty():
-		return str(_recipe.get("setup", {}).get("parent", "mother"))
+		var setup: Dictionary = _recipe.get("setup", {})
+		return str(setup.get("parent", "mother"))
 	var args := active_args()
 	var index := args.find("--parent")
 	if index == -1 or index + 1 >= args.size():
@@ -886,7 +889,7 @@ func is_rig() -> bool:
 	return _is_rig_from_args(active_args()) or recording() or recipe_scripted()
 
 static func _is_rig_from_args(args: PackedStringArray) -> bool:
-	for flag in _RIG_FLAGS:
+	for flag: String in _RIG_FLAGS:
 		if flag in args:
 			return true
 	return false
