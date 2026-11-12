@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for tall-osprey, "the robber's capture zone is too big": a rig that gives the
 ## alley robber's chase different answers, over several seeds, at several catch sizes. Not a suite:
@@ -26,15 +25,15 @@ const SEEDS := 200
 const CATCHES := [30.0, 28.0, 26.0, 24.0, 22.0, 20.0, 18.0, 16.0]
 
 func run(t: TestRunner) -> void:
-	for lunge in [0.0, 30.0]:
+	for lunge: float in [0.0, 30.0]:
 		print("== %s ==" % ("held: lunge_reach 30 (108px)" if lunge > 0.0 else "follows the catch"))
-		for catch_radius in CATCHES:
+		for catch_radius: float in CATCHES:
 			_report(float(catch_radius), lunge)
 	# The robber-only stand-off override: `PursuitSpec.lunge_reach` is the stand-off less 78
 	# (130 x 0.6).
-	for catch_radius in [30.0, 26.0, 24.0]:
+	for catch_radius: float in [30.0, 26.0, 24.0]:
 		print("== catch %.0f, lunge moved out ==" % catch_radius)
-		for standoff in [108.0, 112.0, 116.0, 120.0, 130.0]:
+		for standoff: float in [108.0, 112.0, 116.0, 120.0, 130.0]:
 			_report(catch_radius, standoff - 78.0)
 	t.check(true, "tall_osprey_catch probe ran")
 
@@ -50,7 +49,7 @@ func _report(catch_radius: float, lunge: float) -> void:
 	var out := "catch %4.0f  standoff %5.1f  notice-to-lunge walking in %.3fs standing %.3fs |" % [
 			catch_radius, standoff, _notice_to_lunge(_def(catch_radius, lunge), true),
 			_notice_to_lunge(_def(catch_radius, lunge), false)]
-	for mode in ["still", "walk_away", "run_at_notice", "turn_at_lunge", "turn_at_notice"]:
+	for mode: String in ["still", "walk_away", "run_at_notice", "turn_at_lunge", "turn_at_notice"]:
 		var got_away := 0
 		for seed_i in SEEDS:
 			var rng := RandomNumberGenerator.new()

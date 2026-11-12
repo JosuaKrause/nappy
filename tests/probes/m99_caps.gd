@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M99, the corridor's density after the sealing — "`cyclist` and
 ## `loose_dog`'s caps no longer mean what they say." Not a suite: it prints rather than asserting,
@@ -38,21 +37,21 @@ func run(t: TestRunner) -> void:
 func _measure_caps() -> void:
 	print("\n== M99 caps: %d seeds x one day per act %s, whole day of continuous walking =="
 			% [SEEDS, ACT_SAMPLE_DAYS])
-	for id in TRACKED_IDS:
+	for id: String in TRACKED_IDS:
 		var def := EventCatalogue.by_id(id)
 		print("  %-10s max_per_day=%d weight=%.1f" % [id, def.max_per_day, def.weight])
 
 	# act -> id -> Array[int] per-day counts
 	var by_act_id := {}
-	for act in [1, 2, 3, 4]:
+	for act: int in [1, 2, 3, 4]:
 		by_act_id[act] = {}
-		for id in TRACKED_IDS:
+		for id: String in TRACKED_IDS:
 			by_act_id[act][id] = []
 	var by_act_total_owed := {1: [], 2: [], 3: [], 4: []}
 	var by_act_budgeted := {}
-	for act in [1, 2, 3, 4]:
+	for act: int in [1, 2, 3, 4]:
 		by_act_budgeted[act] = {}
-		for id in TRACKED_IDS:
+		for id: String in TRACKED_IDS:
 			by_act_budgeted[act][id] = []
 
 	for i in SEEDS:
@@ -71,7 +70,7 @@ func _measure_caps() -> void:
 							0).placements()
 
 			var budgeted := {}
-			for id in TRACKED_IDS:
+			for id: String in TRACKED_IDS:
 				budgeted[id] = 0
 			for plan: EventPlan in planned:
 				if plan.def.id in budgeted:
@@ -89,7 +88,7 @@ func _measure_caps() -> void:
 			var vel := Vector2(0.0, -Tuning.WALK_SPEED)
 
 			var counts := {}
-			for id in TRACKED_IDS:
+			for id: String in TRACKED_IDS:
 				counts[id] = 0
 			var total_owed := 0
 			var day_len := Tuning.day_length(day)
@@ -108,30 +107,30 @@ func _measure_caps() -> void:
 					pos.y = clampf(pos.y, y_min, y_max)
 				t += step
 
-			by_act_total_owed[act].append(total_owed)
-			for id in TRACKED_IDS:
-				by_act_id[act][id].append(counts[id])
-				by_act_budgeted[act][id].append(budgeted[id])
+			(by_act_total_owed[act] as Array).append(total_owed)
+			for id: String in TRACKED_IDS:
+				(by_act_id[act][id] as Array).append(counts[id])
+				(by_act_budgeted[act][id] as Array).append(budgeted[id])
 
 	print("\n-- per act (mean over %d seeds) --" % SEEDS)
-	for act in [1, 2, 3, 4]:
+	for act: int in [1, 2, 3, 4]:
 		print("  act %d — mean total AHEAD/TOWARD encounters/day: %.2f"
 				% [act, _mean(by_act_total_owed[act])])
-		for id in TRACKED_IDS:
+		for id: String in TRACKED_IDS:
 			var def := EventCatalogue.by_id(id)
 			print("    %-10s budgeted/day (mean)=%.2f  actually met/day (mean)=%.2f  of max_per_day=%d"
 					% [id, _mean(by_act_budgeted[act][id]), _mean(by_act_id[act][id]), def.max_per_day])
 
 	print("\n-- across every sampled act/seed --")
-	for id in TRACKED_IDS:
+	for id: String in TRACKED_IDS:
 		var all_met: Array = []
 		var all_budgeted: Array = []
-		for act in [1, 2, 3, 4]:
+		for act: int in [1, 2, 3, 4]:
 			all_met.append_array(by_act_id[act][id])
 			all_budgeted.append_array(by_act_budgeted[act][id])
 		var def := EventCatalogue.by_id(id)
 		var max_met := 0
-		for v in all_met:
+		for v: int in all_met:
 			max_met = maxi(max_met, int(v))
 		print("  %-10s mean budgeted/day=%.2f mean met/day=%.2f max met on any sampled day=%d (cap %d)"
 				% [id, _mean(all_budgeted), _mean(all_met), max_met, def.max_per_day])
@@ -140,6 +139,6 @@ func _mean(values: Array) -> float:
 	if values.is_empty():
 		return 0.0
 	var total := 0.0
-	for v in values:
+	for v: float in values:
 		total += float(v)
 	return total / float(values.size())

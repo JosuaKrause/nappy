@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends "res://tests/test_day13_guard.gd"
 ## Measurement probe for velvet-stork, "day 13's guard reaches her from across the city": what the
 ## guard's walk round buildings (`EventInstance._chase_way`) costs a frame of his chase, and
@@ -39,7 +38,7 @@ func run(t: TestRunner) -> void:
 		for part in OS.get_environment("PROBE_SEEDS").split(","):
 			seeds.append(int(part))
 	for seed_value: int in seeds:
-		for walks in [false, true]:
+		for walks: bool in [false, true]:
 			_measure(t, seed_value, walks)
 
 func _measure(t: TestRunner, seed_value: int, walks: bool) -> void:

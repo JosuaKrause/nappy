@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What the crowd and the world read of the screen, printed one line per question**, so handing
 ## them those reads instead of letting them reach for the viewport and the controls can be shown to
@@ -44,7 +43,7 @@ static func _crowd_view_of(anchor: Node) -> CrowdView:
 
 static func _hex(values: Array) -> String:
 	var parts: Array[String] = []
-	for value in values:
+	for value: float in values:
 		parts.append(PackedFloat64Array([float(value)]).to_byte_array().hex_encode())
 	return " ".join(parts)
 
@@ -61,7 +60,8 @@ func _visible_view(t: TestRunner) -> void:
 	camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 	rig.add_child(camera)
 	t.add_child(rig)
-	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	var controls_scene: PackedScene = load("res://scenes/ui/touch_controls.tscn")
+	var controls: TouchControls = controls_scene.instantiate()
 	t.add_child(controls)
 	var schemes := [
 		["tap", ControlsMode.Mode.TAP, ControlsMode.Side.LEFT],
@@ -73,7 +73,7 @@ func _visible_view(t: TestRunner) -> void:
 			rig.global_position = centre
 			ScreenOrientation.apply_to_camera(camera, rotated)
 			camera.force_update_scroll()
-			for scheme in schemes:
+			for scheme: Array in schemes:
 				controls.rotated = rotated
 				controls.set_mode(scheme[1], scheme[2])
 				var label := "%s rotated=%s at=%s" % [scheme[0], rotated, centre]
@@ -110,11 +110,11 @@ func _print_view(label: String, view: VisibleView) -> void:
 			sy += size.y * 1.5
 	print("SR_VV %s | shares %s" % [label, _hex(shares)])
 	var clears: Array[float] = []
-	for start in [Vector2.ZERO, Vector2(120.0, 90.0), Vector2(-200.0, 150.0), Vector2(250.0, 140.0)]:
+	for start: Vector2 in [Vector2.ZERO, Vector2(120.0, 90.0), Vector2(-200.0, 150.0), Vector2(250.0, 140.0)]:
 		for step in 16:
 			var way := Vector2.RIGHT.rotated(TAU * step / 16.0)
-			for box in [Rect2(), Rect2(-12.0, -30.0, 24.0, 30.0), Rect2(-60.0, -20.0, 120.0, 40.0)]:
-				for least in [0.0, 30.0]:
+			for box: Rect2 in [Rect2(), Rect2(-12.0, -30.0, 24.0, 30.0), Rect2(-60.0, -20.0, 120.0, 40.0)]:
+				for least: float in [0.0, 30.0]:
 					clears.append(view.clear_of_sight(view.view.get_center() + start, way, box, least))
 	print("SR_VV %s | clear %s" % [label, _hex(clears)])
 
@@ -148,7 +148,7 @@ func _drawn_box(view: CrowdView, anchor: Node) -> Rect2:
 
 func _beyond(view: CrowdView, centre: Vector2) -> String:
 	var bits := ""
-	for room in [0.0, 2.0 * Tuning.TILE_SIZE]:
+	for room: float in [0.0, 2.0 * Tuning.TILE_SIZE]:
 		for dy in range(-12, 13):
 			for dx in range(-12, 13):
 				var at := centre + Vector2(dx, dy) * 53.7

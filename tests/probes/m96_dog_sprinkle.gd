@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for M96, "the teaching day, and the dog after it" — the sprinkle's own rate.
 ## Not a suite: it prints rather than asserting, so it lives here under `tests/probes/`, where the
@@ -85,18 +84,18 @@ func _mean(values: Array) -> float:
 	if values.is_empty():
 		return 0.0
 	var total := 0.0
-	for v in values:
+	for v: float in values:
 		total += float(v)
 	return total / float(values.size())
 
 func _min(values: Array) -> int:
 	var found := 999999
-	for v in values:
+	for v: int in values:
 		found = mini(found, int(v))
 	return found
 
 func _max(values: Array) -> int:
 	var found := -999999
-	for v in values:
+	for v: int in values:
 		found = maxi(found, int(v))
 	return found

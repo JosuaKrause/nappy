@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## **Day 13's task roadblock, read from real chalk marks**: what the task's placement
 ## (`ResistanceDirector._place_the_roadblock_near()`) does when she reads the mark where a mark
@@ -70,7 +69,7 @@ func run(t: TestRunner) -> void:
 			if not distances.has(key):
 				distances[key] = []
 			if outcome[1] != INF:
-				distances[key].append(outcome[1])
+				(distances[key] as Array).append(outcome[1])
 			print("RM_MARK seed %d mark %s | %s | %s" % [seed_value, chosen[index], kind,
 					"%.0fpx" % outcome[1] if outcome[1] != INF else "-"])
 			asked += 1
@@ -102,7 +101,7 @@ var _times := {}
 func _took(what: String, ms: float) -> void:
 	if not _times.has(what):
 		_times[what] = []
-	_times[what].append(ms)
+	(_times[what] as Array).append(ms)
 
 ## The mark tiles the day's draw could pick, in `_marks()`'s order: those `_pick_reachable()` takes,
 ## legal ground and open to it and reachable from home.

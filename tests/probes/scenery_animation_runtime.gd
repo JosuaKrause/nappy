@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends Node2D
 ## Bounded runtime fixture: production drawing nodes, enlarged for review, with real draw counters.
 
@@ -129,7 +128,7 @@ func _split_by_animation(scenery: EventScenery) -> Array:
 
 func _watch(item: CanvasItem, key: String) -> void:
 	_counts[key] = 0
-	item.draw.connect(func():
+	item.draw.connect(func() -> void:
 		if _recording:
 			_counts[key] += 1)
 

@@ -1,10 +1,12 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## M226's missing non-pursuer measurement. Run through tools/test.sh by this file's path.
-## The identical collector runs on f494956e and the PR. It uses that revision's encounter
-## factory, PendingWarning, EventInstance and real DangerEdge consumer. No placement bound
-## participates in entry detection: drawing_parts() reads the selected sprite frame, wheel,
-## shadow polygon, loose leash and live caret separately. See the retained evidence README.
+## It measures the current game: M207Lead's encounters, the game's PendingWarning and
+## EventInstance, and a real DangerEdge reading them. No placement bound participates in entry
+## detection: drawing_parts() reads each part separately: the selected sprite frame and the
+## wheels from EventPictures, the shadow polygon from the row's own parts (def.parts(), then
+## shape.shadow_outline()), the loose leash as this probe's own 26px rectangle, and the live
+## caret from instance.look.mark_rect(), flashing at EventPictures.MARK_FLASHES_PER_SECOND.
+## See the retained evidence README.
 
 const STEP := 1.0 / 60.0
 const LIMIT := 30.0
@@ -19,8 +21,7 @@ class Source extends Node:
 		return warnings
 
 func run(t: TestRunner) -> void:
-	var factory: Object = load("res://tests/probes/m207_warning_lead.gd").new()
-	var encounters: Array[Dictionary] = factory.encounters()
+	var encounters: Array[Dictionary] = M207Lead.encounters()
 	# The engine can use either road axis; the column's actual main-road lane is vertical.
 	for encounter: Dictionary in encounters.duplicate():
 		var row: EventDef = encounter["def"]
@@ -33,7 +34,7 @@ func run(t: TestRunner) -> void:
 			return PendingWarning.on_its_route(row, her, kerb, Vector2.LEFT, 4000.0)
 		var route := func(place: Vector2, _her: Vector2) -> PackedVector2Array:
 			return PackedVector2Array([place, kerb])
-		encounters.append(factory._warned(row, "warned, on its road to the fire, horizontal",
+		encounters.append(M207Lead._warned(row, "warned, on its road to the fire, horizontal",
 				where, route, Vector2.RIGHT))
 	print("| row | geometry | answer | badge start | created | drawn entry | badge removed | entry minus creation |")
 	print("|---|---|---|---|---|---|---|---|")
@@ -77,29 +78,22 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 	var result := {"badge_start": INF, "created": INF, "entry": INF, "badge_removed": INF}
 	var clock := 0.0
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
-		var route: PackedVector2Array = encounter["route"].call(place, at)
+		var route_of: Callable = encounter["route"]
+		var route: PackedVector2Array = route_of.call(place, at)
 		var instance := EventInstance.new()
 		instance.setup(def, place, route, Vector2.RIGHT, null, null, where)
 		instance.came_under_a_warning = true
 		instance.is_pelican = pelican
-		# f494956e spends telegraph_time; the current game preserves a pulsing row's beat.
-		# The beat's age lives on whichever class owns it at the commit under test.
-		var age: float = def.telegraph_time
-		for owner_path: String in ["res://src/events/event_spawner.gd",
-				"res://src/events/event_manager.gd"]:
-			var beat_owner: GDScript = load(owner_path) if ResourceLoader.exists(owner_path) else null
-			if beat_owner and beat_owner.has_method("age_when_warned"):
-				age = beat_owner.age_when_warned(def)
-				break
-		instance.resume(age, 0.0)
+		# Created at the age the game creates a warned row at: its telegraph spent, and a pulsing
+		# row's beat kept.
+		instance.resume(EventSpawner.age_when_warned(def), 0.0)
 		source.add_child(instance)
 		source.live.append(instance)
 		return true
 	if encounter.get("warned", false):
 		var warning := PendingWarning.new(def, encounter["where"], arrive)
 		warning.is_pelican = pelican
-		var accepted: bool = warning.call("put_up" if warning.has_method("put_up") else "follow", her)
-		if accepted:
+		if warning.put_up(her):
 			source.warnings.append(warning)
 	else:
 		var route: PackedVector2Array = encounter["path"]
@@ -138,7 +132,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		where.tell(her)
 		for instance in source.live:
 			instance.step(STEP)
-		for warning in source.warnings.duplicate():
+		for warning: PendingWarning in source.warnings.duplicate():
 			if warning.tick(STEP, her):
 				source.warnings.erase(warning)
 	viewport.canvas_transform = saved_transform
@@ -148,7 +142,8 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 	return result
 
 ## Drawing geometry for precisely this probe's four looks. Reads the same selected frame and
-## native texture size as _draw_eight_view/_draw_loose_dog, never footprint_of/drawn_box.
+## native texture size as EventLook._draw_eight_view()/FigureLook._draw_loose_dog(), never
+## footprint_of/drawn_box.
 ## Texture quads include transparent padding; this is geometric entry, not pixel-alpha sampling.
 ## No halo is enabled in the isolated encounter. Each primitive is tested separately, so empty
 ## space between a tall caret and a body cannot count as an entry.
@@ -165,23 +160,24 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 					else [EventPictures.CYCLIST_BY_VIEW, EventPictures.CYCLIST_BY_VIEW_B]
 			picture = rider[1 if instance.look.gait_is_stepping() else 0][view]
 		EventDef.Look.LOOSE_DOG:
-			picture = instance.dog_picture(view, instance.look.gait_is_stepping(), instance.look.gait_is_second_half())
-			# Both revisions' _draw_loose_dog draws this 26px trailing, 2px-wide line.
+			picture = EventPictures.dog_picture(view, instance.look.gait_is_stepping(), instance.look.gait_is_second_half())
+			# FigureLook._draw_loose_dog() draws this slack lead, 2px wide, trailing
+			# EventFootprints.LOOSE_LEAD_REACH (26px) behind the dog.
 			var behind := 26.0 if instance.look._heading_is_west() else -26.0
 			parts.append(Rect2(minf(behind, 0.0) - 1.0, -9.0 + bob, absf(behind) + 2.0, 8.0))
 		EventDef.Look.FIRE_ENGINE:
-			picture = instance.FIRE_ENGINE_BY_VIEW[view]
+			picture = EventPictures.FIRE_ENGINE_BY_VIEW[view]
 		EventDef.Look.ARMY_TRUCK:
-			picture = instance.ARMY_TRUCK_BY_VIEW[view]
+			picture = EventPictures.ARMY_TRUCK_BY_VIEW[view]
 		EventDef.Look.CHARGING_DOG:
-			picture = (instance.CHARGING_DOG_BY_VIEW_B if instance.look.gait_is_stepping()
-					else instance.CHARGING_DOG_BY_VIEW)[view]
+			picture = (EventPictures.CHARGING_DOG_BY_VIEW_B if instance.look.gait_is_stepping()
+					else EventPictures.CHARGING_DOG_BY_VIEW)[view]
 		_:
 			assert(false, "arrival collector has no drawing observer for this look")
-	parts.append(_picture_rect(instance, picture, bob))
-	var wheels: Dictionary = instance.WHEELS_BY_LOOK.get(def.look, {})
+	parts.append(_picture_rect(picture, bob))
+	var wheels: Dictionary = EventPictures.WHEELS_BY_LOOK.get(def.look, {})
 	if not wheels.is_empty():
-		parts.append(_picture_rect(instance, wheels[view], 0.0))
+		parts.append(_picture_rect(wheels[view], 0.0))
 	if def.draws_body_shadow:
 		for piece in def.parts():
 			var points: PackedVector2Array = piece.shape.shadow_outline(Vector2.ZERO)
@@ -196,6 +192,6 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 		parts.append(mark)
 	return parts
 
-static func _picture_rect(instance: EventInstance, picture: String, bob: float) -> Rect2:
-	var size: Vector2 = instance._native_size(picture)
+static func _picture_rect(picture: String, bob: float) -> Rect2:
+	var size: Vector2 = EventPictures.native_size(picture)
 	return Rect2(-size.x * 0.5, -size.y + bob, size.x, size.y)

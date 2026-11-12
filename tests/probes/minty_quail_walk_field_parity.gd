@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends "res://tests/test_day13_guard.gd"
 ## Parity probe for minty-quail's shared-components D2 (the walk field on the world layer, the chase
 ## way from the `Navigator`): prints, deterministically and with no timing in it, what the move of
@@ -30,7 +29,7 @@ const CHASE_SECONDS := 31.8
 ## Overrides test_day13_guard.run.
 func run(t: TestRunner) -> void:
 	for seed_value in GUARD_SEEDS:
-		for walks in [false, true]:
+		for walks: bool in [false, true]:
 			_the_guard(t, seed_value, walks)
 	for day in ARROW_DAYS:
 		for seed_value in ARROW_SEEDS:

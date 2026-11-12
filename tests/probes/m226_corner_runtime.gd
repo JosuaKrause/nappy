@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends Node
 ## Observe a normal main scene driven only by existing dev flags. No gameplay state is changed.
 ## The same scene may be run headlessly for preflight or with --screenshot for the evidence burst.
@@ -12,7 +11,8 @@ var emerged := false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	main = load("res://scenes/main.tscn").instantiate()
+	var scene: PackedScene = load("res://scenes/main.tscn")
+	main = scene.instantiate()
 	add_child(main)
 
 func _exit_tree() -> void:

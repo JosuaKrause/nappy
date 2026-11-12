@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for M98, pressure in the empty acts — "Patrols for acts III and IV, built
 ## around encounter cost." Not a suite: it prints rather than asserting, so it lives here under
@@ -125,12 +124,12 @@ func _measure_return_phase() -> void:
 			var after_count: int = return_after[0]
 			var after_ids: Array[String] = return_after[1]
 
-			out_seconds_by_act[act].append(out_seconds)
-			return_seconds_by_act[act].append(return_seconds)
-			return_fraction_by_act[act].append(return_seconds / maxf(1.0, day_len))
-			out_encounters_by_act[act].append(out_count)
-			return_encounters_before_by_act[act].append(before_count)
-			return_encounters_after_by_act[act].append(after_count)
+			(out_seconds_by_act[act] as Array).append(out_seconds)
+			(return_seconds_by_act[act] as Array).append(return_seconds)
+			(return_fraction_by_act[act] as Array).append(return_seconds / maxf(1.0, day_len))
+			(out_encounters_by_act[act] as Array).append(out_count)
+			(return_encounters_before_by_act[act] as Array).append(before_count)
+			(return_encounters_after_by_act[act] as Array).append(after_count)
 
 			if examples.size() < MAX_EXAMPLES:
 				examples.append(
@@ -143,7 +142,7 @@ func _measure_return_phase() -> void:
 
 	print("\n-- per act (mean over %d seeds) --" % SEEDS)
 	print("  act  out-leg(s)  return-leg(s)  return-of-day   owed-out  owed-return-before  owed-return-after")
-	for act in [1, 2, 3, 4]:
+	for act: int in [1, 2, 3, 4]:
 		var n: Array = out_seconds_by_act[act]
 		if n.is_empty():
 			print("  %-4d (no sampled day reached a calm area)" % act)
@@ -154,14 +153,14 @@ func _measure_return_phase() -> void:
 				_mean_i(return_encounters_before_by_act[act]),
 				_mean_i(return_encounters_after_by_act[act])])
 
-	for label in ["before", "after"]:
+	for label: String in ["before", "after"]:
 		var counts: Dictionary = return_encounters_before_by_act if label == "before" \
 				else return_encounters_after_by_act
 		var all_counts: Array = []
-		for act in [1, 2, 3, 4]:
+		for act: int in [1, 2, 3, 4]:
 			all_counts.append_array(counts[act])
 		var zero := 0
-		for c in all_counts:
+		for c: int in all_counts:
 			if int(c) == 0:
 				zero += 1
 		if not all_counts.is_empty():
@@ -203,7 +202,7 @@ func _mean_f(values: Array) -> float:
 	if values.is_empty():
 		return 0.0
 	var total := 0.0
-	for v in values:
+	for v: float in values:
 		total += float(v)
 	return total / float(values.size())
 

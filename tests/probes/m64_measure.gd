@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for "measure the empty feeling before and after". Not a suite: it prints
 ## numbers rather than asserting relationships, so it lives here under `tests/probes/`, where the
@@ -33,7 +32,7 @@ func _roles_of_the_named_rows() -> void:
 	print("WALL_WORTH_OF_COST = %.2f" % EventScheduler.WALL_WORTH_OF_COST)
 	var ids := ["cafe_tables", "market_stall", "construction", "delivery_van",
 			"dog_walker", "homeless_yeller", "loose_dog"]
-	for id in ids:
+	for id: String in ids:
 		var def := EventCatalogue.by_id(id)
 		if not def:
 			print("  %-16s not in the catalogue" % id)
@@ -73,7 +72,7 @@ func _role_and_depth_sweep() -> void:
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 31)
 		var grid := ReachabilityGrid.build(map)
-		for day in SAMPLE_DAYS:
+		for day: int in SAMPLE_DAYS:
 			var state := CityState.new()
 			state.begin_day(map.block_plans, day)
 			map.repaint(state)
@@ -123,20 +122,20 @@ func _role_and_depth_sweep() -> void:
 	print("mean solid friction placements on the corridor/day: %.1f"
 			% (sum_solid_friction_on_corridor / days_f))
 	print("-- by role x depth (0 = on corridor, 1 = rim, 2 = deep/2+) --")
-	for role_name in role_names:
+	for role_name: String in role_names:
 		var counts: Array[int] = []
 		for depth in range(3):
 			counts.append(int(by_role_depth.get("%s:%d" % [role_name, depth], 0)))
 		print("  %-10s depth0=%5d depth1=%5d depth2+=%5d" % [role_name, counts[0], counts[1], counts[2]])
 
 	print("-- per named row: placements by depth, and by role --")
-	for id in named:
+	for id: String in named:
 		var counts: Array[int] = []
 		for depth in range(3):
 			counts.append(int(by_id_depth.get("%s:%d" % [id, depth], 0)))
 		var total := counts[0] + counts[1] + counts[2]
 		var role_bits: Array[String] = []
-		for role_name in role_names:
+		for role_name: String in role_names:
 			var c := int(by_id_role.get("%s:%s" % [id, role_name], 0))
 			if c > 0:
 				role_bits.append("%s=%d" % [role_name, c])
@@ -197,7 +196,7 @@ func _closure_access_vs_rim_sweep() -> void:
 			sum_access += access.size()
 			sum_rim += rim.size()
 			var overlap := 0
-			for key in access:
+			for key: Vector3i in access:
 				if rim.has(key):
 					overlap += 1
 			sum_access_and_rim += overlap
