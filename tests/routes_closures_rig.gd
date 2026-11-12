@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **The cases behind `test_routes_closures_a.gd`, `_b.gd` and `_c.gd`; not a suite itself.** Each
 ## part `prepare()`s the maps it owns and runs the cases it owns, so no suite runs two minutes
@@ -79,7 +78,7 @@ func case_the_home_street_is_never_closed(t: TestRunner) -> void:
 ## be the whole evidence.
 func case_closures_are_deterministic(t: TestRunner) -> void:
 	for map: CityMap in _maps.slice(0, 4):
-		for day in [1, 7, 14]:
+		for day: int in [1, 7, 14]:
 			var first := _plan_uncached(map, day)
 			var second := _plan_uncached(map, day)
 			t.check(first.size() == second.size(),
@@ -133,7 +132,7 @@ func case_a_closed_street_is_out_of_the_network(t: TestRunner) -> void:
 	map.close_streets(closures)
 	t.check(not closures.is_empty(), "act IV shuts something")
 	for closure in closures:
-		for at_a in [true, false]:
+		for at_a: bool in [true, false]:
 			for tile in map.rect_tiles(closure.segment.mouth_rect(at_a)):
 				t.check(map.is_closed(tile), "the mouth tile %s of a closed street is closed" % tile)
 		for tile in closure.tiles(map):
@@ -201,7 +200,7 @@ func case_a_mid_segment_opening_stays_reachable_from_its_own_side(t: TestRunner)
 			var opening: Vector2i = found[0]
 			var street_side: Vector2i = found[1]
 			var barrier := {}
-			for at_a in [true, false]:
+			for at_a: bool in [true, false]:
 				for tile in map.rect_tiles(segment.mouth_rect(at_a)):
 					barrier[tile] = true
 			var reached := grid.flood([opening], barrier)
@@ -236,7 +235,7 @@ func _mid_segment_opening(map: CityMap, segment: StreetNetwork.Segment) -> Array
 ## with today's streets shut, walking from the doorstep still reaches calm ground.
 func case_calm_ground_is_still_walkable_to(t: TestRunner) -> void:
 	for map in _maps:
-		for day in [1, 6, 11, 14]:
+		for day: int in [1, 6, 11, 14]:
 			map.close_streets(_plan(map, day))
 			var reached := map.walk_field(
 					map.world_to_tile(map.doorstep_world_position()), map.closed_tiles)
@@ -338,7 +337,7 @@ func _enough_calm_is_reachable(map: CityMap, grid: ReachabilityGrid,
 		var segment := map.network.by_key(key)
 		if not segment:
 			continue
-		for at_a in [true, false]:
+		for at_a: bool in [true, false]:
 			for tile in map.rect_tiles(segment.mouth_rect(at_a)):
 				blocked[tile] = true
 	var home_tile := map.world_to_tile(map.doorstep_world_position())
@@ -374,7 +373,7 @@ func case_a_wall_off_the_corridor_never_fails_the_invariant(t: TestRunner) -> vo
 		var map := _maps[i]
 		var home := ClosurePlanner.home_street(map)
 		var grid := ReachabilityGrid.build(map)
-		for day in [1, 7, 14]:
+		for day: int in [1, 7, 14]:
 			var tree := _todays_tree(map, day)
 			var areas := ClosurePlanner.calm_areas(map)
 			var closed := {}

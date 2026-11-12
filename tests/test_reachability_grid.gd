@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `ReachabilityGrid`: the tile graph contracted into two-tile cells.
 ##
@@ -127,7 +126,7 @@ func _test_a_query_sees_a_blocked_tile_the_grid_was_not_built_with(t: TestRunner
 
 	# Wall the home in on all four sides with a fresh blocked set the grid was never built with.
 	var blocked := {}
-	for offset in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+	for offset: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
 		blocked[home + offset] = true
 	var sealed := grid.flood([home], blocked)
 	t.check(not grid.reaches(far, blocked, sealed),
@@ -168,7 +167,7 @@ func _test_reaches_uses_the_dirty_set_flood_already_built(t: TestRunner) -> void
 	var reached := grid.flood([Vector2i(0, 0)], blocked)
 
 	t.check(not grid.reaches(Vector2i(2, 2), blocked, reached), "the blocked tile itself is not reached")
-	for tile in [Vector2i(3, 2), Vector2i(2, 3), Vector2i(3, 3)]:
+	for tile: Vector2i in [Vector2i(3, 2), Vector2i(2, 3), Vector2i(3, 3)]:
 		t.check(grid.reaches(tile, blocked, reached),
 				"%s shares the blocked tile's cell and is still reached round it" % tile)
 	t.check(grid.reaches(Vector2i(0, 0), blocked, reached), "the source is reached")

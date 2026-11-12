@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Road closures over the first six maps of the sweep: the day-level invariant, counts, ground, determinism.
 ## One of the parts the suite is split into so none runs two minutes serial; the cases are in `tests/routes_closures_rig.gd`.
@@ -6,7 +5,7 @@ extends RefCounted
 const Rig := preload("res://tests/routes_closures_rig.gd")
 
 func run(t: TestRunner) -> void:
-	var rig = Rig.new()
+	var rig: Rig = Rig.new()
 	rig.prepare(0, 6)
 	rig.case_every_planned_day_keeps_the_invariant(t)
 	rig.case_the_home_street_is_never_closed(t)
