@@ -35,9 +35,10 @@ olive-ferret), and a test reads its subject only through methods (inbox #1182 in
 ## Parity
 
 Each probe ran by path at `origin/main` (da510b555) and at the head, one at a time, with a twenty-minute limit,
-and the outputs were compared with timing lines set aside. Eighteen print the same lines, four of them but for
+and the outputs were compared with timing lines set aside. Nineteen print the same lines, four of them but for
 wall-clock figures (`minty_quail_crowd_yields`, `velvet_stork_guard_path_cost`, `walk_rows`,
-`scenery_shader_warmup_runtime`); `scenery_animation_runtime`'s drawing half needs a window and ran at neither.
+`scenery_shader_warmup_runtime`), and `scenery_animation_runtime` over its headless half, its drawing half needing
+a window and run at neither revision.
 The two m226 probes run where main errors: `m226_arrival_timing` prints no script error and fills its "drawn
 entry" column, its other columns and checks the same as main's; `m226_corner_runtime` sees the charging dog under
 the screen's cover and coming out of it, where main saw neither. `minty_quail_day13_real_marks` stopped at the
