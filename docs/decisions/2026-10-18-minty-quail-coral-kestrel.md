@@ -27,7 +27,8 @@ olive-ferret), and a test reads its subject only through methods (inbox #1182 in
 
 ## Fields read and written, by class
 
-`tools/field_answers.py --counts` on the eleven files, as it prints them, each named method read in its
+`tools/field_answers.py --counts` on the eleven files, as it prints them at the merge of main
+ea5946e88 (a method's call count moves as main adds or drops calls), each named method read in its
 class. Of these, the pass converts the `Building`, `PosterState` and `Prop` fields named above; the
 searched classes' other fields are left because no method answers them, or because the method that
 does sets several fields together and would change what a suite varies (`stand_on()` and `draw_as()`
@@ -43,7 +44,7 @@ station, is `equip(null, null, null)`); every other class's fields are left for 
 - `EventDef`: `id` read (`tests/test_city_decay.gd` on 1 line): no method
 - `EventInstance`: `def` read (`tests/test_posters.gd` on 1 line): `row()` (2 calls); `excitement` read (`tests/test_city_world.gd` on 1 line): `source()` (16 calls)
 - `EventManager`: `world` read (`tests/test_city_world.gd` on 2 lines, `tests/test_posters.gd` on 1 line): no method; `world.instances` read (`tests/test_city_world.gd` on 2 lines): `instances()` (21 calls)
-- `EventPlan`: `def` read (`tests/test_city_decay.gd` on 1 line, `tests/test_power_station.gd` on 2 lines): `row()` (27 calls); `def.id` read (`tests/test_city_decay.gd` on 1 line): `row_id()` (6 calls); `def.obstructs_radius` read (`tests/test_power_station.gd` on 2 lines): `obstructs_within()` (1 call); `position` read (`tests/test_city_decay.gd` on 1 line, `tests/test_power_station.gd` on 2 lines): `placed_at()` (27 calls); of it alone, `is_placed()` returns `position != Vector2.INF` (31 calls, +4 own)
+- `EventPlan`: `def` read (`tests/test_city_decay.gd` on 1 line, `tests/test_power_station.gd` on 2 lines): `row()` (27 calls); `def.id` read (`tests/test_city_decay.gd` on 1 line): `row_id()` (6 calls); `def.obstructs_radius` read (`tests/test_power_station.gd` on 2 lines): `obstructs_within()` (1 call); `position` read (`tests/test_city_decay.gd` on 1 line, `tests/test_power_station.gd` on 2 lines): `placed_at()` (28 calls); of it alone, `is_placed()` returns `position != Vector2.INF` (31 calls, +4 own)
 - `EventWorld`: `day` read (`tests/test_posters.gd` on 1 line): no method
 - `FrameLedger`: `keep` written (`tests/test_power_station.gd` on 1 line): `keep_this_frame()` does `keep = on` (2 calls)
 - `GarbageSacks.Placed`: `position` read (`tests/test_city_decay.gd` on 2 lines): no method
@@ -55,7 +56,7 @@ station, is `equip(null, null, null)`); every other class's fields are left for 
 - `ResistanceRunState`: `completed_steps` written (`tests/test_posters.gd` on 5 lines): `give_back()` does `completed_steps = _dawn_completed_steps.duplicate()` (1 call), `restore()` does `completed_steps = _to_int_array(data["…"])` (3 calls)
 - `ResistanceSteps.Step`: `index` read (`tests/test_posters.gd` on 2 lines): no method
 - `RunHeader`: `day` written (`tests/test_posters.gd` on 2 lines): `reset()` does `day = 1` (3 calls), `restore()` does `day = int(data["…"])` (3 calls)
-- `RunState`: `calendar` read (`tests/test_city_buildings.gd` on 1 line, `tests/test_posters.gd` on 2 lines): no method; `header` read (`tests/test_posters.gd` on 2 lines): no method; `posters` read (`tests/test_posters.gd` on 54 lines): no method; `resistance` read (`tests/test_posters.gd` on 5 lines): no method
+- `RunState`: `calendar` read (`tests/test_city_buildings.gd` on 1 line, `tests/test_posters.gd` on 2 lines): no method; `header` read (`tests/test_posters.gd` on 2 lines): no method; `posters` read (`tests/test_posters.gd` on 55 lines): no method; `resistance` read (`tests/test_posters.gd` on 5 lines): no method
 - `SceneryGround`: `chunks` read (`tests/test_routes_kerb_tint.gd` on 2 lines): no method; `elapsed` written (`tests/test_roof_entities.gd` on 2 lines): no method; `tile_set` read (`tests/test_routes_kerb_tint.gd` on 1 line): no method
 - `SceneryLayer`: `frame_b` read (`tests/test_roof_entities.gd` on 1 line): no method
 - `ScreenCover`: `left` read (`tests/test_posters.gd` on 1 line): `left_corner()` (2 calls)
