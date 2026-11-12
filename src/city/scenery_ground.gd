@@ -102,7 +102,7 @@ func _prepare_whole(key: Vector2i) -> void:
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
 		water.atlas = atlas
-		water.elapsed = elapsed
+		water.set_clock(elapsed)
 		layer.add_child(water)
 		water.configure(water_cells)
 		water.set_process(false)
@@ -139,7 +139,7 @@ func prepare_step(key: Vector2i) -> bool:
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
 		water.atlas = atlas
-		water.elapsed = elapsed
+		water.set_clock(elapsed)
 		layer.add_child(water)
 		water.configure(water_cells)
 		water.set_process(false)
