@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## Where a mark and its guard stand in an alley: avoided alleys, the guard's place, walled alleys and the doorstep.
 ##
@@ -210,16 +209,17 @@ func _test_the_guard_never_lands_inside_a_building(t: TestRunner) -> void:
 	for seed_value in SWEEP_SEEDS:
 		for entry in _relocations_over_the_marks(t, seed_value, _on_the_tile):
 			var guard_at: Vector2 = entry.guard
+			var mark: Vector2 = entry.mark
 			var map := _city.map
 			var tile: Vector2i = entry.tile
 			var doorstep := map.doorstep_world_position()
-			if entry.mark != Vector2.INF:
+			if mark != Vector2.INF:
 				# PLAYTEST-55's spawn kill (`_test_no_alley_robbery_stands_near_the_doorstep()`),
 				# over every mark the relocation stands and its guard.
-				t.check(entry.mark.distance_to(doorstep) > doorstep_reach,
+				t.check(mark.distance_to(doorstep) > doorstep_reach,
 						"seed %d: the mark relocated to %s is not within lethal reach of the doorstep"
-						% [seed_value, map.world_to_tile(entry.mark)])
-			if entry.mark == Vector2.INF or guard_at == Vector2.INF:
+						% [seed_value, map.world_to_tile(mark)])
+			if mark == Vector2.INF or guard_at == Vector2.INF:
 				continue
 			checked += 1
 			t.check(guard_at.distance_to(doorstep) > doorstep_reach,

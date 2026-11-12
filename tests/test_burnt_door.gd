@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Day 8's burnt-building task stands on the building's door, and the red arrow, the contact and the
 ## acceptance point agree on it (teal-moose, playtest azure-koala finding 1: "burnt building task is
@@ -43,7 +42,7 @@ func run(t: TestRunner) -> void:
 		# (held ground is ground), each a tile centre below the facade.
 		var stand_tiles: Array[Vector2i] = []
 		var reach := ResistanceReads.day_reachability(city)
-		for across in [-1, 0, 1]:
+		for across: int in [-1, 0, 1]:
 			var tile: Vector2i = frontage + Vector2i(across, 0)
 			if door.distance_to(city.map.tile_to_world(tile)) <= ResistanceDirector.DOOR_REACH \
 					and city.map.is_walkable(tile) and not city.map.is_closed(tile) \

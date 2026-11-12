@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Day 13's waiting guard follows her to the roadblock she approaches *(inbox #650 in mossy-beaver:
 ## "move the task's waiting guard to the roadblock the player approaches"; inbox #651 in
@@ -79,7 +78,7 @@ func run(t: TestRunner) -> void:
 	_test_a_roadblock_streamed_out_and_in_keeps_its_side(t)
 	# The probes' days on which a guard once stood on her only way.
 	_streams = ""
-	for seed_value in [1234567, 314159]:
+	for seed_value: int in [1234567, 314159]:
 		_test_the_guard_stands_on_the_far_side_from_her(t, seed_value)
 	_streams = "day13-guard:"
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, true)
@@ -859,7 +858,7 @@ func _test_the_roadblock_is_placed_under_the_rules_close_by(t: TestRunner, seed_
 		var plan := plans[index]
 		found = found or (plan.is_placed() and not plan.is_spent() and not plan.is_in_the_wall()
 				and not plan.is_door() and plan.instance() == roadblock)
-	var swapped: bool = plans.size() == plans_before + 1 and plans.back().instance() == roadblock
+	var swapped: bool = plans.size() == plans_before + 1 and plans[plans.size() - 1].instance() == roadblock
 	t.check(found or swapped,
 			"seed %d: it is a roadblock the day placed, or one put across a section in place of what it held"
 			% seed_value)
@@ -1062,7 +1061,7 @@ func _her_way_to_another_roadblock(director: ResistanceDirector, player: Strolle
 func _spots_to_walk_up_from(map: CityMap, roadblock: EventInstance) -> Array[Vector2i]:
 	var centre := map.world_to_tile(roadblock.body_position())
 	var spots: Array[Vector2i] = []
-	for radius in [12, 10, 14, 8, 16, 6]:
+	for radius: int in [12, 10, 14, 8, 16, 6]:
 		for offset: Vector2i in [Vector2i(radius, 0), Vector2i(-radius, 0), Vector2i(0, radius),
 				Vector2i(0, -radius)]:
 			var tile := centre + offset
