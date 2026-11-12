@@ -16,8 +16,8 @@ small pull requests, each reviewed and merged on its own, the player's answer to
 (inbox #1381 in gray-moose): the four developer tools, the run log's summary lines off the city
 scene and the developer's rigs have merged (#1364, #1365, #1374); the event manager's own city is
 in review (#1378), and goes before the dawn's context rewrites `build_day()`'s call
-(`scheduler-breakup.md`); the smaller cases go when they are ready, and who
-builds the event manager and the crowd is last (`standing-layer-breaks.md`). The earlier answer was
+(polite-tapir's `scheduler-breakup.md`); the smaller cases go when they are ready, and who
+builds the event manager and the crowd is last (polite-tapir's `standing-layer-breaks.md`). The earlier answer was
 three pull requests ("yes three prs is fine", inbox #1173 in gray-dolphin):
 
 - the event manager's own city: `EventManager.setup(city, …)` and `EventWorld.city`;

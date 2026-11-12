@@ -1,5 +1,6 @@
 priority: now
 after: 2026-10-18-minty-quail
+after: 2026-11-11-polite-tapir
 
 # snowy-goose — Explosions in the escape city: off screen, an explosion badge, craters already there, flashes and a shake · filed 2026-10-18
 
@@ -11,7 +12,8 @@ bright screen flash (matching the flashes from the apartment escape). don't make
 be dangerous for viewers", and "also have some random screen flashes as well indicating further away
 bombs. and for the closeby explosion have the screen shake a little" (minty-lemur #785).
 
-Built after minty-quail (one engine), since the escape city's events then run on the day's code; the
+Built after minty-quail (one engine) and polite-tapir (its design review, whose placement draws the
+escape city on the day's unit draw), since the escape city's events then run on the day's code; the
 order is the filer's proposal.
 
 **The ask, item by item (one PR, or two if the badge drawing goes first):**

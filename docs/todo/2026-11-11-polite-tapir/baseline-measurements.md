@@ -1,6 +1,6 @@
 # The numbers from before the refactor are captured while the old tree still runs
 
-**The ask.** The entry remeasures once, at the end (inbox #813 in curly-moose), comparing "main and the
+**The ask.** The refactor (minty-quail) remeasures once, at the end (inbox #813 in curly-moose), comparing "main and the
 refactor's head", but the refactor merges into main as it goes. Shown the design review's finding
 that "the single remeasure at the end has no stored 'before'. No baseline commit is named and no
 winnability or route-cost numbers from before the refactor are saved. Capturing them now blocks

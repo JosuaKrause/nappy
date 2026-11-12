@@ -48,7 +48,7 @@ engine hold a file to that.
   it runs. `tests/probes/bouncy_egret_day11_mast.gd` reads `siting.scenery_ground` off
   `EventScheduler.WalkSiting` twice, a member that is the private `_ground`, which no method answers; the probe replays
   `EventScheduler._best_of()`'s rules through `WalkSiting`'s private members, so it is typed or deleted by step 4
-  of `placement-by-construction.md`, which deletes `_best_of()`.
+  of polite-tapir's `placement-by-construction.md`, which deletes `_best_of()`.
 
 **Done when** no file under `tests/` carries a file-level ignore of the typing warnings, whichever of the
 three it names (`uv run python tools/check_field_reads.py --summary` counts the files by folder), and neither

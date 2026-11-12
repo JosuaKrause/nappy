@@ -1,5 +1,6 @@
 priority: now
 after: 2026-10-18-minty-quail
+after: 2026-11-11-polite-tapir
 
 # amber-puffin — The south water is a blue base with drifting Voronoi lines · filed 2026-10-11
 
