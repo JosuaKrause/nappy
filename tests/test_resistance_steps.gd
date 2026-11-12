@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends "res://tests/resistance_rig.gd"
 ## The resistance subquest's step table, touch-completion, the director's seeded dawn draws, a perform step expiring, and a finished task shown by the world: the package, the yeller leaving, the sabotage.
 
@@ -143,9 +142,9 @@ func _test_touching_completes_a_pickup(t: TestRunner) -> void:
 	var completed: Array[int] = []
 	_contact.completed.connect(func(index: int) -> void: completed.append(index))
 
-	t.check(not _contact.is_done, "not done before she arrives")
+	t.check(not _contact.is_finished(), "not done before she arrives")
 	await _step_a_frame(t)
-	t.check(_contact.is_done, "touching it completes it, instantly — there is no hold")
+	t.check(_contact.is_finished(), "touching it completes it, instantly — there is no hold")
 	t.check(completed == [1], "and reports which step it was, once")
 	_teardown_contact()
 
@@ -153,7 +152,7 @@ func _test_walking_away_leaves_it_untouched(t: TestRunner) -> void:
 	_build_pickup(t, 1)
 	_player.global_position = Vector2(500.0, 0.0)
 	await _step_a_frame(t)
-	t.check(not _contact.is_done, "out of reach, nothing happens")
+	t.check(not _contact.is_finished(), "out of reach, nothing happens")
 	_teardown_contact()
 
 ## `ContactPoint._draw_chalk()` reads `MARK` untouched and `MARK_TOUCHED` once `is_done` from the
@@ -192,14 +191,14 @@ func _test_a_perform_contact_rides_on_its_instance(t: TestRunner) -> void:
 
 	_player.global_position = Vector2.ZERO
 	await _step_a_frame(t)
-	t.check(not contact.is_done, "out of reach of where the rider is now")
+	t.check(not contact.is_finished(), "out of reach of where the rider is now")
 
 	# The rider moves; the contact follows it rather than staying where it started. Index 2's own
 	# `completes_at_inner_radius` (M205) still completes on the first tick she is in reach -- it
 	# only changes which radius that reach is measured against, not whether it is instant.
 	instance.position = Vector2.ZERO
 	await _step_a_frame(t)
-	t.check(contact.is_done, "and completes once she reaches wherever the rider has gone")
+	t.check(contact.is_finished(), "and completes once she reaches wherever the rider has gone")
 
 	contact.free()
 	instance.free()
@@ -246,7 +245,7 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 	note_contact.use_player(player)
 	t.add_child(note_contact)
 	await _step_a_frame(t)
-	t.check(note_contact.is_done,
+	t.check(note_contact.is_finished(),
 			"one tick inside inner_radius completes it, even though REACH alone would not have")
 	note_contact.free()
 
@@ -260,7 +259,7 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 	ordinary_contact.use_player(player)
 	t.add_child(ordinary_contact)
 	await _step_a_frame(t)
-	t.check(not ordinary_contact.is_done,
+	t.check(not ordinary_contact.is_finished(),
 			"the same distance does not complete an ordinary step's REACH check")
 	ordinary_contact.free()
 
@@ -271,7 +270,7 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 	outside_contact.use_player(player)
 	t.add_child(outside_contact)
 	await _step_a_frame(t)
-	t.check(not outside_contact.is_done, "outside inner_radius, the note is not delivered either")
+	t.check(not outside_contact.is_finished(), "outside inner_radius, the note is not delivered either")
 	outside_contact.free()
 
 	instance.free()
@@ -339,9 +338,9 @@ func _test_touching_a_tasks_body_from_any_side_completes_it(t: TestRunner) -> vo
 				player.global_position = bearing * r
 				t.add_child(contact)
 				await _step_a_frame(t)
-				if contact.is_done and r == pressed:
+				if contact.is_finished() and r == pressed:
 					pressed_done += 1
-				elif contact.is_done:
+				elif contact.is_finished():
 					far_done += 1
 				contact.free()
 		t.check(pressed_done == bearings,
@@ -365,7 +364,7 @@ func _test_touching_a_tasks_body_from_any_side_completes_it(t: TestRunner) -> vo
 func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t: TestRunner) -> void:
 	var run := _build_city_in_a_new_run(t)
 	run.resistance.progress = Tuning.RESISTANCE_GOAL
-	for day in [9, 13, Tuning.RUN_LENGTH_DAYS]:
+	for day: int in [9, 13, Tuning.RUN_LENGTH_DAYS]:
 		var first := _attempt_the_day(t, day, _city.map.doorstep_world_position(), false)
 		var retry := _attempt_the_day(t, day, first[0], true)
 		var dawn_guarded: bool = day != Tuning.RUN_LENGTH_DAYS
@@ -481,7 +480,7 @@ func _test_the_guard_is_seeded(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 
-	for day in [6, 7, 8, 9]:
+	for day: int in [6, 7, 8, 9]:
 		run.resistance.completed_steps = _completed_through(2 * (day - 6))
 		var director := _director(t)
 		# The robber this day's mark set, not a proximity search over the street: this loop never
@@ -665,7 +664,7 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t: TestRunner) -
 ## was going") would carry him at her on whichever half has him walking toward where she is
 ## standing; `leave_for_a_completed_task()` turns him to leave away from her regardless.
 func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t: TestRunner) -> void:
-	for on_the_second_half in [false, true]:
+	for on_the_second_half: bool in [false, true]:
 		var instance := EventInstance.new()
 		instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO,
 				PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]))

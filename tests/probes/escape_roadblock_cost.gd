@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Measurement probe for the escape's roadblocks (inbox #771 in minty-lemur): what walking past the roadblocks on
 ## one of the escape's streets costs the meter with their guards at their post, what luring the
@@ -24,13 +23,16 @@ const Rig := preload("res://tests/escape_roadblock_rig.gd")
 const SEEDS: Array[int] = [4242, 1, 77, 9001, 23, 5, 31337, 2024]
 
 func run(t: TestRunner) -> void:
-	for awake in [false, true]:
+	for awake: bool in [false, true]:
 		_measure(t, awake)
 
 func _measure(t: TestRunner, awake: bool) -> void:
 	var start := Tuning.EXCITEMENT_WAKE_THRESHOLD if awake else 0.0
 	var tag := "awake %2.0f" % start if awake else "asleep 0"
-	var tally := {"posted": [], "lure": [], "after": []}
+	var posted_walks: Array[Dictionary] = []
+	var lure_walks: Array[Dictionary] = []
+	var after_walks: Array[Dictionary] = []
+	var tally := {"posted": posted_walks, "lure": lure_walks, "after": after_walks}
 	var bands: Array[int] = []
 	for seed_value in SEEDS:
 		var built := Rig.plan_for(seed_value)
@@ -47,19 +49,20 @@ func _measure(t: TestRunner, awake: bool) -> void:
 						segment.key()])
 				continue
 			bands.append(group.size())
-			for forward in [true, false]:
+			for forward: bool in [true, false]:
 				var from: Vector2 = line[0] if forward else line[1]
 				var to: Vector2 = line[1] if forward else line[0]
 				var posted := Rig.walk(t, map, group, from, to, Rig.Meter.new(start, not awake))
 				var lured := Rig.lure(t, map, group, from, to, Rig.Meter.new(start, not awake))
+				var lure: Dictionary = lured["lure"]
 				var after: Dictionary = lured["after"]
 				print("ESCAPE_ROADBLOCK %s seed %5d street %s %d band(s) %s | posted: %s | lure: %s | after: %s"
 						% [tag, seed_value, segment.key(), group.size(), "->" if forward else "<-",
-						_say(posted), _say(lured["lure"]), _say(after)])
-				tally["posted"].append(posted)
-				tally["lure"].append(lured["lure"])
+						_say(posted), _say(lure), _say(after)])
+				posted_walks.append(posted)
+				lure_walks.append(lure)
 				if not after.is_empty():
-					tally["after"].append(after)
+					after_walks.append(after)
 	var two := 0
 	var total := 0
 	for count in bands:
@@ -67,8 +70,8 @@ func _measure(t: TestRunner, awake: bool) -> void:
 		two += 1 if count > 1 else 0
 	print("ESCAPE_ROADBLOCK %s | %d crossings over %d seeds | %d roadblocks | %d crossings with more than one"
 			% [tag, bands.size(), SEEDS.size(), total, two])
-	for key in ["posted", "lure", "after"]:
-		var walks: Array = tally[key]
+	for key: String in ["posted", "lure", "after"]:
+		var walks: Array[Dictionary] = tally[key]
 		var costs: Array[float] = []
 		var caught := 0
 		var charged := 0

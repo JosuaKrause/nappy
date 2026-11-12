@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## Whether two revisions of the code drive an event car identically where it gives way: every
 ## tick's pose, heading, distance travelled, speed and whether it stands, over seeds, heat levels
@@ -29,37 +28,38 @@ func run(t: TestRunner) -> void:
 	for city_seed in SEEDS:
 		var map: CityMap = CityGenerator.generate(city_seed)
 		for def in defs:
-			for rig in _rigs(map):
+			for rig: Dictionary in _rigs(map):
 				var report := _drive(t, map, def, rig)
 				report["seed"] = city_seed
 				report["def"] = def.id
 				report["speed"] = def.speed
 				report["rig"] = rig["name"]
-				report["start"] = snappedf(rig["route"][0].x, 0.001) if rig["axis"] == "x" \
-						else snappedf(rig["route"][0].y, 0.001)
+				var route: PackedVector2Array = rig["route"]
+				report["start"] = snappedf(route[0].x, 0.001) if rig["axis"] == "x" \
+						else snappedf(route[0].y, 0.001)
 				print("EVENT_CAR_TRACE_JSON " + JSON.stringify(report))
 				cases += 1
 	t.check(cases > 0, "ran %d cases" % cases)
 
 ## Each rig: a name, the route, where she waits, how the lights stand and when she leaves.
-func _rigs(map: CityMap) -> Array:
-	var rigs: Array = []
+func _rigs(map: CityMap) -> Array[Dictionary]:
+	var rigs: Array[Dictionary] = []
 	var tile := float(Tuning.TILE_SIZE)
 	var zebra := _a_zebra(map)
 	if zebra != Vector2.INF:
-		for direction in [1.0, -1.0]:
+		for direction: float in [1.0, -1.0]:
 			var start: Vector2 = zebra - Vector2(160.0 * direction, 0.0)
 			rigs.append({"name": "zebra_%d" % int(direction), "route": PackedVector2Array(
 					[start, start + Vector2(560.0 * direction, 0.0)]), "her": zebra, "red": false})
 	var lane_y := _lane_to_the_main_road(map)
 	if lane_y < 0:
 		rigs.append_array(_vertical_rigs(map))
-		for rig in rigs:
+		for rig: Dictionary in rigs:
 			rig["axis"] = rig.get("axis", "x")
 		return rigs
 	var lane := float(lane_y) * tile + tile * 0.5
 	var box_x := float(map.main_road * CityMap.period()) * tile
-	for direction in [1.0, -1.0]:
+	for direction: float in [1.0, -1.0]:
 		var near: float = box_x if direction > 0.0 else box_x + float(Tuning.STREET_WIDTH) * tile
 		var start := Vector2(near - direction * 260.0, lane)
 		rigs.append({"name": "red_%d" % int(direction), "route": PackedVector2Array(
@@ -71,32 +71,32 @@ func _rigs(map: CityMap) -> Array:
 		if _zebras_either_side(map, lane_y, c):
 			ordinary = c
 			break
-	for c in [ordinary, map.main_road]:
+	for c: int in [ordinary, map.main_road]:
 		if c < 0 or not _zebras_either_side(map, lane_y, c):
 			continue
-		for direction in [1.0, -1.0]:
+		for direction: float in [1.0, -1.0]:
 			var low: float = float(c * period) * tile
 			var near: float = low if direction > 0.0 else low + float(Tuning.STREET_WIDTH) * tile
 			var first: int = c * period + (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
 					if direction > 0.0 else 0)
 			var start := Vector2(near - direction * 220.0, lane)
 			for k in Tuning.SIDEWALK_WIDTH:
-				for out in [0.0, 64.0]:
+				for out: float in [0.0, 64.0]:
 					rigs.append({"name": "far_%d_%d_%d_%d" % [c, int(direction), k, int(out)],
 							"route": PackedVector2Array([start, start + Vector2(direction * 820.0, 0.0)]),
 							"her": Vector2((float(first + k) + 0.5) * tile, lane - out),
 							"red": false, "junction": Vector2i(map.main_road, CityMap.junction_index(lane_y)),
 							"green": true})
 	rigs.append_array(_vertical_rigs(map))
-	for rig in rigs:
+	for rig: Dictionary in rigs:
 		rig["axis"] = rig.get("axis", "x")
 	return rigs
 
 ## The north-south rigs: a red light on the main road's own column (the side street's green is the
 ## spine's red), a zebra she waits at on an ordinary street's column, and the far zebra behind a
 ## box on that column; each driven down (+1) and up (-1) the axis.
-func _vertical_rigs(map: CityMap) -> Array:
-	var rigs: Array = []
+func _vertical_rigs(map: CityMap) -> Array[Dictionary]:
+	var rigs: Array[Dictionary] = []
 	var tile := float(Tuning.TILE_SIZE)
 	var period := CityMap.period()
 	var spine_x := _spine_lane(map)
@@ -106,7 +106,7 @@ func _vertical_rigs(map: CityMap) -> Array:
 			var junction := Vector2i(map.main_road, c)
 			if not _signals_of(map).is_signalled(junction):
 				continue
-			for direction in [1.0, -1.0]:
+			for direction: float in [1.0, -1.0]:
 				var low := float(c * period) * tile
 				var near: float = low if direction > 0.0 else low + float(Tuning.STREET_WIDTH) * tile
 				var start := Vector2(lane, near - direction * 260.0)
@@ -126,7 +126,7 @@ func _vertical_rigs(map: CityMap) -> Array:
 			mid = y
 			break
 	if mid > 0:
-		for direction in [1.0, -1.0]:
+		for direction: float in [1.0, -1.0]:
 			var her := Vector2(lane_x, (float(mid) + 0.5) * tile)
 			var start := her - Vector2(0.0, 160.0 * direction)
 			rigs.append({"name": "vzebra_%d" % int(direction), "axis": "y", "route":
@@ -135,14 +135,14 @@ func _vertical_rigs(map: CityMap) -> Array:
 	for c in range(1, map.main_road):
 		if not _zebras_either_side_v(map, column, c):
 			continue
-		for direction in [1.0, -1.0]:
+		for direction: float in [1.0, -1.0]:
 			var low := float(c * period) * tile
 			var near: float = low if direction > 0.0 else low + float(Tuning.STREET_WIDTH) * tile
 			var first: int = c * period + (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
 					if direction > 0.0 else 0)
 			var start := Vector2(lane_x, near - direction * 220.0)
 			for k in Tuning.SIDEWALK_WIDTH:
-				for out in [0.0, 64.0]:
+				for out: float in [0.0, 64.0]:
 					rigs.append({"name": "vfar_%d_%d_%d_%d" % [c, int(direction), k, int(out)],
 							"axis": "y", "route": PackedVector2Array(
 									[start, start + Vector2(0.0, direction * 820.0)]),
@@ -174,7 +174,7 @@ func _ordinary_column(map: CityMap) -> int:
 
 func _zebras_either_side_v(map: CityMap, column: int, c: int) -> bool:
 	var period := CityMap.period()
-	for y in [c * period, c * period + 1, c * period + Tuning.STREET_WIDTH - 2,
+	for y: int in [c * period, c * period + 1, c * period + Tuning.STREET_WIDTH - 2,
 			c * period + Tuning.STREET_WIDTH - 1]:
 		if map.tile_at(Vector2i(column, y)) != GameEnums.TileType.CROSSING:
 			return false
@@ -249,7 +249,7 @@ func _lane_to_the_main_road(map: CityMap) -> int:
 
 func _zebras_either_side(map: CityMap, lane_y: int, c: int) -> bool:
 	var period := CityMap.period()
-	for x in [c * period, c * period + 1, c * period + Tuning.STREET_WIDTH - 2,
+	for x: int in [c * period, c * period + 1, c * period + Tuning.STREET_WIDTH - 2,
 			c * period + Tuning.STREET_WIDTH - 1]:
 		if map.tile_at(Vector2i(x, lane_y)) != GameEnums.TileType.CROSSING:
 			return false

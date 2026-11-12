@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for calm-pelican, "walls inside the building stop excitement too": what the debug
 ## view's fields layer costs now that it cuts each outline where a wall stops the field
@@ -21,7 +20,7 @@ const RUN_SEED := 2
 const SCREEN := Vector2(640.0, 360.0)
 
 func run(t: TestRunner) -> void:
-	for city_seed in [4242, 5551212]:
+	for city_seed: int in [4242, 5551212]:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(CityGenerator.generate(city_seed))

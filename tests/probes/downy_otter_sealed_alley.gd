@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for downy-otter, "a mark is never placed in an alley she cannot reach"
 ## (olive-koala, statement 9: *"also a mark should never be placed in an alley that is not reachable
@@ -62,10 +61,9 @@ func run(t: TestRunner) -> void:
 				_count(totals["moved"], city, director, target, shut, by_tiles, "")
 			director.free()
 		city.free()
-	for kind in ["dawn", "moved"]:
+	for kind: String in ["dawn", "moved"]:
 		print("[downy] %-5s marks %d: only through a district door %d, unreachable by tiles %d"
 				% [kind, totals[kind][0], totals[kind][1], totals[kind][2]])
-	t.check(true, "probe ran")
 
 func _count(total: Array, city: City, director: ResistanceDirector, at: Vector2, shut: Array,
 		by_tiles: PackedInt32Array, label: String) -> void:
@@ -94,11 +92,11 @@ func _doors_shut(city: City) -> Array:
 
 func _by_tiles(city: City) -> PackedInt32Array:
 	var blocked := {}
-	for tile in city.map.closed_tiles:
+	for tile: Vector2i in city.map.closed_tiles:
 		blocked[tile] = true
-	for tile in city.map.soft_sealed_tiles:
+	for tile: Vector2i in city.map.soft_sealed_tiles:
 		blocked[tile] = true
-	for tile in city.map.obstructed_tiles:
+	for tile: Vector2i in city.map.obstructed_tiles:
 		blocked[tile] = true
 	return city.map.walk_field(city.map.world_to_tile(city.map.doorstep_world_position()), blocked)
 

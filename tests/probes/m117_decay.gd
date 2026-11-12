@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What the meter actually does on each kind of ground, walked rather than derived. Not a suite:
 ## it prints numbers rather than asserting relationships, so it lives under `tests/probes/`, where
@@ -35,7 +34,6 @@ const SAMPLE_DAYS := [1, 9]
 func run(t: TestRunner) -> void:
 	_ground_rates(t)
 	_cost_table()
-	t.check(true, "m117 decay probe ran")
 
 # ------------------------------------------------------------------ ground rates ---
 
@@ -47,17 +45,17 @@ func _ground_rates(t: TestRunner) -> void:
 			City.EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER])
 	print("alley trickle %.2f/s" % Baby.EXCITEMENT_FROM_ALLEY)
 
-	for day in SAMPLE_DAYS:
+	for day: int in SAMPLE_DAYS:
 		var totals := {}
 		var counts := {}
 		print("\n-- day %d (act %d) --" % [day, Tuning.act_for_day(day)])
 		print("  %-16s %8s %8s %8s %10s %8s  %s"
 				% ["ground", "crowd/s", "ground/s", "net/s", "clears in", "×", "seed"])
-		for city_seed in SEEDS:
+		for city_seed: int in SEEDS:
 			var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 			t.add_child(city)
 			city.build(CityGenerator.generate(city_seed))
-			for row in _legs(city):
+			for row: Dictionary in _legs(city):
 				var name: String = row["name"]
 				var result := _walk(city, row["from"], row["to"], day, city_seed)
 				_print_row(name, result, city_seed)
@@ -65,7 +63,7 @@ func _ground_rates(t: TestRunner) -> void:
 				counts[name] = int(counts.get(name, 0)) + 1
 			city.free()
 		print("  -- means --")
-		for name in totals:
+		for name: String in totals:
 			var mean: float = totals[name] / maxf(1.0, float(counts[name]))
 			print("  %-16s %8s %8s %8.2f %10s"
 					% [name, "", "", mean, _clears_in(mean)])
@@ -73,9 +71,9 @@ func _ground_rates(t: TestRunner) -> void:
 ## The five grounds, as a start and an end point she walks between. Each leg is a straight line she
 ## paces back and forth along for the whole measurement, which keeps her on the ground the row is
 ## about — a park is 704px across and forty seconds of walking is 3,680.
-func _legs(city: City) -> Array:
+func _legs(city: City) -> Array[Dictionary]:
 	var map := city.map
-	var legs: Array = []
+	var legs: Array[Dictionary] = []
 	var height := float(map.size.y) * Tuning.TILE_SIZE
 
 	var quietest := 0
@@ -167,7 +165,7 @@ func _dominant_multiplier(multipliers: Dictionary) -> String:
 	var best := ""
 	var best_count := 0
 	var total := 0
-	for key in multipliers:
+	for key: String in multipliers:
 		total += int(multipliers[key])
 		if int(multipliers[key]) > best_count:
 			best_count = int(multipliers[key])
@@ -244,17 +242,17 @@ func _cost_table() -> void:
 	print("walking decay %.2f/s, running decay %.2f/s, running penalty %.2f/s"
 			% [Tuning.EXCITEMENT_DECAY_WALKING, Baby.EXCITEMENT_DECAY_RUNNING,
 			Baby.EXCITEMENT_FROM_RUNNING])
-	var rows: Array = []
+	var rows: Array[Dictionary] = []
 	for def in EventCatalogue.all():
 		rows.append({"id": def.id, "walk": def.walk_through_cost(),
 				"run": _run_through_cost(def),
 				"hard_fail": def.hard_fail, "flock": def.flock_size > 1,
 				"pursues": def.pursuit != null, "emission": _mean_emission(def),
 				"intensity": def.intensity, "outer": def.outer_radius})
-	rows.sort_custom(func(a, b): return a["walk"] < b["walk"])
+	rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["walk"] < b["walk"])
 	print("| Event | walk through | run through |")
 	print("| --- | ---: | ---: |")
-	for row in rows:
+	for row: Dictionary in rows:
 		var mark := ""
 		if row["hard_fail"]:
 			mark = " *"
@@ -270,7 +268,7 @@ func _cost_table() -> void:
 	# rows a change to that decay would turn free — `walk` is that comparison already taken.
 	print("\n-- mean emission along the line, against a candidate walking decay --")
 	print("  %-20s %9s %9s %9s %9s" % ["event", "emission", "intensity", "outer", "walk@now"])
-	for row in rows:
+	for row: Dictionary in rows:
 		print("  %-20s %9.2f %9.2f %9.0f %9.1f"
 				% [row["id"], row["emission"], row["intensity"], row["outer"], row["walk"]])
 
