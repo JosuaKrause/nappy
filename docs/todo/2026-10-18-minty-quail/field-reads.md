@@ -95,3 +95,5 @@ Left, each its own design question:
   converted after those land, and the fields they read
   become underscore-private behind a method, which takes the field's name unless the field is a
   yes-or-no one (designing-classes, "Fields are not API").
+  Each such pull request's description shows a search for the field's old name read without
+  parentheses, across `src/`, `tests/` and `tools/`, listing every remaining hit with its reason (another class's field of the same name, a write, a read inside the class's own file, a comment), only a read of this class's field from outside its file failing the step (inbox #1385 in silver-tapir).
