@@ -32,8 +32,8 @@ olive-ferret), and a test reads its subject only through methods (inbox #1182 in
 ## Parity
 
 Probes are not run by CI, so each was run by path at `origin/main` (da510b555) and at the head, one at a time,
-and the outputs compared. Sixteen print the same lines but for the run's time and, in the six that lost a check,
-its count; the two stride sheets write byte-identical pictures at both revisions. `basement_meter`,
+and the outputs compared. Sixteen print the same lines but for timing figures (the run's time line, and the
+milliseconds inside `calm_pelican_fields_layer_cost`'s lines) and, in the six that lost a check, its count; the two stride sheets write byte-identical pictures at both revisions. `basement_meter`,
 `calm_pelican_day13_roadblock` and `lazy_scenery_measure` print the same lines once timing, memory and backtrace
 line numbers are set aside. `lazy_scenery_routes` draws a fresh run seed on each boot (two runs of main drew two
 seeds), so its figures do not compare; its four checks pass at both. `entity_frame_profile`,
