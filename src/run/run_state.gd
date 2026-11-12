@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name RunState
 extends RefCounted
 ## Owns the state of a run: the seed, the calendar, nerves and resistance progress.
@@ -160,7 +159,7 @@ func _new_seed() -> int:
 ## Whether `data` carries every key this build's `run_data()` writes under `"state"` — the keys
 ## come from the parts, so a field a part gains is required of a save the moment it is written.
 func snapshot_is_complete(data: Dictionary) -> bool:
-	for field in run_parts.state_keys():
+	for field: String in run_parts.state_keys():
 		if not data.has(field):
 			return false
 	return true

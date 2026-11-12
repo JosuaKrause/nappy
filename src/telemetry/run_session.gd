@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 class_name RunSession
 extends Node
 ## The run log's one owner for a boot: it opens the log for a run and closes it when the run is
@@ -47,9 +46,12 @@ var _world: DayWorld
 ## Whether the walk being started is a retry (`RunFlow.world_stood`), for its `start` line.
 var _restarted := false
 
+## The game's event bus, named by its script so its signals are typed here.
+const _BUS := preload("res://src/autoload/event_bus.gd")
+
 ## Hands the session the run log, the run's configuration, the bus whose day ends it writes down,
 ## the run flow whose walks it heads and watches, the run it is the log of, and the run's block arcs.
-func setup(run_log: Telemetry, config: RunConfig, bus: Node, flow: RunFlow, run: RunState,
+func setup(run_log: Telemetry, config: RunConfig, bus: _BUS, flow: RunFlow, run: RunState,
 		arcs: CityState) -> void:
 	_log = run_log
 	_config = config

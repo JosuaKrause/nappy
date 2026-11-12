@@ -1316,7 +1316,6 @@ src/city/city.gd view
 
 # [SceneryWater] src/city/scenery_water.gd
 src/city/scenery_ground.gd atlas
-src/city/scenery_ground.gd elapsed
 
 # [SettledState] src/run/settled_state.gd
 src/run/run_calendar.gd settled_in

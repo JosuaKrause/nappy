@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name Building
 extends StaticBody2D
 ## A 2.5D extruded block, assembled from 32px facade and roof tiles.
@@ -1509,7 +1508,8 @@ func _roof_layout() -> Array[Dictionary]:
 			var unit := entry.duplicate(true)
 			unit["texture"] = _furniture_texture(entry.kind)
 			units.append(unit)
-		units.sort_custom(func(a, b): return (a.cell as Vector2i).y > (b.cell as Vector2i).y)
+		units.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+				return (a.cell as Vector2i).y > (b.cell as Vector2i).y)
 		return units
 	var kinds: Array = _KINDS_BY_DISTRICT.get(district, [])
 	var compact_kinds: Array = _COMPACT_KINDS_BY_DISTRICT.get(district, [])
@@ -1553,7 +1553,8 @@ func _roof_layout() -> Array[Dictionary]:
 		placed += 1
 	# Farthest (highest row) first, so the roof layers paint back to front without
 	# re-sorting on every redraw.
-	units.sort_custom(func(a, b): return (a["cell"] as Vector2i).y > (b["cell"] as Vector2i).y)
+	units.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return (a["cell"] as Vector2i).y > (b["cell"] as Vector2i).y)
 	return units
 
 ## Displayed bases up to one tile stand on one cell. Wider equipment is centered across two reserved
@@ -1576,7 +1577,7 @@ func author_roof_furniture(entries: Array) -> Array[String]:
 	var placed: Array[Dictionary] = []
 	var used := {}
 	var interior := _roof_interior_cells()
-	var kinds: Array = _KINDS_BY_DISTRICT.get(district, []).duplicate()
+	var kinds: Array = (_KINDS_BY_DISTRICT.get(district, []) as Array).duplicate()
 	if district == GameEnums.BlockPurpose.INDUSTRIAL:
 		kinds.append(_Furniture.DUCT_RUN)
 	for entry: Dictionary in entries:

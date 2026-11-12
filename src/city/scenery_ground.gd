@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 class_name SceneryGround
 extends Node2D
 ## Freeable map-cell batches sharing one loading-time TileSet. Queries expose resident cells;
@@ -39,10 +38,9 @@ var elapsed := 0.0
 func _process(delta: float) -> void:
 	elapsed += delta
 	for layer: TileMapLayer in chunks.values() + _pending_layers():
-		for child in layer.get_children():
+		for child: Node in layer.get_children():
 			if child is SceneryWater:
-				child.elapsed = elapsed
-				child._ripples.set_shader_parameter("elapsed", elapsed)
+				(child as SceneryWater).set_clock(elapsed)
 
 func configure(map: CityMap, source_of: Callable, composed: TileSet) -> void:
 	clear()
@@ -104,7 +102,7 @@ func _prepare_whole(key: Vector2i) -> void:
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
 		water.atlas = atlas
-		water.elapsed = elapsed
+		water.set_clock(elapsed)
 		layer.add_child(water)
 		water.configure(water_cells)
 		water.set_process(false)
@@ -141,7 +139,7 @@ func prepare_step(key: Vector2i) -> bool:
 	if not water_cells.is_empty():
 		var water := SceneryWater.new()
 		water.atlas = atlas
-		water.elapsed = elapsed
+		water.set_clock(elapsed)
 		layer.add_child(water)
 		water.configure(water_cells)
 		water.set_process(false)
@@ -157,7 +155,7 @@ func prepare_step(key: Vector2i) -> bool:
 	return complete
 
 func _pending_layers() -> Array:
-	return pending.values().map(func(job: Dictionary): return job.layer)
+	return pending.values().map(func(job: Dictionary) -> TileMapLayer: return job.layer)
 
 func cancel(key: Vector2i) -> void:
 	if pending.has(key):
