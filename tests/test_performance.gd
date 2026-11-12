@@ -87,8 +87,9 @@ func _test_the_readout_gains_a_labelled_column_the_log_does_not(t: TestRunner) -
 func _test_the_entry_keeps_the_log_readable_down_a_column(t: TestRunner) -> void:
 	var log := TelemetryLog.new()
 	log.note(12.0, "frame", FrameCost.line(0.0166))
-	t.check(log.lines.size() == 1, "one entry, one line")
-	var written: String = log.lines[0]
+	var lines := log.recorded_lines()
+	t.check(lines.size() == 1, "one entry, one line")
+	var written := lines[0]
 	t.check(written.begins_with("  12.0  frame   "),
 			"the timestamp and the kind sit in the fixed columns (%s)" % written)
 	t.check("fps" in written, "and the sentence follows them")

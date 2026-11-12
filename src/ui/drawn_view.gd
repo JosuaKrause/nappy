@@ -50,8 +50,3 @@ static func box_of(viewport: Viewport) -> Rect2:
 	var box := shown.grow(MARGIN)
 	viewport.set_meta(MEMO_META, [frame, box])
 	return box
-
-## Drops `viewport`'s box for this frame, for a test that moves the view between two asks in one
-## frame.
-static func forget(viewport: Viewport) -> void:
-	viewport.remove_meta(MEMO_META)

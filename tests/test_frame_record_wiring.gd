@@ -2,10 +2,10 @@ extends RefCounted
 ## **The frame recorder wired into a real boot of `main`**, which is the combination this suite is
 ## for: the sitting's record handed to every timed system, the recorder's markers first and last in
 ## a tree no other node is prioritised past, a paused frame timed but not kept, the crowd's tick timed
-## once on real physics ticks, and a desktop save and leaving the tree writing the file. Each is a fact
-## about `main` composing the recorder with the world it times, and no fake of the world shows
-## whether the wiring reaches it; the record, ledger and recorder in themselves are
-## `tests/test_frame_record.gd`'s.
+## once on real physics ticks, and leaving the tree switching the timing off and writing the file
+## the sitting keeps. Each is a fact about `main` composing the recorder with the world it times,
+## and no fake of the world shows whether the wiring reaches it; the record, ledger and recorder in
+## themselves are `tests/test_frame_record.gd`'s.
 
 const Boot := preload("res://tests/booted_main.gd")
 const UI := preload("res://tests/ui_screens.gd")
@@ -30,9 +30,10 @@ func run(t: TestRunner) -> void:
 ## hands the sitting's record to every timed system and sets the recorder up from it, its markers
 ## run first and last because no other node in the tree is prioritised past them, a paused frame is
 ## timed but not kept, a played one is kept with its world counters, the readout carries its line,
-## the crowd's tick is timed once on real physics ticks, a desktop save writes the file the sitting
-## keeps, and leaving the tree switches the timing off — which is what keeps the escape, which
-## builds no recorder, from paying for it — and writes the record.
+## the crowd's tick is timed once on real physics ticks, and leaving the tree switches the timing
+## off — which is what keeps the escape, which builds no recorder, from paying for it — and writes
+## the record on the desktop, to the file the sitting keeps, in the folder `main` handed the
+## recorder.
 ##
 ## The sitting is the test's own, parked in a home of its own (`Boot.home_playing()`) with a run of
 ## its own, which `main` plays and the day counter reads. Its record was started and then stopped
@@ -107,17 +108,14 @@ func _test_the_recorder_in_a_real_main(t: TestRunner) -> void:
 	t.check(await _the_readout_shows(t, main, recorder), "the readout carries the record's line")
 	await _check_the_crowd_is_timed_once(t, city.crowd, record, ledger)
 	record.start(ledger)
-	var written := recorder.save()
-	t.check(written == ProjectSettings.globalize_path(sitting.frame_record_file())
-			and sitting.frame_record_file().begins_with(_SCRATCH_RECORDS + "/"),
-			"a desktop save writes the file its sitting keeps, which outlives the recorder")
-	t.check(recorder.save() == written, "and every later save rewrites the same file")
-	DirAccess.remove_absolute(written)
 	booted.free_all()
 	t.check(not record.is_on(), "leaving the tree switches the timing off")
-	t.check(FileAccess.get_file_as_string(sitting.frame_record_file()).contains("nappy-frame-record"),
-			"and writes the record on the desktop as the scene exits")
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(sitting.frame_record_file()))
+	var written := sitting.frame_record_file()
+	t.check(written.begins_with(_SCRATCH_RECORDS + "/")
+			and FileAccess.get_file_as_string(written).contains("nappy-frame-record"),
+			"and writes the record on the desktop as the scene exits, in the folder `main` handed "
+			+ "the recorder, at the path its sitting keeps, which outlives the recorder")
+	DirAccess.remove_absolute(ProjectSettings.globalize_path(written))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORDS))
 	home.free()
 

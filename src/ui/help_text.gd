@@ -15,9 +15,6 @@ extends RichTextLabel
 ## so the images are added through `add_image()` with the region's own texture. The atlas group is
 ## acquired for as long as this node is in the tree — a region is valid only while its group is
 ## held, see `AtlasLibrary`.
-##
-## `line` is the line as written, tokens included, so a test (and a caller deciding whether the line
-## changed) reads what was said without having to read a picture back out of the layout.
 
 const PAUSE_TOKEN := "{pause}"
 const RUN_TOKEN := "{run}"
@@ -27,8 +24,6 @@ const _ICONS := {
 	RUN_TOKEN: &"ui/run",
 }
 
-## The line as last handed to `show_line()`, tokens unexpanded.
-var line := ""
 ## The baked atlas pages the line's symbols are drawn from (`AtlasLibrary`), handed by its screen
 ## before it enters the tree (`use_atlas()` on the HUD and the pause); a line nobody handed one (a
 ## suite's) makes its own when it first enters the tree.
@@ -65,7 +60,6 @@ static func measurable(text: String) -> String:
 
 ## Replaces what the label shows with `new_line`, centred, the symbols in place.
 func show_line(new_line: String) -> void:
-	line = new_line
 	clear()
 	if new_line == "":
 		return

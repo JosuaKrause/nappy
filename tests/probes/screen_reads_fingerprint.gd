@@ -24,7 +24,7 @@ const SHARE_BOXES: Array[Vector2] = [Vector2(24.0, 24.0), Vector2(110.0, 70.0), 
 
 func run(t: TestRunner) -> void:
 	_visible_view(t)
-	_crowd_view(t)
+	await _crowd_view(t)
 
 ## A view looked through `rig`, with `controls` the controls it is to read the scheme from.
 static func _view_through(rig: Node2D, controls: TouchControls) -> VisibleView:
@@ -124,7 +124,7 @@ func _crowd_view(t: TestRunner) -> void:
 	var anchor := Node.new()
 	t.add_child(anchor)
 	var view := _crowd_view_of(anchor)
-	print("SR_CV none | box %s | beyond %s" % [_rect_hex(_drawn_box(view, anchor)), _beyond(view, Vector2(100.0, 100.0))])
+	print("SR_CV none | box %s | beyond %s" % [_rect_hex(await _drawn_box(t, view)), _beyond(view, Vector2(100.0, 100.0))])
 	var rig := Node2D.new()
 	t.add_child(rig)
 	var camera := Camera2D.new()
@@ -140,12 +140,16 @@ func _crowd_view(t: TestRunner) -> void:
 				ScreenOrientation.apply_to_camera(camera, rotated)
 				camera.force_update_scroll()
 				print("SR_CV at=%s zoom=%s rotated=%s | box %s | beyond %s" % [centre, zoom, rotated,
-						_rect_hex(_drawn_box(view, anchor)), _beyond(view, centre)])
+						_rect_hex(await _drawn_box(t, view)), _beyond(view, centre)])
 	rig.free()
 	anchor.free()
 
-func _drawn_box(view: CrowdView, anchor: Node) -> Rect2:
-	DrawnView.forget(anchor.get_viewport())
+## The drawn box once the next process frame has begun: the box is worked out once a process frame
+## per viewport (`DrawnView.box_of()`), so a camera moved inside one frame is read on the next.
+func _drawn_box(t: TestRunner, view: CrowdView) -> Rect2:
+	var asked_in := Engine.get_process_frames()
+	while Engine.get_process_frames() == asked_in:
+		await t.get_tree().process_frame
 	return view.drawn_box()
 
 func _beyond(view: CrowdView, centre: Vector2) -> String:
