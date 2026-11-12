@@ -41,8 +41,7 @@ pass (the records 2026-10-18-minty-quail-teal-toad, -tall-lynx, -spotted-owl, -q
 4. the night group: `test_heat` reads the event
    instance's vars (`age`, `is_leaving`, `is_finished`, `barrier_post`) until they have methods, and
    it and `test_dark_spine` hold the scheduler's and the crowd's answers in a day-planning case each,
-   to move to those modules' suites; `test_power_station`'s yard-layer frame-record case belongs in
-   `test_frame_record`; `test_masts` waits for the events;
+   to move to those modules' suites; `test_masts` waits for the events;
 5. the crowd: the events' answers still held in the crowd's suites move with the events (entry 6):
    `test_crowd_yields`' four checks of the event instance and manager (stands as, parked, the list
    of moves, placement) and `test_crowd_bodies_on_a_real_day`'s check that a crash's cars stand on
