@@ -51,7 +51,7 @@ func run(t: TestRunner) -> void:
 
 ## `def` built at `tile`, given a counted role so it is asked about.
 func _at(id: String, tile: Vector2i) -> EventPlan:
-	var plan := EventScheduler.build_placement(EventCatalogue.by_id(id), _map, tile,
+	var plan := GamePlanBuilder.over(_map).build(EventCatalogue.by_id(id), tile,
 			RandomNumberGenerator.new())
 	if plan:
 		plan.role = GameEnums.BlockerRole.WALL
@@ -103,7 +103,7 @@ func _test_a_body_closing_a_beats_opening_is_refused(t: TestRunner) -> void:
 	var allowed_without := 0
 	for entry: Array in _corridor.walked_sidewalks(_map):
 		var band: Rect2i = entry[1]
-		var man := EventScheduler.build_placement(EventCatalogue.by_id("homeless_yeller"), _map,
+		var man := GamePlanBuilder.over(_map).build(EventCatalogue.by_id("homeless_yeller"),
 				band.get_center(), RandomNumberGenerator.new())
 		if man == null or man.path.size() < 2:
 			continue

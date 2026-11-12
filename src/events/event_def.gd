@@ -155,7 +155,7 @@ enum PathMode {
 	ALONG_STREET,  ## Down the corridor it starts on.
 	## **Across the alley it landed in**, built by the instance itself from the alley it stands in
 	## (`EventInstance._alley_crossing_path()`), cut to the ground it fits on: `alley_mouse`, placed
-	## on the map with no route of its own (`EventScheduler.build_placement`'s default case).
+	## on the map with no route of its own (`PlanBuilder.build()`'s default case).
 	ACROSS_ITS_ALLEY,
 }
 

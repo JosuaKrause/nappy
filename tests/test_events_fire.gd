@@ -129,7 +129,8 @@ func _fire_siting(day: int) -> EventScheduler.WalkSiting:
 	if not _shared_fire_siting:
 		_fire_walk.set_calm(CalmAreas.of(_map()))
 		_shared_fire_siting = EventScheduler.WalkSiting.new(day, _map(),
-				RouteTree.for_day(_map(), day), _fire_walk, EventScheduler.Verdicts.new())
+				RouteTree.for_day(_map(), day), _fire_walk, EventScheduler.Verdicts.new(),
+				GamePlanBuilder.over(_map()))
 	return _shared_fire_siting
 
 func _fire_in(plans: Array[EventPlan]) -> EventPlan:

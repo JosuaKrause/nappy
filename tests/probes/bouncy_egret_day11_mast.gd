@@ -75,7 +75,7 @@ static func _where_a_mast_may_stand(city: City) -> Array:
 		if siting._tree.branches_on(tile).is_empty():
 			continue
 		var why := "PASS"
-		var candidate := EventScheduler.build_placement(def, map, tile, rng)
+		var candidate := GamePlanBuilder.over(map).build(def, tile, rng)
 		if not siting._a_mast_may_stand(tile):
 			why = "not a mast site"
 		elif not candidate:

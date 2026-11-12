@@ -4,15 +4,16 @@ extends StreetRule
 ## (`_keeps_its_notice_to_itself()`): the escape's rule (`DaySpec.one_notice_at_a_time`),
 ## asked of what the walk has placed.
 
-var _map: CityMap
+var _builder: PlanBuilder
 
-func _init(map: CityMap) -> void:
-	_map = map
+## The rule asking `builder` where each waiting row's band stands.
+func _init(builder: PlanBuilder) -> void:
+	_builder = builder
 
 ## Overrides StreetRule.allows.
 func allows(candidate: EventPlan, _tile: Vector2i,
 		placed: Array[EventPlan], _around: Array[EventPlan]) -> bool:
-	return _keeps_its_notice_to_itself(_map, candidate, placed)
+	return _keeps_its_notice_to_itself(_builder, candidate, placed)
 
 ## **One waiting guard at a time** (`DaySpec.one_notice_at_a_time`). A candidate that waits to
 ## notice her (`EventDef.notice`: the escape's roadblock, whose guard notices her within
@@ -39,15 +40,15 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 ## keeps one guard from standing behind another's drawing: the near guard of a band two tiles up
 ## the street stands between the two bands, where the nearer band and the guard posted on its far
 ## side are drawn over him.
-static func _keeps_its_notice_to_itself(map: CityMap, candidate: EventPlan,
+static func _keeps_its_notice_to_itself(builder: PlanBuilder, candidate: EventPlan,
 		already: Array[EventPlan]) -> bool:
 	var reach := candidate.row().notice_within()
 	if reach <= 0.0:
 		return true
-	var at := EventScheduler.body_stands_at(map, candidate)
+	var at := builder.body_stands_at(candidate)
 	for plan in already:
 		if plan.row().notice_within() <= 0.0 or not plan.is_placed():
 			continue
-		if at.distance_to(EventScheduler.body_stands_at(map, plan)) < reach + plan.row().notice_within():
+		if at.distance_to(builder.body_stands_at(plan)) < reach + plan.row().notice_within():
 			return false
 	return true

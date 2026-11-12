@@ -102,9 +102,11 @@ func _test_one_judgement_per_candidate(t: TestRunner) -> void:
 	var tree := RouteTree.for_day(map, day)
 	var walk := _walk(map, already)
 	var counting := CountingVerdicts.new()
-	var kept := EventScheduler.WalkSiting.new(day, map, tree, walk, counting)
+	var kept := EventScheduler.WalkSiting.new(day, map, tree, walk, counting,
+			GamePlanBuilder.over(map))
 	var forgetful := ForgetfulVerdicts.new()
-	var afresh := EventScheduler.WalkSiting.new(day, map, tree, walk, forgetful)
+	var afresh := EventScheduler.WalkSiting.new(day, map, tree, walk, forgetful,
+			GamePlanBuilder.over(map))
 	var asked := 0
 	var agreed := 0
 	var judged_once := 0
@@ -164,7 +166,8 @@ func _test_one_offer_per_look(t: TestRunner) -> void:
 		if plan.def.on_her_way != null and not plan.is_placed():
 			owed += 1
 	var verdicts := CountingVerdicts.new()
-	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), _walk(map, plans), verdicts)
+	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), _walk(map, plans), verdicts,
+			GamePlanBuilder.over(map))
 	var director := EventDirector.new(map)
 	director.start_day(day, plans, _rng(day), siting)
 	var route := _longest_route(day)
@@ -263,7 +266,7 @@ func _test_a_look_shares_its_verdicts(t: TestRunner) -> void:
 	var already := _planned(day)
 	var verdicts := CountingVerdicts.new()
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
-			_walk(map, already), verdicts)
+			_walk(map, already), verdicts, GamePlanBuilder.over(map))
 	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
 	# A crew stands in front of a blank wall, which only a city's buildings know; every front face
 	# stands in for them here.
@@ -311,7 +314,7 @@ func _longest_route(day: int) -> PackedVector2Array:
 				best = route
 	var points := PackedVector2Array()
 	var siting := EventScheduler.WalkSiting.new(day, _map(), tree, FakeWalkEvents.new(),
-			EventScheduler.Verdicts.new())
+			EventScheduler.Verdicts.new(), GamePlanBuilder.over(_map()))
 	for i in best.size():
 		points.append(siting.cell_centre(best[best.size() - 1 - i]))
 	return points
@@ -327,7 +330,7 @@ func _test_a_dropped_verdict_is_judged_again(t: TestRunner) -> void:
 	var already := _planned(day)
 	var walk := _walk(map, already)
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day), walk,
-			EventScheduler.Verdicts.new())
+			EventScheduler.Verdicts.new(), GamePlanBuilder.over(map))
 	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
 	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
@@ -431,7 +434,7 @@ func _test_the_director_drops_the_verdicts(t: TestRunner) -> void:
 	for _i in 3:
 		plans.append(EventPlan.new(fire, Vector2.INF))
 	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), _walk(map, plans),
-			EventScheduler.Verdicts.new())
+			EventScheduler.Verdicts.new(), GamePlanBuilder.over(map))
 	var director := EventDirector.new(map)
 	director.start_day(day, plans, _rng(day), siting)
 	var out := _longest_route(day)

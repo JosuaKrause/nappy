@@ -570,8 +570,9 @@ track keeps it as it is, under its name; it is made correct in a pull request of
 7, point 6). **Where a plan's body stands on its
 sidewalk band and which tiles it takes** is worked out today by the live event's picture geometry
 (`EventFootprints.stands_at()`, `body_axis()`), which the dawn reads across a layer
-(`tools/layer_map.py` lists it); the breakup's `PlanBuilder` is where that answer moves, and the
-plan then answers `stands_at()` and `body_tiles()` itself.
+(`tools/layer_map.py` lists it); the breakup's `PlanBuilder` is handed that answer as a function
+(`EventFootprints.stands_at`, listed against the scheduler, which makes the builder), and the plan then
+answers `stands_at()` and `body_tiles()` itself.
 
 ## 4. The reads, by class, with what replaces each
 

@@ -965,7 +965,8 @@ func _test_a_swap_replaces_what_the_section_holds(t: TestRunner) -> void:
 	var seen := _view.grow(Tuning.TILE_SIZE * 4.0)
 	for section in walk.locations().sections_in(PlacementView.View.ROUTE_ADJACENT):
 		if seen.intersects(map.tile_rect_to_world(section.tiles())) \
-				or EventScheduler.across_the_section(def, map, section, RandomNumberGenerator.new()) == null:
+				or EventScheduler.across_the_section(def, GamePlanBuilder.over(map), map, section,
+						RandomNumberGenerator.new()) == null:
 			continue
 		var holds := walk.placed_within(map.tile_rect_to_world(section.tiles()))
 		var solid := false

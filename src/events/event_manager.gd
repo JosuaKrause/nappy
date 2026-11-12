@@ -173,6 +173,7 @@ func _notification(what: int) -> void:
 ## navigator its figures move by, or the map's own (`WorldMap.navigator()`) for a rig that hands
 ## none; where something sent at her may start, or, for a rig that hands none, one over `map`
 ## against this manager's own view and the streets' region; and the poster walls a crew pastes on.
+## The city's plan builder is made here, once a city, over `map` (`EventWorld.plan_builder()`).
 ## A rig that builds no city hands what it has and null for the rest: a day it starts is planned
 ## against the streets it hands, so it hands streets whose day it began (`DayStreets.begin_day()`).
 ##
@@ -183,6 +184,8 @@ func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = n
 	world.map = map
 	world.city_map = map
 	world.work_out_mast_sites(map)
+	world.use_plan_builder(PlanBuilder.new(map, EventInstance.mover_for, EventFootprints.stands_at,
+			StreetInvalidation.room_around))
 	world.use_streets(streets)
 	world.use_poster_walls(poster_walls)
 	world.signals = signals
@@ -200,6 +203,7 @@ func setup(map: CityMap, streets: DayStreets = null, signals: TrafficSignals = n
 ## (`start_day()` with the building's spec).
 func setup_world(map: WorldMap, run: RunState) -> void:
 	world.city_map = null
+	world.use_plan_builder(null)
 	world.use_streets(null)
 	world.use_poster_walls(null)
 	ahead.drop_director()
@@ -694,6 +698,11 @@ func event_summary() -> String:
 ## placement made while she walks are handed.
 func walk_events() -> WalkEvents:
 	return _walk_events
+
+## **The city's plan builder** (`PlanBuilder`), the world's (`EventWorld.plan_builder()`): what the
+## resistance and the happenings build a plan at a tile with. Null where the world is not the city.
+func plan_builder() -> PlanBuilder:
+	return world.plan_builder()
 
 ## Events the day owes the director to put in front of her and has not spent yet.
 func owed_ahead() -> int:

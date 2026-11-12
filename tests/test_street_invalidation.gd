@@ -12,7 +12,7 @@ func run(t: TestRunner) -> void:
 	var cafe := EventCatalogue.by_id("cafe_tables")
 	var calm := Rect2(Vector2(1000, 1000), Vector2(256, 256))
 	var rules := StreetInvalidation.new(map, null, {}, [calm] as Array[Rect2], PackedVector2Array(),
-			false)
+			null)
 	var in_the_calm := EventPlan.new(cafe, calm.get_center())
 	var clear := EventPlan.new(cafe, Vector2(3000, 3000))
 	t.check(rules.room(in_the_calm, GameEnums.BlockerRole.FRICTION, Vector2i.ZERO, NONE, NONE) == -INF,
@@ -23,8 +23,9 @@ func run(t: TestRunner) -> void:
 	var flock := EventCatalogue.by_id("pigeon_flock")
 	var placed: Array[EventPlan] = [EventPlan.new(flock, Vector2(5000, 5000))]
 	var beside := EventPlan.new(flock, Vector2(5000 + flock.notice_within(), 5000))
-	var day := StreetInvalidation.new(map, null, {}, [] as Array[Rect2], PackedVector2Array(), false)
-	var escape := StreetInvalidation.new(map, null, {}, [] as Array[Rect2], PackedVector2Array(), true)
+	var day := StreetInvalidation.new(map, null, {}, [] as Array[Rect2], PackedVector2Array(), null)
+	var escape := StreetInvalidation.new(map, null, {}, [] as Array[Rect2], PackedVector2Array(),
+			GamePlanBuilder.over(map))
 	t.check(day.room(beside, GameEnums.BlockerRole.FRICTION, Vector2i.ZERO, placed, placed) != -INF,
 			"a day lets two waiting rows notice her from the same ground")
 	t.check(escape.room(beside, GameEnums.BlockerRole.FRICTION, Vector2i.ZERO, placed, placed) == -INF,

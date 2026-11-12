@@ -904,6 +904,9 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 	var setup: Dictionary = data.get("setup", {})
 	var plans: Array[EventPlan] = []
 	var map := _city.map
+	# The scene's plan builder over the city's map, made here as the game's dawn makes its own.
+	var builder := PlanBuilder.new(map, EventInstance.mover_for, EventFootprints.stands_at,
+			StreetInvalidation.room_around)
 	var tree := _city.streets().route_tree()
 	var corridor: Corridor = Corridor.of(tree) if tree else null
 	var doors := PackedVector2Array()
@@ -950,9 +953,9 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		var plan: EventPlan
 		var why: Array[String] = []
 		if def.role == EventDef.Role.MAST:
-			plan = _mast_placement(def, at, plans)
+			plan = _mast_placement(def, builder, at, plans)
 		elif finale:
-			plan = _finale_placement(def, at, player_at, finale, plans,
+			plan = _finale_placement(def, builder, at, player_at, finale, plans,
 					int(entry.get("route_seed", 1)))
 		elif def.spawn_mode_on(_run.header.day) != EventDef.SpawnMode.MAP:
 			var director := EventDirector.new(map)
@@ -965,7 +968,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 				continue
 			plan = EventPlan.new(def, at, route)
 		else:
-			plan = EventScheduler.recipe_placement(def, _run.header.day, map, at,
+			plan = EventScheduler.recipe_placement(def, _run.header.day, map, builder, at,
 					int(entry.get("route_seed", 1)), plans, corridor, doors, calm, standing,
 					locations, why)
 		if not plan:
@@ -1019,7 +1022,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 ## before it is too near (`StreetInvalidation.room_around()`). It does not ask what
 ## `EventManager.queue_a_mast()`'s `WalkSiting` asks beyond those: the calm she has not used. The
 ## loudspeaker is a scripted row no catalogue roll places, so the ordinary placement refuses it.
-func _mast_placement(def: EventDef, at: Vector2,
+func _mast_placement(def: EventDef, builder: PlanBuilder, at: Vector2,
 		prior: Array[EventPlan]) -> EventPlan:
 	var map := _city.map
 	var tile := map.world_to_tile(at)
@@ -1029,12 +1032,12 @@ func _mast_placement(def: EventDef, at: Vector2,
 			or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile) \
 			or not MastSites.is_eligible(at, map):
 		return null
-	return EventScheduler.place_at(def, map, tile, RandomNumberGenerator.new(), prior)
+	return builder.place_at(def, tile, RandomNumberGenerator.new(), prior)
 
 ## The escape's exact actors use its own row variants (the walk's spec's `DaySpec.bag_rows`), open
 ## streets, tree exclusion, spawn clearance and body spacing. No ordinary-day corridor or offscreen
 ## director stands in for it.
-func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
+func _finale_placement(def: EventDef, builder: PlanBuilder, at: Vector2, player_at: Vector2,
 		finale: FinalePlanner.Plan, prior: Array[EventPlan],
 		route_seed: int) -> EventPlan:
 	if not _walk_spec.bag_rows.has(def.id):
@@ -1055,7 +1058,7 @@ func _finale_placement(def: EventDef, at: Vector2, player_at: Vector2,
 		return null
 	var rng := RandomNumberGenerator.new()
 	rng.seed = route_seed
-	return EventScheduler.place_at(def, map, tile, rng, prior)
+	return builder.place_at(def, tile, rng, prior)
 
 ## Overrides AuthoredScene.begin.
 func begin() -> void:

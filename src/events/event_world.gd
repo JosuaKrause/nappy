@@ -66,6 +66,9 @@ var _streets: DayStreets
 ## The city's poster walls (`poster_walls()`), handed in by `EventManager.setup()`; null where there
 ## are none.
 var _poster_walls: PosterWalls
+## Builds a plan at a tile of the city (`plan_builder()`), handed in by `EventManager.setup()`; null
+## where the world is not the city.
+var _plan_builder: PlanBuilder
 
 ## How every figure made here moves over `map` (`Navigator`): the one handed in by
 ## `EventManager.setup()`, or the map's own (`WorldMap.navigator()`) where none was handed for it —
@@ -103,6 +106,16 @@ func poster_walls() -> PosterWalls:
 ## Hands the world the city's poster walls. See `poster_walls()`.
 func use_poster_walls(walls: PosterWalls) -> void:
 	_poster_walls = walls
+
+## **The city's plan builder** (`PlanBuilder`), made once a city over its map: what a siting made
+## while she walks, the resistance's and the happenings' build a plan at a tile with. Null where
+## the world is not the city (`EventManager.setup_world()`).
+func plan_builder() -> PlanBuilder:
+	return _plan_builder
+
+## Hands the world the city's plan builder. See `plan_builder()`.
+func use_plan_builder(builder: PlanBuilder) -> void:
+	_plan_builder = builder
 
 func use_navigator(navigator: Navigator) -> void:
 	_navigator = navigator

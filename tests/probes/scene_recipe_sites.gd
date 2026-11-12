@@ -37,8 +37,8 @@ func run(_t: TestRunner) -> void:
 		for tile in tiles:
 			var prior: Array[EventPlan] = []
 			var at := map.tile_to_world(tile)
-			var plan := EventScheduler.recipe_placement(def, day, map, at, 1, prior, corridor, doors,
-					calm, none, locations)
+			var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
+					at, 1, prior, corridor, doors, calm, none, locations)
 			if not plan:
 				continue
 			print("SITE ", def.id, " tile=", tile, " world=", at, " path=", plan.path)

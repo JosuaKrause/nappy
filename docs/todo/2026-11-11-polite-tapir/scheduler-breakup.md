@@ -22,25 +22,29 @@ the line counts are its estimates. All under `src/events/`:
 - **`DawnContext`** (`dawn_context.gd`): the one object every phase is handed, in place of the 13
   parameters: the spec, the day's seed with a stream per salt, the map, the walk (route tree or
   chains) and its corridor, the calm areas and the ground to leave alone, the doors, what stands,
-  heat, scars, the spent one-shots, the mast sites and the trace; and what the dawn builds: the
-  day's events (`DayEvents`), the locations (`DayLocations`), the rules built once
-  (`StreetInvalidation`) and the row-ground cache. It is the object that derives the day's facts
+  heat, scars, the spent one-shots, the mast sites, the trace and the plan builder (`PlanBuilder`),
+  handed in by the day's planner; and what the dawn builds: the day's events (`DayEvents`), the
+  locations (`DayLocations`), the rules built once (`StreetInvalidation`) and the row-ground cache. It is the object that derives the day's facts
   once and is handed around (designing-classes).
 - **`dawn_phases/`**, one class per phase with `run(context)`: the fixed parts (ambient rows, masts,
   wall bodies holding their locations), the scars, the roadblock phase's glue with its ground
   judge, the scripted rows, the one-shots, the park spoilers, the lessons and the moments.
 - **`RowGround`** (`row_ground.gd`): which tiles a row may stand on, as an object holding its own
   per-day cache. This is the last re-derived case (minty-quail's `re-derived-cases.md`, the ground cache).
-- **`PlanBuilder`** (`plan_builder.gd`): builds a plan at a tile: the side and band offsets, the
-  along-street paths, the body's disc, an authored scene's placing. The resistance's happenings
-  stop calling a private function of the scheduler.
 - **`RuledLocationGround`** in a file of its own: the judge that offers a row at a location.
 - **`event_scheduler.gd`** keeps `build_day(context)` as an ordered list of phases.
 
 Three blocks are not moved, because `placement-by-construction.md` deletes them in place: the old
 siting roll, the fitted tables, and the escape's own draw loop. The fallback that grows a route tree
 when none is handed in goes with `DawnContext` below, whose shared test helper hands a route to every
-call under `tests/` that hands none today.
+call under `tests/` that hands none today. What building a plan at a tile does not do stays in the scheduler:
+`recipe_placement()` judges an authored row by the day's locations, the row's ground and `role_for()`, all the
+scheduler's, and builds through `LocationFit`, which is handed the builder; `_wants_this_side()` is a ground
+question whose one caller, `open_ground_for()`, goes with `RowGround` above; `_band_offset_of()` and its
+neighbours read a row's own numbers with no tile; and `blocked_by()` and `block_a_disc()` paint a blocked set for a
+flood and build no plan. `PlanBuilder` (`plan_builder.gd`), an object handed the map and the three questions it
+asks other classes (inbox #1392 in dappled-wombat), builds every candidate a judge, a siting or a scene recipe
+sites at a tile (its facing and its route), the scene recipes' masts and escape actors included.
 
 **The pull requests, interleaved with placement.** Each move regenerates `tools/field_reads.txt`
 with `--write`: `--base` passes code reading listed fields moved into a new file with no more uses,
@@ -48,8 +52,7 @@ and fails a read that is new; a read that only moved may add its line to the lis
 grassy-trout), and review reads a moving diff for the cases the check cannot count
 (minty-quail-breezy-bison).
 
-- **`PlanBuilder`**, a pure move.
-- **`RowGround`**, after both: it is a seam, no pure move, since the object with its own per-day
+- **`RowGround`**: it is a seam, no pure move, since the object with its own per-day
   cache replaces the `ground: Dictionary` threaded through `StreetInvalidation`,
   `RouteJunctionsRule`, `LocationFit`, both ground judges, `_weight_in()`, `_best_of()` and
   `WalkSiting`.
@@ -62,5 +65,7 @@ grassy-trout), and review reads a moving diff for the cases the check cannot cou
 
 Dawn planning's reads of live-event geometry (`standing-layer-breaks.md`) move with their code,
 each listed break carried to its new file in `tools/layer_map.py`, and are settled by row 3a of minty-quail's
-`event-interface.md`: the row answers for its mover and its standing place
-(`EventInstance.mover_for()` and `EventFootprints.stands_at()` are what `PlanBuilder` moves).
+`event-interface.md`: the row answers for its mover and its standing place. The two a
+`PlanBuilder` is handed, `EventInstance.mover_for()` and `EventFootprints.stands_at()`, stay listed
+against `event_scheduler.gd`, where the dawn makes its builder, until `DawnContext` is handed a
+builder.

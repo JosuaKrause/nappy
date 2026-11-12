@@ -18,11 +18,11 @@ var _rules: Array[StreetRule] = []
 
 ## The rules for a walk on `map` routed by `corridor` (null for a walk with no route tree, which
 ## asks none of the route rules): `ground` the day's ground cache, `leave_alone` the calm ground she
-## has not used, `doors` where the region doors' bodies stand, `one_notice` whether the spec keeps
-## one waiting guard's notice at a time, and `walk` the walk's ground where the spec keeps the walk
-## open, else null. The walk is asked last, since it is the expensive question.
+## has not used, `doors` where the region doors' bodies stand, `one_notice` the plan builder where
+## the spec keeps one waiting guard's notice at a time (it says where each band stands), else null,
+## and `walk` the walk's ground where the spec keeps the walk open, else null. The walk is asked last, since it is the expensive question.
 func _init(map: CityMap, corridor: Corridor, ground: Dictionary, leave_alone: Array[Rect2],
-		doors: PackedVector2Array, one_notice: bool, walk: WalkGround = null) -> void:
+		doors: PackedVector2Array, one_notice: PlanBuilder, walk: WalkGround = null) -> void:
 	_map = map
 	_corridor = corridor
 	_rules.append(UnusedCalmRule.new(leave_alone))
@@ -32,7 +32,7 @@ func _init(map: CityMap, corridor: Corridor, ground: Dictionary, leave_alone: Ar
 	_rules.append(PacingOpeningRule.new(map, corridor))
 	_rules.append(RouteGroundRule.new(map, corridor))
 	if one_notice:
-		_rules.append(OneNoticeRule.new(map))
+		_rules.append(OneNoticeRule.new(one_notice))
 	if walk:
 		_rules.append(WalkOpenRule.new(walk))
 
@@ -83,8 +83,8 @@ static func _a_pacing_beat_walls_a_sidewalk(plan: EventPlan, map: CityMap) -> bo
 	return not _a_beat_reaches_a_way_out(plan, map)
 
 ## Whether a beat's own run passes a junction box or a side route. Two waypoints and a straight run
-## between them (`EventScheduler._along_street_path`), so the tiles are a step along one axis; a row with no beat
-## laid at all answers no, which is the conservative side of a rule that only ever refuses ground.
+## between them (`PlanBuilder._along_street_path()`), so the tiles are a step along one axis; a row
+## with no beat laid at all answers no, which is the conservative side of a rule that only ever refuses ground.
 static func _a_beat_reaches_a_way_out(plan: EventPlan, map: CityMap) -> bool:
 	if plan.walks().size() < 2:
 		return false

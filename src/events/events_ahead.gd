@@ -80,7 +80,7 @@ func start_day(day: int, tree: RouteTree) -> void:
 		if plan.def.on_her_way != null and not plan.is_placed():
 			if not _siting:
 				_siting = EventScheduler.WalkSiting.new(day, world.city_map, tree, _walk,
-						EventScheduler.Verdicts.new())
+						EventScheduler.Verdicts.new(), world.plan_builder())
 				_siting.holds_the_home_streets = holds_the_home_streets
 				# Where a crew may paste: only the city's buildings know their blank walls, and
 				# the walls paste every dawn, so the fronts are asked for today's, here.
@@ -306,7 +306,7 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	var siting := _siting
 	if not siting:
 		siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree, _walk,
-				EventScheduler.Verdicts.new())
+				EventScheduler.Verdicts.new(), world.plan_builder())
 		siting.holds_the_home_streets = holds_the_home_streets
 	var plan := siting.among(def, rng, offered)
 	if not plan:
@@ -415,7 +415,7 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree if _day_tree \
 				else RouteTree.for_day(world.city_map, world.day), _walk,
-				EventScheduler.Verdicts.new())
+				EventScheduler.Verdicts.new(), world.plan_builder())
 		_siting.holds_the_home_streets = holds_the_home_streets
 		if world.poster_walls():
 			_siting.fronts = world.poster_walls().fronts()

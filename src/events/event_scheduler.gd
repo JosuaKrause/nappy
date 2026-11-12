@@ -227,16 +227,20 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 		route: RouteSource = null, heat: int = 0, doors := PackedVector2Array(),
 		standing: Array[EventPlan] = [], trace: RunTrace = null,
 		beside_the_routes: EventDef = null) -> DayEvents:
+	# The day's one plan builder, handed down to every pass that builds a plan at a tile: the game's
+	# answers to what stops a moving row, where a body stands and the room among placed plans.
+	var builder := PlanBuilder.new(map, EventInstance.mover_for, EventFootprints.stands_at,
+			StreetInvalidation.room_around)
 	var events := DayEvents.over(calm, standing)
 	if spec.draw == DaySpec.Draw.BAG_PER_STREET:
-		_draw_the_walk(spec, rng, map, route, _street_bag(spec.bag, street_bag_seed(rng)), events,
-				calm, doors, trace)
+		_draw_the_walk(spec, rng, map, builder, route,
+				_street_bag(spec.bag, street_bag_seed(rng)), events, calm, doors, trace)
 		return events
 	var day := spec.number
 	# Captured before anything draws from it. Every phase below gets its own stream off this, which
 	# is what makes a retried day the same day — see `_stream`.
 	var base := rng.seed
-	_plan_the_dawn(day, base, map, consumed_one_shots, scars, calm, route, heat, doors,
+	_plan_the_dawn(day, base, map, builder, consumed_one_shots, scars, calm, route, heat, doors,
 			events, mast_sites, trace, spec, beside_the_routes)
 	_ensure_the_run_is_taught(day, events, heat, trace)
 
@@ -255,8 +259,9 @@ static func build_day(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap, c
 ## rows, the one-shots, the spoilers in a park she used, the moments she is owed and the draw of
 ## every location from its view's bag (`_draw_the_locations()`), each phase on its own stream off
 ## `base` (`_stream`). Answers the draw's own placements, in the order drawn. `spec` is the day's
-## placement settings, a day's own (`DaySpec.for_day()`) where none is handed in.
-static func _plan_the_dawn(day: int, base: int, map: CityMap,
+## placement settings, a day's own (`DaySpec.for_day()`) where none is handed in. `builder` builds
+## every plan the dawn sites at a tile.
+static func _plan_the_dawn(day: int, base: int, map: CityMap, builder: PlanBuilder,
 		consumed_one_shots: Array[String], scars: Array[Dictionary], calm: CalmAreas,
 		route: RouteSource, heat: int, doors: PackedVector2Array, events: DayEvents,
 		mast_sites: Array[MastSites.Site], trace: RunTrace = null, spec: DaySpec = null,
@@ -314,15 +319,15 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 			else CalmAreas.NONE
 	if kept_clean != CalmAreas.NONE:
 		leave_alone.append(calm.ground_of(kept_clean))
-	_place_the_roadblocks(beside_the_routes, day, base, map, events, ground, leave_alone,
+	_place_the_roadblocks(beside_the_routes, day, base, map, builder, events, ground, leave_alone,
 			corridor, doors, spec, locations, trace)
 	# **The scripted rows' dawn phase**: each draws one of the day's open locations its ground
 	# takes and is assigned it (`ScriptedPhase`), offered through the dawn draw's own path and
 	# judged by the day's rules, so the draw after passes over it. The one-shots are owed to her
 	# walk (`_place_one_shots()`).
 	var phase_ground := RuledLocationGround.new(day, base, map, events, corridor,
-			LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets),
-			StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false))
+			LocationFit.new(day, map, builder, ground, corridor, spec.holds_the_home_streets),
+			StreetInvalidation.new(map, corridor, ground, leave_alone, doors, null))
 	var weigh := func(def: EventDef, location: Location) -> float:
 		return _weight_in(def, location, day, map, ground, corridor, spec.holds_the_home_streets)
 	var phase := ScriptedPhase.new(locations, phase_ground, weigh)
@@ -331,8 +336,8 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 	_spoil_the_parks_she_used(day, _stream(base, 3), map, events, calm, kept_clean,
 			route_ground, heat, trace)
 	_owe_the_moments(day, _stream(base, MOMENTS_SALT), events, heat, spec.caps_per_day)
-	return _draw_the_locations(day, base, map, events, ground, leave_alone, corridor, doors, spec,
-			locations, heat, beside_the_routes)
+	return _draw_the_locations(day, base, map, builder, events, ground, leave_alone, corridor,
+			doors, spec, locations, heat, beside_the_routes)
 
 ## **The roadblock phase at dawn** (inbox #1185 in gentle-owl: the day's routes first, then roadblocks next to
 ## them, then the ordinary placement): day 13's roadblocks, placed by `RoadblockPhase` in the day's
@@ -360,15 +365,15 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap,
 ## draws the day's other rows, the roadblock holding no marble in it, spaced against these as against
 ## anything already down, and never over one.
 static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityMap,
-		events: DayEvents, ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
+		builder: PlanBuilder, events: DayEvents, ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
 		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations,
 		trace: RunTrace) -> void:
 	if def == null:
 		return
 	def = def.for_day(day)
-	var judged := RuledRoadblockGround.new(def, day, map, events, ground, corridor,
+	var judged := RuledRoadblockGround.new(def, day, map, builder, events, ground, corridor,
 			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-					spec.one_notice_at_a_time),
+					builder if spec.one_notice_at_a_time else null),
 			spec.holds_the_home_streets)
 	var phase := RoadblockPhase.new(locations, judged)
 	var placed: Array[String] = []
@@ -386,13 +391,13 @@ static func _is_on_the_main_road(map: CityMap, section: Location) -> bool:
 	return map.is_main_road(not segment.horizontal, segment.a.x)
 
 ## **`def`, an event that spans the street, standing across `section`**: on the carriageway tile of
-## the section nearest its middle, built as any placement is (`build_placement()`), or null where the
-## section is on the main road (`_is_on_the_main_road()`) or has no carriageway. Nothing is judged:
+## the section nearest its middle, built as any placement is (`builder`, `PlanBuilder.build()`), or
+## null where the section is on the main road (`_is_on_the_main_road()`) or has no carriageway. Nothing is judged:
 ## day 13's task replaces the section's whole content with it, a route-adjacent section being valid
 ## ground under the route-adjacent rules already (inbox #1185 in gentle-owl); what the section held is spent by
 ## the caller (`EventStreaming.swap_section()`).
-static func across_the_section(def: EventDef, map: CityMap, section: Location,
-		rng: RandomNumberGenerator) -> EventPlan:
+static func across_the_section(def: EventDef, builder: PlanBuilder, map: CityMap,
+		section: Location, rng: RandomNumberGenerator) -> EventPlan:
 	if _is_on_the_main_road(map, section):
 		return null
 	var tiles := section.tiles()
@@ -408,7 +413,7 @@ static func across_the_section(def: EventDef, map: CityMap, section: Location,
 				best = tile
 	if best == Vector2i(-1, -1):
 		return null
-	return build_placement(def, map, best, rng)
+	return builder.build(def, best, rng)
 
 ## **The day's ground as the roadblock phase asks it** (`RoadblockGround`): the route tiles, a
 ## section's roadblock left out where the day's rules invalidate it, and close by along her paths.
@@ -433,17 +438,20 @@ class RuledRoadblockGround extends RoadblockGround:
 	var _def: EventDef
 	var _role := GameEnums.BlockerRole.NONE
 	var _map: CityMap
+	var _builder: PlanBuilder
 	var _events: DayEvents
 	var _corridor: Corridor
 	var _rules: StreetInvalidation
 	var _own := {}
 	var _shut := {}
 
-	func _init(def: EventDef, day: int, map: CityMap, events: DayEvents, ground: Dictionary,
-			corridor: Corridor, rules: StreetInvalidation, holds_the_home_streets: bool) -> void:
+	func _init(def: EventDef, day: int, map: CityMap, builder: PlanBuilder, events: DayEvents,
+			ground: Dictionary, corridor: Corridor, rules: StreetInvalidation,
+			holds_the_home_streets: bool) -> void:
 		_def = def
 		_role = EventScheduler.role_for(def, day)
 		_map = map
+		_builder = builder
 		_events = events
 		_corridor = corridor
 		_rules = rules
@@ -491,8 +499,7 @@ class RuledRoadblockGround extends RoadblockGround:
 		var reach_context := already.duplicate()
 		reach_context.append_array(_events.standing())
 		for tile in fits:
-			var candidate := EventScheduler.build_placement(_def, _map, tile,
-					RandomNumberGenerator.new())
+			var candidate := _builder.build(_def, tile, RandomNumberGenerator.new())
 			# `INF` alone: room all round, so the spacing between two of a row
 			# (`EVENT_SPACING_SAME`) leaves a tile invalid rather than merely cramped.
 			if candidate and _rules.room(candidate, _role, tile, already, reach_context) == INF:
@@ -613,7 +620,7 @@ static func owed_to_her_walk(plan: EventPlan) -> EventPlan:
 ## restart after a loss — draws the same walk again. `trace` is told how many marbles the walk drew
 ## (`bag.drawn`), the plan's own account and the one count a reader of the plan cannot recompute.
 static func _draw_the_walk(spec: DaySpec, rng: RandomNumberGenerator, map: CityMap,
-		route: RouteSource, bag: MarbleBag, events: DayEvents, calm: CalmAreas,
+		builder: PlanBuilder, route: RouteSource, bag: MarbleBag, events: DayEvents, calm: CalmAreas,
 		doors := PackedVector2Array(), trace: RunTrace = null) -> void:
 	if not route:
 		return
@@ -625,9 +632,9 @@ static func _draw_the_walk(spec: DaySpec, rng: RandomNumberGenerator, map: CityM
 	var corridor := route.corridor()
 	var walk := WalkGround.new(map, events.standing(), route) if spec.keeps_the_walk_open else null
 	var rules := StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-			spec.one_notice_at_a_time, walk)
-	var fit := LocationFit.new(spec.number, map, ground, corridor, spec.holds_the_home_streets,
-			route.start())
+			builder if spec.one_notice_at_a_time else null, walk)
+	var fit := LocationFit.new(spec.number, map, builder, ground, corridor,
+			spec.holds_the_home_streets, route.start())
 	var offered := RuledLocationGround.new(spec.number, rng.seed, map, events, corridor, fit, rules)
 	var placed := {}
 	for segment in route.streets_on_the_walk():
@@ -1297,14 +1304,6 @@ static func _keeps_the_routes(plan: EventPlan, map: CityMap,
 	var none: Array[EventPlan] = []
 	return route_ground.allows(plan, map.world_to_tile(plan.placed_at()), none, none)
 
-## Where a placement's body stands once it is built: the first point of its path when it has one,
-## recentred on the pavement band unless `pavement_side` pins it — the reading
-## `EventInstance.setup()` makes of a stationary body, which is where a waiting guard's band stands
-## and where he notices her from (`OneNoticeRule`).
-static func body_stands_at(map: CityMap, plan: EventPlan) -> Vector2:
-	return EventFootprints.stands_at(map, plan.def,
-			plan.path[0] if plan.path.size() > 0 else plan.position)
-
 # ----------------------------------------------------------------- placement ---
 
 static func _place_ambient(day: int, map: CityMap, heat: int = 0) -> Array[EventPlan]:
@@ -1393,6 +1392,8 @@ static func _place_one_shots(day: int, consumed: Array[String], events: DayEvent
 class WalkSiting extends RefCounted:
 	var _day: int
 	var _map: CityMap
+	## Builds each candidate the siting judges (`PlanBuilder`), handed in by whoever builds the siting.
+	var _builder: PlanBuilder
 	## The day's routes themselves, not only the corridor made of them: a siting on the branch she
 	## is walking needs the ordered chain of cells. See `_the_way_she_is_going()`.
 	var _tree: RouteTree
@@ -1433,11 +1434,13 @@ class WalkSiting extends RefCounted:
 	## (`EventScheduler.Verdicts`), handed in by whoever builds the siting. Every owner in the game
 	## hands each siting a store of its own: verdicts are kept under a candidate's key and judged
 	## against one siting's plans and route tree, so a siting asked while another is in a look would
-	## read verdicts judged for the other's plans and place wrongly, not only lose a cache.
+	## read verdicts judged for the other's plans and place wrongly, not only lose a cache. `builder`
+	## builds each candidate at a tile.
 	func _init(for_day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
-			verdicts: EventScheduler.Verdicts) -> void:
+			verdicts: EventScheduler.Verdicts, builder: PlanBuilder) -> void:
 		_day = for_day
 		_map = map
+		_builder = builder
 		_tree = tree if tree else RouteTree.for_day(map, for_day)
 		_corridor = Corridor.of(_tree)
 		_walk = walk
@@ -1500,11 +1503,11 @@ class WalkSiting extends RefCounted:
 				widened += 1
 		var offered: Array[Vector2i] = offer[1]
 		var already := _walk.everything_but(besides)
-		var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
-				_leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask())
+		var candidate := EventScheduler._best_of(def, rng, _map, _builder, offered, role, already,
+				_ground, _leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask())
 		if not candidate:
 			return _waited("every tile of its ground on her branch broke a placement rule")
-		# A crew faces the wall it pastes, its back to the street. `build_placement` turned it by
+		# A crew faces the wall it pastes, its back to the street. `PlanBuilder.build()` turned it by
 		# the dawn's own side, out of a wall it was never going to stand at.
 		if def.on_her_way != null and def.on_her_way.at_a_front:
 			candidate.facing = Vector2.UP
@@ -1693,7 +1696,7 @@ class WalkSiting extends RefCounted:
 	## acceptance `ahead_of()` gives a site.
 	func _accepted(def: EventDef, rng: RandomNumberGenerator, already: Array[EventPlan],
 			offered: Array[Vector2i], role: GameEnums.BlockerRole) -> EventPlan:
-		return EventScheduler._best_of(def, rng, _map, offered, role, already, _ground,
+		return EventScheduler._best_of(def, rng, _map, _builder, offered, role, already, _ground,
 				_leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask())
 
 	## A placement for `def` among `offered`, by `EventScheduler._best_of()` against the walk's plans
@@ -1705,8 +1708,8 @@ class WalkSiting extends RefCounted:
 	func among(def: EventDef, rng: RandomNumberGenerator, offered: Array[Vector2i]) -> EventPlan:
 		if offered.is_empty():
 			return null
-		return EventScheduler._best_of(def, rng, _map, offered, EventScheduler.role_for(def, _day),
-				_walk.everything_but(), _ground, _leave_alone, _corridor, _walk.doors(), [],
+		return EventScheduler._best_of(def, rng, _map, _builder, offered,
+				EventScheduler.role_for(def, _day), _walk.everything_but(), _ground, _leave_alone, _corridor, _walk.doors(), [],
 				_verdicts_for_an_ask(false))
 
 	## How far from where she finished the day a dusk placement has to be: the streaming radius, so
@@ -1746,8 +1749,8 @@ class WalkSiting extends RefCounted:
 		for offered in [clear_of_the_routes, merely_away]:
 			if offered.is_empty():
 				continue
-			var candidate := EventScheduler._best_of(def, rng, _map, offered, role, already,
-					_ground, _leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask(false))
+			var candidate := EventScheduler._best_of(def, rng, _map, _builder, offered, role,
+					already, _ground, _leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask(false))
 			if candidate:
 				return candidate
 		return null
@@ -1969,8 +1972,8 @@ class WalkSiting extends RefCounted:
 ## other phases place have no marble: the moments she is owed (`_owe_the_moments()`), and on the day
 ## of the roadblock phase its row (`beside_the_routes`), the phase's alone. Answers what the draw
 ## placed, in the order drawn.
-static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEvents,
-		ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
+static func _draw_the_locations(day: int, base: int, map: CityMap, builder: PlanBuilder,
+		events: DayEvents, ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
 		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations,
 		heat: int, beside_the_routes: EventDef) -> Array[EventPlan]:
 	var rows := {}
@@ -1982,9 +1985,9 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, events: DayEv
 		rows[def.id] = def.for_day(day)
 	var bags := _view_bags(rows, day, spec, base)
 	var judged := RuledLocationGround.new(day, base, map, events, corridor,
-			LocationFit.new(day, map, ground, corridor, spec.holds_the_home_streets),
+			LocationFit.new(day, map, builder, ground, corridor, spec.holds_the_home_streets),
 			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-					spec.one_notice_at_a_time))
+					builder if spec.one_notice_at_a_time else null))
 	var caps := _caps_of(rows, day, spec, _stream(base, CAPS_SALT)) if spec.caps_per_day else {}
 	return LocationDraw.new(locations, bags, rows, judged, caps).draw_all(
 			_stream(base, LOCATIONS_SALT))
@@ -2339,9 +2342,9 @@ class RuledLocationGround extends LocationGround:
 ## tries and no fallback: a location that does not take the row fails the recipe loudly, with the
 ## reason, rather than placing it somewhere else (the orchestrator's reading, open to the player's
 ## overturn). `locations` is the day's, laid out once for the whole recipe; laid out here for a
-## caller that hands none.
-static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
-		route_seed: int, already: Array[EventPlan], corridor: Corridor,
+## caller that hands none. `builder` builds the candidate.
+static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: PlanBuilder,
+		at: Vector2, route_seed: int, already: Array[EventPlan], corridor: Corridor,
 		doors: PackedVector2Array, calm: CalmAreas, standing: Array[EventPlan] = [],
 		locations: DayLocations = null, why: Array[String] = []) -> EventPlan:
 	if not def.available_on(day) or def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
@@ -2359,7 +2362,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 		why.append("no location holds tile %s" % tile)
 		return null
 	var ground := {}
-	var fit := LocationFit.new(day, map, ground, corridor, true)
+	var fit := LocationFit.new(day, map, builder, ground, corridor, true)
 	if not tile in fit.tiles(def, location):
 		why.append("the location holding tile %s does not take %s there" % [tile, def.id])
 		return null
@@ -2371,7 +2374,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 		return null
 	var around := already.duplicate()
 	around.append_array(standing)
-	var rules := StreetInvalidation.new(map, corridor, ground, calm.unused_ground(), doors, false)
+	var rules := StreetInvalidation.new(map, corridor, ground, calm.unused_ground(), doors, null)
 	if rules.room(candidate, role_for(def, day), tile, already, around) == -INF:
 		why.append("the day's rules refuse %s on tile %s" % [def.id, tile])
 		return null
@@ -2409,7 +2412,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, at: Vector2,
 ## for its one caller, the walk's sitings (`WalkSiting`), until the walk's draws move it to the
 ## locations (the orchestrator's choice in placement step 3b).
 static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
-		open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
+		builder: PlanBuilder, open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
 		already: Array[EventPlan], ground: Dictionary, leave_alone: Array[Rect2],
 		corridor: Corridor, doors: PackedVector2Array,
 		standing: Array[EventPlan] = [], kept: Verdicts = null) -> EventPlan:
@@ -2424,7 +2427,7 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# **Each candidate is judged once per call, and every try still rolls.** A pool of a few tiles
 	# — `WalkSiting.ahead_of()` often offers one — is rolled `EVENT_PLACEMENT_TRIES` times, and the
 	# rule chain against every plan of the day is the same question each time the same tile and
-	# path come up, so its verdict is kept here, keyed by both. The roll and `build_placement`'s
+	# path come up, so its verdict is kept here, keyed by both. The roll and `PlanBuilder.build()`'s
 	# own draws still happen on every try, in the same order, so the stream, and with it every
 	# placement, is what it would be if each try asked again.
 	#
@@ -2433,10 +2436,10 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# that caller's to drop whenever what a verdict reads changes — see `WalkSiting.begin_look()`.
 	var verdicts: Verdicts = kept if kept else Verdicts.new()
 	# The day's rules, the same ones the dawn draw asks (`StreetInvalidation`), so they are stated once.
-	var judge := StreetInvalidation.new(map, corridor, ground, leave_alone, doors, false)
+	var judge := StreetInvalidation.new(map, corridor, ground, leave_alone, doors, null)
 	for _attempt in EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
-		var candidate := build_placement(def, map, tile, rng)
+		var candidate := builder.build(def, tile, rng)
 		if not candidate:
 			continue
 		# The row, its role, the tile and the path built on it are the whole of what a candidate
@@ -2805,42 +2808,6 @@ static func _wants_this_side(def: EventDef, map: CityMap, tile: Vector2i, side: 
 	return inward.y == 0 \
 			and map.tile_at(tile + inward) == GameEnums.TileType.BUILDING
 
-## One candidate placement on a given tile, with its route built if it moves.
-static func build_placement(def: EventDef, map: CityMap, tile: Vector2i,
-		rng: RandomNumberGenerator) -> EventPlan:
-	var at := map.tile_to_world(tile)
-	if not def.mobile:
-		var placed := EventPlan.new(def, at)
-		if def.pavement_side == EventDef.Pavement.AGAINST_THE_BUILDING:
-			# Backing in, so it faces *out* of the wall it is against: the box is the end that is
-			# coming towards you and it has to be the end that is in the yard.
-			placed.facing = -Vector2(map.pavement_inward(tile))
-		return placed
-	match def.path_mode:
-		EventDef.PathMode.CROSS_STREET:
-			var crossing := _cross_street_path(map, tile)
-			return null if crossing.is_empty() else EventPlan.new(def, at, crossing)
-		EventDef.PathMode.ALONG_STREET:
-			var route := _along_street_path(map, tile, def, rng)
-			# Nowhere to go from here; a "mobile" event that stands still is worse than
-			# another roll of the dice.
-			return null if route.is_empty() else EventPlan.new(def, at, route)
-		_:
-			return EventPlan.new(def, at)
-
-## The placement a recipe or a planner puts at one site, or null: the candidate `build_placement()`
-## sites on `tile` that `StreetInvalidation.room_around()` leaves room for among `already`. The one entry point a
-## planner and `SceneRecipeRuntime` share: an authored scene's row keeps the day's spacing. The
-## scheduler's own loop (`_best_of()`) does not call it: a day asks the day's rules
-## (`StreetInvalidation`), which ask `StreetInvalidation.room_around()` among many more rules and set the candidate's
-## role, so routing the loop through this would change what the day places.
-static func place_at(def: EventDef, map: CityMap, tile: Vector2i, rng: RandomNumberGenerator,
-		already: Array[EventPlan]) -> EventPlan:
-	var candidate := build_placement(def, map, tile, rng)
-	if not candidate or StreetInvalidation.room_around(candidate, already) == -INF:
-		return null
-	return candidate
-
 # ------------------------------------------------- a path never has to cost (M129) ---
 
 ## **Whether a row's own numbers leave no way past it along a sidewalk it may stand on** — the
@@ -2923,102 +2890,6 @@ static func _band_offset_of(pavement_side: int, band: float) -> float:
 ## asks it of the candidate, as a placement judges it, where the beat actually exists.
 static func _takes_a_whole_sidewalk(def: EventDef) -> bool:
 	return not def.paces and leaves_no_line_along_a_sidewalk(def)
-
-## Distance in tiles from a tile to the edge of the map along a direction, less a
-## one-block margin so a route always ends inside the city rather than against the wall.
-static func _room_along(map: CityMap, tile: Vector2i, direction: Vector2i) -> int:
-	var margin := CityMap.period()
-	var room := 0
-	if direction.x > 0:
-		room = map.size.x - 1 - tile.x
-	elif direction.x < 0:
-		room = tile.x
-	elif direction.y > 0:
-		room = map.size.y - 1 - tile.y
-	else:
-		room = tile.y
-	return maxi(0, room - margin)
-
-## A route down the corridor the tile sits on, for traffic and for anyone walking a dog.
-##
-## Direction is a coin flip *between the directions that have room*, and the length is
-## clamped to what actually fits. Clamping the endpoint to the map bounds instead — the
-## first version — parked every long route hard against the city wall, which put the fire
-## the engine leaves behind out on the boundary every single time.
-static func _along_street_path(map: CityMap, tile: Vector2i, def: EventDef,
-		rng: RandomNumberGenerator) -> PackedVector2Array:
-	var vertical_corridor := CityMap.corridor_offset(tile.x) >= 0
-	var forward := Vector2i.DOWN if vertical_corridor else Vector2i.RIGHT
-	var backward := -forward
-
-	var forward_room := _room_along(map, tile, forward)
-	var backward_room := _room_along(map, tile, backward)
-	var along := forward
-	var room := forward_room
-	# Prefer whichever way fits the whole route; if both do, or neither, flip a coin.
-	if backward_room > forward_room and backward_room >= def.path_length_tiles:
-		along = backward
-		room = backward_room
-	elif forward_room >= def.path_length_tiles and backward_room >= def.path_length_tiles:
-		if rng.randf() < 0.5:
-			along = backward
-			room = backward_room
-	elif backward_room > forward_room:
-		along = backward
-		room = backward_room
-
-	var length := mini(def.path_length_tiles, room)
-	# Stop short of anything that stops the row (`CityMap.passable()`, as it moves: a closure's
-	# barrier, a seal, a body standing today) rather than walking or driving through it — and short
-	# of a calm zone's absorbed corridor as well. A corridor that ends in a park is not a corridor a
-	# delivery van can drive down, and unlike a closure there is nothing there to hit: the route
-	# would simply cross the grass.
-	var from_a_street := map.is_street(tile)
-	var mover := EventInstance.mover_for(def)
-	for step in range(1, length + 1):
-		var next := tile + along * step
-		if not map.passable(next, mover) or (from_a_street and not map.is_street(next)):
-			length = step - 1
-			break
-	if length <= 0:
-		return PackedVector2Array()
-
-	# And never *finish* jammed against the city wall. `_room_along` keeps a period's margin from
-	# the boundary, which is enough on its own — but the truncation above can cut a route down to
-	# almost nothing, and a route that starts near the edge and is cut short finishes there. What
-	# that costs is stated on the loop below: a fire engine leaves its fire wherever it stops, and
-	# a fire on the boundary was the bug that put this margin here in the first place. Refusing is
-	# a re-roll; `tests/test_events.gd` checks it over all fourteen days.
-	var finish := tile + along * length
-	var edge := CityMap.period()
-	var at_end: int = finish.x if along.x != 0 else finish.y
-	var limit: int = map.size.x if along.x != 0 else map.size.y
-	if at_end < edge or at_end > limit - edge:
-		return PackedVector2Array()
-
-	return PackedVector2Array([map.tile_to_world(tile), map.tile_to_world(finish)])
-
-## A route straight across the street the tile sits on. A cat runs *across* traffic, so the
-## path is perpendicular to the road it starts from: out from the tile each way, at most a street's
-## width, as far as a figure on foot may stand (`CityMap.passable()`), so it comes out of one kerb
-## and goes into the other and never starts or ends inside a lot. Empty, so the candidate is
-## refused, where the tile is not one a figure on foot may stand on or nothing either side of it is.
-static func _cross_street_path(map: CityMap, tile: Vector2i) -> PackedVector2Array:
-	var vertical_road := CityMap.corridor_offset(tile.x) >= 0
-	var across := Vector2i.RIGHT if vertical_road else Vector2i.DOWN
-	var reach := Tuning.STREET_WIDTH
-	var mover := Mover.on_foot()
-	var ends: Array[Vector2i] = []
-	for way: Vector2i in [-across, across]:
-		var end := tile
-		for step in range(1, reach + 1):
-			if not map.passable(tile + way * step, mover):
-				break
-			end = tile + way * step
-		ends.append(end)
-	if ends[0] == ends[1] or not map.passable(tile, mover):
-		return PackedVector2Array()
-	return PackedVector2Array([map.tile_to_world(ends[0]), map.tile_to_world(ends[1])])
 
 # ---------------------------------------------------------------- park rules ---
 

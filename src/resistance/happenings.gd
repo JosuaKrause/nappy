@@ -112,6 +112,9 @@ var column: Array[EventInstance] = []
 var _spawn_siting: SpawnSiting
 ## The walk's events, the day's events' own (`EventManager.walk_events()`), from `setup()`.
 var _walk: WalkEvents
+## Builds a plan at a tile (`PlanBuilder`), the day's events' own (`EventManager.plan_builder()`),
+## from `setup()`; null for a rig with no events.
+var _builder: PlanBuilder
 
 ## The run the happenings belong to (`RunState`): the day's stream they draw from, the scars they
 ## leave and the blocks they change. Handed in with the rest (`setup()`).
@@ -134,8 +137,9 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 	_world = world
 	_atlas = atlas
 	# The walk's events every siting here is stated against (`WalkEvents`): the day's events' own, or
-	# an empty walk for a rig with none.
+	# an empty walk for a rig with none. The plan builder is the events' own too, or none.
 	_walk = events.walk_events() if events else WalkEvents.new()
+	_builder = events.plan_builder() if events else null
 	_navigator = navigator if navigator else (map.navigator() if map else null)
 	_spawn_siting = spawn_siting
 
@@ -322,7 +326,7 @@ static func _market_candidates(map: CityMap, state: CityState) -> Array[Vector2i
 func _market_ahead_of(her: Vector2, candidates: Array[Vector2i]) -> Vector2i:
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(_day, _map, _streets.route_tree(), _walk,
-				EventScheduler.Verdicts.new())
+				EventScheduler.Verdicts.new(), _builder)
 	var ahead := _siting.cells_ahead(her, _heading, INF)
 	var best := Vector2i(-1, -1)
 	var nearest := INF
@@ -493,22 +497,22 @@ func _bring_the_column(def: EventDef, place: Vector2, lane_x: float, going: floa
 ## route that ran out leaves (`EventInstance._be_done()`). **Nothing points at them** — no arrow,
 ## no field, no line of text — so the neighbor is a figure she may notice and never a task.
 ##
-## The way is a coin flip between the two directions along her street, each taken as far as
-## `EventScheduler._room_along()` allows and stopped short of anything that stops a figure on foot
-## (`CityMap.passable()`: a closure, a seal, a body), the same shape every route along a street is
+## The way is a coin flip between the two directions along her street, each taken as far as the
+## plan builder's `PlanBuilder.room_along()` allows and stopped short of anything that stops a
+## figure on foot (`CityMap.passable()`: a closure, a seal, a body), the same shape every route along a street is
 ## given; the longer one when only one fits a block. A figure walking half
 ## her pace down her own street is out of sight long before the route runs out, whichever way she
 ## goes, so the departure at its end is one nobody sees.
 func _send_the_neighbor_to_work() -> EventInstance:
-	if not _events or not _map:
+	if not _events or not _map or not _builder:
 		return null
 	var def := EventCatalogue.by_id("neighbor")
 	if not def:
 		return null
 	var door := _map.doorstep_world_position()
 	var tile := _map.world_to_tile(door)
-	var east := EventScheduler._room_along(_map, tile, Vector2i.RIGHT)
-	var west := EventScheduler._room_along(_map, tile, Vector2i.LEFT)
+	var east := _builder.room_along(tile, Vector2i.RIGHT)
+	var west := _builder.room_along(tile, Vector2i.LEFT)
 	var along := Vector2i.RIGHT if east >= west else Vector2i.LEFT
 	if mini(east, west) >= CityMap.period() and _rng.randf() < 0.5:
 		along = -along

@@ -215,6 +215,9 @@ src/
 	                      a bag per view, or the escape city's streets from its marble bag
 	event_plan.gd         one placed event's row, position, role and path: what the manager needs to
 	                      spawn one instance
+	plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along or across
+	                      the street, room among placed plans, where its body stands; handed the map
+	                      and what it asks (what stops a row, where a body stands, the room)
 	day_events.gd         the day's planned rows read through one object: what each spoils, a
 	                      pursuit; kept in step as the plan is built, never saved
 	calm_areas.gd         the day's calm areas as dawn sees them: their ground, which she used

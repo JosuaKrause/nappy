@@ -151,6 +151,7 @@ FILES: dict[str, str] = {
     "src/events/location_fit.gd": "model",
     "src/events/location_ground.gd": "model",
     "src/events/mast_sites.gd": "model",
+    "src/events/plan_builder.gd": "model",
     "src/events/roadblock_ground.gd": "model",
     "src/events/roadblock_phase.gd": "model",
     "src/events/scripted_phase.gd": "model",

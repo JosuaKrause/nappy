@@ -322,9 +322,10 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 		provenance[plan.get_instance_id()] = Source.OTHER
 
 	var locations := DayLocations.lay_out(map, corridor)
+	var builder := GamePlanBuilder.over(map)
 	var phase := ScriptedPhase.new(locations, EventScheduler.RuledLocationGround.new(day, base, map,
-			events, corridor, LocationFit.new(day, map, ground, corridor, true),
-			StreetInvalidation.new(map, corridor, ground, leave_alone, PackedVector2Array(), false)),
+			events, corridor, LocationFit.new(day, map, builder, ground, corridor, true),
+			StreetInvalidation.new(map, corridor, ground, leave_alone, PackedVector2Array(), null)),
 			func(def: EventDef, location: Location) -> float:
 				return EventScheduler._weight_in(def, location, day, map, ground, corridor, true))
 	var before := events.size()
@@ -343,8 +344,8 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	_tag_new(events.placements(), provenance, before, Source.CALM_GROUND)
 
 	before = events.size()
-	EventScheduler._draw_the_locations(day, base, map, events, ground, leave_alone, corridor,
-			PackedVector2Array(), DaySpec.for_day(day), locations, 0, null)
+	EventScheduler._draw_the_locations(day, base, map, builder, events, ground, leave_alone,
+			corridor, PackedVector2Array(), DaySpec.for_day(day), locations, 0, null)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
 	before = events.size()

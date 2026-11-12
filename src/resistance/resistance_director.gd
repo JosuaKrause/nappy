@@ -132,6 +132,9 @@ var _atlas: AtlasLibrary
 var _spawn_siting: SpawnSiting
 ## The walk's events (`WalkEvents`), the day's events' own (`EventManager.walk_events()`), from `setup()`.
 var _walk: WalkEvents
+## Builds a plan at a tile (`PlanBuilder`), the day's events' own (`EventManager.plan_builder()`),
+## from `setup()`; null for a rig with no events.
+var _builder: PlanBuilder
 var _contact: ContactPoint
 ## The mark's own touched `ContactPoint`, once she has read it — kept alive rather than freed the
 ## instant `_begin_step()` activates the perform it unlocks, so `chalk_mark_touched.svg` keeps
@@ -276,6 +279,7 @@ func use_atlas(atlas: AtlasLibrary) -> void:
 ## own (`WorldMap.navigator()`) for a rig that hands none — and where a pursuer it sends may start:
 ## `spawn_siting`, the city's own, or, for a rig that hands none, one over `map` that sees the
 ## events' view and the streets' region where there are events and streets and neither where not.
+## The walk's events and the plan builder are the events' own, or none for a rig with no events.
 func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreets,
 		fronts: CityFronts, world: WorldContext, navigator: Navigator = null,
 		spawn_siting: SpawnSiting = null) -> void:
@@ -286,6 +290,7 @@ func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreet
 	_fronts = fronts
 	_world = world
 	_walk = events.walk_events() if events else WalkEvents.new()
+	_builder = events.plan_builder() if events else null
 	var moves_by := navigator if navigator else map.navigator()
 	if spawn_siting:
 		_spawn_siting = spawn_siting
@@ -1818,7 +1823,7 @@ func _section_to_swap(def: EventDef, her: Vector2, paths: Dictionary) -> Section
 	var checked := {}
 	var may_take := func(section: Location) -> bool:
 		# Stationary, so it draws nothing from a stream: a fresh one, never the director's.
-		var across := EventScheduler.across_the_section(row, _map, section,
+		var across := EventScheduler.across_the_section(row, _builder, _map, section,
 				RandomNumberGenerator.new())
 		if across == null or _drawing_shows(row, across.placed_at()):
 			return false

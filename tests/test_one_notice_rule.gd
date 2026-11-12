@@ -11,7 +11,7 @@ func run(t: TestRunner) -> void:
 	var flock := EventCatalogue.by_id("pigeon_flock")
 	var reach := flock.notice_within()
 	var placed: Array[EventPlan] = [EventPlan.new(flock, Vector2(800, 800))]
-	var rule := OneNoticeRule.new(map)
+	var rule := OneNoticeRule.new(GamePlanBuilder.over(map))
 	var overlapping := EventPlan.new(flock, Vector2(800 + reach, 800))
 	var apart := EventPlan.new(flock, Vector2(800 + 2.0 * reach + 32.0, 800))
 	var cafe := EventPlan.new(EventCatalogue.by_id("cafe_tables"), Vector2(800 + reach, 800))
