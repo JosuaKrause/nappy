@@ -45,8 +45,8 @@ in `docs/CITY.md`, "Calm zones"). Three consequences:
 - **Route redundancy is not true by construction.** A full lattice cannot be disconnected by
   removing one corridor; this one can. It is checked by search — `StreetNetwork.route_count()`.
 - **The absent streets are a set, not a hole in the enumeration.** `StreetNetwork` still enumerates
-  the full grid; `CityMap.absent_segments` says which of them this city does not have, and
-  `CityMap.blocked_segments()` merges it with today's closures. **Every route search takes that
+  the full grid; `CityMap.has_street()` says which of them this city has, and
+  `CityMap.blocked_segments()` merges the ones it does not with today's closures. **Every route search takes that
   merged set** — one that takes only the closures will happily route down the middle of a park and
   overstate the redundancy.
 - **A block is not the unit; a lot is.** `block_plans`, `block_layouts` and `calm_blocks` are keyed
@@ -56,7 +56,7 @@ in `docs/CITY.md`, "Calm zones"). Three consequences:
 
 **An absorbed street is calm ground, not a closure.** The tiles are park and the player walks over
 them — a zone is a shortcut as well as a destination. Only the *lattice* lost the street, which is
-why `absent_segments` is a set of segment keys and `closed_tiles` is a set of tiles. **Anything that
+why the absent streets are a set of segment keys and `closed_tiles` is a set of tiles. **Anything that
 travels the lattice asks `CityMap.is_street()`, not `is_walkable()`.**
 
 ## Every day stays winnable, and always has somewhere else to go

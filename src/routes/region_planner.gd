@@ -34,9 +34,9 @@ extends RefCounted
 ## crossing alley is instead.
 ##
 ## **Growth.** `Tuning.REGION_COUNT` seed junctions, spread by farthest-point sampling over the
-## real-segment graph (`absent_segments` — both the zone-absorbed and the built-over kind — is
-## never traversed, so a region can never grow across ground that is not there to cross), then a
-## round-robin breadth-first flood: one step per region in turn, claiming a junction **and its
+## real-segment graph (an absent street, `CityMap.has_street()` false, of either the zone-absorbed
+## or the built-over kind, is never traversed, so a region can never grow across ground that is not
+## there to cross), then a round-robin breadth-first flood: one step per region in turn, claiming a junction **and its
 ## whole atom** on every claim. The round-robin is what keeps the regions comparable in size
 ## rather than the first seed eating the map before the others start.
 ##
@@ -46,7 +46,7 @@ extends RefCounted
 ## band reaches roughly two tiles either way at the checkpoint row's own radius, wide enough to
 ## cover a nearby alley's mouth outright — the mouth is one tile deep and never bleeds sideways.
 ##
-## **The wall is the day's, not `absent_segments`.** From `Tuning.REGION_WALL_FIRST_DAY`, every
+## **The wall is the day's, not the absent streets'.** From `Tuning.REGION_WALL_FIRST_DAY`, every
 ## boundary crossing — a segment or a crossing alley — the day's tree uses is a **door**; every
 ## other one is **wall**. That is the whole rule: the tree wins. A region with no calm area
 ## therefore gets no doors on every day its own boundary is off the tree, which is every day unless
@@ -116,7 +116,8 @@ class RegionPlan extends RefCounted:
 ## Assigns every junction to a region and stores the result on `map` — `region_of_junction`,
 ## `region_has_calm`. Called once, at generation, after hard blockers have taken their streets
 ## (`CityGenerator._assign_regions`): a region may not grow across ground a dead end or a big
-## building just built over, and `absent_segments` only carries that once the blockers are placed.
+## building just built over, and the absent streets (`CityMap.has_street()`) only carry that once
+## the blockers are placed.
 ##
 ## `rng` seeds only the farthest-point sample's starting junction — everything after that is
 ## deterministic BFS — and it is the caller's own stream, seeded from the map's seed rather than
@@ -361,10 +362,10 @@ static func _demand_ground(demanded: Dictionary, segment: StreetNetwork.Segment,
 	elif demanded[key] != region:
 		demanded[key] = -1
 
-## Junction adjacency over real segments only — `absent_segments` is never traversed, so a region
-## can never grow across ground that is not there to cross. Built fresh per call: this only ever
-## runs once per city, at generation, so keeping it the way `StreetNetwork` keeps the full
-## lattice's adjacency would save nothing.
+## Junction adjacency over real segments only — an absent street (`CityMap.has_street()`) is never
+## traversed, so a region can never grow across ground that is not there to cross. Built fresh per
+## call: this only ever runs once per city, at generation, so keeping it the way `StreetNetwork`
+## keeps the full lattice's adjacency would save nothing.
 static func _growth_graph(map: CityMap) -> Array:
 	var total := StreetNetwork.node_total()
 	var adjacency: Array = []

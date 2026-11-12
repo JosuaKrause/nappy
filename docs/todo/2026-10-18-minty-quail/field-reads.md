@@ -100,18 +100,19 @@ Left, each its own design question:
   by class: the city map's (`CityMap`) in the routes (the region and seal planners), the blackout, the streamed ground and the city's generator, besides the
   events', the run flow's and the rigs'; a building's (`Building`) in the city scene, the city's fronts, the poster walls, the blackout, the roof
   previews and the scene recipes. Two groups have a home of their own:
-  - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
-    (`RecipeCityContext`) are the scene recipes' city. The scene recipes are placed by location (polite-tapir's `placement-by-construction.md`, "What is built"), so they wait
-    for nothing there; what is left is a design for the map capturing and restoring itself.
+  - The authored-scene builder (`RecipeCityBuilder`) is the scene recipes' city. The scene recipes are placed by
+    location (polite-tapir's `placement-by-construction.md`, "What is built"), so it waits for nothing there; its
+    reads of the map are what is left, now that the map captures and restores itself (`CityMap.capture()`,
+    `CityMap.restored()`). The map's recipe side (`RecipeCityContext`) still reads a block plan's steps
+    (`BlockPlan.Step`), an inner class the check does not see.
   - A field only a test still reads outside its own class and the code that writes it
-    (`CityMap.home_rect`, which the map's capture and restore also reads by name, `courtyard_rects`,
+    (`CityMap.home_rect`, `courtyard_rects`,
     `Building.scenery_clock`, `door_world_x_range`, `station_door_col`, `station_yard_cols`,
     `BuildingShadows.streamed`, `falls_on`) keeps its direct write in the city and goes with the
     tests-one-module item (`tests-one-module.md`), when its tests read through a method the game
     also calls. `CityMap.home_block`, `Building.power_station` and `PosterState.pasted_through` are
     not in this group, since game code reads them outside their class, and they are converted with
-    those readers: `home_block` by the day planner, the map's capture and restore and the scene
-    recipe runtime; `power_station` by the city scene's `assign_roof_extensions()`, which skips the
+    those readers: `home_block` by the day planner and the scene recipe runtime; `power_station` by the city scene's `assign_roof_extensions()`, which skips the
     station's yard columns when it extends a roof; `pasted_through` by the poster walls, which read
     and write it.
 - **Her part that only tests read.** `Stroller.atlas` is handed in through `use_atlas()` and read by
