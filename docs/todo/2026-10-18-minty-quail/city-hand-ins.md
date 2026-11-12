@@ -11,22 +11,17 @@ build a city. `DayStreets`, `CityFronts` and the hand-ins for the resistance dir
 happenings, day 12's park cordon, the crowd and the run log's observer are built; the design is in
 #1166's description, under "The step's design".
 
-**What is left, the third pull request.** *Proposed, not asked for, and on the board as
-hand-ins-third-cut, built on the orchestrator's pick since it drops nothing the player asked for:*
-one pull request cannot hold it, so cut it: the event manager's own city and the day planner's
-fallback below go before the dawn's context rewrites `build_day()`'s call (`scheduler-breakup.md`),
-the smaller cases when they are ready, and who builds the event manager and
-the crowd last (`standing-layer-breaks.md`). The player's answer was three pull requests
-("yes three prs is fine", inbox #1173 in gray-dolphin), so the plainer alternative is one large
-third pull request:
-
-- the smaller cases: `day_director.gd` and `main.gd`, as 3c's row in #1166's "Files it touches"
-  lists them (the event manager and its day planner take what they read since the record
-  2026-10-18-minty-quail-crisp-otter, the scenery's residency and ground, the blackout and the poster
-  walls take what they read since the record 2026-10-18-minty-quail-quiet-ibis, the still watch, the
-  debug readout, the frame recorder and the frame trace since the record
-  2026-10-18-minty-quail-calm-wombat, and the developer's rig, the route rig and its planner since
-  the record 2026-10-18-minty-quail-plush-chipmunk);
+**What is left, the third pull request.** One pull request cannot hold it, so it goes in as several
+small pull requests, each reviewed and merged on its own, the player's answer to the cut
+(inbox #1381 in gray-moose); the earlier answer was three pull requests ("yes three prs is fine",
+inbox #1173 in gray-dolphin). Left are the smaller cases, when they are ready: `day_director.gd`
+and `main.gd`, as 3c's row in #1166's "Files it touches" lists them (the event manager and its day
+planner take what they read since the record 2026-10-18-minty-quail-crisp-otter, the scenery's
+residency and ground, the blackout and the poster walls since the record
+2026-10-18-minty-quail-quiet-ibis, the still watch, the debug readout, the frame recorder and the
+frame trace since the record 2026-10-18-minty-quail-calm-wombat, and the developer's rig, the
+route rig and its planner since the record 2026-10-18-minty-quail-plush-chipmunk); and last, who
+builds the event manager and the crowd (`standing-layer-breaks.md`).
 
 **Which map a test uses** is writing-tests' rule (inbox #1172 in gray-dolphin): the shared writer's map is for a test
 of one interaction or edge case, never for a booted day or a measurement.

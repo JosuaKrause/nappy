@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## `SentenceLines`, the helper that breaks a screen's prose onto more than one line only where it
 ## has to, and only between sentences — see `src/ui/sentence_lines.gd`'s own doc for the rule.
@@ -8,6 +7,7 @@ extends RefCounted
 ## `_title` unbroken, and `Texts.DAY_BRIEF`'s day-1 entry had no break in it at all — both pinned checks
 ## below would have read the whole thing as a single line with no `\n` in it.
 
+const DaySummary := preload("res://src/ui/day_summary.gd")
 const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCENE := preload("res://scenes/ui/pause_screen.tscn")
 
@@ -79,7 +79,7 @@ func _test_a_too_narrow_multi_sentence_text_breaks_between_every_sentence(t: Tes
 ## There is no settling her now."` with the clock worked into the first sentence — see
 ## `SummaryModel._clock_line()`'s own doc.
 func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t: TestRunner) -> void:
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var end := DayEnd.new()
 	end.result = GameEnums.DayResult.LOST_CRYING
@@ -98,7 +98,7 @@ func _test_a_day_lost_to_crying_pins_the_players_own_two_lines(t: TestRunner) ->
 ## the park. Walk until she sleeps, then bring her home.\" the newline goes after park" — the
 ## latter.)* Day 1's own `Texts.DAY_BRIEF` entry is exactly this three-sentence text.
 func _test_day_ones_brief_breaks_after_the_park_not_after_every_sentence(t: TestRunner) -> void:
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var run := RunState.new()
 	run.header.day = 1
@@ -127,22 +127,22 @@ func _check_breaks_only_between_sentences(t: TestRunner, source: String, label: 
 			"%s keeps every word — the break neither drops nor rewrites anything in it" % description)
 
 func _test_every_day_brief_breaks_only_between_sentences(t: TestRunner) -> void:
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var brief: Label = summary.get_node("Root/Center/Lines/Brief")
-	for day in Texts.DAY_BRIEF.keys():
+	for day: int in Texts.DAY_BRIEF.keys():
 		var source: String = Texts.DAY_BRIEF[day]
 		_check_breaks_only_between_sentences(t, source, brief, "day %d's brief" % day)
 	summary.queue_free()
 
 func _test_every_ending_and_finale_body_breaks_only_between_sentences(t: TestRunner) -> void:
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
-	for ending in Texts.ENDING_BODY.keys():
+	for ending: GameEnums.Ending in Texts.ENDING_BODY.keys():
 		var source: String = Texts.ENDING_BODY[ending]
 		_check_breaks_only_between_sentences(t, source, body, "the %s ending's body" % ending)
-	for kind in Texts.FINALE_BODY.keys():
+	for kind: CityEdge.Kind in Texts.FINALE_BODY.keys():
 		var source: String = Texts.FINALE_BODY[kind]
 		_check_breaks_only_between_sentences(t, source, body, "the finale body for exit kind %d" % kind)
 	summary.queue_free()
@@ -150,7 +150,7 @@ func _test_every_ending_and_finale_body_breaks_only_between_sentences(t: TestRun
 ## `Texts.RESUMED_DAY_LOST` (`src/ui/texts.gd`) — the day brief's own line for a resumed run whose
 ## save said a day was under way: the two sentences the note is made of.
 func _test_the_resumed_day_note_breaks_only_between_sentences(t: TestRunner) -> void:
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
 	_check_breaks_only_between_sentences(t,
@@ -160,14 +160,15 @@ func _test_the_resumed_day_note_breaks_only_between_sentences(t: TestRunner) -> 
 
 func _test_the_pause_screens_body_breaks_only_between_sentences(t: TestRunner) -> void:
 	# The touch layer holds the control scheme, and the screen words its body again on every open.
-	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	var controls_scene: PackedScene = load("res://scenes/ui/touch_controls.tscn")
+	var controls: TouchControls = controls_scene.instantiate()
 	t.add_child(controls)
-	var pause: CanvasLayer = PAUSE_SCENE.instantiate()
+	var pause: PauseScreen = PAUSE_SCENE.instantiate()
 	var run := RunState.new()
 	pause.use_run(run)
 	t.add_child(pause)
 	var body: HelpText = pause.get_node("Root/Center/Lines/Body")
-	for joystick in [false, true]:
+	for joystick: bool in [false, true]:
 		controls.set_mode(ControlsMode.Mode.JOYSTICK if joystick else ControlsMode.Mode.TAP)
 		pause.open()
 		var source: String = Texts.WALKING_LESSON_PAUSE % (

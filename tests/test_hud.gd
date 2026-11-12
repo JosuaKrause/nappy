@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## The HUD's teaching lines, plus the debug/release gate that decides what else it draws.
 ##
@@ -16,6 +15,7 @@ extends RefCounted
 ## Each test hands its HUD a run of its own (`RunState.new()`), so none leans on, or leaves behind,
 ## a run shared with another test.
 
+const Hud := preload("res://src/ui/hud.gd")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 const UIScreens := preload("res://tests/ui_screens.gd")
 
@@ -49,8 +49,8 @@ func run(t: TestRunner) -> void:
 ## A HUD configured as `main` configures it, before it enters the tree: `debug` false is the release
 ## shape, `touch` the device answer, `learned` an authored mid-game scene's `tutorial_complete`.
 ## It reads `run`, which the test owns.
-func _hud(t: TestRunner, run: RunState, debug := true, touch := false, learned := false) -> CanvasLayer:
-	var hud: CanvasLayer = HUD_SCENE.instantiate()
+func _hud(t: TestRunner, run: RunState, debug := true, touch := false, learned := false) -> Hud:
+	var hud: Hud = HUD_SCENE.instantiate()
 	hud.configure(debug, false, learned)
 	hud.use_touch(touch)
 	hud.use_run(run)
@@ -63,10 +63,10 @@ func _run_on(day: int) -> RunState:
 	run.header.day = day
 	return run
 
-func _teach(hud: CanvasLayer) -> HelpText:
+func _teach(hud: Hud) -> HelpText:
 	return hud.find_child("Teach", true, false) as HelpText
 
-func _label(hud: CanvasLayer, node_name: String) -> Label:
+func _label(hud: Hud, node_name: String) -> Label:
 	return hud.find_child(node_name, true, false) as Label
 
 func _pursuer() -> EventInstance:
@@ -471,7 +471,7 @@ func _test_every_task_line_fits_on_one_line(t: TestRunner) -> void:
 	var hud := _hud(t, run, false)
 	var label := _label(hud, "Resistance")
 	var font_size: int = label.get_theme_font_size("font_size")
-	var width: float = label.get_parent().get_combined_minimum_size().x
+	var width: float = (label.get_parent() as Control).get_combined_minimum_size().x
 	t.check(width >= 280.0, "the Meters column gives the task line at least 280px")
 	# Non-empty so the HUD's own "already touched a mark" gate is open.
 	run.resistance.completed_steps = [1]
@@ -635,7 +635,8 @@ func _test_a_meter_bar_may_not_read_100_before_the_day_actually_ends(t: TestRunn
 ## set to `JOYSTICK` is what the HUD asks.
 func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t: TestRunner) -> void:
 	var run := _run_on(Tuning.RUN_TAUGHT_DAY)
-	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	var controls_scene: PackedScene = load("res://scenes/ui/touch_controls.tscn")
+	var controls: TouchControls = controls_scene.instantiate()
 	t.add_child(controls)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 	var hud := _hud(t, run)

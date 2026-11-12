@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## The pause and the title screen, which share this file because both are the game's ends: the
 ## title is where a run begins and where a finished one goes back to, and the pause is where a
@@ -29,6 +28,7 @@ const Boot := preload("res://tests/booted_main.gd")
 
 const UI := preload("res://tests/ui_screens.gd")
 const SUMMARY := preload("res://scenes/ui/day_summary.tscn")
+const DaySummaryScript := preload("res://src/ui/day_summary.gd")
 const PAUSE := preload("res://scenes/ui/pause_screen.tscn")
 const TITLE := preload("res://scenes/ui/title_screen.tscn")
 ## The seed the runs these screens stand over start on, fixed so a test repeats; no check depends
@@ -109,8 +109,8 @@ func _title(t: TestRunner, touch := false, can_quit := true, run: RunState = nul
 	return title
 
 ## A between-days summary on a platform, in the tree and not yet showing.
-func _summary(t: TestRunner, touch := false) -> CanvasLayer:
-	var summary: CanvasLayer = SUMMARY.instantiate()
+func _summary(t: TestRunner, touch := false) -> DaySummaryScript:
+	var summary: DaySummaryScript = SUMMARY.instantiate()
 	summary.use_touch(touch)
 	t.add_child(summary)
 	return summary
@@ -122,7 +122,7 @@ func _ending(which: GameEnums.Ending) -> SummaryModel:
 	return model
 
 ## Shows an ordinary day's summary that ended as `result`.
-func _show_day_over(summary: CanvasLayer, result: GameEnums.DayResult) -> void:
+func _show_day_over(summary: DaySummaryScript, result: GameEnums.DayResult) -> void:
 	var run := _fresh_run()
 	summary.show_summary(SummaryModel.day_over(run, UI.ended(result)), RunFlow.Mode.DAY_OVER)
 
@@ -133,7 +133,7 @@ func _clocked(restart: ModeButton, clock: UI.FakeClock) -> void:
 func _test_button_catches_and_hover_are_radial_when_rotated(t: TestRunner) -> void:
 	var window: Window = t.get_window()
 	var old_size := window.size
-	for rotated in [false, true]:
+	for rotated: bool in [false, true]:
 		window.size = Vector2i(720, 1280) if rotated else Vector2i(1280, 720)
 		# The catch is the 122.7px square (half-side `radius` * 4/3) holding the 1.05 circle, so a
 		# point just inside and just past the square's edge and its corner are the edges.
@@ -146,26 +146,31 @@ func _test_button_catches_and_hover_are_radial_when_rotated(t: TestRunner) -> vo
 			for offset: Vector2 in offsets:
 				var expected := maxf(absf(offset.x), absf(offset.y)) < half_square
 				var started := [0]
-				var screen: Node
+				var screen: CanvasLayer
+				var title: TitleScreen = null
+				var pause: PauseScreen = null
+				var summary: DaySummaryScript = null
 				var button: ModeButton
 				if kind == "title":
-					var title := _title(t, true)
+					title = _title(t, true)
 					title.start_requested.connect(func(_mode: ControlsMode.Mode, _by_key: bool,
 							_side: ControlsMode.Side) -> void: started[0] += 1)
 					screen = title
 				elif kind == "pause":
-					screen = _pause(t, true)
+					pause = _pause(t, true)
+					screen = pause
 				else:
-					screen = _summary(t, true)
+					summary = _summary(t, true)
+					screen = summary
 				ScreenOrientation.apply_to_layer(screen, rotated)
 				if kind == "title":
-					screen.open()
+					title.open()
 					button = UI.button(screen, "Left")
 				elif kind == "pause":
-					screen.open()
+					pause.open()
 					button = UI.button(screen, "Restart")
 				else:
-					_show_day_over(screen, GameEnums.DayResult.WON)
+					_show_day_over(summary, GameEnums.DayResult.WON)
 					button = UI.button(screen, "Restart")
 				await UI.frames(t)
 				var presented := ScreenOrientation.to_presented_space(
@@ -191,19 +196,22 @@ func _test_button_catches_and_hover_are_radial_when_rotated(t: TestRunner) -> vo
 	# (`ScreenOrientation.wants_rotation`): hover is read in the upright presentation alone.
 	window.size = Vector2i(1280, 720)
 	for kind: String in ["title", "pause", "summary"]:
-		var screen: Node
+		var screen: CanvasLayer
 		var button: ModeButton
 		if kind == "title":
-			screen = _title(t)
-			screen.open()
+			var title := _title(t)
+			title.open()
+			screen = title
 			button = UI.button(screen, "Left")
 		elif kind == "pause":
-			screen = _pause(t)
-			screen.open()
+			var pause := _pause(t)
+			pause.open()
+			screen = pause
 			button = UI.button(screen, "Restart")
 		else:
-			screen = _summary(t)
-			_show_day_over(screen, GameEnums.DayResult.WON)
+			var summary := _summary(t)
+			_show_day_over(summary, GameEnums.DayResult.WON)
+			screen = summary
 			button = UI.button(screen, "Restart")
 		await UI.frames(t)
 		var radius := ModeButton.RADIUS
@@ -1162,8 +1170,8 @@ func _test_an_ending_has_no_continue_button(t: TestRunner) -> void:
 
 	summary.show_summary(_ending(GameEnums.Ending.BAD), RunFlow.Mode.ENDING)
 	t.check(not continue_column.visible, "but the ending screen does not")
-	t.check(UI.button(summary, "Restart").get_parent().visible,
-			"the restart button stays, hold and all")
+	var restart_row: Control = UI.button(summary, "Restart").get_parent()
+	t.check(restart_row.visible, "the restart button stays, hold and all")
 
 	# The row returns to its ordinary shape once a fresh run's own day summary shows — the flag
 	# belongs to the screen currently up, not to whatever was up last.
@@ -1429,7 +1437,7 @@ func _left_click() -> InputEventMouseButton:
 ## and is re-read on every open, since the title screen can choose the scheme after the screen was
 ## built.
 func _test_the_pause_body_names_the_run_button_in_the_joystick_scheme(t: TestRunner) -> void:
-	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	var controls: TouchControls = TOUCH_CONTROLS.instantiate()
 	t.add_child(controls)
 	var pause := _pause(t)
 	var body := UI.control(pause, "Body") as HelpText

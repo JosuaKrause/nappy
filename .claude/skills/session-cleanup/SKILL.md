@@ -133,6 +133,10 @@ tools/sweep-agent-leftovers.py`** and removed with `--apply`: a brief, released 
 branch is gone everywhere and whose own pull request merged, and a detached checkout that holds
 no commit of its own, that no brief of a branch still there names, and that nothing has written
 to lately. It runs bare, since it only reads GitHub, and its `--help` has every condition.
+`.claude/settings.json` allows the removing run spelled exactly `uv run python
+tools/sweep-agent-leftovers.py --apply`, since Claude Code's auto mode otherwise refuses it as an
+irreversible local deletion; the rule matches that text alone, so another spelling goes to the
+classifier (inbox #1382 in gray-moose).
 **Free space is read from `df`, before and after**, since `du` counts
 shared blocks more than once. `references/storage.md` has the rest; read it before removing
 anything a job did not record as its own, after a browser run, and before multiplying worktrees or

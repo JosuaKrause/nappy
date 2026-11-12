@@ -1,33 +1,34 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## What `SentenceLines` returns is what the label shows: every caller's text, rendered at the
 ## label's real width, takes exactly as many lines as `SentenceLines` broke it into. See
 ## `src/ui/sentence_lines.gd` for the rule and why a label that wraps a fitting line again is a bug.
 
+const DaySummary := preload("res://src/ui/day_summary.gd")
+const Hud := preload("res://src/ui/hud.gd")
 const SUMMARY_SCENE := preload("res://scenes/ui/day_summary.tscn")
 const PAUSE_SCENE := preload("res://scenes/ui/pause_screen.tscn")
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
 
 
 func run(t: TestRunner) -> void:
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+	var summary: DaySummary = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var title: Label = summary.get_node("Root/Center/Lines/Title")
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
 	var body: Label = summary.get_node("Root/Center/Lines/Body")
 	var brief: Label = summary.get_node("Root/Center/Lines/Brief")
-	for day in Texts.DAY_BRIEF.keys():
+	for day: int in Texts.DAY_BRIEF.keys():
 		_check_label(t, Texts.DAY_BRIEF[day], brief, "day %d's brief" % day)
-	for ending in Texts.ENDING_BODY.keys():
+	for ending: GameEnums.Ending in Texts.ENDING_BODY.keys():
 		_check_label(t, Texts.ENDING_BODY[ending], body, "ending %d's body" % ending)
-	for kind in Texts.FINALE_BODY.keys():
+	for kind: CityEdge.Kind in Texts.FINALE_BODY.keys():
 		_check_label(t, Texts.FINALE_BODY[kind], body, "finale body %d" % kind)
 	_check_label(t, Texts.RESUMED_DAY_LOST, note, "the resumed-day note")
 	_check_label(t, "She started crying after 0:10. There is no settling her now.", title,
 			"the lost-day title")
 	var hard_fails: Dictionary = Texts.HARD_FAIL_TEXT
 	var hard_fail_run := RunState.new()
-	for reason in hard_fails.keys():
+	for reason: String in hard_fails.keys():
 		var hard_fail_end := DayEnd.new()
 		hard_fail_end.result = GameEnums.DayResult.LOST_HARD_FAIL
 		hard_fail_end.reason = hard_fails[reason]
@@ -42,13 +43,14 @@ func run(t: TestRunner) -> void:
 	# The touch layer holds the control scheme, and the screen words its body again on every open;
 	# what it shows has its sentences on separate lines, so the text it was laid out from is the
 	# shown lines joined by the spaces they stand for.
-	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	var controls_scene: PackedScene = load("res://scenes/ui/touch_controls.tscn")
+	var controls: TouchControls = controls_scene.instantiate()
 	t.add_child(controls)
-	var pause: CanvasLayer = PAUSE_SCENE.instantiate()
+	var pause: PauseScreen = PAUSE_SCENE.instantiate()
 	pause.use_run(run)
 	t.add_child(pause)
 	var pause_body: HelpText = pause.get_node("Root/Center/Lines/Body")
-	for joystick in [false, true]:
+	for joystick: bool in [false, true]:
 		controls.set_mode(ControlsMode.Mode.JOYSTICK if joystick else ControlsMode.Mode.TAP)
 		pause.open()
 		var shown := pause_body.line.replace("\n", " ")
@@ -58,7 +60,7 @@ func run(t: TestRunner) -> void:
 	controls.free()
 	t.get_tree().paused = was_paused
 
-	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	var hud: Hud = HUD_SCENE.instantiate()
 	hud.use_run(run)
 	t.add_child(hud)
 	var teach: HelpText = hud.get_node("Root/Teach")

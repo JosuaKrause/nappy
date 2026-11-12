@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `BadgeModel` stepped on its own: fakes for the dangers, a rectangle for the view, a number for the
 ## clock — no scene, no camera, no frame timing. When a danger's screen-edge badge goes up, when it
@@ -128,7 +127,7 @@ func _test_a_raised_badge_stays_up_while_it_stands_and_while_it_turns_away(t: Te
 	t.check(not _up(model, "thing"), "dropped the frame it is in sight")
 
 func _test_a_raised_badge_ends_when_its_danger_leaves_the_world(t: TestRunner) -> void:
-	for finished in [true, false]:
+	for finished: bool in [true, false]:
 		var model := BadgeModel.new()
 		var truck := _vehicle(1, Vector2(1000.0, 0.0))
 		truck.logged_name = "truck"
@@ -410,7 +409,7 @@ func _test_a_pending_warning_is_ranked_by_its_arrival_among_live_dangers(t: Test
 	t.check(after_it == ["warning", "live"], "0.75s off, the warning with 0.7s left comes first (%s)" % str(after_it))
 
 func _test_the_warning_with_less_time_left_is_listed_first(t: TestRunner) -> void:
-	for sooner_first in [true, false]:
+	for sooner_first: bool in [true, false]:
 		var model := BadgeModel.new()
 		var late := _vehicle(1, Vector2(100.0, 0.0))
 		late.pending = true

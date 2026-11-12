@@ -3,7 +3,8 @@
   "permissions": {
     "allow": [
       "Bash(uv run python tools/agent-identity.py run claude-coder -- tools/prune-merged.sh:*)",
-      "Bash(uv run python tools/agent-identity.py run claude-orchestrator -- tools/prune-merged.sh:*)"
+      "Bash(uv run python tools/agent-identity.py run claude-orchestrator -- tools/prune-merged.sh:*)",
+      "Bash(uv run python tools/sweep-agent-leftovers.py --apply)"
     ]
   },
   "hooks": {
