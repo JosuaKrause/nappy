@@ -72,7 +72,7 @@ extends RouteSource
 ##   should never go alongside the main road — main road by itself can be considered a blocker —
 ##   paths can only cross the main road".)* Crossing it at a junction is untouched, and
 ##   `SealPlanner` refuses the spine as a candidate outright for its own reasons — see its doc.
-## - **the ground of a calm area today's tree leaves alone** (`CityMap.shut_calm`: one she has
+## - **the ground of a calm area today's tree leaves alone** (`CityMap.shut_calm()`: one she has
 ##   already used this act), so no route goes through it, and none is grown to it either — the area
 ##   stays calm, walkable ground (`CityMap.calm_blocks` still has it); it is only this graph, the one
 ##   the tree itself walks, that does not.
@@ -234,14 +234,14 @@ static func for_the_run(map: CityMap) -> RouteTree:
 ## whether or not this run will be offered the last night's task.
 static func for_day(map: CityMap, day: int) -> RouteTree:
 	var rng := RandomNumberGenerator.new()
-	rng.seed = hash("routes:%d:%d" % [map.seed_used, day])
+	rng.seed = hash("routes:%d:%d" % [map.city_seed(), day])
 	var tree := grow(map, ClosurePlanner.home_street(map), _growable_areas(map),
 			map.blocked_segments(), _lattice_grid(map), rng)
 	if day == Tuning.POWER_STATION_DAY and map.has_power_station():
-		tree._grow_a_spur_to(map.rect_tiles(map.power_station_door))
+		tree._grow_a_spur_to(map.rect_tiles(map.power_station_door_tiles()))
 	return tree
 
-## `ClosurePlanner.calm_areas(map)`, minus whatever `CityMap.shut_calm` names today. **A shut area
+## `ClosurePlanner.calm_areas(map)`, minus whatever `CityMap.shut_calm()` names today. **A shut area
 ## is still in `map.calm_blocks`** — it stays calm ground for every guarantee stated over reachable
 ## calm, `ClosurePlanner`'s street-closure invariant among them — but it is not a destination this
 ## tree may grow a branch to: `_grow_a_branch()` would otherwise still reach its access streets and
@@ -250,7 +250,7 @@ static func for_day(map: CityMap, day: int) -> RouteTree:
 static func _growable_areas(map: CityMap) -> Array[ClosurePlanner.CalmArea]:
 	var areas: Array[ClosurePlanner.CalmArea] = []
 	for area in ClosurePlanner.calm_areas(map):
-		if not area.block in map.shut_calm:
+		if not area.block in map.shut_calm():
 			areas.append(area)
 	return areas
 
@@ -543,17 +543,17 @@ func _is_off_the_growths_graph(tile: Vector2i, refuse_the_spine: bool) -> bool:
 		return false
 	# **A used calm area the tree has been told to leave alone is not a route, the trunk's fallback
 	# included.** *(PLAYTEST-140, statement 8: "no route of the day goes through it".)* Its ground
-	# stays open (`CityMap.shut_calm`, `is_shut()`) — she is stopped by the events placed there, not
+	# stays open (`CityMap.shut_calm()`, `is_shut()`) — she is stopped by the events placed there, not
 	# by the tile — and unlike the spine it is never the only way anywhere: `ClosurePlanner.
 	# calm_to_shut()` refuses to exclude an area whose exclusion would cut any ground off.
 	if _map.is_shut(tile):
 		return true
 	if CityMap.junction_at(tile) != Vector2i(-1, -1):
 		return false
-	if refuse_the_spine and _map.main_road >= 0 \
+	if refuse_the_spine and _map.main_road_corridor() >= 0 \
 			and _map.street_kind_at(true, tile) == GameEnums.StreetKind.MAIN:
 		return true
-	var segment := _map.network.segment_containing(tile)
+	var segment := _map.street_network().segment_containing(tile)
 	if not segment:
 		return false
 	if not CityMap.is_road_offset(CityMap.corridor_offset(tile.y if segment.horizontal else tile.x)):
@@ -771,7 +771,7 @@ func _ensure_street_keys() -> void:
 	if _street_keys_built:
 		return
 	for node: int in _colours:
-		var segment := _map.network.segment_containing(grid.any_tile_of(node))
+		var segment := _map.street_network().segment_containing(grid.any_tile_of(node))
 		if segment:
 			_street_keys[segment.key()] = true
 	_street_keys_built = true
@@ -799,7 +799,7 @@ func is_on_the_tree(key: Vector3i) -> bool:
 ## Overrides RouteSource.streets_on_the_walk.
 func streets_on_the_walk() -> Array[StreetNetwork.Segment]:
 	var found: Array[StreetNetwork.Segment] = []
-	for segment in _map.network.segments():
+	for segment in _map.street_network().segments():
 		if is_on_the_tree(segment.key()):
 			found.append(segment)
 	return found
@@ -821,8 +821,8 @@ func reaches_the_alley(map: CityMap, rect: Rect2i) -> bool:
 	var block := map.block_at(map.tile_rect_to_world(rect).get_center())
 	var side_a: int = StreetNetwork.Side.NORTH if vertical else StreetNetwork.Side.WEST
 	var side_b: int = StreetNetwork.Side.SOUTH if vertical else StreetNetwork.Side.EAST
-	var segment_a := map.network.beside_block(block, side_a)
-	var segment_b := map.network.beside_block(block, side_b)
+	var segment_a := map.street_network().beside_block(block, side_a)
+	var segment_b := map.street_network().beside_block(block, side_b)
 	return (segment_a != null and is_on_the_tree(segment_a.key())) \
 			or (segment_b != null and is_on_the_tree(segment_b.key()))
 
@@ -842,7 +842,7 @@ func carries_a_route(tile: Vector2i) -> bool:
 ##
 ## Overrides RouteSource.marks_the_kerb_at.
 func marks_the_kerb_at(tile: Vector2i) -> bool:
-	var segment := _map.network.segment_containing(tile)
+	var segment := _map.street_network().segment_containing(tile)
 	if segment:
 		return is_on_the_tree(segment.key())
 	return carries_a_route(tile)
@@ -854,10 +854,15 @@ func marks_the_kerb_at(tile: Vector2i) -> bool:
 func street_it_starts_in() -> StreetNetwork.Segment:
 	return _home_street
 
-## The street lattice of the map the tree was grown on (`CityMap.network`), for a corridor or a
-## caller that names the streets the tree runs along.
+## The street lattice of the map the tree was grown on (`CityMap.street_network()`), for a corridor
+## or a caller that names the streets the tree runs along.
 func network() -> StreetNetwork:
-	return _map.network
+	return _map.street_network()
+
+## The grid the tree was grown on (`grid`), null for a tree grown with no home street or no calm
+## area to reach, which is how `Corridor.of()` tells an empty tree.
+func reachability_grid() -> ReachabilityGrid:
+	return grid
 
 ## The tree's own corridor, built afresh: what every placement of the day is stated against.
 ##
@@ -889,7 +894,7 @@ func junctions() -> Array[Vector2i]:
 	_ensure_street_keys()
 	var found := {}
 	for key: Vector3i in _street_keys:
-		var segment := _map.network.by_key(key)
+		var segment := _map.street_network().by_key(key)
 		if segment:
 			found[segment.a] = true
 			found[segment.b] = true
@@ -918,11 +923,11 @@ func rim() -> Array[Vector3i]:
 	_ensure_street_keys()
 	var found := {}
 	for key: Vector3i in _street_keys:
-		var segment := _map.network.by_key(key)
+		var segment := _map.street_network().by_key(key)
 		if not segment:
 			continue
 		for junction: Vector2i in [segment.a, segment.b]:
-			for candidate in _map.network.at_junction(junction):
+			for candidate in _map.street_network().at_junction(junction):
 				var beside := candidate.key()
 				if _street_keys.has(beside) or _absent.has(beside):
 					continue
@@ -979,11 +984,11 @@ func segment_depths() -> Dictionary:
 		hop += 1
 		var next: Array[Vector3i] = []
 		for key in frontier:
-			var segment := _map.network.by_key(key)
+			var segment := _map.street_network().by_key(key)
 			if not segment:
 				continue
 			for junction: Vector2i in [segment.a, segment.b]:
-				for candidate in _map.network.at_junction(junction):
+				for candidate in _map.street_network().at_junction(junction):
 					var beside := candidate.key()
 					if found.has(beside):
 						continue
@@ -1014,7 +1019,7 @@ func _is_a_real_street(segment: StreetNetwork.Segment) -> bool:
 ## routes apart, and it is the telemetry's question rather than this one.
 func gaps() -> Array[Vector3i]:
 	var found: Array[Vector3i] = []
-	for segment in _map.network.segments():
+	for segment in _map.street_network().segments():
 		var key := segment.key()
 		if is_on_the_tree(key) or not _is_a_real_street(segment):
 			continue
@@ -1028,7 +1033,7 @@ func gaps() -> Array[Vector3i]:
 ## connector is the corridor carrying straight on through the junction, which is one strand rather
 ## than two, and counting it would call every dead end off a route a gap.
 func _crossed_by_the_tree(junction: Vector2i, along: int) -> bool:
-	for segment in _map.network.at_junction(junction):
+	for segment in _map.street_network().at_junction(junction):
 		if segment.key().z != along and is_on_the_tree(segment.key()):
 			return true
 	return false

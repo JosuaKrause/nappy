@@ -116,7 +116,7 @@ func _test_a_route_is_a_walk_from_the_calm_to_the_door(t: TestRunner) -> void:
 func _test_the_tree_only_uses_streets_that_are_there(t: TestRunner) -> void:
 	for planned in _days:
 		for key in planned.tree.streets():
-			if planned.map.absent_segments.has(key):
+			if not planned.map.has_street(key):
 				continue
 			t.check(not planned.blocked.has(key),
 					"seed %d day %d: the tree stays off shut streets (%s)"

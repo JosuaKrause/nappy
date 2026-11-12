@@ -29,7 +29,7 @@ func _map() -> CityMap:
 	map.fill_rect(court, GameEnums.TileType.COURTYARD)
 	map.set_tile(Vector2i(25, 11), GameEnums.TileType.BUILDING)
 	var layout := BlockLayout.new()
-	layout.open_rect = court
+	layout.carve_open_ground(court)
 	map.block_layouts[COURT] = layout
 	map.calm_blocks = [PARK, COURT] as Array[Vector2i]
 	return map

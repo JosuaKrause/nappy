@@ -52,8 +52,7 @@ func _begin(t: TestRunner, from_the_start := false) -> void:
 	_resistance = ResistanceRunState.new()
 	_resistance.sabotage_done = false
 	_map = CityMap.new()
-	_map.power_station = STATION
-	_map.power_station_door = STATION_DOOR
+	_map.record_power_station(STATION, Vector3i(-1, -1, -1), STATION_DOOR, 0)
 	_signals = TrafficSignals.new(null)
 	_events = FakeEventManager.new()
 	_events.masts_to_silence = 2

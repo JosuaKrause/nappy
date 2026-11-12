@@ -106,15 +106,16 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## **`CityMap.fenced_park`'s fence comes back with the streets** (one `ParkClosure` per fenced run
 ## of its edge), after them and outside the day's quota: it is what `City` stands barriers at, the
 ## same way it stands them at a closed street's two mouths. Every other used area in `CityMap.
-## shut_calm` gets no fence at all — it is off the route tree but not off the ground, so nothing
+## shut_calm()` gets no fence at all — it is off the route tree but not off the ground, so nothing
 ## here draws anything for it. The fenced ground itself was decided at the repaint and is already
 ## closed on the map, so every candidate below is judged with it closed.
 static func plan_day(map: CityMap, spec: DaySpec, rng: RandomNumberGenerator,
 		tree: RouteTree = null, region_plan: RegionPlanner.RegionPlan = null,
 		trace: RunTrace = null) -> Array[RoadClosure]:
 	var chosen := _close_streets(map, spec, rng, tree, region_plan, trace)
-	if map.fenced_park.x >= 0:
-		for fence in ParkClosure.fence(map, map.fenced_park):
+	var fenced := map.fenced_park_block()
+	if fenced.x >= 0:
+		for fence in ParkClosure.fence(map, fenced):
 			chosen.append(fence)
 	return chosen
 
@@ -199,13 +200,13 @@ static func closures_wanted(spec: DaySpec) -> int:
 ## one exit, so sealing it seals the player in. docs/CITY.md states that exemption; this is where
 ## it is enforced.
 static func home_street(map: CityMap) -> StreetNetwork.Segment:
-	return map.network.segment_containing(
+	return map.street_network().segment_containing(
 			map.world_to_tile(map.doorstep_world_position()))
 
 ## Today's calm ground, as areas with their own ground and ways in.
 static func calm_areas(map: CityMap) -> Array[CalmArea]:
 	var found: Array[CalmArea] = []
-	for block in map.calm_blocks:
+	for block in map.calm_blocks_now():
 		var area := CalmArea.new()
 		area.block = block
 		area.rect = calm_area_rect(map, block)
@@ -218,9 +219,9 @@ static func calm_areas(map: CityMap) -> Array[CalmArea]:
 ## the whole lot. Also what `EventScheduler._calm_rect` protects from spoiling; the two ask the
 ## same question and this is the one place it is answered.
 static func calm_area_rect(map: CityMap, block: Vector2i) -> Rect2i:
-	var layout: BlockLayout = map.block_layouts.get(block)
-	if layout and BlockLayout.has(layout.open_rect):
-		return layout.open_rect
+	var layout := map.layout_of(block)
+	if layout and layout.has_open_ground():
+		return layout.open_ground()
 	return CityMap.block_rect(block)
 
 ## The streets a calm area can be entered from, found by walking out from its own tiles rather
@@ -246,7 +247,7 @@ static func _access_segments(map: CityMap, rect: Rect2i) -> Array[StreetNetwork.
 	while head < queue.size():
 		var tile: Vector2i = queue[head]
 		head += 1
-		var segment := map.network.segment_containing(tile)
+		var segment := map.street_network().segment_containing(tile)
 		# A **real** street is where this direction's search stops: what lies beyond it is not
 		# "entered from" this area, it is somewhere the street itself leads on to. `segment_
 		# containing` answers from tile geometry alone, so it still names a segment where a
@@ -307,7 +308,7 @@ static func calm_to_shut(map: CityMap, spent: Array[Vector2i],
 	var shut: Array[Vector2i] = []
 	var candidates: Array[Vector2i] = []
 	for block in spent:
-		if block in map.calm_blocks and not block in protected and not block in candidates:
+		if block in map.calm_blocks_now() and not block in protected and not block in candidates:
 			candidates.append(block)
 	if candidates.is_empty():
 		return shut
@@ -315,7 +316,7 @@ static func calm_to_shut(map: CityMap, spent: Array[Vector2i],
 	var before := map.walk_field(home)
 	var blocked := {}
 	for block in candidates:
-		if map.calm_blocks.size() - shut.size() - 1 < MIN_CALM_AREAS_REACHABLE:
+		if map.calm_blocks_now().size() - shut.size() - 1 < MIN_CALM_AREAS_REACHABLE:
 			_note(trace, "plan", "the calm area she used at %s stays open: shutting it would "
 					% RunTrace.tile(block) + "leave fewer than %d open"
 					% MIN_CALM_AREAS_REACHABLE)
@@ -346,7 +347,7 @@ static func calm_to_shut(map: CityMap, spent: Array[Vector2i],
 static func _tiles_cut_off(map: CityMap, before: PackedInt32Array, after: PackedInt32Array,
 		shut: Dictionary) -> int:
 	var cut := 0
-	var width := map.size.x
+	var width := map.size_in_tiles().x
 	for index in before.size():
 		if before[index] < 0 or after[index] >= 0:
 			continue
@@ -360,7 +361,7 @@ static func _tiles_cut_off(map: CityMap, before: PackedInt32Array, after: Packed
 static func _open_calm_reached(map: CityMap, field: PackedInt32Array, shut: Array[Vector2i],
 		besides: Vector2i) -> int:
 	var reached := 0
-	for block in map.calm_blocks:
+	for block in map.calm_blocks_now():
 		if block == besides or block in shut:
 			continue
 		for tile in map.rect_tiles(calm_area_rect(map, block)):
@@ -395,12 +396,13 @@ static func _open_calm_reached(map: CityMap, field: PackedInt32Array, shut: Arra
 ##
 ## **With today's fenced park closed as well** (`CityMap.fenced_park`, in `map.closed_tiles` from
 ## the repaint on): a street closure that leaves two areas reachable only through the one park that
-## is actually fenced has left them unreachable. A merely-`shut_calm` area is not in `closed_tiles`
-## — its ground stays open, so a street closure may still rely on a route through it.
+## is actually fenced has left them unreachable. A merely-shut area (`CityMap.shut_calm()`) is not
+## in `closed_tiles` — its ground stays open, so a street closure may still rely on a route
+## through it.
 static func _invariant_holds(map: CityMap, grid: ReachabilityGrid, areas: Array[CalmArea],
 		today_closed: Dictionary, places: Array[Array] = []) -> bool:
 	var blocked := _barrier_tiles(map, today_closed)
-	blocked.merge(map.closed_tiles)
+	blocked.merge(map.closed_tile_set())
 	var reached := grid.flood([_home_tile(map)], blocked)
 	for place: Array in places:
 		var place_reached := false
@@ -454,9 +456,9 @@ static func _area_is_reached(map: CityMap, grid: ReachabilityGrid, reached: Dict
 static func _barrier_tiles(map: CityMap, closed: Dictionary) -> Dictionary:
 	var tiles := {}
 	for key: Vector3i in closed:
-		if map.absent_segments.has(key):
+		if not map.has_street(key):
 			continue   # ground a calm zone painted over, not a street with a barrier on it
-		var segment := map.network.by_key(key)
+		var segment := map.street_network().by_key(key)
 		if not segment:
 			continue
 		for at_a: bool in [true, false]:
@@ -542,7 +544,7 @@ static func _shuffled_candidates(map: CityMap, home: StreetNetwork.Segment, area
 		boundary[segment.key()] = true
 	var pool: Array[StreetNetwork.Segment] = []
 	var weights: Array[float] = []
-	for segment in map.network.segments():
+	for segment in map.street_network().segments():
 		var key := segment.key()
 		if key == home.key() or not map.has_street(key) or tree.is_on_the_tree(key) \
 				or access.has(key) or boundary.has(key):

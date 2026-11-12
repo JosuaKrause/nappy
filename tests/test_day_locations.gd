@@ -93,7 +93,7 @@ func _test_each_street_is_filed_under_the_view_it_is_told(t: TestRunner) -> void
 func _test_a_held_or_absent_street_has_no_section_open(t: TestRunner) -> void:
 	var map := CityMap.new()
 	map.hold_segment(BESIDE, HeldStreets.Why.SEAL)
-	map.absent_segments[OFF] = true
+	map.mark_street_absent(OFF)
 	var locations := DayLocations.lay_out(map, _views())
 	t.check(_sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE).is_empty(),
 			"a street held today has no section open to an event")
@@ -217,7 +217,7 @@ func _test_the_ground_beyond_the_streets_has_its_own_locations(t: TestRunner) ->
 			"and every junction box a street meets is one location, the whole box (%d of %d)"
 			% [junctions.size(), lattice.x * lattice.y])
 	for key: Vector3i in [Vector3i(3, 3, 0), Vector3i(2, 3, 0), Vector3i(3, 3, 1), Vector3i(3, 2, 1)]:
-		map.absent_segments[key] = true
+		map.mark_street_absent(key)
 	var absorbed := false
 	for junction in _grounds_of(DayLocations.lay_out(map, _views()), Location.Kind.JUNCTION):
 		absorbed = absorbed or junction.tiles().position == box

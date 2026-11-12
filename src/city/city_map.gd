@@ -248,8 +248,8 @@ var seed_used := 0
 ## **`fenced_park`'s ground is in here too**, the one calm area barriers ever stand around: she
 ## cannot get into it, so everything that asks "is this tile open today" — the resistance's own
 ## siting, the catalogue's placement, the day's own reachability sums — gets the same answer about
-## it a closed street already gets. **A merely-`shut_calm` area is not**: its ground stays exactly
-## as open as any other calm ground, because nothing there blocks her — see `shut_calm`.
+## it a closed street already gets. **A merely-`_shut_calm` area is not**: its ground stays exactly
+## as open as any other calm ground, because nothing there blocks her — see `_shut_calm`.
 ##
 ## Held on the map's blocked record (`blocked`), the one every mover asks through `passable()`.
 var closed_tiles: Dictionary:
@@ -269,12 +269,12 @@ var closed_tiles: Dictionary:
 ##
 ## `fenced_park` is the one exception, and it is in this list too (a fenced area is also off the
 ## tree) but carries the extra, physical closure `closed_tiles` and `ParkClosure` give it.
-var shut_calm: Array[Vector2i] = []
-## Every walkable tile of every area in `shut_calm`, as a set — `is_shut()`, what keeps the route
+var _shut_calm: Array[Vector2i] = []
+## Every walkable tile of every area in `_shut_calm`, as a set — `is_shut()`, what keeps the route
 ## tree off all of them, `fenced_park` included.
 var _shut_tiles := {}
 ## Every walkable tile of `fenced_park` alone, as a set — merged into `closed_tiles` on top of
-## `_shut_tiles`'s wider reach, and kept apart from it so a plain `shut_calm` area's ground is never
+## `_shut_tiles`'s wider reach, and kept apart from it so a plain `_shut_calm` area's ground is never
 ## marked closed by the same pass that fences the one area that actually is.
 var _fenced_tiles := {}
 ## What `set_spent_calm()` handed over, waiting for the next `repaint()` to read it.
@@ -282,7 +282,7 @@ var _spent_for_the_next_repaint: Array[Vector2i] = []
 
 ## The one calm area barriers stand around today, or `Vector2i(-1, -1)` — `run.facts.fenced_park`
 ## as `set_fenced_park_state()` handed it over, carried unchanged for the rest of the act it was
-## chosen in, or the first area today's `shut_calm` accepts if none has been chosen yet and today
+## chosen in, or the first area today's `_shut_calm` accepts if none has been chosen yet and today
 ## is act III or later. See docs/CITY.md, "Shutting a spent park".
 var fenced_park := Vector2i(-1, -1)
 ## The act today's active `fenced_park` was chosen in, or 0 when none stands today.
@@ -298,7 +298,7 @@ var _act_for_the_next_repaint := 0
 ## `repaint()` to shut where it can. `DayDirector.start()` hands them over just before
 ## `City.start_day()` repaints the city, and the repaint reads them once and forgets them: the
 ## escape's own repaint (`City.start_day()` under the city section's spec) comes with no handover and shuts nothing, and a
-## rig that never calls this plans the day exactly as a city with no used parks. See `shut_calm`.
+## rig that never calls this plans the day exactly as a city with no used parks. See `_shut_calm`.
 func set_spent_calm(blocks: Array[Vector2i]) -> void:
 	_spent_for_the_next_repaint = blocks.duplicate()
 
@@ -313,7 +313,7 @@ func set_fenced_park_state(existing_block: Vector2i, existing_act: int, today_ac
 	_act_for_the_next_repaint = today_act
 
 ## Whether a tile is ground of a calm area today's route tree has been told to leave alone. See
-## `shut_calm`. Never a reason her body, or the crowd's, treats the tile any differently —
+## `_shut_calm`. Never a reason her body, or the crowd's, treats the tile any differently —
 ## `is_walkable()` and `is_open()` answer the same for it as for any other calm ground, unless it is
 ## also `fenced_park`'s, which is `is_closed()` too.
 func is_shut(tile: Vector2i) -> bool:
@@ -528,6 +528,10 @@ func calm_blocks_now() -> Array[Vector2i]:
 ## The one calm area barriers stand around today, or `Vector2i(-1, -1)` (`fenced_park`).
 func fenced_park_block() -> Vector2i:
 	return fenced_park
+
+## The calm areas taken off today's route tree, as the blocks that anchor them (`_shut_calm`).
+func shut_calm() -> Array[Vector2i]:
+	return _shut_calm
 
 ## The precincts as `(axis, corridor, first block, last block)` stretches (`precinct_spans`).
 func precinct_stretches() -> Array[Vector4i]:
@@ -928,7 +932,7 @@ func copy() -> CityMap:
 	twin.courtyard_rects = courtyard_rects.duplicate()
 	twin.home_rect = home_rect
 	twin.seed_used = seed_used
-	twin.shut_calm = shut_calm.duplicate()
+	twin._shut_calm = _shut_calm.duplicate()
 	twin._shut_tiles = _shut_tiles.duplicate()
 	twin._fenced_tiles = _fenced_tiles.duplicate()
 	twin._spent_for_the_next_repaint = _spent_for_the_next_repaint.duplicate()
@@ -1252,7 +1256,7 @@ func anchor_of(block: Vector2i) -> Vector2i:
 ## **Today's fenced park stays closed through it** (`fenced_park`, `_fenced_tiles`), and counts as
 ## barrier for the flood like a street's mouths do. A `ParkClosure` among `closures` is the drawing
 ## of that ground's fence, not a street, so it adds nothing here: its ground is already in. A
-## `shut_calm` area that is not `fenced_park` is not: its ground stays open, so it is not a barrier
+## `_shut_calm` area that is not `fenced_park` is not: its ground stays open, so it is not a barrier
 ## anything needs to route around.
 func close_streets(closures: Array[RoadClosure]) -> void:
 	closed_tiles.clear()
@@ -1351,7 +1355,7 @@ func block_at(world_position: Vector2) -> Vector2i:
 ## inside a block's open rect, so no repaint can disconnect the city or make a wall appear where a
 ## route used to be. What changes is what a place is worth walking to.
 ##
-## **And which of the calm areas she has used are taken off today's route tree** (`shut_calm`),
+## **And which of the calm areas she has used are taken off today's route tree** (`_shut_calm`),
 ## last, from whatever `set_spent_calm()` handed over: `ClosurePlanner.calm_to_shut()` decides it
 ## against the ground just painted, so the route tree, the region plan and the closures that follow
 ## all plan around it. A shut area's ground is left exactly as its purpose paints it — it stays
@@ -1361,7 +1365,7 @@ func repaint(state: CityState, trace: RunTrace = null) -> void:
 		tiles = recipe_dawn_tiles.duplicate()
 		_tiles_by_type.clear()
 		closed_tiles.clear()
-		shut_calm.clear()
+		_shut_calm.clear()
 		_shut_tiles.clear()
 		_fenced_tiles.clear()
 		fenced_park = Vector2i(-1, -1)
@@ -1385,7 +1389,7 @@ func repaint(state: CityState, trace: RunTrace = null) -> void:
 	# Yesterday's closures are gone before today's are planned; the planner needs to see the
 	# whole lattice to decide what it can afford to take out of it.
 	closed_tiles.clear()
-	shut_calm.clear()
+	_shut_calm.clear()
 	_shut_tiles.clear()
 	_fenced_tiles.clear()
 	fenced_park = Vector2i(-1, -1)
@@ -1393,14 +1397,14 @@ func repaint(state: CityState, trace: RunTrace = null) -> void:
 	_recompute_calm(state)
 	_shut_the_spent_calm(state, trace)
 
-## Decides today's `shut_calm` — and, at most once a run, `fenced_park` — from what
+## Decides today's `_shut_calm` — and, at most once a run, `fenced_park` — from what
 ## `set_spent_calm()` and `set_fenced_park_state()` handed over, and forgets both handovers. The
 ## park day 12 sends her to is never shut or fenced on its day (`CityState.is_forced_open()`): the
 ## day's own task is in it.
 ##
 ## **An existing fence outlives the day that chose it.** If `run.facts.fenced_park` already names a
 ## block fenced this act, it is protected from `calm_to_shut()`'s own candidate pass — asking the
-## guarantees about ground already fenced would be asking twice — and carried into `shut_calm` and
+## guarantees about ground already fenced would be asking twice — and carried into `_shut_calm` and
 ## `_fenced_tiles` unconditionally, so the barriers stand every day of the act regardless of whether
 ## it is still in `spent`. **A new fence needs act III or later and nothing chosen yet**: the first
 ## area `calm_to_shut()` accepts is the one the run ever fences, and every other used area — today's
@@ -1422,15 +1426,15 @@ func _shut_the_spent_calm(state: CityState, trace: RunTrace = null) -> void:
 			protected.append(block)
 	if already_fenced:
 		protected.append(fenced_park)
-	shut_calm = ClosurePlanner.calm_to_shut(self, spent, protected, trace)
+	_shut_calm = ClosurePlanner.calm_to_shut(self, spent, protected, trace)
 	if already_fenced:
-		shut_calm.append(fenced_park)
-	elif not has_fenced_this_run and _act_for_the_next_repaint >= 3 and not shut_calm.is_empty():
-		fenced_park = shut_calm[0]
+		_shut_calm.append(fenced_park)
+	elif not has_fenced_this_run and _act_for_the_next_repaint >= 3 and not _shut_calm.is_empty():
+		fenced_park = _shut_calm[0]
 		fenced_park_act = _act_for_the_next_repaint
-	if shut_calm.is_empty():
+	if _shut_calm.is_empty():
 		return
-	for block in shut_calm:
+	for block in _shut_calm:
 		for tile in rect_tiles(ClosurePlanner.calm_area_rect(self, block)):
 			if is_walkable(tile):
 				_shut_tiles[tile] = true
@@ -1478,8 +1482,8 @@ static func open_tile_for(purpose: GameEnums.BlockPurpose) -> GameEnums.TileType
 func recompute_calm(state: CityState) -> void:
 	_recompute_calm(state)
 
-## Only `fenced_park` is left out of the calm, and so is its playground — a merely-`shut_calm` area
-## stays calm ground, spoiled rather than gone (see `shut_calm`'s own doc).
+## Only `fenced_park` is left out of the calm, and so is its playground — a merely-`_shut_calm` area
+## stays calm ground, spoiled rather than gone (see `_shut_calm`'s own doc).
 func _recompute_calm(state: CityState) -> void:
 	calm_blocks = state.calm_blocks(block_plans)
 	if fenced_park.x >= 0:
