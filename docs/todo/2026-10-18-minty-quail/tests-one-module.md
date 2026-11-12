@@ -25,7 +25,11 @@ step 3c, open to overturn). Each module's pass hoists them as it touches the sui
 
 **The order** is by module, those whose suites build a city before those that boot `main`, one
 pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build(`, `city.tscn`,
-`booted_main` and `build_day`/`start_day`/`begin_day` first:
+`booted_main` and `build_day`/`start_day`/`begin_day` first. Entries 1 to 6 and 9 have had their
+pass (the records 2026-10-18-minty-quail-fluffy-newt and 2026-10-18-minty-quail-dotted-stork,
+-teal-toad, -tall-lynx, -spotted-owl, -quiet-swan, -curly-hawk and -merry-goose), and what each lists
+is what is left of it; entry 7 is row 5 of `event-interface.md`, after its row 4b; entry 8 has had
+no pass:
 
 1. telemetry: `test_frame_record_wiring` checks that `main` hands the sitting's record to every
    timed system by what each records into the record it was handed, not by reading its hand-in back
@@ -40,15 +44,13 @@ pull request each, each re-checking its suites with `rg` for `RunCity.`, `.build
 4. scene recipes: `test_recipe_structures`, `test_scene_recipe_task`, `test_scene_recipe_stretch`
    and `test_recipe_composition` once `SceneRecipeRuntime.install()` takes a narrow interface for
    what it reads from the city (its map, streets, events and poster walls) instead of the whole
-   `City`, so a stand-in can be handed in; `test_recipe_crowd`'s `Crowd.recipe_coverage` check moves
-   to a crowd suite;
+   `City`, so a stand-in can be handed in;
 5. the night group: `test_heat` reads the event
    instance's vars (`age`, `is_leaving`, `is_finished`, `barrier_post`) until they have methods, and
    it and `test_dark_spine` hold the scheduler's and the crowd's answers in a day-planning case each,
    to move to those modules' suites; `test_power_station`'s yard-layer frame-record case belongs in
    `test_frame_record`; `test_masts` waits for the events;
-6. the crowd: a crowd suite takes `test_recipe_crowd`'s `Crowd.recipe_coverage` check (entry 4);
-   the events' answers still held in the crowd's suites move with the events (entry 7):
+6. the crowd: the events' answers still held in the crowd's suites move with the events (entry 7):
    `test_crowd_yields`' four checks of the event instance and manager (stands as, parked, the list
    of moves, placement) and `test_crowd_bodies_on_a_real_day`'s check that a crash's cars stand on
    recorded ground. `test_danger` (the danger vocabulary) and `test_wall_shield`

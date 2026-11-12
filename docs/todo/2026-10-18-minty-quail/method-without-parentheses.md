@@ -52,10 +52,13 @@ bare name of the file's own class with no receiver (`if is_ready:`).
   method a new name, or every one but a number's) renames accessors across the events' design,
   the player answered "A", stop at yes-or-no fields (inbox #1349 in grassy-trout). A third way, the name kept
   wherever every read of the field fails, is ruled out: it needs a list of such reads, and the
-  same record says how three wordings of one were each wrong. Asked on the board whether each
-  conversion's pull request also shows a search for the old name read without its parentheses
-  coming back empty, which finds the read the conversion missed and not one a branch merged later
-  brings: open, and no rule holds it until the player answers.
+  same record says how three wordings of one were each wrong.
+- **Every conversion's pull request shows a search for the field's old name read without its
+  parentheses**, whatever the field's kind: asked on the board, the player answered yes
+  (inbox #1385 in silver-tapir), and designing-classes ("Fields are not API"), `field-reads.md` and
+  `event-interface.md` carry the rule, with the filer's reading that only a read of this class's
+  field from outside its file fails the step. The search finds the read the conversion missed, not
+  one a branch merged later brings.
 - **A rule in the field-read check**: a typed receiver's method named with no `(` after it fails
   unless the reference hands the `Callable` on. The same record says what a first build of this
   was, why it left its pull request, and where its code is. Built again, the list of forms that

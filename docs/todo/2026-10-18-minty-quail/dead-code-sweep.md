@@ -18,6 +18,7 @@ the code last, or that nothing ever did.
 
 **Where the rest is** (the survey with `check_test_only_members.py` and a scan for members named
 nowhere in `src/`, `tests/`, `tools/` or `scenes/`; no module holds more than a few):
-- `src/events/`: `EventsAhead.walk_siting` (test-only), in a file the day's events after dawn
-  (#1169) holds.
-- `src/resistance/`: `ParkCordon._point_at`, named nowhere, in a file #1169 holds.
+- `src/events/`: `EventsAhead.walk_siting()` (test-only), which hands out the day's walk siting
+  (`EventScheduler.WalkSiting`) so its suites can read the work the siting did: it stays until step
+  4 of polite-tapir's `placement-by-construction.md`, which replaces the walk's old siting roll, and
+  goes with that step (`tests-unseen-reads.md`, `tests-public-seams.md`).
