@@ -26,10 +26,10 @@ engine hold a file to that.
 
 **Build.**
 
-- **What is untyped in a test goes as its suite is converted** to public seams and to one module
-  (`tests-public-seams.md`, `tests-one-module.md`): the pull request that converts a suite types it
-  and deletes its file-level ignore. A module's typing pass may come first, typing its suites and
-  deleting their lines, while their reads of other modules' fields wait for those modules' passes. *Proposed, not asked
+- **Every file under `tests/` is typed and carries no file-level ignore but the two below**, ahead
+  of the suites' conversion to public seams and to one module (`tests-public-seams.md`,
+  `tests-one-module.md`), which is still to come; their reads of other modules' fields wait for
+  those modules' passes and that conversion. *Proposed, not asked
   for:* the fields of a module whose pass has merged are converted in the other suites by one sweep
   after the last typing pass, from the reads its record lists with their methods; the plainer
   alternative is to leave them to each suite's later conversion to one module.
@@ -44,11 +44,15 @@ engine hold a file to that.
   passes: inner classes, getters and an inherited getter missed, and a method credited for a value it
   only derives.
 - **The files under `src/` are typed in the module passes** (`field-reads.md`).
-- **A probe that names a member no class has parses only behind its opt-out line** and fails when
-  it runs. `tests/probes/bouncy_egret_day11_mast.gd` reads `siting.scenery_ground` off
-  `EventScheduler.WalkSiting` twice, a member that is the private `_ground`, which no method answers; the probe replays
-  `EventScheduler._best_of()`'s rules through `WalkSiting`'s private members, so it is typed or deleted by step 4
-  of polite-tapir's `placement-by-construction.md`, which deletes `_best_of()`.
+- **Two files under `tests/` keep their opt-out line for step 4 of polite-tapir's
+  `placement-by-construction.md`**, which deletes `EventScheduler._best_of()` and what only it uses, and each is
+  typed or deleted by that step:
+  - `tests/probes/bouncy_egret_day11_mast.gd` reads `siting.scenery_ground` off `EventScheduler.WalkSiting` twice, a
+    member that is the private `_ground`, which no method answers, so it parses only behind its line and fails when
+    it runs; it replays `_best_of()`'s rules through `WalkSiting`'s private members.
+  - `tests/test_siting_judges_once.gd` holds the memo of `_best_of()`'s verdicts, that a placement over a walk
+    siting's pool judges each candidate once (`EventScheduler.Verdicts`, the store it counts), and reads
+    `WalkSiting.offers_worked_out`, a public counter only it reads, that a look works out its offer once.
 
 **Done when** no file under `tests/` carries a file-level ignore of the typing warnings, whichever of the
 three it names (`uv run python tools/check_field_reads.py --summary` counts the files by folder), and neither
