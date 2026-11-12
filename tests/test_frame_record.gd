@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## The per-system frame record: every microsecond of a frame lands in exactly one bucket, so the
 ## buckets add up to the frame; a frame that ran into the next refresh is marked; the readout names
@@ -62,7 +61,7 @@ func _test_a_frame_adds_up(t: TestRunner) -> void:
 	t.check(row.size() == FrameLedger.columns().size(), "a row has one value per column")
 	t.check(row[FrameLedger.START] == 1000 and row[FrameLedger.FRAME] == 16000,
 			"a frame runs from its first callback to the next frame's first callback")
-	var expected := {FrameRecord.PHYSICS_REST: 500, FrameRecord.CROWD: 500,
+	var expected: Dictionary[int, int] = {FrameRecord.PHYSICS_REST: 500, FrameRecord.CROWD: 500,
 		FrameRecord.PROCESS_REST: 200, FrameRecord.SCENERY: 700, FrameRecord.EVENTS: 100,
 		FrameRecord.DRAW: 500, FrameRecord.RENDER: 500, FrameRecord.WAIT: 13000, FrameRecord.INFLUENCE: 0,
 		FrameRecord.CUES: 0}
@@ -234,10 +233,13 @@ func _test_the_report_round_trips(t: TestRunner) -> void:
 	_drive(ledger, 16000, 40000, FrameRecord.SCENERY, 20000)
 	ledger.process_start(56000)
 	var decoded: Dictionary = JSON.parse_string(JSON.stringify(ledger.report()))
-	t.check(decoded.columns.size() == FrameLedger.WIDTH and decoded.rows.size() == 2,
+	var columns: Array = decoded.columns
+	var rows: Array = decoded.rows
+	var summary: Dictionary = decoded.summary
+	var largest: Dictionary = summary.largest_cost_in_slow_frames
+	t.check(columns.size() == FrameLedger.WIDTH and rows.size() == 2,
 			"the file names every column and carries every kept frame")
-	t.check(decoded.summary.slow_frames == 1
-			and decoded.summary.largest_cost_in_slow_frames.get("scenery", 0) == 1,
+	t.check(summary.slow_frames == 1 and largest.get("scenery", 0) == 1,
 			"the summary says which system was largest in the slow frames")
 
 ## The path the game's entry points take: `enter()` charges the ledger `start()` installed, and
@@ -326,12 +328,15 @@ func _test_draws_are_counted_by_listening(t: TestRunner) -> void:
 	record.start(ledger)
 	# Each node of a counted class lands on the counter of its kind when it draws; one that is
 	# not counted (a label) lands on none. Every node enters the tree, as the game's do.
-	var kinds := {Prop.new(): FrameTiming.Draw.SCENERY, SceneryLayer.new(): FrameTiming.Draw.SCENERY,
-		SceneryWater.new(): FrameTiming.Draw.SCENERY, TrafficLight.new(): FrameTiming.Draw.OTHER,
-		ParkFenceMarker.new(): FrameTiming.Draw.OTHER, MeterBar.new(): FrameTiming.Draw.OTHER,
-		HomeArrow.new(): FrameTiming.Draw.OTHER, ModeButton.new(): FrameTiming.Draw.OTHER,
-		DangerEdge.new(): FrameTiming.Draw.BADGES, Label.new(): -1}
-	for node: Node in kinds:
+	var nodes: Array[CanvasItem] = [Prop.new(), SceneryLayer.new(), SceneryWater.new(),
+		TrafficLight.new(), ParkFenceMarker.new(), MeterBar.new(), HomeArrow.new(),
+		ModeButton.new(), DangerEdge.new(), Label.new()]
+	var expected: Array[int] = [FrameTiming.Draw.SCENERY, FrameTiming.Draw.SCENERY,
+		FrameTiming.Draw.SCENERY, FrameTiming.Draw.OTHER, FrameTiming.Draw.OTHER,
+		FrameTiming.Draw.OTHER, FrameTiming.Draw.OTHER, FrameTiming.Draw.OTHER,
+		FrameTiming.Draw.BADGES, -1]
+	for i in nodes.size():
+		var node := nodes[i]
 		t.add_child(node)
 		_row_so_far(ledger)
 		node.draw.emit()
@@ -340,12 +345,12 @@ func _test_draws_are_counted_by_listening(t: TestRunner) -> void:
 		for kind: String in FrameTiming.Draw.keys():
 			if row[counters + FrameLedger.COUNTER_NAMES.find("draws_" + kind.to_lower())] > 0:
 				landed = FrameTiming.Draw[kind]
-		t.check(landed == kinds[node], "%s is counted as kind %d (landed on %d)"
-				% [node.get_class(), kinds[node], landed])
+		t.check(landed == expected[i], "%s is counted as kind %d (landed on %d)"
+				% [node.get_class(), expected[i], landed])
 		t.remove_child(node)
 		node.free()
 	rig.free_all()
-	for node in [prop, label, chunk, marker]:
+	for node: CanvasItem in [prop, label, chunk, marker]:
 		node.free()
 
 ## The flag and its page word, read the way the game reads them: off the configuration
@@ -368,7 +373,7 @@ func _page(query: String) -> RunConfig:
 	return RunConfig.parse(PackedStringArray(), query, false)
 
 ## The configuration a debug build started with `words` runs on.
-func _debug_build(words: Array) -> RunConfig:
+func _debug_build(words: Array[String]) -> RunConfig:
 	return RunConfig.parse(PackedStringArray(words), "", true)
 
 ## The scenery queue's deferred window: what its update left to the engine's flush is charged to
@@ -414,11 +419,14 @@ func _test_slow_frames_outside_callbacks_and_with_scenery(t: TestRunner) -> void
 	_drive(ledger, 80000, 40000, FrameRecord.CROWD, 30000)
 	ledger.process_start(120000)
 	var summary: Dictionary = ledger.report().summary
-	t.check(summary.largest_cost_in_slow_frames.get(FrameLedger.OUTSIDE_CALLBACKS, 0) == 1
+	var largest: Dictionary = summary.largest_cost_in_slow_frames
+	var with_jobs: Dictionary = summary.largest_cost_in_slow_frames_with_scenery_jobs
+	var without_jobs: Dictionary = summary.largest_cost_in_slow_frames_without_scenery_jobs
+	t.check(largest.get(FrameLedger.OUTSIDE_CALLBACKS, 0) == 1
 			and summary.slow_frames_with_scenery_jobs == 1
-			and summary.largest_cost_in_slow_frames_with_scenery_jobs.get("scenery", 0) == 1
+			and with_jobs.get("scenery", 0) == 1
 			and summary.slow_frames_without_scenery_jobs == 2
-			and summary.largest_cost_in_slow_frames_without_scenery_jobs.get("crowd", 0) == 1,
+			and without_jobs.get("crowd", 0) == 1,
 			"the summary names waiting frames apart and splits slow frames by scenery jobs")
 
 ## A live event made with the record off is never timed, even once it is on; one made under it runs
@@ -554,7 +562,7 @@ func _test_the_environment_carries_the_view_and_the_clock(t: TestRunner) -> void
 	rig.recorder.save()
 	var environment: Dictionary = JSON.parse_string(
 			FileAccess.get_file_as_string(rig.sitting.frame_record_file()))["environment"]
-	for key in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
+	for key: String in ["window_width", "window_height", "device_pixel_ratio", "drawn_width", "drawn_height"]:
 		# A headless window reports 0 by 0, so only the keys and the ratio are pinned.
 		t.check(environment.has(key), "the record's environment carries %s" % key)
 	t.check(environment["device_pixel_ratio"] > 0.0, "the ratio is never 0")

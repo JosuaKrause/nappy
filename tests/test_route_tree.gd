@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The day's corridor: `RouteTree`.
 ##
@@ -41,7 +40,7 @@ var _days: Array[Day] = []
 func run(t: TestRunner) -> void:
 	for i in SEEDS:
 		var map := CityGenerator.generate(BASE_SEED + i * 31)
-		for day in DAYS:
+		for day: int in DAYS:
 			_days.append(_plan(map, day))
 	_test_a_route_is_a_walk_from_the_calm_to_the_door(t)
 	_test_the_tree_only_uses_streets_that_are_there(t)
@@ -284,7 +283,7 @@ func _test_every_reachable_calm_area_is_on_the_tree(t: TestRunner) -> void:
 			if not branch:
 				var access := _access_nodes(planned, area)
 				var next_to_home := false
-				for node in access:
+				for node: int in access:
 					if home_nodes.has(node):
 						next_to_home = true
 						break
@@ -346,7 +345,7 @@ func _test_a_gap_joins_two_parallel_strands(t: TestRunner) -> void:
 					% [planned.map.seed_used, planned.day, key])
 			if not segment:
 				continue
-			for junction in [segment.a, segment.b]:
+			for junction: Vector2i in [segment.a, segment.b]:
 				t.check(_crossed_by_the_tree(planned, junction, key.z),
 						"seed %d day %d: and a strand of corridor runs across %s of it"
 						% [planned.map.seed_used, planned.day, junction])

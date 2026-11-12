@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The page's counter's encounters and bouts of running (`EncounterWatch`) *(misty-newt, the
 ## player: "how frequent do certain events actually appear and are players avoiding them or
@@ -11,6 +10,8 @@ extends RefCounted
 ## her in a real city, for the wiring.
 
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
+const STROLLER_SCENE: PackedScene = preload("res://scenes/player/stroller.tscn")
+const CONTROLS_SCENE: PackedScene = preload("res://scenes/ui/touch_controls.tscn")
 ## The seed of the run the city is handed (`RunCity.with_own_run()`).
 const RUN_SEED := 2
 const SEED := 4242
@@ -447,7 +448,7 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> voi
 	var manager := _manager(t)
 	manager.start_recipe([] as Array[EventPlan], DaySpec.for_day(DAY), DAY,
 			Vector2.ZERO)
-	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
+	var stroller: Stroller = (STROLLER_SCENE.instantiate() as Stroller)
 	t.add_child(stroller)
 	manager.use_player(stroller)
 	var axis := Vector2.RIGHT
@@ -581,12 +582,12 @@ func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 	RigStreets.begin(city.streets(), city.map, spec)
 	city.events.start_day(spec, rng, [] as Array[String])
 	var events := city.events
-	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
+	var stroller: Stroller = (STROLLER_SCENE.instantiate() as Stroller)
 	t.add_child(stroller)
 	var her := CrowdLanes.arterial_pavement(city.map)
 	stroller.reset_at(her)
 	events.use_player(stroller)
-	var controls: TouchControls = load("res://scenes/ui/touch_controls.tscn").instantiate()
+	var controls: TouchControls = (CONTROLS_SCENE.instantiate() as TouchControls)
 	t.add_child(controls)
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 	events.use_controls(controls.covering)
@@ -641,7 +642,7 @@ func _test_the_manager_tells_the_encounter_under_its_day(t: TestRunner) -> void:
 	RigStreets.begin(city.streets(), city.map, spec)
 	city.events.start_day(spec, rng, [] as Array[String])
 	var events := city.events
-	var stroller: Stroller = load("res://scenes/player/stroller.tscn").instantiate()
+	var stroller: Stroller = (STROLLER_SCENE.instantiate() as Stroller)
 	t.add_child(stroller)
 	var her := CrowdLanes.arterial_pavement(city.map)
 	stroller.reset_at(her)
