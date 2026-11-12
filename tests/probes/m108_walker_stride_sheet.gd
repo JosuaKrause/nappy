@@ -20,7 +20,7 @@ const TINT := Color("4f5b52")
 
 const VIEWS: Array[String] = ["front", "back", "side", "front_diagonal", "back_diagonal"]
 
-func run(t: TestRunner) -> void:
+func run(_t: TestRunner) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	var rows: Array[Dictionary] = []
 	for view in VIEWS:
@@ -32,7 +32,6 @@ func run(t: TestRunner) -> void:
 	for row: Dictionary in rows:
 		print("m108_walker_stride_sheet: row %s = [frame a, frame b]" % row["label"])
 	print("m108_walker_stride_sheet: 2 PNGs written under %s" % OUT_DIR)
-	t.check(true, "m108_walker_stride_sheet probe ran")
 
 # ------------------------------------------------------------------- selection ---
 

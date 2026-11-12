@@ -64,7 +64,6 @@ func run(t: TestRunner) -> void:
 	for kind: String in ["dawn", "moved"]:
 		print("[downy] %-5s marks %d: only through a district door %d, unreachable by tiles %d"
 				% [kind, totals[kind][0], totals[kind][1], totals[kind][2]])
-	t.check(true, "probe ran")
 
 func _count(total: Array, city: City, director: ResistanceDirector, at: Vector2, shut: Array,
 		by_tiles: PackedInt32Array, label: String) -> void:

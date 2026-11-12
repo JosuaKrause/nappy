@@ -31,7 +31,6 @@ func run(t: TestRunner) -> void:
 		for day: int in DAYS:
 			_one_day(city, map, city_seed, day)
 		city.free()
-	t.check(true, "probe finished")
 
 func _one_day(city: City, map: CityMap, city_seed: int, day: int) -> void:
 	var state := CityState.new()

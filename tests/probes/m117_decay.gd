@@ -34,7 +34,6 @@ const SAMPLE_DAYS := [1, 9]
 func run(t: TestRunner) -> void:
 	_ground_rates(t)
 	_cost_table()
-	t.check(true, "m117 decay probe ran")
 
 # ------------------------------------------------------------------ ground rates ---
 

@@ -32,7 +32,7 @@ const UNSUFFIXED_SIDE_FAMILIES: Array[String] = [
 	"dog", "cat_running", "charging_dog", "cyclist", "mouse",
 ]
 
-func run(t: TestRunner) -> void:
+func run(_t: TestRunner) -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT_DIR))
 	var rows: Array[Dictionary] = []
 	for family in NAMED_SIDE_FAMILIES + UNSUFFIXED_SIDE_FAMILIES:
@@ -47,7 +47,6 @@ func run(t: TestRunner) -> void:
 	for row: Dictionary in rows:
 		print("m108_event_strides_sheet: row %s = [frame a, frame b]" % row["label"])
 	print("m108_event_strides_sheet: 2 PNGs written under %s, %d rows" % [OUT_DIR, rows.size()])
-	t.check(true, "m108_event_strides_sheet probe ran")
 
 # ------------------------------------------------------------------- selection ---
 

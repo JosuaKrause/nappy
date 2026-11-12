@@ -29,7 +29,6 @@ func run(t: TestRunner) -> void:
 	var map := CityGenerator.generate(SEED)
 	_diagnose_recycle(map)
 	_diagnose_day_start(t, map)
-	t.check(true, "probe finished")
 
 ## Candidate 1: `CrowdAgent._recycle()`, driven directly the way M120's own entry test
 ## (`tests/crowd_rig.gd`, `_test_the_entry_roll_is_kept_inside_its_own_room`) drives it, at each of
