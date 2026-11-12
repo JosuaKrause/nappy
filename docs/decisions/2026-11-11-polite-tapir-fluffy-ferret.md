@@ -40,9 +40,10 @@ asked for the object, since an object handed what it depends on is the dependenc
   (`tests-public-seams.md` leaves "a row or removing" open).
 - **`StreetInvalidation`'s `one_notice` is the builder or null**, the form its `walk` parameter has, in place of
   a flag beside a builder, which would make all eleven construction sites carry one.
-- **What stays in the scheduler**: `recipe_placement()` (it needs `role_for()` and the ground dictionary),
-  `_wants_this_side()` and `_band_offset_of()` (each has one caller, which stays), and `blocked_by()` and
-  `block_a_disc()` (they paint a flood's blocked set for fourteen files).
+- **What stays in the scheduler**: `recipe_placement()` (it judges by the day's locations, the row's ground and
+  `role_for()`), `_wants_this_side()` (its one caller, `open_ground_for()`, goes with the breakup's `RowGround`),
+  `_band_offset_of()` and its neighbours (a row's own numbers, with no tile), and `blocked_by()` and
+  `block_a_disc()` (they paint a flood's blocked set and build no plan).
 - **One pull request**: the one possible cut, `body_stands_at()` second, would only add a constructor change at
   the three makers and the test helper.
 - **No `tests/test_plan_builder.gd` in this pull request**: the functions' checks sit in other modules' suites,

@@ -37,12 +37,14 @@ the line counts are its estimates. All under `src/events/`:
 Three blocks are not moved, because `placement-by-construction.md` deletes them in place: the old
 siting roll, the fitted tables, and the escape's own draw loop. The fallback that grows a route tree
 when none is handed in goes with `DawnContext` below, whose shared test helper hands a route to every
-call under `tests/` that hands none today. What building a plan at a tile still asks of the scheduler stays
-there and moves to no piece: `recipe_placement()` (it needs `role_for()` and the ground), `_wants_this_side()`
-and `_band_offset_of()` (each has one caller, which stays), and `blocked_by()` and `block_a_disc()` (they paint
-a flood's blocked set for fourteen files); `PlanBuilder` (`plan_builder.gd`), an object handed the map and the
-three questions it asks other classes (inbox #1392 in dappled-wombat), places every plan at a tile, the scene
-recipes' masts and escape actors included.
+call under `tests/` that hands none today. What building a plan at a tile does not do stays in the scheduler:
+`recipe_placement()` judges an authored row by the day's locations, the row's ground and `role_for()`, all the
+scheduler's, and builds through `LocationFit`, which is handed the builder; `_wants_this_side()` is a ground
+question whose one caller, `open_ground_for()`, goes with `RowGround` above; `_band_offset_of()` and its
+neighbours read a row's own numbers with no tile; and `blocked_by()` and `block_a_disc()` paint a blocked set for a
+flood and build no plan. `PlanBuilder` (`plan_builder.gd`), an object handed the map and the three questions it
+asks other classes (inbox #1392 in dappled-wombat), builds every candidate a judge, a siting or a scene recipe
+sites at a tile (its facing and its route), the scene recipes' masts and escape actors included.
 
 **The pull requests, interleaved with placement.** Each move regenerates `tools/field_reads.txt`
 with `--write`: `--base` passes code reading listed fields moved into a new file with no more uses,
