@@ -2,8 +2,11 @@ extends RefCounted
 ## M226's missing non-pursuer measurement. Run through tools/test.sh by this file's path.
 ## It measures the current game: M207Lead's encounters, the game's PendingWarning and
 ## EventInstance, and a real DangerEdge reading them. No placement bound participates in entry
-## detection: drawing_parts() reads the selected sprite frame, wheel, shadow polygon, loose leash
-## and live caret separately, from EventPictures. See the retained evidence README.
+## detection: drawing_parts() reads each part separately: the selected sprite frame and the
+## wheels from EventPictures, the shadow polygon from the row's own parts (def.parts(), then
+## shape.shadow_outline()), the loose leash as this probe's own 26px rectangle, and the live
+## caret from instance.look.mark_rect(), flashing at EventPictures.MARK_FLASHES_PER_SECOND.
+## See the retained evidence README.
 
 const STEP := 1.0 / 60.0
 const LIMIT := 30.0
