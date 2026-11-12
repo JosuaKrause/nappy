@@ -5,7 +5,7 @@ extends RefCounted
 ## draws it. A chunk that is not resident has none.
 
 static func at(ground: SceneryGround, tile: Vector2i) -> bool:
-	var layer: TileMapLayer = ground.chunks.get(SceneryGround.key_for(tile))
+	var layer: TileMapLayer = ground.chunks().get(SceneryGround.key_for(tile))
 	if layer == null:
 		return false
 	for child in layer.get_children():

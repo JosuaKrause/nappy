@@ -75,7 +75,7 @@ func _exit_tree() -> void:
 	atlas.release(&"street_kit")
 
 func _draw() -> void:
-	if not scenery_resident:
+	if not residence().is_resident():
 		return
 	match piece:
 		Piece.CAUSE:

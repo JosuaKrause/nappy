@@ -93,7 +93,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner)
 				"Ground's twinned cell at %s keeps the atlas coordinates the plain source would have had"
 				% tile)
 	var chunks_before: Array[int] = []
-	for layer: TileMapLayer in city.scenery_ground.chunks.values():
+	for layer: TileMapLayer in city.scenery_ground.chunks().values():
 		chunks_before.append(layer.get_instance_id())
 	var revisited := _visit_every_neighborhood(t, city, true)
 	t.check(chunks_before.any(func(id: int) -> bool: return not is_instance_valid(instance_from_id(id))),
@@ -209,7 +209,7 @@ func _visit_every_neighborhood(t: TestRunner, city: City, reverse := false) -> V
 	var atlas := {}
 	for key: Vector2i in keys:
 		city.scenery.update(SceneryGround.bounds(key), true)
-		t.check(city.scenery_ground.chunks.has(key), "visited neighborhood %s has a ground owner" % key)
+		t.check(city.scenery_ground.chunks().has(key), "visited neighborhood %s has a ground owner" % key)
 		for y in SceneryGround.CHUNK_TILES:
 			for x in SceneryGround.CHUNK_TILES:
 				var tile := key * SceneryGround.CHUNK_TILES + Vector2i(x, y)

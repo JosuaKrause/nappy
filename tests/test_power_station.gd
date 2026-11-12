@@ -430,7 +430,7 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t: TestRun
 	station.power_station = true
 	station.equip(null, null, null)
 	t.add_child(station)
-	station.set_scenery_resident(true)
+	station.residence().set_resident(true)
 	ledger.process_start(Time.get_ticks_usec())
 	var layers := 0
 	for child in station.get_children():

@@ -87,6 +87,9 @@ src/
 	shadow_drawer.gd      what the buildings' shadows draw their shaded tiles through; the city hands it in
 	scenery_ground.gd     freeable ground chunks, prepared whole or across frames by mode
 	scenery_residency.gd  camera view, preparation budget, and wider visual eviction boundary
+	scenery_residence.gd  one placement's standing with the residency: resident or not, the
+	                      ground it covers, and the switch; a building, the home door and
+	                      every scenery sprite are each composed of one
 	scenery_sprite.gd     persistent placements with independently releasable drawing commands
 	scenery_water.gd      separate south-water surface; pausable shader clock, no ground redraw
 	ground_tiles.gd       which ground tile a cell gets
@@ -1124,7 +1127,9 @@ one figure a slice, a wide scene one
   reconstructed from fixed seeds and current state on return. A building frees its separately
   parented roof objects and their rotor children on eviction, then restores their roof-foot
   placement in the shared entity layer on return. Props and closure markers retain
-  placement facts and release renderer commands. Shared atlas pages and ground composition stay
+  placement facts and release renderer commands. The residency asks each of them through the
+  `SceneryResidence` it is composed of, since a building, the home door and a scenery sprite
+  share no class below `Node2D`. Shared atlas pages and ground composition stay
   at loading moments. `SceneryGround.Mode`, set by `--ground-mode`, schedules an off-screen
   ground region inside the soft CPU budget, which each frame applies afresh to what the last
   one left: mode 1 prepares every needed region whole in its frame, as many as the

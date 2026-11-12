@@ -31,7 +31,7 @@ func _test_water_ownership(t: TestRunner) -> void:
 	# follow the camera home and release the shore this inspects.
 	city.visible = false
 	var surfaces: Array[SceneryWater] = []
-	for chunk: TileMapLayer in city.scenery_ground.chunks.values():
+	for chunk: TileMapLayer in city.scenery_ground.chunks().values():
 		for child in chunk.get_children():
 			if child is SceneryWater:
 				surfaces.append(child)
@@ -45,7 +45,7 @@ func _test_water_ownership(t: TestRunner) -> void:
 	var bridge_right := bridge_left + Tuning.STREET_WIDTH - 2 * Tuning.SIDEWALK_WIDTH
 	# Residency prepares whole chunks, including water beyond the requested shore. The bridge
 	# carries its road on for as far as any view asks, so its columns are never water.
-	for key: Vector2i in city.scenery_ground.chunks:
+	for key: Vector2i in city.scenery_ground.chunks():
 		var start := key * SceneryGround.CHUNK_TILES
 		for y in range(maxi(start.y, city.map.size.y + 1), start.y + SceneryGround.CHUNK_TILES):
 			for x in range(start.x, start.x + SceneryGround.CHUNK_TILES):

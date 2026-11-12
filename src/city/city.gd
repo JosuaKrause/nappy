@@ -296,19 +296,24 @@ var _fronts: CityFronts
 class HomeDoor extends Sprite2D:
 	## The city's library, handed before `picture` is first set.
 	var atlas: AtlasLibrary
-	var scenery_resident := true
+	## Its standing with the scenery residency, which the city registers it with (`residence()`).
+	var _residence := SceneryResidence.new(self, _scenery_bounds, _apply_residence)
 	var picture: StringName:
 		set(value):
 			picture = value
-			texture = atlas.region(picture) if scenery_resident else null
+			texture = atlas.region(picture) if _residence.is_resident() else null
 
-	func set_scenery_resident(resident: bool) -> void:
-		if scenery_resident == resident:
-			return
-		scenery_resident = resident
+	## What the scenery residency asks of the door: whether its picture is resident, the ground it
+	## covers, and the switch between the two.
+	func residence() -> SceneryResidence:
+		return _residence
+
+	## Takes the door's picture back from the atlas when it turns resident, and drops it when it
+	## stops being.
+	func _apply_residence(resident: bool) -> void:
 		texture = atlas.region(picture) if resident else null
 
-	func scenery_bounds() -> Rect2:
+	func _scenery_bounds() -> Rect2:
 		return Rect2(global_position + offset, Vector2(AtlasTable.baked().native_size(picture)))
 
 ## Hands the scene's `Buildings` and `Entities` over as the city's nodes for those draw layers
@@ -336,7 +341,7 @@ func build(city_map: CityMap) -> void:
 	scenery.frame_locked = scenery_frame_locked
 	scenery.setup(self, map, scenery_ground, _building_shadows, _decals)
 	add_child(scenery)
-	scenery_ground.mode = ground_mode
+	scenery_ground.use_mode(ground_mode)
 	scenery_ground.atlas = atlas
 	_decals.use_atlas(atlas)
 	_decals.draw_through(_scenery_drawer)
@@ -546,7 +551,7 @@ func _spawn_home() -> void:
 	var x_range := _door_world_x_range()
 	_home_door.position = Vector2((x_range.x + x_range.y) * 0.5, stoop.position.y)
 	add_entity(_home_door)
-	scenery.register(_home_door)
+	scenery.register(_home_door.residence())
 
 ## `SEALED_DOOR_TEXTURE` once the scar it leaves is on record, `DOOR_TEXTURE` before then.
 func _door_texture_for_today() -> StringName:
@@ -595,7 +600,7 @@ func _spawn_street_trees() -> void:
 		tree.dress(atlas, Prop.Kind.STREET_TREE, hash(planted_tree.position))
 		tree.position = planted_tree.position
 		add_entity(tree)
-		scenery.register(tree)
+		scenery.register(tree.residence())
 		_street_trees.append(tree)
 		_street_tree_pits[planted_tree.tile] = tree
 
@@ -674,7 +679,7 @@ func _spawn_exit(kind: CityEdge.Kind, at: Vector2) -> void:
 		add_entity(exit)
 	else:
 		add_entity(exit, DrawLayer.Layer.BUILDINGS)
-	scenery.register(exit)
+	scenery.register(exit.residence())
 
 ## A signal head on every arm of every junction the spine passes through.
 ##
@@ -720,7 +725,7 @@ func _spawn_signal_heads() -> void:
 				light.faces(heading)
 				light.position = at
 				add_entity(light)
-				scenery.register(light)
+				scenery.register(light.residence())
 
 func _spawn_buildings() -> void:
 	# A stretch's buildings are measured against the city they were cut from — which of their
@@ -788,7 +793,7 @@ func _spawn_buildings() -> void:
 		building.put_roof_objects_in(_entities)
 		add_entity(building, DrawLayer.Layer.BUILDINGS)
 		_buildings.append(building)
-		scenery.register(building)
+		scenery.register(building.residence())
 		# The one part of a building drawn among the entities — see the note at the top of this file.
 		var feet := building.stack_feet()
 		for i in feet.size():
@@ -797,7 +802,7 @@ func _spawn_buildings() -> void:
 			stack.name = "StationStack%d" % i
 			stack.position = building.position + feet[i]
 			add_entity(stack)
-			scenery.register(stack)
+			scenery.register(stack.residence())
 
 ## `Building.covered_ground_cols` for `rect`: true at column `col` where the tile directly south of
 ## `rect`'s own front row — one row below its south edge, the row a passer-by would stand on — is
@@ -1314,7 +1319,7 @@ func _add_closure_node(node: Node, y_sorted: bool) -> void:
 func _track_closure_node(node: Node) -> void:
 	_closure_nodes.append(node)
 	if node is ScenerySprite:
-		scenery.register(node)
+		scenery.register((node as ScenerySprite).residence())
 
 func _dress_blocks(state: CityState) -> void:
 	for prop in _props:
@@ -1453,7 +1458,7 @@ func _add_prop(prop: Node2D) -> void:
 	_props.append(prop)
 	add_entity(prop)
 	if prop is ScenerySprite:
-		scenery.register(prop)
+		scenery.register((prop as ScenerySprite).residence())
 
 ## The framing of the whole city plus its border band, for the cameras that look at the city
 ## rather than follow her: the `--overview` view, the dev rig and the trailer's zoom-out. The

@@ -35,7 +35,7 @@ static func new_building() -> Building:
 ## resident (a building draws nothing while it is not), and asks for a redraw.
 static func watch(building: Building) -> void:
 	building.front_drawer = RecordingFrontDrawer.new()
-	building.set_scenery_resident(true)
+	building.residence().set_resident(true)
 	building.queue_redraw()
 
 ## The reads of `building`'s front as it was last drawn.
