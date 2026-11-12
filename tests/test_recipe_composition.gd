@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_property_access", "unsafe_method_access")
 extends RefCounted
 ## Authored scenery shares the production tree source, and pedestrian overrides end with a day.
 ##
@@ -9,11 +8,15 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const LANE_KEYS := preload("res://tests/lane_key_search.gd")
 
+## The diagnostics a builder's answer carries.
+func _errors(result: Dictionary) -> Array[String]:
+	return result.errors
+
 func run(t: TestRunner) -> void:
 	var recipe: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-dog.json").data
 	var built := RecipeCityBuilder.build(recipe)
-	t.check(built.errors.is_empty(), "opposite-curb tree recipe constructs: %s" % [built.errors])
-	if not built.errors.is_empty():
+	t.check(_errors(built).is_empty(), "opposite-curb tree recipe constructs: %s" % [built.errors])
+	if not _errors(built).is_empty():
 		return
 	var source := Vector2i(50, 74)
 	var destination := Vector2i(50, 71)
@@ -25,8 +28,9 @@ func run(t: TestRunner) -> void:
 	t.add_child(city)
 	city.build(built.map)
 	var trees := {}
-	for prop in city.props():
-		if prop.kind == Prop.Kind.STREET_TREE:
+	for node in city.props():
+		var prop := node as Prop
+		if prop != null and prop.kind == Prop.Kind.STREET_TREE:
 			trees[city.map.world_to_tile(prop.position)] = prop
 	t.check(not trees.has(source) and trees.has(destination),
 			"real tree props use the relocated planning source")
@@ -102,15 +106,17 @@ func run(t: TestRunner) -> void:
 	runtime.free()
 	player.free()
 	city.free()
-	for target in [[50, 73], [51, 71]]:
+	for target: Array in [[50, 73], [51, 71]]:
 		var invalid: Dictionary = recipe.duplicate(true)
 		invalid.city.tree_moves[0].to = target
-		t.check(not RecipeCityBuilder.build(invalid).errors.is_empty(), "tree relocation refuses road or unrelated sidewalk")
+		t.check(not _errors(RecipeCityBuilder.build(invalid)).is_empty(), "tree relocation refuses road or unrelated sidewalk")
 	var title: Dictionary = SceneRecipe.load_file("res://scene-recipes/trailer-title.json").data
 	var park := RecipeCityBuilder.build(title)
-	var at: Vector2 = park.anchors.start
-	t.check(park.map.tile_at(park.map.world_to_tile(at)) == GameEnums.TileType.PARK,
+	var park_map: CityMap = park.map
+	var anchors: Dictionary = park.anchors
+	var at: Vector2 = anchors.start
+	t.check(park_map.tile_at(park_map.world_to_tile(at)) == GameEnums.TileType.PARK,
 			"title begins inside the existing park")
 	var capture := at + Vector2.DOWN * Tuning.WALK_SPEED * float(title.playback.capture_at)
-	t.check(park.map.tile_at(park.map.world_to_tile(capture)) == GameEnums.TileType.PARK,
+	t.check(park_map.tile_at(park_map.world_to_tile(capture)) == GameEnums.TileType.PARK,
 			"title's moving capture remains inside the park")

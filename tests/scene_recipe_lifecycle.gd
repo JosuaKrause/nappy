@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **The lifecycle behind `test_scene_recipe_lifecycle_trailers.gd`, `_tasks.gd` and `_scenes.gd`;
 ## not a suite itself.** Boots the actual Main scene, in this process, on real frames
@@ -87,7 +86,7 @@ func _boot(t: TestRunner, path: String, mode: String, home: Node, reloads: Array
 	# policy (`GameSave._uses_save()`) and not by the headless gate: a scratch save written is a failure.
 	var config := RunConfig.parse(PackedStringArray(["--no-telemetry", "--recipe", path,
 			"--recipe-mode", mode, "--no-focus-pause"]), "", true, false, {}, false)
-	return await Boot.boot(t, scratch, config, func(main: Node) -> void:
+	return await Boot.boot(t, scratch, config, func(main: Boot.MainScript) -> void:
 			main.use_sitting_home(home)
 			main.use_reload(func() -> void: reloads.append(1))
 			main.use_quit(func() -> void: _quits.append(1)))
@@ -114,17 +113,21 @@ func _start_of(t: TestRunner, booted: Boot.Booted, run: RunState, recipe: SceneR
 		label: String) -> Dictionary:
 	if recipe == null or recipe.manifest.get("setup_failed", false):
 		return {}
-	var start := recipe.manifest.initial_actors.get("player", {}).get("position", [0, 0]) as Array
+	var actors: Dictionary = recipe.manifest.initial_actors
+	var player_start: Dictionary = actors.get("player", {})
+	var start: Array = player_start.get("position", [0, 0])
 	t.check(Vector2(start[0], start[1]).is_equal_approx(recipe.start_position()),
 			"%s starts her where the recipe puts her" % label)
-	var authored_day: Variant = recipe.data.get("setup", {}).get("day")
+	var setup: Dictionary = recipe.data.get("setup", {})
+	var authored_day: Variant = setup.get("day")
 	t.check(authored_day == null or run.header.day == int(authored_day),
 			"%s starts the run on its authored day (day %d)" % [label, run.header.day])
 	t.check(_quits.is_empty() and not t.get_tree().paused,
 			"%s boots without ending the game, running" % label)
 	_meters_hold(t, booted.main, recipe, label)
-	for collection in ["events", "actors"]:
-		for entry: Dictionary in recipe.data.get("setup", {}).get(collection, []):
+	for collection: String in ["events", "actors"]:
+		var entries: Array = setup.get(collection, [])
+		for entry: Dictionary in entries:
 			t.check(recipe.named.has(entry.name), "%s installs the authored %s %s"
 					% [label, collection, entry.name])
 	return {"actors": recipe.manifest.initial_actors, "day": run.header.day,
@@ -140,7 +143,8 @@ func _meters_hold(t: TestRunner, main: Node, recipe: SceneRecipeRuntime, label: 
 	var baby := Boot.baby(main)
 	if baby == null:
 		return
-	var authored: Dictionary = recipe.data.get("setup", {}).get("player", {})
+	var setup: Dictionary = recipe.data.get("setup", {})
+	var authored: Dictionary = setup.get("player", {})
 	var asleep: bool = recipe.data.get("kind", "city") == "escape" \
 			or float(authored.get("sleep", 0)) >= Tuning.METER_MAX
 	var seconds := float(recipe.tick) / Engine.physics_ticks_per_second
@@ -175,7 +179,7 @@ func _free_play(t: TestRunner, path: String, label: String) -> Dictionary:
 		home.free()
 		return result
 	result.initial = initial
-	var map: CityMap = recipe.built.map
+	var map := recipe.city_map()
 	# Free play has no capture deadline: the scene keeps counting ticks and nothing ends it (a scripted
 	# one that reached its duration would end the game).
 	var counted := recipe.tick
@@ -323,7 +327,7 @@ func _tick_of_walking(t: TestRunner) -> void:
 	await PhysicsTicks.pass_ticks(t, 1, Callable(), WALK_SCALE)
 
 func _press(direction: Vector2) -> void:
-	for action in ["move_left", "move_right", "move_up", "move_down", "run"]:
+	for action: String in ["move_left", "move_right", "move_up", "move_down", "run"]:
 		Input.action_release(action)
 	if direction.x != 0:
 		Input.action_press("move_right" if direction.x > 0 else "move_left", absf(direction.x))

@@ -1,12 +1,10 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Real Main installs only authored subjects while keeping production crowd simulation.
 ##
 ## **Boots the actual `main` in a child process: its subject is what `main` installs from a recipe**
 ## (authored subjects only, production crowd), which is the game's composition and so cannot be split.
 
-const PROBE := """@warning_ignore_start("unsafe_method_access")
-extends Node
+const PROBE := """extends Node
 const BootedMain := preload("res://tests/booted_main.gd")
 const RoofReads := preload("res://tests/roof_reads.gd")
 func _ready() -> void:
@@ -18,25 +16,30 @@ func _ready() -> void:
 	var main := packed.instantiate()
 	add_child(main)
 	var city := BootedMain.city(main)
-	if not loaded.errors.is_empty() or not city:
+	var load_errors: Array[String] = loaded.errors
+	var loaded_data: Dictionary = loaded.data
+	var anchors: Dictionary = loaded.anchors
+	if not load_errors.is_empty() or not city:
 		return
-	var setup: Dictionary = loaded.data.setup
+	var setup: Dictionary = loaded_data.setup
 	var run := run_of(main)
 	var act := Tuning.act_for_day(run.header.day)
-	var multiplier: float = setup.get("background", {}).get("walker_multiplier", 1)
+	var background: Dictionary = setup.get("background", {})
+	var multiplier: float = background.get("walker_multiplier", 1)
 	var pins: Array = setup.get("actors", [])
 	if city.crowd.agent_count() != roundi(Tuning.crowd_pedestrians(act) * multiplier) + Tuning.crowd_cars(act) + pins.size():
 		fail("background population differs from ordinary day density")
 		return
 	for pin: Dictionary in pins:
 		var actor := city.find_child(pin.name, true, false) as CrowdAgent
-		if not actor or not actor.position.is_equal_approx(position_of(pin.at, loaded.anchors, city)):
+		if not actor or not actor.position.is_equal_approx(position_of(pin.at, anchors, city)):
 			fail("background population dropped or moved an explicit walker")
 			return
-	var expected: int = setup.get("events", []).size()
-	expected += setup.get("seals", []).size() * 2
-	expected += setup.get("gates", []).size() * 3
-	expected += setup.get("barriers", []).size() * 3
+	var events: Array = setup.get("events", [])
+	var seals: Array = setup.get("seals", [])
+	var gates: Array = setup.get("gates", [])
+	var barriers: Array = setup.get("barriers", [])
+	var expected := events.size() + seals.size() * 2 + gates.size() * 3 + barriers.size() * 3
 	if city.events.plans().size() != expected:
 		fail("an unselected event, seal or region body is installed")
 		return
@@ -52,7 +55,7 @@ func _ready() -> void:
 		var matched := false
 		for plan in city.events.plans():
 			if plan.get_meta("recipe_name", "") == entry.name:
-				matched = plan.position.is_equal_approx(position_of(entry.at, loaded.anchors, city))
+				matched = plan.position.is_equal_approx(position_of(entry.at, anchors, city))
 		if not matched:
 			fail("construction moved the pinned subject")
 			return
@@ -82,11 +85,11 @@ func _ready() -> void:
 					!= PosterArt.Kind[str(entry.kind).to_upper()]:
 				fail("authored poster is not a real eligible wall cell")
 				return
-	if loaded.anchors.has("gate"):
+	if anchors.has("gate"):
 		var found := false
 		for body in city.streets().region_plan().door_bodies:
 			if body.def.id == "checkpoint_gate" and body.position.is_equal_approx(
-					loaded.anchors.gate + Vector2(0, 64)):
+					anchors.gate + Vector2(0, 64)):
 				found = not EventPictures.gate_runs_north_south(body.facing)
 		if not found:
 			fail("the father's horizontal approach does not meet the standard vertical gate")
@@ -146,7 +149,7 @@ func run(t: TestRunner) -> void:
 	var scene := FileAccess.open(stem + ".tscn", FileAccess.WRITE)
 	scene.store_string("[gd_scene load_steps=2 format=3]\n[ext_resource type=\"Script\" path=\"%s.gd\" id=\"1\"]\n[node name=\"Probe\" type=\"Node\"]\nscript = ExtResource(\"1\")\n" % stem)
 	scene.close()
-	for name in ["choice", "birds", "dog", "trucks", "gatehouse", "title"]:
+	for name: String in ["choice", "birds", "dog", "trucks", "gatehouse", "title"]:
 		var output: Array = []
 		var status := OS.execute(OS.get_executable_path(), PackedStringArray([
 			"--headless", "--quit-after", "120", "--path", ProjectSettings.globalize_path("res://"),
@@ -156,5 +159,5 @@ func run(t: TestRunner) -> void:
 		var body := "\n".join(output)
 		t.check(status == 0 and body.contains("RECIPE_ACTIVITY_OK")
 				and not body.contains("ERROR"), "%s real background/subject setup: %s" % [name, body])
-	for suffix in [".gd", ".gd.uid", ".tscn"]:
+	for suffix: String in [".gd", ".gd.uid", ".tscn"]:
 		DirAccess.remove_absolute(stem + suffix)
