@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## **The frame recorder wired into a real boot of `main`**, which is the combination this suite is
 ## for: the sitting's record handed to every timed system, the recorder's markers first and last in
@@ -10,6 +9,7 @@ extends RefCounted
 
 const Boot := preload("res://tests/booted_main.gd")
 const UI := preload("res://tests/ui_screens.gd")
+const MainScript := preload("res://src/main.gd")
 ## How long a test holds the clock inside a bucket it wants to read back, in microseconds: long
 ## enough that the bucket's time cannot read as zero, whatever the timer's resolution.
 const SPENT_US := 2000
@@ -45,7 +45,7 @@ func _test_the_recorder_in_a_real_main(t: TestRunner) -> void:
 	var sitting: Sitting = home.get_node(Sitting.NODE_NAME)
 	sitting.use_frame_timing(record)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--frame-record"]),
-			func(unbooted: Node) -> void:
+			func(unbooted: MainScript) -> void:
 				unbooted.use_sitting_home(home)
 				unbooted.use_frame_records_dir(_SCRATCH_RECORDS))
 	var main := booted.main
