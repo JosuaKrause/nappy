@@ -22,16 +22,16 @@ things it does not judge are the reviewer's:
   a read, which exempts it everywhere) and `SKIPPED_TESTS` (a test file not scanned). Each switches
   the check off with no list line and no reason.
 
-What the check cannot see at all stays with the review of the tests: a member whose name is also a
-word in another file, and a test of a setup the game cannot reach.
+What the check cannot see at all stays with the review of the tests: a member whose name another
+file uses on a receiver the check cannot type, and a test of a setup the game cannot reach.
 
 ## A diff that changes the checker
 
 For each line such a diff adds to the `[no reader]` or `[own file only]` group, run the base's
 checker on the head tree:
 
-1. Copy the base's `tools/check_test_only_members.py`, `tools/check_layers.py` and
-   `tools/layer_map.py` into a scratch folder.
+1. Copy the base's `tools/check_test_only_members.py`, `tools/check_layers.py`,
+   `tools/layer_map.py` and `tools/check_field_reads.py` into a scratch folder.
 2. Run `uv run python <scratch>/check_test_only_members.py --root <head checkout>`.
 3. Read its output against the added lines:
    - **An added line it prints nothing for** is a member the base's checker still sees as

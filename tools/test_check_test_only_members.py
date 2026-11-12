@@ -187,9 +187,15 @@ class CollisionTests(unittest.TestCase):
         self.assertIn((self.BASE, "speed"), only(self.overriding({}) | {self.CAR: car}, tests))
 
     def test_an_inner_class_type_is_not_read_as_its_outer_class(self) -> None:
-        # `p: Closure.Piece` is not a `Closure`, so `p.gap` is not typed and counts for every class with the name.
+        # `p: Closure.Piece` is a `Piece`, an inner class of Closure that extends neither class with the name.
+        closure = {self.CLOSURE: self.SRC[self.CLOSURE] + "class Piece extends RefCounted:\n\tvar gap := 2\n"}
         hud = {self.HUD: "func f(p: Closure.Piece):\n\tprint(p.gap)\n"}
-        self.assertEqual(only(self.SRC | hud, self.TESTS), set())
+        self.assertEqual(only(self.SRC | closure | hud, self.TESTS), {(self.CORDON, "gap")})
+
+    def test_an_inner_class_that_extends_the_members_class_reaches_it(self) -> None:
+        closure = {self.CLOSURE: self.SRC[self.CLOSURE] + "class Piece extends Cordon:\n\tpass\n"}
+        hud = {self.HUD: "func f(p: Closure.Piece):\n\tprint(p.gap)\n"}
+        self.assertEqual(only(self.SRC | closure | hud, self.TESTS), set())
 
     def test_a_one_line_if_declares_nothing(self) -> None:
         hud = {self.HUD: "func f(c, k):\n\tif c: Closure.reset()\n\tprint(c.gap)\n"}
@@ -199,9 +205,205 @@ class CollisionTests(unittest.TestCase):
         own = {self.CLOSURE: "class_name Closure\nvar gap := 1\nfunc total() -> int:\n\treturn self.gap\n"}
         self.assertEqual(only(self.SRC | own, self.TESTS), {(self.CORDON, "gap")})
 
-    def test_a_name_defined_once_is_still_judged_by_its_word(self) -> None:
+    def test_a_receiver_typed_as_a_class_that_is_not_the_members_does_not_read_it(self) -> None:
+        # Other is no class under src/ (an engine class): a name defined once is judged by its class too.
         src = {self.CORDON: "class_name Cordon\nvar gap := 0\n", self.HUD: "func f(k: Other):\n\tprint(k.gap)\n"}
-        self.assertEqual(only(src, self.TESTS), set())
+        self.assertEqual(only(src, self.TESTS), {(self.CORDON, "gap")})
+
+
+class ClassTests(unittest.TestCase):
+    """Every name is judged by its class, a name only one file defines included: a local, a value of no class under
+    src/ (an engine one) and a static function called on a value do not read a member, and a plain word reads one only
+    in a class that inherits it."""
+
+    CORDON = "src/resistance/cordon.gd"
+    AREA = "src/x/area.gd"
+    BASE = "src/x/base.gd"
+    SUB = "src/x/sub.gd"
+    HUD = "src/ui/hud.gd"
+    TREE = "src/routes/route_tree.gd"
+    GAP: ClassVar[dict[str, str]] = {CORDON: "class_name Cordon\nvar gap := 0\n"}
+    GAP_READ: ClassVar[dict[str, str]] = {"tests/test_cordon.gd": "func f(c: Cordon) -> void:\n\tprint(c.gap)\n"}
+    GROW: ClassVar[dict[str, str]] = {AREA: "class_name Area\nfunc grow(by: float) -> Area:\n\treturn self\n"}
+    GROW_READ: ClassVar[dict[str, str]] = {"tests/test_area.gd": "func f(a: Area) -> void:\n\ta.grow(1.0)\n"}
+    BASE_GAP: ClassVar[dict[str, str]] = {BASE: "class_name Base\nvar gap := 0\n"}
+    BASE_READ: ClassVar[dict[str, str]] = {"tests/test_base.gd": "func f(b: Base) -> void:\n\tprint(b.gap)\n"}
+
+    def test_a_local_of_the_name_in_another_file_does_not_read_the_member(self) -> None:
+        trees = {"src/city/trees.gd": "class_name Trees\nfunc f() -> int:\n\tvar gap := 3\n\treturn gap\n"}
+        self.assertEqual(only(self.GAP | trees, self.GAP_READ), {(self.CORDON, "gap")})
+
+    def test_a_value_of_no_class_under_src_does_not_read_the_member(self) -> None:
+        for game in (
+            "func f(r: Rect2) -> Rect2:\n\treturn r.grow(1.0)\n",
+            "func f() -> Rect2:\n\treturn Rect2().grow(1.0)\n",
+            "func f(m: Map) -> Rect2i:\n\treturn m.footprint().grow(1)\n",
+        ):
+            src = self.GROW | {
+                self.HUD: game,
+                "src/x/map.gd": "class_name Map\nfunc footprint() -> Rect2i:\n\treturn Rect2i()\n",
+            }
+            self.assertEqual(only(src, self.GROW_READ), {(self.AREA, "grow")}, msg=game)
+
+    def test_a_receiver_the_check_cannot_tell_still_reads_the_member(self) -> None:
+        self.assertEqual(only(self.GROW | {self.HUD: "func f(x) -> void:\n\tx.grow(1.0)\n"}, self.GROW_READ), set())
+
+    def test_a_plain_word_reads_the_member_in_a_class_that_inherits_it(self) -> None:
+        sub = {self.SUB: "class_name Sub\nextends Base\nfunc f() -> int:\n\treturn gap\n"}
+        self.assertEqual(only(self.BASE_GAP | sub, self.BASE_READ), set())
+        plain = {"src/x/plain.gd": 'extends "res://src/x/base.gd"\nfunc f() -> int:\n\treturn gap\n'}
+        self.assertEqual(only(self.BASE_GAP | plain, self.BASE_READ), set())
+
+    def test_a_plain_word_does_not_read_it_where_the_class_defines_the_name_again_or_a_local_has_it(self) -> None:
+        for sub in (
+            "class_name Sub\nextends Base\nvar gap := 1\nfunc f() -> int:\n\treturn gap\n",
+            "class_name Sub\nextends Base\nfunc f() -> int:\n\tvar gap := 2\n\treturn gap\n",
+        ):
+            self.assertIn((self.BASE, "gap"), only(self.BASE_GAP | {self.SUB: sub}, self.BASE_READ), msg=sub)
+
+    def test_self_is_the_lines_own_class_in_an_inner_class_and_in_a_file_with_no_class_name(self) -> None:
+        for game in (
+            "class Piece extends Base:\n\tfunc f() -> int:\n\t\treturn self.gap\n",
+            'extends "res://src/x/base.gd"\nfunc f() -> int:\n\treturn self.gap\n',
+        ):
+            self.assertEqual(only(self.BASE_GAP | {self.HUD: game}, self.BASE_READ), set(), msg=game)
+
+    def test_a_declaration_is_taken_in_its_own_function_only(self) -> None:
+        # The name `r` is a Rect2 in f, and in g a parameter the check cannot tell: g's use still reads.
+        untold = "func f(r: Rect2) -> void:\n\tr.grow(1.0)\nfunc g(r) -> void:\n\tr.grow(1.0)\n"
+        self.assertEqual(only(self.GROW | {self.HUD: untold}, self.GROW_READ), set())
+        # An Area in f, a Rect2 in g: g's use is the engine's.
+        engine = "func f(r: Area) -> void:\n\tpass\nfunc g(r: Rect2) -> void:\n\tr.grow(1.0)\n"
+        self.assertEqual(only(self.GROW | {self.HUD: engine}, self.GROW_READ), {(self.AREA, "grow")})
+
+    def test_a_value_of_no_class_here_reads_in_a_file_whose_opt_out_line_silences_that_access(self) -> None:
+        call = "func f(n: Node) -> void:\n\tn.grow(1.0)\n"
+        self.assertEqual(only(self.GROW | {self.HUD: call}, self.GROW_READ), {(self.AREA, "grow")})
+        silenced = '@warning_ignore_start("unsafe_method_access")\n' + call
+        self.assertEqual(only(self.GROW | {self.HUD: silenced}, self.GROW_READ), set())
+        read = "func f(n: Node) -> void:\n\tprint(n.gap)\n"
+        method_only = '@warning_ignore_start("unsafe_method_access")\n' + read
+        self.assertEqual(only(self.GAP | {self.HUD: method_only}, self.GAP_READ), {(self.CORDON, "gap")})
+        property_too = '@warning_ignore_start("unsafe_property_access", "unsafe_method_access")\n' + read
+        self.assertEqual(only(self.GAP | {self.HUD: property_too}, self.GAP_READ), set())
+
+    def test_a_static_function_is_read_only_through_its_class(self) -> None:
+        tree = {
+            self.TREE: (
+                "class_name RouteTree\nstatic func grow(n: int) -> RouteTree:\n\treturn RouteTree.new()\n"
+                "func for_day() -> RouteTree:\n\treturn grow(1)\n"
+            )
+        }
+        reads = {"tests/test_tree.gd": "func f() -> void:\n\tRouteTree.grow(1)\n"}
+        value = {self.HUD: "func f(x) -> void:\n\tx.grow(1)\n"}
+        found, _ = members.test_only(files(tree | value, reads))
+        self.assertEqual([m.key for m in found], [(self.TREE, "grow")])
+        stands = members.scan(files(tree | value, reads)).stands
+        self.assertEqual(members.group_of(stands[(self.TREE, "grow")]), "own file only")
+        self.assertEqual(only(tree | {self.HUD: "func f() -> void:\n\tRouteTree.grow(2)\n"}, reads), set())
+        self.assertEqual(only(tree, {"tests/test_tree.gd": "func f(x) -> void:\n\tx.grow(1)\n"}), set())
+
+    def test_a_tests_value_of_no_class_under_src_is_no_read(self) -> None:
+        self.assertEqual(only(self.GROW, {"tests/test_r.gd": "func f(r: Rect2) -> void:\n\tr.grow(1.0)\n"}), set())
+
+    def test_a_suite_reads_through_a_field_of_the_rig_it_extends_by_path(self) -> None:
+        tests = {
+            "tests/rig.gd": "extends RefCounted\nvar _area: Area\n",
+            "tests/test_x.gd": 'extends "res://tests/rig.gd"\nfunc f() -> void:\n\t_area.grow(1.0)\n',
+        }
+        self.assertEqual(only(self.GROW, tests), {(self.AREA, "grow")})
+
+    def test_a_preloaded_script_with_no_class_name_types_a_receiver_even_through_another_class(self) -> None:
+        main = {"src/main.gd": "extends Node\nfunc use_save(s: int) -> void:\n\tpass\n"}
+        boot = {"tests/boot.gd": 'extends RefCounted\nconst MainScript := preload("res://src/main.gd")\n'}
+        for suite in (
+            'const MainScript := preload("res://src/main.gd")\nfunc f(m: MainScript) -> void:\n\tm.use_save(1)\n',
+            'const Boot := preload("res://tests/boot.gd")\nfunc f(m: Boot.MainScript) -> void:\n\tm.use_save(1)\n',
+        ):
+            self.assertEqual(only(main, boot | {"tests/test_m.gd": suite}), {("src/main.gd", "use_save")}, msg=suite)
+
+    STROLLER: ClassVar[dict[str, str]] = {
+        "src/stroller.gd": (
+            "class_name Stroller\nfunc probe_only() -> void:\n\tpass\nfunc f() -> void:\n\tprobe_only()\n"
+        )
+    }
+    RIG: ClassVar[dict[str, str]] = {"tests/rig.gd": "class_name Rig\nclass Fake extends Stroller:\n\tpass\n"}
+
+    def test_a_tests_read_through_a_fake_of_the_members_class_is_a_read(self) -> None:
+        for suite in (
+            "class _Her extends Stroller:\n\tpass\nfunc f() -> void:\n\tvar her := _Her.new()\n\ther.probe_only()\n",
+            "class Her extends Stroller:\n\tpass\nfunc f() -> void:\n\tvar her := Her.new()\n\ther.probe_only()\n",
+            "func f() -> void:\n\tvar her := Rig.Fake.new()\n\ther.probe_only()\n",
+            "func f() -> void:\n\tvar her: Rig.Fake = Rig.Fake.new()\n\ther.probe_only()\n",
+        ):
+            found = only(self.STROLLER, self.RIG | {"tests/test_her.gd": suite})
+            self.assertEqual(found, {("src/stroller.gd", "probe_only")}, msg=suite)
+
+    def test_an_inner_class_named_with_an_underscore_types_a_parameter_and_a_return(self) -> None:
+        # The rig's own field of the name is no read of the game's member, typed through either.
+        base = "class _MeterRig extends RefCounted:\n\tvar gap := 1\n"
+        for suite in (
+            base + "func _rig() -> _MeterRig:\n\treturn _MeterRig.new()\nfunc f() -> void:\n\tvar rig := _rig()\n"
+            "\tprint(rig.gap)\n",
+            base + "func f(rig: _MeterRig) -> void:\n\tprint(rig.gap)\n",
+        ):
+            self.assertEqual(only(self.GAP, {"tests/test_rig.gd": suite}), set(), msg=suite)
+
+    def test_await_hands_on_the_value_it_waits_for(self) -> None:
+        suite = (
+            "class Rig2 extends RefCounted:\n\tvar gap := 1\nfunc _rig() -> Rig2:\n\treturn Rig2.new()\n"
+            "func f() -> void:\n\tvar rig := await _rig()\n\tprint(rig.gap)\n"
+        )
+        self.assertEqual(only(self.GAP, {"tests/test_rig.gd": suite}), set())
+
+    def test_a_string_opening_a_line_is_no_indent(self) -> None:
+        # Each lambda's `node` is its own: a dictionary key opening a line does not keep the first one in scope.
+        suite = (
+            "func f() -> void:\n\tvar makers := {\n"
+            '\t\t"a": func() -> Node:\n\t\t\tvar node := Other.new()\n\t\t\treturn node,\n'
+            '\t\t"b": func() -> Node:\n\t\t\tvar node := Rect.new()\n\t\t\tnode.grow(1.0)\n\t\t\treturn node,\n'
+            "\t}\n"
+        )
+        src = self.GROW | {
+            "src/x/other.gd": "class_name Other\nvar x := 1\n",
+            "src/x/rect.gd": "class_name Rect\nvar y := 1\n",
+        }
+        self.assertEqual(only(src, {"tests/test_n.gd": suite}), set())
+
+    def test_a_test_receiver_the_typing_gave_up_on_still_reads_and_a_game_one_does_not(self) -> None:
+        # `rig.area` is a member Rig does not declare (the typing gives up there).
+        rig = {"tests/rig.gd": "class_name Rig\nvar x := 1\n"}
+        suite = {"tests/test_g.gd": "func f(rig: Rig) -> void:\n\trig.area.grow(1.0)\n"}
+        self.assertEqual(only(self.GROW, rig | suite), {(self.AREA, "grow")})
+        game = {self.HUD: "class_name Hud\nfunc f(h: Hud) -> void:\n\th.area.grow(1.0)\n"}
+        self.assertEqual(only(self.GROW | game, self.GROW_READ), {(self.AREA, "grow")})
+
+    def test_a_call_inside_a_tests_inner_class_is_its_own_or_inherited_method(self) -> None:
+        maker = {"src/x/maker.gd": "class_name Maker\nfunc mk() -> Area:\n\treturn Area.new()\n"}
+        for suite in (
+            "class _P extends RefCounted:\n\tfunc mk() -> Area:\n\t\treturn Area.new()\n"
+            "\tfunc f() -> void:\n\t\tvar a := mk()\n\t\ta.grow(1.0)\n",
+            "class _P extends Maker:\n\tfunc f() -> void:\n\t\tvar a := mk()\n\t\ta.grow(1.0)\n",
+            "func f() -> void:\n\tvar a := declared_nowhere()\n\ta.grow(1.0)\n",
+        ):
+            self.assertEqual(only(self.GROW | maker, {"tests/test_p.gd": suite}), {(self.AREA, "grow")}, msg=suite)
+
+    def test_an_autoload_is_its_script(self) -> None:
+        src = {
+            "src/autoload/tuning.gd": "extends Node\nfunc horn() -> float:\n\treturn 1.0\n",
+            "src/x/horn.gd": "class_name Horn\nfunc horn() -> float:\n\treturn 2.0\n",
+            self.HUD: "func f() -> float:\n\treturn Tuning.horn()\n",
+        }
+        tests = {"tests/test_horn.gd": "func f(h: Horn) -> void:\n\th.horn()\n\tTuning.horn()\n"}
+        project = '[autoload]\n\nTuning="*res://src/autoload/tuning.gd"\n'
+        found, _ = members.test_only(members.Files(src=src, tests=tests, project=project))
+        self.assertEqual({m.key for m in found}, {("src/x/horn.gd", "horn")})
+
+    def test_a_kept_line_for_a_name_defined_once_stands_while_only_untold_receivers_read_it(self) -> None:
+        src = self.GAP | {self.HUD: "func f(k) -> void:\n\tprint(k.gap)\n"}
+        key = (self.CORDON, "gap")
+        self.assertEqual(members.check(files(src, self.GAP_READ), {key}, frozenset({key}))[0], [])
+        self.assertEqual(len(members.check(files(src, self.GAP_READ), {key})[0]), 1)
 
 
 class ListTests(unittest.TestCase):
@@ -240,20 +442,20 @@ class ListTests(unittest.TestCase):
     def test_a_namesakes_definition_is_not_a_use_and_its_call_clears_the_member_it_reaches(self) -> None:
         # a.gd's walks() returns b.walks(); a test calls walks(): b's is read by a, a's only by tests.
         src = {
-            "src/sim/a.gd": "class_name A\nfunc walks() -> bool:\n\treturn b.walks()\n",
+            "src/sim/a.gd": "class_name A\nvar b: B\nfunc walks() -> bool:\n\treturn b.walks()\n",
             "src/sim/b.gd": "class_name B\nfunc walks() -> bool:\n\treturn true\n",
         }
         self.assertEqual(only(src, {"tests/test_a.gd": "func f(t):\n\tt.walks()\n"}), {("src/sim/a.gd", "walks")})
 
     def test_a_call_on_a_namesake_is_not_an_own_use_so_the_member_has_no_reader(self) -> None:
         src = {
-            "src/sim/a.gd": "class_name A\nfunc walks() -> bool:\n\treturn b.walks()\n",
+            "src/sim/a.gd": "class_name A\nvar b: B\nfunc walks() -> bool:\n\treturn b.walks()\n",
             "src/sim/b.gd": "class_name B\nfunc walks() -> bool:\n\treturn true\n",
             THING: "class_name Thing\nfunc bump() -> void:\n\tpass\nfunc run() -> void:\n\tself.bump()\n",
         }
         reads = {"tests/test_a.gd": "func f(t):\n\tt.walks()\n\tt.bump()\n"}
         found, _ = members.test_only(files(src, reads))
-        _, stands = members.scan(files(src, reads))
+        stands = members.scan(files(src, reads)).stands
         groups = {m.key: members.group_of(stands[m.key]) for m in found}
         self.assertEqual(groups, {("src/sim/a.gd", "walks"): "no reader", (THING, "bump"): "own file only"})
 
@@ -360,7 +562,7 @@ class ListTests(unittest.TestCase):
             )
         }
         found, _ = members.test_only(files(src, {"tests/test_thing.gd": "func f(t):\n\tt.inner()\n"}))
-        _, stands = members.scan(files(src, {}))
+        stands = members.scan(files(src, {})).stands
         self.assertEqual([members.group_of(stands[m.key]) for m in found], ["no reader"])
 
     def test_a_file_move_carries_its_lines_one_to_one_and_nothing_else_gets_in(self) -> None:

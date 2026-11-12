@@ -22,22 +22,13 @@ least as long as the fairness floor needs") is what **writing-tests** asks for. 
 balance helpers `Tuning.required_horn_time()`, `required_horn_sight()` and `sleepiness_gain_calm()`
 stay public for the same reason: the fairness tests check numbers against them.
 
-**Scope.** The CI check of test-only members lists the owners one by one, and its list is the scope. Its `[own file
-only]` group is empty: each member it listed became internal or holds a `[kept]` line with its reason. Its
-`[no reader]` group holds only the lines `tests-unseen-reads.md` owns. What is left is the members the check cannot
-see, below, and whatever the check's fix surfaces.
+**Scope.** The CI check of test-only members lists the owners one by one, and its list is the scope: every member under
+`[own file only]`, and every member under `[no reader]` apart from the lines `tests-unseen-reads.md` owns.
 
-**What the check still cannot see** (record minty-quail-feathery-finch): a member whose name only one file defines is
-judged by its word, so a local or an engine method of that name hides it: `ParkCordon.gap` (other files have a local
-`gap`, so it can take no `[kept]` line, whose reason stands as a comment on it, record minty-quail-grassy-squirrel) and
-`RouteTree.grow` (`Rect2.grow` calls). The queued fix takes a plain word in another file as a read only where that
-file's class extends the member's class, and an engine-typed or local receiver as not a src class's. A declaration is
-taken for the whole file, not per function. `EventInstance.look` and `EventInstance.phase` are held up the same way:
-namesakes (`officer.phase`, `VisibleView.look()`) count as readers, so neither can take a `[kept]` line, and the reason
-stands as a comment on each (record minty-quail-calm-egret). A call at the end of a chain
-(`a.map.is_closed()`) is taken as a read of every class's member of that name, since the check types no
-chain; `ParkCordon.is_closed()` holds a `[kept]` line, since nothing outside the cordon confirms the
-moment it closes (record minty-quail-plush-chipmunk).
+**What the check still cannot see** (record minty-quail-feathery-finch): a member a game reader reaches through a
+receiver the check cannot type, an untyped value, a Variant, or an engine-typed value in a file whose opt-out line
+silences that access's warning, counts as read. These thin out as `typed-everywhere.md` types the remaining files, and
+whatever the check then lists joins the scope.
 
 **Build.** The members named in Scope, owner by owner (or several small owners together) in a pull request each, each
 also removing a check that holds nothing once its member is gone (curly-rabbit #1097). An `[own file only]` member
