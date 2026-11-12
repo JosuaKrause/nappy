@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Pixel and TileSet contracts for the one-time ground layer compositor.
 ##
@@ -99,22 +98,21 @@ func _test_damage_pools_are_shared_without_changing_source_semantics(t: TestRunn
 		return
 	var components: Dictionary = manifest.get("components", {})
 	var pools: Dictionary = manifest.get("damage_pools", {})
-	for damage_type in ["hairline", "cracked", "broken"]:
+	for damage_type: String in ["hairline", "cracked", "broken"]:
 		var pool: Array = pools.get(damage_type, [])
 		t.check(pool.size() == GroundLayers.DAMAGE_VARIANTS,
 				"the shared %s pool retains all six accepted stencils" % damage_type)
 		var provenance: Dictionary = {}
-		for component_value in pool:
-			var component: String = str(component_value)
+		for component: String in pool:
 			provenance[component.get_slice("_", 0)] = true
 			t.check(components.has(component),
 					"the shared %s pool names a published transparent component" % damage_type)
 		t.check(provenance.has_all(["road", "sidewalk", "alley"]),
 				"the shared %s pool makes every accepted surface drawing available on every base" % damage_type)
 	var source_layers: Dictionary = manifest.get("source_layers", {})
-	for first_source in [40, 46, 52]:
+	for first_source: int in [40, 46, 52]:
 		for offset in range(6):
-			var source_id: int = int(first_source) + offset
+			var source_id: int = first_source + offset
 			t.check(not source_layers.has(str(source_id)),
 					"damage source %d selects a shared pool instead of a surface-bound layer" % source_id)
 			t.check(AUTHORED_GROUND.get_source(source_id) != null,
@@ -171,24 +169,22 @@ func _test_manifest_covers_the_authored_ground_sources(t: TestRunner) -> void:
 	var source_bases: Dictionary = manifest.get("source_bases", {})
 	var components: Dictionary = manifest.get("components", {})
 	var source_layers: Dictionary = manifest.get("source_layers", {})
-	for source_key_value in source_bases:
-		var source_key: String = str(source_key_value)
+	for source_key: String in source_bases:
 		var source_id := int(source_key)
 		var base_name: String = str(source_bases[source_key])
 		t.check(AUTHORED_GROUND.get_source(source_id) != null,
 			"layer manifest source %d remains a real authored TileSet source" % source_id)
 		t.check(bases.has(base_name), "source %d names a declared shared base" % source_id)
-	for source_key_value in source_layers:
-		var source_key: String = str(source_key_value)
+	for source_key: String in source_layers:
 		var layers: Array = source_layers[source_key]
-		for layer_value in layers:
+		for layer_value: Variant in layers:
 			if layer_value is Dictionary:
 				var component: String = str((layer_value as Dictionary).get("component", ""))
 				t.check(components.has(component),
 						"source %s names a declared transparent component" % source_key)
 	var grass_features: Array = manifest.get("grass_features", [])
-	for feature_value in grass_features:
-		var feature_name: String = str(feature_value).trim_suffix(".png")
+	for feature_value: String in grass_features:
+		var feature_name: String = feature_value.trim_suffix(".png")
 		t.check(components.has(feature_name),
 			"grass feature %s names a declared transparent component" % feature_value)
 	# Every picture the recipe names has to be on the page, or the source it belongs to composes
@@ -202,10 +198,10 @@ func _test_manifest_covers_the_authored_ground_sources(t: TestRunner) -> void:
 	if _svg_bake():
 		return
 	var filenames: Array[String] = []
-	for value in bases.values():
-		filenames.append(str(value))
-	for value in components.values():
-		filenames.append(str(value))
+	for value: String in bases.values():
+		filenames.append(value)
+	for value: String in components.values():
+		filenames.append(value)
 	var unbaked: Array[String] = []
 	for filename in filenames:
 		var name := _region_name_of(filename)
@@ -280,7 +276,7 @@ func _test_composed_sources_keep_ids_and_visible_detail(t: TestRunner) -> void:
 	var source_bases: Dictionary = manifest.get("source_bases", {})
 	var pools: Dictionary = manifest.get("damage_pools", {})
 	var source_types: Dictionary = manifest.get("source_damage_types", {})
-	for source_id in [40, 46, 52]:
+	for source_id: int in [40, 46, 52]:
 		var damage := composed.get_source(source_id) as TileSetAtlasSource
 		t.check(damage != null and damage.has_tile(Vector2i(GroundLayers.DAMAGE_VARIANTS - 1, 0)),
 				"damage source %d receives a six-cell shared-stencil atlas" % source_id)
@@ -347,7 +343,7 @@ func _test_damage_atlas_selection_is_stable_and_shared(t: TestRunner) -> void:
 	var road := GroundLayers.atlas_coords_for(40, 4242, tile, composed)
 	t.check(road == GroundLayers.atlas_coords_for(40, 4242, tile, composed),
 			"the same city seed and damage coordinate select the same shared atlas cell")
-	for source_id in [46, 52]:
+	for source_id: int in [46, 52]:
 		t.check(road == GroundLayers.atlas_coords_for(source_id, 4242, tile, composed),
 				"one seed and coordinate select the same shared variation regardless of its material")
 	var seen: Dictionary = {}

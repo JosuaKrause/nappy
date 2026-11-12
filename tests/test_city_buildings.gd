@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## **What a real `City` hands its buildings**: `City._spawn_buildings()`'s own wiring of
 ## `is_home_building`, `door_world_x_range` and `covered_ground_cols` off `CityMap.home_block`,
@@ -100,16 +99,16 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t: T
 				for cell: Vector2i in unit["cells"]:
 					inside = inside and expected.has(cell)
 			t.check(inside, "seed %d: the unextended roof at %s stands its units on its interior"
-					% [map.seed_used, building.lot.position])
+					% [map.seed_used, building.lot_rect().position])
 			ordered += 1
-			if map.seed_used == BASE_SEED and main_layouts.has(building.lot.position):
+			if map.seed_used == BASE_SEED and main_layouts.has(building.lot_rect().position):
 				var layout: Array = []
 				for unit: Dictionary in RoofReads.units_of(building):
 					layout.append([unit["cell"], unit["texture"]])
-				t.check(layout == main_layouts[building.lot.position],
+				t.check(layout == main_layouts[building.lot_rect().position],
 						"seed %d: the roof at %s carries main's layout %s (got %s)"
-						% [map.seed_used, building.lot.position,
-						main_layouts[building.lot.position], layout])
+						% [map.seed_used, building.lot_rect().position,
+						main_layouts[building.lot_rect().position], layout])
 				pinned += 1
 		city.free()
 	t.check(ordered > 0, "the sweep met unextended roofs to ask (%d)" % ordered)
@@ -137,23 +136,23 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 		for building: Building in buildings:
 			if building.covered_ground_cols.is_empty():
 				continue
-			if building.lot.end.y >= map.size.y:
+			if building.lot_rect().end.y >= map.size.y:
 				edge_fronts += 1
 				t.check(not building.covered_ground_cols.has(true),
 						"seed %d: a front facing the map's edge at %s keeps its facade"
-						% [map.seed_used, building.lot.position])
+						% [map.seed_used, building.lot_rect().position])
 			for col in building.covered_ground_cols.size():
 				if not building.covered_ground_cols[col]:
 					continue
-				var south := Vector2i(building.lot.position.x + col,
-						building.lot.position.y + building.lot.size.y)
+				var south := Vector2i(building.lot_rect().position.x + col,
+						building.lot_rect().position.y + building.lot_rect().size.y)
 				t.check(map.in_bounds(south),
 						"seed %d: a covered column's south tile is on the map" % map.seed_used)
 				if not map.in_bounds(south):
 					continue
 				var front: Building = null
 				for candidate: Building in buildings:
-					if candidate.lot.has_point(south):
+					if candidate.lot_rect().has_point(south):
 						front = candidate
 						break
 				t.check(front != null,
@@ -161,8 +160,8 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 						% map.seed_used)
 				if front == null:
 					continue
-				var local_col := south.x - front.lot.position.x
-				var extension: int = fronts[front].roof_rows_at(local_col) - front.roof_tiles()
+				var local_col := south.x - front.lot_rect().position.x
+				var extension: int = _front_of(fronts, front).roof_rows_at(local_col) - front.roof_tiles()
 				t.check(extension == building.wall_tiles(),
 						"seed %d: no column is left with neither a facade nor a covering roof (%d rows expected, got %d)"
 						% [map.seed_used, building.wall_tiles(), extension])
@@ -179,7 +178,7 @@ func _test_the_real_sweep_wires_roof_extensions_to_reach_exactly_the_covered_roo
 func _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t: TestRunner) -> void:
 	var over_yard := 0
 	var over_hall := 0
-	for seed_value in [823576, 966118]:
+	for seed_value: int in [823576, 966118]:
 		var map := CityGenerator.generate(seed_value)
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
@@ -195,24 +194,24 @@ func _test_a_wall_beside_the_power_station_is_covered_only_over_its_hall(t: Test
 			continue
 		var hall := station.hall_cols()
 		for wall: Building in city.buildings():
-			if wall.power_station or wall.lot.end.y != station.lot.position.y:
+			if wall.power_station or wall.lot_rect().end.y != station.lot_rect().position.y:
 				continue
 			for col in wall.columns():
-				var local := wall.lot.position.x + col - station.lot.position.x
+				var local := wall.lot_rect().position.x + col - station.lot_rect().position.x
 				if local < 0 or local >= station.columns():
 					continue
 				var covered: bool = col < wall.covered_ground_cols.size() and wall.covered_ground_cols[col]
-				var station_rows: int = fronts[station].roof_rows_at(local)
+				var station_rows: int = _front_of(fronts, station).roof_rows_at(local)
 				if local >= hall.x and local < hall.y:
 					over_hall += 1
-					t.check(covered and not fronts[wall].facade_drawn_in(col),
+					t.check(covered and not _front_of(fronts, wall).facade_drawn_in(col),
 							"seed %d: a wall over the hall (column %d) is covered and draws no facade" % [seed_value, col])
 					t.check(station_rows == station.roof_tiles() + wall.wall_tiles(),
 							"seed %d: the hall's roof is drawn %d rows taller over that wall (%d rows)"
 							% [seed_value, wall.wall_tiles(), station_rows])
 				else:
 					over_yard += 1
-					t.check(not covered and fronts[wall].facade_drawn_in(col),
+					t.check(not covered and _front_of(fronts, wall).facade_drawn_in(col),
 							"seed %d: a wall over the yard (column %d) keeps its facade" % [seed_value, col])
 					t.check(station_rows == 0,
 							"seed %d: the station draws no roof over its yard (%d rows)" % [seed_value, station_rows])
@@ -239,7 +238,7 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 	for i in SWEEP_SEEDS:
 		var map := MapCache.of(BASE_SEED + i * 977)
 		var courtyard_lots: Array[Rect2i] = []
-		for block in map.block_layouts.keys():
+		for block: Vector2i in map.block_layouts.keys():
 			if map.starting_purpose(block) == GameEnums.BlockPurpose.COURTYARD:
 				courtyard_lots.append(map.lot_rect(block))
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
@@ -253,13 +252,13 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 			for col in building.covered_ground_cols.size():
 				if not building.covered_ground_cols[col]:
 					continue
-				var south := Vector2i(building.lot.position.x + col,
-						building.lot.position.y + building.lot.size.y)
+				var south := Vector2i(building.lot_rect().position.x + col,
+						building.lot_rect().position.y + building.lot_rect().size.y)
 				if not map.in_bounds(south):
 					continue
 				var front: Building = null
 				for candidate: Building in buildings:
-					if candidate.lot.has_point(south):
+					if candidate.lot_rect().has_point(south):
 						front = candidate
 						break
 				if front == null:
@@ -267,23 +266,23 @@ func _test_the_real_sweep_marks_a_courtyard_seam_seamless_and_an_ordinary_one_no
 				var back_lot := -1
 				var front_lot := -1
 				for lot_index in courtyard_lots.size():
-					if courtyard_lots[lot_index].encloses(building.lot):
+					if courtyard_lots[lot_index].encloses(building.lot_rect()):
 						back_lot = lot_index
-					if courtyard_lots[lot_index].encloses(front.lot):
+					if courtyard_lots[lot_index].encloses(front.lot_rect()):
 						front_lot = lot_index
 				var same_courtyard := back_lot >= 0 and back_lot == front_lot
 				var expect_seamless := same_courtyard and building.roof_tiles() > 0
-				var local_col := south.x - front.lot.position.x
+				var local_col := south.x - front.lot_rect().position.x
 				if same_courtyard:
 					t.check(front.tint_variant >= 0 and front.tint_variant == building.tint_variant,
 							"seed %d: two pieces of one courtyard lot share one tint (%d, %d)"
 							% [map.seed_used, front.tint_variant, building.tint_variant])
-				var extension: int = fronts[front].roof_rows_at(local_col) - front.roof_tiles()
+				var extension: int = _front_of(fronts, front).roof_rows_at(local_col) - front.roof_tiles()
 				if extension <= 0 or building.roof_tiles() <= 0:
 					continue
 				var top := front.roof_tiles() + extension - 1
-				var cap_drawn: bool = (fronts[front].roof_edges_at(local_col, top) & Building.ROOF_EDGE_BIT_N) != 0
-				var lip_drawn: bool = (fronts[building].roof_edges_at(col, 0) & Building.ROOF_EDGE_BIT_S) != 0
+				var cap_drawn: bool = (_front_of(fronts, front).roof_edges_at(local_col, top) & Building.ROOF_EDGE_BIT_N) != 0
+				var lip_drawn: bool = (_front_of(fronts, building).roof_edges_at(col, 0) & Building.ROOF_EDGE_BIT_S) != 0
 				t.check(cap_drawn != expect_seamless,
 						"seed %d: the covering piece's extension top draws a north lip exactly off a seamless seam"
 						% map.seed_used)
@@ -321,7 +320,7 @@ func _test_the_real_sweep_keeps_roof_furniture_off_every_lip(t: TestRunner) -> v
 				var cell: Vector2i = unit["cell"]
 				for step in int(unit["span"]):
 					var at := cell + Vector2i(step, 0)
-					t.check(fronts[building].roof_edges_at(at.x, at.y) == 0,
+					t.check(_front_of(fronts, building).roof_edges_at(at.x, at.y) == 0,
 							"seed %d: a roof unit at %s sits on a cell with no lip" % [map.seed_used, at])
 					checked += 1
 					if at.y >= building.roof_tiles():
@@ -356,13 +355,13 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunne
 		city.build(map)
 		var fronts := await _watch_the_fronts(t, city)
 		for building: Building in city.buildings():
-			var front = fronts[building]
+			var front := _front_of(fronts, building)
 			_check_accessor_invariant(t, building, front, map.seed_used)
 			if GroundFloorChecks.check_fire_escape(t, front, "seed %d" % map.seed_used):
 				checked_escapes += 1
 			if building.power_station:
 				continue
-			if building.is_home_building:
+			if building.is_on_home_block():
 				checked_home += 1
 				t.check(building.covered_ground_cols.is_empty(),
 						"seed %d: her own building is never told about a covered column" % map.seed_used)
@@ -450,7 +449,7 @@ func _test_a_real_sweep_of_cities_never_shows_a_ground_floor_window(t: TestRunne
 ## draws (a portico dropped for a covered column frees the other one it straddled) — the same two contracts
 ## `_test_the_accessor_returns_ground_floor_non_window_non_entrance_cells` pins on fixtures, asked
 ## again of whatever the generator actually builds.
-func _check_accessor_invariant(t: TestRunner, building: Building, front, seed_used: int) -> void:
+func _check_accessor_invariant(t: TestRunner, building: Building, front: FrontReads, seed_used: int) -> void:
 	var entrance_cols: Array[int] = []
 	if front.portico_drawn():
 		entrance_cols = front.portico_cols()
@@ -478,6 +477,10 @@ func _watch_the_fronts(t: TestRunner, city: City) -> Dictionary:
 	for building in city.buildings():
 		fronts[building] = FrontReads.look(building)
 	return fronts
+
+## What `building`'s front shows, out of `_watch_the_fronts()`'s record.
+static func _front_of(fronts: Dictionary, building: Building) -> FrontReads:
+	return fronts[building] as FrontReads
 
 ## Whether ground-floor column `col` of `building` stands under its door, which `door_world_x_range`
 ## says is where the door covers it: the column's own world span overlaps the door's.

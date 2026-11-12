@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A precinct's posts shut the carriageway band to her; the pavements beside the row stay open.
 ##
@@ -38,13 +37,13 @@ func run(t: TestRunner) -> void:
 
 func _prop(t: TestRunner, kind: Prop.Kind, at := Vector2.ZERO) -> Prop:
 	var prop := Prop.new()
-	prop.kind = kind
+	prop.dress(null, kind)
 	prop.position = at
 	t.add_child(prop)
 	return prop
 
 func _test_only_the_bollard_has_a_body(t: TestRunner) -> void:
-	for kind in [Prop.Kind.TREE, Prop.Kind.STREET_TREE, Prop.Kind.SACK, Prop.Kind.SACK_PILE]:
+	for kind: Prop.Kind in [Prop.Kind.TREE, Prop.Kind.STREET_TREE, Prop.Kind.SACK, Prop.Kind.SACK_PILE]:
 		var prop := _prop(t, kind)
 		t.check(prop.body_shape() == null,
 				"Prop.Kind %d stays bodiless (no prop but the post has one)" % kind)
@@ -116,7 +115,7 @@ func _test_the_row_stops_her_and_the_pavement_does_not(t: TestRunner) -> void:
 	var band_start := float(across[0]) - margin
 	var on_pavement := band_start - float(Tuning.TILE_SIZE)
 	var on_far_pavement := band_start + band_px + float(Tuning.TILE_SIZE)
-	for case in [["a post", float(across[0]), false],
+	for case: Array in [["a post", float(across[0]), false],
 			["the gap between two posts", (float(across[0]) + float(across[1])) * 0.5, false],
 			["the pavement beside the row", on_pavement, true],
 			["the pavement on the other side", on_far_pavement, true]]:
@@ -134,9 +133,9 @@ func _row_with_posts(t: TestRunner) -> Array:
 	var row := _row()
 	var holder := Node2D.new()
 	t.add_child(holder)
-	for cross in row.across:
+	for cross: float in row.across:
 		var post := Prop.new()
-		post.kind = Prop.Kind.BOLLARD
+		post.dress(null, Prop.Kind.BOLLARD)
 		post.position = Vector2(ROW_ALONG, cross)
 		holder.add_child(post)
 	return [holder, row]
@@ -156,8 +155,8 @@ func _test_the_row_stops_her_at_a_diagonal_from_every_offset(t: TestRunner) -> v
 	var first: float = across[0]
 	var last: float = across[across.size() - 1]
 	var run := RUN_UP * 2.0
-	for degrees in [0.0, 30.0, 45.0]:
-		for sign in [-1.0, 1.0]:
+	for degrees: float in [0.0, 30.0, 45.0]:
+		for sign: float in [-1.0, 1.0]:
 			var facing := heading.rotated(deg_to_rad(degrees) * sign)
 			for step in 9:
 				var cross := lerpf(first, last, float(step) / 8.0)
@@ -184,7 +183,7 @@ func _test_holding_a_diagonal_never_gets_her_past_the_row(t: TestRunner) -> void
 	var first: float = across[0]
 	var last: float = across[across.size() - 1]
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")
-	for side in [-1.0, 1.0]:
+	for side: float in [-1.0, 1.0]:
 		var held: Vector2 = (forward + sideways * side).normalized()
 		for step in 7:
 			var cross := lerpf(first - 30.0, last + 30.0, float(step) / 6.0)

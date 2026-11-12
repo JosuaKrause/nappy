@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The route's own curbstones, tinted whole: `City.tint_the_route()` re-sets cells on `_ground`
 ## itself where the walk marks the kerb (`RouteSource.marks_the_kerb_at()`, a day's tree at
@@ -15,6 +14,11 @@ const CITY_SCENE := preload("res://scenes/world/city.tscn")
 const GroundCells := preload("res://tests/ground_cells.gd")
 ## The seed of the run the city is handed (`RunCity.with_own_run()`).
 const RUN_SEED := 2
+
+## What `_visit_every_neighborhood()` read off the ground: each cell's source id and atlas coordinates.
+class VisitedCells extends RefCounted:
+	var sources := {}
+	var atlas := {}
 
 func run(t: TestRunner) -> void:
 	_test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t)
@@ -66,20 +70,20 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner)
 			% expected.size())
 
 	var twin_source_ids := {}
-	for source in kerb_sources:
+	for source: int in kerb_sources:
 		twin_source_ids[GroundTiles.route_twin_of(source)] = true
 
 	var twinned := {}
 	var observed := _visit_every_neighborhood(t, city)
-	for cell in observed.sources:
+	for cell: Vector2i in observed.sources:
 		if twin_source_ids.has(observed.sources[cell]):
 			twinned[cell] = true
 	t.check(twinned.size() == expected.size(),
 			"Ground carries a route-kerb twin on exactly the kerb tiles at depth 0 "
 			+ "(%d expected, %d twinned)" % [expected.size(), twinned.size()])
-	for cell in twinned:
+	for cell: Vector2i in twinned:
 		t.check(expected.has(cell), "twinned cell %s is a kerb tile at depth 0" % cell)
-	for tile in expected:
+	for tile: Vector2i in expected:
 		var plain_source := GroundTiles.source_for(city.map, tile, day)
 		var expected_atlas := GroundLayers.atlas_coords_for(plain_source, city.map.seed_used, tile,
 				city.scenery_ground.tile_set)
@@ -196,7 +200,7 @@ func _test_the_route_kerb_tint_matches_the_cells_the_tree_carries(t: TestRunner)
 
 ## Samples every map cell from its real resident TileMapLayer. Small destination views keep
 ## other neighborhoods free to unload; the reverse pass proves reconstruction after eviction.
-func _visit_every_neighborhood(t: TestRunner, city: City, reverse := false) -> Dictionary:
+func _visit_every_neighborhood(t: TestRunner, city: City, reverse := false) -> VisitedCells:
 	var keys := city.scenery_ground.keys_in(city.map.tile_rect_to_world(
 			Rect2i(Vector2i.ZERO, city.map.size)))
 	if reverse:
@@ -215,4 +219,7 @@ func _visit_every_neighborhood(t: TestRunner, city: City, reverse := false) -> D
 				if source >= 0:
 					sources[tile] = source
 					atlas[tile] = GroundCells.atlas_coords(city.scenery_ground, tile)
-	return {"sources": sources, "atlas": atlas}
+	var visited := VisitedCells.new()
+	visited.sources = sources
+	visited.atlas = atlas
+	return visited

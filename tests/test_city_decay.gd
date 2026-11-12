@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## The city degrades: `Tuning.degradation_for()`, the cracked ground `GroundTiles` picks from it,
 ## the litter and garbage sacks it places, and the storefronts and windows a building shutters.
@@ -74,7 +73,7 @@ func _test_cracks_are_deterministic_and_grow(t: TestRunner) -> void:
 			baseline[tile] = GroundTiles.source_for(map, tile, 1)
 
 		var last_count := -1
-		for day in [1, Tuning.DEGRADATION_FIRST_DAY, 8, 11, Tuning.RUN_LENGTH_DAYS]:
+		for day: int in [1, Tuning.DEGRADATION_FIRST_DAY, 8, 11, Tuning.RUN_LENGTH_DAYS]:
 			var count := 0
 			for tile in sidewalks:
 				var source := GroundTiles.source_for(map, tile, day)
@@ -126,7 +125,7 @@ func _test_litter_grows_with_the_day(t: TestRunner) -> void:
 	var map := CityGenerator.generate(BASE_SEED)
 	t.check(Litter.placed(map, 1).is_empty(), "day 1 places no litter")
 	var last := 0
-	for day in [Tuning.DEGRADATION_FIRST_DAY, 8, 11, Tuning.RUN_LENGTH_DAYS]:
+	for day: int in [Tuning.DEGRADATION_FIRST_DAY, 8, 11, Tuning.RUN_LENGTH_DAYS]:
 		var count := Litter.placed(map, day).size()
 		t.check(count >= last, "litter count never drops from day to day")
 		last = count
@@ -204,14 +203,12 @@ func _test_the_mouse_prefers_a_pile(t: TestRunner) -> void:
 
 func _test_boarded_storefronts_and_windows_shutter(t: TestRunner) -> void:
 	var building := FrontReads.new_building()
-	building.district = GameEnums.BlockPurpose.COMMERCIAL
-	building.footprint = Vector2(96.0, 96.0)
-	building.height = 64.0
+	building.stand_on(Rect2i(), Vector2(96.0, 96.0), 0, GameEnums.BlockPurpose.COMMERCIAL, 64.0)
 	t.add_child(building)
 	building.condition = Building.Condition.BOARDED
 	building.day = Tuning.RUN_LENGTH_DAYS
 	await UI.frames(t, 2)
-	var front = FrontReads.look(building)
+	var front := FrontReads.look(building)
 	t.check(_variants(front).size() == building.columns() / 2,
 			"a three-column facade has one storefront variant per complete pair")
 	t.check(front.ground_floor_at(1) == &"",
@@ -255,10 +252,9 @@ func _test_a_burnt_building_shows_nothing_intact(t: TestRunner) -> void:
 		var building := Building.new()
 		var front := RecordingFrontDrawer.new()
 		building.front_drawer = front
-		building.district = [GameEnums.BlockPurpose.COMMERCIAL, GameEnums.BlockPurpose.RESIDENTIAL,
-				GameEnums.BlockPurpose.INDUSTRIAL][i % 3]
-		building.footprint = Vector2(128.0, 128.0)
-		building.height = 96.0
+		var purposes: Array[GameEnums.BlockPurpose] = [GameEnums.BlockPurpose.COMMERCIAL,
+				GameEnums.BlockPurpose.RESIDENTIAL, GameEnums.BlockPurpose.INDUSTRIAL]
+		building.stand_on(Rect2i(), Vector2(128.0, 128.0), 0, purposes[i % 3], 96.0)
 		building.position = Vector2(9000.0 + i * 173.0, 9100.0 + i * 61.0)
 		t.add_child(building)
 		building.condition = Building.Condition.BURNT
@@ -306,9 +302,7 @@ func _test_ambient_shuttering_waits_for_the_curve(t: TestRunner) -> void:
 	var buildings: Array[Building] = []
 	for i in range(0, 24):
 		var building := FrontReads.new_building()
-		building.district = GameEnums.BlockPurpose.COMMERCIAL
-		building.footprint = Vector2(96.0, 96.0)
-		building.height = 64.0
+		building.stand_on(Rect2i(), Vector2(96.0, 96.0), 0, GameEnums.BlockPurpose.COMMERCIAL, 64.0)
 		building.position = Vector2(i * 200.0, i * 137.0)
 		t.add_child(building)
 		building.condition = Building.Condition.LIVED_IN
@@ -316,14 +310,14 @@ func _test_ambient_shuttering_waits_for_the_curve(t: TestRunner) -> void:
 		buildings.append(building)
 	await UI.frames(t, 2)
 	for building in buildings:
-		var front = FrontReads.look(building)
+		var front := FrontReads.look(building)
 		for col in building.columns():
 			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(front.ground_floor_at(col)):
 				any_shuttered_early = true
 		building.day = Tuning.RUN_LENGTH_DAYS
 	await UI.frames(t, 2)
 	for building in buildings:
-		var front = FrontReads.look(building)
+		var front := FrontReads.look(building)
 		for col in building.columns():
 			if Building.STOREFRONT_SHUTTERED_TEXTURES.has(front.ground_floor_at(col)):
 				any_shuttered_late = true
@@ -338,27 +332,19 @@ func _test_storefront_variants_use_seeded_bags(t: TestRunner) -> void:
 	var bag_width := Building.STOREFRONT_TEXTURES.size()
 	for i in 16:
 		var building := FrontReads.new_building()
-		building.district = GameEnums.BlockPurpose.COMMERCIAL
-		building.footprint = Vector2(512.0, 96.0)
-		building.height = 64.0
+		building.stand_on(Rect2i(), Vector2(512.0, 96.0), 0, GameEnums.BlockPurpose.COMMERCIAL, 64.0)
 		building.position = Vector2(7000.0 + i * 137.0, 7100.0 + i * 89.0)
 		t.add_child(building)
 		sampled.append(building)
 	var same_seed := FrontReads.new_building()
-	same_seed.district = GameEnums.BlockPurpose.COMMERCIAL
-	same_seed.footprint = Vector2(512.0, 96.0)
-	same_seed.height = 64.0
+	same_seed.stand_on(Rect2i(), Vector2(512.0, 96.0), 0, GameEnums.BlockPurpose.COMMERCIAL, 64.0)
 	same_seed.position = sampled[0].position
 	t.add_child(same_seed)
 	var odd := FrontReads.new_building()
-	odd.district = GameEnums.BlockPurpose.COMMERCIAL
-	odd.footprint = Vector2(160.0, 96.0)
-	odd.height = 64.0
+	odd.stand_on(Rect2i(), Vector2(160.0, 96.0), 0, GameEnums.BlockPurpose.COMMERCIAL, 64.0)
 	t.add_child(odd)
 	var shallow := FrontReads.new_building()
-	shallow.district = GameEnums.BlockPurpose.COMMERCIAL
-	shallow.footprint = Vector2(160.0, 32.0)
-	shallow.height = 32.0
+	shallow.stand_on(Rect2i(), Vector2(160.0, 32.0), 0, GameEnums.BlockPurpose.COMMERCIAL, 32.0)
 	t.add_child(shallow)
 	await UI.frames(t, 2)
 	for building in sampled:
@@ -372,12 +358,12 @@ func _test_storefront_variants_use_seeded_bags(t: TestRunner) -> void:
 				continue
 			var bag := variants.slice(storefront_index, storefront_index + bag_width)
 			var unique_bag := {}
-			for storefront_variant in bag:
+			for storefront_variant: int in bag:
 				unique_bag[storefront_variant] = true
 			t.check(unique_bag.size() == bag_width,
 					"each complete storefront bag uses every available variant once")
 		var order_key := ""
-		for storefront_variant in variants.slice(0, bag_width):
+		for storefront_variant: int in variants.slice(0, bag_width):
 			order_key += "%d," % storefront_variant
 		first_orders[order_key] = true
 	t.check(first_orders.size() > 1,
@@ -409,7 +395,7 @@ func _test_storefront_variants_use_seeded_bags(t: TestRunner) -> void:
 ## The storefront variant behind each drawn storefront of the front `front` reads, left to right: the
 ## index of the picture the ground floor shows in the first column of each storefront pair, in
 ## whichever of the plain, awning or shuttered sets it comes from.
-func _variants(front) -> Array[int]:
+func _variants(front: FrontReads) -> Array[int]:
 	var found: Array[int] = []
 	for col in range(0, front.building.columns(), 2):
 		var texture: StringName = front.ground_floor_at(col)

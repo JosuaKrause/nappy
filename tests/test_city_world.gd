@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## The city as the world the baby stands in (`WorldContext`): what its bodies charge her at a spot,
 ## and how much faster the calm ground fills her sleepiness than the street does.
@@ -35,7 +34,7 @@ func _test_a_live_event_charges_the_spot_it_stands_on(t: TestRunner, city: City)
 	instance.setup(def, spot)
 	city.events.world.instances.append(instance)
 	var charged := 0.0
-	for pair in city.excitement_sources_at(spot):
+	for pair: Array in city.excitement_sources_at(spot):
 		charged += pair[1]
 	t.check(instance.excitement.contribution_at(spot) > 0.0,
 			"the event's own field reaches the spot it stands on")

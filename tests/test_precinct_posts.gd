@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends RefCounted
 ## A generated map's precinct posts: where `CityMap.post_positions()` puts them, and that everything
 ## that steps or floods over the map sees their tiles as blocked.
@@ -34,7 +33,8 @@ func _rows(map: CityMap) -> Array:
 			if not rows.has(key):
 				rows[key] = {"vertical": vertical, "along": along, "across": [] as Array[float]}
 				out.append(rows[key])
-			rows[key].across.append(at.x if vertical else at.y)
+			var across: Array[float] = rows[key]["across"]
+			across.append(at.x if vertical else at.y)
 	return out
 
 ## Every gap between two posts of a row is narrower than her body, on every map.
@@ -45,7 +45,7 @@ func _test_every_gap_is_narrower_than_her_body(t: TestRunner) -> void:
 	var widest := 0.0
 	for i in 6:
 		var map := MapCache.of(1000 + i * 7919)
-		for row in _rows(map):
+		for row: Dictionary in _rows(map):
 			var across: Array = row.across
 			across.sort()
 			t.check(across.size() >= 2, "a row has at least two posts")
@@ -60,7 +60,7 @@ func _test_every_gap_is_narrower_than_her_body(t: TestRunner) -> void:
 ## straight line down the band), and `ReachabilityGrid` has no node on a post's tile but joins the
 ## two sides all the same.
 func _test_nothing_walks_through_the_row_but_her_own_body(t: TestRunner) -> void:
-	for seed_value in [1000, 500, 4242]:
+	for seed_value: int in [1000, 500, 4242]:
 		var map: CityMap = MapCache.of(seed_value)
 		var posts := map.post_positions()
 		var row: Dictionary = _rows(map)[0]
