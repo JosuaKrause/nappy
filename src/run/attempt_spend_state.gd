@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name AttemptSpendState
 extends RunSubState
 ## What an attempt can spend and a lost day gives back: the one-shot events already used, the scars
@@ -46,7 +45,7 @@ func scar_positions(id: String) -> Array[Vector2]:
 ## Records a scar of `id` at `position` on day `since_day`, ignoring one already there (within a pixel).
 func record_scar(id: String, position: Vector2, since_day: int) -> void:
 	for scar in scars:
-		if scar["id"] == id and scar["position"].distance_to(position) < 1.0:
+		if scar["id"] == id and (scar["position"] as Vector2).distance_to(position) < 1.0:
 			return
 	scars.append({"id": id, "position": position, "since_day": since_day})
 

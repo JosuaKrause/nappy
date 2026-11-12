@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name ResistanceRunState
 extends RunSubState
 ## What the resistance has done this run: the steps completed and failed, the progress they earned,
@@ -89,6 +88,6 @@ func restore(data: Dictionary) -> void:
 
 static func _to_int_array(raw: Array) -> Array[int]:
 	var result: Array[int] = []
-	for value in raw:
+	for value: Variant in raw:
 		result.append(int(value))
 	return result
