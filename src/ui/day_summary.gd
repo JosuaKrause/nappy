@@ -29,9 +29,9 @@ signal restart_requested()
 @onready var _root: Control = $Root
 @onready var _heading: Label = $Root/Center/Lines/Heading
 @onready var _title: Label = $Root/Center/Lines/Title
-## Empty and hidden except on a day brief given a lost-day note (`SummaryModel.note`) — the one line
-## the day brief shows that is not always the same words. Its own label, not folded into `_body`,
-## since the two hide independently of each other.
+## Empty and hidden except on a day brief given a lost-day note (`SummaryModel.note_text()`) — the
+## one line the day brief shows that is not always the same words. Its own label, not folded into
+## `_body`, since the two hide independently of each other.
 @onready var _note: Label = $Root/Center/Lines/Note
 @onready var _body: Label = $Root/Center/Lines/Body
 ## The morning's own line — one or two plain sentences saying what is true of the city by that

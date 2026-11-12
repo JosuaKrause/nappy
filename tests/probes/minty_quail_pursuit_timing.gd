@@ -108,7 +108,7 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> void:
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var label := "seed %d day %d" % [seed_value, day]
 	_trace.clear()
-	director.trace = RunTrace.recording(_trace)
+	director.trace = RecordingTrace.new(_trace)
 	var spots: Array[Vector2] = []
 	if OS.get_environment("PROBE_NO_ROWS") == "" and ROW_DAYS.has(day):
 		spots = _spots(city)
@@ -216,7 +216,7 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 	_stand(city, player, swing)
 	city.events.visible_view().look(camera, null)
 	happenings.tick(STEP, swing, Vector2.ZERO)
-	var park := happenings.cordon.park
+	var park := CityGenerator.swing_park(city.map)
 	happenings.cordon.clear()
 	var area := city.map.tile_rect_to_world(ClosurePlanner.calm_area_rect(city.map, park))
 	var before := city.events.instances().duplicate()

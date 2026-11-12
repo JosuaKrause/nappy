@@ -135,7 +135,7 @@ func _test_an_unknown_target_warns_and_returns_home(t: TestRunner) -> void:
 func _test_a_queue_fed_row_refuses_by_name(t: TestRunner) -> void:
 	var lines: Array[String] = []
 	var at := DevRig.for_spawn_target("event:cat_dash", _city.map, _city.events, _city.streets(),
-			_resistance, _city.run.header, RunTrace.recording(lines))
+			_resistance, _city.run.header, RecordingTrace.new(lines))
 	t.check(at == _city.map.home_world_position(),
 			"a queue-fed row still leaves her somewhere to stand: the doorstep")
 	var named := false

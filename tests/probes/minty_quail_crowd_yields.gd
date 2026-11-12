@@ -182,7 +182,7 @@ func _the_cordon(city: City, director: ResistanceDirector, player: Stroller,
 	_stand(city, player, swing)
 	city.events.visible_view().look(camera, null)
 	happenings.tick(STEP, swing, Vector2.ZERO)
-	var park := happenings.cordon.park
+	var park := CityGenerator.swing_park(city.map)
 	happenings.cordon.clear()
 	var before := city.events.instances().duplicate()
 	var meeting := Meeting.new(self, city, label)

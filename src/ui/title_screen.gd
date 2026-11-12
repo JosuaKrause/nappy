@@ -151,9 +151,9 @@ func use_atlas(atlas: AtlasLibrary) -> void:
 	(get_node(^"Root/Choice/RightColumn/Right") as ModeButton).use_atlas(atlas)
 
 ## The sitting whose last restart the guard measures a press against
-## (`Sitting.restarted_at_msec`, which `main._restart_run()` stamps before its reload): a fresh
-## screen is built by that reload, so the stamp lives on the owner that outlives it, never on this
-## node. Handed in by `use_sitting()`; a screen handed none has seen no restart.
+## (`Sitting.restart_requested_at_msec()`, which `main._restart_run()` stamps before its reload): a
+## fresh screen is built by that reload, so the stamp lives on the owner that outlives it, never on
+## this node. Handed in by `use_sitting()`; a screen handed none has seen no restart.
 var _sitting: Sitting
 
 ## Hands the screen the sitting it measures a restart against. Called by `main` before the screen
@@ -408,8 +408,8 @@ func _hard_mode_target() -> Rect2:
 ## `main._open_the_title()`, and this screen is up within a frame or two of the press that dismissed
 ## the ending. A stray press can still land squarely on a button — they are drawn in the same
 ## screen region a catch-all used to cover — so the guard answers exactly that case now rather than
-## every press on the screen. See `Sitting.restarted_at_msec` for what survives the reload and
-## `_RESTART_GUARD_SECONDS`'s for the window's own size.
+## every press on the screen. See `Sitting.restart_requested_at_msec()` for what survives the
+## reload and `_RESTART_GUARD_SECONDS`'s for the window's own size.
 func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return

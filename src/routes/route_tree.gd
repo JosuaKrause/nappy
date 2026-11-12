@@ -55,7 +55,7 @@ extends RouteSource
 ##
 ## **What still asks about a street asks in segment keys, translated from the cells.** A closure is
 ## still a whole `StreetNetwork.Segment` — see `StreetNetwork`'s own docstring on why — so
-## `streets()`, `rim()`, `gaps()` and `is_on_the_tree()` all answer in `Vector3i` segment keys, each
+## `rim()`, `gaps()` and `is_on_the_tree()` all answer in `Vector3i` segment keys, each
 ## one derived from which cells are on the tree rather than tracked directly. `cells()` is the new
 ## one, for the picture and for `Corridor`'s tile-level questions.
 ##
@@ -776,17 +776,10 @@ func _ensure_street_keys() -> void:
 			_street_keys[segment.key()] = true
 	_street_keys_built = true
 
-## Every street the tree touches, as segment keys — the streets `ClosurePlanner` may not close and
+## Whether the tree touches the street `key` names — the streets `ClosurePlanner` may not close and
 ## `CityGenerator` may not take for a hard blocker. A tree that cuts through a park or an alley
-## simply contributes no key for that stretch, which is correct: there is no street there to
+## simply touches no street for that stretch, which is correct: there is no street there to
 ## protect, only ground.
-func streets() -> Array[Vector3i]:
-	_ensure_street_keys()
-	var found: Array[Vector3i] = []
-	for key: Vector3i in _street_keys:
-		found.append(key)
-	return found
-
 func is_on_the_tree(key: Vector3i) -> bool:
 	_ensure_street_keys()
 	return _street_keys.has(key)

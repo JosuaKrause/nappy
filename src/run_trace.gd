@@ -25,11 +25,6 @@ func note(kind: String, text: String) -> void:
 	if _write.is_valid():
 		_write.call(kind, text)
 
-## A trace that keeps every line it is handed as `"kind text"`, for a test to read back.
-static func recording(into: Array[String]) -> RunTrace:
-	return RunTrace.new(func(kind: String, text: String) -> void:
-		into.append("%s %s" % [kind, text]))
-
 # ------------------------------------------------------------------ formatting ---
 # Shared by every writer, so a tile reads the same whichever system wrote the line — the run's own
 # account through a trace, or the run log's observer.

@@ -47,8 +47,8 @@ var _movie := false:
 ## The null display server a headless run boots against: no window, so no player, and the
 ## run never touches the player's save (`GameSave._uses_save()`). Read from the process at
 ## boot (`at_boot()`); a test that wants the saving of a windowed run parses `false`.
-var headless := true:
-	set(value): headless = _write(headless, value)
+var _headless := true:
+	set(value): _headless = _write(_headless, value)
 ## A debug build: the gate on every command-line flag.
 var debug_build := false:
 	set(value): debug_build = _write(debug_build, value)
@@ -228,7 +228,7 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 	config._given = args.duplicate()
 	config._movie = recording_movie
 	config.debug_build = debug_build
-	config.headless = headless_display
+	config._headless = headless_display
 	config.readout_requested = flags.readout_requested()
 	config.live_debug = flags.live_debug_requested()
 	config._web_debug_flag_used = flags.web_debug_flag_used()
@@ -301,13 +301,13 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 ## This run with a loaded recipe's data on top: the recipe's seed, day, escape part and parent in
 ## place of the flags' own. Parsed again from the same words and query, never from the process.
 func with_recipe(recipe_data: Dictionary) -> RunConfig:
-	return parse(_given, page_query, debug_build, _movie, recipe_data, headless)
+	return parse(_given, page_query, debug_build, _movie, recipe_data, _headless)
 
 # --------------------------------------------------------------- what follows ---
 
 ## Whether this is a headless run: the null display server, so no player and no save.
 func is_headless() -> bool:
-	return headless
+	return _headless
 
 ## Whether this is a debug build, the gate on every command-line flag.
 func is_debug_build() -> bool:

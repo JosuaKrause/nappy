@@ -50,7 +50,7 @@ func _test_day_nine_is_done_by_crossing_the_door_not_by_standing_at_it(t: TestRu
 		var player: Stroller = day[1]
 		var events := _city.events
 		var walks_told: Array[String] = []
-		events.trace = RunTrace.recording(walks_told)
+		events.trace = RecordingTrace.new(walks_told)
 		var step := director.current_step()
 		t.check(step != null and step.target_kind == ResistanceSteps.TargetKind.DOOR,
 				"day 9's mark puts the crossing on offer")
@@ -383,7 +383,7 @@ func _test_the_frames_see_a_crossing(t: TestRunner) -> void:
 	var player: Stroller = day[1]
 	var events := _city.events
 	var walks_told: Array[String] = []
-	events.trace = RunTrace.recording(walks_told)
+	events.trace = RecordingTrace.new(walks_told)
 	if _door_position(director) == Vector2.INF:
 		t.check(false, "day 9's door is named")
 		_end_the_attempt(director, player)

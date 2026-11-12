@@ -651,7 +651,7 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t: TestRunner) -> void:
 	var corridor := Corridor.of(tree)
 	var told: Array[String] = []
 	var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, CalmAreas.of(map), MastSites.compute(map),
-			[] as Array[String], [] as Array[Dictionary], tree, 0, PackedVector2Array(), [] as Array[EventPlan], RunTrace.recording(told),
+			[] as Array[String], [] as Array[Dictionary], tree, 0, PackedVector2Array(), [] as Array[EventPlan], RecordingTrace.new(told),
 			EventCatalogue.by_id("roadblock"))
 	var stood: Array[Vector2i] = []
 	var counted := ""
@@ -909,7 +909,7 @@ func _test_a_spoiler_on_a_route_stands_beside_it(t: TestRunner) -> void:
 	var consumed: Array[String] = []
 	var events := EventScheduler.build_day(DaySpec.for_day(_SPOILER_DAY), rng, map, calm,
 			[] as Array[MastSites.Site], consumed, [], _Walk.new(route), 0, PackedVector2Array(),
-			[], RunTrace.recording(lines))
+			[], RecordingTrace.new(lines))
 	var with_a_body := 0
 	for line in lines:
 		if not line.begins_with("roll ") or not line.contains("in the park she used"):

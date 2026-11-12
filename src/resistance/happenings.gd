@@ -427,7 +427,7 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 func _maybe_the_column(her: Vector2) -> void:
 	if her == Vector2.INF or not _events or not _streets or _map.main_road_corridor() < 0:
 		return
-	var near := absf(her.x - spine_x()) <= COLUMN_WITHIN
+	var near := absf(her.x - _spine_x()) <= COLUMN_WITHIN
 	if not (near and _walked >= EventDirector.ON_HER_WAY_AFTER) and _elapsed < COLUMN_BY:
 		return
 	# Still owed when the lane has no place off screen for it yet (she is at the road's very end):
@@ -435,7 +435,7 @@ func _maybe_the_column(her: Vector2) -> void:
 	_column_owed = _send_the_column(her) == null
 
 ## The main road's middle, across it.
-func spine_x() -> float:
+func _spine_x() -> float:
 	return (float(_map.main_road_corridor() * CityMap.period()) + Tuning.STREET_WIDTH * 0.5) \
 			* Tuning.TILE_SIZE
 

@@ -238,8 +238,9 @@ func _test_the_fenced_park_closes_every_entrance(t: TestRunner) -> void:
 					_closure_rng(map, day))
 			var boxes: Array[Rect2] = []
 			for closure in closures:
+				# Every fence that comes back is the fenced park's: `ClosurePlanner` fences no other.
 				var fence := closure as ParkClosure
-				if not fence or fence.area != rect:
+				if not fence:
 					continue
 				t.check(fence.kind == RoadClosure.Kind.PARK and
 						map.network.by_key(fence.segment.key()) == null,

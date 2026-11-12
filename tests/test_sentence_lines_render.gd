@@ -33,7 +33,7 @@ func run(t: TestRunner) -> void:
 		hard_fail_end.result = GameEnums.DayResult.LOST_HARD_FAIL
 		hard_fail_end.reason = hard_fails[reason]
 		hard_fail_end.elapsed_seconds = 600.0
-		var line := SummaryModel.day_over(hard_fail_run, hard_fail_end).title
+		var line := SummaryModel.day_over(hard_fail_run, hard_fail_end).title_text()
 		_check_label(t, line, title, "the day summary title for %s" % reason)
 	_check_label(t, "Dusk. You are still out.", title, "the dusk title")
 	summary.queue_free()

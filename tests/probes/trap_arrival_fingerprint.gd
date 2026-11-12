@@ -78,7 +78,7 @@ func _a_day(t: TestRunner, city: City, seed_value: int, day: int) -> int:
 	t.add_child(director)
 	director.set_process(false)
 	_lines.clear()
-	director.trace = RunTrace.recording(_lines)
+	director.trace = RecordingTrace.new(_lines)
 	director.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,
 			city.spawn_siting)
 	director.use_player(player)

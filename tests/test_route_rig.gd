@@ -5,7 +5,7 @@ extends RefCounted
 ## real `City` in a run of its own, and drives the rig the way `main` does — `setup()`, `start_day()`
 ## and real physics frames, with a real `Stroller` walking by `move_and_slide()` — reading what the
 ## rig does from what it presses (`Input`'s move actions) and from the lines it writes in the run
-## log (a recording trace, `RunTrace.recording()`, handed to the rig and to the city's events),
+## log (a recording trace, `tests/recording_trace.gd`, handed to the rig and to the city's events),
 ## which is what `tests/probes/m184_route_timing.gd` reads a real run back from. The whole loop —
 ## resolve, plan, walk, arrive — is proven, and not only its pieces (the verify skill: "a rig that
 ## steps the parts is not running the whole, and the gap is silent both ways").
@@ -225,7 +225,7 @@ func _started_day(t: TestRunner, city: City, stroller: Stroller, run: RunState) 
 
 ## A rig built and started the way `main` builds one (`main._add_the_route_rig()`, then the day's
 ## `RunFlow.day_planned`), walking `targets` over `city` on `day`. The rig and the city's events
-## write into one recording trace (`RunTrace.recording()`), as `main` hands both the session's, so a
+## write into one recording trace (`tests/recording_trace.gd`), as `main` hands both the session's, so a
 ## test reads back the rig's `route` lines and the doors' `checkpoint` lines in the order they were
 ## written; `_end_rig()` gives the events back the trace they had. The rig's own frames run from
 ## here on.
@@ -237,7 +237,7 @@ func _started_rig(t: TestRunner, city: City, stroller: Stroller, resistance: Res
 	var targets: Array[String] = []
 	targets.assign(words)
 	_lines = []
-	var trace := RunTrace.recording(_lines)
+	var trace := RecordingTrace.new(_lines)
 	rig.trace = trace
 	_rig_city = city
 	_city_trace = city.events.trace
@@ -1596,7 +1596,7 @@ func _test_a_rig_run_never_walks_under_a_boom(t: TestRunner, doors: Dictionary) 
 	# not have counted anything.
 	var lane := gate.global_position + Vector2(-axis.y, axis.x) * 16.0
 	var told: Array[String] = []
-	city.events.trace = RunTrace.recording(told)
+	city.events.trace = RecordingTrace.new(told)
 	stroller.reset_at(lane - axis * 20.0)
 	city.events.checkpoints.watch_the_door_lines()
 	stroller.global_position = lane + axis * 20.0

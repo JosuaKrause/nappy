@@ -136,7 +136,6 @@ func _test_going_back_restores_every_field_the_save_carries(t: TestRunner) -> vo
 	t.check(_write_to_the_scratch_file(run), "the run is written with its checkpoint")
 	run.start_run(_SEED + 1)
 	t.check(not _read_from_the_scratch_file(run).is_empty(), "and read back")
-	t.check(run.calendar.checkpoint_day() == 4, "with its checkpoint on day 4")
 
 	var keys := _run_keys(run)
 	t.check(keys.size() > 10, "there are fields to check (%d)" % keys.size())
@@ -161,9 +160,11 @@ func _test_going_back_restores_every_field_the_save_carries(t: TestRunner) -> vo
 				"'%s' is the checkpoint's own dawn again (%s, wanted %s)"
 						% [key, str(after[key]).left(80), str(wanted[key]).left(80)])
 	t.check(run.header.nerves == Tuning.STARTING_NERVES and run.header.day == 4,
-			"back at day 4 with every nerve")
-	t.check(run.calendar.checkpoint_day() == 4 and not run.calendar.hard_mode,
-			"still a normal run, whose checkpoint is still day 4")
+			"back at day 4 with every nerve, the checkpoint the file gave back")
+	run.header.nerves = 1
+	t.check(run.calendar.finish_day(GameEnums.DayResult.LOST_HARD_FAIL) and not run.calendar.hard_mode
+			and run.header.day == 4 and run.header.nerves == Tuning.STARTING_NERVES,
+			"still a normal run, whose checkpoint is still day 4: its last nerve goes back there again")
 	t.check(run.header.ending == GameEnums.Ending.NONE, "and a normal run has no bad ending")
 
 ## Every key of the file that is the run's own state — top-level riders by name, and `"state"`'s
@@ -231,11 +232,12 @@ func _fake_block_plan() -> BlockPlan:
 func _test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(_SEED)
-	t.check(run.calendar.checkpoint_day() == 1, "a fresh run's checkpoint is day 1")
+	t.check(run.calendar.checkpoint.is_empty(),
+			"a fresh run keeps nothing: its checkpoint is checkpoint zero, day 1")
 	run.header.day = 4
 	run.calendar.begin_day()
 	var day_four := run.calendar.checkpoint.duplicate(true)
-	t.check(run.calendar.checkpoint_day() == 4, "day 4 is a checkpoint")
+	t.check(day_four == run.run_parts.run_data(), "day 4's dawn is the checkpoint")
 	run.header.play_ticks = 2310
 	run.calendar.finish_day(GameEnums.DayResult.LOST_TIMEOUT)
 	run.calendar.begin_day()
@@ -246,10 +248,12 @@ func _test_a_checkpoint_is_kept_only_the_first_time_its_day_is_begun(t: TestRunn
 		if run.header.day < 8:
 			t.check(run.calendar.checkpoint == day_four,
 					"day %d is not a checkpoint, so day 4's stands" % run.header.day)
-	t.check(run.header.day == 8 and run.calendar.checkpoint_day() == 8, "day 8 replaces it")
+	t.check(run.header.day == 8 and run.calendar.checkpoint == run.run_parts.run_data()
+			and run.calendar.checkpoint != day_four, "day 8's dawn replaces it")
 	run.header.day = 12
 	run.calendar.begin_day()
-	t.check(run.calendar.checkpoint_day() == 12, "day 12, the last act's first, replaces it too")
+	t.check(run.calendar.checkpoint == run.run_parts.run_data(),
+			"day 12's dawn, the last act's first, replaces it too")
 
 ## Before day 4, the last nerve goes back to day 1 of the same city — the same seed, and the same
 ## parent pushing the pram — rather than a new run.
@@ -302,8 +306,7 @@ func _test_the_play_time_only_grows_across_every_way_back(t: TestRunner) -> void
 	run.header.play_ticks = 7777
 	run.header.nerves = 1
 	run.calendar.finish_day(GameEnums.DayResult.LOST_CRYING)
-	t.check(run.header.day == 4 and run.calendar.checkpoint_day() == 4
-			and run.header.play_ticks == 7777,
+	t.check(run.header.day == 4 and run.header.play_ticks == 7777,
 			"back to a later checkpoint keeps the play time, not the dawn's (%d)" % run.header.play_ticks)
 
 	# A lost day retried with nerves left: no go-back, the header is not given back.
@@ -353,8 +356,8 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	for d in range(8, 11):
 		Boot.day(main).day_finished.emit(GameEnums.DayResult.WON)
 		await Boot.press_continue(t, main)
-	t.check(run.header.day == 11 and run.calendar.checkpoint_day() == 8,
-			"day 11 is under way, with day 8 the checkpoint")
+	t.check(run.header.day == 11,
+			"day 11 is under way, with day 8 the checkpoint its last nerve goes back to below")
 	var boarded := HomeDoorReads.building(Boot.city(main))
 	t.check(boarded != null and boarded.neighbor_window_col >= 0,
 			"day 11 boarded the neighbor's window")
@@ -425,7 +428,7 @@ func _test_choosing_hard_mode_drops_a_checkpoint_already_kept(t: TestRunner) -> 
 	run.start_run(_SEED)
 	run.header.day = 8
 	run.calendar.begin_day()
-	t.check(run.calendar.checkpoint_day() == 8, "a normal run keeps day 8")
+	t.check(run.calendar.checkpoint == run.run_parts.run_data(), "a normal run keeps day 8's dawn")
 	run.calendar.choose_mode(true)
 	t.check(run.calendar.hard_mode and run.calendar.checkpoint.is_empty(), "hard mode has none")
 

@@ -84,7 +84,7 @@ func _role_and_depth_sweep() -> void:
 			var planned := EventScheduler.build_day(DaySpec.for_day(day), rng, map,
 					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements()
 			day_count += 1
-			sum_corridor_streets += tree.streets().size()
+			sum_corridor_streets += tree.streets_on_the_walk().size()
 			var crossing_streets := {}
 			for plan in planned:
 				if not plan.is_placed():

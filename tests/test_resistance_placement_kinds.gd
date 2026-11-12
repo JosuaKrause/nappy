@@ -5,10 +5,11 @@ extends "res://tests/resistance_rig.gd"
 ## and sets on that run what the day it asks about needs; none reads what another left. What the
 ## director put in the street is read from the street (`contact()`, `rider()`, `read_mark()`, the
 ## city's live instances), a touch is a real physics frame, and the happenings are the public ones
-## (`spine_x()`, `tick()`). The ground a row is offered is asked of
-## `EventScheduler.open_ground_for()`, the next day's masts of the day the manager plans, the
-## near mast of the arrow's tip over two masts a test stands, and `_start_the_day()` puts her stroller in
-## the tree with the baby a child of it, as the scene has them.
+## (`tick()`), the main road they send the column down read off the map. The ground a row is
+## offered is asked of `EventScheduler.open_ground_for()`, the next day's masts of the day the
+## manager plans, the near mast of the arrow's tip over two masts a test stands, and
+## `_start_the_day()` puts her stroller in the tree with the baby a child of it, as the scene has
+## them.
 const UI := preload("res://tests/ui_screens.gd")
 ## Where the red arrow's tip stands and the mast there.
 const ResistanceReads := preload("res://tests/resistance_reads.gd")
@@ -1181,7 +1182,10 @@ func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
 	var happenings := _happenings_on_day(ResistanceHappenings.COLUMN_DAY, state)
 	var map := _city.map
 	var door := map.doorstep_world_position()
-	var spine := happenings.spine_x()
+	# The main road's middle, across it: the corridor the map names as the main road, a street's
+	# width from its first tile.
+	var spine := (float(map.main_road_corridor() * CityMap.period()) + Tuning.STREET_WIDTH * 0.5) \
+			* Tuning.TILE_SIZE
 	var far_from_it := Vector2(spine + ResistanceHappenings.COLUMN_WITHIN * 2.0, door.y)
 	# She has walked as long as a way takes to be chosen, far from the road.
 	happenings.tick(EventDirector.ON_HER_WAY_AFTER, far_from_it, Vector2.RIGHT * Tuning.WALK_SPEED)

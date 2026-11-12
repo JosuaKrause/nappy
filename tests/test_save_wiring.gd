@@ -282,7 +282,8 @@ func _test_a_fresh_boot_writes_nothing_until_the_title_is_dismissed(t: TestRunne
 ## **The restart deletes the save before the run log closes**, so the "deleted the save" line is
 ## written into the run being abandoned: a recording log (`tests/recording_log.gd`) stands in for
 ## the run's, and is the log the restart closes. **And it stamps the sitting** the reloaded boot's title
-## measures its restart guard against (`Sitting.restarted_at_msec`), since that title is a fresh one.
+## measures its restart guard against (`Sitting.restart_requested_at_msec()`), since that title is a
+## fresh one.
 func _test_a_restart_clears_the_save_in_the_log_it_abandons(t: TestRunner) -> void:
 	_begin()
 	# The restart parks the sitting, with the symbol showing its deletion under it, in its home.
@@ -303,7 +304,7 @@ func _test_a_restart_clears_the_save_in_the_log_it_abandons(t: TestRunner) -> vo
 	t.check(not run_log.is_active(), "and the log is closed after it, not before")
 	var sitting := home.get_node_or_null(NodePath(Sitting.NODE_NAME)) as Sitting
 	t.check(sitting != null, "the restart parks the sitting in its home before the reload")
-	t.check(sitting != null and sitting.restarted_at_msec > -INF,
+	t.check(sitting != null and sitting.restart_requested_at_msec() > -INF,
 			"stamped with the restart")
 	var carried := SaveIndicator.carried(sitting)
 	t.check(carried != null, "and with the symbol showing the deletion under it")
@@ -529,7 +530,7 @@ func _test_title_leads_to_the_ending_on_the_last_nerve(t: TestRunner) -> void:
 	var summary := Boot.summary(main)
 	t.check(summary.is_showing()
 			and (summary.get_node("Root/Center/Lines/Title") as Label).text
-			== SummaryModel.ending(run, run.header.ending).title,
+			== SummaryModel.ending(run, run.header.ending).title_text(),
 			"the ending is shown rather than the day brief, so there is no day brief for a later"
 			+ " continue to engage")
 	t.check(not FileAccess.file_exists(_SCRATCH_PATH), "a run that has ended writes nothing, on this path either")

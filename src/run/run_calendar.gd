@@ -123,7 +123,7 @@ static func _is_checkpoint_day(for_day: int) -> bool:
 
 ## The day the run goes back to when a normal run spends its last nerve: the latest checkpoint day
 ## it has begun, or day 1 before day 4.
-func checkpoint_day() -> int:
+func _checkpoint_day() -> int:
 	if checkpoint.is_empty():
 		return 1
 	return int((checkpoint["state"] as Dictionary)["day"])
@@ -142,7 +142,7 @@ func a_loss_goes_back_to_the_checkpoint() -> bool:
 ## hard mode**, which has none. The escape's sections never reach this: they begin no calendar day
 ## (`begin_day()`), since the run is still on its last one.
 func _keep_a_checkpoint_if_one_is_due() -> void:
-	if hard_mode or not _is_checkpoint_day(header.day) or header.day <= checkpoint_day():
+	if hard_mode or not _is_checkpoint_day(header.day) or header.day <= _checkpoint_day():
 		return
 	checkpoint = run_parts.run_data()
 	_trace.note("nerve", "day %d's dawn is the checkpoint a run out of nerves goes back to" % header.day)

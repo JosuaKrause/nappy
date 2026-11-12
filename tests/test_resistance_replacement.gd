@@ -4,10 +4,10 @@ extends "res://tests/resistance_rig.gd"
 ## Every test that needs a city builds its own, in a run of its own (`_build_city_in_a_new_run()`),
 ## and sets on that run what the day it asks about needs; none reads what another left. A mark is
 ## read off the street (`ResistanceDirector.contact_position()`), the neighbor and the raid off the
-## street (the raid's instances among the live ones),
-## and what the director did on a tick off the run's trace (`RunTrace.recording()`). Where a test asks
-## a relocation of many tiles, each is her stroller set down and one tick (`_relocate_round()`), the
-## mark and its guard read off the street.
+## street (the raid's instances among the live ones), and what the director did on a tick off the
+## run's trace (a `RecordingTrace`, `tests/recording_trace.gd`). Where a test asks a relocation of
+## many tiles, each is her stroller set down and one tick (`_relocate_round()`), the mark and its
+## guard read off the street.
 func run(t: TestRunner) -> void:
 	_test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t)
 	_test_a_mark_within_notice_radius_does_not_move(t)
@@ -50,7 +50,7 @@ func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t: TestRunne
 	director.use_player(player)
 
 	var lines: Array[String] = []
-	director.trace = RunTrace.recording(lines)
+	director.trace = RecordingTrace.new(lines)
 	director.tick(STEP)
 	t.check(director.contact_position().distance_to(far_alley) < 0.5,
 			"an unseen mark moves to the alley she has just come near")
@@ -408,7 +408,7 @@ func _test_the_neighbor_is_not_taken_under_a_covered_corner(t: TestRunner) -> vo
 	var corner_size := corner.size * scale
 	var late := _director_on_the_neighbor(t)
 	var lines: Array[String] = []
-	late.trace = RunTrace.recording(lines)
+	late.trace = RecordingTrace.new(lines)
 	var walker := late.rider()
 	t.check(walker != null, "the neighbor is walking home")
 	if walker:
@@ -445,7 +445,7 @@ func _test_the_neighbor_waits_until_none_of_their_figure_shows(t: TestRunner) ->
 		var covered: Variant = TouchCover.joystick() if joystick else null
 		var late := _director_on_the_neighbor(t)
 		var lines: Array[String] = []
-		late.trace = RunTrace.recording(lines)
+		late.trace = RecordingTrace.new(lines)
 		late.set_sight(events.sees)
 		var walker := late.rider()
 		t.check(walker != null, "%s scheme: the neighbor is walking home" % scheme)

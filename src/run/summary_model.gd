@@ -23,18 +23,18 @@ enum Kind {
 
 var kind := Kind.BRIEF
 ## The big heading above the title; empty on a screen that has none, which hides it.
-var heading := ""
-var title := ""
+var _heading := ""
+var _title := ""
 ## Whether the title is prose the screen breaks between sentences (the clock line, a section's
 ## words), rather than a fixed line ("Day 3 of 14", an ending's title).
 var title_is_prose := false
 ## The one line a resumed day's brief adds about what opening the save cost; empty hides it.
-var note := ""
+var _note := ""
 ## The prose the body opens with — an ending's or the epilogue's paragraph — which the screen breaks
 ## between sentences to the body's width before `body()` places it; empty when the body has none.
 var body_prose := ""
 ## The morning's own line (`Texts.DAY_BRIEF`); empty on a screen that has none, which hides it.
-var brief := ""
+var _brief := ""
 ## Whether the continue button shows. Not on an ending (Playtest 28 finding 4: "the game over screen
 ## cannot have a continue button"): the held restart stays, and every other screen carries on.
 var shows_continue := true
@@ -46,11 +46,11 @@ var _body_fill: Array = [""]
 
 ## The line above the title, `""` for none.
 func heading_text() -> String:
-	return heading
+	return _heading
 
 ## The title line.
 func title_text() -> String:
-	return title
+	return _title
 
 ## Whether the title is a sentence the screen breaks to fit its label, rather than a short line.
 func title_is_a_sentence() -> bool:
@@ -58,7 +58,7 @@ func title_is_a_sentence() -> bool:
 
 ## The note under the title, `""` for none.
 func note_text() -> String:
-	return note
+	return _note
 
 ## The prose the body is made of, before the screen breaks it to fit (`body()` puts it back).
 func body_sentence() -> String:
@@ -66,7 +66,7 @@ func body_sentence() -> String:
 
 ## The brief of the day to come, `""` for none.
 func brief_text() -> String:
-	return brief
+	return _brief
 
 ## Whether the screen offers its continue prompt.
 func offers_continue() -> bool:
@@ -87,19 +87,19 @@ func _plain_body(text: String) -> void:
 ## The day brief: what a saved game opens on once the title's start is pressed, and the screen each
 ## section of the escape opens on. Three things, no more: the day (or the section's own words,
 ## `section_title`, where "Day N of 14" stands), the nerves as the run holds them, and the morning's
-## own line, which a section has none of. `note` is what opening the save cost (`Texts.RESUMED_*`),
-## or `""` for a save that cost nothing and for a section.
+## own line, which a section has none of. `note_line` is what opening the save cost
+## (`Texts.RESUMED_*`), or `""` for a save that cost nothing and for a section.
 static func brief_for(run: RunState, note_line := "", section_title := "") -> SummaryModel:
 	var model := SummaryModel.new()
 	model.kind = Kind.BRIEF
-	model.note = note_line
+	model._note = note_line
 	if section_title == "":
-		model.title = day_line(run.header.day)
+		model._title = day_line(run.header.day)
 	else:
-		model.title = section_title
+		model._title = section_title
 		model.title_is_prose = true
 	model._plain_body(nerves_line(run.header.nerves))
-	model.brief = Texts.DAY_BRIEF.get(run.header.day, "") if section_title == "" else ""
+	model._brief = Texts.DAY_BRIEF.get(run.header.day, "") if section_title == "" else ""
 	return model
 
 ## The summary of a day that just ended, or of a lost section of the escape (`section_title`, its
@@ -118,7 +118,7 @@ static func brief_for(run: RunState, note_line := "", section_title := "") -> Su
 static func day_over(run: RunState, end: DayEnd, section_title := "") -> SummaryModel:
 	var model := SummaryModel.new()
 	model.kind = Kind.DAY
-	model.title = _clock_line(end.outcome(), end.loss_reason(), RunState.format_clock_seconds(end.lasted_seconds()))
+	model._title = _clock_line(end.outcome(), end.loss_reason(), RunState.format_clock_seconds(end.lasted_seconds()))
 	model.title_is_prose = true
 	var day := run.header.day
 	var nerves := run.header.nerves
@@ -139,7 +139,7 @@ static func day_over(run: RunState, end: DayEnd, section_title := "") -> Summary
 		lines.append("")
 		lines.append(_resistance_tally(run))
 	model._plain_body("\n".join(lines))
-	model.brief = Texts.DAY_BRIEF.get(day, "") if section_title == "" else ""
+	model._brief = Texts.DAY_BRIEF.get(day, "") if section_title == "" else ""
 	return model
 
 ## The last screen of a run: its heading, its title, its paragraph and the run's length to the
@@ -149,8 +149,8 @@ static func day_over(run: RunState, end: DayEnd, section_title := "") -> Summary
 static func ending(run: RunState, which: GameEnums.Ending) -> SummaryModel:
 	var model := SummaryModel.new()
 	model.kind = Kind.ENDING
-	model.heading = Texts.ENDING_HEADING.get(which, Texts.ENDING_HEADING_DEFAULT)
-	model.title = Texts.ENDING_TITLE.get(which, Texts.ENDING_TITLE_DEFAULT)
+	model._heading = Texts.ENDING_HEADING.get(which, Texts.ENDING_HEADING_DEFAULT)
+	model._title = Texts.ENDING_TITLE.get(which, Texts.ENDING_TITLE_DEFAULT)
 	model.body_prose = Texts.ENDING_BODY.get(which, "")
 	var day_reached := Texts.ENDING_DAY_REACHED % run.header.day \
 			if which == GameEnums.Ending.BAD else ""
@@ -166,8 +166,8 @@ static func ending(run: RunState, which: GameEnums.Ending) -> SummaryModel:
 static func epilogue(end: DayEnd) -> SummaryModel:
 	var model := SummaryModel.new()
 	model.kind = Kind.EPILOGUE
-	model.heading = Texts.FINALE_HEADING
-	model.title = Texts.FINALE_TITLE
+	model._heading = Texts.FINALE_HEADING
+	model._title = Texts.FINALE_TITLE
 	model.body_prose = Texts.FINALE_BODY.get(end.exit_taken(), Texts.FINALE_BODY_DEFAULT)
 	model._body_shape = Texts.FINALE_OUT_IN
 	model._body_fill = [RunState.format_clock(end.lasted_seconds())]
