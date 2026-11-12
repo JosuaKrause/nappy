@@ -12,7 +12,9 @@ asked for the object, since an object handed what it depends on is the dependenc
 - **`PlanBuilder`** (`src/events/plan_builder.gd`, the model layer): an object constructed with the map and three
   functions it is handed, what stops a moving row, where a body stands and the room a candidate has among placed
   plans; the game hands it `EventInstance.mover_for`, `EventFootprints.stands_at` and
-  `StreetInvalidation.room_around`, so the file names no other class's static. Six functions left the scheduler for
+  `StreetInvalidation.room_around`, so it names none of those three classes; the statics it keeps are the
+  lattice's own arithmetic on the map it holds (`CityMap.period()`, `CityMap.corridor_offset()`), a plain
+  value (`Mover.on_foot()`, `EventPlan.new()`) and constants (`Tuning.STREET_WIDTH`, the `EventDef` enums). Six functions left the scheduler for
   it: `build()` (once `build_placement()`), `place_at()`, `body_stands_at()`, `room_along()` (now public, since the
   resistance's happenings call it), `_along_street_path()` and `_cross_street_path()`.
 - **Four places make one**, each with the same expression: the dawn (`EventScheduler.build_day()`), once a day,
@@ -36,6 +38,13 @@ asked for the object, since an object handed what it depends on is the dependenc
   the neighbor's walk to work answers null, as it does with no events.
 - **`build()` in place of `build_placement()`**; the other names stay, and `_cross_street_path()` stays as it is
   (`tests-public-seams.md` leaves "a row or removing" open).
+- **`StreetInvalidation`'s `one_notice` is the builder or null**, the form its `walk` parameter has, in place of
+  a flag beside a builder, which would make all eleven construction sites carry one.
+- **What stays in the scheduler**: `recipe_placement()` (it needs `role_for()` and the ground dictionary),
+  `_wants_this_side()` and `_band_offset_of()` (each has one caller, which stays), and `blocked_by()` and
+  `block_a_disc()` (they paint a flood's blocked set for fourteen files).
+- **One pull request**: the one possible cut, `body_stands_at()` second, would only add a constructor change at
+  the three makers and the test helper.
 - **No `tests/test_plan_builder.gd` in this pull request**: the functions' checks sit in other modules' suites,
   which minty-quail's `tests-one-module.md` sorts.
 

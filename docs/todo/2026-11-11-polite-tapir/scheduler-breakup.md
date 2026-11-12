@@ -31,17 +31,18 @@ the line counts are its estimates. All under `src/events/`:
   judge, the scripted rows, the one-shots, the park spoilers, the lessons and the moments.
 - **`RowGround`** (`row_ground.gd`): which tiles a row may stand on, as an object holding its own
   per-day cache. This is the last re-derived case (minty-quail's `re-derived-cases.md`, the ground cache).
-- **`PlanBuilder`** (`plan_builder.gd`): builds a plan at a tile: the side and band offsets, the
-  along-street paths, the body's disc. It is an object handed the map and the three questions it
-  asks other classes, and its callers are handed it (inbox #1392 in dappled-wombat); an authored
-  scene's placing stays the scheduler's `recipe_placement()`, which is handed the builder.
 - **`RuledLocationGround`** in a file of its own: the judge that offers a row at a location.
 - **`event_scheduler.gd`** keeps `build_day(context)` as an ordered list of phases.
 
 Three blocks are not moved, because `placement-by-construction.md` deletes them in place: the old
 siting roll, the fitted tables, and the escape's own draw loop. The fallback that grows a route tree
 when none is handed in goes with `DawnContext` below, whose shared test helper hands a route to every
-call under `tests/` that hands none today.
+call under `tests/` that hands none today. What building a plan at a tile still asks of the scheduler stays
+there and moves to no piece: `recipe_placement()` (it needs `role_for()` and the ground), `_wants_this_side()`
+and `_band_offset_of()` (each has one caller, which stays), and `blocked_by()` and `block_a_disc()` (they paint
+a flood's blocked set for fourteen files); `PlanBuilder` (`plan_builder.gd`), an object handed the map and the
+three questions it asks other classes (inbox #1392 in dappled-wombat), places every plan at a tile, the scene
+recipes' masts and escape actors included.
 
 **The pull requests, interleaved with placement.** Each move regenerates `tools/field_reads.txt`
 with `--write`: `--base` passes code reading listed fields moved into a new file with no more uses,
