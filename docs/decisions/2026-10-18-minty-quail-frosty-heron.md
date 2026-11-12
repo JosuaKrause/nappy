@@ -19,7 +19,8 @@ typed (the record 2026-10-18-minty-quail-sandy-hedgehog): its items share no cla
   frame record `is_on()`. Five lines leave `tools/field_reads.txt`.
 - **Rejected**: three callables handed to `register()` per item, an adapter wrapping each kind's own flag, and a shared
   base class, which cannot exist since a building is a `StaticBody2D` and the home door a `Sprite2D`.
-- **The queue item's paragraph on the residency goes**, and the files kept for a reason of their own are three.
+- **The queue item's paragraph on the residency goes**, and the files kept for a reason of their own are three;
+  tall-llama's `scenery-loading.md` asks the ground's `chunks()` where it read the field.
 
 ## Verified
 
