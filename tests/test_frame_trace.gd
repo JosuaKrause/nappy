@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## Raw intervals retain their own counters; bounded capture and pause gaps cannot hide a hitch.
 
@@ -23,7 +22,8 @@ func run(t: TestRunner) -> void:
 	for i in 60:
 		flooded.append(1000000 + i * 20000, i, i, counters)
 	var flood := flooded.report(60.0)
-	t.check(flood.samples.size() == 4 and flood.dropped_after_capacity == 56,
+	var flood_samples: Array = flood.samples
+	t.check(flood_samples.size() == 4 and flood.dropped_after_capacity == 56,
 		"overflow never grows storage: sixty frames through four cells keep four and count the rest")
 	t.check(rows[1][0] == 1040000 and rows[1][1] == 21 and rows[1][2] == 19,
 		"the slow interval retains its raw timestamp and both engine frame IDs")
@@ -43,13 +43,18 @@ func run(t: TestRunner) -> void:
 	segmented.append(9999999, 8, 8, counters)
 	segmented.append(10019999, 9, 9, counters)
 	var segments := segmented.report(-1.0)
-	t.check(segments.samples[2][3] == 0 and segments.summary.intervals == 2
-		and segments.summary.max_ms == 20.0, "pause and title gaps cannot become measured stalls")
-	t.check(segments.summary.refresh_budget_ms == 0.0
-		and segments.summary.over_refresh_budget == 0, "unknown refresh does not invent a budget")
+	var segment_samples: Array = segments.samples
+	var segment_summary: Dictionary = segments.summary
+	t.check(segment_samples[2][3] == 0 and segment_summary.intervals == 2
+		and segment_summary.max_ms == 20.0, "pause and title gaps cannot become measured stalls")
+	t.check(segment_summary.refresh_budget_ms == 0.0
+		and segment_summary.over_refresh_budget == 0, "unknown refresh does not invent a budget")
 	var empty := FrameTraceBuffer.new(1).report(60.0)
-	t.check(empty.samples.is_empty() and empty.summary.max_ms == 0.0,
+	var empty_samples: Array = empty.samples
+	var empty_summary: Dictionary = empty.summary
+	t.check(empty_samples.is_empty() and empty_summary.max_ms == 0.0,
 		"a run with no rendered samples explicitly exports an empty report")
 	var decoded: Dictionary = JSON.parse_string(JSON.stringify(report))
-	t.check(decoded.samples[1][3] == 40000 and decoded.samples[1][5] == 900,
+	var decoded_samples: Array = decoded.samples
+	t.check(decoded_samples[1][3] == 40000 and decoded_samples[1][5] == 900,
 		"export round trip retains frame attribution")
