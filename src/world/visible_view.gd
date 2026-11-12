@@ -56,8 +56,8 @@ extends RefCounted
 ## nothing is in sight.
 var view := Rect2()
 ## Whether the joystick scheme's controls cover the view's bottom corners, as `look()` was last told.
-var joystick := false
-## The two covered corners laid onto `view`, while `joystick` holds.
+var _joystick := false
+## The two covered corners laid onto `view`, while `_joystick` holds.
 var _left := Rect2()
 var _right := Rect2()
 ## What the on-screen controls cover and whether their scheme is in force, **handed in** by whoever
@@ -75,12 +75,12 @@ static func around(centre: Vector2, covering: ScreenCover) -> VisibleView:
 	return made
 
 ## Sets the view and the corners for this frame, and lays the covered corners onto it: `covering` is
-## what the controls cover, which counts only while their scheme is in force (`ScreenCover.in_force`);
+## what the controls cover, which counts only while their scheme is in force (`ScreenCover.is_in_force()`);
 ## `null` or a cover not in force is the whole view (tap).
 func look(at_view: Rect2, covering: ScreenCover) -> void:
 	view = at_view
-	joystick = covering != null and covering.is_in_force()
-	if joystick:
+	_joystick = covering != null and covering.is_in_force()
+	if _joystick:
 		var scale := view.size / covering.design_box()
 		_left = _onto(covering.left_corner(), view, scale)
 		_right = _onto(covering.right_corner(), view, scale)
@@ -96,7 +96,7 @@ func look_through(player: Node2D) -> void:
 
 ## `visible_share()` for `rect` against what `look()` was last told.
 func share_of(rect: Rect2) -> float:
-	return _share(rect, view, joystick, _left, _right)
+	return _share(rect, view, _joystick, _left, _right)
 
 ## Whether a world point is in sight: inside the view, and not under a covered corner. `margin`
 ## world px count as in sight as well, past the view's edge and into a corner — the badge's
@@ -105,7 +105,7 @@ func share_of(rect: Rect2) -> float:
 func sees(point: Vector2, margin := 0.0) -> bool:
 	if not view.grow(margin).has_point(point):
 		return false
-	if not joystick:
+	if not _joystick:
 		return true
 	return not (_left.grow(-margin).has_point(point) or _right.grow(-margin).has_point(point))
 
@@ -125,7 +125,7 @@ func sees_any(rect: Rect2) -> bool:
 ## box is a point.
 func clear_of_sight(from: Vector2, direction: Vector2, box: Rect2, at_least := 0.0) -> float:
 	var out := _leaves_the_view(from, direction, box, at_least)
-	if not joystick or out <= at_least:
+	if not _joystick or out <= at_least:
 		return out
 	var d := at_least
 	while d < out:

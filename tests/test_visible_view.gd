@@ -104,8 +104,8 @@ func _test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick
 	var joystick := VisibleView.around(Vector2.ZERO, TouchCover.joystick())
 	var view := tap.view
 	var scale := view.size / ScreenOrientation.DESIGN_SIZE
-	var in_left := view.position + TouchCover.joystick().left.get_center() * scale
-	var in_right := view.position + TouchCover.joystick().right.get_center() * scale
+	var in_left := view.position + TouchCover.joystick().left_corner().get_center() * scale
+	var in_right := view.position + TouchCover.joystick().right_corner().get_center() * scale
 	for point: Vector2 in [in_left, in_right]:
 		t.check(tap.sees(point) and not joystick.sees(point),
 				"%v, under a corner, is in sight in the tap scheme and not in the joystick one" % point)
@@ -125,8 +125,8 @@ func _test_the_margin_counts_past_the_edge_and_into_a_corner(t: TestRunner) -> v
 	t.check(not joystick.sees(past) and joystick.sees(past, 20.0),
 			"10px past the top edge is out of sight, and in sight with a 20px margin")
 	var scale := joystick.view.size / ScreenOrientation.DESIGN_SIZE
-	var corner_top := joystick.view.position.y + TouchCover.joystick().left.position.y * scale.y
-	var corner_x := joystick.view.position.x + TouchCover.joystick().left.get_center().x * scale.x
+	var corner_top := joystick.view.position.y + TouchCover.joystick().left_corner().position.y * scale.y
+	var corner_x := joystick.view.position.x + TouchCover.joystick().left_corner().get_center().x * scale.x
 	var just_in := Vector2(corner_x, corner_top + 10.0)
 	t.check(not joystick.sees(just_in) and joystick.sees(just_in, 20.0),
 			"10px into a covered corner is out of sight, and in sight with a 20px margin")
@@ -196,7 +196,7 @@ func _test_the_view_follows_the_camera_and_the_scheme(t: TestRunner) -> void:
 	body.global_position = Vector2(500.0, 300.0)
 	var view := VisibleView.new()
 	view.look_through(body)
-	t.check(view.view.get_center().is_equal_approx(body.global_position) and not view.joystick,
+	t.check(view.view.get_center().is_equal_approx(body.global_position) and _sees_the_corners(view),
 			"a body with no camera and no controls is the tap scheme's view about her")
 	# With the game's own controls handed in, the scheme they are in decides the corners.
 	t.add_child(body)
@@ -206,15 +206,26 @@ func _test_the_view_follows_the_camera_and_the_scheme(t: TestRunner) -> void:
 	controls.set_mode(ControlsMode.Mode.JOYSTICK)
 	var joystick_view := VisibleView.new()
 	joystick_view.look_through(body)
-	t.check(not joystick_view.joystick, "controls that were not handed in are not read from her tree")
+	t.check(_sees_the_corners(joystick_view),
+			"controls that were not handed in are not read from her tree")
 	joystick_view.controls = controls.covering
 	joystick_view.look_through(body)
-	t.check(joystick_view.joystick, "the controls in the joystick scheme turn the covered corners on")
+	t.check(not _sees_the_corners(joystick_view),
+			"the controls in the joystick scheme turn the covered corners on")
 	controls.set_mode(ControlsMode.Mode.TAP)
 	joystick_view.look_through(body)
-	t.check(not joystick_view.joystick, "and in the tap scheme off again, following the scheme")
+	t.check(_sees_the_corners(joystick_view),
+			"and in the tap scheme off again, following the scheme")
 	controls.free()
 	body.free()
+
+## Whether `view` sees the middle of both corners the joystick's controls cover, laid onto its world
+## view as `look()` lays them: true in the tap scheme, false in the joystick's.
+static func _sees_the_corners(view: VisibleView) -> bool:
+	var scale := view.view.size / ScreenOrientation.DESIGN_SIZE
+	var cover := TouchCover.joystick()
+	return view.sees(view.view.position + cover.left_corner().get_center() * scale) \
+			and view.sees(view.view.position + cover.right_corner().get_center() * scale)
 
 ## *(PLAYTEST-71 era rotation, `ScreenOrientation`: a portrait touch window presents the game turned
 ## a quarter.)* The world goes through the camera, turned, and the controls through their layer,
@@ -237,8 +248,8 @@ func _test_a_rotated_window_shows_the_same_world_under_the_same_corners(t: TestR
 			* Transform2D(0.0, -centre)
 	camera.free()
 	var joystick := VisibleView.around(centre, TouchCover.joystick())
-	var left := TouchCover.joystick().left
-	var right := TouchCover.joystick().right
+	var left := TouchCover.joystick().left_corner()
+	var right := TouchCover.joystick().right_corner()
 	var design_box := Rect2(Vector2.ZERO, ScreenOrientation.DESIGN_SIZE)
 	var agreed := 0
 	var points := 0
@@ -276,7 +287,7 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t: TestRunner) 
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	var her := Vector2(2000.0, 2000.0)
-	var corner := TouchCover.joystick().left.get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
+	var corner := TouchCover.joystick().left_corner().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
 	var start := her + corner * 0.5
 	for joystick: bool in [true, false]:
 		var source := _Source.new()

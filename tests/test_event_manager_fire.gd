@@ -307,7 +307,7 @@ func _test_the_fire_under_a_covered_corner_is_not_sighted(t: TestRunner) -> void
 	var day_plans := events.plans().duplicate()
 	# The view whose left corner holds the fire's point: the corner's middle is (-224, 108) world px
 	# off the view's centre at zoom 2.
-	var corner := TouchCover.joystick().left.get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
+	var corner := TouchCover.joystick().left_corner().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
 	var view := Rect2(at - corner * 0.5 - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	for joystick: bool in [true, false]:
 		var plan := EventPlan.new(def, at)
