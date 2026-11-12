@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name ResistanceDirector
 extends Node
 ## Places the day's resistance contact, and enforces the two things that make the subquest
@@ -747,7 +746,7 @@ func _ride_to_the_door(shell: EventInstance) -> void:
 func _door_can_be_touched(door: Vector2) -> bool:
 	var frontage := _map.world_to_tile(door) + Vector2i.DOWN
 	var ground := _spawn_siting.ask_of_ground()
-	for across in [0, -1, 1]:
+	for across: int in [0, -1, 1]:
 		var tile: Vector2i = frontage + Vector2i(across, 0)
 		if door.distance_to(_map.tile_to_world(tile)) <= DOOR_REACH \
 				and _spawn_siting.allows_every(SpawnSiting.HELD_CONTACT_GROUND, ground,
@@ -1740,7 +1739,7 @@ func _nearest_to_the_mark(candidates: Array[Vector2i], mark: Vector2) -> Vector2
 ## Joined to the day's plan, the task's roadblock is one more live roadblock the arrow chooses among.
 ## With no mark (a rig that starts the task without one) it is looked for from where she stands.
 func _place_the_roadblock_near(mark: Vector2) -> EventInstance:
-	var def := EventCatalogue.by_id(_step.task_event_id) if _step else null
+	var def: EventDef = EventCatalogue.by_id(_step.task_event_id) if _step else null
 	if not def or not _events:
 		return null
 	var her := _where_she_read_it(mark)

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name ResistanceHappenings
 extends RefCounted
 ## What the resistance's story puts in the street that is not a task: the neighbor leaving for
@@ -212,7 +211,7 @@ func _plan_the_raid() -> void:
 	var door := _map.world_to_tile(_map.doorstep_world_position())
 	var corridor := door.y - CityMap.corridor_offset(door.y)
 	var far_side := corridor + Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH
-	for side in [-1, 1]:
+	for side: int in [-1, 1]:
 		var tile := Vector2i(door.x + side * RAID_VAN_OFFSET_TILES, far_side)
 		if _map.tile_at(tile) == GameEnums.TileType.SIDEWALK and not _map.is_closed(tile):
 			_raid_vans.append(_map.tile_to_world(tile))
