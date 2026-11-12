@@ -58,7 +58,7 @@ covers `EntityHalo`, `ExcitementHalo`, `ExcitementSource` (with `EventExcitement
 - Receiver's class not told: `tests/test_visible_view.gd:90` `source.live`
 - Receiver's class not told: `tests/test_visible_view.gd:96` `source.live`
 
-Not in either list, since the tool cannot see a field reached by name: `test_prediction_reuse` reads and sets `EventDef.core_intensity`, `core_radius`, `falloff_power` and `pulse_period`, and `CrowdExcitement`'s `_jolt` fields (a searched class), through `get()` and `set()` (lines 166, 216 and 219); they stay, as `tests-public-seams.md` names the private ones.
+Not in either list, since the tool cannot see a field reached by name: `test_prediction_reuse` reads and sets, through `get()` and `set()`, `EventDef`'s `intensity`, `inner_radius`, `outer_radius`, `core_intensity`, `core_radius`, `falloff_power`, `pulse_period` and `speed` (lines 164 to 166), a crowd body's `_speed`, `_direction` and `_turn_back_hold` (lines 215 and 216), and `CrowdExcitement`'s `_jolt`, `_jolt_for`, `_jolt_intensity`, `_jolt_inner` and `_jolt_outer` (lines 218 and 219, a searched class), each with no method; they stay, as `tests-public-seams.md` names the private ones.
 
 ## Verified
 
