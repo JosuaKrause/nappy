@@ -42,7 +42,11 @@ warning). Each area's conversion below types the receivers in its files and dele
 `tools/` that carry it (`tools/cost_table.gd`, `tools/split-scenes-crop.gd`) are typed by the pull
 request that next changes each, or with the suites' conversion if none does first. The engine warns of nothing on a property read off a value it types as
 Variant (an untyped array's element, what `back()` or `get()` returns), so such a value is read
-through a typed name, and the check, not the engine, is what holds that.
+through a typed name, and the check, not the engine, is what holds that. This paragraph is the
+design review's (inbox #1268 in olive-ferret), and its mechanism is built: `project.godot` makes the
+three typing warnings (`untyped_declaration`, `unsafe_property_access`, `unsafe_method_access`)
+errors. What remains is this item's own conversion, which predates the review, so the item stays in
+minty-quail rather than polite-tapir.
 
 **What is left: the conversion**, one pull request per area, each deleting the lines it converts
 from `tools/field_reads.txt` (its `# [Class] path` groups say which class's fields are read and
@@ -58,7 +62,7 @@ Left, each its own design question:
   request touches and the tests read them, so it waits for that pull request.
 - **The city's own classes** have their readers converted except two groups, each with a home:
   - The authored-scene builder (`RecipeCityBuilder`) and the map's capture and restore
-    (`RecipeCityContext`) are the scene recipes' city. The scene recipes are placed by location (`placement-by-construction.md`, "What is built"), so they wait
+    (`RecipeCityContext`) are the scene recipes' city. The scene recipes are placed by location (polite-tapir's `placement-by-construction.md`, "What is built"), so they wait
     for nothing there; what is left is a design for the map capturing and restoring itself.
   - A field only a test still reads (`CityMap.home_rect`, `home_block`, `courtyard_rects`,
     `Building.scenery_clock`, `door_world_x_range`, `power_station`, `station_door_col`,

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `DevRig` (src/dev/dev_rig.gd) is the half of the dev-flag surface that reads the live city —
 ## docs/TODO.md, M100, "Small, real, and nobody's": the code `--spawn`, `--follow`, `--overview`
@@ -81,7 +80,7 @@ func _teardown(t: TestRunner) -> void:
 ## `docs/CITY.md`'s own generation guarantees) and both have to leave her somewhere she can
 ## actually stand, which is the whole promise `for_spawn_target()` makes for every named target.
 func _test_named_tile_targets_land_on_a_walkable_tile(t: TestRunner) -> void:
-	for target in ["park", "alley"]:
+	for target: String in ["park", "alley"]:
 		var at := DevRig.for_spawn_target(target, _city.map, _city.events, _city.streets(),
 				_resistance, _city.run.header, _city.trace)
 		t.check(_city.map.is_walkable(_city.map.world_to_tile(at)),

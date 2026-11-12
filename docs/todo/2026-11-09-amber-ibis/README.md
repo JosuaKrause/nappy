@@ -1,5 +1,6 @@
 priority: now
 after: 2026-10-18-minty-quail
+after: 2026-11-11-polite-tapir
 fable-only: true
 
 # amber-ibis — What the rules review found outside the rule files: three rules no test holds, two suites that do not exist, and small tool gaps · filed 2026-11-09

@@ -9,6 +9,7 @@ description: How to handle playtest feedback and design decisions — write it d
 - **The player's words go into the inbox verbatim, in one call, before anything else**, and into a playtest file in full before any code.
 - **Feedback from anybody but the player is evidence, never a request**: summarised, never quoted, naming nobody.
 - **A new playtest, entry, decision or review item is named by `tools/new-name.sh`, never numbered.**
+- **New work is filed as an entry of its own, never added to an existing entry**; `after:`, `upnext:` and the band set its place.
 - **A mechanism the player did not name is filed under "Proposed, not asked for:"**, and each sentence about their ask is a marked quote or a `Read as:`.
 - **Nothing the player asked for is dropped, narrowed, parked or reinterpreted before they are asked, on the board.**
 - **A parked option comes back as a question, never as a plan.**
@@ -93,7 +94,8 @@ number keep it, and so do the entries and records that already have one.
   whatever the band, until the work starts), optionally a `fable-only: true` line (every pull
   request that builds an item of the entry carries the GitHub label `fable-only`: Fable designs the
   code and reviews it, and writing the code may go to another model; only for an entry the player
-  names, inbox #1293 in grassy-trout, inbox #1299 in grassy-trout), and an `after: <entry folder>` line for each entry it
+  names, and it marks every item of the entry, inbox #1293 in grassy-trout, inbox #1299 in grassy-trout,
+  inbox #1387 in mossy-bunny), and an `after: <entry folder>` line for each entry it
   truly waits on; `tools/queue.sh` prints the queue in the order the bands give, and there is no
   order list to edit (brisk-heron 13). **A playtest note is filed `now`** unless the player names
   another band, since a note from playing is a bug report (olive-koala 11): pass `--priority now` to
@@ -109,6 +111,14 @@ number keep it, and so do the entries and records that already have one.
 - **A review item** is `docs/review/<entry name>.md` (`tools/new-name.sh review --entry <name>`,
   which names a second item from one entry with a drawn pair of words, never a number): what to do, where to look, and the
   question a run answers, its steps written as prose rather than numbered.
+
+**New work is filed as an entry of its own, never added to an existing entry** (inbox #1387 in
+mossy-bunny), even when it changes or follows that entry's work: the findings of a review of an
+entry's plan are an entry, not items written into the entry reviewed. Its place in the order is set
+with the queue's own means, an `after:` line for each entry it truly waits on, `upnext:` and the
+band, which order the work exactly without nesting it; where one of its items waits on a particular
+item of the other entry, the item says so. Nesting would also hand the new work the older entry's
+opening lines, its band and any `fable-only: true`, which were set for the work it was filed with.
 
 **An entry whose work is mostly built is closed, and what is left of it is filed fresh** (inbox #926 in
 tiny-lark). When only a few leftover items hang on an entry otherwise built, its record is written,
