@@ -148,7 +148,7 @@ const _BUS := preload("res://src/autoload/event_bus.gd")
 var sleepiness := 0.0
 ## Where this charges its time to the frame record, handed in by `main` (`use_frame_timing()`);
 ## the null sink until then.
-var timing := FrameTiming.new()
+var _timing := FrameTiming.new()
 var excitement := 0.0
 var state := GameEnums.BabyState.AWAKE
 ## Nothing adds to `excitement` while this holds; decay still runs. Told by whoever places her,
@@ -215,10 +215,10 @@ func world() -> WorldContext:
 func use_bus(bus: _BUS) -> void:
 	_bus = bus
 
-## Where she charges her time to the frame record from now on (`timing`), handed in by `main` as
+## Where she charges her time to the frame record from now on (`_timing`), handed in by `main` as
 ## it makes her.
 func use_frame_timing(frame_timing: FrameTiming) -> void:
-	timing = frame_timing
+	_timing = frame_timing
 
 ## Nothing adds to her excitement from now on, while decay still runs (`_excitement_frozen`, see
 ## `_update_excitement()`): told by `main` as it makes her for an invincible run.
@@ -248,10 +248,10 @@ func force_sleep() -> void:
 
 ## One physics tick of her meters, which the engine runs on every one while she is in the tree.
 func _physics_process(delta: float) -> void:
-	if timing.is_on():
-		var outer := timing.enter(FrameTiming.INFLUENCE)
+	if _timing.is_on():
+		var outer := _timing.enter(FrameTiming.INFLUENCE)
 		_feel_the_frame(delta)
-		timing.leave(outer)
+		_timing.leave(outer)
 	else:
 		_feel_the_frame(delta)
 

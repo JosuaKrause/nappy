@@ -16,6 +16,12 @@ const SPENT_US := 2000
 const _SCRATCH_SAVE := "user://test_frame_record_scratch.json"
 ## The folder the boot's recorder is handed to write its record in on the desktop.
 const _SCRATCH_RECORDS := "user://test_frame_record_scratch_records"
+## How many frames she walks at most, waiting for the scenery queue to update: many times the few a
+## walk takes to move the camera's view past the queue's step.
+const WALK_FRAMES := 240
+## How many physics ticks the frames she walks hold at least, so that the systems that step on a
+## physics tick have each stepped more than once in them.
+const TICKS_WALKED := 3
 
 func run(t: TestRunner) -> void:
 	await _test_the_recorder_in_a_real_main(t)
@@ -50,15 +56,10 @@ func _test_the_recorder_in_a_real_main(t: TestRunner) -> void:
 	var main := booted.main
 	await Boot.press_title(t, main)
 	var city := Boot.city(main)
-	var edge: DangerEdge = main.get_node("DangerEdge/Edge")
-	var halo: ExcitementHalo = main.get_node("ExcitementHalo")
-	t.check(city.frame_timing == record and city.scenery.timing == record
-			and city.events.timing == record and Boot.baby(main).timing == record
-			and edge.timing == record and halo.timing == record,
-			"main hands the sitting's record to every system that is timed")
 	var recorder: FrameRecorder = main.get_node("FrameRecorder")
 	t.check(record.is_on() and record.frame_ledger() == restarted,
 			"setting up the recorder switches the timing on, keeping the record a restart left")
+	await _check_every_timed_system_records(t, main, restarted)
 	await t.get_tree().process_frame
 	Boot.player(main).queue_redraw()
 	# The redraw lands in one of the next stored frames, not necessarily the last: some frames
@@ -119,6 +120,70 @@ func _test_the_recorder_in_a_real_main(t: TestRunner) -> void:
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(sitting.frame_record_file()))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(_SCRATCH_RECORDS))
 	home.free()
+
+## `main` hands the sitting's record to every system that is timed, read by what each system
+## charges to the record it was handed rather than by the hand-in itself: the baby charges
+## `influence`, the city's events `events`, and the city's scenery queue `scenery`, counting each of
+## its updates (the city is handed the record for those two and hands it on), and the screen edge's
+## badges and the halo charge `cues`. Each bucket is charged by its system alone, so a bucket that
+## fills is that system's. The two cues share theirs, so each is read with the other's process
+## switched off, and with both off the bucket stays empty, which makes each reading that cue's own.
+func _check_every_timed_system_records(t: TestRunner, main: Node, ledger: FrameLedger) -> void:
+	var edge: DangerEdge = main.get_node("DangerEdge/Edge")
+	var halo: ExcitementHalo = main.get_node("ExcitementHalo")
+	var played := await _walk_until_the_scenery_updates(t, ledger)
+	t.check(not played.is_empty()
+			and _summed(played, FrameLedger.FIRST_BUCKET + FrameTiming.INFLUENCE) > 0,
+			"the baby charges her influence sweep to the sitting's record")
+	t.check(_summed(played, FrameLedger.FIRST_BUCKET + FrameTiming.EVENTS) > 0,
+			"the city's events charge their updates to it")
+	t.check(_summed(played, FrameLedger.FIRST_COUNTER + FrameLedger.SCENERY_UPDATES) > 0
+			and _summed(played, FrameLedger.FIRST_BUCKET + FrameTiming.SCENERY) > 0,
+			"the city's scenery queue charges its updates to it and counts them")
+	var edge_alone := await _cues_charged(t, ledger, edge, halo, true, false)
+	var halo_alone := await _cues_charged(t, ledger, edge, halo, false, true)
+	var neither := await _cues_charged(t, ledger, edge, halo, false, false)
+	edge.set_process(true)
+	halo.set_process(true)
+	t.check(edge_alone > 0, "the screen edge's badges charge their watch to it")
+	t.check(halo_alone > 0, "the halo charges its picks and predictions to it")
+	t.check(neither == 0, "and no other system charges the cues (%d µs with both off)" % neither)
+
+## Walks her south from her doorstep, the one way it opens, until the stored frames hold an update
+## of the scenery queue, which updates only once the camera's view has moved, and `TICKS_WALKED`
+## physics ticks, the baby's and the event manager's steps being physics ticks; answers the rows
+## stored meanwhile. Stops after `WALK_FRAMES` whatever they hold.
+func _walk_until_the_scenery_updates(t: TestRunner, ledger: FrameLedger) -> Array[PackedInt64Array]:
+	var before := ledger.rows().size()
+	var walked: Array[PackedInt64Array] = []
+	Input.action_press(&"move_down")
+	for i in WALK_FRAMES:
+		await t.get_tree().process_frame
+		walked = _rows_over(ledger, ledger.rows().size() - before)
+		if _summed(walked, FrameLedger.FIRST_COUNTER + FrameLedger.SCENERY_UPDATES) > 0 \
+				and _summed(walked, FrameLedger.FIRST_COUNTER + FrameLedger.PHYSICS_STEPS) \
+				>= TICKS_WALKED:
+			break
+	Input.action_release(&"move_down")
+	return walked
+
+## What the danger cues charged over a few stored frames with the screen edge's and the halo's
+## process each on or off as given. Two frames pass first, so every frame read began after the
+## switch.
+func _cues_charged(t: TestRunner, ledger: FrameLedger, edge: DangerEdge, halo: ExcitementHalo,
+		edge_on: bool, halo_on: bool) -> int:
+	edge.set_process(edge_on)
+	halo.set_process(halo_on)
+	await UI.frames(t)
+	return _summed(_rows_over(ledger, await _frames_counted(t, ledger, 6)),
+			FrameLedger.FIRST_BUCKET + FrameTiming.CUES)
+
+## The sum of column `column` over `rows`.
+func _summed(rows: Array[PackedInt64Array], column: int) -> int:
+	var sum := 0
+	for row in rows:
+		sum += row[column]
+	return sum
 
 ## Whether the readout's label, which the readout fills a few times a second while the day is
 ## walked, shows the recorder's line, the one that begins `slow` (what follows it changes with each
