@@ -92,7 +92,7 @@ func _test_the_front_door_is_on_its_long_south_side(t: TestRunner) -> void:
 		t.check(pair.size == Vector2i(2, 1),
 				"seed %d: the station is two blocks wide and one deep (%s)" % [map.seed_used, pair])
 		var mass := CityMap.blocks_tile_rect(pair)
-		var door := map.power_station_door
+		var door := map.power_station_door_tiles()
 		t.check(door.size == Vector2i(CityMap.POWER_STATION_DOOR_TILES, 1),
 				"seed %d: the door is %d tiles wide (%s)"
 				% [map.seed_used, CityMap.POWER_STATION_DOOR_TILES, door])
@@ -208,7 +208,7 @@ func _test_the_door_is_reached_on_its_day_through_a_region_door(t: TestRunner) -
 		for item in region_plan.wall_bodies:
 			_add_circle(map, blocked, item.position, item.def.obstructs_radius)
 		var grid := ReachabilityGrid.build(map)
-		var door := map.rect_tiles(map.power_station_door)
+		var door := map.rect_tiles(map.power_station_door_tiles())
 		var reached := grid.flood([map.home_rect.position], blocked)
 		t.check(_reaches_any(grid, reached, blocked, door),
 				"seed %d day %d: the front door is reachable with the day's walls, seals and "

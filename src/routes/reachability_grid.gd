@@ -116,10 +116,11 @@ static func _compute_components(mask: int) -> Array:
 static func build(map: CityMap, mover: Mover = null) -> ReachabilityGrid:
 	var ground := mover if mover else Mover.lattice()
 	var grid := ReachabilityGrid.new()
-	grid._map_size = map.size
-	grid._cells = map.size / CELL
+	var map_size := map.size_in_tiles()
+	grid._map_size = map_size
+	grid._cells = map_size / CELL
 	var components_by_mask := _components_by_mask()
-	var tile_count := map.size.x * map.size.y
+	var tile_count := map_size.x * map_size.y
 	grid._node_of_tile = PackedInt32Array()
 	grid._node_of_tile.resize(tile_count)
 	grid._node_of_tile.fill(NONE)
@@ -141,7 +142,7 @@ static func build(map: CityMap, mover: Mover = null) -> ReachabilityGrid:
 				grid._cell_of_node.append(cell)
 				for slot in component:
 					var tile: Vector2i = tiles[slot]
-					grid._node_of_tile[tile.y * map.size.x + tile.x] = node
+					grid._node_of_tile[tile.y * map_size.x + tile.x] = node
 	grid._build_edges()
 	return grid
 
