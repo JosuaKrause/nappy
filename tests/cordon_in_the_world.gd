@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access")
 extends RefCounted
 ## **What day 12's police cordon shows in the world**, read the way the rest of the game meets it,
 ## for a suite that plays the day through the director (`ResistanceDirector.tick()`) and so holds
@@ -24,8 +23,9 @@ static func tape_line(map: CityMap, park: Vector2i) -> Rect2:
 ## The cordon's officers standing in the city now.
 static func officers(city: City) -> Array[CordonOfficer]:
 	var found: Array[CordonOfficer] = []
-	for figure in city.get_node("Entities").get_children():
-		if figure is CordonOfficer and not figure.is_queued_for_deletion():
+	for node in city.get_node("Entities").get_children():
+		var figure := node as CordonOfficer
+		if figure != null and not figure.is_queued_for_deletion():
 			found.append(figure)
 	return found
 
@@ -46,8 +46,9 @@ static func is_shut(map: CityMap, inside: Vector2) -> bool:
 ## not tape, and a piece the cordon has let go (queued to be freed) is not standing.
 static func tapes(city: City) -> Array[CordonTape]:
 	var found: Array[CordonTape] = []
-	for piece in city.get_node("Entities").get_children():
-		if piece is CordonTape and piece.piece == CordonTape.Piece.TAPE \
+	for node in city.get_node("Entities").get_children():
+		var piece := node as CordonTape
+		if piece != null and piece.piece == CordonTape.Piece.TAPE \
 				and not piece.is_queued_for_deletion():
 			found.append(piece)
 	return found
@@ -57,10 +58,11 @@ static func tapes(city: City) -> Array[CordonTape]:
 static func body_rect(tape: CordonTape) -> Rect2:
 	for child in tape.get_children():
 		if child is StaticBody2D:
-			for part in child.get_children():
-				if part is CollisionShape2D and part.shape is RectangleShape2D:
-					var size: Vector2 = part.shape.size
-					return Rect2(part.global_position - size * 0.5, size)
+			for node in child.get_children():
+				var part := node as CollisionShape2D
+				if part != null and part.shape is RectangleShape2D:
+					var shape: RectangleShape2D = part.shape
+					return Rect2(part.global_position - shape.size * 0.5, shape.size)
 	return Rect2()
 
 ## The two ends of the line a tape's body runs along, read off the body: the tape's length, centred.
