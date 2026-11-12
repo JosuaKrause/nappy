@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `SealPlanner`: every street off the day's tree carries a seal (a share of them from the gatehouse
 ## day), the tree, the doorstep and the main road never do, and sealing never breaks the day's own
@@ -147,7 +146,7 @@ func _test_off_tree_streets_are_sealed(t: TestRunner) -> void:
 			var sealed := _sealed_segments(map, planned)
 
 			var missing := 0
-			for key in candidates:
+			for key: Vector3i in candidates:
 				if not sealed.has(key):
 					missing += 1
 			if DaySpec.for_day(day).region_wall_stands():
@@ -159,7 +158,7 @@ func _test_off_tree_streets_are_sealed(t: TestRunner) -> void:
 						% [map.seed_used, day, missing, candidates.size()])
 
 			var extra := 0
-			for key in sealed:
+			for key: Vector3i in sealed:
 				if not candidates.has(key):
 					extra += 1
 			t.check(extra == 0,
@@ -176,7 +175,7 @@ func _test_off_tree_streets_are_sealed(t: TestRunner) -> void:
 
 func _test_the_tree_and_the_doorstep_are_never_sealed(t: TestRunner) -> void:
 	for map in _maps:
-		for day in [1, 7, 14]:
+		for day: int in [1, 7, 14]:
 			var tree := _tree_for(map, day)
 			var home := ClosurePlanner.home_street(map)
 			var planned := _seals_for(map, day)
@@ -199,7 +198,7 @@ func _test_the_main_road_is_never_sealed(t: TestRunner) -> void:
 	for map in _maps:
 		if map.main_road < 0:
 			continue
-		for day in [1, 7, 14]:
+		for day: int in [1, 7, 14]:
 			var planned := _seals_for(map, day)
 			var sealed := _sealed_segments(map, planned)
 			for segment in map.network.segments():
@@ -252,7 +251,7 @@ func _test_the_doorstep_reaches_the_corridor(t: TestRunner) -> void:
 				continue
 			total += 1
 			var joined := false
-			for junction in [home.a, home.b]:
+			for junction: Vector2i in [home.a, home.b]:
 				for segment in map.network.at_junction(junction):
 					if segment.key() != home.key() and tree.is_on_the_tree(segment.key()):
 						joined = true
@@ -332,7 +331,7 @@ func _test_a_day_is_reachable_without_the_main_road(t: TestRunner) -> void:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			var tree := _tree_for(map, day)
 			var blocked := _blocked_for_day(map, day, tree)
-			for tile in _main_road_tiles(map):
+			for tile: Vector2i in _main_road_tiles(map):
 				blocked[tile] = true
 			var grid := ReachabilityGrid.build(map)
 			t.check(_some_calm_is_reached(map, grid, blocked),
@@ -352,7 +351,7 @@ func _test_a_day_is_reachable_without_the_main_road(t: TestRunner) -> void:
 func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t: TestRunner) -> void:
 	var candidates := 0
 	for map in _maps:
-		for day in [1, 4, 7, 10, 14]:
+		for day: int in [1, 4, 7, 10, 14]:
 			var tree := _tree_for(map, day)
 			var planned := _seals_for(map, day)
 			var off_street_tiles := {}
@@ -373,7 +372,7 @@ func _test_alley_mouths_sealed_only_when_disconnected_from_the_tree(t: TestRunne
 				var rejoins := (segment_a != null and tree.is_on_the_tree(segment_a.key())) \
 						or (segment_b != null and tree.is_on_the_tree(segment_b.key()))
 				var sealed_here := false
-				for tile in off_street_tiles:
+				for tile: Vector2i in off_street_tiles:
 					if rect.has_point(tile):
 						sealed_here = true
 						break
@@ -470,7 +469,7 @@ func _test_the_doorstep_still_reaches_the_corridor_after_thinning(t: TestRunner)
 		# consumption alone; the guarantee below is asked of the tree, which sealing never edits.
 		SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _seal_rng(map, day))
 		var joined := false
-		for junction in [home.a, home.b]:
+		for junction: Vector2i in [home.a, home.b]:
 			for segment in map.network.at_junction(junction):
 				if segment.key() != home.key() and tree.is_on_the_tree(segment.key()):
 					joined = true
@@ -536,7 +535,7 @@ func _test_whole_scene_hard_seals_place_a_single_body(t: TestRunner) -> void:
 	var segment := _first_real_segment(map)
 	if not segment:
 		return
-	for id in ["fallen_tree", "car_accident", "burst_water_main", "collapsed_frontage"]:
+	for id: String in ["fallen_tree", "car_accident", "burst_water_main", "collapsed_frontage"]:
 		var def := EventCatalogue.by_id(id)
 		t.check(def != null, "'%s' is a real catalogue row" % id)
 		if not def:
@@ -586,7 +585,7 @@ func _test_squeezing_past_a_crash_costs_more_than_half_the_meter(t: TestRunner) 
 	var map := _maps[0]
 	var crash := EventCatalogue.by_id("car_accident")
 	var checked := 0
-	for vertical in [false, true]:
+	for vertical: bool in [false, true]:
 		var tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2) if vertical \
 				else Vector2i(Tuning.STREET_WIDTH / 2, Tuning.STREET_WIDTH + 3)
 		var instance := EventInstance.new()
@@ -798,7 +797,7 @@ func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> v
 func _test_the_catalogue_sees_a_seal_at_a_route_junction(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
-		for day in [1, 5, 9, 13]:
+		for day: int in [1, 5, 9, 13]:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day)
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
@@ -939,7 +938,7 @@ func _the_crossing_is_walkable(map: CityMap, corridor: Corridor, junction: Vecto
 	while head < queue.size():
 		var at: Vector2i = queue[head]
 		head += 1
-		for step in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+		for step: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
 			var next: Vector2i = at + step
 			if free.has(next) and not reached.has(next):
 				reached[next] = true
