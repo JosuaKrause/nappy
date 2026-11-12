@@ -207,10 +207,13 @@ func _the_extras(city: City, director: ResistanceDirector, player: Stroller, lab
 		var added := director._add_a_mast_near(contact, mast_rng)
 		_print("%s mast near %s rng %d" % [label, added, mast_rng.state])
 		printed += 1
-		var roadblock := director._place_the_roadblock_near(contact)
-		_print("%s roadblock near %s rng %d" % [label, _point(roadblock.global_position)
-				if roadblock else "none", director._rng.state])
-		printed += 1
+		# Only the guarded band's task (day 13's roadblock) swaps one in, as the director's own
+		# caller asks; any other day's task row does not span the street.
+		if task.is_a_guarded_band:
+			var roadblock := director._place_the_roadblock_near(contact)
+			_print("%s roadblock near %s rng %d" % [label, _point(roadblock.global_position)
+					if roadblock else "none", director._rng.state])
+			printed += 1
 	return printed
 
 ## Day 10's raid: her far from her door, her view on the first van (refused) and then elsewhere
