@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The day loop: the two phases, the four ways a day ends, and the run-level bookkeeping
 ## that decides which ending you get.
@@ -108,7 +107,7 @@ func _test_start_sets_the_clock(t: TestRunner) -> void:
 	_build(t)
 	_day.start(300.0)
 	t.check(_day.phase == GameEnums.DayPhase.WALKING, "a day starts in the walking phase")
-	t.close_to(_day.time_remaining, 300.0, "the clock starts full")
+	t.close_to(_day.seconds_left(), 300.0, "the clock starts full")
 	t.close_to(_day.fraction_remaining(), 1.0, "the light starts at midday")
 	_tick(150.0)
 	t.close_to(_day.fraction_remaining(), 0.5, "the light tracks the clock")
@@ -121,7 +120,7 @@ func _test_running_out_of_daylight_loses(t: TestRunner) -> void:
 	t.check(_results.is_empty(), "the day is still running before dusk")
 	_tick(2.0)
 	t.check(_results == [GameEnums.DayResult.LOST_TIMEOUT], "dusk loses the day")
-	t.check(_day.failure_reason != "", "a timeout explains itself")
+	t.check(_day.loss_reason() != "", "a timeout explains itself")
 	_teardown()
 
 func _test_sleeping_starts_the_return_phase(t: TestRunner) -> void:
@@ -174,7 +173,7 @@ func _test_crying_loses(t: TestRunner) -> void:
 	_day.start(300.0)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
 	t.check(_results == [GameEnums.DayResult.LOST_CRYING], "crying loses the day")
-	t.check(_day.failure_reason != "", "crying explains itself")
+	t.check(_day.loss_reason() != "", "crying explains itself")
 	_teardown()
 
 func _test_hard_fail_loses_with_a_reason(t: TestRunner) -> void:
@@ -182,14 +181,14 @@ func _test_hard_fail_loses_with_a_reason(t: TestRunner) -> void:
 	_day.start(300.0)
 	EventBus.hard_fail_triggered.emit("abduction")
 	t.check(_results == [GameEnums.DayResult.LOST_HARD_FAIL], "a hard fail loses the day")
-	t.check(_day.failure_reason.contains("van"),
+	t.check(_day.loss_reason().contains("van"),
 			"a hard fail explains itself in the event's own words")
 
 	_teardown()
 	_build(t)
 	_day.start(300.0)
 	EventBus.hard_fail_triggered.emit("something_unwritten")
-	t.check(_day.failure_reason != "", "an unwritten hard fail still says something")
+	t.check(_day.loss_reason() != "", "an unwritten hard fail still says something")
 	_teardown()
 
 ## The escape's own catch — `EventBus.hard_fail_triggered` is the same signal a day's own lethal
@@ -201,9 +200,9 @@ func _test_the_masked_pursuer_has_its_own_hard_fail_line(t: TestRunner) -> void:
 	_day.start(300.0)
 	EventBus.hard_fail_triggered.emit("masked_pursuer")
 	t.check(_results == [GameEnums.DayResult.LOST_HARD_FAIL], "the masked man ends the day too")
-	t.check(_day.failure_reason == "He caught you on the stairs.",
+	t.check(_day.loss_reason() == "He caught you on the stairs.",
 			"and names him rather than falling back to the generic line (got '%s')"
-			% _day.failure_reason)
+			% _day.loss_reason())
 	_teardown()
 
 ## Every outcome runs through _end(), and a day that has already ended must stay ended —
@@ -415,7 +414,7 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t: TestRu
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(["--seed", str(SEED)]),
-			func(unbooted: Node2D) -> void: unbooted.use_sitting_home(home), false, MapCache.source())
+			func(unbooted: Boot.MainScript) -> void: unbooted.use_sitting_home(home), false, MapCache.source())
 	var main := booted.main
 	var session := main.get_node("RunSession") as RunSession
 	t.check(not session.get_children().any(func(child: Node) -> bool: return child is TelemetryObserver),
@@ -423,7 +422,7 @@ func _test_day_finished_shows_the_summary_with_no_observer_in_the_tree(t: TestRu
 	await Boot.press_title(t, main, "Tap")
 	var day := Boot.day(main)
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
-	t.check(day.failure_reason != "",
+	t.check(day.loss_reason() != "",
 			"the rig actually lost the day before asking the summary for anything")
 
 	t.check(Boot.summary(main).is_showing(),
@@ -453,7 +452,7 @@ func _test_the_day_brief_shows_the_days_own_line(t: TestRunner) -> void:
 	var saved_paused: bool = t.get_tree().paused
 	run.header.day = 6
 
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
 	var expected := SentenceLines.break_for_label(Texts.DAY_BRIEF[6], _line(summary, "Brief"))
@@ -482,7 +481,7 @@ func _test_the_day_brief_shows_the_days_own_line(t: TestRunner) -> void:
 func _test_the_summary_shows_when_the_day_ended(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
 	_show_day(summary, run, _ended(GameEnums.DayResult.WON, "", 84.0))
@@ -519,7 +518,7 @@ func _test_the_summary_shows_when_the_day_ended(t: TestRunner) -> void:
 func _test_the_summary_shows_the_coming_days_number(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
 	run.header.day = 5
@@ -545,7 +544,7 @@ func _test_the_summary_shows_the_coming_days_number(t: TestRunner) -> void:
 func _test_nerves_are_stars_never_numbers(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
 	run.header.nerves = 3
@@ -583,7 +582,7 @@ func _test_nerves_are_stars_never_numbers(t: TestRunner) -> void:
 func _test_the_epilogue_carries_no_brief_note(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var note: Label = summary.get_node("Root/Center/Lines/Note")
 	summary.show_summary(SummaryModel.brief_for(run, Texts.RESUMED_DAY_LOST),
@@ -602,7 +601,7 @@ func _test_the_epilogue_carries_no_brief_note(t: TestRunner) -> void:
 func _test_the_day_7_brief_breaks_before_the_same_face(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
 	run.header.day = 7
@@ -623,7 +622,7 @@ func _test_the_day_7_brief_breaks_before_the_same_face(t: TestRunner) -> void:
 func _test_the_bad_ending_names_the_day_it_reached(t: TestRunner) -> void:
 	var run := _fresh_run()
 	var saved_paused: bool = t.get_tree().paused
-	var summary: CanvasLayer = DAY_SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = DAY_SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 
 	run.header.day = 9
@@ -651,7 +650,7 @@ func _test_the_bad_ending_names_the_day_it_reached(t: TestRunner) -> void:
 	t.get_tree().paused = saved_paused
 
 ## The summary of the day `end` settled, as `main` raises it over the run as it stands.
-func _show_day(summary: CanvasLayer, run: RunState, end: DayEnd) -> void:
+func _show_day(summary: Boot.DaySummaryScript, run: RunState, end: DayEnd) -> void:
 	summary.show_summary(SummaryModel.day_over(run, end), RunFlow.Mode.DAY_OVER)
 
 ## A day's end as `DayDirector.finish_day()` settles one: what ended it, the loss's own sentence
@@ -842,5 +841,5 @@ func _burnable_plans(block: Vector2i) -> Dictionary:
 	return {block: plan}
 
 ## The summary's line the scene names `node_name` ("Title", "Body", "Brief"), under its lines.
-static func _line(summary: Node, node_name: String) -> Label:
+static func _line(summary: Boot.DaySummaryScript, node_name: String) -> Label:
 	return summary.get_node("Root/Center/Lines/" + node_name) as Label

@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The run's flow through its screens (`RunFlow`): what each screen's continue leads to, and that a
 ## continue with no screen up leads nowhere.
@@ -264,7 +263,7 @@ func _test_a_tap_then_a_key_continue_once(t: TestRunner) -> void:
 
 	var before := _walks_begun()
 	await _tap_then_key(t, main)
-	var started := _walks_begun().slice(before.size())
+	var started: Array[String] = _walks_begun().slice(before.size())
 	t.check(started.size() == 1 and started[0].begins_with("begin_day 1 "),
 			"a tap and a key inside the tap's two frames start the day once (%s)" % [started])
 
@@ -335,7 +334,7 @@ func _test_a_tap_then_a_key_on_a_lost_section_show_the_retry_brief(t: TestRunner
 	t.check(summary.is_showing() and not day.is_running(), "the lost section's screen is up")
 	var before := _walks_begun()
 	await _tap_then_key(t, main)
-	var started := _walks_begun().slice(before.size())
+	var started: Array[String] = _walks_begun().slice(before.size())
 	t.check(summary.is_showing() and _title_of(main) == _city_words() and started.size() == 1,
 			"the retry's brief is up rather than the retry walked past it (%d started, '%s')"
 			% [started.size(), _title_of(main)])
@@ -353,7 +352,7 @@ func _boot(t: TestRunner, args: Array) -> Boot.Booted:
 	_run_log = RecordingLog.new()
 	_run_log.begin_run(SEED)
 	var booted: Boot.Booted = await Boot.boot(t, _SCRATCH_SAVE, Boot.config(words),
-			func(main: Node) -> void:
+			func(main: Boot.MainScript) -> void:
 				main.use_sitting_home(_home)
 				main.use_run_log(_run_log),
 			false, MapCache.source())
