@@ -208,6 +208,9 @@ file is open:
 - **Every note is copied word for word into a playtest file** (`tools/inbox.py draft N M ...`
   prints the filed layout), and the queue is filed from it as **playtest-feedback** says, each
   entry opening with the note's band.
+- **A note's work is filed as entries of its own, never as items added to an existing entry**, even
+  when it changes or follows that entry's work; `after:`, `upnext:` and the band set its place
+  (inbox #1387 in mossy-bunny).
 - **The description names every note on a line of its own, `Filed from #N`**, never `Closes #N`,
   which would leave the note open and editable until the merge.
 - **Right after pushing the pull request, `close --pr P` closes the batch in one call**
