@@ -29,7 +29,9 @@ a method (inbox #1173 in gray-dolphin). This pass is the danger vocabulary's hal
 - **The screen-edge badge keeps its line.** `DangerEdge` holds its event source as a `Node` and duck-types it with
   `has_method()`. The game hands it an `EventManager`, but three stand-ins extend a bare `Node` (`_Source` in
   `tests/test_badge_model.gd` and `tests/test_visible_view.gd`, and `Source` in `tests/probes/m226_arrival_timing.gd`),
-  so typed `EventManager` the file fails on its three calls, and called by name it would hide them. It waits for those
+  so typed `EventManager` those three would no
+  longer parse where they are handed to `setup()`, kept a `Node` the file fails on its three calls (`instances()`,
+  `visible_view()`, `pending_warnings()`), and called by name it would hide them. It waits for those
   suites' conversion to public seams (`tests-public-seams.md`): the stand-ins extend `EventManager`, and
   `DangerEdge`'s fallback to a view of its own, which two of them lean on, goes with its `has_method()` tests.
 - **Five sentences the change made untrue now name the methods**: `docs/EVENTS.md`, under "The hold charges its toll";
