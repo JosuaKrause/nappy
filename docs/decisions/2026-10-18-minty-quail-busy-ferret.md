@@ -10,7 +10,7 @@ olive-ferret): `field-reads.md` with `typed-everywhere.md`, one pass per module.
 - **Five files parse without their file-level opt-out line**, each `@warning_ignore_start("untyped_declaration")`
   before and none after: `src/interior/interior_map_plan.gd`, `interior_map.gd`, `interior_scene.gd`,
   `interior_tileset.gd` and `src/finale/finale_planner.gd`. Nothing else in them changes and no other file changes.
-- **Typing**: nine `for` variables over an array literal or an untyped dictionary take their element's type: the four
+- **Typing**: eight `for` variables over an array literal or an untyped dictionary take their element's type: the four
   steps in the finale planner's `_flood_calm()`, which grows a calm area tile by tile, as `Vector2i`; the basement's
   jog rows and the plan's neighbour offsets in `flight_bands()` as `int`; the hallway waypoints where chandeliers hang
   and the stairwell sides whose backdrop is drawn as `String`; and the tileset's loop over its ground sources as
