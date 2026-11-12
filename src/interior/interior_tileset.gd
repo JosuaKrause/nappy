@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name InteriorTileSet
 extends RefCounted
 ## Builds the interior's own `TileSet` from regions of the baked `interior` atlas page, the way
@@ -75,7 +74,7 @@ static func source_id_for(kind: InteriorTile.Kind) -> int:
 static func build(atlas: AtlasLibrary) -> TileSet:
 	var set := TileSet.new()
 	set.tile_size = Vector2i(Tuning.TILE_SIZE, Tuning.TILE_SIZE)
-	for kind in _SOURCES:
+	for kind: InteriorTile.Kind in _SOURCES:
 		var name: StringName = _SOURCES[kind]
 		var region: AtlasTexture = atlas.region(name)
 		if region == null:
