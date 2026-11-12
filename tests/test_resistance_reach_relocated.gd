@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 extends "res://tests/resistance_rig.gd"
 ## M188: a relocated mark is never placed in an alley she cannot reach, and day 11 puts up a mast near the mark when none is near.
 
@@ -30,6 +29,8 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 		var mark: Vector2 = read[1]
 		var player: Stroller = read[2]
 		var circle := _edge_of_her_circle(director, mark)
+		var edge: Dictionary = circle[0]
+		var inside: Dictionary = circle[1]
 		var site_near := false
 		var reach := ResistanceReads.day_reachability(_city)
 		# The task's mast, by the public link: the contact stands on its foot.
@@ -51,14 +52,14 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 						_walled_alleys()) or _city.map.is_obstructed(next) \
 						or not ResistanceReads.reaches_home(reach, next):
 					continue
-				if circle[0].has(next) or circle[1].has(next):
+				if edge.has(next) or inside.has(next):
 					site_near = true
 				break
 		if not site_near and added_plan != null:
 			added[0] += 1
 			var mast_id := added_plan.mast_id
 			var foot := _city.events.mast_foot(mast_id)
-			t.check(foot != Vector2.INF and circle[0].has(_city.map.world_to_tile(foot)),
+			t.check(foot != Vector2.INF and edge.has(_city.map.world_to_tile(foot)),
 					"seed %d: the mast put up for the task stands where her path reaches the circle's edge"
 					% seed_value)
 			t.check(not _would_show(ResistanceDirector.TASK_BOX, foot),
@@ -169,7 +170,7 @@ func _test_a_relocated_mark_is_never_placed_in_an_alley_she_cannot_reach(t: Test
 	for seed_value in seeds:
 		_build_city_in_a_new_run(t, seed_value)
 		var city := _city
-		for day in REACHABILITY_SWEEP_DAYS:
+		for day: int in REACHABILITY_SWEEP_DAYS:
 			var closure_state := CityState.new()
 			closure_state.begin_day(city.map.block_plans, day)
 			city.start_day(closure_state, day, _production_rng(seed_value, day, "closures"))
