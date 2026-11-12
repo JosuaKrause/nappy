@@ -61,7 +61,7 @@ var controls_word := ""
 ## The instant `main._restart_run()` last asked for a scene reload, or `-INF` before the first one
 ## this sitting. The title's restart guard measures a press against it, so a stray press crossing
 ## the reload does not start a run — see `TitleScreen._begin()`.
-var restarted_at_msec := -INF
+var _restarted_at_msec := -INF
 
 ## Where a desktop frame record is written, chosen by the first recorder to save one this sitting
 ## and kept, so every scene exit rewrites the same file and a restart does not start a second.
@@ -76,9 +76,9 @@ func frame_record_file() -> String:
 func keep_frame_record_file(path: String) -> void:
 	frame_record_path = path
 
-## The instant the held restart's reload was last asked for (`restarted_at_msec`), `-INF` before the first.
+## The instant the held restart's reload was last asked for, `-INF` before the first.
 func restart_requested_at_msec() -> float:
-	return restarted_at_msec
+	return _restarted_at_msec
 
 ## The frame record's timing: the null sink or the `FrameRecord` `use_frame_timing()` handed in.
 func kept_frame_timing() -> FrameTiming:
@@ -114,6 +114,6 @@ func take_the_run() -> RunState:
 		run = RunState.new()
 	return run
 
-## Stamps the held restart's reload — see `restarted_at_msec`.
+## Stamps the held restart's reload — see `_restarted_at_msec`.
 func note_restart_requested() -> void:
-	restarted_at_msec = Time.get_ticks_msec()
+	_restarted_at_msec = Time.get_ticks_msec()

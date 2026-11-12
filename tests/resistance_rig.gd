@@ -546,7 +546,7 @@ func _read_the_mark_on(t: TestRunner, day: int, seed_value: int, trace_into: Arr
 	_city.events.start_day(DaySpec.for_day(day), _rng(day, "events", seed_value), [],
 			_city.map.doorstep_world_position())
 	var director := _director(t)
-	director.trace = RunTrace.recording(trace_into)
+	director.trace = RecordingTrace.new(trace_into)
 	director.start_day(day, _rng(day, "resistance", seed_value), 300.0)
 	var mark := director.contact_position()
 	var player := _rig_player(t, mark)

@@ -244,7 +244,7 @@ func _start_rig(t: TestRunner, spec: DaySpec, in_building := false, scene: Autho
 	director.use_worlds(worlds)
 	director.use_the_scene(scene)
 	var lines: Array[String] = []
-	director.use_trace(RunTrace.recording(lines))
+	director.use_trace(RecordingTrace.new(lines))
 	# What `main._new_director()` hands: where the developer's flags start her, and what they do to
 	# the bars. Here a start on the city map's doorstep, as `--spawn` with no target answers, and no
 	# change to the bars.

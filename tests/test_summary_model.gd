@@ -29,11 +29,11 @@ func _ended(result: GameEnums.DayResult, reason := "", elapsed := 0.0) -> DayEnd
 func _test_a_won_days_summary_names_the_coming_day(t: TestRunner) -> void:
 	var run := _run_on(5, 3)
 	var model := SummaryModel.day_over(run, _ended(GameEnums.DayResult.WON, "", 84.0))
-	t.check(model.kind == SummaryModel.Kind.DAY and model.title == "She fell asleep after 1:24."
-			and model.title_is_a_sentence(), "a won day's title is the clock it ended on ('%s')" % model.title)
+	t.check(model.kind == SummaryModel.Kind.DAY and model.title_text() == "She fell asleep after 1:24."
+			and model.title_is_a_sentence(), "a won day's title is the clock it ended on ('%s')" % model.title_text())
 	t.check(model.body("") == "Day 5 of %d\n\nNerves left: ***" % Tuning.RUN_LENGTH_DAYS,
 			"its body is the coming day and the nerves carried into it ('%s')" % model.body(""))
-	t.check(model.brief == Texts.DAY_BRIEF.get(5, "") and model.heading == "" and model.note == ""
+	t.check(model.brief_text() == Texts.DAY_BRIEF.get(5, "") and model.heading_text() == "" and model.note_text() == ""
 			and model.offers_continue(), "with the morning's line, no heading, no note, and a continue")
 
 func _test_a_lost_days_summary_says_it_is_tried_again(t: TestRunner) -> void:
@@ -41,15 +41,15 @@ func _test_a_lost_days_summary_says_it_is_tried_again(t: TestRunner) -> void:
 	run.resistance.progress = 2
 	var model := SummaryModel.day_over(run, _ended(GameEnums.DayResult.LOST_CRYING,
 			"She started crying. There is no settling her now.", 84.0))
-	t.check(model.title == "She started crying after 1:24. There is no settling her now.",
-			"a crying loss reads the clock into its first sentence ('%s')" % model.title)
+	t.check(model.title_text() == "She started crying after 1:24. There is no settling her now.",
+			"a crying loss reads the clock into its first sentence ('%s')" % model.title_text())
 	var lines := model.body("").split("\n")
 	t.check(lines.has("You try day 4 again.") and lines[lines.size() - 1] == "Errands run: 2 of %d"
 			% Tuning.RESISTANCE_GOAL, "it says the day is tried again, then the tally ('%s')"
 			% model.body(""))
 	var timeout := SummaryModel.day_over(run, _ended(GameEnums.DayResult.LOST_TIMEOUT,
 			"Dusk. You are still out.", 180.0))
-	t.check(timeout.title == "Dusk. You are still out.", "a timeout shows its reason and no clock")
+	t.check(timeout.title_text() == "Dusk. You are still out.", "a timeout shows its reason and no clock")
 
 func _test_a_last_nerve_names_the_checkpoint(t: TestRunner) -> void:
 	var run := _run_on(8, Tuning.STARTING_NERVES)
@@ -67,25 +67,25 @@ func _test_a_lost_sections_summary_carries_its_words(t: TestRunner) -> void:
 	t.check(model.body("") == "Escape the city\n\nNerves left: **",
 			"a lost section names itself where the day stands, with no retry line and no tally ('%s')"
 			% model.body(""))
-	t.check(model.brief == "", "and no morning line")
+	t.check(model.brief_text() == "", "and no morning line")
 
 func _test_a_brief_is_the_day_the_nerves_and_the_morning(t: TestRunner) -> void:
 	var run := _run_on(1, 4)
 	var model := SummaryModel.brief_for(run, Texts.RESUMED_DAY_LOST)
-	t.check(model.kind == SummaryModel.Kind.BRIEF and model.title == "Day 1 of %d"
+	t.check(model.kind == SummaryModel.Kind.BRIEF and model.title_text() == "Day 1 of %d"
 			% Tuning.RUN_LENGTH_DAYS and not model.title_is_a_sentence(), "a brief names the day plainly")
-	t.check(model.body("") == "Nerves left: ****" and model.note == Texts.RESUMED_DAY_LOST
-			and model.brief == Texts.DAY_BRIEF[1], "with the nerves, its note and the morning's line")
+	t.check(model.body("") == "Nerves left: ****" and model.note_text() == Texts.RESUMED_DAY_LOST
+			and model.brief_text() == Texts.DAY_BRIEF[1], "with the nerves, its note and the morning's line")
 	var section := SummaryModel.brief_for(run, "", "Escape the building")
-	t.check(section.title == "Escape the building" and section.title_is_a_sentence()
-			and section.brief == "" and section.note == "", "a section's brief carries its own words")
+	t.check(section.title_text() == "Escape the building" and section.title_is_a_sentence()
+			and section.brief_text() == "" and section.note_text() == "", "a section's brief carries its own words")
 
 func _test_an_ending_has_no_continue_and_names_its_day_when_bad(t: TestRunner) -> void:
 	var run := _run_on(9, 0)
 	run.header.play_ticks = 22620
 	var bad := SummaryModel.ending(run, GameEnums.Ending.BAD)
 	t.check(bad.kind == SummaryModel.Kind.ENDING and not bad.offers_continue()
-			and bad.heading == Texts.ENDING_HEADING[GameEnums.Ending.BAD],
+			and bad.heading_text() == Texts.ENDING_HEADING[GameEnums.Ending.BAD],
 			"an ending has its heading and no continue")
 	t.check(bad.body_sentence() == Texts.ENDING_BODY[GameEnums.Ending.BAD], "its prose is its paragraph")
 	t.check(bad.body("PROSE") == Texts.ENDING_PLAYED % ["PROSE",
@@ -99,7 +99,7 @@ func _test_the_epilogue_names_the_way_out_and_its_clock(t: TestRunner) -> void:
 	end.exit_reached = CityEdge.Kind.TUNNEL
 	var model := SummaryModel.epilogue(end)
 	t.check(model.kind == SummaryModel.Kind.EPILOGUE and model.offers_continue()
-			and model.heading == Texts.FINALE_HEADING and model.title == Texts.FINALE_TITLE,
+			and model.heading_text() == Texts.FINALE_HEADING and model.title_text() == Texts.FINALE_TITLE,
 			"the epilogue has its heading and title, and a continue back to the title")
 	t.check(model.body_sentence() == Texts.FINALE_BODY[CityEdge.Kind.TUNNEL]
 			and model.body("P") == Texts.FINALE_OUT_IN % ["P", RunState.format_clock(42.5)],

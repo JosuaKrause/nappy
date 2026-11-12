@@ -442,7 +442,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	city.run.resistance.progress = 0
 	var resistance := ResistanceDirector.new()
 	var told: Array[String] = []
-	resistance.trace = RunTrace.recording(told)
+	resistance.trace = RecordingTrace.new(told)
 	t.add_child(resistance)
 	resistance.set_process(false)
 	resistance.setup(city.map, city.run, city.events, city.streets(), city.fronts(), city, null,

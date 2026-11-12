@@ -95,7 +95,7 @@ func _test_a_failed_lesson_retry_leaves_the_director_running(t: TestRunner) -> v
 	var manager := EventManager.new()
 	manager.setup(map)
 	var told: Array[String] = []
-	manager.trace = RunTrace.recording(told)
+	manager.trace = RecordingTrace.new(told)
 	var board := _CountingBoard.new(manager.world)
 	var lesson := EventsAhead.new(manager.world, manager.streaming, manager.spawner, board,
 			manager.walk_events())

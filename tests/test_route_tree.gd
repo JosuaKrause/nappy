@@ -109,13 +109,15 @@ func _test_a_route_is_a_walk_from_the_calm_to_the_door(t: TestRunner) -> void:
 ## A day shuts streets and the tree must stay off every one of them, or a corridor down one is
 ## guidance to walk into a barrier.
 ##
-## **Not off every *absent* street any more.** `streets()` names any segment a cell of the tree
-## resolves to, including one a calm zone painted over — and the tree can legitimately cut across
-## exactly that ground now, since it is walkable park rather than a barrier. `planned.blocked`
+## **Not off every *absent* street any more.** The streets the tree walks (`streets_on_the_walk()`,
+## the day's walk as `RouteSource` asks it) are every segment a cell of the tree resolves to,
+## including one a calm zone painted over — and the tree can legitimately cut across exactly that
+## ground now, since it is walkable park rather than a barrier. `planned.blocked`
 ## conflates absent and closed-today; only the closed half is still a real exclusion.
 func _test_the_tree_only_uses_streets_that_are_there(t: TestRunner) -> void:
 	for planned in _days:
-		for key in planned.tree.streets():
+		for segment in planned.tree.streets_on_the_walk():
+			var key := segment.key()
 			if not planned.map.has_street(key):
 				continue
 			t.check(not planned.blocked.has(key),

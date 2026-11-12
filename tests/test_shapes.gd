@@ -1,7 +1,6 @@
 extends RefCounted
 ## `GroundShape`: the datum a shadow and a solid body are both derived from — M61, "one shape per
-## object". `reach()`, `across()` and `distance_to_spine()` over a point, a segment and a
-## rectangle; `collision_shape()`'s three resource types; and the invariant every obstructing
+## object". `reach()` and `distance_to_spine()` over a point, a segment and a rectangle; `collision_shape()`'s three resource types; and the invariant every obstructing
 ## catalogue row now carries, `shape.reach() == obstructs_radius`, checked over the whole
 ## catalogue, every heated copy of every row, and every seal candidate's `sealed_variant()`.
 
@@ -12,7 +11,7 @@ const _PROBE_RADIUS := 0.5
 const _PROBE_MARGIN := 1.0
 
 func run(t: TestRunner) -> void:
-	_test_reach_and_across(t)
+	_test_reach(t)
 	_test_distance_to_spine_of_a_point(t)
 	_test_distance_to_spine_of_a_segment(t)
 	_test_collision_shape_types_and_sizes(t)
@@ -22,7 +21,7 @@ func run(t: TestRunner) -> void:
 	_test_every_seal_candidate_agrees_with_its_shape(t)
 	_test_every_spread_row_still_fills_the_pavement_it_blocked(t)
 	await _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t)
-	_test_rect_reach_across_and_distance_to_spine(t)
+	_test_rect_reach_and_distance_to_spine(t)
 	_test_rect_collision_shape(t)
 	await _test_a_built_building_carries_its_own_footprint_as_its_body(t)
 	_test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t)
@@ -37,16 +36,13 @@ func run(t: TestRunner) -> void:
 
 # ------------------------------------------------------------------ the datum ---
 
-func _test_reach_and_across(t: TestRunner) -> void:
+func _test_reach(t: TestRunner) -> void:
 	var point := GroundShape.point(9.0)
 	t.check(is_equal_approx(point.reach(), 9.0), "a point's reach is its own radius")
-	t.check(is_equal_approx(point.across(), 9.0), "a point's across is its own radius too")
 
 	var segment := GroundShape.segment(12.0, 5.0)
 	t.check(is_equal_approx(segment.reach(), 17.0),
 			"a segment's reach is half_length + radius (12 + 5)")
-	t.check(is_equal_approx(segment.across(), 5.0),
-			"a segment's across is its radius alone, not its half_length")
 
 func _test_distance_to_spine_of_a_point(t: TestRunner) -> void:
 	var shape := GroundShape.point(6.0)
@@ -151,8 +147,8 @@ func _test_every_seal_candidate_agrees_with_its_shape(t: TestRunner) -> void:
 # --------------------------------------------------------- the pavement guarantee ---
 # The same rows `tests/test_events.gd`'s `_test_a_spread_body_fits_the_ground_it_stands_on` checks
 # against a whole tile, checked here against the narrower question this slice changes: a capsule's
-# `across()` is its own half-thickness, which is what a pavement actually has to clear now that the
-# body is not a disc.
+# rounding (`rounding_radius()`) is its own half-thickness, which is what a pavement actually has to
+# clear now that the body is not a disc.
 
 const _SPREAD_LOOKS: Array[EventDef.Look] = [
 	EventDef.Look.ROADWORKS, EventDef.Look.STALL, EventDef.Look.ROADBLOCK,
@@ -172,10 +168,10 @@ func _test_every_spread_row_still_fills_the_pavement_it_blocked(t: TestRunner) -
 		if not blocked_before:
 			continue
 		checked += 1
-		t.check(def.shape.across() + Tuning.PLAYER_BODY_RADIUS > half_band,
+		t.check(def.shape.rounding_radius() + Tuning.PLAYER_BODY_RADIUS > half_band,
 				("'%s' blocked the whole %.0fpx pavement band as a disc (%.0fpx + her %.0fpx); "
 						% [def.id, half_band * 2.0, def.obstructs_radius, Tuning.PLAYER_BODY_RADIUS])
-				+ ("its capsule (%.0fpx across + her %.0fpx) still does" % [def.shape.across(),
+				+ ("its capsule (%.0fpx across + her %.0fpx) still does" % [def.shape.rounding_radius(),
 						Tuning.PLAYER_BODY_RADIUS]))
 	t.check(checked >= 6, "and some spread row actually blocked a pavement to check (%d)" % checked)
 
@@ -198,7 +194,7 @@ func _solid_at(node: Node2D, point: Vector2) -> bool:
 # gap, treating each body's own reach as the distance it covers *across* the street — `positions_
 # across()`'s own `width` is the street's kerb-to-kerb measurement, not its length. That packing
 # arithmetic is only true of a capsule if the capsule's own spine (the long axis, `reach()`) lies
-# across the street too: a capsule laid the other way round reaches `across()` (24px,
+# across the street too: a capsule laid the other way round reaches its rounding (24px,
 # `GroundShape.BAND_RADIUS`) toward each kerb rather than `reach()`, and a hard seal stops being
 # hard at exactly the kerbs nothing here would have caught. So this is the one fact the whole
 # hard-seal guarantee rests on, checked directly against a real `EventInstance` on a real street of
@@ -251,13 +247,14 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t: TestRunner) -> v
 
 		t.check(instance.is_solid(), "the hard seal placement actually builds a body")
 		await PhysicsTicks.pass_ticks(t, 1)
-		# A capsule's long axis is its reach and its short one is its `across()`, so the body is
-		# what the packing arithmetic needs only if the long axis lies across the street: solid out
-		# to nearly its full reach toward each kerb, and solid only `across()` along the street.
+		# A capsule's long axis is its reach and its short one is its rounding (`rounding_radius()`),
+		# so the body is what the packing arithmetic needs only if the long axis lies across the
+		# street: solid out to nearly its full reach toward each kerb, and solid only its rounding
+		# along the street.
 		var centre := instance.global_position
 		var cross := along.rotated(PI * 0.5)
 		var reach := def.shape.reach()
-		var thickness := def.shape.across()
+		var thickness := def.shape.rounding_radius()
 		t.check(reach > thickness + 2.0 * _PROBE_MARGIN,
 				"'barricade' reaches further than it is thick (%.1f vs %.1f), so the two axes differ"
 				% [reach, thickness])
@@ -286,12 +283,10 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t: TestRunner) -> v
 # A building's footprint is the one shape in the game that is not already a point or a band — see
 # `GroundShape.rect()`'s own docstring for why nothing else needs one.
 
-func _test_rect_reach_across_and_distance_to_spine(t: TestRunner) -> void:
+func _test_rect_reach_and_distance_to_spine(t: TestRunner) -> void:
 	var shape := GroundShape.rect(Vector2(30.0, 10.0))
 	t.check(is_equal_approx(shape.reach(), Vector2(30.0, 10.0).length()),
 			"a rectangle's reach is its half-diagonal, the corner rather than an edge")
-	t.check(is_equal_approx(shape.across(), 10.0),
-			"a rectangle's across is its smaller half-extent")
 
 	t.check(is_equal_approx(shape.distance_to_spine(Vector2.ZERO), 0.0),
 			"the centre is inside, so the distance is zero")
@@ -373,9 +368,9 @@ func _test_a_crowd_car_shape_is_not_smaller_than_its_strike_box(t: TestRunner) -
 	t.check(shape.reach() >= Tuning.CAR_STRIKE_HALF_LENGTH,
 			"a car's noise shape reaches at least as far as its strike box's half-length (%.1f >= %.1f)"
 			% [shape.reach(), Tuning.CAR_STRIKE_HALF_LENGTH])
-	t.check(shape.across() >= Tuning.CAR_STRIKE_HALF_WIDTH,
+	t.check(shape.rounding_radius() >= Tuning.CAR_STRIKE_HALF_WIDTH,
 			"and across at least as far as its strike box's half-width (%.1f >= %.1f)"
-			% [shape.across(), Tuning.CAR_STRIKE_HALF_WIDTH])
+			% [shape.rounding_radius(), Tuning.CAR_STRIKE_HALF_WIDTH])
 
 # ------------------------------------------------------------------- the field ---
 # `body ⊕ kernel`: a disc kernel standing still (`field_distance()` reduces to `distance_to_spine`,

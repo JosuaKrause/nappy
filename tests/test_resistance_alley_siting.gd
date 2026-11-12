@@ -279,7 +279,7 @@ func _test_a_guard_with_nowhere_walkable_is_no_guard_at_all(t: TestRunner) -> vo
 	var body := 1
 	map.obstruct_tiles(body, beyond)
 	var lines: Array[String] = []
-	director.trace = RunTrace.recording(lines)
+	director.trace = RecordingTrace.new(lines)
 	var moved := _relocate_round(director, player, _outside_its_mouth(map, target), away)
 	t.check(moved != Vector2.INF and map.world_to_tile(moved) == target,
 			"the mark moves onto %s, reached through its mouth" % target)

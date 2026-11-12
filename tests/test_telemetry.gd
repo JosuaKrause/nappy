@@ -112,7 +112,7 @@ func _close_the_scratch_run(scratch: String) -> void:
 ## the suite starts and removed as it ends, or for the length of one test a log over a scratch
 ## folder of that test's own (`_use_a_log_over()`). This suite is the one place a test builds the
 ## real run log: every other suite that reads what was logged hands a recording fake
-## (`tests/recording_log.gd`, or a `RunTrace.recording()`).
+## (`tests/recording_log.gd`, or `tests/recording_trace.gd`).
 var _log: Telemetry
 ## The suite's own log while `_log` is a test's.
 var _suite_log: Telemetry
@@ -261,7 +261,7 @@ func _test_tracing_a_day_does_not_change_it(t: TestRunner) -> void:
 	var lines: Array[String] = []
 	var traced: Array[String] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		traced.append(PlanSignature.of(map, day, RunTrace.recording(lines)))
+		traced.append(PlanSignature.of(map, day, RecordingTrace.new(lines)))
 
 	# Day 3 is the one that matters: `burning_building` is the catalogue's only one-shot, and the
 	# `roll` line saying what became of it is written while the day is being planned. If the trace
@@ -277,7 +277,7 @@ func _test_tracing_the_arcs_does_not_change_them(t: TestRunner) -> void:
 	var map := CityMapCache.of(8812)
 	var quiet := _arc_signature(map)
 	var lines: Array[String] = []
-	var traced := _arc_signature(map, RunTrace.recording(lines))
+	var traced := _arc_signature(map, RecordingTrace.new(lines))
 	t.check(lines.size() > 0, "a run's arcs wrote something (%d lines)" % lines.size())
 	t.check(quiet == traced, "the blocks walk their arcs the same way with the log on")
 

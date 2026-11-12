@@ -1988,7 +1988,7 @@ func _test_a_walk_under_the_boom_is_seen(t: TestRunner) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
 	var walks_told: Array[String] = []
-	city.events.trace = RunTrace.recording(walks_told)
+	city.events.trace = RecordingTrace.new(walks_told)
 	var gate: EventInstance = rig["gate"]
 	var huts: Array[EventInstance] = []
 	huts.assign(rig["huts"])
@@ -2048,7 +2048,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	var rig := _street_door_rig(t)
 	var city: City = rig["city"]
 	var walks_told: Array[String] = []
-	city.events.trace = RunTrace.recording(walks_told)
+	city.events.trace = RecordingTrace.new(walks_told)
 	var gate: EventInstance = rig["gate"]
 	var huts: Array[EventInstance] = []
 	huts.assign(rig["huts"])

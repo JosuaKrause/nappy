@@ -202,7 +202,7 @@ func _test_a_pursuit_marble_sends_him_at_once_from_off_screen_already_chasing(t:
 	EventBus.poster_pursuit_sent.connect(on_sent)
 	var before := city.events.instances().size()
 	var account: Array[String] = []
-	city.events.trace = RunTrace.recording(account)
+	city.events.trace = RecordingTrace.new(account)
 	city.events.send_a_pursuer()
 	EventBus.poster_pursuit_sent.disconnect(on_sent)
 	var warnings := city.events.pending_warnings()

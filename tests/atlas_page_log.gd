@@ -20,8 +20,8 @@ extends RefCounted
 ## the boot builds draws from (`tests/test_atlas_loading.gd`).
 ##
 ## Making one points the library it watches at a recording trace of its own
-## (`AtlasLibrary.trace_note`, a `RunTrace.recording()`'s `note`), so only the lines written from then
-## on are read. A boot over the library's sitting points the library at the boot's own run log, so a
+## (`AtlasLibrary.trace_note`, the `note` of a `RecordingTrace`, `tests/recording_trace.gd`), so
+## only the lines written from then on are read. A boot over the library's sitting points the library at the boot's own run log, so a
 ## suite that watches a boot hands it `boot_log()`, a recording fake (`tests/recording_log.gd`) that
 ## keeps its lines in the same list. `stop()` lets the library go and frees that log, which a test
 ## owes before it ends.
@@ -30,7 +30,7 @@ const RecordingLog := preload("res://tests/recording_log.gd")
 
 var _lines: Array[String] = []
 ## Held here, since the library's `trace_note` is only a `Callable` over it.
-var _trace := RunTrace.recording(_lines)
+var _trace := RecordingTrace.new(_lines)
 var _atlas: AtlasLibrary
 var _boot_log: Telemetry
 

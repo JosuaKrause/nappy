@@ -80,7 +80,7 @@ class Edge extends StreetNetwork.Segment:
 const POST_HALF := 4.6
 
 ## The calm area this fence belongs to, as the tile rect of its calm ground.
-var area := Rect2i()
+var _area := Rect2i()
 ## Which way is out of the area from this run — the direction the pavement is in.
 var outward := Vector2i.ZERO
 ## Where the line starts and ends along its run, in world pixels on the run's own axis (x for a
@@ -95,7 +95,7 @@ var joined_end := false
 func _init(anchor: Vector2i, calm_rect: Rect2i, strip: Rect2i, out: Vector2i,
 		start_turns := false, end_turns := false) -> void:
 	super(RoadClosure.Kind.PARK, Edge.new(anchor, strip, out.y != 0))
-	area = calm_rect
+	_area = calm_rect
 	outward = out
 	joined_start = start_turns
 	joined_end = end_turns
@@ -235,7 +235,7 @@ func rail_ends() -> PackedVector2Array:
 
 ## The point `along` pixels down this run's axis, on its fence line.
 func _point(along: float) -> Vector2:
-	var across := _line(area, outward)
+	var across := _line(_area, outward)
 	return Vector2(along, across) if outward.y != 0 else Vector2(across, along)
 
 ## The middle of the shut area — nothing is lying there, but `DevRig`'s `closure:<n>` spawn reads the
@@ -243,7 +243,7 @@ func _point(along: float) -> Vector2:
 ##
 ## Overrides RoadClosure.cause_centre.
 func cause_centre(map: CityMap) -> Vector2:
-	return map.tile_rect_to_world(area).get_center()
+	return map.tile_rect_to_world(_area).get_center()
 
 ## A fence along a north or south edge runs left to right across the screen; one along a west or
 ## east edge runs down it. The opposite of a street's, whose barrier lies across the street.

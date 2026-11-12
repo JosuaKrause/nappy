@@ -1317,7 +1317,7 @@ func _test_every_street_draws_one_marble(t: TestRunner) -> void:
 		var bare := _bare_plan(map, seed_value)
 		var streets: Array[StreetNetwork.Segment] = bare["streets"]
 		var lines: Array[String] = []
-		var placed := _escape_rows_traced(map, bare, _city_spec().bag, RunTrace.recording(lines))
+		var placed := _escape_rows_traced(map, bare, _city_spec().bag, RecordingTrace.new(lines))
 		var untraced := _escape_rows_from(map, bare, _city_spec().bag)
 		t.check(_same_rows(placed, untraced), "seed %d: the note changes nothing placed" % seed_value)
 		var drew := _marbles_drawn_in(lines)
@@ -1336,7 +1336,7 @@ func _test_every_street_draws_one_marble(t: TestRunner) -> void:
 		t.check(_escape_rows_from(map, bare, {DaySpec.EMPTY_MARBLE: 1}).is_empty(),
 				"seed %d: a bag of empty marbles stands nothing" % seed_value)
 		var band_lines: Array[String] = []
-		var stood := _escape_rows_traced(map, bare, {"roadblock": 1}, RunTrace.recording(band_lines))
+		var stood := _escape_rows_traced(map, bare, {"roadblock": 1}, RecordingTrace.new(band_lines))
 		var band_draws := _marbles_drawn_in(band_lines)
 		t.check(band_draws == streets.size(), "seed %d: a bag of roadblocks draws once a street (%d)"
 				% [seed_value, band_draws])
