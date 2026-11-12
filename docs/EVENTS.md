@@ -1297,8 +1297,8 @@ Each item quotes the code on this branch.
    own draws.** Every day lays its locations out and draws each from its view's bag (`LocationDraw`,
    `EventScheduler._draw_the_locations()`). Today's placement rules are the invalidation, one class
    each (`StreetRule`: the calm she has not used, a door's clear ground, a route's junctions, its
-   walked sidewalk and a pacing beat's opening, with the escape's one notice at a time and its walk
-   kept open), composed per walk (`StreetInvalidation`) with a location's own ground
+   walked sidewalk, a pacing beat's opening and its ground off the streets, with the escape's one
+   notice at a time and its walk kept open), composed per walk (`StreetInvalidation`) with a location's own ground
    (`LocationFit`), but each is asked against everything the day has placed within its reach, on
    any street (fork 3 of the placement proposal, the orchestrator's reading: today's rules reach
    across a junction), and the spacing still ranks a cramped tile rather than refusing it: a
@@ -1318,8 +1318,10 @@ Each item quotes the code on this branch.
    (`StreetLocations.close_the_section_of()`), as any event a dawn phase puts on a sidewalk does.
    The ambient rows stand where their planners put them; a playground's ground is in no location,
    so it holds none. The spoilers
-   in a park she used go through their own grid and the run's scars stand where they happened, each
-   left out where it would cut a route off from home.
+   in a park she used go through their own grid, a spoiler whose body would cover a tile a route
+   runs along standing on the nearest tile of its cell that covers none, and the run's scars stand
+   where they happened, each left out where a body of it would cover a route tile or the street she
+   starts on (`RouteGroundRule`, the streets counted).
 3. **Not every bag is a view's.**
    - **The walk's route bag** (`EventDirector._route`, a `MarbleBag`) hands out the places the day
      owes her walk, each sited ahead of her on the branch she walks (`WalkSiting.ahead_of()`).
@@ -1367,11 +1369,11 @@ EventScheduler.build_day(day_index, run_seed):
     6. spoil the parks she used  (docs/CITY.md)
     7. owe her the day's moments (the rows the director sites in front of her)
     8. draw every open location from its view's bag (LocationDraw)
-   The scars, the spoilers, the roadblock phase, the scripted rows and the draw are asked, as
-   each body is placed, whether it cuts the day's routes off from home (RouteReachRule), and
-   the draw's bodies all the day's rules (StreetInvalidation); the region wall, the seals, the
-   masts and the ambient rows stand by their own planners' guarantees. Nothing is checked or
-   repaired after.
+   The roadblock phase, the scripted rows and the draw are asked all the day's rules
+   (StreetInvalidation), the route rules among them; the scars and the spoilers are asked,
+   as each body is placed, whether it covers a tile a route runs along (RouteGroundRule,
+   the streets counted); the region wall, the seals, the masts and the ambient rows stand by
+   their own planners' guarantees. Nothing is checked or repaired after.
 ```
 
 **The day's density is the bags' empty marbles**, set per view and per day so each view's share of
@@ -2295,17 +2297,29 @@ the route you memorised on day 2 stops existing.
 
 From Act II several events physically close streets, and from Act IV the seals close every
 street off the day's routes. Any combination that seals the home off from every park makes the day
-unwinnable in a way the player cannot see coming, so **no body is placed that would cut home off
-from the day's routes**, and the routes run to the calm. Every obstructing body a day's dawn places,
-the run's scars and the park spoilers included, is asked `RouteReachRule` against everything
-already down, the seals and the region wall's bodies included: one whose disc would leave a route
-tile home reached without it unreached is refused where it would stand. Hard-fail events count as
-walls for this rule: an abduction in progress is not something you walk through to reach the park
-behind it. Nothing is dropped after planning, so the day is never illegal on the way. A walk's
-sitings (the dusk fire, day 7's route van, day 11's added mast and the rest) are not asked it: the
-rule is the dawn's, and whether the walk's draws ask it is decided
-with them. The escape's draw is not asked it either: its plan has no route tree, and its walk is
-kept open by its own rule (`WalkOpenRule`).
+unwinnable in a way the player cannot see coming, so **no body is placed that could close one of
+the day's routes**, and the routes run to the calm. Nothing floods the city to see whether a route
+is still open: a route cannot be closed to begin with (gray-dolphin #1173). Every placement a day
+judges, at dawn or on her walk, is asked the day's route rules (`StreetInvalidation`) against
+everything already down, the seals and the region wall's bodies included. On a street, a route's
+junction box keeps a free crossing (`RouteJunctionsRule`), the sidewalk it walks keeps a line with
+room for her (`RouteSidewalkRule`), and nothing stands in the open end of a pacing beat
+(`PacingOpeningRule`). Off the streets, on an alley, a park cut or a square, no obstructing body's
+disc covers a tile a route runs along (`RouteGroundRule`), which is stricter than asking for a way
+round: a body never stands on a route tile there even where a detour exists. Hard-fail events count
+as bodies for this rule, by their lethal inner disc: an abduction in progress is not something you
+walk through to reach the park behind it. The run's scars and the park spoilers, which the line
+rules are not asked of, are asked `RouteGroundRule` alone with a street's route tiles counted too,
+and the street she starts on, every route's first stretch, which the tree does not carry: a
+barricade the run left across a route's sidewalk or across her own street is not stood that day,
+and a spoiler whose body would cover a route tile stands on the nearest tile of its own cell of the
+park that covers none, since a used park is shut by the events placed in it (PLAYTEST-140 8).
+Nothing is dropped after planning, so the day is never illegal on the way. A walk's sitings (the dusk fire, day 7's
+route van, day 11's added mast and the rest) and an authored scene's row are asked the same rules.
+The escape's draw asks none of the route rules, since its walk grows no corridor
+(`RouteSource.corridor()`), and its walk is kept open by its own rule (`WalkOpenRule`).
+`tests/probes/walk_rows.gd` counts the route tiles home no longer reaches after the dawn and after
+a walk, which the rules make none.
 
 **On the three days the resistance sends her to one narrow place** — day 9's region door, day
 12's swing, the power station's front door on the last night — the day's routes run to that place

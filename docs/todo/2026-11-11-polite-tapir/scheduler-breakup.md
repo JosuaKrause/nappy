@@ -48,11 +48,11 @@ and fails a read that is new; a read that only moved may add its line to the lis
 grassy-trout), and review reads a moving diff for the cases the check cannot count
 (minty-quail-breezy-bison).
 
-- **`PlanBuilder`**, a pure move, beside placement's route ground rule.
+- **`PlanBuilder`**, a pure move.
 - **`RowGround`**, after both: it is a seam, no pure move, since the object with its own per-day
   cache replaces the `ground: Dictionary` threaded through `StreetInvalidation`,
   `RouteJunctionsRule`, `LocationFit`, both ground judges, `_weight_in()`, `_best_of()` and
-  `WalkSiting`, lines the route ground rule also edits.
+  `WalkSiting`.
 - **`DawnContext`**, after `RowGround`, and
   before the unit draw, so the unit draw edits a small file. The suites and probes that call
   `build_day()` with 13 arguments change once, through one shared test helper that builds a

@@ -106,7 +106,8 @@ func _reproduce_zero_density_visits() -> void:
 				var roll_calm := CalmAreas.of(map, [block] as Array[Vector2i])
 				var roll_events := DayEvents.over(roll_calm)
 				EventScheduler._spoil_the_parks_she_used(day, rng1, map, roll_events, roll_calm,
-						CalmAreas.NONE, RouteReachRule.new(map, null), 0)
+						CalmAreas.NONE, RouteGroundRule.new(map, null, true,
+						EventScheduler._the_street_she_starts_on(map)), 0)
 				var roll_planned := roll_events.placements()
 				var rc := roll_planned.size()
 				roll_counts.append(rc)

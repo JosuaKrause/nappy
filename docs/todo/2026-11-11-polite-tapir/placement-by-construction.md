@@ -38,8 +38,8 @@ by line; its numbered list says where the code differs.
   the seals, the masts, the ambient rows, day 13's roadblock phase, the scripted rows), and every
   other location is drawn as she walks, the rows with a body among them.
 - **A route stays open by the street's own rules, never by a flood.** The orchestrator's earlier
-  ruling, that every row with a body is drawn at dawn so the reach rule (`RouteReachRule`, a flood
-  of the whole city from home) can judge it (stated on the walk draw's pull request, #1262, after
+  ruling, that every row with a body is drawn at dawn so a flood of the whole city from home can
+  judge it (stated on the walk draw's pull request, #1262, after
   its first review), is overturned by the player's question above; it
   rested on "no live reachability check" (inbox #1173 in gray-dolphin), which the design satisfies by needing no
   check at all: "there is no reason to check whether a route is open during game play because it
@@ -65,7 +65,12 @@ fixed parts' and the scripted rows' dawn phases (`ScriptedPhase`). Every open lo
 at dawn by one loop (`EventScheduler._draw_the_locations()`: `LocationDraw.draw_all()` over
 `DayLocations.drawing_order()`); a poster crew is handed to her walk as it is drawn, and a sidewalk
 a dawn phase fills closes its section to the draw and the roadblock phase. Nothing is drawn as she
-walks.
+walks. A day's routes stay open by local rules alone: besides a route's junctions, its walked sidewalk
+and a pacing beat's opening, the route's ground rule (`RouteGroundRule`) keeps every body's disc and
+every lethal row's inner disc off a tile a route runs along off the streets (an alley, a park cut, a
+square), and keeps the scars and the park spoilers off every route tile and off the street she starts
+on. The whole-city flood is no rule of the game; `tests/probes/walk_rows.gd` counts the route tiles a
+day's bodies cut off from home, expected to be none (record 2026-11-11-polite-tapir).
 
 ## What is left, in order
 
@@ -74,16 +79,6 @@ points. let's do it", and "I saw the review and approved it" (inbox #1268 in oli
 each step is the same review's worked-out detail, written after the player had read its points; its
 full text names the files each step owns.
 
-1. **The route's ground rule replaces the flood.** Three of the route rules are already local to a
-   street and count bodies as well as fields: a junction box on a route keeps a free crossing
-   (`RouteJunctionsRule`), the sidewalk a route walks keeps a line with room for her
-   (`RouteSidewalkRule`), and nothing stands in the open end of a pacing beat (`PacingOpeningRule`).
-   One more closes the gap: no body's disc and no lethal row's inner disc covers a tile a route runs
-   along off the sidewalks (an alley, a park cut, a square). With it a route cannot be closed, and
-   `RouteReachRule` leaves the game: the scars and the park spoilers ask the new rule, and the flood
-   becomes a probe's check that counts route tiles cut off from home after a whole day is drawn,
-   expected to be none. It is stricter than the flood, which let a body stand on a route tile where
-   a detour existed.
 2. **A street is drawn as one unit, the first time she comes near it.** A unit is a street (three
    sections, six sidewalk locations), a junction box, an alley, or one park or square. Each has its
    own random stream, seeded by the day's seed and the unit, and draws all its locations in one go
@@ -129,7 +124,7 @@ full text names the files each step owns.
    step keeps today's share and `tests/probes/escape_winnable.gd` shows the before and after.
 
 Steps 3, 4 and 5 touch different files and run in parallel once step 2 is in. The event scheduler's
-breakup (`scheduler-breakup.md`) is interleaved: its moves beside step 1, and its dawn context
+breakup (`scheduler-breakup.md`) is interleaved: its moves now, and its dawn context
 before step 2, so step 2 edits a small file.
 
 **How a step is accepted.** Its suites pass, as for every step of the refactor ("for the refactor

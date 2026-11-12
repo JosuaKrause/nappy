@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## **One source of each kind against a world that is only what this suite hands it**: the shared
 ## part every source keeps once (`ExcitementSource` — the ledger, the first landing, the netting),
@@ -79,7 +78,7 @@ func _test_the_first_landing_is_told_once(t: TestRunner) -> void:
 func _test_the_nets_sum_to_the_bar_rise(t: TestRunner) -> void:
 	var landed := [12.0, 5.0, 3.0]
 	var total := 20.0
-	for decay in [4.0, 19.0]:
+	for decay: float in [4.0, 19.0]:
 		var nets := 0.0
 		for points: float in landed:
 			nets += ExcitementSource.net_landed(points, total, decay)
@@ -93,7 +92,7 @@ func _test_the_nets_sum_to_the_bar_rise(t: TestRunner) -> void:
 func _test_an_event_caches_its_rate_on_its_age(t: TestRunner) -> void:
 	var instance := EventInstance.new()
 	instance.setup(_def("cached", 20.0), Vector2.ZERO)
-	var source := instance.excitement
+	var source := instance.source()
 	var at := Vector2(60.0, 0.0)
 	var first := source.contribution_at(at)
 	t.check(first > 0.0 and first == instance.field_at(at, -1.0, Vector2.INF),
@@ -117,14 +116,14 @@ func _test_an_event_caret_reads_where_its_instance_says_she_is(t: TestRunner) ->
 	for _i in int(ceil(def.telegraph_time / 0.1)) + 1:
 		instance.step(0.1)
 	instance_where.tell(instance.global_position + Vector2(def.lethal_reach() * 0.5, 0.0))
-	t.check(instance.excitement.caret_strength() == 2,
+	t.check(instance.source().caret_strength() == 2,
 			"her place told to the instance by its manager is where the caret measures her from")
 	instance_where.tell(instance.global_position + Vector2(0.0, def.outer_radius * 4.0))
-	t.check(instance.excitement.caret_strength() == 0,
+	t.check(instance.source().caret_strength() == 0,
 			"and the answer moves with her inside one tick, keyed on where she is")
-	instance.excitement.set_player_at(instance.global_position
+	instance.source().set_player_at(instance.global_position
 			+ Vector2(def.lethal_reach() * 0.5, 0.0))
-	t.check(instance.excitement.caret_strength() == 2,
+	t.check(instance.source().caret_strength() == 2,
 			"the halo's word on where she is, once a drawn frame, is where it measures from too")
 	instance.free()
 
@@ -135,9 +134,9 @@ func _test_an_outranked_source_projects_nothing(t: TestRunner) -> void:
 	def.speed = 80.0
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]))
 	var her := Vector2(200.0, 0.0)
-	var gross := instance.excitement.expected_gross_at(her)
-	instance.excitement.outranked = true
-	t.check(gross > 0.0 and instance.excitement.expected_gross_at(her) == 0.0,
+	var gross := instance.source().expected_gross_at(her)
+	instance.source().outranked = true
+	t.check(gross > 0.0 and instance.source().expected_gross_at(her) == 0.0,
 			"a source outranked by another projects nothing (%.2f before)" % gross)
 	instance.free()
 
@@ -145,13 +144,13 @@ func _test_a_crowd_body_is_never_cached(t: TestRunner) -> void:
 	var walker := CrowdAgent.new()
 	walker.kind = CrowdAgent.Kind.WALKER
 	var at := Vector2(Tuning.PEDESTRIAN_INNER_RADIUS * 0.5, 0.0)
-	var before := walker.excitement.contribution_at(at)
+	var before := walker.mood().contribution_at(at)
 	walker.position = Vector2(-Tuning.PEDESTRIAN_OUTER_RADIUS * 3.0, 0.0)
-	t.check(before > 0.0 and walker.excitement.contribution_at(at) == 0.0,
+	t.check(before > 0.0 and walker.mood().contribution_at(at) == 0.0,
 			"a body moved from outside its own frame answers from where it is, its clock unmoved")
 	walker.position = Vector2.ZERO
-	walker.excitement.startle(30.0, 1.0, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
-	t.check(walker.excitement.contribution_at(at) > before,
+	walker.mood().startle(30.0, 1.0, 45.0, Tuning.CAR_HORN_OUTER_RADIUS)
+	t.check(walker.mood().contribution_at(at) > before,
 			"and a startle shows on the same frame it happens")
 	walker.free()
 
@@ -159,9 +158,9 @@ func _test_a_crowd_body_jolt_widens_its_set(t: TestRunner) -> void:
 	var crowd := Crowd.new()
 	var narrow := crowd.sources.silent_beyond()
 	var car := CrowdAgent.new()
-	car.excitement.hear_in(crowd.sources)
+	car.mood().hear_in(crowd.sources)
 	car.kind = CrowdAgent.Kind.CAR
-	car.excitement.startle(30.0, 1.0, 45.0, 900.0)
+	car.mood().startle(30.0, 1.0, 45.0, 900.0)
 	t.check(crowd.sources.silent_beyond() >= 900.0 / (1.0 - Tuning.FIELD_ECCENTRICITY_MAX)
 			and crowd.sources.silent_beyond() > narrow,
 			"a jolt wider than any body's field widens what its crowd's sweep skips beyond")
@@ -195,6 +194,6 @@ func _test_a_held_door_is_the_whole_answer(t: TestRunner) -> void:
 ## What the meter would be charged at the origin: every pair the world answers, summed.
 func _total_at_the_origin(world: WorldContext) -> float:
 	var total := 0.0
-	for pair in world.excitement_sources_at(Vector2.ZERO):
+	for pair: Array in world.excitement_sources_at(Vector2.ZERO):
 		total += pair[1]
 	return total

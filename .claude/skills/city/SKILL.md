@@ -77,7 +77,9 @@ each area.
 
 **A day's narrow target is kept reachable the same way.** On day 9 (a named door), day 12 (a
 park's swing) and the last night (the power station's front door), the route tree, `ClosurePlanner`
-and the dawn's reach rule (`RouteReachRule`, no body cutting a route tile off from home) each keep
+and the day's route rules (`RouteJunctionsRule`, `RouteSidewalkRule`, `PacingOpeningRule` and
+`RouteGroundRule`, no body on a route's ground off the streets, and for the scars and the park
+spoilers none on any route tile or the street she starts on) each keep
 at least one tile of the day's target pool (`ResistanceSteps.target_candidates()`, for the step
 `ResistanceSteps.narrow_target_on()` names) reachable from home, checked before a closure or a body
 is accepted. Anything new that closes a street or stands a body on those days goes through the same
