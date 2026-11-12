@@ -17,15 +17,16 @@ extends LaneMover
 const MARK_HEIGHT := 30.0
 const MARK_WIDTH := 15.0
 
-var colour := Color.WHITE
+## The coat or paint colour, rolled from its look's palette as it is placed.
+var _colour := Color.WHITE
 
 ## What this agent is dressed in, the colour its picture is drawn in.
 func clothing_colour() -> Color:
-	return colour
+	return _colour
 
 ## `--skip crowd`, handed in by the `Crowd` that makes this agent: `_draw()` returns before
 ## drawing anything.
-var skip_draw := false
+var _skip_draw := false
 
 ## Whether the player is touching this agent now (`touching`).
 func is_touched() -> bool:
@@ -37,7 +38,7 @@ func be_touched(now: bool) -> void:
 
 ## Has this agent draw nothing (`--skip crowd`), or draw again.
 func skip_drawing(now: bool) -> void:
-	skip_draw = now
+	_skip_draw = now
 
 ## This body as the thing that charges the baby: its jolt, its field, its caret (`excitement`).
 func mood() -> CrowdExcitement:
@@ -238,7 +239,7 @@ func advance_the_picture(delta: float) -> void:
 ## Overrides LaneMover._dress.
 func _dress() -> void:
 	var palette := _look.palette()
-	colour = palette[_rng.randi_range(0, palette.size() - 1)]
+	_colour = palette[_rng.randi_range(0, palette.size() - 1)]
 
 ## Overrides LaneMover._entry_picture_clearance.
 func _entry_picture_clearance() -> float:
@@ -260,7 +261,7 @@ func _draw() -> void:
 	# alone — the crowd's own motion, lanes and traffic negotiation keep running. `AgentLook.draw_body()` is
 	# left alone rather than gated itself, since `EntityHalo` calls it too for a picked agent's own
 	# ring, which is a different drawing than the ordinary frame this flag measures.
-	if skip_draw:
+	if _skip_draw:
 		return
 	# Told to `Sprites` as well as to the canvas, for the reason `EventLook.draw()` gives: the
 	# mirror inside `draw_standing()` sets an absolute matrix, so a west-facing car not handed the

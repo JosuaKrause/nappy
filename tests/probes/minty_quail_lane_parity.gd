@@ -135,9 +135,10 @@ func _drawn(previous: PackedByteArray, crowd: Crowd) -> PackedByteArray:
 		var heading_key: Vector2i = agent.get("_drawn_heading")
 		var velocity := agent.velocity()
 		var heading := agent.heading()
+		var colour := agent.clothing_colour()
 		state.append_array([picture.x, picture.y, picture.z, heading_key.x, heading_key.y,
 				1.0 if agent.visible else 0.0, float(agent.lane_key()), velocity.x, velocity.y,
-				heading.x, heading.y, agent.colour.r, agent.colour.g, agent.colour.b])
+				heading.x, heading.y, colour.r, colour.g, colour.b])
 	var context := HashingContext.new()
 	context.start(HashingContext.HASH_SHA256)
 	context.update(previous)
