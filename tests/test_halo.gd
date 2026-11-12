@@ -23,7 +23,7 @@ extends RefCounted
 ## by the frame's own `delta`, so time in a check is the frame time the rims were handed, summed by a
 ## node of the suite's own that the engine processes beside them (`HaloRig.FrameClock`); it is not
 ## physics ticks, which no rim reads. What a rim was told is read through the rim a body hands its
-## source (`ExcitementSource.rim`, wrapped in a `HaloRig.ToldRim`), what it draws through the
+## source (`ExcitementSource.rim()`, wrapped in a `HaloRig.ToldRim`), what it draws through the
 ## renderer's own channel (`halo_colour`, the instance parameter the shader reads) and the engine's
 ## `draw` signal, which a headless run emits like any other.
 
@@ -201,7 +201,7 @@ func _test_the_cap_keeps_the_strongest(t: TestRunner) -> void:
 
 	var picked_ids: Array[String] = []
 	for source: ExcitementSource in picked:
-		picked_ids.append((source.body as EventInstance).def.id)
+		picked_ids.append((source.body() as EventInstance).def.id)
 	picked_ids.sort()
 	expected_ids.sort()
 	t.check(picked_ids == expected_ids,
@@ -379,7 +379,7 @@ func _told_for(t: TestRunner, net: float) -> Array:
 	var instance := _instance_at(_def("net_probe", 10.0), Vector2.ZERO)
 	instance.source().accumulate_landed(net)
 	await HaloRig.lit_among(t, [instance.source()], Vector2.ZERO)
-	var rim := instance.source().rim as HaloRig.ToldRim
+	var rim := instance.source().rim() as HaloRig.ToldRim
 	var told := [rim.strength, rim.colour]
 	instance.free()
 	return told
@@ -585,7 +585,7 @@ func _test_process_picks_the_same_sources_the_linear_scan_did(t: TestRunner) -> 
 
 	t.check(strong_rim.strength > 0.0 and strong_rim.is_held(),
 			"a source above the floor at her position is picked and told a nonzero target")
-	t.check(weak.rim() == null and not weak.source().rim.is_held(),
+	t.check(weak.rim() == null and not weak.source().rim().is_held(),
 			"a source out of reach is told zero, so it never builds a rim at all -- the same answer " +
 			"the linear `in` scan gave before the picked set became a Dictionary lookup")
 
@@ -770,7 +770,7 @@ func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t: TestRunner) -> vo
 	# And the rim over them is exactly the state that used to stop re-tracing.
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
-	flock.source().rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
+	flock.source().rim().set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 	var halo: EntityHalo = flock.rim()
 	await _frames_until(t, clock, func() -> bool:
 		return _is_drawn_at(halo, EntityHalo.MAX_ALPHA), EntityHalo.FADE_IN_SECONDS + 1.0)
@@ -894,7 +894,7 @@ func _test_an_event_holds_no_rim_until_it_is_picked(t: TestRunner) -> void:
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
 	var instance := _rig_instance(t, EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
-	var rim_of := instance.source().rim
+	var rim_of := instance.source().rim()
 	t.check(instance.rim() == null and not rim_of.is_held(),
 			"a live event holds no rim before anything has picked it")
 	rim_of.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
@@ -1027,7 +1027,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t: Te
 	var held: Array[EventInstance] = []
 	for i in EntityHalo.RIM_BUDGET:
 		var instance := manager.spawn_extra(_def("held_%d" % i, 20.0), Vector2(32.0 * float(i), 0.0))
-		instance.source().rim.set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
+		instance.source().rim().set_strength(EntityHalo.MAX_ALPHA, Palette.HALO_STRONG)
 		held.append(instance)
 	# Lit fully before the halo is in the tree, so each fade is a whole FADE_OUT_SECONDS.
 	await _frames_until(t, clock, func() -> bool:
@@ -1048,7 +1048,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t: Te
 	var retired: EventInstance = held[0]
 	var retired_rim := retired.rim().get_instance_id()
 	var retired_id := retired.get_instance_id()
-	var retired_rim_of := retired.source().rim
+	var retired_rim_of := retired.source().rim()
 	# Whether the retired event still held its rim as its body left the tree: a rim that goes with
 	# its body has left the tree a moment before (children leave first) but is still held.
 	var held_as_the_body_left := [true]
@@ -1064,7 +1064,7 @@ func _test_a_retired_holder_gives_its_block_back_before_a_new_rim_is_built(t: Te
 	t.check(not held_as_the_body_left[0] and probe.when("out", retired_rim) >= 0
 			and probe.when("out", retired_rim) < probe.when("body", retired_id),
 			"the retired event's rim is freed on the spot, ahead of its own deletion")
-	t.check(fresh_rim != 0 and fresh.source().rim.is_held()
+	t.check(fresh_rim != 0 and fresh.source().rim().is_held()
 			and probe.when("out", retired_rim) < probe.when("in", fresh_rim)
 			and probe.when("in", fresh_rim) < probe.when("body", retired_id),
 			"the new pick builds its rim the same frame, in the block the retired one gave back")
@@ -1111,7 +1111,7 @@ class ChurnSource extends Node2D:
 	class Excitement extends ExcitementSource:
 		## Overrides ExcitementSource._field.
 		func _field(_at: Vector2) -> float:
-			return (body as ChurnSource).strength
+			return (body() as ChurnSource).strength
 
 		## Overrides ExcitementSource.landed.
 		func landed() -> float:

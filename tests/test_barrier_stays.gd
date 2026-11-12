@@ -228,7 +228,7 @@ func _test_the_barrier_rim_survives_the_departure(t: TestRunner) -> void:
 	var stage: RoadblockRig.Stage = made[2]
 	var where := stage.manager.world.where_she_is()
 	# What `ExcitementHalo` does to a source it picks: the strength it lights the source's rim with.
-	var source := guard.excitement.rim
+	var source := guard.excitement.rim()
 	source.set_strength(0.8, Color.RED) # the chase's own rim, on the man
 	t.check(guard.rim() != null, "the man holds a rim while he chases")
 	guard.give_up_the_chase()

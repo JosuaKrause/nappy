@@ -19,8 +19,8 @@ class FrameClock extends Node:
 
 ## **The rim a body hands its source, wrapped** so a test reads what `ExcitementHalo` told it: the
 ## body's own rim (`inner`) does everything, and this keeps the last strength and colour it was
-## told. Handed to the source the way a body hands its own (`ExcitementSource.rim`), so the halo
-## asks this one and nothing else changes.
+## told. Handed to the source the way a body hands its own (`ExcitementSource.use_rim()`), so the
+## halo asks this one and nothing else changes.
 class ToldRim extends SourceRim:
 	var inner: SourceRim
 	var strength := 0.0
@@ -60,7 +60,7 @@ class ToldRim extends SourceRim:
 
 ## Wraps the rim `instance` hands its source in a `ToldRim`, and answers it.
 static func told(instance: EventInstance) -> ToldRim:
-	var rim := ToldRim.new(instance.source().rim)
+	var rim := ToldRim.new(instance.source().rim())
 	instance.source().use_rim(rim)
 	return rim
 
@@ -94,7 +94,7 @@ class ListSet extends ExcitementSources:
 static func lit_among(t: TestRunner, sources: Array, at: Vector2) -> Array:
 	var set := ListSet.new()
 	for source: ExcitementSource in sources:
-		var body: Node2D = source.body
+		var body: Node2D = source.body()
 		source.use_rim(ToldRim.new(SourceRim.new(func() -> EntityHalo:
 				var halo := EntityHalo.new(func(_canvas: CanvasItem) -> void: pass,
 						func() -> float: return 0.0)
@@ -113,7 +113,7 @@ static func lit_among(t: TestRunner, sources: Array, at: Vector2) -> Array:
 		await t.get_tree().process_frame
 	var lit: Array[ExcitementSource] = []
 	for source: ExcitementSource in sources:
-		if (source.rim as ToldRim).strength > 0.0:
+		if (source.rim() as ToldRim).strength > 0.0:
 			lit.append(source)
 	halo.free()
 	player.free()

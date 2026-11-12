@@ -135,7 +135,7 @@ func _test_an_outranked_source_projects_nothing(t: TestRunner) -> void:
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(2000.0, 0.0)]))
 	var her := Vector2(200.0, 0.0)
 	var gross := instance.source().expected_gross_at(her)
-	instance.source().outranked = true
+	instance.source().set_outranked(true)
 	t.check(gross > 0.0 and instance.source().expected_gross_at(her) == 0.0,
 			"a source outranked by another projects nothing (%.2f before)" % gross)
 	instance.free()

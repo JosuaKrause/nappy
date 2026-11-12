@@ -3,7 +3,7 @@ extends RefCounted
 ## The sampling loops and arithmetic follow the stacked baseline; no new cache path is used.
 
 static func event_gross(source: EventInstance, player_position: Vector2) -> float:
-	if source.is_finished or source.is_leaving or source.excitement.outranked:
+	if source.is_finished or source.is_leaving or source.excitement.is_outranked():
 		return 0.0
 	var velocity := source.caret_velocity()
 	var closing := source.excitement.player_velocity - velocity

@@ -2179,9 +2179,9 @@ func _test_the_building_shows_what_the_city_shows(t: TestRunner) -> void:
 	fire.source().accumulate_landed(20.0)
 	# A drawn frame of the halo, as the game runs it.
 	await _frames(t, 3)
-	t.check(fire.source().rim.is_held() and not fire.rim().is_faded_out(),
+	t.check(fire.source().rim().is_held() and not fire.rim().is_faded_out(),
 			"the fire she is standing beside wears a rim, read from the building's events, no crowd")
-	t.check(not man.source().rim.is_held(),
+	t.check(not man.source().rim().is_held(),
 			"and the masked man on the other shaft, charging her nothing, holds no rim at all")
 
 	# **The badge.** Placed far off any screen and walked in towards her, so the only thing that

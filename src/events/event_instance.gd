@@ -265,7 +265,7 @@ var _body: EventBody
 var _rim := Rim.new(self)
 
 func _init() -> void:
-	excitement.rim = _rim
+	excitement.use_rim(_rim)
 
 ## This event's own simulation clock, in seconds, advanced by `delta` in `step()` while the
 ## event is still live. `excitement.landed()` is measured against this rather than the wall clock so

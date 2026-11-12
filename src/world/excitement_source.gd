@@ -46,26 +46,45 @@ static func net_landed(landed: float, total_landed: float, decay: float) -> floa
 		return 0.0
 	return maxf(0.0, landed - decay * (landed / total_landed))
 
+## The thing in the world this source charges her from (`body()`).
+var _body: Node2D
+
+## How this source's rim is drawn (`rim()`).
+var _rim: SourceRim = null
+
+## Whether another source is charging her in this one's place this frame (`is_outranked()`).
+var _outranked := false
+
 ## The thing in the world this source charges her from: where its field stands
-## (`global_position`), and whether it is still there (`is_queued_for_deletion()`).
-var body: Node2D
+## (`global_position`), and whether it is still there (`is_queued_for_deletion()`). Handed back as
+## it is held, so a body freed since answers `is_instance_valid()` false rather than failing here.
+func body() -> Node2D:
+	return _body
 
 ## How this source's rim is drawn, handed in by the body that owns the picture (`SourceRim`), or null
 ## for a source nobody draws.
-var rim: SourceRim = null
-
-## Whether another source of the same kind is the one charging her in this one's place this frame,
-## so this one is not projected (`expected_gross_at()` answers zero) and is not picked for a rim
-## (`ExcitementHalo._select_sources()`). Told from outside, once a frame: a region boundary's
-## structures charge as their strongest (`EventSources`). False until somebody says otherwise.
-var outranked := false
+func rim() -> SourceRim:
+	return _rim
 
 ## Gives the source the rim `ExcitementHalo` lights on its body.
 func use_rim(the_rim: SourceRim) -> void:
-	rim = the_rim
+	_rim = the_rim
+
+## Whether another source of the same kind is the one charging her in this one's place this frame,
+## so this one is not projected (`expected_gross_at()` answers zero) and is not picked for a rim
+## (`ExcitementHalo._select_sources()`). Told from outside, once a frame (`set_outranked()`): a region
+## boundary's structures charge as their strongest (`EventSources`). False until somebody says
+## otherwise.
+func is_outranked() -> bool:
+	return _outranked
+
+## Tells the source whether another is charging her in its place this frame (`is_outranked()`),
+## once a frame, from `EventManager`.
+func set_outranked(outranked: bool) -> void:
+	_outranked = outranked
 
 func _init(the_body: Node2D) -> void:
-	body = the_body
+	_body = the_body
 
 # --------------------------------------------------------------- what she does ---
 
@@ -180,7 +199,7 @@ var _contribution_was := 0.0
 func contribution_at(at: Vector2) -> float:
 	if not _caches_contribution:
 		var field := _field(at)
-		if field > 0.0 and _walled_off_now(body.global_position, at):
+		if field > 0.0 and _walled_off_now(_body.global_position, at):
 			return 0.0
 		return field
 	var stamp := _contribution_stamp()
@@ -199,7 +218,7 @@ func invalidate_contribution() -> void:
 
 func _contribution_uncached(at: Vector2) -> float:
 	var field := _field(at)
-	if field > 0.0 and _walled_off_now(body.global_position, at):
+	if field > 0.0 and _walled_off_now(_body.global_position, at):
 		return 0.0
 	return field
 
@@ -268,12 +287,12 @@ var _expected_landed_cache := 0.0
 ## are out of reach, so the type's question is asked only of the few near enough to matter. The halo
 ## asks this of every source every drawn frame.
 func expected_gross_at(player_position: Vector2) -> float:
-	if outranked:
+	if _outranked:
 		return 0.0
 	var velocity := _projection_velocity()
 	var closing := player_velocity - velocity
 	var reach := closing.length() * Tuning.EXPECTED_IMPACT_HORIZON + _projection_reach()
-	if body.global_position.distance_to(player_position) > reach:
+	if _body.global_position.distance_to(player_position) > reach:
 		return 0.0
 	if (velocity.is_zero_approx() and player_velocity.is_zero_approx()) or not _projects():
 		return 0.0
@@ -301,7 +320,7 @@ func _sample_expected_landed(player_position: Vector2, velocity: Vector2) -> flo
 	var steps := int(round(Tuning.EXPECTED_IMPACT_HORIZON / dt))
 	var integral := 0.0
 	# Where it stands and the walls it asks, read once: neither moves while it samples.
-	var from := body.global_position
+	var from := _body.global_position
 	var grid := wall_grid()
 	for i in steps:
 		var t := float(i + 1) * dt

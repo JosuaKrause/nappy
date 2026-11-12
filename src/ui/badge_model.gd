@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name BadgeModel
 extends RefCounted
 ## **Which dangers get a screen-edge badge, when it goes up and when it comes down.** The decision
@@ -142,7 +141,7 @@ func _measure_dangers_in_the_world(delta: float, here: Vector2, subjects: Array,
 	# Only the subjects alive this frame carry state forward; a key not touched above still reads an
 	# earlier generation and is erased here, which also keeps a freshly streamed thing from
 	# flashing an arrow on the frame it appears, and ends the badge of a danger that left the world.
-	for key in _watch.keys():
+	for key: int in _watch.keys():
 		if _watch[key]["generation"] != _generation:
 			_watch.erase(key)
 

@@ -589,7 +589,7 @@ func _tell_them_where_she_is() -> void:
 	world.where_she_is().tell(world.player.global_position, pram, world.visible.view, running,
 			awake, held)
 	for instance in world.instances:
-		instance.excitement.outranked = instance.def.barrier_structure and instance != strongest
+		instance.excitement.set_outranked(instance.def.barrier_structure and instance != strongest)
 
 func check_hard_fails() -> void:
 	if _hard_failed or not world.has_player():
