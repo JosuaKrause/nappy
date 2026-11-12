@@ -378,6 +378,16 @@ class ClassTests(unittest.TestCase):
         game = {self.HUD: "class_name Hud\nfunc f(h: Hud) -> void:\n\th.area.grow(1.0)\n"}
         self.assertEqual(only(self.GROW | game, self.GROW_READ), {(self.AREA, "grow")})
 
+    def test_a_call_inside_a_tests_inner_class_is_its_own_or_inherited_method(self) -> None:
+        maker = {"src/x/maker.gd": "class_name Maker\nfunc mk() -> Area:\n\treturn Area.new()\n"}
+        for suite in (
+            "class _P extends RefCounted:\n\tfunc mk() -> Area:\n\t\treturn Area.new()\n"
+            "\tfunc f() -> void:\n\t\tvar a := mk()\n\t\ta.grow(1.0)\n",
+            "class _P extends Maker:\n\tfunc f() -> void:\n\t\tvar a := mk()\n\t\ta.grow(1.0)\n",
+            "func f() -> void:\n\tvar a := declared_nowhere()\n\ta.grow(1.0)\n",
+        ):
+            self.assertEqual(only(self.GROW | maker, {"tests/test_p.gd": suite}), {(self.AREA, "grow")}, msg=suite)
+
     def test_an_autoload_is_its_script(self) -> None:
         src = {
             "src/autoload/tuning.gd": "extends Node\nfunc horn() -> float:\n\treturn 1.0\n",
