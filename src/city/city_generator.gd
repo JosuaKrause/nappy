@@ -209,9 +209,10 @@ static func _attempt(seed_value: int, choices: Dictionary = {}) -> CityMap:
 	# block's carved rects, which is why the buildings are collected afterwards rather than before.
 	_place_hard_blockers(map, purposes, block_rects, rng, choices)
 	# **After the hard blockers, and for the same reason they run after the repaint.** A region may
-	# never grow across a street a dead end or a big building just built over, and `absent_segments`
-	# only carries that once the blockers are placed — growing regions any earlier would let a
-	# region's own growth cross ground the run is about to take away.
+	# never grow across a street a dead end or a big building just built over, and the absent
+	# streets (`CityMap.has_street()`) only carry that once the blockers are placed — growing
+	# regions any earlier would let a region's own growth cross ground the run is about to take
+	# away.
 	_assign_regions(map)
 	for rects: Array[Rect2i] in block_rects.values():
 		map.add_building_lots(rects)
@@ -316,7 +317,7 @@ static func _place_precincts(map: CityMap, rng: RandomNumberGenerator) -> void:
 ## not already next to open calm.
 ##
 ## The dictionary that comes back is keyed by **lot anchors**, not by blocks: the three blocks a
-## zone absorbed are removed at the end and live in `map.zone_anchor` instead. They carry the
+## zone absorbed are removed at the end and reach their anchor through `map.anchor_of()` instead. They carry the
 ## zone's purpose while this function runs, though, because that is what makes the "never side
 ## by side" rule see a zone as calm ground without a special case for it.
 static func _assign_purposes(map: CityMap, rng: RandomNumberGenerator, choices: Dictionary = {}) -> Dictionary:
@@ -700,9 +701,9 @@ static func _has_calm_neighbour(purposes: Dictionary, footprint: Rect2i) -> bool
 ## rows and the two vertical ones between its columns.
 ##
 ## That is the whole of it, and the graph half of `StreetNetwork` needs no other change —
-## `map.absent_segments` is added to the closed set of every route search, the four junctions
-## around the removed cross become T-junctions for free, and the one in the middle of the zone
-## is left with nothing reaching it at all.
+## `map.blocked_segments()` adds the absent streets to the closed set of every route search, the
+## four junctions around the removed cross become T-junctions for free, and the one in the middle
+## of the zone is left with nothing reaching it at all.
 ##
 ## Then the **stub**, which every hard blocker shares and states once: see
 ## `_seal_stub_crossings`.
@@ -784,7 +785,7 @@ static func _plan_arcs(map: CityMap, purposes: Dictionary,
 
 ## **The park day 12's task sends her to**, chosen once for the run: *"we can just force open the
 ## park she needs to go to that day … *then* the park starts to close"* (PLAYTEST-119). Its plan
-## carries `BlockPlan.forced_open_on`, so on that day it is a park whatever its arc has reached
+## carries its day (`BlockPlan.force_open_on()`), so on that day it is a park whatever its arc has reached
 ## (`CityState.purpose_of()`), and its arc ends requisitioned, so that once she has reached the
 ## swing it stays taken for the rest of the run (`CityState.take()`).
 ##

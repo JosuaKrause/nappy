@@ -42,7 +42,7 @@ const VAN_WITHIN_THE_NEXT := 2
 ## - `DOOR` sits at one of today's region-wall doors, a bare point rather than a rider.
 ## - `PARK_SWING` sits at the swing of one specific park's playground, also a bare point.
 ## - `STATION_DOOR` sits on the pavement in front of the power station's front door
-##   (`CityMap.power_station_door`), a bare point — the last night's hand-over.
+##   (`CityMap.power_station_door_tiles()`), a bare point — the last night's hand-over.
 ## - `MAST` sits beside the foot of one of today's live loudspeaker masts, a bare point; reaching it
 ##   silences that mast for the rest of the run.
 ## - `NEIGHBOR` rides the neighbor (`task_event_id`), spawned out in the city walking home along a
@@ -259,7 +259,7 @@ static func narrow_target_on(day: int) -> Step:
 ##   (`CityMap.swing_position()`). Empty while that park is not open — on any other day, or once
 ##   she has taken it.
 ## - **`STATION_DOOR`**: the pavement tiles in front of the power station's front door
-##   (`CityMap.power_station_door`), where she stands to reach it — the same tiles the day's
+##   (`CityMap.power_station_door_tiles()`), where she stands to reach it — the same tiles the day's
 ##   corridor grows its spur to (`RouteTree.for_day`). Empty on a city with no station, which
 ##   `CityGenerator.validate()` refuses.
 static func target_candidates(step: Step, map: CityMap,

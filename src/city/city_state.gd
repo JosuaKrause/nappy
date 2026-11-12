@@ -18,7 +18,7 @@ var _stage := {}
 ## the route map wants to shade "this is new".
 var _changed_on := {}
 ## The park that is open today whatever its arc has reached — day 12's, the one its task sends her
-## to (`BlockPlan.forced_open_on`) — as `block -> true`, until she takes it. Derived by
+## to (`BlockPlan.forced_open_day()`) — as `block -> true`, until she takes it. Derived by
 ## `begin_day()` from the plans and the day, never saved: a retried day derives it again.
 var _open_today := {}
 ## Where a block's step along its arc is written down for the run log — the run's trace, handed

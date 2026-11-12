@@ -74,7 +74,7 @@ func _test_it_is_not_in_the_home_region(t: TestRunner) -> void:
 func _test_its_door_is_a_reasonable_walk_from_home(t: TestRunner) -> void:
 	var spread := {}
 	for map in _maps:
-		var key := map.power_station_door_key
+		var key := map.power_station_door_street().key()
 		var offset := (Vector2i(key.x, key.y - 1) - map.home_block).abs()
 		var away := offset.x + offset.y
 		spread[away] = spread.get(away, 0) + 1
@@ -84,8 +84,8 @@ func _test_its_door_is_a_reasonable_walk_from_home(t: TestRunner) -> void:
 	print("[test_power_station] door distance from the home block, blocks: count — %s" % spread)
 
 ## The door is pavement, directly south of the mass, inside its width, on the street
-## `power_station_door_key` names — a real street, which is what makes it a front door rather than
-## a painted one.
+## `power_station_door_street()` names — a real street, which is what makes it a front door rather
+## than a painted one.
 func _test_the_front_door_is_on_its_long_south_side(t: TestRunner) -> void:
 	for map in _maps:
 		var pair := map.power_station
@@ -132,7 +132,7 @@ func _test_industrial_ground_is_preferred(t: TestRunner) -> void:
 
 	var got := {0: 0, 1: 0, 2: 0}
 	for map in _maps:
-		got[map.power_station_industrial_blocks] += 1
+		got[map.capture()["power_station_industrial_blocks"]] += 1
 	print("[test_power_station] industrial blocks under the station: count — %s" % got)
 
 # ------------------------------------------------------------------ the day ---

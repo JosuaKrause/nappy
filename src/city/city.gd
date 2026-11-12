@@ -951,7 +951,7 @@ func _courtyard_lot_of(rects: Array[Rect2i]) -> Array[int]:
 	return result
 
 ## Makes `building` the power station when `rect` is its mass: the door over the pavement
-## `CityMap.power_station_door` names, and the transformer yard over the other block — the hall is
+## `CityMap.power_station_door_tiles()` names, and the transformer yard over the other block — the hall is
 ## the door's block and the street the mass was built across.
 func _dress_the_power_station(building: Building, rect: Rect2i) -> void:
 	if not map.has_power_station() or rect != CityMap.blocks_tile_rect(map.power_station_blocks()):

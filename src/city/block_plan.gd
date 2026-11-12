@@ -35,7 +35,7 @@ var steps: Array[Step] = []
 ## day it is a park whatever its arc has reached (`CityState.purpose_of()`), and once she has
 ## reached its swing it is taken (`CityState.take()`), which its arc ends in for exactly that
 ## reason.
-var forced_open_on := 0
+var _forced_open_on := 0
 
 ## The same arc as a plan of its own: its own steps, so a step written on one plan is not written
 ## on the other (`CityMap.copy()`).
@@ -43,7 +43,7 @@ func copy() -> BlockPlan:
 	var twin := BlockPlan.new()
 	for step in steps:
 		twin.steps.append(Step.new(step.purpose, step.from_day, step.cause))
-	twin.forced_open_on = forced_open_on
+	twin._forced_open_on = _forced_open_on
 	return twin
 
 static func of(start: GameEnums.BlockPurpose) -> BlockPlan:
@@ -85,21 +85,21 @@ func steps_in_order() -> Array[Step]:
 func append_step(step: Step) -> void:
 	steps.append(step)
 
-## The day this park is the swing park's, or 0 on a block that is not (see `forced_open_on`).
+## The day this park is the swing park's, or 0 on a block that is not (see `_forced_open_on`).
 func forced_open_day() -> int:
-	return forced_open_on
+	return _forced_open_on
 
 ## Makes this park the one the day's task sends her to, on `day`.
 func force_open_on(day: int) -> void:
-	forced_open_on = day
+	_forced_open_on = day
 
 ## Whether this park is the swing park, whatever day it is forced open on.
 func is_swing_park() -> bool:
-	return forced_open_on > 0
+	return _forced_open_on > 0
 
 ## Whether this park is forced open on `day`.
 func is_forced_open_on(day: int) -> bool:
-	return forced_open_on == day
+	return _forced_open_on == day
 
 ## True if this block is calm ground at every step of its arc — a piece of the city that can
 ## be relied on for the whole run.
