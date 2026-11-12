@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name SceneRecipe
 extends RefCounted
 ## Construction schema only. Runtime validates setup and playback before exposing a scene.
@@ -36,14 +35,15 @@ static func validate(data: Dictionary) -> Array[String]:
 	if not expected is Array:
 		errors.append("recipe.expected_violations: expected an array")
 	else:
+		var codes: Array = expected
 		var seen := {}
-		for code: Variant in expected:
+		for code: Variant in codes:
 			if not code is String or str(code).is_empty() or seen.has(code):
 				errors.append("recipe.expected_violations: empty, duplicate or non-string diagnostic")
 			seen[code] = true
-		if data.get("classification", "normal") == "normal" and not expected.is_empty():
+		if data.get("classification", "normal") == "normal" and not codes.is_empty():
 			errors.append("recipe.expected_violations: normal scenes cannot waive checks")
-	for field in ["extent", "city", "anchors", "setup", "playback", "stretch", "draft", "context"]:
+	for field: String in ["extent", "city", "anchors", "setup", "playback", "stretch", "draft", "context"]:
 		if not data.get(field, {}) is Dictionary:
 			errors.append("recipe.%s: expected an object" % field)
 	if not errors.is_empty():
@@ -55,16 +55,17 @@ static func validate(data: Dictionary) -> Array[String]:
 	if (extent.get("scope") == "stretch") != data.has("stretch"):
 		errors.append("stretch: a stretch scope and a stretch object come together")
 	elif data.has("stretch"):
-		_validate_stretch(data.stretch, errors)
+		_validate_stretch(data["stretch"], errors)
 		if not data.has("context"):
 			errors.append("context: a stretch requires explicit saved city context; draft it first")
 		else:
-			errors.append_array(RecipeCityContext.validate(data.context))
+			errors.append_array(RecipeCityContext.validate(data["context"]))
 	elif data.has("context"):
 		errors.append("context: saved city context belongs to a stretch")
 	if data.get("draft", {}) is Dictionary:
-		_keys(data.get("draft", {}), ["include"], "draft", errors)
-		var include: Variant = data.get("draft", {}).get("include", [])
+		var draft: Dictionary = data.get("draft", {})
+		_keys(draft, ["include"], "draft", errors)
+		var include: Variant = draft.get("include", [])
 		if not include is Array or not (include as Array).all(
 				func(tile: Variant) -> bool: return tuple(tile, 2, true)):
 			errors.append("draft.include: a list of tiles [x, y] whose ground the draft adds")
@@ -72,7 +73,7 @@ static func validate(data: Dictionary) -> Array[String]:
 		if not tuple(extent.get("bounds"), 4, true):
 			errors.append("extent.bounds: expected [x,y,width,height] in integer tiles")
 		else:
-			var bounds := rect(extent.bounds)
+			var bounds := rect(extent["bounds"])
 			if not bounds.has_area() or not Rect2i(Vector2i.ZERO, CityMap.map_tiles()).encloses(bounds):
 				errors.append("extent.bounds: expected positive bounds inside the city lattice")
 	elif extent.has("bounds"):
@@ -82,37 +83,39 @@ static func validate(data: Dictionary) -> Array[String]:
 	if not city.get("tree_moves", []) is Array:
 		errors.append("city.tree_moves: expected an array")
 	else:
-		for move: Variant in city.get("tree_moves", []):
-			if not move is Dictionary:
+		for entry: Variant in city.get("tree_moves", []):
+			if not entry is Dictionary:
 				errors.append("city.tree_moves: expected from/to tile objects")
 				continue
+			var move: Dictionary = entry
 			_keys(move, ["from", "to"], "city.tree_moves", errors)
 			if not tuple(move.get("from"), 2, true) or not tuple(move.get("to"), 2, true):
 				errors.append("city.tree_moves: from/to must be integer tile pairs")
 	if not integer(city.get("context_seed")):
 		errors.append("city.context_seed: explicit construction context is required")
-	if city.has("main_road") and (not integer(city.main_road) or int(city.main_road) < 3
-			or int(city.main_road) > Tuning.CITY_BLOCKS.x - 3):
+	if city.has("main_road") and (not integer(city["main_road"]) or int(city["main_road"]) < 3
+			or int(city["main_road"]) > Tuning.CITY_BLOCKS.x - 3):
 		errors.append("city.main_road: spine requires three corridors of clearance")
 	if not city.get("lots", []) is Array:
 		errors.append("city.lots: expected an array")
 	else:
 		var footprints: Array[Rect2i] = []
-		for pin: Variant in city.get("lots", []):
-			if not pin is Dictionary:
+		for entry: Variant in city.get("lots", []):
+			if not entry is Dictionary:
 				errors.append("city.lots: expected objects")
 				continue
+			var pin: Dictionary = entry
 			_keys(pin, ["blocks", "purpose"], "city.lots", errors)
 			if not tuple(pin.get("blocks"), 4, true) or pin.get("purpose") not in ["residential", "civic", "commercial", "industrial", "park", "forest", "quiet_square", "courtyard"]:
 				errors.append("city.lots: requires blocks [x,y,w,h] and a starting purpose")
 				continue
-			var footprint := rect(pin.blocks)
+			var footprint := rect(pin["blocks"])
 			if not footprint.has_area() or not Rect2i(Vector2i.ZERO, Tuning.CITY_BLOCKS).encloses(footprint):
 				errors.append("city.lots: footprint outside the block lattice")
 			if footprint.size != Vector2i.ONE:
-				if pin.purpose not in ["park", "forest", "quiet_square", "courtyard"]:
+				if pin["purpose"] not in ["park", "forest", "quiet_square", "courtyard"]:
 					errors.append("city.lots: built purposes require single blocks")
-				elif pin.purpose == "courtyard" and footprint.size != Vector2i(2, 2):
+				elif pin["purpose"] == "courtyard" and footprint.size != Vector2i(2, 2):
 					errors.append("city.lots: apartment complexes require a 2 by 2 footprint")
 				elif not Tuning.CALM_ZONE_SHAPES.has(footprint.size):
 					errors.append("city.lots: unsupported calm-zone footprint")
@@ -121,10 +124,11 @@ static func validate(data: Dictionary) -> Array[String]:
 					errors.append("city.lots: overlapping pins")
 			footprints.append(footprint)
 	if city.has("precincts"):
-		if not city.precincts is Array or city.precincts.size() != 2:
+		var precincts: Variant = city["precincts"]
+		if not precincts is Array or (precincts as Array).size() != 2:
 			errors.append("city.precincts: exactly shore and inland spans are required")
 		else:
-			for span: Variant in city.precincts:
+			for span: Variant in precincts:
 				if not tuple(span, 4, true):
 					errors.append("city.precincts: spans are [axis,corridor,start,end]")
 				elif int(span[0]) not in [0, 1] or int(span[1]) < 0 \
@@ -132,15 +136,16 @@ static func validate(data: Dictionary) -> Array[String]:
 						or int(span[2]) < 0 or int(span[3]) >= Tuning.CITY_BLOCKS[int(span[0])] \
 						or int(span[3]) - int(span[2]) + 1 != Tuning.PRECINCT_BLOCKS:
 					errors.append("city.precincts: invalid precinct span")
-	for field in ["layouts", "dead_ends", "closures"]:
+	for field: String in ["layouts", "dead_ends", "closures"]:
 		if not city.get(field, []) is Array:
 			errors.append("city.%s: expected an array" % field)
 			continue
 		var seen := {}
-		for pin: Variant in city.get(field, []):
-			if not pin is Dictionary:
+		for entry: Variant in city.get(field, []):
+			if not entry is Dictionary:
 				errors.append("city.%s: expected objects" % field)
 				continue
+			var pin: Dictionary = entry
 			if field == "layouts":
 				_keys(pin, ["block", "seed"], "city.layouts", errors)
 				if not tuple(pin.get("block"), 2, true) or not integer(pin.get("seed")):
@@ -158,31 +163,33 @@ static func validate(data: Dictionary) -> Array[String]:
 				errors.append("city.%s: duplicate pin %s" % [field, key])
 			seen[key] = true
 	if city.has("power_station"):
-		var station: Variant = city.power_station
-		if not station is Dictionary:
+		var pinned: Variant = city["power_station"]
+		if not pinned is Dictionary:
 			errors.append("city.power_station: expected an object")
 		else:
+			var station: Dictionary = pinned
 			_keys(station, ["blocks", "door_block"], "city.power_station", errors)
 			if not tuple(station.get("blocks"), 4, true) or not tuple(station.get("door_block"), 2, true):
 				errors.append("city.power_station: requires blocks [x,y,2,1] and door_block [x,y]")
-			elif rect(station.blocks).size != Vector2i(2, 1) or int(station.blocks[0]) < 1 \
-					or int(station.blocks[1]) < 1 or not Rect2i(Vector2i.ONE, Tuning.CITY_BLOCKS - Vector2i(2, 2)).encloses(rect(station.blocks)):
+			elif rect(station["blocks"]).size != Vector2i(2, 1) or int(station["blocks"][0]) < 1 \
+					or int(station["blocks"][1]) < 1 or not Rect2i(Vector2i.ONE, Tuning.CITY_BLOCKS - Vector2i(2, 2)).encloses(rect(station["blocks"])):
 				errors.append("city.power_station: requires two horizontal interior blocks")
 	for key: Variant in data.get("anchors", {}):
-		var anchor: Variant = data.anchors[key]
+		var named: Variant = data["anchors"][key]
 		if not key is String or str(key).is_empty():
 			errors.append("anchors: names must be nonempty strings")
-		if anchor is String:
-			if anchor not in ["doorstep", "power_station_door"]:
+		if named is String:
+			if named not in ["doorstep", "power_station_door"]:
 				errors.append("anchors.%s: unknown landmark" % key)
-		elif not anchor is Dictionary:
+		elif not named is Dictionary:
 			errors.append("anchors.%s: expected landmark string or position object" % key)
 		else:
+			var anchor: Dictionary = named
 			_keys(anchor, ["tile", "world", "junction", "side"], "anchors.%s" % key, errors)
 			var forms := int(anchor.has("tile")) + int(anchor.has("world")) + int(anchor.has("junction"))
 			if forms != 1:
 				errors.append("anchors.%s: choose exactly one position form" % key)
-			for form in ["tile", "world", "junction"]:
+			for form: String in ["tile", "world", "junction"]:
 				if anchor.has(form) and not tuple(anchor[form], 2, form != "world"):
 					errors.append("anchors.%s.%s: expected two coordinates" % [key, form])
 			if anchor.has("junction") and anchor.get("side") not in ["northwest", "northeast", "southwest", "southeast"]:
@@ -232,7 +239,7 @@ static func _validate_stretch(stretch: Dictionary, errors: Array[String]) -> voi
 				for run: Variant in tiles[type]:
 					if not tuple(run, 3, true) or int(run[1]) > int(run[2]):
 						errors.append("stretch.tiles.%s: a run is [y, x_from, x_to] with x_from <= x_to" % type)
-	for field in ["buildings", "trees", "props", "litter", "cracks"]:
+	for field: String in ["buildings", "trees", "props", "litter", "cracks"]:
 		if not stretch.get(field, []) is Array:
 			errors.append("stretch.%s: expected an array" % field)
 	if not errors.is_empty():
@@ -243,10 +250,11 @@ static func _validate_stretch(stretch: Dictionary, errors: Array[String]) -> voi
 	var conditions: Array[String] = []
 	for key: String in Building.Condition:
 		conditions.append(key.to_lower())
-	for building: Variant in stretch.get("buildings", []):
-		if not building is Dictionary:
+	for entry: Variant in stretch.get("buildings", []):
+		if not entry is Dictionary:
 			errors.append("stretch.buildings: expected objects")
 			continue
+		var building: Dictionary = entry
 		_keys(building, ["lot", "district", "variant", "height", "condition"], "stretch.buildings", errors)
 		if not tuple(building.get("lot"), 4, true) or not building.get("district") in districts \
 				or not integer(building.get("variant")) or not integer(building.get("height")) \
@@ -255,19 +263,21 @@ static func _validate_stretch(stretch: Dictionary, errors: Array[String]) -> voi
 	for tree: Variant in stretch.get("trees", []):
 		if not tuple(tree, 2, true):
 			errors.append("stretch.trees: a street tree is its pit tile [x,y]")
-	for prop: Variant in stretch.get("props", []):
-		if not prop is Dictionary:
+	for entry: Variant in stretch.get("props", []):
+		if not entry is Dictionary:
 			errors.append("stretch.props: expected objects")
 			continue
+		var prop: Dictionary = entry
 		_keys(prop, ["kind", "at", "variant", "scale"], "stretch.props", errors)
 		if not prop.get("kind") in prop_kind_names() or not tuple(prop.get("at"), 2, false) \
 				or not integer(prop.get("variant", 0)) or not (prop.get("scale", 1.0) is float
 				or prop.get("scale", 1.0) is int) or float(prop.get("scale", 1.0)) <= 0.0:
 			errors.append("stretch.props: requires a kind, at [x,y], an integer variant and a positive scale")
-	for litter: Variant in stretch.get("litter", []):
-		if not litter is Dictionary:
+	for entry: Variant in stretch.get("litter", []):
+		if not entry is Dictionary:
 			errors.append("stretch.litter: expected objects")
 			continue
+		var litter: Dictionary = entry
 		_keys(litter, ["kind", "at"], "stretch.litter", errors)
 		if not litter.get("kind") in litter_names() or not tuple(litter.get("at"), 2, false):
 			errors.append("stretch.litter: requires a kind (%s) and at [x,y]" % ", ".join(litter_names()))
@@ -280,7 +290,7 @@ static func integer(value: Variant) -> bool:
 	return (value is int or value is float) and is_finite(float(value)) and float(value) == floor(float(value))
 
 static func tuple(value: Variant, count: int, integral: bool) -> bool:
-	if not value is Array or value.size() != count:
+	if not value is Array or (value as Array).size() != count:
 		return false
 	for component: Variant in value:
 		if integral and not integer(component):

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name RouteRigPlanner
 extends RefCounted
 ## **Where a `--route` target is, and the walk there**: the half of `RouteRig` (`src/dev/route_rig.gd`)
@@ -1091,7 +1090,7 @@ func _line_of_sight(a: Vector2i, b: Vector2i) -> bool:
 	var steps := maxi(1, ceili(offset.length() / _LINE_OF_SIGHT_STEP))
 	for i in steps + 1:
 		var centre := start.lerp(stop, float(i) / float(steps))
-		for point in [centre, centre + perpendicular, centre - perpendicular]:
+		for point: Vector2 in [centre, centre + perpendicular, centre - perpendicular]:
 			var tile := _map.world_to_tile(point)
 			if not _map.is_open(tile) or _map.is_obstructed(tile):
 				return false
@@ -1245,7 +1244,7 @@ func unstick_order(away: Vector2, reach: float) -> Array[Vector2]:
 			return a.dot(away) > b.dot(away))
 	var clear_of_doors: Array[Vector2] = []
 	var into_doors: Array[Vector2] = []
-	for direction in order:
+	for direction: Vector2 in order:
 		if _into_a_door(_player.global_position + direction * reach):
 			into_doors.append(direction)
 		else:
