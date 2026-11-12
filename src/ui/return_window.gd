@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access", "unsafe_method_access")
 class_name ReturnWindow
 extends Node
 ## The half second after the game gets focus back, during which every input is ignored, and the
@@ -116,23 +115,26 @@ func _listen_on_the_web() -> void:
 	_web_callback = JavaScriptBridge.create_callback(_on_web_callback)
 	var document := JavaScriptBridge.get_interface("document")
 	var window := JavaScriptBridge.get_interface("window")
-	document.addEventListener("visibilitychange", _web_callback)
-	window.addEventListener("focus", _web_callback)
-	window.addEventListener("blur", _web_callback)
+	# A page object's members are the page's own, which the engine types none of, so they are
+	# called and read by name (`call()`, `get()`), the form a direct `.addEventListener()` takes.
+	document.call("addEventListener", "visibilitychange", _web_callback)
+	window.call("addEventListener", "focus", _web_callback)
+	window.call("addEventListener", "blur", _web_callback)
 
 ## Removes what `_listen_on_the_web()` added, so a scene reload does not pile up listeners.
 func _stop_listening_on_the_web() -> void:
 	if _web_callback == null:
 		return
-	JavaScriptBridge.get_interface("document").removeEventListener("visibilitychange", _web_callback)
-	JavaScriptBridge.get_interface("window").removeEventListener("focus", _web_callback)
-	JavaScriptBridge.get_interface("window").removeEventListener("blur", _web_callback)
+	JavaScriptBridge.get_interface("document").call(
+			"removeEventListener", "visibilitychange", _web_callback)
+	JavaScriptBridge.get_interface("window").call("removeEventListener", "focus", _web_callback)
+	JavaScriptBridge.get_interface("window").call("removeEventListener", "blur", _web_callback)
 	_web_callback = null
 
 func _on_web_callback(args: Array) -> void:
 	var event: JavaScriptObject = args[0] if args.size() > 0 else null
-	var kind := str(event.type) if event != null else ""
-	on_web_event(kind, str(JavaScriptBridge.get_interface("document").visibilityState))
+	var kind := str(event.get("type")) if event != null else ""
+	on_web_event(kind, str(JavaScriptBridge.get_interface("document").get("visibilityState")))
 
 ## The decision half of the web callback, with the browser's answers passed in so a test can drive
 ## it: a `blur`, or a `visibilitychange` to anything but "visible", is a departure; a `focus`, or a

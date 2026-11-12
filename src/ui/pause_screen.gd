@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access")
 class_name PauseScreen
 extends CanvasLayer
 ## The pause, and the only one a player can ask for — the between-days summary stops the tree too,
@@ -380,7 +379,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _touch and event is InputEventMouseMotion:
 		_update_hover((event as InputEventMouseMotion).position)
 		return
-	if not (event is InputEventKey and event.pressed):
+	if not (event is InputEventKey and (event as InputEventKey).pressed):
 		return
 	match (event as InputEventKey).keycode:
 		KEY_R:

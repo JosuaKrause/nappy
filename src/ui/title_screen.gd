@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_property_access")
 class_name TitleScreen
 extends CanvasLayer
 ## The screen the game opens on, and the screen a finished run goes back to.
@@ -203,7 +202,7 @@ const _COLUMN_WIDTH := 220.0
 ## Puts `column`'s disc centre on `centre`, in the design box `_root` is pinned to. The column is a
 ## disc with its caption under it, so the disc's centre is half the column's width across and one
 ## `ModeButton.RADIUS` down from its top-left corner.
-static func _place_column(column: Control, centre: Vector2) -> void:
+static func _place_column(column: VBoxContainer, centre: Vector2) -> void:
 	column.position = centre - Vector2(_COLUMN_WIDTH * 0.5, ModeButton.RADIUS)
 	column.size = Vector2(_COLUMN_WIDTH, column.size.y)
 
@@ -418,7 +417,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		_begin(ControlsMode.Mode.TAP, ControlsMode.Side.LEFT, true)
 		return
-	if event is InputEventKey and event.pressed and not (event as InputEventKey).echo \
+	if event is InputEventKey and (event as InputEventKey).pressed \
+			and not (event as InputEventKey).echo \
 			and (event as InputEventKey).keycode == _HARD_MODE_KEY and _hard_mode_shown():
 		get_viewport().set_input_as_handled()
 		_toggle_hard_mode()
@@ -430,7 +430,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not _touch and event is InputEventMouseMotion:
 		_update_hover((event as InputEventMouseMotion).position)
 		return
-	if _can_quit and event is InputEventKey and event.pressed \
+	if _can_quit and event is InputEventKey and (event as InputEventKey).pressed \
 			and (event as InputEventKey).keycode == KEY_Q:
 		get_viewport().set_input_as_handled()
 		quit_requested.emit()
