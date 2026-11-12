@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends "res://tests/resistance_rig.gd"
 ## The resistance director's re-placement: an unseen mark moving to an alley she comes near, and what a relocation may never do.
 
@@ -229,7 +228,7 @@ func _test_a_guard_never_lands_within_his_own_reach_of_her(t: TestRunner) -> voi
 ## siting, so the test does not ask the code whether the code is right.
 func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t: TestRunner) -> void:
 	var relocations := 0
-	for seed_value in [4242, 555555]:
+	for seed_value: int in [4242, 555555]:
 		var run := _build_city_in_a_new_run(t, seed_value)
 		run.resistance.completed_steps = _completed_through(2)
 		var map := _city.map
