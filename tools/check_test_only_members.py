@@ -375,6 +375,36 @@ def world_of(files: Files) -> World:
             text = expr.strip()
             return super().infer(text[len("await ") :] if text.startswith("await ") else text, own, declared, inner)
 
+        def evaluate(
+            self,
+            chain: tuple[tuple[str, str], list[tuple[str, str]]],
+            own: str,
+            declared: Mapping[str, str],
+            inner: bool,
+        ) -> str | None:
+            # A call at a chain's head inside an inner class is the inner class's own method or one it inherits
+            # (`var her := mk()`), looked up there before the file; a lowercase call declared nowhere is one the typing
+            # gave up on.
+            (head, word), steps = chain
+            if head != "call" or word in ("preload", "load", "Array", "Dictionary") or word[0].isupper():
+                return super().evaluate(chain, own, declared, inner)
+            owner = own
+            if inner and isinstance(declared, check_field_reads.Scope):
+                found = INNER_HEAD.match(self.blocks[declared.path][declared.index])
+                owner = f"{declared.path}{check_field_reads.INNER}{found.group(1)}" if found else own
+            has, current = self.method_return(owner, word)
+            if not has:
+                has, current = self.method_return(own, word)
+            if not has:
+                return (
+                    super().evaluate(chain, own, declared, inner)
+                    if word in check_field_reads.VARIANT_CALLS
+                    else GAVE_UP
+                )
+            for step, name in steps:
+                current = self.step(current, step, name)
+            return current
+
         def first_class(self, word: str, own: str, declared: Mapping[str, str], inner: bool) -> str | None:
             # An inner class with a leading underscore named bare (`_Her.new()`); and a lowercase name the file never
             # declares is one the typing gave up on, not a value it told.
