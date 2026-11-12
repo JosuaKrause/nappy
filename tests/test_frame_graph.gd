@@ -1,9 +1,11 @@
 extends RefCounted
 ## `FrameGraph`'s own arithmetic — the ring, the mean and the classification — driven with literal
 ## deltas rather than a live `Performance` reading, the same reason `tests/test_performance.gd`
-## drives `FrameCost`'s window that way. What a bar actually looks like is not tested here: see the
-## **writing-tests** skill, "layout, colour, readability" is checked by eye, and the milestone's own
-## `tools/shot.sh` still.
+## drives `FrameCost`'s window that way. The ring is read through what the drawing reads of it: each
+## bar's class (`classes()`) and the line at the window's mean (`mean()`), the only two handles on a
+## picture a headless run draws to nothing. What a bar actually looks like is not tested here: see
+## the **writing-tests** skill, "layout, colour, readability" is checked by eye, and the
+## milestone's own `tools/shot.sh` still.
 ##
 ## `FrameGraph` is a `Control`, so every instance this suite builds is freed by hand — nodes are
 ## not refcounted the way the `RefCounted` classes the rest of this file's neighbours test are.
@@ -19,19 +21,29 @@ func run(t: TestRunner) -> void:
 
 ## `FRAME_GRAPH_FRAMES` (240) pushes would leave the whole window; 300 is 60 past it, so the first
 ## 60 pushed (indices 0..59) must have aged out and the last 240 (indices 60..299) must be exactly
-## what remains, oldest first.
+## what remains, oldest first. Read twice: the lengths through the mean, which is the mean of
+## 60..299 milliseconds only when exactly those remain, and the order through the classes, where the
+## 61st push is the one lethal frame and the last the one costly frame of a run otherwise normal.
 func _test_more_than_the_window_pushes_only_the_last_240_remain(t: TestRunner) -> void:
 	var graph := FrameGraph.new()
 	for i in range(300):
 		graph.push(0.001 * i)
-	var frames := graph.frames()
-	t.check(frames.size() == FrameGraph.FRAME_GRAPH_FRAMES,
-			"the ring holds no more than FRAME_GRAPH_FRAMES after 300 pushes (%d)" % frames.size())
-	t.check(is_equal_approx(frames[0], 0.001 * 60),
-			"the oldest surviving push is the 61st one made, the first 60 having aged out")
-	t.check(is_equal_approx(frames[frames.size() - 1], 0.001 * 299),
-			"the newest surviving push is the very last one made")
+	t.check(graph.classes().size() == FrameGraph.FRAME_GRAPH_FRAMES,
+			"the ring holds no more than FRAME_GRAPH_FRAMES after 300 pushes (%d)"
+			% graph.classes().size())
+	t.check(is_equal_approx(graph.mean(), 0.001 * (60 + 299) / 2.0),
+			"the lengths left are the last 240 pushed, the first 60 having aged out (mean %.4f)"
+			% graph.mean())
 	graph.free()
+	var ordered := FrameGraph.new()
+	for i in range(300):
+		ordered.push(0.040 if i == 60 else 0.025 if i == 299 else 0.010)
+	var classes := ordered.classes()
+	t.check(classes[0] == FrameGraph.FrameClass.LETHAL,
+			"the oldest surviving push is the 61st one made, the first 60 having aged out")
+	t.check(classes[classes.size() - 1] == FrameGraph.FrameClass.COSTLY,
+			"the newest surviving push is the very last one made")
+	ordered.free()
 
 ## Three known deltas average to a known mean — the ring holds fewer than the window's own 240, so
 ## nothing has aged out and the mean is exactly their arithmetic mean.
@@ -73,23 +85,25 @@ func _test_a_hidden_graph_records_nothing(t: TestRunner) -> void:
 	graph.visible = false
 	graph.push(0.016)
 	graph.push(0.033)
-	t.check(graph.frames().is_empty(), "nothing pushed while hidden reaches the ring")
+	t.check(graph.classes().is_empty(), "nothing pushed while hidden reaches the ring")
 	t.check(is_equal_approx(graph.mean(), 0.0), "and the mean of an empty ring is 0.0, not a stale reading")
 	graph.free()
 
-## The stored classes age out with the frames they colour: past the window, both arrays hold the
-## same last 240. *(2026-09-14, the player: "I see things on the left side changing (notably adding
-## yellow lines after the fact)".)* A class decided at push time cannot change afterwards, since
-## a frame's class reads fixed lines only; what a stored class could still get wrong is falling out of
-## step with its frame when the ring trims.
+## The stored classes age out with the frames they colour: past the window, the classes and the
+## lengths are both the same last 240. *(2026-09-14, the player: "I see things on the left side
+## changing (notably adding yellow lines after the fact)".)* A class decided at push time cannot
+## change afterwards, since a frame's class reads fixed lines only; what a stored class could still
+## get wrong is falling out of step with its frame when the ring trims, so the one costly frame
+## pushed last is read both as the newest class and in the window's mean.
 func _test_the_classes_age_out_with_their_frames(t: TestRunner) -> void:
 	var graph := FrameGraph.new()
 	for i in range(300):
 		graph.push(0.010)
 	graph.push(0.025)
-	t.check(graph.classes().size() == graph.frames().size(),
-			"the classes stay in step with the frames past the window (%d against %d)"
-			% [graph.classes().size(), graph.frames().size()])
+	t.check(graph.classes().size() == FrameGraph.FRAME_GRAPH_FRAMES
+			and is_equal_approx(graph.mean(), (0.010 * 239 + 0.025) / 240.0),
+			"the classes stay in step with the frames past the window (%d classes, mean %.5f)"
+			% [graph.classes().size(), graph.mean()])
 	t.check(graph.classes()[graph.classes().size() - 1] == FrameGraph.FrameClass.COSTLY,
 			"and the newest bar keeps the class it was pushed with")
 	graph.free()
@@ -104,11 +118,11 @@ func _test_clear_empties_the_ring(t: TestRunner) -> void:
 	for i in range(10):
 		graph.push(0.010)
 	graph.clear()
-	t.check(graph.frames().is_empty(), "clear() empties the deltas")
+	t.check(is_equal_approx(graph.mean(), 0.0),
+			"clear() empties the deltas, so the mean reads like a fresh graph's, 0.0")
 	t.check(graph.classes().is_empty(), "and the classes beside them")
-	t.check(is_equal_approx(graph.mean(), 0.0), "so the mean reads like a fresh graph's, 0.0")
 	graph.push(0.011)
-	t.check(graph.frames().size() == 1 and is_equal_approx(graph.frames()[0], 0.011),
+	t.check(graph.classes().size() == 1 and is_equal_approx(graph.mean(), 0.011),
 			"a push after clear() starts a new window rather than resuming the old one")
 	graph.free()
 

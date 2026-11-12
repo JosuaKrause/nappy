@@ -43,8 +43,6 @@ src/ground_shape.gd across
 src/routes/route_tree.gd streets
 src/run/run_state_registry.gd parts
 src/run_trace.gd recording
-src/ui/drawn_view.gd forget
-src/ui/frame_graph.gd frames
 
 # [own file only] Read by tests and by nothing but its own defining file (functions, vars and signals; a constant
 # used in its own file is exempt): internal, so each gets the underscore and its tests go through what
@@ -132,19 +130,9 @@ src/run/summary_model.gd note
 src/run/summary_model.gd title
 src/run_config.gd headless
 src/run_config.gd parse
-src/telemetry/frame_ledger.gd columns
-src/telemetry/frame_ledger.gd keep
-src/telemetry/frame_recorder.gd save
-src/telemetry/telemetry_log.gd lines
 src/ui/danger_edge.gd model
 src/ui/danger_edge.gd sees
 src/ui/danger_edge.gd view
-src/ui/frame_graph.gd mean
-src/ui/help_text.gd line
-src/ui/mode_button.gd symbol
-src/ui/pause_screen.gd resumed
-src/ui/save_indicator.gd begin
-src/ui/save_indicator.gd settle
 src/world/excitement_source.gd clock
 src/world/excitement_source.gd player_at
 src/world/excitement_source.gd player_sensitivity
@@ -207,6 +195,7 @@ src/player/stroller.gd baby_cue_lift  # how far above the pram's ground point (o
 src/ui/meter_bar.gd displayed_fraction  # the fraction of the bar's width the fill is drawn at, held under full until the value is the max; it exists only as the argument to draw_rect() in _draw(), which a headless run draws to nothing and no node exposes, so nothing outward can read it (tests/test_hud.gd's header says the same of the number printed beside it)
 src/ui/meter_bar.gd displayed_value  # the number the bar prints, floored so 99.5 does not read 100 while the day is live; it exists only as the argument to draw_string() in _draw(), which a headless run draws to nothing and no node exposes, so nothing outward can read it
 src/ui/mode_button.gd hold_progress  # the fraction of the restart disc's radial sweep, which is all _draw() paints of the hold; a headless run draws to nothing and no node exposes the sweep, so the value is the only thing a test can read of what the disc shows (and the one-line clamp its setter owns)
+src/ui/mode_button.gd symbol  # the check misreads it: an exported property the game's own scenes set by name (`symbol = N` in scenes/ui/pause_screen.tscn, day_summary.tscn and title_screen.tscn), a reader the check does not read; tests/test_pause.gd and tests/test_atlas_leaf_consumers.gd set it on a bare button as those scenes set it
 src/ui/return_window.gd on_web_event  # the decision half of the page's focus, blur and visibilitychange events: their callback is made by JavaScriptBridge, which exists only in a web export, so no desktop run can send the browser's event and the suite hands the kind and the visibility the callback reads
 src/city/building.gd window_texture  # the picture each wall cell's window shows, lit or dark by the roll; tests/test_scenery_residency.gd compares it across a prepared building's condition changes, eviction and return, all inside synchronous scenery.update() calls it makes by hand, and the front's pictures are drawn only in frames (tests/front_reads.gd waits two) whose residency maintenance would move the view that suite sets (tests-own-class-members.md: that suite runs without the frames a drawn read needs); every other suite reads windows off the drawn front
 src/city/scenery_ground.gd worst_step_usec  # the slowest single quadrant step of the stepped ground mode, in microseconds, which the frame-timing probes (tests/probes/ground_frames.gd, run by tools/measure-ground-frames.sh) zero and read after a traversal; it is a wall-clock measurement of the work, which no tile the ground lays and no picture it shows carries
@@ -238,6 +227,7 @@ src/dev/debug_layers.gd collision_nodes_under  # the collision shapes the boundi
 src/dev/debug_layers.gd field_runs  # the polylines the field layer draws, as [runs, colour] per outline for a view; they exist only as the arguments of draw_polyline() in _draw_fields(), which a headless run draws to nothing and no node exposes (tests/test_wall_shield.gd, tests/test_interior.gd; tests/probes/calm_pelican_fields_layer_cost.gd times it)
 src/dev/debug_layers.gd open_runs  # where a wall cuts a field's outline, the polylines _draw_fields() draws; nothing outward shows the cut since the draw calls are discarded headless, and tests/test_wall_shield.gd checks the cut against the grid's own wall_between() line by line
 src/ui/frame_graph.gd classes  # the class (normal, costly, lethal) each frame's bar was pushed with, in the window's order; the bar colours exist only as the argument of draw_rect() in _draw(), which a headless run draws to nothing and no node exposes, so this is the one handle on them (tests/test_frame_graph.gd holds that a bar keeps its class as the window ages out and that each of three frame lengths lands in its class)
+src/ui/frame_graph.gd mean  # the window's mean frame length, which _draw() draws as the line across the graph, the bars' heights being the lengths themselves; both exist only as arguments to draw_line() and draw_rect() in _draw(), which a headless run draws to nothing and no node exposes, so this is the one handle on the lengths the ring holds (tests/test_frame_graph.gd holds that the window keeps exactly the last 240 frames' lengths, that they age out in step with their classes, and that an empty or cleared ring reads 0)
 src/dev/still_watch.gd facing_a_red_light  # whether the red light on screen holds the watch off; its only outward effect is whether the watch fires, and a fire ends the run (the watch asks AutoScreenshot for the picture and a quit), so a suite cannot let it fire; the view rect is a plain argument by design (_visible_world_rect() builds it from a viewport) so the geometry and signal half can be asked over a real map and signals (tests/test_still_watch.gd)
 src/city/city_generator.gd power_station_rank  # the order the generator tries the free horizontal pairs in for the power station (industrial ground, then half, then the nearest to it); a city keeps only the pair it picked and how many industrial blocks it stands on, never the ones it passed over, so the preference is visible only through the rank (tests/test_power_station.gd holds the order on constructed block sets)
 src/city/scenery_residency.gd ordinary_guard_preparations  # how many regions and pieces the guard prepared at once rather than in the ordinary stepped pass, a count of work done that no tile the ground lays carries; the frame-timing probes (tests/probes/ground_frames.gd, ground_frames_matched.gd, run by tools/measure-ground-frames.sh) zero and read it after a traversal, as they do SceneryGround.worst_step_usec

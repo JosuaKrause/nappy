@@ -1691,21 +1691,24 @@ func _test_a_stray_answer_shows_nothing(t: TestRunner) -> void:
 
 ## The struck symbol is its own picture on the `ui` atlas (`art/ui/save_unavailable.svg`), swapped
 ## in for the plain one rather than drawn over it — so the region has to exist and be a different
-## picture, and a kept save afterwards has to swap back.
+## picture, and a kept save afterwards has to swap back. The saves are announced on `EventBus`, as
+## `GameSave` announces them: a web write pending, then the browser's answer.
 func _test_a_save_not_kept_swaps_to_the_struck_picture(t: TestRunner) -> void:
 	var indicator := SaveIndicator.new()
 	t.add_child(indicator)
 	var icon := indicator.find_child("Icon", true, false) as TextureRect
 	var plain := icon.texture
-	indicator.begin(1)
-	indicator.settle(1, false)
+	var first := _next_operation()
+	EventBus.save_written.emit(first, int(GameSave.Result.PENDING))
+	EventBus.save_write_settled.emit(first, false)
 	var struck := icon.texture
 	t.check(plain != null and struck != null and struck != plain,
 			"the plain and the struck pictures are both on the atlas, and different")
 	t.check(Boot.save_symbol_struck(indicator), "a save not kept shows the struck picture")
-	indicator.begin(2)
+	var second := _next_operation()
+	EventBus.save_written.emit(second, int(GameSave.Result.PENDING))
 	t.check(Boot.save_symbol_struck(indicator), "a new save still unanswered does not hide the failure")
-	indicator.settle(2, true)
+	EventBus.save_write_settled.emit(second, true)
 	t.check(Boot.save_symbol_plain(indicator) and icon.texture == plain,
 			"and a kept answer swaps back to the plain one")
 	indicator.free()

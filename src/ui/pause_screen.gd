@@ -14,7 +14,6 @@ extends CanvasLayer
 ## Quitting keeps its key, one step further in. A run that is abandoned is still a run worth
 ## reading, so the run session closes its log on the way out (`main._quit()`).
 
-signal resumed()
 signal restart_requested()
 signal quit_requested()
 
@@ -309,7 +308,6 @@ func _acknowledge_and_resume() -> void:
 	_continue_button.clear_forced_press()
 	_resuming = false
 	close()
-	resumed.emit()
 
 ## `Esc` **or `space`** closes it, `R` starts the whole run again and `Q` leaves the game —
 ## **except on the web**, where `QuitOption.available()` is false and the key is not handled at
@@ -345,7 +343,6 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event.is_action_pressed("pause") or event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
 		close()
-		resumed.emit()
 		return
 	# A tap or a mouse click carries on exactly as space does. *(2026-09-06: "I still need to press
 	# space even in mouse mode".)* The pointer scheme reads a click everywhere now, so this screen

@@ -442,7 +442,7 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t: TestRun
 					drawn_with.call()
 	t.check(layers == 1, "the station's yard layer declares its kind (%d layers)" % layers)
 	# The frame the draws landed in is kept, and the next one begins: the ledger hands it out as a row.
-	ledger.keep = true
+	ledger.keep_this_frame()
 	ledger.process_end(Time.get_ticks_usec())
 	ledger.process_start(Time.get_ticks_usec())
 	var rows := ledger.rows()

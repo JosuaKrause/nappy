@@ -109,13 +109,8 @@ func clear() -> void:
 	_classes.clear()
 	queue_redraw()
 
-## The window, oldest first — a copy, so a caller cannot reach in and edit the ring this class is
-## the only writer of.
-func frames() -> Array[float]:
-	return _deltas.duplicate()
-
-## Each surviving frame's class, in the same order as `frames()` — what the bars are actually
-## drawn from, which a headless run draws to nothing; this is the one handle on their colours.
+## Each surviving frame's class, oldest first — what the bars are actually drawn from, which a
+## headless run draws to nothing; this is the one handle on their colours.
 func classes() -> Array[int]:
 	return _classes.duplicate()
 
