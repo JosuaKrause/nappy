@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name RecipeCityBuilder
 extends RefCounted
 ## Loads authored stretches directly; constructs other scopes with exact choices and a global witness.
@@ -9,18 +8,19 @@ static func build(data: Dictionary) -> Dictionary:
 	var result := {"map": null, "anchors": {}, "errors": errors, "manifest": {}}
 	if not errors.is_empty():
 		return result
-	if data.extent.scope == "stretch":
+	var extent: Dictionary = data["extent"]
+	if extent["scope"] == "stretch":
 		return _build_authored(data, errors)
-	var choices: Dictionary = data.city
+	var choices: Dictionary = data["city"]
 	var purpose_counts := {}
 	var zones := 0
 	var complexes := 0
 	var courts := 0
 	var calm := 0
 	for pin: Dictionary in choices.get("lots", []):
-		var purpose: int = GameEnums.BlockPurpose[str(pin.purpose).to_upper()]
+		var purpose: int = GameEnums.BlockPurpose[str(pin["purpose"]).to_upper()]
 		purpose_counts[purpose] = int(purpose_counts.get(purpose, 0)) + 1
-		var multi := SceneRecipe.rect(pin.blocks).size != Vector2i.ONE
+		var multi := SceneRecipe.rect(pin["blocks"]).size != Vector2i.ONE
 		if CityGenerator._OPEN_CALM.has(purpose):
 			calm += 1
 			zones += int(multi)
@@ -34,32 +34,33 @@ static func build(data: Dictionary) -> Dictionary:
 			or courts > Tuning.MAX_COURTYARD_BLOCKS or calm > Tuning.MAX_CALM_BLOCKS:
 		errors.append("lot.count: exceeds an ordinary calm-lot quota")
 	if choices.has("precincts"):
-		var shore: Array = choices.precincts[0]
-		var inland: Array = choices.precincts[1]
+		var shore: Array = choices["precincts"][0]
+		var inland: Array = choices["precincts"][1]
 		if int(shore[0]) != 0 or int(shore[1]) != Tuning.CITY_BLOCKS.y:
 			errors.append("precinct.shore: first span must be on the southern shore")
 		if int(inland[1]) < 1 or int(inland[1]) >= Tuning.CITY_BLOCKS.x:
 			errors.append("precinct.inland: second span must be inland")
-	if choices.get("dead_ends", []).size() > Tuning.MAX_CUL_DE_SACS:
+	var dead_ends: Array = choices.get("dead_ends", [])
+	if dead_ends.size() > Tuning.MAX_CUL_DE_SACS:
 		errors.append("dead_end.count: more pins than the ordinary generator permits")
 	for pin: Dictionary in choices.get("layouts", []):
-		var block := Vector2i(int(pin.block[0]), int(pin.block[1]))
+		var block := Vector2i(int(pin["block"][0]), int(pin["block"][1]))
 		if not Rect2i(Vector2i.ZERO, Tuning.CITY_BLOCKS).has_point(block):
 			errors.append("layout.block: pin outside the block lattice")
 	# No map is built yet, so the keys are checked against a lattice of their own: the same streets
 	# every city's map holds (`CityMap.network`).
 	var lattice := StreetNetwork.new()
 	for pin: Dictionary in choices.get("dead_ends", []):
-		var key := Vector3i(int(pin.segment[0]), int(pin.segment[1]), int(pin.segment[2]))
+		var key := Vector3i(int(pin["segment"][0]), int(pin["segment"][1]), int(pin["segment"][2]))
 		if not lattice.by_key(key):
 			errors.append("dead_end.segment: unknown lattice segment")
 	if not errors.is_empty():
 		return result
-	var map := CityGenerator._attempt(int(choices.context_seed), choices)
+	var map := CityGenerator._attempt(int(choices["context_seed"]), choices)
 	_move_street_trees(map, choices.get("tree_moves", []), errors)
 	for pin: Dictionary in choices.get("lots", []):
-		var footprint := SceneRecipe.rect(pin.blocks)
-		var purpose: int = GameEnums.BlockPurpose[str(pin.purpose).to_upper()]
+		var footprint := SceneRecipe.rect(pin["blocks"])
+		var purpose: int = GameEnums.BlockPurpose[str(pin["purpose"]).to_upper()]
 		if map.lot_blocks(footprint.position) != footprint or map.starting_purpose(footprint.position) != purpose:
 			errors.append("lot.replaced: requested purpose or footprint did not survive construction")
 	if choices.has("precincts"):
@@ -67,7 +68,7 @@ static func build(data: Dictionary) -> Dictionary:
 		if inland.x == 1 and absi(inland.y - map.main_road) <= 1:
 			errors.append("precinct.spine: inland precinct cannot occupy the spine or its neighbor")
 	for pin: Dictionary in choices.get("layouts", []):
-		var block := Vector2i(int(pin.block[0]), int(pin.block[1]))
+		var block := Vector2i(int(pin["block"][0]), int(pin["block"][1]))
 		if not map.block_layouts.has(block) or map.starting_purpose(block) == GameEnums.BlockPurpose.BIG_BUILDING:
 			errors.append("layout.unused: requested layout belongs to an absorbed or replaced lot")
 	errors.append_array(map.recipe_diagnostics)
@@ -89,8 +90,8 @@ static func build(data: Dictionary) -> Dictionary:
 	if not errors.is_empty():
 		return result
 	var bounds := Rect2i(Vector2i.ZERO, map.size_in_tiles())
-	if data.extent.scope == "bounded":
-		bounds = SceneRecipe.rect(data.extent.bounds)
+	if extent["scope"] == "bounded":
+		bounds = SceneRecipe.rect(extent["bounds"])
 		# A bounded view must retain whole footprints. Cutting a building at a camera-sized
 		# rectangle would leave its collider, roof and floor disagreeing at the seam.
 		for footprint in map.building_rects:
@@ -106,24 +107,26 @@ static func build(data: Dictionary) -> Dictionary:
 		map.recipe_exterior = true
 	var anchors := {}
 	for name: String in data.get("anchors", {}):
-		var spec: Variant = data.anchors[name]
+		var spec: Variant = data["anchors"][name]
 		var at := Vector2.ZERO
 		if spec is String:
 			if spec == "power_station_door" and not map.has_power_station():
 				errors.append("anchor.landmark: power station is absent")
 			at = map.doorstep_world_position() if spec == "doorstep" else map.power_station_door_position()
-		elif spec.has("world"):
-			at = Vector2(float(spec.world[0]), float(spec.world[1]))
-		elif spec.has("tile"):
-			at = map.tile_to_world(Vector2i(int(spec.tile[0]), int(spec.tile[1])))
 		else:
-			var tile := Vector2i(int(spec.junction[0]), int(spec.junction[1])) * CityMap.period()
-			var side: String = spec.side
-			if side.ends_with("east"):
-				tile.x += Tuning.STREET_WIDTH - 1
-			if side.begins_with("south"):
-				tile.y += Tuning.STREET_WIDTH - 1
-			at = map.tile_to_world(tile)
+			var place: Dictionary = spec
+			if place.has("world"):
+				at = Vector2(float(place["world"][0]), float(place["world"][1]))
+			elif place.has("tile"):
+				at = map.tile_to_world(Vector2i(int(place["tile"][0]), int(place["tile"][1])))
+			else:
+				var tile := Vector2i(int(place["junction"][0]), int(place["junction"][1])) * CityMap.period()
+				var side: String = place["side"]
+				if side.ends_with("east"):
+					tile.x += Tuning.STREET_WIDTH - 1
+				if side.begins_with("south"):
+					tile.y += Tuning.STREET_WIDTH - 1
+				at = map.tile_to_world(tile)
 		if not bounds.has_point(map.world_to_tile(at)) \
 				or (map.has_stretch() and not _on_the_stretch(map, map.world_to_tile(at))):
 			errors.append("anchor.extent: %s lies outside the authored %s" % [name,
@@ -131,28 +134,30 @@ static func build(data: Dictionary) -> Dictionary:
 		anchors[name] = at
 	if not errors.is_empty():
 		return result
-	result.map = map
-	result.anchors = anchors
-	result.manifest = {"classification": data.get("classification", "normal"),
-			"scope": data.extent.scope, "bounds": [bounds.position.x, bounds.position.y, bounds.size.x, bounds.size.y],
-			"context_seed": int(choices.context_seed), "seed": int(data.seed),
+	result["map"] = map
+	result["anchors"] = anchors
+	result["manifest"] = {"classification": data.get("classification", "normal"),
+			"scope": extent["scope"], "bounds": [bounds.position.x, bounds.position.y, bounds.size.x, bounds.size.y],
+			"context_seed": int(choices["context_seed"]), "seed": int(data["seed"]),
 			"checks": ["construction_schema", "production_choice_predicates", "whole_visible_footprints"],
 			"expected_violations": expected, "violations": violations,
 			"choices": choices.duplicate(true), "anchors": anchors.duplicate()}
 	if violations.is_empty():
-		result.manifest.checks.append("full_context_guarantees")
+		var checks: Array = result["manifest"]["checks"]
+		checks.append("full_context_guarantees")
 	return result
 
 ## An authored scene has no generation step. Its saved context supplies off-camera topology;
 ## visible tile, lot and tree lists are authoritative and feed the same map every rule reads.
 static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictionary:
-	var map := RecipeCityContext.restore(data.context)
+	var map := RecipeCityContext.restore(data["context"])
 	var result := {"map": null, "anchors": {}, "errors": errors, "manifest": {}}
-	var stretch: Dictionary = data.stretch
+	var stretch: Dictionary = data["stretch"]
 	map.stretch.resize(map.size_in_tiles().x * map.size_in_tiles().y)
-	for type_name: String in stretch.tiles:
+	var tiles: Dictionary = stretch["tiles"]
+	for type_name: String in tiles:
 		var type: int = GameEnums.TileType[type_name.to_upper()]
-		for run: Array in stretch.tiles[type_name]:
+		for run: Array in tiles[type_name]:
 			for x in range(int(run[1]), int(run[2]) + 1):
 				var tile := Vector2i(x, int(run[0]))
 				if not map.in_bounds(tile):
@@ -171,7 +176,7 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 			retained.append(lot)
 	map.building_rects = retained
 	for listed: Dictionary in stretch.get("buildings", []):
-		var lot := SceneRecipe.rect(listed.lot)
+		var lot := SceneRecipe.rect(listed["lot"])
 		if not Rect2i(Vector2i.ZERO, map.size_in_tiles()).encloses(lot) or not lot.has_area():
 			errors.append("stretch.buildings: lot outside the map or empty")
 			continue
@@ -182,9 +187,9 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 				errors.append("stretch.buildings: lot overlaps authored ground at %s" % tile)
 		map.fill_rect(lot, GameEnums.TileType.BUILDING)
 		map.building_rects.append(lot)
-		map.stretch_buildings[lot] = {"district": GameEnums.BlockPurpose[str(listed.district).to_upper()],
-				"variant": int(listed.variant), "height": int(listed.height),
-				"condition": Building.Condition[str(listed.condition).to_upper()]}
+		map.stretch_buildings[lot] = {"district": GameEnums.BlockPurpose[str(listed["district"]).to_upper()],
+				"variant": int(listed["variant"]), "height": int(listed["height"]),
+				"condition": Building.Condition[str(listed["condition"]).to_upper()]}
 	var trees: Array[Vector2i] = []
 	for tile in map.recipe_trees:
 		if not map.in_stretch(tile):
@@ -198,16 +203,16 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 			trees.append(tile)
 	map.recipe_trees = trees
 	for listed: Dictionary in stretch.get("props", []):
-		var at := Vector2(float(listed.at[0]), float(listed.at[1]))
+		var at := Vector2(float(listed["at"][0]), float(listed["at"][1]))
 		if not map.in_stretch(map.world_to_tile(at)):
 			errors.append("stretch.props: placement outside the stretch")
-		map.stretch_props.append({"kind": Prop.Kind[str(listed.kind).to_upper()], "at": at,
+		map.stretch_props.append({"kind": Prop.Kind[str(listed["kind"]).to_upper()], "at": at,
 				"variant": int(listed.get("variant", 0)), "scale": float(listed.get("scale", 1.0))})
 	for listed: Dictionary in stretch.get("litter", []):
-		var at := Vector2(float(listed.at[0]), float(listed.at[1]))
+		var at := Vector2(float(listed["at"][0]), float(listed["at"][1]))
 		if not map.in_stretch(map.world_to_tile(at)):
 			errors.append("stretch.litter: placement outside the stretch")
-		map.stretch_litter.append({"at": at, "texture": SceneRecipe.litter_names().find(str(listed.kind))})
+		map.stretch_litter.append({"at": at, "texture": SceneRecipe.litter_names().find(str(listed["kind"]))})
 	for crack: Array in stretch.get("cracks", []):
 		var tile := Vector2i(int(crack[0]), int(crack[1]))
 		if not map.in_stretch(tile):
@@ -217,32 +222,34 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 	_plan_closures(data, map, errors)
 	map.stretch_active = true
 	for label: String in data.get("anchors", {}):
-		var spec: Variant = data.anchors[label]
+		var spec: Variant = data["anchors"][label]
 		var at := Vector2.ZERO
 		if spec is String:
 			at = map.doorstep_world_position() if spec == "doorstep" else map.power_station_door_position()
-		elif spec.has("world"):
-			at = Vector2(float(spec.world[0]), float(spec.world[1]))
-		elif spec.has("tile"):
-			at = map.tile_to_world(RecipeCityContext.point(spec.tile))
 		else:
-			var tile := RecipeCityContext.point(spec.junction) * CityMap.period()
-			if str(spec.side).ends_with("east"):
-				tile.x += Tuning.STREET_WIDTH - 1
-			if str(spec.side).begins_with("south"):
-				tile.y += Tuning.STREET_WIDTH - 1
-			at = map.tile_to_world(tile)
+			var place: Dictionary = spec
+			if place.has("world"):
+				at = Vector2(float(place["world"][0]), float(place["world"][1]))
+			elif place.has("tile"):
+				at = map.tile_to_world(RecipeCityContext.point(place["tile"]))
+			else:
+				var tile := RecipeCityContext.point(place["junction"]) * CityMap.period()
+				if str(place["side"]).ends_with("east"):
+					tile.x += Tuning.STREET_WIDTH - 1
+				if str(place["side"]).begins_with("south"):
+					tile.y += Tuning.STREET_WIDTH - 1
+				at = map.tile_to_world(tile)
 		if not _on_the_stretch(map, map.world_to_tile(at)):
 			errors.append("anchor.extent: %s outside the stretch" % label)
-		result.anchors[label] = at
+		result["anchors"][label] = at
 	if not errors.is_empty():
 		return result
-	result.map = map
-	result.manifest = {"classification": data.get("classification", "normal"), "scope": "stretch",
-			"bounds": [0, 0, map.size_in_tiles().x, map.size_in_tiles().y], "seed": int(data.seed),
+	result["map"] = map
+	result["manifest"] = {"classification": data.get("classification", "normal"), "scope": "stretch",
+			"bounds": [0, 0, map.size_in_tiles().x, map.size_in_tiles().y], "seed": int(data["seed"]),
 			"checks": ["construction_schema", "explicit_city_context", "authored_placements"],
 			"expected_violations": [], "violations": [], "context_sha256":
-			JSON.stringify(data.context, "", true).sha256_text()}
+			JSON.stringify(data["context"], "", true).sha256_text()}
 	return result
 
 ## Whether a stretch scene can name `tile`: one of its own tiles, or a tile of a building it lists —
@@ -263,14 +270,15 @@ static func _fronts_the_stretch(map: CityMap, lot: Rect2i) -> bool:
 	return false
 
 static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]) -> void:
-	var pins: Array = data.city.get("closures", [])
+	var city: Dictionary = data["city"]
+	var pins: Array = city.get("closures", [])
 	if pins.is_empty():
 		return
 	var setup: Dictionary = data.get("setup", {})
-	if not SceneRecipe.integer(setup.get("day")) or int(setup.day) < 1 or int(setup.day) > 14:
+	if not SceneRecipe.integer(setup.get("day")) or int(setup["day"]) < 1 or int(setup["day"]) > 14:
 		errors.append("closure.day: explicit setup.day is required for closure eligibility")
 		return
-	var day := int(setup.day)
+	var day := int(setup["day"])
 	var spec := DaySpec.for_day(day)
 	if pins.size() > ClosurePlanner.closures_wanted(spec):
 		errors.append("closure.count: exceeds the ordinary day's closure budget")
@@ -290,7 +298,7 @@ static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]
 	var closed := {}
 	var emptied: Array[Vector2i] = []
 	for pin: Dictionary in pins:
-		var key := Vector3i(int(pin.segment[0]), int(pin.segment[1]), int(pin.segment[2]))
+		var key := Vector3i(int(pin["segment"][0]), int(pin["segment"][1]), int(pin["segment"][2]))
 		var segment := map.network.by_key(key)
 		var eligible := false
 		for candidate in candidates:
@@ -299,9 +307,9 @@ static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]
 		if not eligible:
 			errors.append("closure.ineligible: %s" % [key])
 			continue
-		var kind: int = RoadClosure.Kind[str(pin.kind).to_upper()]
+		var kind: int = RoadClosure.Kind[str(pin["kind"]).to_upper()]
 		if not RoadClosure.kinds_on(day).has(kind):
-			errors.append("closure.progression: %s is not available on day %d" % [pin.kind, day])
+			errors.append("closure.progression: %s is not available on day %d" % [pin["kind"], day])
 			continue
 		if kind == RoadClosure.Kind.FALLEN_TREE:
 			var pit := StreetTrees.pit_nearest(map, key, map.tile_rect_to_world(segment.tile_rect()).get_center())
@@ -325,8 +333,8 @@ static func _move_street_trees(map: CityMap, moves: Array, errors: Array[String]
 	var selected := {}
 	var destinations := {}
 	for move: Dictionary in moves:
-		var source := Vector2i(int(move.from[0]), int(move.from[1]))
-		var destination := Vector2i(int(move.to[0]), int(move.to[1]))
+		var source := Vector2i(int(move["from"][0]), int(move["from"][1]))
+		var destination := Vector2i(int(move["to"][0]), int(move["to"][1]))
 		var original: StreetTrees.Planted = null
 		for tree in trees:
 			if tree.tile == source:
