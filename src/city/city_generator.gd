@@ -491,9 +491,9 @@ static func _place_one_zone(purposes: Dictionary, zones: Dictionary, shuffled: A
 ##   it here rather than in `_cut_courtyards` is only because it needs a whole unclaimed footprint,
 ##   which is a thing to ask for before the single blocks are handed out.
 ## - **Its absorbed streets are hard blockers.** They are solid ground for the whole run, which is
-##   exactly what `built_over` means, and saying so is what makes the crowd, the telemetry map and
-##   the big-building placement all treat them correctly without any of them learning about
-##   apartment complexes. See `_record_zones`.
+##   exactly what a street built over (`CityMap.record_built_over()`) means, and saying so is what
+##   makes the crowd, the telemetry map and the big-building placement all treat them correctly
+##   without any of them learning about apartment complexes. See `_record_zones`.
 static func _place_apartment_complexes(purposes: Dictionary, zones: Dictionary,
 		shuffled: Array[Vector2i], rng: RandomNumberGenerator, main_road: int,
 		precinct_spans: Array[Vector4i], existing: int = 0) -> void:
@@ -632,7 +632,8 @@ static func _blocks_in(footprint: Rect2i) -> Array[Vector2i]:
 ## **Whether the streets it took are ground or wall is read off the purpose**, which is the one
 ## place that decides it: open calm walks over them and an apartment complex is built on them. Two
 ## multi-block lots, one absorb, and no caller anywhere else has to know which kind it is looking
-## at — a solid one says so in `built_over` and every rule about hard blockers picks it up for free.
+## at — a solid one says so through `record_built_over()` and every rule about hard blockers picks
+## it up for free.
 static func _record_zones(map: CityMap, purposes: Dictionary, zones: Dictionary) -> void:
 	for anchor: Vector2i in zones:
 		var footprint: Rect2i = zones[anchor]
@@ -709,9 +710,10 @@ static func _has_calm_neighbour(purposes: Dictionary, footprint: Rect2i) -> bool
 ## `_seal_stub_crossings`.
 ##
 ## `solid` is the apartment complex: the same streets leave the lattice, and the ground where they
-## were is building rather than park. Saying so in `built_over` is what tells every rule about hard
-## blockers — the crowd's walls, the telemetry legend, where a big building may go — that this is
-## not a park to walk across, without any of them learning what an apartment complex is.
+## were is building rather than park. Saying so through `record_built_over()` is what tells every
+## rule about hard blockers — the crowd's walls, the telemetry legend, where a big building may go —
+## that this is not a park to walk across, without any of them learning what an apartment complex
+## is.
 static func _absorb_streets(map: CityMap, footprint: Rect2i, solid := false) -> void:
 	for y in range(footprint.position.y + 1, footprint.end.y):
 		for x in range(footprint.position.x, footprint.end.x):

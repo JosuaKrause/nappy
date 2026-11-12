@@ -137,8 +137,8 @@ var _absent_segments := {}
 ## Anything asking "can a route go this way" wants `blocked_segments()`, which is both and does not
 ## care. This is for the things that do: the telemetry map's legend, and any test whose sentence is
 ## about zones.
-var built_over := {}
-## Which of `built_over` are **dead ends** — a street with one end walled — as a set of keys. The
+var _built_over := {}
+## Which of `_built_over` are **dead ends** — a street with one end walled — as a set of keys. The
 ## rest belong to a big building, which took its street whole.
 var dead_ends := {}
 ## The landmarks, each as the **pair of blocks** it joins. A big building builds over the one street
@@ -188,7 +188,7 @@ func power_station_door_position() -> Vector2:
 ## painted a park across it. The question every rule about *zones* actually wants to ask, now that
 ## `_absent_segments` has two kinds of thing in it.
 func is_hard_blocker(key: Vector3i) -> bool:
-	return built_over.has(key)
+	return _built_over.has(key)
 
 ## Which of `Tuning.REGION_COUNT` regions each junction belongs to, indexed by `StreetNetwork.
 ## node_of()`. `-1` before generation and for a junction no real segment ever touches. Set once by
@@ -549,9 +549,9 @@ func courtyard_lots() -> Array[Rect2i]:
 func playground_rects() -> Array[Rect2i]:
 	return playgrounds
 
-## The tile rects the city's streets were built over, by segment key (`built_over`).
+## The tile rects the city's streets were built over, by segment key (`_built_over`).
 func streets_built_over() -> Dictionary:
-	return built_over
+	return _built_over
 
 ## The tiles of the streets closed today, as a set (`closed_tiles`).
 func closed_tile_set() -> Dictionary:
@@ -716,13 +716,13 @@ func restore_street(key: Vector3i) -> void:
 	_absent_segments.erase(key)
 
 ## Records that a hard blocker built over the street `key`, now solid on `rect`
-## (`built_over`).
+## (`_built_over`).
 func record_built_over(key: Vector3i, rect: Rect2i) -> void:
-	built_over[key] = rect
+	_built_over[key] = rect
 
-## Forgets that the street `key` was built over (`built_over`).
+## Forgets that the street `key` was built over (`_built_over`).
 func forget_built_over(key: Vector3i) -> void:
-	built_over.erase(key)
+	_built_over.erase(key)
 
 ## Records that the street `key` is a dead end (`dead_ends`).
 func mark_dead_end(key: Vector3i) -> void:
@@ -911,7 +911,7 @@ func copy() -> CityMap:
 	twin.zone_rects = zone_rects.duplicate()
 	twin._zone_anchor = _zone_anchor.duplicate()
 	twin._absent_segments = _absent_segments.duplicate()
-	twin.built_over = built_over.duplicate()
+	twin._built_over = _built_over.duplicate()
 	twin.dead_ends = dead_ends.duplicate()
 	twin.big_buildings = big_buildings.duplicate()
 	twin.power_station = power_station
@@ -998,7 +998,7 @@ func capture() -> Dictionary:
 			"square_rects": square_rects.duplicate(), "courtyard_rects": courtyard_rects.duplicate(),
 			"zones": zones, "block_plans": plans, "block_layouts": layouts,
 			"precincts": precinct_spans.duplicate(), "absent_segments": absent, "dead_ends": walled,
-			"built_over": built_over.duplicate(), "region_of_junction": region_of_junction.duplicate(),
+			"built_over": _built_over.duplicate(), "region_of_junction": region_of_junction.duplicate(),
 			"region_has_calm": region_has_calm.duplicate(),
 			"boundary_wall_at_a": boundary_wall_at_a.duplicate(), "trees": trees}
 
@@ -1042,7 +1042,7 @@ static func restored(facts: Dictionary) -> CityMap:
 	var walled: Array = facts["dead_ends"]
 	for key: Vector3i in walled:
 		map.dead_ends[key] = true
-	map.built_over = (facts["built_over"] as Dictionary).duplicate()
+	map._built_over = (facts["built_over"] as Dictionary).duplicate()
 	map.boundary_wall_at_a = (facts["boundary_wall_at_a"] as Dictionary).duplicate()
 	map.region_of_junction = (facts["region_of_junction"] as PackedInt32Array).duplicate()
 	map.region_has_calm = (facts["region_has_calm"] as PackedByteArray).duplicate()

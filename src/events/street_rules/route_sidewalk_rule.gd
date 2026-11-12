@@ -186,8 +186,8 @@ const HER_LANE_CLEARANCE := 2.0 * Tuning.PLAYER_BODY_RADIUS
 ## read two ways.
 ##
 ## **The walk only has to connect the band's own genuinely open ends, not its raw tile-rect
-## corners.** A street a big building has built over at one end (`CityMap.built_over`, a fixed,
-## whole-run fact rather than anything a day places) has a shorter *real* sidewalk than its
+## corners.** A street a big building has built over at one end (`CityMap.streets_built_over()`, a
+## fixed, whole-run fact rather than anything a day places) has a shorter *real* sidewalk than its
 ## nominal rect — asking the walk to reach a tile that has been a building since generation would
 ## read every day of that street as closed by the ground alone, which is not a body and is not a
 ## defect in one. So the required span is between the outermost tiles that are still actually

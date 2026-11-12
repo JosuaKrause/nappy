@@ -113,9 +113,7 @@ func _test_the_front_door_is_on_its_long_south_side(t: TestRunner) -> void:
 					% [map.seed_used, tile])
 
 ## **The preference is an order, and the order is what is held**: both blocks industrial, then one,
-## then the pair nearest industrial ground. The sweep prints how often each is what a city got —
-## the fallback is taken whenever no free, far-enough industrial pair outside the home region exists,
-## which is the common case with the industrial district scattered a block at a time.
+## then the pair nearest industrial ground.
 func _test_industrial_ground_is_preferred(t: TestRunner) -> void:
 	var industrial := {Vector2i(4, 4): true, Vector2i(5, 4): true, Vector2i(8, 8): true}
 	var both := CityGenerator.power_station_rank(Rect2i(Vector2i(4, 4), Vector2i(2, 1)), industrial)
@@ -129,11 +127,6 @@ func _test_industrial_ground_is_preferred(t: TestRunner) -> void:
 	t.check(CityGenerator.power_station_rank(Rect2i(Vector2i(1, 1), Vector2i(2, 1)), none)
 			== CityGenerator.power_station_rank(Rect2i(Vector2i(6, 6), Vector2i(2, 1)), none),
 			"with no industrial ground every pair ranks the same")
-
-	var got := {0: 0, 1: 0, 2: 0}
-	for map in _maps:
-		got[map.capture()["power_station_industrial_blocks"]] += 1
-	print("[test_power_station] industrial blocks under the station: count — %s" % got)
 
 # ------------------------------------------------------------------ the day ---
 
