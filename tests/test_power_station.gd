@@ -418,7 +418,8 @@ func _test_the_yard_layer_is_tagged_scenery_as_it_enters_the_tree(t: TestRunner)
 	t.add_child(station)
 	var tags_on_entry: Array = []
 	station.child_entered_tree.connect(func(child: Node) -> void:
-			tags_on_entry.append(child.get_meta(FrameTiming.DRAW_KIND_META, null)))
+			tags_on_entry.append(child.get_meta(FrameTiming.DRAW_KIND_META)
+					if child.has_meta(FrameTiming.DRAW_KIND_META) else null))
 	station.residence().set_resident(true)
 	t.check(tags_on_entry.count(FrameTiming.Draw.SCENERY) == 1,
 			"exactly one child of the station, its yard layer, enters the tree already tagged as scenery (tags on entry: %s)"
