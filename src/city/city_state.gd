@@ -12,7 +12,7 @@ extends RefCounted
 ## far along each one the run has got, which is why a day can be reconstructed from a seed
 ## and a day number plus the causes that have fired.
 
-## Block -> index into that block's `BlockPlan.steps`.
+## Block -> index into that block's arc (`BlockPlan.step_at()`).
 var _stage := {}
 ## Block -> the day it last moved. Day 1 for a block that has never changed, which is what
 ## the route map wants to shade "this is new".

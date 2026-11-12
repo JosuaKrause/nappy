@@ -28,7 +28,7 @@ class Step extends RefCounted:
 		cause = step_cause
 
 ## Step 0 is what the block starts as, and is always reached on day 1.
-var steps: Array[Step] = []
+var _steps: Array[Step] = []
 
 ## The day this park is the one day 12's task sends her to (`ResistanceSteps`, the swing), 0 on
 ## every other block. One park per city carries it (`CityGenerator._plan_the_swing_park()`). That
@@ -41,14 +41,14 @@ var _forced_open_on := 0
 ## on the other (`CityMap.copy()`).
 func copy() -> BlockPlan:
 	var twin := BlockPlan.new()
-	for step in steps:
-		twin.steps.append(Step.new(step.purpose, step.from_day, step.cause))
+	for step in _steps:
+		twin._steps.append(Step.new(step.purpose, step.from_day, step.cause))
 	twin._forced_open_on = _forced_open_on
 	return twin
 
 static func of(start: GameEnums.BlockPurpose) -> BlockPlan:
 	var plan := BlockPlan.new()
-	plan.steps.append(Step.new(start, 1, GameEnums.BlockCause.SCHEDULED))
+	plan._steps.append(Step.new(start, 1, GameEnums.BlockCause.SCHEDULED))
 	return plan
 
 ## Appends a step. Returns self so a whole arc reads as one expression at the call site.
@@ -60,30 +60,30 @@ static func of(start: GameEnums.BlockPurpose) -> BlockPlan:
 func then(purpose: GameEnums.BlockPurpose, from_day: int,
 		cause: GameEnums.BlockCause) -> BlockPlan:
 	var earliest := from_day
-	if not steps.is_empty():
-		earliest = maxi(earliest, steps[steps.size() - 1].from_day)
-	steps.append(Step.new(purpose, earliest, cause))
+	if not _steps.is_empty():
+		earliest = maxi(earliest, _steps[_steps.size() - 1].from_day)
+	_steps.append(Step.new(purpose, earliest, cause))
 	return self
 
 func starting_purpose() -> GameEnums.BlockPurpose:
-	return steps[0].purpose
+	return _steps[0].purpose
 
 ## How many steps the arc has, the starting purpose's included.
 func step_count() -> int:
-	return steps.size()
+	return _steps.size()
 
 ## The step at `index` of the arc, 0 being what the block starts as.
 func step_at(index: int) -> Step:
-	return steps[index]
+	return _steps[index]
 
 ## The arc's steps in order, as a list of its own: adding to it adds nothing to the arc.
 func steps_in_order() -> Array[Step]:
-	return steps.duplicate()
+	return _steps.duplicate()
 
 ## Appends a step as it is, with no pushing of its day forward (`then()` does that): what a stored
 ## arc is read back with, whose days were already put in order when it was planned.
 func append_step(step: Step) -> void:
-	steps.append(step)
+	_steps.append(step)
 
 ## The day this park is the swing park's, or 0 on a block that is not (see `_forced_open_on`).
 func forced_open_day() -> int:
@@ -104,7 +104,7 @@ func is_forced_open_on(day: int) -> bool:
 ## True if this block is calm ground at every step of its arc — a piece of the city that can
 ## be relied on for the whole run.
 func stays_calm() -> bool:
-	for step in steps:
+	for step in _steps:
 		if not is_calm(step.purpose):
 			return false
 	return true

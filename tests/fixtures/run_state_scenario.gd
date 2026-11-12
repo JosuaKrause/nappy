@@ -46,11 +46,8 @@ static func build(run: RunState) -> void:
 	run.facts.escape_section = 1
 
 static func _burn(run: RunState, block: Vector2i) -> void:
-	var plan := BlockPlan.new()
-	plan.steps = [
-		BlockPlan.Step.new(GameEnums.BlockPurpose.RESIDENTIAL, 1, GameEnums.BlockCause.SCHEDULED),
-		BlockPlan.Step.new(GameEnums.BlockPurpose.BURNT_OUT, 1, GameEnums.BlockCause.FIRE),
-	]
+	var plan := BlockPlan.of(GameEnums.BlockPurpose.RESIDENTIAL).then(GameEnums.BlockPurpose.BURNT_OUT,
+			1, GameEnums.BlockCause.FIRE)
 	run.attempt_spend.city_state.apply_cause({block: plan}, block, GameEnums.BlockCause.FIRE, 6)
 
 ## The day lost on the run: it is given back to its dawn, a nerve spent.
