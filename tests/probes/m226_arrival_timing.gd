@@ -1,9 +1,9 @@
 extends RefCounted
 ## M226's missing non-pursuer measurement. Run through tools/test.sh by this file's path.
-## The identical collector runs on f494956e and the PR. It uses that revision's encounter
-## factory, PendingWarning, EventInstance and real DangerEdge consumer. No placement bound
-## participates in entry detection: drawing_parts() reads the selected sprite frame, wheel,
-## shadow polygon, loose leash and live caret separately. See the retained evidence README.
+## It measures the current game: M207Lead's encounters, the game's PendingWarning and
+## EventInstance, and a real DangerEdge reading them. No placement bound participates in entry
+## detection: drawing_parts() reads the selected sprite frame, wheel, shadow polygon, loose leash
+## and live caret separately, from EventPictures. See the retained evidence README.
 
 const STEP := 1.0 / 60.0
 const LIMIT := 30.0
@@ -81,24 +81,16 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		instance.setup(def, place, route, Vector2.RIGHT, null, null, where)
 		instance.came_under_a_warning = true
 		instance.is_pelican = pelican
-		# f494956e spends telegraph_time; the current game preserves a pulsing row's beat.
-		# The beat's age lives on whichever class owns it at the commit under test.
-		var age: float = def.telegraph_time
-		for owner_path: String in ["res://src/events/event_spawner.gd",
-				"res://src/events/event_manager.gd"]:
-			var beat_owner: GDScript = load(owner_path) if ResourceLoader.exists(owner_path) else null
-			if beat_owner and beat_owner.has_method("age_when_warned"):
-				age = beat_owner.call("age_when_warned", def)
-				break
-		instance.resume(age, 0.0)
+		# Created at the age the game creates a warned row at: its telegraph spent, and a pulsing
+		# row's beat kept.
+		instance.resume(EventSpawner.age_when_warned(def), 0.0)
 		source.add_child(instance)
 		source.live.append(instance)
 		return true
 	if encounter.get("warned", false):
 		var warning := PendingWarning.new(def, encounter["where"], arrive)
 		warning.is_pelican = pelican
-		var accepted: bool = warning.call("put_up" if warning.has_method("put_up") else "follow", her)
-		if accepted:
+		if warning.put_up(her):
 			source.warnings.append(warning)
 	else:
 		var route: PackedVector2Array = encounter["path"]
@@ -147,7 +139,8 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 	return result
 
 ## Drawing geometry for precisely this probe's four looks. Reads the same selected frame and
-## native texture size as _draw_eight_view/_draw_loose_dog, never footprint_of/drawn_box.
+## native texture size as EventLook._draw_eight_view()/FigureLook._draw_loose_dog(), never
+## footprint_of/drawn_box.
 ## Texture quads include transparent padding; this is geometric entry, not pixel-alpha sampling.
 ## No halo is enabled in the isolated encounter. Each primitive is tested separately, so empty
 ## space between a tall caret and a body cannot count as an entry.
@@ -165,7 +158,8 @@ static func drawing_parts(instance: EventInstance) -> Array[Rect2]:
 			picture = rider[1 if instance.look.gait_is_stepping() else 0][view]
 		EventDef.Look.LOOSE_DOG:
 			picture = EventPictures.dog_picture(view, instance.look.gait_is_stepping(), instance.look.gait_is_second_half())
-			# Both revisions' _draw_loose_dog draws this 26px trailing, 2px-wide line.
+			# FigureLook._draw_loose_dog() draws this slack lead, 2px wide, trailing
+			# EventFootprints.LOOSE_LEAD_REACH (26px) behind the dog.
 			var behind := 26.0 if instance.look._heading_is_west() else -26.0
 			parts.append(Rect2(minf(behind, 0.0) - 1.0, -9.0 + bob, absf(behind) + 2.0, 8.0))
 		EventDef.Look.FIRE_ENGINE:
