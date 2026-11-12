@@ -4,26 +4,29 @@ extends RefCounted
 ## of the location it takes (`Location.takes()`) that are the row's own ground for its role on the
 ## day (`EventScheduler.ground_for()`: off every tile a route runs along for a wall, off a held or
 ## closed street, the home block, a tree, the side of the sidewalk the row wants), and the
-## candidate built on one of them as any placement is (`EventScheduler.build_placement()`: its
+## candidate built on one of them as any placement is (`PlanBuilder.build()`: its
 ## facing and its path). On a walk that starts where she stands (the escape), a body is never offered
 ## the ground she starts on (`EventScheduler.clearance_around_her()`). Whether the candidate may stand
 ## is the rules' (`StreetInvalidation`). The row's own ground is worked out once a row. Model: no node.
 
 var _day := 0
 var _map: CityMap
+var _builder: PlanBuilder
 var _ground: Dictionary
 var _corridor: Corridor
 var _holds_the_home_streets := true
 var _start := Vector2.INF
 var _own := {}
 
-## The fit on `map` for `day`, routed by `corridor`: `ground` is the day's ground cache,
-## `holds_the_home_streets` whether the home's streets are the day's (`DaySpec`), and `start` where
-## she is put down on a walk that starts there, `Vector2.INF` on a day.
-func _init(day: int, map: CityMap, ground: Dictionary, corridor: Corridor,
+## The fit on `map` for `day`, routed by `corridor`: `builder` builds a candidate on a tile,
+## `ground` is the day's ground cache, `holds_the_home_streets` whether the home's streets are the
+## day's (`DaySpec`), and `start` where she is put down on a walk that starts there, `Vector2.INF`
+## on a day.
+func _init(day: int, map: CityMap, builder: PlanBuilder, ground: Dictionary, corridor: Corridor,
 		holds_the_home_streets: bool, start := Vector2.INF) -> void:
 	_day = day
 	_map = map
+	_builder = builder
 	_ground = ground
 	_corridor = corridor
 	_holds_the_home_streets = holds_the_home_streets
@@ -47,7 +50,7 @@ func tiles(def: EventDef, location: Location) -> Array[Vector2i]:
 
 ## `def`'s candidate built at `tile`, its facing and path drawn on `rng`, or null where none fits.
 func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator) -> EventPlan:
-	return EventScheduler.build_placement(def, _map, tile, rng)
+	return _builder.build(def, tile, rng)
 
 func _own_ground(def: EventDef) -> Dictionary:
 	if not _own.has(def):

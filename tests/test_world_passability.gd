@@ -423,7 +423,7 @@ func _barrier_body_at(city: City, at: Vector2) -> StaticBody2D:
 	return null
 
 ## The cat's crossing, sited ahead of her as she walks, starts and ends on ground a cat may stand on
-## and runs clear between, never out of or into a lot; so does the scheduler's own crossing from any
+## and runs clear between, never out of or into a lot; so does the plan builder's crossing from any
 ## road tile a cat may stand on.
 func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> void:
 	var map := city.map
@@ -471,13 +471,14 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> vo
 	var in_a_lot := 0
 	var none: Array[EventPlan] = []
 	# No catalogue row is planned as a crossing (`EventDef.PathMode.CROSS_STREET`: the cat is sited by
-	# the director), so the row is the cat with the scheduler's crossing path laid for it.
+	# the director), so the row is the cat with the plan builder's crossing path laid for it.
 	var scheduled := cat.duplicate() as EventDef
 	scheduled.path_mode = EventDef.PathMode.CROSS_STREET
+	var builder := GamePlanBuilder.over(map)
 	for tile in map.tiles_of_type(GameEnums.TileType.ROAD):
 		if tile.x % 7 != 0 or not map.passable(tile, Mover.on_foot()):
 			continue
-		var placed := EventScheduler.place_at(scheduled, map, tile, _rng("cross-street"), none)
+		var placed := builder.place_at(scheduled, tile, _rng("cross-street"), none)
 		if placed == null:
 			continue
 		for end in placed.path:
@@ -485,7 +486,7 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> vo
 			if not map.passable(map.world_to_tile(end), Mover.on_foot()):
 				in_a_lot += 1
 	t.check(ends > 0 and in_a_lot == 0,
-			"the scheduler's crossings end on open ground (%d of %d do not)" % [in_a_lot, ends])
+			"the plan builder's crossings end on open ground (%d of %d do not)" % [in_a_lot, ends])
 
 ## A dog that loses interest facing a building leaves round it: every frame of its departure is on
 ## ground it may stand on, and it gets away from her.

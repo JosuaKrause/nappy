@@ -575,7 +575,7 @@ func _the_rigged_bag(told: Array[String]) -> Array:
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
 func _the_longest_route(city: City) -> Array[Vector2]:
 	var siting := EventScheduler.WalkSiting.new(city.events.world.day, city.map, city.streets().route_tree(),
-			FakeWalkEvents.new(), EventScheduler.Verdicts.new())
+			FakeWalkEvents.new(), EventScheduler.Verdicts.new(), GamePlanBuilder.over(city.map))
 	var longest: Array = []
 	for branch in city.streets().route_tree().branches:
 		for route: Array in branch.routes:

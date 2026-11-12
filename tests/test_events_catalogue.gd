@@ -169,8 +169,9 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 	var nothing_down: Array[EventPlan] = []
 	var locations := DayLocations.lay_out(map, corridor)
 	for tile in EventScheduler.open_ground_for(def.for_day(day), map, {}):
-		var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile), 1,
-				nothing_down, corridor, no_doors, calm, nothing_down, locations)
+		var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
+				map.tile_to_world(tile), 1, nothing_down, corridor, no_doors, calm, nothing_down,
+				locations)
 		if plan:
 			return plan.role
 	return -1

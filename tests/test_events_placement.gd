@@ -337,8 +337,9 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 	var locations := DayLocations.lay_out(map, corridor)
 	var standing: Array[EventPlan] = []
 	for tile in EventScheduler.open_ground_for(def.for_day(day), map, {}):
-		var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile), 1,
-				nothing_down, corridor, no_doors, calm, standing, locations)
+		var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
+				map.tile_to_world(tile), 1, nothing_down, corridor, no_doors, calm, standing,
+				locations)
 		if plan:
 			return plan.role
 	return -1
@@ -461,8 +462,9 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 				if offered.is_empty():
 					break
 				var tile: Vector2i = offered[rng.randi_range(0, offered.size() - 1)]
-				var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile),
-						day + copy * 31, already, corridor, no_doors, calm, standing, locations)
+				var plan := EventScheduler.recipe_placement(def, day, map,
+						GamePlanBuilder.over(map), map.tile_to_world(tile), day + copy * 31, already,
+						corridor, no_doors, calm, standing, locations)
 				if not plan:
 					continue
 				already.append(plan)
@@ -475,8 +477,9 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 			for k in 24:
 				var tile: Vector2i = sidewalk[(k * 7919) % sidewalk.size()]
 				var why: Array[String] = []
-				var plan := EventScheduler.recipe_placement(def, day, map, map.tile_to_world(tile),
-						day, already, corridor, no_doors, calm, standing, locations, why)
+				var plan := EventScheduler.recipe_placement(def, day, map,
+						GamePlanBuilder.over(map), map.tile_to_world(tile), day, already, corridor,
+						no_doors, calm, standing, locations, why)
 				t.check(plan == null, "day %d: a sidewalk tile %s is refused the square crew"
 						% [day, RunTrace.tile(tile)])
 				t.check(why.size() == 1 and (why[0].contains("does not take")
@@ -513,8 +516,8 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 ##
 ## **The walled count is small, and the arithmetic says it has to be.** `homeless_yeller` paces
 ## `path_length_tiles` (8) against a block of `Tuning.BLOCK_SIZE` (8), so a beat laid anywhere on a
-## street runs into the junction box at one end of it unless `_along_street_path` truncates it —
-## at a closure, at a calm zone's absorbed corridor, or against the map's own margin. The walled
+## street runs into the junction box at one end of it unless `PlanBuilder._along_street_path()`
+## truncates it — at a closure, at a calm zone's absorbed corridor, or against the map's own margin. The walled
 ## case is that truncation, which is why the floor under it is *one* rather than a share: what it
 ## guards is that the sweep can still produce the case at all. City 88 is in the sweep for it: its
 ## day 1, before any mast holds a location, paces a walled beat, so the floor rests on a day no

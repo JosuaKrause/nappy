@@ -625,8 +625,8 @@ func _test_an_investigating_car_stops_on_its_road_and_a_policeman_gets_out(t: Te
 ## or is gone: the car's approach, the man's notice and chase, his stop, his walk back, and the car
 ## driving on past her. No lights, so no car is held beside her by one. Standing still nothing
 ## decays (`Baby.EXCITEMENT_DECAY_IDLE` is 0), so the sum is the meter from 0. Over the hand-made
-## lane on days 8 and 9 and over real `_along_street_path()` routes on three seeds, her standing
-## beside each at several places, the worst must stay under `Tuning.METER_MAX` by
+## lane on days 8 and 9 and over real `PlanBuilder._along_street_path()` routes on three seeds, her
+## standing beside each at several places, the worst must stay under `Tuning.METER_MAX` by
 ## `ENCOUNTER_MARGIN` — the cap never reached, let alone the push past it that ends the day — and
 ## every encounter must cost more than his stop alone.
 func _test_the_whole_encounter_from_calm_never_ends_the_day(t: TestRunner) -> void:
@@ -717,7 +717,7 @@ func _the_whole_encounter(city: City, her: Node2D, hot: EventDef,
 
 ## **It never stops in a junction box** *(sunny-finch: nothing enters a box it cannot leave)*, over
 ## real patrol routes rather than a hand-made one: on three seeds, `police_patrol`'s own
-## `EventScheduler._along_street_path()` routes at full heat, her standing on the sidewalk beside
+## `PlanBuilder._along_street_path()` routes at full heat, her standing on the sidewalk beside
 ## the route at several places along it, the car driven until it stops for her. Wherever it stops,
 ## no part of its body — spine and width — is on a junction's tiles, the crossing street's
 ## corridor with its zebras; and some of those cars saw her from inside a box and drove on out of

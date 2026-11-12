@@ -815,7 +815,7 @@ const MAST_DRAWS := 32
 ## than 800px from the doorstep with a sidewalk tile 96 to 128px from it and another 224 to 288px from
 ## it that each take a loudspeaker the way a scene recipe's are accepted (an eligible mast site, not
 ## closed, held or on the home block, `MastSites.is_eligible()`, and room for it,
-## `EventScheduler.place_at()`); empty when none has.
+## `PlanBuilder.place_at()`); empty when none has.
 func _two_masts_round_a_mark(map: CityMap) -> Array:
 	for tile in _mark_tiles():
 		var mark := map.tile_to_world(tile)
@@ -840,13 +840,14 @@ func _two_masts_round_a_mark(map: CityMap) -> Array:
 					near.append(site)
 				else:
 					far.append(site)
+		var builder := GamePlanBuilder.over(map)
 		for a in near:
-			var first := EventScheduler.place_at(EventCatalogue.mast(), map, a,
+			var first := builder.place_at(EventCatalogue.mast(), a,
 					RandomNumberGenerator.new(), [] as Array[EventPlan])
 			if first == null:
 				continue
 			for b in far:
-				var second := EventScheduler.place_at(EventCatalogue.mast(), map, b,
+				var second := builder.place_at(EventCatalogue.mast(), b,
 						RandomNumberGenerator.new(), [first] as Array[EventPlan])
 				if second != null:
 					return [mark, first, second]

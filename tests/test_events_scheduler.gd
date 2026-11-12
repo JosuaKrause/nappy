@@ -616,11 +616,12 @@ func _test_nothing_beside_the_routes_stands_on_the_main_road(t: TestRunner) -> v
 	t.check(main != null and side != null, "the city has a street of the main road and one that is not")
 	if main == null or side == null:
 		return
-	var across := EventScheduler.across_the_section(def, map, side, _rng(13))
+	var builder := GamePlanBuilder.over(map)
+	var across := EventScheduler.across_the_section(def, builder, map, side, _rng(13))
 	t.check(across != null and side.tiles().has_point(map.world_to_tile(across.placed_at())),
 			"a side street's section takes a roadblock across it, inside the section")
 	t.check(_has_a_carriageway(map, main)
-			and EventScheduler.across_the_section(def, map, main, _rng(13)) == null,
+			and EventScheduler.across_the_section(def, builder, map, main, _rng(13)) == null,
 			"a section of the main road takes none")
 
 ## Whether any tile of `section` is carriageway (`ROAD`): a precinct, paved frontage to frontage,
@@ -709,8 +710,9 @@ func _test_a_roadblock_leaves_no_section_within_its_spacing_offered(t: TestRunne
 	var corridor := Corridor.of(RouteTree.for_day(map, day))
 	var def := EventCatalogue.by_id("roadblock").for_day(day)
 	var events := DayEvents.over(CalmAreas.of(map))
-	var judged := EventScheduler.RuledRoadblockGround.new(def, day, map, events, {}, corridor,
-			StreetInvalidation.new(map, corridor, {}, [] as Array[Rect2], PackedVector2Array(), false),
+	var judged := EventScheduler.RuledRoadblockGround.new(def, day, map,
+			GamePlanBuilder.over(map), events, {}, corridor,
+			StreetInvalidation.new(map, corridor, {}, [] as Array[Rect2], PackedVector2Array(), null),
 			true)
 	var sections := DayLocations.lay_out(map, corridor).sections_in(
 			PlacementView.View.ROUTE_ADJACENT)
