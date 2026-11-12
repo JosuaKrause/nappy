@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## The run's state kept in one registered list (`RunStateRegistry` of `RunSubState` parts) — see
 ## docs/ARCHITECTURE.md, "The run's state".
@@ -191,12 +190,13 @@ func _test_every_part_gives_back_what_it_photographed(t: TestRunner) -> void:
 ## its `to_data()` is the mistake the old six places made easy.
 func _test_every_part_declares_each_field_once_in_its_data(t: TestRunner) -> void:
 	var run := _fresh(1)
-	for part in run.run_parts.parts():
+	for part: RunSubState in run.run_parts.parts():
 		var variables := 0
 		for property in part.get_property_list():
 			if property["usage"] & PROPERTY_USAGE_SCRIPT_VARIABLE:
 				variables += 1
-		var name: String = part.get_script().get_global_name()
+		var script: Script = part.get_script()
+		var name: String = script.get_global_name()
 		t.check(variables == part.to_data().size(),
 				"%s writes one key per field (%d fields, %d keys)"
 				% [name, variables, part.to_data().size()])
@@ -205,10 +205,11 @@ func _test_every_part_declares_each_field_once_in_its_data(t: TestRunner) -> voi
 func _test_every_part_round_trips_through_json(t: TestRunner) -> void:
 	var run := _fresh(1)
 	SCENARIO.build(run)
-	for part in run.run_parts.parts():
+	for part: RunSubState in run.run_parts.parts():
 		var data := part.to_data()
 		var through: Dictionary = JSON.parse_string(JSON.stringify(data))
-		var name: String = part.get_script().get_global_name()
+		var script: Script = part.get_script()
+		var name: String = script.get_global_name()
 		part.reset()
 		part.restore(through)
 		var again: Variant = JSON.parse_string(JSON.stringify(part.to_data()))

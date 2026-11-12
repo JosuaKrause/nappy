@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## `DayController`'s clock: the countdown itself, and how often it tells anyone about it.
 ##
@@ -114,7 +113,7 @@ func _test_invincible_stops_emitting_once_the_first_second_is_told(t: TestRunner
 func _test_the_escape_clock_moves_every_frame(t: TestRunner) -> void:
 	var escape := _rig(t)
 	escape.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
-	var labels := []
+	var labels: Array[String] = []
 	var on_emit := func(remaining: float, _total: float) -> void:
 		labels.append(RunState.format_clock_hundredths(remaining))
 	EventBus.day_time_changed.connect(on_emit)
@@ -125,7 +124,7 @@ func _test_the_escape_clock_moves_every_frame(t: TestRunner) -> void:
 	t.check(labels.size() == 10,
 			"the escape's clock emits on each of ten frames inside one second (%d)" % labels.size())
 	var distinct := {}
-	for l in labels:
+	for l: String in labels:
 		distinct[l] = true
 	t.check(distinct.size() == 10,
 			"and the label differs on every one of them (%d distinct)" % distinct.size())
@@ -160,16 +159,16 @@ func _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t: TestRunner) -> 
 	escape.spec = DaySpec.for_section(DaySpec.Section.BUILDING, 180.0)
 	escape.start(180.0)
 	escape.tick(tick)
-	var after_the_tick := escape.time_remaining
+	var after_the_tick := escape.seconds_left()
 	await _one_drawn_frame(t, escape, shown)
 	t.check(shown.size() == 1 and shown[0] <= after_the_tick
 			and shown[0] > after_the_tick - tick - 0.0001,
 			"a drawn frame shows the countdown between this tick and the next (%s, %.4f)"
 			% [shown, after_the_tick])
-	t.check(is_equal_approx(escape.time_remaining, after_the_tick),
+	t.check(is_equal_approx(escape.seconds_left(), after_the_tick),
 			"and a drawn frame moves the countdown itself not at all")
 	escape.free()
-	for frozen in [false, true]:
+	for frozen: bool in [false, true]:
 		var day := _rig(t)
 		day.invincible = frozen
 		if frozen:
@@ -249,9 +248,9 @@ func _test_each_section_is_won_at_its_own_goal(t: TestRunner) -> void:
 			+ "from its two ways out (%s)" % [results])
 	_her.global_position = Vector2(-1000.0 + DayController.FINALE_EXIT_REACH - 1.0, 0.0)
 	city.tick(0.016)
-	t.check(results == [GameEnums.DayResult.WON] and city.exit_reached == CityEdge.Kind.BRIDGE,
+	t.check(results == [GameEnums.DayResult.WON] and city.exit_taken() == CityEdge.Kind.BRIDGE,
 			"at the bridge deck, awake, the city section is won by the bridge (%s, %d)"
-			% [results, city.exit_reached])
+			% [results, city.exit_taken()])
 	city.free()
 
 	results.clear()

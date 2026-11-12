@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## What `main` does with the save: the focus loss that writes nothing, the dawn a resumed boot writes,
 ## the title and the resume gate that lead to the day brief or the ending, the day engaged writing the
@@ -171,8 +170,8 @@ func _one(root: Node, type_name: String) -> Node:
 ## frames let pass until its boot has finished (`Boot.until_booted()`): the run, the day, her and
 ## the title are built.
 func _boot(t: TestRunner, config: RunConfig, calls: Calls, home: Node = null, hand_the_save := true,
-		run_log: Telemetry = null) -> Node2D:
-	var main: Node2D = MAIN_SCENE.instantiate()
+		run_log: Telemetry = null) -> Boot.MainScript:
+	var main: Boot.MainScript = MAIN_SCENE.instantiate()
 	if hand_the_save:
 		main.use_save(_save)
 	main.configure(config)
@@ -187,12 +186,12 @@ func _boot(t: TestRunner, config: RunConfig, calls: Calls, home: Node = null, ha
 	await Boot.until_booted(t, main)
 	return main
 
-func _shut(t: TestRunner, main: Node2D) -> void:
+func _shut(t: TestRunner, main: Boot.MainScript) -> void:
 	t.get_tree().paused = false
 	main.free()
 
 ## Whether the summary's note line is up, and what it says.
-func _note_of(main: Node2D) -> Label:
+func _note_of(main: Boot.MainScript) -> Label:
 	return Boot.summary(main).get_node("Root/Center/Lines/Note") as Label
 
 # ---------------------------------------------------------------------------- the checks ---

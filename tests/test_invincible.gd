@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## `--invincible`, M100 "An invincible mode for playtesting": `DevFlags`' own parsing of the flag,
 ## and what the run hands on from it — `DayController.invincible`, whose `_ignores_loss()` is the
@@ -12,6 +11,7 @@ const SEED := 4242
 ## tree (`_let_the_baby_tick()`).
 const METER_SECONDS := 3.0
 const HUD_SCENE := preload("res://scenes/ui/hud.tscn")
+const HudScript := preload("res://src/ui/hud.gd")
 
 ## Stands in for the city, the same shape `tests/test_meters.gd`'s own `FakeWorld` uses: a live
 ## noise source `Baby.excitement_sources_at()` can actually sum, so the meter test below drives
@@ -145,7 +145,7 @@ func _test_crying_does_not_end_the_day_under_invincible(t: TestRunner) -> void:
 	EventBus.baby_state_changed.emit(GameEnums.BabyState.CRYING)
 	t.check(_results.is_empty(), "crying does not end the day under --invincible")
 	t.check(_day.is_running(), "the day is still running")
-	t.check(_day.failure_reason == "", "nothing set a failure reason — nothing has failed")
+	t.check(_day.loss_reason() == "", "nothing set a failure reason — nothing has failed")
 	_teardown()
 
 func _test_hard_fail_does_not_end_the_day_under_invincible(t: TestRunner) -> void:
@@ -166,11 +166,11 @@ func _test_the_clock_never_moves_under_invincible(t: TestRunner) -> void:
 	_day.start(10.0)
 	_day.invincible = true
 	_day.tick(9.0)
-	t.close_to(_day.time_remaining, 10.0,
+	t.close_to(_day.seconds_left(), 10.0,
 			"the clock has not moved even after what would be most of the day", 0.001)
 	t.check(_results.is_empty(), "and nothing ended the day either")
 	_day.tick(5.0)
-	t.close_to(_day.time_remaining, 10.0,
+	t.close_to(_day.seconds_left(), 10.0,
 			"or after running past what would have been dusk", 0.001)
 	t.check(_results.is_empty(), "dusk still never arrives")
 	t.check(_day.is_running(), "the day is still running")
@@ -210,7 +210,7 @@ func _test_the_clock_and_the_meter_both_move_with_the_flag_off(t: TestRunner) ->
 	_day.start(10.0)
 	_day.invincible = false
 	_day.tick(3.0)
-	t.check(_day.time_remaining < 10.0 - 0.01, "the clock counts down with the flag off")
+	t.check(_day.seconds_left() < 10.0 - 0.01, "the clock counts down with the flag off")
 	_teardown()
 
 	var rig := _build_meter_rig(t)
@@ -263,7 +263,7 @@ func _test_the_hud_names_the_mode_when_invincible(t: TestRunner) -> void:
 ## The header a debug HUD draws on entering the tree, configured `invincible` or not and handed
 ## `run`; its owner is the HUD, which the caller frees.
 func _hud_drawing(t: TestRunner, run: RunState, invincible: bool) -> Label:
-	var hud: CanvasLayer = HUD_SCENE.instantiate()
+	var hud: HudScript = HUD_SCENE.instantiate()
 	hud.configure(true, invincible, false)
 	hud.use_run(run)
 	t.add_child(hud)

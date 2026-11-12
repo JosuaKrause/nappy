@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 extends RefCounted
 ## A run's checkpoints and its two modes — see docs/MECHANICS.md, "Nerves" and "Saving and
 ## resuming". A normal run that spends its last nerve goes back to the latest checkpoint it has
@@ -345,7 +344,7 @@ func _test_going_back_across_day_11_boots_a_world_with_nothing_after_the_checkpo
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var reloads := []
-	var hand := func(main: Node) -> void:
+	var hand := func(main: Boot.MainScript) -> void:
 		main.use_sitting_home(home)
 		main.use_reload(func() -> void: reloads.append(1))
 	var config := Boot.config(["--day", "8"])
@@ -450,7 +449,7 @@ func _test_a_hard_runs_escape_spends_nerves_and_ends_on_the_last(t: TestRunner) 
 	run.facts.escape_section = DaySpec.Section.BUILDING
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, Boot.config([]),
-			func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
+			func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 	var main := booted.main
 	var summary := Boot.summary(main)
 	await Boot.press_continue(t, main)
@@ -492,7 +491,7 @@ func _test_leaving_the_building_gives_a_hard_run_no_nerve_back(t: TestRunner) ->
 	run.facts.escape_section = DaySpec.Section.BUILDING
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, Boot.config([]),
-			func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
+			func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 	var main := booted.main
 	var interior := Boot.interior(main)
 	t.check(interior != null and Boot.summary(main).is_showing(),
@@ -516,7 +515,7 @@ func _test_the_lost_day_screen_says_where_she_goes_back_to(t: TestRunner) -> voi
 	var run := RunState.new()
 	run.start_run(_SEED)
 	run.header.day = 8
-	var summary: CanvasLayer = SUMMARY_SCENE.instantiate()
+	var summary: Boot.DaySummaryScript = SUMMARY_SCENE.instantiate()
 	t.add_child(summary)
 	var end := DayEnd.new()
 	end.result = GameEnums.DayResult.LOST_TIMEOUT
@@ -607,7 +606,7 @@ func _test_which_titles_show_the_checkbox_today(t: TestRunner) -> void:
 		var run := RunState.new()
 		var home := Boot.home_playing(t, run)
 		var booted: Boot.Booted = await Boot.boot(t, _scratch_path, _windowed(),
-				func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
+				func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 		var title := Boot.title(booted.main)
 		t.check(title.is_open() and _box_shown(title) == case[2],
 				"%s: the box is %s" % [case[3], "shown" if case[2] else "not shown"])
@@ -805,7 +804,7 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t: TestRunn
 	var run := RunState.new()
 	var home := Boot.home_playing(t, run)
 	var booted: Boot.Booted = await Boot.boot(t, _scratch_path, _windowed(),
-			func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
+			func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 	await Boot.press_title(t, booted.main, "Tap")
 	t.check(run.calendar.hard_mode and modes.is_empty(),
 			"a resumed run keeps the mode its save carries, and reports none")
@@ -815,7 +814,7 @@ func _test_the_title_sets_a_new_games_mode_and_leaves_a_resumed_ones(t: TestRunn
 	run = RunState.new()
 	home = Boot.home_playing(t, run)
 	booted = await Boot.boot(t, _scratch_path, _windowed(),
-			func(main: Node) -> void: main.use_sitting_home(home), false, MapCache.source())
+			func(main: Boot.MainScript) -> void: main.use_sitting_home(home), false, MapCache.source())
 	var title := Boot.title(booted.main)
 	await UI.frames(t)
 	UI.push(title, UI.touch_at(_the_catch_owed(title).get_center(), true))
