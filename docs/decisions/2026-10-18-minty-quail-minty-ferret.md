@@ -17,8 +17,6 @@ is deleted (curly-rabbit #1095). This pass takes the view's and the run log's li
   run log's `lines` (tests read `recorded_lines()`).
 - **Kept, with reasons on their lines**: `FrameGraph.mean()`, which exists only as an argument to the draw calls a
   headless run draws to nothing; `ModeButton.symbol`, which three scenes set by name, a read the check cannot see.
-- **A check grew stronger**: the finale's retry check read the teaching line's stored text, which clearing the label
-  never cleared; it now reads what the label shows.
 - **The queue loses `HelpText.line`** from `tests-public-seams.md`'s open list and the entry README's list.
 
 ## Verified
