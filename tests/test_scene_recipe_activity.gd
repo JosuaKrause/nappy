@@ -128,7 +128,7 @@ func roof_matches(building: Building, fixtures: Array) -> bool:
 		expected[cell] = ROOF_TEXTURE_OF_KIND.get(kind, &"")
 		if kind == "DUCT_STRAIGHT":
 			expected[cell + Vector2i.RIGHT] = Building.DUCT_RUN
-	building.set_scenery_resident(true)
+	building.residence().set_resident(true)
 	var layout := RoofReads.units_of(building)
 	if layout.is_empty() or expected.size() != layout.size():
 		return false

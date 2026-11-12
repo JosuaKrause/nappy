@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name SceneryResidency
 extends Node
 ## Prepares camera-adjacent artwork while retaining the complete gameplay city. The inner
@@ -38,7 +37,9 @@ var _decals: CityDecals
 ## in by the city that builds this. Free play keeps ordinary streaming.
 var frame_locked := false
 var view := Rect2()
-var _items: Array[Node2D] = []
+## The standings of everything registered: a building, the home door and every `ScenerySprite`,
+## which share no class below `Node2D` and are each composed of a `SceneryResidence`.
+var _items: Array[SceneryResidence] = []
 var worst_update_usec := 0
 var ordinary_guard_preparations := 0
 var _pending := false
@@ -63,9 +64,10 @@ func setup(world: CanvasItem, map: CityMap, ground: SceneryGround, shadows: Buil
 	_shadows = shadows
 	_decals = decals
 
-func register(item: Node2D) -> void:
-	_items.append(item)
-	item.set_scenery_resident(false)
+## Takes a placement's standing over, its pictures freed until the view comes near.
+func register(residence: SceneryResidence) -> void:
+	_items.append(residence)
+	residence.set_resident(false)
 
 func _process(_delta: float) -> void:
 	if _world and _world.is_visible_in_tree():
@@ -92,7 +94,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 	# with the jobs it ran counted by kind and what it spent past `budget_usec` kept apart. The
 	# deferred window's two ends go into the engine's deferred queue either side of everything this
 	# update queues there, so the tile map work and first draws it leaves behind are scenery's too.
-	var recording := timing.on
+	var recording := timing.is_on()
 	var outer := 0
 	if recording:
 		outer = timing.enter(FrameTiming.SCENERY)
@@ -106,17 +108,17 @@ func update(next_view: Rect2, immediate := false) -> void:
 	var retained := view.grow(RETAIN_MARGIN)
 	var guard := load_view if immediate or relocated else view.grow(GUARD_MARGIN)
 	var ground := _ground
-	for key: Vector2i in ground.chunks.keys():
+	for key: Vector2i in ground.chunks().keys():
 		if not retained.intersects(SceneryGround.bounds(key)):
 			ground.release(key)
 	# Keep unfinished allocations through the wider retention ring too. They pause outside
 	# the load boundary, so reversing there resumes the same work without allocation churn.
-	for key: Vector2i in ground.pending.keys():
+	for key: Vector2i in ground.pending().keys():
 		if not retained.intersects(SceneryGround.bounds(key)):
 			ground.cancel(key)
 	var pending: Array[Dictionary] = []
-	for key in ground.keys_in(load_view):
-		if ground.chunks.has(key):
+	for key: Vector2i in ground.keys_in(load_view):
+		if ground.chunks().has(key):
 			continue
 		var bounds := SceneryGround.bounds(key)
 		if guard.intersects(bounds):
@@ -129,25 +131,27 @@ func update(next_view: Rect2, immediate := false) -> void:
 		else:
 			pending.append({"distance": bounds.get_center().distance_squared_to(view.get_center()),
 					"ground_key": key})
-	for item in _items.duplicate():
-		if not is_instance_valid(item) or item.is_queued_for_deletion():
-			_items.erase(item)
+	# A standing outlives its placement while it is held here, so a freed placement is let go by
+	# asking the standing, never by touching the placement.
+	for residence: SceneryResidence in _items.duplicate():
+		if residence.is_gone():
+			_items.erase(residence)
 			continue
-		var bounds: Rect2 = item.scenery_bounds()
-		if item.scenery_resident:
+		var bounds := residence.bounds()
+		if residence.is_resident():
 			if not retained.intersects(bounds):
-				item.set_scenery_resident(false)
+				residence.set_resident(false)
 		elif guard.intersects(bounds):
 			if not immediate and not relocated:
 				ordinary_guard_preparations += 1
 			if recording:
 				timing.scenery_job(FrameTiming.Job.GUARD)
-			item.set_scenery_resident(true)
+			residence.set_resident(true)
 		elif load_view.intersects(bounds):
 			var job := {"distance": bounds.get_center().distance_squared_to(view.get_center()),
-					"prepare": item.set_scenery_resident.bind(true)}
+					"prepare": residence.set_resident.bind(true)}
 			if recording:
-				job.kind = FrameTiming.Job.BUILDING if item is Building else FrameTiming.Job.PROP
+				job["kind"] = residence.counted_as()
 			pending.append(job)
 	# Which kind the shadows' and decals' jobs are counted as, held in an array the callable shares
 	# rather than bound into it, so a run without the record does no extra work for it.
@@ -163,39 +167,41 @@ func update(next_view: Rect2, immediate := false) -> void:
 			var job := {"distance": bounds.get_center().distance_squared_to(view.get_center()),
 					"prepare": prepare}
 			if recording:
-				job.kind = enqueued_kind[0]
+				job["kind"] = enqueued_kind[0]
 			pending.append(job)
 	_shadows.update_view(load_view, retained, enqueue)
 	enqueued_kind[0] = FrameTiming.Job.DECAL
 	_decals.update_view(load_view, retained, enqueue)
-	pending.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.distance < b.distance)
+	pending.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return a["distance"] < b["distance"])
 	_pending = false
 	# At least one job runs before the budget can stop the queue, in every mode and for every kind
 	# of job, so the queue always advances. `started` is taken before the synchronous guard
 	# preparations, so the frames where this adds a job beyond the budget are the ones the guard
 	# (or this update's own bookkeeping) has already spent it in: the heaviest frames.
 	var ran := 0
-	for job in pending:
+	for job: Dictionary in pending:
 		if not frame_locked and ran > 0 \
 				and Time.get_ticks_usec() - started >= budget_usec:
 			_pending = true
 			break
 		if job.has("ground_key"):
-			if frame_locked or ground.mode == SceneryGround.Mode.ALL:
-				ground.prepare(job.ground_key)
+			var key: Vector2i = job["ground_key"]
+			if frame_locked or ground.mode() == SceneryGround.Mode.ALL:
+				ground.prepare(key)
 				ran += 1
 				if recording:
 					timing.scenery_job(FrameTiming.Job.GROUND)
 				continue
 			var frame := Engine.get_process_frames()
-			if ground.mode == SceneryGround.Mode.ONE:
+			if ground.mode() == SceneryGround.Mode.ONE:
 				# The fence is per process frame, so repeating an explicit update cannot add a
 				# second region; a guard preparation earlier in this frame has spent it too.
 				if _whole_region_frame == frame:
 					_pending = true
 					continue
 				_whole_region_frame = frame
-				ground.prepare(job.ground_key)
+				ground.prepare(key)
 				ran += 1
 				if recording:
 					timing.scenery_job(FrameTiming.Job.GROUND)
@@ -205,20 +211,21 @@ func update(next_view: Rect2, immediate := false) -> void:
 			if _ground_step_frame != frame:
 				_ground_step_frame = frame
 				_ground_stepped.clear()
-			if _ground_stepped.has(job.ground_key):
+			if _ground_stepped.has(key):
 				_pending = true
 				continue
-			_ground_stepped[job.ground_key] = true
+			_ground_stepped[key] = true
 			ran += 1
 			if recording:
 				timing.scenery_job(FrameTiming.Job.GROUND)
-			if not ground.prepare_step(job.ground_key):
+			if not ground.prepare_step(key):
 				_pending = true
 		else:
-			(job.prepare as Callable).call()
+			(job["prepare"] as Callable).call()
 			ran += 1
 			if recording:
-				timing.scenery_job(job.kind)
+				var kind: FrameTiming.Job = job["kind"]
+				timing.scenery_job(kind)
 	var elapsed := Time.get_ticks_usec() - started
 	worst_update_usec = maxi(worst_update_usec, elapsed)
 	if recording:

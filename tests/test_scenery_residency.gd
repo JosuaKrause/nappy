@@ -106,7 +106,7 @@ func _scene_for(t: TestRunner, seed_value: int) -> Scene:
 	scene.world.add_child(scene.ground)
 	scene.scenery.setup(scene.world, scene.map, scene.ground, scene.shadows, scene.decals)
 	scene.world.add_child(scene.scenery)
-	scene.ground.mode = SceneryGround.Mode.ONE
+	scene.ground.use_mode(SceneryGround.Mode.ONE)
 	scene.ground.atlas = scene.atlas
 	scene.ground.configure(scene.map, scene.source_at,
 			GroundLayers.build_tile_set(AUTHORED_GROUND, GroundRecipe.new(), scene.atlas))
@@ -129,7 +129,7 @@ func _scene_for(t: TestRunner, seed_value: int) -> Scene:
 		building.put_roof_objects_in(scene.entities)
 		scene.world.add_child(building)
 		scene.buildings.append(building)
-		scene.scenery.register(building)
+		scene.scenery.register(building.residence())
 		_drawers[building] = drawer
 	scene.scenery.update(scene.home_view(), true)
 	return scene
@@ -148,7 +148,7 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	_check_coverage(t, scene, home)
 	var unloaded := 0
 	for building in scene.buildings:
-		if not building.scenery_resident:
+		if not building.residence().is_resident():
 			unloaded += 1
 			t.check(not building.is_processing(), "unprepared roofs run no animation callbacks")
 			t.check(_drawer_of(building).standing().is_empty() and _lit_windows(building) == 0,
@@ -158,14 +158,14 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	t.check(unloaded > scene.buildings.size() / 2, "most buildings are unprepared at home")
 	var lit_in_view := 0
 	for resident in scene.buildings:
-		if resident.scenery_resident:
+		if resident.residence().is_resident():
 			lit_in_view += _lit_windows(resident)
 	t.check(lit_in_view > 0, "the prepared buildings show lit windows, so an unprepared one showing"
 			+ " none says something")
 	var building := _a_building_with_a_roof(scene)
 	var identity := building.get_instance_id()
 	var collision := _collision_shape(building)
-	var target := _view(building.scenery_bounds().get_center())
+	var target := _view(building.residence().bounds().get_center())
 	scene.scenery.update(target, true)
 	# Lived in and powered, so the pictures say which windows the roll lit.
 	building.condition = Building.Condition.LIVED_IN
@@ -193,7 +193,7 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 				"retained chunks preserve their actual allocation")
 	var far := _view(map.world_size() - Vector2(100, 100))
 	scene.scenery.update(far, true)
-	t.check(not building.scenery_resident, "leaving the retention boundary evicts the building")
+	t.check(not building.residence().is_resident(), "leaving the retention boundary evicts the building")
 	for layer in layers:
 		t.check(not is_instance_valid(layer), "eviction frees roof nodes and their texture references")
 	t.check(resident_ids.values().any(func(id: int) -> bool: return not is_instance_valid(instance_from_id(id))),
@@ -241,7 +241,7 @@ func _test_residency_follows_the_view(t: TestRunner, seed_value: int) -> void:
 	var shore := _view(Vector2(map.world_size().x * 0.5, map.world_size().y + 100))
 	scene.scenery.update(shore, true)
 	var water_count := 0
-	for chunk: TileMapLayer in scene.ground.chunks.values():
+	for chunk: TileMapLayer in scene.ground.chunks().values():
 		for child in chunk.get_children():
 			if child is SceneryWater:
 				var water: SceneryWater = child
@@ -257,7 +257,7 @@ func _test_roof_phase(t: TestRunner, seed_value: int) -> void:
 	for building in scene.buildings:
 		if building.district != GameEnums.BlockPurpose.INDUSTRIAL:
 			continue
-		var view := _view(building.scenery_bounds().get_center())
+		var view := _view(building.residence().bounds().get_center())
 		scene.scenery.update(view, true)
 		if _rotors_of(building).is_empty():
 			continue
@@ -265,7 +265,7 @@ func _test_roof_phase(t: TestRunner, seed_value: int) -> void:
 			var old_rotors := _rotors_of(building)
 			var old_objects := _objects_of(building)
 			scene.scenery.update(_view(Vector2(-10000, -10000)), true)
-			t.check(not building.scenery_resident, "the actual fan owner crosses the eviction boundary")
+			t.check(not building.residence().is_resident(), "the actual fan owner crosses the eviction boundary")
 			for rotor in old_rotors:
 				t.check(not is_instance_valid(rotor), "eviction frees the actual moving rotor owner")
 			for object in old_objects:
@@ -289,7 +289,7 @@ func _check_roof_ownership(t: TestRunner, scene: Scene) -> void:
 	# The layer the scene hands every building to stand its roof art in.
 	var entities := scene.entities
 	for building in scene.buildings:
-		if not building.scenery_resident:
+		if not building.residence().is_resident():
 			t.check(_objects_of(building).is_empty() and _rotors_of(building).is_empty(),
 					"unloaded buildings retain no external roof objects or rotor textures")
 		for object in _objects_of(building):
@@ -305,7 +305,7 @@ func _check_roof_ownership(t: TestRunner, scene: Scene) -> void:
 ## The first prepared building whose roof draws units, so what it draws is something to compare.
 func _a_building_with_a_roof(scene: Scene) -> Building:
 	for building in scene.buildings:
-		if building.scenery_resident and not _drawer_of(building).standing().is_empty():
+		if building.residence().is_resident() and not _drawer_of(building).standing().is_empty():
 			return building
 	return scene.buildings[0]
 
@@ -382,7 +382,7 @@ func _frames(t: TestRunner, count := 1) -> void:
 ## Switches an emptied ground to `mode` and prepares the home view again in it.
 func _use_mode(scene: Scene, mode: SceneryGround.Mode) -> void:
 	scene.ground.clear()
-	scene.ground.mode = mode
+	scene.ground.use_mode(mode)
 	scene.scenery.update(scene.home_view(), true)
 
 ## Releases up to `count` regions between the guard and the load boundary of `view`, so the next
@@ -392,7 +392,7 @@ func _ring_keys(scene: Scene, view: Rect2, count: int) -> Array[Vector2i]:
 	for candidate in scene.ground.keys_in(view.grow(SceneryResidency.LOAD_MARGIN)):
 		if view.grow(SceneryResidency.GUARD_MARGIN).intersects(SceneryGround.bounds(candidate)):
 			continue
-		if scene.ground.chunks.has(candidate):
+		if scene.ground.chunks().has(candidate):
 			scene.ground.release(candidate)
 		keys.append(candidate)
 		if keys.size() == count:
@@ -401,10 +401,10 @@ func _ring_keys(scene: Scene, view: Rect2, count: int) -> Array[Vector2i]:
 
 ## What ALL and ONE build: the region as one layer, so one renderer quadrant and one water surface.
 func _all_prepared(ground: SceneryGround, keys: Array[Vector2i]) -> bool:
-	return keys.all(func(key: Vector2i) -> bool: return ground.chunks.has(key))
+	return keys.all(func(key: Vector2i) -> bool: return ground.chunks().has(key))
 
 func _check_whole_layout(t: TestRunner, scene: Scene, key: Vector2i) -> void:
-	var layer: TileMapLayer = scene.ground.chunks[key]
+	var layer: TileMapLayer = scene.ground.chunks()[key]
 	var surfaces := 0
 	for child in layer.get_children():
 		surfaces += int(child is SceneryWater)
@@ -425,19 +425,19 @@ func _test_all_mode(t: TestRunner, seed_value: int) -> void:
 	# three; the budget's own spill-over is `_test_all_mode_budget`'s, which a one-microsecond
 	# budget makes countable without timing anything.
 	scene.scenery.budget_usec = 1_000_000_000
-	var prepared := ground.chunks.keys()
+	var prepared := ground.chunks().keys()
 	scene.scenery.update(view)
 	scene.scenery.budget_usec = SceneryResidency.BUDGET_USEC
 	var all_whole := true
 	for key in keys:
-		all_whole = all_whole and ground.chunks.has(key)
+		all_whole = all_whole and ground.chunks().has(key)
 	t.check(all_whole and _added(ground, prepared) == keys.size(),
 			"mode 1 prepares every needed region whole in the update that needs it")
 	# Nothing waiting: a real frame passes and the residency's own maintenance, which runs an
 	# update whenever work waits, prepares nothing more.
-	var after := ground.chunks.keys()
+	var after := ground.chunks().keys()
 	await _frames(t)
-	t.check(ground.pending.is_empty() and _added(ground, after) == 0,
+	t.check(ground.pending().is_empty() and _added(ground, after) == 0,
 			"mode 1 leaves nothing partly built and nothing waiting")
 	for key in keys:
 		_check_chunk(t, scene, key)
@@ -461,11 +461,11 @@ func _test_all_mode_budget(t: TestRunner, seed_value: int) -> void:
 	await _frames(t)
 	# The first update is the one that finds the ring; the residency's own per-frame maintenance
 	# then keeps going while work waits, one real frame at a time.
-	var prepared := ground.chunks.keys()
+	var prepared := ground.chunks().keys()
 	scenery.update(view)
 	counts.append(_added(ground, prepared))
 	for frame in keys.size() + 1:
-		prepared = ground.chunks.keys()
+		prepared = ground.chunks().keys()
 		await _frames(t)
 		if _added(ground, prepared) == 0:
 			break
@@ -473,8 +473,8 @@ func _test_all_mode_budget(t: TestRunner, seed_value: int) -> void:
 	scenery.budget_usec = SceneryResidency.BUDGET_USEC
 	var all_whole := true
 	for key in keys:
-		all_whole = all_whole and ground.chunks.has(key)
-	prepared = ground.chunks.keys()
+		all_whole = all_whole and ground.chunks().has(key)
+	prepared = ground.chunks().keys()
 	await _frames(t)
 	t.check(all_whole and _added(ground, prepared) == 0, "every spilled region is prepared in the end")
 	t.check(counts.size() == keys.size() and counts.all(func(n: int) -> bool: return n == 1),
@@ -492,9 +492,9 @@ func _test_one_mode(t: TestRunner, seed_value: int) -> void:
 	t.check(keys.size() == 3, "the mode-2 check has three actual load-ring regions to prepare")
 	# A real frame since the ground was emptied, so the process frame is a new one.
 	await _frames(t)
-	var prepared := ground.chunks.keys()
+	var prepared := ground.chunks().keys()
 	scenery.update(view)
-	t.check(_added(ground, prepared) == 1 and ground.pending.is_empty()
+	t.check(_added(ground, prepared) == 1 and ground.pending().is_empty()
 			and not _all_prepared(ground, keys),
 			"mode 2 prepares one whole region in a frame and the others wait, none half built")
 	scenery.update(view)
@@ -508,10 +508,10 @@ func _test_one_mode(t: TestRunner, seed_value: int) -> void:
 				"each following frame prepares exactly one more waiting region")
 	var all_whole := true
 	for key in keys:
-		all_whole = all_whole and ground.chunks.has(key)
+		all_whole = all_whole and ground.chunks().has(key)
 		_check_chunk(t, scene, key)
 		_check_whole_layout(t, scene, key)
-	prepared = ground.chunks.keys()
+	prepared = ground.chunks().keys()
 	await _frames(t)
 	t.check(all_whole and _added(ground, prepared) == 0, "every waiting region is prepared in turn")
 	# A guard preparation spends the frame: the ring region waits rather than making it two.
@@ -519,19 +519,19 @@ func _test_one_mode(t: TestRunner, seed_value: int) -> void:
 	var close := SceneryGround.key_for(scene.map.world_to_tile(view.get_center()))
 	ground.release(close)
 	await _frames(t)
-	prepared = ground.chunks.keys()
+	prepared = ground.chunks().keys()
 	scenery.update(view)
-	t.check(ground.chunks.has(close), "a region about to come into view is prepared at once by the guard")
-	t.check(_added(ground, prepared) == 1 and not ground.chunks.has(waiting[0]),
+	t.check(ground.chunks().has(close), "a region about to come into view is prepared at once by the guard")
+	t.check(_added(ground, prepared) == 1 and not ground.chunks().has(waiting[0]),
 			"a frame that needed the guard prepares no second, ordinary region")
 	await _frames(t, 2)
-	t.check(ground.chunks.has(waiting[0]), "the waiting region follows in the next frame")
+	t.check(ground.chunks().has(waiting[0]), "the waiting region follows in the next frame")
 	# A relocation prepares its whole destination before it is seen, in every mode.
 	var away := Rect2(view.position + Vector2(SceneryResidency.LOAD_MARGIN * 3, 0), view.size)
 	scenery.update(away)
 	var covered := true
 	for key in ground.keys_in(away.grow(SceneryResidency.LOAD_MARGIN)):
-		covered = covered and ground.chunks.has(key)
+		covered = covered and ground.chunks().has(key)
 	t.check(covered, "a relocation in mode 2 prepares the whole destination before returning")
 	_free(scene)
 
@@ -583,13 +583,13 @@ func _test_pending(t: TestRunner, seed_value: int) -> void:
 	_use_mode(scene, SceneryGround.Mode.STEPPED)
 	var ground := scene.ground
 	var key := SceneryGround.key_for(scene.map.size_in_tiles() - Vector2i(8, 8))
-	if ground.chunks.has(key):
+	if ground.chunks().has(key):
 		ground.release(key)
 	var used := GroundCells.used_cells(ground).size()
 	t.check(not ground.prepare_step(key), "one step leaves a ground region unfinished")
 	var layer: TileMapLayer = _unfinished_layer(ground, key)
 	var identity := layer.get_instance_id()
-	t.check(not ground.chunks.has(key) and GroundCells.used_cells(ground).size() == used,
+	t.check(not ground.chunks().has(key) and GroundCells.used_cells(ground).size() == used,
 			"unfinished ground is excluded from every resident-cell query")
 	t.check(layer.is_visible_in_tree(), "off-screen preparation keeps renderer commands alive")
 	ground.prepare_step(key)
@@ -598,36 +598,36 @@ func _test_pending(t: TestRunner, seed_value: int) -> void:
 	# The residency cancels a job whose region leaves the retention ring; cancelling frees the
 	# unfinished layer rather than publishing its cells.
 	ground.cancel(key)
-	t.check(not ground.pending.has(key) and not is_instance_valid(layer),
+	t.check(not ground.pending().has(key) and not is_instance_valid(layer),
 			"cancelling an unfinished region frees its state rather than publishing stale cells")
 	ground.prepare_step(key)
 	ground.prepare(key)
-	t.check(ground.chunks.has(key) and not ground.pending.has(key),
+	t.check(ground.chunks().has(key) and not ground.pending().has(key),
 			"synchronous guard completion promotes the existing pending owner")
 	_check_chunk(t, scene, key)
 	ground.release(key)
 	ground.prepare_step(key)
 	layer = _unfinished_layer(ground, key)
 	ground.repaint()
-	t.check(ground.pending.is_empty() and not is_instance_valid(layer),
+	t.check(ground.pending().is_empty() and not is_instance_valid(layer),
 			"route-tint repaint discards pending jobs with old ground inputs")
 	ground.prepare_step(key)
 	layer = _unfinished_layer(ground, key)
 	scene.scenery.update(scene.home_view(), true)
-	t.check(not ground.pending.has(key) and not is_instance_valid(layer),
+	t.check(not ground.pending().has(key) and not is_instance_valid(layer),
 			"out-of-range movement cancels and frees unfinished regions")
 	# Choose an actual load-ring region and remove it so ordinary maintenance must step it.
 	var view := scene.home_view()
 	for candidate in ground.keys_in(view.grow(SceneryResidency.LOAD_MARGIN)):
 		if view.grow(SceneryResidency.GUARD_MARGIN).intersects(SceneryGround.bounds(candidate)):
 			continue
-		if ground.chunks.has(candidate):
+		if ground.chunks().has(candidate):
 			ground.release(candidate)
 		key = candidate
 		break
 	scene.scenery.update(view)
-	t.check(ground.pending.has(key), "ordinary approach starts a stepped job")
-	if ground.pending.has(key):
+	t.check(ground.pending().has(key), "ordinary approach starts a stepped job")
+	if ground.pending().has(key):
 		var progress: int = _step_of(ground, key)
 		var pending_id: int = _unfinished_layer(ground, key).get_instance_id()
 		scene.scenery.update(view)
@@ -638,56 +638,56 @@ func _test_pending(t: TestRunner, seed_value: int) -> void:
 		away.position.x = SceneryGround.bounds(key).end.x + SceneryResidency.LOAD_MARGIN + 1
 		scene.scenery.view = away
 		scene.scenery.update(away)
-		t.check(ground.pending.has(key) and _step_of(ground, key) == progress \
+		t.check(ground.pending().has(key) and _step_of(ground, key) == progress \
 				and _unfinished_layer(ground, key).get_instance_id() == pending_id,
 				"unfinished regions pause with the same allocation inside the retention ring")
 		scene.scenery.view = view
 		ground.cancel(key)
 		scene.scenery.update(view)
-		t.check(not ground.pending.has(key) and not ground.chunks.has(key),
+		t.check(not ground.pending().has(key) and not ground.chunks().has(key),
 				"canceling a job cannot bypass its region's process-frame step fence")
 	scene.scenery.update(Rect2(SceneryGround.bounds(key).get_center() - view.size / 2,
 			view.size), true)
-	t.check(not ground.pending.has(key) and ground.chunks.has(key),
+	t.check(not ground.pending().has(key) and ground.chunks().has(key),
 			"camera relocation completes pending destination ground before returning")
 	_check_chunk(t, scene, key)
 	ground.release(key)
 	ground.prepare_step(key)
 	layer = _unfinished_layer(ground, key)
 	ground.configure(scene.map, scene.source_at, ground.tile_set)
-	t.check(ground.pending.is_empty() and not is_instance_valid(layer),
+	t.check(ground.pending().is_empty() and not is_instance_valid(layer),
 			"day/reset configuration discards every unfinished allocation")
 	scene.scenery.update(scene.home_view(), true)
 	_free(scene)
 
 ## The layer the ground holds for the resident region `key`.
 func _resident_layer(ground: SceneryGround, key: Vector2i) -> TileMapLayer:
-	return ground.chunks[key]
+	return ground.chunks()[key]
 
 ## The layer the ground holds for the unfinished region `key`.
 func _unfinished_layer(ground: SceneryGround, key: Vector2i) -> TileMapLayer:
-	var job: Dictionary = ground.pending[key]
+	var job: Dictionary = ground.pending()[key]
 	return job.layer
 
 ## How many steps the ground has taken of the unfinished region `key`.
 func _step_of(ground: SceneryGround, key: Vector2i) -> int:
-	var job: Dictionary = ground.pending[key]
+	var job: Dictionary = ground.pending()[key]
 	return job.step
 
 ## The instance id of each resident ground region's layer, by region key: what the ground has
 ## actually allocated, so a region freed and laid again shows a different id.
 func _chunk_ids(ground: SceneryGround) -> Dictionary:
 	var ids := {}
-	for key: Vector2i in ground.chunks:
+	for key: Vector2i in ground.chunks():
 		ids[key] = _resident_layer(ground, key).get_instance_id()
 	return ids
 
 ## How many regions the ground gained since `before` (its resident keys then), or -1000 when it also
 ## lost one, so an eviction in the same update cannot hide a missing or extra preparation.
 func _added(ground: SceneryGround, before: Array) -> int:
-	if not before.all(func(key: Vector2i) -> bool: return ground.chunks.has(key)):
+	if not before.all(func(key: Vector2i) -> bool: return ground.chunks().has(key)):
 		return -1000
-	return ground.chunks.size() - before.size()
+	return ground.chunks().size() - before.size()
 
 func _check_chunk(t: TestRunner, scene: Scene, key: Vector2i) -> void:
 	for y in range(key.y * SceneryGround.CHUNK_TILES, (key.y + 1) * SceneryGround.CHUNK_TILES):
@@ -720,5 +720,5 @@ func _check_coverage(t: TestRunner, scene: Scene, view: Rect2) -> void:
 				checked += 1
 	t.check(checked > 0 and wrong == 0, "visible ground has its current source without gaps")
 	for building in scene.buildings:
-		if building.scenery_bounds().intersects(view):
-			t.check(building.scenery_resident, "every intersecting building is prepared")
+		if building.residence().bounds().intersects(view):
+			t.check(building.residence().is_resident(), "every intersecting building is prepared")

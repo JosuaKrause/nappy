@@ -282,7 +282,7 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 	city.build(MapCache.of(SEED))
 	# The shadow layer is the scene's own child, found by the name the scene gives it.
 	var shadows := city.get_node("BuildingShadows") as BuildingShadows
-	t.check(city.scenery_ground.mode == SceneryGround.Mode.STEPPED and city.scenery.frame_locked
+	t.check(city.scenery_ground.mode() == SceneryGround.Mode.STEPPED and city.scenery.frame_locked
 			and shadows.skip_draw, "the ground, the scenery and the shadows")
 	t.check(city.events.skip_drawing
 			and city.events.pelican_rig == EventSpawner.PelicanRig.ALWAYS,

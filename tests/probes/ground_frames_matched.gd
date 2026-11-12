@@ -46,12 +46,10 @@ func _start_frame() -> void:
 	_city.scenery_ground._process(float(_request.delta))
 	# Roof animation shares the modeled clock too; actual uncapped FPS must not change
 	# frame selection or redraw cadence between strategies. Keep its work inside the span.
-	for item: Node2D in _city.scenery._items:
-		if item is Building:
-			var building := item as Building
-			building.set_process(false)
-			if building.scenery_resident and building._has_vent:
-				building._process(float(_request.delta))
+	for building: Building in _city.buildings():
+		building.set_process(false)
+		if building.residence().is_resident() and building._has_vent:
+			building._process(float(_request.delta))
 
 func _process(_delta: float) -> void:
 	if Time.get_ticks_msec() - _started > 120000:
@@ -85,7 +83,7 @@ func _finish_frame() -> void:
 	if not CameraWorldView.of(_city.get_viewport()).is_equal_approx(_request.view):
 		_failures.append("camera geometry differs from coverage geometry")
 	for key in ground.keys_in(_request.view):
-		gaps += int(not ground.chunks.has(key))
+		gaps += int(not ground.chunks().has(key))
 	var after := _snapshot()
 	var after_pending: Dictionary = after.pending
 	var after_chunks: Dictionary = after.chunks
@@ -136,13 +134,13 @@ func _sample(view: Rect2, delta: float, queue := true) -> Dictionary:
 func _snapshot() -> Dictionary:
 	var pending := {}
 	if _stepped:
-		var jobs: Dictionary = _city.scenery_ground.get("pending")
+		var jobs: Dictionary = _city.scenery_ground.pending()
 		for key: Vector2i in jobs:
 			var job: Dictionary = jobs[key]
 			pending[key] = job.step
 	var chunks := {}
-	for key: Vector2i in _city.scenery_ground.chunks:
-		var layer: TileMapLayer = _city.scenery_ground.chunks[key]
+	for key: Vector2i in _city.scenery_ground.chunks():
+		var layer: TileMapLayer = _city.scenery_ground.chunks()[key]
 		chunks[key] = layer.get_instance_id()
 	return {"pending": pending, "chunks": chunks,
 		"guards": _city.scenery.ordinary_guard_preparations}
@@ -161,8 +159,8 @@ func _run() -> void:
 		_city.scenery.set_process(false)
 		_city.scenery_ground.set_process(false)
 		_city.scenery_ground.elapsed = 0
-		_city_mode = _city.scenery_ground.mode
-		_stepped = _city.scenery_ground.mode == SceneryGround.Mode.STEPPED
+		_city_mode = _city.scenery_ground.mode()
+		_stepped = _city.scenery_ground.mode() == SceneryGround.Mode.STEPPED
 		_camera = Camera2D.new()
 		_camera.physics_interpolation_mode = Node.PHYSICS_INTERPOLATION_MODE_OFF
 		_camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
@@ -240,7 +238,7 @@ func _workload() -> Dictionary:
 	var records: Array[String] = []
 	var water_surfaces := 0
 	var water_cells := 0
-	for layer: TileMapLayer in _city.scenery_ground.chunks.values():
+	for layer: TileMapLayer in _city.scenery_ground.chunks().values():
 		for cell in layer.get_used_cells():
 			records.append("%s:%s:%s" % [cell, layer.get_cell_source_id(cell), layer.get_cell_atlas_coords(cell)])
 		for child in layer.get_children():
@@ -250,7 +248,7 @@ func _workload() -> Dictionary:
 					water_cells += 1
 					records.append("water:%s" % cell)
 	records.sort()
-	return {"regions": _city.scenery_ground.chunks.size(), "cells": records.size(),
+	return {"regions": _city.scenery_ground.chunks().size(), "cells": records.size(),
 		"water_cells": water_cells, "water_surfaces": water_surfaces,
 		"cell_sha256": "\n".join(records).sha256_text()}
 

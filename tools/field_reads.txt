@@ -917,7 +917,6 @@ src/events/event_spawner.gd on_first_landing
 src/dev/debug_readout.gd text_colour
 
 # [FrameTiming] src/frame_timing.gd
-src/city/scenery_residency.gd on
 src/events/event_instance.gd on
 src/events/event_manager.gd on
 
@@ -1303,11 +1302,7 @@ src/main.gd atlas
 # [SceneryGround] src/city/scenery_ground.gd
 src/city/building.gd elapsed
 src/city/city.gd atlas
-src/city/city.gd mode
 src/city/city.gd tile_set
-src/city/scenery_residency.gd chunks
-src/city/scenery_residency.gd mode
-src/city/scenery_residency.gd pending
 
 # [SceneryResidency] src/city/scenery_residency.gd
 src/city/city.gd frame_locked

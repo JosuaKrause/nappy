@@ -98,7 +98,7 @@ func _compute_shape() -> GroundShape:
 			return GroundShape.point(0.0)
 
 func _draw() -> void:
-	if not scenery_resident:
+	if not residence().is_resident():
 		return
 	match kind:
 		Kind.TREE:

@@ -93,7 +93,7 @@ func _test_a_roof_with_nothing_to_cover_lands_its_furniture_where_main_does(t: T
 				for row in range(1, building.roof_tiles() - 1):
 					for col in range(1, building.columns() - 1):
 						expected.append(Vector2i(col, row))
-			building.set_scenery_resident(true)
+			building.residence().set_resident(true)
 			var inside := true
 			for unit: Dictionary in RoofReads.units_of(building):
 				for cell: Vector2i in unit["cells"]:
