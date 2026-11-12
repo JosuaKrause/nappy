@@ -134,7 +134,6 @@ src/resistance/happenings.gd spine_x
 src/resistance/park_cordon.gd park
 src/routes/park_closure.gd area
 src/routes/route_tree.gd carries_a_route
-src/routes/route_tree.gd grow
 src/run/day_director.gd baby
 src/run/day_director.gd day
 src/run/day_director.gd events
@@ -184,6 +183,7 @@ src/crowd/crowd.gd set_focus  # where the crowd's simulated patch is centred; th
 src/crowd/crowd_sources.gd silent_beyond  # the distance past which the crowd's sweep skips a body without asking it (sources_at(), in its own file); six lines of tests/test_crowd_contributions.gd and tests/test_excitement_source.gd hold that no body's field, a jolt's included, reaches past it, which is what makes the skip give the same answer as asking every body, and nothing outward shows the distance; EventDef.silent_beyond(), the events' own distance of the same name, has its game reader in EventExcitement, which the check counts for EventDef alone now that its receiver is typed
 src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS  # the mean wait between the building's distant window flashes, which InteriorScene's shape constant FINALE_DISTANT_FLASH_SHAPE_B is solved for (its doc says moving the mean means solving B again); nothing in src/ reads it, and tests/test_interior.gd draws 4000 waits from the curve and asserts the sample mean lands within 0.05s of it, a relationship test of the kind writing-tests wants, so it stays a constant a test reads for that relationship (the brief's choice between deleting it and keeping it; settled by inbox #1173 in gray-dolphin)
 src/telemetry/telemetry_log.gd recorded_lines  # the lines the run log wrote, kept in memory as well as on disk (its doc: "so a test can assert on the log without a file"); a run's log is a file the game only writes, so the log's suite (tests/test_telemetry.gd) can read it only off this
+src/routes/route_tree.gd grow  # grows a route tree from a home street and calm areas a caller chooses; the game grows one only through for_day() in its own file, and tests/test_power_station.gd grows the station day's tree without the power station's spur and holds that the day's own tree (for_day()) keeps every cell of it and only adds to it, since the station day's corridor without its spur is one no day's own corridor gives (tests-unseen-reads.md, section 2)
 
 # [kept] Kept public as hand-ins, the orchestrator's ruling, not asked for, open to the player's correction
 # (dependency injection, minty-lemur #794, and the mocking in inbox #1095 in curly-rabbit): each hands the object
