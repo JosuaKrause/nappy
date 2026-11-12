@@ -40,7 +40,6 @@ src/events/events_ahead.gd walk_siting
 src/events/pending_warning.gd left
 src/events/views/spread_look.gd slices
 src/ground_shape.gd across
-src/routes/route_source.gd carries_a_route
 src/routes/route_tree.gd streets
 src/run/run_state_registry.gd parts
 src/run_trace.gd recording
@@ -69,15 +68,12 @@ src/city/city_map.gd is_held
 src/city/city_state.gd trace
 src/city/poster_art.gd sheet
 src/city/poster_walls.gd art
-src/city/poster_walls.gd atlas
-src/city/prop.gd atlas
 src/city/scenery_layer.gd frame_b
 src/city/scenery_residency.gd budget_usec
 src/city/scenery_water.gd cells
 src/city/scenery_water.gd elapsed
 src/city/street_trees.gd runs
 src/city/traffic_light.gd atlas
-src/city/traffic_light.gd signals
 src/crowd/car_look.gd body_anchor
 src/crowd/car_look.gd sector
 src/crowd/car_look.gd travelled
@@ -86,7 +82,6 @@ src/crowd/crowd_agent.gd colour
 src/crowd/crowd_agent.gd skip_draw
 src/crowd/crowd_field.gd centre
 src/crowd/crowd_field.gd city_view
-src/crowd/crowd_field.gd radius
 src/crowd/crowd_field.gd uniform_walkers
 src/crowd/lane_mover.gd gap_ahead
 src/crowd/lane_mover.gd strategy
@@ -100,8 +95,6 @@ src/dev/scene_recipe_runtime.gd tick
 src/events/behaviours/event_officer.gd trail
 src/events/behaviours/event_officer.gd vehicle
 src/events/calm_areas.gd unused
-src/events/checkpoint_controller.gd world
-src/events/day_planner.gd world
 src/events/event_catalogue.gd all
 src/events/event_instance.gd charge_radius
 src/events/event_instance.gd chase_age
@@ -115,17 +108,12 @@ src/events/event_manager.gd spawner
 src/events/event_manager.gd streaming
 src/events/event_manager.gd warnings
 src/events/event_plan.gd ends
-src/events/event_spawner.gd world
-src/events/event_streaming.gd world
 src/events/events_ahead.gd director
-src/events/events_ahead.gd world
 src/events/location.gd section
 src/events/pending_warning.gd place
 src/events/views/event_look.gd drawn_heading
-src/events/warning_board.gd world
 src/player/baby.gd timing
 src/player/baby.gd world
-src/player/stroller.gd atlas
 src/player/stroller.gd pose
 src/player/stroller.gd steering
 src/resistance/cordon_tape.gd across
@@ -133,8 +121,6 @@ src/resistance/cordon_tape.gd piece
 src/resistance/happenings.gd spine_x
 src/resistance/park_cordon.gd park
 src/routes/park_closure.gd area
-src/routes/route_tree.gd carries_a_route
-src/run/day_director.gd baby
 src/run/day_director.gd day
 src/run/day_director.gd events
 src/run/day_director.gd landed_by_group
@@ -148,7 +134,6 @@ src/run/summary_model.gd title
 src/run_config.gd headless
 src/run_config.gd parse
 src/telemetry/frame_ledger.gd columns
-src/telemetry/frame_ledger.gd count
 src/telemetry/frame_ledger.gd keep
 src/telemetry/frame_recorder.gd save
 src/telemetry/telemetry_log.gd lines
@@ -183,7 +168,7 @@ src/crowd/crowd.gd set_focus  # where the crowd's simulated patch is centred; th
 src/crowd/crowd_sources.gd silent_beyond  # the distance past which the crowd's sweep skips a body without asking it (sources_at(), in its own file); six lines of tests/test_crowd_contributions.gd and tests/test_excitement_source.gd hold that no body's field, a jolt's included, reaches past it, which is what makes the skip give the same answer as asking every body, and nothing outward shows the distance; EventDef.silent_beyond(), the events' own distance of the same name, has its game reader in EventExcitement, which the check counts for EventDef alone now that its receiver is typed
 src/autoload/tuning.gd FINALE_DISTANT_FLASH_MEAN_SECONDS  # the mean wait between the building's distant window flashes, which InteriorScene's shape constant FINALE_DISTANT_FLASH_SHAPE_B is solved for (its doc says moving the mean means solving B again); nothing in src/ reads it, and tests/test_interior.gd draws 4000 waits from the curve and asserts the sample mean lands within 0.05s of it, a relationship test of the kind writing-tests wants, so it stays a constant a test reads for that relationship (the brief's choice between deleting it and keeping it; settled by inbox #1173 in gray-dolphin)
 src/telemetry/telemetry_log.gd recorded_lines  # the lines the run log wrote, kept in memory as well as on disk (its doc: "so a test can assert on the log without a file"); a run's log is a file the game only writes, so the log's suite (tests/test_telemetry.gd) can read it only off this
-src/routes/route_tree.gd grow  # grows a route tree from a home street and calm areas a caller chooses; the game grows one only through for_day() in its own file, and tests/test_power_station.gd grows the station day's tree without the power station's spur and holds that the day's own tree (for_day()) keeps every cell of it and only adds to it, since the station day's corridor without its spur is one no day's own corridor gives (tests-unseen-reads.md, section 2)
+src/routes/route_tree.gd grow  # grows a route tree from a home street and calm areas a caller chooses; the game grows one only through for_day() in its own file, and tests/test_power_station.gd grows the station day's tree without the power station's spur and holds that the day's own tree (for_day()) keeps every cell of it and only adds to it, since the station day's corridor without its spur is one no day's own corridor gives (tests-unseen-reads.md, the paragraph "How a test writes game state")
 
 # [kept] Kept public as hand-ins, the orchestrator's ruling, not asked for, open to the player's correction
 # (dependency injection, minty-lemur #794, and the mocking in inbox #1095 in curly-rabbit): each hands the object
@@ -228,6 +213,9 @@ src/city/building.gd window_texture  # the picture each wall cell's window shows
 src/city/scenery_ground.gd worst_step_usec  # the slowest single quadrant step of the stepped ground mode, in microseconds, which the frame-timing probes (tests/probes/ground_frames.gd, run by tools/measure-ground-frames.sh) zero and read after a traversal; it is a wall-clock measurement of the work, which no tile the ground lays and no picture it shows carries
 src/resistance/contact_point.gd draws_a_mark  # whether the chalk picture is drawn at all, `_draw()`'s one question: a pickup is a chalk mark, a perform's contact is invisible untouched or done so that a rider looks like the ordinary row it rides on; it exists only as the guard before `draw_texture()` in `_draw()`, which a headless run draws to nothing and no node exposes, so nothing outward can read what a contact draws (tests/test_destination_drawing.gd asks it for every day's mark and task)
 src/resistance/happenings.gd cordon  # the handle on day 12's police cordon (`ParkCordon`) that tests/test_park_cordon.gd and tests/test_park_return.gd take from the happenings the director's swing touch (or the suite) started, so the cordon they read is the one the happenings run; they stand her at its `last_gap` (kept public: the world shows the gap only once the tapers meet at it) and ask whether it has closed; tests/park_cordon_sweep.gd builds cordons of its own and reads this one only to compare, so it could move off it, as could the two suites by building `ParkCordon` themselves (open to overturn)
+src/crowd/car_turn.gd centre  # the check misreads it: the one test reading is `section.centre()` in tests/test_day13_guard.gd, a `Location`'s centre(), where `section` is declared twice in one function (a typed and an untyped `for`) and so is a receiver it cannot tell
+src/crowd/crowd_field.gd radius  # the check misreads it: the test readings are `CarTurn.into_an_arm(...).radius` in tests/test_turns.gd, `CarTurn.radius` on a call written across two lines, whose receiver it cannot tell
+src/telemetry/frame_ledger.gd count  # the check misreads it: the one test reading is `day_dir.count("-")` in tests/test_telemetry.gd, a String's count() on a name inferred from a call it cannot type
 src/resistance/park_cordon.gd gap  # the stretches the last gap is, with their tiles and the side of the park they face, chosen on the first tick; the sweep checks the chosen gap's stretches against the map, and the pram and slow-leaver tests stand her square before the gap and need its tiles, while the world shows the gap only once the tapers meet at it, by which time its stretches are taped (record minty-quail-grassy-squirrel)
 src/resistance/park_cordon.gd is_closed  # the moment the cordon closes, which its suites hold her outside of (TRAPPED) and the sweep waits on; nothing outside confirms that moment but the tapers leaving and a run-log line, and only the cordon's own tick() asks it in the game
 src/resistance/park_cordon.gd last_gap  # where the last gap closes, on the tape's line, chosen on the first tick; a test that stands her in or at the gap, or walks her out through it, needs the place before any tape shows it, and the world shows the gap only once the tapers meet at it (tests/test_park_cordon.gd, tests/test_park_return.gd, tests/park_cordon_sweep.gd); what the cordon does with it is read off the world (the last tape to go up, the officers, the obstruction)

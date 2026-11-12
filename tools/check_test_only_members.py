@@ -54,26 +54,31 @@ inbox #1098 in curly-rabbit; a hand-in; a member the check misreads). The check 
 
 **Every member is judged by its class**, so another class's member of the same name, a local of the name and an
 engine method of the name do not hide it (`ParkCordon.gap` beside other files' locals named `gap`, `RouteTree.grow`
-beside `Rect2.grow`). A `.name` is typed by its receiver with the receiver typing of `tools/check_field_reads.py` (its
-`Tree`), run over the game's and the tests' files: a chain resolved from its head through declared types, a method's
-declared `-> Type`, a preloaded script, an autoload's script or a `ClassName`, with one type for a name in its top-level
-block (a function, or an inner class whole), so a declaration in one function does not type a name in another. Here a
-suite's parent named by its path (`extends "res://tests/rig.gd"`) is followed too, a preloaded script with no
-`class_name` is its file, through another class's constant too (`Boot.MainScript`), and `self` and `super` are the
-line's own class, an inner class's included. A receiver typed as the member's class, a class it extends or a class
-that extends it reaches it (a call dispatches on the object, so a reader typed as the base reaches the override). One
-typed as another class, or as a value of no class under `src/` (an engine class, a builtin, an array: `Rect2(...)`, a
-`Rect2` a method returns), does not, except in a file whose opt-out line names the engine's warning for that access
-(`unsafe_method_access` for a call, `unsafe_property_access` for a read), where an engine-typed value may still hold a
-game object. One the typing cannot tell (an untyped parameter, a Variant) reaches every class with the name, in the
-game's files and the tests' alike. A static function is reached only through its class (`RouteTree.grow()`, a
-preloaded script), never through a value, since the engine warns on a static function called on a value and no
-warning it prints is left standing (woolly-finch 19). A plain word in another file reads a member only where the
-line's class extends the member's class and does not define the name again, and no local of the name is declared on
-the line or in scope there: an inherited member used bare. In an ancestor's file that defines the name too, a plain
-use is a call the override answers (a template method). A `[kept]` line stands while every use of its member elsewhere
-is a `.name` on a receiver the typing cannot tell (the check cannot tell whose it is, and the line says it is not the
-game's), and is a `REMOVE` line once a told reader reads it.
+beside `Rect2.grow`). A `.name` is typed by its receiver with the receiver typing of `tools/check_field_reads.py`
+(its `Tree`), run over the game's and the tests' files: a chain resolved from its head through declared types, a
+method's declared `-> Type`, a preloaded script, an autoload's script or a `ClassName`, with one type for a name in
+its top-level block (a function, or an inner class whole), so a declaration in one function does not type a name in
+another. Here a suite's parent named by its path (`extends "res://tests/rig.gd"`) is followed too, a preloaded
+script with no `class_name` is its file, through another class's constant too (`Boot.MainScript`), an inner class is
+found by a name with a leading underscore (`_Her.new()`, `rig: _MeterRig`, `-> _MeterRig`) and through its outer
+class (`Rig.Fake.new()`), `await` hands on the value it waits for, a line's indent is read from the code as written
+(a string opening a line is not an indent), and `self` and `super` are the line's own class, an inner class's
+included. A receiver typed as the member's class, a class it extends or a class that extends it reaches it (a call
+dispatches on the object, so a reader typed as the base reaches the override). One typed as another class, or as a
+value of no class under `src/` (an engine class, a builtin, an array: `Rect2(...)`, a `Rect2` a method returns),
+does not, except in a file whose opt-out line names the engine's warning for that access (`unsafe_method_access` for
+a call, `unsafe_property_access` for a read), where an engine-typed value may still hold a game object. One the
+typing cannot tell (an untyped parameter, a Variant) reaches every class with the name, in the game's files and the
+tests' alike, and in a test so does one the typing gave up on (a lowercase name the file never declares, a member
+its class does not declare, a class it cannot find), so a read through a fake it could not type still counts; in the
+game's files such a receiver reaches nothing. A static function is reached only through its class
+(`RouteTree.grow()`, a preloaded script), never through a value, since the engine warns on a static function called
+on a value and no warning it prints is left standing (woolly-finch 19). A plain word in another file reads a member
+only where the line's class extends the member's class and does not define the name again, and no local of the name
+is declared on the line or in scope there: an inherited member used bare. In an ancestor's file that defines the
+name too, a plain use is a call the override answers (a template method). A `[kept]` line stands while every use of
+its member elsewhere is a `.name` on a receiver the typing cannot tell (the check cannot tell whose it is, and the
+line says it is not the game's), and is a `REMOVE` line once a told reader reads it.
 
 **What it can miss and where it can accuse falsely.** It can *miss* a test-only member when a game reader the typing
 cannot tell uses a word of its name (a namesake reached through an untyped value or a Variant), when a file's opt-out
@@ -107,6 +112,7 @@ import functools
 import re
 import sys
 from collections import Counter
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -144,6 +150,15 @@ OWN_USE = re.compile(r"(?<![\w.])(\w+)")
 # receiver typing of check_field_reads, written for `src/`, does not follow.
 EXTENDS_PATH = re.compile(r'^extends[ \t]+"res://([^"]+)"', re.MULTILINE)
 INNER_HEAD = re.compile(r"^class[ \t]+([A-Za-z_]\w*)")
+DECLARED_NAME = re.compile(r"^(?:static[ \t]+)?(?:const|signal|enum|class)[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
+UNDERSCORE_TYPED = re.compile(r"\b([A-Za-z_]\w*)[ \t]*:[ \t]*(_[A-Za-z]\w*)(?![\w.(])")
+UNDERSCORE_RETURN = re.compile(
+    r"^(?:static[ \t]+)?func[ \t]+([A-Za-z_]\w*)[ \t]*\((?:[^()]|\([^()]*\))*\)[ \t]*->[ \t]*(_\w*)", re.MULTILINE
+)
+# A receiver's kind where the typing gave up (a name the file never declares, a member a class does not declare, a
+# class it cannot find), told apart from a value it told as of no class here: in a test such a receiver is one it
+# cannot tell, so a test's read through a fake it could not type still counts.
+GAVE_UP = "@gave-up"
 # A receiver that names a class rather than a value: a word, or words joined by dots (`Boot.MainScript`).
 CLASS_REFERENCE = re.compile(r"([A-Za-z_]\w*)(?:[ \t]*\.[ \t]*[A-Za-z_]\w*)*")
 # Names the engine's own classes carry, which a test reads on a node it holds (`camera.enabled`, a
@@ -297,6 +312,10 @@ def world_of(files: Files) -> World:
     import check_field_reads
 
     class Typing(check_field_reads.Tree):
+        def __init__(self, src: dict[str, str], autoloads: dict[str, str]) -> None:
+            self.declared_names: dict[str, set[str]] = {}
+            super().__init__(src, autoloads)
+
         def parent_of(self, path: str) -> str | None:
             named = super().parent_of(path)
             by_path = EXTENDS_PATH.search(self.src[path])
@@ -314,7 +333,82 @@ def world_of(files: Files) -> World:
             owner = self.by_name.get(first) or self.preloads.get(outer, {}).get(first)
             if kind == check_field_reads.UNTRACKED and owner and rest in self.preloads.get(owner, {}):
                 return self.preloads[owner][rest]
+            if kind == check_field_reads.UNTRACKED and ("." in text or text.strip().startswith("_")):
+                return GAVE_UP  # a class the typing cannot find, not an engine one
             return kind
+
+        def collect_members(self, path: str) -> None:
+            # A return type naming an inner class with a leading underscore (`-> _MeterRig`), which the tree's own
+            # pattern, wanting a capital, does not read.
+            super().collect_members(path)
+            for match in UNDERSCORE_RETURN.finditer(self.text_of(path)):
+                self.files[path].returns[match.group(1)] = self.annotation(match.group(2), path)
+            if path in self.bare:
+                # A line's indent read from the code as written: blanking turns a string that opens a line (a
+                # dictionary's key before a lambda) into spaces, which would read as a deep indent.
+                raw, bare = self.src[path].split("\n"), self.bare[path].split("\n")
+                if len(raw) == len(bare):
+                    self.indents[path] = [
+                        len(r) - len(r.lstrip(" \t")) if b.strip() else None for r, b in zip(raw, bare, strict=True)
+                    ]
+
+        def collect_declared(self, path: str) -> None:
+            # A name declared as an inner class with a leading underscore (`rig: _MeterRig`), which the tree's own
+            # pattern, wanting a capital, does not read.
+            super().collect_declared(path)
+            lines = self.bare[path].split("\n")
+            start = 0
+            for index, block in enumerate(self.blocks[path]):
+                headers = [(h.start(), h.end()) for h in check_field_reads.FUNC_PARAMS.finditer(block)]
+                for match in UNDERSCORE_TYPED.finditer(block):
+                    header = next((h for h in headers if h[0] <= match.start() < h[1]), None)
+                    line = start + block.count("\n", 0, header[0] if header else match.start())
+                    body_only = header is not None or lines[line].lstrip().startswith("for ")
+                    kind = self.annotation(match.group(2), path) or ""
+                    decls = self.decls[path][index].setdefault(match.group(1), [])
+                    decls[:] = [d for d in decls if d.line != line]
+                    decls.append(check_field_reads.Decl(line, self.indents[path][line] or 0, kind, body_only))
+                start += block.count("\n") + 1
+
+        def infer(self, expr: str, own: str, declared: Mapping[str, str], inner: bool) -> str | None:
+            # `await` hands on the value of what it waits for (`var rig := await _rig(t)`).
+            text = expr.strip()
+            return super().infer(text[len("await ") :] if text.startswith("await ") else text, own, declared, inner)
+
+        def first_class(self, word: str, own: str, declared: Mapping[str, str], inner: bool) -> str | None:
+            # An inner class with a leading underscore named bare (`_Her.new()`); and a lowercase name the file never
+            # declares is one the typing gave up on, not a value it told.
+            outer = own.split(check_field_reads.INNER)[0]
+            if word.startswith("_") and f"{outer}{check_field_reads.INNER}{word}" in self.files:
+                return f"{outer}{check_field_reads.INNER}{word}"
+            kind = super().first_class(word, own, declared, inner)
+            told = word in declared or self.member_field_type(own, word)[0] or word in self.preloads.get(outer, {})
+            return GAVE_UP if kind == check_field_reads.UNTRACKED and not word[0].isupper() and not told else kind
+
+        def step(self, current: str | None, step: str, word: str) -> str | None:
+            # A class's inner class (`Rig.Fake.new()`); a member a class does not declare is one the typing gave up
+            # on (an engine property of a node, or a member it cannot see), and so is all that follows it.
+            if current == GAVE_UP:
+                return None if step == "index" else GAVE_UP
+            inner_class = f"{current}{check_field_reads.INNER}{word}"
+            if step == "field" and current and check_field_reads.INNER not in current and inner_class in self.files:
+                return inner_class
+            kind = super().step(current, step, word)
+            undeclared = current in self.files and not self.declares(current, word)
+            return GAVE_UP if kind == check_field_reads.UNTRACKED and undeclared else kind
+
+        def declares(self, klass: str, word: str) -> bool:
+            """Whether `klass` or a class it extends declares `word`: a var, a function, a constant, a signal, an enum
+            or an inner class."""
+            for ancestor in self.ancestors(klass):
+                found = self.files[ancestor]
+                if word in found.fields or word in found.methods:
+                    return True
+                if ancestor not in self.declared_names:
+                    self.declared_names[ancestor] = set(DECLARED_NAME.findall(self.text_of(ancestor)))
+                if word in self.declared_names[ancestor]:
+                    return True
+            return False
 
     tree = Typing(files.src | files.tests, check_field_reads.autoloads_of(files.project))
     defines: dict[str, frozenset[str]] = {}
@@ -375,6 +469,8 @@ def found_in(path: str, world: World, names: frozenset[str]) -> Found:
             # (`var _hud: CanvasLayer`, then `_hud.configure()`) may still hold a game object.
             silenced = ("unsafe_method_access" if call else "unsafe_property_access") in ignored
             if kind is not None and kind not in tree.files and silenced:
+                kind = None
+            if kind == GAVE_UP and path.startswith(f"{TESTS}/"):
                 kind = None
             reference = CLASS_REFERENCE.fullmatch(receiver.strip()) if receiver else None
             on_class = bool(reference and reference.group(1) in classes and kind in tree.files)
@@ -710,8 +806,10 @@ def parse(argv: list[str]) -> argparse.Namespace:
             " src/ reaches, unless tools/test_only_members.txt lists it, and fails on a listed line that has gone"
             " stale (the member has a reader in another file, no test reads it, or it is gone). A caller in the"
             " member's own file is not a reader; a reader is told by its receiver's type where it is known (another"
-            " class, a local, an engine value or a static function called on a value is no reader); constants are"
-            " exempt unless used nowhere."
+            " class, a local, an engine value or a static function called on a value is no reader, except an engine"
+            " value in a file whose opt-out line silences that access's warning, unsafe_method_access for a call or"
+            " unsafe_property_access for a read; in a test, a receiver the typing gave up on still reads); constants"
+            " are exempt unless used nowhere."
             " A caller under src/dev counts as a reader; a function is read only as a call, not passed as a"
             " callable; a short set of engine member names (ENGINE_MEMBERS) is never taken as a read. The list's"
             " [no reader] and [own file only] groups only shrink."

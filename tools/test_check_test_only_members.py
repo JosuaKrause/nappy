@@ -322,6 +322,60 @@ class ClassTests(unittest.TestCase):
         ):
             self.assertEqual(only(main, boot | {"tests/test_m.gd": suite}), {("src/main.gd", "use_save")}, msg=suite)
 
+    STROLLER: ClassVar[dict[str, str]] = {
+        "src/stroller.gd": "class_name Stroller\nfunc probe_only() -> void:\n\tpass\nfunc f() -> void:\n\tprobe_only()\n"
+    }
+    RIG: ClassVar[dict[str, str]] = {"tests/rig.gd": "class_name Rig\nclass Fake extends Stroller:\n\tpass\n"}
+
+    def test_a_tests_read_through_a_fake_of_the_members_class_is_a_read(self) -> None:
+        for suite in (
+            "class _Her extends Stroller:\n\tpass\nfunc f() -> void:\n\tvar her := _Her.new()\n\ther.probe_only()\n",
+            "class Her extends Stroller:\n\tpass\nfunc f() -> void:\n\tvar her := Her.new()\n\ther.probe_only()\n",
+            "func f() -> void:\n\tvar her := Rig.Fake.new()\n\ther.probe_only()\n",
+            "func f() -> void:\n\tvar her: Rig.Fake = Rig.Fake.new()\n\ther.probe_only()\n",
+        ):
+            found = only(self.STROLLER, self.RIG | {"tests/test_her.gd": suite})
+            self.assertEqual(found, {("src/stroller.gd", "probe_only")}, msg=suite)
+
+    def test_an_inner_class_named_with_an_underscore_types_a_parameter_and_a_return(self) -> None:
+        # The rig's own field of the name is no read of the game's member, typed through either.
+        base = "class _MeterRig extends RefCounted:\n\tvar gap := 1\n"
+        for suite in (
+            base + "func _rig() -> _MeterRig:\n\treturn _MeterRig.new()\nfunc f() -> void:\n\tvar rig := _rig()\n"
+            "\tprint(rig.gap)\n",
+            base + "func f(rig: _MeterRig) -> void:\n\tprint(rig.gap)\n",
+        ):
+            self.assertEqual(only(self.GAP, {"tests/test_rig.gd": suite}), set(), msg=suite)
+
+    def test_await_hands_on_the_value_it_waits_for(self) -> None:
+        suite = (
+            "class Rig2 extends RefCounted:\n\tvar gap := 1\nfunc _rig() -> Rig2:\n\treturn Rig2.new()\n"
+            "func f() -> void:\n\tvar rig := await _rig()\n\tprint(rig.gap)\n"
+        )
+        self.assertEqual(only(self.GAP, {"tests/test_rig.gd": suite}), set())
+
+    def test_a_string_opening_a_line_is_no_indent(self) -> None:
+        # Each lambda's `node` is its own: a dictionary key opening a line does not keep the first one in scope.
+        suite = (
+            "func f() -> void:\n\tvar makers := {\n"
+            '\t\t"a": func() -> Node:\n\t\t\tvar node := Other.new()\n\t\t\treturn node,\n'
+            '\t\t"b": func() -> Node:\n\t\t\tvar node := Rect.new()\n\t\t\tnode.grow(1.0)\n\t\t\treturn node,\n'
+            "\t}\n"
+        )
+        src = self.GROW | {
+            "src/x/other.gd": "class_name Other\nvar x := 1\n",
+            "src/x/rect.gd": "class_name Rect\nvar y := 1\n",
+        }
+        self.assertEqual(only(src, {"tests/test_n.gd": suite}), set())
+
+    def test_a_test_receiver_the_typing_gave_up_on_still_reads_and_a_game_one_does_not(self) -> None:
+        # `rig.area` is a member Rig does not declare (the typing gives up there).
+        rig = {"tests/rig.gd": "class_name Rig\nvar x := 1\n"}
+        suite = {"tests/test_g.gd": "func f(rig: Rig) -> void:\n\trig.area.grow(1.0)\n"}
+        self.assertEqual(only(self.GROW, rig | suite), {(self.AREA, "grow")})
+        game = {self.HUD: "class_name Hud\nfunc f(h: Hud) -> void:\n\th.area.grow(1.0)\n"}
+        self.assertEqual(only(self.GROW | game, self.GROW_READ), {(self.AREA, "grow")})
+
     def test_an_autoload_is_its_script(self) -> None:
         src = {
             "src/autoload/tuning.gd": "extends Node\nfunc horn() -> float:\n\treturn 1.0\n",
