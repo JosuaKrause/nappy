@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## What `playground` and `busker` actually cost on real, generated parks, printed rather than
 ## asserted. Not a suite: it lives under `tests/probes/`, where the runner never discovers it,
@@ -18,7 +17,7 @@ extends RefCounted
 const CITY_SCENE := preload("res://scenes/world/city.tscn")
 ## The seed each city's run starts from: fixed, so the probe measures the same runs on every machine.
 const RUN_SEED := 2
-const SEEDS := [4242, 90210, 1337]
+const SEEDS: Array[int] = [4242, 90210, 1337]
 const BUSKER_DAY := 2  # `busker.first_day`.
 
 const OLD_BUSKER_INTENSITY := 13.0
@@ -226,7 +225,7 @@ func _busker_denial_and_inner_floor(t: TestRunner) -> void:
 	print("\n== net rate at inner_radius on grass, over a whole beat (must not trend down) ==")
 	print("calm ground gives back %.2f/s; the beat's own mean multiplier is %.4f"
 			% [calm_decay, mean_multiplier])
-	for row in [
+	for row: Dictionary in [
 		{"label": "before", "intensity": OLD_BUSKER_INTENSITY},
 		{"label": "after", "intensity": def.intensity},
 	]:

@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Measurement probe for M213, "the robber stands at the far end of the mark's own alley", and for
 ## brisk-wombat's "a robber appears out of nowhere": prints numbers, asserts nothing, so it lives
@@ -48,7 +47,7 @@ func _task_guards(t: TestRunner) -> void:
 		var city: City = RunCity.with_own_run(CITY_SCENE, RUN_SEED)
 		t.add_child(city)
 		city.build(CityGenerator.generate(seed_value))
-		for day in [13]:
+		for day: int in [13]:
 			city.run.facts.completed_resistance_alley_tiles = []
 			var done: Array[int] = []
 			done.assign(range(1, 2 * (day - 6) + 1))
@@ -108,11 +107,11 @@ func _reachability(t: TestRunner) -> void:
 	var robbery := EventCatalogue.by_id("alley_robbery")
 	var min_distance: float = robbery.inner_radius + ContactPoint.REACH
 	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
-	var names := ["far end"]
+	var names: Array[String] = ["far end"]
 	var asleep := {"through": [0], "passage": [0]}
 	var counted := {"through": 0, "passage": 0}
 	var unguarded := {"through": [0], "passage": [0]}
-	var too_close := [0]
+	var too_close: Array[int] = [0]
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var director := ResistanceDirector.new()
@@ -143,7 +142,7 @@ func _reachability(t: TestRunner) -> void:
 			if _stays_asleep(robbery, guard_at, [outside, touch, outside]):
 				asleep[kind][0] += 1
 		director.free()
-	for kind in ["through", "passage"]:
+	for kind: String in ["through", "passage"]:
 		for i in names.size():
 			print("[m213] %-8s %-16s asleep %4d of %4d (%.0f%%), unguarded %d" % [kind, names[i],
 					asleep[kind][i], counted[kind],

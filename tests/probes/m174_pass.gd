@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 class_name M174Pass
 extends RefCounted
 ## Measurement probe for M174, item 3, "the pass": the net points a real pass lands, walking at
@@ -62,7 +61,7 @@ const STEP := 1.0 / 60.0
 ## street actually offer — 0/20/40 is one lane's width of give, 80/120 is stepping toward or past
 ## the far lane. None of the three rows obstruct (mobile is exempt from "solid things are solid"),
 ## so 0 is always geometrically walkable for all three.
-const OFFSETS := [0.0, 20.0, 40.0, 80.0, 120.0]
+const OFFSETS: Array[float] = [0.0, 20.0, 40.0, 80.0, 120.0]
 const PHASE_SAMPLES := 8
 ## Well past the widest `outer_radius` in the catalogue (`car_accident`'s field aside, which is
 ## not one of these three) plus a margin for how far either body moves during the crossing.

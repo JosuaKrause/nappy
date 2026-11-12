@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## Reproducible crowd-query workload, not a whole-game frame or a phone benchmark.
 ## Run explicitly with tools/test.sh probes/m159_contribution_cost.gd; raw timings print at end.
@@ -16,7 +15,7 @@ func run(t: TestRunner) -> void:
 	city.build(CityGenerator.generate(4242))
 	var reports: Array = []
 	for repetition in 3:
-		for day in [1, 9]:
+		for day: int in [1, 9]:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("contribution-cost:4242:%d" % day)
 			var here := city.map.home_world_position()
@@ -43,7 +42,7 @@ func run(t: TestRunner) -> void:
 				var checksum := 0.0
 				var started := Time.get_ticks_usec()
 				for repeat in BATCH:
-					for pair in city.crowd.sources.sources_at(here):
+					for pair: Array in city.crowd.sources.sources_at(here):
 						checksum += pair[1]
 				var elapsed := Time.get_ticks_usec() - started
 				rows.append([frame, float(elapsed) / BATCH, expected, silent,
