@@ -1,4 +1,3 @@
-@warning_ignore_start("unsafe_method_access")
 class_name PosterWalls
 extends Node
 ## The posters on the city's walls: where they can go, what goes up each dawn, what a crew pastes
@@ -362,7 +361,7 @@ func _work_the_crews(delta: float) -> void:
 		_refresh_wall(_by_tile[tile].x)
 		# Where and what, because nothing else records it: the crew was sited on her walk, and
 		# whether it finished depends on how long she stayed in sight of it.
-		var what: String = PosterArt.Kind.keys()[int(job["kind"])].to_lower()
+		var what: String = String(PosterArt.Kind.keys()[int(job["kind"])]).to_lower()
 		if int(job["pasted"]) == 1:
 			trace.note("scar", "a poster crew at %s starts pasting %s sheets on the wall, %d to go"
 					% [RunTrace.tile(tile), what, int(job["total"])])
@@ -469,7 +468,7 @@ func _tear(tile: Vector2i) -> void:
 	_refresh_wall(_by_tile[tile].x)
 	# `VisitCounter`'s own "poster-torn" — see docs/TELEMETRY.md, "The page counts visits".
 	EventBus.poster_torn.emit()
-	var what: String = PosterArt.Kind.keys()[kind].to_lower()
+	var what: String = String(PosterArt.Kind.keys()[kind]).to_lower()
 	# Where and which, because nothing else records it: a tear depends on where she pushed.
 	trace.note("scar", "she tears down the %s sheet at %s, tear %d of the run"
 			% [what, RunTrace.tile(tile), state.tears_made()])

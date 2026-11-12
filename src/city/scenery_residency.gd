@@ -168,7 +168,7 @@ func update(next_view: Rect2, immediate := false) -> void:
 	_shadows.update_view(load_view, retained, enqueue)
 	enqueued_kind[0] = FrameTiming.Job.DECAL
 	_decals.update_view(load_view, retained, enqueue)
-	pending.sort_custom(func(a: Dictionary, b: Dictionary): return a.distance < b.distance)
+	pending.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a.distance < b.distance)
 	_pending = false
 	# At least one job runs before the budget can stop the queue, in every mode and for every kind
 	# of job, so the queue always advances. `started` is taken before the synchronous guard
