@@ -428,7 +428,7 @@ func _test_the_yard_layer_is_counted_when_the_station_comes_into_view(t: TestRun
 	var station := Building.new()
 	station.stand_on(Rect2i(), Vector2(96.0, 256.0), 0, GameEnums.BlockPurpose.INDUSTRIAL, 64.0)
 	station.power_station = true
-	station.scenery_resident = false
+	station.equip(null, null, null)
 	t.add_child(station)
 	station.set_scenery_resident(true)
 	ledger.process_start(Time.get_ticks_usec())

@@ -450,7 +450,7 @@ func _test_the_walls_fill_the_way_the_run_asks(t: TestRunner) -> void:
 			if day < PosterWalls.FIRST_DAY:
 				t.check(cells.is_empty(), "seed %d: nothing is on a wall on day %d" % [seed_value, day])
 			for tile: Vector2i in cells:
-				var kind := int(cells[tile]["kind"])
+				var kind := int(run.posters.sheet_at(tile)["kind"])
 				t.check(day >= int(PosterWalls.KIND_FIRST_DAY[kind]),
 						"seed %d day %d: no %s sheet before day %d" % [seed_value, day,
 						PosterArt.Kind.keys()[kind], PosterWalls.KIND_FIRST_DAY[kind]])
