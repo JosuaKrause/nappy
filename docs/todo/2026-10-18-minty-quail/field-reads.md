@@ -102,7 +102,7 @@ Left, each its own design question:
   previews and the scene recipes. Two groups have a home of their own:
   - The authored-scene builder (`RecipeCityBuilder`) is the scene recipes' city. The scene recipes are placed by
     location (polite-tapir's `placement-by-construction.md`, "What is built"), so it waits for nothing there; its
-    reads of the map are what is left, the map capturing and restoring itself (`CityMap.capture()`,
+    reads of the map are what is left, now that the map captures and restores itself (`CityMap.capture()`,
     `CityMap.restored()`). The map's recipe side (`RecipeCityContext`) still reads a block plan's steps
     (`BlockPlan.Step`), an inner class the check does not see.
   - A field only a test still reads outside its own class and the code that writes it
