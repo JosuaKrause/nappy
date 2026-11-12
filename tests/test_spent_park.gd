@@ -1,4 +1,3 @@
-@warning_ignore_start("untyped_declaration")
 extends RefCounted
 ## A used calm area is shut by the events placed in it, as before, and no route of the day goes
 ## through it. One used area, at most once a run and no earlier than act III, is fenced instead.
@@ -224,7 +223,7 @@ func _test_the_fenced_park_closes_every_entrance(t: TestRunner) -> void:
 	var checked := 0
 	var half_depth := Tuning.CLOSURE_BARRIER_DEPTH * 0.5
 	for map in _maps:
-		for day in [9, 13]:
+		for day: int in [9, 13]:
 			var used := _used_by(map, day)
 			if used.is_empty():
 				continue
@@ -355,7 +354,7 @@ func _edge_tiles(rect: Rect2i, out: Vector2i) -> Array[Vector2i]:
 func _test_the_guarantees_hold_with_the_fenced_park(t: TestRunner) -> void:
 	var checked := 0
 	for map in _maps:
-		for day in [9, 12, 13, 14]:
+		for day: int in [9, 12, 13, 14]:
 			var used := _used_by(map, day)
 			if used.is_empty():
 				continue
@@ -385,7 +384,7 @@ func _test_the_guarantees_hold_with_the_fenced_park(t: TestRunner) -> void:
 			for closure in closures:
 				if closure is ParkClosure:
 					continue
-				for at_a in [true, false]:
+				for at_a: bool in [true, false]:
 					for tile in map.rect_tiles(closure.segment.mouth_rect(at_a)):
 						barriers[tile] = true
 			var field := map.walk_field(home, barriers)
@@ -451,7 +450,7 @@ func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t: TestRunner) -> v
 	for map in _maps:
 		var fenced := Vector2i(-1, -1)
 		var fenced_act := 0
-		for day in [3, 6, 10, 13]:
+		for day: int in [3, 6, 10, 13]:
 			var used := _used_by(map, day)
 			var result := _repaint(map, day, used, fenced, fenced_act)
 			fenced = result[0]
@@ -547,7 +546,7 @@ func _test_a_used_courtyard_keeps_what_was_put_in_it(t: TestRunner) -> void:
 func _test_with_every_area_used_one_stays_clean(t: TestRunner) -> void:
 	var asked := 0
 	for map in _maps:
-		for day in [5, 9, 14]:
+		for day: int in [5, 9, 14]:
 			var used := _calm_on(map, day)
 			_repaint(map, day, used)
 			var tree := RouteTree.for_day(map, day)
@@ -576,7 +575,7 @@ func _test_with_every_area_used_one_stays_clean(t: TestRunner) -> void:
 ## actually leaves `calm_blocks`.
 func _test_shutting_is_refused_rather_than_breaking_a_guarantee(t: TestRunner) -> void:
 	for map in _maps:
-		for day in [1, 5, 9, 12, 14]:
+		for day: int in [1, 5, 9, 12, 14]:
 			var calm := _calm_on(map, day)
 			_repaint(map, day, calm, Vector2i(-1, -1), 0)
 			t.check(calm.size() - map.shut_calm.size() >= ClosurePlanner.MIN_CALM_AREAS_REACHABLE,
@@ -607,9 +606,9 @@ func _test_the_swing_park_is_never_shut_or_fenced_on_its_day(t: TestRunner) -> v
 ## The same handover shuts and fences the same areas, and a repaint with no handover shuts and
 ## fences nothing — the escape's own repaint, and every rig that never hands one over.
 func _test_shutting_is_deterministic_and_forgotten_by_the_next_repaint(t: TestRunner) -> void:
-	for map in _maps.slice(0, 3):
+	for map: CityMap in _maps.slice(0, 3):
 		var cmap: CityMap = map
-		for day in [3, 7, 11]:
+		for day: int in [3, 7, 11]:
 			var used := _used_by(cmap, day)
 			_repaint(cmap, day, used)
 			var first: Array[Vector2i] = cmap.shut_calm.duplicate()
