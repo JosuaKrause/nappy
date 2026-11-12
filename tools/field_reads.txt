@@ -570,8 +570,6 @@ src/events/event_scheduler.gd obstructs_radius
 src/events/event_scheduler.gd on_her_way
 src/events/event_scheduler.gd outer_radius
 src/events/event_scheduler.gd paces
-src/events/event_scheduler.gd path_length_tiles
-src/events/event_scheduler.gd path_mode
 src/events/event_scheduler.gd pavement_side
 src/events/event_scheduler.gd placement
 src/events/event_scheduler.gd pursuit
@@ -607,6 +605,10 @@ src/events/events_ahead.gd vehicle
 src/events/mast_sites.gd outer_radius
 src/events/pending_warning.gd id
 src/events/pending_warning.gd placement
+src/events/plan_builder.gd mobile
+src/events/plan_builder.gd path_length_tiles
+src/events/plan_builder.gd path_mode
+src/events/plan_builder.gd pavement_side
 src/events/street_invalidation.gd id
 src/events/street_invalidation.gd paces
 src/events/street_rules/pacing_opening_rule.gd paces
@@ -817,6 +819,10 @@ src/events/events_ahead.gd position
 src/events/events_ahead.gd role
 src/events/events_ahead.gd spent
 src/events/events_ahead.gd was_live
+src/events/plan_builder.gd def
+src/events/plan_builder.gd facing
+src/events/plan_builder.gd path
+src/events/plan_builder.gd position
 src/events/walk_ground.gd def
 src/events/walk_ground.gd facing
 src/events/walk_ground.gd path
@@ -1386,6 +1392,7 @@ src/dev/scene_recipe_runtime.gd size
 src/events/event_instance.gd moves
 src/events/event_scheduler.gd size
 src/events/event_spawner.gd world
+src/events/plan_builder.gd size
 src/events/views/spread_look.gd world
 src/events/walk_ground.gd size
 src/interior/interior_scene.gd world

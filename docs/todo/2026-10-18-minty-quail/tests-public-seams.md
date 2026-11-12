@@ -76,7 +76,7 @@ ticks give, and is kept with its reason:
 - **No test catches removing `DayDirector.prepare_city_scenery()` from `start_day()`** (the home's
   ground is already loaded; `test_camera_start.gd`'s dawn check does not fail without the call), or
   `DaySummary`'s `_continuing` guard.
-- **`EventScheduler._cross_street_path`** serves no catalogue row today, since the director sites the
+- **`PlanBuilder._cross_street_path`** serves no catalogue row today, since the director sites the
   cat; it wants a row or removing.
 - **A recycled walker's heading** when it chooses its lane again has no suite guarding it.
 - **`EventsAhead.walk_siting()`** has no game caller (the route bag and resistance arrow suites and two probes read it), and `test_route_bag.gd` reads a place waiting for its site in the director's private

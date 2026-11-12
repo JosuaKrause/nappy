@@ -166,7 +166,8 @@ func _test_one_offer_per_look(t: TestRunner) -> void:
 		if plan.def.on_her_way != null and not plan.is_placed():
 			owed += 1
 	var verdicts := CountingVerdicts.new()
-	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), _walk(map, plans), verdicts)
+	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), _walk(map, plans), verdicts,
+			GamePlanBuilder.over(map))
 	var director := EventDirector.new(map)
 	director.start_day(day, plans, _rng(day), siting)
 	var route := _longest_route(day)
@@ -433,7 +434,7 @@ func _test_the_director_drops_the_verdicts(t: TestRunner) -> void:
 	for _i in 3:
 		plans.append(EventPlan.new(fire, Vector2.INF))
 	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), _walk(map, plans),
-			EventScheduler.Verdicts.new())
+			EventScheduler.Verdicts.new(), GamePlanBuilder.over(map))
 	var director := EventDirector.new(map)
 	director.start_day(day, plans, _rng(day), siting)
 	var out := _longest_route(day)

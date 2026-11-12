@@ -92,7 +92,7 @@ exposes (drawing, a signal, input and frames) or the member is removed or needs 
 under `src/dev`, the scene-recipe and rig tools): about 55 names, among them `Crowd.add_recipe_actor`
 and `recipe_coverage`, `DayStreets.replace_region_plan`, `ResistanceDirector.read_mark`,
 `start_recipe_task` and `scene_task_errors`, `EventManager.start_recipe`,
-`EventScheduler.place_at` and `recipe_placement`, `EventInstance.walk_on_by_hand`,
+`PlanBuilder.place_at`, `EventScheduler.recipe_placement`, `EventInstance.walk_on_by_hand`,
 `solid_part_centres`, `solid_part_shapes` and `is_solid`, `WorldMap.is_obstructed` and
 `VisibleView.visible_share`. The first reading above counts `src/dev` among the game's own classes,
 and the item's own seams `add_recipe_actor`, `place_at` and `read_mark` depend on it. The SELF-only

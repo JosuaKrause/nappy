@@ -362,7 +362,7 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 			CalmAreas.of(map), MastSites.compute(map), [], [], tree, 0).placements()
 	var siting := RefusingSiting.new(day, map, tree,
 			FakeWalkEvents.new().set_plans(plans).set_calm(CalmAreas.of(map)),
-			EventScheduler.Verdicts.new())
+			EventScheduler.Verdicts.new(), GamePlanBuilder.over(map))
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("route-bag:refused:ahead:%d" % SEED)

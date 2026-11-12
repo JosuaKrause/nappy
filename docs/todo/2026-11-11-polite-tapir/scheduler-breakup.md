@@ -22,9 +22,9 @@ the line counts are its estimates. All under `src/events/`:
 - **`DawnContext`** (`dawn_context.gd`): the one object every phase is handed, in place of the 13
   parameters: the spec, the day's seed with a stream per salt, the map, the walk (route tree or
   chains) and its corridor, the calm areas and the ground to leave alone, the doors, what stands,
-  heat, scars, the spent one-shots, the mast sites and the trace; and what the dawn builds: the
-  day's events (`DayEvents`), the locations (`DayLocations`), the rules built once
-  (`StreetInvalidation`) and the row-ground cache. It is the object that derives the day's facts
+  heat, scars, the spent one-shots, the mast sites, the trace and the plan builder (`PlanBuilder`),
+  handed in by the day's planner; and what the dawn builds: the day's events (`DayEvents`), the
+  locations (`DayLocations`), the rules built once (`StreetInvalidation`) and the row-ground cache. It is the object that derives the day's facts
   once and is handed around (designing-classes).
 - **`dawn_phases/`**, one class per phase with `run(context)`: the fixed parts (ambient rows, masts,
   wall bodies holding their locations), the scars, the roadblock phase's glue with its ground
@@ -48,7 +48,6 @@ and fails a read that is new; a read that only moved may add its line to the lis
 grassy-trout), and review reads a moving diff for the cases the check cannot count
 (minty-quail-breezy-bison).
 
-- **`PlanBuilder`**, a pure move.
 - **`RowGround`**, after both: it is a seam, no pure move, since the object with its own per-day
   cache replaces the `ground: Dictionary` threaded through `StreetInvalidation`,
   `RouteJunctionsRule`, `LocationFit`, both ground judges, `_weight_in()`, `_best_of()` and
@@ -62,5 +61,7 @@ grassy-trout), and review reads a moving diff for the cases the check cannot cou
 
 Dawn planning's reads of live-event geometry (`standing-layer-breaks.md`) move with their code,
 each listed break carried to its new file in `tools/layer_map.py`, and are settled by row 3a of minty-quail's
-`event-interface.md`: the row answers for its mover and its standing place
-(`EventInstance.mover_for()` and `EventFootprints.stands_at()` are what `PlanBuilder` moves).
+`event-interface.md`: the row answers for its mover and its standing place. The two a
+`PlanBuilder` is handed, `EventInstance.mover_for()` and `EventFootprints.stands_at()`, stay listed
+against `event_scheduler.gd`, where the dawn makes its builder, until `DawnContext` is handed a
+builder.
