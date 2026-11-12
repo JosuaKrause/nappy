@@ -416,12 +416,16 @@ func _test_the_yard_layer_is_tagged_scenery_as_it_enters_the_tree(t: TestRunner)
 	station.power_station = true
 	station.equip(null, null, null)
 	t.add_child(station)
+	# The roof objects that enter beside it are counted as scenery by their class, so the layers
+	# with a tag to read are the others: the yard layer alone.
 	var tags_on_entry: Array = []
 	station.child_entered_tree.connect(func(child: Node) -> void:
+			if child is Building.RoofObject:
+				return
 			tags_on_entry.append(child.get_meta(FrameTiming.DRAW_KIND_META)
 					if child.has_meta(FrameTiming.DRAW_KIND_META) else null))
 	station.residence().set_resident(true)
-	t.check(tags_on_entry.count(FrameTiming.Draw.SCENERY) == 1,
-			"exactly one child of the station, its yard layer, enters the tree already tagged as scenery (tags on entry: %s)"
+	t.check(tags_on_entry == [FrameTiming.Draw.SCENERY],
+			"the station's yard layer, the one child that is no roof object, enters the tree already tagged as scenery (tags on entry: %s)"
 			% [tags_on_entry])
 	station.free()
