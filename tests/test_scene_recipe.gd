@@ -117,7 +117,7 @@ func _test_fixture(t: TestRunner) -> void:
 	t.check(_errors(allowed).is_empty(), "explicit fixture matches the exact violated production guarantee: %s" % [allowed.errors])
 	if _errors(allowed).is_empty():
 		var manifest: Dictionary = allowed.manifest
-		var checks: Dictionary = manifest.checks
+		var checks: Array = manifest.checks
 		t.check(manifest.classification == "fixture" and not checks.has("full_context_guarantees"),
 				"expected failures never receive a normal full-guarantee certificate")
 		var expected: Array = input.expected_violations
