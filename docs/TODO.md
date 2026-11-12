@@ -54,8 +54,8 @@ may carry the line beside `priority:`; an item file carries none. Every pull req
 item of that entry carries the GitHub label `fable-only`, and the label means that Fable designs the
 code and reviews it, while writing the code may go to another model (inbox #1293 in grassy-trout, inbox #1299 in grassy-trout); the
 model table in **orchestrating** says so for the session that picks a model. The line goes only on an
-entry the player names, and it marks every item of the entry, so work the player names is filed as
-an entry of its own, never as items of an entry that holds other work (inbox #1387 in mossy-bunny).
+entry the player names, and it marks every item of the entry, so the work the player puts under the
+line is an entry of its own, never items of an entry that holds other work (inbox #1387 in mossy-bunny).
 It changes no order: `tools/queue.sh` ends the entry's line in
 `[fable-only]`, and CI fails a pull request that adds a record of such an entry under
 [decisions/](decisions/) without the label (`tools/ci_fable_only.py`), a new record being what every

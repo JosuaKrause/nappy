@@ -67,8 +67,8 @@ from before the refactor are stored, and that a probe asks only what every tree 
 events' fields are behind methods no probe runs on both the old tree and the new; the player, shown
 that capturing them blocks nothing: "sure". *Read as, with the specifics proposed by the
 orchestrator and open to the player's correction:* the baseline is `v0.29.0`, the tree minty-quail's
-first review read. `baseline-measurements.md` captures the before-numbers into `docs/evidence/`, and
-takes one background reading of winnability and frame time when placement closes and one after the
+first review read. The before-numbers are in `docs/evidence/minty-quail-baseline-2026-11-09/`
+(record mossy-raven), and `baseline-measurements.md` takes one background reading of winnability and frame time when placement closes and one after the
 events' field-read conversion, so the end remeasure can say which half moved a number. None of it
 blocks a step or changes the player's "remeasuring at the very end" (inbox #813 in curly-moose): a
 reading is recorded, not judged.

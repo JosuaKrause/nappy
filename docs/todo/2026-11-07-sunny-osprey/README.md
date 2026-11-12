@@ -14,7 +14,7 @@ remeasuring, though -- of what?" (inbox #1155 in gray-dolphin). The question was
 discussed in the chat (inbox #1155 in gray-dolphin).
 
 **Read as:** the outcome that stood when the question left the board: lane movement on the navigator
-is not part of the refactor (minty-quail); it is work of its own after the refactor's remeasuring.
+is not part of the refactor (minty-quail and polite-tapir); it is work of its own after the refactor's remeasuring.
 The player's last questions (whether the difference in motion is better or worse, and what would be
 remeasured) are open, and this entry answers them in its design before anything is built.
 

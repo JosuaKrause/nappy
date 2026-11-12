@@ -24,11 +24,13 @@ hook, a general project script, or anything else of that kind) is the exception 
 (inbox #1305 in grassy-trout). *Read as, open to the player's correction:* a pull request another entry
 already has stays open as a draft and resumes after the refactor closes.
 
-**The refactor is this entry and polite-tapir** (the refactor's design review: placement drawn as she walks, the
+**The design review's items are polite-tapir** (the refactor's design review: placement drawn as she walks, the
 event scheduler broken up, one start for every kind of day, the standing layer breaks, the baseline measurements),
-whose items the design review gave and which carries `fable-only: true` where this entry does not
-(inbox #1387 in mossy-bunny). *Read as, the filer's, open to the player's correction:* the two are worked side by
-side, their items interleaved as each item says; neither waits for the other to start, and this entry's remeasure
+an entry of their own that carries `fable-only: true` where this entry does not (inbox #1387 in mossy-bunny).
+*Read as, the filer's, open to the player's correction:* the review was of the refactor's design ("have a fable
+agent review the design of the refactor", inbox #1265 in olive-ferret), so its items are the refactor's work, the
+refactor is this entry and polite-tapir, and the rule above (inbox #1210 in gentle-owl) covers both; the two are
+worked side by side, their items interleaved as each item says; neither waits for the other to start, and this entry's remeasure
 (step 4 below) comes after the last item of both.
 
 ## The review this entry files
