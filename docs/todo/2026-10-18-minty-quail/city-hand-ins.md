@@ -23,6 +23,19 @@ frame trace since the record 2026-10-18-minty-quail-calm-wombat, and the develop
 route rig and its planner since the record 2026-10-18-minty-quail-plush-chipmunk); and last, who
 builds the event manager and the crowd (polite-tapir's `standing-layer-breaks.md`).
 
+**Other readers of a whole `City` under `src/`**, which #1166's row does not list:
+
+- `src/day/day_world.gd` holds the city and hands it out (`DayWorld.city()`), and the run log's
+  session (`src/telemetry/run_session.gd`) asks it for the city's map, its streets and its crowd's
+  sources, which it hands the observer and the run log's map; the day director takes it from there
+  too.
+- The scene recipes take the city whole: `SceneRecipeRuntime.install()` (and the `AuthoredScene`
+  it extends, `src/run/authored_scene.gd`), and `SceneRecipeDraft.record()` and `compose()`
+  (`src/dev/scene_recipe_draft.gd`). `tests-one-module.md`'s entry 4 waits for `install()` to take a
+  narrow interface instead.
+- The debug layers (`src/dev/debug_layers.gd`) ask the world they are handed whether it is a `City`
+  and read its props through `City.props()`.
+
 **Which map a test uses** is writing-tests' rule (inbox #1172 in gray-dolphin): the shared writer's map is for a test
 of one interaction or edge case, never for a booted day or a measurement.
 

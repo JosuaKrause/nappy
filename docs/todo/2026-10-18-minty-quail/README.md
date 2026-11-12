@@ -102,8 +102,9 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    group of suites would be mocked against fields and redone; shown its suggestion to go module by
    module, the player: "yeah module by module makes sense and can be parallelized". Within a
    module: its dead code (`dead-code-sweep.md`), its standing layer breaks (the design review's,
-   below), its interface and field reads with the receivers typed
-   (`field-reads.md`), then its suites (`tests-one-module.md`). The player approved going
+   below), its interface and field reads, its receivers typed with them or by a typing pass ahead
+   of them (`field-reads.md`), then its suites (`tests-one-module.md`), typed already but for two
+   files (`typed-everywhere.md`). The player approved going
    module by module in parallel; the tracks are the design review's worked-out detail:
    - **The design review's tracks are the entry polite-tapir** (placement drawn as she walks with
      the event scheduler's breakup interleaved, one start for every kind of day, the standing layer
@@ -112,14 +113,16 @@ during the refactor", "for the refactor test parity is enough" (inbox #813 in cu
    - **Run flow:** `city-hand-ins.md`'s third pull request, which settles who builds the events and
      the crowd together with the design review's one start for every kind of day.
    - **The modules that do not wait for the events:** telemetry; the atlas and the scenery; the
-     crowd; the city map. The city scene and the run's parts follow the third hand-ins pull
-     request. *Proposed, not asked for:* three more passes, each what is left of a folder with
-     files still under the opt-out line: **the view** (`src/ui/`), whose reads through the run's
-     parts wait with those parts and the rest for nothing; **the building** (`src/interior/`,
-     `src/finale/`), whose one read of `WorldMap.world` goes with the map interface's world half
-     (the design review's standing breaks); and **the developer's rigs** (`src/dev/`), row 3c of
-     `event-interface.md`. The plainer alternative is to leave them to `field-reads.md`'s
-     one-pull-request-per-area sentence.
+     crowd; the city map. The city scene and the conversion of the run's parts (`field-reads.md`,
+     "A run's parts") follow the third hand-ins pull request. **Every file under `src/` is typed
+     but those `field-reads.md` lists, each with what it waits for, under "What is left of the
+     typing".** The view (`src/ui/`), the building (`src/interior/`, `src/finale/`), the run's
+     parts, the routes, the resistance and the developer's rigs (`src/dev/`) are typed ahead of
+     their conversion, and what is left of them is their reads of other classes' fields, which the
+     records of their typing list by class: among them the building's
+     write of `WorldMap.world`, which goes with the map interface's world half (the design
+     review's standing breaks), the reads through the run's parts, which wait with those parts,
+     and the developer's rigs' reads of an event, row 3c of `event-interface.md`.
    - **Tools:** `typed-everywhere.md`: code is
      typed wherever the language can type it, the tests included.
      `method-without-parentheses.md`, a typed receiver's method named without its parentheses
@@ -159,8 +162,12 @@ player: "also good points". *Read as, the orchestrator's, open to the player's c
 entry is done when the items in this folder are gone and the remeasure is taken, which comes after
 the design review's items too, the decision on each standing break among them; a defect found in a pull request of this entry is fixed in that pull request,
 and anything else found from here on is filed as an entry of its own after this one, never as a new
-item here. The open test gaps `tests-public-seams.md` lists add tests and refactor nothing: they
-move to such an entry when this one closes.
+item here. `tests-public-seams.md`'s open list holds two kinds: test gaps, which add tests and
+refactor nothing and move to such an entry when this one closes; and members the game does not
+need, `PlanBuilder._cross_street_path` (which no catalogue row uses) and those only tests read
+(`EventsAhead.walk_siting()`, `WalkSiting.offers_worked_out`, `RouteLines.routes()`,
+`TouchControls._FOCUS_KNOB_OFFSET` and `_FOCUS_KNOB_RADIUS`, `HelpText.line`), whose removal or game
+reader is a change to `src/`, a refactor rather than a test gap.
 
 The PR that closes this entry rewrites **designing-classes**'s "Code is designed by layer", whose
 layering paragraph and closing list of proposals refer to this entry, and **removes its exception for downy-tapir's minimal
