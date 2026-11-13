@@ -747,7 +747,7 @@ also shows a search for the field's old name read without parentheses, every rem
 
 **What runs beside the placement track**: 1, 2a and 2b. They own no file it owns; 1 and 2a add methods to `event_def.gd`, where placement has been
 adding its own, and such additions merge without a conflict of meaning. Everything from 3a on
-waits, because it converts the files those two tracks are rewriting.
+waits, because it converts the files that track is rewriting.
 
 **A live half before its spec exists.** Until 4b the body, the field, the hold, the route and the
 flock have no spec of their own, so in 2a their live halves are handed the row and ask the row;

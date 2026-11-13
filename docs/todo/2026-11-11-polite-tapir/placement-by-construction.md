@@ -112,9 +112,12 @@ full text names the files each step owns.
    comes to on her way, so a player who turns at a junction still meets him; a row she must meet
    whatever route she takes exists wherever she goes, the guarantee the covering sites gave at dawn
    (M50-the-city-points-somewhere). These stay dependent on her path on purpose. `WalkSiting` leaves the event scheduler for a
-   file of its own as this step rewrites it, and the scheduler is handed it rather than making it,
-   so a test of the scheduler can pass a mock in its place (the player on the board, question
-   walksiting-lift, 2026-11-13; inbox note #1456). With the last
+   file of its own as this step rewrites it: "yes, and make it so you can inject it which will
+   allow for it to be mocked easily" (the player on the board, question walksiting-lift, 2026-11-13;
+   inbox #1456). **Read as** (the orchestrator's reading): the classes that make one today with
+   `WalkSiting.new()`, `EventsAhead` (in `start_day()`, `queue_a_mast()` and `rig_her_route()`) and
+   `ResistanceHappenings` (in `_market_ahead_of()`), are handed it, or a maker of it, as
+   `EventDirector` already is, so a test of any of them can pass a mock in its place. With the last
    caller gone, `EventScheduler._best_of()`, `Verdicts`, `EVENT_PLACEMENT_TRIES` and whatever only
    they used are deleted. `RowGround._times_for_role()` stays with `RowGround.offers_for_role()` while a row's own
    ground still needs it.

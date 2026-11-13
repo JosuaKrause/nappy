@@ -1359,8 +1359,8 @@ Each item quotes the code on this branch.
 EventScheduler.build_day(context):
     the context (DawnContext) holds the day's inputs and gives each phase its own stream off the
     day's seed
-    the dawn's phases are the thirteen classes under src/events/dawn_phases/, run in the order of
-    EventScheduler._phases(); steps 2 to 9 below are the phases, step 2 being four of them, with
+    the dawn's phases are the thirteen phase classes under src/events/dawn_phases/ (beside their
+    base, DawnPhase, and RuledRoadblockGround), run in the order of EventScheduler._phases(); steps 2 to 9 below are the phases, step 2 being four of them, with
     DawnCalmKeptClean (which calm area the spoilers leave alone) between steps 2 and 3 and
     DawnRoadblockCount (the run-log count of route tiles day 13's roadblocks leave uncovered) after 9
     1. the day's locations (DayLocations, laid out by the context the first time a phase asks), each

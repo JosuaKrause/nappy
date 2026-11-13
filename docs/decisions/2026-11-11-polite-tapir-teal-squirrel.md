@@ -63,14 +63,15 @@ The designer's, where the item is silent, each with what it was chosen over:
 ## Settled with the player on the board
 
 - **The files now holding balance numbers come under the balance rules** (board question balance-reach, 2026-11-13;
-  inbox note #1455): `TASK_ROW_CLOSE_BY` in `ruled_roadblock_ground.gd`, the mouse's two pile numbers in
+  inbox #1455): `TASK_ROW_CLOSE_BY` in `ruled_roadblock_ground.gd`, the mouse's two pile numbers in
   `ruled_location_ground.gd` (`_MOUSE_PILE_ADJACENCY`, `_MOUSE_PILE_EXTRA_COPIES`), `DawnMasts.CURFEW_ANNOUNCE_DAY`,
   and the park spoilers' three numbers in `dawn_spoilers.gd` sit in files only the events row of the rules covers.
   One pull request after this one adds them to the balance row of the rules hook, `CLAUDE.md`'s table and the
   hook's test.
-- **`WalkSiting` (about 580 lines) gets a file of its own at placement's step 4**, which rewrites it, and the
-  scheduler is handed it so a test can pass a mock (board question walksiting-lift, 2026-11-13; inbox note #1456);
-  step 4 of `placement-by-construction.md` says so. The scheduler stays about 1,500 lines until placement's steps
+- **`WalkSiting` (about 580 lines) gets a file of its own at placement's step 4**, which rewrites it, made
+  injectable so it can be mocked (board question walksiting-lift, 2026-11-13; inbox #1456). Step 4 of
+  `placement-by-construction.md` quotes the player and gives the reading: `EventsAhead` and `ResistanceHappenings`,
+  which make one today, are handed it or a maker of it, as `EventDirector` already is. The scheduler stays about 1,500 lines until placement's steps
   delete their blocks.
 
 ## Left open
