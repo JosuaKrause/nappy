@@ -95,8 +95,11 @@ class needs is kept in an underscore field behind a method.
 **A method that replaces a yes-or-no field takes a name the field did not have**, on the object
 the field was read from: in the events' design `is_finished` becomes `is_gone()` and `hard_fail`
 becomes `ends_the_day()`. Under the field's old name a read left behind without its parentheses is
-a reference to the function, always true in a condition, and nothing reports it on a receiver
-whose class is known (**godot**, "Types"). Under a new name the read left behind names nothing
+a reference to the function, always true in a condition. The field-read check fails it on a
+receiver it types as a class under `src/`, and, in a file without the opt-out line, on a receiver
+whose class it cannot tell, such as a Variant, unless its `--help` excuses the name; nothing
+reports it on a receiver typed too wide (a `Node` holding the class), nor on a receiver the check
+cannot tell in a file that carries the line (**godot**, "Types"). Under a new name the read left behind names nothing
 and fails: at the parse on a typed receiver in a file that does not silence
 `unsafe_property_access`, and when the line runs everywhere else (a file whose opt-out line names
 that warning, a receiver typed too wide, a Variant). The rule stops at yes-or-no fields: a field
@@ -112,7 +115,8 @@ hit with its reason (another class's field of the same name, a write, a read ins
 comment), and only a read of this class's field from outside its file fails the step (the filer's proposal,
 below). It finds the read a conversion missed at the cost of one command. A yes-or-no field's new
 name makes the compiler find such a read; a field of another kind keeps its name, so a read left
-behind is the silent function reference above and nothing else reports it.
+behind is the silent function reference above, which the field-read check reports only in the
+cases the paragraph above names.
 
 **Two lists hold "Fields are not API" while `src/` is converted, and neither grows except by what only moved.** Much of `src/` still
 reads fields across objects: `tools/check_field_reads.py` (CI's `gates` job) fails a change that

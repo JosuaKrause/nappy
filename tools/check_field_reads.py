@@ -48,8 +48,10 @@ typed opts out with one line at its top naming the warnings it still trips. The 
 list of files not yet converted, which only shrinks; nothing else records it. The engine cannot see two kinds of
 access. A property read on a value it types as `Variant` (an element of an untyped array or dictionary, a call that
 returns a Variant, a name declared `: Variant`) warns of nothing, and neither does a method named without its
-parentheses, on any receiver: `thing.hard_fail` is a reference to the function, always true. So in a file under
-`src/` **without** the line this check fails, naming the file, the line and the expression:
+parentheses, on any receiver, in a condition, an argument or an assignment (alone on a line it is a statement that
+does nothing, `standalone_expression`, which `project.godot` also makes an error): `thing.hard_fail` is a reference
+to the function, always true. So in a file under `src/` **without** the line this check fails, naming the file, the
+line and the expression:
 
 - a `.name` use with no `(` after it, whose receiver's class it cannot tell, whether or not the use hands a Callable
   on, where the name is a var as above, or a method a file or an inner class under `src/` declares
@@ -64,6 +66,32 @@ parentheses, on any receiver: `thing.hard_fail` is a reference to the function, 
 
 In a file **with** the line such a use is skipped, never listed and never failed, and `--summary` counts the
 skipped uses of a var's name.
+
+**A typed receiver's own method named without its parentheses.** In every file under `src/`, with the line or
+without it, a `.name` with no `(` after it fails where the check tells the receiver's class, a class under `src/` (an
+inner class included), and that class or one under `src/` it extends declares `name` as a method: a reference to the
+function, always true in a condition, and a statement that does nothing on a line of its own (`crowd.clear` for
+`crowd.clear()`). It passes where the reference hands the Callable on, in one of these forms and no other:
+
+1. a step follows it: `t.go.bind(1)`, `t.go.call()`, `t.go.unbind(1)`;
+2. it is an argument of a call, alone or among others, on the call's line or a line of its own inside the call's
+   parentheses: `g(t.go)`, `done.connect(t.go)`, `Thing.new(1, t.go)`;
+3. it is an element of an array literal: `[t.go]`;
+4. it is the right side of an `=` or a `:=`: an assignment, a declaration, a parameter's default (`cb = t.go`, `var
+   cb: Callable = t.go`, `var cb := t.go`), and not a compound assignment's (`cb += t.go`), a comparison's (`x ==
+   t.go`) or a dictionary entry's (`{k = t.go}`);
+5. it is a returned value, a lambda's included: `return t.go`;
+6. it is the first or the last branch of a ternary, or of a chain of them, that itself stands in one of these
+   forms: `var cb := t.go if t else Callable()`, `g(Callable() if t else t.go)`, `var cb := Callable() if a else
+   Callable() if b else t.go`. A middle branch of a chain passes only in parentheses of its own (`Callable() if a
+   else (t.go if b else Callable())`), and a branch of a ternary that stands in a condition or a dictionary's value
+   fails with it (`if (x if x else t.go):`).
+
+A parenthesised expression is what its parentheses are: `(t.go)` hands the Callable on where `t.go` in its place
+would, and so does a ternary in parentheses. Anything else fails: a condition (`if`, `elif`, `while`,
+`assert(...)`), an operand (`not t.go`, `t.go == f`), a subscript (`d[t.go]`), a dictionary's value, a statement on
+its own. A form found in the tree that hands a Callable on and is not among these is added here with a unit case of
+its own; this list is the one text of them.
 
 **The line has one form**, the file's whole first line, `@warning_ignore_start("untyped_declaration",
 "unsafe_method_access")`: double-quoted names separated by `, `, only those three warnings, each once, in that
@@ -84,9 +112,12 @@ receiver whose class cannot be told read with such a name fails only where some 
 name as a method; a bare name nothing declares is taken for an engine property of the file's own class; a
 parameter of a function whose parameter list closes at the margin (a line starting with `)`, which opens a new
 block) has no type here, so a read through it is neither a read nor an unknown. A method named without its
-parentheses is seen only on a receiver whose class the check cannot tell: not on one it can type, a class under
-`src/` or an engine value (`if thing.is_ready:` with `thing: Thing`), nor on a bare name of the file's own class
-with no receiver (`if is_ready:`). A second read of a field a file already reads is not a new
+parentheses is not seen where it is an engine method, on an engine value (`if node.is_inside_tree:`) or inherited
+by a class under `src/` (`if crowd.is_inside_tree:` with `Crowd extends Node`, `if self.is_inside_tree:`): the check
+tells an engine value only as not a class under `src/`, never as which engine class, and knows a class's methods
+only as far as its ancestors under `src/` declare them, so it has no list of the engine's methods; nor as a bare name of
+the file's own class with no receiver (`if is_ready:`); nor where the receiver ends on a line before its dot, a chain
+broken over lines. A second read of a field a file already reads is not a new
 line, so a change that adds one to a listed reader file and field passes `--base`: review reads the diff for it.
 Tests are not read for reads (that is `tests-one-module.md`'s item). Whether a line still names only warnings its
 file trips is the engine's to show, not this check's: deleting a name the file still trips fails the boot, and a
@@ -386,6 +417,39 @@ ENGINE_PROPERTIES = frozenset(
     }
 )
 CONSTANT = re.compile(r"^(?:static[ \t]+)?(?:const|enum)[ \t]+([A-Za-z_]\w*)", re.MULTILINE)
+# What `hands_on` reads around a method reference, for the forms the module docstring lists: before it on its line
+# (HANDED_STATEMENT, an `=` that is no comparison and no compound assignment, a `:=`, a `return`), before it inside
+# the bracket holding it (HANDED_ELEMENT), and after it (HANDED_AFTER); TERNARY_THEN and TERNARY_ELSE tell a branch
+# of a ternary, and STATEMENT_TOKEN where the expression holding it starts.
+STATEMENT_TOKEN = re.compile(r"(?<![=!<>:+\-*/%&|^])=(?!=)|:=|\breturn\b")
+HANDED_STATEMENT = re.compile(rf"(?:{STATEMENT_TOKEN.pattern})[ \t]*$")
+HANDED_ELEMENT = re.compile(r"(?:^|,)\s*$")
+HANDED_AFTER = re.compile(r"^[ \t]*(?:$|[)\],])")
+TERNARY_THEN = re.compile(r"^\s*if\b.*\belse\b", re.DOTALL)
+TERNARY_ELSE = re.compile(r"\bif\b.*\belse\s*$", re.DOTALL)
+# The words a `(` or a `[` may follow without being a call or a subscript: after `assert(`, `if (` or `while (` the
+# bracket holds a condition, and after `return [` or `in [` an array literal.
+KEYWORDS = frozenset(
+    [
+        "and",
+        "as",
+        "assert",
+        "await",
+        "elif",
+        "else",
+        "for",
+        "if",
+        "in",
+        "is",
+        "match",
+        "not",
+        "or",
+        "return",
+        "when",
+        "while",
+    ]
+)
+TRAILING_WORD = re.compile(r"[A-Za-z_]\w*$")
 
 
 class FieldReadsError(Exception):
@@ -417,12 +481,14 @@ class Read:
 
 UNKNOWN_VAR = "var"
 UNKNOWN_METHOD = "method"
+REFERENCE = "reference"
 
 
 @dataclass(frozen=True)
 class Unknown:
-    """A `.name` use in a file without the opt-out line that fails: a receiver whose class cannot be told, where
-    `name` is a var (UNKNOWN_VAR) or a method (UNKNOWN_METHOD) as `reads_of` counts them."""
+    """A `.name` use that fails: in a file without the opt-out line, a receiver whose class cannot be told, where
+    `name` is a var (UNKNOWN_VAR) or a method (UNKNOWN_METHOD) as `reads_of` counts them; in any file under `src/`,
+    a typed receiver's own method named without its parentheses where the Callable is not handed on (REFERENCE)."""
 
     reader: str
     line: int
@@ -1238,35 +1304,134 @@ def method_names_of(tree: Tree) -> set[str]:
     return methods - var_names_of(tree) - constants - ENGINE_PROPERTIES
 
 
+def enclosing(bare: str, at: int) -> int:
+    """The index of the innermost bracket left open before `at`, or -1 where none is."""
+    depth = 0
+    for index in range(at - 1, -1, -1):
+        char = bare[index]
+        if char in ")]}":
+            depth += 1
+        elif char in "([{":
+            if depth == 0:
+                return index
+            depth -= 1
+    return -1
+
+
+def list_bracket(bare: str, opener: int) -> bool:
+    """Whether the bracket at `opener` is a call's argument list (a `(` after a name that is not a keyword, or after a
+    closing bracket) or an array literal (a `[` after neither), rather than a condition's (a `(` after `assert`, `if`
+    or `while`), a parenthesised expression's (a `(` after an operator), a subscript's (a `[` after a name) or a
+    dictionary's."""
+    before = bare[:opener].rstrip(" \t")
+    word = TRAILING_WORD.search(before)
+    called = bool(word and word.group(0) not in KEYWORDS) or before.endswith((")", "]"))
+    if bare[opener] == "(":
+        return called
+    return bare[opener] == "[" and not called
+
+
+def ternary_of(bare: str, start: int, end: int, opener: int) -> tuple[int, int] | None:
+    """The span of the ternary whose branch is the reference spanning `start` to `end`, or None where it is not a
+    first or last branch of one: the expression holding the reference, inside the bracket `opener` (or on its line
+    where none is), between the commas around it, and after the last `=`, `:=` or `return` before it."""
+    if opener >= 0:
+        close = close_of(bare, opener)
+        region_start, region_end = opener + 1, close if close >= 0 else len(bare)
+    else:
+        line_end = bare.find("\n", end)
+        region_start, region_end = bare.rfind("\n", 0, start) + 1, len(bare) if line_end < 0 else line_end
+    flat = top_level(bare[region_start:region_end])
+    at, to = start - region_start, end - region_start
+    left = flat.rfind(",", 0, at) + 1
+    right = flat.find(",", to)
+    right = len(flat) if right < 0 else right
+    tokens = list(STATEMENT_TOKEN.finditer(flat, left, at))
+    first = tokens[-1].end() if tokens else left
+    last = right
+    head, tail = flat[first:at], flat[to:last]
+    if not ((not head.strip() and TERNARY_THEN.match(tail)) or (not tail.strip() and TERNARY_ELSE.search(head))):
+        return None
+    text = bare[region_start + first : region_start + last]
+    return (region_start + first + len(text) - len(text.lstrip()), region_start + last - len(text) + len(text.rstrip()))
+
+
+def hands_on(bare: str, start: int, end: int) -> bool:
+    """Whether the method reference spanning `start` to `end` of the file's blanked code hands the Callable on, in
+    one of the forms the module docstring lists; anything else is a function where a value was meant."""
+    line_start = bare.rfind("\n", 0, start) + 1
+    line_end = bare.find("\n", end)
+    after = bare[end : len(bare) if line_end < 0 else line_end]
+    if after.lstrip(" \t").startswith("."):
+        return True
+    opener = enclosing(bare, start)
+    before = bare[max(line_start, opener + 1) : start]
+    if re.match(r"[ \t]*if\b", after) or re.search(r"\belse[ \t]*$", before):
+        span = ternary_of(bare, start, end, opener)
+        return span is not None and span != (start, end) and hands_on(bare, *span)
+    if not HANDED_AFTER.match(after):
+        return False
+    statement = HANDED_STATEMENT.search(before)
+    if statement and (statement.group().startswith("return") or opener < 0 or bare[opener] != "{"):
+        return True
+    if opener < 0 or not HANDED_ELEMENT.search(bare[opener + 1 : start]):
+        return False
+    if list_bracket(bare, opener):
+        return True
+    close = close_of(bare, opener)
+    if bare[opener] != "(" or close < 0 or bare[opener + 1 : start].strip() or bare[end:close].strip():
+        return False
+    return hands_on(bare, opener, close + 1)
+
+
 def reads_of(tree: Tree) -> Found:
     reads: dict[tuple[str, str, str, str], Read] = {}
     unknown: list[Unknown] = []
     skipped = 0
     declared_names = var_names_of(tree)
     method_names = method_names_of(tree)
+    # Every name a file or an inner class under src/ declares as a method, which a typed receiver's class may declare.
+    any_method = {name for klass in tree.files.values() for name in klass.methods}
     for path in sorted(tree.bare):
         own = path
-        lines = tree.bare[path].split("\n")
-        owner_block = block_index(tree.bare[path])
-        inner = inner_lines(tree.bare[path])
+        bare = tree.bare[path]
+        lines = bare.split("\n")
+        owner_block = block_index(bare)
+        inner = inner_lines(bare)
         converted = path not in tree.opted_out
+        offset = 0
         for index, line in enumerate(lines):
+            line_offset, offset = offset, offset + len(line) + 1
             if "." not in line:
                 continue
             for match in USE.finditer(line):
                 name, call = match.group(1), match.group(2)
                 is_var = name in declared_names
-                if call or not (is_var or (converted and name in method_names)):
+                untold = is_var or (converted and name in method_names)
+                if call or not (untold or name in any_method):
                     continue
                 declared = Scope(tree, path, owner_block[index], index)
                 receiver = receiver_text(line, match.start())
                 klass = tree.chain_class(receiver, own, declared, inner[index]) if receiver else None
                 expression = re.sub(r"\s+", " ", f"{(receiver or '').strip() or '...'}.{name}")
                 if klass is None:
+                    if not untold:
+                        continue
                     if not converted:
                         skipped += 1
                     else:
                         unknown.append(Unknown(path, index + 1, expression, UNKNOWN_VAR if is_var else UNKNOWN_METHOD))
+                    continue
+                if (
+                    klass in tree.files
+                    and tree.method_return(klass, name)[0]
+                    and not hands_on(
+                        bare,
+                        line_offset + len(line[: match.start()].rstrip(" \t")) - len(receiver or ""),
+                        line_offset + match.end(),
+                    )
+                ):
+                    unknown.append(Unknown(path, index + 1, expression, REFERENCE))
                     continue
                 if not is_var or klass not in tree.classes:
                     continue
@@ -1350,6 +1515,12 @@ def failures_of(found: Found, entries: list[Entry]) -> list[str]:
 def unknown_failure(u: Unknown) -> str:
     """The failure line for a use `reads_of` could not let stand in a file without the opt-out line."""
     where = f"{u.reader}:{u.line}"
+    if u.kind == REFERENCE:
+        return (
+            f"{where}: `{u.expression}` names a method of the receiver's class without its parentheses, which is a"
+            " reference to the function: always true in a condition, nothing done as a statement; call it with `()`,"
+            " or hand the Callable on in one of the forms tools/check_field_reads.py --help lists"
+        )
     if u.kind == UNKNOWN_METHOD:
         return (
             f"{where}: cannot tell the class of the receiver in `{u.expression}`, in a file without the opt-out line,"
@@ -1557,8 +1728,14 @@ def summary(found: Found, carrying: dict[str, tuple[str, ...]] | None = None) ->
         f"{found.skipped} use(s) skipped for an unknown receiver of a name some class declares as a var, in files"
         " carrying the opt-out line"
     )
-    if found.unknown:
-        out.append(f"{len(found.unknown)} such use(s) in files without it, each a failure")
+    untold = [u for u in found.unknown if u.kind != REFERENCE]
+    if untold:
+        out.append(f"{len(untold)} such use(s) in files without it, each a failure")
+    references = len(found.unknown) - len(untold)
+    if references:
+        out.append(
+            f"{references} method(s) of a typed receiver named without parentheses and not handed on, each a failure"
+        )
     return out
 
 
@@ -1675,7 +1852,10 @@ def parse(argv: list[str]) -> argparse.Namespace:
     mode.add_argument(
         "--list",
         action="store_true",
-        help="print every read found, listed or not, and every unknown receiver in a converted file, without failing",
+        help=(
+            "print every read found, listed or not, every unknown receiver in a converted file, and every typed"
+            " receiver's method named without parentheses and not handed on, without failing"
+        ),
     )
     mode.add_argument(
         "--summary",
@@ -1740,7 +1920,7 @@ def main(argv: list[str]) -> int:
             mark = "listed" if (r.klass, r.reader, r.name) in listed else "NEW"
             print(f"{mark:6} {r.reader}:{r.line}: {r.klass}.{r.name} ({r.count})")
         for u in found.unknown:
-            print(f"UNKNOWN {u.reader}:{u.line}: {u.expression}")
+            print(f"{'REFERENCE' if u.kind == REFERENCE else 'UNKNOWN'} {u.reader}:{u.line}: {u.expression}")
         for line in failures:
             if line.startswith(("REMOVE", LIST_NAME)):
                 print(line)
