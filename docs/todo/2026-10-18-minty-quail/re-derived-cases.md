@@ -12,9 +12,10 @@ to whoever asks (designing-classes). The dawn cases were built with `DayEvents` 
 
 **What is left of the last case, the ground cache** (which tiles each row may stand on): the day's
 walk derives it once, in polite-tapir's `RowGround` (`src/events/row_ground.gd`), which the dawn
-makes and hands to every pass and to the walk's sitings. Two makers outside a day's walk still scan
-for themselves: `EventScheduler.recipe_placement()` makes one ground per authored row of a scene
-recipe, and `SceneRecipeRuntime._finale_placement()` one per escape actor. The fix is the recipe
-runtime making one `RowGround` for its scene and handing it to both. Placement by construction
+makes and hands to every pass and to the walk's sitings. Three places outside a day's walk still scan for themselves: `EventScheduler.recipe_placement()`
+makes one ground per authored row of a scene recipe, `SceneRecipeRuntime._finale_placement()` one per
+escape actor, and a scene recipe's walk carries no ground, so `EventsAhead._ground_of_the_walk()` makes
+one per siting and the resistance director one per ask. The fix is the recipe runtime making one
+`RowGround` for its scene and handing it to all three, its walk included. Placement by construction
 (polite-tapir's `placement-by-construction.md`) replaces the code `recipe_placement()` sits in, so it
 is done there or after.

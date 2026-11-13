@@ -113,8 +113,8 @@ full text names the files each step owns.
    whatever route she takes exists wherever she goes, the guarantee the covering sites gave at dawn
    (M50-the-city-points-somewhere). These stay dependent on her path on purpose. With the last
    caller gone, `EventScheduler._best_of()`, `Verdicts`, `EVENT_PLACEMENT_TRIES` and whatever only
-   they used are deleted. `_copies_of()` stays with `ground_for()` while a row's own ground still
-   needs it.
+   they used are deleted. `RowGround._times_for_role()` stays with `RowGround.offers_for_role()` while a row's own
+   ground still needs it.
 5. **The escape city's draw is the same unit draw** with three settings on the day's spec: one bag
    for the whole walk, at most one event a street, and every unit drawn before she sets off, in the
    walk's own order. `EventScheduler._draw_the_walk()` and the spec's switch between draws go, and a
