@@ -1057,7 +1057,7 @@ def cite_line(
             return [int(n) for n in re.findall(r"#(\d+)", head.group(0))]
         middle = RUN_TAIL.match(before)
         top = HEAD_OF_RUN.search(before2)
-        if middle is None or top is None or RUN_CONTINUES.search(before, middle.end()) is None:
+        if middle is None or top is None or RUN_CONTINUES.match(before, middle.end()) is None:
             return None
         return [int(n) for n in re.findall(r"#(\d+)", top.group(0) + middle.group(1))]
 

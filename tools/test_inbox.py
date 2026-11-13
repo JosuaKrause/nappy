@@ -1125,6 +1125,14 @@ class CiteWrappedRunTests(unittest.TestCase):
         self.assertEqual(hand, [])
         self.assertEqual(self.cite(new), (new, []))
 
+    def test_a_line_closing_a_run_then_continuing_with_and_is_not_a_middle_line(self) -> None:
+        text = "x (inbox #9101 and\n#9102 in gray-egret), and\n#9103 is next.\n"
+        self.assertEqual(self.cite(text), (text, []))
+
+    def test_a_run_over_four_lines_is_listed_for_a_hand_fix_and_never_edited(self) -> None:
+        text = "(inbox #9101 and\n#9102 and\n#9101 and\n#9102) here.\n"
+        self.assertEqual(self.cite(text), (text, [4]))
+
     def test_a_continued_line_inside_a_quote_is_part_of_the_run(self) -> None:
         named = "> (inbox #9101 and\n> #9102 in gray-egret).\n"
         self.assertEqual(self.cite(named), (named, []))
