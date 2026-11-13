@@ -10,9 +10,11 @@ what another place already worked out, is moved into one object that derives it 
 to whoever asks (designing-classes). The dawn cases were built with `DayEvents` and `CalmAreas`
 (#1158); the after-dawn ones with `WalkEvents` and `DayReach` (#1169).
 
-**What is left: one case, as the orchestrator's notes name it,** found again with its places in the
-code before it is designed; placement by construction (polite-tapir's `placement-by-construction.md`) replaces the
-code it sits in, so it is done there or after:
-
-- **The ground cache:** which tiles each row may stand on (`EventScheduler.open_ground_for()`), a
-  per-day cache `build_day()` builds at dawn and each `WalkSiting` builds again for itself.
+**What is left of the last case, the ground cache** (which tiles each row may stand on): the day's
+walk derives it once, in polite-tapir's `RowGround` (`src/events/row_ground.gd`), which the dawn
+makes and hands to every pass and to the walk's sitings. Two makers outside a day's walk still scan
+for themselves: `EventScheduler.recipe_placement()` makes one ground per authored row of a scene
+recipe, and `SceneRecipeRuntime._finale_placement()` one per escape actor. The fix is the recipe
+runtime making one `RowGround` for its scene and handing it to both. Placement by construction
+(polite-tapir's `placement-by-construction.md`) replaces the code `recipe_placement()` sits in, so it
+is done there or after.

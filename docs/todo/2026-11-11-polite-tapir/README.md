@@ -43,8 +43,8 @@ detail, which the player approved.
   minty-quail: the first steps of minty-quail's
   `event-interface.md` (the callers outside the events folder, the live event's behaviours and
   looks) run beside placement, and its dawn, the event manager's parts, the resistance and the
-  scene recipes follow placement and the scheduler's breakup; minty-quail's `re-derived-cases.md`
-  closes with the breakup's `RowGround`; a probe minty-quail's `typed-everywhere.md` lists is typed
+  scene recipes follow placement and the scheduler's breakup; what is left of minty-quail's
+  `re-derived-cases.md` (the scene recipes' own ground scans) closes with placement or after it; a probe minty-quail's `typed-everywhere.md` lists is typed
   or deleted by placement's step 4.
 - **Run flow:** who builds the events and the crowd (`one-start-for-every-spec.md`), together with
   the last part of the third hand-ins pull request (minty-quail's `city-hand-ins.md`), landing

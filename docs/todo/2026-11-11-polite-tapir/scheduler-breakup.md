@@ -24,13 +24,12 @@ the line counts are its estimates. All under `src/events/`:
   chains) and its corridor, the calm areas and the ground to leave alone, the doors, what stands,
   heat, scars, the spent one-shots, the mast sites, the trace and the plan builder (`PlanBuilder`),
   handed in by the day's planner; and what the dawn builds: the day's events (`DayEvents`), the
-  locations (`DayLocations`), the rules built once (`StreetInvalidation`) and the row-ground cache. It is the object that derives the day's facts
+  locations (`DayLocations`), the rules built once (`StreetInvalidation`) and the day's `RowGround`, the object that answers which
+  tiles a row may stand on (`row_ground.gd`). It is the object that derives the day's facts
   once and is handed around (designing-classes).
 - **`dawn_phases/`**, one class per phase with `run(context)`: the fixed parts (ambient rows, masts,
   wall bodies holding their locations), the scars, the roadblock phase's glue with its ground
   judge, the scripted rows, the one-shots, the park spoilers, the lessons and the moments.
-- **`RowGround`** (`row_ground.gd`): which tiles a row may stand on, as an object holding its own
-  per-day cache. This is the last re-derived case (minty-quail's `re-derived-cases.md`, the ground cache).
 - **`RuledLocationGround`** in a file of its own: the judge that offers a row at a location.
 - **`event_scheduler.gd`** keeps `build_day(context)` as an ordered list of phases.
 
@@ -39,8 +38,7 @@ siting roll, the fitted tables, and the escape's own draw loop. The fallback tha
 when none is handed in goes with `DawnContext` below, whose shared test helper hands a route to every
 call under `tests/` that hands none today. What building a plan at a tile does not do stays in the scheduler:
 `recipe_placement()` judges an authored row by the day's locations, the row's ground and `role_for()`, all the
-scheduler's, and builds through `LocationFit`, which is handed the builder; `_wants_this_side()` is a ground
-question whose one caller, `open_ground_for()`, goes with `RowGround` above; `_band_offset_of()` and its
+scheduler's, and builds through `LocationFit`, which is handed the builder; `_band_offset_of()` and its
 neighbours read a row's own numbers with no tile; and `blocked_by()` and `block_a_disc()` paint a blocked set for a
 flood and build no plan. `PlanBuilder` (`plan_builder.gd`), an object handed the map and the three questions it
 asks other classes (inbox #1392 in dappled-wombat), builds every candidate a judge, a siting or a scene recipe
@@ -52,12 +50,7 @@ and fails a read that is new; a read that only moved may add its line to the lis
 grassy-trout), and review reads a moving diff for the cases the check cannot count
 (minty-quail-breezy-bison).
 
-- **`RowGround`**: it is a seam, no pure move, since the object with its own per-day
-  cache replaces the `ground: Dictionary` threaded through `StreetInvalidation`,
-  `RouteJunctionsRule`, `LocationFit`, both ground judges, `_weight_in()`, `_best_of()` and
-  `WalkSiting`.
-- **`DawnContext`**, after `RowGround`, and
-  before the unit draw, so the unit draw edits a small file. The suites and probes that call
+- **`DawnContext`**, before the unit draw, so the unit draw edits a small file. The suites and probes that call
   `build_day()` with 13 arguments change once, through one shared test helper that builds a
   `DawnContext`.
 - **The phases**, a pull request of their own after `DawnContext`: the context changes a signature
