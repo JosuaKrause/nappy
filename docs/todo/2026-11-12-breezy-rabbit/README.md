@@ -1,5 +1,4 @@
 priority: now
-upnext: true
 
 # breezy-rabbit — The model table says the Fable designer decides a hand-off, every build takes the lowest model that can do it, and one Fable runs at a time · filed 2026-11-12
 
@@ -27,14 +26,10 @@ same session: "please use only one fable at a time and not in parallel" (inbox #
   reviews need none.
 
 **Why it is work on how the project is worked on:** the orchestrating skill's model table is what
-every brief picks its model from, so it goes first (`upnext: true`; the orchestrating skill's
-"Work on how the project is worked on goes first"). The table's `fable-only` row says only that
-writing the code "may go to another model", not who decides; that gap let the brief for
-polite-tapir's `RowGround` seam (the event scheduler's breakup) hand Fable the coding.
+every brief picks its model from, so it goes first (the orchestrating skill's "Work on how the project
+is worked on goes first").
 
-*Open, for when the entry is picked up:* whether "one fable at a time and not in parallel" (inbox #1433
-in minty-rabbit) is a standing rule for the model table or held for that session only. The player's
-words do not say, and the item asks before writing it as a rule.
+**Open:** whether "one fable at a time and not in parallel" (inbox #1433 in minty-rabbit) is a standing
+rule for the model table or held for that session only (`one-fable-line.md`, asked on the board).
 
-*Not asked for:* the band `now` is the filer's proposal; `upnext: true` follows from the skill's rule
-on such work.
+*Not asked for:* the band `now` is the filer's proposal.

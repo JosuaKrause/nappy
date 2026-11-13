@@ -52,7 +52,9 @@ the line, and the end-of-session pass drops it from an entry an open pull reques
 **`fable-only: true` says whose design and review an entry's work is.** An entry's opening block
 may carry the line beside `priority:`; an item file carries none. Every pull request that builds an
 item of that entry carries the GitHub label `fable-only`, and the label means that Fable designs the
-code and reviews it, while writing the code may go to another model (inbox #1293 in grassy-trout, inbox #1299 in grassy-trout); the
+code and reviews it, and the Fable designer decides whether the coding is too complex to hand off:
+it writes it itself if so and otherwise hands it to the lowest model that can do it, a brief never
+deciding this for it (inbox #1293 in grassy-trout, inbox #1299 in grassy-trout, inbox #1432 in minty-rabbit); the
 model table in **orchestrating** says so for the session that picks a model. The line goes only on an
 entry the player names, and it marks every item of the entry, so the work the player puts under the
 line is an entry of its own, never items of an entry that holds other work (inbox #1387 in mossy-bunny).
