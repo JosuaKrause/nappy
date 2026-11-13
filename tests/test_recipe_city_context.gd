@@ -3,9 +3,10 @@ extends RefCounted
 ## context restores to a map and saves again as the same context, and that what it saves passes
 ## its own `validate()`.
 ##
-## **Builds the real `CityMap` the task-07 scene's context restores to, because the context is the
-## file form of that map**: boxing, key order and the run-length tiles are written and read against
-## the map's real fields, which no fake map holds. The map's own capture and restore are
+## **Builds the real `CityMap` the task-07 scene's context restores to, because `restore()` answers
+## one through the static `CityMap.restored()`, which has no seam for a fake, and the round trip
+## `capture(restore(saved))` runs through that map.** The boxing, the run-length tiles and the block
+## rows are written from what the real map captures. The map's own capture and restore are
 ## `tests/test_city_map.gd`'s.
 
 ## The authored scene whose saved context is restored and saved again.

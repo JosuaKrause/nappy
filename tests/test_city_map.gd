@@ -2,8 +2,7 @@ extends RefCounted
 ## A city map's copy (`CityMap.copy()`): that it is a city the generator's guarantees hold on, that
 ## it answers every question the map it was copied from answers, and that nothing either map is
 ## then handed reaches the other. And its capture (`CityMap.capture()`, `restored()`): that a map
-## restored from what a map captured captures the same facts again, for a generated map, its copy
-## and an authored scene's map.
+## restored from what a map captured captures the same facts again, for a generated map and its copy.
 ##
 ## **Real generated maps, because a copy is only as lossless as the fields generation fills**: a
 ## hand-drawn map leaves the block plans, the zones, the regions and the landmarks empty, and an
@@ -48,7 +47,6 @@ func run(t: TestRunner) -> void:
 		_test_a_copy_taken_in_act_three_carries_the_closures_and_the_fence(t, original, seed_value)
 		_test_a_restored_map_captures_what_it_was_restored_from(t, original, seed_value)
 	_test_a_copy_of_an_authored_scene_map_carries_its_recipe(t)
-	_test_a_scene_map_captures_what_it_was_restored_from(t)
 	_test_a_map_with_no_calm_ground_says_none(t)
 
 ## A generated map, and its copy, capture the same facts, and the map restored from them captures
@@ -64,14 +62,6 @@ func _test_a_restored_map_captures_what_it_was_restored_from(t: TestRunner, orig
 	var restored := CityMap.restored(original.capture())
 	t.check(_comparable(restored.capture()) == facts,
 			"seed %d: the restored map captures what it was restored from" % seed_value)
-
-## An authored scene's map, restored from what it captured, captures the same facts again.
-func _test_a_scene_map_captures_what_it_was_restored_from(t: TestRunner) -> void:
-	var data: Dictionary = SceneRecipe.load_file(SCENE).data
-	var map: CityMap = RecipeCityBuilder.build(data).map
-	var facts := _comparable(map.capture())
-	t.check(_comparable(CityMap.restored(map.capture()).capture()) == facts,
-			"the scene's restored map captures what it was restored from")
 
 ## A capture with each block's arc written out as its steps, so two captures compare by value
 ## rather than by which `BlockPlan` each holds.
