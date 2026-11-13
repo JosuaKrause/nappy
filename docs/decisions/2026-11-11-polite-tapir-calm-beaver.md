@@ -37,5 +37,5 @@ gray-dolphin), and the ground was derived at dawn and again by every walk siting
   own flag goes. A rig that calls `EventManager.use_the_spec()` mid-walk no longer changes later sitings' rule.
 - **`EventDef.stands_only_in_alleys()` replaces the scheduler's `_refuses_required_alleys()`**; `street_ground()` and
   `_weight_in()` stay in the scheduler, handed the ground.
-- **The scene recipes' two makers still scan for themselves** (`recipe_placement()`, `_finale_placement()`), left in
-  minty-quail's `re-derived-cases.md`.
+- **The scene recipes still scan for themselves in three places** (`recipe_placement()`, `_finale_placement()`, and a
+  recipe's walk, which carries no ground), left in minty-quail's `re-derived-cases.md`.
