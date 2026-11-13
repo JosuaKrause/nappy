@@ -10,7 +10,8 @@ which `field-reads.md` names beside its `frame_b`.
 
 - **Private, twenty**: the block layout's `playground` and `has()`, the building's `front_drawer`, `roof_drawer`,
   `neighbor_taken` and `shape`, the shadows' `skip_draw`, the decals' `atlas` and `drawer`, the city edge's and the
-  traffic light's `atlas`, the generator's `validate()`, the map's `dead_ends` (its checks read dead ends off the streets built over: a street where only the wall across one end was) and `is_held()`, the city state's
+  traffic light's `atlas`, the generator's `validate()`, the map's `dead_ends` (its checks read dead ends off
+  the streets built over: a street where only the wall across one end was) and `is_held()`, the city state's
   `trace`, the poster art's `sheet()`, the poster walls' `art`, the scenery layer's `frame_b` and `drawer`, and the
   water's `elapsed`. The tests read outward behavior: drawers and atlases handed in through the game's hand-ins, the
   collision child physics reads, what a recording drawer is asked to draw, the ripple shader's parameter.
