@@ -9,11 +9,11 @@ the brief and this file differ, the brief's task-specific line wins and says so.
 file); the playtest files it cites under `docs/playtests/` (the player's own words — these win over
 the entry's paraphrase); the records the brief names under `docs/decisions/` (`tools/decisions.sh
 <noun>` finds more); then the source files. `CLAUDE.md` is already in your context. **Before your
-first change to a file, read whole every skill that governs it, whichever tool makes the change**:
-the edit tools, `sed`, a script or a patch alike. `CLAUDE.md`'s path table names the skills. A hook
-names them too and refuses the first `Edit` or `Write` there until they are read, but it sees only
-those two tools, so a change made through the shell meets no refusal and the reading is yours to
-do first.
+first change to a file, read whole every skill that governs it and is not already in your context,
+whichever tool makes the change**: the edit tools, `sed`, a script or a patch alike. `CLAUDE.md`'s
+path table names the skills. A hook names them too and refuses the first edit-tool change of an
+area until they are read, but it sees no shell command, so a change made through the shell meets no
+refusal and the reading is yours to do first.
 This file carries what a builder needs of **verify** and **committing**, so neither is read for an
 ordinary task, and a tool the brief names explains itself: run `tools/<name> --help`.
 
