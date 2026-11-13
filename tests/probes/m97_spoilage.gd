@@ -22,7 +22,8 @@ extends RefCounted
 ##    from the day's ordinary fill the way an unvisited one is (`CalmAreas.unused_ground()` only
 ##    lists calm areas she has not used).
 ##
-## "Denies" is read the way `DawnSpoilers._denial_radius()` defines it: a tile is denied if it is within the
+## "Denies" is read the way `DawnSpoilers._denial_radius()` defines it: a tile is denied if it
+## is within the
 ## radius at which the source's field still outpaces the calm-ground decay, not merely within its
 ## outer radius. The fraction of a park's open tiles NOT denied is the walkable edge playtest 20
 ## described ("I could just walk at the edge of it").
@@ -190,9 +191,11 @@ func _reproduce_zero_density_visits() -> void:
 			print(line)
 
 ## The fraction of `open_tiles` within `DawnSpoilers._denial_radius()` of at least one placed
-## plan — the same question `DawnSpoilers._denial_radius()`'s own doc states: not the outer radius, the radius at
+## plan — the same question `DawnSpoilers._denial_radius()`'s own doc states: not the outer
+## radius, the radius at
 ## which the source still outpaces the calm-ground decay. Everything in `plans` is stationary
-## (`DawnSpoilers._things_to_put_in_a_park()` excludes `mobile`), so a point-to-position distance is exact rather
+## (`DawnSpoilers._things_to_put_in_a_park()` excludes `mobile`), so a point-to-position
+## distance is exact rather
 ## than an approximation of a route.
 func _tiles_denied_fraction(map: CityMap, open_tiles: Array[Vector2i],
 		plans: Array[EventPlan]) -> float:

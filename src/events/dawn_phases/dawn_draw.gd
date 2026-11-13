@@ -1,9 +1,10 @@
 class_name DawnDraw
 extends DawnPhase
-## **The dawn draw**: every open location of the day drawn from its view's bag (`LocationDraw`, inbox #1185 in gentle-owl): the
-## bags (`EventScheduler.view_bags()`) hold every recurring row the catalogue places on the map today, each as many
-## times as its weight in the view (`EventScheduler.view_weight()`), and the empty event; the day's ground answers
-## which row is valid where and how much each location weighs it (`RuledLocationGround`). The rows
+## **The dawn draw**: every open location of the day drawn from its view's bag (`LocationDraw`,
+## inbox #1185 in gentle-owl): the bags (`EventScheduler.view_bags()`) hold every recurring row
+## the catalogue places on the map today, each as many times as its weight in the view
+## (`EventScheduler.view_weight()`), and the empty event; the day's ground answers which row is
+## valid where and how much each location weighs it (`RuledLocationGround`). The rows
 ## other phases place have no marble: the moments she is owed (`DawnMoments`), and on the day
 ## of the roadblock phase its row (`DawnContext.roadblock_row()`), the phase's alone. The draw
 ## places into the context's plan.
@@ -37,7 +38,8 @@ func run(context: DawnContext) -> void:
 
 ## **How many of each row the day's draw may stand** (`id -> count`): its `EventDef.max_per_day`,
 ## and a wall-role row's times `DaySpec.wall_row_share`, so the gatehouse day holds that share of a
-## wall whose cap binds as well as of one whose weight does (`EventScheduler.view_weight()` scales the weight). A
+## wall whose cap binds as well as of one whose weight does (`EventScheduler.view_weight()`
+## scales the weight). A
 ## share of a cap that is not whole is rounded up or down on `rng`, by its fraction, so the day
 ## holds the share on average.
 static func _caps_of(rows: Dictionary, day: int, spec: DaySpec,
