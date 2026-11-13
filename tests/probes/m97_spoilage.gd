@@ -12,7 +12,7 @@ extends RefCounted
 ## seed's city has at the time. For each visit it measures two things separately, because the
 ## TODO item names two different candidate causes and this is how to tell them apart:
 ##
-## 1. **The spoil roll alone** — `EventScheduler._spoil_the_parks_she_used` called on its own,
+## 1. **The spoil roll alone** — `DawnSpoilers` run on its own,
 ##    the way the "roll" telemetry line ("<ids> in the park she used yesterday, <tile>") reports
 ##    it. Its own count and how much of the park's open ground it actually denies.
 ## 2. **The full day's plan** — `EventScheduler.build_day` with the same park as `used_calm`,
@@ -22,7 +22,7 @@ extends RefCounted
 ##    from the day's ordinary fill the way an unvisited one is (`CalmAreas.unused_ground()` only
 ##    lists calm areas she has not used).
 ##
-## "Denies" is read the way `_denial_radius` defines it: a tile is denied if it is within the
+## "Denies" is read the way `DawnSpoilers._denial_radius()` defines it: a tile is denied if it is within the
 ## radius at which the source's field still outpaces the calm-ground decay, not merely within its
 ## outer radius. The fraction of a park's open tiles NOT denied is the walkable edge playtest 20
 ## described ("I could just walk at the edge of it").
@@ -94,7 +94,7 @@ func _reproduce_zero_density_visits() -> void:
 				if open_tiles.is_empty():
 					open_empty_count += 1
 					continue
-				var pool := EventScheduler._things_to_put_in_a_park(day, lot_world, 0)
+				var pool := DawnSpoilers._things_to_put_in_a_park(day, lot_world, 0)
 				if pool.is_empty():
 					pool_empty_count += 1
 					continue
@@ -106,7 +106,7 @@ func _reproduce_zero_density_visits() -> void:
 				var roll_calm := CalmAreas.of(map, [block] as Array[Vector2i])
 				var roll := GameDawn.of(DaySpec.for_day(day), rng1, map).calm(roll_calm) \
 						.masts([] as Array[MastSites.Site]).on(RouteSource.new()).context()
-				EventScheduler._spoil_the_parks_she_used(roll)
+				DawnSpoilers.new().run(roll)
 				var roll_planned := roll.events().placements()
 				var rc := roll_planned.size()
 				roll_counts.append(rc)
@@ -153,8 +153,8 @@ func _reproduce_zero_density_visits() -> void:
 	print("valid visits (calm, open, and a pool to draw from): %d" % valid)
 
 	if valid > 0:
-		print("\n-- the roll alone (EventScheduler.SPOILERS_TO_DENY_A_PARK = %d cells at most) --"
-				% EventScheduler.SPOILERS_TO_DENY_A_PARK)
+		print("\n-- the roll alone (DawnSpoilers.SPOILERS_TO_DENY_A_PARK = %d cells at most) --"
+				% DawnSpoilers.SPOILERS_TO_DENY_A_PARK)
 		_print_int_distribution("placements", roll_counts)
 		_print_float_distribution("open ground denied", roll_denied)
 
@@ -189,10 +189,10 @@ func _reproduce_zero_density_visits() -> void:
 		for line in low_examples:
 			print(line)
 
-## The fraction of `open_tiles` within `EventScheduler._denial_radius` of at least one placed
-## plan — the same question `_denial_radius`'s own doc states: not the outer radius, the radius at
+## The fraction of `open_tiles` within `DawnSpoilers._denial_radius()` of at least one placed
+## plan — the same question `DawnSpoilers._denial_radius()`'s own doc states: not the outer radius, the radius at
 ## which the source still outpaces the calm-ground decay. Everything in `plans` is stationary
-## (`_things_to_put_in_a_park` excludes `mobile`), so a point-to-position distance is exact rather
+## (`DawnSpoilers._things_to_put_in_a_park()` excludes `mobile`), so a point-to-position distance is exact rather
 ## than an approximation of a route.
 func _tiles_denied_fraction(map: CityMap, open_tiles: Array[Vector2i],
 		plans: Array[EventPlan]) -> float:
@@ -207,7 +207,7 @@ func _tiles_denied_fraction(map: CityMap, open_tiles: Array[Vector2i],
 		for plan: EventPlan in plans:
 			if not plan.is_placed():
 				continue
-			if world.distance_to(plan.position) <= EventScheduler._denial_radius(plan.def):
+			if world.distance_to(plan.position) <= DawnSpoilers._denial_radius(plan.def):
 				is_denied = true
 				break
 		if is_denied:

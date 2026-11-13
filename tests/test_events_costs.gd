@@ -443,7 +443,7 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 	var used_set: Array[Vector2i] = [used]
 	var calm := CalmAreas.of(map, used_set)
 	var lot := calm.ground_of(used)
-	var allowed := maxf(EventScheduler.OBSTRUCTION_A_PARK_CAN_HOLD,
+	var allowed := maxf(DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(lot.size.x, lot.size.y) / 16.0)
 	var spoiled_days := 0
 	for day in range(2, 15):
@@ -472,9 +472,9 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 		# "Close the ground" is the test, not "have a body at all" — the two were the same thing
 		# until M34 made everything that stands still solid, and reading it as the stricter one
 		# would have emptied the pool of loud harmless things and retired this rule by accident.
-		# A busker is 22px of a 704px lot. See `EventScheduler.OBSTRUCTION_A_PARK_CAN_HOLD`.
+		# A busker is 22px of a 704px lot. See `DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD`.
 		#
-		# And the allowance is the lot's, not a constant: `_things_to_put_in_a_park` lets a
+		# And the allowance is the lot's, not a constant: `DawnSpoilers._things_to_put_in_a_park()` lets a
 		# bigger park hold a bigger thing, because what matters is the share of the ground it
 		# takes. Asserting the constant instead passed for as long as `calm_blocks[0]` happened
 		# to be a single block, and failed the day a city had enough calm areas for a four-block

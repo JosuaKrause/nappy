@@ -4,7 +4,7 @@ extends Resource
 ##
 ## A `MAP` row in every other respect — it is a place, on a tile, with a body and a field, and the
 ## whole plan is stated against the day's corridor exactly as it would have been at dawn. What moves
-## is the moment: a one-shot is planned with no position (`EventScheduler._place_one_shots`), a
+## is the moment: a one-shot is planned with no position (`DawnOneShots`), a
 ## recurring row is drawn at a location as any other and handed to her walk with no position
 ## (`LocationDraw.draw_all()`), and
 ## `EventDirector.site_what_is_on_her_way()` puts it on a tile of its own ground ahead of her (a

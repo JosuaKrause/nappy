@@ -116,7 +116,7 @@ func day_seed() -> int:
 ## phases off a single sequence and anything that changes how much an earlier phase draws moves
 ## everything after it — and two things change between attempts by design:
 ##
-## - `EventScheduler._place_one_shots` skips a one-shot the run has already spent. Skipping it
+## - `DawnOneShots` skips a one-shot the run has already spent. Skipping it
 ##   *before* drawing its `randf()` would start every later phase's draws one value earlier on the
 ##   second attempt and produce a different city's worth of events.
 ## - `DawnScars` prepends what the run has burnt down, and every scar is one

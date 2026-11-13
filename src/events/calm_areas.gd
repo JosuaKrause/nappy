@@ -96,7 +96,7 @@ func unused() -> Array[Vector2i]:
 ## events there!")* A placement rule rather than a repair: the events go somewhere else instead,
 ## which is the **city** skill's *checked before they are accepted, never repaired afterwards*.
 ##
-## The areas she *has* used are not in it: `EventScheduler._spoil_the_parks_she_used` is aimed at
+## The areas she *has* used are not in it: `DawnSpoilers` is aimed at
 ## exactly those, and this rule would otherwise cancel it. An `AMBIENT` row and a scar are not
 ## placed through the catalogue's judge, so neither is refused by it, which is what keeps a park
 ## contested rather than sterile.

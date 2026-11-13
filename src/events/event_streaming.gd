@@ -133,7 +133,7 @@ func stream_in(plan: EventPlan) -> void:
 	# back past a burnt-out shell must not re-report the fire that made it.
 	plan.live = _spawner.create(plan.def, plan.position, plan.path, first_time, plan.facing)
 	# **A set piece the day owed her walk is spent here rather than at dawn**, because here is where it
-	# becomes something that happened — see `EventScheduler._place_one_shots`. The list is the one
+	# becomes something that happened — see `DawnOneShots`. The list is the one
 	# `start_day` was handed, which in a played game is `world.run.attempt_spend.consumed_one_shots`
 	# and in a rig is the rig's own.
 	if first_time and plan.def.on_her_way != null and plan.def.kind == GameEnums.EventKind.ONE_SHOT \

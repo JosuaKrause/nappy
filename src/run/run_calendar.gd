@@ -330,7 +330,7 @@ func earned_good_ending() -> bool:
 ##
 ## **Restored rather than counted back**: the step lists are what the next attempt's planning
 ## reads (`ResistanceSteps.for_day()` decides what is on offer from them,
-## `EventScheduler._place_one_shots` skips a consumed row, `build_day` stands a permanent body
+## `DawnOneShots` skips a consumed row, `build_day` stands a permanent body
 ## on every scar), so putting the photograph back is the whole of it, and the retry meets the
 ## same mark again.
 ##

@@ -147,7 +147,7 @@ Four exemptions, each written down in `docs/EVENTS.md`, "Solid things are solid"
 too — several bodies wheeling inside one disc have no silhouette to be half of, and being walked into
 is the event). `tests/test_events_solid.gd` requires everything else to have one.
 
-**A body is a route cost, not a closure.** `EventScheduler.OBSTRUCTION_A_PARK_CAN_HOLD` is the
+**A body is a route cost, not a closure.** `DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD` is the
 `obstructs_radius` a spoiler may carry and still count as something a park can hold — a body you can
 walk around does not close a park; one you have to route around does. **If a rule tests
 `obstructs_radius > 0`, ask whether it means *has a body* or *closes ground*.**

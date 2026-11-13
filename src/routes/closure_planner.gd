@@ -279,8 +279,8 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 
 ## Which of the calm areas she has used this act (`spent`, most recent first) are taken off today's
 ## route tree: the tree neither grows a branch to one nor runs a route through it, though the
-## ground stays calm and walkable — she is stopped by what `EventScheduler.
-## _spoil_the_parks_she_used` places there, not by the ground itself. *(PLAYTEST-140, statement 8:
+## ground stays calm and walkable — she is stopped by what `DawnSpoilers`
+## places there, not by the ground itself. *(PLAYTEST-140, statement 8:
 ## "a used park is shut by the events placed in it, as before... and no route of the day goes
 ## through it".)* Called by `CityMap.repaint()`, before anything grows the day's tree, so the tree,
 ## the region plan and the street closures are all planned around what this excludes.
@@ -300,7 +300,7 @@ static func _queue_walkable_neighbours(map: CityMap, tile: Vector2i, visited: Di
 ##
 ## `protected` is never excluded: day 12's park, whose swing is the day's task. An area that is not
 ## calm today (requisitioned since, or never calm) is not in `map.calm_blocks` and is passed over.
-## A refused area is still one she has used, so `EventScheduler._spoil_the_parks_she_used` spoils it
+## A refused area is still one she has used, so `DawnSpoilers` spoils it
 ## — which every accepted area not chosen as `CityMap.fenced_park` also gets, since exclusion from
 ## the tree is the only thing accepting an area here actually does.
 static func calm_to_shut(map: CityMap, spent: Array[Vector2i],

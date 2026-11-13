@@ -10,7 +10,7 @@ extends DawnPhase
 ##
 ## **The phase places into the day's locations** (`DawnContext.locations()`, laid out off the
 ## walk's corridor every day), before the dawn draw fills the rest
-## (`EventScheduler._draw_the_locations()`).
+## (`DawnDraw`).
 ##
 ## **What a section is offered, and what close by is, are the day's**: `RuledRoadblockGround`
 ## stands the roadblock where it fits in the section and asks today's placement rules of it
@@ -21,7 +21,7 @@ extends DawnPhase
 ##
 ## **What it does not promise.** Close by is measured over the ground as it stands when this
 ## runs: the scripted rows, the one-shots, the spoilers and the dawn draw after it shut more.
-## `EventScheduler._count_what_is_left_uncovered()` writes to the run log how many route tiles
+## `DawnRoadblockCount` writes to the run log how many route tiles
 ## have none as the day finally stands.
 ##
 ## **Outside the bags and on a stream of its own** (`RoadblockPhase.SALT`): the dawn draw after

@@ -1,21 +1,12 @@
 @warning_ignore_start("untyped_declaration", "unsafe_method_access")
 class_name EventScheduler
 extends RefCounted
-## Builds one day's event set from the run seed and the day index. See docs/EVENTS.md.
+## Plans one day's event set: `build_day()` runs the dawn's phases over the dawn's context.
+## See docs/EVENTS.md.
 ##
 ## Deterministic: the same seed and day always produce the same plan, which is what lets a
 ## player learn a run. Nothing here touches the global RNG.
 
-## The rate a source has to beat before it is counted as denying the calm ground near it —
-## `EventScheduler._denial_radius`, and `EventCatalogue`'s own reasoning for the one ambient row
-## that stands in a park.
-##
-## **Its own number rather than the calm ground's live decay, and the decoupling is the point.**
-## Read off the decay, every rise in the walking rate would quietly admit louder rows beside parks:
-## the pram settling faster is a statement about the pram, and *which events may stand next to a
-## park* is a statement about the parks. Tying the two put the second decision inside the first,
-## where nobody making it would see it.
-const CALM_ZONE_DENIAL_RATE := 7.7
 ## How many times over a tile on the day's routes is offered to a **friction** placement.
 ##
 ## *"Benign blockers go on the route… to make it more challenging / force the player to think their
@@ -76,33 +67,6 @@ const EVENT_WALL_GAP_WEIGHT := 6
 ## for — she has strayed one turning and it is expensive — and a lethal row wants the ground beyond
 ## it. See `RowGround._times_for_role()` and `WALL_DEEP_WEIGHT`.
 const EVENT_WALL_RIM_WEIGHT := 4
-## The widest body an event may have and still be allowed to stand on calm ground.
-##
-## A spoiler has to make the park loud rather than take the ground away. **Refusing *anything* with
-## a body is the reading to avoid**: once every stationary row is solid, a person is 18px across and
-## that rule empties the pool, so nothing can be put in a park at all.
-##
-## So it is stated as what it means. A body you can walk around does not close a 704px lot; one you
-## have to route around does. Sized to sit above a person and well under `construction`, which is
-## exactly the thing it is there to keep out.
-const OBSTRUCTION_A_PARK_CAN_HOLD := 16.0
-## The most things the day will put in the park she used yesterday.
-##
-## **One spoiler is three percent of a four-block calm zone** — see `EventScheduler._denial_radius`
-## for the arithmetic — so a single event does not spoil a park, it stands in one. A cap rather than
-## a target: the grid asks for as many as it takes to cover the ground and this is where it stops
-## asking, because the events come from the day's own pool and a park with a dozen things in it is
-## not a spoiled park, it is a different kind of city.
-##
-## Nine is a 3x3 grid, and it is measured: over twenty lots and five seeds it denies **99%** of a
-## four-block calm zone and 91% of a one-block courtyard, against 8-12% for the same lot on an
-## ordinary day. A 3x2 grid leaves 15% of the biggest zones standing, which is a hundred tiles of
-## usable park — enough to settle in, so the spoiling would not have happened.
-##
-## A small lot never asks for nine: the grid is sized from what one of them actually denies, so a
-## 46-tile courtyard takes one or two and this cap is never reached. What it costs is a day with
-## nine more events in it, all of them inside the one lot she is being asked not to use.
-const SPOILERS_TO_DENY_A_PARK := 9
 ## How many times over ground two or more turnings off the corridor is offered to a **lethal** wall,
 ## against the rim.
 ##
@@ -184,7 +148,7 @@ const WALL_WORTH_OF_COST := Tuning.METER_MAX * 0.48
 ## `EventCatalogue.heated()`, so nothing in this file tests for it.
 ##
 ## **Plans into the context and answers nothing**: the day's plan is `DawnContext.events()`, written
-## only by the dawn's phases (`_phases()`) and the passes below, and the locations and the ground
+## only by the dawn's phases (`_phases()`), and the locations and the ground
 ## the dawn built are read beside it (`DawnContext.locations()`, `DawnContext.ground()`).
 ##
 ## **A day whose target stands in a calm area owes her a second one** — day 12's swing, in the
@@ -200,13 +164,6 @@ static func build_day(context: DawnContext) -> void:
 		return
 	for phase in _phases():
 		phase.run(context)
-	_place_scripted(context)
-	_place_one_shots(context)
-	_spoil_the_parks_she_used(context)
-	_owe_the_moments(context)
-	_draw_the_locations(context)
-	_ensure_the_run_is_taught(context)
-	_count_what_is_left_uncovered(context)
 
 ## **The dawn's phases, in the order they run** (`DawnPhase`, one class each under
 ## `dawn_phases/`), each handed the day's context and each on its own stream off the day's seed
@@ -216,7 +173,11 @@ static func build_day(context: DawnContext) -> void:
 ## own"): the ambient rows, the masts and the region wall's bodies stand where their planners put
 ## them and each holds its location, so the draw passes over it; the run's scars stand between
 ## them. Then the calm area the day keeps clean is decided, before the first judge asks the
-## day's rules; then day 13's roadblocks.
+## day's rules; then day 13's roadblocks. Then the rows the day places for a reason of its own (the
+## scripted rows), the one-shots owed to her walk, the spoilers in the parks she used, the moments
+## she is owed and the draw of every open location from its view's bag; the run lesson is added
+## after the draw, where the day owes no pursuit, and the last phase counts for the run log what
+## day 13's roadblocks leave uncovered.
 static func _phases() -> Array[DawnPhase]:
 	return [
 		DawnAmbient.new(),
@@ -225,6 +186,13 @@ static func _phases() -> Array[DawnPhase]:
 		DawnWallBodies.new(),
 		DawnCalmKeptClean.new(),
 		DawnRoadblocks.new(),
+		DawnScripted.new(),
+		DawnOneShots.new(),
+		DawnSpoilers.new(),
+		DawnMoments.new(),
+		DawnDraw.new(),
+		DawnLesson.new(),
+		DawnRoadblockCount.new(),
 	]
 
 ## **Whether `section` is on the main road**, where nothing that closes a street stands outside the
@@ -258,50 +226,10 @@ static func across_the_section(def: EventDef, builder: PlanBuilder, map: CityMap
 		return null
 	return builder.build(def, best, rng)
 
-## **How many of the day's route tiles have none of `def`'s rows close by as the day stands**,
-## written to the run log: once every pass is done, each placed `def` the day stands
-## (not a region door's body or the wall's own) is read as close by every route tile its paths
-## reach within `RuledRoadblockGround.TASK_ROW_CLOSE_BY` over the day's whole obstruction
-## (`DayReach.shut_by()`), and the route tiles it leaves are counted. The roadblock phase
-## (`DawnRoadblocks`) aims at none,
-## but a route tile no section within reach took one for and ground the later passes shut both
-## leave some. A
-## count and nothing more: nothing is placed or moved here. Nothing on a day with no `def`
-## (`DawnContext.roadblock_row()`), none written to (`DawnContext.is_traced()`) or no corridor.
-static func _count_what_is_left_uncovered(context: DawnContext) -> void:
-	var def := context.roadblock_row()
-	var corridor := context.corridor()
-	if def == null or not context.is_traced() or corridor == null:
-		return
-	var map := context.map()
-	var events := context.events()
-	var down := events.placements().duplicate()
-	down.append_array(events.standing())
-	var shut := DayReach.shut_by(map, down)
-	var covered := {}
-	for plan in down:
-		if plan.row_id() != def.id or not plan.is_placed() or plan.is_door() \
-				or plan.is_in_the_wall():
-			continue
-		for reached: Vector2i in RuledRoadblockGround.close_by(map, shut, plan):
-			covered[reached] = true
-	var tiles := 0
-	var left := 0
-	for y in map.size.y:
-		for x in map.size.x:
-			var tile := Vector2i(x, y)
-			if not corridor.carries_a_route(tile) or not map.is_walkable(tile) or shut.has(tile):
-				continue
-			tiles += 1
-			if not covered.has(tile):
-				left += 1
-	context.note("plan", "%d of %d route tiles have no %s within %.0fpx along her paths as the day stands"
-			% [left, tiles, def.id, RuledRoadblockGround.TASK_ROW_CLOSE_BY])
-
 ## **`plan`'s row, unplaced, for her walk to site** (`EventDirector.site_what_is_on_her_way()`):
 ## what a recurring row handed to her walk (`EventDef.is_handed_to_her_walk()`, the poster crew)
 ## becomes as a location draws it (`LocationDraw`), so no row drawn after it is spaced from a place
-## it never stands at. A one-shot owed to her walk is planned unplaced by `_place_one_shots`.
+## it never stands at. A one-shot owed to her walk is planned unplaced by `DawnOneShots`.
 static func owed_to_her_walk(plan: EventPlan) -> EventPlan:
 	var owed := EventPlan.new(plan.def, Vector2.INF)
 	owed.role = plan.role
@@ -550,362 +478,6 @@ static func role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 static func _is_a_wall_by_cost(def: EventDef) -> bool:
 	return def.hard_fail or def.walk_through_cost() >= WALL_WORTH_OF_COST \
 			or def.reaches_the_far_lane()
-
-## The day the run is taught cannot leave the lesson to a weighted roll.
-##
-## `EventDirector._teach_the_run` moves a pursuit to the head of the owed list on `RUN_TAUGHT_DAY`,
-## and if the day happened to owe none there is nothing to teach. `charging_dog` is weight 1.4 of
-## a day-3 pool, so whole day 3s with none of them exist — and a player can reach act II never
-## having been shown the one control the game will later require.
-##
-## It is added **outside** the day's draws rather than competing in them, and that is the exception
-## being made honestly: everywhere else in this file the density is the bags', and a lesson that only
-## happens when the dice agree is not a lesson. One event on one day of fourteen.
-static func _ensure_the_run_is_taught(context: DawnContext) -> void:
-	var day := context.day()
-	var events := context.events()
-	if day != Tuning.RUN_TAUGHT_DAY or events.has_a_pursuit():
-		return
-	for def in EventCatalogue.available_on(day, context.heat()):
-		if def.pursuit == null or def.spawn_mode != EventDef.SpawnMode.AHEAD_OF_PLAYER:
-			continue
-		events.add(EventPlan.new(def, Vector2.INF))
-		context.note("plan", "day %d owes no pursuit, so the run lesson is added: %s"
-				% [day, def.id])
-		return
-
-# ------------------------------------------------------- the city remembers ---
-
-## Puts something on a calm area she has already settled in this act.
-##
-## Not because repetition is boring, but because **the game's only verb stops being a decision on
-## day two**: a player who finds a good park on day 1 has no question left to answer, and route
-## planning is the whole game. It is the same problem as a calm area being a lap rather than a
-## route, one scale up: that one is about the destination, this is about *which* destination.
-##
-## **And the day's route tree plans around the same area** (`ClosurePlanner.calm_to_shut()`, checked
-## before it is accepted the way a street closure is): the tree neither grows a branch to a used area
-## it can spare nor routes through it, so a spoiler standing here is never somewhere the tree was
-## going to send her regardless. *(PLAYTEST-140, statement 8: "a used park is shut by the events
-## placed in it, as before... and no route of the day goes through it".)*
-##
-## **One used area, at most once a run, is fenced instead** — `CityMap.fenced_park`, the first used
-## area whose exclusion the guarantees allow on a day in act III or later (`Tuning.ACT_START_DAYS`),
-## fenced for the rest of that act and never chosen again. *(PLAYTEST-140: "doing it for one park,
-## sure, more towards the later stages of the game once but not for regular".)* It is never in
-## `map.calm_blocks`, so it is skipped here by the same test that skips anywhere no longer calm —
-## its fence is the whole of what it shows, and a spoiler behind it would be noise on the pavement
-## beside a park nobody can enter.
-##
-## Three things keep it from being a punishment for playing well, and all three are load-bearing:
-##
-## - **It spoils with events, not by taking the ground away.** The park is still there, still
-##   calm ground, still walkable. Things are standing in it, and she can see that from
-##   the street and decide. An event that could seal or end the day is never chosen for this.
-## - **One area is kept clean by construction** (`DawnCalmKeptClean`): the spoilers pass over it and
-##   its ground joins what nothing may reach, so the day it creates is still winnable and the
-##   alternative is still real rather than nominal.
-## - **They are ordinary events, placed like any other.** They have no count of their own
-##   and are drawn from the same day's pool, so day 2 is not "day 1 plus a punishment", it is a day
-##   whose noise happens to be somewhere she was counting on.
-##
-## **It has to cover the ground, not stand in it**, and one event does not.
-##
-## What denies calm ground is holding the meter above `EXCITEMENT_CALM_THRESHOLD` against
-## `CALM_ZONE_DENIAL_RATE`, 7.7/s — so a busker at intensity 19.3 has a *useful* radius of
-## 157px whatever his 190px reach says, in a lot 704px across. That is a small share of one, and a
-## day that rolls one spoiler for the block she used is still a day she settles in that same block.
-## **The rate is fixed and the intensity is not**, so raising a row's intensity is the one thing
-## that widens this: the busker's own reach grew by half when it was raised to clear the ground it
-## stands on.
-##
-## So a spoiler is a **crowd**: one thing per cell of a grid laid over the calm ground, sized from
-## what each of them can actually deny, capped by `SPOILERS_TO_DENY_A_PARK`. Each cell rolls its own
-## def rather than repeating one — the fiction is that a park which is busy today is busy with
-## several different things, and nine copies of one sprite in a field read as a duplicate, which is
-## exactly what the spacing rule at `StreetInvalidation.room_around` prevents everywhere else.
-##
-## **Every area she has used this act, not just last night.** One night's memory makes day 2 a fresh
-## decision and day 3 the same decision as day 1; an act's memory is what turns *find a different
-## park* into *find your way around the city*. The city forgets at the act boundary, which is the
-## only good news a run ever gets.
-##
-## One is always left alone whatever the memory says: the guarantee that a day is winnable outranks
-## the guarantee that it is a fresh decision, and `MIN_CALM_BLOCKS` is sized so that the two do not
-## have to fight — an act's worth of days plus one in reserve.
-##
-## Silent for anywhere she did not settle, that is no longer calm, or that is `CityMap.fenced_park`
-## today — the last because it is left out of `map.calm_blocks`, and said again here so the reason
-## is next to the loop. A merely-`shut_calm` area is not skipped: it is still calm ground, and this
-## is exactly what stands in it.
-static func _spoil_the_parks_she_used(context: DawnContext) -> void:
-	var calm := context.calm()
-	var rng := context.stream(3)
-	var blocks := calm.blocks()
-	var spoilable := blocks.size() - 1
-	for block in calm.used():
-		if spoilable <= 0:
-			return
-		if block.x >= 0 and block in blocks and block != context.kept_clean():
-			spoilable -= 1
-			_spoil_one_park(context, rng, block)
-
-static func _spoil_one_park(context: DawnContext, rng: RandomNumberGenerator,
-		block: Vector2i) -> void:
-	var map := context.map()
-	var events := context.events()
-	var calm := context.calm()
-	var lot := calm.rect_of(block)
-	var open: Array[Vector2i] = []
-	for tile in map.rect_tiles(lot):
-		if not map.is_closed(tile):
-			open.append(tile)
-	if open.is_empty():
-		return
-
-	var ground := calm.ground_of(block)
-	var pool := _things_to_put_in_a_park(context.day(), ground, context.heat())
-	if pool.is_empty():
-		return
-
-	var placed: Array[String] = []
-	var cells := _spoiling_grid(ground, pool)
-	for cell in cells:
-		var def := _pick_by_what_it_denies(pool, rng)
-		# Snapped to the nearest open tile of the lot, so nothing lands on a closed street or
-		# outside the calm ground the cell was measured from.
-		var at := map.tile_to_world(_nearest_of(open, map.world_to_tile(cell)))
-		var plan := EventPlan.new(def, at)
-		# A body on a tile a route runs along stands beside the route instead, in its own cell:
-		# the park is shut by what is placed in it (PLAYTEST-140 8), so a cell keeps its spoiler.
-		if not context.keeps_the_routes(plan):
-			plan = _beside_the_routes(def, cell, cells, open, context)
-			if plan == null:
-				continue
-		events.add(plan)
-		placed.append(def.id)
-	if placed.is_empty():
-		return
-	context.note("roll", "%s in the park she used yesterday, %s"
-			% [", ".join(placed), RunTrace.tile(block)])
-
-## **`def` stood on the open tile of `cell`'s own ground nearest its centre that leaves the day's
-## routes their ground** (`DawnContext.keeps_the_routes()`), or null where every tile of the cell
-## is refused. A spoiler whose first tile puts its body on a route stands beside the route rather
-## than not at all, since a used park the day could not shut is shut by its spoilers alone
-## (PLAYTEST-140 8: "a used park is shut by the events placed in it, as before"). The tiles are
-## asked in order of distance from the cell's centre, so the body is checked before it is
-## accepted and nothing is repaired after. A tile is the cell's own when no other cell of the grid
-## (`cells`) has a centre nearer it, which keeps the spoilers spread as the grid spreads them. A
-## route is a chain of two-tile cells and a grid cell is several times wider, so only a park the
-## routes fill leaves a cell no such tile.
-static func _beside_the_routes(def: EventDef, cell: Vector2, cells: Array[Vector2],
-		open: Array[Vector2i], context: DawnContext) -> EventPlan:
-	var map := context.map()
-	var centre := map.world_to_tile(cell)
-	var order := open.duplicate()
-	# Nearest first, and the same order on every run: ties go by row, then column.
-	order.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
-		var to_a := (a - centre).length_squared()
-		var to_b := (b - centre).length_squared()
-		if to_a != to_b:
-			return to_a < to_b
-		return a.y < b.y if a.y != b.y else a.x < b.x)
-	for tile: Vector2i in order:
-		var at := map.tile_to_world(tile)
-		if not _is_nearest_to(cell, at, cells):
-			continue
-		var plan := EventPlan.new(def, at)
-		if context.keeps_the_routes(plan):
-			return plan
-	return null
-
-## Whether no point of `cells` is nearer `at` than `cell` is.
-static func _is_nearest_to(cell: Vector2, at: Vector2, cells: Array[Vector2]) -> bool:
-	var own := at.distance_squared_to(cell)
-	for other in cells:
-		if at.distance_squared_to(other) < own:
-			return false
-	return true
-
-## Rolls one of the pool, weighted by how much ground it can actually take.
-##
-## Everywhere else in the scheduler a def's `weight` is how *common* it is, which is a statement
-## about a city. Here the job is covering a lot, and what a row denies goes as the square of its
-## reach — a busker covers several times the ground a market stall does — so the roll is by area
-## as well as by weight, and the quiet rows become the garnish on a spoiled park rather than half
-## of it. It stays a roll rather than becoming "always the
-## loudest" for the reason the mix exists at all: a park that is busy today is busy with several
-## different things, and one repeated sprite reads as a duplicated sprite.
-static func _pick_by_what_it_denies(defs: Array[EventDef], rng: RandomNumberGenerator) -> EventDef:
-	var weights: Array[float] = []
-	var total := 0.0
-	for def in defs:
-		var reach := _denial_radius(def)
-		var weight := def.weight * reach * reach
-		weights.append(weight)
-		total += weight
-	var roll := rng.randf() * total
-	for i in defs.size():
-		roll -= weights[i]
-		if roll <= 0.0:
-			return defs[i]
-	return defs[defs.size() - 1]
-
-## The points a spoiler goes at: a grid over the calm ground, spaced by what one of them denies.
-##
-## The spacing is the **average** denial radius of the pool rather than any one row's, because which
-## def lands in which cell is a roll and the grid has to be laid out before the rolls happen.
-static func _spoiling_grid(ground: Rect2, pool: Array[EventDef]) -> Array[Vector2]:
-	var reach := 0.0
-	for def in pool:
-		reach += _denial_radius(def)
-	reach = maxf(reach / float(pool.size()), float(Tuning.TILE_SIZE))
-
-	# Cells wide enough that two neighbours' fields just meet, then thinned until the cap is met:
-	# a lot too big to be covered by `SPOILERS_TO_DENY_A_PARK` things is covered as evenly as that
-	# many can manage rather than densely in one corner.
-	var columns := maxi(1, ceili(ground.size.x / (reach * 2.0)))
-	var rows := maxi(1, ceili(ground.size.y / (reach * 2.0)))
-	while columns * rows > SPOILERS_TO_DENY_A_PARK:
-		if columns >= rows:
-			columns -= 1
-		else:
-			rows -= 1
-
-	var points: Array[Vector2] = []
-	for row in rows:
-		for column in columns:
-			points.append(ground.position + Vector2(
-					ground.size.x * (column + 0.5) / float(columns),
-					ground.size.y * (row + 0.5) / float(rows)))
-	return points
-
-## How far from a source calm ground stops being usable.
-##
-## **Not the outer radius**, which is where it stops reaching at all. Anywhere a source emits less
-## than `CALM_ZONE_DENIAL_RATE` (7.7/s) is somewhere she can still settle — and for every
-## act I row that is most of its own field. Getting this wrong is how one busker was ever thought
-## to spoil a park.
-##
-## **The rate is its own constant rather than the calm ground's live decay**, because *which rows
-## may stand beside a park* is a decision about the parks and not about how fast the pram settles.
-## Read off the decay, every rise in the walking rate would admit louder rows here as a side
-## effect of a change nobody made about parks.
-##
-## **The zero case is not the line rules' zero case.** `EventDef.reach_above()` answers nothing at all for a
-## row quieter than the rate it is asked about, which is right there — ground a walk nets the meter
-## down in is not denied — and wrong here: a source she is standing on top of keeps her awake
-## whatever its rate does further out, so the floor is its own `inner_radius`.
-static func _denial_radius(def: EventDef) -> float:
-	return maxf(def.inner_radius, def.reach_above(CALM_ZONE_DENIAL_RATE))
-
-static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
-	var best := tiles[0]
-	var best_distance := INF
-	for tile in tiles:
-		var distance := Vector2(tile - to).length_squared()
-		if distance < best_distance:
-			best_distance = distance
-			best = tile
-	return best
-
-## The things that may be put in the park she used yesterday.
-##
-## Deliberately narrow: nothing lethal, nothing that closes the ground, nothing mobile. A spoiled
-## park has to be a park she can *see* is spoiled and walk away from — an abduction sitting in it
-## would be a punishment for having settled there, and a barricade would be the ground taken
-## away rather than made noisy, which is the thing this rule promises not to do.
-##
-## **The body test is a width, not `obstructs_radius > 0`.** Once everything that stands still has a
-## body the two stop meaning the same thing: a busker is 18px across in a lot 704px wide, so he is
-## loud and he is walked around, which is the whole job. `OBSTRUCTION_A_PARK_CAN_HOLD` is where that
-## stops being true.
-##
-## **And the allowance depends on the ground.** A body that is nothing in a four-block calm zone is
-## a wall across a four-tile courtyard, and a fixed number cannot be both — so it is a sixteenth of
-## the shortest side of the calm ground, floored at that constant. That is what lets a market take
-## over a whole park and keeps it out of a back yard.
-##
-## **And it has to stay where it was put.** A row handed to her walk
-## (`EventDef.is_handed_to_her_walk()`, the sidewalk `poster_crew`) stands where her walk sites it,
-## never where the dawn would put it, so a park it was meant to spoil would stand empty, against
-## PLAYTEST-140 8 (a used park is shut by the events placed in it). None is offered.
-static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> Array[EventDef]:
-	var allowed := maxf(OBSTRUCTION_A_PARK_CAN_HOLD,
-			minf(ground.size.x, ground.size.y) / 16.0)
-	var suitable: Array[EventDef] = []
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
-		if def.hard_fail or def.mobile:
-			continue
-		if def.obstructs_radius > allowed:
-			continue
-		if def.spawn_mode != EventDef.SpawnMode.MAP:
-			continue
-		if def.is_handed_to_her_walk():
-			continue
-		suitable.append(def)
-	return suitable
-
-# ----------------------------------------------------------------- placement ---
-
-static func _place_scripted(context: DawnContext) -> void:
-	var day := context.day()
-	var map := context.map()
-	var events := context.events()
-	var ground := context.ground()
-	var phase_ground := RuledLocationGround.new(day, context.day_seed(), map, events,
-			context.corridor(), LocationFit.new(day, map, context.builder(), ground),
-			context.rules(), ground)
-	var weigh := func(def: EventDef, location: Location) -> float:
-		return _weight_in(def, location, day, map, ground)
-	var phase := ScriptedPhase.new(context.locations(), phase_ground, weigh)
-	var rng := context.stream(1)
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day, context.heat()):
-		# A row sited while she walks is owed here with no position, as every such row is.
-		if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
-			events.add(EventPlan.new(def, Vector2.INF))
-			continue
-		phase.place(def.for_day(day), rng)
-
-## How strongly `def`'s dawn phase draws `location`: how many times the day's ground offers the row,
-## placed for its role, each tile of the location it may stand on
-## (`RowGround.offers_for_role()`, whose role weights keep a wall off the route and draw friction
-## onto it), summed; 0 where it may stand on none.
-static func _weight_in(def: EventDef, location: Location, day: int, map: CityMap,
-		ground: RowGround) -> float:
-	var by_tile := ground.offers_for_role(def, role_for(def, day))
-	var weight := 0
-	var rect := location.tiles()
-	for y in range(rect.position.y, rect.end.y):
-		for x in range(rect.position.x, rect.end.x):
-			var tile := Vector2i(x, y)
-			if by_tile.has(tile) and location.takes(map.tile_at(tile)):
-				weight += int(by_tile[tile])
-	return float(weight)
-
-static func _place_one_shots(context: DawnContext) -> void:
-	var day := context.day()
-	var events := context.events()
-	var consumed := context.spent_one_shots()
-	# **A one-shot is owed to her walk, never rolled for.** Every one-shot is sited from her walk
-	# (`EventDef.validate()` refuses one that is not): it is the day's authored beat and has to
-	# happen whichever way she goes, so the plan is made here, at dawn, and only its *position* is
-	# left for `EventDirector.site_what_is_on_her_way()` to choose, the same split an
-	# `AHEAD_OF_PLAYER` row is owed and sited under.
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.ONE_SHOT, day, context.heat()):
-		if def.id in consumed:
-			continue
-		var owed := EventPlan.new(def, Vector2.INF)
-		owed.role = role_for(def, day)
-		events.add(owed)
-		# **And it is not consumed here.** It has no position yet, so planning it promises nothing.
-		# It is spent where it becomes real instead — `EventStreaming.stream_in()`. What that buys is
-		# the retry: *"what the run has spent stays spent ... a fire that burnt a block down did
-		# happen"* (`RunCalendar.finish_day`), and a fire that was never lit did not, so a lost day 3
-		# is offered it again.
-		context.note("roll", "one-shot %s: owed to her walk, sited when her heading is clear"
-				% def.id)
 
 # ------------------------------------------------- a placement made after dawn ---
 
@@ -1509,60 +1081,9 @@ class WalkSiting extends RefCounted:
 
 # ------------------------------------------------- the day's locations, from the bags ---
 
-## **Every open location of the day drawn from its view's bag** (`LocationDraw`, inbox #1185 in gentle-owl): the
-## bags (`_view_bags()`) hold every recurring row the catalogue places on the map today, each as many
-## times as its weight in the view (`view_weight()`), and the empty event; the day's ground answers
-## which row is valid where and how much each location weighs it (`RuledLocationGround`). The rows
-## other phases place have no marble: the moments she is owed (`_owe_the_moments()`), and on the day
-## of the roadblock phase its row (`DawnContext.roadblock_row()`), the phase's alone. The draw
-## places into the context's plan.
-static func _draw_the_locations(context: DawnContext) -> void:
-	var day := context.day()
-	var spec := context.spec()
-	var base := context.day_seed()
-	var map := context.map()
-	var beside_the_routes := context.roadblock_row()
-	var rows := {}
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, context.heat()):
-		if def.spawn_mode_on(day) != EventDef.SpawnMode.MAP:
-			continue
-		if beside_the_routes != null and def.id == beside_the_routes.id:
-			continue
-		rows[def.id] = def.for_day(day)
-	var bags := _view_bags(rows, day, spec, base)
-	var judged := RuledLocationGround.new(day, base, map, context.events(), context.corridor(),
-			LocationFit.new(day, map, context.builder(), context.ground()), context.rules(),
-			context.ground())
-	var caps := _caps_of(rows, day, spec, context.stream(CAPS_SALT)) if spec.caps_per_day else {}
-	LocationDraw.new(context.locations(), bags, rows, judged, caps).draw_all(
-			context.stream(LOCATIONS_SALT))
-
-## **How many of each row the day's draw may stand** (`id -> count`): its `EventDef.max_per_day`,
-## and a wall-role row's times `DaySpec.wall_row_share`, so the gatehouse day holds that share of a
-## wall whose cap binds as well as of one whose weight does (`view_weight()` scales the weight). A
-## share of a cap that is not whole is rounded up or down on `rng`, by its fraction, so the day
-## holds the share on average.
-static func _caps_of(rows: Dictionary, day: int, spec: DaySpec,
-		rng: RandomNumberGenerator) -> Dictionary:
-	var caps := {}
-	var ids := rows.keys()
-	ids.sort()
-	for id: String in ids:
-		var def: EventDef = rows[id]
-		var most := float(def.most_in_a_day())
-		if role_for(def, day) == GameEnums.BlockerRole.WALL:
-			most *= spec.wall_row_share
-		caps[id] = floori(most) + (1 if rng.randf() < most - floorf(most) else 0)
-	return caps
-
 ## The phase salt the dawn draw shuffles each street's locations on, and the bags' streams start
 ## from: apart from every other phase's.
 const LOCATIONS_SALT := 6
-## The phase salt the moments she is owed are drawn on.
-const MOMENTS_SALT := 7
-## The phase salt a share of a wall's cap is rounded on (`_caps_of()`).
-const CAPS_SALT := 8
-
 ## **A row's weight in a view's bag**: its own `EventDef.weight` times what the view is to its role,
 ## the offers today's placement made per tile of the view's ground (`RowGround._times_for_role()`'s gradient),
 ## stated per view (inbox #1185 in gentle-owl: "all possible events for that view multiplied by their
@@ -1583,7 +1104,7 @@ const CAPS_SALT := 8
 ## **Every wall-role row's weight is scaled by `wall_share`** (`DaySpec.wall_row_share`), so there
 ## are fewer of them once the region wall stands (azure-puffin 4: "let's loosen the density of the
 ## hard blocking events in that case", and "fewer of all three" to a question that listed the
-## wall-type events; the record bouncy-egret). `_view_bags()` counts the empty marbles against every
+## wall-type events; the record bouncy-egret). `view_bags()` counts the empty marbles against every
 ## wall weighed in full, so the share takes walls away rather than giving their place to the other
 ## rows.
 ##
@@ -1638,7 +1159,7 @@ const FRICTION_VIEW_SCALES := [
 ## weighed in full, so a spec weighing its walls by a share (`DaySpec.wall_row_share`) draws that
 ## share of them and the rest of the day as it was; the scales are fitted on the days as they are
 ## played, the gatehouse day's share included. Each on its own stream off `base`.
-static func _view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> Dictionary:
+static func view_bags(rows: Dictionary, day: int, spec: DaySpec, base: int) -> Dictionary:
 	var bags := {}
 	for view: int in [PlacementView.View.ON_THE_ROUTE, PlacementView.View.ROUTE_ADJACENT,
 			PlacementView.View.OFF_THE_ROUTE]:
@@ -1731,41 +1252,6 @@ const GROUND_WEIGHTS := {
 static func ground_weight(def: EventDef, kind: int) -> float:
 	var weights: Dictionary = GROUND_WEIGHTS.get(def.id, {})
 	return float(weights.get(kind, 1.0))
-
-## **The moments the day owes her** (`AHEAD_OF_PLAYER` and `TOWARD_PLAYER` rows, the cat that bolts
-## across, the cyclist, the loose dog): sited in front of her by the director, on its own clock and
-## from its own bag (`EventDirector`; the orchestrator's reading of fork 9: a moment is not a place),
-## so the day only says how many. `MOMENTS_PER_DAY` of them, as today's placement bought on that day,
-## each a row drawn by weight among today's, at most its `max_per_day` where the spec keeps the caps.
-static func _owe_the_moments(context: DawnContext) -> void:
-	var day := context.day()
-	var events := context.events()
-	var caps := context.spec().caps_per_day
-	var rng := context.stream(MOMENTS_SALT)
-	var rows: Array[EventDef] = []
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, context.heat()):
-		var mode := def.spawn_mode_on(day)
-		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
-			rows.append(def)
-	var owed := {}
-	for _i in int(MOMENTS_PER_DAY[clampi(day, 1, 14) - 1]):
-		var open: Array[EventDef] = []
-		var total := 0.0
-		for def in rows:
-			if not caps or int(owed.get(def.id, 0)) < def.most_in_a_day():
-				open.append(def)
-				total += def.drawn_as_often()
-		if open.is_empty():
-			return
-		var roll := rng.randf() * total
-		var chosen: EventDef = open.back()
-		for def in open:
-			roll -= def.drawn_as_often()
-			if roll <= 0.0:
-				chosen = def
-				break
-		owed[chosen.id] = int(owed.get(chosen.id, 0)) + 1
-		events.add(EventPlan.new(chosen, Vector2.INF))
 
 ## How many moments she is owed on each day (`[day - 1]`), as today's placement bought them before the
 ## bags (`tests/probes/placement_rows.gd` on main, eighteen seeds, rounded). Measured, not derived: a

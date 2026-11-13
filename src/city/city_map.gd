@@ -265,7 +265,7 @@ var closed_tiles: Dictionary:
 ## `repaint()`, before anything grows the day's route tree, from candidates that stay in
 ## `calm_blocks` and stay walkable: **the tree simply never plans a route to or through one**, so a
 ## used area is a place she is not sent rather than a place she cannot reach. She is stopped by what
-## `EventScheduler._spoil_the_parks_she_used` places there, not by the ground.
+## `DawnSpoilers` places there, not by the ground.
 ##
 ## `fenced_park` is the one exception, and it is in this list too (a fenced area is also off the
 ## tree) but carries the extra, physical closure `closed_tiles` and `ParkClosure` give it.
@@ -1511,7 +1511,7 @@ func repaint(state: CityState, trace: RunTrace = null) -> void:
 ## `_fenced_tiles` unconditionally, so the barriers stand every day of the act regardless of whether
 ## it is still in `spent`. **A new fence needs act III or later and nothing chosen yet**: the first
 ## area `calm_to_shut()` accepts is the one the run ever fences, and every other used area — today's
-## and every later day's — is left to `EventScheduler._spoil_the_parks_she_used` instead.
+## and every later day's — is left to `DawnSpoilers` instead.
 func _shut_the_spent_calm(state: CityState, trace: RunTrace = null) -> void:
 	var spent := _spent_for_the_next_repaint
 	_spent_for_the_next_repaint = []

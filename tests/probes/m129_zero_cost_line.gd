@@ -121,7 +121,7 @@ extends RefCounted
 ##
 ## `shut` hands it to the repaint the way `main._start()` does, so it is shut where it can be
 ## (`ClosurePlanner.calm_to_shut()`) and fenced; `spoiled` only tells `EventScheduler.build_day`, so
-## it is filled by the calm-ground pass (`_spoil_the_parks_she_used`) instead — the day a used park
+## it is filled by the calm-ground pass (`DawnSpoilers`) instead — the day a used park
 ## gets when its shutting is refused.
 ##
 ## # Sizing

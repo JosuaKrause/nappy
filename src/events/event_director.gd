@@ -405,7 +405,7 @@ func owed() -> int:
 ## Fills `_route` with every row the director sites on `day` — recurring, available, and
 ## `AHEAD_OF_PLAYER` or `TOWARD_PLAYER` that day — in proportion to its weight. **How many she is owed
 ## is the day's** (`EventScheduler.MOMENTS_PER_DAY`, each drawn by weight under its cap by
-## `EventScheduler._owe_the_moments()`); the bag only decides which row each of those is, in the
+## `DawnMoments`); the bag only decides which row each of those is, in the
 ## order she meets them. *(2026-09-27, asked how far the bags reach, the
 ## player chose the route's events only.)*
 func _fill_the_route_bag(day: int, heat: int, rng: RandomNumberGenerator) -> void:

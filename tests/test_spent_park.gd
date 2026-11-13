@@ -6,8 +6,8 @@ extends RefCounted
 ## later stages of the game once but not for regular".)*
 ##
 ## `ClosurePlanner.calm_to_shut()` decides which used areas come off today's route tree at
-## `CityMap.repaint()`; `RouteTree` plans around all of them; `EventScheduler.
-## _spoil_the_parks_she_used` spoils every one of them except `CityMap.fenced_park`, the one the run
+## `CityMap.repaint()`; `RouteTree` plans around all of them; `DawnSpoilers`
+## spoils every one of them except `CityMap.fenced_park`, the one the run
 ## ever fences (`ClosurePlanner.plan_day` hands `City` its `ParkClosure`). This suite asks all of
 ## that over a sweep of seeds and days, with the used areas an act would actually have, and once
 ## with every calm area used to make the guarantee's refusals happen.
@@ -511,7 +511,7 @@ func _a_body_stands_inside(map: CityMap, events: DayEvents, calm: CalmAreas, blo
 ## **A used area keeps what the spoil pass put in it.** A row handed to her walk
 ## (`EventDef.is_handed_to_her_walk()`) stands where her walk sites it, so a spoiler of that kind
 ## would leave the area it spoiled empty; the spoil pass offers none
-## (`EventScheduler._things_to_put_in_a_park()`). The city is the one where that happened: seed
+## (`DawnSpoilers._things_to_put_in_a_park()`). The city is the one where that happened: seed
 ## 61823 on day 14, with the four-tile courtyard at block (3, 2) used yesterday, whose one spoiler
 ## was the sidewalk `poster_crew`.
 func _test_a_used_courtyard_keeps_what_was_put_in_it(t: TestRunner) -> void:

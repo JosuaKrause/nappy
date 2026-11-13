@@ -521,7 +521,7 @@ A park that is always safe would collapse the game into one memorised loop, so a
 already settled in this act is **spoiled with events**, not by taking the ground away — the park is
 still there, still calm ground, still walkable, and things are standing in it that she can see from
 the street and decide about. *(PLAYTEST-140, statement 8: "a used park is shut by the events placed
-in it, as before".)* `EventScheduler._spoil_the_parks_she_used` is the mechanism; its measurements
+in it, as before".)* `DawnSpoilers` is the mechanism; its measurements
 are in `docs/EVENTS.md`, "The city remembers where she went".
 
 **And the day's route tree plans around every one of them.** `ClosurePlanner.calm_to_shut()`, called
@@ -650,7 +650,7 @@ question below:
   afterwards.
 - `DawnCalmKeptClean` covers the day she has used every calm area there is: the one
   area the spoilers pass over joins the ground nothing may reach.
-- `_spoil_the_parks_she_used` spoils every area she has already settled in **this act** — what stops
+- `DawnSpoilers` spoils every area she has already settled in **this act** — what stops
   her going back to the same bench every day — except the currently active `CityMap.fenced_park`,
   the run's single physical fence, which stands for the remainder of its chosen act.
 - Every body the day places, the scars and the spoilers included, is judged by the rules that keep

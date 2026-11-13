@@ -214,8 +214,9 @@ src/
 	                      under a raised boom, the crossing's warning and the guard it sets on her;
 	                      what a door does to her it says as an intent the manager carries out
 	event_catalogue.gd    every event, defined in code
-	event_scheduler.gd    builds a day's event set from the dawn's context: the day's locations drawn from
-	                      a bag per view, or the escape city's streets from its marble bag
+	event_scheduler.gd    the dawn as an ordered list of phases over the dawn's context, or the escape
+	                      city's streets from its marble bag; a row's role, the walk's ground and
+	                      the view bags
 	dawn_context.gd       one dawn in one object: what the day's planner hands it and what the dawn
 	                      builds once, the corridor, the day's events, locations, ground and rules;
 	                      handed to every phase, and what a phase asks it to record or judge: a fixed
@@ -276,7 +277,9 @@ src/
 	                      `RuledRoadblockGround`
 	dawn_phases/          the dawn's phases, one class each with run(context), handed the dawn's
 	                      context: the ambient rows, the scars, the masts, the wall's bodies, the calm
-	                      area kept clean, the roadblocks; and the roadblock phase's ruled ground
+	                      area kept clean, the roadblocks, the scripted rows, the one-shots, the park
+	                      spoilers, the moments, the dawn draw, the run lesson, the roadblock count;
+	                      and the roadblock phase's ruled ground
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
 	                       junction corners, squares and the main road; a pure function of the map
 	event_manager.gd      a day's events as the rest of the game sees them: handed the world, the
