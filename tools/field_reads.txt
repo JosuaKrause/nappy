@@ -197,10 +197,10 @@ src/dev/scene_recipe_runtime.gd main_road
 src/dev/scene_recipe_runtime.gd network
 src/dev/scene_recipe_runtime.gd recipe_bounds
 src/events/calm_areas.gd calm_blocks
+src/events/dawn_phases/dawn_ambient.gd playgrounds
 src/events/day_planner.gd home_block
 src/events/day_planner.gd network
 src/events/event_scheduler.gd closed_tiles
-src/events/event_scheduler.gd playgrounds
 src/events/event_spawner.gd block_plans
 src/events/mast_sites.gd boundary_wall_at_a
 src/events/mast_sites.gd calm_blocks
@@ -303,6 +303,7 @@ src/events/dawn_context.gd holds_the_home_streets
 src/events/dawn_context.gd keeps_the_walk_open
 src/events/dawn_context.gd keeps_unused_calm_clear
 src/events/dawn_context.gd one_notice_at_a_time
+src/events/dawn_phases/dawn_calm_kept_clean.gd keeps_unused_calm_clear
 src/events/day_planner.gd closes_streets
 src/events/day_planner.gd holds_the_home_streets
 src/events/day_planner.gd number
@@ -315,7 +316,6 @@ src/events/event_scheduler.gd bag
 src/events/event_scheduler.gd bag_rows
 src/events/event_scheduler.gd caps_per_day
 src/events/event_scheduler.gd draw
-src/events/event_scheduler.gd keeps_unused_calm_clear
 src/events/event_scheduler.gd wall_row_share
 src/main.gd a_win_leads_into
 src/main.gd daylight_runs_down
@@ -408,6 +408,8 @@ src/events/behaviours/event_notice_run.gd flock_spread
 src/events/behaviours/event_notice_run.gd mobile
 src/events/behaviours/event_route_walk.gd paces
 src/events/behaviours/event_route_walk.gd speed
+src/events/dawn_phases/dawn_ambient.gd ambient_source
+src/events/dawn_phases/dawn_roadblocks.gd id
 src/events/day_events.gd pursuit
 src/events/event_catalogue.gd abduction
 src/events/event_catalogue.gd act_tag
@@ -526,7 +528,6 @@ src/events/event_plan.gd pursuit
 src/events/event_plan.gd repeat_after
 src/events/event_plan.gd repeat_every
 src/events/event_plan.gd role
-src/events/event_scheduler.gd ambient_source
 src/events/event_scheduler.gd hard_fail
 src/events/event_scheduler.gd id
 src/events/event_scheduler.gd inner_radius
@@ -742,6 +743,9 @@ src/dev/scene_recipe_runtime.gd live
 src/dev/scene_recipe_runtime.gd mast_id
 src/dev/scene_recipe_runtime.gd path
 src/dev/scene_recipe_runtime.gd position
+src/events/dawn_phases/dawn_masts.gd mast_id
+src/events/dawn_phases/dawn_masts.gd silenced
+src/events/dawn_phases/dawn_scars.gd permanent
 src/events/day_events.gd def
 src/events/day_planner.gd position
 src/events/event_director.gd def
@@ -756,12 +760,9 @@ src/events/event_manager.gd facing
 src/events/event_manager.gd position
 src/events/event_scheduler.gd def
 src/events/event_scheduler.gd facing
-src/events/event_scheduler.gd mast_id
 src/events/event_scheduler.gd path
-src/events/event_scheduler.gd permanent
 src/events/event_scheduler.gd position
 src/events/event_scheduler.gd role
-src/events/event_scheduler.gd silenced
 src/events/event_spawner.gd def
 src/events/event_spawner.gd live
 src/events/event_streaming.gd age

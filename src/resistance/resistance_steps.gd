@@ -138,7 +138,7 @@ static func all() -> Array[Step]:
 	return _all
 
 ## **The row of `day`'s guarded-band task** (`Step.is_a_guarded_band`: day 13's roadblock), whose
-## copies dawn stands beside her routes (`EventScheduler._place_the_roadblocks()`), or `""` on a
+## copies dawn stands beside her routes (`DawnRoadblocks`), or `""` on a
 ## day with none.
 static func guarded_row_on(day: int) -> String:
 	for step in all():

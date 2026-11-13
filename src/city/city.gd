@@ -272,7 +272,7 @@ const DOOR_TEXTURE := &"props/door"
 const SEALED_DOOR_TEXTURE := &"buildings/home_door_sealed"
 ## `run.attempt_spend.scars` id for the sealed street door, recorded at the doorstep by
 ## `ResistanceHappenings._maybe_raid()` once the raid actually arrives. No `since_day` comparison
-## is needed the way `EventScheduler.SILENCED_MAST` reads one: `_spawn_home()` and `start_day()`'s
+## is needed the way `DawnMasts.SILENCED_MAST` reads one: `_spawn_home()` and `start_day()`'s
 ## `_sync_home_door()` both run after `RunCalendar.begin_day()`'s dawn photograph, so the
 ## scar's mere presence already answers "sealed as of this dawn" for every day after the one it
 ## was added on, and the moment it happens on its own day is `CityFronts.seal_home_door()`'s,

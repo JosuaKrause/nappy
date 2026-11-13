@@ -310,7 +310,7 @@ func _distance_to_sidewalk(map: CityMap, from: Vector2) -> float:
 
 # -------------------------------------------------------------------------- the playground ---
 
-## Every playground this city has, standing exactly at its own centre — where `_place_ambient`
+## Every playground this city has, standing exactly at its own centre — where `DawnAmbient`
 ## puts the ambient source, and so the worst point in the park for it. `_walk_until_asleep` is
 ## `tests/test_balance.gd`'s own rig, duplicated here rather than shared because a probe under
 ## `tests/probes/` is not discovered by anything that could import it as a dependency.

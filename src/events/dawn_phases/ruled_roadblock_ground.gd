@@ -26,7 +26,7 @@ extends RoadblockGround
 ## The widest a task's row is searched for round where she read its mark: a block and a street past
 ## the 576px circle round it (`ResistanceDirector.ROADBLOCK_WIDER_REACH`'s last ring), 1,024px. What
 ## the roadblock phase aims to stand day 13's roadblocks within of every stretch of her routes
-## (`EventScheduler._place_the_roadblocks()`).
+## (`DawnRoadblocks`).
 const TASK_ROW_CLOSE_BY := (Tuning.BLOCK_SIZE * 2.5 + Tuning.STREET_WIDTH * 2.0) * Tuning.TILE_SIZE
 
 var _def: EventDef

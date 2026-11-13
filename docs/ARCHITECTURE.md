@@ -218,7 +218,8 @@ src/
 	                      a bag per view, or the escape city's streets from its marble bag
 	dawn_context.gd       one dawn in one object: what the day's planner hands it and what the dawn
 	                      builds once, the corridor, the day's events, locations, ground and rules;
-	                      handed to every phase
+	                      handed to every phase, and what a phase asks it to record or judge: a fixed
+	                      part's location, a body off the routes
 	event_plan.gd         one placed event's row, position, role and path: what the manager needs to
 	                      spawn one instance
 	plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along or across
@@ -273,7 +274,9 @@ src/
 	roadblock_ground.gd   what the roadblock phase asks of the day: route tiles, a section's roadblock
 	                      if valid, the route tiles one is close by, standing one; the day's own is
 	                      `RuledRoadblockGround`
-	dawn_phases/          ruled_roadblock_ground.gd, the day's own ground as the roadblock phase asks it
+	dawn_phases/          the dawn's phases, one class each with run(context), handed the dawn's
+	                      context: the ambient rows, the scars, the masts, the wall's bodies, the calm
+	                      area kept clean, the roadblocks; and the roadblock phase's ruled ground
 	mast_sites.gd          where the loudspeaker masts stand, by farthest-point sampling over
 	                       junction corners, squares and the main road; a pure function of the map
 	event_manager.gd      a day's events as the rest of the game sees them: handed the world, the

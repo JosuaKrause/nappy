@@ -305,10 +305,10 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 ## a lethal row's field, the region doors' clear ground and the calm she has not used; a mast is
 ## exempt from the three rules that keep a line along her routes (the route junctions, the route
 ## sidewalks and a pacing beat's opening), as the fixed ones are (inbox #684 in coral-lark).
-## Appended to the day's plan under `EventScheduler.added_mast_id()` with its body recorded, it
+## Appended to the day's plan under `DawnMasts.added_mast_id()` with its body recorded, it
 ## streams in like any planned row, broadcasts on the one clock, is silenced by
 ## `EventStreaming.silence_mast()`, counts for `EventStreaming.silence_all_masts()`, and once
-## silenced stands silenced on later days from its scar (`EventScheduler._place_masts()`). Null when no offered tile passes, which leaves day 11 to the
+## silenced stands silenced on later days from its scar (`DawnMasts`). Null when no offered tile passes, which leaves day 11 to the
 ## nearest live mast, or, when no live mast stands at all, with nowhere to go.
 func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> EventPlan:
 	if offered.is_empty():
@@ -322,7 +322,7 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	var plan := siting.among(def, rng, offered)
 	if not plan:
 		return null
-	plan.mast_id = EventScheduler.added_mast_id(plan.position)
+	plan.mast_id = DawnMasts.added_mast_id(plan.position)
 	_streaming.add(plan)
 	return plan
 
@@ -404,7 +404,7 @@ func _put_down_on_her_route(plan: EventPlan, body: Node2D) -> void:
 	# silenced by `EventStreaming.silence_mast()` and counts for
 	# `EventStreaming.silence_all_masts()`.
 	if plan.def.role == EventDef.Role.MAST:
-		plan.mast_id = EventScheduler.added_mast_id(plan.position)
+		plan.mast_id = DawnMasts.added_mast_id(plan.position)
 	_streaming.add(plan)
 	# Where, because nothing else records it: the siting depends on the walk she took.
 	world.trace.note("ahead", "%s is put on her route %.0fpx ahead of her at %s, %s of where she is at %s"
@@ -554,10 +554,10 @@ func site_what_is_on_her_way(delta: float) -> void:
 			continue
 		world.map.release_obstruction(plan.get_instance_id())
 		_spawner.record_the_body(plan.get_instance_id(), plan.def, plan.position, plan.facing)
-		# A mast's id is its foot (`EventScheduler.added_mast_id()`), so a mast moved before it was
+		# A mast's id is its foot (`DawnMasts.added_mast_id()`), so a mast moved before it was
 		# ever in the world is named by where it now stands.
 		if plan.mast_id != "":
-			plan.mast_id = EventScheduler.added_mast_id(plan.position)
+			plan.mast_id = DawnMasts.added_mast_id(plan.position)
 		# Where and why, because nothing else records it: the siting depends on the walk she took
 		# and no seed reproduces it from outside. The same `ahead` entry the director's crossings
 		# write, for the same reason.

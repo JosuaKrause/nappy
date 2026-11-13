@@ -206,7 +206,7 @@ func _test_every_day_keeps_a_park_quiet_enough_to_settle_in(t: TestRunner) -> vo
 
 ## M128: the playground itself costs nothing, or a one-block park with one in it has no ground
 ## left to settle her on — `outer_radius` (150) reaches past half of a 256px block. Standing
-## exactly on the ambient source's own centre, where `EventScheduler._place_ambient` puts it, is
+## exactly on the ambient source's own centre, where `DawnAmbient` puts it, is
 ## the worst point in any park it is in, so if she settles there she settles everywhere else in
 ## the same park too.
 func _test_the_playground_itself_settles_her(t: TestRunner) -> void:

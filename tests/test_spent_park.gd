@@ -443,7 +443,7 @@ func _test_a_never_used_park_is_unaffected(t: TestRunner) -> void:
 
 ## The scheduler's calm-ground pass spoils every used area the tree has taken off the route —
 ## the day still has a clean open calm area, which dawn keeps clean before any spoiler is placed
-## (`EventScheduler._calm_kept_clean`) — and places nothing inside `CityMap.fenced_park`, whose fence is the whole of
+## (`DawnCalmKeptClean`) — and places nothing inside `CityMap.fenced_park`, whose fence is the whole of
 ## what it shows.
 func _test_the_day_spoils_every_shut_area_but_the_fenced_one(t: TestRunner) -> void:
 	var offered := 0
@@ -541,7 +541,7 @@ func _test_a_used_courtyard_keeps_what_was_put_in_it(t: TestRunner) -> void:
 
 ## **With every calm area she could settle in used this act, one is still clean**: the day she has
 ## settled in all of them is the one the calm rule protects nothing on, so dawn keeps one clean by
-## construction before the spoilers are placed (`EventScheduler._calm_kept_clean()`), and the plan
+## construction before the spoilers are placed (`DawnCalmKeptClean`), and the plan
 ## has some counted calm area nothing reaches. Days 5, 9 and 14, the used order the one an act
 ## would have.
 func _test_with_every_area_used_one_stays_clean(t: TestRunner) -> void:

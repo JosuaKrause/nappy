@@ -252,12 +252,12 @@ func mast_foot(mast_id: String) -> Vector2:
 ## arcs and no field, so this sets `EventPlan.silenced` and its live instance's own mirror rather
 ## than finishing it: `EventInstance._finish()` is for something that leaves, and a mast never
 ## does. Returns whether a mast with that id was found. Matches every plan whose `mast_id` is this
-## one — a mast's ordinary broadcast and, on `EventScheduler.CURFEW_ANNOUNCE_DAY`, its curfew announcement
+## one — a mast's ordinary broadcast and, on `DawnMasts.CURFEW_ANNOUNCE_DAY`, its curfew announcement
 ## too, so silencing a mast mid-announcement silences both at once.
 ##
 ## **Run-long, it is a scar.** Day 11's task silences one mast for the rest of the run: the
-## director calls this for today and records `EventScheduler.SILENCED_MAST` at the foot, which
-## `EventScheduler._place_masts()` reads on every later day. The id is `MastSites.Site.id`, stable
+## director calls this for today and records `DawnMasts.SILENCED_MAST` at the foot, which
+## `DawnMasts` reads on every later day. The id is `MastSites.Site.id`, stable
 ## across days, and the foot is its own.
 func silence_mast(mast_id: String) -> bool:
 	var found := false

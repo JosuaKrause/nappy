@@ -23,6 +23,7 @@ extends RefCounted
 const _ALLOWED_FILES := {
 	"res://src/dev/": "developer tooling: rigs, recipes, previews and the dev flags' own messages",
 	"res://src/telemetry/": "the run log's own lines",
+	"res://src/events/dawn_phases/": "the dawn's phases write run-log lines through the context, as the scheduler does",
 	"res://src/autoload/telemetry.gd": "the run log's own lines",
 	"res://src/autoload/game_save.gd": "the save's own log and error lines",
 	"res://src/run/run_calendar.gd": "log notes about nerves and resistance work",

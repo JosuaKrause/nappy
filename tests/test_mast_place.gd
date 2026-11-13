@@ -19,7 +19,7 @@ func run(t: TestRunner) -> void:
 	t.check(not fixed.counts_against_the_line(),
 			"a fixed mast does not count against the line")
 	var added := EventPlan.new(mast, here)
-	added.mast_id = EventScheduler.added_mast_id(here)
+	added.mast_id = DawnMasts.added_mast_id(here)
 	t.check(not added.counts_against_the_line(),
 			"a queued or routed mast, named by its foot, does not count against the line")
 	var shouting := EventPlan.new(yeller, here)

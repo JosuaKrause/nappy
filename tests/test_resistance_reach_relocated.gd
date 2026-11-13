@@ -12,7 +12,7 @@ func run(t: TestRunner) -> void:
 ## mark with no live mast near it). On three cities, day 11 is planned the way a played day is and
 ## its mark read standing on it: where no planned mast stands where her paths reach in the circle,
 ## the task goes to a mast the scheduler has just generated near her (`EventManager.queue_a_mast()`)
-## — a `loudspeaker` plan under `EventScheduler.added_mast_id()`, on the edge of the circle and out
+## — a `loudspeaker` plan under `DawnMasts.added_mast_id()`, on the edge of the circle and out
 ## of her view — or, where the scheduler's acceptance refused all of it, the nearest live mast.
 ## Reaching it silences it and records its scar; day 14's sabotage (`silence_all_masts()`) puts
 ## that very plan out when it is lit again; and the next day's and the last night's masts, planned
@@ -68,7 +68,7 @@ func _test_day_eleven_puts_up_a_mast_near_the_mark_when_none_is_near(t: TestRunn
 			director.contact().complete_now()
 			var scarred := false
 			for scar: Dictionary in _city.run.attempt_spend.scars:
-				if String(scar["id"]) == EventScheduler.SILENCED_MAST \
+				if String(scar["id"]) == DawnMasts.SILENCED_MAST \
 						and (scar["position"] as Vector2).distance_to(foot) < 1.0:
 					scarred = true
 			t.check(scarred and added_plan.silenced,

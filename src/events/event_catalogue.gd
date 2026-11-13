@@ -1809,7 +1809,7 @@ static func _poster_crew_square() -> EventDef:
 	return def
 
 ## A mast on a street, with a field around it: six of them, planted by `MastSites` and placed every
-## day from `Tuning.MAST_FIRST_DAY` by `EventScheduler._place_masts()` rather than by the ordinary
+## day from `Tuning.MAST_FIRST_DAY` by `DawnMasts` rather than by the ordinary
 ## catalogue roll. `scripted_day` stays 0, the seal pictures' own sentinel for "a planner places me
 ## directly, and `EventDef.available_on()` must never roll one" (see the seal table in
 ## `docs/EVENTS.md`). Its geometry is `homeless_yeller`'s (same inner and outer radius, same
@@ -1833,16 +1833,16 @@ static func _loudspeaker() -> EventDef:
 	def.outer_radius = 210.0
 	def.telegraph_time = 3.0
 	def.pulse_period = 22.0
-	# `_place_masts()` places one at every site `MastSites.compute()` names, which is
+	# `DawnMasts` places one at every site `MastSites.compute()` names, which is
 	# `Tuning.MAST_COUNT` of them: not a roll's own cap, but the count of the city's sites, which is
 	# what `tests/test_events.gd`'s `_test_scheduler_respects_placement_and_caps` reads it as. A day
 	# can carry one more: the mast day 11 queued for her task (`EventManager.queue_a_mast()`), which
-	# once she silenced it `_place_masts()` plans again from its scar on every later day.
+	# once she silenced it `DawnMasts` plans again from its scar on every later day.
 	def.max_per_day = Tuning.MAST_COUNT
 	return def
 
-## What the masts carry on `EventScheduler.CURFEW_ANNOUNCE_DAY` instead of their ordinary broadcast:
-## `EventScheduler._place_masts()` places one of these at every mast site that morning, alongside
+## What the masts carry on `DawnMasts.CURFEW_ANNOUNCE_DAY` instead of their ordinary broadcast:
+## `DawnMasts` places one of these at every mast site that morning, alongside
 ## the mast's own `loudspeaker` instance, which keeps drawing the pole, the lamp and the arcs. This
 ## row is `Look.NONE` and adds only the field, as a park's own playground frame draws itself while
 ## `_playground()` merely prices it; the field has the shape of the mast's ordinary one.

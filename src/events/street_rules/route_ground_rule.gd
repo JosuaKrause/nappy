@@ -38,7 +38,7 @@ var _home_street: Rect2i
 
 ## The rule on `map` for the routes `corridor` runs (null for a walk with no route tree, which this
 ## refuses nothing on), counting a street's route tiles too where `counts_the_streets`, and with
-## them `home_street`, the tiles of the street she starts on (`DawnContext.route_ground()`'s reading of it,
+## them `home_street`, the tiles of the street she starts on (`DawnContext.keeps_the_routes()`'s reading of it,
 ## the one place it is worked out; empty for a map with no home street).
 func _init(map: CityMap, corridor: Corridor, counts_the_streets := false,
 		home_street := Rect2i()) -> void:

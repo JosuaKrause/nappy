@@ -119,7 +119,7 @@ func day_seed() -> int:
 ## - `EventScheduler._place_one_shots` skips a one-shot the run has already spent. Skipping it
 ##   *before* drawing its `randf()` would start every later phase's draws one value earlier on the
 ##   second attempt and produce a different city's worth of events.
-## - `EventScheduler._place_scars` prepends what the run has burnt down, and every scar is one
+## - `DawnScars` prepends what the run has burnt down, and every scar is one
 ##   more plan for `StreetInvalidation.room_around` to reject a placement against — and a
 ##   rejection is a re-roll.
 ##
@@ -168,8 +168,7 @@ func doors() -> PackedVector2Array:
 func heat() -> int:
 	return _heat
 
-## The permanent marks earlier days left (`EventScheduler._place_scars()`,
-## `EventScheduler._place_masts()`).
+## The permanent marks earlier days left (`DawnScars`, `DawnMasts`).
 func scars() -> Array[Dictionary]:
 	return _scars
 
@@ -232,9 +231,9 @@ func locations() -> DayLocations:
 	return _locations
 
 ## **Tells the dawn which calm area it keeps clean** besides the ones she has not used
-## (`EventScheduler._calm_kept_clean()`), `CalmAreas.NONE` for none: its ground joins what
-## nothing may reach. Said once, after the fixed parts and the scars stand and before the first
-## judge asks the rules, which are built over that ground once.
+## (`DawnCalmKeptClean`), `CalmAreas.NONE` for none: its ground joins what nothing may reach.
+## Said once, after the fixed parts and the scars stand and before the first judge asks the rules,
+## which are built over that ground once.
 func keep_clean(block: Vector2i) -> void:
 	assert(_rules == null, "the calm area kept clean is said before the day's rules are built")
 	_kept_clean = block
@@ -258,10 +257,19 @@ func rules() -> StreetInvalidation:
 				_builder if _spec.one_notice_at_a_time else null, walk_ground)
 	return _rules
 
-## **What the run's scars and the park spoilers are asked** (`RouteGroundRule`, counting the
-## streets): their ground is not the bags', and they keep the spacing and the line rules they
-## stand without, so no body of theirs covers a tile a route runs along, the streets' included,
-## nor the street she starts on.
+## **Records a fixed part on the location holding where it stands**
+## (`DayLocations.hold_fixed_part()`), so no draw happens there: an ambient row, a mast, one of
+## the region wall's bodies. A part standing where no location is records nothing.
+func hold_fixed_part(part: EventPlan) -> void:
+	var tile := _map.world_to_tile(part.placed_at())
+	locations().hold_fixed_part(part, tile, _map.tile_at(tile))
+
+## **Whether `plan`, stood where it is, leaves the day's routes their ground**: what the run's
+## scars and the park spoilers are asked (`RouteGroundRule`, counting the streets). Their ground
+## is not the bags', and they keep the spacing and the line rules they stand without, so only
+## this is asked of them: no body of theirs covers a tile a route runs along, the streets'
+## included, nor the street she starts on. A field of one stands on a route's line as it always
+## did; the question asks nothing of what the day holds or what stands.
 ##
 ## The street the front door opens onto, which nothing is placed on: the day's ground refuses it
 ## to every row (`RowGround.tiles_for()`), and the route's ground rule is handed it.
@@ -278,9 +286,14 @@ func rules() -> StreetInvalidation:
 ##
 ## Nothing else needs the exemption: the spoiler grid places on calm ground, a scar is where
 ## something already happened (and its body is kept off this street by `RouteGroundRule`, which
-## `route_ground()` hands this street as the routes' first stretch), and an ambient event has no
-## tile.
-func route_ground() -> RouteGroundRule:
+## `keeps_the_routes()` counts this street as the routes' first stretch), and an ambient event
+## has no tile.
+func keeps_the_routes(plan: EventPlan) -> bool:
+	var none: Array[EventPlan] = []
+	return _route_ground_rule().allows(plan, _map.world_to_tile(plan.placed_at()), none, none)
+
+## The rule `keeps_the_routes()` asks, made on the first ask.
+func _route_ground_rule() -> RouteGroundRule:
 	if _route_ground == null:
 		var home := ClosurePlanner.home_street(_map)
 		_route_ground = RouteGroundRule.new(_map, corridor(), true,

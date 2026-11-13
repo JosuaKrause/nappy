@@ -170,7 +170,7 @@ var bag := {}
 ## What each of `bag`'s marbles stands, a marble -> `EventDef`; `EMPTY_MARBLE` has none.
 var bag_rows := {}
 ## Whether nothing dangerous may reach a calm area she has not used yet, and one stays usable
-## (`CalmAreas.unused_ground()`, `EventScheduler._calm_kept_clean()`): every day's rule. The
+## (`CalmAreas.unused_ground()`, `DawnCalmKeptClean`): every day's rule. The
 ## escape is the climax and its chains pass a calm area at every stop, so the player kept it off
 ## there (minty-lemur #785).
 var keeps_unused_calm_clear := true

@@ -535,7 +535,7 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 		var reached := grid.flood([map.world_to_tile(her_at_siting)])
 		t.check(grid.reaches(tile, {}, reached), "day %d: she can walk to it from where she was" % day)
 		if row == "loudspeaker":
-			t.check(plan.mast_id == EventScheduler.added_mast_id(plan.position),
+			t.check(plan.mast_id == DawnMasts.added_mast_id(plan.position),
 					"a mast put on her route is a mast the day can silence, named by its foot")
 			t.check(MastSites.is_eligible(plan.position, map),
 					"a mast put on her route stands where a mast site may (off the home street)")
