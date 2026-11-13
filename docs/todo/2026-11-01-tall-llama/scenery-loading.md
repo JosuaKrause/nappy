@@ -12,9 +12,6 @@ gameplay reads no evictable visual data, and no half-prepared ground is ever dra
   already done, no? in 444", and #444 measured a detached probe. Measure boot, day start, frame
   tails and memory at the parent of #445's merge against `main`, and file the result as an entry of its own — or the
   player waives it, in their words.
-- #444's parked probes `tests/probes/lazy_scenery_{city,measure,routes}.gd` no longer run, since
-  `City/Ground` is no longer a `TileMapLayer`; delete them and their `.uid` files (the #444 reruns
-  check out pinned revisions, so nothing is lost).
 - Water is one surface per ground chunk, phased by `SceneryGround`'s clock, but
   `docs/ARCHITECTURE.md` (its water paragraph), `docs/GRAPHICS.md` (its water lines) and
   `src/city/scenery_water.gd`'s header comment describe the old arrangement. Rewrite all three.
