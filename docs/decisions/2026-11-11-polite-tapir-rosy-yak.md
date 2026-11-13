@@ -17,11 +17,12 @@ a thirteen-parameter shim in `src/` that only tests read.
   call's effective arguments are unchanged (the review compared all 80 by script). It hands the day's tree where a
   test names no walk, which is what `build_day()`'s fallback grew.
 - **This pull request, `DawnContext`** (`src/events/dawn_context.gd`, the model layer): handed the spec, the day's seed,
-  the map, the walk, the calm areas, the plan builder and the ground's maker at construction, and what a walk may be without after it
-  (`use_the_run()`, `use_the_doors()`, `use_what_stands()`, `use_mast_sites()`, `use_trace()`,
+  the map, the walk, the calm areas, the plan builder and the ground's maker at construction, and what a walk may be
+  without after it (`use_the_run()`, `use_the_doors()`, `use_what_stands()`, `use_mast_sites()`, `use_trace()`,
   `use_the_roadblock_row()`); it derives the corridor, the day's events, locations, ground and rules once, on first ask.
   `build_day(context)` returns nothing and every dawn pass takes the context; `DayPlanner` makes it with the city's own
-  plan builder; `DayEvents` loses its two hand-ons (`use_locations()` and `locations()`, `use_ground()` and `ground()`); the route-tree and spec fallbacks go; `GameDawn` builds one.
+  plan builder; `DayEvents` loses its two hand-ons (`use_locations()` and `locations()`, `use_ground()` and
+  `ground()`); the route-tree and spec fallbacks go; `GameDawn` builds one.
 - **Nothing a day places changed**: the placement fingerprints (`FP`, `DP`, `TA`, `ESCAPE_SPACING`) and
   `placement_rows.gd` are identical before and after.
 
@@ -58,6 +59,6 @@ The designer's where the item is silent, kept as given, each with what it was ch
 - **The helper's default mast sites are worked out at each planned dawn**, as about forty calls did; hoisting them
   once per city is `tests-one-module.md`'s, and `.masts(sites)` is where a suite does it.
 - **Two pull requests, tests first** (above). Over: one pull request, or `src/` first behind a shim only tests read.
-- **No `tests/test_dawn_context.gd`**: the context's derivations are held by the scheduler's and the planner's suites
-  and by the placement fingerprints, as fluffy-ferret left `PlanBuilder` without a suite of its own. Over: a suite of
-  its own, which `tests-one-module.md` may add.
+- **No `tests/test_dawn_context.gd`**: the context's derivations are held by the scheduler's suite, the event
+  manager's (which plans through `DayPlanner`) and the placement fingerprints, as fluffy-ferret left `PlanBuilder`
+  without a suite of its own. Over: a suite of its own, which `tests-one-module.md` may add.
