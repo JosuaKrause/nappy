@@ -617,7 +617,7 @@ func _test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries(t: TestRun
 			continue
 		var walk := _city.events.walk_events()
 		var counting := _CountingGround.new(_city.map, null, true, RowGround.Weights.new(),
-				EventScheduler._is_a_wall_by_cost)
+				func(_row: EventDef) -> bool: return false)
 		walk.take(walk.plans(), walk.calm(), walk.doors(), walk.reach(), walk.locations(), counting)
 		_city.events.ahead.start_day(day, _city.events.walk())
 		asked = counting.asks
