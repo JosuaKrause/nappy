@@ -105,6 +105,9 @@ func _busker_never_fills_the_day(t: TestRunner) -> void:
 				("the chosen intensity (%.1f) does not fill a sleep meter standing at his core for "
 				+ "a whole day (%.0fs, capped at %.0fs)")
 				% [chosen, Tuning.DAY_LENGTH_SECONDS, _SLEEP_CAP_SECONDS])
+	# Freeing the city frees its event manager, and the engine drops a freed object's signal
+	# connections, so `EventBus.return_phase_started` is left as it was found.
+	city.free()
 
 ## The first `PARK`-purpose block, exactly one block to its lot, found across `SEEDS` — or an
 ## empty dictionary if none of them rolled one. `{}` rather than `null` because GDScript cannot
