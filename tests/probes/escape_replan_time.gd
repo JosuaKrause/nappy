@@ -28,7 +28,7 @@ func run(t: TestRunner) -> void:
 			rng.seed = seed_value
 			var started := Time.get_ticks_msec()
 			var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
-					_city_spec())
+					_city_spec(), GamePlanBuilder.over(map))
 			took.append(Time.get_ticks_msec() - started)
 			placed.append(placements.size())
 		firsts.append(took[0])

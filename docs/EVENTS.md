@@ -1356,9 +1356,10 @@ Each item quotes the code on this branch.
 ## Scheduling
 
 ```
-EventScheduler.build_day(day_index, run_seed):
-    rng = RNG(hash(run_seed, day_index))
-    1. lay out the day's locations (DayLocations), each told its view
+EventScheduler.build_day(context):
+    the context (DawnContext) holds the day's inputs and gives each phase its own stream off the
+    day's seed
+    1. the day's locations (DayLocations, the context's), each told its view
     2. add all AMBIENT events for the current act, the scars, the masts at the run's sites;
        the region wall's bodies (standing), the masts and the ambient rows each hold the
        location under it; the seals stand, and hold none
@@ -1415,7 +1416,8 @@ so a day's `plan` line reads as *n sited, m ahead*.
 
 **The pool is narrower than "every tile of the right type" before a single weight is applied.**
 Which tiles a row may stand on is the day's ground's answer (`RowGround`, `src/events/row_ground.gd`):
-one object a walk, made at dawn (`EventScheduler.row_ground()`), which scans the map once for each
+one object a walk, made at dawn by the dawn's context (`DawnContext.ground()`, with
+`EventScheduler.row_ground()`), which scans the map once for each
 question a row asks and keeps the answer, and is handed to every placement that asks: the dawn's
 phases, and, with the walk (`WalkEvents.ground()`), whatever is sited while she walks, so nothing
 scans the city for it again and both stand their rows on the same ground.
@@ -1844,8 +1846,8 @@ Three things about that shape are the design rather than the implementation:
   set of shapes is finite and `EventCatalogue.all()` runs the fairness contract over all of them. A
   row that *mutated* mid-run would be checked by `EventDef.validate()` in the shape it booted in —
   the harmless one — and the contract would simply not be stated about the dangerous one.
-- **The heat is an argument to the day, not a global it reads.** `EventScheduler.build_day()` takes
-  it, so planning a hot day is something a rig can do without a run having happened.
+- **The heat is handed to the day, not a global it reads.** The day's `DawnContext` holds it, so
+  planning a hot day is something a rig can do without a run having happened.
 
 **The ladder has two rungs and only the top one hunts.** `PRESSES` never gains `hard_fail` at any
 level, and `tests/test_heat.gd` asserts that over the response rather than over the row that

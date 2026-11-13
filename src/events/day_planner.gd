@@ -5,8 +5,8 @@ extends RefCounted
 ## each on the stream it is handed and in the order its streams have always been drawn:
 ##
 ## - **a day** (`_plan_a_day()`): the day's holds, its seals (`SealPlanner.plan_day()`), the
-##   catalogue's rows (`EventScheduler.build_day()`) and the region's wall and doors, against the
-##   route tree the city grew this morning;
+##   catalogue's rows (`EventScheduler.build_day()`, on the `DawnContext` this makes) and the
+##   region's wall and doors, against the route tree the city grew this morning;
 ## - **the escape's city** (`plan_the_escape_city()`), whose spec closes no streets of a tree
 ##   (`DaySpec.closes_streets`): its walk is the two chains `FinalePlanner.route()` grows, the seals
 ##   are the same `SealPlanner.plan_day()` off them and the events the same `build_day()` on them;
@@ -48,8 +48,8 @@ class Plan extends RefCounted:
 	func use_calm(calm: CalmAreas) -> void:
 		_calm = calm
 
-	## The day's locations, as dawn laid them out (`DayLocations`), which the walk hands day 13's
-	## task (`WalkEvents.locations()`); null on a day that laid none out.
+	## The day's locations, as the dawn's context laid them out (`DawnContext.locations()`), which
+	## the walk hands day 13's task (`WalkEvents.locations()`); null on a day that laid none out.
 	var _locations: DayLocations = null
 
 	## The day's locations. See `_locations`.
@@ -60,9 +60,9 @@ class Plan extends RefCounted:
 	func use_locations(locations: DayLocations) -> void:
 		_locations = locations
 
-	## The day's ground for a row, as dawn made it (`RowGround`), which the walk hands every
-	## placement made while she walks (`WalkEvents.ground()`); null for a walk no dawn of a day
-	## planned (the escape's walks, the building, a scene recipe's).
+	## The day's ground for a row, as the dawn's context made it (`DawnContext.ground()`), which the
+	## walk hands every placement made while she walks (`WalkEvents.ground()`); null for a walk no
+	## dawn of a day planned (the escape's walks, the building, a scene recipe's).
 	var _ground: RowGround = null
 
 	## The day's ground for a row. See `_ground`.
@@ -79,8 +79,9 @@ var world: EventWorld
 func _init(the_world: EventWorld) -> void:
 	world = the_world
 
-## **`spec`'s plan**, on `rng`, with `consumed` the one-shots the run has already spent (appended to
-## in place by a day's plan, as `EventScheduler.build_day()` spends them).
+## **`spec`'s plan**, on `rng`, with `consumed` the one-shots the run has already spent (handed to
+## the day's dawn, which owes her walk none of them a second time; one is spent where it becomes
+## real, `EventStreaming.stream_in()`).
 func plan(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[String]) -> Plan:
 	if spec.world == DaySpec.World.BUILDING:
 		return _plan_the_building(rng)
@@ -182,10 +183,16 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	var guarded := ResistanceSteps.guarded_row_on(day)
 	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded),
 			world.run.resistance.progress) if guarded != "" else null
-	var day_events := EventScheduler.build_day(spec, rng, city_map, calm, world.mast_sites(),
-			consumed, world.run.attempt_spend.scars, tree, world.run.resistance.progress, doors,
-			standing, world.trace, beside)
-	var placements := day_events.placements()
+	var dawn := DawnContext.new(spec, rng.seed, city_map, tree, calm, world.plan_builder(),
+			EventScheduler.row_ground)
+	dawn.use_the_run(consumed, world.run.attempt_spend.scars, world.run.resistance.progress)
+	dawn.use_the_doors(doors)
+	dawn.use_what_stands(standing)
+	dawn.use_mast_sites(world.mast_sites())
+	dawn.use_trace(world.trace)
+	dawn.use_the_roadblock_row(beside)
+	EventScheduler.build_day(dawn)
+	var placements := dawn.events().placements()
 	placements.append_array(seals)
 	# The wall's own bodies — hard seals of the roadblock row, one region boundary at a time. Kept
 	# as `RegionPlanner`'s own returned list rather than folded into `SealPlanner`'s: a caller that
@@ -203,8 +210,8 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	result.walk = tree
 	result.doors = doors
 	result.use_calm(calm)
-	result.use_locations(day_events.locations())
-	result.use_ground(day_events.ground())
+	result.use_locations(dawn.locations())
+	result.use_ground(dawn.ground())
 	return result
 
 ## **The day's calm areas as the map stands now**, with the areas she settled in this act
@@ -224,7 +231,8 @@ func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
 	var result := Plan.new()
 	var walk := FinalePlanner.route(world.city_map)
 	result.walk = walk
-	result.placements = plan_the_escape_city(world.city_map, walk, rng, spec, true, world.trace)
+	result.placements = plan_the_escape_city(world.city_map, walk, rng, spec, world.plan_builder(),
+			true, world.trace)
 	result.is_a_day = false
 	world.city_map.clear_day_holds()
 	return result
@@ -246,9 +254,8 @@ func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
 ##
 ## `trace` is where the bag draw writes its count for the run log (`EventScheduler.build_day()`).
 static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
-		rng: RandomNumberGenerator, spec: DaySpec,
-		populate_events := true,
-		trace: RunTrace = null) -> Array[EventPlan]:
+		rng: RandomNumberGenerator, spec: DaySpec, builder: PlanBuilder,
+		populate_events := true, trace: RunTrace = null) -> Array[EventPlan]:
 	var placements: Array[EventPlan] = []
 	var seals := SealPlanner.plan_day(map, spec, walk, rng)
 	for seal in seals:
@@ -256,9 +263,12 @@ static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 	placements.append_array(seals)
 	if populate_events:
 		# The escape's walk draws its streets from its bag and stands no mast, so it is handed none.
-		placements.append_array(EventScheduler.build_day(spec, rng, map, CalmAreas.of(map),
-				[] as Array[MastSites.Site], [], [], walk, 0, PackedVector2Array(), seals,
-				trace).placements())
+		var dawn := DawnContext.new(spec, rng.seed, map, walk, CalmAreas.of(map), builder,
+				EventScheduler.row_ground)
+		dawn.use_what_stands(seals)
+		dawn.use_trace(trace)
+		EventScheduler.build_day(dawn)
+		placements.append_array(dawn.events().placements())
 	return placements
 
 # --------------------------------------------------------------- the building ---

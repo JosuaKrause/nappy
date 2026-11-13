@@ -107,8 +107,9 @@ func poster_walls() -> PosterWalls:
 func use_poster_walls(walls: PosterWalls) -> void:
 	_poster_walls = walls
 
-## **The city's plan builder** (`PlanBuilder`), made once a city over its map: what a siting made
-## while she walks, the resistance's and the happenings' build a plan at a tile with. Null where
+## **The city's plan builder** (`PlanBuilder`), made once a city over its map: what the dawn
+## (`DayPlanner`, handing it to its `DawnContext`), a siting made while she walks, the resistance's
+## and the happenings' build a plan at a tile with. Null where
 ## the world is not the city (`EventManager.setup_world()`).
 func plan_builder() -> PlanBuilder:
 	return _plan_builder

@@ -104,11 +104,10 @@ func _reproduce_zero_density_visits() -> void:
 				var rng1 := RandomNumberGenerator.new()
 				rng1.seed = hash("m97:roll:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
 				var roll_calm := CalmAreas.of(map, [block] as Array[Vector2i])
-				var roll_events := DayEvents.over(roll_calm)
-				EventScheduler._spoil_the_parks_she_used(day, rng1, map, roll_events, roll_calm,
-						CalmAreas.NONE, RouteGroundRule.new(map, null, true,
-						EventScheduler._the_street_she_starts_on(map)), 0)
-				var roll_planned := roll_events.placements()
+				var roll := GameDawn.of(DaySpec.for_day(day), rng1, map).calm(roll_calm) \
+						.masts([] as Array[MastSites.Site]).on(RouteSource.new()).context()
+				EventScheduler._spoil_the_parks_she_used(roll)
+				var roll_planned := roll.events().placements()
 				var rc := roll_planned.size()
 				roll_counts.append(rc)
 				var rd := _tiles_denied_fraction(map, open_tiles, roll_planned)

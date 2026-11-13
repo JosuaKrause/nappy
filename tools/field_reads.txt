@@ -299,6 +299,10 @@ src/dev/route_rig.gd number
 src/dev/route_rig_planner.gd exits
 src/dev/scene_recipe_runtime.gd bag_rows
 src/dev/scene_recipe_runtime.gd holds_the_home_streets
+src/events/dawn_context.gd holds_the_home_streets
+src/events/dawn_context.gd keeps_the_walk_open
+src/events/dawn_context.gd keeps_unused_calm_clear
+src/events/dawn_context.gd one_notice_at_a_time
 src/events/day_planner.gd closes_streets
 src/events/day_planner.gd holds_the_home_streets
 src/events/day_planner.gd number
@@ -311,11 +315,7 @@ src/events/event_scheduler.gd bag
 src/events/event_scheduler.gd bag_rows
 src/events/event_scheduler.gd caps_per_day
 src/events/event_scheduler.gd draw
-src/events/event_scheduler.gd holds_the_home_streets
-src/events/event_scheduler.gd keeps_the_walk_open
 src/events/event_scheduler.gd keeps_unused_calm_clear
-src/events/event_scheduler.gd number
-src/events/event_scheduler.gd one_notice_at_a_time
 src/events/event_scheduler.gd wall_row_share
 src/main.gd a_win_leads_into
 src/main.gd daylight_runs_down

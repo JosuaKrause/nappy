@@ -38,7 +38,7 @@ func run(t: TestRunner) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		for plan in DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
-				_city_spec()):
+				_city_spec(), GamePlanBuilder.over(map)):
 			_count(escape_rows, map, ground, plan)
 	_print("day", day_rows)
 	_print("escape", escape_rows)

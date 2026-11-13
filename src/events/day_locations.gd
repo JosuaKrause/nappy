@@ -7,11 +7,12 @@ extends RefCounted
 ## phase has assigned taken for the day. The one object holding those answers, so nothing works
 ## them out again (inbox #1156 in gray-dolphin).
 ##
-## **Laid out every day at dawn**, in `EventScheduler.build_day()` after the routes are established
-## and the day's holds are on the map (`EventScheduler._plan_the_dawn()`). On day 13 the roadblock
+## **Laid out every day at dawn**, by the dawn's context (`DawnContext.locations()`) the first time
+## `EventScheduler.build_day()` asks, after the routes are established and the day's holds are on
+## the map (`EventScheduler._plan_the_dawn()`). On day 13 the roadblock
 ## phase (`RoadblockPhase`) assigns its sections first; then every open location is drawn from its
-## view's bag (`LocationDraw`). The day's plan hands the locations on to the walk
-## (`DayEvents.locations()`, `DayPlanner.Plan.locations()`, `WalkEvents.locations()`), where day 13's
+## view's bag (`LocationDraw`). The day's planner hands the locations on to the walk
+## (`DawnContext.locations()`, `DayPlanner.Plan.locations()`, `WalkEvents.locations()`), where day 13's
 ## task takes a section for its roadblock when none is close by (`nearest_section_in()`). Pure state:
 ## no node, nothing that runs.
 

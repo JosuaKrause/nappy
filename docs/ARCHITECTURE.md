@@ -214,8 +214,11 @@ src/
 	                      under a raised boom, the crossing's warning and the guard it sets on her;
 	                      what a door does to her it says as an intent the manager carries out
 	event_catalogue.gd    every event, defined in code
-	event_scheduler.gd    builds a day's event set from seed + the day's spec: the day's locations drawn from
+	event_scheduler.gd    builds a day's event set from the dawn's context: the day's locations drawn from
 	                      a bag per view, or the escape city's streets from its marble bag
+	dawn_context.gd       one dawn in one object: what the day's planner hands it and what the dawn
+	                      builds once, the corridor, the day's events, locations, ground and rules;
+	                      handed to every phase
 	event_plan.gd         one placed event's row, position, role and path: what the manager needs to
 	                      spawn one instance
 	plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along or across
@@ -278,8 +281,9 @@ src/
 	                       all working over one `EventWorld` (event_world.gd)
 	day_planner.gd        what a walk places before she sets off, chosen by its spec: a day's
 	                       holds, seals, rows and doors, against the day's streets the manager is
-	                       handed (`DayStreets`); the escape city's seals and rows on its chains;
-	                       the building's own placements
+	                       handed (`DayStreets`), the rows planned on the dawn's context it makes;
+	                       the escape city's seals and rows on its chains; the building's own
+	                       placements
 	event_streaming.gd    the day's plan and the live instance each plan streams in as, carrying
 	                       its state out and back; the repeats, the masts, a finished plan spent
 	event_spawner.gd      every instance made, with its scar, its body and the bang outside;

@@ -305,50 +305,35 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
 			map.held_streets())
 
-	var corridor := Corridor.of(tree)
-	var ground := EventScheduler.row_ground(map, corridor)
-	var calm := CalmAreas.of(map)
-	var leave_alone := calm.unused_ground()
-	var rng := _rng(map, day, "events")
-	var base: int = rng.seed
-
-	var events := DayEvents.over(calm)
+	var dawn := GameDawn.of(DaySpec.for_day(day), _rng(map, day, "events"), map) \
+			.masts([] as Array[MastSites.Site]).on(tree).context()
+	var events := dawn.events()
+	var corridor := dawn.corridor()
 	var provenance := {}   # EventPlan instance id -> Source
 
-	var ambient := EventScheduler._place_ambient(day, map, 0)
+	var ambient := EventScheduler._place_ambient(dawn)
 	events.add_all(ambient)
 	for plan: EventPlan in ambient:
 		provenance[plan.get_instance_id()] = Source.OTHER
 
-	var locations := DayLocations.lay_out(map, corridor)
-	var builder := GamePlanBuilder.over(map)
-	var phase := ScriptedPhase.new(locations, EventScheduler.RuledLocationGround.new(day, base, map,
-			events, corridor, LocationFit.new(day, map, builder, ground),
-			StreetInvalidation.new(map, corridor, leave_alone, PackedVector2Array(), null)),
-			func(def: EventDef, location: Location) -> float:
-				return EventScheduler._weight_in(def, location, day, map, ground))
 	var before := events.size()
-	EventScheduler._place_scripted(day, EventScheduler._stream(base, 1), events, phase, 0)
+	EventScheduler._place_scripted(dawn)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
 	before = events.size()
-	var consumed: Array[String] = []
-	EventScheduler._place_one_shots(day, consumed, events, 0)
+	EventScheduler._place_one_shots(dawn)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
 	before = events.size()
-	EventScheduler._spoil_the_parks_she_used(day, EventScheduler._stream(base, 3), map, events,
-			calm, CalmAreas.NONE, RouteGroundRule.new(map, corridor, true,
-			EventScheduler._the_street_she_starts_on(map)), 0)
+	EventScheduler._spoil_the_parks_she_used(dawn)
 	_tag_new(events.placements(), provenance, before, Source.CALM_GROUND)
 
 	before = events.size()
-	EventScheduler._draw_the_locations(day, base, map, builder, events, ground, leave_alone,
-			corridor, PackedVector2Array(), DaySpec.for_day(day), locations, 0, null)
+	EventScheduler._draw_the_locations(dawn)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
 
 	before = events.size()
-	EventScheduler._ensure_the_run_is_taught(day, events, 0)
+	EventScheduler._ensure_the_run_is_taught(dawn)
 	_tag_new(events.placements(), provenance, before, Source.OTHER)
 
 	var planned := events.placements()
