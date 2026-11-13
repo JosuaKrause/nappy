@@ -35,8 +35,8 @@ the line counts are its estimates. All under `src/events/`:
 
 Three blocks are not moved, because `placement-by-construction.md` deletes them in place: the old
 siting roll, the fitted tables, and the escape's own draw loop. The fallback that grows a route tree
-when none is handed in goes with `DawnContext` below, whose shared test helper hands a route to every
-call under `tests/` that hands none today. What building a plan at a tile does not do stays in the scheduler:
+when none is handed in goes with `DawnContext` below; the suites and probes already hand one, through
+the shared helper `GameDawn` (`tests/game_dawn.gd`), which hands the day's tree where a test names no walk. What building a plan at a tile does not do stays in the scheduler:
 `recipe_placement()` judges an authored row by the day's locations, the row's ground (`RowGround`) and
 `role_for()`, and builds through `LocationFit`, which is handed the builder; `_band_offset_of()` and its
 neighbours read a row's own numbers with no tile; and `blocked_by()` and `block_a_disc()` paint a blocked set for a
@@ -50,9 +50,9 @@ and fails a read that is new; a read that only moved may add its line to the lis
 grassy-trout), and review reads a moving diff for the cases the check cannot count
 (minty-quail-breezy-bison).
 
-- **`DawnContext`**, before the unit draw, so the unit draw edits a small file. The suites and probes that call
-  `build_day()` with 13 arguments change once, through one shared test helper that builds a
-  `DawnContext`.
+- **`DawnContext`**, before the unit draw, so the unit draw edits a small file. The suites and probes already plan through
+  the shared helper `GameDawn` (`tests/game_dawn.gd`); what is left is the class, `build_day()` and the dawn's
+  passes taking it, the day's planner making it, and the inside of that helper building one.
 - **The phases**, a pull request of their own after `DawnContext`: the context changes a signature
   and every caller, and the phases move code.
 
