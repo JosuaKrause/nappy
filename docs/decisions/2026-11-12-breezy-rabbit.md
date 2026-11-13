@@ -19,8 +19,9 @@ to Opus for any build that changes play or builds a seam from its design.
   decides this.
 - **Two rows replace "Build at test parity | Sonnet", "Build that changes play, or builds a seam from
   its design | Opus" and "Investigate an unexplained result | Opus"**: a design, always detailed, takes
-  a stronger model; a build, and every task that is neither a design nor a review, takes the lowest
-  model that can do it. A paragraph under the table says why.
+  a stronger model; a build, and every other task no row names that is neither a design nor a review,
+  takes the lowest model that can do it. A paragraph under the table says why, and that drawing keeps
+  Opus (PLAYTEST-123 8).
 - **`docs/TODO.md` and the playtest-feedback skill** restate the label the same way.
 - The review rows, the drawing row and the measuring and capture rows stay.
 
@@ -34,5 +35,5 @@ to Opus for any build that changes play or builds a seam from its design.
 - **How a hand-off reaches a builder**: the Fable designer says in its report whether it writes the code or hands
   it off, and on a hand-off the orchestrator briefs the lowest model able from the design. The filer's proposal,
   since the player's words do not say how.
-- **Drawing keeps Opus**, and the measuring and capture rows name the lowest model for their kind; the catch-all
-  covers only a build and the tasks no row names.
+- **The measuring and capture rows name the lowest model for their kind**, so the catch-all leaves them as
+  they are.

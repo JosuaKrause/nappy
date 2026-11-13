@@ -70,9 +70,9 @@ hand-off the orchestrator briefs the lowest model able from the design.
 | Review of queue, docs, a skill's wording alone or a small delta | Sonnet |
 
 **A design is always detailed, and a build takes the lowest model that can do it** (inbox #1432 in
-minty-rabbit): designing, and reviewing in general, is where a stronger model goes, because the
-detailed design is what lets a weaker model build, so a build, and any other task no row names that
-is neither a design nor a review, gets the lowest model able to do it rather than a fixed stronger
+minty-rabbit): designing, and reviewing in general, is where a stronger model goes. The detailed
+design is what lets a weaker model build, so a build, and any other task no row names that is
+neither a design nor a review, gets the lowest model able to do it rather than a fixed stronger
 one. Drawing keeps Opus (PLAYTEST-123 8), and the measuring and capture rows name the lowest model
 for their kind. A review keeps its own rows, since reviews have their own decision points and some
 need no strong model.
@@ -395,15 +395,16 @@ The rules in this file that are the filer's proposal or reading, not the player'
 to the player's correction:
 
 - **Every row of the model table that carries no citation**, the merging row among them, to be
-  revised once the agent counter holds enough entries (inbox #900 in freckled-moose). The player asked for a granular table revised after experiments or statistics,
-  and for Haiku to be tried on captures and measuring.
+  revised once the agent counter holds enough entries (inbox #900 in freckled-moose). The player
+  asked for a granular table revised after experiments or statistics, and for Haiku to be tried on
+  captures and measuring.
 - **That a stronger model than a row names takes a milestone whose geometry or contracts warrant
   it** ("The model table"), and that for a build these are part of what decides which model can do
   it; the player's words are that the model is chosen by judgement (woolly-finch 15).
 - **That an investigation of an unexplained result, and every other task no row names that is
   neither a design nor a review, falls under the lowest-model rule**: the reading of the player's
-  answer naming designs and reviews as where stronger models go (inbox #1432 in minty-rabbit), who
-  said only building outright; a task that needs complex reasoning still has Fable considered by the
+  answer naming designs and reviews as where stronger models go (inbox #1432 in minty-rabbit), since
+  the player named only building outright; a task that needs complex reasoning still has Fable considered by the
   planning row.
 - **How a hand-off reaches a builder** ("The model table"): the Fable designer says in its report
   whether it writes the code or hands it off, and on a hand-off the orchestrator briefs the lowest
