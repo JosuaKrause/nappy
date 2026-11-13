@@ -760,13 +760,17 @@ const FIRE_ROW := "burning_building"
 
 ## The ground day 8's task stands on when the run never recorded a scar: every front day 3's fire
 ## itself could be sited on (`RowGround.tiles_for()` with `burning_building`'s own
-## `AT_THE_FRONT`), each with a building directly north of it to burn. A ground of its own
-## (`EventScheduler.row_ground()`), asked once.
+## `AT_THE_FRONT`), each with a building directly north of it to burn. Asked of the day's ground,
+## which the walk's events hand on from dawn (`WalkEvents.ground()`); a rig whose walk no dawn
+## planned has none, and is answered by a ground made here (`EventScheduler.row_ground()`).
 func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 	var fire := EventCatalogue.by_id(FIRE_ROW)
 	if not fire:
 		return []
-	return EventScheduler.row_ground(_map).tiles_for(fire)
+	var ground := _walk.ground()
+	if not ground:
+		ground = EventScheduler.row_ground(_map)
+	return ground.tiles_for(fire)
 
 ## The guard. From `TRAP_FIRST_DAY` no chalk mark is ever placed without one, nor day 13's
 ## roadblock (`_keeps_a_waiting_guard()`) — a robber drawn from the band `alley_robbery`'s own

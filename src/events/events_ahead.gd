@@ -71,9 +71,10 @@ func director() -> EventDirector:
 func start_day(day: int, tree: RouteTree) -> void:
 	# The day's placement context, kept past dawn for the one kind of plan the day plans and
 	# leaves for her walk to site — see `EventScheduler.WalkSiting` and `EventDef.on_her_way`.
-	# Stated against exactly what `build_day` was: the same tree, and the walk's own doors and calm
-	# areas, which are the day's. Only on a day that has such a plan: the context grows a corridor,
-	# and a day with nothing left for her walk would pay for it and read none of it.
+	# Stated against exactly what `build_day` was: the same tree, the walk's own doors and calm
+	# areas, which are the day's, and the day's ground for a row (`_ground_of_the_walk()`). Only
+	# on a day that has such a plan: the context grows a corridor, and a day with nothing left for
+	# her walk would pay for it and read none of it.
 	_siting = null
 	_day_tree = tree
 	for plan in _walk.plans():
