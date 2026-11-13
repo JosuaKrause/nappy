@@ -139,7 +139,7 @@ func _plan(map: CityMap, own_run: RunState, walk: FinalePlanner.Plan, day: int,
 		var counts: Array = mix["counts"]
 		spec.bag = {"military_convoy": counts[0], "finale_explosion": counts[1],
 				"abduction": counts[2], "roadblock": counts[3], DaySpec.EMPTY_MARBLE: counts[4]}
-	return DayPlanner.plan_the_escape_city(map, walk, rng, spec)
+	return DayPlanner.plan_the_escape_city(map, walk, rng, spec, GamePlanBuilder.over(map))
 
 ## `{streets, empty, dangers, rows}`: the open streets, those standing none of the four rows, how
 ## many of the four rows stand on them in all, and how many of each.

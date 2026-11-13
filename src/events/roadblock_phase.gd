@@ -33,7 +33,7 @@ extends RefCounted
 ## Handed the day's locations and what it asks of the day's ground (`RoadblockGround`). Model: no
 ## node, nothing that runs.
 
-## The phase's stream salt off the day's seed (`EventScheduler._stream()`): apart from the dawn
+## The phase's stream salt off the day's seed (`DawnContext.stream()`): apart from the dawn
 ## draw's (`EventScheduler.LOCATIONS_SALT`) and the moments' (`EventScheduler.MOMENTS_SALT`), so it
 ## never shares a stream with either.
 const SALT := 5

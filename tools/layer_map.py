@@ -141,6 +141,7 @@ FILES: dict[str, str] = {
     "src/events/pursuit_spec.gd": "data",
     "src/events/vehicle_spec.gd": "data",
     "src/events/calm_areas.gd": "model",
+    "src/events/dawn_context.gd": "model",
     "src/events/day_events.gd": "model",
     "src/events/day_locations.gd": "model",
     "src/events/day_reach.gd": "model",
@@ -350,10 +351,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/events/event_scheduler.gd",
             "src/events/walk_ground.gd",
         ),
-        more=(
-            ("src/events/event_scheduler.gd", 2),
-            ("src/events/walk_ground.gd", 3),
-        ),
+        more=(("src/events/walk_ground.gd", 3),),
     ),
     Exception_(
         "names",
@@ -361,12 +359,10 @@ EXCEPTIONS: tuple[Exception_, ...] = (
         "the day's planning reaches into the live event for its placement rules",
         (
             "src/events/event_plan.gd",
-            "src/events/event_scheduler.gd",
             "src/events/walk_ground.gd",
         ),
         more=(
             ("src/events/event_plan.gd", 1),
-            ("src/events/event_scheduler.gd", 1),
             ("src/events/walk_ground.gd", 1),
         ),
     ),

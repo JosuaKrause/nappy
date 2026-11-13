@@ -109,7 +109,8 @@ static func _plan_for(seed_value: int) -> Dictionary:
 	rng.seed = seed_value
 	var walk := FinalePlanner.route(map)
 	return {"map": map, "plan": walk,
-			"placements": DayPlanner.plan_the_escape_city(map, walk, rng, _city_spec())}
+			"placements": DayPlanner.plan_the_escape_city(map, walk, rng, _city_spec(),
+				GamePlanBuilder.over(map))}
 
 ## *"No overlapping routes"*: the choice is made once, at the door, and is the game's verb. The
 ## cell she leaves from is the one exception, since both walks have to start somewhere.
@@ -1094,7 +1095,8 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 		var map: CityMap = city.map
 		var plan := FinalePlanner.route(map)
 		var placements := DayPlanner.plan_the_escape_city(map, plan,
-				run.calendar.day_rng(run.header.day, "finale"), _city_spec())
+				run.calendar.day_rng(run.header.day, "finale"), _city_spec(),
+				GamePlanBuilder.over(map))
 		var bands := _escape_roadblocks(placements)
 		var hers := map.network.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
 		var on_her_street := 0
@@ -1280,7 +1282,8 @@ func _test_a_restart_plans_the_same_escape(t: TestRunner) -> void:
 	for attempt in 2:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = SEEDS[0]
-		plans.append(DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng, _city_spec()))
+		plans.append(DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng, _city_spec(),
+				GamePlanBuilder.over(map)))
 	var first: Array[EventPlan] = []
 	first.assign(plans[0])
 	var second: Array[EventPlan] = []
@@ -1374,7 +1377,8 @@ static func _bare_plan(map: CityMap, seed_value: int) -> Dictionary:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var plan := FinalePlanner.route(map)
-	var seals := DayPlanner.plan_the_escape_city(map, plan, rng, _city_spec(), false)
+	var seals := DayPlanner.plan_the_escape_city(map, plan, rng, _city_spec(),
+			GamePlanBuilder.over(map), false)
 	return {"plan": plan, "streets": plan.open_streets, "seals": seals, "rng": rng,
 			"state": rng.state}
 
@@ -1469,7 +1473,7 @@ func _test_nothing_the_finale_places_stands_where_she_comes_out(t: TestRunner) -
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
-				_city_spec())
+				_city_spec(), GamePlanBuilder.over(map))
 		var spawn := FinalePlanner.service_exit_world_position(map)
 		t.check(map.is_walkable(map.world_to_tile(spawn)),
 				"seed %d: she is put down on walkable ground" % seed_value)
@@ -1517,7 +1521,7 @@ func _test_no_lethal_field_covers_the_ground_she_comes_out_on(t: TestRunner) -> 
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
-				_city_spec())
+				_city_spec(), GamePlanBuilder.over(map))
 		var spawn := FinalePlanner.service_exit_world_position(map)
 		for placement: EventPlan in placements:
 			if not placement.def.hard_fail:

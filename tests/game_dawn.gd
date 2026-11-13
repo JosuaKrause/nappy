@@ -56,7 +56,9 @@ func scars(left: Array[Dictionary]) -> GameDawn:
 	_scars = left
 	return self
 
-## The walk the day is placed against, where it is not the tree the city grows for the day.
+## The walk the day is placed against, where it is not the tree the city grows for the day. A walk
+## not said becomes that tree on every spec, the escape's bag-per-street one included, where the
+## game hands the escape the walk its chains make.
 func on(walk: RouteSource) -> GameDawn:
 	_walk = walk
 	return self
@@ -86,9 +88,27 @@ func roadblock(row: EventDef) -> GameDawn:
 	_roadblock = row
 	return self
 
+## The dawn's context as the game's planner makes it, not yet planned: for a probe that runs
+## one pass of the dawn.
+func context() -> DawnContext:
+	var dawn := DawnContext.new(_spec, _rng.seed, _map,
+			_walk if _walk else RouteTree.for_day(_map, _spec.day_number()),
+			_calm if _calm else CalmAreas.of(_map), GamePlanBuilder.over(_map),
+			EventScheduler.row_ground)
+	dawn.use_the_run(_spent, _scars, _heat)
+	dawn.use_the_doors(_doors)
+	dawn.use_what_stands(_standing)
+	dawn.use_mast_sites(_masts if _masts_are_said else MastSites.compute(_map))
+	dawn.use_trace(_trace)
+	dawn.use_the_roadblock_row(_roadblock)
+	return dawn
+
+## Plans the dawn and answers its context: the plan, and the locations and the ground it built.
+func planned() -> DawnContext:
+	var dawn := context()
+	EventScheduler.build_day(dawn)
+	return dawn
+
 ## Plans the dawn and answers its plan.
 func plan() -> DayEvents:
-	return EventScheduler.build_day(_spec, _rng, _map, _calm if _calm else CalmAreas.of(_map),
-			_masts if _masts_are_said else MastSites.compute(_map), _spent, _scars,
-			_walk if _walk else RouteTree.for_day(_map, _spec.day_number()), _heat, _doors,
-			_standing, _trace, _roadblock)
+	return planned().events()

@@ -29,7 +29,7 @@ func run(t: TestRunner) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
 		var placements := DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng,
-				_city_spec())
+				_city_spec(), GamePlanBuilder.over(map))
 		var bands: Array[EventPlan] = []
 		for placement in placements:
 			if placement.def.id == "roadblock":

@@ -37,7 +37,8 @@ static func plan_for(seed_value: int) -> Dictionary:
 	rng.seed = seed_value
 	var walk := FinalePlanner.route(map)
 	return {"map": map, "plan": walk,
-			"placements": DayPlanner.plan_the_escape_city(map, walk, rng, _city_spec())}
+			"placements": DayPlanner.plan_the_escape_city(map, walk, rng, _city_spec(),
+				GamePlanBuilder.over(map))}
 
 ## The roadblocks among `placements` on each open street of the walk `plan` that carries any,
 ## `[segment, Array[EventPlan]]` pairs.

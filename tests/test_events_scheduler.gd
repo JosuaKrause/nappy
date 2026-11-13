@@ -630,7 +630,7 @@ static func _has_a_carriageway(map: CityMap, section: Location) -> bool:
 
 ## **Day 13's roadblock phase stands its roadblocks beside her routes and says how many route tiles
 ## it leaves without one** (inbox #1185 in gentle-owl, inbox #1186 in gentle-owl): the day planned with the task's row
-## (`build_day()`'s `beside_the_routes`, `RoadblockPhase`) on the suite's own city, where the run log
+## (`DawnContext.roadblock_row()`, `RoadblockPhase`) on the suite's own city, where the run log
 ## names each one it stood. Each is on a route-adjacent street (`Corridor.view_of()`),
 ## off every tile a route runs along and off the main road, nothing else stands within
 ## `EVENT_SPACING_ANY` of it, no two of them stand within `EVENT_SPACING_SAME` of each other (the
@@ -745,7 +745,7 @@ const _CHOICE_CITY_SEED := 1000
 const _CHOICE_DRAW_SEED := 3855935566
 ## The body stood on the clean area's one way in: a burst water main, whose body reaches 96px each
 ## way from the middle of the street, across its 192px. Stood through the run's scars, the one way a
-## day stands a catalogue body on a spot of the caller's choosing (`build_day()`'s `scars`).
+## day stands a catalogue body on a spot of the caller's choosing (`DawnContext.scars()`).
 const _CUTTING_BODY := "burst_water_main"
 
 ## **On the swing day, a scar that would cut the clean calm area off is not stood.** Day 12's route
@@ -958,8 +958,9 @@ func _keep_streets_to(map: CityMap, to: Vector2i, keep: Dictionary) -> bool:
 func _test_the_fixed_parts_hold_their_locations(t: TestRunner) -> void:
 	var asked := 0
 	for day: int in [3, 5, 8, 11, 14]:
-		var events := _day_events(day)
-		var locations := events.locations()
+		var dawn := _dawn(day)
+		var events := dawn.events()
+		var locations := dawn.locations()
 		var map := _map()
 		for part in events.placements():
 			if part.row().role != EventDef.Role.MAST and part.row().kind != GameEnums.EventKind.AMBIENT:
@@ -986,7 +987,8 @@ func _test_the_fixed_parts_hold_their_locations(t: TestRunner) -> void:
 func _test_a_scripted_row_takes_a_location_of_its_own(t: TestRunner) -> void:
 	var asked := 0
 	for day: int in [10, 13]:
-		var events := _day_events(day)
+		var dawn := _dawn(day)
+		var events := dawn.events()
 		var map := _map()
 		for plan in events.placements():
 			if plan.row().kind != GameEnums.EventKind.SCRIPTED or plan.row().role == EventDef.Role.MAST \
@@ -994,7 +996,7 @@ func _test_a_scripted_row_takes_a_location_of_its_own(t: TestRunner) -> void:
 				continue
 			asked += 1
 			var tile := map.world_to_tile(plan.placed_at())
-			var location := events.locations().holding(tile, map.tile_at(tile))
+			var location := dawn.locations().holding(tile, map.tile_at(tile))
 			t.check(location != null and location.is_taken(),
 					"day %d: %s stands in a location taken for the day" % [day, plan.row_id()])
 			if location == null:
@@ -1036,9 +1038,10 @@ func _test_a_wall_body_holds_its_location_and_a_seal_none(t: TestRunner) -> void
 	seal.stand_as_a_seal()
 	var standing: Array[EventPlan] = [wall, seal]
 	var consumed: Array[String] = []
-	var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map).masts(_sites()).spent(consumed) \
-			.standing(standing).plan()
-	var walled := events.locations().holding(wall_tile, map.tile_at(wall_tile))
+	var dawn := GameDawn.of(DaySpec.for_day(day), _rng(day), map).masts(_sites()).spent(consumed) \
+			.standing(standing).planned()
+	var events := dawn.events()
+	var walled := dawn.locations().holding(wall_tile, map.tile_at(wall_tile))
 	t.check(walled != null and walled.is_taken(), "the location under the wall's body is taken")
 	if walled != null:
 		for other in events.placements():
@@ -1046,6 +1049,6 @@ func _test_a_wall_body_holds_its_location_and_a_seal_none(t: TestRunner) -> void
 				continue
 			t.check(not walled.tiles().has_point(map.world_to_tile(other.placed_at())),
 					"nothing the day places stands in the wall's location (found %s)" % other.row_id())
-	var sealed := events.locations().holding(seal_tile, map.tile_at(seal_tile))
+	var sealed := dawn.locations().holding(seal_tile, map.tile_at(seal_tile))
 	t.check(sealed != null and sealed.is_drawn(),
 			"the location under the seal's body is not held: the draw visits it like any other")

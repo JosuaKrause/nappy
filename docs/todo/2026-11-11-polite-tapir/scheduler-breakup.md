@@ -19,24 +19,15 @@ holds today has a file of its own that can be read, tested and changed alone.
 it", inbox #1268 in olive-ferret); the file-by-file detail was worked out by the same review after the approval, and
 the line counts are its estimates. All under `src/events/`:
 
-- **`DawnContext`** (`dawn_context.gd`): the one object every phase is handed, in place of the 13
-  parameters: the spec, the day's seed with a stream per salt, the map, the walk (route tree or
-  chains) and its corridor, the calm areas and the ground to leave alone, the doors, what stands,
-  heat, scars, the spent one-shots, the mast sites, the trace and the plan builder (`PlanBuilder`),
-  handed in by the day's planner; and what the dawn builds: the day's events (`DayEvents`), the
-  locations (`DayLocations`), the rules built once (`StreetInvalidation`) and the day's `RowGround`, the object that answers which
-  tiles a row may stand on (`row_ground.gd`). It is the object that derives the day's facts
-  once and is handed around (designing-classes).
-- **`dawn_phases/`**, one class per phase with `run(context)`: the fixed parts (ambient rows, masts,
+- **`dawn_phases/`**, one class per phase with `run(context)`, each handed the day's `DawnContext`
+  (`src/events/dawn_context.gd`, the one object every pass takes in place of `build_day()`'s parameters): the fixed parts (ambient rows, masts,
   wall bodies holding their locations), the scars, the roadblock phase's glue with its ground
   judge, the scripted rows, the one-shots, the park spoilers, the lessons and the moments.
 - **`RuledLocationGround`** in a file of its own: the judge that offers a row at a location.
 - **`event_scheduler.gd`** keeps `build_day(context)` as an ordered list of phases.
 
 Three blocks are not moved, because `placement-by-construction.md` deletes them in place: the old
-siting roll, the fitted tables, and the escape's own draw loop. The fallback that grows a route tree
-when none is handed in goes with `DawnContext` below; the suites and probes already hand one, through
-the shared helper `GameDawn` (`tests/game_dawn.gd`), which hands the day's tree where a test names no walk. What building a plan at a tile does not do stays in the scheduler:
+siting roll, the fitted tables, and the escape's own draw loop. What building a plan at a tile does not do stays in the scheduler:
 `recipe_placement()` judges an authored row by the day's locations, the row's ground (`RowGround`) and
 `role_for()`, and builds through `LocationFit`, which is handed the builder; `_band_offset_of()` and its
 neighbours read a row's own numbers with no tile; and `blocked_by()` and `block_a_disc()` paint a blocked set for a
@@ -50,15 +41,12 @@ and fails a read that is new; a read that only moved may add its line to the lis
 grassy-trout), and review reads a moving diff for the cases the check cannot count
 (minty-quail-breezy-bison).
 
-- **`DawnContext`**, before the unit draw, so the unit draw edits a small file. The suites and probes already plan through
-  the shared helper `GameDawn` (`tests/game_dawn.gd`); what is left is the class, `build_day()` and the dawn's
-  passes taking it, the day's planner making it, and the inside of that helper building one.
-- **The phases**, a pull request of their own after `DawnContext`: the context changes a signature
-  and every caller, and the phases move code.
+- **The phases**, a pull request of their own: the phases move code out of `event_scheduler.gd`,
+  each taking the `DawnContext` the dawn's passes already take.
 
 Dawn planning's reads of live-event geometry (`standing-layer-breaks.md`) move with their code,
 each listed break carried to its new file in `tools/layer_map.py`, and are settled by row 3a of minty-quail's
 `event-interface.md`: the row answers for its mover and its standing place. The two a
-`PlanBuilder` is handed, `EventInstance.mover_for()` and `EventFootprints.stands_at()`, stay listed
-against `event_scheduler.gd`, where the dawn makes its builder, until `DawnContext` is handed a
-builder.
+`PlanBuilder` is handed, `EventInstance.mover_for()` and `EventFootprints.stands_at()`, are named only
+where a city's builder is made: by the event manager, whose builder the day's planner hands the
+`DawnContext`, and by the scene recipes' runtime (`src/dev/scene_recipe_runtime.gd`).

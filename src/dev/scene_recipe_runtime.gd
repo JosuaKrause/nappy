@@ -904,7 +904,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 	var setup: Dictionary = data.get("setup", {})
 	var plans: Array[EventPlan] = []
 	var map := _city.map
-	# The scene's plan builder over the city's map, made here as the game's dawn makes its own.
+	# The scene's plan builder over the city's map, made here as the event manager makes the city's.
 	var builder := PlanBuilder.new(map, EventInstance.mover_for, EventFootprints.stands_at,
 			StreetInvalidation.room_around)
 	var tree := _city.streets().route_tree()
@@ -916,7 +916,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		# The escape's seals alone, which dress the map as the game's walk does (the tree pits a
 		# seal empties, the soft seals cleared); what they place is not the scene's.
 		DayPlanner.plan_the_escape_city(map, finale,
-				_run.calendar.day_rng(_run.header.day, "finale"), _walk_spec, false)
+				_run.calendar.day_rng(_run.header.day, "finale"), _walk_spec, builder, false)
 		for chain in finale.chains:
 			if not chain.complete:
 				errors.append("escape route construction could not complete its ordinary chains")

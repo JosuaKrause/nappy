@@ -796,7 +796,7 @@ written once, after it is final.
   parts (`test_event_manager*`, `test_event_parts`, `test_events_fire`: the manager real, plans
   plain, a real city only in the suite whose header gives the reason); the dawn
   (`test_events_scheduler`, `_placement`, `test_event_spacing`, the day 6, 7 and 13 suites: rows
-  and plans plain, through the breakup's one helper that builds a `DawnContext`); the event halves
+  and plans plain, through the shared helper `GameDawn`, `tests/game_dawn.gd`, which builds a `DawnContext`); the event halves
   held in other modules' suites, which move to the event suites or take a `FakeEvent`
   (`test_danger`'s twenty or so, `test_crowd_yields`' four checks, `test_wall_shield`,
   `test_heat`, `test_masts`, `test_crowd_bodies_on_a_real_day`'s one); and the resistance

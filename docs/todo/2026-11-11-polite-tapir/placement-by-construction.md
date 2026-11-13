@@ -124,8 +124,8 @@ full text names the files each step owns.
    step keeps today's share and `tests/probes/escape_winnable.gd` shows the before and after.
 
 Steps 3, 4 and 5 touch different files and run in parallel once step 2 is in. The event scheduler's
-breakup (`scheduler-breakup.md`) is interleaved: its moves now, and its dawn context
-before step 2, so step 2 edits a small file.
+breakup (`scheduler-breakup.md`) is interleaved: its phases move into classes of their own before
+step 2, so step 2 edits a small file.
 
 **How a step is accepted.** Its suites pass, as for every step of the refactor ("for the refactor
 test parity is enough", inbox #813 in curly-moose), with the tests that held main's exact counts changed to hold

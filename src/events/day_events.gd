@@ -5,8 +5,9 @@ extends RefCounted
 ## whether one is a pursuit — kept in step with every row added.
 ##
 ## *(inbox #1156 in gray-dolphin: "have an object that contains the derived information -- don't rederive over
-## and over again -- then pass that object around".)* `EventScheduler.build_day()` makes one per
-## walk with `over()` and is its only writer; its passes and `DayPlanner` are handed it, and nothing reads the rows any other way. So a fact is worked out
+## and over again -- then pass that object around".)* The dawn's context makes one per walk
+## (`DawnContext.events()`, with `over()`) and the dawn's passes are its only writers; `DayPlanner`
+## reads it through the context, and nothing reads the rows any other way. So a fact is worked out
 ## once, when the row arrives, and every question answers from the plan as it stands.
 ##
 ## **A calm area is spoiled for the day** when a row's field reaches its calm ground
@@ -29,10 +30,6 @@ var _standing: Array[EventPlan] = []
 ## Calm block -> the rows spoiling it (`Array[EventPlan]`), in plan order.
 var _spoilers := {}
 var _pursuits := 0
-## The day's locations, where a phase laid them out (`use_locations()`), or null.
-var _locations: DayLocations = null
-## The day's ground for a row, where the dawn made one (`use_ground()`), or null.
-var _ground: RowGround = null
 
 ## **An empty plan over `calm`**, with `standing` the bodies planned before the catalogue: the day's
 ## seals and the region wall's own bodies, or the escape city's seals on its walk. They stand for the
@@ -96,22 +93,3 @@ func is_spoiled(block: Vector2i) -> bool:
 func has_a_pursuit() -> bool:
 	return _pursuits > 0
 
-## Hands the plan the day's locations (`DayLocations`), as the roadblock phase lays them out, so the
-## walk that starts from this plan is handed them too (`DayPlanner.Plan.locations()`).
-func use_locations(locations: DayLocations) -> void:
-	_locations = locations
-
-## The day's locations, laid out at dawn on day 13 in this step of the placement, or null on a day
-## that laid none out.
-func locations() -> DayLocations:
-	return _locations
-
-## Hands the plan the day's ground for a row (`RowGround`), as the dawn makes it, so the walk that
-## starts from this plan is handed the same one (`DayPlanner.Plan.ground()`) and what is sited
-## while she walks asks the ground the day was planned on.
-func use_ground(ground: RowGround) -> void:
-	_ground = ground
-
-## The day's ground for a row, as the dawn made it, or null for a plan no dawn of a day made.
-func ground() -> RowGround:
-	return _ground
