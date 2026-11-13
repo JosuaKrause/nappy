@@ -22,7 +22,14 @@ The call costs about 65 ns more per check. The two field readers ran once per li
 (`EventInstance._process()`) and once per physics tick (`EventManager._physics_process()`): about 2 us a frame at a
 realistic 30 live events (an estimate from the streaming radius, not a measurement) and 13 us at 200, under 0.1% of a
 16.7 ms frame on desktop, and about 0.5% at worst on a phone at the desktop-to-phone ratio the record M124 measured for
-the physics tick (about 6x). The phone itself was not measured.
+the physics tick (about 6x). The phone itself was not measured, and the game was not: in the frame record's own
+evidence (`docs/evidence/m159-frame-record-2026-10-04/`) a timed call cost about 4x what a microbenchmark predicted.
+At that ratio the bound is about 50 us a desktop frame at 200 live events, about 0.3 ms (2% of a 16.7 ms frame) on a
+phone at 6x, and about 0.3% of a phone frame at 30 events; `measure.py cost` in that folder is how an in-game number
+would be taken. The switch was made on that bound.
+
+**What it overturns.** The record M159-5 had a live event copy the switch when made and pay one member read; a timed
+system now asks the method instead, since designing-classes' "Fields are not API" holds wherever the cost allows.
 
 ## What was built
 
