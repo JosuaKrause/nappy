@@ -10,13 +10,13 @@ extends RoadblockGround
 ##   held or closed street, the home block, a tree) nearest the section's middle that the day's rules
 ##   (`StreetInvalidation`) refuse nothing, asked against the day's plans and what stands
 ##   (`DayEvents.standing()`). A section with no such tile is offered none, and none is ever offered
-##   on the main road (inbox #1186 in gentle-owl). **Every rule invalidates here, the spacing between two of a row
-##   included**: a tile with
-##   another roadblock within `EventScheduler.EVENT_SPACING_SAME` (256px), the one rule that bends elsewhere, is
-##   not offered, so construction keeps the day's roadblocks apart and the phase's bias ranks what is
-##   left. *Read as, the orchestrator's and open to correction:* which events make others invalid is
-##   "what your current rules accomplish. the same applies still" (inbox #1185 in gentle-owl), and the spacing is
-##   one of those rules.
+##   on the main road (inbox #1186 in gentle-owl). **Every rule invalidates here, the spacing
+##   between two of a row included**: a tile with another roadblock within
+##   `EventScheduler.EVENT_SPACING_SAME` (256px), the one rule that bends elsewhere, is not
+##   offered, so construction keeps the day's roadblocks apart and the phase's bias ranks what is
+##   left. *Read as, the orchestrator's and open to correction:* which events make others invalid
+##   is "what your current rules accomplish. the same applies still" (inbox #1185 in gentle-owl),
+##   and the spacing is one of those rules.
 ## - **Close by** is the walk her paths take, without leaving the circle of `TASK_ROW_CLOSE_BY` round
 ##   it, from the ground she touches it from (`close_by()`), with its own body standing.
 ##
@@ -94,7 +94,7 @@ func offer(section: Location) -> EventPlan:
 	for tile in fits:
 		var candidate := _builder.build(_def, tile, RandomNumberGenerator.new())
 		# `INF` alone: room all round, so the spacing between two of a row
-		# (`EVENT_SPACING_SAME`) leaves a tile invalid rather than merely cramped.
+		# (`EventScheduler.EVENT_SPACING_SAME`) leaves a tile invalid rather than merely cramped.
 		if candidate and _rules.room(candidate, _role, tile, already, reach_context) == INF:
 			return candidate
 	return null

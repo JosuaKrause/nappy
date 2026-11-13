@@ -267,9 +267,9 @@ static func _plan_the_dawn(context: DawnContext) -> void:
 ##
 ## **What a section is offered, and what close by is, are the day's**: `RuledRoadblockGround`
 ## stands the roadblock where it fits in the section and asks today's placement rules of it
-## (`StreetInvalidation`), never on the main road (inbox #1186 in gentle-owl); close by is the walk her paths take from
-## the ground she touches it from without leaving the circle of `RuledRoadblockGround.TASK_ROW_CLOSE_BY` round it
-## (`DayReach.paths_over()`), the widest the task searches (`ResistanceDirector.ROADBLOCK_WIDER_REACH`).
+## (`StreetInvalidation`), never on the main road (inbox #1186 in gentle-owl); close by is the
+## walk her paths take from the ground she touches it from without leaving the circle of
+## `RuledRoadblockGround.TASK_ROW_CLOSE_BY` round it (`DayReach.paths_over()`), the widest the task searches (`ResistanceDirector.ROADBLOCK_WIDER_REACH`).
 ##
 ## **What it does not promise.** Close by is measured over the ground as it stands when this runs:
 ## the scripted rows, the one-shots, the spoilers and the dawn draw after it shut more.
@@ -331,8 +331,9 @@ static func across_the_section(def: EventDef, builder: PlanBuilder, map: CityMap
 ## **How many of the day's route tiles have none of `def`'s rows close by as the day stands**,
 ## written to the run log: once every pass is done, each placed `def` the day stands
 ## (not a region door's body or the wall's own) is read as close by every route tile its paths
-## reach within `RuledRoadblockGround.TASK_ROW_CLOSE_BY` over the day's whole obstruction (`DayReach.shut_by()`), and the
-## route tiles it leaves are counted. The roadblock phase (`_place_the_roadblocks()`) aims at none,
+## reach within `RuledRoadblockGround.TASK_ROW_CLOSE_BY` over the day's whole obstruction
+## (`DayReach.shut_by()`), and the route tiles it leaves are counted. The roadblock phase
+## (`_place_the_roadblocks()`) aims at none,
 ## but a route tile no section within reach took one for and ground the later passes shut both
 ## leave some. A
 ## count and nothing more: nothing is placed or moved here. Nothing on a day with no `def`
