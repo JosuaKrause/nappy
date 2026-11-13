@@ -351,9 +351,7 @@ EXCEPTIONS: tuple[Exception_, ...] = (
             "src/events/event_scheduler.gd",
             "src/events/walk_ground.gd",
         ),
-        more=(
-            ("src/events/walk_ground.gd", 3),
-        ),
+        more=(("src/events/walk_ground.gd", 3),),
     ),
     Exception_(
         "names",
