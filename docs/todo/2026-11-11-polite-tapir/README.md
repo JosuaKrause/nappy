@@ -38,7 +38,7 @@ The review's tracks run beside minty-quail's, module by module (inbox #1268 in o
 module by module makes sense and can be parallelized"). The tracks are the review's worked-out
 detail, which the player approved.
 
-- **Placement:** `placement-by-construction.md`'s steps with `scheduler-breakup.md` interleaved.
+- **Placement:** `placement-by-construction.md`'s steps.
   Nothing else changes where events go until it is done (inbox #1185 in gentle-owl). Where it meets
   minty-quail: the first steps of minty-quail's
   `event-interface.md` (the callers outside the events folder, the live event's behaviours and

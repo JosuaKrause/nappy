@@ -136,8 +136,7 @@ Left, each its own design question:
   changes no line under `src/`.
 - **The lines the placement rewrite, the third hand-ins pull request and the events' interface
   touch** are converted after those land:
-  - `src/events/`, which the placement rewrite and the event scheduler's breakup rewrite
-    (polite-tapir's `placement-by-construction.md` and `scheduler-breakup.md`);
+  - `src/events/`, which the placement rewrite rewrites (polite-tapir's `placement-by-construction.md`);
   - `day_director.gd` and `main.gd`, the third hand-ins pull request's smaller cases still left, and
     the reads of the city's event manager and crowd, which wait for who builds them
     (`city-hand-ins.md`); `run_session.gd`'s reads of `City.map`, `City.crowd` and `Crowd.sources`
