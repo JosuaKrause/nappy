@@ -1,14 +1,14 @@
 priority: now
 fable-only: true
 
-# polite-tapir — The refactor's design review: placement drawn as she walks, the event scheduler broken up, one start for every kind of day, the standing layer breaks, the baseline measurements · filed 2026-11-11
+# polite-tapir — The refactor's design review: placement drawn as she walks, one start for every kind of day, the standing layer breaks, the baseline measurements · filed 2026-11-11
 
 **The ask.** The player had the refactor's design reviewed, the refactor being minty-quail (one
 engine: the codebase refactored by layer): "have a fable agent review the design of the refactor"
 (inbox #1265 in olive-ferret). Shown the review's findings, the player answered them point by point,
 then "let's apply the suggestions", "agree on all design review points. let's do it", and, of the
 mechanisms the review worked out, "I saw the review and approved it" (inbox #1268 in olive-ferret).
-The five items in this folder are that review's work; each opens with the finding it answers and the
+The items in this folder are that review's work; each opens with the finding it answers and the
 player's words on it.
 
 **Read as:** the work is the refactor's own, as minty-quail's is: minty-quail's "the refactor is the
@@ -43,7 +43,7 @@ detail, which the player approved.
   minty-quail: the first steps of minty-quail's
   `event-interface.md` (the callers outside the events folder, the live event's behaviours and
   looks) run beside placement, and its dawn, the event manager's parts, the resistance and the
-  scene recipes follow placement and the scheduler's breakup; what is left of minty-quail's
+  scene recipes follow placement; what is left of minty-quail's
   `re-derived-cases.md` (the scene recipes' own ground scans) closes with placement or after it; a probe minty-quail's `typed-everywhere.md` lists is typed
   or deleted by placement's step 4.
 - **Run flow:** who builds the events and the crowd (`one-start-for-every-spec.md`), together with
@@ -51,8 +51,9 @@ detail, which the player approved.
   between two placement pull requests.
 - **The standing layer breaks** (`standing-layer-breaks.md`): one pull request per group, each in
   its module's turn of minty-quail's order (within a module, its dead code, then its standing
-  breaks, then its interface and field reads, then its suites). Dawn planning's reads move with the
-  scheduler's breakup and are settled by row 3a of minty-quail's `event-interface.md`; the city
+  breaks, then its interface and field reads, then its suites). Dawn planning's reads stand in the
+  walk's siting and the walk's ground; placement's step 4 rewrites the siting, and row 3a of
+  minty-quail's `event-interface.md` settles both; the city
   scene as builder goes with the run flow above; the building's pass in minty-quail's order
   (`src/interior/`, `src/finale/`) takes its one read of `WorldMap.world` with the map interface's
   world half.

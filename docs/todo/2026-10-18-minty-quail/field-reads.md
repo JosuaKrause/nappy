@@ -65,8 +65,8 @@ is the files open work rewrites, typed by that work or after it, and three kept 
 own:
 
 - The event scheduler, the walk's ground and the event director (`src/events/event_scheduler.gd`,
-  `walk_ground.gd`, `event_director.gd`), which the placement rewrite and the scheduler's breakup
-  rewrite, then rows 3a and 3b of `event-interface.md`; and the event manager (`event_manager.gd`),
+  `walk_ground.gd`, `event_director.gd`), which the placement rewrite
+  rewrites, then rows 3a and 3b of `event-interface.md`; and the event manager (`event_manager.gd`),
   row 3b's.
 - `src/main.gd` and the city scene (`src/city/city.gd`), which the third hand-ins pull request and
   who builds the event manager and the crowd rewrite (`city-hand-ins.md`), the city scene then row

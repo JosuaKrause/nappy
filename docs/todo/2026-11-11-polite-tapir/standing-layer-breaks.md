@@ -62,7 +62,8 @@ review; a builder runs it again):
   designing-classes.
 - Dawn planning's reads of live-event geometry stand in `WalkSiting.could_be_in_her_view()` in
   `src/events/event_scheduler.gd` (`EventFootprints` once, `Stroller` three times), which placement's step 4
-  rewrites, and are settled by row 3a of minty-quail's `event-interface.md`.
+  rewrites, and in `src/events/walk_ground.gd` (`EventFootprints` three times, `EventInstance` once); row 3a
+  of minty-quail's `event-interface.md` settles both files' reads.
 - *Proposed, not asked for, the plainer alternative being to decide each when the pull request
   that finishes this item lists what is left:* **the rest** ends as follows. `DrawnView` goes on the world layer in
   the map, beside `VisibleView`: it names only the engine, as the halo's rim did. The `DangerEdge`
@@ -75,7 +76,8 @@ review; a builder runs it again):
   third hand-ins step; `Prop` as a data constant, in a pull request of its own; `GameSave` and
   `HelpText` in the view's pass; `ResistanceHappenings` with a run's parts (minty-quail's `field-reads.md`); the
   calendar's map and `SpawnSiting` with rows 3c and 4b of minty-quail's `event-interface.md`; and `RowGround`'s
-  `City.BURNT_FRONTAGE_SCAR` (`src/events/row_ground.gd`) with placement's steps.
+  `City.BURNT_FRONTAGE_SCAR` (`src/events/row_ground.gd`, read by `_burns_its_front()`) when placement
+  closes, since no step of `placement-by-construction.md` rewrites that read.
 - `src/events/` holds data, model and simulation files side by side, so a new file there takes the
   most permissive of the three by default: the folder is split by layer, or the map names a
   default for it that a new file has to opt out of.

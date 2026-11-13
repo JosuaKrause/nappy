@@ -22,6 +22,9 @@ nowhere in `src/`, `tests/`, `tools/` or `scenes/`; no module holds more than a 
   (`EventScheduler.WalkSiting`) so its suites can read the work the siting did: it stays until step
   4 of polite-tapir's `placement-by-construction.md`, which replaces the walk's old siting roll, and
   goes with that step (`tests-unseen-reads.md`, `tests-public-seams.md`).
+- `src/events/`: `EventScheduler._calm_rect()`, which nothing under `src/` calls; only the probe
+  `tests/probes/m97_spoilage.gd` does, and a comment in `src/routes/closure_planner.gd` still cites
+  it. It goes with the probe's call, the comment rewritten in the same pull request.
 - `src/city/`: the city map's industrial-block count for the power station
   (`CityMap._power_station_industrial_blocks`, the recipe key `power_station_industrial_blocks`), which the generator
   writes and the map's copy, capture and restore and the scene recipe files only carry: nothing reads it. Deleting it

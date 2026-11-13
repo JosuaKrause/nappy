@@ -6,8 +6,7 @@ phase, each handed the day's `DawnContext`, the location judge gets a file of it
 ordered list of phases.
 
 **Who did what.** A Fable agent wrote the detailed design and handed the coding off (inbox #1432 in minty-rabbit); Sonnet
-built it in three pull requests, each reviewed by Fable but the third, whose Fable review the player left to the next
-session.
+built it in three pull requests, each reviewed by Fable.
 
 ## What was built
 
@@ -26,8 +25,8 @@ session.
 
 - **The phases' run-log lines** go through `context.note(`, which `tests/test_texts_catalogue.gd` read as player-facing
   sentences once they left the scheduler, a file on its allow-list; `res://src/events/dawn_phases/` joined the list.
-- **A rename wrapped across a line** (a name broken after `EventScheduler.`) was missed by the builders' scripted pass
-  twice; each review found it.
+- **A rename wrapped across a line** (a name broken after `EventScheduler.`) was missed by the second pull request's
+  scripted pass, and its review found it.
 - **The divider "the day's locations, from the bags"** stays in the scheduler over `LOCATIONS_SALT`, `view_weight()`
   and the bags' tables, which placement's step 3 replaces in place.
 
@@ -61,15 +60,25 @@ The designer's, where the item is silent, each with what it was chosen over:
   `tests-one-module.md` may add.
 - **Three pull requests** where the item says one, since one would run past what a builder holds well.
 
-## Left open, on the board
+## Settled with the player on the board
 
-- **Whether the files now holding balance numbers come under the balance rules** (board question balance-reach):
-  `TASK_ROW_CLOSE_BY` and the location judge's two weights, `DawnMasts.CURFEW_ANNOUNCE_DAY`, and the park spoilers'
-  three numbers in `dawn_spoilers.gd` sit in files only the events row of the rules covers.
-- **When `WalkSiting` (about 580 lines) gets a file of its own** (board question walksiting-lift): the designer proposed
-  placement's step 4, which rewrites it; the scheduler stays about 1,500 lines until placement's steps delete their
-  blocks.
-- **No listed layer break moved**: the scheduler's four stand in `WalkSiting.could_be_in_her_view()`.
+- **The files now holding balance numbers come under the balance rules** (board question balance-reach, 2026-11-13;
+  inbox note #1455): `TASK_ROW_CLOSE_BY` in `ruled_roadblock_ground.gd`, the mouse's two pile numbers in
+  `ruled_location_ground.gd` (`_MOUSE_PILE_ADJACENCY`, `_MOUSE_PILE_EXTRA_COPIES`), `DawnMasts.CURFEW_ANNOUNCE_DAY`,
+  and the park spoilers' three numbers in `dawn_spoilers.gd` sit in files only the events row of the rules covers.
+  One pull request after this one adds them to the balance row of the rules hook, `CLAUDE.md`'s table and the
+  hook's test.
+- **`WalkSiting` (about 580 lines) gets a file of its own at placement's step 4**, which rewrites it, and the
+  scheduler is handed it so a test can pass a mock (board question walksiting-lift, 2026-11-13; inbox note #1456);
+  step 4 of `placement-by-construction.md` says so. The scheduler stays about 1,500 lines until placement's steps
+  delete their blocks.
+
+## Left open
+
+- **No listed layer break moved**: the scheduler's four stand in `WalkSiting.could_be_in_her_view()`, and
+  `walk_ground.gd` keeps its four.
+- **`EventScheduler._calm_rect()` is unreached under `src/`**: only the probe `tests/probes/m97_spoilage.gd` calls
+  it. minty-quail's `dead-code-sweep.md` lists it.
 
 The probe `tests/probes/m128_park_beats.gd` exits on two shared-state leaks (a `City` left in the runner, a signal left
-connected) on `main` as on this branch: older than this work, and not built here.
+connected): older than this work and not built here; #1453 fixes both on `main`.
