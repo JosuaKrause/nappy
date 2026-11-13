@@ -21,9 +21,9 @@ the line counts are its estimates. All under `src/events/`:
 
 - **`dawn_phases/`**, one class per phase with `run(context)`, each handed the day's `DawnContext`
   (`src/events/dawn_context.gd`, the one object every pass takes in place of `build_day()`'s parameters): the fixed parts (ambient rows, masts,
-  wall bodies holding their locations), the scars, the roadblock phase's glue with its ground
-  judge, the scripted rows, the one-shots, the park spoilers, the lessons and the moments.
-- **`RuledLocationGround`** in a file of its own: the judge that offers a row at a location.
+  wall bodies holding their locations), the scars, the roadblock phase's glue (its ground judge,
+  `RuledRoadblockGround`, already stands in `dawn_phases/`), the scripted rows, the one-shots, the park spoilers, the
+  lessons and the moments.
 - **`event_scheduler.gd`** keeps `build_day(context)` as an ordered list of phases.
 
 Three blocks are not moved, because `placement-by-construction.md` deletes them in place: the old
@@ -41,8 +41,11 @@ and fails a read that is new; a read that only moved may add its line to the lis
 grassy-trout), and review reads a moving diff for the cases the check cannot count
 (minty-quail-breezy-bison).
 
-- **The phases**, a pull request of their own: the phases move code out of `event_scheduler.gd`,
-  each taking the `DawnContext` the dawn's passes already take.
+- **The phases**, two pull requests: the dawn's opening phases (the base class, the list in `build_day()`, and the
+  ambient rows, the scars, the masts, the wall's bodies, the calm area kept clean and the roadblocks), then its other
+  phases (the scripted rows, the one-shots, the park spoilers, the moments, the dawn draw, the run lesson and the
+  roadblock count), after which `build_day()` is the list alone. Each moves code out of `event_scheduler.gd`, each
+  phase taking the `DawnContext` the dawn's passes already take.
 
 Dawn planning's reads of live-event geometry (`standing-layer-breaks.md`) move with their code,
 each listed break carried to its new file in `tools/layer_map.py`, and are settled by row 3a of minty-quail's

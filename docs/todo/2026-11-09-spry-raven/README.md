@@ -34,7 +34,7 @@ never triggers its two-second inspection; an alley mouth's body beside it stands
 
 **Already built elsewhere:** placement by construction (polite-tapir) never offers the main road a
 roadblock, neither one day 13's roadblock phase places nor one the task swaps in
-(`EventScheduler._is_on_the_main_road()`), and no convoy drops a barricade any more (gentle-owl #1183,
+(`EventScheduler.is_on_the_main_road()`), and no convoy drops a barricade any more (gentle-owl #1183,
 the record minty-quail-crisp-koala).
 
 **Item:** `main-road-guardhouse.md`, mostly built on draft pull request #1188, paused until the
