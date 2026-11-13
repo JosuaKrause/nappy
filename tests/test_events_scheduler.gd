@@ -630,7 +630,7 @@ static func _has_a_carriageway(map: CityMap, section: Location) -> bool:
 
 ## **Day 13's roadblock phase stands its roadblocks beside her routes and says how many route tiles
 ## it leaves without one** (inbox #1185 in gentle-owl, inbox #1186 in gentle-owl): the day planned with the task's row
-## (`build_day()`'s `beside_the_routes`, `RoadblockPhase`) on the suite's own city, where the run log
+## (`DawnContext.roadblock_row()`, `RoadblockPhase`) on the suite's own city, where the run log
 ## names each one it stood. Each is on a route-adjacent street (`Corridor.view_of()`),
 ## off every tile a route runs along and off the main road, nothing else stands within
 ## `EVENT_SPACING_ANY` of it, no two of them stand within `EVENT_SPACING_SAME` of each other (the
@@ -745,7 +745,7 @@ const _CHOICE_CITY_SEED := 1000
 const _CHOICE_DRAW_SEED := 3855935566
 ## The body stood on the clean area's one way in: a burst water main, whose body reaches 96px each
 ## way from the middle of the street, across its 192px. Stood through the run's scars, the one way a
-## day stands a catalogue body on a spot of the caller's choosing (`build_day()`'s `scars`).
+## day stands a catalogue body on a spot of the caller's choosing (`DawnContext.scars()`).
 const _CUTTING_BODY := "burst_water_main"
 
 ## **On the swing day, a scar that would cut the clean calm area off is not stood.** Day 12's route

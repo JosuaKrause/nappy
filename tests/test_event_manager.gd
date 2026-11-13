@@ -590,7 +590,7 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 		t.check(checked.has(id), "'%s' is among the rows sent down her line (%s)"
 				% [id, ", ".join(checked)])
 
-## **The ground the dawn made is the walk's** (`DayEvents.use_ground()` at dawn,
+## **The ground the dawn made is the walk's** (`DawnContext.ground()` at dawn,
 ## `DayPlanner.Plan.use_ground()`, `EventManager._take()`, `WalkEvents.ground()`): a day started
 ## through the manager carries one, so what is sited while she walks is not made a ground of its
 ## own by `EventsAhead._ground_of_the_walk()`'s fallback, which would scan the city a second time

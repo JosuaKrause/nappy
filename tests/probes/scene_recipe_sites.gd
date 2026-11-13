@@ -51,7 +51,7 @@ func run(_t: TestRunner) -> void:
 	map.repaint(state)
 	var finale := FinalePlanner.route(map)
 	DayPlanner.plan_the_escape_city(map, finale, own_run.calendar.day_rng(14, "finale"), _city_spec(),
-		GamePlanBuilder.over(map))
+			GamePlanBuilder.over(map))
 	var guards := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	print("ESCAPE_EXIT ", FinalePlanner.service_exit_world_position(map))
 	var found := 0

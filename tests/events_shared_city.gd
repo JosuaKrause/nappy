@@ -45,9 +45,9 @@ func _rng(day: int) -> RandomNumberGenerator:
 ## **Ten checks below ask for exactly this**: `GameDawn.of(DaySpec.for_day(day), _rng(day),
 ## _map())` with a fresh empty `consumed` handed to `spent()`, and `build_day` is the most expensive
 ## call in this suite at roughly two thirds of a second for an early day and a second for a late
-## one. Planning the same fourteen days
-## ten times over was six or seven minutes of re-deriving an answer that nothing between the calls
-## had changed, and none of the ten was checking anything the first one had not already produced.
+## one. Planning the same fourteen days ten times over was six or seven minutes of re-deriving an
+## answer that nothing between the calls had changed, and none of the ten was checking anything
+## the first one had not already produced.
 ##
 ## Every caller reads the plans and none writes to them, which is what makes one copy safe to
 ## share. **Two callers go round this on purpose and both have to.**

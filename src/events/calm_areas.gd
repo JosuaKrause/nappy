@@ -5,14 +5,14 @@ extends RefCounted
 ## is a park or a quiet block where the baby can settle; its calm ground is the part of its lot she
 ## settles on (`ClosurePlanner.calm_area_rect()`: a courtyard's court, a park's open rect).
 ##
-## **Worked out once and handed to whoever asks** (inbox #1156 in gray-dolphin): `DayPlanner` makes the day's
-## with `of()` and hands it to the dawn's context (`DawnContext`), which `EventScheduler.build_day()`
-## hands to its passes and which makes `DayEvents` over it, and the day's plan (`DayPlanner.Plan.calm()`) carries it past
-## dawn to the walk's events (`WalkEvents.calm()`), whose sitings read their leave-alone ground off
-## it, so no two of them can disagree about an area. A scene recipe makes one for its whole recipe
-## and hands it to each of its rows' placements (`EventScheduler.recipe_placement()`), and the
-## escape's city makes its own (`DayPlanner.plan_the_escape_city()`: nothing used, nothing set
-## aside).
+## **Worked out once and handed to whoever asks** (inbox #1156 in gray-dolphin): `DayPlanner`
+## makes the day's with `of()` and hands it to the dawn's context (`DawnContext`), which
+## `EventScheduler.build_day()` hands to its passes and which makes `DayEvents` over it, and the
+## day's plan (`DayPlanner.Plan.calm()`) carries it past dawn to the walk's events
+## (`WalkEvents.calm()`), whose sitings read their leave-alone ground off it, so no two of them can
+## disagree about an area. A scene recipe makes one for its whole recipe and hands it to each of
+## its rows' placements (`EventScheduler.recipe_placement()`), and the escape's city makes its own
+## (`DayPlanner.plan_the_escape_city()`: nothing used, nothing set aside).
 ##
 ## **Never saved.** What it is derived from is: the city (its seed and `CityState`), and where she
 ## settled (`SettledState`, read through `RunCalendar.settled_this_act()`). A load plans the day

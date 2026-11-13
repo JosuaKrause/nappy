@@ -1096,7 +1096,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 		var plan := FinalePlanner.route(map)
 		var placements := DayPlanner.plan_the_escape_city(map, plan,
 				run.calendar.day_rng(run.header.day, "finale"), _city_spec(),
-					GamePlanBuilder.over(map))
+				GamePlanBuilder.over(map))
 		var bands := _escape_roadblocks(placements)
 		var hers := map.network.segment_containing(WHERE_THE_PLAYER_WAS_CAUGHT)
 		var on_her_street := 0
@@ -1283,7 +1283,7 @@ func _test_a_restart_plans_the_same_escape(t: TestRunner) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = SEEDS[0]
 		plans.append(DayPlanner.plan_the_escape_city(map, FinalePlanner.route(map), rng, _city_spec(),
-			GamePlanBuilder.over(map)))
+				GamePlanBuilder.over(map)))
 	var first: Array[EventPlan] = []
 	first.assign(plans[0])
 	var second: Array[EventPlan] = []
@@ -1378,7 +1378,7 @@ static func _bare_plan(map: CityMap, seed_value: int) -> Dictionary:
 	rng.seed = seed_value
 	var plan := FinalePlanner.route(map)
 	var seals := DayPlanner.plan_the_escape_city(map, plan, rng, _city_spec(),
-		GamePlanBuilder.over(map), false)
+			GamePlanBuilder.over(map), false)
 	return {"plan": plan, "streets": plan.open_streets, "seals": seals, "rng": rng,
 			"state": rng.state}
 

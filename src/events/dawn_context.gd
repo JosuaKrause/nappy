@@ -116,17 +116,19 @@ func day_seed() -> int:
 ## phases off a single sequence and anything that changes how much an earlier phase draws moves
 ## everything after it — and two things change between attempts by design:
 ##
-## - `EventScheduler._place_one_shots` skips a one-shot the run has already spent. Skipping it *before* drawing its
-##   `randf()` would start every later phase's draws one value earlier on the second attempt and
-##   produce a different city's worth of events.
-## - `EventScheduler._place_scars` prepends what the run has burnt down, and every scar is one more plan for
-##   `StreetInvalidation.room_around` to reject a placement against — and a rejection is a re-roll.
+## - `EventScheduler._place_one_shots` skips a one-shot the run has already spent. Skipping it
+##   *before* drawing its `randf()` would start every later phase's draws one value earlier on the
+##   second attempt and produce a different city's worth of events.
+## - `EventScheduler._place_scars` prepends what the run has burnt down, and every scar is one
+##   more plan for `StreetInvalidation.room_around` to reject a placement against — and a
+##   rejection is a re-roll.
 ##
 ## Separate streams close the first completely and most of the second (each phase's salt, the dawn
 ## draw's `LOCATIONS_SALT` among them).
-## What is deliberately *not* closed: a scar that genuinely occupies the ground an event wanted still
-## moves that event. That is the right answer — a fire that burnt a block down did happen, and the
-## day should acknowledge it — and it is a handful of placements rather than the whole day.
+## What is deliberately *not* closed: a scar that genuinely occupies the ground an event wanted
+## still moves that event. That is the right answer — a fire that burnt a block down did happen,
+## and the day should acknowledge it — and it is a handful of placements rather than the whole
+## day.
 func stream(salt: int) -> RandomNumberGenerator:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("%d:%d" % [_seed, salt])
@@ -261,7 +263,6 @@ func rules() -> StreetInvalidation:
 ## stand without, so no body of theirs covers a tile a route runs along, the streets' included,
 ## nor the street she starts on.
 ##
-##
 ## The street the front door opens onto, which nothing is placed on: the day's ground refuses it
 ## to every row (`RowGround.tiles_for()`), and the route's ground rule is handed it.
 ##
@@ -277,7 +278,7 @@ func rules() -> StreetInvalidation:
 ##
 ## Nothing else needs the exemption: the spoiler grid places on calm ground, a scar is where
 ## something already happened (and its body is kept off this street by `RouteGroundRule`, which
-## `_plan_the_dawn()` hands this street as the routes' first stretch), and an ambient event has no
+## `route_ground()` hands this street as the routes' first stretch), and an ambient event has no
 ## tile.
 func route_ground() -> RouteGroundRule:
 	if _route_ground == null:

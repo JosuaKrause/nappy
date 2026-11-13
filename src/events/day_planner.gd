@@ -252,6 +252,9 @@ func _plan_the_escape_city(spec: DaySpec, rng: RandomNumberGenerator) -> Plan:
 ## anything afterwards. The events are handed the seals too, because what they may not close is the
 ## walk from where she stands to either exit with the seals already down.
 ##
+## `builder` makes every plan the dawn sites (`DawnContext.builder()`), and `populate_events` says
+## whether the events are sited at all.
+##
 ## `trace` is where the bag draw writes its count for the run log (`EventScheduler.build_day()`).
 static func plan_the_escape_city(map: CityMap, walk: FinalePlanner.Plan,
 		rng: RandomNumberGenerator, spec: DaySpec, builder: PlanBuilder,
