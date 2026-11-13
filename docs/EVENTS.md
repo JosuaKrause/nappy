@@ -67,7 +67,7 @@ to tune, and a catalogue that lives in one file is easier to balance than forty 
 | `barrier_structure` | Whether this row is a piece of the region boundary — a street being held. The four that are (`checkpoint_hut`, `checkpoint_gate`, `checkpoint_post`, `roadblock`) charge the meter as **one** source, the strongest at her position, rather than as their sum; everything else in the catalogue still sums — see "Checkpoints" |
 | `heat_response` | How the row answers to the resistance: `NONE`, `PRESSES` (more of them, more expensive, and past half way it stops near her and a man on foot gets out, whose catch costs her), `HUNTS` (it stops being a place and starts being a hunter; the two vans hunt on foot, letting out men whose catch ends the day) — see "The heat" |
 | `look` | Which picture it draws. **One per row, and no two rows share one** — see "The visual vocabulary", point 6 |
-| `has_a_spread` | Whether the row draws itself as a **spread**, laid along its street's axis: segments or one scene fitted across `obstructs_radius` (`construction`, `burnt_shell`, `market_stall`, `roadblock`, `barricade`, `scaffolding`, `collapsed_frontage`, `cafe_tables`, and the wide seal scenes `fallen_tree`, `car_accident`, `burst_water_main`). Row data, kept by every copy; a spread is never offered a corner (`EventScheduler.open_ground_for`) |
+| `has_a_spread` | Whether the row draws itself as a **spread**, laid along its street's axis: segments or one scene fitted across `obstructs_radius` (`construction`, `burnt_shell`, `market_stall`, `roadblock`, `barricade`, `scaffolding`, `collapsed_frontage`, `cafe_tables`, and the wide seal scenes `fallen_tree`, `car_accident`, `burst_water_main`). Row data, kept by every copy; a spread is never offered a corner (`RowGround.tiles_for()`) |
 | `stands_along_its_street` | Whether the row stands along its street like a spread without being drawn as one: `protest` and `firefight`. Its drawn box and its body's spine follow the street's axis (`EventFootprints.drawn_box_of()`, `solid_axis_of()`); it never asks a spread's corner question |
 | `lies_across_its_street` | Whether a stationary vehicle lies across its street rather than along it: `burnt_out_car`, where `moving_van` stands along the kerb (`EventFootprints.stands_side_on()`) |
 | `warning_picture` | The pictures a row standing in its warning is drawn in, whose largest decides whether that warning would stand in her view (`EventFootprints.warning_picture_size()`): `GUARD_ALERT` (the default), `DOG_ALERT` (`charging_dog`), `ROBBER_ALERT` (`alley_robbery`) |
@@ -1349,7 +1349,7 @@ Each item quotes the code on this branch.
    design has the view's bag alone decide; the weights are what holds the refactor at today's mix
    while the rules are still today's (item 1), and are fitted again when the rules change.
 8. **A row's own ground is still asked tile by tile inside the view.** A wall's own ground refuses
-   only the cells a route runs along (`Corridor.carries_a_route()`, in `EventScheduler.ground_for()`), so on a
+   only the cells a route runs along (`Corridor.carries_a_route()`, in `RowGround.offers_for_role()`), so on a
    route street a wall stands only on the sidewalk across from the route, and the ground beyond the
    streets is told its view by the grid's own depth (`Corridor.view_of_ground()`).
 
@@ -1414,7 +1414,12 @@ so a day's `plan` line reads as *n sited, m ahead*.
 ### Where in the city, and why
 
 **The pool is narrower than "every tile of the right type" before a single weight is applied.**
-`EventScheduler.open_ground_for` refuses five kinds of ground outright, by construction rather than
+Which tiles a row may stand on is the day's ground's answer (`RowGround`, `src/events/row_ground.gd`):
+one object a walk, made at dawn (`EventScheduler.row_ground()`), which scans the map once for each
+question a row asks and keeps the answer, and is handed to every placement that asks: the dawn's
+phases, and, with the walk (`WalkEvents.ground()`), whatever is sited while she walks, so nothing
+scans the city for it again and both stand their rows on the same ground.
+`RowGround.tiles_for()` refuses five kinds of ground outright, by construction rather than
 as a check on what a roll came back with:
 
 - a tile closed today (`CityMap.is_closed`);
@@ -1425,7 +1430,7 @@ as a check on what a roll came back with:
   day is what yields, and a van, a café, a market stall, a yeller or a dog walker is never in or
   behind one. `docs/CITY.md`, "Street trees", is why they are rare enough for this to cost the day
   almost nothing;
-- the street the front door opens onto (`_the_street_she_starts_on` — a notch with one exit is not
+- the street the front door opens onto (`ClosurePlanner.home_street()` — a notch with one exit is not
   a route decision, it is a tax);
 - a tile whose street segment is **held** today (`CityMap.is_held_at`) — a hard seal's own segment,
   a region wall or door, or a segment bordering the home block, all in `CityMap.held_streets()`; a
@@ -1473,7 +1478,7 @@ See `docs/CITY.md`, "A pacing row is passed by waiting, or left at a crossing".
 
 **A seal is checked the same way in a different place.** `SealPlanner` puts a body on the
 off-tree streets it seals whether or not the scheduler would have offered that tile, so it never asks
-`open_ground_for` at all; `SealPlanner._seal_along_tile` applies the tree refusal at the one place
+`RowGround.tiles_for()` at all; `SealPlanner._seal_along_tile` applies the tree refusal at the one place
 a seal's site is chosen, stepping along the street from its midpoint to the nearest cross-section
 with no pit in it. The single exception in the whole game is `fallen_tree_seal`, which stands *on*
 a pit and empties it — see `docs/CITY.md`, "What closes a street". See `docs/CITY.md`,
@@ -1526,7 +1531,7 @@ the kerb, over 28 — a body this narrow only needs to move off the exact middle
 where a wider one could not.
 
 **A pinned row is a sidewalk row, because a square has no sides.** `CityMap.pavement_inward`
-answers nothing on a square, so `EventScheduler._wants_this_side` refuses every square tile to a
+answers nothing on a square, so `RowGround._wants_this_side()` refuses every square tile to a
 row carrying `AT_THE_KERB` or `AGAINST_THE_BUILDING` — which means a `placement` listing that
 ground is listing ground the row can never be offered. `poster_crew_square` is the poster crew's
 answer to it: the same event on the ground the pinned row cannot take, standing at the free-standing
@@ -1556,7 +1561,7 @@ a closure, a calm zone's absorbed corridor or the map's own margin cuts it short
 everywhere, a wall where the street gave it no way out.
 
 **A pacing wall is offered its ground at friction's weights and takes only the wall's refusal**, and
-that is the one place the two halves of a role come apart: `EventScheduler.ground_for()` builds a pool per role
+that is the one place the two halves of a role come apart: `RowGround.offers_for_role()` builds a pool per role
 before any tile is rolled, and a beat does not exist until one is — so the tile it lands on was
 offered as friction's and the corridor's own sidewalk is then refused it. What it lands on in
 practice is the far side of a route street, which is where the rim weight would have sent it
@@ -1592,8 +1597,8 @@ particular.
 recommendation). -- do that")* The rim is for the big, noisy things meant to be seen from a
 distance before she commits to a street; `delivery_van` is silent and a wall only because its own
 body leaves no lane, which the
-cost clause never sees (`EventScheduler._is_a_wall_by_cost` is the question `_copies_of` asks
-before choosing a `WALL`'s weight). So a wall by fit keeps only the one consequence every wall
+cost clause never sees (`EventScheduler._is_a_wall_by_cost` is the question the day's ground is
+handed, and `RowGround._times_for_role()` asks it before choosing a `WALL`'s weight). So a wall by fit keeps only the one consequence every wall
 gets — zero copies of a route-carrying cell — and is weighted everywhere else exactly as friction
 is, landing on the far side of a route street through `EVENT_CORRIDOR_WEIGHT` rather than through
 the rim. A pacing wall's own reach is wide enough that it answers the cost question too, so its own
@@ -1994,7 +1999,7 @@ All implemented.
 | --- | --- | --- | --- |
 | `playground` | AMBIENT | 1 | Free — intensity 0. The swing frame in every park is `map.playgrounds`' own prop, drawn whether or not this row costs anything; a one-block park has no ground left to settle her on once anything standing in the middle of it costs, so nothing here does. |
 | `cat_dash` | RECURRING (`AHEAD_OF_PLAYER`) | 1 | Crouches, then bolts across the traffic. It does not telegraph its coming (see "What telegraphs"): no badge; its in-world telegraph still meets the fairness contract. Intensity 17, tiny radius, 1.8s duration — long enough to carry it the whole way across the street it starts at the edge of, and raised from 15 for a sharper startle spike once the barrier fields it used to be judged against went quiet. Its dash, driven straight at a standing player, still projects under `Tuning.EXPECTED_IMPACT_POINTS`, so the crouch's own silhouette carries the warning rather than a caret. Sited at `EventDef.ahead_of_player_lead()` rather than the flat `AHEAD_LEAD_DISTANCE`, which prices in the ground she covers while it holds its crouch, so it crosses where she actually is by the time it moves rather than behind her. The tutorial obstacle. |
-| `alley_mouse` | RECURRING | 1 | The cat's shape, `MAP`-placed on `ALLEY` tiles instead of director-sited — an alley she is routed through is already ground she is about to walk, unlike a `ROAD` tile that could be anywhere in the city. Intensity 21 on a 60/15px field (the cat's 4:1 ratio) and half its cap (4), on top of the alley's own `Baby.EXCITEMENT_FROM_ALLEY` (+3.0/s) ambient dread. **Priced above the cat on each row's own ground**, which is not the same ground — *(2026-09-12: "alley mouse is a bit above charging cat"; "consider that the mouse is in the alley but the cat is usually not")*. A cat is met on a street that gives back 6.0/s; a mouse only ever in an alley, which gives back 3.5/s and is charging the dread as well, so the alley hands this row most of the gap before its intensity is touched. It walks to **+19.9 in an alley** against the cat's **+17.6 on a street**. The field is only 60px across, so the crossing is a second and a third and the spike has to be bought in intensity — there is no `impulse` field. No body, nothing lethal. Waits unclocked (`EventDef.notice` 150px, without `EventDef.pursuit`) until she is close, so a `MAP` placement streamed in from `EVENT_STREAM_RADIUS` does not telegraph and finish off screen before she arrives — see `EventDef.notice` and `EventNoticeRun`. Its two-point dash is read off `CityMap.alley_rects` and laid across whichever side of the alley is narrower — always the width, since she can only be walking the length — so it crosses her path rather than running down it (`EventInstance._alley_crossing_path()`). `EventScheduler._refuses_required_alleys`, stated over `def.placement == [ALLEY]` and shared with `alley_robbery`, keeps it off alleys she has no way around. It does not telegraph its coming (see "What telegraphs"): no badge; its in-world telegraph still meets the fairness contract. |
+| `alley_mouse` | RECURRING | 1 | The cat's shape, `MAP`-placed on `ALLEY` tiles instead of director-sited — an alley she is routed through is already ground she is about to walk, unlike a `ROAD` tile that could be anywhere in the city. Intensity 21 on a 60/15px field (the cat's 4:1 ratio) and half its cap (4), on top of the alley's own `Baby.EXCITEMENT_FROM_ALLEY` (+3.0/s) ambient dread. **Priced above the cat on each row's own ground**, which is not the same ground — *(2026-09-12: "alley mouse is a bit above charging cat"; "consider that the mouse is in the alley but the cat is usually not")*. A cat is met on a street that gives back 6.0/s; a mouse only ever in an alley, which gives back 3.5/s and is charging the dread as well, so the alley hands this row most of the gap before its intensity is touched. It walks to **+19.9 in an alley** against the cat's **+17.6 on a street**. The field is only 60px across, so the crossing is a second and a third and the spike has to be bought in intensity — there is no `impulse` field. No body, nothing lethal. Waits unclocked (`EventDef.notice` 150px, without `EventDef.pursuit`) until she is close, so a `MAP` placement streamed in from `EVENT_STREAM_RADIUS` does not telegraph and finish off screen before she arrives — see `EventDef.notice` and `EventNoticeRun`. Its two-point dash is read off `CityMap.alley_rects` and laid across whichever side of the alley is narrower — always the width, since she can only be walking the length — so it crosses her path rather than running down it (`EventInstance._alley_crossing_path()`). `EventDef.stands_only_in_alleys()`, stated over `def.placement == [ALLEY]` and shared with `alley_robbery`, keeps it off alleys she has no way around. It does not telegraph its coming (see "What telegraphs"): no badge; its in-world telegraph still meets the fairness contract. |
 | `dog_walker` | RECURRING | 1 | Mobile along the sidewalk at 32px/s — slower than walking, so the ordinary band rule applies. Intensity 33 on a tight radius, barking on a 3.5s pulse: it owns the pavement it is on, so walking straight through it is never the cheap option. **The measure is a pass, not standing beside it**: she and the dog walker going different ways at `Tuning.WALK_SPEED`, the row moving as the game moves it. What a pass nets, and the walk-through cost that has to stay under `EventScheduler.WALL_WORTH_OF_COST` for this row to be met on her route, are its line in [COSTS.md](COSTS.md). Deliberately given no `obstructs_radius` — a moving wall on a two-tile pavement pins the player against a building. |
 | `cafe_tables` | RECURRING | 1 | A café spilling out of its frontage, `obstructs_radius` 24px. The first thing in the game that is physically in the way on **day one**, and a **wall** by passability rather than by price: 24px of tables billing anybody within 56px of them leaves no line along the 64px sidewalk it stands on, so it is what the far side of a day-one street carries and never what the route's own sidewalk does. Pleasant, which is worse: nothing about it looks like a hazard and it still costs the street. Stationary, so it can never pin anybody. The people at the tables are drawn as well as the tables, because the tables are what obstructs and the conversation is what it emits — a real source, derived from the body itself: `inner_radius` 38px (touching the tables), `outer_radius` 64px (the pavement band's own centre to the carriageway's), so it bills somebody at the tables and not somebody across the street. |
 | `homeless_yeller` | RECURRING | 1 | Intensity 20 over a 210px field, yelling on a 5s **pulse**, and **pacing** eight tiles of pavement (`EventDef.paces`). A fixed source on a fixed patch is a line you draw once; a man walking up and down it is a timing problem on top of a routing one. Mobile, so he has no body. **The measure is a pass, not standing beside him**: she and he going different ways at `Tuning.WALK_SPEED` while he paces. What a pass nets, and the walk-through cost that keeps him under `EventScheduler.WALL_WORTH_OF_COST`, are his line in [COSTS.md](COSTS.md). **Friction or a wall depending on where his beat runs**: the way past him is never a lane and always a crossing — a beat that reaches a junction box is one she can leave at the zebra there while he is at the far end of it, and he stays on the route like any other timing problem; a beat truncated short of a junction by a closure or a calm zone leaves no way off his sidewalk, and that placement is a wall. His silhouette is his own — a long coat, a raised arm, a beard, one shape where a passer-by is two. One of him is also the resistance's first contact: the instance she actually hands the note to keeps shouting for `ResistanceDirector.NOTE_HANDOVER_LINGER_SECONDS` (2.5s) after the handover, still charging her the whole time, before he stops and walks off, the same departure any finished event takes (`EventInstance.leave_for_a_completed_task()`), while every other live one carries on. `paces` never reaches the end of its own path and he carries no `duration`, so this is the only way he ever leaves — at `departs_at` (60px/s, faster than his 30px/s shuffle and well under her own walk), and not until she is `Tuning.OUT_OF_SIGHT` of him: he does not pop out of existence mid-screen if she is standing right there watching. |
@@ -2219,15 +2224,15 @@ two are.
 
 **The escape offers its rows per street rather than per city, on the day's own ground** — a row
 fits a location of the street on the day's answer for the row (`LocationFit`, over
-`open_ground_for()`), since the chains already say which streets exist for it. *(Inbox #785 in minty-lemur: "does the escape use the same placement rules as the
+`RowGround.tiles_for()`), since the chains already say which streets exist for it. *(Inbox #785 in minty-lemur: "does the escape use the same placement rules as the
 regular game? it doesn't seem like it does. it should, though.")* So every refusal a day makes of a
 tile holds here — a closed tile, a held street, the home block, **a standing street tree's ground**
 (`docs/CITY.md`, "Street trees"), the side of the sidewalk a row wants, a corner for a row with a
 spread, the power station's front; all but the street the
 home's front door opens onto, a door the escape never sets off from (`DaySpec.holds_the_home_streets`
-off; `docs/CITY.md`, "The escape"). What is sited after dawn reads the same setting off the walk's
-spec (`EventScheduler.WalkSiting.holds_the_home_streets`, handed over by `EventsAhead`), so a row
-placed while she walks keeps the rule the walk was planned under.
+off; `docs/CITY.md`, "The escape"). What is sited after dawn asks the ground the walk was planned
+on (`RowGround`, made under that setting and handed to every `EventScheduler.WalkSiting` by
+`EventsAhead`), so a row placed while she walks keeps the rule the walk was planned under.
 Each candidate then meets the day's own spacing (`StreetInvalidation.room_around()`) and the escape's own refusals
 below, and is never offered the ground she starts on.
 

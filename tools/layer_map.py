@@ -153,6 +153,7 @@ FILES: dict[str, str] = {
     "src/events/mast_sites.gd": "model",
     "src/events/plan_builder.gd": "model",
     "src/events/roadblock_ground.gd": "model",
+    "src/events/row_ground.gd": "model",
     "src/events/roadblock_phase.gd": "model",
     "src/events/scripted_phase.gd": "model",
     "src/events/street_locations.gd": "model",
@@ -266,8 +267,8 @@ EXCEPTIONS: tuple[Exception_, ...] = (
     Exception_(
         "names",
         "City",
-        "the scheduler reads the burnt frontage's scar name off the city scene",
-        ("src/events/event_scheduler.gd",),
+        "a row's ground reads the burnt frontage's scar name off the city scene",
+        ("src/events/row_ground.gd",),
     ),
     Exception_(
         "names",

@@ -221,13 +221,17 @@ src/
 	plan_builder.gd       builds one event's plan at a tile: a row's facing, its route along or across
 	                      the street, room among placed plans, where its body stands; handed the map
 	                      and what it asks (what stops a row, where a body stands, the room)
+	row_ground.gd         which tiles a row may stand on today and how many times over each is
+	                      offered: one object a walk, made at dawn and handed to every placement
+	                      that asks, then to the walk; handed the map, the corridor, the
+	                      home-street rule, the weights and which wall is one by cost
 	day_events.gd         the day's planned rows read through one object: what each spoils, a
 	                      pursuit; kept in step as the plan is built, never saved
 	calm_areas.gd         the day's calm areas as dawn sees them: their ground, which she used
 	                      this act, the one that does not count today
 	walk_events.gd        the walk's plans read through one object once it has started: the plans
 	                      in the order they stream, everything but one, what stands in an area, the
-	                      doors, the calm areas, the reach and the day's locations
+	                      doors, the calm areas, the reach, the day's locations and its ground
 	day_reach.gd          where she can get to from home as the walk was planned: the ground its
 	                      plan shuts and the flood over it, made once as the walk starts; and the
 	                      walk her paths take within a circle, the measure of close by

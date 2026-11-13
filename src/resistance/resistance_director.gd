@@ -759,14 +759,14 @@ func _door_can_be_touched(door: Vector2) -> bool:
 const FIRE_ROW := "burning_building"
 
 ## The ground day 8's task stands on when the run never recorded a scar: every front day 3's fire
-## itself could be sited on (`EventScheduler.open_ground_for()` with `burning_building`'s own
-## `AT_THE_FRONT`), each with a building directly north of it to burn. A fresh ground cache, since
-## the scheduler's own is the day's and this asks once.
+## itself could be sited on (`RowGround.tiles_for()` with `burning_building`'s own
+## `AT_THE_FRONT`), each with a building directly north of it to burn. A ground of its own
+## (`EventScheduler.row_ground()`), asked once.
 func _fronts_a_fire_catches_on() -> Array[Vector2i]:
 	var fire := EventCatalogue.by_id(FIRE_ROW)
 	if not fire:
 		return []
-	return EventScheduler.open_ground_for(fire, _map, {})
+	return EventScheduler.row_ground(_map).tiles_for(fire)
 
 ## The guard. From `TRAP_FIRST_DAY` no chalk mark is ever placed without one, nor day 13's
 ## roadblock (`_keeps_a_waiting_guard()`) — a robber drawn from the band `alley_robbery`'s own

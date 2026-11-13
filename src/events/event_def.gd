@@ -190,7 +190,7 @@ enum SpawnMode {
 ## also fill `obstructs_radius`-worth of ground but are not spreads (`stands_along_its_street`), so
 ## a corner costs them nothing.
 ##
-## **`EventScheduler.open_ground_for` asks this before it offers a corner as a site**: a junction
+## **`RowGround.tiles_for()` asks this before it offers a corner as a site**: a junction
 ## has no single street for the spread's axis or `EventFootprints._centred_on_the_pavement_band` to
 ## answer about, so only a row that asks either question has anything to lose by standing on one.
 ## Kept by every copy (`duplicate()`, `at_heat()`).
@@ -1029,7 +1029,7 @@ func lunge_is_inside_the_catch() -> bool:
 enum Role {
 	NONE,
 	## Exempt from the cost rule's wall and friction placement: `EventScheduler.role_for` answers
-	## `NONE` for it before the cost check runs, so `_copies_of` neither pulls it off the corridor
+	## `NONE` for it before the cost check runs, so `RowGround._times_for_role()` neither pulls it off the corridor
 	## nor weights it onto one, and it lands on whatever tile the roll picks, as an ambient event or
 	## a scar does. `pigeon_flock` is the row it exists for: a 42-over-168px field crosses
 	## `EventScheduler.WALL_WORTH_OF_COST` and would otherwise be pulled off every route like any
@@ -1750,6 +1750,14 @@ func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> flo
 ## (`EventFootprints.stands_at()`).
 func stands_on_its_band_middle() -> bool:
 	return not mobile and obstructs_radius > 0.0 and pavement_side == Pavement.ANY
+
+## Whether the row stands in alleys and on no other ground: the robber and the mouse. Such a row is
+## refused an alley the day's routes run down (`RowGround.offers_for_role()`) and has no marble on
+## the route (`EventScheduler.view_weight()`), since that alley is ground she has no way around
+## rather than one she may choose to detour into. Stated over the ground the row lists rather than
+## its id, so a row that shares the shape inherits the refusal.
+func stands_only_in_alleys() -> bool:
+	return placement.size() == 1 and placement[0] == GameEnums.TileType.ALLEY
 
 ## Whether the row carries a field at all (`intensity` above zero): a silent body bills nothing
 ## round it, so standing clear of it is standing clear of its body.

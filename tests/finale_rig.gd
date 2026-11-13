@@ -1162,7 +1162,7 @@ func _test_the_players_seed_is_winnable_past_its_roadblocks(t: TestRunner) -> vo
 # ------------------------------------------------------- the day's own rules ---
 
 ## **The escape's own rows stand on the day's own ground for them** (`EventScheduler.street_ground()`
-## asks `open_ground_for()`): every truck, van, roadblock and burst on a tile a day would offer that
+## asks `RowGround.tiles_for()`): every truck, van, roadblock and burst on a tile a day would offer that
 ## row — none on the home block, none in a street tree, none on the wrong side of a sidewalk, no
 ## spread on a corner — all but the front door's street, a door the escape never sets off from.
 ## *(Inbox #785 in minty-lemur, 2026-10-18: "does the escape use the same placement rules as the regular game? it
@@ -1182,7 +1182,7 @@ func _test_the_escape_stands_its_rows_on_the_days_own_ground(t: TestRunner) -> v
 			var key := placement.def.get_instance_id()
 			if not offered.has(key):
 				var tiles := {}
-				for tile in EventScheduler.open_ground_for(placement.def, map, {}, -1, false):
+				for tile in EventScheduler.row_ground(map, null, false).tiles_for(placement.def):
 					tiles[tile] = true
 				offered[key] = tiles
 			var at := map.world_to_tile(placement.position)
@@ -2028,7 +2028,7 @@ func _test_a_day_owes_its_return_only_as_its_spec_says(t: TestRunner) -> void:
 	city.free()
 
 ## **A tree and an event never share ground** (`docs/CITY.md`, "Street trees"), and the escape's
-## own plan is a second placement path that does not go through `EventScheduler.open_ground_for`
+## own plan is a second placement path that does not go through `RowGround.tiles_for()`
 ## or `SealPlanner.plan_day` — so the rule is asserted on this side too, over the whole plan: the
 ## trucks, vans, masked men and bursts on the open streets, and every seal body off them.
 ##

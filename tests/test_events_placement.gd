@@ -35,7 +35,7 @@ func run(t: TestRunner) -> void:
 ##
 ## **A lethal event is a wall, and a wall never stands on ground a route runs along.**
 ## *(`docs/CITY.md`: "hard and lethal blockers form the paths — they are the walls… the route is
-## what is left between them.")* This is the one absolute in `_copies_of` and it is what the
+## what is left between them.")* This is the one absolute in `RowGround._times_for_role()` and it is what the
 ## milestone can most easily get wrong: a lethal row on the route she is being guided down is not a
 ## wall in the wrong place, it is the guidance pointing at the thing it exists to point away from.
 ##
@@ -55,13 +55,13 @@ func run(t: TestRunner) -> void:
 ## `RouteSidewalkRule`; a pacing row with no way off its sidewalk,
 ## `StreetInvalidation._a_pacing_beat_walls_a_sidewalk`), so the costly rows placed on the corridor are compared with
 ## what a draw without the weight would put there: for each, the corridor's share of the ground
-## `EventScheduler.open_ground_for()` offers that row, summed. With the weight at 1 the placed count
+## `RowGround.tiles_for()` offers that row, summed. With the weight at 1 the placed count
 ## falls under that sum; with it on, it stands well over it on every city tried.
 ##
 ## **The whole share sits under its own natural ceiling because `delivery_van` counts as a wall in
 ## this tally while its own ground is weighted exactly like friction.** `delivery_van` is a wall by
 ## fit (`_closes_the_band_by_its_own_placement`) and is refused every route-carrying cell like any
-## other wall, so it never shows up as `friction_on_the_route` even though `_copies_of`'s `by_cost`
+## other wall, so it never shows up as `friction_on_the_route` even though `RowGround._times_for_role()`'s `by_cost`
 ## clause spreads its ground the same way friction's is spread.
 ##
 ## An `AHEAD_OF_PLAYER` row is exempt from the first half and the exemption is the design rather
@@ -119,7 +119,7 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 		for key in tree.gaps():
 			gaps["%d:%s" % [day, key]] = true
 		var consumed: Array[String] = []
-		var ground := {}
+		var ground := EventScheduler.row_ground(map)
 		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
 				CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
 			if not plan.is_placed():
@@ -151,7 +151,7 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 				friction += 1
 				if away == 0:
 					friction_on_the_route += 1
-				var offered := EventScheduler.open_ground_for(plan.def, map, ground)
+				var offered := ground.tiles_for(plan.def)
 				var on_it := 0
 				for offered_tile in offered:
 					if corridor.depth(offered_tile) == 0:
@@ -336,7 +336,7 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 	var calm := CalmAreas.of(map)
 	var locations := DayLocations.lay_out(map, corridor)
 	var standing: Array[EventPlan] = []
-	for tile in EventScheduler.open_ground_for(def.for_day(day), map, {}):
+	for tile in EventScheduler.row_ground(map).tiles_for(def.for_day(day)):
 		var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
 				map.tile_to_world(tile), 1, nothing_down, corridor, no_doors, calm, standing,
 				locations)
@@ -380,7 +380,7 @@ func _paces_a_beat_with_no_way_out(plan: EventPlan, map: CityMap) -> bool:
 
 ## **A row pinned to one side of a pavement may not be offered ground that has no sides.**
 ## *(2026-09-19: "we need a separate square poster crew entity for this", PLAYTEST-107.)* A square
-## answers no `CityMap.pavement_inward`, so the ground the scheduler offers (`EventScheduler.open_ground_for()`) refuses every square
+## answers no `CityMap.pavement_inward`, so the ground the scheduler offers (`RowGround.tiles_for()`) refuses every square
 ## tile to a row carrying `AT_THE_KERB` or `AGAINST_THE_BUILDING` — and a `placement` entry whose
 ## every tile is refused is not a placement, it is a kind of ground the row silently stopped
 ## appearing on. That is exactly what happened to the poster crew when it moved against the
@@ -391,13 +391,13 @@ func _paces_a_beat_with_no_way_out(plan: EventPlan, map: CityMap) -> bool:
 ## `placement` are the seal pictures, sited by `SealPlanner` on ground it picks itself.
 func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t: TestRunner) -> void:
 	var map := MapCache.of(4242)
-	var ground := {}
+	var ground := EventScheduler.row_ground(map)
 	var asked := 0
 	for def in EventCatalogue.all():
 		if def.pavement_side == EventDef.Pavement.ANY or def.placement.is_empty():
 			continue
 		var offered := {}
-		for tile in EventScheduler.open_ground_for(def, map, ground):
+		for tile in ground.tiles_for(def):
 			var offered_type := map.tile_at(tile)
 			offered[offered_type] = int(offered.get(offered_type, 0)) + 1
 		for type in def.placement:
@@ -410,8 +410,8 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t: TestRunner
 	t.check(asked >= 4, "and the catalogue has pinned rows to ask it of (%d)" % asked)
 	# The pool the roll actually draws from, for the one row the player asked about: `poster_crew`
 	# is a sidewalk row now, and the square crew is the row that stands on squares.
-	t.check(not EventScheduler.open_ground_for(EventCatalogue.by_id("poster_crew"), map,
-			ground).is_empty(), "and the sidewalk crew still has ground of its own to stand on")
+	t.check(not ground.tiles_for(EventCatalogue.by_id("poster_crew")).is_empty(),
+			"and the sidewalk crew still has ground of its own to stand on")
 
 ## **The square's poster crew stands on squares and on nothing else.** *(2026-09-19: "we need a
 ## separate square poster crew entity for this", PLAYTEST-107.)* The sidewalk crew pastes against
@@ -424,7 +424,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t: TestRunner
 ## nothing at all on most of them and would go red on a reseed rather than on a defect.
 ## `EventScheduler.recipe_placement()` is the public entry that judges a row on one chosen tile as
 ## the day's own placement does (the scene recipes call it), so the sweep asks it directly, over seeds and over
-## days spanning the acts: the ground the scheduler offers the row (`open_ground_for()`) has to be
+## days spanning the acts: the ground the scheduler offers the row (`RowGround.tiles_for()`) has to be
 ## squares alone, the row is placed on tiles drawn from it, and every sidewalk tile of a sample
 ## strewn over the map is refused it, loudly: the refusal says the location the tile names does not
 ## take the row there (or that none holds it), rather than the row being placed somewhere else. The count at the end is what
@@ -444,7 +444,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 			map.repaint(state)
 			var tree := RouteTree.for_day(map, day)
 			var corridor := Corridor.of(tree)
-			var offered := EventScheduler.open_ground_for(def, map, {})
+			var offered := EventScheduler.row_ground(map).tiles_for(def)
 			var off_the_squares := 0
 			for tile in offered:
 				if map.tile_at(tile) != GameEnums.TileType.SQUARE:
@@ -964,7 +964,7 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 ## **A flock is scenery — overturned on 2026-09-13**, PLAYTEST-71: *"flocks are basically free
 ## already — don't count it as block, just count is scenery."* Under the plain cost rule a
 ## 42-over-168px field crosses `EventScheduler.WALL_WORTH_OF_COST`, so without `EventDef.Role.SCENERY`
-## `EventScheduler.role_for()` would call `pigeon_flock` a `WALL` and `_copies_of` would pull it off every route
+## `EventScheduler.role_for()` would call `pigeon_flock` a `WALL` and `RowGround._times_for_role()` would pull it off every route
 ## corridor the way any other expensive row is. `Role.SCENERY` is checked first and answers `NONE`.
 ##
 ## Two claims. The role is a fact about the def, checked directly on every placement the day

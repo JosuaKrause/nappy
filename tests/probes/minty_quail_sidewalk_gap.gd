@@ -41,7 +41,7 @@ func run(t: TestRunner) -> void:
 				_count(beats["barricade"], _gap(map, barricade, at, Vector2(0, going)))
 				asked += 1
 		var roadblock := EventCatalogue.by_id("roadblock")
-		var ground := EventScheduler.open_ground_for(roadblock, map, {})
+		var ground := EventScheduler.row_ground(map).tiles_for(roadblock)
 		for i in range(0, ground.size(), 7):
 			_count(beats["roadblock"],
 					_gap(map, roadblock, map.tile_to_world(ground[i]), Vector2.RIGHT))

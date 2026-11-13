@@ -383,7 +383,8 @@ func _test_a_place_that_cannot_be_sited_holds_nothing_up(t: TestRunner) -> void:
 			CalmAreas.of(map), MastSites.compute(map), [], [], tree, 0).placements()
 	var siting := RefusingSiting.new(day, map, tree,
 			FakeWalkEvents.new().set_plans(plans).set_calm(CalmAreas.of(map)),
-			EventScheduler.Verdicts.new(), GamePlanBuilder.over(map))
+			EventScheduler.Verdicts.new(), GamePlanBuilder.over(map),
+			EventScheduler.row_ground(map))
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("route-bag:refused:ahead:%d" % SEED)
@@ -547,8 +548,8 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 			# site a mast is offered is a tile a mast site may be.
 			var mast := city.events.ahead.director().route_row(row)
 			var ground := {}
-			for at: Vector2i in EventScheduler.open_ground_for(mast, map, {}, mast.pavement_side,
-					city.events.ahead.holds_the_home_streets):
+			for at: Vector2i in EventScheduler.row_ground(map, null,
+					city.events.ahead.holds_the_home_streets).tiles_for(mast, mast.pavement_side):
 				ground[at] = true
 			var siting := city.events.ahead.walk_siting()
 			t.check(siting.mast_checks > 0 and siting.mast_checks * 10 < ground.size(),
@@ -595,8 +596,9 @@ func _the_rigged_bag(told: Array[String]) -> Array:
 
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
 func _the_longest_route(city: City) -> Array[Vector2]:
-	var siting := EventScheduler.WalkSiting.new(city.events.world.day, city.map, city.streets().route_tree(),
-			FakeWalkEvents.new(), EventScheduler.Verdicts.new(), GamePlanBuilder.over(city.map))
+	var siting := EventScheduler.WalkSiting.new(city.events.world.day, city.map,
+			city.streets().route_tree(), FakeWalkEvents.new(), EventScheduler.Verdicts.new(),
+			GamePlanBuilder.over(city.map), EventScheduler.row_ground(city.map))
 	var longest: Array = []
 	for branch in city.streets().route_tree().branches:
 		for route: Array in branch.routes:

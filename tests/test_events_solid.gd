@@ -122,7 +122,7 @@ func _test_a_lorry_has_a_wall_to_back_into(t: TestRunner) -> void:
 			if plan.def.pavement_side != EventDef.Pavement.AGAINST_THE_BUILDING:
 				continue
 			# A place the day owes her walk has no tile yet to have a frontage behind it — day 3's
-			# fire is sited later, against the same `_wants_this_side` rule this asks about, and
+			# fire is sited later, against the same `RowGround._wants_this_side()` rule this asks about, and
 			# where it lands is asked of a real walk in `tests/test_event_manager.gd`.
 			if not plan.is_placed():
 				continue
@@ -201,7 +201,7 @@ func _add_a_physical_body(bodies: Array, plan: EventPlan) -> void:
 ## every catalogue placement and every seal body on these same full days is asked whether it stands
 ## on a tile `StreetTrees.footprint_tiles` covers. The seals are asked here rather than only in
 ## `tests/test_seals.gd` because they are the half that does **not** go through
-## `EventScheduler.open_ground_for` — `SealPlanner._seal_along_tile` is a second implementation of
+## `RowGround.tiles_for()` — `SealPlanner._seal_along_tile` is a second implementation of
 ## one rule, and a day's plan is where the two have to agree. `fallen_tree` is the single exception
 ## and is excluded by name: it is the body that stands in a pit and empties it.
 ##
@@ -216,7 +216,7 @@ func _add_a_physical_body(bodies: Array, plan: EventPlan) -> void:
 ## the generator — it did, twice, the day this was written — and say nothing about holds.
 ## **Two seeds and five days.** A (seed, day) here is the most expensive unit anywhere in this
 ## suite — a `RouteTree`, a region plan, a closure plan, two seal plans and a `build_day` — and
-## what it proves is that five refusals inside `open_ground_for` fire, which every single pair
+## what it proves is that five refusals inside `RowGround.tiles_for()` fire, which every single pair
 ## exercises over its whole day's worth of candidates. The days stay five rather than one because
 ## holds come from four different planners and each has its own first day (region walls from
 ## `REGION_WALL_FIRST_DAY`, closures from act I), so the sample has to span the acts; the seeds

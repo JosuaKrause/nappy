@@ -646,7 +646,7 @@ func _crash_pass_cost(instance: EventInstance, offset: float) -> float:
 # ------------------------------------------------------------------ street trees ---
 
 ## **A seal never stands in a street tree** — `docs/CITY.md`, "Street trees". A seal does not go
-## through `EventScheduler.open_ground_for`, because `plan_day` puts one on every off-tree street
+## through `RowGround.tiles_for()`, because `plan_day` puts one on every off-tree street
 ## whether or not the catalogue would have been offered that tile, so the refusal lives in
 ## `SealPlanner._seal_along_tile` instead and this is what holds it. Stated over a whole run of
 ## days rather than one, since which street gets which picture is a daily roll.

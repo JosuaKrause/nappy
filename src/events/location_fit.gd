@@ -2,34 +2,31 @@ class_name LocationFit
 extends RefCounted
 ## **Whether a row has ground to stand on in a location, and the candidate built there**: the tiles
 ## of the location it takes (`Location.takes()`) that are the row's own ground for its role on the
-## day (`EventScheduler.ground_for()`: off every tile a route runs along for a wall, off a held or
+## day (`RowGround.offers_for_role()`: off every tile a route runs along for a wall, off a held or
 ## closed street, the home block, a tree, the side of the sidewalk the row wants), and the
 ## candidate built on one of them as any placement is (`PlanBuilder.build()`: its
 ## facing and its path). On a walk that starts where she stands (the escape), a body is never offered
 ## the ground she starts on (`EventScheduler.clearance_around_her()`). Whether the candidate may stand
-## is the rules' (`StreetInvalidation`). The row's own ground is worked out once a row. Model: no node.
+## is the rules' (`StreetInvalidation`). The day's ground is asked once a row. Model: no node.
 
 var _day := 0
 var _map: CityMap
 var _builder: PlanBuilder
-var _ground: Dictionary
-var _corridor: Corridor
-var _holds_the_home_streets := true
+var _ground: RowGround
 var _start := Vector2.INF
+## Row -> its own ground for its role, as the day's ground answered it.
 var _own := {}
 
-## The fit on `map` for `day`, routed by `corridor`: `builder` builds a candidate on a tile,
-## `ground` is the day's ground cache, `holds_the_home_streets` whether the home's streets are the
-## day's (`DaySpec`), and `start` where she is put down on a walk that starts there, `Vector2.INF`
-## on a day.
-func _init(day: int, map: CityMap, builder: PlanBuilder, ground: Dictionary, corridor: Corridor,
-		holds_the_home_streets: bool, start := Vector2.INF) -> void:
+## The fit on `map` for `day`: `builder` builds a candidate on a tile, `ground` is the walk's
+## ground for a row (`RowGround`, which knows the walk's routes and whether the home's streets are
+## the walk's), and `start` where she is put down on a walk that starts there, `Vector2.INF` on a
+## day.
+func _init(day: int, map: CityMap, builder: PlanBuilder, ground: RowGround,
+		start := Vector2.INF) -> void:
 	_day = day
 	_map = map
 	_builder = builder
 	_ground = ground
-	_corridor = corridor
-	_holds_the_home_streets = holds_the_home_streets
 	_start = start
 
 ## The tiles of `location` `def` may stand on, in the location's own order, row by row.
@@ -54,9 +51,6 @@ func build(def: EventDef, tile: Vector2i, rng: RandomNumberGenerator) -> EventPl
 
 func _own_ground(def: EventDef) -> Dictionary:
 	if not _own.has(def):
-		var found := {}
-		for tile in EventScheduler.ground_for(def, _map, _ground, _corridor,
-				EventScheduler.role_for(def, _day), _holds_the_home_streets):
-			found[tile] = true
-		_own[def] = found
-	return _own[def]
+		_own[def] = _ground.offers_for_role(def, EventScheduler.role_for(def, _day))
+	var kept: Dictionary = _own[def]
+	return kept

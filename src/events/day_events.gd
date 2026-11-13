@@ -31,6 +31,8 @@ var _spoilers := {}
 var _pursuits := 0
 ## The day's locations, where a phase laid them out (`use_locations()`), or null.
 var _locations: DayLocations = null
+## The day's ground for a row, where the dawn made one (`use_ground()`), or null.
+var _ground: RowGround = null
 
 ## **An empty plan over `calm`**, with `standing` the bodies planned before the catalogue: the day's
 ## seals and the region wall's own bodies, or the escape city's seals on its walk. They stand for the
@@ -103,3 +105,13 @@ func use_locations(locations: DayLocations) -> void:
 ## that laid none out.
 func locations() -> DayLocations:
 	return _locations
+
+## Hands the plan the day's ground for a row (`RowGround`), as the dawn makes it, so the walk that
+## starts from this plan is handed the same one (`DayPlanner.Plan.ground()`) and what is sited
+## while she walks asks the ground the day was planned on.
+func use_ground(ground: RowGround) -> void:
+	_ground = ground
+
+## The day's ground for a row, as the dawn made it, or null for a plan no dawn of a day made.
+func ground() -> RowGround:
+	return _ground

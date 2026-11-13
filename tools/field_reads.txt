@@ -18,10 +18,10 @@ src/events/event_catalogue.gd on_finish
 src/events/event_catalogue.gd on_sight
 src/events/event_catalogue.gd scar
 src/events/event_def.gd on_finish
-src/events/event_scheduler.gd scar
 src/events/event_spawner.gd on_finish
 src/events/event_spawner.gd on_sight
 src/events/event_spawner.gd scar
+src/events/row_ground.gd scar
 src/events/walk_ground.gd on_finish
 
 # [AtlasLibrary] src/visuals/atlas_library.gd
@@ -201,12 +201,12 @@ src/events/day_planner.gd home_block
 src/events/day_planner.gd network
 src/events/event_scheduler.gd closed_tiles
 src/events/event_scheduler.gd playgrounds
-src/events/event_scheduler.gd power_station
 src/events/event_spawner.gd block_plans
 src/events/mast_sites.gd boundary_wall_at_a
 src/events/mast_sites.gd calm_blocks
 src/events/mast_sites.gd main_road
 src/events/mast_sites.gd square_rects
+src/events/row_ground.gd power_station
 src/main.gd seed_used
 src/routes/region_planner.gd alley_rects
 src/routes/region_planner.gd boundary_wall_at_a
@@ -526,10 +526,8 @@ src/events/event_plan.gd pursuit
 src/events/event_plan.gd repeat_after
 src/events/event_plan.gd repeat_every
 src/events/event_plan.gd role
-src/events/event_scheduler.gd aftermath
 src/events/event_scheduler.gd ambient_source
 src/events/event_scheduler.gd hard_fail
-src/events/event_scheduler.gd has_a_spread
 src/events/event_scheduler.gd id
 src/events/event_scheduler.gd inner_radius
 src/events/event_scheduler.gd kind
@@ -578,6 +576,11 @@ src/events/plan_builder.gd mobile
 src/events/plan_builder.gd path_length_tiles
 src/events/plan_builder.gd path_mode
 src/events/plan_builder.gd pavement_side
+src/events/row_ground.gd aftermath
+src/events/row_ground.gd hard_fail
+src/events/row_ground.gd has_a_spread
+src/events/row_ground.gd pavement_side
+src/events/row_ground.gd placement
 src/events/street_invalidation.gd id
 src/events/street_invalidation.gd paces
 src/events/street_rules/pacing_opening_rule.gd paces

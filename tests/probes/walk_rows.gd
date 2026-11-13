@@ -132,7 +132,8 @@ func run(t: TestRunner) -> void:
 			walk.take(plans, CalmAreas.of(map), doors)
 			# The walk's sitings are judged against the walk itself, as the game's are.
 			var siting := EventScheduler.WalkSiting.new(day, map, tree, walk,
-					EventScheduler.Verdicts.new(), GamePlanBuilder.over(map))
+					EventScheduler.Verdicts.new(), GamePlanBuilder.over(map),
+					EventScheduler.row_ground(map))
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("walk_rows director:%d:%d" % [i, day])

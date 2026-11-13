@@ -340,7 +340,7 @@ func gap_to(other: EventPlan) -> float:
 ##
 ## **A wall is not outside it**, and that is the player's own decision on the one thing the four
 ## rules left open: *"option 2 is valid only if the influence at a junction is low enough that it
-## can be taken without having to worry or plan around it."* A wall bounds the corridor — `EventScheduler._copies_of`
+## can be taken without having to worry or plan around it."* A wall bounds the corridor — `RowGround._times_for_role()`
 ## offers it zero copies of any ground a route runs along, so it never stands on a route — but its
 ## field reaches in from the far sidewalk or one street out, and being told to walk a corridor whose crossings are covered by what is
 ## bounding it is being told to pay for the guidance. So a wall's own charging disc is asked the
@@ -401,7 +401,7 @@ func reach_touches(rect: Rect2, reach: float) -> bool:
 ## 145 to 380px, cannot tile anything.
 ##
 ## **A `WALL` is exactly the off-route set and that is by construction, not by coincidence.**
-## `EventScheduler._copies_of` offers a wall zero copies of any tile a route actually runs along, so a placement
+## `RowGround._times_for_role()` offers a wall zero copies of any tile a route actually runs along, so a placement
 ## carrying this role is off the routes or it does not exist — including the far sidewalk of a
 ## route's own street, which is ground no route walks. What keeps its clearance is everything else: a
 ## set piece, which is sited on her way, and anything the day placed for a reason that is not about

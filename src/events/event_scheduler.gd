@@ -51,7 +51,7 @@ const EVENT_SPACING_SAME := 256.0
 ##
 ## Two strands running down neighbouring streets with a free step between them are one wide region
 ## rather than two routes. `RouteTree.gaps()` is what a gap is; the placement is
-## `EventScheduler._copies_of`, where this multiplies the band weight rather than replacing it.
+## `RowGround._times_for_role()`, where this multiplies the band weight rather than replacing it.
 ##
 ## **Set to leave about half of them open, which is the instruction rather than a compromise.** What
 ## is asked for is *variety in what a gap is worth*, so a number that closed every gap would be as
@@ -78,7 +78,7 @@ const EVENT_WALL_GAP_WEIGHT := 6
 ##
 ## **It applies to the *costly* half of the wall band only.** A very costly row is what the rim is
 ## for — she has strayed one turning and it is expensive — and a lethal row wants the ground beyond
-## it. See `EventScheduler._copies_of` and `WALL_DEEP_WEIGHT`.
+## it. See `RowGround._times_for_role()` and `WALL_DEEP_WEIGHT`.
 const EVENT_WALL_RIM_WEIGHT := 4
 ## The widest body an event may have and still be allowed to stand on calm ground.
 ##
@@ -268,13 +268,14 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap, builder: PlanBuild
 		beside_the_routes: EventDef = null) -> Array[EventPlan]:
 	if spec == null:
 		spec = DaySpec.for_day(day)
-	# Which tiles each kind of event may stand on, worked out at most once per day. See
-	# `ground_for`; it is threaded through rather than kept on the map because its lifetime is
-	# exactly one day and a cache with a shorter life than its invalidation rule is a bug waiting.
-	var ground := {}
 	# Where the day's routes run, as a question about a tile. This is what turns *wall* and
-	# *friction* from words into placements — see `role_for` and `ground_for`.
+	# *friction* from words into placements — see `role_for` and `RowGround.offers_for_role()`.
 	var corridor := route.corridor() if route else Corridor.of(RouteTree.for_day(map, day))
+	# Which tiles each row may stand on, worked out at most once a day (`RowGround`): made here,
+	# handed to every pass below that asks, and handed on with the plan (`DayEvents.use_ground()`)
+	# to what is sited while she walks, so nothing scans the city for it again.
+	var ground := row_ground(map, corridor, spec.holds_the_home_streets)
+	events.use_ground(ground)
 
 	# The calm she has not used yet, which nothing today may be placed near, where the spec
 	# keeps the calm rule. See `CalmAreas.unused_ground()`.
@@ -326,10 +327,10 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap, builder: PlanBuild
 	# judged by the day's rules, so the draw after passes over it. The one-shots are owed to her
 	# walk (`_place_one_shots()`).
 	var phase_ground := RuledLocationGround.new(day, base, map, events, corridor,
-			LocationFit.new(day, map, builder, ground, corridor, spec.holds_the_home_streets),
-			StreetInvalidation.new(map, corridor, ground, leave_alone, doors, null))
+			LocationFit.new(day, map, builder, ground),
+			StreetInvalidation.new(map, corridor, leave_alone, doors, null))
 	var weigh := func(def: EventDef, location: Location) -> float:
-		return _weight_in(def, location, day, map, ground, corridor, spec.holds_the_home_streets)
+		return _weight_in(def, location, day, map, ground)
 	var phase := ScriptedPhase.new(locations, phase_ground, weigh)
 	_place_scripted(day, _stream(base, 1), events, phase, heat)
 	_place_one_shots(day, consumed_one_shots, events, heat, trace)
@@ -365,16 +366,15 @@ static func _plan_the_dawn(day: int, base: int, map: CityMap, builder: PlanBuild
 ## draws the day's other rows, the roadblock holding no marble in it, spaced against these as against
 ## anything already down, and never over one.
 static func _place_the_roadblocks(def: EventDef, day: int, base: int, map: CityMap,
-		builder: PlanBuilder, events: DayEvents, ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
+		builder: PlanBuilder, events: DayEvents, ground: RowGround, leave_alone: Array[Rect2], corridor: Corridor,
 		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations,
 		trace: RunTrace) -> void:
 	if def == null:
 		return
 	def = def.for_day(day)
 	var judged := RuledRoadblockGround.new(def, day, map, builder, events, ground, corridor,
-			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
-					builder if spec.one_notice_at_a_time else null),
-			spec.holds_the_home_streets)
+			StreetInvalidation.new(map, corridor, leave_alone, doors,
+					builder if spec.one_notice_at_a_time else null))
 	var phase := RoadblockPhase.new(locations, judged)
 	var placed: Array[String] = []
 	for plan in phase.place(_stream(base, RoadblockPhase.SALT)):
@@ -421,8 +421,8 @@ static func across_the_section(def: EventDef, builder: PlanBuilder, map: CityMap
 ## - **The route tiles** are every walkable tile a route runs along (`Corridor.carries_a_route()`)
 ##   that nothing already standing shuts (`DayReach.shut_by()`).
 ## - **A section's roadblock** stands where it fits inside the section: on the tile of the row's own
-##   ground for its role (`ground_for()`: off every tile a route runs along, off a held or closed
-##   street, the home block, a tree) nearest the section's middle that the day's rules
+##   ground for its role (`RowGround.offers_for_role()`: off every tile a route runs along, off a
+##   held or closed street, the home block, a tree) nearest the section's middle that the day's rules
 ##   (`StreetInvalidation`) refuse nothing, asked against the day's plans and what stands
 ##   (`DayEvents.standing()`). A section with no such tile is offered none, and none is ever offered
 ##   on the main road (inbox #1186 in gentle-owl). **Every rule invalidates here, the spacing between two of a row
@@ -442,12 +442,13 @@ class RuledRoadblockGround extends RoadblockGround:
 	var _events: DayEvents
 	var _corridor: Corridor
 	var _rules: StreetInvalidation
+	## The row's own ground for its role, as the day's ground answers it (`tile -> times offered`).
 	var _own := {}
 	var _shut := {}
 
+	## `ground` is the day's ground (`RowGround`), asked once for the row's own.
 	func _init(def: EventDef, day: int, map: CityMap, builder: PlanBuilder, events: DayEvents,
-			ground: Dictionary, corridor: Corridor, rules: StreetInvalidation,
-			holds_the_home_streets: bool) -> void:
+			ground: RowGround, corridor: Corridor, rules: StreetInvalidation) -> void:
 		_def = def
 		_role = EventScheduler.role_for(def, day)
 		_map = map
@@ -455,9 +456,7 @@ class RuledRoadblockGround extends RoadblockGround:
 		_events = events
 		_corridor = corridor
 		_rules = rules
-		for tile in EventScheduler.ground_for(def, map, ground, corridor, _role,
-				holds_the_home_streets):
-			_own[tile] = true
+		_own = ground.offers_for_role(def, _role)
 		var down := events.placements().duplicate()
 		down.append_array(events.standing())
 		_shut = DayReach.shut_by(map, down)
@@ -624,17 +623,17 @@ static func _draw_the_walk(spec: DaySpec, rng: RandomNumberGenerator, map: CityM
 		doors := PackedVector2Array(), trace: RunTrace = null) -> void:
 	if not route:
 		return
-	# **A tree and an event never share ground** — `docs/CITY.md`, "Street trees".
-	var ground := {TREE_TILES_KEY: StreetTrees.footprint_tiles(map)}
 	var leave_alone: Array[Rect2] = []
 	if spec.keeps_unused_calm_clear:
 		leave_alone = calm.unused_ground()
 	var corridor := route.corridor()
+	# The walk's ground for a row (`RowGround`), the day's own under the spec's home-street rule:
+	# **a tree and an event never share ground** — `docs/CITY.md`, "Street trees".
+	var ground := row_ground(map, corridor, spec.holds_the_home_streets)
 	var walk := WalkGround.new(map, events.standing(), route) if spec.keeps_the_walk_open else null
-	var rules := StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
+	var rules := StreetInvalidation.new(map, corridor, leave_alone, doors,
 			builder if spec.one_notice_at_a_time else null, walk)
-	var fit := LocationFit.new(spec.number, map, builder, ground, corridor,
-			spec.holds_the_home_streets, route.start())
+	var fit := LocationFit.new(spec.number, map, builder, ground, route.start())
 	var offered := RuledLocationGround.new(spec.number, rng.seed, map, events, corridor, fit, rules)
 	var placed := {}
 	for segment in route.streets_on_the_walk():
@@ -673,19 +672,16 @@ static func street_bag_seed(rng: RandomNumberGenerator) -> int:
 	return hash("%d:escape-bag" % rng.seed)
 
 ## The tiles of one street of the walk a given row may stand on: **the day's own ground for the row**
-## (`open_ground_for()`, every refusal a day makes of a tile — a closed tile, a held street, the
+## (`RowGround.tiles_for()`, every refusal a day makes of a tile — a closed tile, a held street, the
 ## home block, a standing street tree's footprint, the side of the sidewalk the row wants, a corner
 ## for a row with a spread, the power station's front — and its precinct weight), on the street's
 ## own rect. *(Inbox #785 in minty-lemur, 2026-10-18: "does the escape use the same placement rules
 ## as the regular game? it doesn't seem like it does. it should, though.")* The walk names the
 ## streets that exist for it, so the rect takes the place of a day's corridor weighting.
-## `from_the_door` is the spec's home-street rule (`DaySpec.holds_the_home_streets`): the escape
-## keeps it off, since she never sets off from that door there.
-##
-## `trees` is `StreetTrees.footprint_tiles()`, the trees the day's ground refuses, *(2026-09-12, the
-## player: "trees read like obstacles (they add noise) so it makes detecting actual obstacles
-## harder")*. `open` is the cache `open_ground_for()` keeps its answers in for the whole plan, as a
-## day's `ground` is kept for the whole day; a caller with none gets the trees put in a new one.
+## `ground` is the walk's ground (`row_ground()`), made under the spec's home-street rule
+## (`DaySpec.holds_the_home_streets`): the escape keeps it off, since she never sets off from that
+## door there. It refuses a street tree's ground *(2026-09-12, the player: "trees read like
+## obstacles (they add noise) so it makes detecting actual obstacles harder")*.
 ##
 ## `standing_at` is where she starts the walk (`RouteSource.start()`), and ground within a body's
 ## reach of it is refused the same way a tree's is. *(2026-09-19: "the spawning shouldn't be a
@@ -694,12 +690,9 @@ static func street_bag_seed(rng: RandomNumberGenerator) -> int:
 ## pass that placed a van on her and a later one that moved it would leave the guarantee resting on
 ## the repair, and a check that moved *her* instead is the option they named and rejected. Ground she
 ## is standing on is not ground this is ever offered.
-static func street_ground(map: CityMap, segment: StreetNetwork.Segment, def: EventDef,
-		trees: Dictionary, standing_at: Vector2, open: Dictionary,
-		from_the_door: bool) -> Array[Vector2i]:
-	if not open.has(TREE_TILES_KEY):
-		open[TREE_TILES_KEY] = trees
-	var copies := _open_ground_counts(def, map, open, from_the_door)
+static func street_ground(map: CityMap, ground: RowGround, segment: StreetNetwork.Segment,
+		def: EventDef, standing_at: Vector2) -> Array[Vector2i]:
+	var copies := ground.offers_for(def)
 	var found: Array[Vector2i] = []
 	var rect := segment.tile_rect()
 	var clear_of_her := clearance_around_her(def)
@@ -714,18 +707,23 @@ static func street_ground(map: CityMap, segment: StreetNetwork.Segment, def: Eve
 				found.append(tile)
 	return found
 
-## `open_ground_for()`'s answer for `def` as a count of copies per tile, kept beside it in `open`,
-## so a street's tiles are looked up rather than the whole city's list walked once per street.
-static func _open_ground_counts(def: EventDef, map: CityMap, open: Dictionary,
-		from_the_door: bool) -> Dictionary:
-	var key := "street counts|%s|%d|%s|%s|%s" % [def.placement, def.pavement_side,
-			_burns_its_front(def), def.has_a_spread, from_the_door]
-	if not open.has(key):
-		var counts := {}
-		for tile in open_ground_for(def, map, open, -1, from_the_door):
-			counts[tile] = int(counts.get(tile, 0)) + 1
-		open[key] = counts
-	return open[key]
+## **The ground of a walk on `map` routed by `corridor`** (`RowGround`: which tiles a row may stand
+## on, and how many times over each is offered), made with what is this file's: how many times over
+## a precinct, the routes' streets, the rim, a gap and the ground past the rim are offered
+## (`EVENT_PRECINCT_WEIGHT`, `EVENT_CORRIDOR_WEIGHT`, `EVENT_WALL_RIM_WEIGHT`,
+## `EVENT_WALL_GAP_WEIGHT`, `WALL_DEEP_WEIGHT`), and which wall is one by its cost
+## (`_is_a_wall_by_cost()`). `corridor` is null for a walk with no routes; `from_the_door` is the
+## spec's home-street rule (`DaySpec.holds_the_home_streets`), a day's where none is said.
+##
+## **One ground a walk**: the dawn makes the day's and hands it on with the plan
+## (`DayEvents.ground()`), so whoever is handed the walk's asks that one. A caller that makes its
+## own is one with no walk's ground to be handed: a scene recipe's row, a check, a probe.
+static func row_ground(map: CityMap, corridor: Corridor = null,
+		from_the_door := true) -> RowGround:
+	return RowGround.new(map, corridor, from_the_door,
+			RowGround.Weights.of(EVENT_PRECINCT_WEIGHT, EVENT_CORRIDOR_WEIGHT,
+					EVENT_WALL_RIM_WEIGHT, EVENT_WALL_GAP_WEIGHT, WALL_DEEP_WEIGHT),
+			EventScheduler._is_a_wall_by_cost)
 
 ## How far from the tile she is put down on a row of this kind may not be offered ground — the
 ## wider of the two things she can arrive *inside* of: a body, and a lethal field.
@@ -819,14 +817,15 @@ static func role_for(def: EventDef, day: int = 0) -> GameEnums.BlockerRole:
 	return GameEnums.BlockerRole.FRICTION
 
 ## **Whether a `WALL` earns the pull toward junction rims, as opposed to keeping only the one
-## consequence every wall gets** (zero copies on a route-carrying cell, `_copies_of` below).
+## consequence every wall gets** (zero copies on a route-carrying cell, `RowGround._times_for_role()`).
 ## *(2026-09-19, the player, asked whether `delivery_van` should also be weighted toward junctions
 ## once it became a wall: "A. No (my recommendation). -- do that")* `EVENT_WALL_RIM_WEIGHT`
 ## is for the rows meant to be seen from a distance before she commits to a street — lethal, or
 ## costly enough to cross `WALL_WORTH_OF_COST` — and `delivery_van` is neither: silent, and a wall
 ## only because its own body leaves no lane (`_closes_the_band_by_its_own_placement`), which the
 ## cost clause (`EventDef.reaches_the_far_lane()`) never sees. A row that is a wall by fit alone is
-## spread along streets the way friction is instead: `_copies_of` reads this before deciding which
+## spread along streets the way friction is instead: the day's ground is handed this question
+## (`row_ground()`) and asks it before deciding which
 ## weight a `WALL` gets.
 static func _is_a_wall_by_cost(def: EventDef) -> bool:
 	return def.hard_fail or def.walk_through_cost() >= WALL_WORTH_OF_COST \
@@ -1326,20 +1325,13 @@ static func _place_scripted(day: int, rng: RandomNumberGenerator, events: DayEve
 			continue
 		phase.place(def.for_day(day), rng)
 
-## How strongly `def`'s dawn phase draws `location`: the copies its role gives each tile of the
-## location it may stand on (`ground_for()`'s pool, whose role weights keep a wall off the route and
-## draw friction onto it), summed; 0 where it may stand on none. The pool is the day's, worked out
-## once a row (`ground`).
+## How strongly `def`'s dawn phase draws `location`: how many times the day's ground offers the row,
+## placed for its role, each tile of the location it may stand on
+## (`RowGround.offers_for_role()`, whose role weights keep a wall off the route and draw friction
+## onto it), summed; 0 where it may stand on none.
 static func _weight_in(def: EventDef, location: Location, day: int, map: CityMap,
-		ground: Dictionary, corridor: Corridor, holds_the_home_streets: bool) -> float:
-	var key := "phase copies:%d" % def.get_instance_id()
-	if not ground.has(key):
-		var copies := {}
-		for tile in ground_for(def, map, ground, corridor, role_for(def, day),
-				holds_the_home_streets):
-			copies[tile] = int(copies.get(tile, 0)) + 1
-		ground[key] = copies
-	var by_tile: Dictionary = ground[key]
+		ground: RowGround) -> float:
+	var by_tile := ground.offers_for_role(def, role_for(def, day))
 	var weight := 0
 	var rect := location.tiles()
 	for y in range(rect.position.y, rect.end.y):
@@ -1401,9 +1393,13 @@ class WalkSiting extends RefCounted:
 	var _leave_alone: Array[Rect2]
 	## The walk's events: its plans, its doors and its calm areas (`WalkEvents`).
 	var _walk: WalkEvents
-	## The same per-day cache of "which tiles may this kind of row stand on" `build_day` threads
-	## through its own placements, kept here for the day so the city is not rescanned per attempt.
-	var _ground := {}
+	## The walk's ground for a row (`RowGround`), handed in by whoever builds the siting: the day's
+	## own, as dawn derived it, so what is sited while she walks stands on the ground the day was
+	## planned on, under the same home-street rule, and scans nothing dawn already scanned.
+	var _ground: RowGround
+	## A row that pastes a front -> the tiles of its ground that are fronts
+	## (`_ground_as_a_set()`), worked out once a row.
+	var _front_ground := {}
 
 	## Why attempts placed nothing, as `reason -> how many attempts ended that way`. Nothing in the
 	## game reads it: it is what lets `tests/probes/m179_fire_on_her_way.gd` report *what* a long wait
@@ -1416,11 +1412,6 @@ class WalkSiting extends RefCounted:
 	## handed over by `EventManager` from the city it belongs to. What a row whose `OnHerWay.at_a_front` is set
 	## may stand on; empty, and so nowhere, for a rig with no city.
 	var fronts := {}
-	## **Whether the home's streets are the walk's** (`DaySpec.holds_the_home_streets`): nothing
-	## sited after dawn stands on the street her front door opens onto, as nothing at dawn does
-	## (`EventScheduler.open_ground_for()`'s `from_the_door`). Handed over by `EventsAhead` from the
-	## spec the walk was started with; a day's rule until then.
-	var holds_the_home_streets := true
 
 	## `tree` is the day's corridor tree and `walk` the walk's events (`WalkEvents`): its plans, which
 	## every placement is spaced and checked against, where today's doors stand and the day's calm
@@ -1436,11 +1427,17 @@ class WalkSiting extends RefCounted:
 	## against one siting's plans and route tree, so a siting asked while another is in a look would
 	## read verdicts judged for the other's plans and place wrongly, not only lose a cache. `builder`
 	## builds each candidate at a tile.
+	##
+	## `ground` is the walk's ground for a row (`RowGround`): the day's, which dawn made and handed
+	## on with the walk (`WalkEvents.ground()`). **Whether the home's streets are the walk's is the
+	## ground's** (`DaySpec.holds_the_home_streets`): nothing sited after dawn stands on the street
+	## her front door opens onto, as nothing at dawn does, because both ask the one ground.
 	func _init(for_day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
-			verdicts: EventScheduler.Verdicts, builder: PlanBuilder) -> void:
+			verdicts: EventScheduler.Verdicts, builder: PlanBuilder, ground: RowGround) -> void:
 		_day = for_day
 		_map = map
 		_builder = builder
+		_ground = ground
 		_tree = tree if tree else RouteTree.for_day(map, for_day)
 		_corridor = Corridor.of(_tree)
 		_walk = walk
@@ -1504,7 +1501,7 @@ class WalkSiting extends RefCounted:
 		var offered: Array[Vector2i] = offer[1]
 		var already := _walk.everything_but(besides)
 		var candidate := EventScheduler._best_of(def, rng, _map, _builder, offered, role, already,
-				_ground, _leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask())
+				_leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask())
 		if not candidate:
 			return _waited("every tile of its ground on her branch broke a placement rule")
 		# A crew faces the wall it pastes, its back to the street. `PlanBuilder.build()` turned it by
@@ -1696,7 +1693,7 @@ class WalkSiting extends RefCounted:
 	## acceptance `ahead_of()` gives a site.
 	func _accepted(def: EventDef, rng: RandomNumberGenerator, already: Array[EventPlan],
 			offered: Array[Vector2i], role: GameEnums.BlockerRole) -> EventPlan:
-		return EventScheduler._best_of(def, rng, _map, _builder, offered, role, already, _ground,
+		return EventScheduler._best_of(def, rng, _map, _builder, offered, role, already,
 				_leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask())
 
 	## A placement for `def` among `offered`, by `EventScheduler._best_of()` against the walk's plans
@@ -1709,8 +1706,8 @@ class WalkSiting extends RefCounted:
 		if offered.is_empty():
 			return null
 		return EventScheduler._best_of(def, rng, _map, _builder, offered,
-				EventScheduler.role_for(def, _day), _walk.everything_but(), _ground, _leave_alone, _corridor, _walk.doors(), [],
-				_verdicts_for_an_ask(false))
+				EventScheduler.role_for(def, _day), _walk.everything_but(), _leave_alone, _corridor,
+				_walk.doors(), [], _verdicts_for_an_ask(false))
 
 	## How far from where she finished the day a dusk placement has to be: the streaming radius, so
 	## the site is ground she was never near enough to have it exist in front of her.
@@ -1738,8 +1735,7 @@ class WalkSiting extends RefCounted:
 		var role := EventScheduler.role_for(def, _day)
 		var clear_of_the_routes: Array[Vector2i] = []
 		var merely_away: Array[Vector2i] = []
-		for tile in EventScheduler.open_ground_for(def, _map, _ground, -1,
-				holds_the_home_streets):
+		for tile in _ground.tiles_for(def):
 			if _map.tile_to_world(tile).distance_to(away_from) < DUSK_CLEAR_OF_HER:
 				continue
 			merely_away.append(tile)
@@ -1750,7 +1746,7 @@ class WalkSiting extends RefCounted:
 			if offered.is_empty():
 				continue
 			var candidate := EventScheduler._best_of(def, rng, _map, _builder, offered, role,
-					already, _ground, _leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask(false))
+					already, _leave_alone, _corridor, _walk.doors(), [], _verdicts_for_an_ask(false))
 			if candidate:
 				return candidate
 		return null
@@ -1917,7 +1913,8 @@ class WalkSiting extends RefCounted:
 	## cost of siting a mast on her route to the tiles it was offered.
 	var mast_checks := 0
 
-	## `open_ground_for`'s list as a set, so a cell can ask whether one of its four tiles is in it.
+	## The row's ground as a set (`RowGround.offers_for()`, read for its tiles alone), so a cell can
+	## ask whether one of its four tiles is in it.
 	##
 	## **The precinct weighting is dropped here and that is correct rather than a shortcut.** The
 	## weighting offers a retail tile several times so the day's own roll lands there more often;
@@ -1925,21 +1922,19 @@ class WalkSiting extends RefCounted:
 	## she is walking has already decided everything the weight was for.
 	##
 	## **A row that pastes a front is offered the fronts, not its own side.** Its ground is the
-	## `AT_THE_FRONT` lane with every rule `open_ground_for` asks of any other row, narrowed to the
+	## `AT_THE_FRONT` lane with every rule the day's ground asks of any other row, narrowed to the
 	## tiles in `fronts` — in front of a blank ground-floor cell, which only the city's buildings
 	## know — and nothing at all where no city handed any over.
 	func _ground_as_a_set(def: EventDef) -> Dictionary:
-		var at_a_front := def.on_her_way != null and def.on_her_way.at_a_front
-		var side := EventDef.Pavement.AT_THE_FRONT if at_a_front else def.pavement_side
-		var key := "set|%s|%d" % [def.placement, side]
-		if not _ground.has(key):
+		if def.on_her_way == null or not def.on_her_way.at_a_front:
+			return _ground.offers_for(def)
+		if not _front_ground.has(def):
 			var found := {}
-			for tile in EventScheduler.open_ground_for(def, _map, _ground, side,
-					holds_the_home_streets):
-				if not at_a_front or fronts.has(tile):
+			for tile: Vector2i in _ground.offers_for(def, EventDef.Pavement.AT_THE_FRONT):
+				if fronts.has(tile):
 					found[tile] = true
-			_ground[key] = found
-		return _ground[key]
+			_front_ground[def] = found
+		return _front_ground[def]
 
 	func _cell_of(position: Vector2) -> Vector2i:
 		if not _tree or not _tree.grid:
@@ -1973,7 +1968,7 @@ class WalkSiting extends RefCounted:
 ## of the roadblock phase its row (`beside_the_routes`), the phase's alone. Answers what the draw
 ## placed, in the order drawn.
 static func _draw_the_locations(day: int, base: int, map: CityMap, builder: PlanBuilder,
-		events: DayEvents, ground: Dictionary, leave_alone: Array[Rect2], corridor: Corridor,
+		events: DayEvents, ground: RowGround, leave_alone: Array[Rect2], corridor: Corridor,
 		doors: PackedVector2Array, spec: DaySpec, locations: DayLocations,
 		heat: int, beside_the_routes: EventDef) -> Array[EventPlan]:
 	var rows := {}
@@ -1985,8 +1980,8 @@ static func _draw_the_locations(day: int, base: int, map: CityMap, builder: Plan
 		rows[def.id] = def.for_day(day)
 	var bags := _view_bags(rows, day, spec, base)
 	var judged := RuledLocationGround.new(day, base, map, events, corridor,
-			LocationFit.new(day, map, builder, ground, corridor, spec.holds_the_home_streets),
-			StreetInvalidation.new(map, corridor, ground, leave_alone, doors,
+			LocationFit.new(day, map, builder, ground),
+			StreetInvalidation.new(map, corridor, leave_alone, doors,
 					builder if spec.one_notice_at_a_time else null))
 	var caps := _caps_of(rows, day, spec, _stream(base, CAPS_SALT)) if spec.caps_per_day else {}
 	return LocationDraw.new(locations, bags, rows, judged, caps).draw_all(
@@ -2019,7 +2014,7 @@ const MOMENTS_SALT := 7
 const CAPS_SALT := 8
 
 ## **A row's weight in a view's bag**: its own `EventDef.weight` times what the view is to its role,
-## the offers today's placement made per tile of the view's ground (`_copies_of()`'s gradient),
+## the offers today's placement made per tile of the view's ground (`RowGround._times_for_role()`'s gradient),
 ## stated per view (inbox #1185 in gentle-owl: "all possible events for that view multiplied by their
 ## probability/weight"):
 ##
@@ -2032,7 +2027,7 @@ const CAPS_SALT := 8
 ##   (`WALL_DEEP_WEIGHT`);
 ## - **a wall by its fit alone** reads like friction;
 ## - **anything else** (scenery) once everywhere;
-## - a row refused an alley the routes run down (`_refuses_required_alleys()`) has no marble on the
+## - a row refused an alley the routes run down (`EventDef.stands_only_in_alleys()`) has no marble on the
 ##   route.
 ##
 ## **Every wall-role row's weight is scaled by `wall_share`** (`DaySpec.wall_row_share`), so there
@@ -2047,7 +2042,7 @@ const CAPS_SALT := 8
 static func view_weight(def: EventDef, view: int, day: int, wall_share: float) -> float:
 	var on := view == PlacementView.View.ON_THE_ROUTE
 	var off := view == PlacementView.View.OFF_THE_ROUTE
-	if on and _refuses_required_alleys(def):
+	if on and def.stands_only_in_alleys():
 		return 0.0
 	var times := 1.0
 	var act := Tuning.act_for_day(day) - 1
@@ -2361,8 +2356,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: Pla
 	if location == null:
 		why.append("no location holds tile %s" % tile)
 		return null
-	var ground := {}
-	var fit := LocationFit.new(day, map, builder, ground, corridor, true)
+	var fit := LocationFit.new(day, map, builder, row_ground(map, corridor))
 	if not tile in fit.tiles(def, location):
 		why.append("the location holding tile %s does not take %s there" % [tile, def.id])
 		return null
@@ -2374,7 +2368,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: Pla
 		return null
 	var around := already.duplicate()
 	around.append_array(standing)
-	var rules := StreetInvalidation.new(map, corridor, ground, calm.unused_ground(), doors, null)
+	var rules := StreetInvalidation.new(map, corridor, calm.unused_ground(), doors, null)
 	if rules.room(candidate, role_for(def, day), tile, already, around) == -INF:
 		why.append("the day's rules refuse %s on tile %s" % [def.id, tile])
 		return null
@@ -2413,7 +2407,7 @@ static func recipe_placement(def: EventDef, day: int, map: CityMap, builder: Pla
 ## locations (the orchestrator's choice in placement step 3b).
 static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 		builder: PlanBuilder, open_candidates: Array[Vector2i], role: GameEnums.BlockerRole,
-		already: Array[EventPlan], ground: Dictionary, leave_alone: Array[Rect2],
+		already: Array[EventPlan], leave_alone: Array[Rect2],
 		corridor: Corridor, doors: PackedVector2Array,
 		standing: Array[EventPlan] = [], kept: Verdicts = null) -> EventPlan:
 	var best: EventPlan = null
@@ -2436,7 +2430,7 @@ static func _best_of(def: EventDef, rng: RandomNumberGenerator, map: CityMap,
 	# that caller's to drop whenever what a verdict reads changes — see `WalkSiting.begin_look()`.
 	var verdicts: Verdicts = kept if kept else Verdicts.new()
 	# The day's rules, the same ones the dawn draw asks (`StreetInvalidation`), so they are stated once.
-	var judge := StreetInvalidation.new(map, corridor, ground, leave_alone, doors, null)
+	var judge := StreetInvalidation.new(map, corridor, leave_alone, doors, null)
 	for _attempt in EVENT_PLACEMENT_TRIES:
 		var tile: Vector2i = open_candidates[rng.randi_range(0, open_candidates.size() - 1)]
 		var candidate := builder.build(def, tile, rng)
@@ -2486,77 +2480,6 @@ class Verdicts extends RefCounted:
 	func forget() -> void:
 		_kept.clear()
 
-## The tiles an event of this kind may stand on today, worked out once and kept for the rest of
-## the day's planning.
-##
-## The answer is two passes over every tile of the right type, and a sidewalk is five thousand of
-## them — while the dawn draw asks the question for every row a location weighs, hundreds of times on
-## a day. Nothing it depends on can move inside one `build_day`: the grid was
-## repainted at dawn and the day's closures are already on the map.
-##
-## The key is the *question* rather than the event, because almost every row in the catalogue asks
-## the same one — a pavement, either side, for this role — so one list serves most of the day. The
-## order matters: the placement roll is an index into this array and a day has to be reproducible
-## from its seed.
-##
-## **The role is part of the question, and it is answered the way the precinct weight is**: by how
-## many times a tile is *offered*, rather than by a rule downstream. Everything that reads this
-## array — the roll, the spacing, the room measurement — keeps working unchanged, which is why this
-## is worth copying rather than inventing a second mechanism beside it.
-##
-## **The role's list is built out of the roleless one rather than beside it**, and that is a cost
-## decision with a number behind it. The scan is the expensive half — two passes over every sidewalk
-## in the city, with a closure test, a doorstep test and a kerb test on each — and doing it once per
-## role doubles the suite's time on its own. The role only ever *re-weights* tiles the scan already
-## accepted, so it is a second pass over a list that is already in memory.
-static func ground_for(def: EventDef, map: CityMap, ground: Dictionary,
-		corridor: Corridor = null, role := GameEnums.BlockerRole.NONE,
-		from_the_door := true) -> Array[Vector2i]:
-	var base := open_ground_for(def, map, ground, -1, from_the_door)
-	if not corridor or role == GameEnums.BlockerRole.NONE:
-		return base
-	# The key is the *question*, and `hard_fail` is part of it since the wall band gained a
-	# gradient: two lethal rows share an answer and a lethal row and a costly one no longer do.
-	# `has_a_spread` joined it for the same reason M64 added it to `open_ground_for`'s own key: a
-	# corner is off the question for two rows sharing every other answer only when one of them
-	# actually has an orientation to be wrong about on it. Without this a plain silhouette processed
-	# first quietly hands its unfiltered `base` to a spread row asking the identical other four
-	# questions, and the corner refusal never runs at all. `_is_a_wall_by_cost` joined for the same
-	# reason: two rows sharing every other answer can still disagree about the rim pull, and a
-	# cached list keyed without it would hand a fit-only wall's ground to a cost wall sharing its
-	# placement, pavement side and spread shape, or the reverse.
-	var by_cost := _is_a_wall_by_cost(def)
-	var key := "%s|%d|%d|%s|%s|%s%s" % [def.placement, def.pavement_side, role,
-			def.hard_fail, def.has_a_spread, by_cost, "" if from_the_door else "|no door"]
-	if ground.has(key):
-		return ground[key]
-	var aimed: Array[Vector2i] = []
-	var refuses_required_alleys := _refuses_required_alleys(def)
-	for tile in base:
-		# **No robber stands in an alley she has to walk down.** An alley the day's corridor runs
-		# through — `corridor.depth(tile) == 0`, the `INSIDE` band — is ground she has no way
-		# around, and `alley_robbery`'s own design note is that "a robbery has no telegraph you
-		# could see coming, and it never did": a risk with no warning is only fair on ground she
-		# chose to enter. See `docs/DECISIONS.md`, M64, "and no robber stands in an alley she has to
-		# walk down."
-		if refuses_required_alleys and corridor.depth(tile) == 0:
-			continue
-		for _copy in _copies_of(tile, corridor, role, def.hard_fail, by_cost):
-			aimed.append(tile)
-	ground[key] = aimed
-	return aimed
-
-## Whether `def` is refused a required alley outright — an alley the day's corridor runs down,
-## rather than one she may choose to detour into. **Two rows today**, `alley_robbery` and
-## `alley_mouse`, both `def.placement == [ALLEY]` and neither one anything else can ever reach an
-## alley through — `charging_dog` arrives `AHEAD_OF_PLAYER` and never asks this pool at all, and a
-## heated patrol reaches an alley by a different path than a map placement. Stated over the
-## placement shape rather than `def.id` so a future row sharing it inherits the same refusal
-## without this function changing, which is the same reason `has_a_spread` is a test on the def
-## rather than a name.
-static func _refuses_required_alleys(def: EventDef) -> bool:
-	return def.placement.size() == 1 and def.placement[0] == GameEnums.TileType.ALLEY
-
 ## `alley_mouse`'s own preference: an alley location beside a garbage-sack pile
 ## (`GarbageSacks.alley_pile_tiles()`, within `_MOUSE_PILE_ADJACENCY` tiles) weighs the mouse
 ## `_MOUSE_PILE_EXTRA_COPIES` and one times over (`RuledLocationGround.scale()`), and the mouse it
@@ -2565,186 +2488,8 @@ const _MOUSE_ID := "alley_mouse"
 const _MOUSE_PILE_ADJACENCY := 1
 const _MOUSE_PILE_EXTRA_COPIES := 4
 
-## The day's copy of `StreetTrees.footprint_tiles()`, kept in the same `ground` dictionary every
-## other answer in this file is cached in and under a key no `"%s|%d"` placement question can
-## collide with. One scan of the city's pits per day rather than one per candidate row: the trees
-## are fixed for the run, so nothing inside one `build_day` can move them.
-const TREE_TILES_KEY := "street tree footprints"
-
-static func _street_tree_tiles(map: CityMap, ground: Dictionary) -> Dictionary:
-	if not ground.has(TREE_TILES_KEY):
-		ground[TREE_TILES_KEY] = StreetTrees.footprint_tiles(map)
-	return ground[TREE_TILES_KEY]
-
-## A tile whose two coordinates are **both** inside a corridor band — a junction, belonging to two
-## streets at once. `EventInstance._spread_is_vertical` and `_centred_on_the_pavement_band` both
-## give up here, for the reason each states in its own docstring: there is no single street left for
-## a spread to lie across or be centred on. See `docs/DECISIONS.md`, M64, "a spread on a corner is placed
-## as if the corner were nothing."
-static func _is_a_corner(tile: Vector2i) -> bool:
-	return CityMap.corridor_offset(tile.x) >= 0 and CityMap.corridor_offset(tile.y) >= 0
-
-## Every tile of the right kind that anything may stand on today, precinct weighting included.
-##
-## **A precinct is a retail street**, so it carries more of the day than a length of ordinary
-## pavement does: it is where the cafés and the market stalls and the buskers are.
-##
-## **Anything `EventDef.has_a_spread` is refused a corner outright**, cached under its own
-## key so the un-narrowed list stays shared with everything that has no orientation to get wrong on
-## one — a yeller or a busker keeps every tile a plain sidewalk scan already found. This is an
-## exclusion from the candidate pool rather than a repair after the fact, the same shape a barrier
-## beside a calm area's access street is refused in rather than moved out of afterwards.
-##
-## **A row that burns its front is refused the power station's** (`_burns_its_front()`): the
-## station's facade is drawn whole whatever its `Building.condition` says, its transformer yard
-## has no wall at all for the burnt building's red arrow to end on, and it is the last night's
-## building. Cached under its own key, so a poster crew asking for the same `AT_THE_FRONT` lane
-## keeps the station's front.
-##
-## `from_the_door` is the spec's home-street rule (`DaySpec.holds_the_home_streets`): whether she
-## sets off from the home's front door, whose street nothing stands on
-## (`_the_street_she_starts_on()`). Every day does; the escape comes out of the service exit on the
-## side of the block and never uses that door, the reason its seals spare the street she stands in
-## rather than the home street (`RouteSource.street_it_starts_in()`, `docs/CITY.md`, "The escape").
-static func open_ground_for(def: EventDef, map: CityMap, ground: Dictionary,
-		side: int = -1, from_the_door := true) -> Array[Vector2i]:
-	var wanted_side := def.pavement_side if side < 0 else side
-	var burns := _burns_its_front(def)
-	var key := "%s|%d%s%s" % [def.placement, wanted_side, "|burns" if burns else "",
-			"" if from_the_door else "|no door"]
-	if not ground.has(key):
-		var doorstep := _the_street_she_starts_on(map) if from_the_door else Rect2i()
-		var trees := _street_tree_tiles(map, ground)
-		# In tiles: `CityMap.power_station` names the station's two blocks.
-		var station := CityMap.blocks_tile_rect(map.power_station) \
-				if burns and map.has_power_station() else Rect2i()
-		var open: Array[Vector2i] = []
-		for type in def.placement:
-			for candidate in map.tiles_of_type(type as GameEnums.TileType):
-				# A closed street is not somewhere anyone can get to, so it is not somewhere an event
-				# can usefully happen: the player would never see it and the day would hold an
-				# event for nothing. `is_held_at` refuses the same ground for a street that is
-				# not closed but is still spoken for — a hard seal's segment, a region wall or door,
-				# or a segment bordering the home block (`CityMap.held`) — and
-				# `is_on_home_block` refuses the block's own interior on top of that, both by
-				# construction rather than as a repair once something has landed there. See
-				# `docs/DECISIONS.md`, M100, "Events spawn inside a fully blocked street" and "Nothing on the
-				# home block".
-				#
-				# **And a standing street tree's own ground.** The trees are the city's and fixed
-				# for the run while the events are the day's, so the day is what yields — refused
-				# here, where the candidate is offered, never moved afterwards. *(2026-09-12, the
-				# player: "events can only be placed where no trees are (except for the fallen tree
-				# which must empty out one tree lot)".)* The footprint rather than the trunk tile,
-				# because the ground a tree's shadow reaches over is ground a van would be standing
-				# in. The fallen tree is the exception and needs none here: it arrives as a closure
-				# or a hard seal, and both hold their whole street against the catalogue already.
-				if map.is_closed(candidate) or doorstep.has_point(candidate) \
-						or map.is_held_at(candidate) or map.is_on_home_block(candidate) \
-						or trees.has(candidate) \
-						or station.has_point(candidate + Vector2i.UP) \
-						or not _wants_this_side(def, map, candidate, wanted_side):
-					continue
-				open.append(candidate)
-				if map.street_kind_at(true, candidate) == GameEnums.StreetKind.PEDESTRIAN \
-						or map.street_kind_at(false, candidate) == GameEnums.StreetKind.PEDESTRIAN:
-					for _extra in EVENT_PRECINCT_WEIGHT - 1:
-						open.append(candidate)
-		ground[key] = open
-	if not def.has_a_spread:
-		return ground[key]
-	var corner_free_key := key + "|no corner"
-	if not ground.has(corner_free_key):
-		var without_corners: Array[Vector2i] = []
-		for tile in ground[key]:
-			if not _is_a_corner(tile):
-				without_corners.append(tile)
-		ground[corner_free_key] = without_corners
-	return ground[corner_free_key]
-
-## How many more times a tile is offered to the roll because of what the day is placing there.
-##
-## Zero means the tile is not offered at all, and there is exactly one case of it — **a wall never
-## stands on ground a route runs along.** Every other preference here is a weight, because a weight
-## cannot starve a row of ground and a filter can. What makes this one safe to state absolutely is
-## that the rest of the city stays available to it: a wall wants its own band, it settles for
-## anywhere else off the routes, and only the routes themselves are refused.
-##
-## **The refusal is per sidewalk and the rest of the band is per street**, which is the one place
-## those two grains differ on purpose. `corridor.depth()` answers a street tile for its whole
-## street, because what a *price* is stated over is ground the player may be anywhere across; where
-## a thing may **stand** is the narrower question, and a branch runs along one sidewalk of a street
-## rather than down the middle of it. So `carries_a_route()` is what closes the ground, and the
-## sidewalk **across the street from a route** is where a very costly wall **wants** to be —
-## *"the market stall should appear on the other side of the street where for some reason no event
-## was chosen"* (PLAYTEST-77). What keeps a wide row off it is the width rule: a wall across the
-## street whose reach covers the route's own sidewalk is refused that ground by
-## `RouteSidewalkRule._leaves_the_routes_sidewalk_open`.
-##
-## **The wall band has a gradient in it, and the gradient is the instruction**: the ground off the
-## paths ranges from *very costly* to *deadly*. Stray one turning and it is expensive; stray further
-## and it ends the day. So a **very costly** wall is pulled to the rim and a **lethal** one is
-## pulled past it. Both keep the whole off-corridor city as a weight rather than a filter, so
-## neither can be starved of ground on a day whose corridor happens to be most of the map.
-##
-## **The rim has two members and they are the same thing seen from the two grains.** One is a
-## turning she might wrongly take, one street out (`depth() == 1`); the other is the far side of the
-## street she is already on (`depth() == 0` with no route along it), which is the nearest ground to
-## the route there is and the one she can read without leaving her own line. A wall is what bounds
-## the corridor, and both of those bound it from somewhere she can see. That is why the costly
-## weight is `away <= 1` rather than a turning exactly: the far sidewalk carries
-## `EVENT_WALL_RIM_WEIGHT` like a turning does.
-##
-## The **lethal** half keeps its own gradient rather than joining that: it is pulled past the rim by
-## `WALL_DEEP_WEIGHT`, and the far sidewalk is inside the rim, so a lethal row is no likelier there
-## than at any other single turning.
-##
-## **And one street inside the rim is worth more than the rest of it.** A gap is the single street
-## two adjacent strands of today's corridor are joined by, so it is the one piece of rim that is
-## *inside* the day's own plan rather than beside it: with nothing on it the two strands are one
-## wide easy region and choosing between them is not a choice.
-##
-## It is a **weight on top of the rim weight** rather than a rule that closes every gap: a gap is
-## likelier than an ordinary turning to carry something and never certain to, which is the variety
-## the design asks for.
-##
-## **It applies to the costly half of the wall band and not to the lethal half**, which is a
-## measured correction rather than a nicety. A gap is on the rim by construction, so a lethal row's
-## weight there is 1 against `WALL_DEEP_WEIGHT` further out — and multiplying *that* by the gap
-## weight makes a gap the best lethal ground in the city, which pulls the deep band's teeth straight
-## out: measured over eight seeds of day 9, the deep band goes from the dearest ground in the city to
-## level with the corridor. The gradient's own sentence is the fix — *stray one turning and it is
-## expensive, stray further and it ends the day* — so what stands in a gap is very expensive, and
-## the deadly end stays where it was put.
-##
-## **A wall by fit alone skips the gradient entirely and reads like friction beyond the one
-## refusal every wall keeps** — see `_is_a_wall_by_cost`'s own doc for the player's own answer on
-## this. `by_cost` is that question, asked once by the caller rather than re-derived per tile: a
-## silent, narrow body earns no distance-before-she-commits pull, so it is weighted onto an
-## on-corridor tile exactly as `FRICTION` is, and left at one copy everywhere else — never pulled
-## to the rim, never pushed past it. The zero-copies refusal above still applies to it first, since
-## that is the one consequence of being a wall this decision does not touch.
-static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.BlockerRole,
-		lethal := false, by_cost := true) -> int:
-	var away := corridor.depth(tile)
-	match role:
-		GameEnums.BlockerRole.WALL:
-			if corridor.carries_a_route(tile):
-				return 0
-			if not by_cost:
-				return EVENT_CORRIDOR_WEIGHT if away == 0 else 1
-			if lethal:
-				return WALL_DEEP_WEIGHT if away >= 2 else 1
-			if away > 1:
-				return 1
-			return EVENT_WALL_RIM_WEIGHT \
-					* (EVENT_WALL_GAP_WEIGHT if corridor.is_in_a_gap(tile) else 1)
-		GameEnums.BlockerRole.FRICTION:
-			return EVENT_CORRIDOR_WEIGHT if away == 0 else 1
-		_:
-			return 1
-
-## The street the front door opens onto, which nothing is placed on.
+## The street the front door opens onto, which nothing is placed on: the day's ground refuses it
+## to every row (`RowGround.tiles_for()`), and the route's ground rule is handed it.
 ##
 ## The home is a notch with one exit, so the walk from the doorstep to the first junction is the
 ## one stretch of a day she does not choose to be on — and a thing standing on it is not a route
@@ -2763,50 +2508,6 @@ static func _copies_of(tile: Vector2i, corridor: Corridor, role: GameEnums.Block
 static func _the_street_she_starts_on(map: CityMap) -> Rect2i:
 	var segment := ClosurePlanner.home_street(map)
 	return segment.tile_rect() if segment else Rect2i()
-
-## Whether `def` leaves the building it stands against burnt (its scar is the one `City` draws as
-## a burnt frontage), so the front it catches on has to be one that can be drawn burnt.
-static func _burns_its_front(def: EventDef) -> bool:
-	return def.aftermath.scar == City.BURNT_FRONTAGE_SCAR
-
-## Whether a tile is the lane of the pavement this event wants.
-##
-## Almost everything says `ANY` and this is a free `true`. The two rows that do not are placement
-## questions rather than balance ones: a parked van belongs at the kerb rather than in a traffic
-## lane the crowd will drive straight through, and a lorry reversing into a yard belongs with its
-## back to a wall.
-##
-## `AGAINST_THE_BUILDING` asks for two things and the second is about the *art*: there has to be
-## a real building on the far side, and it has to be **east or west**, because the silhouettes
-## that back into things are drawn side-on and a sprite cannot face north. A frontage the lorry
-## would have to reverse into sideways is not one it can be drawn reversing into, and half the
-## pavements in the city are still eligible.
-##
-## `AT_THE_FRONT` is the south face's own lane, the one side a front is drawn on: `burning_building`'s
-## own `pavement_side`, since the building it catches on is drawn burnt afterwards, and what
-## `WalkSiting` asks, through `side`, for a row whose `OnHerWay.at_a_front` is set. **The tile behind has to be
-## on the map as well as read `BUILDING`**, because `CityMap.tile_at()` reads anything off the map
-## as `BUILDING`: without the bounds check the north sidewalk of the map's northmost street, with
-## nothing behind it but the edge of the world, passes as a front. `side` is typed `int` for the
-## cross-script enum reason the **godot** skill names; `-1` means the row's own.
-static func _wants_this_side(def: EventDef, map: CityMap, tile: Vector2i, side: int = -1) -> bool:
-	var wanted := def.pavement_side if side < 0 else side
-	if wanted == EventDef.Pavement.ANY:
-		return true
-	var inward := map.pavement_inward(tile)
-	if inward == Vector2i.ZERO:
-		return false
-	if wanted == EventDef.Pavement.AT_THE_FRONT:
-		return inward == Vector2i.UP and map.in_bounds(tile + inward) \
-				and map.tile_at(tile + inward) == GameEnums.TileType.BUILDING
-	if wanted == EventDef.Pavement.AT_THE_KERB:
-		# The kerb lane is the one whose *road* side is actually road: on a two-tile pavement
-		# that is the inner of the two, and asking the tiles rather than the offset keeps it true
-		# of a crossing, a closed carriageway, or whatever a later milestone paints there.
-		return map.is_street(tile - inward) \
-				and map.tile_at(tile - inward) != GameEnums.TileType.SIDEWALK
-	return inward.y == 0 \
-			and map.tile_at(tile + inward) == GameEnums.TileType.BUILDING
 
 # ------------------------------------------------- a path never has to cost (M129) ---
 

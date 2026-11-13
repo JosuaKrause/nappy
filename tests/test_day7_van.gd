@@ -331,12 +331,12 @@ func _a_place_from_her_route(events: EventManager,
 	return null
 
 ## The placement context the game builds for her walk (`EventsAhead.start_day()`), built with the
-## constructor the game calls.
+## constructor the game calls, on a ground under the day's own home-street rule.
 func _siting_of(city: City) -> EventScheduler.WalkSiting:
-	var siting := EventScheduler.WalkSiting.new(DAY, city.map, city.streets().route_tree(),
-			city.events.walk_events(), EventScheduler.Verdicts.new(), GamePlanBuilder.over(city.map))
-	siting.holds_the_home_streets = DaySpec.for_day(DAY).holds_the_home_streets
-	return siting
+	return EventScheduler.WalkSiting.new(DAY, city.map, city.streets().route_tree(),
+			city.events.walk_events(), EventScheduler.Verdicts.new(),
+			GamePlanBuilder.over(city.map), EventScheduler.row_ground(city.map, null,
+					DaySpec.for_day(DAY).holds_the_home_streets))
 
 ## The cell centres of the day's longest route, from the doorstep end out — the walk she takes.
 func _the_longest_route(city: City, siting: EventScheduler.WalkSiting) -> Array[Vector2]:

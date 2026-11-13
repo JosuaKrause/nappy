@@ -153,7 +153,7 @@ func _test_sacks_wait_for_the_curve_then_alleys_before_fronts(t: TestRunner) -> 
 ## there.** The last day is planned through `build_day()` on pinned maps, each from several rolls,
 ## and every mouse it stands is asked whether it is within a tile of a pile
 ## (`GarbageSacks.alley_pile_tiles()`). Without the preference a mouse is a uniform pick of the
-## alley ground it may stand on (`EventScheduler.open_ground_for()`), so each lands near a pile with
+## alley ground it may stand on (`RowGround.tiles_for()`), so each lands near a pile with
 ## the probability of that ground's share of such tiles, and the count near is a sum of those
 ## chances: its mean is the sum of the shares and its variance the sum of share * (1 - share). With
 ## the preference an alley location beside a pile draws the mouse five times as often (itself and
@@ -173,7 +173,7 @@ func _test_the_mouse_prefers_a_pile(t: TestRunner) -> void:
 		var piles := GarbageSacks.alley_pile_tiles(map, day)
 		if piles.is_empty():
 			continue
-		var candidates := EventScheduler.open_ground_for(mouse, map, {})
+		var candidates := EventScheduler.row_ground(map).tiles_for(mouse)
 		var beside := {}
 		for tile in candidates:
 			for pile in piles:

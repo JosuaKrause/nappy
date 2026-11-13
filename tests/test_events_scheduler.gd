@@ -144,7 +144,7 @@ func _test_one_shots_fire_once_per_run(t: TestRunner) -> void:
 	t.check(one_shots_seen > 0, "some run had a one-shot to check (%d)" % one_shots_seen)
 
 ## **No robber stands in an alley she has to walk down.** *(2026-09-03: "alley robber should not
-## happen on required alleys".)* `EventScheduler._refuses_required_alleys` excludes `alley_robbery`
+## happen on required alleys".)* `EventDef.stands_only_in_alleys()` excludes `alley_robbery`
 ## from any `ALLEY` tile the day's corridor runs through — `corridor.depth(tile) == 0` — because its
 ## own design note is that "a robbery has no telegraph you could see coming, and it never did": a
 ## risk with no warning is only fair on ground she chose to enter. See `docs/DECISIONS.md`, "and no
@@ -711,9 +711,8 @@ func _test_a_roadblock_leaves_no_section_within_its_spacing_offered(t: TestRunne
 	var def := EventCatalogue.by_id("roadblock").for_day(day)
 	var events := DayEvents.over(CalmAreas.of(map))
 	var judged := EventScheduler.RuledRoadblockGround.new(def, day, map,
-			GamePlanBuilder.over(map), events, {}, corridor,
-			StreetInvalidation.new(map, corridor, {}, [] as Array[Rect2], PackedVector2Array(), null),
-			true)
+			GamePlanBuilder.over(map), events, EventScheduler.row_ground(map, corridor), corridor,
+			StreetInvalidation.new(map, corridor, [] as Array[Rect2], PackedVector2Array(), null))
 	var sections := DayLocations.lay_out(map, corridor).sections_in(
 			PlacementView.View.ROUTE_ADJACENT)
 	var first: EventPlan = null
