@@ -26,3 +26,6 @@ nowhere in `src/`, `tests/`, `tools/` or `scenes/`; no module holds more than a 
   (`CityMap._power_station_industrial_blocks`, the recipe key `power_station_industrial_blocks`), which the generator
   writes and the map's copy, capture and restore and the scene recipe files only carry: nothing reads it. Deleting it
   changes the recipe format, the files under `scene-recipes/` and `RecipeCityContext.validate()` with it.
+- `src/city/`: the city map's set of dead-end streets (`CityMap._dead_ends`, the recipe key `dead_ends`), which the
+  generator writes and the map's copy, capture and restore and the scene recipe files only carry; the game reads a dead
+  end off the streets built over (`RegionPlanner`). Deleting it changes the recipe format the same way.
