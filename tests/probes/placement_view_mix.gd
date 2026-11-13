@@ -45,10 +45,8 @@ func _mix_on(day: int) -> void:
 		var rng := _rng(i, day)
 		var guarded := ResistanceSteps.guarded_row_on(day)
 		var consumed: Array[String] = []
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), sites,
-				consumed, [], tree, 0, PackedVector2Array(),
-				[] as Array[EventPlan], null,
-				EventCatalogue.by_id(guarded) if guarded != "" else null).placements():
+		for plan in GameDawn.of(DaySpec.for_day(day), rng, map).masts(sites).spent(consumed) \
+				.on(tree).roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null).plan().placements():
 			var mode := plan.def.spawn_mode_on(day)
 			if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER:
 				moments += 1

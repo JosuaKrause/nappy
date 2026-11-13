@@ -834,8 +834,7 @@ func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
 		rng.seed = hash("%d:%d:events" % [run_seed, day])
 
 		var consumed: Array[String] = []
-		var first := EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), MastSites.compute(map),
-				consumed).placements()
+		var first := GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan().placements()
 		# **Planning day 3 spends nothing**, because its one-shot is owed to her walk and is spent
 		# where it becomes real — `EventScheduler._place_one_shots`. And a lost day gives back what
 		# it spent (`RunCalendar.finish_day`), so every retry is the same day down to the fire itself.
@@ -844,8 +843,8 @@ func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
 				"seed %d: planning day %d spends nothing on its own" % [run_seed, day])
 		var again := RandomNumberGenerator.new()
 		again.seed = rng.seed
-		var second := EventScheduler.build_day(DaySpec.for_day(day), again, map,
-				CalmAreas.of(map), MastSites.compute(map), consumed.duplicate()).placements()
+		var second := GameDawn.of(DaySpec.for_day(day), again, map).spent(consumed.duplicate()) \
+				.plan().placements()
 
 		# The one-shot itself is the one thing that must differ: it fired yesterday and is spent, so
 		# the retry plans **none** of it.
@@ -874,8 +873,7 @@ func _test_a_retried_day_is_the_same_day(t: TestRunner) -> void:
 		var spent: Array[String] = ["burning_building"]
 		var third_rng := RandomNumberGenerator.new()
 		third_rng.seed = rng.seed
-		var third := _kinds_in(EventScheduler.build_day(DaySpec.for_day(day), third_rng, map,
-				CalmAreas.of(map), MastSites.compute(map), spent).placements())
+		var third := _kinds_in(GameDawn.of(DaySpec.for_day(day), third_rng, map).spent(spent).plan().placements())
 		for id: String in before.keys() + third.keys():
 			var expected: int = 0 if id in spent else int(before.get(id, 0))
 			t.check(int(third.get(id, 0)) == expected,
@@ -895,9 +893,7 @@ func _test_the_run_is_always_taught(t: TestRunner) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d:events" % [run_seed, day])
 		var consumed: Array[String] = []
-		var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map,
-				CalmAreas.of(map), MastSites.compute(map),
-				consumed)
+		var events := GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).plan()
 		t.check(events.has_a_pursuit(),
 				"seed %d: day %d has something that has to be run from" % [run_seed, day])
 

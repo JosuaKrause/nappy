@@ -184,8 +184,7 @@ func _test_the_mouse_prefers_a_pile(t: TestRunner) -> void:
 		for roll in 8:
 			var rng := RandomNumberGenerator.new()
 			rng.seed = 1000 + roll
-			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,
-					CalmAreas.of(map), MastSites.compute(map)).placements():
+			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).plan().placements():
 				if plan.def.id != mouse.id:
 					continue
 				mice += 1

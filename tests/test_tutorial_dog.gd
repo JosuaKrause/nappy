@@ -104,8 +104,8 @@ func _test_day_4_is_a_map_placement(t: TestRunner) -> void:
 			var tree := RouteTree.for_day(map, day)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,
-					CalmAreas.of(map), masts, consumed, [], tree).placements():
+			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).masts(masts).spent(consumed) \
+					.on(tree).plan().placements():
 				if plan.def.id != "charging_dog":
 					continue
 				checked += 1

@@ -19,7 +19,8 @@ gets a method, and suites move as a pull request touches them.
 
 **A suite that plans one city over many days hands in its mast sites worked out once per city**,
 as the game does (`EventWorld.work_out_mast_sites()` on the city as built): today about forty suites
-work them out at each `EventScheduler.build_day()` call, on the day's paint, so a test can measure
+leave them to the shared helper's default (`tests/game_dawn.gd`), which works them out at each planned
+dawn, on the day's paint, so a test can measure
 masts that move between days, which the game never shows (the orchestrator's choice in placement
 step 3c, open to overturn). Each module's pass hoists them as it touches the suite.
 

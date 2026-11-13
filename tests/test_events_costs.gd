@@ -351,8 +351,7 @@ func _test_the_named_decisions_arrive(t: TestRunner) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:1" % city_seed)
 		var counts := {}
-		for plan in EventScheduler.build_day(DaySpec.for_day(1), rng, seeded,
-				CalmAreas.of(seeded), MastSites.compute(seeded), consumed).placements():
+		for plan in GameDawn.of(DaySpec.for_day(1), rng, seeded).spent(consumed).plan().placements():
 			counts[plan.def.id] = int(counts.get(plan.def.id, 0)) + 1
 		# No day-1 map may be without either of them at all, which is the failure the player
 		# actually reported: *"a restaurant — I never saw one."*
@@ -449,8 +448,8 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 	var spoiled_days := 0
 	for day in range(2, 15):
 		var consumed: Array[String] = []
-		var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, calm, MastSites.compute(map),
-				consumed, [])
+		var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map).calm(calm).spent(consumed) \
+				.plan()
 		var planned := events.placements()
 
 		var on_her_park := 0
@@ -494,11 +493,10 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 	# And a day that knows nothing about yesterday plans exactly as it always did.
 	var forgetful: Array[String] = []
 	var remembering: Array[String] = []
-	var a := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), map, CalmAreas.of(map), MastSites.compute(map),
-			forgetful).placements()
+	var a := GameDawn.of(DaySpec.for_day(3), _rng(3), map).spent(forgetful).plan().placements()
 	var nothing: Array[Vector2i] = []
-	var b := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), map, CalmAreas.of(map,
-			nothing), MastSites.compute(map), remembering, []).placements()
+	var b := GameDawn.of(DaySpec.for_day(3), _rng(3), map).calm(CalmAreas.of(map, nothing)) \
+			.spent(remembering).plan().placements()
 	t.check(_signature(a) == _signature(b),
 			"and a day with nothing to remember is unchanged by the rule")
 
@@ -516,8 +514,8 @@ func _test_the_city_remembers_where_she_went(t: TestRunner) -> void:
 			used_this_act = []
 		var consumed: Array[String] = []
 		var calm_today := CalmAreas.of(map, used_this_act)
-		var quietest := _quietest_calm_block(EventScheduler.build_day(DaySpec.for_day(day),
-				_rng(day), map, calm_today, MastSites.compute(map), consumed, []), calm_today)
+		var quietest := _quietest_calm_block(GameDawn.of(DaySpec.for_day(day), _rng(day), map) \
+				.calm(calm_today).spent(consumed).plan(), calm_today)
 		t.check(not used_this_act.has(quietest),
 				"day %d sends her somewhere she has not used this act" % day)
 		used_this_act.append(quietest)

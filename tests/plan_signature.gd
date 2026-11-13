@@ -13,8 +13,6 @@ static func of(map: CityMap, day: int, trace: RunTrace = null) -> String:
 	rng.seed = hash("telemetry:%d:%d" % [map.seed_used, day])
 	var consumed: Array[String] = []
 	var parts: Array[String] = []
-	for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map), MastSites.compute(map),
-			consumed, [], null, 0,
-			PackedVector2Array(), [], trace).placements():
+	for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).traced(trace).plan().placements():
 		parts.append("%s@%.2f,%.2f" % [plan.def.id, plan.position.x, plan.position.y])
 	return "|".join(parts)

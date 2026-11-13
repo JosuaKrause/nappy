@@ -113,9 +113,9 @@ func run(t: TestRunner) -> void:
 			var guarded := ResistanceSteps.guarded_row_on(day)
 			var consumed: Array[String] = []
 			var planned_from := Time.get_ticks_usec()
-			var events: DayEvents = EventScheduler.build_day(spec, rng, map, CalmAreas.of(map), sites,
-					consumed, [], tree, 0, doors, standing, null,
-					EventCatalogue.by_id(guarded) if guarded != "" else null)
+			var events: DayEvents = GameDawn.of(spec, rng, map).masts(sites).spent(consumed) \
+					.on(tree).doors(doors).standing(standing) \
+					.roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null).plan()
 			print("WP %d %d %d" % [day, i, Time.get_ticks_usec() - planned_from])
 			var plans: Array[EventPlan] = events.placements()
 			plans.append_array(seals)

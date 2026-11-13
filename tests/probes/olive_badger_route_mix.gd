@@ -56,9 +56,8 @@ func _measure() -> void:
 			var tree := RouteTree.for_day(map, day)
 			var plan_rng := RandomNumberGenerator.new()
 			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
-			var planned: Array[EventPlan] = EventScheduler.build_day(
-					DaySpec.for_day(day), plan_rng, map, CalmAreas.of(map), MastSites.compute(map), [], [], tree,
-							0).placements()
+			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
+					.on(tree).plan().placements()
 			var bought := 0
 			for plan in planned:
 				var mode := plan.def.spawn_mode_on(day)
@@ -129,9 +128,8 @@ func _measure_the_return() -> void:
 			var tree := RouteTree.for_day(map, day)
 			var plan_rng := RandomNumberGenerator.new()
 			plan_rng.seed = hash("olive-badger:plan:%d:%d" % [map.seed_used, day])
-			var planned: Array[EventPlan] = EventScheduler.build_day(
-					DaySpec.for_day(day), plan_rng, map, CalmAreas.of(map), MastSites.compute(map), [], [], tree,
-							0).placements()
+			var planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), plan_rng, map) \
+					.on(tree).plan().placements()
 			var director := EventDirector.new(map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("olive-badger:ahead:%d:%d" % [map.seed_used, day])
