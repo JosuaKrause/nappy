@@ -46,7 +46,11 @@ delegation is unavailable, do the bounded work locally and retain the same verif
 
 **The model for each kind of task is the table below**, and which model a task gets is chosen by
 judgement (woolly-finch 15). The rows that cite the player's words hold where another row differs.
-A stronger model than a row's takes a milestone whose geometry or contracts warrant it.
+A stronger model than a row names takes a milestone whose geometry or contracts warrant it; for a
+build, the geometry and the contracts are part of what decides which model can do it, so this does
+not override the lowest-model rule below. A design the Fable designer hands off reaches a builder
+through the designer's report: it says whether it writes the code or hands it off, and on a
+hand-off the orchestrator briefs the lowest model able from the design.
 
 | Task kind | Model |
 |---|---|
@@ -57,7 +61,7 @@ A stronger model than a row's takes a milestone whose geometry or contracts warr
 | Waiting on a merge or a check, polling | no agent: a timer or a script in a background shell, which costs no tokens (inbox #1070 in gentle-walrus, inbox #1072 in gentle-walrus) |
 | Merging | the orchestrating session, with no agent spawned for it; an agent or a monitor may run a merge the session hands it (**committing**, "Merging") |
 | A design: always detailed, the kind a builder works from | a stronger model (inbox #1432 in minty-rabbit) |
-| A build, and every task that is neither a design nor a review, an investigation of an unexplained result included | the lowest model that can do it, since a detailed design is what lets a weaker model build (inbox #1432 in minty-rabbit) |
+| A build, and every other task no row names that is neither a design nor a review, an investigation of an unexplained result included | the lowest model that can do it; for a build, the detailed design is what lets a weaker model do it (inbox #1432 in minty-rabbit) |
 | Measure: run a named probe batch into a fixed table, no conclusion | Haiku |
 | Measure with interpretation: what is noise, what is real, what a picture shows | Sonnet |
 | Capture named moments for a PR | Haiku, the pictures judged by the measurer or the reviewer |
@@ -66,10 +70,12 @@ A stronger model than a row's takes a milestone whose geometry or contracts warr
 | Review of queue, docs, a skill's wording alone or a small delta | Sonnet |
 
 **A design is always detailed, and a build takes the lowest model that can do it** (inbox #1432 in
-minty-rabbit): designing is where a stronger model goes, because the detailed design is what lets a
-weaker model build, so the table gives a build, and any task that is neither a design nor a review,
-the lowest model able to do it, never a fixed stronger one. A review keeps its own rows, since
-reviews have their own decision points and some need no strong model.
+minty-rabbit): designing, and reviewing in general, is where a stronger model goes, because the
+detailed design is what lets a weaker model build, so a build, and any other task no row names that
+is neither a design nor a review, gets the lowest model able to do it rather than a fixed stronger
+one. Drawing keeps Opus (PLAYTEST-123 8), and the measuring and capture rows name the lowest model
+for their kind. A review keeps its own rows, since reviews have their own decision points and some
+need no strong model.
 
 **In Claude Code, drawing is Opus's** (PLAYTEST-123 8), since the result is judged by eye and a
 weaker first pass costs the player a review round; Codex has its own model hierarchy and keeps its
@@ -391,9 +397,17 @@ to the player's correction:
 - **Every row of the model table that carries no citation**, the merging row among them, to be
   revised once the agent counter holds enough entries (inbox #900 in freckled-moose). The player asked for a granular table revised after experiments or statistics,
   and for Haiku to be tried on captures and measuring.
-- **That a stronger model than a row's takes a milestone whose geometry or contracts warrant it**
-  ("The model table"); the player's words are that the model is chosen by judgement
-  (woolly-finch 15).
+- **That a stronger model than a row names takes a milestone whose geometry or contracts warrant
+  it** ("The model table"), and that for a build these are part of what decides which model can do
+  it; the player's words are that the model is chosen by judgement (woolly-finch 15).
+- **That an investigation of an unexplained result, and every other task no row names that is
+  neither a design nor a review, falls under the lowest-model rule**: the reading of the player's
+  answer naming designs and reviews as where stronger models go (inbox #1432 in minty-rabbit), who
+  said only building outright; a task that needs complex reasoning still has Fable considered by the
+  planning row.
+- **How a hand-off reaches a builder** ("The model table"): the Fable designer says in its report
+  whether it writes the code or hands it off, and on a hand-off the orchestrator briefs the lowest
+  model able from the design. The player's words do not say how.
 - **That a review of a change to what a rule says goes to Opus** and a skill's wording alone to
   Sonnet ("The model table").
 - **That a pull request that carries a drawing is reviewed by Opus** ("The model table"); the
