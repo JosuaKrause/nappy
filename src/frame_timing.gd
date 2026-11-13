@@ -2,7 +2,7 @@ class_name FrameTiming
 extends RefCounted
 ## Where a system charges its time to the frame record, and the names of what it charges: what a
 ## system that is timed is handed in place of reading a switch every reader would share. **This is
-## the null sink** — it records nothing and says so (`on` is false) — which a system with no record
+## the null sink** — it records nothing and says so (`is_on()` is false) — which a system with no record
 ## to feed (a rig, a test, a page without `?framerecord=1`) keeps; `FrameRecord`
 ## (`src/telemetry/`) is the one that feeds the record, handed in by whoever builds the system
 ## (`main`, and `City` for what it makes), and the one the `Sitting` keeps across a scene reload.
@@ -13,7 +13,7 @@ extends RefCounted
 ## from inside another one is charged to itself and not to both. The game's own `_draw()` calls
 ## are not counted here: `FrameRecorder` listens for them on the nodes that draw.
 ##
-## **Off, it costs one member read per timed entry point**, and nothing is allocated.
+## **Off, it costs one `is_on()` call per timed entry point**, and nothing is allocated.
 
 ## What the physics steps did that no named system claims: her own movement and the physics
 ## server's step, and any `_draw()` a physics callback queued, since the engine flushes those at

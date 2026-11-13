@@ -539,10 +539,10 @@ var _ends_its_route_on_commit := false
 var _may_park_on_commit := true
 
 ## Where this event charges its time to the frame record, handed in by whoever makes it
-## (`EventSpawner.create()`, from its manager's own). With the record off, `_process()` pays two
-## member reads and no call: with the crowd's agents beside the live events, a static read and a
-## call into a second function made every player's frame measurably longer on a desktop
-## (docs/evidence/m159-frame-record-2026-10-04/).
+## (`EventSpawner.create()`, from its manager's own). With the record off, `_process()` pays a
+## member read and one `is_on()` call, and its body stays in `_process()` itself: a static read
+## and a call into a second function would cost every player more with the crowd's agents beside
+## the live events (docs/evidence/m159-frame-record-2026-10-04/).
 var timing := FrameTiming.new()
 ## The baked atlas pages this event's pictures come from (`AtlasLibrary`), handed in by whoever
 ## makes it (`EventSpawner.create()`, from its manager's own), which holds the events' group on it.
