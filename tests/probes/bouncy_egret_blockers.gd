@@ -118,9 +118,8 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	var consumed: Array[String] = []
 	var walls := 0
 	var friction := 0
-	for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(map, day, "events"), map,
-			CalmAreas.of(map), MastSites.compute(map), consumed, [],
-			tree, 0, doors, standing).placements():
+	for plan in GameDawn.of(DaySpec.for_day(day), _rng(map, day, "events"), map).spent(consumed) \
+			.on(tree).doors(doors).standing(standing).plan().placements():
 		if not plan.is_placed():
 			continue
 		if plan.role == GameEnums.BlockerRole.WALL:

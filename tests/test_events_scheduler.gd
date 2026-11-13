@@ -74,19 +74,15 @@ func _test_scheduler_is_deterministic(t: TestRunner) -> void:
 	for day: int in [1, 5, 14]:
 		var consumed_a: Array[String] = []
 		var consumed_b: Array[String] = []
-		var first := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), consumed_a).placements()
-		var second := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), consumed_b).placements()
+		var first := GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed_a).plan().placements()
+		var second := GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed_b).plan().placements()
 		t.check(_signature(first) == _signature(second),
 				"day %d replans identically from the same seed" % day)
 
 	var consumed: Array[String] = []
-	var day_one := EventScheduler.build_day(DaySpec.for_day(1), _rng(1), map, CalmAreas.of(map), MastSites.compute(map),
-			consumed).placements()
+	var day_one := GameDawn.of(DaySpec.for_day(1), _rng(1), map).spent(consumed).plan().placements()
 	consumed.clear()
-	var day_two := EventScheduler.build_day(DaySpec.for_day(2), _rng(2), map, CalmAreas.of(map), MastSites.compute(map),
-			consumed).placements()
+	var day_two := GameDawn.of(DaySpec.for_day(2), _rng(2), map).spent(consumed).plan().placements()
 	t.check(_signature(day_one) != _signature(day_two), "different days plan differently")
 
 func _test_scheduler_respects_placement_and_caps(t: TestRunner) -> void:
@@ -133,8 +129,8 @@ func _test_one_shots_fire_once_per_run(t: TestRunner) -> void:
 			rng.seed = hash("%d:%d" % [seed_value, day])
 			return rng
 		for day in range(1, 15):
-			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng_for.call(day), map,
-					CalmAreas.of(map), sites, consumed).placements():
+			for plan in GameDawn.of(DaySpec.for_day(day), rng_for.call(day), map).masts(sites) \
+					.spent(consumed).plan().placements():
 				if plan.def.kind != GameEnums.EventKind.ONE_SHOT:
 					continue
 				t.check(int(seen.get(plan.def.id, day)) == day,
@@ -168,8 +164,7 @@ func _test_alley_robbery_never_lands_on_a_required_alley(t: TestRunner) -> void:
 			var corridor := Corridor.of(tree)
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("%d:%d" % [run_seed, day])
-			for plan in EventScheduler.build_day(DaySpec.for_day(day), rng, map,
-					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
+			for plan in GameDawn.of(DaySpec.for_day(day), rng, map).spent(consumed).on(tree).plan().placements():
 				if plan.def.id != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1
@@ -361,8 +356,8 @@ func _test_calm_she_has_not_used_is_left_alone(t: TestRunner) -> void:
 				act = Tuning.act_for_day(day)
 				used_this_act = []
 			var calm := CalmAreas.of(map, used_this_act)
-			var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, calm, MastSites.compute(map),
-					consumed, [])
+			var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map).calm(calm) \
+					.spent(consumed).plan()
 			for block in calm.unused():
 				var near: Array[String] = []
 				for plan in events.spoilers_of(block):
@@ -546,8 +541,7 @@ func _test_the_gatehouse_day_keeps_a_share_of_the_fills_walls(t: TestRunner) -> 
 		var every_wall := DaySpec.for_day(day)
 		every_wall.wall_row_share = 1.0
 		var consumed: Array[String] = []
-		var full_plans := EventScheduler.build_day(every_wall, _rng(day), map, CalmAreas.of(map), MastSites.compute(map),
-				consumed).placements()
+		var full_plans := GameDawn.of(every_wall, _rng(day), map).spent(consumed).plan().placements()
 		var full := _walls_of(full_plans)
 		var game := _walls_of(_planned(day))
 		if day >= Tuning.REGION_WALL_FIRST_DAY:
@@ -650,9 +644,8 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t: TestRunner) -> void:
 	var tree := RouteTree.for_day(map, day)
 	var corridor := Corridor.of(tree)
 	var told: Array[String] = []
-	var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, CalmAreas.of(map), MastSites.compute(map),
-			[] as Array[String], [] as Array[Dictionary], tree, 0, PackedVector2Array(), [] as Array[EventPlan], RecordingTrace.new(told),
-			EventCatalogue.by_id("roadblock"))
+	var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map).on(tree) \
+			.traced(RecordingTrace.new(told)).roadblock(EventCatalogue.by_id("roadblock")).plan()
 	var stood: Array[Vector2i] = []
 	var counted := ""
 	var tile_pattern := RegEx.create_from_string("\\((-?\\d+),(-?\\d+)\\)")
@@ -832,7 +825,8 @@ func _test_a_scar_cutting_the_clean_calm_area_off_is_not_stood(t: TestRunner) ->
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _CHOICE_DRAW_SEED
 	var consumed: Array[String] = []
-	var events := EventScheduler.build_day(DaySpec.for_day(day), rng, map, calm, MastSites.compute(map), consumed, scars)
+	var events := GameDawn.of(DaySpec.for_day(day), rng, map).calm(calm).spent(consumed) \
+			.scars(scars).plan()
 	t.check(events.is_spoiled(spoiled_block),
 			"the area she used is spoiled, so the day has a spoiled area besides the clean one")
 	t.check(not events.is_spoiled(clean_block), "the area she has not used is clean")
@@ -906,9 +900,9 @@ func _test_a_spoiler_on_a_route_stands_beside_it(t: TestRunner) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = _CHOICE_DRAW_SEED
 	var consumed: Array[String] = []
-	var events := EventScheduler.build_day(DaySpec.for_day(_SPOILER_DAY), rng, map, calm,
-			[] as Array[MastSites.Site], consumed, [], _Walk.new(route), 0, PackedVector2Array(),
-			[], RecordingTrace.new(lines))
+	var events := GameDawn.of(DaySpec.for_day(_SPOILER_DAY), rng, map).calm(calm) \
+			.masts([] as Array[MastSites.Site]).spent(consumed).on(_Walk.new(route)) \
+			.traced(RecordingTrace.new(lines)).plan()
 	var with_a_body := 0
 	for line in lines:
 		if not line.begins_with("roll ") or not line.contains("in the park she used"):
@@ -1042,8 +1036,8 @@ func _test_a_wall_body_holds_its_location_and_a_seal_none(t: TestRunner) -> void
 	seal.stand_as_a_seal()
 	var standing: Array[EventPlan] = [wall, seal]
 	var consumed: Array[String] = []
-	var events := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map, CalmAreas.of(map),
-			_sites(), consumed, [], null, 0, PackedVector2Array(), standing)
+	var events := GameDawn.of(DaySpec.for_day(day), _rng(day), map).masts(_sites()).spent(consumed) \
+			.standing(standing).plan()
 	var walled := events.locations().holding(wall_tile, map.tile_at(wall_tile))
 	t.check(walled != null and walled.is_taken(), "the location under the wall's body is taken")
 	if walled != null:

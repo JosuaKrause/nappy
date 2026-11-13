@@ -598,8 +598,8 @@ func _test_no_alley_robbery_stands_near_the_doorstep(t: TestRunner) -> void:
 			var tree := RouteTree.for_day(map, day)
 			var events_rng := RandomNumberGenerator.new()
 			events_rng.seed = hash("%d:events:%d" % [seed_value, day])
-			for plan in EventScheduler.build_day(DaySpec.for_day(day), events_rng, map,
-					CalmAreas.of(map), MastSites.compute(map), consumed, [], tree).placements():
+			for plan in GameDawn.of(DaySpec.for_day(day), events_rng, map).spent(consumed).on(tree) \
+					.plan().placements():
 				if plan.def.id != "alley_robbery" or not plan.is_placed():
 					continue
 				checked += 1

@@ -86,15 +86,15 @@ func _test_scars_outlive_the_day_that_made_them(t: TestRunner) -> void:
 	t.check(run.attempt_spend.scars.size() == 1, "the same scar is not recorded twice")
 
 	var consumed: Array[String] = []
-	var same_day := EventScheduler.build_day(DaySpec.for_day(3), _rng(3), _map,
-			CalmAreas.of(_map), MastSites.compute(_map), consumed, run.attempt_spend.scars).placements()
+	var same_day := GameDawn.of(DaySpec.for_day(3), _rng(3), _map).spent(consumed) \
+			.scars(run.attempt_spend.scars).plan().placements()
 	t.check(not _contains(same_day, "burnt_shell"),
 			"a scar does not double up on the day it was made")
 
 	for day: int in [4, 9, 14]:
 		var later: Array[String] = []
-		var planned := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
-				CalmAreas.of(_map), MastSites.compute(_map), later, run.attempt_spend.scars).placements()
+		var planned := GameDawn.of(DaySpec.for_day(day), _rng(day), _map).spent(later) \
+				.scars(run.attempt_spend.scars).plan().placements()
 		t.check(_contains(planned, "burnt_shell"),
 				"the burnt-out shell is still there on day %d" % day)
 		for plan in planned:
@@ -299,8 +299,8 @@ func _test_a_park_stays_reachable_every_day(t: TestRunner) -> void:
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var consumed: Array[String] = []
 		var blockers: Array[EventPlan] = []
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
-				CalmAreas.of(_map), MastSites.compute(_map), consumed, run.attempt_spend.scars).placements():
+		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), _map).spent(consumed) \
+				.scars(run.attempt_spend.scars).plan().placements():
 			if plan.obstructs():
 				blockers.append(plan)
 		t.check(_a_park_is_reachable(grid, blockers),

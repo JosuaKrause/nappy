@@ -264,12 +264,10 @@ func _test_heat_is_derived_once_and_kept(t: TestRunner) -> void:
 func _test_a_day_is_a_function_of_its_heat(t: TestRunner) -> void:
 	var day := 9
 	var consumed: Array[String] = []
-	var first := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
-			CalmAreas.of(_map), MastSites.compute(_map), consumed.duplicate(),
-			[], null, Tuning.RESISTANCE_GOAL).placements()
-	var second := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map,
-			CalmAreas.of(_map), MastSites.compute(_map), consumed.duplicate(),
-			[], null, Tuning.RESISTANCE_GOAL).placements()
+	var first := GameDawn.of(DaySpec.for_day(day), _rng(day), _map).spent(consumed.duplicate()) \
+			.heat(Tuning.RESISTANCE_GOAL).plan().placements()
+	var second := GameDawn.of(DaySpec.for_day(day), _rng(day), _map).spent(consumed.duplicate()) \
+			.heat(Tuning.RESISTANCE_GOAL).plan().placements()
 	t.check(first.size() == second.size(),
 			"a hot day planned twice is the same day (%d vs %d)" % [first.size(), second.size()])
 	for i in mini(first.size(), second.size()):
@@ -706,11 +704,9 @@ func _test_a_hot_day_places_more_patrols(t: TestRunner) -> void:
 		cold_rng.seed = rng_seed
 		var hot_rng := RandomNumberGenerator.new()
 		hot_rng.seed = rng_seed
-		colds += _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), cold_rng, map,
-				CalmAreas.of(map), MastSites.compute(map), [], [], null, 0).placements())
-		hots += _count_patrols(EventScheduler.build_day(DaySpec.for_day(day), hot_rng, map,
-				CalmAreas.of(map), MastSites.compute(map), [], [], null,
-				Tuning.RESISTANCE_GOAL).placements())
+		colds += _count_patrols(GameDawn.of(DaySpec.for_day(day), cold_rng, map).plan().placements())
+		hots += _count_patrols(GameDawn.of(DaySpec.for_day(day), hot_rng, map) \
+				.heat(Tuning.RESISTANCE_GOAL).plan().placements())
 	t.check(hots > colds,
 			"over %d seeds a fully heated day places more patrols than a cold one (%d against %d)"
 			% [seeds.size(), hots, colds])

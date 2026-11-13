@@ -42,8 +42,8 @@ func _rng(day: int) -> RandomNumberGenerator:
 
 ## The shared map's plan for `day`, memoized.
 ##
-## **Ten checks below ask for exactly this** — `build_day(day, _rng(day), _map(), consumed)` with a
-## fresh empty `consumed` — and `build_day` is the most expensive call in this suite at roughly two
+## **Ten checks below ask for exactly this** — `GameDawn.of(DaySpec.for_day(day), _rng(day), _map())` with a
+## fresh empty `consumed` handed to `spent()` — and `build_day` is the most expensive call in this suite at roughly two
 ## thirds of a second for an early day and a second for a late one. Planning the same fourteen days
 ## ten times over was six or seven minutes of re-deriving an answer that nothing between the calls
 ## had changed, and none of the ten was checking anything the first one had not already produced.
@@ -64,6 +64,6 @@ func _planned(day: int) -> Array[EventPlan]:
 func _day_events(day: int) -> DayEvents:
 	if not _plans.has(day):
 		var consumed: Array[String] = []
-		_plans[day] = EventScheduler.build_day(DaySpec.for_day(day), _rng(day), _map(),
-				CalmAreas.of(_map()), _sites(), consumed)
+		_plans[day] = GameDawn.of(DaySpec.for_day(day), _rng(day), _map()).masts(_sites()) \
+				.spent(consumed).plan()
 	return _plans[day]

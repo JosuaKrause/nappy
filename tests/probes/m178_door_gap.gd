@@ -76,8 +76,8 @@ func _plan_day(map: CityMap, day: int, tree: RouteTree,
 	var consumed: Array[String] = []
 	var scars: Array[Dictionary] = []
 	var used_calm: Array[Vector2i] = []
-	return EventScheduler.build_day(DaySpec.for_day(day), rng, map, CalmAreas.of(map,
-			used_calm), MastSites.compute(map), consumed, scars, tree, 0, doors).placements()
+	return GameDawn.of(DaySpec.for_day(day), rng, map).calm(CalmAreas.of(map, used_calm)) \
+			.spent(consumed).scars(scars).on(tree).doors(doors).plan().placements()
 
 func _placed(plans: Array[EventPlan]) -> int:
 	var total := 0

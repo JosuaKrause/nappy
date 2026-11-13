@@ -105,9 +105,8 @@ func _fire_route(day: int, outward := true) -> PackedVector2Array:
 ## suite on the understanding that nothing writes to it.
 func _fire_day_plans() -> Array[EventPlan]:
 	var consumed: Array[String] = []
-	return EventScheduler.build_day(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY),
-			_rng(Tuning.RUN_TAUGHT_DAY), _map(), CalmAreas.of(_map()), MastSites.compute(_map()),
-			consumed).placements()
+	return GameDawn.of(DaySpec.for_day(Tuning.RUN_TAUGHT_DAY), _rng(Tuning.RUN_TAUGHT_DAY), _map()) \
+			.spent(consumed).plan().placements()
 
 ## The placement context the director above is started on, built the way `EventManager.start_day`
 ## builds one. Kept as its own function so a check can ask it the same questions the director does —
@@ -405,11 +404,9 @@ func _test_a_crew_drawn_is_handed_to_her_walk(t: TestRunner) -> void:
 	var crew_way := crew.on_her_way
 	for day: int in [4, 8, 12]:
 		var tree := RouteTree.for_day(map, day)
-		var handed := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), [], [], tree).placements()
+		var handed := GameDawn.of(DaySpec.for_day(day), _rng(day), map).on(tree).plan().placements()
 		crew.on_her_way = null
-		var kept := EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), [], [], tree).placements()
+		var kept := GameDawn.of(DaySpec.for_day(day), _rng(day), map).on(tree).plan().placements()
 		crew.on_her_way = crew_way
 		var handed_crews := 0
 		var handed_placed := 0

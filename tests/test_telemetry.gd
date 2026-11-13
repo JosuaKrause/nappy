@@ -652,8 +652,7 @@ func _test_every_routed_event_is_a_straight_line(t: TestRunner) -> void:
 	var map := CityMapCache.of(4242)
 	var consumed: Array[String] = []
 	for day: int in [1, 3, 7, 14]:
-		for plan in EventScheduler.build_day(DaySpec.for_day(day), _rng(day), map,
-				CalmAreas.of(map), MastSites.compute(map), consumed).placements():
+		for plan in GameDawn.of(DaySpec.for_day(day), _rng(day), map).spent(consumed).plan().placements():
 			if plan.path.size() < 2:
 				continue
 			t.check(plan.path.size() == 2, "%s's route is two points, not %d"

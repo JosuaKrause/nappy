@@ -119,9 +119,8 @@ func _reproduce_zero_density_visits() -> void:
 				# spoiler (`EventPlan.reaches()`).
 				var rng2 := RandomNumberGenerator.new()
 				rng2.seed = hash("m97:full:%d:%d:%d" % [map.seed_used, day, block.x * 100000 + block.y])
-				var full_planned: Array[EventPlan] = EventScheduler.build_day(
-						DaySpec.for_day(day), rng2, map, CalmAreas.of(map, [block] as Array[Vector2i]), MastSites.compute(map),
-						[], [], tree, 0).placements()
+				var full_planned: Array[EventPlan] = GameDawn.of(DaySpec.for_day(day), rng2, map) \
+						.calm(CalmAreas.of(map, [block] as Array[Vector2i])).on(tree).plan().placements()
 				var full_in_lot: Array[EventPlan] = []
 				for plan: EventPlan in full_planned:
 					if plan.def.kind == GameEnums.EventKind.AMBIENT or plan.permanent \
