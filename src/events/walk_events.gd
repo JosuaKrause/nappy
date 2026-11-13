@@ -2,8 +2,9 @@ class_name WalkEvents
 extends RefCounted
 ## **What the walk's events are, read through one object while she walks it**: the walk's plans in
 ## the order they stream, what the walk was planned against that a placement made while she walks
-## is stated against too — where today's region doors stand and the day's calm areas — and where she
-## can get to from home as the walk was planned (`DayReach`).
+## is stated against too — where today's region doors stand, the day's calm areas and the day's
+## ground for a row (`RowGround`) — and where she can get to from home as the walk was planned
+## (`DayReach`).
 ## `DayEvents` is the day while dawn plans it; this is the walk once it has started.
 ##
 ## *(inbox #1156: "have an object that contains the derived information -- don't rederive over
@@ -27,22 +28,25 @@ var _calm: CalmAreas = null
 var _doors := PackedVector2Array()
 var _reach: DayReach = null
 var _locations: DayLocations = null
+var _ground: RowGround = null
 
 # ------------------------------------------------------------------- writes ---
 
 ## Takes `plans` as the walk's whole plan, the very array handed in, planned against `calm` (the
 ## day's calm areas, or none for a walk that is not a day in the city), with today's region doors
 ## standing at `doors`, `reach`, where she can get to from home as it was planned (none for a
-## walk that is not in the city), and `locations`, the day's locations as dawn laid them out (none
-## on a day that laid none out).
+## walk that is not in the city), `locations`, the day's locations as dawn laid them out (none
+## on a day that laid none out), and `ground`, the day's ground for a row as dawn made it (none for
+## a walk no dawn of a day planned).
 func take(plans: Array[EventPlan], calm: CalmAreas = null,
 		doors := PackedVector2Array(), reach: DayReach = null,
-		locations: DayLocations = null) -> void:
+		locations: DayLocations = null, ground: RowGround = null) -> void:
 	_plans = plans
 	_calm = calm
 	_doors = doors
 	_reach = reach
 	_locations = locations
+	_ground = ground
 
 ## Adds one plan placed while she walks, after every plan already in the walk.
 func add(plan: EventPlan) -> void:
@@ -55,6 +59,7 @@ func clear() -> void:
 	_doors = PackedVector2Array()
 	_reach = null
 	_locations = null
+	_ground = null
 
 # ---------------------------------------------------------------- questions ---
 
@@ -107,6 +112,13 @@ func reach() -> DayReach:
 ## day that laid none out and before a walk starts.
 func locations() -> DayLocations:
 	return _locations
+
+## The day's ground for a row, as dawn made it (`RowGround`): which tiles a row may stand on, the
+## answers dawn asked for already kept, which every placement made while she walks asks in place
+## of scanning the city again; null for a walk no dawn of a day planned (the escape's walks, the
+## building, a scene recipe's) and before a walk starts.
+func ground() -> RowGround:
+	return _ground
 
 ## **The walk's placed, unspent plans standing inside `area`** (world space), by where each was
 ## placed: what a section holds, which day 13's swap spends when it puts its roadblock across the

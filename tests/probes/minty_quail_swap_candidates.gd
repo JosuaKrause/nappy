@@ -154,7 +154,7 @@ func _bodies(city: City, seed_value: int) -> void:
 						continue
 					tiles.append([Vector2(lane_x, map.tile_to_world(tile).y), Vector2(0, going)])
 		else:
-			var ground := EventScheduler.open_ground_for(def, map, {})
+			var ground := EventScheduler.row_ground(map).tiles_for(def)
 			for i in range(0, ground.size(), 7):
 				tiles.append([map.tile_to_world(ground[i]), Vector2.RIGHT])
 		for site: Array in tiles:

@@ -71,6 +71,7 @@ static func _where_a_mast_may_stand(city: City) -> Array:
 	var rng := RandomNumberGenerator.new()
 	var counts := {}
 	var passing: Array[Vector2i] = []
+	var junctions := RouteJunctionsRule.new(map, siting._corridor)
 	for tile: Vector2i in siting._ground_as_a_set(def):
 		if siting._tree.branches_on(tile).is_empty():
 			continue
@@ -80,13 +81,11 @@ static func _where_a_mast_may_stand(city: City) -> Array:
 			why = "not a mast site"
 		elif not candidate:
 			why = "no placement"
-		elif not RouteJunctionsRule._leaves_the_route_junctions_open(candidate, map, siting._corridor,
-				siting.scenery_ground, none):
+		elif not junctions._leaves_the_route_junctions_open(candidate, none):
 			why = "junction, the mast alone"
 		elif not RouteSidewalkRule._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor, none):
 			why = "sidewalk, the mast alone"
-		elif not RouteJunctionsRule._leaves_the_route_junctions_open(candidate, map, siting._corridor,
-				siting.scenery_ground, plans):
+		elif not junctions._leaves_the_route_junctions_open(candidate, plans):
 			why = "junction, with the day"
 		elif not RouteSidewalkRule._leaves_the_routes_sidewalk_open(candidate, map, siting._corridor, plans):
 			why = "sidewalk, with the day"

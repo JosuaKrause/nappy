@@ -8,18 +8,19 @@ extends StreetRule
 
 var _map: CityMap
 var _corridor: Corridor
-var _ground: Dictionary
+## The routes' junctions with the geometry the rule asks about (`_route_junctions()`), worked out
+## when the rule is first asked and kept for its life.
+var _junctions: Array = []
+var _junctions_are_known := false
 
-func _init(map: CityMap, corridor: Corridor, ground: Dictionary) -> void:
+func _init(map: CityMap, corridor: Corridor) -> void:
 	_map = map
 	_corridor = corridor
-	_ground = ground
 
 ## Overrides StreetRule.allows.
 func allows(candidate: EventPlan, _tile: Vector2i,
 		_placed: Array[EventPlan], around: Array[EventPlan]) -> bool:
-	return _leaves_the_route_junctions_open(candidate, _map, _corridor, _ground,
-			around)
+	return _leaves_the_route_junctions_open(candidate, around)
 
 ## **A route's junctions stay clear**, checked before a row is accepted and never repaired after.
 ##
@@ -35,34 +36,30 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 ## only ever asked *does this row alone take the box* would accept both of them. Stating it
 ## cumulatively is still *checked before accepted*: each row in turn is asked whether the day it is
 ## joining still has a line through every crossing, so a closed one never exists even briefly.
-static func _leaves_the_route_junctions_open(candidate: EventPlan, map: CityMap,
-		corridor: Corridor, ground: Dictionary, already: Array[EventPlan]) -> bool:
-	if not corridor or not candidate.counts_against_the_line():
+func _leaves_the_route_junctions_open(candidate: EventPlan, already: Array[EventPlan]) -> bool:
+	if not _corridor or not candidate.counts_against_the_line():
 		return true
 	var reach := candidate.row().line_reach()
-	for entry: Array in _route_junctions(map, ground, corridor):
+	for entry: Array in _route_junctions():
 		var centre: Vector2 = entry[1]
 		var box_reach: float = entry[2]
 		if candidate.distance_from(centre) > reach + box_reach:
 			continue
-		if not _a_crossing_stays_open(map, corridor, entry, candidate, already):
+		if not _a_crossing_stays_open(_map, _corridor, entry, candidate, already):
 			return false
 	return true
 
-## The day's route junctions with the geometry the rule asks about, worked out once per day and
-## kept in the same `ground` dictionary every other day-lifetime answer in this file lives in.
-## Each entry is `[junction, the box's world centre, the box's own reach from that centre]`.
-const _ROUTE_JUNCTIONS_KEY := "route_junctions"
-
-static func _route_junctions(map: CityMap, ground: Dictionary, corridor: Corridor) -> Array:
-	if not ground.has(_ROUTE_JUNCTIONS_KEY):
-		var found: Array = []
-		for junction in corridor.route_junctions():
+## The routes' junctions with the geometry the rule asks about, worked out once a rule: each entry
+## is `[junction, the box's world centre, the box's own reach from that centre]`. They are the
+## rule's own facts about the routes, a few dozen boxes, so the rule keeps them itself.
+func _route_junctions() -> Array:
+	if not _junctions_are_known:
+		for junction in _corridor.route_junctions():
 			var box := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
-			var world := map.tile_rect_to_world(box)
-			found.append([junction, world.get_center(), world.size.length() * 0.5])
-		ground[_ROUTE_JUNCTIONS_KEY] = found
-	return ground[_ROUTE_JUNCTIONS_KEY]
+			var world := _map.tile_rect_to_world(box)
+			_junctions.append([junction, world.get_center(), world.size.length() * 0.5])
+		_junctions_are_known = true
+	return _junctions
 
 ## Whether one junction box still carries a walk between every route street that meets it, with the
 ## candidate standing and everything already down standing too.

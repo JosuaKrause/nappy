@@ -9,7 +9,7 @@ extends RefCounted
 ## could not tell apart:
 ##
 ## 1. Does `EventScheduler.role_for` call the pavement-changing rows (`cafe_tables`,
-##    `market_stall`, `construction`, `delivery_van`) a WALL, which `_copies_of` then refuses on
+##    `market_stall`, `construction`, `delivery_van`) a WALL, which `RowGround._times_for_role()` then refuses on
 ##    every corridor tile?
 ## 2. How much of `ClosurePlanner`'s calm-area access-street refusal falls on the rim — the ground
 ##    closest to where she actually walks — versus scattered elsewhere?

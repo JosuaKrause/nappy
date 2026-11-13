@@ -60,6 +60,19 @@ class Plan extends RefCounted:
 	func use_locations(locations: DayLocations) -> void:
 		_locations = locations
 
+	## The day's ground for a row, as dawn made it (`RowGround`), which the walk hands every
+	## placement made while she walks (`WalkEvents.ground()`); null for a walk no dawn of a day
+	## planned (the escape's walks, the building, a scene recipe's).
+	var _ground: RowGround = null
+
+	## The day's ground for a row. See `_ground`.
+	func ground() -> RowGround:
+		return _ground
+
+	## Hands the plan the day's ground for a row. See `_ground`.
+	func use_ground(ground: RowGround) -> void:
+		_ground = ground
+
 ## The world the walk is planned over.
 var world: EventWorld
 
@@ -191,6 +204,7 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	result.doors = doors
 	result.use_calm(calm)
 	result.use_locations(day_events.locations())
+	result.use_ground(day_events.ground())
 	return result
 
 ## **The day's calm areas as the map stands now**, with the areas she settled in this act

@@ -1024,7 +1024,7 @@ func _test_kerb_parked_vans_keep_their_axis_chosen_view(t: TestRunner) -> void:
 		instance.free()
 
 ## `reversing_lorry` (`AGAINST_THE_BUILDING`) only ever faces due east or west —
-## `EventScheduler._wants_this_side` refuses any facing that is not purely horizontal — so its
+## `RowGround._wants_this_side()` refuses any facing that is not purely horizontal — so its
 ## front, back and diagonal views are never actually reachable in play; binding it onto the shared
 ## table must not change that.
 func _test_reversing_lorry_only_ever_faces_the_side_view(t: TestRunner) -> void:

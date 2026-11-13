@@ -470,7 +470,7 @@ func sleepiness_multiplier(world_position: Vector2) -> float:
 ##
 ## Cleared at dawn rather than never: `map.repaint` can turn a park into `SPOILED` overnight, and a
 ## cached answer that outlives the ground it was about is the shape of bug this project keeps
-## finding — see `EventScheduler.ground_for()`'s note about a cache with a shorter life than its invalidation rule.
+## finding — see `RowGround`'s note that a ground lives exactly one walk.
 var _sleepiness_tile := Vector2i(-1, -1)
 var _sleepiness_answer := 1.0
 

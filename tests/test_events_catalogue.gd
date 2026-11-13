@@ -141,7 +141,7 @@ const _CARRIAGEWAY_SPREAD_CLEARANCE := (Tuning.SIDEWALK_WIDTH + 0.5) * Tuning.TI
 ## excitement?"; "should be a bit more".)* A wide field at a moderate rate loses more of its price
 ## to the walking decay than a narrow fierce one does, so buying back what the decay took pushes
 ## `walk_through_cost()` toward `EventScheduler.WALL_WORTH_OF_COST` — and a `WALL` is given zero copies on
-## any cell a route runs along (`EventScheduler._copies_of`), which would put a protest off every
+## any cell a route runs along (`RowGround._times_for_role()`), which would put a protest off every
 ## route a day plans rather than on one she can be sent to walk through.
 ##
 ## Not "the intensity is 19.5", which would be the catalogue read back to itself: what would tell
@@ -168,7 +168,7 @@ func _role_it_places_as(def: EventDef, day: int, map: CityMap, corridor: Corrido
 	var calm := CalmAreas.of(map)
 	var nothing_down: Array[EventPlan] = []
 	var locations := DayLocations.lay_out(map, corridor)
-	for tile in EventScheduler.open_ground_for(def.for_day(day), map, {}):
+	for tile in EventScheduler.row_ground(map).tiles_for(def.for_day(day)):
 		var plan := EventScheduler.recipe_placement(def, day, map, GamePlanBuilder.over(map),
 				map.tile_to_world(tile), 1, nothing_down, corridor, no_doors, calm, nothing_down,
 				locations)
@@ -531,7 +531,7 @@ func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 				and end_extent.x < side_extent.x,
 				"'%s' end view keeps its narrower authored projection" % def.id)
 
-## **A spread never lands on a corner.** `EventScheduler._is_a_corner` refuses any tile whose two
+## **A spread never lands on a corner.** `RowGround._is_a_corner()` refuses any tile whose two
 ## coordinates are both inside a corridor band to a row `EventDef.has_a_spread` names — see
 ## `docs/DECISIONS.md`, "a spread on a corner is placed as if the corner were nothing": such a tile
 ## has no single street for `_spread_is_vertical` or `_centred_on_the_pavement_band` to answer about.

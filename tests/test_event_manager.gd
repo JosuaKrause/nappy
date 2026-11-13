@@ -30,11 +30,32 @@ func run(t: TestRunner) -> void:
 		_test_the_first_dog_of_the_run_day_is_the_lesson,
 		_test_a_moved_guard_keeps_what_he_is_in_the_middle_of,
 		_test_a_day_started_twice_stands_the_same_rows,
+		_test_the_walk_is_handed_the_ground_the_dawn_made,
+		_test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries,
 	]
 	for test in tests:
 		_build_city(t)
 		await test.call(t)
 		_teardown()
+
+## A ground that counts what it is asked, for the siting's hand-on to be seen.
+class _CountingGround extends RowGround:
+	var asks := 0
+
+	## Overrides RowGround.tiles_for.
+	func tiles_for(def: EventDef, side: int = -1) -> Array[Vector2i]:
+		asks += 1
+		return super(def, side)
+
+	## Overrides RowGround.offers_for.
+	func offers_for(def: EventDef, side: int = -1) -> Dictionary:
+		asks += 1
+		return super(def, side)
+
+	## Overrides RowGround.offers_for_role.
+	func offers_for_role(def: EventDef, role: GameEnums.BlockerRole) -> Dictionary:
+		asks += 1
+		return super(def, role)
 
 func _build_city(t: TestRunner) -> void:
 	_city = Rig.build_city(t)
@@ -568,3 +589,38 @@ func _test_a_row_warned_down_her_line_arrives_at_its_own_intensity(t: TestRunner
 	for id: String in ["cyclist", "loose_dog"]:
 		t.check(checked.has(id), "'%s' is among the rows sent down her line (%s)"
 				% [id, ", ".join(checked)])
+
+## **The ground the dawn made is the walk's** (`DayEvents.use_ground()` at dawn,
+## `DayPlanner.Plan.use_ground()`, `EventManager._take()`, `WalkEvents.ground()`): a day started
+## through the manager carries one, so what is sited while she walks is not made a ground of its
+## own by `EventsAhead._ground_of_the_walk()`'s fallback, which would scan the city a second time
+## and change no answer, so nothing else here would show the link dropped.
+func _test_the_walk_is_handed_the_ground_the_dawn_made(t: TestRunner) -> void:
+	_start(1)
+	t.check(_city.events.walk_events().ground() != null,
+			"a day started through the manager carries the ground the dawn made for its walk")
+
+## **What is sited on her walk asks the ground the walk carries** (`EventsAhead.start_day()` hands
+## `WalkEvents.ground()` to the siting it makes for a plan left for her walk): a ground that counts
+## its asks is handed to the walk, the director's day is started over it again, and the siting's
+## one-time scans (`WalkSiting.prepare()`) ask it. A siting handed a ground of its own would leave
+## the count at zero.
+func _test_what_is_sited_on_her_walk_asks_the_ground_the_walk_carries(t: TestRunner) -> void:
+	var asked := -1
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		_start(day)
+		var left_for_her_walk := false
+		for plan in _city.events.plans():
+			if plan.def.on_her_way != null and not plan.is_placed():
+				left_for_her_walk = true
+		if not left_for_her_walk:
+			continue
+		var walk := _city.events.walk_events()
+		var counting := _CountingGround.new(_city.map, null, true, RowGround.Weights.new(),
+				func(_row: EventDef) -> bool: return false)
+		walk.take(walk.plans(), walk.calm(), walk.doors(), walk.reach(), walk.locations(), counting)
+		_city.events.ahead.start_day(day, _city.events.walk())
+		asked = counting.asks
+		break
+	t.check(asked >= 0, "a day leaves a plan for her walk to site")
+	t.check(asked > 0, "and the siting made for it asks the ground the walk carries (%d asks)" % asked)

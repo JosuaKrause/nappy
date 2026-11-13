@@ -16,8 +16,8 @@ extends RefCounted
 ## a **cost** one (`EventDef.reaches_the_far_lane()`, "what does this row bill a passer-by")
 ## and a **physical** one (`_closes_the_band_by_its_own_placement`, "does a passer-by have anywhere
 ## left to stand"), and either is enough to make the row a wall — refused a route cell entirely by
-## `_copies_of`. Both are asked once, from the def alone, before a tile is ever chosen, by the
-## placement's own ground (`EventScheduler.ground_for()`). This probe checks the result of that decision against the day as
+## `RowGround._times_for_role()`. Both are asked once, from the def alone, before a tile is ever chosen, by the
+## placement's own ground (`RowGround.offers_for_role()`). This probe checks the result of that decision against the day as
 ## it is actually planned and placed: does any body, from any placing path, still end up standing
 ## where it leaves no lane on a walked sidewalk — a genuine gap in what the rule covers, or, if one
 ## the rule itself is supposed to refuse turns up anyway, a bug in the rule rather than a gap in it.
@@ -306,7 +306,7 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 			map.held_streets())
 
 	var corridor := Corridor.of(tree)
-	var ground := {}
+	var ground := EventScheduler.row_ground(map, corridor)
 	var calm := CalmAreas.of(map)
 	var leave_alone := calm.unused_ground()
 	var rng := _rng(map, day, "events")
@@ -323,10 +323,10 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	var locations := DayLocations.lay_out(map, corridor)
 	var builder := GamePlanBuilder.over(map)
 	var phase := ScriptedPhase.new(locations, EventScheduler.RuledLocationGround.new(day, base, map,
-			events, corridor, LocationFit.new(day, map, builder, ground, corridor, true),
-			StreetInvalidation.new(map, corridor, ground, leave_alone, PackedVector2Array(), null)),
+			events, corridor, LocationFit.new(day, map, builder, ground),
+			StreetInvalidation.new(map, corridor, leave_alone, PackedVector2Array(), null)),
 			func(def: EventDef, location: Location) -> float:
-				return EventScheduler._weight_in(def, location, day, map, ground, corridor, true))
+				return EventScheduler._weight_in(def, location, day, map, ground))
 	var before := events.size()
 	EventScheduler._place_scripted(day, EventScheduler._stream(base, 1), events, phase, 0)
 	_tag_new(events.placements(), provenance, before, Source.CANDIDATE_LOOP)
@@ -391,7 +391,7 @@ func _tag_new(planned: Array[EventPlan], provenance: Dictionary, before: int,
 # ------------------------------------------------------------------- the closing test ---
 
 ## Whether `position` stands on an on-corridor street's sidewalk band that is *not* the one the
-## tree actually walks — legal ground for a wall (`EventScheduler._copies_of`), and what
+## tree actually walks — legal ground for a wall (`RowGround._times_for_role()`), and what
 ## `docs/DECISIONS.md`'s "walls on a route street's far sidewalk" measures for `cafe_tables` and
 ## `construction`. `false` off a street entirely, or on a street the tree does not use at all.
 func _stands_on_a_route_streets_far_sidewalk(map: CityMap, corridor: Corridor,

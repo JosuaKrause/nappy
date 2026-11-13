@@ -26,9 +26,9 @@ func run(_t: TestRunner) -> void:
 			if body.def.id == "checkpoint_hut":
 				print("GATE ", body.position)
 		var def := EventCatalogue.by_id("leaf_blower" if day == 1 else "military_convoy")
-		var ground := {}
-		var tiles := EventScheduler.ground_for(def, map, ground, corridor,
-				EventScheduler.role_for(def, day))
+		var tiles: Array[Vector2i] = []
+		tiles.assign(EventScheduler.row_ground(map, corridor).offers_for_role(def,
+				EventScheduler.role_for(def, day)).keys())
 		tiles.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
 			return a.distance_squared_to(Vector2i(65, 60)) < b.distance_squared_to(Vector2i(65, 60)))
 		var accepted := 0
@@ -54,10 +54,10 @@ func run(_t: TestRunner) -> void:
 	var guards := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	print("ESCAPE_EXIT ", FinalePlanner.service_exit_world_position(map))
 	var found := 0
+	var escape_ground := EventScheduler.row_ground(map, null, false)
 	for segment in finale.open_streets:
-		var ground := EventScheduler.street_ground(map, segment, guards,
-				StreetTrees.footprint_tiles(map), FinalePlanner.service_exit_world_position(map), {},
-				false)
+		var ground := EventScheduler.street_ground(map, escape_ground, segment, guards,
+				FinalePlanner.service_exit_world_position(map))
 		if ground.is_empty():
 			continue
 		print("ESCAPE_GUARD ", map.tile_to_world(ground[ground.size() / 2]), " street=", segment.key())

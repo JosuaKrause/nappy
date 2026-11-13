@@ -122,8 +122,8 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	city.build(CityGenerator.generate(SEED))
 
 	var sites := {}
-	for tile in EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
-			city.map, {}):
+	for tile in EventScheduler.row_ground(city.map).tiles_for(
+			EventCatalogue.by_id("burning_building")):
 		sites[tile] = true
 	t.check(sites.size() > 100,
 			"seed %d: there are fronts for the fire to catch on (%d)" % [SEED, sites.size()])
@@ -211,8 +211,8 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	var station := CityMap.blocks_tile_rect(city.map.power_station)
 	t.check(city.map.has_power_station(), "seed %d has a power station" % SEED)
 	var station_fronts := 0
-	var lane_of_fronts := EventScheduler.open_ground_for(EventCatalogue.by_id("cafe_tables"),
-			city.map, {}, EventDef.Pavement.AT_THE_FRONT)
+	var lane_of_fronts := EventScheduler.row_ground(city.map).tiles_for(
+			EventCatalogue.by_id("cafe_tables"), EventDef.Pavement.AT_THE_FRONT)
 	for tile in lane_of_fronts:
 		if station.has_point(tile + Vector2i.UP):
 			station_fronts += 1

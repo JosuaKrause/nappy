@@ -175,7 +175,7 @@ var bag_rows := {}
 ## there (minty-lemur #785).
 var keeps_unused_calm_clear := true
 ## Whether the home's streets are the day's: nothing on the street her front door opens onto
-## (`EventScheduler.open_ground_for()`) or round the home block (`CityMap.held`). The
+## (`RowGround.tiles_for()`) or round the home block (`CityMap.held`). The
 ## escape keeps its own rule instead, by the player's word (minty-lemur #785): she sets off from the
 ## service exit, which opens onto one of those streets, and only the ground she stands on is
 ## refused (`EventScheduler.clearance_around_her()`).

@@ -6,7 +6,7 @@ extends "res://tests/resistance_rig.gd"
 ## director put in the street is read from the street (`contact()`, `rider()`, `read_mark()`, the
 ## city's live instances), a touch is a real physics frame, and the happenings are the public ones
 ## (`tick()`), the main road they send the column down read off the map. The ground a row is
-## offered is asked of `EventScheduler.open_ground_for()`, the next day's masts of the day the
+## offered is asked of `RowGround.tiles_for()`, the next day's masts of the day the
 ## manager plans, the near mast of the arrow's tip over two masts a test stands, and
 ## `_start_the_day()` puts her stroller in the tree with the baby a child of it, as the scene has
 ## them.
@@ -49,8 +49,8 @@ func _test_the_burnt_shell_task_rides_the_recorded_scar(t: TestRunner) -> void:
 	var doorstep := _city.map.doorstep_world_position()
 	var near_fronts: Array[Vector2i] = []
 	var far_fronts: Array[Vector2i] = []
-	for tile in EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
-			_city.map, {}):
+	for tile in EventScheduler.row_ground(_city.map).tiles_for(
+			EventCatalogue.by_id("burning_building")):
 		var distance := _city.map.tile_to_world(tile).distance_to(doorstep)
 		if distance < Tuning.EVENT_STREAM_RADIUS:
 			near_fronts.append(tile)
@@ -201,8 +201,8 @@ func _check_a_touch_from_the_near_half_of_the_sidewalk(t: TestRunner, director: 
 func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var size := float(Tuning.TILE_SIZE)
-	var fronts := EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
-			_city.map, {})
+	var fronts := EventScheduler.row_ground(_city.map).tiles_for(
+			EventCatalogue.by_id("burning_building"))
 	var on_a_door := 0
 	var wrong: Array[Vector2i] = []
 	var behind_tile := {}
@@ -273,8 +273,8 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t: TestRunner) 
 
 	var shell := rider.global_position
 	var shell_tile := _city.map.world_to_tile(shell)
-	var fronts := EventScheduler.open_ground_for(EventCatalogue.by_id("burning_building"),
-			_city.map, {})
+	var fronts := EventScheduler.row_ground(_city.map).tiles_for(
+			EventCatalogue.by_id("burning_building"))
 	t.check(shell_tile in fronts,
 			"the shell stands at %s, a front day 3's fire could have caught on" % shell_tile)
 	var recorded := 0

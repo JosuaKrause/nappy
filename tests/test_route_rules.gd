@@ -67,7 +67,7 @@ func _far_from_the_routes() -> Vector2i:
 	return Vector2i(-1, -1)
 
 func _test_a_body_closing_a_route_crossing_is_refused(t: TestRunner) -> void:
-	var rule := RouteJunctionsRule.new(_map, _corridor, {})
+	var rule := RouteJunctionsRule.new(_map, _corridor)
 	var junction: Vector2i = _tree.junctions()[0]
 	var box := Rect2i(junction * CityMap.period(), Vector2i.ONE * Tuning.STREET_WIDTH)
 	var at_the_box := _at("burst_water_main", box.get_center())

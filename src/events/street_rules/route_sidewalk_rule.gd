@@ -60,7 +60,7 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 ## **Two readings, either enough to refuse the candidate.** `closes_the_run` is the cost one, over
 ## `_cumulative_lane_reach_of` rather than `EventDef.line_reach()` alone —
 ## `EventScheduler._closes_the_band_by_its_own_placement`'s own role clause is asked of a row's own numbers before
-## a tile is chosen, but `EventScheduler._copies_of` still offers a `WALL` a cell of the *same* lane that does not
+## a tile is chosen, but `RowGround._times_for_role()` still offers a `WALL` a cell of the *same* lane that does not
 ## itself `carries_a_route` (a route need not use every cell of the block it is walked along), so a
 ## body legally rolled onto that cell can still physically close the lane the width rule is
 ## checking. `closes_a_walked_sidewalk_band` is the physical reading asked here for exactly that

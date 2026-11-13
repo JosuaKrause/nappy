@@ -294,7 +294,8 @@ func _take(spec: DaySpec, plan: DayPlanner.Plan, focus: Vector2) -> void:
 	# Where she can get to from home, worked out once as the walk starts, from what it planned and
 	# the map's closures and soft seals as they stand now (`DayReach`).
 	var reach := DayReach.of(world.city_map, plan.placements) if world.city_map else null
-	_walk_events.take(plan.placements, plan.calm(), plan.doors, reach, plan.locations())
+	_walk_events.take(plan.placements, plan.calm(), plan.doors, reach, plan.locations(),
+			plan.ground())
 	if plan.is_a_day:
 		# Every stationary solid body the day has sited, recorded per tile so the crowd goes round
 		# it — see `CityMap.obstructed_tiles`. Taken from the **plan** rather than from the live
@@ -365,8 +366,8 @@ func stand_down() -> void:
 ## **The walk's own settings, out of the spec the run flow hands in**: whether falling asleep owes
 ## her a return (`DaySpec.owes_a_return`), whether a torn poster sends a pursuer
 ## (`DaySpec.poster_pursuits`) and whether what is sited after dawn keeps off the home's streets
-## (`DaySpec.holds_the_home_streets`, read by every `EventScheduler.WalkSiting` the director makes). Every walk hands its spec in as it starts (`start_day()`); a rig may
-## hand another in mid-walk. Until one is handed in, a day's settings (`DaySpec`'s own defaults).
+## (`DaySpec.holds_the_home_streets`, which `EventsAhead` keeps as the rule it makes a ground under for a walk no dawn planned; a day's ground keeps the rule it was made under at dawn). Every walk hands its spec in as it starts (`start_day()`); a rig may
+## hand another in mid-walk, which sets the rule of a ground made after it for a walk no dawn planned and leaves a day's ground, and so a day's later sitings, as dawn made it. Until one is handed in, a day's settings (`DaySpec`'s own defaults).
 func use_the_spec(spec: DaySpec) -> void:
 	_owes_a_return = spec.owes_a_return
 	ahead.sends_poster_pursuits = spec.poster_pursuits

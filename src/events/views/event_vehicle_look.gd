@@ -27,7 +27,7 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			_draw_eight_view(EventPictures.ICE_CREAM_VAN_BY_VIEW, event.facing_now(), canvas)
 		EventDef.Look.LORRY:
 			# `reversing_lorry`'s own facing is always exactly east or west — `AGAINST_THE_BUILDING`
-			# sets it to `-pavement_inward`, which `_wants_this_side` already refuses unless it is
+			# sets it to `-pavement_inward`, which `RowGround._wants_this_side()` already refuses unless it is
 			# purely horizontal — so the diagonal and front/back views this table adds are never
 			# actually reachable; the row draws its side view.
 			_draw_eight_view(EventPictures.LORRY_BY_VIEW, event.facing_now(), canvas)

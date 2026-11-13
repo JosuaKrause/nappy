@@ -25,9 +25,9 @@ var _warnings: WarningBoard
 ## is handed the spec.
 var sends_poster_pursuits := true
 ## Whether the home's streets are the walk's (`DaySpec.holds_the_home_streets`), as the manager is
-## handed the spec: every placement context made here for a siting after dawn reads it
-## (`EventScheduler.WalkSiting.holds_the_home_streets`), so what is sited while she walks keeps the
-## rule the walk was planned under at dawn.
+## handed the spec: the rule the ground of a walk no dawn planned is made under
+## (`_ground_of_the_walk()`), so what is sited while she walks keeps the rule the walk was started
+## under. A day's ground, made at dawn, carries the day's own.
 var holds_the_home_streets := true
 ## The walk's spec, as the manager is handed it: whether the region wall stands in it says which man
 ## is the pursuer on foot (`EventCatalogue.on_foot_on()`). Until one is handed in, one with no wall.
@@ -71,17 +71,18 @@ func director() -> EventDirector:
 func start_day(day: int, tree: RouteTree) -> void:
 	# The day's placement context, kept past dawn for the one kind of plan the day plans and
 	# leaves for her walk to site — see `EventScheduler.WalkSiting` and `EventDef.on_her_way`.
-	# Stated against exactly what `build_day` was: the same tree, and the walk's own doors and calm
-	# areas, which are the day's. Only on a day that has such a plan: the context grows a corridor,
-	# and a day with nothing left for her walk would pay for it and read none of it.
+	# Stated against exactly what `build_day` was: the same tree, the walk's own doors and calm
+	# areas, which are the day's, and the day's ground for a row (`_ground_of_the_walk()`). Only
+	# on a day that has such a plan: the context grows a corridor, and a day with nothing left for
+	# her walk would pay for it and read none of it.
 	_siting = null
 	_day_tree = tree
 	for plan in _walk.plans():
 		if plan.def.on_her_way != null and not plan.is_placed():
 			if not _siting:
 				_siting = EventScheduler.WalkSiting.new(day, world.city_map, tree, _walk,
-						EventScheduler.Verdicts.new(), world.plan_builder())
-				_siting.holds_the_home_streets = holds_the_home_streets
+						EventScheduler.Verdicts.new(), world.plan_builder(),
+						_ground_of_the_walk())
 				# Where a crew may paste: only the city's buildings know their blank walls, and
 				# the walls paste every dawn, so the fronts are asked for today's, here.
 				if world.poster_walls():
@@ -90,6 +91,17 @@ func start_day(day: int, tree: RouteTree) -> void:
 			_siting.prepare(plan.def)
 	_director.start_day(day, _walk.plans(), world.run.calendar.day_rng(day, "ahead"), _siting,
 			world.run.resistance.progress)
+
+## **The ground a siting made here stands its rows on** (`RowGround`): the walk's, as dawn made it
+## (`WalkEvents.ground()`), so nothing sited after dawn scans the city for what dawn already
+## worked out, and it stands on the ground the day was planned on. A walk no dawn of a day planned
+## (a scene recipe's, a rig's) has none, and its siting is handed one made here under the walk's
+## own home-street rule (`holds_the_home_streets`).
+func _ground_of_the_walk() -> RowGround:
+	var dawns := _walk.ground()
+	if dawns:
+		return dawns
+	return EventScheduler.row_ground(world.city_map, null, holds_the_home_streets)
 
 ## Starts the director over a walk whose plan was handed in whole. It owes nothing — every such
 ## placement is `MAP`-sited — but it is started anyway so that `owed_ahead()` and its own per-day
@@ -306,8 +318,7 @@ func queue_a_mast(offered: Array[Vector2i], rng: RandomNumberGenerator) -> Event
 	var siting := _siting
 	if not siting:
 		siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree, _walk,
-				EventScheduler.Verdicts.new(), world.plan_builder())
-		siting.holds_the_home_streets = holds_the_home_streets
+				EventScheduler.Verdicts.new(), world.plan_builder(), _ground_of_the_walk())
 	var plan := siting.among(def, rng, offered)
 	if not plan:
 		return null
@@ -415,8 +426,7 @@ func rig_her_route(ids: Array[String], size: int) -> Array:
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(world.day, world.city_map, _day_tree if _day_tree \
 				else RouteTree.for_day(world.city_map, world.day), _walk,
-				EventScheduler.Verdicts.new(), world.plan_builder())
-		_siting.holds_the_home_streets = holds_the_home_streets
+				EventScheduler.Verdicts.new(), world.plan_builder(), _ground_of_the_walk())
 		if world.poster_walls():
 			_siting.fronts = world.poster_walls().fronts()
 	var rigged := _director.rig_her_route(ids, size, world.run.resistance.progress, _siting)

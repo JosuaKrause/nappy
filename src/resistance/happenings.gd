@@ -325,7 +325,7 @@ static func _market_candidates(map: CityMap, state: CityState) -> Array[Vector2i
 func _market_ahead_of(her: Vector2, candidates: Array[Vector2i]) -> Vector2i:
 	if not _siting:
 		_siting = EventScheduler.WalkSiting.new(_day, _map, _streets.route_tree(), _walk,
-				EventScheduler.Verdicts.new(), _builder)
+				EventScheduler.Verdicts.new(), _builder, _walk.ground())
 	var ahead := _siting.cells_ahead(her, _heading, INF)
 	var best := Vector2i(-1, -1)
 	var nearest := INF

@@ -567,7 +567,7 @@ static func _cat_dash() -> EventDef:
 ## **Acts and cap, derived from the cat's.** `first_day`, `last_day` and `act_tag` are left at their
 ## defaults (1, 0, 1), as `_cat_dash` leaves them: everyday background texture. The cap is half of
 ## the cat's 8; an `ALLEY` tile is scarcer than every `ROAD` and `CROSSING` tile a cat may cross,
-## and `_refuses_required_alleys` narrows the pool further.
+## and `EventDef.stands_only_in_alleys()` narrows the pool further.
 ##
 ## **Lower intensity than the cat's 17, because it is a startle rather than a threat**: 9, roughly
 ## half, on the same 4:1 outer:inner ratio scaled down to the alley's smaller stage (60:15). The
@@ -1008,12 +1008,12 @@ static func _fire_truck() -> EventDef:
 ## **It always catches on a wall the city actually draws**, since the building itself is shown burnt
 ## afterwards (`CityFronts.mark_the_burnt_frontage()`, `Building.Condition.BURNT`).
 ## `AGAINST_THE_BUILDING` only sites against an east-or-west wall
-## (`EventScheduler._wants_this_side()`'s default branch), never a wall `building.gd` draws a facade
+## (`RowGround._wants_this_side()`'s default branch), never a wall `building.gd` draws a facade
 ## on: every building is extruded south from its lot's south edge. `AT_THE_FRONT`, "the one face of
 ## a building the city draws" (`EventDef.Pavement`), is therefore this row's placement choice. A
 ## proposal, open to overturn if a fire that can also catch on the un-drawn walls matters more than
 ## a burnt shell with a real facade behind it. **Never on the power station's front**
-## (`EventScheduler._burns_its_front()`): its facade does not draw burnt, and its transformer yard
+## (`RowGround._burns_its_front()`): its facade does not draw burnt, and its transformer yard
 ## has no wall to burn.
 static func _burning_building() -> EventDef:
 	var def := EventDef.new()
@@ -1738,7 +1738,7 @@ static func _police_patrol() -> EventDef:
 ## of the 64px band and is a wall by physical fit (`EventScheduler._closes_the_band_by_its_own_
 ## placement`); pinned to the frontage lane's tile centre, `TILE_SIZE * 0.5` from the wall, it
 ## spans 5-27px of the band and leaves 37px to the kerb, over the 28px she needs, so it stays
-## friction. `_wants_this_side` narrows its `SIDEWALK` ground to north-south streets with a real
+## friction. `RowGround._wants_this_side()` narrows its `SIDEWALK` ground to north-south streets with a real
 ## building on the far side, as `reversing_lorry` does.
 ##
 ## **It is a sidewalk row only.** A square answers no `pavement_inward`, so there is no frontage

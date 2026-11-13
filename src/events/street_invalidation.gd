@@ -17,17 +17,17 @@ var _corridor: Corridor
 var _rules: Array[StreetRule] = []
 
 ## The rules for a walk on `map` routed by `corridor` (null for a walk with no route tree, which
-## asks none of the route rules): `ground` the day's ground cache, `leave_alone` the calm ground she
+## asks none of the route rules): `leave_alone` the calm ground she
 ## has not used, `doors` where the region doors' bodies stand, `one_notice` the plan builder where
 ## the spec keeps one waiting guard's notice at a time (it says where each band stands), else null,
 ## and `walk` the walk's ground where the spec keeps the walk open, else null. The walk is asked last, since it is the expensive question.
-func _init(map: CityMap, corridor: Corridor, ground: Dictionary, leave_alone: Array[Rect2],
+func _init(map: CityMap, corridor: Corridor, leave_alone: Array[Rect2],
 		doors: PackedVector2Array, one_notice: PlanBuilder, walk: WalkGround = null) -> void:
 	_map = map
 	_corridor = corridor
 	_rules.append(UnusedCalmRule.new(leave_alone))
 	_rules.append(DoorClearanceRule.new(doors))
-	_rules.append(RouteJunctionsRule.new(map, corridor, ground))
+	_rules.append(RouteJunctionsRule.new(map, corridor))
 	_rules.append(RouteSidewalkRule.new(map, corridor))
 	_rules.append(PacingOpeningRule.new(map, corridor))
 	_rules.append(RouteGroundRule.new(map, corridor))

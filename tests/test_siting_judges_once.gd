@@ -103,17 +103,17 @@ func _test_one_judgement_per_candidate(t: TestRunner) -> void:
 	var walk := _walk(map, already)
 	var counting := CountingVerdicts.new()
 	var kept := EventScheduler.WalkSiting.new(day, map, tree, walk, counting,
-			GamePlanBuilder.over(map))
+			GamePlanBuilder.over(map), EventScheduler.row_ground(map))
 	var forgetful := ForgetfulVerdicts.new()
 	var afresh := EventScheduler.WalkSiting.new(day, map, tree, walk, forgetful,
-			GamePlanBuilder.over(map))
+			GamePlanBuilder.over(map), EventScheduler.row_ground(map))
 	var asked := 0
 	var agreed := 0
 	var judged_once := 0
 	var refused := 0
 	for id in ["poster_crew", "homeless_yeller", "dog_walker"]:
 		var def := EventCatalogue.by_id(id).for_day(day)
-		var whole := EventScheduler.open_ground_for(def, map, {})
+		var whole := EventScheduler.row_ground(map).tiles_for(def)
 		var picker := RandomNumberGenerator.new()
 		picker.seed = hash(id)
 		# Pools of one, two and a handful of tiles, which is what a walk siting offers, and one of
@@ -167,7 +167,7 @@ func _test_one_offer_per_look(t: TestRunner) -> void:
 			owed += 1
 	var verdicts := CountingVerdicts.new()
 	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), _walk(map, plans), verdicts,
-			GamePlanBuilder.over(map))
+			GamePlanBuilder.over(map), EventScheduler.row_ground(map))
 	var director := EventDirector.new(map)
 	director.start_day(day, plans, _rng(day), siting)
 	var route := _longest_route(day)
@@ -266,11 +266,12 @@ func _test_a_look_shares_its_verdicts(t: TestRunner) -> void:
 	var already := _planned(day)
 	var verdicts := CountingVerdicts.new()
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day),
-			_walk(map, already), verdicts, GamePlanBuilder.over(map))
+			_walk(map, already), verdicts, GamePlanBuilder.over(map),
+			EventScheduler.row_ground(map))
 	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
 	# A crew stands in front of a blank wall, which only a city's buildings know; every front face
 	# stands in for them here.
-	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
+	for tile in EventScheduler.row_ground(map).tiles_for(crew, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
 	# The band the director sites the walk's events in: from the streaming edge to the sight of a
 	# walk's `ON_HER_WAY_SIGHT` seconds beyond it.
@@ -314,7 +315,8 @@ func _longest_route(day: int) -> PackedVector2Array:
 				best = route
 	var points := PackedVector2Array()
 	var siting := EventScheduler.WalkSiting.new(day, _map(), tree, FakeWalkEvents.new(),
-			EventScheduler.Verdicts.new(), GamePlanBuilder.over(_map()))
+			EventScheduler.Verdicts.new(), GamePlanBuilder.over(_map()),
+			EventScheduler.row_ground(_map()))
 	for i in best.size():
 		points.append(siting.cell_centre(best[best.size() - 1 - i]))
 	return points
@@ -330,9 +332,10 @@ func _test_a_dropped_verdict_is_judged_again(t: TestRunner) -> void:
 	var already := _planned(day)
 	var walk := _walk(map, already)
 	var siting := EventScheduler.WalkSiting.new(day, map, RouteTree.for_day(map, day), walk,
-			EventScheduler.Verdicts.new(), GamePlanBuilder.over(map))
+			EventScheduler.Verdicts.new(), GamePlanBuilder.over(map),
+			EventScheduler.row_ground(map))
 	var crew := EventCatalogue.by_id("poster_crew").for_day(day)
-	for tile in EventScheduler.open_ground_for(crew, map, {}, EventDef.Pavement.AT_THE_FRONT):
+	for tile in EventScheduler.row_ground(map).tiles_for(crew, EventDef.Pavement.AT_THE_FRONT):
 		siting.fronts[tile] = true
 	# The band the director sites the walk's events in: from the streaming edge to the sight of a
 	# walk's `ON_HER_WAY_SIGHT` seconds beyond it.
@@ -434,7 +437,8 @@ func _test_the_director_drops_the_verdicts(t: TestRunner) -> void:
 	for _i in 3:
 		plans.append(EventPlan.new(fire, Vector2.INF))
 	var siting := SpySiting.new(day, map, RouteTree.for_day(map, day), _walk(map, plans),
-			EventScheduler.Verdicts.new(), GamePlanBuilder.over(map))
+			EventScheduler.Verdicts.new(), GamePlanBuilder.over(map),
+			EventScheduler.row_ground(map))
 	var director := EventDirector.new(map)
 	director.start_day(day, plans, _rng(day), siting)
 	var out := _longest_route(day)

@@ -285,7 +285,7 @@ func _a_route_out(day: int, outward := true) -> PackedVector2Array:
 func _a_siting(day: int) -> EventScheduler.WalkSiting:
 	return EventScheduler.WalkSiting.new(day, _city.map, _days_tree(day),
 			_city.events.walk_events(), EventScheduler.Verdicts.new(),
-			GamePlanBuilder.over(_city.map))
+			GamePlanBuilder.over(_city.map), EventScheduler.row_ground(_city.map))
 
 ## Which cells of the day's routes carry `position`, as the branch colours `RouteTree` records —
 ## empty for a point off the tree. What "on the path" means, asked of a placement.
