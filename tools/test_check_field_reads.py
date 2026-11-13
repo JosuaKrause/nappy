@@ -482,9 +482,10 @@ class TypedMethodReferenceTests(unittest.TestCase):
         self.handed(
             "func f() -> Callable:\n\tg(t.go if t else Callable())\n\tvar a := Callable() if t else t.make\n"
             "\tvar b := (Callable() if t else t.go)\n\tvar c := Callable() if t else Callable() if t else t.go\n"
-            "\tg(1, Callable() if t else t.make)\n\tvar d := Callable() if t else (t.go if t else Callable())\n"
+            "\tg(1, Callable() if t else t.make)\n\tg(1, t.go if t else Callable())\n"
+            "\tvar d := Callable() if t else (t.go if t else Callable())\n"
             "\tvar e := t.make if t else func() -> void: pass\n\treturn t.go if t else Callable()\n",
-            8,
+            9,
         )
 
     def test_a_parenthesised_expression_is_what_its_parentheses_are(self) -> None:
