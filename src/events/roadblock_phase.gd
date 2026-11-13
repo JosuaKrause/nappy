@@ -15,7 +15,8 @@ extends RefCounted
 ## (`RoadblockGround.reoffer_within()`), since that roadblock may have made it invalid.
 ##
 ## **It stops once every route tile has a roadblock close by** (`RoadblockGround.covers()`, the walk
-## along her paths day 13's task measures close by with, out to `EventScheduler.TASK_ROW_CLOSE_BY`),
+## along her paths day 13's task measures close by with, out to
+## `RuledRoadblockGround.TASK_ROW_CLOSE_BY`),
 ## **or once no section still offered would bring one close by a route tile that has none**, **or once
 ## `MOST` stand**, or once no section is left in the draw. The stop is asked before each draw, never
 ## of the draw itself: a section close by nothing new is drawn like any other while some other

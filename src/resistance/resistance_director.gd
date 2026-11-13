@@ -1776,11 +1776,11 @@ func _place_the_roadblock_near(mark: Vector2) -> EventInstance:
 ## How far out from where she read the mark day 13's roadblock is looked for, in turn, past the
 ## `NEAR_THE_MARK` circle: half a block and a street further, then a whole block and a street — the
 ## next block out, still nearer than the far side of a district, and the widest dawn stands one
-## within of every stretch of her routes (`EventScheduler.TASK_ROW_CLOSE_BY`). *(Proposed, not
+## within of every stretch of her routes (`RuledRoadblockGround.TASK_ROW_CLOSE_BY`). *(Proposed, not
 ## asked for: the player's "closeby" sets no number.)*
 const ROADBLOCK_WIDER_REACH: Array[float] = [
 	NEAR_THE_MARK + (Tuning.BLOCK_SIZE / 2.0 + Tuning.STREET_WIDTH) * Tuning.TILE_SIZE,
-	EventScheduler.TASK_ROW_CLOSE_BY,
+	RuledRoadblockGround.TASK_ROW_CLOSE_BY,
 ]
 
 ## **The nearest roadblock the day placed that her paths reach within `reach`**: a placed, unspent

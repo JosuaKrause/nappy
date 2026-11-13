@@ -694,7 +694,7 @@ func _test_day_13s_roadblocks_stand_beside_the_routes(t: TestRunner) -> void:
 ## **Once a roadblock stands, the day's ground offers no section a roadblock within
 ## `EVENT_SPACING_SAME` of it** (the spacing between two of a row as an invalidation, the
 ## orchestrator's reading of inbox #1185 in gentle-owl, open to correction): on the suite's own city on day 13,
-## the judged ground the roadblock phase asks (`EventScheduler.RuledRoadblockGround`) is asked of
+## the judged ground the roadblock phase asks (`RuledRoadblockGround`) is asked of
 ## every route-adjacent section before and after one roadblock stands. Sections it offered one
 ## within that spacing before are offered none, or one standing clear of it, after.
 func _test_a_roadblock_leaves_no_section_within_its_spacing_offered(t: TestRunner) -> void:
@@ -703,7 +703,7 @@ func _test_a_roadblock_leaves_no_section_within_its_spacing_offered(t: TestRunne
 	var corridor := Corridor.of(RouteTree.for_day(map, day))
 	var def := EventCatalogue.by_id("roadblock").for_day(day)
 	var events := DayEvents.over(CalmAreas.of(map))
-	var judged := EventScheduler.RuledRoadblockGround.new(def, day, map,
+	var judged := RuledRoadblockGround.new(def, day, map,
 			GamePlanBuilder.over(map), events, EventScheduler.row_ground(map, corridor), corridor,
 			StreetInvalidation.new(map, corridor, [] as Array[Rect2], PackedVector2Array(), null))
 	var sections := DayLocations.lay_out(map, corridor).sections_in(

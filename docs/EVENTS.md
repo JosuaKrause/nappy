@@ -1239,7 +1239,7 @@ not a strict rule. Those locations are then assigned, so no draw happens for the
   whose roadblock would stand within 256px of it is offered one, and the bias ranks the rest.
 - `RoadblockPhase` places them, in the sections of the day's locations (`DayLocations`). Every
   route-adjacent section whose roadblock today's rules leave valid
-  (`EventScheduler.RuledRoadblockGround`), and that no fixed part on its sidewalk has closed, is
+  (`RuledRoadblockGround`), and that no fixed part on its sidewalk has closed, is
   in each draw, weighted by the bias; the stop is asked
   before each draw and never narrows it, so a section close by nothing new is drawn like any other
   while another could still cover a route tile.

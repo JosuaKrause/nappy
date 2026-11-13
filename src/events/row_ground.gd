@@ -102,6 +102,20 @@ func _init(map: CityMap, corridor: Corridor, from_the_door: bool, weights: Weigh
 	_weights = weights
 	_wall_by_cost = wall_by_cost
 
+## **How many times over this ground offers a tile**, as it was made (`Weights`). A judge of
+## locations weighs a location by the same numbers where a tile's weight is a location's too (a
+## precinct street, the street between two strands of the routes:
+## `RuledLocationGround.scale()`), so they are said once, by whoever made the ground.
+func weights() -> Weights:
+	return _weights
+
+## **Whether `def` is a wall by what it costs to walk through**, as whoever made the ground reads
+## it (the function it was handed): what the ground's own role weights ask, and a judge of
+## locations with them (`RuledLocationGround.scale()`).
+func is_a_wall_by_cost(def: EventDef) -> bool:
+	var by_cost: bool = _wall_by_cost.call(def)
+	return by_cost
+
 # ---------------------------------------------------------------- questions ---
 
 ## **Every tile `def` may stand on today, once for each time the day offers it**, in the map's own
@@ -199,7 +213,7 @@ func offers_for(def: EventDef, side: int = -1) -> Dictionary:
 func offers_for_role(def: EventDef, role: GameEnums.BlockerRole) -> Dictionary:
 	if _corridor == null or role == GameEnums.BlockerRole.NONE:
 		return offers_for(def)
-	var by_cost: bool = _wall_by_cost.call(def)
+	var by_cost := is_a_wall_by_cost(def)
 	var question := "%s|%d|%s|%s" % [_question(def, def.pavement_side), role, def.hard_fail,
 			by_cost]
 	if not _role_offers.has(question):

@@ -581,6 +581,8 @@ src/events/row_ground.gd hard_fail
 src/events/row_ground.gd has_a_spread
 src/events/row_ground.gd pavement_side
 src/events/row_ground.gd placement
+src/events/ruled_location_ground.gd hard_fail
+src/events/ruled_location_ground.gd id
 src/events/street_invalidation.gd id
 src/events/street_invalidation.gd paces
 src/events/street_rules/pacing_opening_rule.gd paces
@@ -1348,6 +1350,7 @@ src/dev/route_rig_planner.gd obstructed_tiles
 src/dev/route_rig_planner.gd size
 src/dev/scene_recipe_draft.gd size
 src/dev/scene_recipe_runtime.gd size
+src/events/dawn_phases/ruled_roadblock_ground.gd size
 src/events/event_instance.gd moves
 src/events/event_scheduler.gd size
 src/events/event_spawner.gd world
