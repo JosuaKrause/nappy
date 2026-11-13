@@ -48,4 +48,5 @@ Dawn planning's reads of live-event geometry (`standing-layer-breaks.md`) move w
 each listed break carried to its new file in `tools/layer_map.py`, and are settled by row 3a of minty-quail's
 `event-interface.md`: the row answers for its mover and its standing place. The two a
 `PlanBuilder` is handed, `EventInstance.mover_for()` and `EventFootprints.stands_at()`, are named only
-where the event manager makes the city's builder, which the day's planner hands the `DawnContext`.
+where a city's builder is made: by the event manager, whose builder the day's planner hands the
+`DawnContext`, and by the scene recipes' runtime (`src/dev/scene_recipe_runtime.gd`).
