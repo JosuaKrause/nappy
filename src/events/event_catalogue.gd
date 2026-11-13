@@ -1841,7 +1841,7 @@ static func _loudspeaker() -> EventDef:
 	def.max_per_day = Tuning.MAST_COUNT
 	return def
 
-## What the masts carry on `DawnMasts.CURFEW_ANNOUNCE_DAY` instead of their ordinary broadcast:
+## What the masts carry on `DawnMasts.CURFEW_ANNOUNCE_DAY` on top of their ordinary broadcast:
 ## `DawnMasts` places one of these at every mast site that morning, alongside
 ## the mast's own `loudspeaker` instance, which keeps drawing the pole, the lamp and the arcs. This
 ## row is `Look.NONE` and adds only the field, as a park's own playground frame draws itself while
